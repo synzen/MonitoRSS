@@ -1,17 +1,19 @@
-#Discord Feed
+#Discord RSS
+
+Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own.
 
 ***
 ##Starting the Bot
 ***
-1. Install Node https://nodejs.org/en/
-2. Clone files into a directory
+1. Install Node https://nodejs.org/en/.
+2. Clone files into a directory.
 3. Use `npm install` in the directory from terminal, command prompt, etc.
-4. Create and get a bot token from https://discordapp.com/developers/applications/me
-5. Invite your bot to your server with a link generated from https://discordapi.com/permissions.html, putting your bot's client ID there
+4. Create and get a bot token from https://discordapp.com/developers/applications/me.
+5. Invite your bot to your server with a link generated from https://discordapi.com/permissions.html, putting your bot's client ID there.
 6. Put your bot token in config.json
-7. [Customize](https://github.com/debenco/projm#configuration-and-customization) whatever you'd like in your RSS messages in config.json
+7. [Add or customize](https://github.com/debenco/projm#configuration-and-customization) whatever you'd like in your RSS messages in config.json
 8. Start the bot through `node server.js`
-9. Feeds in addition to the ones in config can be [added through Discord] (https://github.com/debenco/projm#controlling-rss-feeds-through-discord)
+9. Feeds in addition to the ones in config can be [added through Discord] (https://github.com/debenco/projm#controlling-rss-feeds-through-discord) (albeit without any neat designs unless you add additional customizations through config.json)
 
 ####Built With
 * [Node] (https://nodejs.org/en/)
