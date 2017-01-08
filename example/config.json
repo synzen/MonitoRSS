@@ -1,0 +1,49 @@
+{
+  "token": "myTokenHere",
+  "timezone": "PST",
+  "refreshTimeMinutes": 15,
+  "sqlType": "sqlite3",
+  "databaseName": "rss",
+  "defaultMaxAge": 3,
+  "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}",
+  "sources": [
+    {
+      "enabled": 0,
+      "name": "WarframeTwitter",
+      "link": "https://twitrss.me/twitter_user_to_rss/?user=PlayWarframe",
+      "channel": "twitter",
+      "maxAge": 2,
+      "message": "",
+      "embedMessage": {
+        "enabled": 1,
+        "properties": {
+          "color": 3447003,
+          "authorTitle": "Warframe @PlayWarframe",
+          "authorAvatarURL": "http://icons.iconarchive.com/icons/uiconstock/socialmedia/512/Twitter-icon.png",
+          "thumbnailURL": "https://pbs.twimg.com/profile_images/797287460199862272/mG1KEwQ2.jpg",
+          "message": "{description}",
+          "footerText": "{date}",
+          "attachURL": true
+        }
+      }
+    },
+    {
+      "enabled": 0,
+      "name": "257938647771250688_https://www.rt.com",
+      "link": "https://www.rt.com/rss/",
+      "channel": "257938647771250688",
+      "maxAge": 3,
+      "filters": {
+        "title": ["first", "second"],
+        "description": "more!"
+      }
+    },
+    {
+      "enabled": 1,
+      "name": "washingtonPost",
+      "link": "http://feeds.washingtonpost.com/rss/sports",
+      "channel": "sports",
+      "message": "A new article on sports!\n{title}\n\n{description}\nBy: {author}\n\n {link}"
+    }
+  ]
+}

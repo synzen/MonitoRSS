@@ -1,0 +1,12 @@
+{
+  "token": "",
+  "timezone": "",
+  "refreshTimeMinutes": 15,
+  "sqlType": "sqlite3",
+  "databaseName": "rss",
+  "defaultMaxAge": 3,
+  "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}",
+  "sources": [
+    {}
+  ]
+}
