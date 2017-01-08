@@ -11,9 +11,9 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 4. Create and get a bot token from https://discordapp.com/developers/applications/me.
 5. Invite your bot to your server with a link generated from https://discordapi.com/permissions.html, putting your bot's client ID there.
 6. Put your bot token in config.json
-7. [Add or customize](https://github.com/debenco/projm#configuration-and-customization) whatever you'd like in your RSS messages in config.json
+7. [Add or customize](https://github.com/debenco/discord-rss#configuration-and-customization) whatever you'd like in your RSS messages in config.json
 8. Start the bot through `node server.js`
-9. Feeds in addition to the ones in config can be [added through Discord] (https://github.com/debenco/projm#controlling-rss-feeds-through-discord) (albeit without any neat designs unless you add additional customizations through config.json)
+9. Feeds in addition to the ones in config can be [added through Discord] (https://github.com/debenco/discord-rss#controlling-rss-feeds-through-discord) (albeit without any neat designs unless you add additional customizations through config.json)
 
 ####Built With
 * [Node] (https://nodejs.org/en/)
@@ -32,7 +32,7 @@ An example is provided in examples/config.json. *All* of these properties are re
 
 1. `token` : Bot token to login through server.js
 
-2. `sqlType`: See [Database Selection](https://github.com/debenco/projm#database-selection)
+2. `sqlType`: See [Database Selection](https://github.com/debenco/discord-rss#database-selection)
 
 3. `timezone`: (Optional) By default adding dates to your feeds will not show the timezone. Manually specify it here.
 For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed's date. Specifying PST timezone will make it print `Sat, January 7th 2017, 7:18 AM (PST)`. This is *purely for visual purposes*.
