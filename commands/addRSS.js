@@ -25,7 +25,9 @@ module.exports = function (bot, message) {
     if (!error && response.statusCode == 200){
       for (var x in rssList) {
         if ( rssList[x].link == content[1] && isCurrentChannel(rssList[x].channel) ) {
-          return message.channel.sendMessage("This RSS feed already exists for this channel.");
+          let msg = "This RSS feed already exists for this channel."
+          if (rssList[x].enabled == 0) msg += " It has been disabled in the config.";
+          return message.channel.sendMessage(msg);
         }
       }
       initializeRSS(bot, content[1], message.channel);

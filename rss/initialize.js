@@ -95,7 +95,7 @@ module.exports = function (bot, rssLink, channel) {
         addToConfig();
         return sqlCmds.end(con, function(err) {
           if (err) throw err;
-          else console.log(`RSS Info: Successfully added ${feedName} to config`);
+          else console.log(`RSS Info: Successfully added ${rssLink} to config for channel ${channel.id}.`);
         });
       }
     }
@@ -110,7 +110,7 @@ module.exports = function (bot, rssLink, channel) {
     	})
 
       updateConfig('./config.json', rssConfig)
-      channel.sendMessage(`Successfully added ${feedName} to config.`)
+      channel.sendMessage(`Successfully added ${rssLink} to config for channel ${channel.id}.`)
     }
 
     startDataProcessing();

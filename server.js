@@ -3,8 +3,9 @@ const bot = new Discord.Client()
 const initializeAllRSS = require('./rss/initializeall.js')
 const checkValidConfig = require('./util/configCheck.js')
 const rssAdd = require('./commands/addRSS.js')
-const rssRemove = require('./commands/removeRSS.js')
-const rssTest = require('./commands/testRSS.js')
+const rssPrintList = require('./commands/util/printFeeds.js')
+
+
 const startFeedSchedule = require('./util/startFeedSchedule.js')
 var rssConfig = require('./config.json')
 var rssList = rssConfig.sources
@@ -37,7 +38,6 @@ function validChannel(rssIndex) {
 bot.on('ready', function() {
   console.log("I am online.")
 
-
   for (var rssIndex in rssList){
     if (checkValidConfig(rssIndex, true, true)) {
       if (validChannel(rssIndex) !== false) {
@@ -56,18 +56,42 @@ bot.on('ready', function() {
 
 })
 
+var inProgress = false;
 bot.on('message', function (message) {
+  let m = message.content.split(" ")
+  let command = m[0].substr(rssConfig.prefix.length)
+  //let command = message.content.substr(rssConfig.prefix.length)
 
-  if (message.content.startsWith("~rssadd")){
+  if (command == "rssadd" && !inProgress){
     rssAdd(bot, message);
   }
 
-  else if (message.content.startsWith("~rssremove")){
-    rssRemove(bot, message);
+  else if (command == "rsstest" && !inProgress) {
+    inProgress = true;
+    rssPrintList(message, 'testRSS', function() {
+      inProgress = false
+    })
   }
 
-  else if (message.content.startsWith("~rsstest")) {
-    rssTest(bot, message);
+  else if (command == "rssremove" && !inProgress){
+    inProgress = true;
+    rssPrintList(message, 'removeRSS', function() {
+      inProgress = false
+    })
+  }
+
+  else if (command == "rssmessage" && !inProgress) {
+    inProgress = true;
+    rssPrintList(message, 'customMessage', function() {
+      inProgress = false
+    })
+  }
+
+  else if (command == "rssembed" && !inProgress) {
+    inProgress = true;
+    rssPrintList(message, 'customEmbed', function() {
+      inProgress = false
+    })
   }
 
 });

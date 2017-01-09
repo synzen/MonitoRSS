@@ -13,25 +13,25 @@ module.exports = function (rssIndex, data, replaceKeywords) {
 
   let embedSpecs = rssList[rssIndex].embedMessage.properties;
 
-  if (embedSpecs.message !== null)
+  if (embedSpecs.message != null)
     embed.embed.description = replaceKeywords(embedSpecs.message);
 
-  if (embedSpecs.footerText !== null)
+  if (embedSpecs.footerText != null)
     embed.embed.footer.text = replaceKeywords(embedSpecs.footerText);
 
-  if (embedSpecs.color != null && embedSpecs.color !== "" && !isNaN(embedSpecs.color))
+  if (embedSpecs.color != null && embedSpecs.color != "" && !isNaN(embedSpecs.color))
     embed.embed.color = embedSpecs.color;
 
   if (embedSpecs.authorTitle != null)
     embed.embed.author.name = replaceKeywords(embedSpecs.authorTitle);
 
-  if (embedSpecs.authorAvatarURL !== null && embedSpecs.authorAvatarURL !== "" && embedSpecs.authorAvatarURL.startsWith("http"))
+  if (embedSpecs.authorAvatarURL != null && embedSpecs.authorAvatarURL != "" && embedSpecs.authorAvatarURL.startsWith("http"))
     embed.embed.author.icon_url = embedSpecs.authorAvatarURL;
 
-  if (embedSpecs.thumbnailURL !== null && embedSpecs.thumbnailURL !== "")
+  if (embedSpecs.thumbnailURL != null && embedSpecs.thumbnailURL != "")
     embed.embed.thumbnail.url = replaceKeywords(embedSpecs.thumbnailURL);
 
-  if (embedSpecs.attachURL == true)
+  if (embedSpecs.url == null || embedSpecs.url == "")
     embed.embed.url = data.link;
 
   return embed;
