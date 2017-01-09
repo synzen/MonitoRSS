@@ -61,7 +61,7 @@ module.exports = function (message, rssIndex, callback) {
     else {
       //property collector
       customCollect.stop()
-      message.channel.sendMessage(`Set the property now. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. To find valid properties, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\` first to find valid properties.`);
+      message.channel.sendMessage(`Set the property now. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. To find valid properties, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\` first to find valid properties.`);
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
 
       propertyCollect.on('message', function (propSetting) {
