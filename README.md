@@ -116,7 +116,7 @@ Putting tags such as {title}, {description}, {summary}, {author}, {link}, {image
 ***
 ##Controlling RSS Feeds through Discord
 ***
-Uncomfortable with JSON? No problem! I have written up some commands for you to use. Each command must start with the prefix defined in config.json (literally the first line, set to default as `~`). All of the above features are included except filters. 
+Uncomfortable with JSON? No problem! I have scrounged up some commands for you to use. Each command must start with the prefix defined in config.json (literally the first line, set to default as `~`). All of the above features are included except filters. 
 
 Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#other-customizations) to add the feed's information. *As of now, no permission filters for the commands have been set*.
 
@@ -148,3 +148,8 @@ This is especially useful when you want to add the feed's title and/or descripti
    * You can check the validity of your configuration through [JSONLint](http://jsonlint.com/).
 
    * Repurposing the bot is actually (relatively) easy since the only things that uses the Discord.js library is the message sending code (basically a couple lines in rss.js/initializeall.js), Discord channel checks in /util/, server.js and the commands directory (which stems from server.js).
+
+***
+##Author's Note
+***
+This is in fact my first Javascript project. If you have any potential suggestions/improvements, I'm very open to hearing them out.
