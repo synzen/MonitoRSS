@@ -5,12 +5,12 @@ const updateConfig = require('../util/updateJSON.js')
 module.exports = function (message, rssIndex, callback) {
 
   var embedProperties = [["Color", "The sidebar color of the embed\nThis MUST be an integer color. See https://www.shodor.org/stella2java/rgbint.html", "color"],
-                        ["Author Title", "Title of the embed", "authorTitle"],
+                        ["Author Title", "Title of the embed\nAccepts tags.", "authorTitle"],
                         ["Author Avatar URL", "The avatar picture to the left of author title.\nThis MUST be a link to an image. If an Author Title is not specified, the Author Avatar URL will not be shown.", "authorAvatarURL"],
                         ["Thumbnail URL", "The picture on the right hand side of the embed\nThis MUST be a link to an image.", "thumbnailURL"],
-                        ["Message", "Main message of the embed", "message"],
-                        ["Footer Text", "The bottom-most text", "footerText"],
-                        ["URL", "A link that clicking on the title will lead to. By default this will lead to the feed's url.\nThis MUST be a link.", "url"],
+                        ["Message", "Main message of the embed\nAcceps tags.", "message"],
+                        ["Footer Text", "The bottom-most text\nAccepts tags.", "footerText"],
+                        ["URL", "A link that clicking on the title will lead to.\nThis MUST be a link. By default this is set to the feed's url", "url"],
                         ["Remove", "Remove and reset all properties.", "remove"]]
 
   var embedListMsg = "```Markdown\n"

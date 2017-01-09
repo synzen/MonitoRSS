@@ -29,7 +29,7 @@ module.exports = function (rssIndex, data, replaceKeywords) {
     embed.embed.author.icon_url = embedSpecs.authorAvatarURL;
 
   if (embedSpecs.thumbnailURL != null && embedSpecs.thumbnailURL != "")
-    embed.embed.thumbnail.url = replaceKeywords(embedSpecs.thumbnailURL);
+    embed.embed.thumbnail.url = embedSpecs.thumbnailURL;
 
   if (embedSpecs.url == null || embedSpecs.url == "")
     embed.embed.url = data.link;
