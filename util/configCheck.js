@@ -6,7 +6,11 @@ module.exports = function (rssIndex, logging, initializing) {
 
   var valid = true;
 
-  if (rssList[rssIndex].enabled == 0) {
+  if (rssConfig.defaultMessage == null || rssConfig.defaultMessage == "") {
+    console.log(`RSS Config Warning: A default message must be set in config before continuing.`);
+    return false;
+  }
+  else if (rssList[rssIndex].enabled == 0) {
     if (logging && initializing) console.log(`RSS Config Info: Feed "${rssList[rssIndex].name}" is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
     return false;
   }
