@@ -105,8 +105,7 @@ module.exports = function (bot, rssLink, channel) {
     		enabled: 1,
     		name: feedName,
     		link: rssLink,
-    		channel: channel.id,
-    		maxAge: 3
+    		channel: channel.id
     	})
 
       updateConfig('./config.json', rssConfig)
