@@ -1,6 +1,6 @@
-#Discord RSS
+#Discord.RSS
 
-Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own.
+Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible, and (should be) easy to understand.
 
 ***
 ##Starting the Bot
