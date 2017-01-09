@@ -1,10 +1,11 @@
 {
+  "prefix": "~",
   "token": "myTokenHere",
   "timezone": "PST",
   "refreshTimeMinutes": 15,
   "sqlType": "sqlite3",
   "databaseName": "rss",
-  "defaultMaxAge": 3,
+  "defaultMaxAge": 2,
   "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}",
   "sources": [
     {
@@ -23,7 +24,7 @@
           "thumbnailURL": "https://pbs.twimg.com/profile_images/797287460199862272/mG1KEwQ2.jpg",
           "message": "{description}",
           "footerText": "{date}",
-          "attachURL": true
+          "url": "https://www.google.com/"
         }
       }
     },
