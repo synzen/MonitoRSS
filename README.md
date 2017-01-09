@@ -11,9 +11,9 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 4. Create and get a bot token from https://discordapp.com/developers/applications/me.
 5. Invite your bot to your server with a link generated from https://discordapi.com/permissions.html, putting your bot's client ID there.
 6. Put your bot token in config.json
-7. [Add or customize](https://github.com/debenco/discord-rss#configuration-and-customization) whatever you'd like in your RSS messages in config.json
+7. [Add or customize](https://github.com/synzen/discord-rss#configuration-and-customization) whatever you'd like in your RSS messages in config.json
 8. Start the bot through `node server.js`
-9. Feeds in addition to the ones in config can be [added/customized through Discord] (https://github.com/debenco/discord-rss#controlling-rss-feeds-through-discord)
+9. Feeds in addition to the ones in config can be [added/customized through Discord] (https://github.com/synzen/discord-rss#controlling-rss-feeds-through-discord)
 
 ####Built With
 * [Node] (https://nodejs.org/en/)
@@ -32,7 +32,7 @@ An example is provided in examples/config.json. *All* of these properties are re
 
 1. `token` : Bot token to login through server.js
 
-2. `sqlType`: See [Database Selection](https://github.com/debenco/discord-rss#database-selection)
+2. `sqlType`: See [Database Selection](https://github.com/synzen/discord-rss#database-selection)
 
 3. `timezone`: (Optional) By default adding dates to your feeds will not show the timezone. Manually specify it here.
 For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed's date. Specifying PST timezone will make it print `Sat, January 7th 2017, 7:18 AM (PST)`. This is *purely for visual purposes*.
@@ -118,7 +118,7 @@ Putting tags such as {title}, {description}, {summary}, {author}, {link}, {image
 ***
 Uncomfortable with JSON? No problem! I have written up some commands for you to use. Each command must start with the prefix defined in config.json (literally the first line, set to default as `~`). All of the above features are included except filters. 
 
-Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/debenco/discord-rss#other-customizations) to add the feed's information. *As of now, no permission filters for the commands have been set*.
+Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#other-customizations) to add the feed's information. *As of now, no permission filters for the commands have been set*.
 
 
 **rssadd**: Add feeds for that specific channel. `(prefix)rssadd rss_link_here`. A new entry will be made in config.json with its name in the format of channelID_feedLink, and will use the default message formatting unless customized otherwise.
