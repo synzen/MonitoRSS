@@ -1,4 +1,5 @@
 {
+  "prefix": "~",
   "token": "",
   "timezone": "",
   "refreshTimeMinutes": 15,
