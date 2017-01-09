@@ -34,7 +34,7 @@ An example is provided in examples/config.json. *All* of these properties are re
 
 2. `sqlType`: See [Database Selection](https://github.com/synzen/discord-rss#database-selection)
 
-3. `timezone`: (Optional) By default adding dates to your feeds will not show the timezone. Manually specify it here.
+3. `timezone`: (Optional) By default adding {date}s to your feeds will not show the timezone. Manually specify it here.
 For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed's date. Specifying PST timezone will make it print `Sat, January 7th 2017, 7:18 AM (PST)`. This is *purely for visual purposes*.
 
 4. `refreshTimeMinutes`: The bot will check for new feeds regularly at every interval specified in minutes here.
