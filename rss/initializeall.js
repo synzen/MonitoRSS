@@ -100,8 +100,8 @@ module.exports = function (bot, channel, rssIndex, callback) {
           let feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
             var cutoffDay;
-            if (rssList[rssIndex].maxAge == null || rssList[rssIndex].defaultMaxAge == "")
-              cutoffDay = moment(new Date()).subtract(rssConfig.maxAge, 'd');
+            if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "")
+              cutoffDay = moment(new Date()).subtract(rssConfig.defaultMaxAge, 'd');
             else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
 
             if (currentFeed[x].pubdate >= cutoffDay){
@@ -137,7 +137,7 @@ module.exports = function (bot, channel, rssIndex, callback) {
         else {
           //console.log(`never seen ${feed.link}, logging and sending msg now`);
           var message = translator(rssIndex, feed, false);
-          if (bot.guilds.size <= 5) { //this can result in great spam once the loads up after a period of downtime
+          if (bot.guilds.size <= 5 && rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
             if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
             else channel.sendMessage(message.textMsg);
           }

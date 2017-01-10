@@ -7,8 +7,6 @@ const createEmbed = require('./embed.js')
 const cleanRandoms = require('./cleanup.js')
 
 module.exports = function (rssIndex, data, isTestMessage) {
-  console.log(data)
-
   var originalDate = data.pubdate;
   var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
   if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`
