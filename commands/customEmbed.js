@@ -50,7 +50,7 @@ module.exports = function (message, rssIndex, callback) {
         choice = embedProperties[e][2];
     }
 
-    if (choice == "") return message.channel.sendMessage("That is not a valid property.")
+    if (choice == "") return message.channel.sendMessage("That is not a valid property.");
     else if (choice == "remove") {
       customCollect.stop();
       rssList[rssIndex].embedMessage = {};

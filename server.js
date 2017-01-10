@@ -62,7 +62,9 @@ var commands = {
   rssremove: {description: "Open a menu to delete a feed from the channel.", file: "removeRSS"},
   rssmessage: {description: "Open a menu to customize a feed's text message.", file: "customMessage"},
   rssembed: {description: "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted.", file: "customEmbed"},
-  rsstest: {description: "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization.", file: "testRSS"}
+  rsstest: {description: "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization.", file: "testRSS"},
+  rssfilteradd: {description: "Opens a menu to add filters.", file: "filterAdd"},
+  rssfilterremove: {description: "Opens a menu to remove filters.", file: "filterRemove"}
 }
 
 var inProgress = false;
