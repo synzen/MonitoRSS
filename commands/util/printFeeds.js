@@ -27,7 +27,7 @@ module.exports = function (message, command, callback) {
       returnMsg += `[${count}]: ${currentRSSList[x][0]}\n`
     }
 
-    message.channel.sendMessage(returnMsg + "``````# Choose a feed to from this channel by typing the number to execute your requested action on.```");
+    message.channel.sendMessage(returnMsg + "``````# Choose a feed to from this channel by typing the number to execute your requested action on, or type exit to cancel.```");
 
     const filter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(filter,{time:60000});
