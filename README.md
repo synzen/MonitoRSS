@@ -132,9 +132,9 @@ Each command will open a menu for you to select the RSS in that channel to modif
 
 This is especially useful when you want to add the feed's title and/or description, but you don't know if they'll turn out undefined. However, if the message is too long (that is, over the 2000 character limit), it will not send.
 
-***
+
 ##Noteworthy Details
-***
+
    * Custom emojis use a different format - it must be in the format of `<:emoji_name:12345>` with 12345 being the emoji's URL ID. The ID can be retrieved by getting the emoji's URL and copying the number in the URL.
 
    * This bot was made with private server owners in mind. Its stability beyond that is unpredictable, however I assume that since it checks *all* the feeds at a set interval this is probably(?) not good for stability or efficiency on the massive scale of a public bot.
