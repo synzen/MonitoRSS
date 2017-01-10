@@ -25,7 +25,7 @@ module.exports = function (bot, message) {
       for (var x in rssList) {
         if ( rssList[x].link == content[1] && isCurrentChannel(rssList[x].channel) ) {
           message.channel.stopTyping();
-          return message.channel.sendMessage("This RSS feed already exists for this channel.");
+          return message.channel.sendMessage("This feed already exists for this channel.");
         }
       }
       //message.channel.startTyping();
@@ -34,7 +34,7 @@ module.exports = function (bot, message) {
 
     else {
       message.channel.stopTyping();
-      return message.channel.sendMessage("Invalid link.");
+      return message.channel.sendMessage("That is an invalid feed link.");
     }
 
   });

@@ -18,7 +18,7 @@ module.exports = function (message, rssIndex, callback) {
   if (enabledFeeds == 0 || rssList.length == 0) console.log("RSS Info: No more active feeds enabled.")
 
   callback()
-  message.channel.sendMessage("Removed " + link).then(m => message.channel.stopTyping())
+  message.channel.sendMessage(`Successfully removed ${link} from this channel.`).then(m => message.channel.stopTyping())
   // message.channel.stopTyping()
 
 }
