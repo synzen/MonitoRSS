@@ -144,7 +144,7 @@ This is especially useful when you want to add the feed's title and/or descripti
    * This bot was made with private server owners in mind. Its stability beyond that is unpredictable, however I assume that since it checks *all* the feeds at a set interval this is probably(?) not good for stability or efficiency on the massive scale of a public bot.
 
    * Upon starting the bot with a never before seen RSS feed, it will all store available feeds at that time and put it into the database instead of sending it to Discord. This will prevent your server from being spammed by the bot with messages.
-      * Upon starting the bot with an already seen RSS feed, it will retrieve feeds and send it to the Discord server with respect to its maxAge.
+      * Upon starting the bot with an already seen RSS feed, it will retrieve feeds and send it to the Discord server with respect to its maxAge, UNLESS the bot is in more than 5 guilds.
 
    * If you already have a bot active, you can simply use that bot's token and that bot will inherit the functionality of this RSS bot.
 
