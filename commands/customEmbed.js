@@ -10,8 +10,7 @@ module.exports = function (message, rssIndex, callback) {
                         ["Thumbnail URL", "The picture on the right hand side of the embed\nThis MUST be a link to an image, OR the {thumbnail} tag for YouTube videos.", "thumbnailURL"],
                         ["Message", "Main message of the embed\nAcceps tags.", "message"],
                         ["Footer Text", "The bottom-most text\nAccepts tags.", "footerText"],
-                        ["URL", "A link that clicking on the title will lead to.\nThis MUST be a link. By default this is set to the feed's url", "url"],
-                        ["Remove", "Remove and reset all properties.", "remove"]]
+                        ["URL", "A link that clicking on the title will lead to.\nThis MUST be a link. By default this is set to the feed's url", "url"]]
 
   var embedListMsg = "```Markdown\n"
   for (var prop in embedProperties) {
@@ -37,7 +36,7 @@ module.exports = function (message, rssIndex, callback) {
   }
   if (currentEmbedProps == "```Markdown\n") currentEmbedProps = "```\nNo properties set.\n";
 
-  message.channel.sendMessage(`The current embed properties for ${rssList[rssIndex].link} are: \n${currentEmbedProps + "```"}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, or type exit to cancel.`);
+  message.channel.sendMessage(`The current embed properties for ${rssList[rssIndex].link} are: \n${currentEmbedProps + "```"}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type exit to cancel.`);
 
   const filter = m => m.author.id == message.author.id;
   const customCollect = message.channel.createCollector(filter,{time:240000});
@@ -50,8 +49,7 @@ module.exports = function (message, rssIndex, callback) {
         choice = embedProperties[e][2];
     }
 
-    if (choice == "") return message.channel.sendMessage("That is not a valid property.");
-    else if (choice == "remove") {
+    if (chosenProp.content == "remove") {
       message.channel.startTyping();
       customCollect.stop();
       rssList[rssIndex].embedMessage = {};
@@ -60,6 +58,7 @@ module.exports = function (message, rssIndex, callback) {
       message.channel.stopTyping();
       return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
     }
+    else if (choice == "") return message.channel.sendMessage("That is not a valid property.");
     else {
       //property collector
       customCollect.stop()
