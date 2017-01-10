@@ -5,7 +5,7 @@
   "refreshTimeMinutes": 15,
   "sqlType": "sqlite3",
   "databaseName": "rss",
-  "sendOldMessages": false,
+  "sendOldMessages": 0,
   "defaultMaxAge": 2,
   "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}",
   "sources": [
