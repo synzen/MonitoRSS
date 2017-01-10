@@ -61,7 +61,7 @@ module.exports = function (message, rssIndex, callback) {
     else {
       //property collector
       customCollect.stop()
-      message.channel.sendMessage(`Set the property now. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. To find valid properties, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\` first to find valid properties.`);
+      message.channel.sendMessage(`Set the property now. To reset the property to be blank, type \`reset\`.\n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. To find valid properties, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\` first to find valid properties.`);
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
 
       propertyCollect.on('message', function (propSetting) {
@@ -73,7 +73,8 @@ module.exports = function (message, rssIndex, callback) {
           let finalChange = propSetting.content;
           if (choice == "color") finalChange = parseInt(propSetting.content,10);
           propertyCollect.stop();
-          rssList[rssIndex].embedMessage.properties[choice] = finalChange;
+          if (finalChange.toLowerCase() = "reset") delete rssList[rssIndex].embedMessage.properties[choice];
+          else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
           rssList[rssIndex].embedMessage.enabled = 1;
           updateConfig('./config.json', rssConfig);
           callback();
