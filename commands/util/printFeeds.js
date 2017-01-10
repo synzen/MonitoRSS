@@ -2,7 +2,7 @@ const loadCommand = (command) => require(`../${command}.js`)
 const rssConfig = require('../../config.json')
 const rssList = rssConfig.sources
 
-module.exports = function (message, command, callback) {
+module.exports = function (message, isCallingCmd, command, callback) {
 
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) {
@@ -30,7 +30,8 @@ module.exports = function (message, command, callback) {
       returnMsg += `[${count}]: ${currentRSSList[x][0]}\n`
     }
 
-    message.channel.sendMessage(returnMsg + "``````# Choose a feed to from this channel by typing the number to execute your requested action on, or type exit to cancel.```");
+    if (isCallingCmd) message.channel.sendMessage(returnMsg + "``````# Choose a feed to from this channel by typing the number to execute your requested action on, or type exit to cancel.```");
+    else return message.channel.sendMessage(returnMsg + "```");
 
     const filter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(filter,{time:60000});
@@ -43,12 +44,10 @@ module.exports = function (message, command, callback) {
       if (isNaN(index) || m > currentRSSList.length) return message.channel.sendMessage("That is not a valid number.");
       else {
         collector.stop();
-        let rssIndex = currentRSSList[index][1]
-
+        let rssIndex = currentRSSList[index][1];
         loadCommand(command)(message, rssIndex, function () {
           callback()
-        })
-
+        });
       }
     })
     collector.on('end', (collected, reason) => {
