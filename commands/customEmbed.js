@@ -79,7 +79,7 @@ module.exports = function (message, rssIndex, callback) {
           updateConfig('./config.json', rssConfig);
           callback();
           if (finalChange.toLowerCase() == "reset") return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);
-          else return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\``);
+          else return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`. You may use \`${rssConfig.prefix}rsstest\` to see your new embed format.`);
         }
       });
       propertyCollect.on('end', (collected, reason) => {

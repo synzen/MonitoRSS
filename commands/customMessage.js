@@ -21,7 +21,7 @@ module.exports = function (message, rssIndex, callback) {
       message.channel.sendMessage(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
     }
     customCollect.stop()
-    message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
+    message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}. You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`)
     rssList[rssIndex].message = m.content
     updateConfig('./config.json', rssConfig);
     return callback();
