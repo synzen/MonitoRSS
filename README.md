@@ -120,19 +120,19 @@ Uncomfortable with JSON? No problem! I have scrounged up some commands for you t
 Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#other-customizations) to add the feed's information. The user must have Manage Channels permission to use the commands.
 
 
-`rssadd`: Add feeds for that specific channel. `(prefix)rssadd rss_link_here`. A new entry will be made in config.json with its name in the format of channelID_feedLink, and will use the default message formatting unless customized otherwise.
+[`rssadd`]: Add feeds for that specific channel. `(prefix)rssadd rss_link_here`. A new entry will be made in config.json with its name in the format of channelID_feedLink, and will use the default message formatting unless customized otherwise.
 
-`rssremove`: To remove feeds. After menu selection, the feed will automatically be removed from config.json.
+[`rssremove`]: To remove feeds. After menu selection, the feed will automatically be removed from config.json.
 
-`rssmessage`: Set the custom text message of the feed that will be sent.
+[`rssmessage`]: Set the custom text message of the feed that will be sent.
 
-`rssembed`: Enable and set embed properties to be sent in addition to its regular message.
+[`rssembed`]: Enable and set embed properties to be sent in addition to its regular message.
 
-`rssfilteradd`: Add filters for specific categories.
+[`rssfilteradd`]: Add filters for specific categories.
 
-`rssfilterremove`: Remove filters for specific categories.
+[`rssfilterremove`]: Remove filters for specific categories.
 
-`rsstest`: Print out the typical properties of the RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config.
+[`rsstest`]: Print out the typical properties of the RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config.
 
 This is especially useful when you want to add the feed's title and/or description, but you don't know if they'll turn out undefined. However, if the message is too long (that is, over the 2000 character limit), it will not send.
 
