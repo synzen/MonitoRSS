@@ -2,9 +2,8 @@
 
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible, and (should be) easy to understand.
 
-***
 ##Starting the Bot
-***
+
 1. Install Node https://nodejs.org/en/.
 2. Clone files into a directory.
 3. Use `npm install` in the directory from terminal, command prompt, etc.
@@ -25,9 +24,9 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 * [sqlite3] (https://www.npmjs.com/package/sqlite3)
 * [mysql] (https://www.npmjs.com/package/mysql) (optional)
 
-***
+
 ##Configuration and Customization
-***
+
 An example is provided in examples/config.json. *All* of these properties are required, with the exception of `timezone` and `sources`.
 
 1. `token` : Bot token to login through server.js
@@ -113,9 +112,9 @@ The difference between the two is that for sqlite, the database is created in th
 Putting tags such as {title}, {description}, {summary}, {author}, {link}, {image}, {date} will add the feed's respective information into the text. This can either be in the main message, or in the embed. Regular [Markdown formatting] (https://support.discordapp.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-) is possible wherever Discord allows.
 
 `"message": "{date}\nA new feed has arrived!\n\n**{title}**\n{description}"`
-***
+
 ##Controlling RSS Feeds through Discord
-***
+
 Uncomfortable with JSON? No problem! I have scrounged up some commands for you to use. Each command must start with the prefix defined in config.json (literally the first line, set to default as `~`). All of the above features are included except filters. 
 
 Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#other-customizations) to add the feed's information. *As of now, no permission filters for the commands have been set*.
@@ -149,7 +148,7 @@ This is especially useful when you want to add the feed's title and/or descripti
 
    * Repurposing the bot is actually (relatively) easy since the only things that uses the Discord.js library is the message sending code (basically a couple lines in rss.js/initializeall.js), Discord channel checks in /util/, server.js and the commands directory (which stems from server.js).
 
-***
+
 ##Author's Note
-***
+
 This is in fact my first Javascript project. If you have any potential suggestions/improvements, I'm very open to hearing them out.
