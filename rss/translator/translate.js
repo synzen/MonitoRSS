@@ -4,8 +4,10 @@ const rssConfig = require('../../config.json')
 const rssList = rssConfig.sources
 const filterFeed = require('./filters.js')
 const createEmbed = require('./embed.js')
+const cleanRandoms = require('./cleanup.js')
 
 module.exports = function (rssIndex, data, isTestMessage) {
+  console.log(data)
 
   var originalDate = data.pubdate;
   var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
@@ -13,11 +15,17 @@ module.exports = function (rssIndex, data, isTestMessage) {
 
   var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
-  else dataDescrip = striptags(data.description)
-  if (dataDescrip.length > 1500) dataDescrip = dataDescrip.substr(0, 1500) + "[...]";
+  else dataDescrip = cleanRandoms(striptags(data.description));
+  if (dataDescrip.length > 1500) dataDescrip = dataDescrip.substr(0, 1400) + "[...]";
 
-  var dataSummary = striptags(data.summary)
-  if (dataSummary.length > 1500) dataSummary = striptags(data.summary).substr(0, 1500) + "[...]";
+  if (data.link.includes("reddit")) {
+    let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
+    let b = a.replace("submitted by", "\n*Submitted by:*");
+    dataDescrip = b;
+  }
+
+  var dataSummary = cleanRandoms(striptags(data.summary))
+  if (dataSummary.length > 1500)  dataSummary = striptags(data.summary).substr(0, 1400) + "[...]";
 
   function replaceKeywords(word){
     var a = word.replace(/{date}/g, vanityDate)
