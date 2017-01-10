@@ -12,18 +12,22 @@ module.exports = function (rssIndex, data, isTestMessage) {
   if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`
 
   var dataDescrip = ""
-  if (data.guid.includes("yt")) dataDescrip = data['media:group']['media:description']['#'];
+  if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = striptags(data.description)
+  if (dataDescrip.length > 1500) dataDescrip = dataDescrip.substr(0, 1500) + "[...]";
+
+  var dataSummary = striptags(data.summary)
+  if (dataSummary.length > 1500) dataSummary = striptags(data.summary).substr(0, 1500) + "[...]";
 
   function replaceKeywords(word){
     var a = word.replace(/{date}/g, vanityDate)
     var b = a.replace(/{title}/g, striptags(data.title))
     var c = b.replace(/{link}/g, data.link)
     var d = c.replace(/{author}/g, data.author)
-    var e = d.replace(/{summary}/g, striptags(data.summary))
+    var e = d.replace(/{summary}/g, dataSummary)
     var f = e.replace(/{image}/g, data.image.url)
 
-    if (data.guid.includes("yt")) { //youtube feeds have the property media:group that other feeds do not have
+    if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
       if (data['media:group']['media:description']['#'] != null)
         var g = f.replace(/{description}/g, data['media:group']['media:description']['#']);
       else var g = f.replace(/{description}/g, "");
@@ -51,15 +55,16 @@ module.exports = function (rssIndex, data, isTestMessage) {
   var finalMessage = "";
   if (isTestMessage) {
 
-    var dataSummary = striptags(data.summary)
-    if (dataSummary.length > 1500) dataSummary = "Summary is greater than 1500 characters and cannot be sent as a precaution.";
-    if (dataDescrip.length > 1500) dataDescrip = "Description is greater than 1500 characters and cannot be sent as a precaution.";
-    if (dataSummary.length >= 1000 && dataDescrip.length >= 1000) dataDescrip = dataSummary = "Description and summary combined have a character count greater than 2000 and as a precaution cannot be sent.";
+    if (dataSummary.length >= 1000 && dataDescrip.length >= 1000) {
+      dataSummary = striptags(data.summary).substr(0, 750) + "[...]";
+      dataDescrip = dataDescrip.substr(0, 750) + "[...]";
+      //dataDescrip = dataSummary = "Description and summary combined have a character count greater than 2000 and as a precaution cannot be sent.";
+    }
 
     let footer = "```Below is the configured message to be sent for this feed set in config```\n-\n"
     finalMessage += `\`\`\`Markdown\n# Data for ${data.link}\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}\n\n[Description]: {description}\n${dataDescrip}\n\n[Summary]: {summary}\n${dataSummary}\n\n[Published Date]: {date}\n${vanityDate}\n\n[Author]: {author}\n${data.author}\n\n[Link]: {link}\n${data.link}\n\n[Image URL]: {image}\n${data.image.url}`;
     if (filterExists) finalMessage += `\n\n[Passed Filters?]: ${filterFound}`;
-    if (data.guid.includes("yt")) {
+    if (data.guid.startsWith("yt:video")) {
       finalMessage += `\n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer + configMessage;
     }
     else finalMessage += "```" + footer + configMessage;

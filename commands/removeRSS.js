@@ -4,8 +4,8 @@ const updateConfig = require('../util/updateJSON.js')
 const sqlCmds = require('../rss/sql/commands.js')
 
 module.exports = function (message, rssIndex, callback) {
-
-  message.channel.sendMessage("Removed " + rssList[rssIndex].link);
+  message.channel.startTyping();
+  let link = rssList[rssIndex].link
   sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name);
   rssList.splice(rssIndex,1);
   updateConfig('./config.json', rssConfig);
@@ -18,5 +18,7 @@ module.exports = function (message, rssIndex, callback) {
   if (enabledFeeds == 0 || rssList.length == 0) console.log("RSS Info: No more active feeds enabled.")
 
   callback()
+  message.channel.sendMessage("Removed " + link).then(m => message.channel.stopTyping())
+  // message.channel.stopTyping()
 
 }

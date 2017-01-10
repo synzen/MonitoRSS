@@ -89,9 +89,9 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
         gatherResults();
         var message = translator(rssIndex, feed, true);
         if (message.embedMsg != null)
-          channel.sendMessage(message.textMsg,message.embedMsg);
+          channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());
         else
-          channel.sendMessage(message.textMsg);
+          channel.sendMessage(message.textMsg).then(m => m.channel.stopTyping());
       }
       else {
         sqlCmds.select(con, feedName, data, function (err, results, fields) {

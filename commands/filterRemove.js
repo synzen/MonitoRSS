@@ -53,11 +53,13 @@ module.exports = function(message, rssIndex, callback) {
 
     if (chosenFilterType.content == "exit") {callback(); return filterTypeCollect.stop("RSS Filter Removal menu closed.");}
     else if (chosenFilterType.content == "{reset}") {
+      message.channel.startTyping();
       filterTypeCollect.stop();
       delete rssList[rssIndex].filters;
       updateConfig('./config.json', rssConfig);
       callback();
-      return message.channel.sendMessage("All filters have been removed.");
+      message.channel.stopTyping();
+      return message.channel.sendMessage("All filters have been removed.")//.then(m => m.channel.stopTyping());
     }
     else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
     else if (validFilterType) {
@@ -81,6 +83,7 @@ module.exports = function(message, rssIndex, callback) {
           return message.channel.sendMessage(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again.`);
         }
         else if (validFilter !== false) {
+          message.channel.startTyping();
           filterCollect.stop();
           if (typeof validFilter == "object") {
             rssList[rssIndex].filters[chosenFilterType.content].splice(validFilter[1], 1);
@@ -92,7 +95,8 @@ module.exports = function(message, rssIndex, callback) {
           updateConfig('./config.json', rssConfig);
           callback();
           console.log(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
-          return message.channel.sendMessage(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`)
+          message.channel.stopTyping();
+          return message.channel.sendMessage(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`)//.then(m => m.channel.stopTyping());
         }
       })
       filterCollect.on('end', (collected, reason) => {

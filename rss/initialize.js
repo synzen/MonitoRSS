@@ -108,8 +108,9 @@ module.exports = function (bot, rssLink, channel) {
     		channel: channel.id
     	})
 
-      updateConfig('./config.json', rssConfig)
+      updateConfig('./config.json', rssConfig, channel)
       channel.sendMessage(`Successfully added ${rssLink} to config for channel ${channel.id}.`)
+      channel.stopTyping()
     }
 
     startDataProcessing();

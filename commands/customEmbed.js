@@ -52,16 +52,18 @@ module.exports = function (message, rssIndex, callback) {
 
     if (choice == "") return message.channel.sendMessage("That is not a valid property.");
     else if (choice == "remove") {
+      message.channel.startTyping();
       customCollect.stop();
       rssList[rssIndex].embedMessage = {};
       updateConfig('./config.json', rssConfig);
       callback();
-      return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");
+      message.channel.stopTyping();
+      return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
     }
     else {
       //property collector
       customCollect.stop()
-      message.channel.sendMessage(`Set the property now. To reset the property to be blank, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. To find other tags, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\`.`);
+      message.channel.sendMessage(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. To find other tags, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\`.`);
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
 
       propertyCollect.on('message', function (propSetting) {
@@ -70,16 +72,23 @@ module.exports = function (message, rssIndex, callback) {
         else if ((choice == "authorAvatarURL" || choice == "thumbnailURL") && propSetting.content !== "reset" && !rssList[rssIndex].link.includes("youtube") && !propSetting.content.startsWith("http")) return message.channel.sendMessage("URLs must link to actual images. Try again.");
         else if (choice == "attachURL" && propSetting.content !== "reset" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.");}
         else {
+          message.channel.startTyping();
           let finalChange = propSetting.content;
           if (choice == "color") finalChange = parseInt(propSetting.content,10);
           propertyCollect.stop();
-          if (finalChange.toLowerCase() == "reset") delete rssList[rssIndex].embedMessage.properties[choice];
+          if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") delete rssList[rssIndex].embedMessage.properties[choice];
           else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
           rssList[rssIndex].embedMessage.enabled = 1;
           updateConfig('./config.json', rssConfig);
           callback();
-          if (finalChange.toLowerCase() == "reset") return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);
-          else return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`. You may use \`${rssConfig.prefix}rsstest\` to see your new embed format.`);
+          if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") {
+            message.channel.stopTyping();
+            return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);
+          }
+          else {
+            message.channel.stopTyping();
+            return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`You may use \`${rssConfig.prefix}rsstest\` to see your new embed format.`);
+          }
         }
       });
       propertyCollect.on('end', (collected, reason) => {
