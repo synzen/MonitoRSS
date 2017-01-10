@@ -19,7 +19,10 @@ module.exports = function (message, command, callback) {
   for (var rssIndex in rssList){
     if (isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex] );
   }
-  if (currentRSSList.length <= 0) return message.channel.sendMessage("No feeds assigned to this channel.");
+  if (currentRSSList.length <= 0) {
+    callback();
+    return message.channel.sendMessage("No feeds assigned to this channel.");
+  }
   else {
     let returnMsg = "```Markdown\n# Feeds assigned to this channel: ``````Markdown\n"
     for (var x in currentRSSList) {
@@ -51,7 +54,7 @@ module.exports = function (message, command, callback) {
     collector.on('end', (collected, reason) => {
       if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
 
-      else if (reason !== "user") return message.channel.sendMessage(reason).then( m => m.delete(5000) );
+      else if (reason !== "user") return message.channel.sendMessage(reason);
     })
   }
 }

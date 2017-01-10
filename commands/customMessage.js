@@ -7,7 +7,7 @@ module.exports = function (message, rssIndex, callback) {
   if (rssList[rssIndex].message == "" || rssList[rssIndex].message == null) currentMsg += "None has been set. Current using default message below:\n\n``````\n" + rssConfig.defaultMessage;
   else currentMsg += rssList[rssIndex].message
 
-  message.channel.sendMessage(`The current message for ${rssList[rssIndex].link} is: \n${currentMsg + "```"}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags {title}, {description}, {link}, and etc. Use \`${rssConfig.prefix}rsstest\` first to find valid properties for the feed.\n\n 4 minute timeframe.`);
+  message.channel.sendMessage(`The current message for ${rssList[rssIndex].link} is: \n${currentMsg + "```"}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. To find other tags, type \`exit\` then \`${rssConfig.prefix}rsstest\`.\n\n`);
 
   const filter = m => m.author.id == message.author.id;
   const customCollect = message.channel.createCollector(filter,{time:240000});
@@ -29,7 +29,7 @@ module.exports = function (message, rssIndex, callback) {
 
   customCollect.on('end', (collected, reason) => {
     if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
-    else if (reason !== "user") return message.channel.sendMessage(reason).then( m => m.delete(5000) );
+    else if (reason !== "user") return message.channel.sendMessage(reason);
   });
 
  }

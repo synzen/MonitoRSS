@@ -7,7 +7,7 @@ module.exports = function (message, rssIndex, callback) {
   var embedProperties = [["Color", "The sidebar color of the embed\nThis MUST be an integer color. See https://www.shodor.org/stella2java/rgbint.html", "color"],
                         ["Author Title", "Title of the embed\nAccepts tags.", "authorTitle"],
                         ["Author Avatar URL", "The avatar picture to the left of author title.\nThis MUST be a link to an image. If an Author Title is not specified, the Author Avatar URL will not be shown.", "authorAvatarURL"],
-                        ["Thumbnail URL", "The picture on the right hand side of the embed\nThis MUST be a link to an image.", "thumbnailURL"],
+                        ["Thumbnail URL", "The picture on the right hand side of the embed\nThis MUST be a link to an image, OR the {thumbnail} tag for YouTube videos.", "thumbnailURL"],
                         ["Message", "Main message of the embed\nAcceps tags.", "message"],
                         ["Footer Text", "The bottom-most text\nAccepts tags.", "footerText"],
                         ["URL", "A link that clicking on the title will lead to.\nThis MUST be a link. By default this is set to the feed's url", "url"],
@@ -56,19 +56,19 @@ module.exports = function (message, rssIndex, callback) {
       rssList[rssIndex].embedMessage = {};
       updateConfig('./config.json', rssConfig);
       callback();
-      return message.channel.sendMessage("Settings reset.");
+      return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");
     }
     else {
       //property collector
       customCollect.stop()
-      message.channel.sendMessage(`Set the property now. To reset the property to be blank, type \`reset\`.\n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. To find valid properties, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\` first to find valid properties.`);
+      message.channel.sendMessage(`Set the property now. To reset the property to be blank, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. To find other tags, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\`.`);
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
 
       propertyCollect.on('message', function (propSetting) {
         if (propSetting.content.toLowerCase() == "exit") {callback(); return propertyCollect.stop("RSS customization menu closed.");}
-        else if (choice == "color" && isNaN(parseInt(propSetting.content,10))) return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.");
-        else if ((choice == "authorAvatarURL" || choice == "thumbnailURL") && !propSetting.content.startsWith("http")) return message.channel.sendMessage("URLs must link to actual images. Try again.");
-        else if (choice == "attachURL" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.");}
+        else if (choice == "color" && isNaN(parseInt(propSetting.content,10)) && propSetting.content !== "reset") return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.");
+        else if ((choice == "authorAvatarURL" || choice == "thumbnailURL") && propSetting.content !== "reset" && !rssList[rssIndex].link.includes("youtube") && !propSetting.content.startsWith("http")) return message.channel.sendMessage("URLs must link to actual images. Try again.");
+        else if (choice == "attachURL" && propSetting.content !== "reset" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.");}
         else {
           let finalChange = propSetting.content;
           if (choice == "color") finalChange = parseInt(propSetting.content,10);
@@ -78,17 +78,18 @@ module.exports = function (message, rssIndex, callback) {
           rssList[rssIndex].embedMessage.enabled = 1;
           updateConfig('./config.json', rssConfig);
           callback();
-          return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\``);
+          if (finalChange.toLowerCase() == "reset") return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);
+          else return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\``);
         }
       });
       propertyCollect.on('end', (collected, reason) => {
         if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
-        else if (reason !== "user") return message.channel.sendMessage(reason).then( m => m.delete(5000) );
+        else if (reason !== "user") return message.channel.sendMessage(reason);
       });
       }
     });
     customCollect.on('end', (collected, reason) => {
       if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
-      else if (reason !== "user") return message.channel.sendMessage(reason).then( m => m.delete(5000) );
+      else if (reason !== "user") return message.channel.sendMessage(reason);
     });
  }
