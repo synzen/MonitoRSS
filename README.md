@@ -120,7 +120,7 @@ Uncomfortable with JSON? No problem! I have scrounged up some commands for you t
 Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#other-customizations) to add the feed's information. The user must have Manage Channels permission to use the commands.
 
 
-`rssadd**`: Add feeds for that specific channel. `(prefix)rssadd rss_link_here`. A new entry will be made in config.json with its name in the format of channelID_feedLink, and will use the default message formatting unless customized otherwise.
+`rssadd`: Add feeds for that specific channel. `(prefix)rssadd rss_link_here`. A new entry will be made in config.json with its name in the format of channelID_feedLink, and will use the default message formatting unless customized otherwise.
 
 `rssremove`: To remove feeds. After menu selection, the feed will automatically be removed from config.json.
 
