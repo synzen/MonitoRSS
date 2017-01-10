@@ -79,6 +79,7 @@ bot.on('message', function (message) {
     rssHelp(commands, message);
   }
 
+  //for commands that needs menu selection, AKA collectors
   else if (!inProgress) {
     for (let cmd in commands) {
       if (command == cmd) {
