@@ -35,13 +35,14 @@ module.exports = function(message, rssIndex, callback) {
     else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
     else if (validFilterType) {
       filterTypeCollect.stop();
-      if (rssList[rssIndex].filters[chosenFilterType.content] == null || rssList[rssIndex].filters[chosenFilterType.content] == "") rssList[rssIndex].filters[chosenFilterType.content] = [];
       message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType.content.toLowerCase()}\` by typing it, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`)
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
       filterCollect.on('message', function(chosenFilter) {
         if (chosenFilter.content == "{exit}") {callback(); return filterCollect.stop("RSS Filter Addition menu closed.");}
         else {
+          if (rssList[rssIndex].filters[chosenFilterType.content] == null || rssList[rssIndex].filters[chosenFilterType.content] == "") rssList[rssIndex].filters[chosenFilterType.content] = [];
+
           message.channel.startTyping();
           filterCollect.stop();
           rssList[rssIndex].filters[chosenFilterType.content].push(chosenFilter.content);

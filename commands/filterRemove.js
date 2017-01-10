@@ -23,10 +23,12 @@ module.exports = function(message, rssIndex, callback) {
   }
 
   var isEmptyFilter = true;
-  for (let x in filterObj) {
-    if (filterObj[x].loc != null && filterObj[x].loc !== "") {
-      isEmptyFilter = false;
-      filterObj[x].exists = true;
+  for (let x in rssList[rssIndex].filters) {
+    for (let y in filterObj) {
+      if (x == y && rssList[rssIndex].filters[x] != null && rssList[rssIndex].filters[x] !== "" && rssList[rssIndex].filters[x].length != 0) {
+        filterObj[y].exists = true;
+        isEmptyFilter = false;
+      }
     }
   }
 
