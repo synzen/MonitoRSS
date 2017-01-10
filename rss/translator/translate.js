@@ -64,11 +64,16 @@ module.exports = function (rssIndex, data, isTestMessage) {
     if (dataSummary.length >= 1000 && dataDescrip.length >= 1000) {
       dataSummary = striptags(data.summary).substr(0, 750) + "[...]";
       dataDescrip = dataDescrip.substr(0, 750) + "[...]";
-      //dataDescrip = dataSummary = "Description and summary combined have a character count greater than 2000 and as a precaution cannot be sent.";
     }
 
-    let footer = "```Below is the configured message to be sent for this feed set in config```\n-\n"
-    finalMessage += `\`\`\`Markdown\n# Data for ${data.link}\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}\n\n[Description]: {description}\n${dataDescrip}\n\n[Summary]: {summary}\n${dataSummary}\n\n[Published Date]: {date}\n${vanityDate}\n\n[Author]: {author}\n${data.author}\n\n[Link]: {link}\n${data.link}\n\n[Image URL]: {image}\n${data.image.url}`;
+    let footer = "\nBelow is the configured message to be sent for this feed set in config:\n\n\n\n"
+    finalMessage += `\`\`\`Markdown\n# ${data.link}\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}`;
+    if (dataDescrip != null && dataDescrip !== "") finalMessage += `\n\n[Description]: {description}\n${dataDescrip}`
+    if (dataSummary != null && dataSummary !== "") finalMessage += `\n\n[Summary]: {summary}\n${dataSummary}`
+    if (vanityDate != null && vanityDate !== "") finalMessage += `\n\n[Published Date]: {date}\n${vanityDate}`
+    if (data.author != null && data.author !== "") finalMessage += `\n\n[Author]: {author}\n${data.author}`
+    if (data.link != null) finalMessage += `\n\n[Link]: {link}\n${data.link}`
+    if (data.image.url !=  null && data.image.url !== "") finalMessage += `\n\n[Image URL]: {image}\n${data.image.url}`;
     if (filterExists) finalMessage += `\n\n[Passed Filters?]: ${filterFound}`;
     if (data.guid.startsWith("yt:video")) {
       finalMessage += `\n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer + configMessage;
@@ -80,7 +85,7 @@ module.exports = function (rssIndex, data, isTestMessage) {
 
   //account for final message length
   if (finalMessage.length >= 1800) {
-    finalMessage = `Warning: The feed titled ${data.title} is greater than or equal to 1800 characters cannot be sent as a precaution.`;
+    finalMessage = `Warning: The feed titled **${data.title}** is greater than or equal to 1800 characters cannot be sent as a precaution. The link to the feed is:\n\n${data.link}`;
     console.log(`RSS Warning: Feed titled "${data.title}" cannot be sent to Discord because message length is >1800.`)
   }
   let finalMessageCombo = {
