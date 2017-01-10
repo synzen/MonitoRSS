@@ -58,9 +58,10 @@ bot.on('ready', function() {
 
 var inProgress = false;
 bot.on('message', function (message) {
+  if (!message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
+  
   let m = message.content.split(" ")
   let command = m[0].substr(rssConfig.prefix.length)
-  //let command = message.content.substr(rssConfig.prefix.length)
 
   if (command == "rssadd" && !inProgress){
     rssAdd(bot, message);
