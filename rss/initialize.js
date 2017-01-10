@@ -38,8 +38,8 @@ module.exports = function (bot, rssLink, channel) {
   requestStream(rssLink, feedparser)
 
   feedparser.on('error', function (error) {
-    channel.sendMessage("Not a proper feed.");
-    console.log("not a feed")
+    channel.sendMessage(`${rssLink} is not a proper feed to add.`);
+    console.log(`RSS Warning: ${rssLink} is not a proper feed to add.`)
     feedparser.removeAllListeners('end');
   });
 
