@@ -37,7 +37,7 @@ module.exports = function (message, rssIndex, callback) {
   }
   if (currentEmbedProps == "```Markdown\n") currentEmbedProps = "```\nNo properties set.\n";
 
-  message.channel.sendMessage(`The current embed properties for ${rssList[rssIndex].link} are: \n${currentEmbedProps + "```"}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set**, or type exit to cancel.`);
+  message.channel.sendMessage(`The current embed properties for ${rssList[rssIndex].link} are: \n${currentEmbedProps + "```"}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, or type exit to cancel.`);
 
   const filter = m => m.author.id == message.author.id;
   const customCollect = message.channel.createCollector(filter,{time:240000});
@@ -73,7 +73,7 @@ module.exports = function (message, rssIndex, callback) {
           let finalChange = propSetting.content;
           if (choice == "color") finalChange = parseInt(propSetting.content,10);
           propertyCollect.stop();
-          if (finalChange.toLowerCase() = "reset") delete rssList[rssIndex].embedMessage.properties[choice];
+          if (finalChange.toLowerCase() == "reset") delete rssList[rssIndex].embedMessage.properties[choice];
           else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
           rssList[rssIndex].embedMessage.enabled = 1;
           updateConfig('./config.json', rssConfig);
