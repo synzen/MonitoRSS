@@ -43,7 +43,7 @@ module.exports = function(message, rssIndex, callback) {
     }
   }
 
-  message.channel.sendMessage(msg + "```\n**Type the filter category for which you would like you remove, type \`{reset}\` to remove all filters, or type exit to cancel.**");
+  message.channel.sendMessage(msg + "```\n**Type the filter category for which you would like you remove a filter from, type \`{reset}\` to remove all filters, or type exit to cancel.**");
 
   const filter = m => m.author.id == message.author.id;
   const filterTypeCollect = message.channel.createCollector(filter,{time:240000});

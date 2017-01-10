@@ -22,7 +22,7 @@ module.exports = function(message, rssIndex, callback) {
     msg += `\n[Filter Category]: ${filterType}\n`;
   }
 
-  message.channel.sendMessage(msg + "```\n**Type the filter indicated in brackets which you would like you add, or type exit to cancel.**");
+  message.channel.sendMessage(msg + "```\n**Type the filter category for which you would like you add a filter to, or type exit to cancel.**");
 
   const filter = m => m.author.id == message.author.id;
   const filterTypeCollect = message.channel.createCollector(filter,{time:240000});
@@ -36,7 +36,7 @@ module.exports = function(message, rssIndex, callback) {
     else if (validFilterType) {
       filterTypeCollect.stop();
       if (rssList[rssIndex].filters[chosenFilterType.content] == null || rssList[rssIndex].filters[chosenFilterType.content] == "") rssList[rssIndex].filters[chosenFilterType.content] = [];
-      message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType.content.toLowerCase()}\` by typing it, or type {exit} to cancel. The filter will be applied as **case insensitive** to feeds.`)
+      message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType.content.toLowerCase()}\` by typing it, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`)
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
       filterCollect.on('message', function(chosenFilter) {
