@@ -39,8 +39,16 @@ module.exports = function (rssIndex, data, isTestMessage) {
   if (rssList[rssIndex].message == null) configMessage = replaceKeywords(rssConfig.defaultMessage);
   else configMessage = replaceKeywords(rssList[rssIndex].message);
 
-  var finalMessage = "";
+  //filter message
+  var filterExists = false
+  var filterFound = false
+  if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
+    filterExists = true;
+    filterFound = filterFeed(rssIndex, data, dataDescrip);
+  }
 
+  //generate final msg
+  var finalMessage = "";
   if (isTestMessage) {
 
     var dataSummary = striptags(data.summary)
@@ -50,8 +58,8 @@ module.exports = function (rssIndex, data, isTestMessage) {
 
     let footer = "```Below is the configured message to be sent for this feed set in config```\n-\n"
     finalMessage += `\`\`\`Markdown\n# Data for ${data.link}\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}\n\n[Description]: {description}\n${dataDescrip}\n\n[Summary]: {summary}\n${dataSummary}\n\n[Published Date]: {date}\n${vanityDate}\n\n[Author]: {author}\n${data.author}\n\n[Link]: {link}\n${data.link}\n\n[Image URL]: {image}\n${data.image.url}`;
+    if (filterExists) finalMessage += `\n\n[Passed Filters?]: ${filterFound}`;
     if (data.guid.includes("yt")) {
-      //finalMessage += `\n\n[Youtube Description]: {description}\n${data['media:group']['media:description']['#']} \n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer + configMessage;
       finalMessage += `\n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer + configMessage;
     }
     else finalMessage += "```" + footer + configMessage;
@@ -59,19 +67,7 @@ module.exports = function (rssIndex, data, isTestMessage) {
   }
   else finalMessage = configMessage;
 
-
-  var filterExists = false
-  var filterFound = false
-  if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
-    filterExists = true;
-    filterFound = filterFeed(rssIndex, data, dataDescrip);
-  }
-
-  var enabledEmbed;
-  if (rssList[rssIndex].embedMessage == null || rssList[rssIndex].embedMessage.enabled == false || rssList[rssIndex].embedMessage == "" || rssList[rssIndex].embedMessage.enabled == "")
-    enabledEmbed = false;
-  else enabledEmbed = true;
-
+  //account for final message length
   if (finalMessage.length >= 1800) {
     finalMessage = `Warning: The feed titled ${data.title} is greater than or equal to 1800 characters cannot be sent as a precaution.`;
     console.log(`RSS Warning: Feed titled "${data.title}" cannot be sent to Discord because message length is >1800.`)
@@ -79,6 +75,13 @@ module.exports = function (rssIndex, data, isTestMessage) {
   let finalMessageCombo = {
     textMsg: finalMessage
   }
+
+  //check if embed is enabled
+  var enabledEmbed;
+  if (rssList[rssIndex].embedMessage == null || rssList[rssIndex].embedMessage.enabled == false || rssList[rssIndex].embedMessage == "" || rssList[rssIndex].embedMessage.enabled == "")
+    enabledEmbed = false;
+  else enabledEmbed = true;
+
 
   //message only passes through if the filter found the specified content
   if (!filterFound && !isTestMessage && filterExists && finalMessage.length < 1900) {
