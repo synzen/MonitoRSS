@@ -13,18 +13,24 @@ module.exports = function (message, rssIndex, callback) {
   const customCollect = message.channel.createCollector(filter,{time:240000});
   customCollect.on('message', function (m) {
     if (m.content.toLowerCase() == "exit") {callback(); return customCollect.stop("RSS Feed Message customization menu closed.");}
-    if (m.content.toLowerCase() == "reset") {
+    else if (m.content.toLowerCase() == "reset") {
+      message.channel.startTyping();
       customCollect.stop();
       rssList[rssIndex].message = "";
       updateConfig('./config.json', rssConfig);
       callback();
-      message.channel.sendMessage(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
+      message.channel.stopTyping();
+      return message.channel.sendMessage(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
     }
-    customCollect.stop()
-    message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}. You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`)
-    rssList[rssIndex].message = m.content
-    updateConfig('./config.json', rssConfig);
-    return callback();
+    else {
+      message.channel.startTyping();
+      customCollect.stop()
+      rssList[rssIndex].message = m.content
+      updateConfig('./config.json', rssConfig);
+      callback();
+      message.channel.stopTyping();
+      return message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`)
+    }
   });
 
   customCollect.on('end', (collected, reason) => {

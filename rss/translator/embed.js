@@ -29,7 +29,7 @@ module.exports = function (rssIndex, data, replaceKeywords) {
     embed.embed.author.icon_url = embedSpecs.authorAvatarURL;
 
   if (embedSpecs.thumbnailURL != null && embedSpecs.thumbnailURL != "") {
-    if (data.guid.includes("yt") && embedSpecs.thumbnailURL == "{thumbnail}") embed.embed.thumbnail.url = data['media:group']['media:thumbnail']['@']['url'];
+    if (data.guid.startsWith("yt:video") && embedSpecs.thumbnailURL == "{thumbnail}") embed.embed.thumbnail.url = data['media:group']['media:thumbnail']['@']['url'];
     else embed.embed.thumbnail.url = embedSpecs.thumbnailURL;
   }
 

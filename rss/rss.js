@@ -54,7 +54,7 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
     var filteredItems = 0;
     var con; //the SQL connection
 
-    console.log("RSS Info: Starting retrieval for: " + feedName);
+    //console.log("RSS Info: Starting retrieval for: " + feedName);
 
     function startDataProcessing() {
       //due to the huge differences in which MySQL/sqlite3 "connects", connection takes a different module from the normal queries
@@ -88,10 +88,11 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
         filteredItems++;
         gatherResults();
         var message = translator(rssIndex, feed, true);
+        console.log(`RSS Info: Sending test message for "${rssList[rssIndex].name}".`)
         if (message.embedMsg != null)
-          channel.sendMessage(message.textMsg,message.embedMsg);
+          channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());
         else
-          channel.sendMessage(message.textMsg);
+          channel.sendMessage(message.textMsg).then(m => m.channel.stopTyping());
       }
       else {
         sqlCmds.select(con, feedName, data, function (err, results, fields) {
@@ -103,12 +104,14 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
           }
 
           else {
+            console.log(`RSS Info: Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`)
             //console.log(`never seen ${feed.link}, logging now`);
             var message = translator(rssIndex, feed, false);
             if (message.embedMsg != null)
               channel.sendMessage(message.textMsg,message.embedMsg);
             else
               channel.sendMessage(message.textMsg);
+
             insertIntoTable(data);
           }
 
@@ -129,7 +132,7 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
       //console.log(filteredItems + " " + processedItems) //for debugging
       if (processedItems == filteredItems) {
         sqlCmds.end(con, function(err) {
-          console.log("RSS Info: Finished retrieval for: " + feedName)
+          //console.log("RSS Info: Finished retrieval for: " + feedName)
         });
       }
     }

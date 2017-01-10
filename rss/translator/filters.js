@@ -36,7 +36,7 @@ module.exports = function (rssIndex, data, dataDescrip) {
   if (foundFilterWords(smryFilters, striptags(data.summary)))
     filterFound = true;
 
-  if (data.guid.includes("yt")) {
+  if (data.guid.startsWith("yt:video")) {
     if (foundFilterWords(descrFilters, data['media:group']['media:description']['#']))
       filterFound = true;
   }

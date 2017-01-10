@@ -80,13 +80,16 @@ bot.on('message', function (message) {
   else if (command == "rsshelp" && !inProgress) {
     rssHelp(commands, message);
   }
+  else if (command == "rsslist" && !inProgress) {
+    rssPrintList(message, false, "", function (){})
+  }
 
   //for commands that needs menu selection, AKA collectors
   else if (!inProgress) {
     for (let cmd in commands) {
       if (command == cmd) {
         inProgress = true;
-        rssPrintList(message, commands[cmd].file, function () {
+        rssPrintList(message, true, commands[cmd].file, function () {
           inProgress = false
         })
       }

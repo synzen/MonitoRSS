@@ -42,11 +42,13 @@ module.exports = function(message, rssIndex, callback) {
       filterCollect.on('message', function(chosenFilter) {
         if (chosenFilter.content == "{exit}") {callback(); return filterCollect.stop("RSS Filter Addition menu closed.");}
         else {
+          message.channel.startTyping();
           filterCollect.stop();
           rssList[rssIndex].filters[chosenFilterType.content].push(chosenFilter.content);
           updateConfig('./config.json', rssConfig);
           callback();
           console.log(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`);
+          message.channel.stopTyping();
           return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`)
         }
       })

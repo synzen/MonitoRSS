@@ -4,7 +4,6 @@ const request = require('request')
 const initializeRSS = require('../rss/initialize.js')
 
 module.exports = function (bot, message) {
-
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) {
       if (message.channel.name == channel) return true;
@@ -17,21 +16,26 @@ module.exports = function (bot, message) {
   }
 
   let content = message.content.split(" ");
-
   if (content.length == 1) return;
-
+  message.channel.startTyping()
   request(content[1], (error, response, body) => {
 
     if (!error && response.statusCode == 200){
+
       for (var x in rssList) {
         if ( rssList[x].link == content[1] && isCurrentChannel(rssList[x].channel) ) {
+          message.channel.stopTyping();
           return message.channel.sendMessage("This RSS feed already exists for this channel.");
         }
       }
+      //message.channel.startTyping();
       initializeRSS(bot, content[1], message.channel);
     }
 
-    else return message.channel.sendMessage("Invalid link.");
+    else {
+      message.channel.stopTyping();
+      return message.channel.sendMessage("Invalid link.");
+    }
 
   });
 
