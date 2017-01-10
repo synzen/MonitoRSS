@@ -137,10 +137,10 @@ module.exports = function (bot, channel, rssIndex, callback) {
         else {
           //console.log(`never seen ${feed.link}, logging and sending msg now`);
           var message = translator(rssIndex, feed, false);
-          if (message.embedMsg != null)
-            channel.sendMessage(message.textMsg,message.embedMsg);
-          else
-            channel.sendMessage(message.textMsg);
+          if (bot.guilds.size <= 5) { //this can result in great spam once the loads up after a period of downtime
+            if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
+            else channel.sendMessage(message.textMsg);
+          }
           insertIntoTable(data);
         }
       })
