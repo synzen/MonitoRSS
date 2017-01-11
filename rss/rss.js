@@ -104,7 +104,7 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
           }
 
           else {
-            console.log(`RSS Info: Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`)
+            console.log(`RSS Info: Never seen ${feed.link} for guild ${channel.guild.id} (${channel.guild.name}), sending message for RSS named "${rssList[rssIndex].name}".`);
             //console.log(`never seen ${feed.link}, logging now`);
             var message = translator(channel, rssIndex, feed, false);
             if (message.embedMsg != null)
