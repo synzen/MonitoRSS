@@ -1,8 +1,9 @@
-const rssConfig = require('../config.json')
-const rssList = rssConfig.sources
+
 const updateConfig = require('../util/updateJSON.js')
 
 module.exports = function (message, rssIndex, callback) {
+  var rssConfig = require('../config.json')
+  var rssList = rssConfig.sources[message.guild.id]
 
   var embedProperties = [["Color", "The sidebar color of the embed\nThis MUST be an integer color. See https://www.shodor.org/stella2java/rgbint.html", "color"],
                         ["Author Title", "Title of the embed\nAccepts tags.", "authorTitle"],
@@ -49,7 +50,7 @@ module.exports = function (message, rssIndex, callback) {
         choice = embedProperties[e][2];
     }
 
-    if (chosenProp.content == "remove") {
+    if (chosenProp.content == "reset") {
       message.channel.startTyping();
       customCollect.stop();
       rssList[rssIndex].embedMessage = {};

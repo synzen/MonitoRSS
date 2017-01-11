@@ -15,8 +15,7 @@ const requestStream = require('./request.js')
 const translator = require('./translator/translate.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const rssConfig = require('../config.json')
-const rssList = rssConfig.sources
+
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -28,7 +27,8 @@ function isEmptyObject(obj) {
 }
 
 module.exports = function (rssIndex, channel, sendingTestMessage) {
-
+  var rssConfig = require('../config.json')
+  var rssList = rssConfig.sources[channel.guild.id]
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -87,7 +87,7 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
       if (sendingTestMessage) {
         filteredItems++;
         gatherResults();
-        var message = translator(rssIndex, feed, true);
+        var message = translator(channel, rssIndex, feed, true);
         console.log(`RSS Info: Sending test message for "${rssList[rssIndex].name}".`)
         if (message.embedMsg != null)
           channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());

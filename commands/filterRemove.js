@@ -1,5 +1,4 @@
-const rssConfig = require('../config.json')
-const rssList = rssConfig.sources
+
 const updateConfig = require('../util/updateJSON.js')
 
 function isEmptyObject(obj) {
@@ -11,6 +10,8 @@ function isEmptyObject(obj) {
 }
 
 module.exports = function(message, rssIndex, callback) {
+  var rssConfig = require('../config.json')
+  var rssList = rssConfig.sources[message.guild.id]
 
   var filterList = rssList[rssIndex].filters;
 

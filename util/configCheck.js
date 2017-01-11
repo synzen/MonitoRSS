@@ -1,8 +1,8 @@
 
-module.exports = function (rssIndex, logging, initializing) {
+module.exports = function (guildIndex, rssIndex, logging, initializing) {
 
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources
+  var rssList = rssConfig.sources[guildIndex]
 
   var valid = true;
 
@@ -27,10 +27,10 @@ module.exports = function (rssIndex, logging, initializing) {
     if (logging) console.log(`RSS Config Warning: ${rssList[rssIndex].name} has no channel defined, skipping...`);
     valid = false;
   }
-  else if (rssList[rssIndex].message == null){
-    if (logging && initializing) console.log(`RSS Config Info: ${rssList[rssIndex].name} has no Message defined, using default message...`);
-    valid = true;
-  }
+  // else if (rssList[rssIndex].message == null){
+  //   if (logging && initializing) console.log(`RSS Config Info: ${rssList[rssIndex].name} has no Message defined, using default message...`);
+  //   valid = true;
+  // }
 
   return valid;
 

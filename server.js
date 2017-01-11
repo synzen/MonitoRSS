@@ -5,52 +5,53 @@ const checkValidConfig = require('./util/configCheck.js')
 const rssAdd = require('./commands/addRSS.js')
 const rssHelp = require('./commands/helpRSS.js')
 const rssPrintList = require('./commands/util/printFeeds.js')
-
-
 const startFeedSchedule = require('./util/startFeedSchedule.js')
 var rssConfig = require('./config.json')
-var rssList = rssConfig.sources
+var guildList = rssConfig.sources//[bot.guild.id]
 
-var initializedFeeds = 0
-var enabledFeeds = 0
-
-for (var x in rssList)
-  if (rssList[x].enabled == 1) enabledFeeds++;
-
-function validChannel(rssIndex) {
-  if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
-    let channel = bot.channels.find("name",rssList[rssIndex].channel);
+function validChannel(guildIndex, rssIndex) {
+  if (isNaN(parseInt(guildList[guildIndex][rssIndex].channel,10))) {
+    let channel = bot.channels.find("name",guildList[guildIndex][rssIndex].channel);
     if (channel == null) {
-      console.log(`RSS Warning: ${rssList[rssIndex].name}'s string-defined channel was not found, skipping...`)
+      console.log(`RSS Warning: ${guildList[guildIndex][rssIndex].name}'s string-defined channel was not found, skipping...`)
       return false;
     }
     else return channel;
   }
   else {
-    let channel = bot.channels.get(`${rssList[rssIndex].channel}`);
+    let channel = bot.channels.get(`${guildList[guildIndex][rssIndex].channel}`);
     if (channel == null) {
-      console.log(`RSS Warning: ${rssList[rssIndex].name}'s integer-defined channel was not found. skipping...`)
+      console.log(`RSS Warning: ${guildList[guildIndex][rssIndex].name}'s integer-defined channel was not found. skipping...`)
       return false;
     }
     else return channel;
   }
 }
 
+var initializedFeeds = 0
+var enabledFeeds = 0
+
+for (let q in guildList)
+  for (let x in guildList[q])
+    if (guildList[q][x].enabled == 1) enabledFeeds++;
+
 bot.on('ready', function() {
   console.log("I am online.")
 
-  for (var rssIndex in rssList){
-    if (checkValidConfig(rssIndex, true, true)) {
-      if (validChannel(rssIndex) !== false) {
-        initializeAllRSS(bot, validChannel(rssIndex), rssIndex, function() {
-          initializedFeeds++
-          if (initializedFeeds == enabledFeeds) startFeedSchedule(bot);
-        });
+  for (var guildIndex in guildList) {
+    for (var rssIndex in guildList[guildIndex]){
+      if (checkValidConfig(guildIndex, rssIndex, true, true)) {
+        if (validChannel(guildIndex, rssIndex) !== false) {
+          initializeAllRSS(bot, validChannel(guildIndex, rssIndex), rssIndex, function() {
+            initializedFeeds++
+            if (initializedFeeds == enabledFeeds) startFeedSchedule(bot);
+          });
+        }
       }
     }
   }
 
-  if (enabledFeeds == 0 || rssList.length == 0) {
+  if (enabledFeeds == 0) {
     console.log("RSS Info: All feeds are disabled");
     startFeedSchedule(bot);
   }
@@ -70,7 +71,7 @@ var commands = {
 var inProgress = false;
 bot.on('message', function (message) {
   if (!message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
-  let m = message.content.split(" ")
+  var m = message.content.split(" ")
   let command = m[0].substr(rssConfig.prefix.length)
 
   if (command == "rssadd" && !inProgress){
@@ -97,5 +98,15 @@ bot.on('message', function (message) {
   }
 
 });
+
+bot.on('guildCreate', function (guild) {
+  console.log(`Guild "${guild.name}" has been added.`)
+  bot.channels.get('267436614110806024').sendMessage(`Guild Info: "${guild.name}" has been added.\nUsers: ${guild.members.size}\nOwner: ${guild.owner.user.username} (${guild.owner})`)
+})
+
+bot.on('guildDelete', function (guild) {
+  console.log(`Guild "${guild.name}" has been removed.`)
+  bot.channels.get('267436614110806024').sendMessage(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size}\nOwner: ${guild.owner} (${guild.owner})`)
+})
 
 bot.login(rssConfig.token)

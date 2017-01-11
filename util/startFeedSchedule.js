@@ -3,21 +3,21 @@ const getRSS = require('../rss/rss.js')
 
 module.exports = function (bot, feedIndex) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources
+  var guildList = rssConfig.sources
 
-  function validChannel(rssIndex) {
-    if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
-      let channel = bot.channels.find("name",rssList[rssIndex].channel);
+  function validChannel(guildIndex, rssIndex) {
+    if (isNaN(parseInt(guildList[guildIndex][rssIndex].channel,10))) {
+      let channel = bot.channels.find("name",guildList[guildIndex][rssIndex].channel);
       if (channel == null) {
-        console.log(`RSS: ${rssList[rssIndex].name}'s string-defined channel was not found, skipping...`)
+        console.log(`RSS Warning: ${guildList[guildIndex][rssIndex].name}'s string-defined channel was not found, skipping...`)
         return false;
       }
       else return channel;
     }
     else {
-      let channel = bot.channels.get(`${rssList[rssIndex].channel}`);
+      let channel = bot.channels.get(`${guildList[guildIndex][rssIndex].channel}`);
       if (channel == null) {
-        console.log(`RSS: ${rssList[rssIndex].name}'s integer-defined channel was not found. skipping...`)
+        console.log(`RSS Warning: ${guildList[guildIndex][rssIndex].name}'s integer-defined channel was not found. skipping...`)
         return false;
       }
       else return channel;
@@ -27,10 +27,11 @@ module.exports = function (bot, feedIndex) {
   function startFeed () {
     rssConfig = require('../config.json')
     rssList = rssConfig.sources
-    for (var rssIndex in rssList)
-      if (checkValidConfig(rssIndex, false))
-        if (validChannel(rssIndex) !== false)
-          getRSS(rssIndex , validChannel(rssIndex), false);
+    for (var guildIndex in guildList)
+      for (var rssIndex in guildList[guildIndex])
+        if (checkValidConfig(guildIndex, rssIndex, false))
+          if (validChannel(guildIndex, rssIndex) !== false)
+            getRSS(rssIndex , validChannel(guildIndex, rssIndex), false);
   }
 
 

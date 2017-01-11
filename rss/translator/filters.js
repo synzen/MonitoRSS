@@ -1,8 +1,11 @@
-const rssConfig = require('../../config.json')
-const rssList = rssConfig.sources
+
 const striptags = require('striptags')
 
-function foundFilterWords(filterType, content) {
+function foundFilterWords(channel, filterType, content) {
+
+  var rssConfig = require('../../config.json')
+  var rssList = rssConfig.sources[channel.guild.id]
+
   if (content == null) return false;
   var content = content.toLowerCase();
   if (filterType != null && filterType.length !== 0) {

@@ -1,6 +1,5 @@
 
 const rssConfig = require('../../config.json')
-const rssList = rssConfig.sources
 var mysql, sqlite3
 let sqlType = rssConfig.sqlType.toLowerCase()
 
@@ -63,7 +62,7 @@ exports.dropTable = function (db, table) {
     credentials.database = db
 
     var con = mysql.createConnection(credentials);
-    
+
     con.connect(function (err) {
       if (err) console.log(err);
       else console.log(`RSS Info: Starting removal of ${table} from config`)

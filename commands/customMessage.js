@@ -1,8 +1,10 @@
-const rssConfig = require('../config.json')
-const rssList = rssConfig.sources
+
 const updateConfig = require('../util/updateJSON.js')
 
 module.exports = function (message, rssIndex, callback) {
+  var rssConfig = require('../config.json')
+  var rssList = rssConfig.sources[message.guild.id]
+
   let currentMsg = "```Markdown\n"
   if (rssList[rssIndex].message == "" || rssList[rssIndex].message == null) currentMsg += "None has been set. Current using default message below:\n\n``````\n" + rssConfig.defaultMessage;
   else currentMsg += rssList[rssIndex].message

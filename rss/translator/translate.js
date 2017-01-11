@@ -1,12 +1,13 @@
 const striptags = require('striptags')
 const moment = require('moment')
-const rssConfig = require('../../config.json')
-const rssList = rssConfig.sources
 const filterFeed = require('./filters.js')
 const createEmbed = require('./embed.js')
 const cleanRandoms = require('./cleanup.js')
 
-module.exports = function (rssIndex, data, isTestMessage) {
+module.exports = function (channel, rssIndex, data, isTestMessage) {
+  var rssConfig = require('../../config.json')
+  var rssList = rssConfig.sources[channel.guild.id]
+
   var originalDate = data.pubdate;
   var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
   if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`
@@ -54,7 +55,7 @@ module.exports = function (rssIndex, data, isTestMessage) {
   var filterFound = false
   if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
     filterExists = true;
-    filterFound = filterFeed(rssIndex, data, dataDescrip);
+    filterFound = filterFeed(channel, rssIndex, data, dataDescrip);
   }
 
   //generate final msg
@@ -64,6 +65,7 @@ module.exports = function (rssIndex, data, isTestMessage) {
     if (dataSummary.length >= 1000 && dataDescrip.length >= 1000) {
       dataSummary = striptags(data.summary).substr(0, 750) + "[...]";
       dataDescrip = dataDescrip.substr(0, 750) + "[...]";
+      //dataDescrip = dataSummary = "Description and summary combined have a character count greater than 2000 and as a precaution cannot be sent.";
     }
 
     let footer = "\nBelow is the configured message to be sent for this feed set in config:\n\n\n\n"
@@ -110,7 +112,7 @@ module.exports = function (rssIndex, data, isTestMessage) {
   else {
 
     if (rssList[rssIndex].embedMessage.properties != null)
-      finalMessageCombo.embedMsg = createEmbed(rssIndex, data, replaceKeywords)
+      finalMessageCombo.embedMsg = createEmbed(channel, rssIndex, data, replaceKeywords)
 
     return finalMessageCombo;
   }

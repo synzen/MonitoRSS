@@ -1,8 +1,9 @@
-const rssConfig = require('../config.json')
-const rssList = rssConfig.sources
+
 const updateConfig = require('../util/updateJSON.js')
 
 module.exports = function(message, rssIndex, callback) {
+  var rssConfig = require('../config.json')
+  var rssList = rssConfig.sources[message.guild.id]
 
   if (rssList[rssIndex].filters == null || rssList[rssIndex].filters == "") rssList[rssIndex].filters = {};
 

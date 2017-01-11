@@ -136,7 +136,6 @@ Each command will open a menu for you to select the RSS in that channel to modif
 
 This is especially useful when you want to add the feed's title and/or description, but you don't know if they'll turn out undefined. However, if the message is too long (that is, over the 2000 character limit), it will not send.
 
-Other commands are [`rsslist`] and [`rsshelp`] where the former just lists the feeds in the channel, and the latter shows the commands available.
 
 ##Noteworthy Details
 

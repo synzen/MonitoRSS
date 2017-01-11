@@ -35,8 +35,6 @@ const startFeedSchedule = require('../util/startFeedSchedule.js')
 const requestStream = require('./request.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const rssConfig = require('../config.json')
-const rssList = rssConfig.sources
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -48,6 +46,9 @@ function isEmptyObject(obj) {
 }
 
 module.exports = function (bot, channel, rssIndex, callback) {
+  var rssConfig = require('../config.json')
+  var rssList = rssConfig.sources[channel.guild.id]
+
   var feedparser = new FeedParser()
   var currentFeed = []
 
@@ -90,11 +91,11 @@ module.exports = function (bot, channel, rssIndex, callback) {
       sqlCmds.selectTable(con, feedName, function (err, results) {
         if (err) throw err;
         if (isEmptyObject(results)) {
-          console.log(`RSS Info: Table does not exist for ${feedName}, creating now and initializing all`);
+          //console.log(`RSS Info: Table does not exist for ${feedName}, creating now and initializing all`);
           createTable();
         }
         else {
-          console.log(`RSS Info: Table already exists for ${feedName}, getting new feeds if exists`)
+          //console.log(`RSS Info: Table already exists for ${feedName}, getting new feeds if exists`)
           tableAlreadyExisted = true;
 
           let feedLength = currentFeed.length - 1;
@@ -136,7 +137,7 @@ module.exports = function (bot, channel, rssIndex, callback) {
         if (!isEmptyObject(results)) gatherResults();
         else {
           //console.log(`never seen ${feed.link}, logging and sending msg now`);
-          var message = translator(rssIndex, feed, false);
+          var message = translator(channel, rssIndex, feed, false);
           if (bot.guilds.size <= 5 && rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
             if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
             else channel.sendMessage(message.textMsg);

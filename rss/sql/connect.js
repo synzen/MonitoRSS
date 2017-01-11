@@ -9,7 +9,6 @@
 */
 const mysqlCmds = require('./commands.js')
 var rssConfig = require('../../config.json')
-var rssList = rssConfig.sources
 
 var mysql, sqlite3
 if (rssConfig.sqlType.toLowerCase() == "mysql") mysql = require('mysql');

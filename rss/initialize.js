@@ -30,7 +30,7 @@ function isEmptyObject(obj) {
 
 module.exports = function (bot, rssLink, channel) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources
+  var rssList = rssConfig.sources[channel.guild.id]
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -100,7 +100,8 @@ module.exports = function (bot, rssLink, channel) {
       }
     }
 
-    function addToConfig(){
+    function addToConfig() {
+
       rssList.push({
     		enabled: 1,
     		name: feedName,
