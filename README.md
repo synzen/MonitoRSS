@@ -1,6 +1,6 @@
 #Discord.RSS
 
-Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible, and (should be) easy to understand.
+Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
 
 ##Starting the Bot
 
@@ -40,23 +40,43 @@ For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed'
 
 5. `databaseName`: Name of database that will be created.
 
-6. `defaultMaxAge`: The max aged feed in days that the bot will grab if it unexpected stops.
+6. `sendOldMessages`: Send unseen messages that were not caught during bot downtime after it has restarted - this may result in message spam.
 
-7. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
+7. `defaultMaxAge`: The max aged feed in days that the bot will grab if it unexpected stops.
 
-8. `sources`: The list of RSS feeds, in object format. See sources formatting below.
+8. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
+
+9. `maxFeeds`: The maximum amount of feeds one server is allowed to have.
+
+10. `sources`: The list of RSS feeds for each guild, in object format. See sources formatting below.
 
 ###Sources Formatting
 The bare minimum for a source must be `name`, `link`, and `channel` for it to be functional. But of course customization is possible!
 
 ```javascript
 "sources": {
+    "guild-one-ID": [{
+      //RSS #1 settings
+    }, {
+      //RSS #2 settings
+    }, {
+      //more RSS
+    }],
+    "guild-two-ID": [{
+      //RSS #1 settings
+    }]
+}
+```
+
+```javascript
+"guild-one-id": [{
+    //RSS #1 settings
     "name": "there",
     "link": "http://somewebsite.com/rss/",
     "channel": "website-feeds"
     }, {
-    //another source
-    }
+    //RSS #2 settings
+    }]
 }
 ```
 
@@ -132,7 +152,7 @@ Each command will open a menu for you to select the RSS in that channel to modif
 
 [`rssfilterremove`]: Remove filters for specific categories.
 
-[`rsstest`]: Print out the typical properties of the RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config.
+[`rsstest`]: Print out the properties for that specific RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config.
 
 This is especially useful when you want to add the feed's title and/or description, but you don't know if they'll turn out undefined. However, if the message is too long (that is, over the 2000 character limit), it will not send.
 
@@ -144,14 +164,11 @@ This is especially useful when you want to add the feed's title and/or descripti
    * This bot was made with private server owners in mind. Its stability beyond that is unpredictable.
 
    * Upon starting the bot with a never before seen RSS feed, it will all store available feeds at that time and put it into the database instead of sending it to Discord. This will prevent your server from being spammed by the bot with messages.
-      * Upon starting the bot with an already seen RSS feed, it will retrieve feeds and send it to the Discord server with respect to its maxAge, UNLESS the bot is in more than 5 guilds.
+      * Upon starting the bot with an already seen RSS feed, it will retrieve feeds and send it to the Discord server with respect to its `maxAge`, UNLESS the bot is in more than 5 guilds or `sendOldMessages` is set to false in the config.
 
    * If you already have a bot active, you can simply use that bot's token and that bot will inherit the functionality of this RSS bot.
 
    * You can check the validity of your configuration through [JSONLint](http://jsonlint.com/).
-
-   * Repurposing the bot is actually (relatively) easy since the only things that uses the Discord.js library is the message sending code (basically a couple lines in rss.js/initializeall.js), Discord channel checks in /util/, server.js and the commands directory (which stems from server.js).
-
 
 ##Author's Note
 
