@@ -106,7 +106,7 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
           else {
             console.log(`RSS Info: Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`)
             //console.log(`never seen ${feed.link}, logging now`);
-            var message = translator(rssIndex, feed, false);
+            var message = translator(channel, rssIndex, feed, false);
             if (message.embedMsg != null)
               channel.sendMessage(message.textMsg,message.embedMsg);
             else
