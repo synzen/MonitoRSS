@@ -70,6 +70,7 @@ var commands = {
 
 var inProgress = false;
 bot.on('message', function (message) {
+  if (!message.guild) return;
   if (!message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
   var m = message.content.split(" ")
   let command = m[0].substr(rssConfig.prefix.length)

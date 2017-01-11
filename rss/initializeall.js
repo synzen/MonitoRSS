@@ -138,7 +138,7 @@ module.exports = function (bot, channel, rssIndex, callback) {
         else {
           var message = translator(channel, rssIndex, feed, false);
           if (rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
-            console.log(`never seen ${feed.link}, logging and sending msg now`);
+            console.log(`RSS Info: Never seen ${feed.link}, logging and sending msg now`);
             if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
             else channel.sendMessage(message.textMsg);
           }
