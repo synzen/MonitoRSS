@@ -56,26 +56,26 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 ```javascript
 "sources": {
     "guild-one-ID": [{
-      //RSS #1 settings
+      //feed #1 settings
     }, {
-      //RSS #2 settings
+      //feed #2 settings
     }, {
-      //more RSS
+      //more feeds
     }],
     "guild-two-ID": [{
-      //RSS #1 settings
+      //feed #1 settings
     }]
 }
 ```
 
 ```javascript
 "guild-one-id": [{
-    //RSS #1 settings
+    //feed #1 settings
     "name": "there",
     "link": "http://somewebsite.com/rss/",
     "channel": "website-feeds"
     }, {
-    //RSS #2 settings
+    //feed #2 settings
     }]
 }
 ```
@@ -148,9 +148,9 @@ Each command will open a menu for you to select the RSS in that channel to modif
 
 [`rssembed`]: Enable and set embed properties to be sent in addition to its regular message.
 
-[`rssfilteradd`]: Add filters for specific categories.
+[`rssfilteradd`]: Add filters for specific categories for a feed.
 
-[`rssfilterremove`]: Remove filters for specific categories.
+[`rssfilterremove`]: Remove filters for specific categories for a feed.
 
 [`rsstest`]: Print out the properties for that specific RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config.
 
