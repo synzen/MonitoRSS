@@ -33,7 +33,7 @@ module.exports = function (bot, message) {
       }
 
 
-      if (rssList.length < rssConfig.maxFeeds) initializeRSS(bot, content[1], message.channel);
+      if (rssConfig.maxFeeds == 0 || rssList.length < rssConfig.maxFeeds) initializeRSS(bot, content[1], message.channel);
       else {
         message.channel.stopTyping();
         return message.channel.sendMessage(`Unable to add feed. The server has reached the limit of: \`${rssConfig.maxFeeds}\` feeds.`)
@@ -41,8 +41,8 @@ module.exports = function (bot, message) {
     }
 
     else {
-      message.channel.stopTyping();
       return message.channel.sendMessage("That is an invalid feed link.");
+      message.channel.stopTyping();
     }
 
   });

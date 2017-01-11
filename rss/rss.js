@@ -132,7 +132,7 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
       //console.log(filteredItems + " " + processedItems) //for debugging
       if (processedItems == filteredItems) {
         sqlCmds.end(con, function(err) {
-          //console.log("RSS Info: Finished retrieval for: " + feedName)
+          console.log("RSS Info: Finished retrieval for: " + feedName)
         });
       }
     }

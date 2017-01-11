@@ -20,7 +20,7 @@ module.exports = function (message, rssIndex, callback) {
     if (rssList[x].enabled == 1) enabledFeeds++;
   }
 
-  if (enabledFeeds == 0 || rssList == null) console.log("RSS Info: No more active feeds enabled.")
+  if (enabledFeeds == 0 || rssList == null) console.log(`RSS Info: No more active feeds enabled for guild ${message.guild.id} (${message.guild.name}).`)
 
   callback()
   message.channel.sendMessage(`Successfully removed ${link} from this channel.`)

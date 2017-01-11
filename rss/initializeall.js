@@ -136,9 +136,9 @@ module.exports = function (bot, channel, rssIndex, callback) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
         else {
-          //console.log(`never seen ${feed.link}, logging and sending msg now`);
           var message = translator(channel, rssIndex, feed, false);
-          if (bot.guilds.size <= 5 && rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
+          if (rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
+            console.log(`never seen ${feed.link}, logging and sending msg now`);
             if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
             else channel.sendMessage(message.textMsg);
           }

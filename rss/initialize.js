@@ -40,6 +40,7 @@ module.exports = function (bot, rssLink, channel) {
   feedparser.on('error', function (error) {
     channel.sendMessage(`${rssLink} is not a proper feed to add.`);
     console.log(`RSS Warning: ${rssLink} is not a proper feed to add.`)
+    channel.stopTyping()
     feedparser.removeAllListeners('end');
   });
 
@@ -110,7 +111,7 @@ module.exports = function (bot, rssLink, channel) {
     	})
 
       updateConfig('./config.json', rssConfig)
-      channel.sendMessage(`Successfully added ${rssLink} to config for this channel.`)
+      channel.sendMessage(`Successfully added ${rssLink} for this channel.`)
       channel.stopTyping()
     }
 
