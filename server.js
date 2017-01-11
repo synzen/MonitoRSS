@@ -100,13 +100,11 @@ bot.on('message', function (message) {
 });
 
 bot.on('guildCreate', function (guild) {
-  console.log(`Guild "${guild.name}" has been added.`)
-  bot.channels.get('267436614110806024').sendMessage(`Guild Info: "${guild.name}" has been added.\nUsers: ${guild.members.size}\nOwner: ${guild.owner.user.username} (${guild.owner})`)
+  console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been added.`)
 })
 
 bot.on('guildDelete', function (guild) {
-  console.log(`Guild "${guild.name}" has been removed.`)
-  bot.channels.get('267436614110806024').sendMessage(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size}\nOwner: ${guild.owner} (${guild.owner})`)
+  console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
 })
 
 bot.login(rssConfig.token)
