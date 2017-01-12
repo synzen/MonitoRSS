@@ -24,6 +24,9 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 * [sqlite3] (https://www.npmjs.com/package/sqlite3)
 * [mysql] (https://www.npmjs.com/package/mysql) (optional)
 
+####To Do List
+* Use a database to store sources instead of JSON
+* End the database connection after it has gone through all the sources in the list rather than opening and closing after each source
 
 ##Configuration and Customization
 
