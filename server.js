@@ -1,3 +1,4 @@
+process.setMaxListeners(0)
 const Discord = require('discord.js')
 const bot = new Discord.Client()
 const initializeAllRSS = require('./rss/initializeall.js')
@@ -7,7 +8,8 @@ const rssHelp = require('./commands/helpRSS.js')
 const rssPrintList = require('./commands/util/printFeeds.js')
 const startFeedSchedule = require('./util/startFeedSchedule.js')
 var rssConfig = require('./config.json')
-var guildList = rssConfig.sources//[bot.guild.id]
+var guildList = rssConfig.sources
+
 
 function validChannel(guildIndex, rssIndex) {
   if (isNaN(parseInt(guildList[guildIndex][rssIndex].channel,10))) {
@@ -44,9 +46,12 @@ bot.on('ready', function() {
         if (validChannel(guildIndex, rssIndex) !== false) {
           initializeAllRSS(bot, validChannel(guildIndex, rssIndex), rssIndex, function() {
             initializedFeeds++
-            if (initializedFeeds == enabledFeeds) startFeedSchedule(bot);
+            if (initializedFeeds == enabledFeeds) {
+              startFeedSchedule(bot);
+            }
           });
         }
+        else if (validChannel(guildIndex, rssIndex) == false) initializedFeeds++;
       }
     }
   }
@@ -70,8 +75,7 @@ var commands = {
 
 var inProgress = false;
 bot.on('message', function (message) {
-  if (!message.guild) return;
-  if (!message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
+  if (message.member == null || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot ) return;
   var m = message.content.split(" ")
   let command = m[0].substr(rssConfig.prefix.length)
 
@@ -79,11 +83,25 @@ bot.on('message', function (message) {
     rssAdd(bot, message);
   }
 
+  else if (command == "printlisten") {
+    message.channel.sendMessage(process.getMaxListeners())
+  }
+
   else if (command == "rsshelp" && !inProgress) {
     rssHelp(commands, message);
   }
   else if (command == "rsslist" && !inProgress) {
     rssPrintList(message, false, "", function (){})
+  }
+  else if (command == "stats" && message.author.id == "156576312985780224") {
+    message.channel.sendMessage(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`)
+  }
+  else if (command == "setgame" && message.author.id == "156576312985780224"){
+    let a = message.content.split(" ")
+    a.shift()
+    let game = a.join(" ")
+    if (game == "null") game = null;
+    bot.user.setGame(game)
   }
 
   //for commands that needs menu selection, AKA collectors
@@ -100,12 +118,32 @@ bot.on('message', function (message) {
 
 });
 
+const update = require('./util/updateJSON.js')
 bot.on('guildCreate', function (guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been added.`)
 })
 
+const removeRSS = require('./commands/removeRSS.js')
+bot.on('channelDelete', function (channel) {
+  let rssList = rssConfig.sources[channel.guild.id]
+  for (let rssIndex in rssList) {
+    if (rssList[rssIndex].channel == channel.id) {
+      removeRSS(channel, rssIndex, function (){})
+    }
+  }
+
+})
+
+const sqlCmds = require('./rss/sql/commands.js')
 bot.on('guildDelete', function (guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
+
+  for (let rssIndex in rssConfig.sources[guild.id]) {
+    sqlCmds.dropTable(rssConfig.databaseName, rssConfig.sources[guild.id][rssIndex])
+  }
+
+  delete rssConfig.sources[guild.id]
+  update('./config.json', rssConfig)
 })
 
 bot.login(rssConfig.token)
