@@ -58,7 +58,7 @@ module.exports = function (bot, rssLink, channel) {
     var feedName = `${channel.id}_${currentFeed[0].meta.link}`
 
     //MySQL table names have a limit of 64 char
-    if (correctFeedName.length >= 64 ) feedName = feedName.substr(0,64);
+    if (feedName.length >= 64 ) feedName = feedName.substr(0,64);
 
     var processedItems = 0
     var totalItems = currentFeed.length
