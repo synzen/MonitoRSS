@@ -2,7 +2,7 @@
 const updateConfig = require('../util/updateJSON.js')
 const sqlCmds = require('../rss/sql/commands.js')
 
-module.exports = function (message, rssIndex, callback) {
+module.exports = function (commands, message, rssIndex) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 
@@ -22,7 +22,6 @@ module.exports = function (message, rssIndex, callback) {
 
   if (enabledFeeds == 0 || rssList == null) console.log(`RSS Info: No more active feeds enabled for guild ${message.guild.id} (${message.guild.name}).`)
 
-  callback()
   if (message.channel != null) {
     message.channel.sendMessage(`Successfully removed ${link} from this channel.`);
     message.channel.stopTyping();

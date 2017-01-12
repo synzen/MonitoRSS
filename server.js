@@ -1,5 +1,5 @@
-process.setMaxListeners(0)
 const Discord = require('discord.js')
+process.setMaxListeners(0)
 const bot = new Discord.Client()
 const initializeAllRSS = require('./rss/initializeall.js')
 const checkValidConfig = require('./util/configCheck.js')
@@ -39,14 +39,18 @@ for (let q in guildList)
 
 bot.on('ready', function() {
   console.log("I am online.")
+  console.log("RSS Info: Starting initialization cycle.")
 
   for (var guildIndex in guildList) {
     for (var rssIndex in guildList[guildIndex]){
       if (checkValidConfig(guildIndex, rssIndex, true, true)) {
         if (validChannel(guildIndex, rssIndex) !== false) {
-          initializeAllRSS(bot, validChannel(guildIndex, rssIndex), rssIndex, function() {
+          initializeAllRSS(bot, validChannel(guildIndex, rssIndex), rssIndex, function(con) {
             initializedFeeds++
             if (initializedFeeds == enabledFeeds) {
+              sqlCmds.end(con, function(err) {
+                console.log("RSS Info: Finished initialization cycle.")
+              });
               startFeedSchedule(bot);
             }
           });
@@ -64,7 +68,7 @@ bot.on('ready', function() {
 })
 
 var commands = {
-  rssadd: {description: "Add an RSS feed to the channel with the default message."},
+  //rssadd: {description: "Add an RSS feed to the channel with the default message."},
   rssremove: {description: "Open a menu to delete a feed from the channel.", file: "removeRSS"},
   rssmessage: {description: "Open a menu to customize a feed's text message.", file: "customMessage"},
   rssembed: {description: "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted.", file: "customEmbed"},
@@ -73,46 +77,28 @@ var commands = {
   rssfilterremove: {description: "Opens a menu to remove filters.", file: "filterRemove"}
 }
 
-var inProgress = false;
+
 bot.on('message', function (message) {
   if (message.member == null || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot ) return;
   var m = message.content.split(" ")
   let command = m[0].substr(rssConfig.prefix.length)
 
-  if (command == "rssadd" && !inProgress){
+  if (command == "rssadd"){
     rssAdd(bot, message);
   }
 
-  else if (command == "printlisten") {
-    message.channel.sendMessage(process.getMaxListeners())
-  }
-
-  else if (command == "rsshelp" && !inProgress) {
+  else if (command == "rsshelp") {
     rssHelp(commands, message);
   }
-  else if (command == "rsslist" && !inProgress) {
-    rssPrintList(message, false, "", function (){})
-  }
-  else if (command == "stats" && message.author.id == "156576312985780224") {
-    message.channel.sendMessage(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`)
-  }
-  else if (command == "setgame" && message.author.id == "156576312985780224"){
-    let a = message.content.split(" ")
-    a.shift()
-    let game = a.join(" ")
-    if (game == "null") game = null;
-    bot.user.setGame(game)
+  else if (command == "rsslist") {
+    rssPrintList(commands, message, false, "")
   }
 
   //for commands that needs menu selection, AKA collectors
-  else if (!inProgress) {
-    for (let cmd in commands) {
-      if (command == cmd) {
-        inProgress = true;
-        rssPrintList(message, true, commands[cmd].file, function () {
-          inProgress = false
-        })
-      }
+  for (let cmd in commands) {
+    if (command == cmd) {
+      inProgress = true;
+      rssPrintList(commands, message, true, commands[cmd].file)
     }
   }
 
@@ -128,7 +114,7 @@ bot.on('channelDelete', function (channel) {
   let rssList = rssConfig.sources[channel.guild.id]
   for (let rssIndex in rssList) {
     if (rssList[rssIndex].channel == channel.id) {
-      removeRSS(channel, rssIndex, function (){})
+      removeRSS(commands, channel, rssIndex)
     }
   }
 

@@ -157,10 +157,8 @@ module.exports = function (bot, channel, rssIndex, callback) {
     function gatherResults(){
       processedItems++;
       if (processedItems == totalItems) {
-        sqlCmds.end(con, function(err) {
-          console.log("RSS Info: Finished default initialization for: " + feedName)
-          callback();
-        });
+        callback(con);
+        console.log("RSS Info: Finished default initialization for: " + feedName)
       }
     }
 

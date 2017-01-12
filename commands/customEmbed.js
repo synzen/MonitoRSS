@@ -1,7 +1,8 @@
 
 const updateConfig = require('../util/updateJSON.js')
+const rssConfig = require('../config.json')
 
-module.exports = function (message, rssIndex, callback) {
+module.exports = function (commands, message, rssIndex) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 
@@ -66,7 +67,8 @@ module.exports = function (message, rssIndex, callback) {
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
 
       propertyCollect.on('message', function (propSetting) {
-        if (propSetting.content.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
+        if (commands.hasOwnProperty(rssConfig.prefix + propSetting)) propertyCollect.stop();
+        else if (propSetting.content.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
         else if (choice == "color" && isNaN(parseInt(propSetting.content,10)) && propSetting.content !== "reset") return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.");
         else if ((choice == "authorAvatarURL" || choice == "thumbnailURL") && propSetting.content !== "reset" && !rssList[rssIndex].link.includes("youtube") && !propSetting.content.startsWith("http")) return message.channel.sendMessage("URLs must link to actual images. Try again.");
         else if (choice == "attachURL" && propSetting.content !== "reset" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.");}
@@ -90,14 +92,12 @@ module.exports = function (message, rssIndex, callback) {
         }
       });
       propertyCollect.on('end', (collected, reason) => {
-        callback()
         if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
       }
     });
     customCollect.on('end', (collected, reason) => {
-      callback()
       if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
       else if (reason !== "user") return message.channel.sendMessage(reason);
     });

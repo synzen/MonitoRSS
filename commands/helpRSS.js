@@ -6,6 +6,6 @@ module.exports = function (commands, message) {
   for (let cmd in commands){
     msg += `\`${rssConfig.prefix}${cmd}\`\n${commands[cmd].description}\n\n`
   }
-  message.channel.sendMessage(msg + "\nNote that is an **experimental bot**. You may find some support in a discord I made at https://discord.gg/WPWRyxK.");
+  message.channel.sendMessage(msg);
 
 }

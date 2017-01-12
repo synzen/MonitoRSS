@@ -1,7 +1,7 @@
 
 const updateConfig = require('../util/updateJSON.js')
 
-module.exports = function (message, rssIndex, callback) {
+module.exports = function (commands, message, rssIndex) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 
@@ -34,7 +34,6 @@ module.exports = function (message, rssIndex, callback) {
   });
 
   customCollect.on('end', (collected, reason) => {
-    callback()
     if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
     else if (reason !== "user") return message.channel.sendMessage(reason);
   });

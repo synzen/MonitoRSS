@@ -1,7 +1,7 @@
 const loadCommand = (command) => require(`../${command}.js`)
 
 
-module.exports = function (message, isCallingCmd, command, callback) {
+module.exports = function (commands, message, isCallingCmd, command) {
   var rssConfig = require('../../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 
@@ -45,13 +45,10 @@ module.exports = function (message, isCallingCmd, command, callback) {
       else {
         collector.stop();
         let rssIndex = currentRSSList[index][1];
-        loadCommand(command)(message, rssIndex, function () {
-          callback()
-        });
+        loadCommand(command)(commands, message, rssIndex);
       }
     })
     collector.on('end', (collected, reason) => {
-      callback();
       if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
       else if (reason !== "user") return message.channel.sendMessage(reason);
     })

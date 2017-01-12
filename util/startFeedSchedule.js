@@ -1,5 +1,8 @@
 const checkValidConfig = require('./configCheck.js')
 const getRSS = require('../rss/rss.js')
+var rssConfig = require('../config.json')
+var guildList = rssConfig.sources
+const sqlCmds = require('../rss/sql/commands.js')
 
 module.exports = function (bot, feedIndex) {
   var rssConfig = require('../config.json')
@@ -24,14 +27,30 @@ module.exports = function (bot, feedIndex) {
     }
   }
 
+var feedLength = 0
+var feedProcessed = 0
+
+for (let x in guildList)
+  for (let y in guildList[x])
+    feedLength++
+
   function startFeed () {
+    console.log("RSS Info: Starting feed retrieval cycle.")
     rssConfig = require('../config.json')
     rssList = rssConfig.sources
-    for (var guildIndex in guildList)
-      for (var rssIndex in guildList[guildIndex])
+    for (let guildIndex in guildList)
+      for (let rssIndex in guildList[guildIndex])
         if (checkValidConfig(guildIndex, rssIndex, false))
           if (validChannel(guildIndex, rssIndex) !== false)
-            getRSS(rssIndex , validChannel(guildIndex, rssIndex), false);
+            getRSS(rssIndex , validChannel(guildIndex, rssIndex), false, function (con) {
+              feedProcessed++
+              if (feedProcessed == feedLength) {
+                feedProcessed = 0;
+                sqlCmds.end(con, function(err) {
+                  console.log("RSS Info: Finished feed retrieval cycle.")
+                });
+              }
+            });
   }
 
 

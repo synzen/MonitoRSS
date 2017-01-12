@@ -26,7 +26,7 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (rssIndex, channel, sendingTestMessage) {
+module.exports = function (rssIndex, channel, sendingTestMessage, callback) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[channel.guild.id]
 
@@ -131,9 +131,8 @@ module.exports = function (rssIndex, channel, sendingTestMessage) {
       processedItems++;
       //console.log(filteredItems + " " + processedItems) //for debugging
       if (processedItems == filteredItems) {
-        sqlCmds.end(con, function(err) {
-          console.log("RSS Info: Finished retrieval for: " + feedName)
-        });
+        callback(con);
+        console.log("RSS Info: Finished retrieval for: " + feedName)
       }
     }
 

@@ -9,13 +9,13 @@ function isEmptyObject(obj) {
     return JSON.stringify(obj) === JSON.stringify({});
 }
 
-module.exports = function(message, rssIndex, callback) {
+module.exports = function(commands, message, rssIndex) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 
   var filterList = rssList[rssIndex].filters;
 
-  if (filterList == null || filterList == "") {callback(); return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);}
+  if (filterList == null || filterList == "") return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
 
   let filterObj = {
     title: {exists: false, loc: filterList.title},
@@ -33,7 +33,7 @@ module.exports = function(message, rssIndex, callback) {
     }
   }
 
-  if (isEmptyFilter) {callback(); return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);}
+  if (isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
 
   var msg = `\`\`\`Markdown\n# Chosen Feed: ${rssList[rssIndex].link}\n# List of current filters\`\`\`\`\`\`Markdown\n`
 
@@ -54,13 +54,12 @@ module.exports = function(message, rssIndex, callback) {
     var validFilterType = false;
     for (let a in filterObj) if (chosenFilterType.content.toLowerCase() == a) validFilterType = true;
 
-    if (chosenFilterType.content == "exit") {callback(); return filterTypeCollect.stop("RSS Filter Removal menu closed.");}
+    if (chosenFilterType.content == "exit") return filterTypeCollect.stop("RSS Filter Removal menu closed.");
     else if (chosenFilterType.content == "{reset}") {
       message.channel.startTyping();
       filterTypeCollect.stop();
       delete rssList[rssIndex].filters;
       updateConfig('./config.json', rssConfig);
-      callback();
       message.channel.stopTyping();
       return message.channel.sendMessage("All filters have been removed.")//.then(m => m.channel.stopTyping());
     }
@@ -81,7 +80,7 @@ module.exports = function(message, rssIndex, callback) {
         else if (typeof chosenFilterTypeList == "string")
           if (chosenFilterTypeList == chosenFilter.content) validFilter = true;
 
-        if (chosenFilter.content == "exit") {callback(); return filterCollect.stop("RSS Filter Removal menu closed.");}
+        if (chosenFilter.content == "exit") return filterCollect.stop("RSS Filter Removal menu closed.");
         else if (!validFilter) {
           return message.channel.sendMessage(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again.`);
         }
@@ -96,7 +95,6 @@ module.exports = function(message, rssIndex, callback) {
           console.log(rssList[rssIndex].filters)
           if (isEmptyObject(rssList[rssIndex].filters)) delete rssList[rssIndex].filters;
           updateConfig('./config.json', rssConfig);
-          callback();
           console.log(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
           message.channel.stopTyping();
           return message.channel.sendMessage(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`)//.then(m => m.channel.stopTyping());
