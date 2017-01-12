@@ -54,10 +54,15 @@ module.exports = function (bot, rssLink, channel) {
 });
 
   feedparser.on('end', function() {
-    let feedName = `${channel.id}_${currentFeed[0].meta.link}`
-    var processedItems = 0;
-    var totalItems = currentFeed.length;
-    var con;
+    let metaLink = currentFeed[0].meta.link
+    var feedName = `${channel.id}_${currentFeed[0].meta.link}`
+
+    //MySQL table names have a limit of 64 char
+    if (correctFeedName.length >= 64 ) feedName = feedName.substr(0,64);
+
+    var processedItems = 0
+    var totalItems = currentFeed.length
+    var con
 
     console.log("RSS Info: Initializing new feed: " + rssLink)
 
