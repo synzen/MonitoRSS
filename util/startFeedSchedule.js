@@ -35,7 +35,11 @@ for (let x in guildList)
   for (let y in guildList[x])
     feedLength++
 
-  var con = sqlConnect(startFeed)
+var con;
+
+  function connect () {
+    con = sqlConnect(startFeed)
+  }
 
   function startFeed () {
     console.log("RSS Info: Starting feed retrieval cycle.")
@@ -56,6 +60,7 @@ for (let x in guildList)
             });
   }
 
-  setInterval(startFeed, rssConfig.refreshTimeMinutes*60000)
+  connect()
+  setInterval(connect, rssConfig.refreshTimeMinutes*60000)
 
 }
