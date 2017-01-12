@@ -26,7 +26,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 
 ####To Do List
 * Use a database to store sources instead of JSON
-* End the database connection after it has gone through all the sources in the list rather than opening and closing after each source
+* End the database connection after it has gone through all the sources in the list rather than opening and closing after each source (directly customizing from JSON will no longer be possible after this)
 
 ##Configuration and Customization
 
