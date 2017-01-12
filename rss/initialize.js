@@ -28,7 +28,7 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (bot, rssLink, channel) {
+module.exports = function (con, rssLink, channel) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[channel.guild.id]
 
@@ -64,16 +64,13 @@ module.exports = function (bot, rssLink, channel) {
     // else feedNamePart = metaLink.slice(7, metaLink.length);
 
 
-    //let feedName = channel.id + feedNamePart
     var processedItems = 0
     var totalItems = currentFeed.length
-    var con
 
     console.log("RSS Info: Initializing new feed: " + rssLink)
 
     function startDataProcessing() {
-      con = sqlConnect(createTable)
-      if (con == null) throw "RSS ERROR: SQL type is not correctly defined in config"
+      createTable()
     }
 
     function createTable() {

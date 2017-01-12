@@ -17,7 +17,7 @@ else if (rssConfig.sqlType.toLowerCase() == "sqlite3") sqlite3 = require('sqlite
 const credentials = require('../../mysqlCred.json')
 
 
-module.exports = function (createTable, checkTableExists, checkingTables) {
+module.exports = function (callback) {
   if (typeof rssConfig.sqlType !== "string") return null;
   else if (rssConfig.sqlType.toLowerCase() == "mysql") {
   var con, iterations = 0;
@@ -27,11 +27,11 @@ module.exports = function (createTable, checkTableExists, checkingTables) {
 
       con.connect(function(err){
         if(err){
+          throw err;
           // console.log(err.code);
           // console.log(err.fatal);
           console.log('Error connecting to database ' + rssConfig.databaseName + '. Attempting to reconnect.');
-          setTimeout(startDataProcessing, 2000);
-          if (iterations == 50) throw err;
+          //setTimeout(startDataProcessing, 2000);
         }
         else {
           con.query('create database if not exists `' + rssConfig.databaseName + '`', function (err) {
@@ -40,19 +40,18 @@ module.exports = function (createTable, checkTableExists, checkingTables) {
           con.query('use ' + rssConfig.databaseName, function (err) {
             if (err) throw err;
           })
-          if (checkingTables) checkTableExists();
-          else createTable();
+          callback();
 
         }
       });
 
-      con.on('error', function(err) {
-        if(err.code === 'PROTOCOL_CONNECTION_LOST') {
-          startDataProcessing();
-          iterations++;
-        }
-        else throw err;
-      });
+      // con.on('error', function(err) {
+      //   if(err.code === 'PROTOCOL_CONNECTION_LOST') {
+      //     startDataProcessing();
+      //     iterations++;
+      //   }
+      //   else throw err;
+      // });
     })()
 
     return con;
@@ -62,8 +61,7 @@ module.exports = function (createTable, checkTableExists, checkingTables) {
 
   //so much simpler!
   else if (rssConfig.sqlType.toLowerCase() == "sqlite3") {
-    if (checkingTables) return new sqlite3.Database(`./${rssConfig.databaseName}.db`, checkTableExists);
-    else return new sqlite3.Database(`./${rssConfig.databaseName}.db`, createTable);
+    return new sqlite3.Database(`./${rssConfig.databaseName}.db`, callback);
   }
   else return null;
 }

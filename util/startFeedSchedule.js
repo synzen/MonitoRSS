@@ -3,6 +3,7 @@ const getRSS = require('../rss/rss.js')
 var rssConfig = require('../config.json')
 var guildList = rssConfig.sources
 const sqlCmds = require('../rss/sql/commands.js')
+const sqlConnect = require('../rss/sql/connect.js')
 
 module.exports = function (bot, feedIndex) {
   var rssConfig = require('../config.json')
@@ -34,6 +35,8 @@ for (let x in guildList)
   for (let y in guildList[x])
     feedLength++
 
+  var con = sqlConnect(startFeed)
+
   function startFeed () {
     console.log("RSS Info: Starting feed retrieval cycle.")
     rssConfig = require('../config.json')
@@ -42,7 +45,7 @@ for (let x in guildList)
       for (let rssIndex in guildList[guildIndex])
         if (checkValidConfig(guildIndex, rssIndex, false))
           if (validChannel(guildIndex, rssIndex) !== false)
-            getRSS(rssIndex , validChannel(guildIndex, rssIndex), false, function (con) {
+            getRSS(con, rssIndex , validChannel(guildIndex, rssIndex), false, function () {
               feedProcessed++
               if (feedProcessed == feedLength) {
                 feedProcessed = 0;
@@ -53,8 +56,6 @@ for (let x in guildList)
             });
   }
 
-
-  startFeed()
   setInterval(startFeed, rssConfig.refreshTimeMinutes*60000)
 
 }

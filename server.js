@@ -8,7 +8,12 @@ const rssHelp = require('./commands/helpRSS.js')
 const rssPrintList = require('./commands/util/printFeeds.js')
 const startFeedSchedule = require('./util/startFeedSchedule.js')
 var rssConfig = require('./config.json')
-var guildList = rssConfig.sources
+var guildList = rssConfig.sources//[bot.guild.id]
+// const sqlCmds = require('./rss/sql/commands.js')
+// const updateConfig = require('./util/updateJSON.js')
+const sqlCmds = require('./rss/sql/commands.js')
+const sqlConnect = require('./rss/sql/connect.js')
+
 
 
 function validChannel(guildIndex, rssIndex) {
@@ -41,21 +46,26 @@ bot.on('ready', function() {
   console.log("I am online.")
   console.log("RSS Info: Starting initialization cycle.")
 
-  for (var guildIndex in guildList) {
-    for (var rssIndex in guildList[guildIndex]){
-      if (checkValidConfig(guildIndex, rssIndex, true, true)) {
-        if (validChannel(guildIndex, rssIndex) !== false) {
-          initializeAllRSS(bot, validChannel(guildIndex, rssIndex), rssIndex, function(con) {
-            initializedFeeds++
-            if (initializedFeeds == enabledFeeds) {
-              sqlCmds.end(con, function(err) {
-                console.log("RSS Info: Finished initialization cycle.")
-              });
-              startFeedSchedule(bot);
-            }
-          });
+  var con = sqlConnect(startBot);
+  if (con == null) throw "RSS Error: SQL type is not correctly defined in config"
+
+  function startBot() {
+    for (var guildIndex in guildList) {
+      for (var rssIndex in guildList[guildIndex]){
+        if (checkValidConfig(guildIndex, rssIndex, true, true)) {
+          if (validChannel(guildIndex, rssIndex) !== false) {
+            initializeAllRSS(con, validChannel(guildIndex, rssIndex), rssIndex, function() {
+              initializedFeeds++
+              if (initializedFeeds == enabledFeeds) {
+                sqlCmds.end(con, function(err) {
+                  console.log("RSS Info: Finished initialization cycle.")
+                });
+                startFeedSchedule(bot);
+              }
+            });
+          }
+          else if (validChannel(guildIndex, rssIndex) == false) initializedFeeds++;
         }
-        else if (validChannel(guildIndex, rssIndex) == false) initializedFeeds++;
       }
     }
   }
@@ -120,7 +130,6 @@ bot.on('channelDelete', function (channel) {
 
 })
 
-const sqlCmds = require('./rss/sql/commands.js')
 bot.on('guildDelete', function (guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
 

@@ -26,7 +26,7 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (rssIndex, channel, sendingTestMessage, callback) {
+module.exports = function (con, rssIndex, channel, sendingTestMessage, callback) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[channel.guild.id]
 
@@ -52,14 +52,10 @@ module.exports = function (rssIndex, channel, sendingTestMessage, callback) {
     let feedName = rssList[rssIndex].name
     var processedItems = 0;
     var filteredItems = 0;
-    var con; //the SQL connection
-
     //console.log("RSS Info: Starting retrieval for: " + feedName);
 
     function startDataProcessing() {
-      //due to the huge differences in which MySQL/sqlite3 "connects", connection takes a different module from the normal queries
-      con = sqlConnect(createTable)
-      if (con == null) throw "RSS ERROR: SQL type is not correctly defined in config"
+      createTable();
     }
 
     function createTable() {
