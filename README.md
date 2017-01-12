@@ -25,7 +25,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 * [mysql] (https://www.npmjs.com/package/mysql) (optional)
 
 ####To Do List
-* ~~Use a database to store sources instead of JSON (directly customizing from JSON will no longer be possible after this)~~ This is most likely not possible/not worth the trouble when dealing with user input.
+* ~~Use a database to store sources instead of JSON (directly customizing from JSON will no longer be possible after this)~~ This is most likely not worth the trouble when dealing with user input.
 * End the database connection after it has gone through all the sources in the list rather than opening and closing after each source
 
 ##Configuration and Customization
