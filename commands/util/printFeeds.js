@@ -21,7 +21,6 @@ module.exports = function (message, isCallingCmd, command, callback) {
     if (isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex] );
   }
   if (currentRSSList.length <= 0) {
-    callback();
     return message.channel.sendMessage("No feeds assigned to this channel.");
   }
   else {
@@ -39,7 +38,7 @@ module.exports = function (message, isCallingCmd, command, callback) {
 
 
     collector.on('message', function (m) {
-      if (m.content.toLowerCase() == "exit") {callback(); return collector.stop("RSS Feed selection menu closed.");}
+      if (m.content.toLowerCase() == "exit") return collector.stop("RSS Feed selection menu closed.");
       let index = parseInt(m,10) - 1;
 
       if (isNaN(index) || m > currentRSSList.length) return message.channel.sendMessage("That is not a valid number.");
@@ -52,8 +51,8 @@ module.exports = function (message, isCallingCmd, command, callback) {
       }
     })
     collector.on('end', (collected, reason) => {
+      callback();
       if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
-
       else if (reason !== "user") return message.channel.sendMessage(reason);
     })
   }

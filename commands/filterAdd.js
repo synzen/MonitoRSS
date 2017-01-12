@@ -31,7 +31,7 @@ module.exports = function(message, rssIndex, callback) {
     var validFilterType = false;
     for (let a in filterObj) if (chosenFilterType.content.toLowerCase() == a) validFilterType = true;
 
-    if (chosenFilterType.content == "exit") {callback(); return filterTypeCollect.stop("RSS Filter Addition menu closed.");}
+    if (chosenFilterType.content == "exit") return filterTypeCollect.stop("RSS Filter Addition menu closed.");
 
     else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
     else if (validFilterType) {
@@ -40,7 +40,7 @@ module.exports = function(message, rssIndex, callback) {
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
       filterCollect.on('message', function(chosenFilter) {
-        if (chosenFilter.content == "{exit}") {callback(); return filterCollect.stop("RSS Filter Addition menu closed.");}
+        if (chosenFilter.content == "{exit}") return filterCollect.stop("RSS Filter Addition menu closed.");
         else {
           if (rssList[rssIndex].filters[chosenFilterType.content] == null || rssList[rssIndex].filters[chosenFilterType.content] == "") rssList[rssIndex].filters[chosenFilterType.content] = [];
 
@@ -48,13 +48,13 @@ module.exports = function(message, rssIndex, callback) {
           filterCollect.stop();
           rssList[rssIndex].filters[chosenFilterType.content].push(chosenFilter.content);
           updateConfig('./config.json', rssConfig);
-          callback();
           console.log(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`);
           message.channel.stopTyping();
           return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`)
         }
       })
       filterCollect.on('end', (collected, reason) => {
+        callback()
         if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
@@ -62,6 +62,7 @@ module.exports = function(message, rssIndex, callback) {
 
   })
   filterTypeCollect.on('end', (collected, reason) => {
+    callback()
     if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
     else if (reason !== "user") return message.channel.sendMessage(reason);
   });

@@ -42,7 +42,7 @@ module.exports = function (message, rssIndex, callback) {
   const filter = m => m.author.id == message.author.id;
   const customCollect = message.channel.createCollector(filter,{time:240000});
   customCollect.on('message', function (chosenProp) {
-    if (chosenProp.content.toLowerCase() == "exit") {callback(); return customCollect.stop("RSS customization menu closed.");}
+    if (chosenProp.content.toLowerCase() == "exit") return customCollect.stop("RSS customization menu closed.");
 
     var choice = "";
     for (var e in embedProperties) {
@@ -55,7 +55,6 @@ module.exports = function (message, rssIndex, callback) {
       customCollect.stop();
       rssList[rssIndex].embedMessage = {};
       updateConfig('./config.json', rssConfig);
-      callback();
       message.channel.stopTyping();
       return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
     }
@@ -67,7 +66,7 @@ module.exports = function (message, rssIndex, callback) {
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
 
       propertyCollect.on('message', function (propSetting) {
-        if (propSetting.content.toLowerCase() == "exit") {callback(); return propertyCollect.stop("RSS customization menu closed.");}
+        if (propSetting.content.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
         else if (choice == "color" && isNaN(parseInt(propSetting.content,10)) && propSetting.content !== "reset") return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.");
         else if ((choice == "authorAvatarURL" || choice == "thumbnailURL") && propSetting.content !== "reset" && !rssList[rssIndex].link.includes("youtube") && !propSetting.content.startsWith("http")) return message.channel.sendMessage("URLs must link to actual images. Try again.");
         else if (choice == "attachURL" && propSetting.content !== "reset" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.");}
@@ -80,7 +79,6 @@ module.exports = function (message, rssIndex, callback) {
           else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
           rssList[rssIndex].embedMessage.enabled = 1;
           updateConfig('./config.json', rssConfig);
-          callback();
           if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") {
             message.channel.stopTyping();
             return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);
@@ -92,12 +90,14 @@ module.exports = function (message, rssIndex, callback) {
         }
       });
       propertyCollect.on('end', (collected, reason) => {
+        callback()
         if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
       }
     });
     customCollect.on('end', (collected, reason) => {
+      callback()
       if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
       else if (reason !== "user") return message.channel.sendMessage(reason);
     });

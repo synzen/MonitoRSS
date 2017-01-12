@@ -19,7 +19,7 @@ exports.selectTable = function (con, table, callback) {
 exports.createTable = function (con, table, callback) {
   if (sqlType == "mysql")
     return con.query(`create table if not exists \`${table}\` (link text)`, callback)
-    
+
   else
     return con.run(`create table if not exists "${table}" (link text)`, callback);
 
