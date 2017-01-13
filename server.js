@@ -8,13 +8,10 @@ const rssHelp = require('./commands/helpRSS.js')
 const rssPrintList = require('./commands/util/printFeeds.js')
 const startFeedSchedule = require('./util/startFeedSchedule.js')
 var rssConfig = require('./config.json')
-var guildList = rssConfig.sources//[bot.guild.id]
-// const sqlCmds = require('./rss/sql/commands.js')
-// const updateConfig = require('./util/updateJSON.js')
+var guildList = rssConfig.sources
+
 const sqlCmds = require('./rss/sql/commands.js')
 const sqlConnect = require('./rss/sql/connect.js')
-
-
 
 function validChannel(guildIndex, rssIndex) {
   if (isNaN(parseInt(guildList[guildIndex][rssIndex].channel,10))) {
@@ -36,18 +33,18 @@ function validChannel(guildIndex, rssIndex) {
 }
 
 var initializedFeeds = 0
-var enabledFeeds = 0
+var totalFeeds = 0
 
 for (let q in guildList)
   for (let x in guildList[q])
-    if (guildList[q][x].enabled == 1) enabledFeeds++;
+    totalFeeds++;
 
-bot.on('ready', function() {
-  console.log("I am online.")
-  console.log("RSS Info: Starting initialization cycle.")
+  var con;
 
-  var con = sqlConnect(startBot);
-  if (con == null) throw "RSS Error: SQL type is not correctly defined in config"
+  function start() {
+    con = sqlConnect(startBot);
+    if (con == null) throw "RSS Error: SQL type is not correctly defined in config";
+  }
 
   function startBot() {
     for (var guildIndex in guildList) {
@@ -55,8 +52,8 @@ bot.on('ready', function() {
         if (checkValidConfig(guildIndex, rssIndex, true, true)) {
           if (validChannel(guildIndex, rssIndex) !== false) {
             initializeAllRSS(con, validChannel(guildIndex, rssIndex), rssIndex, function() {
-              initializedFeeds++
-              if (initializedFeeds == enabledFeeds) {
+              initializedFeeds++;
+              if (initializedFeeds == totalFeeds) {
                 sqlCmds.end(con, function(err) {
                   console.log("RSS Info: Finished initialization cycle.")
                 });
@@ -64,17 +61,22 @@ bot.on('ready', function() {
               }
             });
           }
-          else if (validChannel(guildIndex, rssIndex) == false) initializedFeeds++;
+          else initializedFeeds++;
         }
+        else initializedFeeds++;
       }
     }
   }
 
-  if (enabledFeeds == 0) {
+bot.on('ready', function() {
+  console.log("I am online.")
+  console.log("RSS Info: Starting initialization cycle.")
+  start()
+
+  if (totalFeeds == 0) {
     console.log("RSS Info: All feeds are disabled");
     startFeedSchedule(bot);
   }
-
 })
 
 var commands = {

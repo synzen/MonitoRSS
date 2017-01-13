@@ -2,6 +2,7 @@
 const request = require('request')
 const initializeRSS = require('../rss/initialize.js')
 const sqlConnect = require('../rss/sql/connect.js')
+const sqlCmds = require('../rss/sql/commands.js')
 
 module.exports = function (bot, message) {
   var rssConfig = require('../config.json')
@@ -21,7 +22,9 @@ module.exports = function (bot, message) {
 
   let content = message.content.split(" ");
   if (content.length == 1) return;
+  if else (!content[1].startsWith("http")) return message.channel.sendMessage("Unable to add feed. Make sure there are no odd characters before your feed link (such as new lines).")
   message.channel.startTyping()
+
   request(content[1], (error, response, body) => {
 
     if (!error && response.statusCode == 200){
@@ -37,7 +40,12 @@ module.exports = function (bot, message) {
       if (rssConfig.maxFeeds == 0 || rssList.length < rssConfig.maxFeeds) {
         var con = sqlConnect(init);
         function init() {
-          initializeRSS(con, content[1], message.channel);
+          initializeRSS(con, content[1], message.channel, function() {
+            sqlCmds.end(con, function(err) {
+              if (err) throw err;
+              console.log("RSS Info: Successfully added new feed.")
+            });
+          });
         }
       }
       else {

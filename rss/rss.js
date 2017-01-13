@@ -33,7 +33,7 @@ module.exports = function (con, rssIndex, channel, sendingTestMessage, callback)
   var feedparser = new FeedParser()
   var currentFeed = []
 
-  requestStream(rssList[rssIndex].link,feedparser)
+  requestStream(rssList[rssIndex].link, feedparser, con)
 
   feedparser.on('error', function (error) {
     console.log(error)
@@ -127,7 +127,7 @@ module.exports = function (con, rssIndex, channel, sendingTestMessage, callback)
       processedItems++;
       //console.log(filteredItems + " " + processedItems) //for debugging
       if (processedItems == filteredItems) {
-        callback(con);
+        callback();
         console.log("RSS Info: Finished retrieval for: " + feedName)
       }
     }

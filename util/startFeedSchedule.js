@@ -47,8 +47,8 @@ var con;
     rssList = rssConfig.sources
     for (let guildIndex in guildList)
       for (let rssIndex in guildList[guildIndex])
-        if (checkValidConfig(guildIndex, rssIndex, false))
-          if (validChannel(guildIndex, rssIndex) !== false)
+        if (checkValidConfig(guildIndex, rssIndex, false)) {
+          if (validChannel(guildIndex, rssIndex) !== false) {
             getRSS(con, rssIndex , validChannel(guildIndex, rssIndex), false, function () {
               feedProcessed++
               if (feedProcessed == feedLength) {
@@ -58,6 +58,10 @@ var con;
                 });
               }
             });
+          }
+          else feedProcessed++;
+        }
+        else feedProcessed++;
   }
 
   connect()

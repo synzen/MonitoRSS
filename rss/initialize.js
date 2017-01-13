@@ -28,7 +28,7 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (con, rssLink, channel) {
+module.exports = function (con, rssLink, channel, callback) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[channel.guild.id]
 
@@ -54,8 +54,16 @@ module.exports = function (con, rssLink, channel) {
 });
 
   feedparser.on('end', function() {
-    let metaLink = currentFeed[0].meta.link
-    var feedName = `${channel.id}_${currentFeed[0].meta.link}`
+    var metaLink = ""
+    for (let random in currentFeed) metaLink = currentFeed[random].meta.link
+
+    var feedName = `${channel.id}_${metaLink}`
+
+    if (metaLink == "" ) {
+      channel.sendMessage("Cannot find meta link for this feed. Unable to add to database.");
+      channel.stopTyping();
+      return callback();
+    }
 
     //MySQL table names have a limit of 64 char
     if (feedName.length >= 64 ) feedName = feedName.substr(0,64);
@@ -101,10 +109,7 @@ module.exports = function (con, rssLink, channel) {
       processedItems++;
       if (processedItems == totalItems) {
         addToConfig();
-        return sqlCmds.end(con, function(err) {
-          if (err) throw err;
-          else console.log(`RSS Info: Successfully added ${rssLink} to config for channel ${channel.id}.`);
-        });
+        callback();
       }
     }
 
