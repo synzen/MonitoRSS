@@ -2,7 +2,7 @@
 const updateConfig = require('../util/updateJSON.js')
 const sqlCmds = require('../rss/sql/commands.js')
 
-module.exports = function (commands, message, rssIndex) {
+module.exports = function (message, rssIndex) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 

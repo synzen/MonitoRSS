@@ -9,7 +9,7 @@ function isEmptyObject(obj) {
     return JSON.stringify(obj) === JSON.stringify({});
 }
 
-module.exports = function(commands, message, rssIndex) {
+module.exports = function(message, rssIndex) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 
@@ -92,7 +92,6 @@ module.exports = function(commands, message, rssIndex) {
             if (rssList[rssIndex].filters[chosenFilterType.content].length == 0) delete rssList[rssIndex].filters[chosenFilterType.content];
           }
           else delete rssList[rssIndex].filters[chosenFilterType.content];
-          console.log(rssList[rssIndex].filters)
           if (isEmptyObject(rssList[rssIndex].filters)) delete rssList[rssIndex].filters;
           updateConfig('./config.json', rssConfig);
           console.log(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);

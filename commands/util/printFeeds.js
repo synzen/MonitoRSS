@@ -1,7 +1,7 @@
 const loadCommand = (command) => require(`../${command}.js`)
 
 
-module.exports = function (commands, message, isCallingCmd, command) {
+module.exports = function (message, isCallingCmd, command) {
   var rssConfig = require('../../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 
@@ -45,7 +45,7 @@ module.exports = function (commands, message, isCallingCmd, command) {
       else {
         collector.stop();
         let rssIndex = currentRSSList[index][1];
-        loadCommand(command)(commands, message, rssIndex);
+        loadCommand(command)(message, rssIndex);
       }
     })
     collector.on('end', (collected, reason) => {

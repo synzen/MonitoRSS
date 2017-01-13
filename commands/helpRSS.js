@@ -1,6 +1,6 @@
 const rssConfig = require('../config.json')
 
-module.exports = function (commands, message) {
+module.exports = function (message, commands) {
 
   var msg = "Available commands are: \n\n"
   for (let cmd in commands){

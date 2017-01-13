@@ -2,7 +2,7 @@
 const updateConfig = require('../util/updateJSON.js')
 const rssConfig = require('../config.json')
 
-module.exports = function (commands, message, rssIndex) {
+module.exports = function (message, rssIndex) {
   var rssConfig = require('../config.json')
   var rssList = rssConfig.sources[message.guild.id]
 
@@ -28,14 +28,17 @@ module.exports = function (commands, message, rssIndex) {
     };
 
   let currentEmbedProps = "```Markdown\n";
-  let propertyList = rssList[rssIndex].embedMessage.properties;
-  for (var property in propertyList) {
-    //let current = "";
-    for (var y in embedProperties)
-      if (embedProperties[y][2] == property && propertyList[property] != null && propertyList[property] != "") {
-        currentEmbedProps += `[${embedProperties[y][0]}]: ${propertyList[property]}\n`
-      }
+  if (rssList[rssIndex].embedMessage != null & rssList[rssIndex].embedMessage.properties != null) {
+    let propertyList = rssList[rssIndex].embedMessage.properties;
+    for (var property in propertyList) {
+      //let current = "";
+      for (var y in embedProperties)
+        if (embedProperties[y][2] == property && propertyList[property] != null && propertyList[property] != "") {
+          currentEmbedProps += `[${embedProperties[y][0]}]: ${propertyList[property]}\n`
+        }
+    }
   }
+
   if (currentEmbedProps == "```Markdown\n") currentEmbedProps = "```\nNo properties set.\n";
 
   message.channel.sendMessage(`The current embed properties for ${rssList[rssIndex].link} are: \n${currentEmbedProps + "```"}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type exit to cancel.`);
@@ -54,7 +57,7 @@ module.exports = function (commands, message, rssIndex) {
     if (chosenProp.content == "reset") {
       message.channel.startTyping();
       customCollect.stop();
-      rssList[rssIndex].embedMessage = {};
+      if (rssList[rssIndex].embedMessage != null) delete rssList[rssIndex].embedMessage;
       updateConfig('./config.json', rssConfig);
       message.channel.stopTyping();
       return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
@@ -67,8 +70,7 @@ module.exports = function (commands, message, rssIndex) {
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
 
       propertyCollect.on('message', function (propSetting) {
-        if (commands.hasOwnProperty(rssConfig.prefix + propSetting)) propertyCollect.stop();
-        else if (propSetting.content.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
+        if (propSetting.content.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
         else if (choice == "color" && isNaN(parseInt(propSetting.content,10)) && propSetting.content !== "reset") return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.");
         else if ((choice == "authorAvatarURL" || choice == "thumbnailURL") && propSetting.content !== "reset" && !rssList[rssIndex].link.includes("youtube") && !propSetting.content.startsWith("http")) return message.channel.sendMessage("URLs must link to actual images. Try again.");
         else if (choice == "attachURL" && propSetting.content !== "reset" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.");}
@@ -77,8 +79,16 @@ module.exports = function (commands, message, rssIndex) {
           let finalChange = propSetting.content;
           if (choice == "color") finalChange = parseInt(propSetting.content,10);
           propertyCollect.stop();
+
+          if (rssList[rssIndex].embedMessage == null || rssList[rssIndex].embedMessage.properties == null)
+            rssList[rssIndex].embedMessage = {
+              enabled: 0,
+              properties: {}
+            };
+
           if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") delete rssList[rssIndex].embedMessage.properties[choice];
           else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
+
           rssList[rssIndex].embedMessage.enabled = 1;
           updateConfig('./config.json', rssConfig);
           if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") {
@@ -87,7 +97,7 @@ module.exports = function (commands, message, rssIndex) {
           }
           else {
             message.channel.stopTyping();
-            return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`You may use \`${rssConfig.prefix}rsstest\` to see your new embed format.`);
+            return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${rssConfig.prefix}rsstest\` to see your new embed format.`);
           }
         }
       });

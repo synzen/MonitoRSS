@@ -52,7 +52,9 @@ module.exports = function (con, channel, rssIndex, callback) {
   var feedparser = new FeedParser()
   var currentFeed = []
 
-  requestStream(rssList[rssIndex].link, feedparser)
+  requestStream(rssList[rssIndex].link, feedparser, con, function () {
+    feedparser.removeAllListeners('end')
+  })
 
   feedparser.on('error', function (error) {
     console.log(error)

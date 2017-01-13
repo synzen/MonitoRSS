@@ -35,13 +35,15 @@ module.exports = function (con, rssLink, channel, callback) {
   var feedparser = new FeedParser()
   var currentFeed = []
 
-  requestStream(rssLink, feedparser)
+  requestStream(rssLink, feedparser, con, function() {
+    feedparser.removeAllListeners('end')
+  })
 
   feedparser.on('error', function (error) {
-    channel.sendMessage(`${rssLink} is not a proper feed to add.`);
+    channel.sendMessage(`${rssLink} is not a proper feed to add.`)
     console.log(`RSS Warning: ${rssLink} is not a proper feed to add.`)
     channel.stopTyping()
-    feedparser.removeAllListeners('end');
+    feedparser.removeAllListeners('end')
   });
 
   feedparser.on('readable',function () {

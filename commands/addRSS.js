@@ -22,7 +22,7 @@ module.exports = function (bot, message) {
 
   let content = message.content.split(" ");
   if (content.length == 1) return;
-  if else (!content[1].startsWith("http")) return message.channel.sendMessage("Unable to add feed. Make sure there are no odd characters before your feed link (such as new lines).")
+  if (!content[1].startsWith("http")) return message.channel.sendMessage("Unable to add feed. Make sure there are no odd characters before your feed link (such as new lines).")
   message.channel.startTyping()
 
   request(content[1], (error, response, body) => {

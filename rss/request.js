@@ -1,7 +1,7 @@
 const request = require('request'); // for fetching the feed
 const sqlCmds = require('./sql/commands.js')
 
-module.exports = function (link, feedparser, con) {
+module.exports = function (link, feedparser, con, callback) {
 
   const req = request(link, function (error, response) {
     if (error || response.statusCode !== 200)
@@ -12,6 +12,7 @@ module.exports = function (link, feedparser, con) {
     console.log('RSS Request Error: ' + error)
     sqlCmds.end(con, function(err) {
       console.log("RSS Error: SQL Connection closed on error.")
+      callback()
     });
   });
 
