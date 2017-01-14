@@ -28,9 +28,8 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 * ~~Use a database to store sources instead of JSON (directly customizing from JSON will no longer be possible after this)~~ This is most likely not worth the trouble when dealing with user input.
 * End the database connection after it has gone through all the sources in the list rather than opening and closing after each source
 
-##Configuration and Customization
-
-An example is provided in examples/config.json. *All* of these properties are required, with the exception of `timezone` and `sources`.
+##Configuration
+(config.json)
 
 1. `token` : Bot token to login through server.js
 
@@ -51,28 +50,13 @@ For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed'
 
 9. `maxFeeds`: The maximum amount of feeds one server is allowed to have.
 
-10. `sources`: The list of RSS feeds for each guild, in object format. See sources formatting below.
+##RSS Storage
+All sources are organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information it must have is `name`, `id`, and `sources` where `sources` is the list of feed sources along with their customizations. 
 
-###Sources Formatting
 The bare minimum for a source must be `name`, `link`, and `channel` for it to be functional. But of course customization is possible!
 
 ```javascript
-"sources": {
-    "guild-one-ID": [{
-      //feed #1 settings
-    }, {
-      //feed #2 settings
-    }, {
-      //more feeds
-    }],
-    "guild-two-ID": [{
-      //feed #1 settings
-    }]
-}
-```
-
-```javascript
-"guild-one-id": [{
+"sources": [{
     //feed #1 settings
     "name": "there",
     "link": "http://somewebsite.com/rss/",
@@ -82,6 +66,7 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
     }]
 }
 ```
+####Sources Customization
 
 1. `name`: Feed Name. If you can, try not to add spaces.
 
@@ -122,19 +107,17 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 	}
 ```
 
-###Database Selection
-**I strongly recommend leaving this on `sqlite3` in config.json**. It can be set to sqlite3 or mysql, however the bot *may* have connection failures after some time. sqlite3 however should be working fine.
-
-Should you wish to try and use MySQL (and given that you already know what it is and have it installed), it is as simple as changing the login details in mysqlCred.json as well as the `sqlType` in config.json. If you don't have/use MySQL, it is very simple to set up. All you must do is install MySQL on your system and set up the root account with a password. The bot will handle everything else.
-
-SQLite on the otherhand requires no setup. It will create the database in the same directory as server.js on first startup.
-
-The difference between the two is that for sqlite, the database is created in the same directory as server.js, whereas for mysql (generally used for more "heavy" apps) creates a database in a separate directory.
-
-###Other Customizations
 Putting tags such as {title}, {description}, {summary}, {author}, {link}, {image}, {date} will add the feed's respective information into the text. This can either be in the main message, or in the embed. Regular [Markdown formatting] (https://support.discordapp.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-) is possible wherever Discord allows.
 
 `"message": "{date}\nA new feed has arrived!\n\n**{title}**\n{description}"`
+
+##Database Selection
+I recommend leaving this on `sqlite3`. It can be set to sqlite3 or mysql, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine.
+
+Should you wish to try and use MySQL (and given that you already know what it is and have it installed), it is quite simple. If you don't already have MySQL installed on your system, [install it](https://dev.mysql.com/downloads/mysql/) and set up the root account password. Then use `npm install mysql` to install the node package for it in the same directory as server.js. Change the login details in mysqlCred.json as well as the `sqlType` in config.json to `mysql`. The bot will handle everything else.
+
+SQLite on the otherhand requires no setup. It will create the database in the same directory as server.js on first startup.
+
 
 ##Controlling RSS Feeds through Discord
 
@@ -142,6 +125,7 @@ Uncomfortable with JSON? No problem! I have scrounged up some commands for you t
 
 Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#other-customizations) to add the feed's information. The user must have Manage Channels permission to use the commands.
 
+[`rsshelp`]: List the commands to use for Discord.RSS
 
 [`rssadd`]: Add feeds for that specific channel. `(prefix)rssadd rss_link_here`. A new entry will be made in config.json with its name in the format of channelID_feedLink, and will use the default message formatting unless customized otherwise.
 
