@@ -13,11 +13,11 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`
 
   var dataDescrip = ""
-  if (data.guid != null && data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
+  if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(striptags(data.description));
   if (dataDescrip.length > 1500) dataDescrip = dataDescrip.substr(0, 1400) + "[...]";
 
-  if (data.link != null && data.link.includes("reddit")) {
+  if (data.link.includes("reddit")) {
     let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
     let b = a.replace("submitted by", "\n*Submitted by:*");
     dataDescrip = b;
@@ -34,7 +34,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     var e = d.replace(/{summary}/g, dataSummary)
     var f = e.replace(/{image}/g, data.image.url)
 
-    if (data.guid != null && data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
+    if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
       if (data['media:group']['media:description']['#'] != null)
         var g = f.replace(/{description}/g, data['media:group']['media:description']['#']);
       else var g = f.replace(/{description}/g, "");
@@ -77,7 +77,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     if (data.link != null) finalMessage += `\n\n[Link]: {link}\n${data.link}`
     if (data.image.url !=  null && data.image.url !== "") finalMessage += `\n\n[Image URL]: {image}\n${data.image.url}`;
     if (filterExists) finalMessage += `\n\n[Passed Filters?]: ${filterFound}`;
-    if (data.guid != null && data.guid.startsWith("yt:video")) {
+    if (data.guid.startsWith("yt:video")) {
       finalMessage += `\n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer + configMessage;
     }
     else finalMessage += "```" + footer + configMessage;
