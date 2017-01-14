@@ -54,7 +54,6 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
     let feedName = rssList[rssIndex].source.name
     var processedItems = 0;
     var filteredItems = 0;
-    //console.log("RSS Info: Starting retrieval for: " + feedName);
 
     function startDataProcessing() {
       const fs = require('fs')
@@ -97,7 +96,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
         filteredItems++;
         gatherResults();
         var message = translator(channel, rssList, rssIndex, feed, true);
-        console.log(`RSS Info: ${rssList[rssIndex].guild} => Sending test message for: ${rssList[rssIndex].source.name}`)
+        console.log(`RSS Delivery: ${rssList[rssIndex].guild} => Sending test message for: ${rssList[rssIndex].source.name}`)
         if (message.embedMsg != null)
           channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());
         else
@@ -113,7 +112,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
           }
 
           else {
-            console.log(`RSS Info: ${rssList[rssIndex].guild} => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].source.name}".`);
+            console.log(`RSS Delivery: ${rssList[rssIndex].guild} => Never seen ${feed.link}, sending message for: ${rssList[rssIndex].source.name}`);
             //console.log(`never seen ${feed.link}, logging now`);
             var message = translator(channel, rssIndex, feed, false);
             if (message.embedMsg != null)

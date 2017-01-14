@@ -81,8 +81,6 @@ module.exports = function (con, channel, rssList, rssIndex, callback) {
     //var for when table exists
     var filteredItems = 0;
 
-    console.log(`RSS Info: ${rssList[rssIndex].guild} => Starting default initializion for: ${feedName}`)
-
     function startDataProcessing() {
       checkTableExists()
     }
@@ -138,7 +136,7 @@ module.exports = function (con, channel, rssList, rssIndex, callback) {
         else {
           if (rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
             var message = translator(channel, rssList, rssIndex, feed, false);
-            console.log(`RSS Info: ${rssList[rssIndex].guild} => Never seen ${feed.link}, logging and sending msg now`);
+            console.log(`RSS Delivery: ${rssList[rssIndex].guild} => Never seen ${feed.link}, sending message for: ${rssList[rssIndex].source.name}`);
             if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
             else channel.sendMessage(message.textMsg);
           }
