@@ -16,7 +16,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   else dataDescrip = cleanRandoms(striptags(data.description));
   if (dataDescrip.length > 1500) dataDescrip = dataDescrip.substr(0, 1400) + "[...]";
 
-  if (data.link.includes("reddit")) {
+  if (data.link != null && data.link.includes("reddit")) {
     let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
     let b = a.replace("submitted by", "\n*Submitted by:*");
     dataDescrip = b;

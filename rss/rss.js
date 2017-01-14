@@ -57,6 +57,16 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
     //console.log("RSS Info: Starting retrieval for: " + feedName);
 
     function startDataProcessing() {
+      const fs = require('fs')
+      const fileOps = require('../util/updateJSON.js')
+      if (rssList[rssIndex].guild !== `(${channel.guild.id + ".json"}, ${channel.guild.name})`) {
+        if (fs.existsSync(`./sources/${channel.guild.id}.json`)) {
+          var guildRss = require(`../sources/${channel.guild.id}.json`);
+          guildRss.name = channel.guild.name
+          fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRss)
+        }
+      }
+
       createTable();
     }
 
