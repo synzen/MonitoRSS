@@ -36,6 +36,7 @@ module.exports = function (con, rssLink, channel, callback) {
   var currentFeed = []
 
   requestStream(rssLink, feedparser, con, function() {
+    callback()
     feedparser.removeAllListeners('end')
   })
 

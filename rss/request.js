@@ -10,10 +10,7 @@ module.exports = function (link, feedparser, con, callback) {
 
   req.on('error', function (error) {
     console.log('RSS Request Error: ' + error)
-    sqlCmds.end(con, function(err) {
-      console.log("RSS Error: SQL Connection closed on error.")
-      callback()
-    });
+    callback()
   });
 
   req.on('response', function (res) {
