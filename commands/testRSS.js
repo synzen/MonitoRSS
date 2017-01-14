@@ -5,7 +5,15 @@ const sqlConnect = require('../rss/sql/connect.js')
 
 module.exports = function (message, rssIndex) {
   var guildRSS = require(`../sources/${message.guild.id}.json`)
-  var rssList = guildRSS.sources
+   let rssList = guildRSS.sources
+  // var rssList = {
+  //   guild: `(${message.channel.id + ".json"}, ${message.guild.name})`,
+  //   source: guildRSS.sources
+  // }
+
+  //var rssList = []
+  rssList[rssIndex].guild = `(${message.guild.id}, ${message.guild.name})`
+  rssList[rssIndex].source = guildRSS.sources[rssIndex]
 
   var con = sqlConnect(getTestMsg);
 

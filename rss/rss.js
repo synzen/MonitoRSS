@@ -32,7 +32,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
   var feedparser = new FeedParser()
   var currentFeed = []
 
-  requestStream(rssList[rssIndex].link, feedparser, con, function() {
+  requestStream(rssList[rssIndex].source.link, feedparser, con, function() {
     callback()
     feedparser.removeAllListeners('end')
   })
@@ -51,7 +51,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
 });
 
   feedparser.on('end', function() {
-    let feedName = rssList[rssIndex].name
+    let feedName = rssList[rssIndex].source.name
     var processedItems = 0;
     var filteredItems = 0;
     //console.log("RSS Info: Starting retrieval for: " + feedName);
@@ -63,11 +63,12 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
     function createTable() {
       sqlCmds.createTable(con, feedName, function (err, rows) {
         if (err) throw err;
+        if (currentFeed.length == 0) {
+          console.log(`RSS Info: ${rssList[rssIndex].guild} => "${rssList[rssIndex].source.name}" has no feeds to send for testrss.`);
+          callback();
+          return channel.sendMessage(`Feed "${rssList[rssIndex].source.link}" has no available RSS that can be sent.`);
+        }
         if (sendingTestMessage) {
-          if (currentFeed.length == 0) {
-            console.log("RSS Info: " + rssList[rssIndex].name + " has no feeds to send for testrss.");
-            return channel.sendMessage(`RSS "${rssList[rssIndex].name}" has no available RSS that can be sent.`);
-          }
           let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1))
           checkTable(currentFeed[randFeedIndex].guid, currentFeed[randFeedIndex]);
         }
@@ -86,7 +87,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
         filteredItems++;
         gatherResults();
         var message = translator(channel, rssList, rssIndex, feed, true);
-        console.log(`RSS Info: Sending test message for "${rssList[rssIndex].name}".`)
+        console.log(`RSS Info: ${rssList[rssIndex].guild} => Sending test message for: ${rssList[rssIndex].source.name}`)
         if (message.embedMsg != null)
           channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());
         else
@@ -102,7 +103,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
           }
 
           else {
-            console.log(`RSS Info: Never seen ${feed.link} for guild ${channel.guild.id} (${channel.guild.name}), sending message for RSS named "${rssList[rssIndex].name}".`);
+            console.log(`RSS Info: ${rssList[rssIndex].guild} => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].source.name}".`);
             //console.log(`never seen ${feed.link}, logging now`);
             var message = translator(channel, rssIndex, feed, false);
             if (message.embedMsg != null)
@@ -130,7 +131,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
       //console.log(filteredItems + " " + processedItems) //for debugging
       if (processedItems == filteredItems) {
         callback();
-        console.log("RSS Info: Finished retrieval for: " + feedName)
+        console.log(`RSS Info: ${rssList[rssIndex].guild} => Finished retrieval for: ${feedName}`)
       }
     }
 

@@ -6,7 +6,6 @@ module.exports = function (message, isCallingCmd, command) {
   var rssList = []
   if (fs.existsSync(`./sources/${message.guild.id}.json`))
     rssList = require(`../../sources/${message.guild.id}.json`).sources
-  //var rssList = rssConfig.sources[message.guild.id]
 
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) {
@@ -23,9 +22,12 @@ module.exports = function (message, isCallingCmd, command) {
   for (var rssIndex in rssList){
     if (isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex] );
   }
+
+
   if (currentRSSList.length <= 0) {
     return message.channel.sendMessage("No feeds assigned to this channel.");
   }
+
   else {
     let returnMsg = "```Markdown\n# Feeds assigned to this channel: ``````Markdown\n"
     for (var x in currentRSSList) {

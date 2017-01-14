@@ -7,19 +7,12 @@ const cleanRandoms = require('./cleanup.js')
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var rssConfig = require('../../config.json')
 
-  if (data.guid == null) {
-    let obj = {
-      textMsg: `Data GUID does not exist for ${data.link}. Unable to record and send feed.`
-    }
-    return obj
-  }
-
   var originalDate = data.pubdate;
   var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
   if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`
 
   var dataDescrip = ""
-  if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
+  if (data.guid != null && data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(striptags(data.description));
   if (dataDescrip.length > 1500) dataDescrip = dataDescrip.substr(0, 1400) + "[...]";
 
@@ -40,7 +33,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     var e = d.replace(/{summary}/g, dataSummary)
     var f = e.replace(/{image}/g, data.image.url)
 
-    if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
+    if (data.guid != null && data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
       if (data['media:group']['media:description']['#'] != null)
         var g = f.replace(/{description}/g, data['media:group']['media:description']['#']);
       else var g = f.replace(/{description}/g, "");
@@ -83,7 +76,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     if (data.link != null) finalMessage += `\n\n[Link]: {link}\n${data.link}`
     if (data.image.url !=  null && data.image.url !== "") finalMessage += `\n\n[Image URL]: {image}\n${data.image.url}`;
     if (filterExists) finalMessage += `\n\n[Passed Filters?]: ${filterFound}`;
-    if (data.guid.startsWith("yt:video")) {
+    if (data.guid != null && data.guid.startsWith("yt:video")) {
       finalMessage += `\n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer + configMessage;
     }
     else finalMessage += "```" + footer + configMessage;

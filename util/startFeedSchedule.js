@@ -9,18 +9,18 @@ module.exports = function (bot) {
   var rssConfig = require('../config.json')
 
   function validChannel(rssList, rssIndex) {
-    if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
-      let channel = bot.channels.find("name", rssList[rssIndex].channel);
+    if (isNaN(parseInt(rssList[rssIndex].source.channel,10))) {
+      let channel = bot.channels.find("name", rssList[rssIndex].source.channel);
       if (channel == null) {
-        console.log(`RSS Warning: ${rssList[rssIndex].name}'s string-defined channel was not found, skipping...`)
+        console.log(`RSS Warning: ${rssList[rssIndex].guild} => ${rssList[rssIndex].source.name}'s string-defined channel was not found, skipping...`)
         return false;
       }
       else return channel;
     }
     else {
-      let channel = bot.channels.get(`${rssList[rssIndex].channel}`);
+      let channel = bot.channels.get(`${rssList[rssIndex].source.channel}`);
       if (channel == null) {
-        console.log(`RSS Warning: ${rssList[rssIndex].name}'s integer-defined channel was not found. skipping...`)
+        console.log(`RSS Warning: ${rssList[rssIndex].guild} => ${rssList[rssIndex].source.name}'s integer-defined channel was not found. skipping...`)
         return false;
       }
       else return channel;
@@ -48,12 +48,16 @@ module.exports = function (bot) {
     fs.readdir('./sources', function(err, files) {
       if (err) throw err;
       files.forEach(function(guildRSS) {
-        var guildRssList = require(`../sources/${guildRSS}`).sources
+        let guild = require(`../sources/${guildRSS}`)
+        var guildRssList = guild.sources
         for (var x in guildRssList) {
-          rssList.push(guildRssList[x])
+          rssList.push({
+            guild: `(${guildRSS}, ${guild.name})`,
+            source: guildRssList[x]
+          })
         }
       })
-      if (rssList.length == 0) return console.log("RSS Info: No feeds to retrieve. Finishing retrieval cycle.");
+      if (rssList.length == 0) return console.log("RSS Info: Finished feed retrieval cycle. No feeds to retrieve.");
       else con = sqlConnect(startFeed);
     })
 

@@ -14,7 +14,7 @@ module.exports = function (message, rssIndex) {
   rssList.splice(rssIndex,1)
   fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRSS)
 
-  if (rssList.length == 0) fileOps.deleteFile(`/sources/${message.guild.id}`);
+  if (rssList.length == 0) fileOps.deleteFile(`./sources/${message.guild.id}.json`);
 
   var enabledFeeds = 0;
 
