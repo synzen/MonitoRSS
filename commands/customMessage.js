@@ -1,9 +1,9 @@
 
-const updateConfig = require('../util/updateJSON.js')
+const fileOps = require('../util/updateJSON.js')
 
 module.exports = function (message, rssIndex) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[message.guild.id]
+  var rssList = require(`../sources/${message.guild.id}`).sources
 
   let currentMsg = "```Markdown\n"
   if (rssList[rssIndex].message == "" || rssList[rssIndex].message == null) currentMsg += "None has been set. Currently using default message below:\n\n``````\n" + rssConfig.defaultMessage;
@@ -19,7 +19,7 @@ module.exports = function (message, rssIndex) {
       message.channel.startTyping();
       customCollect.stop();
       rssList[rssIndex].message = "";
-      updateConfig('./config.json', rssConfig);
+      fileOps.updateFile('./config.json', rssConfig);
       message.channel.stopTyping();
       return message.channel.sendMessage(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
     }
@@ -27,7 +27,7 @@ module.exports = function (message, rssIndex) {
       message.channel.startTyping();
       customCollect.stop()
       rssList[rssIndex].message = m.content
-      updateConfig('./config.json', rssConfig);
+      fileOps.updateFile('./config.json', rssConfig);
       message.channel.stopTyping();
       return message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`)
     }

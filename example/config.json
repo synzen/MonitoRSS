@@ -44,6 +44,5 @@
 			"channel": "sports",
 			"message": "A new article on sports!\n{title}\n\n{description}\nBy: {author}\n\n {link}"
 		}]
-
 	}
 }

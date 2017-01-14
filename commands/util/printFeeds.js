@@ -1,9 +1,12 @@
 const loadCommand = (command) => require(`../${command}.js`)
-
+const fs = require('fs')
 
 module.exports = function (message, isCallingCmd, command) {
   var rssConfig = require('../../config.json')
-  var rssList = rssConfig.sources[message.guild.id]
+  var rssList = []
+  if (fs.existsSync(`./sources/${message.guild.id}.json`))
+    rssList = require(`../../sources/${message.guild.id}.json`).sources
+  //var rssList = rssConfig.sources[message.guild.id]
 
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) {

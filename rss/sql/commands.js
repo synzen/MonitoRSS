@@ -80,6 +80,7 @@ exports.dropTable = function (db, table) {
 
   else {
     var con = new sqlite3.Database(`./${rssConfig.databaseName}.db`, dropTable);
+    console.log(table);
     console.log(`RSS Info: Starting removal of ${table} from config`);
 
     function dropTable() {

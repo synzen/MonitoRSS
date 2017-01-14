@@ -1,5 +1,5 @@
 
-const updateConfig = require('../util/updateJSON.js')
+const fileOps = require('../util/updateJSON.js')
 
 function isEmptyObject(obj) {
     for(var prop in obj) {
@@ -11,7 +11,7 @@ function isEmptyObject(obj) {
 
 module.exports = function(message, rssIndex) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[message.guild.id]
+  var rssList = require(`../sources/${message.guild.id}`).sources
 
   var filterList = rssList[rssIndex].filters;
 
@@ -59,7 +59,7 @@ module.exports = function(message, rssIndex) {
       message.channel.startTyping();
       filterTypeCollect.stop();
       delete rssList[rssIndex].filters;
-      updateConfig('./config.json', rssConfig);
+      fileOps.updateFile('./config.json', rssConfig);
       message.channel.stopTyping();
       return message.channel.sendMessage("All filters have been removed.")//.then(m => m.channel.stopTyping());
     }
@@ -93,7 +93,7 @@ module.exports = function(message, rssIndex) {
           }
           else delete rssList[rssIndex].filters[chosenFilterType.content];
           if (isEmptyObject(rssList[rssIndex].filters)) delete rssList[rssIndex].filters;
-          updateConfig('./config.json', rssConfig);
+          fileOps.updateFile('./config.json', rssConfig);
           console.log(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
           message.channel.stopTyping();
           return message.channel.sendMessage(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`)//.then(m => m.channel.stopTyping());

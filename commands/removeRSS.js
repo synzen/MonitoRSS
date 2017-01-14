@@ -1,18 +1,20 @@
 
-const updateConfig = require('../util/updateJSON.js')
+const fileOps = require('../util/updateJSON.js')
 const sqlCmds = require('../rss/sql/commands.js')
 
 module.exports = function (message, rssIndex) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[message.guild.id]
+  var guildRSS = require(`../sources/${message.guild.id}.json`)
+  var rssList = guildRSS.sources
 
   if (message.channel != null) message.channel.startTyping();
 
   let link = rssList[rssIndex].link
   sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name)
   rssList.splice(rssIndex,1)
-  if (rssList.length == 0) delete rssConfig.sources[message.guild.id];
-  updateConfig('./config.json', rssConfig)
+  fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRSS)
+
+  if (rssList.length == 0) fileOps.deleteFile(`/sources/${message.guild.id}`);
 
   var enabledFeeds = 0;
 

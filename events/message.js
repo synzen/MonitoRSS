@@ -1,11 +1,10 @@
 var rssConfig = require('../config.json')
-var guildList = rssConfig.sources
 const rssAdd = require('../commands/addRSS.js')
 const rssHelp = require('../commands/helpRSS.js')
 const rssPrintList = require('../commands/util/printFeeds.js')
 
 const commands = {
-  //rssadd: {description: "Add an RSS feed to the channel with the default message."},
+  rssadd: {description: "Add an RSS feed to the channel with the default message."},
   rssremove: {description: "Open a menu to delete a feed from the channel.", file: "removeRSS"},
   rssmessage: {description: "Open a menu to customize a feed's text message.", file: "customMessage"},
   rssembed: {description: "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted.", file: "customEmbed"},

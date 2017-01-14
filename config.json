@@ -8,6 +8,5 @@
   "sendOldMessages": false,
   "defaultMaxAge": 2,
   "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}",
-  "maxFeeds": 5,
-  "sources": {}
+  "maxFeeds": 5
 }

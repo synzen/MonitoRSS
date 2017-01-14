@@ -1,10 +1,10 @@
 
 const striptags = require('striptags')
+var rssConfig = require('../../config.json')
 
 function foundFilterWords(channel, filterType, content) {
 
-  var rssConfig = require('../../config.json')
-  var rssList = rssConfig.sources[channel.guild.id]
+  //filterType is title, description, or summary
 
   if (content == null) return false;
   var content = content.toLowerCase();
@@ -23,7 +23,7 @@ function foundFilterWords(channel, filterType, content) {
 }
 
 
-module.exports = function (rssIndex, data, dataDescrip) {
+module.exports = function (rssList, rssIndex, data, dataDescrip) {
 
   var filterFound = false
 

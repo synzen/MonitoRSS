@@ -45,9 +45,8 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (con, channel, rssIndex, callback) {
+module.exports = function (con, channel, rssList, rssIndex, callback) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[channel.guild.id]
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -137,8 +136,8 @@ module.exports = function (con, channel, rssIndex, callback) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
         else {
-          var message = translator(channel, rssIndex, feed, false);
           if (rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
+            var message = translator(channel, rssList, rssIndex, feed, false);
             console.log(`never seen ${feed.link}, logging and sending msg now`);
             if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
             else channel.sendMessage(message.textMsg);

@@ -1,10 +1,10 @@
 
-const updateConfig = require('../util/updateJSON.js')
+const fileOps = require('../util/updateJSON.js')
 const rssConfig = require('../config.json')
 
 module.exports = function (message, rssIndex) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[message.guild.id]
+  var rssList = require(`../sources/${message.guild.id}`).sources
 
   var embedProperties = [["Color", "The sidebar color of the embed\nThis MUST be an integer color. See https://www.shodor.org/stella2java/rgbint.html", "color"],
                         ["Author Title", "Title of the embed\nAccepts tags.", "authorTitle"],
@@ -31,7 +31,6 @@ module.exports = function (message, rssIndex) {
   if (rssList[rssIndex].embedMessage != null & rssList[rssIndex].embedMessage.properties != null) {
     let propertyList = rssList[rssIndex].embedMessage.properties;
     for (var property in propertyList) {
-      //let current = "";
       for (var y in embedProperties)
         if (embedProperties[y][2] == property && propertyList[property] != null && propertyList[property] != "") {
           currentEmbedProps += `[${embedProperties[y][0]}]: ${propertyList[property]}\n`
@@ -58,7 +57,7 @@ module.exports = function (message, rssIndex) {
       message.channel.startTyping();
       customCollect.stop();
       if (rssList[rssIndex].embedMessage != null) delete rssList[rssIndex].embedMessage;
-      updateConfig('./config.json', rssConfig);
+      fileOps.updateFile('./config.json', rssConfig);
       message.channel.stopTyping();
       return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
     }
@@ -90,7 +89,7 @@ module.exports = function (message, rssIndex) {
           else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
 
           rssList[rssIndex].embedMessage.enabled = 1;
-          updateConfig('./config.json', rssConfig);
+          fileOps.updateFile('./config.json', rssConfig);
           if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") {
             message.channel.stopTyping();
             return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);

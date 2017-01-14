@@ -1,13 +1,14 @@
-
 const request = require('request')
 const initializeRSS = require('../rss/initialize.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const sqlCmds = require('../rss/sql/commands.js')
+const fs = require('fs')
 
 module.exports = function (bot, message) {
   var rssConfig = require('../config.json')
-  if (rssConfig.sources[message.guild.id] == null) rssConfig.sources[message.guild.id] = []
-  var rssList = rssConfig.sources[message.guild.id]
+
+  var rssList = []
+  if (fs.existsSync(`./sources/${message.guild.id}.json`)) rssList = require(`../sources/${message.guild.id}`).sources
 
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) {

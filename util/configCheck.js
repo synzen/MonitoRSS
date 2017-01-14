@@ -1,8 +1,7 @@
 
-module.exports = function (guildIndex, rssIndex, logging, initializing) {
+module.exports = function (rssList, rssIndex, logging, initializing) {
 
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[guildIndex]
 
   var valid = true;
 

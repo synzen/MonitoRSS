@@ -26,9 +26,8 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (con, rssIndex, channel, sendingTestMessage, callback) {
+module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, callback) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[channel.guild.id]
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -86,7 +85,7 @@ module.exports = function (con, rssIndex, channel, sendingTestMessage, callback)
       if (sendingTestMessage) {
         filteredItems++;
         gatherResults();
-        var message = translator(channel, rssIndex, feed, true);
+        var message = translator(channel, rssList, rssIndex, feed, true);
         console.log(`RSS Info: Sending test message for "${rssList[rssIndex].name}".`)
         if (message.embedMsg != null)
           channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());

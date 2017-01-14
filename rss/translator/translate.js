@@ -4,9 +4,15 @@ const filterFeed = require('./filters.js')
 const createEmbed = require('./embed.js')
 const cleanRandoms = require('./cleanup.js')
 
-module.exports = function (channel, rssIndex, data, isTestMessage) {
+module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var rssConfig = require('../../config.json')
-  var rssList = rssConfig.sources[channel.guild.id]
+
+  if (data.guid == null) {
+    let obj = {
+      textMsg: `Data GUID does not exist for ${data.link}. Unable to record and send feed.`
+    }
+    return obj
+  }
 
   var originalDate = data.pubdate;
   var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
@@ -55,7 +61,7 @@ module.exports = function (channel, rssIndex, data, isTestMessage) {
   var filterFound = false
   if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
     filterExists = true;
-    filterFound = filterFeed(channel, rssIndex, data, dataDescrip);
+    filterFound = filterFeed(rssList, rssIndex, data, dataDescrip);
   }
 
   //generate final msg
@@ -112,7 +118,7 @@ module.exports = function (channel, rssIndex, data, isTestMessage) {
   else {
 
     if (rssList[rssIndex].embedMessage.properties != null)
-      finalMessageCombo.embedMsg = createEmbed(channel, rssIndex, data, replaceKeywords)
+      finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssIndex, data, replaceKeywords)
 
     return finalMessageCombo;
   }

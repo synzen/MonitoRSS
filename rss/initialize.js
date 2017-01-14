@@ -13,11 +13,12 @@
 
 const request = require('request');
 const FeedParser = require('feedparser');
-const updateConfig = require('../util/updateJSON.js')
+const file = require('../util/updateJSON.js')
 const requestStream = require('./request.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const startFeedSchedule = require('../util/startFeedSchedule.js')
+const fs = require('fs')
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -30,7 +31,6 @@ function isEmptyObject(obj) {
 
 module.exports = function (con, rssLink, channel, callback) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[channel.guild.id]
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -70,9 +70,6 @@ module.exports = function (con, rssLink, channel, callback) {
 
     //MySQL table names have a limit of 64 char
     if (feedName.length >= 64 ) feedName = feedName.substr(0,64);
-    // if (metaLink.slice(0,10) == "http://www") feedNamePart = metaLink.slice(10, metaLink.length);
-    // else if (metaLink.slice(0,11) == "https://www") feedNamePart = metaLink.slice(11, metaLink.length);
-    // else feedNamePart = metaLink.slice(7, metaLink.length);
 
 
     var processedItems = 0
@@ -118,16 +115,34 @@ module.exports = function (con, rssLink, channel, callback) {
 
     function addToConfig() {
 
-      rssList.push({
-    		enabled: 1,
-    		name: feedName,
-    		link: rssLink,
-    		channel: channel.id
-    	})
+      if (fs.existsSync(`./sources/${channel.guild.id}.json`)) {
+        let guildRSS = require(`../sources/${channel.guild.id}.json`)
+        let rssList = guildRSS.sources
+        rssList.push({
+      		enabled: 1,
+      		name: feedName,
+      		link: rssLink,
+      		channel: channel.id
+      	})
+        file.updateFile(`./sources/${channel.guild.id}.json`, guildRSS)
+      }
+      else {
+        let guildRSS = {
+          name: channel.guild.name,
+          id: channel.guild.id,
+          sources: [{
+        		enabled: 1,
+        		name: feedName,
+        		link: rssLink,
+        		channel: channel.id
+        	}]
+        }
 
-      updateConfig('./config.json', rssConfig)
-      channel.sendMessage(`Successfully added ${rssLink} for this channel.`)
-      channel.stopTyping()
+        file.updateFile(`./sources/${channel.guild.id}.json`, guildRSS)
+      }
+        channel.sendMessage(`Successfully added ${rssLink} for this channel.`)
+        channel.stopTyping()
+
     }
 
     startDataProcessing();

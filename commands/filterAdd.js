@@ -1,9 +1,9 @@
 
-const updateConfig = require('../util/updateJSON.js')
+const fileOps = require('../util/updateJSON.js')
 
 module.exports = function(message, rssIndex) {
   var rssConfig = require('../config.json')
-  var rssList = rssConfig.sources[message.guild.id]
+  var rssList = require(`../sources/${message.guild.id}`).sources
 
   if (rssList[rssIndex].filters == null || rssList[rssIndex].filters == "") rssList[rssIndex].filters = {};
 
@@ -47,7 +47,7 @@ module.exports = function(message, rssIndex) {
           message.channel.startTyping();
           filterCollect.stop();
           rssList[rssIndex].filters[chosenFilterType.content].push(chosenFilter.content);
-          updateConfig('./config.json', rssConfig);
+          fileOps.updateFile('./config.json', rssConfig);
           console.log(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`);
           message.channel.stopTyping();
           return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`)

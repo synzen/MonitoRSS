@@ -1,67 +1,82 @@
 const checkValidConfig = require('./configCheck.js')
 const getRSS = require('../rss/rss.js')
-var rssConfig = require('../config.json')
-var guildList = rssConfig.sources
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
+const fs = require('fs')
+var rssConfig = require('../config.json')
 
-module.exports = function (bot, feedIndex) {
+module.exports = function (bot) {
   var rssConfig = require('../config.json')
-  var guildList = rssConfig.sources
 
-  function validChannel(guildIndex, rssIndex) {
-    if (isNaN(parseInt(guildList[guildIndex][rssIndex].channel,10))) {
-      let channel = bot.channels.find("name",guildList[guildIndex][rssIndex].channel);
+  function validChannel(rssList, rssIndex) {
+    if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
+      let channel = bot.channels.find("name", rssList[rssIndex].channel);
       if (channel == null) {
-        console.log(`RSS Warning: ${guildList[guildIndex][rssIndex].name}'s string-defined channel was not found, skipping...`)
+        console.log(`RSS Warning: ${rssList[rssIndex].name}'s string-defined channel was not found, skipping...`)
         return false;
       }
       else return channel;
     }
     else {
-      let channel = bot.channels.get(`${guildList[guildIndex][rssIndex].channel}`);
+      let channel = bot.channels.get(`${rssList[rssIndex].channel}`);
       if (channel == null) {
-        console.log(`RSS Warning: ${guildList[guildIndex][rssIndex].name}'s integer-defined channel was not found. skipping...`)
+        console.log(`RSS Warning: ${rssList[rssIndex].name}'s integer-defined channel was not found. skipping...`)
         return false;
       }
       else return channel;
     }
   }
 
-var feedLength = 0
-var feedProcessed = 0
+  var feedLength = 0
+  var feedsProcessed = 0
+  var feedsSkipped = 0
 
-for (let x in guildList)
-  for (let y in guildList[x])
-    feedLength++
+  var con
+  var rssList = []
 
-var con;
+  function endCon () {
+    sqlCmds.end(con, function(err) {
+      console.log("RSS Info: Finished feed retrieval cycle.")
+    });
+  }
 
   function connect () {
-    con = sqlConnect(startFeed)
+    console.log("RSS Info: Starting feed retrieval cycle.")
+    feedsProcessed = 0
+    feedsSkipped = 0
+    rssList = []
+    fs.readdir('./sources', function(err, files) {
+      if (err) throw err;
+      files.forEach(function(guildRSS) {
+        var guildRssList = require(`../sources/${guildRSS}`).sources
+        for (var x in guildRssList) {
+          rssList.push(guildRssList[x])
+        }
+      })
+      if (rssList.length == 0) return console.log("RSS Info: No feeds to retrieve. Finishing retrieval cycle.");
+      else con = sqlConnect(startFeed);
+    })
+
   }
 
   function startFeed () {
-    console.log("RSS Info: Starting feed retrieval cycle.")
-    rssConfig = require('../config.json')
-    rssList = rssConfig.sources
-    for (let guildIndex in guildList)
-      for (let rssIndex in guildList[guildIndex])
-        if (checkValidConfig(guildIndex, rssIndex, false)) {
-          if (validChannel(guildIndex, rssIndex) !== false) {
-            getRSS(con, rssIndex , validChannel(guildIndex, rssIndex), false, function () {
-              feedProcessed++
-              if (feedProcessed == feedLength) {
-                feedProcessed = 0;
-                sqlCmds.end(con, function(err) {
-                  console.log("RSS Info: Finished feed retrieval cycle.")
-                });
-              }
-            });
-          }
-          else feedProcessed++;
+
+    for (let rssIndex in rssList)
+      if (checkValidConfig(rssList, rssIndex, false)) {
+        if (validChannel(rssList, rssIndex) !== false) {
+          getRSS(con, rssList, rssIndex , validChannel(rssList, rssIndex), false, function () {
+            feedsProcessed++
+            console.log(feedsProcessed + feedsSkipped + " " + rssList.length)
+            if (feedsProcessed + feedsSkipped == rssList.length) {
+              endCon();
+            }
+          });
         }
-        else feedProcessed++;
+        else feedsSkipped++;
+      }
+      else feedsSkipped++;
+
+    if (feedsSkipped + feedsProcessed == rssList.length) endCon();
   }
 
   connect()
