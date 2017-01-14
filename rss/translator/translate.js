@@ -5,6 +5,7 @@ const createEmbed = require('./embed.js')
 const cleanRandoms = require('./cleanup.js')
 
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
+
   var rssConfig = require('../../config.json')
 
   var originalDate = data.pubdate;

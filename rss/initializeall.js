@@ -45,13 +45,16 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (con, channel, rssList, rssIndex, callback) {
+module.exports = function (con, channel, guildId, rssIndex, callback) {
   var rssConfig = require('../config.json')
 
   var feedparser = new FeedParser()
   var currentFeed = []
 
-  requestStream(rssList[rssIndex].source.link, feedparser, con, function () {
+  var guild = require(`../sources/${guildId}.json`)
+  var rssList = guild.sources
+
+  requestStream(rssList[rssIndex].link, feedparser, con, function () {
     callback()
     feedparser.removeAllListeners('end')
   })
@@ -70,7 +73,7 @@ module.exports = function (con, channel, rssList, rssIndex, callback) {
 });
 
   feedparser.on('end', function() {
-    var feedName = rssList[rssIndex].source.name
+    var feedName = rssList[rssIndex].name
     var tableAlreadyExisted = 0
 
     var processedItems = 0
@@ -80,6 +83,8 @@ module.exports = function (con, channel, rssList, rssIndex, callback) {
 
     //var for when table exists
     var filteredItems = 0;
+
+    console.log(`RSS Info: (${guild.id}, ${guild.name}) => Starting default initializion for: ${feedName}`)
 
     function startDataProcessing() {
       checkTableExists()
@@ -99,9 +104,9 @@ module.exports = function (con, channel, rssList, rssIndex, callback) {
           let feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
             var cutoffDay;
-            if (rssList[rssIndex].source.maxAge == null || rssList[rssIndex].source.maxAge == "")
+            if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "")
               cutoffDay = moment(new Date()).subtract(rssConfig.defaultMaxAge, 'd');
-            else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].source.maxAge, 'd');
+            else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
 
             if (currentFeed[x].pubdate >= cutoffDay){
               checkTable(currentFeed[x].guid, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
@@ -136,7 +141,7 @@ module.exports = function (con, channel, rssList, rssIndex, callback) {
         else {
           if (rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
             var message = translator(channel, rssList, rssIndex, feed, false);
-            console.log(`RSS Delivery: ${rssList[rssIndex].guild} => Never seen ${feed.link}, sending message for: ${rssList[rssIndex].source.name}`);
+            console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, logging and sending msg now`);
             if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
             else channel.sendMessage(message.textMsg);
           }
@@ -156,7 +161,7 @@ module.exports = function (con, channel, rssList, rssIndex, callback) {
       processedItems++;
       if (processedItems == totalItems) {
         callback(con);
-        console.log(`RSS Info: ${rssList[rssIndex].guild} => Finished default initialization for: ${feedName}`)
+        //console.log(`RSS Info: (${guild.id}, ${guild.name}) => Finished default initialization for: ${feedName}`)
       }
     }
 

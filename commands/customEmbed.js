@@ -4,7 +4,8 @@ const rssConfig = require('../config.json')
 
 module.exports = function (message, rssIndex) {
   var rssConfig = require('../config.json')
-  var rssList = require(`../sources/${message.guild.id}`).sources
+  var guildRss = require(`../sources/${message.guild.id}.json`)
+  var rssList = guildRss.sources
 
   var embedProperties = [["Color", "The sidebar color of the embed\nThis MUST be an integer color. See https://www.shodor.org/stella2java/rgbint.html", "color"],
                         ["Author Title", "Title of the embed\nAccepts tags.", "authorTitle"],
@@ -57,7 +58,7 @@ module.exports = function (message, rssIndex) {
       message.channel.startTyping();
       customCollect.stop();
       if (rssList[rssIndex].embedMessage != null) delete rssList[rssIndex].embedMessage;
-      fileOps.updateFile('./config.json', rssConfig);
+      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss);
       message.channel.stopTyping();
       return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
     }
@@ -89,7 +90,7 @@ module.exports = function (message, rssIndex) {
           else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
 
           rssList[rssIndex].embedMessage.enabled = 1;
-          fileOps.updateFile('./config.json', rssConfig);
+          fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss);
           if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") {
             message.channel.stopTyping();
             return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);

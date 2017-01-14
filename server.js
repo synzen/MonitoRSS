@@ -11,22 +11,26 @@ const fs = require('fs')
 
 var skippedFeeds = 0
 var initializedFeeds = 0
+var totalFeeds = 0
 
-var rssList = []
+var guildList = []
 
-function validChannel(rssList, rssIndex) {
-  if (isNaN(parseInt(rssList[rssIndex].source.channel,10))) {
-    let channel = bot.channels.find("name", rssList[rssIndex].source.channel);
+function validChannel(guildId, rssIndex) {
+  var guild = require(`./sources/${guildId}.json`)
+  var rssList = guild.sources
+
+  if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
+    let channel = bot.channels.find("name", rssList[rssIndex].channel);
     if (channel == null) {
-      console.log(`RSS Warning: ${rssList[rssIndex].guild} => ${rssList[rssIndex].source.name}'s string-defined channel was not found, skipping...`)
+      console.log(`RSS Warning: ${guild.id} => ${rssList[rssIndex].name}'s string-defined channel was not found, skipping...`)
       return false;
     }
     else return channel;
   }
   else {
-    let channel = bot.channels.get(`${rssList[rssIndex].source.channel}`);
+    let channel = bot.channels.get(`${rssList[rssIndex].channel}`);
     if (channel == null) {
-      console.log(`RSS Warning: ${rssList[rssIndex].guild} => ${rssList[rssIndex].source.name}'s integer-defined channel was not found. skipping...`)
+      console.log(`RSS Warning: ${guild.id} => ${rssList[rssIndex].name}'s integer-defined channel was not found. skipping...`)
       return false;
     }
     else return channel;
@@ -49,20 +53,23 @@ function validChannel(rssList, rssIndex) {
   }
 
   function startBot() {
-    for (var rssIndex in rssList){
-      if (checkValidConfig(rssList, rssIndex, true, true)) {
-        if (validChannel(rssList, rssIndex) !== false) {
-          initializeAllRSS(con, validChannel(rssList, rssIndex), rssList, rssIndex, function() {
-            initializedFeeds++;
-            if (initializedFeeds + skippedFeeds == rssList.length) endCon();
-          });
+    for (var guildIndex in guildList) {
+      let guildId = guildList[guildIndex].id
+      let rssList = guildList[guildIndex].sources
+      for (var rssIndex in rssList){
+        if (checkValidConfig(guildId, rssIndex, true, true)) {
+          if (validChannel(guildId, rssIndex) !== false) {
+            initializeAllRSS(con, validChannel(guildId, rssIndex), guildId, rssIndex, function() {
+              initializedFeeds++;
+              if (initializedFeeds + skippedFeeds == totalFeeds) endCon();
+            });
+          }
+          else skippedFeeds++;
         }
         else skippedFeeds++;
       }
-      else skippedFeeds++;
     }
-
-    if (skippedFeeds == rssList.length) endCon();
+    if (skippedFeeds == totalFeeds) endCon();
   }
 
 
@@ -73,15 +80,10 @@ bot.on('ready', function() {
     if (err) throw err;
     files.forEach(function(guildRSS) {
       let guild = require(`./sources/${guildRSS}`)
-      var guildRssList = guild.sources
-      for (var x in guildRssList) {
-        rssList.push({
-          guild: `(${guildRSS}, ${guild.name})`,
-          source: guildRssList[x]
-        })
-      }
+      guildList.push(guild)
+      for (var y in guild.sources) totalFeeds++
     })
-    if (rssList.length == 0) {
+    if (totalFeeds == 0) {
       console.log("RSS Info: There are no active feeds.");
       startFeedSchedule(bot);
     }

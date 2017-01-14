@@ -5,10 +5,11 @@ const update = require('../util/updateJSON.js')
 const fs = require('fs')
 
 module.exports = function (bot, guild) {
-  if (!fs.existsSync(`./sources/${guild.guild.id}.json`)) return;
-  else var rssList = require(`../sources/${channel.guild.id}.json`).sources;
-
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has removed the bot.`)
+  bot.channels.get('267436614110806024').sendMessage(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size}\nOwner: ${guild.owner} (${guild.owner})`)
+
+  if (!fs.existsSync(`./sources/${guild.id}.json`)) return;
+  else var rssList = require(`../sources/${channel.guild.id}.json`).sources;
 
   for (let rssIndex in rssList) {
     sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name)

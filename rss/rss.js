@@ -26,13 +26,16 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, callback) {
+module.exports = function (con, guildId, rssIndex, channel, sendingTestMessage, callback) {
   var rssConfig = require('../config.json')
 
   var feedparser = new FeedParser()
   var currentFeed = []
 
-  requestStream(rssList[rssIndex].source.link, feedparser, con, function() {
+  var guild = require(`../sources/${guildId}.json`)
+  var rssList = guild.sources
+
+  requestStream(rssList[rssIndex].link, feedparser, con, function() {
     callback()
     feedparser.removeAllListeners('end')
   })
@@ -51,21 +54,12 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
 });
 
   feedparser.on('end', function() {
-    let feedName = rssList[rssIndex].source.name
+    let feedName = rssList[rssIndex].name
     var processedItems = 0;
     var filteredItems = 0;
+    //console.log("RSS Info: Starting retrieval for: " + feedName);
 
     function startDataProcessing() {
-      const fs = require('fs')
-      const fileOps = require('../util/updateJSON.js')
-      if (rssList[rssIndex].guild !== `(${channel.guild.id + ".json"}, ${channel.guild.name})`) {
-        if (fs.existsSync(`./sources/${channel.guild.id}.json`)) {
-          var guildRss = require(`../sources/${channel.guild.id}.json`);
-          guildRss.name = channel.guild.name
-          fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRss)
-        }
-      }
-
       createTable();
     }
 
@@ -73,9 +67,9 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
       sqlCmds.createTable(con, feedName, function (err, rows) {
         if (err) throw err;
         if (currentFeed.length == 0) {
-          console.log(`RSS Info: ${rssList[rssIndex].guild} => "${rssList[rssIndex].source.name}" has no feeds to send for testrss.`);
+          //console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for testrss.`);
           callback();
-          return channel.sendMessage(`Feed "${rssList[rssIndex].source.link}" has no available RSS that can be sent.`);
+          return //channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
         }
         if (sendingTestMessage) {
           let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1))
@@ -96,7 +90,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
         filteredItems++;
         gatherResults();
         var message = translator(channel, rssList, rssIndex, feed, true);
-        console.log(`RSS Delivery: ${rssList[rssIndex].guild} => Sending test message for: ${rssList[rssIndex].source.name}`)
+        //console.log(`RSS Info: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].name}`)
         if (message.embedMsg != null)
           channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());
         else
@@ -112,9 +106,9 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
           }
 
           else {
-            console.log(`RSS Delivery: ${rssList[rssIndex].guild} => Never seen ${feed.link}, sending message for: ${rssList[rssIndex].source.name}`);
+            console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`);
             //console.log(`never seen ${feed.link}, logging now`);
-            var message = translator(channel, rssIndex, feed, false);
+            var message = translator(channel, rssList, rssIndex, feed, false);
             if (message.embedMsg != null)
               channel.sendMessage(message.textMsg,message.embedMsg);
             else
@@ -140,7 +134,7 @@ module.exports = function (con, rssList, rssIndex, channel, sendingTestMessage, 
       //console.log(filteredItems + " " + processedItems) //for debugging
       if (processedItems == filteredItems) {
         callback();
-        console.log(`RSS Info: ${rssList[rssIndex].guild} => Finished retrieval for: ${feedName}`)
+        console.log(`RSS Info: (${guild.id}, ${guild.name}) => Finished retrieval for: ${feedName}`)
       }
     }
 
