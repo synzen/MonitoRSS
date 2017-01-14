@@ -7,7 +7,8 @@ module.exports = function (text) {
   var b = a.replace(/&#32;/g, "")
   var c = b.replace(/&nbsp;/g, "")
   var d = c.replace(/&hellip;/g, "")
-
-  return d.trim()
+  var e = d.replace(/&lt;3/g, "")
+  
+  return e.trim()
 
 }
