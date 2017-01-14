@@ -6,12 +6,7 @@ const sqlConnect = require('../rss/sql/connect.js')
 module.exports = function (message, rssIndex) {
   var guildRSS = require(`../sources/${message.guild.id}.json`)
    let rssList = guildRSS.sources
-  // var rssList = {
-  //   guild: `(${message.channel.id + ".json"}, ${message.guild.name})`,
-  //   source: guildRSS.sources
-  // }
 
-  //var rssList = []
   rssList[rssIndex].guild = `(${message.guild.id}, ${message.guild.name})`
   rssList[rssIndex].source = guildRSS.sources[rssIndex]
 
@@ -21,7 +16,7 @@ module.exports = function (message, rssIndex) {
   function getTestMsg() {
     getRSS(con, rssList, rssIndex, message.channel, true, function () {
       sqlCmds.end(con, function(err) {
-        // console.log("RSS Info: Finished feed retrieval cycle.")
+        if (err) throw err;
       });
     });
   }
