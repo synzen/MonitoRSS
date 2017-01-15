@@ -1,0 +1,44 @@
+{
+  "name": "my guild name",
+  "id": "123456",
+  "sources": [
+    {
+      "enabled": 1,
+      "name": "WarframeTwitter",
+      "link": "https://queryfeed.net/tw?q=%40PlayWarframe",
+      "channel": "twitter",
+      "maxAge": 2,
+      "message": "",
+      "embedMessage": {
+        "enabled": 1,
+        "properties": {
+          "color": 3447003,
+          "authorTitle": "Warframe @PlayWarframe",
+          "authorAvatarURL": "http://icons.iconarchive.com/icons/uiconstock/socialmedia/512/Twitter-icon.png",
+          "thumbnailURL": "https://pbs.twimg.com/profile_images/797287460199862272/mG1KEwQ2.jpg",
+          "message": "{description}",
+          "footerText": "{date}",
+          "url": ""
+        }
+      }
+    },
+    {
+      "enabled": 1,
+      "name": "257938647771250688_https://www.rt.com",
+      "link": "https://www.rt.com/rss/",
+      "channel": "257931586721250688",
+      "maxAge": 3,
+      "filters": {
+        "title": ["first", "second"],
+        "description": "more!"
+      }
+    },
+    {
+      "enabled": 1,
+      "name": "washingtonPost",
+      "link": "http://feeds.washingtonpost.com/rss/sports",
+      "channel": "sports",
+      "message": "A new article on sports!\n{title}\n\n{description}\nBy: {author}\n\n {link}"
+    }
+  ]
+}
