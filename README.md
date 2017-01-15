@@ -31,7 +31,7 @@ As an experiment, I am hosting the bot to see how it performs and doing any pote
 10. Optionally use the the [forever module](https://www.npmjs.com/package/forever) to automatically restart the bot if it crashes.
 
 ###Built With
-* [Node] (https://nodejs.org/en/)
+* [Node.js] (https://nodejs.org/en/)
 * [Discord.js] (https://www.npmjs.com/package/discord.js)
 * [Feedparser] (https://www.npmjs.com/package/feedparser)
 * [Request] (https://www.npmjs.com/package/request)
