@@ -2,7 +2,7 @@
 
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
 
-**Table of Contents**
+####Table of Contents
 - [Starting the Bot](#)
 	- [Built With](#)
 - [Configuration](#)
