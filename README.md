@@ -66,7 +66,9 @@ For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed'
 ###Database Selection
 I recommend leaving this on `sqlite3`. It can be set to `sqlite3` or `mysql`, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine. If you are working with a large number of servers, `mysql` may be the more ideal choice.
 
-Should you wish to try and use MySQL (and given that you already know what it is and have it installed), it is quite simple. If you don't already have MySQL installed on your system, [install it](https://dev.mysql.com/downloads/mysql/) and set up the root account password. Then use `npm install mysql` to install the node package for it in the same directory as server.js. Change the login details in mysqlCred.json as well as the `sqlType` in config.json to `mysql`. The bot will handle everything else.
+Should you wish to try and use MySQL, it is quite simple. If you already have it installed on your system, `npm install mysql` in the server.js directory, set up your credentials in mysqlCred.json, change the `sqltype` to `mysql` in config.json, and you're done!
+
+If you don't already have MySQL installed on your system, [install it](https://dev.mysql.com/downloads/mysql/) and set up the root account password. Then follow the same steps as above. The bot will handle everything else.
 
 SQLite on the otherhand requires no setup. It will create the database in the same directory as server.js on first startup.
 
