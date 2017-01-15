@@ -9,7 +9,7 @@ module.exports = function (message, rssIndex) {
 
   message.channel.startTyping();
   function getTestMsg() {
-    getRSS(con, rssIndex, message.channel, true, function () {
+    getRSS(con, message.channel, rssIndex, true, function () {
       sqlCmds.end(con, function(err) {
         if (err) throw err;
       });

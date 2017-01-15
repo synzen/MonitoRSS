@@ -28,7 +28,7 @@ module.exports = function (bot) {
     fs.readdir('./sources', function(err, files) {
       if (err) throw err;
       files.forEach(function(guildRSS) {
-        let guild = require(`../sources/${guildRSS}`)
+        var guild = require(`../sources/${guildRSS}`)
         guildList.push(guild)
         for (var y in guild.sources) feedLength++
       })
@@ -44,7 +44,7 @@ module.exports = function (bot) {
       let rssList = guildList[guildIndex].sources
       for (let rssIndex in rssList) {
         if (configChecks.checkExists(guildId, rssIndex, false) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
-          getRSS(con, rssIndex , configChecks.validChannel(bot, guildId, rssIndex), false, function () {
+          getRSS(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, false, function () {
             feedsProcessed++
             //console.log(feedsProcessed + feedsSkipped + " " + feedLength)
             if (feedsProcessed + feedsSkipped == feedLength) endCon();

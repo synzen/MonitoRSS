@@ -114,18 +114,17 @@ module.exports = function (con, rssLink, channel, callback) {
     function addToConfig() {
 
       if (fs.existsSync(`./sources/${channel.guild.id}.json`)) {
-        let guildRSS = require(`../sources/${channel.guild.id}.json`)
-        let rssList = guildRSS.sources
+        var guildRSS = require(`../sources/${channel.guild.id}.json`);
+        var rssList = guildRSS.sources;
         rssList.push({
       		enabled: 1,
       		name: feedName,
       		link: rssLink,
       		channel: channel.id
-      	})
-        fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRSS)
+      	});
       }
       else {
-        let guildRSS = {
+        var guildRSS = {
           name: channel.guild.name,
           id: channel.guild.id,
           sources: [{
@@ -134,14 +133,17 @@ module.exports = function (con, rssLink, channel, callback) {
         		link: rssLink,
         		channel: channel.id
         	}]
-        }
-
-        fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRSS)
+        };
       }
-        console.log("RSS Info: Successfully added new feed.")
-        channel.sendMessage(`Successfully added ${rssLink} for this channel.`)
-        channel.stopTyping()
 
+      try {
+        delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)]
+      }
+      catch (e) {}
+      fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRSS)
+      console.log("RSS Info: Successfully added new feed.")
+      channel.sendMessage(`Successfully added ${rssLink} for this channel.`)
+      channel.stopTyping()
     }
 
     startDataProcessing();
