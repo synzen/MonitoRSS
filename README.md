@@ -34,7 +34,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 * [Request] (https://www.npmjs.com/package/request)
 * [Moment] (https://www.npmjs.com/package/moment)
 * [striptags] (https://www.npmjs.com/package/striptags)
-* Datebase Manager
+* Datebase Manager (choose one)
  * [sqlite3] (https://www.npmjs.com/package/sqlite3) (recommended)
  * [mysql] (https://www.npmjs.com/package/mysql)
 
