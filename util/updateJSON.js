@@ -5,7 +5,7 @@ exports.updateFile = function (realFile, inFile, cacheFile) {
   try {
     delete require.cache[require.resolve(cacheFile)]
   }
-  catch (e) {}
+  catch (e) {console.log(e)}
 
   fs.writeFile(realFile, JSON.stringify(inFile, null, 2), function (err) {
     if (err) return console.log(err);
@@ -17,6 +17,6 @@ exports.updateFile = function (realFile, inFile, cacheFile) {
 exports.deleteFile = function(file) {
   fs.unlink(file, function(err) {
     if (err) return console.log(err)
-    return console.log(`RSS File Ops: Deleted ${file}.`)
+    return console.log(`RSS File Ops: Deleted ${file} due to zero sources detected..`)
   })
 }

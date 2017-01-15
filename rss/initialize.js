@@ -136,6 +136,10 @@ module.exports = function (con, rssLink, channel, callback) {
         };
       }
 
+      // try {
+      //   delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)]
+      // }
+      // catch (e) {}
       fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRSS, `../sources/${channel.guild.id}.json`)
       console.log("RSS Info: Successfully added new feed.")
       channel.sendMessage(`Successfully added ${rssLink} for this channel.`)

@@ -12,7 +12,7 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
     return false;
   }
   else if (rssList[rssIndex].enabled == 0) {
-    if (logging && initializing) console.log(`RSS Config Info: (${guild.id}, ${guild.name}) => Feed "${rssList[rssIndex].name}" is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
+    console.log(`RSS Config Info: (${guild.id}, ${guild.name}) => Feed "${rssList[rssIndex].name}" is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
     return false;
   }
 

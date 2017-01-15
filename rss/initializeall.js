@@ -73,8 +73,6 @@ module.exports = function (con, channel, rssIndex, callback) {
 });
 
   feedparser.on('end', function() {
-    console.log(`RSS Info: (${guild.id}, ${guild.name}) => Starting default initializion for: ${feedName}`)
-
     if (currentFeed.length == 0) return callback();
 
     var feedName = rssList[rssIndex].name
@@ -88,6 +86,7 @@ module.exports = function (con, channel, rssIndex, callback) {
     //var for when table exists
     var filteredItems = 0;
 
+    console.log(`RSS Info: (${guild.id}, ${guild.name}) => Starting default initializion for: ${feedName}`)
 
     function startDataProcessing() {
       checkTableExists()
