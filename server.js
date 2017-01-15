@@ -36,7 +36,7 @@ function startBot() {
     let rssList = guildList[guildIndex].sources
     for (var rssIndex in rssList){
       if (configChecks.checkExists(guildId, rssIndex, true, true) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
-        initializeAllRSS(con, configChecks.validChannel(bot, guildId, rssIndex), guildId, rssIndex, function() {
+        initializeAllRSS(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, function() {
           initializedFeeds++;
           if (initializedFeeds + skippedFeeds == totalFeeds) endCon();
         });

@@ -44,7 +44,7 @@ module.exports = function (bot) {
       let rssList = guildList[guildIndex].sources
       for (let rssIndex in rssList) {
         if (configChecks.checkExists(guildId, rssIndex, false) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
-          getRSS(con, guildId, rssIndex , configChecks.validChannel(bot, guildId, rssIndex), false, function () {
+          getRSS(con, rssIndex , configChecks.validChannel(bot, guildId, rssIndex), false, function () {
             feedsProcessed++
             //console.log(feedsProcessed + feedsSkipped + " " + feedLength)
             if (feedsProcessed + feedsSkipped == feedLength) endCon();

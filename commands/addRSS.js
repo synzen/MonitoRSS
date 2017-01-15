@@ -8,7 +8,7 @@ const rssConfig = require('../config.json')
 module.exports = function (bot, message) {
 
   var rssList = []
-  if (fs.existsSync(`./sources/${message.guild.id}.json`)) rssList = require(`../sources/${message.guild.id}`).sources
+  if (fs.existsSync(`./sources/${message.guild.id}.json`)) rssList = require(`../sources/${message.guild.id}.json`).sources
 
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) {

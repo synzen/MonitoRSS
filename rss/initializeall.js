@@ -35,6 +35,7 @@ const translator = require('./translator/translate.js')
 const startFeedSchedule = require('../util/startFeedSchedule.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
+const fs = require('fs')
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -45,12 +46,15 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (con, channel, guildId, rssIndex, callback) {
+module.exports = function (con, channel, rssIndex, callback) {
 
   var feedparser = new FeedParser()
   var currentFeed = []
 
-  var guild = require(`../sources/${guildId}.json`)
+  //sometimes feeds get deleted during the retrieval process
+  if (!fs.existsSync(`./sources/${channel.guild.id}.json`) || require(`../sources/${channel.guild.id}.json`).sources[rssIndex] == null) callback();
+  else var guild = require(`../sources/${channel.guild.id}.json`);
+
   var rssList = guild.sources
 
   requestStream(rssList[rssIndex].link, feedparser, con, function () {
