@@ -4,7 +4,7 @@ const rssConfig = require('../config.json')
 
 module.exports = function (message, rssIndex) {
   var guildRss = require(`../sources/${message.guild.id}.json`)
-  var rssList = guildRSS.sources
+  var rssList = guildRss.sources
 
   if (message.channel != null) message.channel.startTyping();
 
