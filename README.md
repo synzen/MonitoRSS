@@ -9,6 +9,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 	- [Database Selection](#)
 - [RSS Storage](#)
 	- [Feed Customization](#)
+		- [Tags](#)
 	- [RSS Management](#)
 - [Controlling RSS Feeds through Discord](#)
 - [Noteworthy Details](#)
@@ -129,6 +130,7 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 	}
 ```
 
+####Tags
 Putting tags such as {title}, {description}, {summary}, {author}, {link}, {image}, {date} will add the feed's respective information into the text. This can either be in the main message, or in the embed. Regular [Markdown formatting] (https://support.discordapp.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-) is possible wherever Discord allows.
 
 `"message": "{date}\nA new feed has arrived!\n\n**{title}**\n{description}"`
@@ -136,13 +138,13 @@ Putting tags such as {title}, {description}, {summary}, {author}, {link}, {image
 ###RSS Management
 I don't advise tampering with the `name` of feeds. Everytime a new feed is initialized, a table is created in the database. Manually changing the name of a feed will create a new table for that feed, leaving the old one unmanaged and undeleted unless you manually delete it (or change the name back and remove it through Discord). The names are there more for database management than anything.
 
-In general if you don't want trash lying around in your database don't remove manually remove feeds from `sources`. Instead, remove them from Discord with the command `~rssremove` as explained in the section farther below. Deleting the channel or removing the bot from the server will also purge any traces of the guild from the configs and the database.
+In general if you don't want trash lying around in your database don't remove manually remove feeds from `sources`. Instead, remove them from Discord with the command `~rssremove` as explained in the section below. Deleting the channel or removing the bot from the server will also purge any traces of the guild from the configs and the database.
 
 ##Controlling RSS Feeds through Discord
 
 Uncomfortable with JSON? No problem! I have scrounged up some commands for you to use. Each command must start with the prefix defined in config.json (literally the first line, set to default as `~`). All of the above features are included.
 
-Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#other-customizations) to add the feed's information. The user must have Manage Channels permission to use the commands.
+Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#tags) to add the feed's information. The user must have Manage Channels permission to use the commands.
 
 [`rsshelp`]: List the commands to use for Discord.RSS
 
