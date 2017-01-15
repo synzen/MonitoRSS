@@ -22,10 +22,10 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 3. Use `npm install` in the directory from terminal/command prompt/etc.
 4. Create and get a bot token from https://discordapp.com/developers/applications/me.
 5. Invite your bot to your server with a link generated from https://discordapi.com/permissions.html, putting your bot's client ID there.
-6. Put your bot token and change whatever else you need to in [config.json](https://github.com/synzen/discord-rss#configuration)
+6. Put your bot token and change whatever else you need to in [config.json](#configuration)
 7. Create a folder named "sources" in the same directory as server.js
 8. Start the bot by `node server.js` in terminal/command prompt/etc.
-9. Add feeds either [via Discord](https://github.com/synzen/discord-rss#Controlling-RSS-Feeds-through-Discord), or [manually create](https://github.com/synzen/discord-rss#rss-storage) and [customize](https://github.com/synzen/discord-rss#feed-customization) in the sources folder.
+9. Add feeds either [via Discord](#controlling-rss-feeds-through-discord), or [manually create](#rss-storage) and [customize](#feed-customization) in the sources folder.
 
 ###Built With
 * [Node] (https://nodejs.org/en/)
@@ -43,7 +43,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 
 1. `token` : Bot token to login through server.js
 
-2. `sqlType`: See [Database Selection](https://github.com/synzen/discord-rss#database-selection)
+2. `sqlType`: See [Database Selection](#database-selection)
 
 3. `timezone`: (Optional) By default adding {date}s to your feeds will not show the timezone. Manually specify it here.
 For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed's date. Specifying PST timezone will make it print `Sat, January 7th 2017, 7:18 AM (PST)`. This is *purely for visual purposes*.
@@ -97,7 +97,7 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 
 3. `channel`: Can be the channel's ID, or a name. IDs are highly recommended.
 
-4. `message`: Define a custom message for a feed. Use ```\n``` for a new line.
+4. `message`: Define a custom message for a feed. Use `\n` for a new line.
 
 5. `maxAge`: (Optional) If the bot stops unexpectedly, it will grab feeds younger than the maxAge in days and send on bot restart.
 
@@ -144,7 +144,7 @@ In general if you don't want trash lying around in your database don't remove ma
 
 Uncomfortable with JSON? No problem! I have scrounged up some commands for you to use. Each command must start with the prefix defined in config.json (literally the first line, set to default as `~`). All of the above features are included.
 
-Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](https://github.com/synzen/discord-rss#tags) to add the feed's information. The user must have Manage Channels permission to use the commands.
+Each command will open a menu for you to select the RSS in that channel to modify, except `rssadd` which must have a link after it. Whatever you're trying to customize, if it is a non-URL/number field, you can use [tags](#tags) to add the feed's information. The user must have Manage Channels permission to use the commands.
 
 [`rsshelp`]: List the commands to use for Discord.RSS
 
