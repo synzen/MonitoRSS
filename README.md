@@ -2,6 +2,18 @@
 
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
 
+- [Discord.RSS](#)
+	- [Starting the Bot](#)
+		- [Built With](#)
+	- [Configuration](#)
+		- [Database Selection](#)
+	- [RSS Storage](#)
+		- [Feed Customization](#)
+	- [RSS Management](#)
+	- [Controlling RSS Feeds through Discord](#)
+	- [Noteworthy Details](#)
+	- [Author's Note](#)
+
 ##Starting the Bot
 
 1. Install Node https://nodejs.org/en/.
@@ -46,6 +58,13 @@ For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed'
 8. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
 
 9. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
+
+###Database Selection
+I recommend leaving this on `sqlite3`. It can be set to sqlite3 or mysql, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine.
+
+Should you wish to try and use MySQL (and given that you already know what it is and have it installed), it is quite simple. If you don't already have MySQL installed on your system, [install it](https://dev.mysql.com/downloads/mysql/) and set up the root account password. Then use `npm install mysql` to install the node package for it in the same directory as server.js. Change the login details in mysqlCred.json as well as the `sqlType` in config.json to `mysql`. The bot will handle everything else.
+
+SQLite on the otherhand requires no setup. It will create the database in the same directory as server.js on first startup.
 
 ##RSS Storage
 Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information it must have is `name`, `id`, and `sources` where `sources` is the list of feeds along with their customizations. 
@@ -118,14 +137,6 @@ Putting tags such as {title}, {description}, {summary}, {author}, {link}, {image
 I don't advise tampering with the `name` of feeds. Everytime a new feed is initialized, a table is created in the database. Manually changing the name of a feed will create a new table for that feed, leaving the old one unmanaged and undeleted unless you manually delete it (or change the name back and remove it through Discord). The names are there more for database management than anything.
 
 In general if you don't want trash lying around in your database don't remove manually remove feeds from `sources`. Instead, remove them from Discord with the command `~rssremove` as explained in the section farther below. Deleting the channel or removing the bot from the server will also purge any traces of the guild from the bot and the database.
-
-##Database Selection
-I recommend leaving this on `sqlite3`. It can be set to sqlite3 or mysql, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine.
-
-Should you wish to try and use MySQL (and given that you already know what it is and have it installed), it is quite simple. If you don't already have MySQL installed on your system, [install it](https://dev.mysql.com/downloads/mysql/) and set up the root account password. Then use `npm install mysql` to install the node package for it in the same directory as server.js. Change the login details in mysqlCred.json as well as the `sqlType` in config.json to `mysql`. The bot will handle everything else.
-
-SQLite on the otherhand requires no setup. It will create the database in the same directory as server.js on first startup.
-
 
 ##Controlling RSS Feeds through Discord
 
