@@ -14,7 +14,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 8. Start the bot by `node server.js` in terminal/command prompt/etc.
 9. Add feeds either [via Discord](https://github.com/synzen/discord-rss#Controlling-RSS-Feeds-through-Discord), or [manually create](https://github.com/synzen/discord-rss#rss-storage) and [customize](https://github.com/synzen/discord-rss#feed-customization) in the sources folder.
 
-####Built With
+###Built With
 * [Node] (https://nodejs.org/en/)
 * [Discord.js] (https://www.npmjs.com/package/discord.js)
 * [Feedparser] (https://www.npmjs.com/package/feedparser)
@@ -68,11 +68,6 @@ The bottom is an example of what would be in a guild source file, for example `.
 }
 ```
 
-##RSS Management
-I don't advise tampering with the `name` of feeds. Everytime a new feed is initialized, a table is created in the database. Manually changing the name of a feed will create a new table for that feed, leaving the old one unmanaged and undeleted unless you manually delete it (or change the name back and remove it through Discord). The names are there more for database management than anything.
-
-In general if you don't want trash lying around in your database don't remove manually remove feeds from `sources`. Instead, remove them from Discord with the command `~rssremove` as explained in the section farther below. Deleting the channel or removing the bot from the guild will also purge any traces of the guild from the bot and the database.
-
 ###Feed Customization
 The bare minimum for a source must be `name`, `link`, and `channel` for it to be functional. But of course customization is possible! 
 
@@ -118,6 +113,11 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 Putting tags such as {title}, {description}, {summary}, {author}, {link}, {image}, {date} will add the feed's respective information into the text. This can either be in the main message, or in the embed. Regular [Markdown formatting] (https://support.discordapp.com/hc/en-us/articles/210298617-Markdown-Text-101-Chat-Formatting-Bold-Italic-Underline-) is possible wherever Discord allows.
 
 `"message": "{date}\nA new feed has arrived!\n\n**{title}**\n{description}"`
+
+##RSS Management
+I don't advise tampering with the `name` of feeds. Everytime a new feed is initialized, a table is created in the database. Manually changing the name of a feed will create a new table for that feed, leaving the old one unmanaged and undeleted unless you manually delete it (or change the name back and remove it through Discord). The names are there more for database management than anything.
+
+In general if you don't want trash lying around in your database don't remove manually remove feeds from `sources`. Instead, remove them from Discord with the command `~rssremove` as explained in the section farther below. Deleting the channel or removing the bot from the server will also purge any traces of the guild from the bot and the database.
 
 ##Database Selection
 I recommend leaving this on `sqlite3`. It can be set to sqlite3 or mysql, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine.
