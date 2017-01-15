@@ -80,7 +80,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   //account for final message length
   if (finalMessage.length >= 1800) {
     finalMessage = `Warning: The feed titled **${data.title}** is greater than or equal to 1800 characters cannot be sent as a precaution. The link to the feed is:\n\n${data.link}`;
-    console.log(`RSS Warning: Feed titled "${data.title}" cannot be sent to Discord because message length is >1800.`)
+    console.log(`RSS Warning: (${channel.guild.id}, ${channe.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1800.`)
   }
   let finalMessageCombo = {
     textMsg: finalMessage
@@ -102,7 +102,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   //message only passes through if the filter found the specified content
   if (!filterFound && !isTestMessage && filterExists && finalMessage.length < 1900) {
-    console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => ${feed.link} did not pass filters, skipping "${data.title}".`);
+    console.log(`RSS Delivery: (${channel.guild.id}, ${channe.guild.name}) => ${feed.link} did not pass filters, skipping "${data.title}".`);
     return null;
   }
   else if (enabledEmbed !== true || finalMessage.length >= 1900) {
