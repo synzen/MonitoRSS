@@ -54,7 +54,7 @@ module.exports = function (con, channel, rssIndex, callback) {
   //sometimes feeds get deleted during the retrieval process
   if (!fs.existsSync(`./sources/${channel.guild.id}.json`) || require(`../sources/${channel.guild.id}.json`).sources[rssIndex] == null) callback();
 
-  var guild = require(`../sources/${channel.guild.id}.json`);
+  var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
   var rssLink = rssList[rssIndex].link
 
