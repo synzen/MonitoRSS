@@ -9,7 +9,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 	- [Database Selection](#)
 - [RSS Storage](#)
 	- [Feed Customization](#)
-		- [Tags](#)
+		- [Tags](#Tags)
 	- [RSS Management](#)
 - [Controlling RSS Feeds through Discord](#)
 - [Noteworthy Details](#)
