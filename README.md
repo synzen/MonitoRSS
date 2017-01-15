@@ -21,8 +21,9 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 * [Request] (https://www.npmjs.com/package/request)
 * [Moment] (https://www.npmjs.com/package/moment)
 * [striptags] (https://www.npmjs.com/package/striptags)
-* [sqlite3] (https://www.npmjs.com/package/sqlite3)
-* [mysql] (https://www.npmjs.com/package/mysql) (optional)
+* Datebase manager
+ * [sqlite3] (https://www.npmjs.com/package/sqlite3) (recommended)
+ * [mysql] (https://www.npmjs.com/package/mysql)
 
 ####To Do List
 * ~~Use a database to store sources instead of JSON (directly customizing from JSON will no longer be possible after this)~~ This is most likely not worth the trouble when dealing with user input.
