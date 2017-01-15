@@ -96,11 +96,11 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 
 2. `link`: RSS Feed link.
 
-3. `channel`: Can be the channel's ID, or a name. IDs are highly recommended.
+3. `channel`: Can be the channel's ID, or a name. IDs are highly recommended. **Do not use non-ID channel names in public bots where there may be more than one channel with the same name.**
 
 4. `message`: Define a custom message for a feed. Use `\n` for a new line.
 
-5. `maxAge`: (Optional) If the bot stops unexpectedly, it will grab feeds younger than the maxAge in days and send on bot restart.
+5. `maxAge`: (Optional) If the bot stops unexpectedly, it will grab feeds younger than the maxAge in days and send on bot restart. If `sendOldMessage` is set to `0`, this is ignored.
 
 6. `filters`: The bot will then only send feeds to Discord with the words defined in these filters.
    * There are three filters available: `title`, `description` and `summary` - they are added as properties of `filters`.
