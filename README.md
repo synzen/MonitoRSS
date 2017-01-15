@@ -2,6 +2,8 @@
 
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
 
+As an experiment, I am hosting the bot to see how it performs and doing any potential fixes along the way. For more information, [see here](https://www.reddit.com/r/discordapp/comments/5n9l6w/discordrss_an_rss_bot/) on adding the bot to your server.
+
 ####Table of Contents
 - [Starting the Bot](#starting-the-bot)
 	- [Built With](#built-with)
@@ -29,7 +31,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 10. Optionally use the the [forever module](https://www.npmjs.com/package/forever) to automatically restart the bot if it crashes.
 
 ###Built With
-* [Node] (https://nodejs.org/en/)
+* [Node.js] (https://nodejs.org/en/)
 * [Discord.js] (https://www.npmjs.com/package/discord.js)
 * [Feedparser] (https://www.npmjs.com/package/feedparser)
 * [Request] (https://www.npmjs.com/package/request)
@@ -62,16 +64,18 @@ For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed'
 9. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
 
 ###Database Selection
-I recommend leaving this on `sqlite3`. It can be set to `sqlite3` or `mysql`, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine. If you are working with a large number of servers, `mysql` may be the more ideal choice.
+I recommend leaving this on `sqlite3`. It can be set to `sqlite3` or `mysql`, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine and is easy to work with since it doesn't require any credentials, and the database is created in the same directory as server.js. If you are working with a large number of servers, `mysql` may be the more ideal choice.
 
-Should you wish to try and use MySQL (and given that you already know what it is and have it installed), it is quite simple. If you don't already have MySQL installed on your system, [install it](https://dev.mysql.com/downloads/mysql/) and set up the root account password. Then use `npm install mysql` to install the node package for it in the same directory as server.js. Change the login details in mysqlCred.json as well as the `sqlType` in config.json to `mysql`. The bot will handle everything else.
+Should you wish to try and use MySQL, it is quite simple. If you already have it installed on your system, `npm install mysql` in the server.js directory, set up your credentials in mysqlCred.json, change the `sqltype` to `mysql` in config.json, and you're done!
+
+If you don't already have MySQL installed on your system, [install it](https://dev.mysql.com/downloads/mysql/) and set up the root account password. Then follow the same steps as above. The bot will handle everything else.
 
 SQLite on the otherhand requires no setup. It will create the database in the same directory as server.js on first startup.
 
 ##RSS Storage
 Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information it must have is `name`, `id`, and `sources` where `sources` is the list of feeds along with their customizations. 
 
-The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`.
+The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. A comprehensive example is provided in `./example/my_guild_id.json`.
 
 ```javascript
 "name": "My First Guild!",
