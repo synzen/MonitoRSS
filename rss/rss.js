@@ -108,13 +108,15 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
           }
 
           else {
-            console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`);
             //console.log(`never seen ${feed.link}, logging now`);
             var message = translator(channel, rssList, rssIndex, feed, false);
-            if (message.embedMsg != null)
-              channel.sendMessage(message.textMsg,message.embedMsg);
-            else
-              channel.sendMessage(message.textMsg);
+            if (message != null) {
+              console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`);
+              if (message.embedMsg != null)
+                channel.sendMessage(message.textMsg,message.embedMsg);
+              else
+                channel.sendMessage(message.textMsg);
+            }
 
             insertIntoTable(data);
           }

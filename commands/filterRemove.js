@@ -59,7 +59,7 @@ module.exports = function(message, rssIndex) {
       message.channel.startTyping();
       filterTypeCollect.stop();
       delete rssList[rssIndex].filters;
-      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss);
+      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
       message.channel.stopTyping();
       return message.channel.sendMessage("All filters have been removed.")//.then(m => m.channel.stopTyping());
     }
@@ -93,10 +93,10 @@ module.exports = function(message, rssIndex) {
           }
           else delete rssList[rssIndex].filters[chosenFilterType.content];
           if (isEmptyObject(rssList[rssIndex].filters)) delete rssList[rssIndex].filters;
-          fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss);
+          fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           console.log(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
           message.channel.stopTyping();
-          return message.channel.sendMessage(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`)//.then(m => m.channel.stopTyping());
+          return message.channel.sendMessage(`The filter \`${chosenFilter}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
         }
       })
       filterCollect.on('end', (collected, reason) => {

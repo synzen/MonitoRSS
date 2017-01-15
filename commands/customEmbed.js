@@ -56,7 +56,7 @@ module.exports = function (message, rssIndex) {
       message.channel.startTyping();
       customCollect.stop();
       if (rssList[rssIndex].embedMessage != null) delete rssList[rssIndex].embedMessage;
-      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss);
+      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
       message.channel.stopTyping();
       return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
     }
@@ -88,7 +88,7 @@ module.exports = function (message, rssIndex) {
           else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
 
           rssList[rssIndex].embedMessage.enabled = 1;
-          fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss);
+          fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") {
             message.channel.stopTyping();
             return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);

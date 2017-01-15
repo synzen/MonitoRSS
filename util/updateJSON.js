@@ -1,7 +1,12 @@
 const fs = require('fs');
 
 
-exports.updateFile = function (realFile, inFile) {
+exports.updateFile = function (realFile, inFile, cacheFile) {
+  try {
+    delete require.cache[require.resolve(cacheFile)]
+  }
+  catch (e) {}
+
   fs.writeFile(realFile, JSON.stringify(inFile, null, 2), function (err) {
     if (err) return console.log(err);
   });

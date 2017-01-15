@@ -19,17 +19,17 @@ module.exports = function (message, rssIndex) {
       message.channel.startTyping();
       customCollect.stop();
       rssList[rssIndex].message = "";
-      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss);
+      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
       message.channel.stopTyping();
       return message.channel.sendMessage(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
     }
     else {
       message.channel.startTyping();
-      customCollect.stop()
-      rssList[rssIndex].message = m.content
-      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss);
+      customCollect.stop();
+      rssList[rssIndex].message = m.content;
+      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
       message.channel.stopTyping();
-      return message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`)
+      return message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`);
     }
   });
 

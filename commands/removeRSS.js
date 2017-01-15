@@ -3,7 +3,7 @@ const sqlCmds = require('../rss/sql/commands.js')
 const rssConfig = require('../config.json')
 
 module.exports = function (message, rssIndex) {
-  var guildRSS = require(`../sources/${message.guild.id}.json`)
+  var guildRss = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRSS.sources
 
   if (message.channel != null) message.channel.startTyping();
@@ -11,7 +11,7 @@ module.exports = function (message, rssIndex) {
   let link = rssList[rssIndex].link
   sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name)
   rssList.splice(rssIndex,1)
-  fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRSS)
+  fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`)
 
   if (rssList.length == 0) fileOps.deleteFile(`./sources/${message.guild.id}.json`);
 

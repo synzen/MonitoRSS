@@ -1,7 +1,7 @@
 const rssConfig = require('../../config.json')
 const striptags = require('striptags')
 
-function foundFilterWords(channel, filterType, content) {
+function foundFilterWords(filterType, content) {
 
   //filterType is title, description, or summary
 
