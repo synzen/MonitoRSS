@@ -104,7 +104,7 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 
 6. `filters`: The bot will then only send feeds to Discord with the words defined in these filters.
    * There are three filters available: `title`, `description` and `summary` - they are added as properties of `filters`.
-   * For each filter, they can be a string or an array (["filter one!", "two"]) to specify more than one word/phrase. For an feed to pass the filters, every word/phrase defined in filters must exist in their respective filter (case-insensitive).
+   * For each filter, they can be a string or an array (`["filter one!", "two"]`) to specify more than one word/phrase. For an feed to pass the filters, every word/phrase defined in filters must exist in their respective filter (case-insensitive).
 
 7. `embedMessage`: Define a custom embed message to go along with the text message.
    * Can be enabled or disabled with the property `enabled` (boolean).
