@@ -134,7 +134,7 @@ module.exports = function (con, guildId, rssIndex, channel, sendingTestMessage, 
       //console.log(filteredItems + " " + processedItems) //for debugging
       if (processedItems == filteredItems) {
         callback();
-        console.log(`RSS Info: (${guild.id}, ${guild.name}) => Finished retrieval for: ${feedName}`)
+        //console.log(`RSS Info: (${guild.id}, ${guild.name}) => Finished retrieval for: ${feedName}`)
       }
     }
 

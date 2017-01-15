@@ -2,7 +2,7 @@
   "prefix": "~",
   "token": "",
   "timezone": "",
-  "refreshTimeMinutes": 15,
+  "refreshTimeMinutes": 10,
   "sqlType": "sqlite3",
   "databaseName": "rss",
   "sendOldMessages": false,

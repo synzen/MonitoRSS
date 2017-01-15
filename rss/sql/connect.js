@@ -1,12 +1,3 @@
-/*
-    MySQL connections are going to disconnect, through experimentation,
-    after about 7-8 hours. I have tried to go around this through
-    creating new connections on a loop should it fail, but alas it is to
-    no avail and will fail even on reconnection attempts.
-
-    SQLite3 should be working without any problems.
-
-*/
 const mysqlCmds = require('./commands.js')
 var rssConfig = require('../../config.json')
 
@@ -28,8 +19,6 @@ module.exports = function (callback) {
       con.connect(function(err){
         if(err){
           throw err;
-          // console.log(err.code);
-          // console.log(err.fatal);
           console.log('Error connecting to database ' + rssConfig.databaseName + '. Attempting to reconnect.');
           //setTimeout(startDataProcessing, 2000);
         }

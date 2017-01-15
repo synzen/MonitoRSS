@@ -10,7 +10,8 @@ exports.updateFile = function (realFile, inFile) {
 }
 
 exports.deleteFile = function(file) {
-  fs.unlink(file, function() {
+  fs.unlink(file, function(err) {
+    if (err) console.log(err)
     console.log(`RSS File Ops: Deleted ${file}.`)
   })
 }

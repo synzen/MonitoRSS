@@ -1,7 +1,7 @@
 const Discord = require('discord.js')
 const bot = new Discord.Client()
 const initializeAllRSS = require('./rss/initializeall.js')
-const checkValidConfig = require('./util/configCheck.js')
+const configChecks = require('./util/configCheck.js')
 const startFeedSchedule = require('./util/startFeedSchedule.js')
 const eventHandler = (evnt) => require(`./events/${evnt}.js`)
 var rssConfig = require('./config.json')
@@ -14,28 +14,6 @@ var initializedFeeds = 0
 var totalFeeds = 0
 
 var guildList = []
-
-function validChannel(guildId, rssIndex) {
-  var guild = require(`./sources/${guildId}.json`)
-  var rssList = guild.sources
-
-  if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
-    let channel = bot.channels.find("name", rssList[rssIndex].channel);
-    if (channel == null) {
-      console.log(`RSS Warning: ${guild.id} => ${rssList[rssIndex].name}'s string-defined channel was not found, skipping...`)
-      return false;
-    }
-    else return channel;
-  }
-  else {
-    let channel = bot.channels.get(`${rssList[rssIndex].channel}`);
-    if (channel == null) {
-      console.log(`RSS Warning: ${guild.id} => ${rssList[rssIndex].name}'s integer-defined channel was not found. skipping...`)
-      return false;
-    }
-    else return channel;
-  }
-}
 
   var con;
 
@@ -57,9 +35,9 @@ function validChannel(guildId, rssIndex) {
       let guildId = guildList[guildIndex].id
       let rssList = guildList[guildIndex].sources
       for (var rssIndex in rssList){
-        if (checkValidConfig(guildId, rssIndex, true, true)) {
-          if (validChannel(guildId, rssIndex) !== false) {
-            initializeAllRSS(con, validChannel(guildId, rssIndex), guildId, rssIndex, function() {
+        if (configChecks.checkExists(guildId, rssIndex, true, true)) {
+          if (configChecks.validChannel(bot, guildId, rssIndex) !== false) {
+            initializeAllRSS(con, configChecks.validChannel(bot, guildId, rssIndex), guildId, rssIndex, function() {
               initializedFeeds++;
               if (initializedFeeds + skippedFeeds == totalFeeds) endCon();
             });
