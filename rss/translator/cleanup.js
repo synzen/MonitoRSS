@@ -1,5 +1,3 @@
-
-
 module.exports = function (text) {
 
   //clean up random artifacts

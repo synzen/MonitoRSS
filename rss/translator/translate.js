@@ -1,3 +1,4 @@
+const rssConfig = require('../../config.json')
 const striptags = require('striptags')
 const moment = require('moment')
 const filterFeed = require('./filters.js')
@@ -6,7 +7,6 @@ const cleanRandoms = require('./cleanup.js')
 
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
-  var rssConfig = require('../../config.json')
 
   var originalDate = data.pubdate;
   var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")

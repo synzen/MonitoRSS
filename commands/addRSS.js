@@ -3,9 +3,9 @@ const initializeRSS = require('../rss/initialize.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const fs = require('fs')
+const rssConfig = require('../config.json')
 
 module.exports = function (bot, message) {
-  var rssConfig = require('../config.json')
 
   var rssList = []
   if (fs.existsSync(`./sources/${message.guild.id}.json`)) rssList = require(`../sources/${message.guild.id}`).sources
@@ -44,7 +44,6 @@ module.exports = function (bot, message) {
           initializeRSS(con, content[1], message.channel, function() {
             sqlCmds.end(con, function(err) {
               if (err) throw err;
-              console.log("RSS Info: Successfully added new feed.")
             });
           });
         }

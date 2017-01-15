@@ -3,7 +3,7 @@ const getRSS = require('../rss/rss.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fs = require('fs')
-var rssConfig = require('../config.json')
+const rssConfig = require('../config.json')
 
 module.exports = function (bot) {
   var rssConfig = require('../config.json')
@@ -43,17 +43,12 @@ module.exports = function (bot) {
       let guildId = guildList[guildIndex].id
       let rssList = guildList[guildIndex].sources
       for (let rssIndex in rssList) {
-        if (configChecks.checkExists(guildId, rssIndex, false)) {
-          if (configChecks.validChannel(bot, guildId, rssIndex) !== false) {
-            getRSS(con, guildId, rssIndex , configChecks.validChannel(bot, guildId, rssIndex), false, function () {
-              feedsProcessed++
-              //console.log(feedsProcessed + feedsSkipped + " " + feedLength)
-              if (feedsProcessed + feedsSkipped == feedLength) {
-                endCon();
-              }
-            });
-          }
-          else feedsSkipped++;
+        if (configChecks.checkExists(guildId, rssIndex, false) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
+          getRSS(con, guildId, rssIndex , configChecks.validChannel(bot, guildId, rssIndex), false, function () {
+            feedsProcessed++
+            //console.log(feedsProcessed + feedsSkipped + " " + feedLength)
+            if (feedsProcessed + feedsSkipped == feedLength) endCon();
+          });
         }
         else feedsSkipped++;
       }

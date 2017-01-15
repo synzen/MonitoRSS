@@ -1,5 +1,5 @@
-
 const fileOps = require('../util/updateJSON.js')
+const rssConfig = require('../config.json')
 
 function isEmptyObject(obj) {
     for(var prop in obj) {
@@ -10,7 +10,6 @@ function isEmptyObject(obj) {
 }
 
 module.exports = function(message, rssIndex) {
-  var rssConfig = require('../config.json')
   var guildRss = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 

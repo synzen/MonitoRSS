@@ -27,12 +27,12 @@
       7. Log all items in feed in table
       8. gatherResults() and close connection
 */
-const request = require('request');
+const rssConfig = require('../config.json')
+const requestStream = require('./request.js')
 const FeedParser = require('feedparser');
 const moment = require('moment');
 const translator = require('./translator/translate.js')
 const startFeedSchedule = require('../util/startFeedSchedule.js')
-const requestStream = require('./request.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 
@@ -46,7 +46,6 @@ function isEmptyObject(obj) {
 }
 
 module.exports = function (con, channel, guildId, rssIndex, callback) {
-  var rssConfig = require('../config.json')
 
   var feedparser = new FeedParser()
   var currentFeed = []

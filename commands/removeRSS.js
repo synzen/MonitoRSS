@@ -1,9 +1,8 @@
-
 const fileOps = require('../util/updateJSON.js')
 const sqlCmds = require('../rss/sql/commands.js')
+const rssConfig = require('../config.json')
 
 module.exports = function (message, rssIndex) {
-  var rssConfig = require('../config.json')
   var guildRSS = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRSS.sources
 

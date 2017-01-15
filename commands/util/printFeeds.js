@@ -1,8 +1,8 @@
 const loadCommand = (command) => require(`../${command}.js`)
+const rssConfig = require('../../config.json')
 const fs = require('fs')
 
 module.exports = function (message, isCallingCmd, command) {
-  var rssConfig = require('../../config.json')
   var rssList = []
   if (fs.existsSync(`./sources/${message.guild.id}.json`))
     rssList = require(`../../sources/${message.guild.id}.json`).sources

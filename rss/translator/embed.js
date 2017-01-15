@@ -1,7 +1,6 @@
-
+const rssConfig = require('../../config.json')
 
 module.exports = function (channel, rssList, rssIndex, data, replaceKeywords) {
-  var rssConfig = require('../../config.json')
   var rssList = require(`../../sources/${channel.guild.id}`).sources
 
   var embed = {embed: {

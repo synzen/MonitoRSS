@@ -16,7 +16,6 @@ const translator = require('./translator/translate.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 
-
 function isEmptyObject(obj) {
   for (var key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -27,7 +26,6 @@ function isEmptyObject(obj) {
 }
 
 module.exports = function (con, guildId, rssIndex, channel, sendingTestMessage, callback) {
-  var rssConfig = require('../config.json')
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -67,9 +65,9 @@ module.exports = function (con, guildId, rssIndex, channel, sendingTestMessage, 
       sqlCmds.createTable(con, feedName, function (err, rows) {
         if (err) throw err;
         if (currentFeed.length == 0) {
-          //console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for testrss.`);
+          console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for testrss.`);
           callback();
-          return //channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
+          return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
         }
         if (sendingTestMessage) {
           let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1))

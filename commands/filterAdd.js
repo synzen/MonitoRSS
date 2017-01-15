@@ -1,8 +1,7 @@
-
 const fileOps = require('../util/updateJSON.js')
+const rssConfig = require('../config.json')
 
 module.exports = function(message, rssIndex) {
-  var rssConfig = require('../config.json')
   var guildRss = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
@@ -15,8 +14,6 @@ module.exports = function(message, rssIndex) {
     description: {exists: false, loc: filterList.description},
     summary: {exists: false, loc: filterList.summary}
   }
-
-
 
   var msg = `\`\`\`Markdown\n# Chosen Feed: ${rssList[rssIndex].link}\n# List of available filters to add\`\`\`\`\`\`Markdown\n`
 

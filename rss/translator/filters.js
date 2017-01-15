@@ -1,6 +1,5 @@
-
+const rssConfig = require('../../config.json')
 const striptags = require('striptags')
-var rssConfig = require('../../config.json')
 
 function foundFilterWords(channel, filterType, content) {
 
