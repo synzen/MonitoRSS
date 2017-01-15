@@ -26,6 +26,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 7. Create a folder named "sources" in the same directory as server.js
 8. Start the bot by `node server.js` in terminal/command prompt/etc.
 9. Add feeds either [via Discord](#controlling-rss-feeds-through-discord), or [manually create](#rss-storage) and [customize](#feed-customization) in the sources folder.
+10. Optionally use the the [forever module](https://www.npmjs.com/package/forever) to automatically restart the bot if it crashes.
 
 ###Built With
 * [Node] (https://nodejs.org/en/)
@@ -61,7 +62,7 @@ For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed'
 9. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
 
 ###Database Selection
-I recommend leaving this on `sqlite3`. It can be set to sqlite3 or mysql, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine.
+I recommend leaving this on `sqlite3`. It can be set to `sqlite3` or `mysql`, however the bot *may* have connection failures after some time with MySQL. sqlite3 however should be working fine. If you are working with a large number of servers, `mysql` may be the more ideal choice.
 
 Should you wish to try and use MySQL (and given that you already know what it is and have it installed), it is quite simple. If you don't already have MySQL installed on your system, [install it](https://dev.mysql.com/downloads/mysql/) and set up the root account password. Then use `npm install mysql` to install the node package for it in the same directory as server.js. Change the login details in mysqlCred.json as well as the `sqlType` in config.json to `mysql`. The bot will handle everything else.
 
