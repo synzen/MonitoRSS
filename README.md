@@ -11,7 +11,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 	- [Feed Customization](#feed-customization)
 		- [Tags](#tags)
 	- [RSS Management](#rss-management)
-- [Controlling RSS Feeds through Discord](#discord-commands)
+- [Discord Commands](#discord-commands)
 - [Noteworthy Details](#noteworthy-details)
 - [Author's Note](#authors-note)
 
