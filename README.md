@@ -3,17 +3,17 @@
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
 
 ####Table of Contents
-- [Starting the Bot](#)
-	- [Built With](#)
-- [Configuration](#)
-	- [Database Selection](#)
-- [RSS Storage](#)
-	- [Feed Customization](#)
-		- [Tags](#Tags)
-	- [RSS Management](#)
-- [Controlling RSS Feeds through Discord](#)
-- [Noteworthy Details](#)
-- [Author's Note](#)
+- [Starting the Bot](#starting-the-bot)
+	- [Built With](#built-with)
+- [Configuration](#configuration)
+	- [Database Selection](#database-selection)
+- [RSS Storage](#rss-storage)
+	- [Feed Customization](#feed-customization)
+		- [Tags](#tags)
+	- [RSS Management](#rss-management)
+- [Controlling RSS Feeds through Discord](#controlling-rss-feeds-through-discord)
+- [Noteworthy Details](#noteworthy-details)
+- [Author's Note](#authors-note)
 
 ##Starting the Bot
 
