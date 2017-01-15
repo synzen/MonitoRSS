@@ -6,13 +6,13 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 
 1. Install Node https://nodejs.org/en/.
 2. Clone files into a directory.
-3. Use `npm install` in the directory from terminal, command prompt, etc.
+3. Use `npm install` in the directory from terminal/command prompt/etc.
 4. Create and get a bot token from https://discordapp.com/developers/applications/me.
 5. Invite your bot to your server with a link generated from https://discordapi.com/permissions.html, putting your bot's client ID there.
-6. Put your bot token in config.json
-7. [Add or customize](https://github.com/synzen/discord-rss#configuration-and-customization) whatever you'd like in your RSS messages in config.json
-8. Start the bot through `node server.js`
-9. Feeds in addition to the ones in config can be [added/customized through Discord] (https://github.com/synzen/discord-rss#controlling-rss-feeds-through-discord)
+6. Put your bot token and change whatever else you need to in [config.json](https://github.com/synzen/discord-rss#configuration)
+7. Create a folder named "sources" in the same directory as server.js
+8. Start the bot by `node server.js` in terminal/command prompt/etc.
+9. Add feeds either [via Discord](https://github.com/synzen/discord-rss#Controlling-RSS-Feeds-through-Discord), or [manually create](https://github.com/synzen/discord-rss#rss-storage) and [customize](https://github.com/synzen/discord-rss#feed-customization) in the sources folder.
 
 ####Built With
 * [Node] (https://nodejs.org/en/)
@@ -21,13 +21,9 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 * [Request] (https://www.npmjs.com/package/request)
 * [Moment] (https://www.npmjs.com/package/moment)
 * [striptags] (https://www.npmjs.com/package/striptags)
-* Datebase manager
+* Datebase Manager
  * [sqlite3] (https://www.npmjs.com/package/sqlite3) (recommended)
  * [mysql] (https://www.npmjs.com/package/mysql)
-
-####To Do List
-* ~~Use a database to store sources instead of JSON (directly customizing from JSON will no longer be possible after this)~~ This is most likely not worth the trouble when dealing with user input.
-* End the database connection after it has gone through all the sources in the list rather than opening and closing after each source
 
 ##Configuration
 (config.json)
@@ -49,14 +45,16 @@ For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed'
 
 8. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
 
-9. `maxFeeds`: The maximum amount of feeds one server is allowed to have.
+9. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
 
 ##RSS Storage
-All sources are organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information it must have is `name`, `id`, and `sources` where `sources` is the list of feed sources along with their customizations. 
+Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information it must have is `name`, `id`, and `sources` where `sources` is the list of feeds along with their customizations. 
 
-The bare minimum for a source must be `name`, `link`, and `channel` for it to be functional. But of course customization is possible!
+The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`.
 
 ```javascript
+"name": "My First Guild!",
+"id": "1234567890",
 "sources": [{
     //feed #1 settings
     "name": "there",
@@ -64,10 +62,13 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
     "channel": "website-feeds"
     }, {
     //feed #2 settings
+    }, {
+    //feed #3 settings
     }]
 }
 ```
-####Sources Customization
+###Feed Customization
+The bare minimum for a source must be `name`, `link`, and `channel` for it to be functional. But of course customization is possible! 
 
 1. `name`: Feed Name. If you can, try not to add spaces.
 
@@ -77,7 +78,7 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 
 4. `message`: Define a custom message for a feed. Use ```\n``` for a new line.
 
-5. `maxAge`: If the bot stops unexpectedly, it will grab feeds younger than the maxAge in days and send on bot restart.
+5. `maxAge`: (Optional) If the bot stops unexpectedly, it will grab feeds younger than the maxAge in days and send on bot restart.
 
 6. `filters`: The bot will then only send feeds to Discord with the words defined in these filters.
    * There are three filters available: `title`, `description` and `summary` - they are added as properties of `filters`.
