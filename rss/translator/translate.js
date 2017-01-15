@@ -50,6 +50,14 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   if (rssList[rssIndex].message == null) configMessage = replaceKeywords(rssConfig.defaultMessage);
   else configMessage = replaceKeywords(rssList[rssIndex].message);
 
+  //filter message
+  var filterExists = false
+  var filterFound = false
+  if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
+    filterExists = true;
+    filterFound = filterFeed(rssList, rssIndex, data, dataDescrip);
+  }
+
   //generate final msg
   var finalMessage = "";
   if (isTestMessage) {
@@ -92,17 +100,9 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     enabledEmbed = false;
   else enabledEmbed = true;
 
-  //filter message
-  var filterExists = false
-  var filterFound = false
-  if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
-    filterExists = true;
-    filterFound = filterFeed(rssList, rssIndex, data, dataDescrip);
-  }
-
   //message only passes through if the filter found the specified content
-  if (!filterFound && !isTestMessage && filterExists && finalMessage.length < 1900) {
-    console.log(`RSS Delivery: (${channel.guild.id}, ${channe.guild.name}) => ${feed.link} did not pass filters, skipping "${data.title}".`);
+  if (!isTestMessage && filterExists && !filterFound && finalMessage.length < 1900) {
+    console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => ${data.link} did not pass filters and was not sent:\n`, rssList[rssIndex].filters);
     return null;
   }
   else if (enabledEmbed !== true || finalMessage.length >= 1900) {

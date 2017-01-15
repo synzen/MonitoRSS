@@ -54,7 +54,15 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
   feedparser.on('end', function() {
     //sometimes feeds get deleted mid-retrieval process
-    if (rssList[rssIndex] == null) return callback();
+    if (rssList[rssIndex] == null || currentFeed.length == 0) return callback();
+    if (currentFeed.length == 0) {
+      if (sendingTestMessage) {
+        callback();
+        console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for testrss.`);
+        return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
+      }
+      else return callback();
+    }
 
     let feedName = rssList[rssIndex].name
     var processedItems = 0
@@ -68,11 +76,6 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
     function createTable() {
       sqlCmds.createTable(con, feedName, function (err, rows) {
         if (err) throw err;
-        if (currentFeed.length == 0) {
-          console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for testrss.`);
-          callback();
-          return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
-        }
         if (sendingTestMessage) {
           let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1))
           checkTable(currentFeed[randFeedIndex].guid, currentFeed[randFeedIndex]);

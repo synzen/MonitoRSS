@@ -43,6 +43,6 @@ module.exports = function (rssList, rssIndex, data, dataDescrip) {
       filterFound = true;
   }
 
-  return filterFound;
+  return filterFound
 
 }
