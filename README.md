@@ -11,7 +11,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 	- [Feed Customization](#feed-customization)
 		- [Tags](#tags)
 	- [RSS Management](#rss-management)
-- [Controlling RSS Feeds through Discord](#controlling-rss-feeds-through-discord)
+- [Controlling RSS Feeds through Discord](#discord-commands)
 - [Noteworthy Details](#noteworthy-details)
 - [Author's Note](#authors-note)
 
@@ -25,7 +25,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 6. Put your bot token and change whatever else you need to in [config.json](#configuration)
 7. Create a folder named "sources" in the same directory as server.js
 8. Start the bot by `node server.js` in terminal/command prompt/etc.
-9. Add feeds either [via Discord](#controlling-rss-feeds-through-discord), or [manually create](#rss-storage) and [customize](#feed-customization) in the sources folder.
+9. Add feeds either [via Discord](#discord-commands), or [manually create](#rss-storage) and [customize](#feed-customization) in the sources folder.
 10. Optionally use the the [forever module](https://www.npmjs.com/package/forever) to automatically restart the bot if it crashes.
 
 ###Built With
@@ -141,7 +141,7 @@ I don't advise tampering with the `name` of feeds. Everytime a new feed is initi
 
 In general if you don't want trash lying around in your database don't remove manually remove feeds from `sources`. Instead, remove them from Discord with the command `rssremove` as explained in the section below. Deleting the channel or removing the bot from the server will also purge any traces of the guild from the configs and the database.
 
-##Controlling RSS Feeds through Discord
+##Discord Commands
 
 Uncomfortable with JSON? No problem! I have scrounged up some commands for you to use. Each command must start with the prefix defined in config.json (literally the first line, set to default as `~`). All of the above features are included.
 
