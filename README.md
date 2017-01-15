@@ -100,7 +100,7 @@ The bare minimum for a source must be `name`, `link`, and `channel` for it to be
 
 2. `link`: RSS Feed link.
 
-3. `channel`: Can be the channel's ID, or a name. IDs are highly recommended. **Do not use non-ID channel names in public bots where there may be more than one channel with the same name.**
+3. `channel`: Can be the channel's ID, or a name. IDs are highly recommended.
 
 4. `message`: Define a custom message for a feed. Use `\n` for a new line.
 
