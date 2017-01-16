@@ -5,7 +5,7 @@ exports.updateFile = function (realFile, inFile, cacheFile) {
   try {
     delete require.cache[require.resolve(cacheFile)]
   }
-  catch (e) {console.log(e)}
+  catch (e) {}
 
   fs.writeFile(realFile, JSON.stringify(inFile, null, 2), function (err) {
     if (err) return console.log(err);
