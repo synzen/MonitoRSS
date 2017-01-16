@@ -6,12 +6,20 @@ module.exports = function (link, feedparser, con, callback) {
 
   (function requestStream() {
     const req = request(link, function (error, response) {
-      if (error || response.statusCode !== 200)
-        console.log(`RSS Request Error: Problem occured while requesting from "${link}"`);
+      // if (error || response.statusCode !== 200)
+      //   console.log(`RSS Request Error: Problem occured while requesting from "${link}"`);
     });
 
     req.on('error', function (error) {
-      console.log('RSS Request Error: ' + error)
+      console.log(`RSS Request Error: ${error} for request from ${link}`)
+      if (attempts < 10) {
+        attempts++;
+        setTimeout(requestStream,1500);
+      }
+      else {
+        console.log(`RSS Request Error: Unable to reconnect. Skipping ${link}.`);
+        callback();
+      }
     });
 
     req.on('response', function (res) {
@@ -19,16 +27,9 @@ module.exports = function (link, feedparser, con, callback) {
 
       if (res.statusCode !== 200) {
         this.emit('error', new Error(`Bad status code, attempting to reconnect, attempt #${attempts+1}`));
-        if (attempts < 10) {
-          attempts++;
-          setTimeout(requestStream,1500);
-        }
-        else {
-          console.log(`RSS Request Error: Unable to reconnect. Skipping ${link}.`);
-          callback();
-        }
       }
       else {
+        if (attempts > 0) console.log(`RSS Request Success on attempt ${attempts+1}`);
         stream.pipe(feedparser);
       }
 

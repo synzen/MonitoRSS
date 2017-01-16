@@ -15,7 +15,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(striptags(data.description));
-  if (dataDescrip.length > 1500) dataDescrip = dataDescrip.substr(0, 1400) + "[...]";
+  if (dataDescrip.length > 1000) dataDescrip = dataDescrip.substr(0, 900) + "...";
 
   if (data.link.includes("reddit")) {
     let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
@@ -24,7 +24,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   }
 
   var dataSummary = cleanRandoms(striptags(data.summary))
-  if (dataSummary.length > 1500)  dataSummary = striptags(data.summary).substr(0, 1400) + "[...]";
+  if (dataSummary.length > 1000)  dataSummary = striptags(data.summary).substr(0, 900) + "...";
 
   function replaceKeywords(word){
     var a = word.replace(/{date}/g, vanityDate)
@@ -88,7 +88,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   //account for final message length
   if (finalMessage.length >= 1800) {
     finalMessage = `Warning: The feed titled **${data.title}** is greater than or equal to 1800 characters cannot be sent as a precaution. The link to the feed is:\n\n${data.link}`;
-    console.log(`RSS Warning: (${channel.guild.id}, ${channe.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1800.`)
+    console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1800.`)
   }
   let finalMessageCombo = {
     textMsg: finalMessage
