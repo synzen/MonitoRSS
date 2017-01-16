@@ -38,10 +38,10 @@ module.exports = function (con, rssLink, channel, callback) {
   })
 
   feedparser.on('error', function (error) {
-    channel.sendMessage(`${rssLink} is not a proper feed to add.`)
-    console.log(`RSS Warning: ${rssLink} is not a proper feed to add.`)
+    channel.sendMessage(`<${rssLink}> is not a valid feed to add.`)
+    console.log(`RSS Warning: ${rssLink} is not a valid feed to add.`)
     channel.stopTyping()
-    feedparser.removeAllListeners('end')
+    return feedparser.removeAllListeners('end')
   });
 
   feedparser.on('readable',function () {
@@ -61,7 +61,7 @@ module.exports = function (con, rssLink, channel, callback) {
 
     if (metaLink == "" ) {
       channel.sendMessage("Cannot find meta link for this feed. Unable to add to database. This is most likely due to no existing articles in the feed.");
-      console.log(`RSS Info: Cannot initialize feed because of no meta link: ${rssLink}`)
+      console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Cannot initialize feed because of no meta link: ${rssLink}`)
       channel.stopTyping();
       return callback();
     }
@@ -73,7 +73,7 @@ module.exports = function (con, rssLink, channel, callback) {
     var processedItems = 0
     var totalItems = currentFeed.length
 
-    console.log("RSS Info: Initializing new feed: " + rssLink)
+    console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Initializing new feed: ${rssLink}`)
 
     function startDataProcessing() {
       createTable()
@@ -142,7 +142,7 @@ module.exports = function (con, rssLink, channel, callback) {
       // catch (e) {}
       fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRSS, `../sources/${channel.guild.id}.json`)
       console.log("RSS Info: Successfully added new feed.")
-      channel.sendMessage(`Successfully added ${rssLink} for this channel.`)
+      channel.sendMessage(`Successfully added <${rssLink}> for this channel.`)
       channel.stopTyping()
     }
 

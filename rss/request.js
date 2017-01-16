@@ -11,7 +11,7 @@ module.exports = function (link, feedparser, con, callback) {
     });
 
     req.on('error', function (error) {
-      console.log(`RSS Request Error: ${error} for request from ${link}`)
+      console.log(`RSS Request Error: ${error} for request from ${link}.  Reconnection attempt #${attempts+1}`)
       if (attempts < 10) {
         attempts++;
         setTimeout(requestStream,1500);
@@ -26,7 +26,7 @@ module.exports = function (link, feedparser, con, callback) {
       var stream = this;
 
       if (res.statusCode !== 200) {
-        this.emit('error', new Error(`Bad status code, attempting to reconnect, attempt #${attempts+1}`));
+        this.emit('error', new Error(`Bad status code.`));
       }
       else {
         if (attempts > 0) console.log(`RSS Request Success on attempt ${attempts+1}`);

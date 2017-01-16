@@ -55,8 +55,8 @@ module.exports = function (bot, message) {
     }
 
     else {
-      return message.channel.sendMessage("That is an invalid feed link.");
       message.channel.stopTyping();
+      return message.channel.sendMessage(`Unable to add feed, invalid response received from <${content[1]}>.`);
     }
 
   });
