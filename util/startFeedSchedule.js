@@ -8,6 +8,7 @@ const rssConfig = require('../config.json')
 module.exports = function (bot) {
   var rssConfig = require('../config.json')
 
+  var cycleInProgress = false
   var guildList = []
   var feedLength = 0
   var feedsProcessed = 0
@@ -18,10 +19,13 @@ module.exports = function (bot) {
   function endCon () {
     sqlCmds.end(con, function(err) {
       console.log("RSS Info: Finished feed retrieval cycle. " + new Date())
+      cycleInProgress = false
     });
   }
 
   function connect () {
+    if (cycleInProgress) return;
+    cycleInProgress = true
     //console.log("RSS Info: Starting feed retrieval cycle.")
     feedLength = feedsProcessed = feedsSkipped = 0
     guildList = []
