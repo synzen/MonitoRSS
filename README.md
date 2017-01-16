@@ -173,8 +173,10 @@ This is especially useful when you want to add the feed's title and/or descripti
 ##Noteworthy Details
 
    * Custom emojis use a different format - it must be in the format of `<:emoji_name:12345>` with 12345 being the emoji's URL ID. The ID can be retrieved by getting the emoji's URL and copying the number in the URL.
+   
+   * If you want to link something, but you don't want Discord to automatically embed the link (AKA preview), add `<` and `>` around the link.
 
-   * This bot was made with private server owners in mind. Its stability beyond that is unpredictable.
+   * ~~This bot was made with private server owners in mind. Its stability beyond that is unpredictable.~~ Public usage of the bot is now being tested. See the info at the top.
 
    * Upon starting the bot with a never before seen RSS feed, it will all store available feeds at that time and put it into the database instead of sending it to Discord. This will prevent your server from being spammed by the bot with messages.
       * Upon starting the bot with an already seen RSS feed, it will retrieve feeds and send it to the Discord server with respect to its `maxAge`, UNLESS `sendOldMessages` is set to false in the config.
