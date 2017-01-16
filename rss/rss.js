@@ -54,15 +54,16 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
   feedparser.on('end', function() {
     //sometimes feeds get deleted mid-retrieval process
-    if (rssList[rssIndex] == null || currentFeed.length == 0) return callback();
+    if (rssList[rssIndex] == null) return callback();
     if (currentFeed.length == 0) {
       if (sendingTestMessage) {
         callback();
-        console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for testrss.`);
+        console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for rsstest.`);
         return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
       }
       else return callback();
     }
+    
     if (guild.name !== channel.guild.name) {
       console.log(`Guild Info: (${guild.id}, ${guild.name}) => Name change detected, changing guild name from "${guild.name}" to "${channel.guild.name}".`);
       guild.name = channel.guild.name;
