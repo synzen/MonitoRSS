@@ -29,7 +29,6 @@ module.exports = function (link, feedparser, con, callback) {
         }
       }
       else {
-        console.log("success");
         stream.pipe(feedparser);
       }
 
