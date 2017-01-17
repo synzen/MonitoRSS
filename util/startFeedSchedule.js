@@ -51,14 +51,14 @@ module.exports = function (bot) {
           getRSS(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, false, function () {
             feedsProcessed++
             //console.log(feedsProcessed + feedsSkipped + " " + feedLength)
-            if (feedsProcessed + feedsSkipped == feedLength) endCon();
+            if (feedsProcessed + feedsSkipped == feedLength) return setTimeout(endCon, 5000);
           });
         }
         else feedsSkipped++;
       }
     }
 
-    if (feedsSkipped + feedsProcessed == feedLength) endCon();
+    if (feedsSkipped + feedsProcessed == feedLength) return endCon();
   }
 
   connect()

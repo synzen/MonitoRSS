@@ -59,9 +59,9 @@ bot.on('ready', function() {
     })
     if (totalFeeds == 0) {
       console.log("RSS Info: There are no active feeds.");
-      startFeedSchedule(bot);
+      return startFeedSchedule(bot);
     }
-    else start();
+    else return start();
   })
 })
 
