@@ -40,7 +40,9 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
   })
 
   feedparser.on('error', function (error) {
-    console.log(error)
+    console.log(`RSS Parsing Error: (${guild.id}, ${guild.name}) => ${error}`)
+    feedparser.removeAllListeners('end')
+    callback()
   });
 
   feedparser.on('readable',function () {
@@ -63,7 +65,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
       }
       else return callback();
     }
-    
+
     if (guild.name !== channel.guild.name) {
       console.log(`Guild Info: (${guild.id}, ${guild.name}) => Name change detected, changing guild name from "${guild.name}" to "${channel.guild.name}".`);
       guild.name = channel.guild.name;

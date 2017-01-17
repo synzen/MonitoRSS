@@ -7,6 +7,8 @@ const cleanRandoms = require('./cleanup.js')
 
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
+  //sometimes feeds get deleted mid process
+  if (data.guid == null) {console.log(`(${channel.guild.id} RSS ID ${rssList[rssIndex]})\n\n DATA GUID IS NULL FOR\n`);console.log(data); return null};
 
   var originalDate = data.pubdate;
   var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
@@ -15,7 +17,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(striptags(data.description));
-  if (dataDescrip.length > 1000) dataDescrip = dataDescrip.substr(0, 900) + "...";
+  if (dataDescrip.length > 700) dataDescrip = dataDescrip.substr(0, 690) + " [...]";
 
   if (data.link.includes("reddit")) {
     let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
@@ -24,7 +26,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   }
 
   var dataSummary = cleanRandoms(striptags(data.summary))
-  if (dataSummary.length > 1000)  dataSummary = striptags(data.summary).substr(0, 900) + "...";
+  if (dataSummary.length > 700)  dataSummary = striptags(data.summary).substr(0, 690) + " [...]";
 
   function replaceKeywords(word){
     var a = word.replace(/{date}/g, vanityDate)
@@ -62,16 +64,16 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var finalMessage = "";
   if (isTestMessage) {
 
-    if (dataSummary.length >= 1000 && dataDescrip.length >= 1000) {
-      dataSummary = striptags(data.summary).substr(0, 750) + "[...]";
-      dataDescrip = dataDescrip.substr(0, 750) + "[...]";
-      //dataDescrip = dataSummary = "Description and summary combined have a character count greater than 2000 and as a precaution cannot be sent.";
-    }
+    // if (dataSummary.length >= 900 && dataDescrip.length >= 900) {
+    //   dataSummary = striptags(data.summary).substr(0, 750) + "[...]";
+    //   dataDescrip = dataDescrip.substr(0, 750) + "[...]";
+    //   //dataDescrip = dataSummary = "Description and summary combined have a character count greater than 2000 and as a precaution cannot be sent.";
+    // }
 
     let footer = "\nBelow is the configured message to be sent for this feed set in config:\n\n\n\n"
     finalMessage += `\`\`\`Markdown\n# ${data.link}\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}`;
     if (dataDescrip != null && dataDescrip !== "") finalMessage += `\n\n[Description]: {description}\n${dataDescrip}`
-    if (dataSummary != null && dataSummary !== "") finalMessage += `\n\n[Summary]: {summary}\n${dataSummary}`
+    if (dataSummary !== dataDescrip && dataSummary != null && dataSummary !== "") finalMessage += `\n\n[Summary]: {summary}\n${dataSummary}`
     if (vanityDate != null && vanityDate !== "") finalMessage += `\n\n[Published Date]: {date}\n${vanityDate}`
     if (data.author != null && data.author !== "") finalMessage += `\n\n[Author]: {author}\n${data.author}`
     if (data.link != null) finalMessage += `\n\n[Link]: {link}\n${data.link}`
@@ -87,6 +89,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   //account for final message length
   if (finalMessage.length >= 1800) {
+    console.log(finalMessage)
     finalMessage = `Warning: The feed titled **${data.title}** is greater than or equal to 1800 characters cannot be sent as a precaution. The link to the feed is:\n\n${data.link}`;
     console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1800.`)
   }

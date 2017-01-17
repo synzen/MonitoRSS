@@ -41,7 +41,8 @@ module.exports = function (con, rssLink, channel, callback) {
     channel.sendMessage(`<${rssLink}> is not a valid feed to add.`)
     console.log(`RSS Warning: ${rssLink} is not a valid feed to add.`)
     channel.stopTyping()
-    return feedparser.removeAllListeners('end')
+    feedparser.removeAllListeners('end')
+    return callback()
   });
 
   feedparser.on('readable',function () {

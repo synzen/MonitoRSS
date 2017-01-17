@@ -60,8 +60,10 @@ module.exports = function (con, channel, rssIndex, callback) {
   })
 
   feedparser.on('error', function (error) {
-    console.log(error)
-  });
+    console.log(`RSS Parsing Error: (${guild.id}, ${guild.name}) => ${error}`)
+    feedparser.removeAllListeners('end')
+    callback()
+    });
 
   feedparser.on('readable',function () {
     var stream = this;
