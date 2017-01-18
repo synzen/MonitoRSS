@@ -24,7 +24,7 @@ module.exports = function (bot) {
   }
 
   function connect () {
-    if (cycleInProgress) return;
+    if (cycleInProgress) return console.log("RSS Warning: Feed retrieval cannot start because cycle is already in progress.");
     cycleInProgress = true
     //console.log("RSS Info: Starting feed retrieval cycle.")
     feedLength = feedsProcessed = feedsSkipped = 0
