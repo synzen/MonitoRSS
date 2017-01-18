@@ -40,9 +40,9 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
   })
 
   feedparser.on('error', function (error) {
-    console.log(`RSS Parsing Error: (${guild.id}, ${guild.name}) => ${error}`)
+    console.log(`RSS Parsing Error: (${guild.id}, ${guild.name}) => ${error}, for link ${rssList[rssIndex].link}`)
     feedparser.removeAllListeners('end')
-    callback()
+    return callback()
   });
 
   feedparser.on('readable',function () {
