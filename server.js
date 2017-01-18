@@ -63,6 +63,7 @@ bot.on('ready', function() {
     }
     else return start();
   })
+  bot.removeAllListeners('ready')
 })
 
 bot.on('message', function (message) {
