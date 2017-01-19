@@ -104,7 +104,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
         filteredItems++;
         gatherResults();
         var message = translator(channel, rssList, rssIndex, feed, true);
-        //console.log(`RSS Info: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].name}`)
+        console.log(`RSS Info: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].name}`)
         if (message.embedMsg != null)
           channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());
         else

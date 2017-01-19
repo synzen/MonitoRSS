@@ -60,22 +60,22 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   function replaceKeywords(word){
     var a = word.replace(/{date}/g, vanityDate)
-    var b = a.replace(/{title}/g, striptags(data.title))
-    var c = b.replace(/{link}/g, data.link)
-    var d = c.replace(/{author}/g, data.author)
-    var e = d.replace(/{summary}/g, dataSummary)
-    var f = e.replace(/{image}/g, data.image.url)
+            .replace(/{title}/g, striptags(data.title))
+            .replace(/{link}/g, data.link)
+            .replace(/{author}/g, data.author)
+            .replace(/{summary}/g, dataSummary)
+            .replace(/{image}/g, data.image.url)
 
     if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
       if (data['media:group']['media:description']['#'] != null)
-        var g = f.replace(/{description}/g, data['media:group']['media:description']['#']);
-      else var g = f.replace(/{description}/g, "");
+        var b = a.replace(/{description}/g, data['media:group']['media:description']['#']);
+      else var b = a.replace(/{description}/g, "");
 
-      var h = g.replace(/{thumbnail}/g, data['media:group']['media:thumbnail']['@']['url']);
-      return h;
+      var c = b.replace(/{thumbnail}/g, data['media:group']['media:thumbnail']['@']['url']);
+      return c;
     }
     else
-      return f.replace(/{description}/g, dataDescrip)
+      return a.replace(/{description}/g, dataDescrip)
   }
 
   var configMessage = "";
