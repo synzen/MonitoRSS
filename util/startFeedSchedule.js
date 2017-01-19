@@ -24,7 +24,7 @@ module.exports = function (bot) {
   }
 
   function connect () {
-    if (cycleInProgress) return console.log("RSS Warning: Feed retrieval cannot start because cycle is already in progress.");
+    if (cycleInProgress) return;
     cycleInProgress = true
     //console.log("RSS Info: Starting feed retrieval cycle.")
     feedLength = feedsProcessed = feedsSkipped = 0
@@ -32,11 +32,17 @@ module.exports = function (bot) {
     fs.readdir('./sources', function(err, files) {
       if (err) throw err;
       files.forEach(function(guildRSS) {
-        var guild = require(`../sources/${guildRSS}`)
-        guildList.push(guild)
-        for (var y in guild.sources) feedLength++
+        if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
+          let guild = require(`../sources/${guildRSS}`)
+          guildList.push(guild);
+          for (var y in guild.sources) feedLength++;
+        }
+        else if (guildRSS !== "example.json") console.log(`RSS Warning: File ${guildRSS} was not found. Skipping file.`);
       })
-      if (feedLength == 0) return console.log("RSS Info: Finished feed retrieval cycle. No feeds to retrieve. " + new Date());
+      if (feedLength == 0) {
+        cycleInProgress = false;
+        return console.log("RSS Info: Finished feed retrieval cycle. No feeds to retrieve. " + new Date());
+      }
       else con = sqlConnect(startFeed);
     })
 
@@ -50,8 +56,8 @@ module.exports = function (bot) {
         if (configChecks.checkExists(guildId, rssIndex, false) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
           getRSS(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, false, function () {
             feedsProcessed++
-            //console.log(feedsProcessed + feedsSkipped + " " + feedLength)
-            if (feedsProcessed + feedsSkipped == feedLength) return setTimeout(endCon, 5000);
+            // console.log(feedsProcessed + feedsSkipped + " " + feedLength)
+            if (feedsProcessed + feedsSkipped == feedLength) setTimeout(endCon, 5000);
           });
         }
         else feedsSkipped++;

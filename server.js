@@ -53,9 +53,15 @@ bot.on('ready', function() {
   fs.readdir('./sources', function(err, files) {
     if (err) throw err;
     files.forEach(function(guildRSS) {
-      let guild = require(`./sources/${guildRSS}`)
-      guildList.push(guild)
-      for (var y in guild.sources) totalFeeds++
+      if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
+        let guild = require(`./sources/${guildRSS}`)
+        guildList.push(guild);
+        for (var y in guild.sources) totalFeeds++;
+      }
+      else if (guildRSS !== "example.json"){
+        fs.unlink(`./sources/${guildRSS}`, function(err) {if (err) console.log(err)});
+        console.log(`RSS Guild Info: ${guildRSS} was not found in bot's guild list. Deleted source file.`);
+      }
     })
     if (totalFeeds == 0) {
       console.log("RSS Info: There are no active feeds.");
