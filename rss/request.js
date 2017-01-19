@@ -14,7 +14,7 @@ module.exports = function (link, feedparser, con, callback) {
       console.log(`RSS Request Error: ${error} for request from ${link}.  Reconnection attempt #${attempts+1}`)
       if (attempts < 10) {
         attempts++;
-        requestStream();
+        SetTimeout(requestStream, 1000);
       }
       else {
         console.log(`RSS Request Error: Unable to reconnect. Skipping ${link}.`);
