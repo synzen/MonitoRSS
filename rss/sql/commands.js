@@ -55,7 +55,7 @@ exports.end = function (con, callback) {
   }
 }
 
-exports.dropTable = function (db, table) {
+exports.dropTable = function (db, table, callback) {
 
   if (sqlType == "mysql") {
     var credentials = require('../../mysqlCred.json')
@@ -88,7 +88,7 @@ exports.dropTable = function (db, table) {
 
     function closeDb() {
       con.close()
-      console.log(`RSS Info: Successfully removed ${table} from config`)
+      callback()
     }
 
   }

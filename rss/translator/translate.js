@@ -20,7 +20,8 @@ const months = [
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   //sometimes feeds get deleted mid process
-  if (data.guid == null) return null;
+  //if (rssList[rssIndex] == null) {console.log("RSS Error: Unhandled error. Trying to translate a null source. Please report."); return null;}
+  if (data.guid == null) {console.log("Feed GUID is null. Unhandled error, please report.", data); return null;}
 
   var pubDate = data.pubdate
   var time = ""

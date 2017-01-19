@@ -11,13 +11,12 @@ module.exports = function (link, feedparser, con, callback) {
     });
 
     req.on('error', function (error) {
-      console.log(`RSS Request Error: ${error} for request from ${link}.  Reconnection attempt #${attempts+1}`)
       if (attempts < 4) {
         attempts++;
-        SetTimeout(requestStream, 1500);
+        setTimeout(requestStream, 1500);
       }
       else {
-        console.log(`RSS Request Error: Unable to reconnect. Skipping ${link}.`);
+        console.log(`RSS Request Error: Unable to connect to ${link}, skipping...`);
         callback();
       }
     });
@@ -29,7 +28,7 @@ module.exports = function (link, feedparser, con, callback) {
         this.emit('error', new Error(`Bad status code.`));
       }
       else {
-        if (attempts > 0) console.log(`RSS Request Success on attempt ${attempts+1}`);
+        if (attempts > 0) console.log(`RSS Request: Successful connection to ${link} on attempt ${attempts+1}`);
         stream.pipe(feedparser);
       }
 

@@ -9,20 +9,22 @@ module.exports = function (message, rssIndex) {
   if (message.channel != null) message.channel.startTyping();
 
   let link = rssList[rssIndex].link
-  console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Starting removal of ${rssList[rssIndex].name}`)
-  sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name)
+  console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Starting removal of ${rssList[rssIndex].link}`)
+  sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name, function () {
+    console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Successfully removed ${rssList[rssIndex].link}`)
+  })
   rssList.splice(rssIndex,1)
   fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`)
 
-  if (rssList.length == 0) fileOps.deleteFile(`./sources/${message.guild.id}.json`);
+  if (rssList.length == 0) fileOps.deleteFile(`./sources/${message.guild.id}.json`, `../sources/${message.guild.id}.json`, function () {
+    return console.log(`RSS File Ops: Deleted ${message.guild.id}.json due to zero sources detected..`)
+  });
 
   var enabledFeeds = 0;
 
   for (var x in rssList) {
     if (rssList[x].enabled == 1) enabledFeeds++;
   }
-
-  if (enabledFeeds == 0 || rssList == null) console.log(`RSS Info: No more active feeds enabled for guild ${message.guild.id} (${message.guild.name}).`)
 
   if (message.channel != null) {
     message.channel.sendMessage(`Successfully removed ${link} from this channel.`);

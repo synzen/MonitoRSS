@@ -1,22 +1,30 @@
 const fs = require('fs');
 
-
-exports.updateFile = function (realFile, inFile, cacheFile) {
-  try {
-    delete require.cache[require.resolve(cacheFile)]
-  }
-  catch (e) {}
-
-  fs.writeFile(realFile, JSON.stringify(inFile, null, 2), function (err) {
-    if (err) return console.log(err);
-  });
-  //fs.writeFileSync(realFile, JSON.stringify(inFile, null, 2))
-
+exports.exists = function (file) {
+  return fs.existsSync(file)
 }
 
-exports.deleteFile = function(file) {
+exports.updateFile = function (realFile, inFile, cacheFile) {
+  fs.writeFile(realFile, JSON.stringify(inFile, null, 2), function (err) {
+    if (err) return console.log(err);
+
+    try {
+      delete require.cache[require.resolve(cacheFile)]
+    }
+    catch (e) {}
+
+  });
+}
+
+exports.deleteFile = function(file, cacheFile, callback) {
   fs.unlink(file, function(err) {
     if (err) return console.log(err)
-    return console.log(`RSS File Ops: Deleted ${file} due to zero sources detected..`)
+
+    try {
+      delete require.cache[require.resolve(cacheFile)]
+    }
+    catch (e) {console.log(e)}
+
+    return callback()
   })
 }

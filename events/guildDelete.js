@@ -1,20 +1,19 @@
 var rssConfig = require('../config.json')
-//var guildList = rssConfig.sources
 const sqlCmds = require('../rss/sql/commands.js')
 const update = require('../util/updateJSON.js')
-const fs = require('fs')
+const fileOps = require('../util/updateJSON.js')
 
 module.exports = function (bot, guild) {
+  console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has removed the bot.`)
 
-  if (!fs.existsSync(`./sources/${guild.id}.json`)) return;
+  if (!fileOps.exists(`./sources/${guild.id}.json`)) return;
   else var rssList = require(`../sources/${guild.id}.json`).sources;
 
   for (let rssIndex in rssList) {
     sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name)
   }
 
-  fs.unlink(`./sources/${guild.id}.json`, function() {
-    console.log(`Guild Info: Guild "${guild.name}" (Users: ${guild.members.size}) has left and its records have been deleted.`)
+  fileOps.deleteFile(`./sources/${guild.id}.json`, `../sources/${guild.id}.json`, function() {
+    return console.log(`RSS Info: Guild entry ${guild.id} (${guild.name}) deleted.`)
   })
-
 }
