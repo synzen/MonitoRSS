@@ -37,7 +37,7 @@ module.exports = function (bot) {
           guildList.push(guild);
           for (var y in guild.sources) feedLength++;
         }
-        else if (guildRSS !== "example.json") console.log(`RSS Warning: File ${guildRSS} was not found. Skipping file.`);
+        else if (guildRSS !== "guild_id_here.json") console.log(`RSS Warning: File ${guildRSS} was not found. Skipping file.`);
       })
       if (feedLength == 0) {
         cycleInProgress = false;
