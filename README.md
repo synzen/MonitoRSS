@@ -176,12 +176,15 @@ This is especially useful when you want to add the feed's title and/or descripti
 
    * ~~This bot was made with private server owners in mind. Its stability beyond that is unpredictable.~~ Public usage of the bot is now being tested. See the info at the top.
 
-   * Upon starting the bot with a never before seen RSS feed, it will all store available feeds at that time and put it into the database instead of sending it to Discord. This will prevent your server from being spammed by the bot with messages.
-      * Upon starting the bot with an already seen RSS feed, it will retrieve feeds and send it to the Discord server with respect to its `maxAge`, UNLESS `sendOldMessages` is set to false in the config.
+   * Upon starting the bot with a never before seen RSS feed (AKA, when its first added/first seen in the config), it will all store available feeds at that time and put it into the database instead of sending it to Discord. This will prevent your server from being spammed by the bot with messages.
+      * Upon starting the bot with an already recorded RSS feed, it will retrieve feeds and send it to the Discord server with respect to its `maxAge`, UNLESS `sendOldMessages` is set to false in the config.
+      * Once the initialization process after the bot has started has finished, the bot will then retrieve and send any new feeds to Discord afterwards.
 
    * If you already have a bot active, you can simply use that bot's token and that bot will inherit the functionality of this RSS bot.
 
-   * You can check the validity of your configuration through [JSONLint](http://jsonlint.com/).
+   * You can check the validity of your configuration through [JSONLint](http://jsonlint.com/) if you choose to do the manual configuration by directly editing the feed sources.
+   
+   * The bot should be stable on a private server. Once I have done enough testing as a public bot to deem it stable, I will post a [release](https://github.com/synzen/Discord.RSS/releases).
 
 ##Author's Note
 
