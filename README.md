@@ -25,10 +25,9 @@ As an experiment, I am hosting the bot to see how it performs and doing any pote
 4. Create and get a bot token from https://discordapp.com/developers/applications/me.
 5. Invite your bot to your server with a link generated from https://discordapi.com/permissions.html, putting your bot's client ID there.
 6. Put your bot token and change whatever else you need to in [config.json](#configuration)
-7. Create a folder named "sources" in the same directory as server.js
-8. Start the bot by `node server.js` in terminal/command prompt/etc.
-9. Add feeds either [via Discord](#discord-commands), or [manually create](#rss-storage) and [customize](#feed-customization) in the sources folder.
-10. Optionally use the the [forever module](https://www.npmjs.com/package/forever) to automatically restart the bot if it crashes.
+7. Start the bot by `node server.js` in terminal/command prompt/etc.
+8. Add feeds either [via Discord](#discord-commands), or [manually create](#rss-storage) and [customize](#feed-customization) in the sources folder.
+9. Optionally use the the [forever module](https://www.npmjs.com/package/forever) to automatically restart the bot if it crashes.
 
 ###Built With
 * [Node.js] (https://nodejs.org/en/)
@@ -74,7 +73,7 @@ SQLite on the otherhand requires no setup. It will create the database in the sa
 ##RSS Storage
 Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information it must have is `name`, `id`, and `sources` where `sources` is the list of feeds along with their customizations. 
 
-The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. A comprehensive example is provided in `./example/my_guild_id.json`.
+The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. An example is provided in `./sources/guild_id_here.json` (this file will be ignored by the bot on intiailization).
 
 ```javascript
 "name": "My First Guild!",
