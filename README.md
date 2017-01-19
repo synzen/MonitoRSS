@@ -73,7 +73,7 @@ SQLite on the otherhand requires no setup. It will create the database in the sa
 ##RSS Storage
 Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information it must have is `name`, `id`, and `sources` where `sources` is the list of feeds along with their customizations. 
 
-The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. An example is provided in `./sources/guild_id_here.json` (this file will be ignored by the bot on intiailization).
+The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. An example is provided in `./sources/guild_id_here.json` (this file will be ignored by the bot on intialization).
 
 ```javascript
 "name": "My First Guild!",
