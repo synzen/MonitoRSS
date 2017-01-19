@@ -10,7 +10,7 @@ module.exports = function (bot, guild) {
   else var rssList = require(`../sources/${guild.id}.json`).sources;
 
   for (let rssIndex in rssList) {
-    sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name)
+    sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name, function() {})
   }
 
   fileOps.deleteFile(`./sources/${guild.id}.json`, `../sources/${guild.id}.json`, function() {
