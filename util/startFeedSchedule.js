@@ -8,7 +8,7 @@ const rssConfig = require('../config.json')
 module.exports = function (bot) {
   var rssConfig = require('../config.json')
 
-  var cycleInProgress = false
+  //var cycleInProgress = false
   var guildList = []
   var feedLength = 0
   var feedsProcessed = 0
@@ -19,13 +19,13 @@ module.exports = function (bot) {
   function endCon () {
     sqlCmds.end(con, function(err) {
       console.log("RSS Info: Finished feed retrieval cycle. " + new Date())
-      cycleInProgress = false
+      //cycleInProgress = false
     });
   }
 
   function connect () {
-    if (cycleInProgress) return;
-    cycleInProgress = true
+    //if (cycleInProgress) return;
+    //cycleInProgress = true
     //console.log("RSS Info: Starting feed retrieval cycle.")
     feedLength = feedsProcessed = feedsSkipped = 0
     guildList = []
@@ -40,7 +40,7 @@ module.exports = function (bot) {
         else if (guildRSS !== "guild_id_here.json") console.log(`RSS Warning: File ${guildRSS} was not found. Skipping file.`);
       })
       if (feedLength == 0) {
-        cycleInProgress = false;
+        //cycleInProgress = false;
         return console.log("RSS Info: Finished feed retrieval cycle. No feeds to retrieve. " + new Date());
       }
       else con = sqlConnect(startFeed);
