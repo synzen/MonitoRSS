@@ -13,26 +13,37 @@ const commands = {
   rssfilterremove: {description: "Opens a menu to remove filters.", file: "filterRemove"}
 }
 
+
 module.exports = function (bot, message) {
 
   if (message.member == null || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot ) return;
   var m = message.content.split(" ")
   let command = m[0].substr(rssConfig.prefix.length)
 
-  if (command == "rssadd"){
+  function hasPermission() {
+    let guild = bot.guilds.get(message.guild.id)
+    let guildBot = guild.members.get(bot.user.id)
+    if (!guildBot.permissionsIn(message.channel).hasPermission("SEND_MESSAGES")) {
+      console.log(`RSS Permissions Error: (${message.guild.id}, ${message.guild.name}) => Cannot open menus due to missing send message permission in channel (${message.channel.id}, ${message.channel.name})`);
+      return false;
+    }
+    else return true;
+  }
+
+  if (command == "rssadd" && hasPermission()){
     rssAdd(bot, message);
   }
 
-  else if (command == "rsshelp") {
+  else if (command == "rsshelp" && hasPermission()) {
     rssHelp(message, commands);
   }
-  else if (command == "rsslist") {
+  else if (command == "rsslist" && hasPermission()) {
     rssPrintList(message, false, "")
   }
 
   //for commands that needs menu selection, AKA collectors
   else for (let cmd in commands) {
-    if (command == cmd) {
+    if (command == cmd && hasPermission()) {
       inProgress = true;
       rssPrintList(message, true, commands[cmd].file)
     }

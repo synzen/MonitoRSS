@@ -12,7 +12,7 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
     return false;
   }
   else if (rssList[rssIndex].enabled == 0) {
-    console.log(`RSS Config Info: (${guild.id}, ${guild.name}) => Feed "${rssList[rssIndex].name}" is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
+    console.log(`RSS Config Info: (${guild.id}, ${guild.name}) => Feed "${rssList[rssIndex].link}" is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
     return false;
   }
 
@@ -21,11 +21,11 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
     valid = false;
   }
   else if (rssList[rssIndex].link == null || !rssList[rssIndex].link.startsWith("http")){
-    if (logging) console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${rssList[rssIndex].name} has no valid link defined, skipping...`);
+    if (logging) console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${rssList[rssIndex].link} has no valid link defined, skipping...`);
     valid = false;
   }
   else if (rssList[rssIndex].channel == null) {
-    if (logging) console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${rssList[rssIndex].name} has no channel defined, skipping...`);
+    if (logging) console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${rssList[rssIndex].link} has no channel defined, skipping...`);
     valid = false;
   }
   // else if (rssList[rssIndex].message == null){
@@ -38,23 +38,37 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
 }
 
 exports.validChannel = function (bot, guildId, rssIndex) {
-    var guild = require(`../sources/${guildId}.json`)
-    var rssList = guild.sources
+  var guildRss = require(`../sources/${guildId}.json`)
+  var rssList = guildRss.sources
 
+  function getChannel() {
     if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
-      let channel = bot.channels.find("name", rssList[rssIndex].channel);
+      var channel = bot.channels.find("name", rssList[rssIndex].channel);
       if (channel == null) {
-        console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${rssList[rssIndex].name}'s string-defined channel was not found, skipping...`)
+        console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssList[rssIndex].link}'s string-defined channel was not found, skipping...`)
         return false;
       }
       else return channel;
     }
     else {
-      let channel = bot.channels.get(`${rssList[rssIndex].channel}`);
+      var channel = bot.channels.get(`${rssList[rssIndex].channel}`);
       if (channel == null) {
-        console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${rssList[rssIndex].name}'s integer-defined channel was not found. skipping...`)
+        console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssList[rssIndex].link}'s integer-defined channel was not found. skipping...`)
         return false;
       }
-      else return channel;
+        else return channel;
     }
   }
+
+  if (getChannel() !== false) {
+    let guild = bot.guilds.get(guildId)
+    let guildBot = guild.members.get(bot.user.id)
+    if (!guildBot.permissionsIn(getChannel()).hasPermission("SEND_MESSAGES")) {
+      console.log(`RSS Permissions Error: (${guild.id}, ${guild.name}) => Not acquiring feed ${rssList[rssIndex].link} due to missing send channel permission in channel (${getChannel().id}, ${getChannel().name})`);
+      return false;
+    }
+    else return getChannel();
+  }
+  else return false;
+
+}
