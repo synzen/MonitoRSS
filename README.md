@@ -35,7 +35,6 @@ As an experiment, I am hosting the bot to see how it performs and doing any pote
 * [Discord.js] (https://www.npmjs.com/package/discord.js)
 * [Feedparser] (https://www.npmjs.com/package/feedparser)
 * [Request] (https://www.npmjs.com/package/request)
-* [Moment] (https://www.npmjs.com/package/moment)
 * [striptags] (https://www.npmjs.com/package/striptags)
 * Datebase Manager (choose one)
  * [sqlite3] (https://www.npmjs.com/package/sqlite3) (recommended)
