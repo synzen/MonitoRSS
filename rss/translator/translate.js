@@ -1,17 +1,40 @@
 const rssConfig = require('../../config.json')
 const striptags = require('striptags')
-const moment = require('moment')
 const filterFeed = require('./filters.js')
 const createEmbed = require('./embed.js')
 const cleanRandoms = require('./cleanup.js')
+const dates = [
+  "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th",
+  "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th", "20th",
+  "21st", "22nd", "23rd", "24th", "25th", "26th", "27th", "28th", "29th", "30th",
+  "31st"
+  ]
+const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const months = [
+  "January", "February", "March",
+  "April", "May", "June", "July",
+  "August", "September", "October",
+  "November", "December"
+]
 
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   //sometimes feeds get deleted mid process
-  if (data.guid == null) {console.log(`(${channel.guild.id} RSS ID ${rssList[rssIndex]})\n\n DATA GUID IS NULL FOR\n`);console.log(data); return null};
+  if (data.guid == null) return null;
 
-  var originalDate = data.pubdate;
-  var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
+  var pubDate = data.pubdate
+  var time = ""
+  if (pubDate.getHours() >= 12) {
+    if (pubDate.getHours() > 12) time = `${pubDate.getHours() - 12}:${pubDate.getMinutes()} PM`;
+    else time = `12:${pubDate.getMinutes()} PM`;
+  }
+  else {
+    if (pubDate.getHours() != 0) time = `${pubDate.getHours()}:${pubDate.getMinutes()} AM`;
+    else time = `12:${pubDate.getMinutes()} AM`;
+  }
+
+  var vanityDate = `${weekdays[pubDate.getDay()]}, ${months[pubDate.getMonth()]} ${dates[pubDate.getDate() - 1]} ${pubDate.getFullYear()}, ${time}`
+
   if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`
 
   var dataDescrip = ""
@@ -70,12 +93,6 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   //generate final msg
   var finalMessage = "";
   if (isTestMessage) {
-
-    // if (dataSummary.length >= 900 && dataDescrip.length >= 900) {
-    //   dataSummary = striptags(data.summary).substr(0, 750) + "[...]";
-    //   dataDescrip = dataDescrip.substr(0, 750) + "[...]";
-    //   //dataDescrip = dataSummary = "Description and summary combined have a character count greater than 2000 and as a precaution cannot be sent.";
-    // }
 
     let footer = "\nBelow is the configured message to be sent for this feed set in config:\n\n\n\n"
     finalMessage += `\`\`\`Markdown\n# ${data.link}\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}`;

@@ -30,7 +30,6 @@
 const rssConfig = require('../config.json')
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser');
-const moment = require('moment');
 const translator = require('./translator/translate.js')
 const startFeedSchedule = require('../util/startFeedSchedule.js')
 const sqlConnect = require('./sql/connect.js')
@@ -109,8 +108,8 @@ module.exports = function (con, channel, rssIndex, callback) {
           for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
             var cutoffDay;
             if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "")
-              cutoffDay = moment(new Date()).subtract(rssConfig.defaultMaxAge, 'd');
-            else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
+              cutoffDay = new Date(new Date().setDate(new Date().getDate()-rssConfig.defaultMaxAge));
+            else cutoffDay = new Date(new Date().setDate(new Date().getDate()-rssList[rssIndex].maxAge))
 
             if (currentFeed[x].pubdate >= cutoffDay){
               checkTable(currentFeed[x].guid, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
