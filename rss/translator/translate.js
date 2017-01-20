@@ -23,20 +23,21 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   //if (rssList[rssIndex] == null) {console.log("RSS Error: Unhandled error. Trying to translate a null source. Please report."); return null;}
   if (data.guid == null) {console.log("Feed GUID is null. Unhandled error, please report.", data); return null;}
 
-  var pubDate = data.pubdate
-  var time = ""
-  if (pubDate.getHours() >= 12) {
-    if (pubDate.getHours() > 12) time = `${pubDate.getHours() - 12}:${pubDate.getMinutes()} PM`;
-    else time = `12:${pubDate.getMinutes()} PM`;
+  var pubDate = "No published date available."
+  if (data.pubdate != null) {
+    pubDate = data.pubdate;
+    var time = "";
+    if (pubDate.getHours() >= 12) {
+      if (pubDate.getHours() > 12) time = `${pubDate.getHours() - 12}:${pubDate.getMinutes()} PM`;
+      else time = `12:${pubDate.getMinutes()} PM`;
+    }
+    else {
+      if (pubDate.getHours() != 0) time = `${pubDate.getHours()}:${pubDate.getMinutes()} AM`;
+      else time = `12:${pubDate.getMinutes()} AM`;
+    }
+    var vanityDate = `${weekdays[pubDate.getDay()]}, ${months[pubDate.getMonth()]} ${dates[pubDate.getDate() - 1]} ${pubDate.getFullYear()}, ${time}`;
+    if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`;
   }
-  else {
-    if (pubDate.getHours() != 0) time = `${pubDate.getHours()}:${pubDate.getMinutes()} AM`;
-    else time = `12:${pubDate.getMinutes()} AM`;
-  }
-
-  var vanityDate = `${weekdays[pubDate.getDay()]}, ${months[pubDate.getMonth()]} ${dates[pubDate.getDate() - 1]} ${pubDate.getFullYear()}, ${time}`
-
-  if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`
 
   var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
