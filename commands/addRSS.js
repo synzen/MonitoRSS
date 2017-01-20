@@ -23,25 +23,26 @@ module.exports = function (bot, message) {
 
   let content = message.content.split(" ");
   if (content.length == 1) return;
-  if (!content[1].startsWith("http")) return message.channel.sendMessage("Unable to add feed. Make sure there are no odd characters before your feed link (such as new lines).")
+
+  let rssLink = content[1].trim()
+  if (!rssLink.startsWith("http")) return message.channel.sendMessage("Unable to add feed. Make sure it is a link, and there are no odd characters before your feed link.")
   message.channel.startTyping()
 
-  request(content[1], (error, response, body) => {
+  request(rssLink, function (error, response, body) {
 
     if (!error && response.statusCode == 200){
 
       for (var x in rssList) {
-        if ( rssList[x].link == content[1] && isCurrentChannel(rssList[x].channel) ) {
+        if ( rssList[x].link == rssLink && isCurrentChannel(rssList[x].channel) ) {
           message.channel.stopTyping();
           return message.channel.sendMessage("This feed already exists for this channel.");
         }
       }
 
-
       if (rssConfig.maxFeeds == 0 || rssList.length < rssConfig.maxFeeds) {
         var con = sqlConnect(init);
         function init() {
-          initializeRSS(con, content[1], message.channel, function() {
+          initializeRSS(con, rssLink, message.channel, function() {
             sqlCmds.end(con, function(err) {
               if (err) throw err;
             });
@@ -50,13 +51,15 @@ module.exports = function (bot, message) {
       }
       else {
         message.channel.stopTyping();
+        console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to limit of ${rssConfig.maxFeeds} feeds.`)
         return message.channel.sendMessage(`Unable to add feed. The server has reached the limit of: \`${rssConfig.maxFeeds}\` feeds.`)
       }
     }
 
     else {
       message.channel.stopTyping();
-      return message.channel.sendMessage(`Unable to add feed, invalid response received from <${content[1]}>.`);
+      console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to invalid response.`)
+      return message.channel.sendMessage(`Unable to add feed, could not connect to <${rssLink}>.`);
     }
 
   });
