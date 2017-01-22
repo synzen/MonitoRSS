@@ -21,7 +21,7 @@ module.exports = function (bot) {
       console.log("RSS Info: Finished feed retrieval cycle. " + new Date())
     });
     cycleInProgress = false
-    if (startingCycle) setTimeout(connect, 3000);
+    if (startingCycle) setTimeout(connect, 1000);
   }
 
   function connect () {

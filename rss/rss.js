@@ -15,7 +15,6 @@ const requestStream = require('./request.js')
 const translator = require('./translator/translate.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const fs = require('fs')
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -105,8 +104,8 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
         gatherResults();
         var message = translator(channel, rssList, rssIndex, feed, true);
         console.log(`RSS Info: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].name}`);
-        if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
-        else channel.sendMessage(message.textMsg);
+        if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg).catch(err => console.log(`RSS Test Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
+        else channel.sendMessage(message.textMsg).catch(err => console.log(`RSS Test Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
         channel.stopTyping();
       }
       else {
@@ -120,11 +119,13 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
             var message = translator(channel, rssList, rssIndex, feed, false);
             if (message != null) {
               console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`);
-              if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
-              else channel.sendMessage(message.textMsg);
+              if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg).catch(err => console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
+              else channel.sendMessage(message.textMsg).catch(err => console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
             }
+
             insertIntoTable(data);
           }
+
         })
       }
     }
@@ -139,10 +140,9 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
     function gatherResults(){
       processedItems++;
-      //console.log(filteredItems + " " + processedItems) //for debugging
+      //console.log(`${rssList[rssIndex].name} ${filteredItems} ${processedItems}`) //for debugging
       if (processedItems == filteredItems) {
         callback();
-        //console.log(`RSS Info: (${guild.id}, ${guild.name}) => Finished retrieval for: ${feedName}`)
       }
     }
 
