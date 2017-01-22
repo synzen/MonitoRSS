@@ -71,9 +71,9 @@ If you don't already have MySQL installed on your system, [install it](https://d
 SQLite on the otherhand requires no setup. It will create the database in the same directory as server.js on first startup.
 
 ##RSS Storage
-Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information it must have is `name`, `id`, and `sources` where `sources` is the list of feeds along with their customizations. 
+Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information a guild profile must have is `id`, and `sources` where `sources` is the list of feeds along with their customizations. 
 
-The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. An example is provided in `./sources/guild_id_here.json` (this file will be ignored by the bot on intialization).
+The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. The basic information for each source in a guild profile must be `name`, `channel,`, and `link`. A more comprehensive example is provided in `./sources/guild_id_here.json` (this file will be ignored by the bot on intialization). 
 
 ```javascript
 "name": "My First Guild!",
@@ -92,7 +92,7 @@ The bottom is an example of what would be in a guild source file, for example `.
 ```
 
 ###Feed Customization
-The bare minimum for a source must be `name`, `link`, and `channel` for it to be functional. But of course customization is possible! 
+Besides the required `name`, `link`, and `channel` fields, more can be added for customization of course!
 
 1. `name`: Feed Name. If you can, try not to add spaces.
 
