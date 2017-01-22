@@ -114,18 +114,16 @@ module.exports = function (con, channel, rssIndex, callback) {
             if (currentFeed[x].pubdate >= cutoffDay){
               checkTable(currentFeed[x].guid, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
             }
-             else if (currentFeed[x].pubdate < cutoffDay){
-               gatherResults();
-             }
+            else if (currentFeed[x].pubdate < cutoffDay){
+              gatherResults();
+            }
             else if (x == 0 && filteredItems == 0) { //when no feed items have been sent to checkTable and the foor loop is at its end
               filteredItems++;
               gatherResults();
             }
           }
-
         }
       })
-
     }
 
     function createTable() {

@@ -104,35 +104,27 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
         filteredItems++;
         gatherResults();
         var message = translator(channel, rssList, rssIndex, feed, true);
-        console.log(`RSS Info: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].name}`)
-        if (message.embedMsg != null)
-          channel.sendMessage(message.textMsg,message.embedMsg).then(m => m.channel.stopTyping());
-        else
-          channel.sendMessage(message.textMsg).then(m => m.channel.stopTyping());
+        console.log(`RSS Info: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].name}`);
+        if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
+        else channel.sendMessage(message.textMsg);
+        channel.stopTyping();
       }
       else {
         sqlCmds.select(con, feedName, data, function (err, results, fields) {
           if (err) throw err;
-
           if (!isEmptyObject(results)) {
             //console.log(`already seen ${feed.link}, not logging`);
             gatherResults();
           }
-
           else {
-            //console.log(`never seen ${feed.link}, logging now`);
             var message = translator(channel, rssList, rssIndex, feed, false);
             if (message != null) {
               console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`);
-              if (message.embedMsg != null)
-                channel.sendMessage(message.textMsg,message.embedMsg);
-              else
-                channel.sendMessage(message.textMsg);
+              if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg);
+              else channel.sendMessage(message.textMsg);
             }
-
             insertIntoTable(data);
           }
-
         })
       }
     }

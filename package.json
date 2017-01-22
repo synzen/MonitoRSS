@@ -6,7 +6,7 @@
   "author": "debenco",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/debenco/discord-rss/issues"
+    "url": "https://github.com/synzen/Discord.RSS/issues"
   },
   "dependencies": {
     "discord.js": "^11.0.0",
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/debenco/discord-rss.git"
+    "url": "git+https://github.com/synzen/Discord.RSS.git"
   }
 
 }

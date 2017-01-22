@@ -23,25 +23,29 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   //if (rssList[rssIndex] == null) {console.log("RSS Error: Unhandled error. Trying to translate a null source. Please report."); return null;}
   if (data.guid == null) {console.log("Feed GUID is null. Unhandled error, please report.", data); return null;}
 
-  var pubDate = "No published date available."
-  if (data.pubdate != null) {
-    pubDate = data.pubdate;
-    var time = "";
+  var vanityDate = data.pubDate
+  if (vanityDate != null) {
+    let pubDate = data.pubdate;
+    let time = "";
+    let pubDateMin = pubDate.getMinutes();
+    if (pubDate.getMinutes().toString().length == 1) pubDateMin = "0" + pubDateMin;
+
     if (pubDate.getHours() >= 12) {
-      if (pubDate.getHours() > 12) time = `${pubDate.getHours() - 12}:${pubDate.getMinutes()} PM`;
-      else time = `12:${pubDate.getMinutes()} PM`;
+      if (pubDate.getHours() > 12) time = `${pubDate.getHours() - 12}:${pubDateMin} PM`;
+      else time = `12:${pubDateMin} PM`;
     }
     else {
-      if (pubDate.getHours() != 0) time = `${pubDate.getHours()}:${pubDate.getMinutes()} AM`;
-      else time = `12:${pubDate.getMinutes()} AM`;
+      if (pubDate.getHours() != 0) time = `${pubDate.getHours()}:${pubDateMin} AM`;
+      else time = `12:${pubDateMin} AM`;
     }
-    var vanityDate = `${weekdays[pubDate.getDay()]}, ${months[pubDate.getMonth()]} ${dates[pubDate.getDate() - 1]} ${pubDate.getFullYear()}, ${time}`;
+    vanityDate = `${weekdays[pubDate.getDay()]}, ${months[pubDate.getMonth()]} ${dates[pubDate.getDate() - 1]} ${pubDate.getFullYear()}, ${time}`;
     if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`;
   }
 
   var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(striptags(data.description));
+  
   if (dataDescrip.length > 700) {
     //if (isTestMessage) dataDescrip = dataDescrip.substr(0, 400) + " [...]";
     dataDescrip = dataDescrip.substr(0, 690) + " [...]";
