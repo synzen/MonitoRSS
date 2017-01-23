@@ -74,7 +74,7 @@ module.exports = function (con, channel, rssIndex, callback) {
 });
 
   feedparser.on('end', function() {
-    if (currentFeed.length == 0) return callback();
+    if (currentFeed.length == 0 || rssList[rssIndex] == null) return callback();
 
     var feedName = rssList[rssIndex].name
     var tableAlreadyExisted = 0
