@@ -45,14 +45,14 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(striptags(data.description));
-  
+
   if (dataDescrip.length > 700) {
     //if (isTestMessage) dataDescrip = dataDescrip.substr(0, 400) + " [...]";
     dataDescrip = dataDescrip.substr(0, 690) + " [...]";
   }
 
 
-  if (data.link.includes("reddit")) {
+  if (data.link != null && data.link.includes("reddit")) {
     let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
     let b = a.replace("submitted by", "\n*Submitted by:*");
     dataDescrip = b;
@@ -67,21 +67,22 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   function replaceKeywords(word){
     var a = word.replace(/{date}/g, vanityDate)
             .replace(/{title}/g, striptags(data.title))
-            .replace(/{link}/g, data.link)
             .replace(/{author}/g, data.author)
             .replace(/{summary}/g, dataSummary)
             .replace(/{image}/g, data.image.url)
 
-    if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
-      if (data['media:group']['media:description']['#'] != null)
-        var b = a.replace(/{description}/g, data['media:group']['media:description']['#']);
-      else var b = a.replace(/{description}/g, "");
+    if (data.link != null) var b = a.replace(/{link}/g, data.link);
+    else var b = a.replace(/{link}/g, "");
 
-      var c = b.replace(/{thumbnail}/g, data['media:group']['media:thumbnail']['@']['url']);
-      return c;
+    if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
+      if (data['media:group']['media:description']['#'] != null) var c = b.replace(/{description}/g, data['media:group']['media:description']['#']);
+      else var c = b.replace(/{description}/g, "");
+
+      var d = c.replace(/{thumbnail}/g, data['media:group']['media:thumbnail']['@']['url']);
+      return d;
     }
     else
-      return a.replace(/{description}/g, dataDescrip)
+      return b.replace(/{description}/g, dataDescrip)
   }
 
   var configMessage = "";
@@ -101,7 +102,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   if (isTestMessage) {
 
     let footer = "\nBelow is the configured message to be sent for this feed set in config:\n\n\n\n"
-    finalMessage += `\`\`\`Markdown\n# ${data.link}\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}`;
+    finalMessage += `\`\`\`Markdown\n# Test Message\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}`;
     if (dataDescrip != null && dataDescrip !== "") finalMessage += `\n\n[Description]: {description}\n${dataDescrip}`
     if (dataSummary !== dataDescrip && dataSummary != null && dataSummary !== "") finalMessage += `\n\n[Summary]: {summary}\n${dataSummary}`
     if (vanityDate != null && vanityDate !== "") finalMessage += `\n\n[Published Date]: {date}\n${vanityDate}`

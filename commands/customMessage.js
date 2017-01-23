@@ -18,7 +18,7 @@ module.exports = function (message, rssIndex) {
     else if (m.content.toLowerCase() == "reset") {
       message.channel.startTyping();
       customCollect.stop();
-      rssList[rssIndex].message = "";
+      delete rssList[rssIndex].message;
       fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
       message.channel.stopTyping();
       return message.channel.sendMessage(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
