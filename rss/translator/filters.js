@@ -38,6 +38,10 @@ module.exports = function (rssList, rssIndex, data, dataDescrip) {
   if (foundFilterWords(smryFilters, striptags(data.summary)))
     filterFound = true;
 
+  let authorFilters = rssList[rssIndex].filters.author;
+  if (foundFilterWords(authorFilters, striptags(data.author)))
+    filterFound = true;
+
   if (data.guid.startsWith("yt:video")) {
     if (foundFilterWords(descrFilters, data['media:group']['media:description']['#']))
       filterFound = true;

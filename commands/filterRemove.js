@@ -20,7 +20,8 @@ module.exports = function(message, rssIndex) {
   let filterObj = {
     title: {exists: false, loc: filterList.title},
     description: {exists: false, loc: filterList.description},
-    summary: {exists: false, loc: filterList.summary}
+    summary: {exists: false, loc: filterList.summary},
+    author: {exists: false, loc: filterList.author}
   }
 
   var isEmptyFilter = true;
