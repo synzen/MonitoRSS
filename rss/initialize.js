@@ -114,7 +114,8 @@ module.exports = function (con, rssLink, channel, callback) {
     }
 
     function addToConfig() {
-      let metaTitle = currentFeed[0].meta.title
+      if (currentFeed[0].meta.title == null || currentFeed[0].meta.title == "") let metaTitle = "No feed title found."
+      else let metaTitle = currentFeed[0].meta.title;
       if (currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
       else if (currentFeed[0].link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
