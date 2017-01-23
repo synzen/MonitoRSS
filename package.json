@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "discord.js": "^11.0.0",
+    "entities": "^1.1.1",
     "feedparser": "^2.0.0",
     "request": "^2.79.0",
     "sqlite3": "^3.1.8",
