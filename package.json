@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Discord RSS bot with customizable feeds",
   "main": "server.js",
-  "author": "debenco",
+  "author": "synzen",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/synzen/Discord.RSS/issues"
