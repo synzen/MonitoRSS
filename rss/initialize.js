@@ -116,9 +116,9 @@ module.exports = function (con, rssLink, channel, callback) {
     function addToConfig() {
       if (currentFeed[0].meta.title == null || currentFeed[0].meta.title == "") var metaTitle = "No feed title found.";
       else var metaTitle = currentFeed[0].meta.title;
-      
+
       if (currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
-      else if (currentFeed[0].link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
+      else if (currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
       if (fs.existsSync(`./sources/${channel.guild.id}.json`)) {
         var guildRSS = require(`../sources/${channel.guild.id}.json`);
