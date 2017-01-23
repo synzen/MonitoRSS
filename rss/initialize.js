@@ -56,9 +56,10 @@ module.exports = function (con, rssLink, channel, callback) {
 
   feedparser.on('end', function() {
     var metaLink = ""
+    var randomNum = Math.floor((Math.random() * 100) + 1)
     if (currentFeed[0] != null) metaLink = currentFeed[0].meta.link;
 
-    var feedName = `${channel.id}_${metaLink}`
+    var feedName = `${channel.id}_${randomNum}${metaLink}`
 
     if (metaLink == "" ) {
       channel.sendMessage("Cannot find meta link for this feed. Unable to add to database. This is most likely due to no existing articles in the feed.");
@@ -113,6 +114,9 @@ module.exports = function (con, rssLink, channel, callback) {
     }
 
     function addToConfig() {
+      let metaTitle = currentFeed[0].meta.title
+      if (currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
+      else if (currentFeed[0].link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
       if (fs.existsSync(`./sources/${channel.guild.id}.json`)) {
         var guildRSS = require(`../sources/${channel.guild.id}.json`);
@@ -120,6 +124,7 @@ module.exports = function (con, rssLink, channel, callback) {
         rssList.push({
       		enabled: 1,
       		name: feedName,
+          title: metaTitle,
       		link: rssLink,
       		channel: channel.id
       	});
@@ -131,6 +136,7 @@ module.exports = function (con, rssLink, channel, callback) {
           sources: [{
         		enabled: 1,
         		name: feedName,
+            title: metaTitle,
         		link: rssLink,
         		channel: channel.id
         	}]

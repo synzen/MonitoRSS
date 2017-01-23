@@ -29,14 +29,14 @@ module.exports = function (bot, message) {
     rssHelp(message, commands);
   }
   else if (command == "rsslist" && hasPermission) {
-    rssPrintList(message, false, "")
+    rssPrintList(bot, message, false, "");
   }
 
   //for commands that needs menu selection, AKA collectors
   else for (let cmd in commands) {
     if (command == cmd && hasPermission) {
       inProgress = true;
-      rssPrintList(message, true, commands[cmd].file)
+      rssPrintList(bot, message, true, commands[cmd].file)
     }
   }
 
