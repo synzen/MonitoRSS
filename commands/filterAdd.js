@@ -48,7 +48,8 @@ module.exports = function(message, rssIndex) {
           rssList[rssIndex].filters[chosenFilterType.content].push(chosenFilter.content);
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           message.channel.stopTyping();
-          return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`);
+          console.log(`RSS Filters: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
+          return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
         }
       })
       filterCollect.on('end', (collected, reason) => {
