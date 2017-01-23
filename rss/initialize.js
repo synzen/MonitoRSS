@@ -70,6 +70,7 @@ module.exports = function (con, rssLink, channel, callback) {
 
     //MySQL table names have a limit of 64 char
     if (feedName.length >= 64 ) feedName = feedName.substr(0,64);
+    feedName = feedName.replace(/\?/g, "")
 
 
     var processedItems = 0
