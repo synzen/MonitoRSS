@@ -1,8 +1,10 @@
-const rssConfig = require('../../config.json')
+const rssConfig = require('../config.json')
 const moment = require('moment-timezone')
 const fileOps = require('../util/updateJSON.js')
 
 module.exports = function (message) {
+  if (!fileOps.exists(`./sources/${message.guild.id}.json`)) return message.channel.sendMessage("You cannot set your timezone if you have not added any feeds.");
+
   var guild = require(`../sources/${message.guild.id}.json`)
 
   if (guild.timezone == null) var oldTimezone = rssConfig.timezone;

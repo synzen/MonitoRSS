@@ -11,6 +11,7 @@ const commands = {
   rssmessage: {description: "Open a menu to customize a feed's text message.", file: "customMessage"},
   rssembed: {description: "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted.", file: "customEmbed"},
   rsstest: {description: "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization.", file: "testRSS"},
+  rsstimezone: {description: "Change the timezone for dates given by {date} tag customization. Default is America/New_York. For a list of timezones, see the TZ column at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>."},
   rssfilteradd: {description: "Opens a menu to add filters.", file: "filterAdd"},
   rssfilterremove: {description: "Opens a menu to remove filters.", file: "filterRemove"}
 }
@@ -32,10 +33,10 @@ module.exports = function (bot, message) {
   else if (command == "rsslist" && hasPermission) {
     rssPrintList(bot, message, false, "");
   }
-  else if (command == "rsstimezone" && hasPermission()) {
+  else if (command == "rsstimezone" && hasPermission) {
     rssTimezone(message);
   }
-  
+
   //for commands that needs menu selection, AKA collectors
   else for (let cmd in commands) {
     if (command == cmd && hasPermission) {

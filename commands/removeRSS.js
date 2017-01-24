@@ -16,7 +16,7 @@ module.exports = function (message, rssIndex) {
   rssList.splice(rssIndex,1)
   fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`)
 
-  if (rssList.length == 0) fileOps.deleteFile(`./sources/${message.guild.id}.json`, `../sources/${message.guild.id}.json`, function () {
+  if (rssList.length == 0 && guildRss.timezone == null) fileOps.deleteFile(`./sources/${message.guild.id}.json`, `../sources/${message.guild.id}.json`, function () {
     return console.log(`RSS File Ops: Deleted ${message.guild.id}.json due to zero sources detected..`)
   });
 

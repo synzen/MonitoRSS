@@ -60,9 +60,14 @@ module.exports = function (bot, message) {
 
       else {
         message.channel.stopTyping();
-        console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to invalid response.`)
-        if (attempts < 2) setTimeout(checkValidLink, 500);
-        else return message.channel.sendMessage(`Unable to add feed, could not connect to <${rssLink}>.`);
+        if (attempts < 2) {
+          attempts++;
+          setTimeout(checkValidLink, 500);
+        }
+        else {
+          console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to invalid response.`)
+          return message.channel.sendMessage(`Unable to add feed, could not connect to <${rssLink}>.`);
+        }
       }
     });
 
