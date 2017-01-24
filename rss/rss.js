@@ -132,9 +132,9 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
                 .then(m => console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`))
                 .catch(err => {
                   console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`);
-                  console.log(message.textMsg);
-                  console.log(message.embedMsg);
-                  console.log(`Channel is: `, channel);
+                  // console.log(message.textMsg);
+                  // console.log(message.embedMsg);
+                  // console.log(`Channel is: `, channel);
                 });
               }
               else {
@@ -142,15 +142,15 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
                 .then(m => console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`))
                 .catch(err => {
                   console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`);
-                  console.log(message.textMsg);
-                  console.log(`Channel is: `, channel);
+                  // console.log(message.textMsg);
+                  // console.log(`Channel is: `, channel);
                 });
               }
             }
             insertIntoTable(data);
-        }
-      })
-    }
+          }
+        })
+      }
     }
 
 
