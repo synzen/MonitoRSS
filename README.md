@@ -105,7 +105,7 @@ Besides the required `name`, `link`, and `channel` fields, more can be added for
 
 5. `maxAge`: (Optional) If the bot stops unexpectedly, it will grab feeds younger than the maxAge in days and send on bot restart. If `sendOldMessage` is set to `0`, this is ignored.
 
-6. `filters`: The bot will then only send feeds to Discord with the words defined in these filters.
+6. `filters`: The bot will then only send feeds to Discord if the feed has any of the words defined in these filters.
    * There are four filters available: `title`, `description`, `summary` and `author` - they are added as properties of `filters`.
    * For each filter, they can be a string or an array (`["filter one!", "two"]`) to specify more than one word/phrase. For an feed to pass the filters, every word/phrase defined in filters must exist in their respective filter (case-insensitive).
 
