@@ -142,9 +142,26 @@ module.exports = function (con, channel, rssIndex, callback) {
         else {
           if (rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
             var message = translator(channel, rssList, rssIndex, feed, false);
-            console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, logging and sending msg now`);
-            if (message.embedMsg != null) channel.sendMessage(message.textMsg,message.embedMsg).catch(err => console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
-            else channel.sendMessage(message.textMsg).catch(err => console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
+            //console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, logging and sending msg now`);
+            if (message.embedMsg != null) {
+              channel.sendMessage(message.textMsg,message.embedMsg)
+              .then(m => console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`))
+              .catch(err => {
+                console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`);
+                // console.log(message.textMsg);
+                // console.log(message.embedMsg);
+                // console.log(`Channel is: `, channel);
+              });
+            }
+            else {
+              channel.sendMessage(message.textMsg)
+              .then(m => console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`))
+              .catch(err => {
+                console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`);
+                // console.log(message.textMsg);
+                // console.log(`Channel is: `, channel);
+              });
+            }
           }
           insertIntoTable(data);
         }
