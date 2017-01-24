@@ -36,6 +36,7 @@ As an experiment, I am hosting the bot to see how it performs and doing any pote
 * [Request] (https://www.npmjs.com/package/request)
 * [striptags] (https://www.npmjs.com/package/striptags)
 * [entities] (https://www.npmjs.com/package/entities)
+* [moment-timezone] (https://www.npmjs.com/package/moment-timezone)
 * Datebase Manager (choose one)
  * [sqlite3] (https://www.npmjs.com/package/sqlite3) (recommended)
  * [mysql] (https://www.npmjs.com/package/mysql)
