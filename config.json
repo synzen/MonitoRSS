@@ -1,7 +1,7 @@
 {
   "prefix": "~",
   "token": "",
-  "timezone": "",
+  "timezone": "America/New_York",
   "refreshTimeMinutes": 10,
   "sqlType": "sqlite3",
   "databaseName": "rss",

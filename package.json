@@ -12,6 +12,8 @@
     "discord.js": "^11.0.0",
     "entities": "^1.1.1",
     "feedparser": "^2.0.0",
+    "moment": "^2.17.1",
+    "moment-timezone": "^0.5.11",
     "request": "^2.79.0",
     "sqlite3": "^3.1.8",
     "striptags": "^2.1.1"

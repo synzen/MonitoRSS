@@ -3,44 +3,20 @@ const striptags = require('striptags')
 const filterFeed = require('./filters.js')
 const createEmbed = require('./embed.js')
 const cleanRandoms = require('./cleanup.js')
-const dates = [
-  "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th",
-  "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th", "20th",
-  "21st", "22nd", "23rd", "24th", "25th", "26th", "27th", "28th", "29th", "30th",
-  "31st"
-  ]
-const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-const months = [
-  "January", "February", "March",
-  "April", "May", "June", "July",
-  "August", "September", "October",
-  "November", "December"
-]
+const moment = require('moment-timezone')
 
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
+  const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone
 
   //sometimes feeds get deleted mid process
   //if (rssList[rssIndex] == null) {console.log("RSS Error: Unhandled error. Trying to translate a null source. Please report."); return null;}
   if (data.guid == null) {console.log("Feed GUID is null. Unhandled error, please report.", data); return null;}
 
-  var vanityDate = data.pubDate
-  if (vanityDate != null) {
-    let pubDate = data.pubdate;
-    let time = "";
-    let pubDateMin = pubDate.getMinutes();
-    if (pubDate.getMinutes().toString().length == 1) pubDateMin = "0" + pubDateMin;
-
-    if (pubDate.getHours() >= 12) {
-      if (pubDate.getHours() > 12) time = `${pubDate.getHours() - 12}:${pubDateMin} PM`;
-      else time = `12:${pubDateMin} PM`;
-    }
-    else {
-      if (pubDate.getHours() != 0) time = `${pubDate.getHours()}:${pubDateMin} AM`;
-      else time = `12:${pubDateMin} AM`;
-    }
-    vanityDate = `${weekdays[pubDate.getDay()]}, ${months[pubDate.getMonth()]} ${dates[pubDate.getDate() - 1]} ${pubDate.getFullYear()}, ${time}`;
-    if (rssConfig.timezone != null || rssConfig.timezone !== "") vanityDate += ` ${rssConfig.timezone}`;
-  }
+  var originalDate = data.pubdate;
+  if (guildTimezone != null) var timezone = guildTimezone;
+  else var timezone = rssConfig.timezone;
+  // var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
+  var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
 
   var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
@@ -52,7 +28,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   }
 
 
-  if (data.meta.link.includes("reddit")) {
+  if (data.link != null && data.link.includes("reddit")) {
     let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
     let b = a.replace("submitted by", "\n*Submitted by:*");
     dataDescrip = b;

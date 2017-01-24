@@ -3,6 +3,7 @@ const rssAdd = require('../commands/addRSS.js')
 const rssHelp = require('../commands/helpRSS.js')
 const rssPrintList = require('../commands/util/printFeeds.js')
 const checkPerm = require('../util/checkPerm.js')
+const rssTimezone = require('../commands/timezone.js')
 
 const commands = {
   rssadd: {description: "Add an RSS feed to the channel with the default message."},
@@ -31,7 +32,10 @@ module.exports = function (bot, message) {
   else if (command == "rsslist" && hasPermission) {
     rssPrintList(bot, message, false, "");
   }
-
+  else if (command == "rsstimezone" && hasPermission()) {
+    rssTimezone(message);
+  }
+  
   //for commands that needs menu selection, AKA collectors
   else for (let cmd in commands) {
     if (command == cmd && hasPermission) {
