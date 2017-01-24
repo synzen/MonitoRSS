@@ -95,7 +95,7 @@ module.exports = function(message, rssIndex) {
           else delete rssList[rssIndex].filters[chosenFilterType.content];
           if (isEmptyObject(rssList[rssIndex].filters)) delete rssList[rssIndex].filters;
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
-          console.log(`RSS Filters: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
+          console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
           message.channel.stopTyping();
           return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`);
         }

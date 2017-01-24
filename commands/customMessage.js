@@ -21,6 +21,7 @@ module.exports = function (message, rssIndex) {
       delete rssList[rssIndex].message;
       fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
       message.channel.stopTyping();
+      console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Message reset for ${rssList[rssIndex].link}.`);
       return message.channel.sendMessage(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
     }
     else {
@@ -29,6 +30,7 @@ module.exports = function (message, rssIndex) {
       rssList[rssIndex].message = m.content;
       fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
       message.channel.stopTyping();
+      console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New message recorded for ${rssList[rssIndex].link}.`);
       return message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`);
     }
   });

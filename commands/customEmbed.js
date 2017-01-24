@@ -58,6 +58,7 @@ module.exports = function (message, rssIndex) {
       if (rssList[rssIndex].embedMessage != null) delete rssList[rssIndex].embedMessage;
       fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
       message.channel.stopTyping();
+      console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssIndex].link}.`);
       return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
     }
     else if (choice == "") return message.channel.sendMessage("That is not a valid property.");
@@ -88,6 +89,7 @@ module.exports = function (message, rssIndex) {
           else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
 
           rssList[rssIndex].embedMessage.enabled = 1;
+          console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${rssList[rssIndex].link}.`);
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") {
             message.channel.stopTyping();
