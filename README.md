@@ -48,8 +48,7 @@ As an experiment, I am hosting the bot to see how it performs and doing any pote
 
 2. `sqlType`: See [Database Selection](#database-selection)
 
-3. `timezone`: (Optional) By default adding {date}s to your feeds will not show the timezone. Manually specify it here.
-For example, normally it will show `Sat, January 7th 2017, 7:18 AM` as the feed's date. Specifying PST timezone will make it print `Sat, January 7th 2017, 7:18 AM (PST)`. This is *purely for visual purposes*.
+3. `timezone`: (Optional) This is for the {date} tag customization. By default the date will be in UTC. To add your own timezone, use a timezone from [this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) under the TZ column.
 
 4. `refreshTimeMinutes`: The bot will check for new feeds regularly at every interval specified in minutes here.
 
@@ -164,6 +163,8 @@ Each command will open a menu for you to select the RSS in that channel to modif
 [`rssfilteradd`]: Add filters for specific categories for a feed.
 
 [`rssfilterremove`]: Remove filters for specific categories for a feed.
+
+[`rsstimezone`]: Add a timezone to be applied for {date} tags in all feeds for the guild.
 
 [`rsstest`]: Print out the properties for that specific RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config.
 
