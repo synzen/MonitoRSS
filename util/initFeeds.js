@@ -53,8 +53,7 @@ module.exports = function (bot) {
         for (var y in guild.sources) totalFeeds++;
       }
       else if (guildRSS !== "guild_id_here.json"){
-        fs.unlink(`./sources/${guildRSS}`, function(err) {if (err) console.log(err)});
-        console.log(`RSS Guild Info: ${guildRSS} was not found in bot's guild list. Deleted source file.`);
+        console.log(`RSS Guild Info: ${guildRSS} was not found in bot's guild list. Skipping.`);
       }
     })
     if (totalFeeds == 0) {
