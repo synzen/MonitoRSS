@@ -9,11 +9,11 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone
 
   //sometimes feeds get deleted mid process
-  //if (rssList[rssIndex] == null) {console.log("RSS Error: Unhandled error. Trying to translate a null source. Please report."); return null;}
+  if (rssList[rssIndex] == null) {console.log("RSS Error: Unhandled error. Trying to translate a null source. Please report."); return null;}
   if (data.guid == null) {console.log("Feed GUID is null. Unhandled error, please report.", data); return null;}
 
   var originalDate = data.pubdate;
-  if (guildTimezone != null) var timezone = guildTimezone;
+  if (guildTimezone != null && moment.tz.zone(guildTimezone) != null) var timezone = guildTimezone;
   else var timezone = rssConfig.timezone;
   // var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
   var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
@@ -23,9 +23,12 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   else dataDescrip = cleanRandoms(striptags(data.description));
 
   if (dataDescrip.length > 700) {
-    //if (isTestMessage) dataDescrip = dataDescrip.substr(0, 400) + " [...]";
     dataDescrip = dataDescrip.substr(0, 690) + " [...]";
   }
+  if (isTestMessage && dataDescrip.length > 400) {
+    dataDescrip = dataDescrip.substr(0, 390) + " [...]";
+  }
+
 
 
   if (data.link != null && data.link.includes("reddit")) {
