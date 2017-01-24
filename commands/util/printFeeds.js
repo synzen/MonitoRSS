@@ -11,7 +11,7 @@ module.exports = function (bot, message, isCallingCmd, command) {
     var embed = {embed: {
       color: 0x778899,
       description: `**Channel:** #${message.channel.name}\n**Global Limit:** ${rssList.length}/${rssConfig.maxFeeds}\n`,
-      author: {name: `Active Feeds for Current Channel`, icon_url: bot.user.avatarURL},
+      author: {name: `Active Feeds for Current Channel`},
       fields: [],
       footer: {}
     }}
@@ -48,16 +48,15 @@ module.exports = function (bot, message, isCallingCmd, command) {
       })
     }
 
-    // if (isCallingCmd) message.channel.sendMessage(returnMsg + "``````Markdown\n# Choose a feed to from this channel by typing the number to execute your requested action on, or type exit to cancel.```");
     if (isCallingCmd) {
-      embed.embed.description += `\nChoose a feed to from this channel by typing the number to execute your requested action on, or type exit to cancel.\n_____`;
+      embed.embed.author.name = "Feed Selection Menu";
+      embed.embed.description += `\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
       message.channel.sendMessage("",embed);
     }
     else {
       embed.embed.description += `_____`;
       return message.channel.sendMessage("",embed);
     }
-    // else return message.channel.sendMessage(returnMsg + "```");
 
     const filter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(filter,{time:60000});
