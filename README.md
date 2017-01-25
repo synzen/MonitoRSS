@@ -188,8 +188,6 @@ This is especially useful when you want to add the feed's title and/or descripti
    * If you already have a bot active, you can simply use that bot's token and that bot will inherit the functionality of this RSS bot.
 
    * You can check the validity of your configuration through [JSONLint](http://jsonlint.com/) if you choose to do the manual configuration by directly editing the feed sources.
-   
-   * The bot should be stable on a private server. Once I have done enough testing as a public bot to deem it stable, I will post a [release](https://github.com/synzen/Discord.RSS/releases).
 
 ##Author's Note
 
