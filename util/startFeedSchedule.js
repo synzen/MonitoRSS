@@ -18,15 +18,16 @@ module.exports = function (bot) {
 
   function endCon (startingCycle) {
     sqlCmds.end(con, function(err) {
-      console.log("RSS Info: Finished feed retrieval cycle. " + new Date())
+      if (err) console.log(err);
+      if (!startingCycle) console.log(`RSS Info: Finished feed retrieval cycle. ${new Date()}`);
     });
     cycleInProgress = false
-    if (startingCycle) setTimeout(connect, 1000);
+    if (startingCycle) setTimeout(connect, 5000);
   }
 
   function connect () {
     if (cycleInProgress) {
-      console.log(`RSS Info: Previous cycle was unable to finish. Forcing cycle end.`);
+      console.log(`RSS Info: Previous cycle was unable to finish. Forcing cycle end and starting new cycle. ${new Date()}`);
       endCon(true);
     }
     else {
@@ -46,7 +47,7 @@ module.exports = function (bot) {
         })
         if (feedLength == 0) {
           cycleInProgress = false;
-          return console.log("RSS Info: Finished feed retrieval cycle. No feeds to retrieve. " + new Date());
+          return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve. ${new Date()}`);
         }
         else con = sqlConnect(startFeed);
       })

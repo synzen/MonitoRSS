@@ -16,7 +16,6 @@ const fileOps = require('../util/updateJSON.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const startFeedSchedule = require('../util/startFeedSchedule.js')
-const fs = require('fs')
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -27,7 +26,7 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (con, rssLink, channel, callback) {
+module.exports = function (con, verifyMsg, rssLink, channel, callback) {
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -121,7 +120,7 @@ module.exports = function (con, rssLink, channel, callback) {
       if (currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
       else if (currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
-      if (fs.existsSync(`./sources/${channel.guild.id}.json`)) {
+      if (fileOps.exists(`./sources/${channel.guild.id}.json`)) {
         var guildRSS = require(`../sources/${channel.guild.id}.json`);
         var rssList = guildRSS.sources;
         rssList.push({
@@ -146,14 +145,10 @@ module.exports = function (con, rssLink, channel, callback) {
         };
       }
 
-      // try {
-      //   delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)]
-      // }
-      // catch (e) {}
       fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRSS, `../sources/${channel.guild.id}.json`)
       console.log("RSS Info: Successfully added new feed.")
-      channel.sendMessage(`Successfully added <${rssLink}> for this channel.`)
-      channel.stopTyping()
+      // channel.sendMessage(`Successfully added <${rssLink}> for this channel.`)
+      verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`);
     }
 
     startDataProcessing();

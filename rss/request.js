@@ -24,11 +24,13 @@ module.exports = function (link, feedparser, con, callback) {
     req.on('response', function (res) {
       var stream = this;
 
-      if (res.statusCode !== 200) {
-        this.emit('error', new Error(`Bad status code.`));
-      }
-      else {
-        if (attempts > 0) console.log(`RSS Request: Successful connection to ${link} on attempt ${attempts+1}`);
+      // if (res.statusCode !== 200) {
+      //   this.emit('error', new Error(`Bad status code.`));
+      // }
+      if (res.statusCode == 200) {
+        if (attempts > 0) {
+          console.log(`RSS Request: Successful connection to ${link} on attempt ${attempts+1}`);
+        }
         stream.pipe(feedparser);
       }
 

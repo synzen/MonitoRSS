@@ -3,7 +3,7 @@ const striptags = require('striptags')
 
 function foundFilterWords(filterType, content) {
 
-  //filterType is title, description, or summary
+  //filterType is title, description, summary, or author
 
   if (content == null) return false;
   var content = content.toLowerCase();

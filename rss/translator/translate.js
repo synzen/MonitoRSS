@@ -29,8 +29,6 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     dataDescrip = dataDescrip.substr(0, 390) + " [...]";
   }
 
-
-
   if (data.link != null && data.link.includes("reddit")) {
     let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
     let b = a.replace("submitted by", "\n*Submitted by:*");
@@ -39,8 +37,10 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   var dataSummary = cleanRandoms(striptags(data.summary));
   if (dataSummary.length > 700)  {
-    //if (isTestMessage) dataSummary = striptags(dataSummary).substr(0, 400) + " [...]";
     dataSummary = striptags(dataSummary).substr(0, 690) + " [...]";
+  }
+  if (isTestMessage && dataSummary.length > 400) {
+    dataSumary = dataSummary.substr(0, 390) + " [...]";
   }
 
   function replaceKeywords(word){

@@ -21,25 +21,24 @@ module.exports = function (bot, message) {
   var m = message.content.split(" ")
   let command = m[0].substr(rssConfig.prefix.length)
 
-  var hasPermission = checkPerm(bot, message.channel)
+  //ugly permission checking, but it'll have to do for now
 
-  if (command == "rssadd" && hasPermission){
+  if (command == "rssadd" && checkPerm(command, bot, message.channel)){
     rssAdd(bot, message);
   }
-
-  else if (command == "rsshelp" && hasPermission) {
+  else if (command == "rsshelp" && checkPerm(command, bot, message.channel)) {
     rssHelp(message, commands);
   }
-  else if (command == "rsslist" && hasPermission) {
-    rssPrintList(bot, message, false, "");
+  else if (command == "rsslist" && checkPerm(command, bot, message.channel)) {
+    rssPrintList(bot, message, false, "")
   }
-  else if (command == "rsstimezone" && hasPermission) {
+  else if (command == "rsstimezone" && checkPerm(command, bot, message.channel)) {
     rssTimezone(message);
   }
 
   //for commands that needs menu selection, AKA collectors
   else for (let cmd in commands) {
-    if (command == cmd && hasPermission) {
+    if (command == cmd && checkPerm(command, bot, message.channel)) {
       inProgress = true;
       rssPrintList(bot, message, true, commands[cmd].file)
     }

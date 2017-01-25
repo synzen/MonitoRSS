@@ -6,7 +6,7 @@ module.exports = function (message, rssIndex) {
   var guildRss = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
-  if (message.channel != null) message.channel.startTyping();
+  message.channel.startTyping();
 
   let link = rssList[rssIndex].link
   console.log(`RSS Removal: (${message.guild.id}, ${message.guild.name}) => Starting removal of ${link}`)
@@ -26,9 +26,7 @@ module.exports = function (message, rssIndex) {
     if (rssList[x].enabled == 1) enabledFeeds++;
   }
 
-  if (message.channel != null) {
-    message.channel.sendMessage(`Successfully removed ${link} from this channel.`);
-    message.channel.stopTyping();
-  }
+  message.channel.sendMessage(`Successfully removed ${link} from this channel.`);
+  message.channel.stopTyping();
 
 }
