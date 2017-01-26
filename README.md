@@ -58,7 +58,7 @@ The bot should be stable on a private server (self-hosted). Once I have done eno
 
 6. `sendOldMessages`: Send unseen messages that were not caught during bot downtime after it has restarted - this may result in message spam.
 
-7. `defaultMaxAge`: The max aged feed in days that the bot will grab if it unexpected stops.
+7. `defaultMaxAge`: The max aged feed in days that the bot will grab on startup if it unexpectedly stops.
 
 8. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
 
