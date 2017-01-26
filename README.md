@@ -65,7 +65,7 @@ The bot should be stable on a private server (self-hosted). Once I have done eno
 9. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
 
 ###Database Selection
-I recommend leaving this on `sqlite3`. It can be set to `sqlite3` or `mysql`, however sqlite3 should be easier to work with since it doesn't require any credentials, and the database is created in the same directory as server.js. If you are working with a large number of servers, `mysql` may be the more ideal choice.
+I recommend leaving this on `sqlite3` for small servers. It can be set to `sqlite3` or `mysql`, however sqlite3 should be easier to work with since it doesn't require any credentials, and the database is created in the same directory as server.js. If you are working with a large number of servers, `mysql` may be the more ideal choice as you may encounter a "database is busy" error while using sqlite3 because it is constantly writing to the database while the bot is on its schedule and sqlite3 cannot have simultaneous connections.
 
 Should you wish to try and use MySQL, it is quite simple. If you already have it installed on your system, `npm install mysql` in the server.js directory, set up your credentials in mysqlCred.json, change the `sqltype` to `mysql` in config.json, and you're done!
 
