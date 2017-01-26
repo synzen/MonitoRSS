@@ -4,7 +4,7 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 
 As an experiment, I am hosting the bot to see how it performs and doing any potential fixes along the way. For more information, [see here](https://www.reddit.com/r/discordapp/comments/5n9l6w/discordrss_an_rss_bot/) on adding the bot to your server.
 
-The bot should be stable on a private server (self-hosted). Once I have done enough testing as a public bot to deem it stable, I will post a release.
+The bot should be stable on a private server (self-hosted). Once I have done enough testing as a public bot to deem it stable, I will post a release. In any case, whatever changes I make while testing the public bot will also apply to self-hosted bots since they are all-around improvements.
 
 ####Table of Contents
 - [Starting the Bot](#starting-the-bot)
