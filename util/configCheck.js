@@ -41,35 +41,21 @@ exports.validChannel = function (bot, guildId, rssIndex) {
   var guildRss = require(`../sources/${guildId}.json`)
   var rssList = guildRss.sources
 
-  function getChannel() {
-    if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
-      var channel = bot.channels.find("name", rssList[rssIndex].channel);
-      if (channel == null) {
-        console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssList[rssIndex].link}'s string-defined channel was not found, skipping...`)
-        return false;
-      }
+  if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
+    var channel = bot.channels.find("name", rssList[rssIndex].channel);
+    if (channel == null) {
+      console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssList[rssIndex].link}'s string-defined channel was not found, skipping...`)
+      return false;
+    }
+    else return channel;
+  }
+  else {
+    var channel = bot.channels.get(`${rssList[rssIndex].channel}`);
+    if (channel == null) {
+      console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssList[rssIndex].link}'s integer-defined channel was not found. skipping...`)
+      return false;
+    }
       else return channel;
-    }
-    else {
-      var channel = bot.channels.get(`${rssList[rssIndex].channel}`);
-      if (channel == null) {
-        console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssList[rssIndex].link}'s integer-defined channel was not found. skipping...`)
-        return false;
-      }
-        else return channel;
-    }
   }
-
-  if (getChannel() !== false) {
-    // let guild = bot.guilds.get(guildId)
-    // let guildBot = guild.members.get(bot.user.id)
-    // if (!guildBot.permissionsIn(getChannel()).hasPermission("SEND_MESSAGES")) {
-    //   console.log(`RSS Permissions Error: (${guild.id}, ${guild.name}) => Not acquiring feed ${rssList[rssIndex].link} due to missing send channel permission in channel (${getChannel().id}, ${getChannel().name})`);
-    //   return false;
-    // }
-    //else return getChannel();
-    return getChannel();
-  }
-  else return false;
 
 }
