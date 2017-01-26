@@ -19,7 +19,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
 
   var dataDescrip = ""
-  if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
+  if (data.guid.startsWith("yt:video") && data['media:group']['media:description']['#'] !== undefined) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(striptags(data.description));
 
   if (dataDescrip.length > 700) {
@@ -55,7 +55,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
     if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
       if (data['media:group']['media:description']['#'] != null) var c = b.replace(/{description}/g, data['media:group']['media:description']['#']);
-      else var c = b.replace(/{description}/g, "");
+      else var c = b.replace(/{description}/g, "No description available.");
 
       var d = c.replace(/{thumbnail}/g, data['media:group']['media:thumbnail']['@']['url']);
       return d;
