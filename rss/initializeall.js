@@ -34,7 +34,7 @@ const translator = require('./translator/translate.js')
 const startFeedSchedule = require('../util/startFeedSchedule.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const fs = require('fs')
+const sendToDiscord = require('../util/sendToDiscord.js')
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -139,22 +139,7 @@ module.exports = function (con, channel, rssIndex, callback) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
         else {
-          if (rssConfig.sendOldMessages == true) { //this can result in great spam once the loads up after a period of downtime
-            var message = translator(channel, rssList, rssIndex, feed, false);
-            //console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, logging and sending msg now`);
-            if (message != null) {
-              if (message.embedMsg != null) {
-                channel.sendMessage(message.textMsg,message.embedMsg)
-                .then(m => console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`))
-                .catch(err => console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
-              }
-              else {
-                channel.sendMessage(message.textMsg)
-                .then(m => console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`))
-                .catch(err => console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
-              }
-            }
-          }
+          if (rssConfig.sendOldMessages == true) sendToDiscord(rssIndex, channel, feed, false); //this can result in great spam once the loads up after a period of downtime
           insertIntoTable(data);
         }
       })

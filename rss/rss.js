@@ -15,6 +15,7 @@ const requestStream = require('./request.js')
 const translator = require('./translator/translate.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
+const sendToDiscord = require('../util/sendToDiscord.js')
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -100,20 +101,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
       if (sendingTestMessage) {
         filteredItems++;
         gatherResults();
-        var message = translator(channel, rssList, rssIndex, feed, true);
-        //console.log(`RSS Test Delivery: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].name}`);
-        if (message.embedMsg != null) {
-          channel.sendMessage(message.textMsg,message.embedMsg)
-          .then(m => console.log(`RSS Test Delivery: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`))
-          .catch(err => console.log(`RSS Test Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
-        }
-
-        else {
-          channel.sendMessage(message.textMsg)
-          .then(m => console.log(`RSS Test Delivery: (${guild.id}, ${guild.name}) => Sending test message for: ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`))
-          .catch(err => console.log(`RSS Test Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
-          channel.stopTyping();
-        }
+        sendToDiscord(rssIndex, channel, feed, true);
       }
       else {
         sqlCmds.select(con, feedName, data, function (err, results, fields) {
@@ -123,20 +111,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
             gatherResults();
           }
           else {
-            var message = translator(channel, rssList, rssIndex, feed, false);
-            if (message != null) {
-              //console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for RSS named "${rssList[rssIndex].name}".`);
-              if (message.embedMsg != null) {
-                channel.sendMessage(message.textMsg,message.embedMsg)
-                .then(m => console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`))
-                .catch(err => console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
-              }
-              else {
-                channel.sendMessage(message.textMsg)
-                .then(m => console.log(`RSS Delivery: (${guild.id}, ${guild.name}) => Never seen ${feed.link}, sending message for ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`))
-                .catch(err => console.log(`RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: ${err.response.body.message}`));
-              }
-            }
+            sendToDiscord(rssIndex, channel, feed, false);
             insertIntoTable(data);
           }
         })
