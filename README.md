@@ -101,7 +101,7 @@ Besides the required `name`, `link`, and `channel` fields, more can be added for
 
 2. `link`: RSS Feed link.
 
-3. `channel`: Can be the channel's ID, or a name. IDs are highly recommended.
+3. `channel`: Can be the channel's ID, or a name.
 
 4. `message`: Define a custom message for a feed. Use `\n` for a new line.
 
