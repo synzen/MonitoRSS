@@ -16,16 +16,18 @@ module.exports = function (rssIndex, channel, feed, isTestMessage) {
 
   var message = translator(channel, rssList, rssIndex, feed, isTestMessage);
 
-  if (message.embedMsg != null) {
-    channel.sendMessage(message.textMsg,message.embedMsg)
-    .then(m => console.log(successLog))
-    .catch(err => console.log(errLog + err.response.body.message));
-  }
+  if (message != null)
+    if (message.embedMsg != null) {
+      channel.sendMessage(message.textMsg,message.embedMsg)
+      .then(m => console.log(successLog))
+      .catch(err => console.log(errLog + err.response.body.message));
+    }
 
-  else {
-    channel.sendMessage(message.textMsg)
-    .then(m => console.log(successLog))
-    .catch(err => console.log(errLog + err.response.body.message));
+    else {
+      channel.sendMessage(message.textMsg)
+      .then(m => console.log(successLog))
+      .catch(err => console.log(errLog + err.response.body.message));
+    }
   }
 
 }
