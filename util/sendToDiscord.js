@@ -6,11 +6,11 @@ module.exports = function (rssIndex, channel, feed, isTestMessage) {
 
   if (isTestMessage) {
     var successLog = `RSS Test Delivery: (${guild.id}, ${guild.name}) => Sent test message for: ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`;
-    var errLog = `RSS Test Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: `;
+    var errLog = `RSS Test Error: (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) => Reason: `;
   }
   else {
     var successLog = `RSS Delivery: (${guild.id}, ${guild.name}) => Sent message for: ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`;
-    var errLog = `RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${message.channel.id}, ${message.channel.name}) => Reason: `;
+    var errLog = `RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) => Reason: `;
   }
 
 
