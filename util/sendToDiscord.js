@@ -16,7 +16,7 @@ module.exports = function (rssIndex, channel, feed, isTestMessage) {
 
   var message = translator(channel, rssList, rssIndex, feed, isTestMessage);
 
-  if (message != null)
+  if (message != null) {
     if (message.embedMsg != null) {
       channel.sendMessage(message.textMsg,message.embedMsg)
       .then(m => console.log(successLog))
