@@ -5,13 +5,12 @@ const fs = require('fs')
 module.exports = function (bot, message, isCallingCmd, command) {
   var rssList = []
 
-  if (fs.existsSync(`./sources/${message.guild.id}.json`))
-    rssList = require(`../../sources/${message.guild.id}.json`).sources
+  try {rssList = require(`../../sources/${message.guild.id}.json`).sources} catch(e) {}
 
     var embed = {embed: {
       color: 0x778899,
-      description: `**Channel:** #${message.channel.name}\n**Global Limit:** ${rssList.length}/${rssConfig.maxFeeds}\n`,
-      author: {name: `Active Feeds for Current Channel`},
+      description: `**Global Limit:** ${rssList.length}/${rssConfig.maxFeeds}\n`,
+      author: {name: `Server Feeds for ${message.guild.name}`},
       fields: [],
       footer: {}
     }}
@@ -27,9 +26,16 @@ module.exports = function (bot, message, isCallingCmd, command) {
     }
   }
 
+  function getChannel(channel) {
+    if (isNaN(parseInt(channel,10)) && bot.channels.find("name", channel) != null) return `<#${bot.channels.find("name", channel).id}>`;
+    else if (bot.channels.get(channel) != null) return `<#${channel}>`;
+    else return `Error: ${channel} not found in guild.`;
+  }
+
   var currentRSSList = [];
   for (var rssIndex in rssList){
-    if (isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title] );
+    if (isCallingCmd && isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title] );
+    else if (!isCallingCmd) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title, getChannel(rssList[rssIndex].channel)] )
   }
 
 
@@ -44,13 +50,15 @@ module.exports = function (bot, message, isCallingCmd, command) {
       returnMsg += `[${count}]: ${currentRSSList[x][0]}\n`
       embed.embed.fields.push({
         name: `${count})  ${currentRSSList[x][2]}`,
-        value: "Link: " + currentRSSList[x][0]
+        value: ""
       })
+      if (isCallingCmd) embed.embed.fields[embed.embed.fields.length - 1].value = `Link: ${currentRSSList[x][0]}`;
+      else embed.embed.fields[embed.embed.fields.length - 1].value = `Channel: ${currentRSSList[x][3]}\nLink: ${currentRSSList[x][0]}`;
     }
 
     if (isCallingCmd) {
       embed.embed.author.name = "Feed Selection Menu";
-      embed.embed.description += `\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
+      embed.embed.description += `**Channel:** #${message.channel.name}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
       message.channel.sendMessage("",embed);
     }
     else {
