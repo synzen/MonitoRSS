@@ -50,19 +50,21 @@ The bot should perform fine on a private server (self-hosted) since you have the
 
 2. `sqlType`: See [Database Selection](#database-selection)
 
-3. `timezone`: (Optional) This is for the {date} tag customization. By default the date will be in UTC. To add your own timezone, use a timezone from [this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) under the TZ column.
+3. `menuColor` The color of the Discord embed menu commands. Must be in [*integer* format](https://www.shodor.org/stella2java/rgbint.html).
 
-4. `refreshTimeMinutes`: The bot will check for new feeds regularly at every interval specified in minutes here.
+4. `timezone`: (Optional) This is for the {date} tag customization. By default the date will be in UTC if left blank. To add your own timezone, use a timezone from [this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) under the TZ column.
 
-5. `databaseName`: Name of database that will be created.
+5. `refreshTimeMinutes`: The bot will check for new feeds regularly at every interval specified in minutes here.
 
-6. `sendOldMessages`: Send unseen messages that were not caught during bot downtime after it has restarted - this may result in message spam.
+6. `databaseName`: Name of database that will be created.
 
-7. `defaultMaxAge`: The max aged feed in days that the bot will grab on startup if it unexpectedly stops.
+7. `sendOldMessages`: Send unseen messages that were not caught during bot downtime after it has restarted - this may result in message spam.
 
-8. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
+8. `defaultMaxAge`: The max aged feed in days that the bot will grab on startup if it unexpectedly stops.
 
-9. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
+9. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
+
+10. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
 
 ###Database Selection
 It can be set to `sqlite3` or `mysql`. sqlite3 should be easier to work with since it doesn't require any credentials, and the database is created in the same directory as server.js. If you are working with a large number of servers, `mysql` may be the more ideal choice as you may encounter a "database is busy/closed" error while using sqlite3 because it is constantly writing to the database while the bot is on its schedule and sqlite3 cannot have simultaneous connections.
@@ -103,15 +105,18 @@ Besides the required `name`, `link`, and `channel` fields, more can be added for
 
 3. `channel`: Can be the channel's ID, or a name.
 
-4. `message`: Define a custom message for a feed. Use `\n` for a new line.
+4. `message`: (Optional) Define a custom message for a feed. Use `\n` for a new line.
 
 5. `maxAge`: (Optional) If the bot stops unexpectedly, it will grab feeds younger than the maxAge in days and send on bot restart. If `sendOldMessage` is set to `0`, this is ignored.
 
-6. `filters`: The bot will then only send feeds to Discord if the feed has any of the words defined in these filters.
+6. `subscribedRoles`: (Optional) An array of roles that will be mentioned on every new article sent from a feed. (More details to be added)
+
+7. `filters`: (Optional) The bot will then only send feeds to Discord if the feed has any of the words defined in these filters.
    * There are four filters available: `title`, `description`, `summary` and `author` - they are added as properties of `filters`.
    * For each filter, they can be a string or an array (`["filter one!", "two"]`) to specify more than one word/phrase. For a feed to pass the filters - if any word/phrase defined in any of the filter categories are found (case-insensitive) in the message, it will pass the filter and be sent to Discord. 
+   * In addition to the above, another object can be made - `subscribedRoles` (not the same as #6). Here you can define role-specific filters that will determine when they will be mentioned instead of global mentioning as in #6. If manually added, global subscriptions will override this. Otherwise, Discord commands will automatically remove one or the other when setting global or filter-specific role subscriptions. (More details to be added)
 
-7. `embedMessage`: Define a custom embed message to go along with the text message.
+8. `embedMessage`: (Optional) Define a custom embed message to go along with the text message.
    * Can be enabled or disabled with the property `enabled` (boolean).
    * This will override the normal embed that Discord sends whenever a link is posted.
    * Properties are defined through embedMessage.properties (as exemplified through the example). Properties include `color` ([*integer* format](https://www.shodor.org/stella2java/rgbint.html)), `authorTitle`, `authorAvatarURL`, `thumbnailURL`, `message`, `footerText`, and `attachURL` (boolean). Note that not all properties are available in every feed as some may return as undefined.
@@ -162,13 +167,13 @@ Each command will open a menu for you to select the RSS in that channel to modif
 
 [`rssembed`]: Enable and set embed properties to be sent in addition to its regular message.
 
-[`rssfilteradd`]: Add filters for specific categories for a feed.
-
-[`rssfilterremove`]: Remove filters for specific categories for a feed.
+[`rssfilters`]: Add or remove filters for specific categories for a feed.
 
 [`rsstimezone`]: Add a timezone to be applied for {date} tags in all feeds for the guild.
 
-[`rsstest`]: Print out the properties for that specific RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config.
+[`rssroles`]: Set role subscriptions - either global subscriptions that will mention a role every time a new article from a feed is posted, or filtered subscriptions where the role will only be mentioned with its role-specific filters. 
+
+[`rsstest`]: Print out the properties for that specific RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config. (The role filters are done *after* the feed filters defined from `rssfilters` if they exist.
 
 This is especially useful when you want to add the feed's title and/or description, but you don't know if they'll turn out undefined. However, if the message is too long (that is, over the 2000 character limit), it will not send.
 
