@@ -10,7 +10,7 @@ module.exports = function(bot, message, command) {
 
   try {var guildRss = require(`../sources/${message.guild.id}.json`)}
   catch (e) {return message.channel.sendMessage("Cannot add role customizations without any active feeds.")}
-  
+
   var rssList = guildRss.sources
   var role
 
@@ -93,10 +93,10 @@ module.exports = function(bot, message, command) {
 
     filterOptionCollector.on('end', (collected, reason) => {
       if (reason == "time") {
-        return channel.sendMessage(`I have closed the menu due to inactivity.`);
+        return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
       }
       else if (reason !== "user") {
-        return channel.sendMessage(reason);
+        return message.channel.sendMessage(reason);
       }
     });
   }

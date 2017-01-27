@@ -6,9 +6,11 @@ module.exports = function (message, rssIndex) {
   var guildRss = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
-  message.channel.startTyping();
-
   let link = rssList[rssIndex].link
+
+  //must be checked because this is called when chanels are deleted as well
+  if (message.channel != null) var msg = message.channel.sendMessage(`Removing ${link}...`);
+
   console.log(`RSS Removal: (${message.guild.id}, ${message.guild.name}) => Starting removal of ${link}`)
   sqlCmds.dropTable(rssConfig.databaseName, rssList[rssIndex].name, function () {
     console.log(`RSS Removal: (${message.guild.id}, ${message.guild.name}) => Removal successful.`)
@@ -26,7 +28,6 @@ module.exports = function (message, rssIndex) {
     if (rssList[x].enabled == 1) enabledFeeds++;
   }
 
-  message.channel.sendMessage(`Successfully removed ${link} from this channel.`);
-  message.channel.stopTyping();
+  if (message.channel != null) msg.then(m => m.edit(`Successfully removed ${link} from this channel.`));
 
 }
