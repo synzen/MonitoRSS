@@ -1,6 +1,6 @@
 const filterAdd = require('./filterAdd.js')
 const filterRemove = require('./filterRemove.js')
-const rssConfig = require('../rssConfig.json')
+const rssConfig = require('../config.json')
 
 module.exports = function(message, rssIndex, role) {
   var rssList = require(`../sources/${message.guild.id}.json`).sources
