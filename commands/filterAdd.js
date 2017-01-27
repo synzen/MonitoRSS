@@ -1,14 +1,22 @@
 const fileOps = require('../util/updateJSON.js')
 const rssConfig = require('../config.json')
 
-module.exports = function(message, rssIndex) {
+module.exports = function(message, rssIndex, role) {
   var guildRss = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
   if (rssList[rssIndex].filters == null || rssList[rssIndex].filters == "") rssList[rssIndex].filters = {};
+  if (role != null && rssList[rssIndex].filters.roleSubscriptions == null) rssList[rssIndex].filters.roleSubscriptions = {};
+  if (role != null && rssList[rssIndex].filters.roleSubscriptions[role.id] == null)
+    rssList[rssIndex].filters.roleSubscriptions[role.id] = {
+      roleName: role.name,
+      filters: {}
+    }
 
   //recycled from filterRemove.js
-  var filterList = rssList[rssIndex].filters;
+  if (role == null) var filterList = rssList[rssIndex].filters;
+  else var filterList = rssList[rssIndex].filters.roleSubscriptions[role.id].filters;
+
   let filterObj = {
     title: {exists: false, loc: filterList.title},
     description: {exists: false, loc: filterList.description},
@@ -41,15 +49,24 @@ module.exports = function(message, rssIndex) {
       filterCollect.on('message', function(chosenFilter) {
         if (chosenFilter.content == "{exit}") return filterCollect.stop("RSS Filter Addition menu closed.");
         else {
-          if (rssList[rssIndex].filters[chosenFilterType.content] == null || rssList[rssIndex].filters[chosenFilterType.content] == "") rssList[rssIndex].filters[chosenFilterType.content] = [];
-
+          if (role != null) {
+            try {delete rssList[rssIndex].roleSubscriptions} catch(e) {}
+          }
+          if (filterList[chosenFilterType.content] == null || filterList[chosenFilterType.content] == "") filterList[chosenFilterType.content] = [];
           message.channel.startTyping();
           filterCollect.stop();
-          rssList[rssIndex].filters[chosenFilterType.content].push(chosenFilter.content);
+          filterList[chosenFilterType.content].push(chosenFilter.content);
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           message.channel.stopTyping();
-          console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
-          return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
+          if (role == null) {
+            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
+            return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
+          }
+          else {
+            console.log(`RSS Role Customization: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
+            return message.channel.sendMessage(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
+
+          }
         }
       })
       filterCollect.on('end', (collected, reason) => {

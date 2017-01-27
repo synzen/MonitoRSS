@@ -82,7 +82,11 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
     function createTable() {
       sqlCmds.createTable(con, feedName, function (err, rows) {
-        if (err) throw err;
+        if (err) {
+          console.log(`Database fatal error!. (${guild.id}, ${guild.name}) => RSS index ${rssIndex} Feed ${rssList[rssIndex].link} and date ${new Date()}. Skipping.`);
+          //throw err;
+          return callback();
+        }
         if (sendingTestMessage) {
           let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1))
           checkTable(currentFeed[randFeedIndex].guid, currentFeed[randFeedIndex]);

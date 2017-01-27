@@ -1,11 +1,12 @@
 {
   "prefix": "~",
   "token": "",
+  "menuColor": 7833753,
   "timezone": "America/New_York",
   "refreshTimeMinutes": 10,
   "sqlType": "sqlite3",
   "databaseName": "rss",
-  "sendOldMessages": false,
+  "sendOldMessages": true,
   "defaultMaxAge": 2,
   "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}",
   "maxFeeds": 5

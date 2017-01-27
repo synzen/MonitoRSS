@@ -1,19 +1,19 @@
 const loadCommand = (command) => require(`../${command}.js`)
 const rssConfig = require('../../config.json')
-const fs = require('fs')
+const commandList = require('../../util/commandList.json')
 
-module.exports = function (bot, message, isCallingCmd, command) {
+module.exports = function (bot, message, isCallingCmd, command, callback) {
+  if (commandList[command] != null) var commandFile = commandList[command].file
   var rssList = []
-
   try {rssList = require(`../../sources/${message.guild.id}.json`).sources} catch(e) {}
 
-    var embed = {embed: {
-      color: 0x778899,
-      description: `**Global Limit:** ${rssList.length}/${rssConfig.maxFeeds}\n`,
-      author: {name: `Server Feeds for ${message.guild.name}`},
-      fields: [],
-      footer: {}
-    }}
+  var embed = {embed: {
+    color: rssConfig.menuColor,
+    description: `**Channel:** #${message.channel.name}\n**Server Limit:** ${rssList.length}/${rssConfig.maxFeeds}\n`,
+    author: {name: `Active Feeds for Current Channel`},
+    fields: [],
+    footer: {}
+  }}
 
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) {
@@ -26,16 +26,9 @@ module.exports = function (bot, message, isCallingCmd, command) {
     }
   }
 
-  function getChannel(channel) {
-    if (isNaN(parseInt(channel,10)) && bot.channels.find("name", channel) != null) return `<#${bot.channels.find("name", channel).id}>`;
-    else if (bot.channels.get(channel) != null) return `<#${channel}>`;
-    else return `Error: ${channel} not found in guild.`;
-  }
-
   var currentRSSList = [];
   for (var rssIndex in rssList){
-    if (isCallingCmd && isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title] );
-    else if (!isCallingCmd) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title, getChannel(rssList[rssIndex].channel)] )
+    if (isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title] );
   }
 
 
@@ -48,17 +41,23 @@ module.exports = function (bot, message, isCallingCmd, command) {
     for (var x in currentRSSList) {
       let count = parseInt(x,10) + 1;
       returnMsg += `[${count}]: ${currentRSSList[x][0]}\n`
-      embed.embed.fields.push({
-        name: `${count})  ${currentRSSList[x][2]}`,
-        value: ""
-      })
-      if (isCallingCmd) embed.embed.fields[embed.embed.fields.length - 1].value = `Link: ${currentRSSList[x][0]}`;
-      else embed.embed.fields[embed.embed.fields.length - 1].value = `Channel: ${currentRSSList[x][3]}\nLink: ${currentRSSList[x][0]}`;
+      if (isCallingCmd) {
+        embed.embed.fields.push({
+          name: `${count})  ${currentRSSList[x][2]}`,
+          value: "Link: " + currentRSSList[x][0]
+        })
+      }
+      else {
+        embed.embed.fields.push({
+          name: `${currentRSSList[x][2]}`,
+          value: "Link: " + currentRSSList[x][0]
+        })
+      }
     }
 
     if (isCallingCmd) {
       embed.embed.author.name = "Feed Selection Menu";
-      embed.embed.description += `**Channel:** #${message.channel.name}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
+      embed.embed.description += `**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
       message.channel.sendMessage("",embed);
     }
     else {
@@ -78,7 +77,8 @@ module.exports = function (bot, message, isCallingCmd, command) {
       else {
         collector.stop();
         let rssIndex = currentRSSList[index][1];
-        loadCommand(command)(message, rssIndex);
+        if (!commandList[command].specialCmd) loadCommand(commandFile)(message, rssIndex);
+        else callback(rssIndex);
       }
     })
     collector.on('end', (collected, reason) => {

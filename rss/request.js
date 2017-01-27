@@ -16,7 +16,7 @@ module.exports = function (link, feedparser, con, callback) {
         setTimeout(requestStream, 1500);
       }
       else {
-        console.log(`RSS Request: Unable to connect to ${link}, skipping...`);
+        console.log(`RSS Request Error: Unable to connect to ${link}, skipping...`);
         callback();
       }
     });

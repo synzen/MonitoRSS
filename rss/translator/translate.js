@@ -4,6 +4,7 @@ const filterFeed = require('./filters.js')
 const createEmbed = require('./embed.js')
 const cleanRandoms = require('./cleanup.js')
 const moment = require('moment-timezone')
+const getSubscriptions = require('./subscriptions.js')
 
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone
@@ -19,7 +20,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
 
   var dataDescrip = ""
-  if (data.guid.startsWith("yt:video") && data['media:group']['media:description']['#'] !== undefined) dataDescrip = data['media:group']['media:description']['#'];
+  if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(striptags(data.description));
 
   if (dataDescrip.length > 700) {
@@ -43,19 +44,22 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     dataSumary = dataSummary.substr(0, 390) + " [...]";
   }
 
+  var subscriptions = getSubscriptions(channel, rssIndex, data, dataDescrip)
+
   function replaceKeywords(word){
     var a = word.replace(/{date}/g, vanityDate)
             .replace(/{title}/g, striptags(data.title))
             .replace(/{author}/g, data.author)
             .replace(/{summary}/g, dataSummary)
             .replace(/{image}/g, data.image.url)
+            .replace(/{subscriptions}/g, subscriptions)
 
     if (data.link != null) var b = a.replace(/{link}/g, data.link);
     else var b = a.replace(/{link}/g, "");
 
     if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
       if (data['media:group']['media:description']['#'] != null) var c = b.replace(/{description}/g, data['media:group']['media:description']['#']);
-      else var c = b.replace(/{description}/g, "No description available.");
+      else var c = b.replace(/{description}/g, "");
 
       var d = c.replace(/{thumbnail}/g, data['media:group']['media:thumbnail']['@']['url']);
       return d;
@@ -64,17 +68,29 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
       return b.replace(/{description}/g, dataDescrip)
   }
 
-  var configMessage = "";
-  if (rssList[rssIndex].message == null) configMessage = replaceKeywords(rssConfig.defaultMessage);
-  else configMessage = replaceKeywords(rssList[rssIndex].message);
-
   //filter message
+  var filterPropCount = 0;
+  if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
+    for (var prop in rssList[rssIndex].filters)
+      if (rssList[rssIndex].filters.hasOwnProperty(prop) && prop !== "roleSubscriptions") filterPropCount++;
+  }
+
   var filterExists = false
   var filterFound = false
-  if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
+  if (filterPropCount !== 0) {
     filterExists = true;
     filterFound = filterFeed(rssList, rssIndex, data, dataDescrip);
   }
+
+  //feed article only passes through if the filter found the specified content
+  if (!isTestMessage && filterExists && !filterFound) {
+    console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => ${data.link} did not pass filters and was not sent:\n`, rssList[rssIndex].filters);
+    return null;
+  }
+
+  var configMessage = "";
+  if (rssList[rssIndex].message == null) configMessage = replaceKeywords(rssConfig.defaultMessage);
+  else configMessage = replaceKeywords(rssList[rssIndex].message);
 
   //generate final msg
   var finalMessage = "";
@@ -88,6 +104,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     if (data.author != null && data.author !== "") finalMessage += `\n\n[Author]: {author}\n${data.author}`
     if (data.link != null) finalMessage += `\n\n[Link]: {link}\n${data.link}`
     if (data.image.url !=  null && data.image.url !== "") finalMessage += `\n\n[Image URL]: {image}\n${data.image.url}`;
+    if (subscriptions !== "") finalMessage += `\n\n[Subscriptions]: {subscriptions}\n${subscriptions.split(" ").length - 1} subscriber(s)`;
     if (filterExists) finalMessage += `\n\n[Passed Filters?]: ${filterFound}`;
     if (data.guid.startsWith("yt:video")) {
       finalMessage += `\n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer + configMessage;
@@ -113,12 +130,8 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     enabledEmbed = false;
   else enabledEmbed = true;
 
-  //message only passes through if the filter found the specified content
-  if (!isTestMessage && filterExists && !filterFound && finalMessage.length < 1900) {
-    console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => ${data.link} did not pass filters and was not sent:\n`, rssList[rssIndex].filters);
-    return null;
-  }
-  else if (enabledEmbed !== true || finalMessage.length >= 1900) {
+
+  if (enabledEmbed !== true) {
      return finalMessageCombo;
   }
   else {

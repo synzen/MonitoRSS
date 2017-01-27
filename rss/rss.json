@@ -1,0 +1,79 @@
+{
+	"refreshTimeMinutes": 5,
+	"databaseName": "rss",
+	"defaultMaxAge": 7,
+	"defaultMessage": ":newspaper:  |  **{title}**\n\n{url}",
+	"sources": [{
+		"enabled": 1,
+		"name": "WarframeTwitter",
+		"link": "https://twitrss.me/twitter_user_to_rss/?user=PlayWarframe",
+		"channel": "wf_twitter",
+		"maxAge": 7,
+		"message": "",
+		"embedMessage": {
+			"enabled": 1,
+			"useSimple": 1,
+			"simpleEmbed": {
+					"color": 3447003,
+					"title": "Warframe @PlayWarframe",
+					"avatarURL": "http://icons.iconarchive.com/icons/uiconstock/socialmedia/512/Twitter-icon.png" ,
+					"thumbnailURL": "https://pbs.twimg.com/profile_images/797287460199862272/mG1KEwQ2.jpg",
+					"message":"{description}",
+					"footerText": "{date}",
+					"attachURL": true
+			}
+		}
+	}, {
+		"enabled": 1,
+		"name": "WarframeYouTube",
+		"link": "https://www.youtube.com/feeds/videos.xml?channel_id=UCBIdHvSAyoud-CNZOVKW2-w",
+		"channel": "wf_youtube",
+		"maxAge": 14,
+		"message": "<:youtube:241244891479277569>   **|   A new video has been uploaded on PlayWarframe!** \n\n{url}",
+		"embedMessage": {
+			"enabled": 1,
+			"useSimple": 1,
+			"simpleEmbed": {
+					"color": 3447003,
+					"title": "{title}",
+					"avatarURL": "https://www.seeklogo.net/wp-content/uploads/2016/06/YouTube-icon.png" ,
+					"thumbnailURL": "{thumbnail:yt}",
+					"message":"{description:yt}",
+					"footerText": "{date}",
+					"attachURL": true
+			}
+		}
+	}, {
+		"enabled": 1,
+		"name": "RecruitPostings",
+		"link": "http://detrecruit.blogspot.com/feeds/posts/default",
+		"channel": "new-recruits",
+		"maxAge": 3,
+		"message": "*{date}*\n:mega:   **|   Someone has posted on the recruiting thread**\n\nhttps://forums.warframe.com/topic/704047-deus-ex-tempus-recruitment-laidback-clan-with-completed-dojo-and-research-25-years-and-going-strong/?page=99999",
+		"embedMessage": {}
+	}, {
+		"enabled": 1,
+		"name": "RecruitStoner74",
+		"link": "http://detstoner74.blogspot.com/feeds/posts/default",
+		"channel": "new-recruits",
+		"maxAge": 3,
+		"message": "*{date}*\n\n:white_check_mark:   **|   Recruiter Stoner74 has replied on the thread.**",
+		"embedMessage": {}
+	}, {
+		"enabled": 1,
+		"name": "RecruitMecha",
+		"link": "http://detmecha.blogspot.com/feeds/posts/default",
+		"channel": "new-recruits",
+		"maxAge": 3,
+		"message": "*{date}*\n\n:white_check_mark:   **|   Recruiter Mecha-Tyrant has replied on the thread.**",
+		"embedMessage": {}
+	}, {
+		"enabled": 1,
+		"name": "RecruitHugs",
+		"link": "http://detgamma.blogspot.com/feeds/posts/default",
+		"channel": "new-recruits",
+		"maxAge": 3,
+		"message": "*{date}*\n\n:white_check_mark:   **|   Recruiter Pajama has replied on the thread.**",
+		"embedMessage": {}
+	}]
+}

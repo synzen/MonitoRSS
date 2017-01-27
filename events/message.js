@@ -1,20 +1,11 @@
 var rssConfig = require('../config.json')
 const rssAdd = require('../commands/addRSS.js')
 const rssHelp = require('../commands/helpRSS.js')
-const rssPrintList = require('../commands/util/printFeeds.js')
+const printFeeds = require('../commands/util/printFeeds.js')
+const rssRoles = require('../commands/rssRoles.js')
 const checkPerm = require('../util/checkPerm.js')
 const rssTimezone = require('../commands/timezone.js')
-
-const commands = {
-  rssadd: {description: "Add an RSS feed to the channel with the default message."},
-  rssremove: {description: "Open a menu to delete a feed from the channel.", file: "removeRSS"},
-  rssmessage: {description: "Open a menu to customize a feed's text message.", file: "customMessage"},
-  rssembed: {description: "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted.", file: "customEmbed"},
-  rsstest: {description: "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization.", file: "testRSS"},
-  rsstimezone: {description: `Change the timezone for dates given by {date} tag customization. Default is \`${rssConfig.timezone}\`. For a list of timezones, see the TZ column at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>.`},
-  rssfilteradd: {description: "Opens a menu to add filters.", file: "filterAdd"},
-  rssfilterremove: {description: "Opens a menu to remove filters.", file: "filterRemove"}
-}
+const commandList = require('../util/commandList.json')
 
 module.exports = function (bot, message) {
   if (message.member == null || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
@@ -27,20 +18,22 @@ module.exports = function (bot, message) {
     rssAdd(bot, message);
   }
   else if (command == "rsshelp" && checkPerm(command, bot, message.channel)) {
-    rssHelp(message, commands);
+    rssHelp(message, commandList);
   }
   else if (command == "rsslist" && checkPerm(command, bot, message.channel)) {
-    rssPrintList(bot, message, false, "")
+    printFeeds(bot, message, false, "")
   }
   else if (command == "rsstimezone" && checkPerm(command, bot, message.channel)) {
     rssTimezone(message);
   }
+  else if (command == "rssroles") {
+    rssRoles(bot, message, command);
+  }
 
   //for commands that needs menu selection, AKA collectors
-  else for (let cmd in commands) {
+  else for (let cmd in commandList) {
     if (command == cmd && checkPerm(command, bot, message.channel)) {
-      inProgress = true;
-      rssPrintList(bot, message, true, commands[cmd].file)
+      printFeeds(bot, message, true, cmd)//commandList[cmd].file)
     }
   }
 

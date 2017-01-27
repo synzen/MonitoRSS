@@ -26,5 +26,13 @@ bot.on('channelDelete', function (channel) {
   eventHandler('channelDelete')(channel)
 })
 
+bot.on('roleDelete', function (role) {
+  eventHandler('roleDelete')(bot, role)
+})
+
 
 bot.login(rssConfig.token)
+
+process.on("unhandledRejection", err => {
+  console.error("Uncaught Promise Error: \n" + err.stack);
+});

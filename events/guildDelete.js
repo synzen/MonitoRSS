@@ -1,4 +1,4 @@
-var rssConfig = require('../config.json')
+const rssConfig = require('../config.json')
 const sqlCmds = require('../rss/sql/commands.js')
 const update = require('../util/updateJSON.js')
 const fileOps = require('../util/updateJSON.js')

@@ -8,8 +8,10 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
   var valid = true;
 
   if (rssConfig.defaultMessage == null || rssConfig.defaultMessage == "") {
-    console.log(`RSS Config Warning: A default message must be set in config before continuing.`);
-    return false;
+    throw `RSS Config Warning: A default message must be set in config. Terminating.`;
+  }
+  else if (rssConfig.menuColor == null || isNaN(parseInt(rssConfig.menuColor, 10))) {
+    throw "Menu color is not properly set in config. Terminating.";
   }
   else if (rssList[rssIndex].enabled == 0) {
     console.log(`RSS Config Info: (${guild.id}, ${guild.name}) => Feed "${rssList[rssIndex].link}" is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
