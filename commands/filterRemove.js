@@ -36,29 +36,31 @@ module.exports = function(message, rssIndex, role) {
   }
 
   var isEmptyFilter = true;
-  for (let x in filterList) {
-    for (let y in filterObj) {
-      if (x == y && filterList[x] != null && filterList[x] !== "" && filterList[x].length != 0) {
-        filterObj[y].exists = true;
-        isEmptyFilter = false;
-      }
-    }
+
+  if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
+    for (let prop in rssList[rssIndex].filters)
+      if (rssList[rssIndex].filters.hasOwnProperty(prop) && prop !== "roleSubscriptions") isEmptyFilter = false;
   }
 
   if (isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
 
-  var msg = `\`\`\`Markdown\n# Chosen Feed: ${rssList[rssIndex].link}\n# List of current filters\`\`\`\`\`\`Markdown\n`
+  var msg = {embed: {
+    color: rssConfig.menuColor,
+    description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nBelow are the filter categories with their words/phrases under each.\n_____`,
+    author: {name: `List of Assigned Filters`},
+    fields: [],
+    footer: {}
+  }}
 
-  for (let filterType in filterObj) {
-    if (filterObj[filterType].exists == true) {
-      msg += `\n[Filter Category]: ${filterType}\n`;
-      for (let filter in filterObj[filterType].loc) {
-        msg += filterObj[filterType].loc[filter] + "\n";
-      }
+  for (let filterCategory in filterList)  {
+    var field = {name: filterCategory, value: "", inline: true};
+    if (filterCategory !== "roleSubscriptions") {
+      for (let filter in filterList[filterCategory])
+        field.value += `${filterList[filterCategory][filter]}\n`;
     }
+    msg.embed.fields.push(field);
   }
-
-  message.channel.sendMessage(msg + "```\n**Type the filter category for which you would like you remove a filter from, type \`{reset}\` to remove all filters, or type exit to cancel.**");
+  message.channel.sendMessage("**Type the filter category for which you would like you remove a filter from, type \`{reset}\` to remove all filters, or type exit to cancel.**", msg);
 
   const filter = m => m.author.id == message.author.id;
   const filterTypeCollect = message.channel.createCollector(filter,{time:240000});
@@ -117,11 +119,11 @@ module.exports = function(message, rssIndex, role) {
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           message.channel.stopTyping();
           if (role == null) {
-            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+            console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
             return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
           }
           else {
-            console.log(`RSS Role Customization: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+            console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
             return message.channel.sendMessage(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
           }
         }
