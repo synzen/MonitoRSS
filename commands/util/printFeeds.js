@@ -9,8 +9,8 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
 
   var embed = {embed: {
     color: rssConfig.menuColor,
-    description: `**Channel:** #${message.channel.name}\n**Server Limit:** ${rssList.length}/${rssConfig.maxFeeds}\n`,
-    author: {name: `Active Feeds for Current Channel`},
+    description: `**Server Limit:** ${rssList.length}/${rssConfig.maxFeeds}\n`,
+    author: {},
     fields: [],
     footer: {}
   }}
@@ -26,9 +26,16 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     }
   }
 
+  function getChannel(channel) {
+    if (isNaN(parseInt(channel,10)) && bot.channels.find("name", channel) != null) return `<#${bot.channels.find("name", channel).id}>`;
+    else if (bot.channels.get(channel) != null) return `<#${channel}>`;
+    else return `Error: ${channel} not found in guild.`;
+  }
+
   var currentRSSList = [];
   for (var rssIndex in rssList){
-    if (isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title] );
+    if (isCallingCmd && isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title] );
+    else if (!isCallingCmd) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title, getChannel(rssList[rssIndex].channel)] )
   }
 
 
@@ -41,26 +48,21 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     for (var x in currentRSSList) {
       let count = parseInt(x,10) + 1;
       returnMsg += `[${count}]: ${currentRSSList[x][0]}\n`
-      if (isCallingCmd) {
-        embed.embed.fields.push({
-          name: `${count})  ${currentRSSList[x][2]}`,
-          value: "Link: " + currentRSSList[x][0]
-        })
-      }
-      else {
-        embed.embed.fields.push({
-          name: `${currentRSSList[x][2]}`,
-          value: "Link: " + currentRSSList[x][0]
-        })
-      }
+      embed.embed.fields.push({
+        name: `${count})  ${currentRSSList[x][2]}`,
+        value: ""
+      })
+      if (isCallingCmd) embed.embed.fields[embed.embed.fields.length - 1].value = `Link: ${currentRSSList[x][0]}`;
+      else embed.embed.fields[embed.embed.fields.length - 1].value = `Channel: ${currentRSSList[x][3]}\nLink: ${currentRSSList[x][0]}`;
     }
 
     if (isCallingCmd) {
       embed.embed.author.name = "Feed Selection Menu";
-      embed.embed.description += `**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
+      embed.embed.description += `**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
       message.channel.sendMessage("",embed);
     }
     else {
+      embed.embed.author.name = "Current Active Feeds"
       embed.embed.description += `_____`;
       return message.channel.sendMessage("",embed);
     }
