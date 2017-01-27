@@ -18,10 +18,10 @@ module.exports = function(message, rssIndex, role) {
   else var filterList = rssList[rssIndex].filters.roleSubscriptions[role.id].filters;
 
   let filterObj = {
-    title: {exists: false, loc: filterList.title},
-    description: {exists: false, loc: filterList.description},
-    summary: {exists: false, loc: filterList.summary},
-    author: {exists: false, loc: filterList.author}
+    Title: {exists: false, loc: filterList.Title},
+    Description: {exists: false, loc: filterList.Description},
+    Summary: {exists: false, loc: filterList.Summary},
+    Author: {exists: false, loc: filterList.Author}
   }
 
   var msg = `\`\`\`Markdown\n# Chosen Feed: ${rssList[rssIndex].link}\n# List of available filters to add\`\`\`\`\`\`Markdown\n`
@@ -34,16 +34,22 @@ module.exports = function(message, rssIndex, role) {
 
   const filter = m => m.author.id == message.author.id;
   const filterTypeCollect = message.channel.createCollector(filter,{time:240000});
-  filterTypeCollect.on('message', function (chosenFilterType) {
+  filterTypeCollect.on('message', function (filterType) {
+    if (filterType.content == "exit") return filterTypeCollect.stop("RSS Filter Addition menu closed.");
     var validFilterType = false;
-    for (let a in filterObj) if (chosenFilterType.content.toLowerCase() == a) validFilterType = true;
 
-    if (chosenFilterType.content == "exit") return filterTypeCollect.stop("RSS Filter Addition menu closed.");
+    for (let a in filterObj) {
+      if (filterType.content.toLowerCase() == a.toLowerCase()) {
+        var chosenFilterType = a;
+        validFilterType = true;
+      }
+    }
 
-    else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
+
+    if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
     else if (validFilterType) {
       filterTypeCollect.stop();
-      message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType.content.toLowerCase()}\` by typing it, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`)
+      message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`)
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
       filterCollect.on('message', function(chosenFilter) {
@@ -52,19 +58,19 @@ module.exports = function(message, rssIndex, role) {
           if (role != null) {
             try {delete rssList[rssIndex].roleSubscriptions} catch(e) {}
           }
-          if (filterList[chosenFilterType.content] == null || filterList[chosenFilterType.content] == "") filterList[chosenFilterType.content] = [];
+          if (filterList[chosenFilterType] == null || filterList[chosenFilterType] == "") filterList[chosenFilterType] = [];
           message.channel.startTyping();
           filterCollect.stop();
-          filterList[chosenFilterType.content].push(chosenFilter.content);
+          filterList[chosenFilterType].push(chosenFilter.content);
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           message.channel.stopTyping();
           if (role == null) {
-            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
-            return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
+            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+            return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
           }
           else {
-            console.log(`RSS Role Customization: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
-            return message.channel.sendMessage(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
+            console.log(`RSS Role Customization: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+            return message.channel.sendMessage(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
 
           }
         }

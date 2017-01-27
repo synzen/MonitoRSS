@@ -10,8 +10,8 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone
 
   //sometimes feeds get deleted mid process
-  if (rssList[rssIndex] == null) {console.log("RSS Error: Unhandled error. Trying to translate a null source. Please report."); return null;}
-  if (data.guid == null) {console.log("Feed GUID is null. Unhandled error, please report.", data); return null;}
+  if (rssList[rssIndex] == null) {console.log("RSS Error: Unable to translate a null source."); return null;}
+  if (data.guid == null) {console.log(`RSS Error: (${channel.guild.id}, ${channel.guild.name}) => Feed GUID is null.`, data); return null;}
 
   var originalDate = data.pubdate;
   if (guildTimezone != null && moment.tz.zone(guildTimezone) != null) var timezone = guildTimezone;
@@ -115,10 +115,10 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   else finalMessage = configMessage;
 
   //account for final message length
-  if (finalMessage.length >= 1800) {
+  if (finalMessage.length >= 1900) {
     console.log(finalMessage)
-    finalMessage = `The feed titled **<${data.title}>** is greater than or equal to 1800 characters cannot be sent as a precaution. The link to the feed is:\n\n${data.link}`;
-    console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1800.`)
+    finalMessage = `The feed titled **<${data.title}>** is greater than or equal to 1900 characters cannot be sent as a precaution. The link to the feed is:\n\n${data.link}`;
+    console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1900.`)
   }
   let finalMessageCombo = {
     textMsg: finalMessage

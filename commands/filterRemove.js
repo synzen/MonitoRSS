@@ -29,10 +29,10 @@ module.exports = function(message, rssIndex, role) {
   if (filterList == null || filterList == "") return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
 
   let filterObj = {
-    title: {exists: false, loc: filterList.title},
-    description: {exists: false, loc: filterList.description},
-    summary: {exists: false, loc: filterList.summary},
-    author: {exists: false, loc: filterList.author}
+    Title: {exists: false, loc: filterList.Title},
+    Description: {exists: false, loc: filterList.Description},
+    Summary: {exists: false, loc: filterList.Summary},
+    Author: {exists: false, loc: filterList.Author}
   }
 
   var isEmptyFilter = true;
@@ -62,12 +62,19 @@ module.exports = function(message, rssIndex, role) {
 
   const filter = m => m.author.id == message.author.id;
   const filterTypeCollect = message.channel.createCollector(filter,{time:240000});
-  filterTypeCollect.on('message', function (chosenFilterType) {
-    var validFilterType = false;
-    for (let a in filterObj) if (chosenFilterType.content.toLowerCase() == a) validFilterType = true;
+  filterTypeCollect.on('message', function (filterType) {
+    if (filterType.content == "exit") return filterTypeCollect.stop("RSS Filter Removal menu closed.");
 
-    if (chosenFilterType.content == "exit") return filterTypeCollect.stop("RSS Filter Removal menu closed.");
-    else if (chosenFilterType.content == "{reset}") {
+    var validFilterType = false;
+
+    for (let a in filterObj) {
+      if (filterType.content.toLowerCase() == a.toLowerCase()) {
+        var chosenFilterType = a;
+        validFilterType = true;
+      }
+    }
+
+    if (chosenFilterType == "{reset}") {
       message.channel.startTyping();
       filterTypeCollect.stop();
       delete filterList;
@@ -78,19 +85,17 @@ module.exports = function(message, rssIndex, role) {
     else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
     else if (validFilterType) {
       filterTypeCollect.stop();
-      message.channel.sendMessage(`Confirm the filter word/phrase you would like to remove in the category \`${chosenFilterType.content.toLowerCase()}\` by typing it (case sensitive).`)
+      message.channel.sendMessage(`Confirm the filter word/phrase you would like to remove in the category \`${chosenFilterType}\` by typing it (case sensitive).`)
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
       filterCollect.on('message', function(chosenFilter) {
         var validFilter = false
-        let chosenFilterTypeList = filterList[chosenFilterType.content.toLowerCase()]
+        let chosenFilterTypeList = filterList[chosenFilterType]
 
-        if (typeof chosenFilterTypeList == "object")
-          for (var filterIndex in chosenFilterTypeList) {
-            if (chosenFilterTypeList[filterIndex] == chosenFilter.content) validFilter = [true, filterIndex];
-          }
-        // else if (typeof chosenFilterTypeList == "string")
-        //   if (chosenFilterTypeList == chosenFilter.content) validFilter = true;
+        //if (typeof chosenFilterTypeList == "object")
+        for (var filterIndex in chosenFilterTypeList) {
+          if (chosenFilterTypeList[filterIndex] == chosenFilter.content) validFilter = [true, filterIndex];
+        }
 
         if (chosenFilter.content == "exit") return filterCollect.stop("RSS Filter Removal menu closed.");
         else if (!validFilter) {
@@ -100,10 +105,10 @@ module.exports = function(message, rssIndex, role) {
           message.channel.startTyping();
           filterCollect.stop();
           if (typeof validFilter == "object") {
-            filterList[chosenFilterType.content].splice(validFilter[1], 1);
-            if (filterList[chosenFilterType.content].length == 0) delete filterList[chosenFilterType.content];
+            filterList[chosenFilterType].splice(validFilter[1], 1);
+            if (filterList[chosenFilterType].length == 0) delete filterList[chosenFilterType];
           }
-          else delete filterList[chosenFilterType.content];
+          else delete filterList[chosenFilterType];
           if (role != null && isEmptyObject(filterList)) delete rssList[rssIndex].filters.roleSubscriptions[role.id];
           if (role != null && isEmptyObject(rssList[rssIndex].filters.roleSubscriptions)) delete rssList[rssIndex].filters.roleSubscriptions;
           if (isEmptyObject(rssList[rssIndex].filters)) {
@@ -112,12 +117,12 @@ module.exports = function(message, rssIndex, role) {
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           message.channel.stopTyping();
           if (role == null) {
-            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
-            return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`);
+            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+            return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
           }
           else {
-            console.log(`RSS Role Customization: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType.content}' for ${rssList[rssIndex].link}.`);
-            return message.channel.sendMessage(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType.content}\` for the feed ${rssList[rssIndex].link}.`);
+            console.log(`RSS Role Customization: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+            return message.channel.sendMessage(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
           }
         }
       })

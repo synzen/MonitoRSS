@@ -7,7 +7,7 @@ module.exports = function (message, rssIndex) {
 
   let currentMsg = "```Markdown\n"
   if (rssList[rssIndex].message == "" || rssList[rssIndex].message == null) currentMsg += "None has been set. Currently using default message below:\n\n``````\n" + rssConfig.defaultMessage;
-  else currentMsg += rssList[rssIndex].message
+  else currentMsg += rssList[rssIndex].message;
 
   message.channel.sendMessage(`The current message for ${rssList[rssIndex].link} is: \n${currentMsg + "```"}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${rssConfig.prefix}rsstest\`.\n\n`);
 

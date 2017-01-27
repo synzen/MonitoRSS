@@ -26,19 +26,19 @@ module.exports = function (rssList, rssIndex, data, dataDescrip) {
 
   var filterFound = false
 
-  let titleFilters = rssList[rssIndex].filters.title;
+  let titleFilters = rssList[rssIndex].filters.Title;
   if (foundFilterWords(titleFilters, data.title))
     filterFound = true;
 
-  let descrFilters = rssList[rssIndex].filters.description;
+  let descrFilters = rssList[rssIndex].filters.Description;
   if (foundFilterWords(descrFilters, dataDescrip))
     filterFound = true;
 
-  let smryFilters = rssList[rssIndex].filters.summary;
+  let smryFilters = rssList[rssIndex].filters.Summary;
   if (foundFilterWords(smryFilters, striptags(data.summary)))
     filterFound = true;
 
-  let authorFilters = rssList[rssIndex].filters.author;
+  let authorFilters = rssList[rssIndex].filters.Author;
   if (foundFilterWords(authorFilters, striptags(data.author)))
     filterFound = true;
 
