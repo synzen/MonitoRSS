@@ -53,7 +53,7 @@ module.exports = function (bot) {
           changedInfo = true;
         }
         else if (guild.roles.get(roleID).name !== filteredSubList[roleID].roleName) {
-          console.log(`RSS Info: (${guild.id}, ${guild.name}) => Role (${roleID}, ${filteredSubList[roleID].roleName}) => Changed role name to ${guild.roles.get(roleID).name}`);
+          console.log(`RSS Info: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) => Changed role name to ${guild.roles.get(role.roleID).name}`);
           filteredSubList[roleID].roleName = guild.roles.get(roleID).name;
           changedInfo = true;
         }
@@ -100,9 +100,12 @@ module.exports = function (bot) {
     if (err) throw err;
     files.forEach(function(guildRSS) {
       if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
-        let guild = require(`../sources/${guildRSS}`)
-        guildList.push(guild);
-        for (var y in guild.sources) totalFeeds++;
+        try {
+          let guild = require(`../sources/${guildRSS}`)
+          guildList.push(guild);
+          for (var y in guild.sources) totalFeeds++;
+        }
+        catch (err) {console.log(`RSS Error: Cannot load guild profile ${guildRSS}. Reason:\n${err}`)}
       }
       else if (guildRSS !== "guild_id_here.json"){
         console.log(`RSS Guild Info: ${guildRSS} was not found in bot's guild list. Skipping.`);

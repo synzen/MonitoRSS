@@ -31,17 +31,19 @@ module.exports = function (bot) {
       endCon(true);
     }
     else {
-      cycleInProgress = true
-      //console.log("RSS Info: Starting feed retrieval cycle.")
-      feedLength = feedsProcessed = feedsSkipped = 0
-      guildList = []
+      cycleInProgress = true;
+      feedLength = feedsProcessed = feedsSkipped = 0;
+      guildList = [];
       fs.readdir('./sources', function(err, files) {
         if (err) throw err;
         files.forEach(function(guildRSS) {
           if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
-            let guild = require(`../sources/${guildRSS}`)
-            guildList.push(guild);
-            for (var y in guild.sources) feedLength++;
+            try {
+              let guild = require(`../sources/${guildRSS}`)
+              guildList.push(guild);
+              for (var y in guild.sources) feedLength++;
+            }
+            catch (err) {console.log(`RSS Error: Cannot load guild profile ${guildRSS}. Reason:\n${err}`)}
           }
           else if (guildRSS !== "guild_id_here.json") console.log(`RSS Warning: File ${guildRSS} was not found. Skipping file.`);
         })
