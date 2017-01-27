@@ -53,7 +53,7 @@ module.exports = function (bot) {
           changedInfo = true;
         }
         else if (guild.roles.get(roleID).name !== filteredSubList[roleID].roleName) {
-          console.log(`RSS Info: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) => Changed role name to ${guild.roles.get(role.roleID).name}`);
+          console.log(`RSS Info: (${guild.id}, ${guild.name}) => Role (${roleID}, ${filteredSubList[roleID].roleName}) => Changed role name to ${guild.roles.get(roleID).name}`);
           filteredSubList[roleID].roleName = guild.roles.get(roleID).name;
           changedInfo = true;
         }
