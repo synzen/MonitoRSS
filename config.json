@@ -8,6 +8,6 @@
   "databaseName": "rss",
   "sendOldMessages": true,
   "defaultMaxAge": 2,
-  "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}",
+  "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
   "maxFeeds": 5
 }
