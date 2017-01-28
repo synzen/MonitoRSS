@@ -39,7 +39,6 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
   feedparser.on('error', function (error) {
     channel.sendMessage(`<${rssLink}> is not a valid feed to add.`)
     console.log(`RSS Warning: ${rssLink} is not a valid feed to add.`)
-    channel.stopTyping()
     feedparser.removeAllListeners('end')
     return callback()
   });
@@ -63,7 +62,6 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
     if (metaLink == "" ) {
       channel.sendMessage("Cannot find meta link for this feed. Unable to add to database. This is most likely due to no existing articles in the feed.");
       console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Cannot initialize feed because of no meta link: ${rssLink}`)
-      channel.stopTyping();
       return callback();
     }
 
