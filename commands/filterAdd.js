@@ -59,30 +59,29 @@ module.exports = function(message, rssIndex, role) {
             try {delete rssList[rssIndex].roleSubscriptions} catch(e) {}
           }
           if (filterList[chosenFilterType] == null || filterList[chosenFilterType] == "") filterList[chosenFilterType] = [];
-          message.channel.startTyping();
+          let editing = message.channel.sendMessage(`Updating filters...`);
           filterCollect.stop();
           filterList[chosenFilterType].push(chosenFilter.content);
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
-          message.channel.stopTyping();
           if (role == null) {
             console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
+            return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`));
           }
           else {
             console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return message.channel.sendMessage(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`);
+            return editing.then(m => m.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`));
           }
         }
       })
       filterCollect.on('end', (collected, reason) => {
-        if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+        if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
     }
 
   })
   filterTypeCollect.on('end', (collected, reason) => {
-    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
     else if (reason !== "user") return message.channel.sendMessage(reason);
   });
 

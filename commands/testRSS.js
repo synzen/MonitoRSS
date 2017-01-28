@@ -5,14 +5,16 @@ const sqlConnect = require('../rss/sql/connect.js')
 
 module.exports = function (message, rssIndex) {
 
-  var con = sqlConnect(getTestMsg);
+  var con = sqlConnect(getTestMsg)
 
-  message.channel.startTyping();
+  var grabbing = message.channel.sendMessage(`Grabbing a random feed...`)
+
   function getTestMsg() {
     getRSS(con, message.channel, rssIndex, true, function () {
       sqlCmds.end(con, function(err) {
         if (err) throw err;
-      });
+      })
+      grabbing.then(m => m.delete())
     });
   }
 

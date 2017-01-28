@@ -85,7 +85,7 @@ module.exports = function(message, rssIndex, role) {
   })
 
   collector.on('end', (collected, reason) => {
-    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
     else if (reason !== "user") return message.channel.sendMessage(reason);
   })
 }

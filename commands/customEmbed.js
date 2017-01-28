@@ -53,13 +53,12 @@ module.exports = function (message, rssIndex) {
     }
 
     if (chosenProp.content == "reset") {
-      message.channel.startTyping();
+      let resetMsg = message.channel.sendMessage(`Resetting and disabling embed...`);
       customCollect.stop();
       if (rssList[rssIndex].embedMessage != null) delete rssList[rssIndex].embedMessage;
       fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
-      message.channel.stopTyping();
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssIndex].link}.`);
-      return message.channel.sendMessage("Embed has been disabled, and all properties have been removed.");//.then(m => m.channel.stopTyping());
+      return resetMsg.then(m => m.edit("Embed has been disabled, and all properties have been removed."));;
     }
     else if (choice == "") return message.channel.sendMessage("That is not a valid property.");
     else {
@@ -74,7 +73,7 @@ module.exports = function (message, rssIndex) {
         else if ((choice == "authorAvatarURL" || choice == "thumbnailURL") && propSetting.content !== "reset" && !rssList[rssIndex].link.includes("youtube") && !propSetting.content.startsWith("http")) return message.channel.sendMessage("URLs must link to actual images. Try again.");
         else if (choice == "attachURL" && propSetting.content !== "reset" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.");}
         else {
-          message.channel.startTyping();
+          let editing = message.channel.sendMessage(`Updating embed settings...`);
           let finalChange = propSetting.content;
           if (choice == "color") finalChange = parseInt(propSetting.content,10);
           propertyCollect.stop();
@@ -92,23 +91,21 @@ module.exports = function (message, rssIndex) {
           console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${rssList[rssIndex].link}.`);
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
           if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == "reset") {
-            message.channel.stopTyping();
-            return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been reset.`);
+            return editing.then(m => m.edit(`Settings updated. The property \`${choice}\` has been reset.`));
           }
           else {
-            message.channel.stopTyping();
-            return message.channel.sendMessage(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${rssConfig.prefix}rsstest\` to see your new embed format.`);
+            return editing.then(m => m.edit(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${rssConfig.prefix}rsstest\` to see your new embed format.`));
           }
         }
       });
       propertyCollect.on('end', (collected, reason) => {
-        if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+        if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
       }
     });
     customCollect.on('end', (collected, reason) => {
-      if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+      if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== "user") return message.channel.sendMessage(reason);
     });
  }

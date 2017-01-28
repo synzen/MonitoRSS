@@ -16,27 +16,25 @@ module.exports = function (message, rssIndex) {
   customCollect.on('message', function (m) {
     if (m.content.toLowerCase() == "exit") return customCollect.stop("RSS Feed Message customization menu closed.");
     else if (m.content.toLowerCase() == "reset") {
-      message.channel.startTyping();
+      let resetMsg = message.channel.sendMessage(`Resetting message...`);
       customCollect.stop();
       delete rssList[rssIndex].message;
       fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
-      message.channel.stopTyping();
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Message reset for ${rssList[rssIndex].link}.`);
-      return message.channel.sendMessage(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`)
+      return resetMsg.then(m => m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`));
     }
     else {
-      message.channel.startTyping();
+      let editing = message.channel.sendMessage(`Updating message...`);
       customCollect.stop();
       rssList[rssIndex].message = m.content;
       fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
-      message.channel.stopTyping();
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New message recorded for ${rssList[rssIndex].link}.`);
-      return message.channel.sendMessage(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`);
+      return editing.then(m => m.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`));
     }
   });
 
   customCollect.on('end', (collected, reason) => {
-    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
     else if (reason !== "user") return message.channel.sendMessage(reason);
   });
 

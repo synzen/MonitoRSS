@@ -77,12 +77,11 @@ module.exports = function(message, rssIndex, role) {
     }
 
     if (chosenFilterType == "{reset}") {
-      message.channel.startTyping();
+      let resetMsg = message.channel.sendMessage(`Resetting all filters...`)
       filterTypeCollect.stop();
       delete filterList;
       fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
-      message.channel.stopTyping();
-      return message.channel.sendMessage("All filters have been removed.")//.then(m => m.channel.stopTyping());
+      return resetMsg.then(m => m.edit("All filters have been removed."));
     }
     else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
     else if (validFilterType) {
@@ -104,7 +103,7 @@ module.exports = function(message, rssIndex, role) {
           return message.channel.sendMessage(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again.`);
         }
         else if (validFilter !== false) {
-          message.channel.startTyping();
+          let editing = message.channel.sendMessage(`Removing filter ${chosenFilter.content} from category ${chosenFilterType}...`);
           filterCollect.stop();
           if (typeof validFilter == "object") {
             filterList[chosenFilterType].splice(validFilter[1], 1);
@@ -117,25 +116,24 @@ module.exports = function(message, rssIndex, role) {
             delete rssList[rssIndex].filters;
           }
           fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
-          message.channel.stopTyping();
           if (role == null) {
             console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return message.channel.sendMessage(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
+            return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`));
           }
           else {
             console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return message.channel.sendMessage(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`);
+            return editing.then(m => m.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`));
           }
         }
       })
       filterCollect.on('end', (collected, reason) => {
-        if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+        if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
     }
   })
   filterTypeCollect.on('end', (collected, reason) => {
-    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
     else if (reason !== "user") return message.channel.sendMessage(reason);
   });
 

@@ -33,6 +33,6 @@ bot.on('roleDelete', function (role) {
 
 bot.login(rssConfig.token)
 
-process.on("unhandledRejection", err => {
-  console.error("Uncaught Promise Error: \n" + err.stack);
-});
+process.on("unhandledRejection", (err, promise) => {
+  console.log('Unhandled Rejection at: Promise', promise, 'reason:', err);
+})
