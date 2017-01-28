@@ -18,7 +18,7 @@ module.exports = function(message, rssIndex, role) {
   var menu = {embed: {
     color: rssConfig.menuColor,
     description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these global filters will be sent to Discord.\n_____`,
-    author: {name: `Feed Filters Customization`},
+    author: {name: `Global Filters Customization`},
     fields: [{name: `1) Add a global filter`, value: `Add a new filter to a specific category.`},
             {name: `2) Remove a global filter`, value: `Remove an existing filter, if any.`},
             {name: `3) Remove all global filters`, value: `Remove all filters, if any.`},
