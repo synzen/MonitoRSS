@@ -70,10 +70,11 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
   const collector = message.channel.createCollector(filter,{time:60000});
 
   collector.on('message', function (m) {
-    if (m.content.toLowerCase() == "exit") return collector.stop("RSS Feed selection menu closed.");
-    let index = parseInt(m,10) - 1;
+    let chosenOption = m.content;
+    if (chosenOption.toLowerCase() == "exit") return collector.stop("RSS Feed selection menu closed.");
+    let index = parseInt(chosenOption, 10) - 1;
 
-    if (isNaN(index) || m > currentRSSList.length) return message.channel.sendMessage("That is not a valid number.");
+    if (isNaN(index) || chosenOption > currentRSSList.length || chosenOption < 1) return message.channel.sendMessage("That is not a valid number.");
     else {
       collector.stop();
       let rssIndex = currentRSSList[index][1];
@@ -85,5 +86,4 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
     else if (reason !== "user") return message.channel.sendMessage(reason);
   })
-
 }
