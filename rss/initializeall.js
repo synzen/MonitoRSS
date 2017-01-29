@@ -74,6 +74,11 @@ module.exports = function (con, channel, rssIndex, callback) {
 });
 
   feedparser.on('end', function() {
+    //sometimes feeds get deleted mid-retrieval process
+    //in that case re-requiring it is necessary
+    delete require.cache[require.resolve(`../sources/${channel.guild.id}`)]
+    guild = require(`../sources/${channel.guild.id}.json`)
+    rssList = guild.sources
     if (currentFeed.length == 0 || rssList[rssIndex] == null) return callback();
 
     var feedName = rssList[rssIndex].name

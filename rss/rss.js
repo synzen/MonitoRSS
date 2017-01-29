@@ -34,6 +34,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
 
+
   requestStream(rssList[rssIndex].link, feedparser, con, function() {
     callback()
     feedparser.removeAllListeners('end')
@@ -56,7 +57,12 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
   feedparser.on('end', function() {
     //sometimes feeds get deleted mid-retrieval process
+    //in that case re-requiring it is necessary
+    delete require.cache[require.resolve(`../sources/${channel.guild.id}`)]
+    guild = require(`../sources/${channel.guild.id}.json`)
+    rssList = guild.sources
     if (rssList[rssIndex] == null) return callback();
+
     if (currentFeed.length == 0) {
       if (sendingTestMessage) {
         callback();
