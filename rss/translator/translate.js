@@ -21,7 +21,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
-  else dataDescrip = cleanRandoms(striptags(data.description));
+  else dataDescrip = cleanRandoms(data.description);
 
   if (dataDescrip.length > 700) {
     dataDescrip = dataDescrip.substr(0, 690) + " [...]";
@@ -36,9 +36,9 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     dataDescrip = b;
   }
 
-  var dataSummary = cleanRandoms(striptags(data.summary));
+  var dataSummary = cleanRandoms(data.summary);
   if (dataSummary.length > 700)  {
-    dataSummary = striptags(dataSummary).substr(0, 690) + " [...]";
+    dataSummary = dataSummary.substr(0, 690) + " [...]";
   }
   if (isTestMessage && dataSummary.length > 400) {
     dataSumary = dataSummary.substr(0, 390) + " [...]";

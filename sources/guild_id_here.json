@@ -30,7 +30,7 @@
       "maxAge": 3,
       "filters": {
         "title": ["first", "second"],
-        "description": "more!"
+        "description": ["more!"]
       }
     },
     {

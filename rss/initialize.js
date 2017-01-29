@@ -55,7 +55,9 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
   feedparser.on('end', function() {
     var metaLink = ""
     var randomNum = Math.floor((Math.random() * 100) + 1)
-    if (currentFeed[0] != null) metaLink = currentFeed[0].meta.link;
+    if (currentFeed[0] != null) {
+      metaLink = (currentFeed[0].meta.link != null) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
+    }
 
     var feedName = `${channel.id}_${randomNum}${metaLink}`
 
