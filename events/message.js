@@ -17,38 +17,28 @@ module.exports = function (bot, message) {
     return console.log(`RSS Commands: (${message.guild.id}, ${message.guild.name}) => Used ${command}.`)
   }
 
-  //ugly permission checking, but it'll have to do for now
+  //ugly command handling, but it'll have to do for now
   if (channelTracker.hasActiveMenus(message.channel.id)) return;
 
   if (command == "rssadd" && checkPerm(command, bot, message.channel)){
-    logCommand(command)
-    rssAdd(bot, message)
+    logCommand(command);
+    rssAdd(bot, message);
   }
   else if (command == "rsshelp" && checkPerm(command, bot, message.channel)) {
-    logCommand(command)
-    rssHelp(message, commandList)
+    logCommand(command);
+    rssHelp(message, commandList);
   }
   else if (command == "rsslist" && checkPerm(command, bot, message.channel)) {
-    logCommand(command)
-    printFeeds(bot, message, false, "")
+    logCommand(command);
+    printFeeds(bot, message, false, "");
   }
   else if (command == "rsstimezone" && checkPerm(command, bot, message.channel)) {
-    logCommand(command)
-    rssTimezone(message)
+    logCommand(command);
+    rssTimezone(message);
   }
   else if (command == "rssroles") {
-    logCommand(command)
+    logCommand(command);
     rssRoles(bot, message, command);
-  }
-  else if (command == "stats" && message.author.id == "156576312985780224" && checkPerm(command, bot, message.channel)) {
-    message.channel.sendMessage(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`).catch(m => console.log("error with stat sending"));
-  }
-  else if (command == "setgame" && message.author.id == "156576312985780224" && checkPerm(command, bot, message.channel)){
-    let a = message.content.split(" ")
-    a.shift()
-    let game = a.join(" ")
-    if (game == "null") game = null;
-    bot.user.setGame(game)
   }
 
   //for commands that needs menu selection, AKA collectors
