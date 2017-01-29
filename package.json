@@ -1,12 +1,12 @@
 {
-  "name": "discord-rss",
+  "name": "Discord.RSS",
   "version": "1.0.0",
   "description": "Discord RSS bot with customizable feeds",
   "main": "server.js",
-  "author": "debenco",
+  "author": "synzen",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/debenco/discord-rss/issues"
+    "url": "https://github.com/synzen/discord.RSS/issues"
   },
   "dependencies": {
     "discord.js": "^11.0.0",
@@ -19,6 +19,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/debenco/discord-rss.git"
+    "url": "git+https://github.com/synzen/Discord.RSS.git"
   }
 }
