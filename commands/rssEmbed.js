@@ -69,6 +69,7 @@ module.exports = function (message, rssIndex) {
       customCollect.stop()
       message.channel.sendMessage(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other tags, you may first type \`exit\` then use \`${config.prefix}rsstest\`.`);
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
+      channelTracker.addCollector(message.channel.id)
 
       propertyCollect.on('message', function (propSetting) {
         if (propSetting.content.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
