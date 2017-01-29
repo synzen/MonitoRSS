@@ -1,9 +1,10 @@
 const getRole = require('./util/getRole.js')
 const printFeeds = require('./util/printFeeds.js')
 const fileOps = require('../util/updateJSON.js')
-const addFilter = require('./filterAdd.js')
-const removeFilter = require('./filterRemove.js')
-const rssConfig = require('../config.json')
+const addFilter = require('./util/filterAdd.js')
+const removeFilter = require('./util/filterRemove.js')
+const config = require('../config.json')
+const channelTracker = require('../util/channelTracker.js')
 
 module.exports = function(bot, message, command) {
   const collectorFilter = m => m.author.id == message.author.id;
@@ -45,7 +46,7 @@ module.exports = function(bot, message, command) {
     if (source.roleSubscriptions == null) return message.channel.sendMessage("This role is not globally subscribed to this feed.");
 
     for (let globalSubber in source.roleSubscriptions) {
-      if (source.roleSubscriptions[globalSubber].roleID == role.id) {source.roleSubscriptions.splice(subbedRole, 1); found = true;}
+      if (source.roleSubscriptions[globalSubber].roleID == role.id) {source.roleSubscriptions.splice(globalSubber, 1); found = true;}
     }
     if (source.roleSubscriptions.length == 0) delete source.roleSubscriptions;
     if (found == false) return message.channel.sendMessage(`The role \`${role.name} does not have a global subscription to this feed.`);
@@ -56,7 +57,7 @@ module.exports = function(bot, message, command) {
 
   function openSubMenu (rssIndex, role, isGlobalSub) {
     var subMenu = {embed: {
-      color: rssConfig.menuColor,
+      color: config.menuColor,
       author: {},
       description: `**Selected Role**: ${role.name}\n**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nSelect an option by typing its number, or type *exit* to cancel.\n_____`,
       footer: {}
@@ -75,6 +76,8 @@ module.exports = function(bot, message, command) {
     message.channel.sendMessage("",subMenu)
 
     const filterOptionCollector = message.channel.createCollector(collectorFilter,{time:240000});
+    channelTracker.addCollector(message.channel.id)
+
     filterOptionCollector.on('message', function (m) {
       let optionSelected = m.content
       if (optionSelected.toLowerCase() == "exit") return filterOptionCollector.stop("RSS Role Customization menu closed.");
@@ -85,19 +88,22 @@ module.exports = function(bot, message, command) {
       }
       else if (optionSelected == 2) {
         filterOptionCollector.stop();
-        if (!isGlobalSub) removeFilter(message, rssIndex, role);
-        else removeGlobalSub(rssIndex, role);
+        if (!isGlobalSub) {
+          if (rssList[rssIndex].filters == null || rssList[rssIndex].filters.roleSubscriptions == null) return message.channel.sendMessage("This feed has no filtered subscriptions to remove.");
+          removeFilter(message, rssIndex, role);
+        }
+        else {
+          if (rssList[rssIndex].roleSubscriptions == null) return message.channel.sendMessage("This feed has no global subscriptions to remove.");
+          removeGlobalSub(rssIndex, role);
+        }
       }
       else message.channel.sendMessage("That is not a valid option. Try again.")
     })
 
     filterOptionCollector.on('end', (collected, reason) => {
-      if (reason == "time") {
-        return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
-      }
-      else if (reason !== "user") {
-        return message.channel.sendMessage(reason);
-      }
+      channelTracker.removeCollector(message.channel.id)
+      if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
+      else if (reason !== "user") return message.channel.sendMessage(reason);
     });
   }
 
@@ -106,7 +112,7 @@ module.exports = function(bot, message, command) {
     let guild = message.guild
     var subList = {}
     var msg = {embed: {
-      color: rssConfig.menuColor,
+      color: config.menuColor,
       description: `\nBelow are the feed titles with any roles subscribed to that feed under it.\n_____`,
       author: {name: `Subscribed Roles List`},
       fields: [],
@@ -186,7 +192,7 @@ module.exports = function(bot, message, command) {
   }
 
   var menu = {embed: {
-    color: rssConfig.menuColor,
+    color: config.menuColor,
     description: `\nCurrent Channel: ${message.channel}\n\nSelect an option by typing its number, or type *exit* to cancel.\n_____`,
     author: {name: `Role Subscription Options`},
     fields: [{name: `1) Add/Remove Global Subscriptions for a Role`, value: `Enable mentions for a role for all delivered articles of this feed.\n*Using global subscriptions will disable filtered subscriptions if enabled for that role.*`},
@@ -199,6 +205,7 @@ module.exports = function(bot, message, command) {
   message.channel.sendMessage("", menu)
 
   const collector = message.channel.createCollector(collectorFilter,{time:240000});
+  channelTracker.addCollector(message.channel.id)
 
   collector.on('message', function (m) {
     let optionSelected = m.content
@@ -228,6 +235,7 @@ module.exports = function(bot, message, command) {
   })
 
   collector.on('end', (collected, reason) => {
+    channelTracker.removeCollector(message.channel.id)
     if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
     else if (reason !== "user") return message.channel.sendMessage(reason);
   });

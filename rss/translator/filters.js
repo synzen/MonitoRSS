@@ -7,16 +7,16 @@ function foundFilterWords(filterType, content) {
 
   if (content == null) return false;
   var content = content.toLowerCase();
-  if (filterType != null && filterType.length !== 0 && typeof filterType == "object") {
-    // if (typeof filterType == "object") {
-    for (var word in filterType)
-      if (content.search(filterType[word].toLowerCase()) !== -1)
+  if (filterType != null && filterType.length !== 0) {
+    if (typeof filterType == "object") {
+      for (var word in filterType)
+        if (content.search(filterType[word].toLowerCase()) !== -1)
+          return true;
+    }
+    else if (typeof filterType == "string") {
+      if (content.search(filterType.toLowerCase()) !== -1)
         return true;
-    // }
-    // else if (typeof filterType == "string") {
-    //   if (content.search(filterType.toLowerCase()) !== -1)
-    //     return true;
-    // }
+    }
   }
   else return false;
 }

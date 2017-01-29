@@ -3,10 +3,10 @@ const getRSS = require('../rss/rss.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./updateJSON.js')
-const rssConfig = require('../config.json')
+const config = require('../config.json')
 
 module.exports = function (bot) {
-  var rssConfig = require('../config.json')
+  var config = require('../config.json')
 
   var cycleInProgress = false
   var guildList = []
@@ -16,10 +16,16 @@ module.exports = function (bot) {
 
   var con
 
+  var startTime
+
+
   function endCon (startingCycle) {
     sqlCmds.end(con, function(err) {
       if (err) console.log(err);
-      if (!startingCycle) console.log(`RSS Info: Finished feed retrieval cycle. ${new Date()}`);
+      if (!startingCycle) {
+        var timeTaken = ((new Date() - startTime) / 1000).toFixed(2);
+        console.log(`RSS Info: Finished feed retrieval cycle. Cycle Time: ${timeTaken}s`);
+      }
     });
     cycleInProgress = false
     if (startingCycle) setTimeout(connect, 5000);
@@ -27,7 +33,7 @@ module.exports = function (bot) {
 
   function connect () {
     if (cycleInProgress) {
-      console.log(`RSS Info: Previous cycle was unable to finish. Forcing cycle end and starting new cycle. ${new Date()}`);
+      console.log(`RSS Info: Previous cycle was unable to finish. Forcing cycle end and starting new cycle.`);
       endCon(true);
     }
     else {
@@ -49,7 +55,7 @@ module.exports = function (bot) {
         })
         if (feedLength == 0) {
           cycleInProgress = false;
-          return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve. ${new Date()}`);
+          return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
         }
         else con = sqlConnect(startFeed);
       })
@@ -57,6 +63,7 @@ module.exports = function (bot) {
   }
 
   function startFeed () {
+    startTime = new Date()
     for (let guildIndex in guildList) {
       let guildId = guildList[guildIndex].id
       let rssList = guildList[guildIndex].sources
@@ -76,6 +83,6 @@ module.exports = function (bot) {
   }
 
   connect()
-  setInterval(connect, rssConfig.refreshTimeMinutes*60000)
+  setInterval(connect, config.refreshTimeMinutes*60000)
 
 }

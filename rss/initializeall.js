@@ -27,7 +27,7 @@
       7. Log all items in feed in table
       8. gatherResults() and close connection
 */
-const rssConfig = require('../config.json')
+const config = require('../config.json')
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser');
 const translator = require('./translator/translate.js')
@@ -113,7 +113,7 @@ module.exports = function (con, channel, rssIndex, callback) {
           for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
             var cutoffDay;
             if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "")
-              cutoffDay = new Date(new Date().setDate(new Date().getDate()-rssConfig.defaultMaxAge));
+              cutoffDay = new Date(new Date().setDate(new Date().getDate()-config.defaultMaxAge));
             else cutoffDay = new Date(new Date().setDate(new Date().getDate()-rssList[rssIndex].maxAge))
 
             if (currentFeed[x].pubdate >= cutoffDay){
@@ -145,7 +145,7 @@ module.exports = function (con, channel, rssIndex, callback) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
         else {
-          if (rssConfig.sendOldMessages == true) sendToDiscord(rssIndex, channel, feed, false); //this can result in great spam once the loads up after a period of downtime
+          if (config.sendOldMessages == true) sendToDiscord(rssIndex, channel, feed, false); //this can result in great spam once the loads up after a period of downtime
           insertIntoTable(data);
         }
       })

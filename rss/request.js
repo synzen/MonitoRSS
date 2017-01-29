@@ -5,7 +5,7 @@ module.exports = function (link, feedparser, con, callback) {
   var attempts = 0;
 
   (function requestStream() {
-    const req = request(link, function (error, response) {
+    var req = request(link, function (error, response) {
       // if (error || response.statusCode !== 200)
       //   console.log(`RSS Request Error: Problem occured while requesting from "${link}"`);
     });

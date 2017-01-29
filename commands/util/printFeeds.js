@@ -1,6 +1,7 @@
 const loadCommand = (command) => require(`../${command}.js`)
-const rssConfig = require('../../config.json')
+const config = require('../../config.json')
 const commandList = require('../../util/commandList.json')
+const channelTracker = require('../../util/channelTracker.js')
 
 module.exports = function (bot, message, isCallingCmd, command, callback) {
   if (commandList[command] != null) var commandFile = commandList[command].file
@@ -8,8 +9,8 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
   try {rssList = require(`../../sources/${message.guild.id}.json`).sources} catch(e) {}
 
   var embed = {embed: {
-    color: rssConfig.menuColor,
-    description: `**Server Limit:** ${rssList.length}/${rssConfig.maxFeeds}\n`,
+    color: config.menuColor,
+    description: `**Server Limit:** ${rssList.length}/${config.maxFeeds}\n`,
     author: {},
     fields: [],
     footer: {}
@@ -58,7 +59,9 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
   if (isCallingCmd) {
     embed.embed.author.name = "Feed Selection Menu";
     embed.embed.description += `**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
-    message.channel.sendEmbed(embed.embed).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}`));
+    var error = false;
+    message.channel.sendEmbed(embed.embed).catch(err => {error = true; console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}`);});
+
   }
   else {
     embed.embed.author.name = "Current Active Feeds"
@@ -66,8 +69,11 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     return message.channel.sendEmbed(embed.embed).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err.response.body.message}`));
   }
 
-  const filter = m => m.author.id == message.author.id;
-  const collector = message.channel.createCollector(filter,{time:60000});
+  if (error) return;
+
+  const filter = m => m.author.id == message.author.id
+  const collector = message.channel.createCollector(filter,{time:60000})
+  channelTracker.addCollector(message.channel.id)
 
   collector.on('message', function (m) {
     let chosenOption = m.content;
@@ -83,7 +89,9 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     }
   })
   collector.on('end', (collected, reason) => {
+    channelTracker.removeCollector(message.channel.id)
     if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
     else if (reason !== "user") return message.channel.sendMessage(reason);
   })
+
 }

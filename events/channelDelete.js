@@ -1,4 +1,4 @@
-const removeRSS = require('../commands/removeRSS.js')
+const removeRSS = require('../commands/rssRemove.js')
 const fileOps = require('../util/updateJSON.js')
 
 module.exports = function (channel) {

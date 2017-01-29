@@ -1,5 +1,6 @@
-const fileOps = require('../util/updateJSON.js')
-const rssConfig = require('../config.json')
+const fileOps = require('../../util/updateJSON.js')
+const config = require('../../config.json')
+const channelTracker = require('../../util/channelTracker.js')
 
 function isEmptyObject(obj) {
     for(var prop in obj) {
@@ -20,7 +21,7 @@ function getObjLength(obj) {
 }
 
 module.exports = function(message, rssIndex, role) {
-  var guildRss = require(`../sources/${message.guild.id}.json`)
+  var guildRss = require(`../../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
   if (role == null) var filterList = rssList[rssIndex].filters;
@@ -45,7 +46,7 @@ module.exports = function(message, rssIndex, role) {
   if (isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
 
   var msg = {embed: {
-    color: rssConfig.menuColor,
+    color: config.menuColor,
     description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nBelow are the filter categories with their words/phrases under each.\n_____`,
     author: {name: `List of Assigned Filters`},
     fields: [],
@@ -60,10 +61,12 @@ module.exports = function(message, rssIndex, role) {
     }
     msg.embed.fields.push(field);
   }
-  message.channel.sendMessage("**Type the filter category for which you would like you remove a filter from, type \`{reset}\` to remove all filters, or type exit to cancel.**", msg);
+  message.channel.sendMessage("**Type the filter category for which you would like you remove a filter from, type \`{reset}\` to remove all filters, or type exit to cancel.**", msg)
 
-  const filter = m => m.author.id == message.author.id;
-  const filterTypeCollect = message.channel.createCollector(filter,{time:240000});
+  const filter = m => m.author.id == message.author.id
+  const filterTypeCollect = message.channel.createCollector(filter,{time:240000})
+  channelTracker.addCollector(message.channel.id)
+
   filterTypeCollect.on('message', function (filterType) {
     if (filterType.content == "exit") return filterTypeCollect.stop("RSS Filter Removal menu closed.");
 
@@ -86,9 +89,11 @@ module.exports = function(message, rssIndex, role) {
     else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
     else if (validFilterType) {
       filterTypeCollect.stop();
-      message.channel.sendMessage(`Confirm the filter word/phrase you would like to remove in the category \`${chosenFilterType}\` by typing it (case sensitive).`)
+      message.channel.sendMessage(`Confirm the filter word/phrase you would like to remove in the category \`${chosenFilterType}\` by typing it (case sensitive).`);
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
+      channelTracker.addCollector(message.channel.id)
+
       filterCollect.on('message', function(chosenFilter) {
         var validFilter = false
         let chosenFilterTypeList = filterList[chosenFilterType]
@@ -127,12 +132,14 @@ module.exports = function(message, rssIndex, role) {
         }
       })
       filterCollect.on('end', (collected, reason) => {
+        channelTracker.removeCollector(message.channel.id)
         if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
     }
   })
   filterTypeCollect.on('end', (collected, reason) => {
+    channelTracker.removeCollector(message.channel.id)
     if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
     else if (reason !== "user") return message.channel.sendMessage(reason);
   });

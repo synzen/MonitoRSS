@@ -5,7 +5,7 @@
 	"rssremove": {
 		"action": "Feed Removal",
 		"description": "Open a menu to delete a feed from the channel.",
-		"file": "removeRSS"
+		"file": "rssRemove"
 	},
 	"rsslist": {
 		"description": "List all active feeds in server."
@@ -13,17 +13,17 @@
 	"rssmessage": {
 		"action": "Message Customization",
 		"description": "Open a menu to customize a feed's text message.",
-		"file": "customMessage"
+		"file": "rssMessage"
 	},
 	"rssembed": {
 		"action": "Embed Message Customization",
 		"description": "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted.",
-		"file": "customEmbed"
+		"file": "rssEmbed"
 	},
 	"rsstest": {
 		"action": "Feed Delivery Test",
 		"description": "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization.",
-		"file": "testRSS"
+		"file": "rssTest.js"
 	},
 	"rsstimezone": {
 		"description": "Change the timezone for dates given by {date} tag customization. For a list of timezones, see the TZ column at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>."
@@ -31,7 +31,7 @@
 	"rssfilters": {
 		"action": "Global Filter Addition/Removal",
 		"description": "Opens a menu to add or remove global filters from a feed.",
-		"file": "filterMenuSelect"
+		"file": "rssFilters"
 	},
 	"rssroles": {
 		"specialCmd": true,

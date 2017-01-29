@@ -1,5 +1,5 @@
-const filterAdd = require('./filterAdd.js')
-const filterRemove = require('./filterRemove.js')
+const filterAdd = require('./util/filterAdd.js')
+const filterRemove = require('./util/filterRemove.js')
 const rssConfig = require('../config.json')
 const fileOps = require('../util/updateJSON.js')
 
@@ -34,14 +34,17 @@ module.exports = function(message, rssIndex, role) {
   collector.on('message', function (m) {
     if (m.content.toLowerCase() == "exit") return collector.stop("RSS Filter Action selection menu closed.");
     if (m.content == 1) {
+      console.log(m.content);
       collector.stop();
       return filterAdd(message, rssIndex);
     }
     else if (m.content == 2) {
+      console.log(m.content);
       collector.stop();
       return filterRemove(message, rssIndex);
     }
     else if (m.content == 3 || m.content == 4) {
+      console.log(m.content);
       collector.stop();
       var foundFilters = [];
       if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {

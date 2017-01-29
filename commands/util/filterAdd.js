@@ -1,8 +1,9 @@
-const fileOps = require('../util/updateJSON.js')
-const rssConfig = require('../config.json')
+const fileOps = require('../../util/updateJSON.js')
+const config = require('../../config.json')
+const channelTracker = require('../../util/channelTracker.js')
 
 module.exports = function(message, rssIndex, role) {
-  var guildRss = require(`../sources/${message.guild.id}.json`)
+  var guildRss = require(`../../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
   if (rssList[rssIndex].filters == null || rssList[rssIndex].filters == "") rssList[rssIndex].filters = {};
@@ -30,10 +31,12 @@ module.exports = function(message, rssIndex, role) {
     msg += `\n[Filter Category]: ${filterType}\n`;
   }
 
-  message.channel.sendMessage(msg + "```\n**Type the filter category for which you would like you add a filter to, or type exit to cancel.**");
+  message.channel.sendMessage(msg + "```\n**Type the filter category for which you would like you add a filter to, or type exit to cancel.**")
 
-  const filter = m => m.author.id == message.author.id;
-  const filterTypeCollect = message.channel.createCollector(filter,{time:240000});
+  const filter = m => m.author.id == message.author.id
+  const filterTypeCollect = message.channel.createCollector(filter,{time:240000})
+  channelTracker.addCollector(message.channel.id)
+
   filterTypeCollect.on('message', function (filterType) {
     if (filterType.content == "exit") return filterTypeCollect.stop("RSS Filter Addition menu closed.");
     var validFilterType = false;
@@ -52,6 +55,8 @@ module.exports = function(message, rssIndex, role) {
       message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`)
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
+      channelTracker.addCollector(message.channel.id)
+
       filterCollect.on('message', function(chosenFilter) {
         if (chosenFilter.content == "{exit}") return filterCollect.stop("RSS Filter Addition menu closed.");
         else {
@@ -65,15 +70,16 @@ module.exports = function(message, rssIndex, role) {
           fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
           if (role == null) {
             console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`));
+            return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.prefix}rsstest\` and see what kind of feeds pass through.`));
           }
           else {
             console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return editing.then(m => m.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`));
+            return editing.then(m => m.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.prefix}rsstest\` and see what kind of feeds pass through.`));
           }
         }
       })
       filterCollect.on('end', (collected, reason) => {
+        channelTracker.removeCollector(message.channel.id)
         if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
@@ -81,6 +87,7 @@ module.exports = function(message, rssIndex, role) {
 
   })
   filterTypeCollect.on('end', (collected, reason) => {
+    channelTracker.removeCollector(message.channel.id)
     if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
     else if (reason !== "user") return message.channel.sendMessage(reason);
   });

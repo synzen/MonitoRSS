@@ -1,12 +1,12 @@
 const Discord = require('discord.js')
 const bot = new Discord.Client()
 const eventHandler = (evnt) => require(`./events/${evnt}.js`)
-const rssConfig = require('./config.json')
-const startRSSInit = require('./util/initFeeds.js')
+const config = require('./config.json')
+const initRSS = require('./util/initFeeds.js')
 
 bot.on('ready', function() {
   console.log("I am online.")
-  startRSSInit(bot)
+  initRSS(bot)
   bot.removeAllListeners('ready')
 })
 
@@ -30,7 +30,8 @@ bot.on('roleDelete', function (role) {
   eventHandler('roleDelete')(bot, role)
 })
 
-bot.login(rssConfig.token)
+
+bot.login(config.token)
 
 process.on("unhandledRejection", (err, promise) => {
   console.log('Unhandled Rejection at: Promise', promise, 'reason:', err);

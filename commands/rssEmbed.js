@@ -1,5 +1,6 @@
 const fileOps = require('../util/updateJSON.js')
-const rssConfig = require('../config.json')
+const config = require('../config.json')
+const channelTracker = require('../util/channelTracker.js')
 
 module.exports = function (message, rssIndex) {
   var guildRss = require(`../sources/${message.guild.id}.json`)
@@ -39,10 +40,12 @@ module.exports = function (message, rssIndex) {
 
   if (currentEmbedProps == "```Markdown\n") currentEmbedProps = "```\nNo properties set.\n";
 
-  message.channel.sendMessage(`The current embed properties for ${rssList[rssIndex].link} are: \n${currentEmbedProps + "```"}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type exit to cancel.`);
+  message.channel.sendMessage(`The current embed properties for ${rssList[rssIndex].link} are: \n${currentEmbedProps + "```"}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type exit to cancel.`)
 
-  const filter = m => m.author.id == message.author.id;
-  const customCollect = message.channel.createCollector(filter,{time:240000});
+  const filter = m => m.author.id == message.author.id
+  const customCollect = message.channel.createCollector(filter,{time:240000})
+  channelTracker.addCollector(message.channel.id)
+
   customCollect.on('message', function (chosenProp) {
     if (chosenProp.content.toLowerCase() == "exit") return customCollect.stop("RSS customization menu closed.");
 
@@ -64,7 +67,7 @@ module.exports = function (message, rssIndex) {
     else {
       //property collector
       customCollect.stop()
-      message.channel.sendMessage(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other tags, you may first type \`exit\` then use \`${rssConfig.prefix}rsstest\`.`);
+      message.channel.sendMessage(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other tags, you may first type \`exit\` then use \`${config.prefix}rsstest\`.`);
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
 
       propertyCollect.on('message', function (propSetting) {
@@ -94,17 +97,19 @@ module.exports = function (message, rssIndex) {
             return editing.then(m => m.edit(`Settings updated. The property \`${choice}\` has been reset.`));
           }
           else {
-            return editing.then(m => m.edit(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${rssConfig.prefix}rsstest\` to see your new embed format.`));
+            return editing.then(m => m.edit(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${config.prefix}rsstest\` to see your new embed format.`));
           }
         }
       });
       propertyCollect.on('end', (collected, reason) => {
+        channelTracker.removeCollector(message.channel.id)
         if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== "user") return message.channel.sendMessage(reason);
       });
       }
     });
     customCollect.on('end', (collected, reason) => {
+      channelTracker.removeCollector(message.channel.id)
       if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== "user") return message.channel.sendMessage(reason);
     });

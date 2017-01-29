@@ -14,6 +14,6 @@ module.exports = function (bot, guild) {
   }
 
   fileOps.deleteFile(`./sources/${guild.id}.json`, `../sources/${guild.id}.json`, function() {
-    return console.log(`RSS Info: Guild entry ${guild.id} (${guild.name}) deleted.`)
+    console.log(`RSS Info: Guild entry ${guild.id} (${guild.name}) deleted.`)
   })
 }
