@@ -1,6 +1,7 @@
 {
   "prefix": "~",
   "token": "",
+  "enableBackups": true,
   "menuColor": 7833753,
   "timezone": "America/New_York",
   "refreshTimeMinutes": 10,

@@ -43,49 +43,47 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     return message.channel.sendMessage("No feeds assigned to this channel.");
   }
 
-  else {
-    let returnMsg = "```Markdown\n# Feeds assigned to this channel: ``````Markdown\n"
-    for (var x in currentRSSList) {
-      let count = parseInt(x,10) + 1;
-      returnMsg += `[${count}]: ${currentRSSList[x][0]}\n`
-      embed.embed.fields.push({
-        name: `${count})  ${currentRSSList[x][2]}`,
-        value: ""
-      })
-      if (isCallingCmd) embed.embed.fields[embed.embed.fields.length - 1].value = `Link: ${currentRSSList[x][0]}`;
-      else embed.embed.fields[embed.embed.fields.length - 1].value = `Channel: ${currentRSSList[x][3]}\nLink: ${currentRSSList[x][0]}`;
-    }
-
-    if (isCallingCmd) {
-      embed.embed.author.name = "Feed Selection Menu";
-      embed.embed.description += `**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
-      message.channel.sendMessage("",embed);
-    }
-    else {
-      embed.embed.author.name = "Current Active Feeds"
-      embed.embed.description += `_____`;
-      return message.channel.sendMessage("",embed);
-    }
-
-    const filter = m => m.author.id == message.author.id;
-    const collector = message.channel.createCollector(filter,{time:60000});
-
-
-    collector.on('message', function (m) {
-      if (m.content.toLowerCase() == "exit") return collector.stop("RSS Feed selection menu closed.");
-      let index = parseInt(m,10) - 1;
-
-      if (isNaN(index) || m > currentRSSList.length) return message.channel.sendMessage("That is not a valid number.");
-      else {
-        collector.stop();
-        let rssIndex = currentRSSList[index][1];
-        if (!commandList[command].specialCmd) loadCommand(commandFile)(message, rssIndex);
-        else callback(rssIndex);
-      }
+  let returnMsg = "```Markdown\n# Feeds assigned to this channel: ``````Markdown\n"
+  for (var x in currentRSSList) {
+    let count = parseInt(x,10) + 1;
+    returnMsg += `[${count}]: ${currentRSSList[x][0]}\n`
+    embed.embed.fields.push({
+      name: `${count})  ${currentRSSList[x][2]}`,
+      value: ""
     })
-    collector.on('end', (collected, reason) => {
-      if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
-      else if (reason !== "user") return message.channel.sendMessage(reason);
-    })
+    if (isCallingCmd) embed.embed.fields[embed.embed.fields.length - 1].value = `Link: ${currentRSSList[x][0]}`;
+    else embed.embed.fields[embed.embed.fields.length - 1].value = `Channel: ${currentRSSList[x][3]}\nLink: ${currentRSSList[x][0]}`;
   }
+
+  if (isCallingCmd) {
+    embed.embed.author.name = "Feed Selection Menu";
+    embed.embed.description += `**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
+    message.channel.sendEmbed(embed.embed).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}`));
+  }
+  else {
+    embed.embed.author.name = "Current Active Feeds"
+    embed.embed.description += `_____`;
+    return message.channel.sendEmbed(embed.embed).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err.response.body.message}`));
+  }
+
+  const filter = m => m.author.id == message.author.id;
+  const collector = message.channel.createCollector(filter,{time:60000});
+
+  collector.on('message', function (m) {
+    if (m.content.toLowerCase() == "exit") return collector.stop("RSS Feed selection menu closed.");
+    let index = parseInt(m,10) - 1;
+
+    if (isNaN(index) || m > currentRSSList.length) return message.channel.sendMessage("That is not a valid number.");
+    else {
+      collector.stop();
+      let rssIndex = currentRSSList[index][1];
+      if (!commandList[command].specialCmd) loadCommand(commandFile)(message, rssIndex);
+      else callback(rssIndex);
+    }
+  })
+  collector.on('end', (collected, reason) => {
+    if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+    else if (reason !== "user") return message.channel.sendMessage(reason);
+  })
+
 }

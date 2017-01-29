@@ -28,6 +28,6 @@ module.exports = function (bot, role) {
     if (source.roleSubscriptions != null && source.roleSubscriptions.length == 0) delete source.roleSubscriptions;
   }
 
-  if (found == true) return fileOps.updateFile(`./sources/${role.guild.id}.json`, guildRss, `../sources/${role.guild.id}.json`);
+  if (found == true) return fileOps.updateFile(role.guild.id, guildRss, `../sources/${role.guild.id}.json`);
 
 }

@@ -19,31 +19,31 @@ module.exports = function (bot, message) {
   //ugly permission checking, but it'll have to do for now
 
   if (command == "rssadd" && checkPerm(command, bot, message.channel)){
-    logCommand(command)
+    logCommand(command);
     rssAdd(bot, message);
   }
   else if (command == "rsshelp" && checkPerm(command, bot, message.channel)) {
-    logCommand(command)
+    logCommand(command);
     rssHelp(message, commandList);
   }
   else if (command == "rsslist" && checkPerm(command, bot, message.channel)) {
-    logCommand(command)
+    logCommand(command);
     printFeeds(bot, message, false, "")
   }
   else if (command == "rsstimezone" && checkPerm(command, bot, message.channel)) {
-    logCommand(command)
+    logCommand(command);
     rssTimezone(message);
   }
   else if (command == "rssroles") {
-    logCommand(command)
+    logCommand(command);
     rssRoles(bot, message, command);
   }
 
   //for commands that needs menu selection, AKA collectors
   else for (let cmd in commandList) {
     if (command == cmd && checkPerm(command, bot, message.channel)) {
-      logCommand(command)
-      printFeeds(bot, message, true, cmd)//commandList[cmd].file)
+      logCommand(command);
+      printFeeds(bot, message, true, cmd);
     }
   }
 

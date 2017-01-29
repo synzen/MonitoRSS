@@ -62,7 +62,7 @@ module.exports = function(message, rssIndex, role) {
           let editing = message.channel.sendMessage(`Updating filters...`);
           filterCollect.stop();
           filterList[chosenFilterType].push(chosenFilter.content);
-          fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
+          fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
           if (role == null) {
             console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
             return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${rssConfig.prefix}rsstest\` and see what kind of feeds pass through.`));

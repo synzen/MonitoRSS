@@ -80,7 +80,7 @@ module.exports = function(message, rssIndex, role) {
       let resetMsg = message.channel.sendMessage(`Resetting all filters...`)
       filterTypeCollect.stop();
       delete filterList;
-      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
+      fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
       return resetMsg.then(m => m.edit("All filters have been removed."));
     }
     else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
@@ -115,7 +115,7 @@ module.exports = function(message, rssIndex, role) {
           if (isEmptyObject(rssList[rssIndex].filters)) {
             delete rssList[rssIndex].filters;
           }
-          fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
+          fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
           if (role == null) {
             console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
             return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`));

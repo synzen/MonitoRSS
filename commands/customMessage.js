@@ -19,7 +19,7 @@ module.exports = function (message, rssIndex) {
       let resetMsg = message.channel.sendMessage(`Resetting message...`);
       customCollect.stop();
       delete rssList[rssIndex].message;
-      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
+      fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Message reset for ${rssList[rssIndex].link}.`);
       return resetMsg.then(m => m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${rssConfig.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`));
     }
@@ -27,9 +27,9 @@ module.exports = function (message, rssIndex) {
       let editing = message.channel.sendMessage(`Updating message...`);
       customCollect.stop();
       rssList[rssIndex].message = m.content;
-      fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
+      fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New message recorded for ${rssList[rssIndex].link}.`);
-      return editing.then(m => m.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`));
+      return editing.then(final => final.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${rssConfig.prefix}rsstest\` to see your new message format.`));
     }
   });
 

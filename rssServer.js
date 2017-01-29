@@ -5,7 +5,7 @@ const initRSS = require('./util/initFeeds.js')
 const config = require('./config.json')
 
 bot.on('ready', function() {
-  console.log("I am online.")
+  console.log("Discord.RSS RSS functions are now online.")
   initRSS(bot)
   bot.removeAllListeners('ready')
 })

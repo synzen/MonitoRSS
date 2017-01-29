@@ -4,7 +4,8 @@ const configChecks = require('../util/configCheck.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./updateJSON.js')
-const fs = require('fs')
+const config = require('../config.json')
+
 
 module.exports = function (bot) {
 
@@ -60,7 +61,7 @@ module.exports = function (bot) {
       }
     }
 
-    if (changedInfo) return fileOps.updateFile(`./sources/${guildId}.json`, guildRss, `../sources/${guildId}.json`);
+    if (changedInfo) return fileOps.updateFile(guildId, guildRss, `../sources/${guildId}.json`);
     else return;
 
   }
@@ -96,7 +97,7 @@ module.exports = function (bot) {
     if (skippedFeeds == totalFeeds) endCon();
   }
 
-  fs.readdir('./sources', function(err, files) {
+  fileOps.readDir('./sources', function (err, files) {
     if (err) throw err;
     files.forEach(function(guildRSS) {
       if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
@@ -105,10 +106,10 @@ module.exports = function (bot) {
           guildList.push(guild);
           for (var y in guild.sources) totalFeeds++;
         }
-        catch (err) {console.log(`RSS Error: Cannot load guild profile ${guildRSS}. Reason:\n${err}`)}
+        catch (err) {fileOps.checkBackup(guildRSS)}
       }
-      else if (guildRSS !== "guild_id_here.json"){
-        console.log(`RSS Guild Info: ${guildRSS} was not found in bot's guild list. Skipping.`);
+      else if (guildRSS !== "guild_id_here.json" && guildRSS !== "backup"){
+        console.log(`RSS Guild Profile: ${guildRSS} was not found in bot's guild list. Skipping.`);
       }
     })
     if (totalFeeds == 0) {

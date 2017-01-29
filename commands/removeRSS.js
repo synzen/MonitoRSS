@@ -5,6 +5,7 @@ const rssConfig = require('../config.json')
 module.exports = function (message, rssIndex) {
   var guildRss = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
+  if (rssList[rssIndex] == null) return console.log(`RSS Error: (${message.guild.id}, ${message.guild.name}) => Could not remove feed due to null rssList.`);
 
   let link = rssList[rssIndex].link
 
@@ -16,7 +17,7 @@ module.exports = function (message, rssIndex) {
     console.log(`RSS Removal: (${message.guild.id}, ${message.guild.name}) => Removal successful.`)
   })
   rssList.splice(rssIndex,1)
-  fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`)
+  fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`)
 
   if (rssList.length == 0 && guildRss.timezone == null) fileOps.deleteFile(`./sources/${message.guild.id}.json`, `../sources/${message.guild.id}.json`, function () {
     return console.log(`RSS File Ops: Deleted ${message.guild.id}.json due to zero sources detected..`)
@@ -28,6 +29,6 @@ module.exports = function (message, rssIndex) {
     if (rssList[x].enabled == 1) enabledFeeds++;
   }
 
-  if (message.channel != null) msg.then(m => m.edit(`Successfully removed ${link} from this channel.`));
+  if (message.channel != null) msg.then(m => m.edit(`Successfully removed ${link} from this channel.`)).catch(err => console.log("remove rss error", err));
 
 }

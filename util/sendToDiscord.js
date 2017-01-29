@@ -9,7 +9,7 @@ module.exports = function (rssIndex, channel, feed, isTestMessage) {
     var errLog = `RSS Test Error: (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) => Reason: `;
   }
   else {
-    var successLog = `RSS Delivery: (${guild.id}, ${guild.name}) => Sent message for: ${rssList[rssIndex].link} in channel (${channel.id}, ${channel.name})`;
+    var successLog = `RSS Delivery: (${guild.id}, ${guild.name}) => Sent message: ${feed.link} in channel (${channel.id}, ${channel.name})`;
     var errLog = `RSS Delivery Error: (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) => Reason: `;
   }
 

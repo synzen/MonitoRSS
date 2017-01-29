@@ -30,6 +30,6 @@ module.exports = function (message) {
     console.log(`RSS Guild Info: (${message.guild.id}, ${message.guild.name}) => Timezone updated from '${oldTimezone}' to '${timezone}.'`);
   }
 
-  return fileOps.updateFile(`./sources/${message.guild.id}.json`, guild, `../sources/${message.guild.id}.json`)
+  return fileOps.updateFile(message.guild.id, guild, `../sources/${message.guild.id}.json`)
 
 }

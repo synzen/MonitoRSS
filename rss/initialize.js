@@ -143,7 +143,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
         };
       }
 
-      fileOps.updateFile(`./sources/${channel.guild.id}.json`, guildRSS, `../sources/${channel.guild.id}.json`)
+      fileOps.updateFile(channel.guild.id, guildRSS, `../sources/${channel.guild.id}.json`)
       console.log("RSS Info: Successfully added new feed.")
       // channel.sendMessage(`Successfully added <${rssLink}> for this channel.`)
       verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`);

@@ -13,7 +13,7 @@ module.exports = function (link, feedparser, con, callback) {
     req.on('error', function (error) {
       if (attempts < 4) {
         attempts++;
-        setTimeout(requestStream, 1500);
+        requestStream();
       }
       else {
         console.log(`RSS Request Error: Unable to connect to ${link}, skipping...`);

@@ -35,7 +35,7 @@ module.exports = function(bot, message, command) {
     })
     message.channel.sendMessage(`Global subscription successfully added for \`${message.guild.roles.get(role.id).name}\` to feed \`${rssList[rssIndex].title}\`.`);
     console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${message.guild.roles.get(role.id).id}, ${message.guild.roles.get(role.id).name}) => Global subscription added to feed \`${rssList[rssIndex].title}\`.`);
-    return fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
+    return fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
   }
 
   function removeGlobalSub (rssIndex, role) {
@@ -51,7 +51,7 @@ module.exports = function(bot, message, command) {
     if (found == false) return message.channel.sendMessage(`The role \`${role.name} does not have a global subscription to this feed.`);
     else message.channel.sendMessage(`Successfully removed the global subscription of the role \`${role.name}\` from the feed \`${rssList[rssIndex].title}\``);
     console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${role.id}, ${role.name}) => Removed global subscription for feed \`${rssList[rssIndex].title}\``);
-    return fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
+    return fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
   }
 
   function openSubMenu (rssIndex, role, isGlobalSub) {
@@ -180,7 +180,7 @@ module.exports = function(bot, message, command) {
     if (source.roleSubscriptions != null && source.roleSubscriptions.length == 0) delete source.roleSubscriptions;
     if (source.filters != null && isEmptyObject(source.filters.roleSubscriptions)) delete source.filters.roleSubscriptions;
     if (source.filters != null && isEmptyObject(source.filters)) delete source.filters;
-    fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`)
+    fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`)
     console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${message.guild.roles.get(roleID).id}, ${message.guild.roles.get(roleID).name}) => All subscriptions deleted.`);
     return message.channel.sendMessage(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`.`)
   }

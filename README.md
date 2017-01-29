@@ -46,25 +46,29 @@ The bot should perform fine on a private server (self-hosted) since you have the
 ##Configuration
 (config.json)
 
-1. `token` : Bot token to login through server.js
+1. `prefix`: Prefix for [Discord commands](#discord-commands)
 
-2. `sqlType`: See [Database Selection](#database-selection)
+2. `token` : Bot token to login through server.js
 
-3. `menuColor` The color of the Discord embed menu commands. Must be in [*integer* format](https://www.shodor.org/stella2java/rgbint.html).
+3. `enableBackups`: Enable automatic backups creation and restoration in sources/backups folder. Manually adding a backup file will also work, given that the file name is the guild's ID. If you manually edit your sources and for some reason do not check your the validity of your JSON configuration through something like [JSONLint](http://jsonlint.com/), do not enable this as it will overwrite your invalid file.
 
-4. `timezone`: (Optional) This is for the {date} tag customization. By default the date will be in UTC if left blank. To add your own timezone, use a timezone from [this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) under the TZ column.
+4. `sqlType`: See [Database Selection](#database-selection)
 
-5. `refreshTimeMinutes`: The bot will check for new feeds regularly at every interval specified in minutes here.
+5. `menuColor` The color of the Discord embed menu commands. Must be in [*integer* format](https://www.shodor.org/stella2java/rgbint.html).
 
-6. `databaseName`: Name of database that will be created.
+6. `timezone`: (Optional) This is for the {date} tag customization. By default the date will be in UTC if left blank. To add your own timezone, use a timezone from [this list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) under the TZ column.
 
-7. `sendOldMessages`: Send unseen messages that were not caught during bot downtime after it has restarted - this may result in message spam.
+7. `refreshTimeMinutes`: The bot will check for new feeds regularly at every interval specified in minutes here.
 
-8. `defaultMaxAge`: The max aged feed in days that the bot will grab on startup if it unexpectedly stops.
+8. `databaseName`: Name of database that will be created.
 
-9. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
+9. `sendOldMessages`: Send unseen messages that were not caught during bot downtime after it has restarted - this may result in message spam.
 
-10. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
+10. `defaultMaxAge`: The max aged feed in days that the bot will grab on startup if it unexpectedly stops.
+
+11. `defaultMessage`: If no custom message is defined for a specific feed, this will be the message the feed will fallback to.
+
+12. `maxFeeds`: The maximum amount of feeds each server is allowed to have.
 
 ###Database Selection
 It can be set to `sqlite3` or `mysql`. sqlite3 should be easier to work with since it doesn't require any credentials, and the database is created in the same directory as server.js. If you are working with a large number of servers, `mysql` may be the more ideal choice as you may encounter a "database is busy/closed" error while using sqlite3 because it is constantly writing to the database while the bot is on its schedule and sqlite3 cannot have simultaneous connections.
@@ -76,9 +80,9 @@ If you don't already have MySQL installed on your system, [install it](https://d
 SQLite on the otherhand requires no setup. It will create the database in the same directory as server.js on first startup.
 
 ##RSS Storage
-Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information a guild profile must have is `id`, and `sources` where `sources` is the list of feeds along with their customizations. 
+Everything is organized by guild ID and handled through the folder  `./sources`. Each JSON file is named with their guild ID, and contains that guild's RSS feeds and customizations. The basic information a guild profile must have is `id`, and `sources` where `sources` is the list of feeds along with their customizations.
 
-The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. The basic information for each source in a guild profile must be `name`, `channel,`, and `link`. A more comprehensive example is provided in `./sources/guild_id_here.json` (this file will be ignored by the bot on intialization). 
+The bottom is an example of what would be in a guild source file, for example `./sources/guild_id_here.json`. The basic information for each source in a guild profile must be `name`, `channel,`, and `link`. A more comprehensive example is provided in `./sources/guild_id_here.json` (this file will be ignored by the bot on intialization).
 
 ```javascript
 "name": "My First Guild!",
@@ -113,7 +117,7 @@ Besides the required `name`, `link`, and `channel` fields, more can be added for
 
 7. `filters`: (Optional) The bot will then only send feeds to Discord if the feed has any of the words defined in these filters.
    * There are four filters available: `title`, `description`, `summary` and `author` - they are added as properties of `filters`.
-   * For each filter, they can be a string or an array (`["filter one!", "two"]`) to specify more than one word/phrase. For a feed to pass the filters - if any word/phrase defined in any of the filter categories are found (case-insensitive) in the message, it will pass the filter and be sent to Discord. 
+   * For each filter, they can be a string or an array (`["filter one!", "two"]`) to specify more than one word/phrase. For a feed to pass the filters - if any word/phrase defined in any of the filter categories are found (case-insensitive) in the message, it will pass the filter and be sent to Discord.
    * In addition to the above, another object can be made - `subscribedRoles` (not the same as #6). Here you can define role-specific filters that will determine when they will be mentioned instead of global mentioning as in #6. If manually added, global subscriptions will override this. Otherwise, Discord commands will automatically remove one or the other when setting global or filter-specific role subscriptions. (More details to be added)
 
 8. `embedMessage`: (Optional) Define a custom embed message to go along with the text message.
@@ -171,7 +175,7 @@ Each command will open a menu for you to select the RSS in that channel to modif
 
 [`rsstimezone`]: Add a timezone to be applied for {date} tags in all feeds for the guild.
 
-[`rssroles`]: Set role subscriptions - either global subscriptions that will mention a role every time a new article from a feed is posted, or filtered subscriptions where the role will only be mentioned with its role-specific filters. 
+[`rssroles`]: Set role subscriptions - either global subscriptions that will mention a role every time a new article from a feed is posted, or filtered subscriptions where the role will only be mentioned with its role-specific filters.
 
 [`rsstest`]: Print out the properties for that specific RSS feed and its filter status on whether it passed (if filters exist), along with a randomly chosen feed of any age - in the defined message/embed format in config.json. This was to ease the pains of having to wait for an RSS feed to come just to see how it would look once you designed it in the config. (The role filters are done *after* the feed filters defined from `rssfilters` if they exist.
 
@@ -181,7 +185,7 @@ This is especially useful when you want to add the feed's title and/or descripti
 ##Noteworthy Details
 
    * Custom emojis use a different format - it must be in the format of `<:emoji_name:12345>` with 12345 being the emoji's URL ID. The ID can be retrieved by getting the emoji's URL and copying the number in the URL.
-   
+
    * If you want to link something, but you don't want Discord to automatically embed the link (AKA preview), add `<` and `>` around the link.
 
    * ~~This bot was made with private server owners in mind. Its stability beyond that is unpredictable.~~ Public usage of the bot is now being tested. See the info at the top.

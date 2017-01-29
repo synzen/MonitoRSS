@@ -69,7 +69,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
     if (guild.name !== channel.guild.name) {
       console.log(`Guild Info: (${guild.id}, ${guild.name}) => Name change detected, changing guild name from "${guild.name}" to "${channel.guild.name}".`);
       guild.name = channel.guild.name;
-      fileOps.updateFile(`./sources/${channel.guild.id}.json`, guild, `../sources/${channel.guild.id}.json`);
+      fileOps.updateFile(channel.guild.id, guild, `../sources/${channel.guild.id}.json`);
     }
 
     let feedName = rssList[rssIndex].name

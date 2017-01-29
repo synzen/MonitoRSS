@@ -2,7 +2,7 @@ const configChecks = require('./configCheck.js')
 const getRSS = require('../rss/rss.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
-const fs = require('fs')
+const fileOps = require('./updateJSON.js')
 const rssConfig = require('../config.json')
 
 module.exports = function (bot) {
@@ -34,7 +34,7 @@ module.exports = function (bot) {
       cycleInProgress = true;
       feedLength = feedsProcessed = feedsSkipped = 0;
       guildList = [];
-      fs.readdir('./sources', function(err, files) {
+      fileOps.readDir('./sources', function (err, files) {
         if (err) throw err;
         files.forEach(function(guildRSS) {
           if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
@@ -43,9 +43,9 @@ module.exports = function (bot) {
               guildList.push(guild);
               for (var y in guild.sources) feedLength++;
             }
-            catch (err) {console.log(`RSS Error: Cannot load guild profile ${guildRSS}. Reason:\n${err}`)}
+            catch (err) {fileOps.checkBackup(guildRSS)}
           }
-          else if (guildRSS !== "guild_id_here.json") console.log(`RSS Warning: File ${guildRSS} was not found. Skipping file.`);
+          else if (guildRSS !== "guild_id_here.json" && guildRSS !== "backup") console.log(`RSS Guild Profile: ${guildRSS} was not found in bot's guild list. Skipping.`);
         })
         if (feedLength == 0) {
           cycleInProgress = false;

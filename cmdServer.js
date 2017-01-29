@@ -4,7 +4,7 @@ const eventHandler = (evnt) => require(`./events/${evnt}.js`)
 const config = require('./config.json')
 
 bot.on('ready', function() {
-  console.log("I am online.")
+  console.log("Discord.RSS Command Handler is now online.")
 })
 
 bot.on('message', function (message) {

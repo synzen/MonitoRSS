@@ -57,7 +57,7 @@ module.exports = function(message, rssIndex, role) {
           if (filterCategory !== "roleSubscriptions") delete filterList[filterCategory];
         }
         if (isEmptyObject(filterList)) delete rssList[rssIndex].filters;
-        fileOps.updateFile(`./sources/${message.guild.id}.json`, guildRss, `../sources/${message.guild.id}.json`);
+        fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
         return message.channel.sendMessage(`All global filters have been successfully removed from this feed.`);
       }
       else if (m.content == 4) {
@@ -78,7 +78,9 @@ module.exports = function(message, rssIndex, role) {
           }
           msg.embed.fields.push(field);
         }
-        message.channel.sendMessage("", msg);
+        message.channel.sendMessage("", msg).catch(err => {
+          console.log("promise error! cannot send embed of filters listings, the embed is: \n", msg.embed, "\n\nthe fields is:\n", msg.fields)
+        });
       }
     }
     else message.channel.sendMessage("That is not a valid choice. Try again.");
