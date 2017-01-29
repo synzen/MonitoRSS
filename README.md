@@ -117,7 +117,7 @@ Besides the required `name`, `link`, and `channel` fields, more can be added for
 
 7. `filters`: (Optional) The bot will then only send feeds to Discord if the feed has any of the words defined in these filters.
    * There are four filters available: `title`, `description`, `summary` and `author` - they are added as properties of `filters`.
-   * For each filter, they can be a string or an array (`["filter one!", "two"]`) to specify more than one word/phrase. For a feed to pass the filters - if any word/phrase defined in any of the filter categories are found (case-insensitive) in the message, it will pass the filter and be sent to Discord.
+   * For each filter, they must be an array (`["filter one!", "two"]`). For a feed to pass the filters - if any word/phrase defined in any of the filter categories are found (case-insensitive) in the message, it will pass the filter and be sent to Discord.
    * In addition to the above, another object can be made - `subscribedRoles` (not the same as #6). Here you can define role-specific filters that will determine when they will be mentioned instead of global mentioning as in #6. If manually added, global subscriptions will override this. Otherwise, Discord commands will automatically remove one or the other when setting global or filter-specific role subscriptions. (More details to be added)
 
 8. `embedMessage`: (Optional) Define a custom embed message to go along with the text message.
