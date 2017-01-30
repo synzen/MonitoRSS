@@ -1,4 +1,4 @@
-const loadCommand = (command) => require(`../${command}.js`)
+const loadCommand = (command) => require(`../${command}`)
 const config = require('../../config.json')
 const commandList = require('../../util/commandList.json')
 const channelTracker = require('../../util/channelTracker.js')
