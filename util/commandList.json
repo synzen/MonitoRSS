@@ -23,7 +23,7 @@
 	"rsstest": {
 		"action": "Feed Delivery Test",
 		"description": "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization.",
-		"file": "rssTest.js"
+		"file": "rssTest"
 	},
 	"rsstimezone": {
 		"description": "Change the timezone for dates given by {date} tag customization. For a list of timezones, see the TZ column at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>."
