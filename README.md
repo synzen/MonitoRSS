@@ -161,5 +161,3 @@ This is especially useful when you want to add the feed's title and/or descripti
 ##Author's Note
 
 This is in fact my first Javascript project. If you have any potential suggestions/improvements, I'm open to hearing them out.
-
-Tobias!
