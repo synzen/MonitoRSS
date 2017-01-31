@@ -10,7 +10,7 @@ Current Progress (30 Jan 17) : RSS Feed Grabbing is now stable, currently contin
 
 For steps on how to use the bot, see https://github.com/synzen/Discord.RSS/wiki.
 
-###Built With		
+##Built With		
 
 ####Basic Functions
  * [Node.js] (https://nodejs.org/en/)		
