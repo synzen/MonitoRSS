@@ -9,3 +9,19 @@ The bot should perform fine on a private server (self-hosted) since you have the
 Current Progress (30 Jan 17) : RSS Feed Grabbing is now stable, currently continuing to test Discord commands stability
 
 For steps on how to use the bot, see https://github.com/synzen/Discord.RSS/wiki.
+
+###Built With		
+
+##Basic Functions
+ * [Node.js] (https://nodejs.org/en/)		
+ * [Discord.js] (https://www.npmjs.com/package/discord.js)		
+ * [Feedparser] (https://www.npmjs.com/package/feedparser)		
+ * [Request] (https://www.npmjs.com/package/request)
+ * Datebase Manager (choose one)		
+  * [sqlite3] (https://www.npmjs.com/package/sqlite3) (default)		
+  * [mysql] (https://www.npmjs.com/package/mysql)
+
+#Customization Functions
+ * [striptags] (https://www.npmjs.com/package/striptags) - To remove HTML from feeds		
+ * [entities] (https://www.npmjs.com/package/entities) - Replace HTML content
+ * [moment-timezone] (https://www.npmjs.com/package/moment-timezone) - Customizable timezones per guild		
