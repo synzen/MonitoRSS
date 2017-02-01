@@ -41,7 +41,8 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
 
 
   if (currentRSSList.length <= 0) {
-    return message.channel.sendMessage("No feeds assigned to this channel.");
+    if (isCallingCmd) return message.channel.sendMessage("No feeds assigned to this channel.");
+    else return message.channel.sendMessage("There are no existing feeds.");
   }
 
   let returnMsg = "```Markdown\n# Feeds assigned to this channel: ``````Markdown\n"

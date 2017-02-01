@@ -19,29 +19,28 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   // var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
   var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
 
-  var dataDescrip = ""
-  if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
-  else dataDescrip = cleanRandoms(data.description);
+  if (data.guid.startsWith("yt:video")) var dataDescrip = data['media:group']['media:description']['#'];
+  else var dataDescrip = cleanRandoms(data.description);
 
-  if (dataDescrip.length > 700) {
-    dataDescrip = dataDescrip.substr(0, 690) + " [...]";
+  var dataSummary = cleanRandoms(data.summary);
+  if (dataSummary.length > 800)  {
+    dataSummary = dataSummary.slice(0, 800) + " [...]";
   }
-  if (isTestMessage && dataDescrip.length > 400) {
-    dataDescrip = dataDescrip.substr(0, 390) + " [...]";
+  if (isTestMessage && dataSummary.length > 300) {
+    dataSummary = dataSummary.slice(0, 300) + " [...]\n(Truncated shorter summary for test)";
+  }
+
+  if (dataDescrip.length > 800) {
+    dataDescrip = dataDescrip.slice(0, 800) + " [...]";
+  }
+  if (isTestMessage && dataDescrip.length > 300) {
+    if (data.summary == data.description) dataDescrip = dataDescrip.slice(0, 600) + " [...]\n(Truncated shorter description for test)";
+    else dataDescrip = dataDescrip.slice(0, 300) + " [...]\n(Truncated shorter description for test)";
   }
 
   if (data.link != null && data.link.includes("reddit")) {
-    let a = dataDescrip.substr(0,dataDescrip.length-22); //truncate the useless end of reddit description
-    let b = a.replace("submitted by", "\n*Submitted by:*");
-    dataDescrip = b;
-  }
-
-  var dataSummary = cleanRandoms(data.summary);
-  if (dataSummary.length > 700)  {
-    dataSummary = dataSummary.substr(0, 690) + " [...]";
-  }
-  if (isTestMessage && dataSummary.length > 400) {
-    dataSumary = dataSummary.substr(0, 390) + " [...]";
+    let dataDescrip = dataDescrip.substr(0,dataDescrip.length-22)
+            .replace("submitted by", "\n*Submitted by:*"); //truncate the useless end of reddit description
   }
 
   var subscriptions = getSubscriptions(channel, rssIndex, data, dataDescrip)
@@ -64,8 +63,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
       var d = c.replace(/{thumbnail}/g, data['media:group']['media:thumbnail']['@']['url']);
       return d;
     }
-    else
-      return b.replace(/{description}/g, dataDescrip)
+    else return b.replace(/{description}/g, dataDescrip);
   }
 
   //filter message
@@ -88,18 +86,17 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     return null;
   }
 
-  var configMessage = "";
-  if (rssList[rssIndex].message == null) configMessage = replaceKeywords(rssConfig.defaultMessage);
-  else configMessage = replaceKeywords(rssList[rssIndex].message);
+  if (rssList[rssIndex].message == null) var configMessage = replaceKeywords(rssConfig.defaultMessage);
+  else var configMessage = replaceKeywords(rssList[rssIndex].message);
 
   //generate final msg
   var finalMessage = "";
   if (isTestMessage) {
 
-    let footer = "\nBelow is the configured message to be sent for this feed set in config:\n\n\n\n"
+    let footer = "\nBelow is the configured message to be sent for this feed:\n\n\n\n"
     finalMessage += `\`\`\`Markdown\n# Test Message\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}`;
     if (dataDescrip != null && dataDescrip !== "") finalMessage += `\n\n[Description]: {description}\n${dataDescrip}`
-    if (dataSummary !== dataDescrip && dataSummary != null && dataSummary !== "") finalMessage += `\n\n[Summary]: {summary}\n${dataSummary}`
+    if (data.description !== data.summary && dataSummary != null && dataSummary !== "") finalMessage += `\n\n[Summary]: {summary}\n${dataSummary} (Summary has been truncated for test)`
     if (vanityDate != null && vanityDate !== "") finalMessage += `\n\n[Published Date]: {date}\n${vanityDate}`
     if (data.author != null && data.author !== "") finalMessage += `\n\n[Author]: {author}\n${data.author}`
     if (data.link != null) finalMessage += `\n\n[Link]: {link}\n${data.link}`
@@ -116,9 +113,11 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   //account for final message length
   if (finalMessage.length >= 1900) {
-    console.log(finalMessage)
-    finalMessage = `The feed titled **<${data.title}>** is greater than or equal to 1900 characters cannot be sent as a precaution. The link to the feed is:\n\n${data.link}`;
-    console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1900.`)
+    console.log(finalMessage);
+    finalMessage = `The article titled **<${data.title}>** is greater than or equal to 1900 characters cannot be sent as a precaution. The link to the article is:\n\n${data.link}`;
+    if (!isTestMessage) console.log(`RSS Delivery Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1900.`);
+    else console.log(`RSS Test Delivery Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1900.`);
+
   }
   let finalMessageCombo = {
     textMsg: finalMessage

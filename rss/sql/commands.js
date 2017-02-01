@@ -19,7 +19,7 @@ exports.selectTable = function (con, table, callback) {
 exports.createTable = function (con, table, callback) {
   if (sqlType == "mysql")
     return con.query(`create table if not exists \`${table}\` (link text)`, callback);
-    
+
   else
     return con.run(`create table if not exists "${table}" (link text)`, callback);
 
@@ -74,7 +74,7 @@ exports.dropTable = function (db, table, callback) {
 
     con.end(function (err) {
       if(err) console.log(err);
-      else return console.log(`RSS Info: Successfully removed ${table} from config`)
+      else return callback();
     })
   }
 
