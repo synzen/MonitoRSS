@@ -8,7 +8,7 @@ const getSubscriptions = require('./subscriptions.js')
 
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone
-
+  require('fs').writeFileSync('./something.txt', data.description)
   //sometimes feeds get deleted mid process
   if (rssList[rssIndex] == null) {console.log("RSS Error: Unable to translate a null source."); return null;}
   if (data.guid == null) {console.log(`RSS Error: (${channel.guild.id}, ${channel.guild.name}) => Feed GUID is null.`, data); return null;}
@@ -27,15 +27,15 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     dataSummary = dataSummary.slice(0, 800) + " [...]";
   }
   if (isTestMessage && dataSummary.length > 300) {
-    dataSummary = dataSummary.slice(0, 300) + " [...]\n(Truncated shorter summary for test)";
+    dataSummary = dataSummary.slice(0, 300) + " [...]\n\n**(Truncated shorter summary for rsstest)**";
   }
 
   if (dataDescrip.length > 800) {
     dataDescrip = dataDescrip.slice(0, 800) + " [...]";
   }
   if (isTestMessage && dataDescrip.length > 300) {
-    if (data.summary == data.description) dataDescrip = dataDescrip.slice(0, 600) + " [...]\n(Truncated shorter description for test)";
-    else dataDescrip = dataDescrip.slice(0, 300) + " [...]\n(Truncated shorter description for test)";
+    if (data.summary == data.description) dataDescrip = dataDescrip.slice(0, 600) + " [...]\n\n**(Truncated shorter description for rsstest)**";
+    else dataDescrip = dataDescrip.slice(0, 300) + " [...]\n(Truncated shorter description for rsstest)";
   }
 
   if (data.link != null && data.link.includes("reddit")) {
