@@ -11,7 +11,7 @@ module.exports = function (message) {
   else var oldTimezone = guild.timezone;
 
   var msgArray = message.content.split(" ")
-  if (msgArray.length <= 1) return message.channel.sendMessage(`To set your timezone, the syntax is \`${rssConfig.prefix}rsstimezone your_timezone_here\`. To reset back to the default (${rssConfig.timezone}), type \`${rssConfig.prefix}rsstimezone reset\`.\n\nSee <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`);
+  if (msgArray.length <= 1) return message.channel.sendMessage(`Setting your timezone is only useful if you intend on using customized messages. To set your timezone, the syntax is \`${rssConfig.prefix}rsstimezone your_timezone_here\`. To reset back to the default (${rssConfig.timezone}), type \`${rssConfig.prefix}rsstimezone reset\`.\n\nSee <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`);
   let timezone = msgArray[msgArray.length - 1]
 
   if (timezone !== "reset" && moment.tz.zone(timezone) == null) return message.channel.sendMessage(`\`${timezone}\` is not a valid timezone. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for more information. Valid timezones are in the \`TZ\` column.`);

@@ -17,7 +17,7 @@ module.exports = function (bot, message) {
     return console.log(`RSS Commands: (${message.guild.id}, ${message.guild.name}) => Used ${command}.`)
   }
 
-  //ugly command handling, but it'll have to do for now
+  //ugly permission checking, but it'll have to do for now
   if (channelTracker.hasActiveMenus(message.channel.id)) return;
 
   if (command == "rssadd" && checkPerm(command, bot, message.channel)){

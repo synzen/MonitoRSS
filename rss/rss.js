@@ -100,7 +100,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
         }
         else {
           let feedLength = currentFeed.length - 1
-          for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
+          for (var x = feedLength; x > currentFeed - 10; x--){ //get feeds starting from oldest, ending with newest.
             checkTable(currentFeed[x].guid, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
             filteredItems++;
           }

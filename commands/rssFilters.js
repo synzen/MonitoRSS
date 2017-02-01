@@ -34,7 +34,6 @@ module.exports = function(message, rssIndex, role) {
   collector.on('message', function (m) {
     if (m.content.toLowerCase() == "exit") return collector.stop("RSS Filter Action selection menu closed.");
     if (m.content == 1) {
-      console.log(m.content);
       collector.stop();
       return filterAdd(message, rssIndex);
     }

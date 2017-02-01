@@ -19,6 +19,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   // var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
   var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
 
+  //var dataDescrip = ""
   if (data.guid.startsWith("yt:video")) var dataDescrip = data['media:group']['media:description']['#'];
   else var dataDescrip = cleanRandoms(data.description);
 
@@ -39,7 +40,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   }
 
   if (data.link != null && data.link.includes("reddit")) {
-    let dataDescrip = dataDescrip.substr(0,dataDescrip.length-22)
+    dataDescrip = dataDescrip.substr(0,dataDescrip.length-22)
             .replace("submitted by", "\n*Submitted by:*"); //truncate the useless end of reddit description
   }
 
