@@ -52,6 +52,16 @@ module.exports = function (con, channel, rssIndex, callback) {
 
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
+  
+  //sometimes feeds get deleted mid-retrieval process
+  //in that case re-requiring it is necessary
+  function isDeletedSource () {
+    delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)]
+    guild = require(`../sources/${channel.guild.id}.json`)
+    rssList = guild.sources
+    if (rssList[rssIndex] == null) return true;
+    else return false;
+  }
 
   requestStream(rssList[rssIndex].link, feedparser, con, function () {
     callback()
@@ -74,12 +84,7 @@ module.exports = function (con, channel, rssIndex, callback) {
 });
 
   feedparser.on('end', function() {
-    //sometimes feeds get deleted mid-retrieval process
-    //in that case re-requiring it is necessary
-    delete require.cache[require.resolve(`../sources/${channel.guild.id}`)]
-    guild = require(`../sources/${channel.guild.id}.json`)
-    rssList = guild.sources
-    if (currentFeed.length == 0 || rssList[rssIndex] == null) return callback();
+    if (currentFeed.length == 0) return callback();
 
     var feedName = rssList[rssIndex].name
     var tableAlreadyExisted = 0
@@ -99,6 +104,7 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function checkTableExists() {
+      if (isDeletedSource()) return callback();
       sqlCmds.selectTable(con, feedName, function (err, results) {
         if (err) throw err;
         if (isEmptyObject(results)) {
@@ -132,6 +138,7 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function createTable() {
+      if (isDeletedSource()) return callback();
       sqlCmds.createTable(con, feedName, function (err, results) {
         if (err) throw err;
         for (var x in currentFeed){
@@ -141,6 +148,7 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function checkTable(data, feed) {
+      if (isDeletedSource()) return callback();
       sqlCmds.select(con, feedName, data, function (err, results) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
@@ -152,6 +160,7 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function insertIntoTable(data) {
+      if (isDeletedSource()) return callback();
       sqlCmds.insert(con, feedName, data, function (err, res){
         if (err) throw err;
         gatherResults();
