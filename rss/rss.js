@@ -46,6 +46,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
 
   requestStream(rssList[rssIndex].link, feedparser, con, function() {
+    if (sendingTestMessage) channel.sendMessage("Unable to get test feed. Could not connect to feed link.");
     callback()
     feedparser.removeAllListeners('end')
   })
