@@ -29,7 +29,7 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
 
   function getChannel(channel) {
     if (isNaN(parseInt(channel,10)) && bot.channels.find("name", channel) != null) return `<#${bot.channels.find("name", channel).id}>`;
-    else if (bot.channels.get(channel) != null) return `<#${channel}>`;
+    else if (bot.channels.get(channel) != null) return `${channel}`;
     else return `Error: ${channel} not found in guild.`;
   }
 
@@ -45,23 +45,27 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     else return message.channel.sendMessage("There are no existing feeds.");
   }
 
-  let returnMsg = "```Markdown\n# Feeds assigned to this channel: ``````Markdown\n"
   for (var x in currentRSSList) {
     let count = parseInt(x,10) + 1;
-    returnMsg += `[${count}]: ${currentRSSList[x][0]}\n`
+    let link = currentRSSList[x][0];
+    let title =  currentRSSList[x][2]
+    let channelID = currentRSSList[x][3];
+
+    if (isCallingCmd) var info = `Link: ${link}`;
+    else var info = `Channel: <#${channelID}> (#${bot.channels.get(channelID).name})\nLink: ${link}`;
+
     embed.embed.fields.push({
-      name: `${count})  ${currentRSSList[x][2]}`,
-      value: ""
+      name: `${count})  ${title}`,
+      value: info
     })
-    if (isCallingCmd) embed.embed.fields[embed.embed.fields.length - 1].value = `Link: ${currentRSSList[x][0]}`;
-    else embed.embed.fields[embed.embed.fields.length - 1].value = `Channel: ${currentRSSList[x][3]}\nLink: ${currentRSSList[x][0]}`;
+
   }
 
   if (isCallingCmd) {
     embed.embed.author.name = "Feed Selection Menu";
     embed.embed.description += `**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
     var error = false;
-    message.channel.sendEmbed(embed.embed).catch(err => {error = true; console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}`);});
+    message.channel.sendEmbed(embed.embed).catch(err => {error = true; console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}, embed is: `, embed.embed);});
 
   }
   else {
