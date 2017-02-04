@@ -37,7 +37,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
   })
 
   feedparser.on('error', function (error) {
-    channel.sendMessage(`<${rssLink}> is not a valid feed to add.`)
+    verifyMsg.edit(`<${rssLink}> is not a valid feed to add.`)
     console.log(`RSS Warning: ${rssLink} is not a valid feed to add.`)
     feedparser.removeAllListeners('end')
     return callback()
@@ -55,9 +55,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
   feedparser.on('end', function() {
     var metaLink = ""
     var randomNum = Math.floor((Math.random() * 100) + 1)
-    if (currentFeed[0] != null) {
-      metaLink = (currentFeed[0].meta.link != null) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
-    }
+    if (currentFeed[0] != null) metaLink = (currentFeed[0].meta.link != null) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
 
     var feedName = `${channel.id}_${randomNum}${metaLink}`
 
@@ -147,8 +145,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
 
       fileOps.updateFile(channel.guild.id, guildRSS, `../sources/${channel.guild.id}.json`)
       console.log("RSS Info: Successfully added new feed.")
-      // channel.sendMessage(`Successfully added <${rssLink}> for this channel.`)
-      verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`);
+      verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`)
     }
 
     startDataProcessing();
