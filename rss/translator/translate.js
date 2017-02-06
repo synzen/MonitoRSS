@@ -16,12 +16,11 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var originalDate = data.pubdate;
   if (guildTimezone != null && moment.tz.zone(guildTimezone) != null) var timezone = guildTimezone;
   else var timezone = rssConfig.timezone;
-  // var vanityDate = moment(originalDate).format("ddd, MMMM Do YYYY, h:mm A")
   var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
 
-  //var dataDescrip = ""
-  if (data.guid.startsWith("yt:video")) var dataDescrip = data['media:group']['media:description']['#'];
-  else var dataDescrip = cleanRandoms(data.description);
+  var dataDescrip = ""
+  if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
+  else dataDescrip = cleanRandoms(data.description);
 
   var dataSummary = cleanRandoms(data.summary);
   if (dataSummary.length > 800)  {
