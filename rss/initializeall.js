@@ -28,6 +28,7 @@
       8. gatherResults() and close connection
 */
 const config = require('../config.json')
+const moment = require('moment-timezone')
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser');
 const translator = require('./translator/translate.js')
@@ -46,22 +47,11 @@ function isEmptyObject(obj) {
 }
 
 module.exports = function (con, channel, rssIndex, callback) {
-
   var feedparser = new FeedParser()
   var currentFeed = []
 
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
-  
-  //sometimes feeds get deleted mid-retrieval process
-  //in that case re-requiring it is necessary
-  function isDeletedSource () {
-    delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)]
-    guild = require(`../sources/${channel.guild.id}.json`)
-    rssList = guild.sources
-    if (rssList[rssIndex] == null) return true;
-    else return false;
-  }
 
   requestStream(rssList[rssIndex].link, feedparser, con, function () {
     callback()
@@ -84,6 +74,11 @@ module.exports = function (con, channel, rssIndex, callback) {
 });
 
   feedparser.on('end', function() {
+    //sometimes feeds get deleted mid-retrieval process
+    //in that case re-requiring it is necessary
+    // delete require.cache[require.resolve(`../sources/${channel.guild.id}`)]
+    // guild = require(`../sources/${channel.guild.id}.json`)
+    // rssList = guild.sources
     if (currentFeed.length == 0) return callback();
 
     var feedName = rssList[rssIndex].name
@@ -104,7 +99,6 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function checkTableExists() {
-      if (isDeletedSource()) return callback();
       sqlCmds.selectTable(con, feedName, function (err, results) {
         if (err) throw err;
         if (isEmptyObject(results)) {
@@ -118,9 +112,8 @@ module.exports = function (con, channel, rssIndex, callback) {
           let feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
             var cutoffDay;
-            if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "")
-              cutoffDay = new Date(new Date().setDate(new Date().getDate()-config.defaultMaxAge));
-            else cutoffDay = new Date(new Date().setDate(new Date().getDate()-rssList[rssIndex].maxAge))
+            if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "") cutoffDay = moment(new Date()).subtract(config.defaultMaxAge, 'd');
+            else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
 
             if (currentFeed[x].pubdate >= cutoffDay){
               checkTable(currentFeed[x].guid, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
@@ -138,7 +131,6 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function createTable() {
-      if (isDeletedSource()) return callback();
       sqlCmds.createTable(con, feedName, function (err, results) {
         if (err) throw err;
         for (var x in currentFeed){
@@ -148,7 +140,6 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function checkTable(data, feed) {
-      if (isDeletedSource()) return callback();
       sqlCmds.select(con, feedName, data, function (err, results) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
@@ -160,7 +151,6 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function insertIntoTable(data) {
-      if (isDeletedSource()) return callback();
       sqlCmds.insert(con, feedName, data, function (err, res){
         if (err) throw err;
         gatherResults();

@@ -26,7 +26,7 @@ module.exports = function (bot) {
         var timeTaken = ((new Date() - startTime) / 1000).toFixed(2);
         console.log(`RSS Info: Finished feed retrieval cycle. Cycle Time: ${timeTaken}s`);
       }
-    });
+    }, startingCycle);
     cycleInProgress = false
     if (startingCycle) setTimeout(connect, 5000);
   }
@@ -45,7 +45,7 @@ module.exports = function (bot) {
         files.forEach(function(guildRSS) {
           if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
             try {
-              let guild = require(`../sources/${guildRSS}`)
+              let guild = require(`../sources/${guildRSS}`);
               guildList.push(guild);
               for (var y in guild.sources) feedLength++;
             }
@@ -71,7 +71,7 @@ module.exports = function (bot) {
         if (configChecks.checkExists(guildId, rssIndex, false) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
           getRSS(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, false, function () {
             feedsProcessed++
-            //console.log(`${feedsProcessed} ${feedsSkipped} (${feedsProcessed + feedsSkipped}) ${feedLength}`)
+            //console.log(`${feedsProcessed} ${feedsSkipped} ${feedLength}`)
             if (feedsProcessed + feedsSkipped == feedLength) setTimeout(endCon, 5000);
           });
         }

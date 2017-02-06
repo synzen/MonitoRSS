@@ -34,17 +34,6 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
 
-  //sometimes feeds get deleted mid-retrieval process
-  //in that case re-requiring it is necessary
-  function isDeletedSource () {
-    delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)]
-    guild = require(`../sources/${channel.guild.id}.json`)
-    rssList = guild.sources
-    if (rssList[rssIndex] == null) return true;
-    else return false;
-  }
-
-
   requestStream(rssList[rssIndex].link, feedparser, con, function() {
     if (sendingTestMessage) channel.sendMessage("Unable to get test feed. Could not connect to feed link.");
     callback()
@@ -67,7 +56,6 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 });
 
   feedparser.on('end', function() {
-
     if (currentFeed.length == 0) {
       if (!sendingTestMessage) return callback();
       callback();
@@ -84,18 +72,20 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
     let feedName = rssList[rssIndex].name
     var processedItems = 0
     var filteredItems = 0
-    //console.log("RSS Info: Starting retrieval for: " + feedName);
+    //console.log("RSS Info: Starting retrieval for: " + guild.id);
 
     function startDataProcessing() {
-      createTable();
+      checkTableExists();
     }
 
-    function createTable() {
-      if (isDeletedSource()) return callback();
-      sqlCmds.createTable(con, feedName, function (err, rows) {
-        if (err) {
-          console.log(`Database fatal error!. (${guild.id}, ${guild.name}) => RSS index ${rssIndex} Feed ${rssList[rssIndex].link} and date ${new Date()}. Skipping.`);
-          //throw err;
+    function checkTableExists() {
+      sqlCmds.selectTable(con, feedName, function (err, results) {
+        if (err || isEmptyObject(results)) {
+          if (err) console.log(err);
+          if (isEmptyObject(results)) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" appears to have been deleted, updating entry now...`);
+          delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)];
+          guild = require(`../sources/${channel.guild.id}.json`)
+          rssList = guild.sources;
           return callback();
         }
         if (sendingTestMessage) {
@@ -113,7 +103,6 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
     }
 
     function checkTable(data, feed) {
-      if (isDeletedSource()) return callback();
       if (sendingTestMessage) {
         filteredItems++;
         gatherResults();
@@ -136,7 +125,6 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
 
     function insertIntoTable(data) { //inserting the feed into the table marks it as "seen"
-    if (isDeletedSource()) return callback();
       sqlCmds.insert(con, feedName, data, function (err,res) {
         if (err) throw err;
         gatherResults();

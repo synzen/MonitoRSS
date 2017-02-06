@@ -1,42 +1,29 @@
-
 const rssConfig = require('../../config.json')
 var mysql, sqlite3
 let sqlType = rssConfig.sqlType.toLowerCase()
-
 
 if (sqlType == "mysql") mysql = require('mysql');
 else sqlite3 = require('sqlite3').verbose();
 
 
 exports.selectTable = function (con, table, callback) {
-  if (sqlType == "mysql")
-    return con.query(`select "${table}" from information_schema.tables where table_schema = "${rssConfig.databaseName}" and table_name = "${table}"`, callback);
-
-  else
-    return con.all(`select name from sqlite_master where type = 'table' and name = '${table}'`, callback);
+  if (sqlType == "mysql") return con.query(`select "${table}" from information_schema.tables where table_schema = "${rssConfig.databaseName}" and table_name = "${table}"`, callback);
+  else return con.all(`select name from sqlite_master where type = 'table' and name = '${table}'`, callback);
 }
 
 exports.createTable = function (con, table, callback) {
-  if (sqlType == "mysql")
-    return con.query(`create table if not exists \`${table}\` (link text)`, callback);
-
-  else
-    return con.run(`create table if not exists "${table}" (link text)`, callback);
+  if (sqlType == "mysql") return con.query(`create table if not exists \`${table}\` (link text)`, callback);
+  else return con.run(`create table if not exists "${table}" (link text)`, callback);
 
 }
 
 exports.select = function (con, table, data, callback) {
-  if (sqlType == "mysql")
-    return con.query(`select * from \`${table}\` where link like "%${data}%"`, callback);
-
-  else
-    return con.all(`select * from "${table}" where link like '%${data}%'`, callback);
+  if (sqlType == "mysql") return con.query(`select * from \`${table}\` where link like "%${data}%"`, callback);
+  else return con.all(`select * from "${table}" where link like '%${data}%'`, callback);
 }
 
 exports.insert = function (con, table, data, callback) {
-  if (sqlType == "mysql")
-    return con.query(`insert ignore into \`${table}\` (link) values (?)`, [data], callback);
-
+  if (sqlType == "mysql") return con.query(`insert ignore into \`${table}\` (link) values (?)`, [data], callback);
   else {
     var prep = con.prepare(`insert into "${table}" (link) values (?)`);
     prep.run(data);
@@ -45,12 +32,10 @@ exports.insert = function (con, table, data, callback) {
   }
 }
 
-exports.end = function (con, callback) {
-  if (sqlType == "mysql")
-    return con.end(callback);
-
+exports.end = function (con, callback, startingCycle) {
+  if (sqlType == "mysql") return con.end(callback);
   else  {
-    con.close();
+    if (!startingCycle) con.close();
     return callback();
   }
 }

@@ -1,4 +1,4 @@
-const request = require('request')
+const request = require('req-fast')
 const initializeRSS = require('../rss/initialize.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const sqlCmds = require('../rss/sql/commands.js')

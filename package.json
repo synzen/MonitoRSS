@@ -14,7 +14,7 @@
     "feedparser": "^2.1.0",
     "moment": "^2.17.1",
     "moment-timezone": "^0.5.11",
-    "request": "^2.79.0",
+    "req-fast": "^0.2.17",
     "striptags": "^2.1.1"
   },
   "repository": {
