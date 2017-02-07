@@ -2,7 +2,8 @@ const fs = require('fs');
 const config = require('../config.json')
 
 function updateContent(realFile, inFile, cacheFile) {
-  fs.writeFileSync(realFile, JSON.stringify(inFile, null, 2));
+  process.send(realFile)
+  fs.writeFileSync(`./sources/${realFile}.json`, JSON.stringify(inFile, null, 2))
   try {delete require.cache[require.resolve(cacheFile)]} catch (e) {}
 }
 
@@ -15,10 +16,10 @@ exports.updateFile = function (guildId, inFile, cacheFile) {
     fs.readFile(`./sources/${guildId}.json`, function (err, data) {
       if (err) throw err;
       fs.writeFileSync(`./sources/backup/${guildId}.json`, data)
-      updateContent(`./sources/${guildId}.json`, inFile, cacheFile)
+      updateContent(guildFile, inFile, cacheFile)
     });
   }
-  else updateContent(`./sources/${guildId}.json`, inFile, cacheFile);
+  else updateContent(guildFile, inFile, cacheFile);
 }
 
 exports.deleteFile = function(file, cacheFile, callback) {
@@ -40,6 +41,6 @@ exports.checkBackup = function (guildFile) {
   try {var backup = require(`../sources/backup/${guildFile}`)}
   catch (e) {return console.log(`RSS Warning: Unable to restore backup for ${guildFile}. Reason: ${e}`)}
 
-  updateContent(`./sources/${guildFile}`, backup, `../sources/${guildFile}`);
+  updateContent(guildFile, backup, `../sources/${guildFile}`);
   console.log(`Guild Profile: Successfully restored backup of ${guildFile}`);
 }

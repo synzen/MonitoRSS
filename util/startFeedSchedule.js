@@ -6,7 +6,14 @@ const fileOps = require('./updateJSON.js')
 const config = require('../config.json')
 
 module.exports = function (bot) {
-  var config = require('../config.json')
+  const cmdServer = require('child_process').fork('cmdServer.js');
+
+  cmdServer.on('message', function (guildFile) {
+    try {
+      delete require.cache[require.resolve(`../sources/${guildFile}.json`)];
+      console.log("RSS Module now using new and updated file for guild ID: " + guildFile);
+    } catch (e) {}
+  })
 
   var cycleInProgress = false
   var guildList = []
@@ -17,7 +24,6 @@ module.exports = function (bot) {
   var con
 
   var startTime
-
 
   function endCon (startingCycle) {
     sqlCmds.end(con, function(err) {

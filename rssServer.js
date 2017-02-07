@@ -3,6 +3,8 @@ const bot = new Discord.Client()
 const initRSS = require('./util/initFeeds.js')
 const config = require('./config.json')
 
+if (config.logDates) require('./util/logDates.js')();
+
 bot.on('ready', function() {
   console.log("I am online.")
   initRSS(bot)

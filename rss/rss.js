@@ -82,10 +82,10 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
       sqlCmds.selectTable(con, feedName, function (err, results) {
         if (err || isEmptyObject(results)) {
           if (err) console.log(err);
-          if (isEmptyObject(results)) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" appears to have been deleted, updating entry now...`);
-          delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)];
-          guild = require(`../sources/${channel.guild.id}.json`)
-          rssList = guild.sources;
+          if (isEmptyObject(results)) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" appears to have been deleted, skippinga...`);
+          // delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)];
+          // guild = require(`../sources/${channel.guild.id}.json`)
+          // rssList = guild.sources;
           return callback();
         }
         if (sendingTestMessage) {

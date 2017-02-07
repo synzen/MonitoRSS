@@ -5,9 +5,8 @@ const config = require('./config.json')
 
 if (config.logDates) require('./util/logDates.js')();
 
-
 bot.on('ready', function() {
-  console.log("I am online.")
+  console.log("Discord.RSS commands module activated and online.")
 })
 
 bot.on('message', function (message) {
