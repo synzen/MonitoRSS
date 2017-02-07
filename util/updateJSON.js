@@ -16,10 +16,10 @@ exports.updateFile = function (guildId, inFile, cacheFile) {
     fs.readFile(`./sources/${guildId}.json`, function (err, data) {
       if (err) throw err;
       fs.writeFileSync(`./sources/backup/${guildId}.json`, data)
-      updateContent(guildFile, inFile, cacheFile)
+      updateContent(guildId, inFile, cacheFile)
     });
   }
-  else updateContent(guildFile, inFile, cacheFile);
+  else updateContent(guildId, inFile, cacheFile);
 }
 
 exports.deleteFile = function(file, cacheFile, callback) {
@@ -34,13 +34,13 @@ exports.readDir = function (dir, func) {
   return fs.readdir(dir, func)
 }
 
-exports.checkBackup = function (guildFile) {
-  if (config.enableBackups !== true) return console.log(`Guild Profile: Cannot load guild profile ${guildFile}. Backups disabled, skipping profile..`);
+exports.checkBackup = function (guildId) {
+  if (config.enableBackups !== true) return console.log(`Guild Profile: Cannot load guild profile ${guildId}. Backups disabled, skipping profile..`);
 
-  console.log(`Guild Profile: Cannot load guild profile ${guildFile}. Backups enabled, attempting to restore backup.`);
-  try {var backup = require(`../sources/backup/${guildFile}`)}
-  catch (e) {return console.log(`RSS Warning: Unable to restore backup for ${guildFile}. Reason: ${e}`)}
+  console.log(`Guild Profile: Cannot load guild profile ${guildId}. Backups enabled, attempting to restore backup.`);
+  try {var backup = require(`../sources/backup/${guildId}`)}
+  catch (e) {return console.log(`RSS Warning: Unable to restore backup for ${guildId}. Reason: ${e}`)}
 
-  updateContent(guildFile, backup, `../sources/${guildFile}`);
-  console.log(`Guild Profile: Successfully restored backup of ${guildFile}`);
+  updateContent(guildId, backup, `../sources/${guildId}`);
+  console.log(`Guild Profile: Successfully restored backup of ${guildId}`);
 }
