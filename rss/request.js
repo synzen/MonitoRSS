@@ -3,7 +3,7 @@ const sqlCmds = require('./sql/commands.js')
 
 module.exports = function (link, feedparser, con, callback) {
   var attempts = 0;
-  
+
   (function requestStream() {
     request(link, function (error, response) {
       if (error || response === undefined || response.statusCode !== 200) {
@@ -17,7 +17,7 @@ module.exports = function (link, feedparser, con, callback) {
         }
       }
       else if (attempts > 0) {
-        console.log(`RSS Request: Successful connection to ${link} on attempt ${attempts+1}`);
+        //console.log(`RSS Request: Successful connection to ${link} on attempt ${attempts+1}`);
       }
     })
     .pipe(feedparser)

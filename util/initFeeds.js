@@ -6,8 +6,8 @@ const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./updateJSON.js')
 const config = require('../config.json')
 
-
 module.exports = function (bot) {
+  var changedGuilds = []
 
   var guildList = []
   var skippedFeeds = 0
@@ -61,16 +61,20 @@ module.exports = function (bot) {
       }
     }
 
-    if (changedInfo) return fileOps.updateFile(guildId, guildRss, `../sources/${guildId}.json`);
-    else return;
-
+    if (changedInfo) {
+      return changedGuilds.push({
+        id: guildId,
+        updatedFile: guildRss,
+        cacheLoc: `../sources/${guildId}.json`
+      });
+    }
   }
 
   function endCon () {
     sqlCmds.end(con, function(err) {
       console.log("RSS Info: Finished initialization cycle.")
     });
-    startFeedSchedule(bot);
+    startFeedSchedule(bot, changedGuilds);
   }
 
   function start () {

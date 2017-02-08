@@ -34,3 +34,10 @@ bot.login(config.token)
 process.on("unhandledRejection", (err, promise) => {
   console.log('Unhandled Rejection at: Promise', promise, 'reason:', err);
 })
+
+process.on('message', function (guildFile) {
+  try {
+    delete require.cache[require.resolve(`./sources/${guildFile}.json`)];
+    console.log("Discord Commands Module now using new and updated file for guild ID: " + guildFile);
+  } catch (e) {}
+})

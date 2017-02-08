@@ -20,13 +20,13 @@ module.exports = function (rssIndex, channel, feed, isTestMessage) {
     if (message.embedMsg != null) {
       channel.sendMessage(message.textMsg,message.embedMsg)
       .then(m => console.log(successLog))
-      .catch(err => console.log(errLog + err.response.body.message));
+      .catch(err => console.log(errLog + err));
     }
 
     else {
       channel.sendMessage(message.textMsg)
       .then(m => console.log(successLog))
-      .catch(err => console.log(errLog + err.response.body.message));
+      .catch(err => console.log(errLog + err));
     }
   }
 
