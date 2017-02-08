@@ -5,21 +5,15 @@ const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./updateJSON.js')
 const config = require('../config.json')
 
-module.exports = function (bot, changedGuilds) {
-  global.cmdServer = require('child_process').fork('./cmdServer.js', {env: {isCmdServer: true} });
+module.exports = function (bot) {
+  const cmdServer = require('child_process').fork('./cmdServer.js', {env: {isCmdServer: true} });
 
-  global.cmdServer.on('message', function (guildFile) {
+  cmdServer.on('message', function (guildFile) {
     try {
       delete require.cache[require.resolve(`../sources/${guildFile}.json`)];
       console.log("RSS Module now using new and updated file for guild ID: " + guildFile);
     } catch (e) {}
   })
-
-  if (changedGuilds.length !== 0) {
-    for (let guild in changedGuilds) {
-      fileOps.updateFile(changedGuilds[guild].id, changedGuilds[guild].updatedFile, changedGuilds[guild].cacheLoc);
-    }
-  }
 
   var cycleInProgress = false
   var guildList = []

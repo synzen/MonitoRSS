@@ -9,7 +9,6 @@
     It still has to check the table however because the feedparser
     grabs ALL the data each time, new and old, through the link.
 */
-const fileOps = require('../util/updateJSON.js')
 const FeedParser = require('feedparser');
 const requestStream = require('./request.js')
 const translator = require('./translator/translate.js')
@@ -61,12 +60,6 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
       callback();
       console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for rsstest.`);
       return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
-    }
-
-    if (guild.name !== channel.guild.name) {
-      console.log(`Guild Info: (${guild.id}, ${guild.name}) => Name change detected, changing guild name from "${guild.name}" to "${channel.guild.name}".`);
-      guild.name = channel.guild.name;
-      fileOps.updateFile(channel.guild.id, guild, `../sources/${channel.guild.id}.json`);
     }
 
     let feedName = rssList[rssIndex].name

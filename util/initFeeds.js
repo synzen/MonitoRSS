@@ -5,76 +5,20 @@ const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./updateJSON.js')
 const config = require('../config.json')
+const checkGuild = require('../util/checkGuild.js')
 
 module.exports = function (bot) {
-  var changedGuilds = []
-
   var guildList = []
   var skippedFeeds = 0
   var initializedFeeds = 0
   var totalFeeds = 0
-
   var con;
-
-  function isEmptyObject(obj) {
-      for(var prop in obj) {
-          if(obj.hasOwnProperty(prop))
-              return false;
-      }
-      return JSON.stringify(obj) === JSON.stringify({});
-  }
-
-  function roleCheck (guildId, rssIndex) {
-    var guildRss = require(`../sources/${guildId}.json`)
-    var rssList = guildRss.sources
-    var guild = bot.guilds.get(guildId)
-    var changedInfo = false
-
-    if (rssList[rssIndex].roleSubscriptions != null && rssList[rssIndex].roleSubscriptions.length !== 0) {
-      var globalSubList = rssList[rssIndex].roleSubscriptions;
-      for (let roleIndex in globalSubList) {
-        var role = globalSubList[roleIndex]
-        if (guild.roles.get(role.roleID) == null) {
-          console.log(`RSS Warning: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) not found.`);
-          changedInfo = true;
-        }
-        else if (guild.roles.get(role.roleID).name !== role.roleName) {
-          console.log(`RSS Info: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) => Changed role name to ${guild.roles.get(role.roleID).name}`);
-          role.roleName = guild.roles.get(role.roleID).name;
-          changedInfo = true;
-        }
-      }
-    }
-
-    if (rssList[rssIndex].filters != null && rssList[rssIndex].filters.roleSubscriptions != null && !isEmptyObject(rssList[rssIndex].filters.roleSubscriptions)) {
-      let filteredSubList = rssList[rssIndex].filters.roleSubscriptions
-      for (let roleID in filteredSubList) {
-        if (guild.roles.get(roleID) == null) {
-          console.log(`RSS Warning: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) not found.`);
-          changedInfo = true;
-        }
-        else if (guild.roles.get(roleID).name !== filteredSubList[roleID].roleName) {
-          console.log(`RSS Info: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) => Changed role name to ${guild.roles.get(role.roleID).name}`);
-          filteredSubList[roleID].roleName = guild.roles.get(roleID).name;
-          changedInfo = true;
-        }
-      }
-    }
-
-    if (changedInfo) {
-      return changedGuilds.push({
-        id: guildId,
-        updatedFile: guildRss,
-        cacheLoc: `../sources/${guildId}.json`
-      });
-    }
-  }
 
   function endCon () {
     sqlCmds.end(con, function(err) {
       console.log("RSS Info: Finished initialization cycle.")
     });
-    startFeedSchedule(bot, changedGuilds);
+    startFeedSchedule(bot);
   }
 
   function start () {
@@ -87,11 +31,13 @@ module.exports = function (bot) {
     for (var guildIndex in guildList) {
       let guildId = guildList[guildIndex].id
       let rssList = guildList[guildIndex].sources
+      checkGuild.names(bot, guildId);
       for (var rssIndex in rssList){
-        roleCheck(guildId, rssIndex);
+        checkGuild.roles(bot, guildId, rssIndex);
         if (configChecks.checkExists(guildId, rssIndex, true, true) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
           initializeAllRSS(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, function() {
             initializedFeeds++;
+            console.log(`${initializedFeeds}, ${totalFeeds}`)
             if (initializedFeeds + skippedFeeds == totalFeeds) endCon();
           });
         }
