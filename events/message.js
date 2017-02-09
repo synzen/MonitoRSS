@@ -16,7 +16,7 @@ function isBotController (command, author) {
     return false;
   }
   for (var x in controllerList) {
-    if (controllerList[x] == author) return true;
+    if (controllerList[x] === author) return true;
   }
   return false
 }
@@ -57,7 +57,9 @@ module.exports = function (bot, message) {
     message.channel.sendMessage(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`).catch(err => console.log("Could not send stats, reason:\n", err));
   }
   else if (command == "setgame" && isBotController(command, message.author.id) && checkPerm(command, bot, message.channel)){
-    let game = message.content.split(" ").shift().join(" ")
+    let content = message.content.split(" ");
+    content.shift();
+    let game = content.join(" ");
     if (game == "null") game = null;
     bot.user.setGame(game);
   }
