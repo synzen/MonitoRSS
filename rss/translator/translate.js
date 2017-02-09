@@ -1,4 +1,4 @@
-const rssConfig = require('../../config.json')
+const config = require('../../config.json')
 const striptags = require('striptags')
 const filterFeed = require('./filters.js')
 const createEmbed = require('./embed.js')
@@ -15,7 +15,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
 
   var originalDate = data.pubdate;
   if (guildTimezone != null && moment.tz.zone(guildTimezone) != null) var timezone = guildTimezone;
-  else var timezone = rssConfig.timezone;
+  else var timezone = config.feedSettings.timezone;
   var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
 
   var dataDescrip = ""
@@ -86,7 +86,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     return null;
   }
 
-  if (rssList[rssIndex].message == null) var configMessage = replaceKeywords(rssConfig.defaultMessage);
+  if (rssList[rssIndex].message == null) var configMessage = replaceKeywords(config.feedSettings.defaultMessage);
   else var configMessage = replaceKeywords(rssList[rssIndex].message);
 
   //generate final msg

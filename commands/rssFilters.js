@@ -1,6 +1,6 @@
 const filterAdd = require('./util/filterAdd.js')
 const filterRemove = require('./util/filterRemove.js')
-const rssConfig = require('../config.json')
+const config = require('../config.json')
 const fileOps = require('../util/updateJSON.js')
 
 function isEmptyObject(obj) {
@@ -16,7 +16,7 @@ module.exports = function(message, rssIndex, role) {
   var rssList = guildRss.sources
 
   var menu = {embed: {
-    color: rssConfig.menuColor,
+    color: config.botSettings.menuColor,
     description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these global filters will be sent to Discord.\n_____`,
     author: {name: `Global Filters Customization`},
     fields: [{name: `1) Add a global filter`, value: `Add a new filter to a specific category.`},
@@ -38,12 +38,10 @@ module.exports = function(message, rssIndex, role) {
       return filterAdd(message, rssIndex);
     }
     else if (m.content == 2) {
-      console.log(m.content);
       collector.stop();
       return filterRemove(message, rssIndex);
     }
     else if (m.content == 3 || m.content == 4) {
-      console.log(m.content);
       collector.stop();
       var foundFilters = [];
       if (rssList[rssIndex].filters != null && typeof rssList[rssIndex].filters == "object") {
@@ -65,7 +63,7 @@ module.exports = function(message, rssIndex, role) {
       else if (m.content == 4) {
 
         var msg = {embed: {
-          color: rssConfig.menuColor,
+          color: config.botSettings.menuColor,
           description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nBelow are the filter categories with their words/phrases under each.\n_____`,
           author: {name: `List of Assigned Filters`},
           fields: [],

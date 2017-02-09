@@ -4,7 +4,7 @@ const eventHandler = (evnt) => require(`./events/${evnt}.js`)
 const config = require('./config.json')
 const fileOps = require('./util/updateJSON.js')
 
-if (config.logDates) require('./util/logDates.js')();
+if (config.logging.logDates) require('./util/logDates.js')();
 
 bot.on('ready', function() {
   console.log("Discord.RSS commands module activated and online.")
@@ -23,11 +23,12 @@ bot.on('guildDelete', function (guild) {
 })
 
 bot.on('channelDelete', function (channel) {
+  if (!fileOps.exists(`./sources/${channel.guild.id}.json`)) return;
   eventHandler('channelDelete')(channel)
 })
 
 bot.on('roleUpdate', function (oldRole, newRole) {
-  if (oldRole.name === newRole.name) return;
+  if (oldRole.name === newRole.name || !fileOps.exists(`./sources/${oldRole.guild.id}.json`)) return;
   eventHandler('roleUpdate')(bot, oldRole, newRole)
 })
 
@@ -40,15 +41,18 @@ bot.on('guildUpdate', function (oldGuild, newGuild) {
   eventHandler('guildUpdate')(bot, oldGuild, newGuild)
 })
 
-bot.login(config.token)
+bot.login(config.botSettings.token)
 
-process.on("unhandledRejection", (err, promise) => {
+process.on("unhandledRejection", function (err, promise) {
   console.log('Unhandled Rejection at: Promise', promise, 'reason:', err);
 })
 
-process.on('message', function (guildFile) {
-  try {
-    delete require.cache[require.resolve(`./sources/${guildFile}.json`)];
-    console.log("Discord Commands Module now using new and updated file for guild ID: " + guildFile);
-  } catch (e) {}
+process.on('uncaughtException', function (err) {
+  console.log(`Fatal Error for Commands Module! Stopping bot, printing error:\n\n`, err.stack)
+  process.send('kill')
+  process.exit(1)
+})
+
+process.on('message', function (message) {
+  if (message === 'kill') process.exit(1);
 })

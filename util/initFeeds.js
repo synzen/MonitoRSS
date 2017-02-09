@@ -4,10 +4,9 @@ const configChecks = require('../util/configCheck.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./updateJSON.js')
-const config = require('../config.json')
 const checkGuild = require('../util/checkGuild.js')
 
-module.exports = function (bot) {
+module.exports = function (bot, callback) {
   var guildList = []
   var skippedFeeds = 0
   var initializedFeeds = 0
@@ -18,7 +17,8 @@ module.exports = function (bot) {
     sqlCmds.end(con, function(err) {
       console.log("RSS Info: Finished initialization cycle.")
     });
-    startFeedSchedule(bot);
+    callback()
+    startFeedSchedule(bot)
   }
 
   function start () {

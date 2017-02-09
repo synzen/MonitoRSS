@@ -112,7 +112,7 @@ module.exports = function (con, channel, rssIndex, callback) {
           let feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
             var cutoffDay;
-            if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "") cutoffDay = moment(new Date()).subtract(config.defaultMaxAge, 'd');
+            if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "") cutoffDay = moment(new Date()).subtract(config.feedSettings.defaultMaxAge, 'd');
             else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
 
             if (currentFeed[x].pubdate >= cutoffDay){
@@ -144,7 +144,7 @@ module.exports = function (con, channel, rssIndex, callback) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
         else {
-          if (config.sendOldMessages == true) sendToDiscord(rssIndex, channel, feed, false); //this can result in great spam once the loads up after a period of downtime
+          if (config.feedSettings.sendOldMessages == true) sendToDiscord(rssIndex, channel, feed, false); //this can result in great spam once the loads up after a period of downtime
           insertIntoTable(data);
         }
       })

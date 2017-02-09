@@ -1,5 +1,3 @@
-
-
 module.exports = function (content, bot, channel) {
 
   let guild = bot.guilds.get(channel.guild.id)

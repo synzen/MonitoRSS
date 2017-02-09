@@ -1,15 +1,26 @@
 {
-  "prefix": "~",
-  "token": "",
-  "logDates": true,
-  "enableBackups": true,
-  "menuColor": 7833753,
-  "timezone": "America/New_York",
-  "refreshTimeMinutes": 10,
-  "sqlType": "sqlite3",
-  "databaseName": "rss",
-  "sendOldMessages": true,
-  "defaultMaxAge": 2,
-  "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
-  "maxFeeds": 5
+  "logging": {
+    "logDates": true,
+    "discordChannelLog": ""
+  },
+  "botSettings": {
+    "token": "",
+    "prefix": "~",
+    "defaultGame": "",
+    "controllerIds": [],
+    "menuColor": 7833753
+  },
+  "feedManagement": {
+    "sqlType": "sqlite3",
+    "databaseName": "rss",
+    "enableBackups": true
+  },
+  "feedSettings": {
+    "refreshTimeMinutes": 15,
+    "timezone": "America/New_York",
+    "maxFeeds": 5,
+    "sendOldMessages": false,
+    "defaultMaxAge": 2,
+    "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
+  }
 }

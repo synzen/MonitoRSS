@@ -1,16 +1,15 @@
+const config = require('../config.json')
 
 exports.checkExists = function (guildId, rssIndex, logging, initializing) {
   var guild = require(`../sources/${guildId}.json`)
   var rssList = guild.sources
 
-  var rssConfig = require('../config.json')
-
   var valid = true;
 
-  if (rssConfig.defaultMessage == null || rssConfig.defaultMessage == "") {
+  if (config.feedSettings.defaultMessage == null || config.feedSettings.defaultMessage == "") {
     throw `RSS Config Warning: A default message must be set in config. Terminating.`;
   }
-  else if (rssConfig.menuColor == null || isNaN(parseInt(rssConfig.menuColor, 10))) {
+  else if (config.botSettings.menuColor == null || isNaN(parseInt(config.botSettings.menuColor, 10))) {
     throw "Menu color is not properly set in config. Terminating.";
   }
   else if (rssList[rssIndex].enabled == 0) {

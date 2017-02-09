@@ -6,23 +6,12 @@ const fileOps = require('./updateJSON.js')
 const config = require('../config.json')
 
 module.exports = function (bot) {
-  const cmdServer = require('child_process').fork('./cmdServer.js', {env: {isCmdServer: true} });
-
-  cmdServer.on('message', function (guildFile) {
-    try {
-      delete require.cache[require.resolve(`../sources/${guildFile}.json`)];
-      console.log("RSS Module now using new and updated file for guild ID: " + guildFile);
-    } catch (e) {}
-  })
-
   var cycleInProgress = false
   var guildList = []
   var feedLength = 0
   var feedsProcessed = 0
   var feedsSkipped = 0
-
   var con
-
   var startTime
 
   function endCon (startingCycle) {
@@ -89,6 +78,6 @@ module.exports = function (bot) {
   }
 
   connect()
-  setInterval(connect, config.refreshTimeMinutes*60000)
+  setInterval(connect, config.feedSettings.refreshTimeMinutes*60000)
 
 }

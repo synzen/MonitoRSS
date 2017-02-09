@@ -1,16 +1,16 @@
 const mysqlCmds = require('./commands.js')
-var rssConfig = require('../../config.json')
+var config = require('../../config.json')
 
 var mysql, sqlite3
-if (rssConfig.sqlType.toLowerCase() == "mysql") mysql = require('mysql');
-else if (rssConfig.sqlType.toLowerCase() == "sqlite3") sqlite3 = require('sqlite3').verbose();
+if (config.feedManagement.sqlType.toLowerCase() == "mysql") mysql = require('mysql');
+else if (config.feedManagement.sqlType.toLowerCase() == "sqlite3") sqlite3 = require('sqlite3').verbose();
 
 const credentials = require('../../mysqlCred.json')
 
 
 module.exports = function (callback) {
-  if (typeof rssConfig.sqlType !== "string") return null;
-  else if (rssConfig.sqlType.toLowerCase() == "mysql") {
+  if (typeof config.feedManagement.sqlType !== "string") return null;
+  else if (config.feedManagement.sqlType.toLowerCase() == "mysql") {
   var con, iterations = 0;
 
     (function startDataProcessing() {
@@ -19,14 +19,14 @@ module.exports = function (callback) {
       con.connect(function(err){
         if(err){
           throw err;
-          console.log('Error connecting to database ' + rssConfig.databaseName + '. Attempting to reconnect.');
+          console.log('Error connecting to database ' + config.feedManagement.databaseName + '. Attempting to reconnect.');
           //setTimeout(startDataProcessing, 2000);
         }
         else {
-          con.query('create database if not exists `' + rssConfig.databaseName + '`', function (err) {
+          con.query('create database if not exists `' + config.feedManagement.databaseName + '`', function (err) {
             if (err) throw err;
           })
-          con.query('use ' + rssConfig.databaseName, function (err) {
+          con.query('use ' + config.feedManagement.databaseName, function (err) {
             if (err) throw err;
           })
           callback();
@@ -49,8 +49,8 @@ module.exports = function (callback) {
 
 
   //so much simpler!
-  else if (rssConfig.sqlType.toLowerCase() == "sqlite3") {
-    return new sqlite3.Database(`./${rssConfig.databaseName}.db`, callback);
+  else if (config.feedManagement.sqlType.toLowerCase() == "sqlite3") {
+    return new sqlite3.Database(`./${config.feedManagement.databaseName}.db`, callback);
   }
   else return null;
 }

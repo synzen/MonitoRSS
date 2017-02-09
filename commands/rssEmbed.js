@@ -67,7 +67,7 @@ module.exports = function (message, rssIndex) {
     else {
       //property collector
       customCollect.stop()
-      message.channel.sendMessage(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other tags, you may first type \`exit\` then use \`${config.prefix}rsstest\`.`);
+      message.channel.sendMessage(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other tags, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`);
       const propertyCollect = message.channel.createCollector(filter, {time: 240000});
       channelTracker.addCollector(message.channel.id)
 
@@ -98,7 +98,7 @@ module.exports = function (message, rssIndex) {
             return editing.then(m => m.edit(`Settings updated. The property \`${choice}\` has been reset.`));
           }
           else {
-            return editing.then(m => m.edit(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${config.prefix}rsstest\` to see your new embed format.`));
+            return editing.then(m => m.edit(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`));
           }
         }
       });

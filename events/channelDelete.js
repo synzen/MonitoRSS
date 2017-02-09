@@ -1,14 +1,12 @@
 const removeRSS = require('../commands/rssRemove.js')
-const fileOps = require('../util/updateJSON.js')
 
 module.exports = function (channel) {
-  if (!fileOps.exists(`./sources/${channel.guild.id}.json`)) return;
-  else var rssList = require(`../sources/${channel.guild.id}.json`).sources;
+  var rssList = require(`../sources/${channel.guild.id}.json`).sources
+
+  console.log(`Guild Info: (${channel.guild.id}, ${channel.guild.name}) => Channel (${channel.id}, ${channel.name}) deleted.`)
 
   for (let rssIndex in rssList) {
-    if (rssList[rssIndex].channel == channel.id) {
-      removeRSS(channel, rssIndex);
-    }
+    if (rssList[rssIndex].channel == channel.id) removeRSS(channel, rssIndex);
   }
 
 }

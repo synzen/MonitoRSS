@@ -1,3 +1,4 @@
+const Discord = require('discord.js')
 const loadCommand = (command) => require(`../${command}`)
 const config = require('../../config.json')
 const commandList = require('../../util/commandList.json')
@@ -8,13 +9,7 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
   var rssList = []
   try {rssList = require(`../../sources/${message.guild.id}.json`).sources} catch(e) {}
 
-  var embed = {embed: {
-    color: config.menuColor,
-    description: `**Server Limit:** ${rssList.length}/${config.maxFeeds}\n`,
-    author: {},
-    fields: [],
-    footer: {}
-  }}
+  var embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
 
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) {
@@ -28,9 +23,9 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
   }
 
   function getChannel(channel) {
-    if (isNaN(parseInt(channel,10)) && bot.channels.find("name", channel) != null) return `<#${bot.channels.find("name", channel).id}>`;
-    else if (bot.channels.get(channel) != null) return `${channel}`;
-    else return `Error: ${channel} not found in guild.`;
+    if (isNaN(parseInt(channel,10)) && bot.channels.find("name", channel) != null) return `${bot.channels.find("name", channel).name}`;
+    else if (bot.channels.get(channel) != null) return bot.channels.get(channel).name;
+    else return undefined;
   }
 
   var currentRSSList = [];
@@ -40,7 +35,7 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
   }
 
 
-  if (currentRSSList.length <= 0) {
+  if (currentRSSList.length == 0) {
     if (isCallingCmd) return message.channel.sendMessage("No feeds assigned to this channel.");
     else return message.channel.sendMessage("There are no existing feeds.");
   }
@@ -49,32 +44,33 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     let count = parseInt(x,10) + 1;
     let link = currentRSSList[x][0];
     let title =  currentRSSList[x][2]
-    let channelID = currentRSSList[x][3];
+    let channelName = currentRSSList[x][3];
 
     if (isCallingCmd) var info = `Link: ${link}`;
-    else var info = `Channel: <#${channelID}> (#${bot.channels.get(channelID).name})\nLink: ${link}`;
+    else var info = `Channel: #${channelName}\nLink: ${link}`;
 
-    embed.embed.fields.push({
-      name: `${count})  ${title}`,
-      value: info
-    })
-
+    // if (channelID !== undefined) {
+    embedMsg.addField(`${count})  ${title}`, info);
+    // }
   }
 
   if (isCallingCmd) {
-    embed.embed.author.name = "Feed Selection Menu";
-    embed.embed.description += `**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`;
+    embedMsg.setAuthor('Feed Selection Menu');
+    embedMsg.setDescription(`**Server Limit:** ${rssList.length}/${config.feedSettings.maxFeeds}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`);
     var error = false;
-    message.channel.sendEmbed(embed.embed).catch(err => {error = true; console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}, embed is: `, embed.embed);});
-
+    message.channel.sendEmbed(embedMsg)
+    .catch(err => {
+      error = true;
+      message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`);
+      console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}, embed is: `, embedMsg);});
   }
   else {
-    embed.embed.author.name = "Current Active Feeds"
-    embed.embed.description += `_____`;
-    return message.channel.sendEmbed(embed.embed).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err.response.body.message}`));
+    embedMsg.setAuthor('Current Active Feeds');
+    embedMsg.setDescription(`**Server Limit:** ${rssList.length}/${config.feedSettings.maxFeeds}\n_____`);
+    return message.channel.sendEmbed(embedMsg).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err.response.body.message}`));
   }
 
-  if (error) return;
+  if (error) {console.log("print feeds returning due to error"); return;}
 
   const filter = m => m.author.id == message.author.id
   const collector = message.channel.createCollector(filter,{time:60000})

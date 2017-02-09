@@ -3,8 +3,6 @@ const config = require('../config.json')
 
 function updateContent(realFile, inFile, cacheFile) {
   if (process.env.isCmdServer) process.send(realFile); //child process
-  // else global.cmdServer.send(realFile); //master process
-
   fs.writeFileSync(`./sources/${realFile}.json`, JSON.stringify(inFile, null, 2))
   try {delete require.cache[require.resolve(cacheFile)]} catch (e) {}
 }
@@ -24,20 +22,21 @@ exports.updateFile = function (guildId, inFile, cacheFile) {
   else updateContent(guildId, inFile, cacheFile);
 }
 
-exports.deleteFile = function(file, cacheFile, callback) {
-  fs.unlink(file, function(err) {
-    if (err) return console.log(err)
+exports.deleteFile = function(guildId, cacheFile, callback) {
+  fs.unlink(`./sources/${guildId}.json`, function(err) {
+    if (err) return console.log(`Error with delete file:\n`, err);
+    if (process.env.isCmdServer) process.send(guildId);
     try {delete require.cache[require.resolve(cacheFile)]} catch (e) {console.log(e)}
     return callback()
   })
 }
 
-exports.readDir = function (dir, func) {
-  return fs.readdir(dir, func)
+exports.readDir = function (dir, callback) {
+  return fs.readdir(dir, callback)
 }
 
 exports.checkBackup = function (guildId) {
-  if (config.enableBackups !== true) return console.log(`Guild Profile: Cannot load guild profile ${guildId}. Backups disabled, skipping profile..`);
+  if (config.feedManagement.enableBackups !== true) return console.log(`Guild Profile: Cannot load guild profile ${guildId}. Backups disabled, skipping profile..`);
 
   console.log(`Guild Profile: Cannot load guild profile ${guildId}. Backups enabled, attempting to restore backup.`);
   try {var backup = require(`../sources/backup/${guildId}`)}

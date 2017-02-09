@@ -1,13 +1,13 @@
-const rssConfig = require('../../config.json')
+const config = require('../../config.json')
 var mysql, sqlite3
-let sqlType = rssConfig.sqlType.toLowerCase()
+let sqlType = config.feedManagement.sqlType.toLowerCase()
 
 if (sqlType == "mysql") mysql = require('mysql');
 else sqlite3 = require('sqlite3').verbose();
 
 
 exports.selectTable = function (con, table, callback) {
-  if (sqlType == "mysql") return con.query(`select "${table}" from information_schema.tables where table_schema = "${rssConfig.databaseName}" and table_name = "${table}"`, callback);
+  if (sqlType == "mysql") return con.query(`select "${table}" from information_schema.tables where table_schema = "${config.feedManagement.databaseName}" and table_name = "${table}"`, callback);
   else return con.all(`select name from sqlite_master where type = 'table' and name = '${table}'`, callback);
 }
 
@@ -18,8 +18,8 @@ exports.createTable = function (con, table, callback) {
 }
 
 exports.select = function (con, table, data, callback) {
-  if (sqlType == "mysql") return con.query(`select * from \`${table}\` where link like "%${data}%"`, callback);
-  else return con.all(`select * from "${table}" where link like '%${data}%'`, callback);
+  if (sqlType == "mysql") return con.query(`select * from \`${table}\` where link = ?`, [data], callback);
+  else return con.all(`select * from "${table}" where link = ?`, data, callback);
 }
 
 exports.insert = function (con, table, data, callback) {
@@ -64,7 +64,7 @@ exports.dropTable = function (db, table, callback) {
   }
 
   else {
-    var con = new sqlite3.Database(`./${rssConfig.databaseName}.db`, dropTable);
+    var con = new sqlite3.Database(`./${config.feedManagement.databaseName}.db`, dropTable);
     //console.log(`RSS Info: Starting removal of ${table} from config`);
 
     function dropTable() {

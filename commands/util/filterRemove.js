@@ -46,7 +46,7 @@ module.exports = function(message, rssIndex, role) {
   if (isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
 
   var msg = {embed: {
-    color: config.menuColor,
+    color: config.botSettings.menuColor,
     description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nBelow are the filter categories with their words/phrases under each.\n_____`,
     author: {name: `List of Assigned Filters`},
     fields: [],

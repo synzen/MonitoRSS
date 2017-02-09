@@ -7,10 +7,10 @@ module.exports = function (message, rssIndex) {
   var rssList = guildRss.sources
 
   let currentMsg = "```Markdown\n"
-  if (rssList[rssIndex].message == "" || rssList[rssIndex].message == null) currentMsg += "None has been set. Currently using default message below:\n\n``````\n" + config.defaultMessage;
+  if (rssList[rssIndex].message == "" || rssList[rssIndex].message == null) currentMsg += "None has been set. Currently using default message below:\n\n``````\n" + config.feedSettings.defaultMessage;
   else currentMsg += rssList[rssIndex].message;
 
-  message.channel.sendMessage(`The current message for ${rssList[rssIndex].link} is: \n${currentMsg + "```"}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${config.prefix}rsstest\`.\n\n`)
+  message.channel.sendMessage(`The current message for ${rssList[rssIndex].link} is: \n${currentMsg + "```"}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${config.botSettings.prefix}rsstest\`.\n\n`)
 
   const filter = m => m.author.id == message.author.id
   const customCollect = message.channel.createCollector(filter,{time:240000})
@@ -24,7 +24,7 @@ module.exports = function (message, rssIndex) {
       delete rssList[rssIndex].message;
       fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Message reset for ${rssList[rssIndex].link}.`);
-      return resetMsg.then(m => m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`));
+      return resetMsg.then(m => m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`));
     }
     else {
       let editing = message.channel.sendMessage(`Updating message...`);
@@ -32,7 +32,7 @@ module.exports = function (message, rssIndex) {
       rssList[rssIndex].message = m.content;
       fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New message recorded for ${rssList[rssIndex].link}.`);
-      return editing.then(final => final.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${config.prefix}rsstest\` to see your new message format.`));
+      return editing.then(final => final.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`));
     }
   });
 

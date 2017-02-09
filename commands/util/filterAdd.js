@@ -70,11 +70,11 @@ module.exports = function(message, rssIndex, role) {
           fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
           if (role == null) {
             console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.prefix}rsstest\` and see what kind of feeds pass through.`));
+            return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.botSettings.prefix}rsstest\` and see what kind of feeds pass through.`));
           }
           else {
             console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return editing.then(m => m.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.prefix}rsstest\` and see what kind of feeds pass through.`));
+            return editing.then(m => m.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.botSettings.prefix}rsstest\` and see what kind of feeds pass through.`));
           }
         }
       })

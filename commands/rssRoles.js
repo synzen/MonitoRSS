@@ -57,7 +57,7 @@ module.exports = function(bot, message, command) {
 
   function openSubMenu (rssIndex, role, isGlobalSub) {
     var subMenu = {embed: {
-      color: config.menuColor,
+      color: config.botSettings.menuColor,
       author: {},
       description: `**Selected Role**: ${role.name}\n**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nSelect an option by typing its number, or type *exit* to cancel.\n_____`,
       footer: {}
@@ -112,7 +112,7 @@ module.exports = function(bot, message, command) {
     let guild = message.guild
     var subList = {}
     var msg = {embed: {
-      color: config.menuColor,
+      color: config.botSettings.menuColor,
       description: `\nBelow are the feed titles with any roles subscribed to that feed under it.\n_____`,
       author: {name: `Subscribed Roles List`},
       fields: [],
@@ -121,7 +121,7 @@ module.exports = function(bot, message, command) {
 
     for (let rssIndex in rssList) {
       let source = rssList[rssIndex];
-      //global sub list is an array
+      //global sub list is an array of objects
       if (source.roleSubscriptions != null) {
         for (let globalSubber in source.roleSubscriptions) {
           if (subList[source.title] == null) subList[source.title] = {};
@@ -192,7 +192,7 @@ module.exports = function(bot, message, command) {
   }
 
   var menu = {embed: {
-    color: config.menuColor,
+    color: config.botSettings.menuColor,
     description: `\nCurrent Channel: ${message.channel}\n\nSelect an option by typing its number, or type *exit* to cancel.\n_____`,
     author: {name: `Role Subscription Options`},
     fields: [{name: `1) Add/Remove Global Subscriptions for a Role`, value: `Enable mentions for a role for all delivered articles of this feed.\n*Using global subscriptions will disable filtered subscriptions if enabled for that role.*`},

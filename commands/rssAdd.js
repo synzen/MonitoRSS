@@ -2,7 +2,7 @@ const request = require('req-fast')
 const initializeRSS = require('../rss/initialize.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const sqlCmds = require('../rss/sql/commands.js')
-const rssConfig = require('../config.json')
+const config = require('../config.json')
 
 module.exports = function (bot, message) {
 
@@ -27,9 +27,9 @@ module.exports = function (bot, message) {
 
   let rssLink = content[1].trim()
   if (!rssLink.startsWith("http")) return message.channel.sendMessage("Unable to add feed. Make sure it is a link, and there are no odd characters before your feed link.")
-  else if (rssList.length >= rssConfig.maxFeeds && rssConfig.maxFeeds !== 0)  {
-    console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to limit of ${rssConfig.maxFeeds} feeds.`);
-    return message.channel.sendMessage(`Unable to add feed. The server has reached the limit of: \`${rssConfig.maxFeeds}\` feeds.`);
+  else if (rssList.length >= config.feedSettings.maxFeeds && config.feedSettings.maxFeeds !== 0)  {
+    console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to limit of ${config.feedSettings.maxFeeds} feeds.`);
+    return message.channel.sendMessage(`Unable to add feed. The server has reached the limit of: \`${config.feedSettings.maxFeeds}\` feeds.`);
   }
 
   var verify = message.channel.sendMessage("Verifying link...")
