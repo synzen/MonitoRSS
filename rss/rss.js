@@ -74,32 +74,34 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
     function checkTableExists() {
       sqlCmds.selectTable(con, feedName, function (err, results) {
         if (err || isEmptyObject(results)) {
-          if (err) console.log(err);
-          if (isEmptyObject(results)) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" appears to have been deleted, skippinga...`);
-          // delete require.cache[require.resolve(`../sources/${channel.guild.id}.json`)];
-          // guild = require(`../sources/${channel.guild.id}.json`)
-          // rssList = guild.sources;
+          if (err) console.log(`Database fatal error!. (${guild.id}, ${guild.name}) => RSS index ${rssIndex} Feed ${rssList[rssIndex].link}. Skipping because of error:`, err);
+          else if (isEmptyObject(results)) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" appears to have been deleted, skipping...`);
           return callback();
         }
         if (sendingTestMessage) {
-          let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1))
-          checkTable(currentFeed[randFeedIndex].guid, currentFeed[randFeedIndex]);
+          let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1));
+          checkTable(currentFeed[randFeedIndex]);
         }
         else {
-          let feedLength = currentFeed.length - 1
+          let feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
-            checkTable(currentFeed[x].guid, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
+            if (currentFeed[0].guid == null && currentFeed[0].pubdate !== "Invalid Date") var feedId = currentFeed[x].pubdate;
+            else if (currentFeed[0].guid == null && currentFeed[0] === "Invalid Date" && currentFeed[0].title != null) var feedId = currentFeed[x].title;
+            else var feedId = currentFeed[x].guid;
+            checkTable(currentFeed[x], feedId);
             filteredItems++;
           }
         }
       })
     }
 
-    function checkTable(data, feed) {
+    function checkTable(feed, data) {
       if (sendingTestMessage) {
         filteredItems++;
         gatherResults();
-        sendToDiscord(rssIndex, channel, feed, true);
+        sendToDiscord(rssIndex, channel, feed, true, function (err) {
+          if (err) console.log(err);
+        });
       }
       else {
         sqlCmds.select(con, feedName, data, function (err, results, fields) {
@@ -109,8 +111,10 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
             gatherResults();
           }
           else {
-            sendToDiscord(rssIndex, channel, feed, false);
-            insertIntoTable(data);
+            sendToDiscord(rssIndex, channel, feed, false, function (err) {
+              if (err) console.log(err);
+              insertIntoTable(data);
+            });
           }
         })
       }

@@ -54,7 +54,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
 
   feedparser.on('end', function() {
     var metaLink = ""
-    var randomNum = Math.floor((Math.random() * 100) + 1)
+    var randomNum = Math.floor((Math.random() * 99) + 1)
     if (currentFeed[0] != null) metaLink = (currentFeed[0].meta.link != null) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
 
     var feedName = `${channel.id}_${randomNum}${metaLink}`
@@ -83,7 +83,10 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
       sqlCmds.createTable(con, feedName, function (err, rows) {
         if (err) throw err;
         for (var x in currentFeed){
-          checkTable(currentFeed[x].guid)
+          if (currentFeed[0].guid == null && currentFeed[0].pubdate !== "Invalid Date") var feedId = currentFeed[x].pubdate;
+          else if (currentFeed[0].guid == null && currentFeed[0] === "Invalid Date" && currentFeed[0].title != null) var feedId = currentFeed[x].title;
+          else var feedId = currentFeed[x].guid;
+          checkTable(feedId);
         }
       })
     }
@@ -115,7 +118,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
       if (currentFeed[0].meta.title == null || currentFeed[0].meta.title == "") var metaTitle = "No feed title found.";
       else var metaTitle = currentFeed[0].meta.title;
 
-      if (currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
+      if (currentFeed[0].guid != null && currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
       else if (currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
       if (fileOps.exists(`./sources/${channel.guild.id}.json`)) {

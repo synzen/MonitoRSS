@@ -6,6 +6,13 @@ const fileOps = require('./util/updateJSON.js')
 
 if (config.logging.logDates) require('./util/logDates.js')();
 
+(function login() {
+  bot.login(config.botSettings.token).catch(err => {
+    console.log(`Discord.RSS commands module could not login, retrying...`)
+    setTimeout(login, 1000)
+  })
+})()
+
 bot.on('ready', function() {
   console.log("Discord.RSS commands module activated and online.")
 })
@@ -41,7 +48,6 @@ bot.on('guildUpdate', function (oldGuild, newGuild) {
   eventHandler('guildUpdate')(bot, oldGuild, newGuild)
 })
 
-bot.login(config.botSettings.token)
 
 process.on("unhandledRejection", function (err, promise) {
   console.log('Unhandled Rejection at: Promise', promise, 'reason:', err);

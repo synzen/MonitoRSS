@@ -3,7 +3,7 @@ module.exports = function (content, bot, channel) {
   let guild = bot.guilds.get(channel.guild.id)
   let guildBot = guild.members.get(bot.user.id)
   if (!guildBot.permissionsIn(channel).hasPermission("SEND_MESSAGES")) {
-    channel.sendMessage("A guild permission error has been found. I am currently trying to fix thus, but in the meanwhile try recreating the bot's role if it exists, or specifically adding the bot's name to permissions.")
+    channel.sendMessage("An uncaught guild permission error has been found. If you can please, report by screenshotting the current permissions of the bot. I am currently trying to fix thus, but in the meantime try recreating the bot's role if it exists, or specifically adding the bot's name to permissions.")
     .then(m => console.log("error: message actually sent."))
     .catch(err => console.log("Successful block"));
 

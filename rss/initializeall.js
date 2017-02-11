@@ -116,7 +116,10 @@ module.exports = function (con, channel, rssIndex, callback) {
             else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
 
             if (currentFeed[x].pubdate >= cutoffDay){
-              checkTable(currentFeed[x].guid, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
+              if (currentFeed[0].guid == null && currentFeed[0].pubdate !== "Invalid Date") var feedId = currentFeed[x].pubdate;
+              else if (currentFeed[0].guid == null && currentFeed[0] === "Invalid Date" && currentFeed[0].title != null) var feedId = currentFeed[x].title;
+              else var feedId = currentFeed[x].guid;
+              checkTable(feedId, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
             }
             else if (currentFeed[x].pubdate < cutoffDay || currentFeed[x].pubdate == "Invalid Date"){
               gatherResults();
@@ -134,7 +137,10 @@ module.exports = function (con, channel, rssIndex, callback) {
       sqlCmds.createTable(con, feedName, function (err, results) {
         if (err) throw err;
         for (var x in currentFeed){
-          insertIntoTable(currentFeed[x].guid)
+          if (currentFeed[0].guid == null && currentFeed[0].pubdate !== "Invalid Date") var feedId = currentFeed[x].pubdate;
+          else if (currentFeed[0].guid == null && currentFeed[0] === "Invalid Date" && currentFeed[0].title != null) var feedId = currentFeed[x].title;
+          else var feedId = currentFeed[x].guid;
+          insertIntoTable(feedId);
         }
       })
     }
@@ -144,8 +150,10 @@ module.exports = function (con, channel, rssIndex, callback) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
         else {
-          if (config.feedSettings.sendOldMessages == true) sendToDiscord(rssIndex, channel, feed, false); //this can result in great spam once the loads up after a period of downtime
-          insertIntoTable(data);
+          if (config.feedSettings.sendOldMessages == true) sendToDiscord(rssIndex, channel, feed, false, function (err) { //this can result in great spam once the loads up after a period of downtime
+            if (err) console.log(err);
+            insertIntoTable(data);
+          });
         }
       })
     }

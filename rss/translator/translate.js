@@ -8,10 +8,9 @@ const getSubscriptions = require('./subscriptions.js')
 
 module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone
-  require('fs').writeFileSync('./something.txt', data.description)
   //sometimes feeds get deleted mid process
   if (rssList[rssIndex] == null) {console.log("RSS Error: Unable to translate a null source."); return null;}
-  if (data.guid == null) {console.log(`RSS Error: (${channel.guild.id}, ${channel.guild.name}) => Feed GUID is null.`, data); return null;}
+  // if (data.guid == null) {console.log(`RSS Error: (${channel.guild.id}, ${channel.guild.name}) => Feed GUID is null.`, data); return null;}
 
   var originalDate = data.pubdate;
   if (guildTimezone != null && moment.tz.zone(guildTimezone) != null) var timezone = guildTimezone;
@@ -19,7 +18,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
 
   var dataDescrip = ""
-  if (data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
+  if (data.guid != null && data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
   else dataDescrip = cleanRandoms(data.description);
 
   var dataSummary = cleanRandoms(data.summary);
@@ -56,7 +55,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     if (data.link != null) var b = a.replace(/{link}/g, data.link);
     else var b = a.replace(/{link}/g, "");
 
-    if (data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
+    if (data.guid != null && data.guid.startsWith("yt:video")) { //youtube feeds have the property media:group that other feeds do not have
       if (data['media:group']['media:description']['#'] != null) var c = b.replace(/{description}/g, data['media:group']['media:description']['#']);
       else var c = b.replace(/{description}/g, "");
 
@@ -103,7 +102,7 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
     if (data.image.url !=  null && data.image.url !== "") finalMessage += `\n\n[Image URL]: {image}\n${data.image.url}`;
     if (subscriptions !== "") finalMessage += `\n\n[Subscriptions]: {subscriptions}\n${subscriptions.split(" ").length - 1} subscriber(s)`;
     if (filterExists) finalMessage += `\n\n[Passed Filters?]: ${filterFound}`;
-    if (data.guid.startsWith("yt:video")) {
+    if (data.guid != null && data.guid.startsWith("yt:video")) {
       finalMessage += `\n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer + configMessage;
     }
     else finalMessage += "```" + footer + configMessage;
