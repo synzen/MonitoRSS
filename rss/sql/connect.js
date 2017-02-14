@@ -19,7 +19,7 @@ module.exports = function (callback) {
       con.connect(function(err){
         if(err){
           throw err;
-          console.log('Error connecting to database ' + config.feedManagement.databaseName + '. Attempting to reconnect.');
+          // console.log('Error connecting to database ' + config.feedManagement.databaseName + '. Attempting to reconnect.');
           //setTimeout(startDataProcessing, 2000);
         }
         else {
@@ -27,6 +27,9 @@ module.exports = function (callback) {
             if (err) throw err;
           })
           con.query('use ' + config.feedManagement.databaseName, function (err) {
+            if (err) throw err;
+          })
+          con.query('SET collation_connection = \'utf8_general_ci\'', function (rtt) {
             if (err) throw err;
           })
           callback();

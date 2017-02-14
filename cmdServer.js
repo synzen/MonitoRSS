@@ -1,53 +1,26 @@
 const Discord = require('discord.js')
-const bot = new Discord.Client()
 const eventHandler = (evnt) => require(`./events/${evnt}.js`)
 const config = require('./config.json')
 const fileOps = require('./util/updateJSON.js')
+const cmdListeners = require('./util/cmdListeners.js')
+var bot
 
 if (config.logging.logDates) require('./util/logDates.js')();
 
 (function login() {
-  bot.login(config.botSettings.token).catch(err => {
+  bot = new Discord.Client()
+  bot.login(config.botSettings.token)
+  .catch(err => {
     console.log(`Discord.RSS commands module could not login, retrying...`)
     setTimeout(login, 1000)
   })
+  cmdListeners.createAllListeners(bot)
+  bot.once('disconnect', function (e) {
+    console.log("Discord.RSS commands module has been disconneted. Reconnecting...")
+    cmdListeners.removeAllListeners(bot)
+    login()
+  })
 })()
-
-bot.on('ready', function() {
-  console.log("Discord.RSS commands module activated and online.")
-})
-
-bot.on('message', function (message) {
-  eventHandler('message')(bot, message)
-})
-
-bot.on('guildCreate', function (guild) {
-  eventHandler('guildCreate')(bot, guild)
-})
-
-bot.on('guildDelete', function (guild) {
-  eventHandler('guildDelete')(bot, guild)
-})
-
-bot.on('channelDelete', function (channel) {
-  if (!fileOps.exists(`./sources/${channel.guild.id}.json`)) return;
-  eventHandler('channelDelete')(channel)
-})
-
-bot.on('roleUpdate', function (oldRole, newRole) {
-  if (oldRole.name === newRole.name || !fileOps.exists(`./sources/${oldRole.guild.id}.json`)) return;
-  eventHandler('roleUpdate')(bot, oldRole, newRole)
-})
-
-bot.on('roleDelete', function (role) {
-  eventHandler('roleDelete')(bot, role)
-})
-
-bot.on('guildUpdate', function (oldGuild, newGuild) {
-  if (newGuild.name === oldGuild.name || !fileOps.exists(`./sources/${oldGuild.id}.json`)) return;
-  eventHandler('guildUpdate')(bot, oldGuild, newGuild)
-})
-
 
 process.on("unhandledRejection", function (err, promise) {
   console.log('Unhandled Rejection at: Promise', promise, 'reason:', err);

@@ -23,7 +23,7 @@ module.exports = function (rssIndex, channel, feed, isTestMessage, callback) {
       (function sendCombinedMsg() {
         channel.sendMessage(message.textMsg,message.embedMsg)
         .then(m => {
-          console.log(successLog)
+          // console.log(successLog)
           return callback()
         })
         .catch(err => {
@@ -39,7 +39,7 @@ module.exports = function (rssIndex, channel, feed, isTestMessage, callback) {
       (function sendTxtMsg() {
         channel.sendMessage(message.textMsg)
         .then(m => {
-          console.log(successLog)
+          // console.log(successLog)
           return callback()
         })
         .catch(err => {

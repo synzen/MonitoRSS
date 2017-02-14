@@ -113,8 +113,8 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
           else {
             sendToDiscord(rssIndex, channel, feed, false, function (err) {
               if (err) console.log(err);
-              insertIntoTable(data);
             });
+            insertIntoTable(data);
           }
         })
       }

@@ -154,6 +154,7 @@ module.exports = function (con, channel, rssIndex, callback) {
             if (err) console.log(err);
             insertIntoTable(data);
           });
+          else insertIntoTable(data);
         }
       })
     }

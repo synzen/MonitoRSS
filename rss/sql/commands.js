@@ -12,13 +12,18 @@ exports.selectTable = function (con, table, callback) {
 }
 
 exports.createTable = function (con, table, callback) {
-  if (sqlType == "mysql") return con.query(`create table if not exists \`${table}\` (link text)`, callback);
+  if (sqlType == "mysql") {
+    con.query(`create table if not exists \`${table}\` (link text)`, callback);
+    return con.query(`alter table \`${table}\` convert to character set utf8 collate utf8_general_ci`);
+  }
   else return con.run(`create table if not exists "${table}" (link text)`, callback);
 
 }
 
 exports.select = function (con, table, data, callback) {
-  if (sqlType == "mysql") return con.query(`select * from \`${table}\` where link = ?`, [data], callback);
+  if (sqlType == "mysql") {
+    return con.query(`select * from \`${table}\` where link = ?`, [data], callback);
+  }
   else return con.all(`select * from "${table}" where link = ?`, data, callback);
 }
 
