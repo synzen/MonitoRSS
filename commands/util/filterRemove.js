@@ -24,10 +24,11 @@ module.exports = function(message, rssIndex, role) {
   var guildRss = require(`../../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
+  //null role = not adding a filter for a role
   if (role == null) var filterList = rssList[rssIndex].filters;
   else var filterList = rssList[rssIndex].filters.roleSubscriptions[role.id].filters;
 
-  if (filterList == null || filterList == "") return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
+  if (filterList == null || typeof filterList !== 'object') return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
 
   let filterObj = {
     Title: {exists: false, loc: filterList.Title},
@@ -43,7 +44,7 @@ module.exports = function(message, rssIndex, role) {
       if (rssList[rssIndex].filters.hasOwnProperty(prop) && prop !== "roleSubscriptions") isEmptyFilter = false;
   }
 
-  if (isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
+  if (role == null && isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
 
   var msg = {embed: {
     color: config.botSettings.menuColor,

@@ -1,7 +1,5 @@
 const Discord = require('discord.js')
-const eventHandler = (evnt) => require(`./events/${evnt}.js`)
 const config = require('./config.json')
-const fileOps = require('./util/updateJSON.js')
 const cmdListeners = require('./util/cmdListeners.js')
 var bot
 

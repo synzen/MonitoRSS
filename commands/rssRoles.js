@@ -102,7 +102,7 @@ module.exports = function(bot, message, command) {
 
     filterOptionCollector.on('end', (collected, reason) => {
       channelTracker.removeCollector(message.channel.id)
-      if (reason == "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
+      if (reason === "time") return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== "user") return message.channel.sendMessage(reason);
     });
   }
@@ -113,7 +113,7 @@ module.exports = function(bot, message, command) {
     var subList = {}
     var msg = {embed: {
       color: config.botSettings.menuColor,
-      description: `\nBelow are the feed titles with any roles subscribed to that feed under it.\n_____`,
+      description: `\nBelow are the feed titles with any roles subscribed to that feed under it. Each role is then categorized as either a global or filtered subscription.\n_____`,
       author: {name: `Subscribed Roles List`},
       fields: [],
       footer: {}
@@ -152,16 +152,16 @@ module.exports = function(bot, message, command) {
         for (let globalSubber in subList[feed].globalSubs) {
            globalSubList += `${subList[feed].globalSubs[globalSubber]}\n`;
         }
-        if (globalSubList !== "**Global Subscriptions:**\n") list+= globalSubList;
+        if (globalSubList !== "**Global Subscriptions:**\n") list += globalSubList;
 
         var filteredSubList = "\n**Filtered Subscriptions:**\n";
         for (let filteredSubber in subList[feed].filteredSubs) {
-          list += `${subList[feed].filteredSubs[filteredSubber]}\n`;
+          filteredSubList += `${subList[feed].filteredSubs[filteredSubber]}\n`;
         }
         if (filteredSubList !== "\n**Filtered Subscriptions:**\n") list += filteredSubList;
-        msg.embed.fields.push({name: `${feed}`, value: list, inline: true});
+        msg.embed.fields.push({name: `${feed} `, value: list, inline: true});
       }
-      return message.channel.sendMessage("",msg);
+      return message.channel.sendMessage("", msg);
     }
   }
 
@@ -193,7 +193,7 @@ module.exports = function(bot, message, command) {
 
   var menu = {embed: {
     color: config.botSettings.menuColor,
-    description: `\nCurrent Channel: ${message.channel}\n\nSelect an option by typing its number, or type *exit* to cancel.\n_____`,
+    description: `\nCurrent Channel: #${message.channel.name}\n\nSelect an option by typing its number, or type *exit* to cancel.\n_____`,
     author: {name: `Role Subscription Options`},
     fields: [{name: `1) Add/Remove Global Subscriptions for a Role`, value: `Enable mentions for a role for all delivered articles of this feed.\n*Using global subscriptions will disable filtered subscriptions if enabled for that role.*`},
             {name: `2) Add/Remove Filtered Subscriptions for a Role`, value: `Create role-specific filters where only selected articles will mention a role.\n*Using filtered subscriptions will disable global subscriptions if enabled for that role.*`},
@@ -204,13 +204,14 @@ module.exports = function(bot, message, command) {
 
   message.channel.sendMessage("", menu)
 
-  const collector = message.channel.createCollector(collectorFilter,{time:240000});
+  const collector = message.channel.createCollector(collectorFilter,{time:240000})
   channelTracker.addCollector(message.channel.id)
 
   collector.on('message', function (m) {
     let optionSelected = m.content
     if (optionSelected.toLowerCase() == "exit") return collector.stop("RSS Role Customization menu closed.");
-    else if (optionSelected == 4){
+
+    if (optionSelected == 4) {
       collector.stop()
       return printSubscriptions(collector);
     }
@@ -218,16 +219,10 @@ module.exports = function(bot, message, command) {
       collector.stop()
       getRole(message, function(role) {
         if (!role) return;
-        else if (optionSelected == 3) {
-          return deleteSubscription(role.id);
-        }
+        if (optionSelected == 3) return deleteSubscription(role.id);
         else printFeeds(bot, message, true, command, function(rssIndex) {
-          if (optionSelected == 2) {
-            return openSubMenu(rssIndex, role, false);
-          }
-          else if (optionSelected == 1) {
-            return openSubMenu(rssIndex, role, true);
-          }
+          if (optionSelected == 2) return openSubMenu(rssIndex, role, false);
+          else if (optionSelected == 1) return openSubMenu(rssIndex, role, true);
         })
       })
     }
