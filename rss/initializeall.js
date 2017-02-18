@@ -53,7 +53,7 @@ module.exports = function (con, channel, rssIndex, callback) {
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
 
-  requestStream(rssList[rssIndex].link, feedparser, con, function () {
+  requestStream(rssList[rssIndex].link, feedparser, function () {
     callback()
     feedparser.removeAllListeners('end')
   })

@@ -1,6 +1,7 @@
 const config = require('../config.json')
+const commands = require('../util/commandList.json')
 
-module.exports = function (message, commands) {
+module.exports = function (message) {
 
   var msg = "Available commands are: \n\n"
   for (let cmd in commands){

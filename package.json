@@ -2,20 +2,21 @@
   "name": "Discord.RSS",
   "version": "1.0.0",
   "description": "Discord RSS bot with customizable feeds",
-  "main": "server.js",
+  "main": "rssServer.js",
   "author": "synzen",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/synzen/discord.RSS/issues"
+    "url": "https://github.com/synzen/Discord.RSS/issues"
   },
   "dependencies": {
     "discord.js": "^11.0.0",
     "entities": "^1.1.1",
     "feedparser": "^2.1.0",
+    "fetch": "^1.1.0",
     "moment": "^2.17.1",
     "moment-timezone": "^0.5.11",
-    "req-fast": "^0.2.17",
-    "striptags": "^2.1.1"
+    "striptags": "^2.1.1",
+    "iconv": "*"
   },
   "repository": {
     "type": "git",

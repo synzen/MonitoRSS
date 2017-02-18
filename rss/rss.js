@@ -33,7 +33,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
 
-  requestStream(rssList[rssIndex].link, feedparser, con, function() {
+  requestStream(rssList[rssIndex].link, feedparser, function() {
     if (sendingTestMessage) channel.sendMessage("Unable to get test feed. Could not connect to feed link.");
     callback()
     feedparser.removeAllListeners('end')

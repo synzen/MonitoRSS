@@ -1,4 +1,4 @@
-const request = require('req-fast')
+const channelTracker = require('../util/channelTracker.js')
 const initializeRSS = require('../rss/initialize.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const sqlCmds = require('../rss/sql/commands.js')
@@ -35,37 +35,28 @@ module.exports = function (bot, message) {
   var verify = message.channel.sendMessage("Verifying link...")
 
   verify.then(function (verifyMsg) {
-    var attempts = 0;
+    channelTracker.addCollector(message.channel.id);
 
-    (function checkValidLink() {
-      request(rssLink, function (error, response, body) {
-        if (!error && response.statusCode == 200){
-          for (var x in rssList) {
-            if ( rssList[x].link == rssLink && isCurrentChannel(rssList[x].channel) ) {
-              return verifyMsg.edit("Unable to add feed because it already exists for this channel.");
-            }
-          }
-          var con = sqlConnect(init);
-          function init() {
-            initializeRSS(con, verifyMsg, rssLink, message.channel, function() {
-              sqlCmds.end(con, function(err) {
-                if (err) throw err;
-              });
-            });
-          }
-        }
-        else {
-          if (attempts < 2) {
-            attempts++;
-            setTimeout(checkValidLink, 500);
-          }
-          else {
-            console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to invalid response.`)
-            return verifyMsg.edit(`Unable to verify feed, could not connect to <${rssLink}>.`);
-          }
-        }
+    for (var x in rssList) {
+      if (rssList[x].link == rssLink && isCurrentChannel(rssList[x].channel)) {
+        channelTracker.removeCollector(message.channel.id);
+        return verifyMsg.edit("Unable to add feed because it already exists for this channel.");
+      }
+    }
+
+    var con = sqlConnect(init);
+
+    function init() {
+      initializeRSS(con, verifyMsg, rssLink, message.channel, function(err) {
+        channelTracker.removeCollector(message.channel.id)
+        if (err) return verifyMsg.edit(err + ' Be sure to validate your feed.');
+        console.log("RSS Info: Successfully added new feed.")
+        verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`)
+        sqlCmds.end(con, function(err) {
+          if (err) throw err;
+        });
       });
-    })()
+    }
 
   })
 }

@@ -4,9 +4,9 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 
 As an experiment, I am hosting the bot to see how it performs and doing any potential fixes along the way. For more information, [see here](https://www.reddit.com/r/discordapp/comments/5n9l6w/discordrss_an_rss_bot/) on adding the bot to your server.
 
-The bot performs fine on a private server (self-hosted) since you have the ability to restart the bot should it crash, and can track its progress. Once I have done enough testing as a public bot to deem it completely stable, I will post a [release](https://github.com/synzen/Discord.RSS/releases). In any case, whatever changes I make while testing the public bot will also apply to self-hosted bots since they are all-around improvements.
+The bot performs fine on a private server (self-hosted) since you can track and monitor its progress. Once I have done enough testing as a public bot to deem it completely stable, I will post a [release](https://github.com/synzen/Discord.RSS/releases). In any case, whatever changes I make while testing the public bot will also apply to self-hosted bots since they are all-around improvements.
 
-For steps on how to start the bot on your own and on using the bot itself, see https://github.com/synzen/Discord.RSS/wiki.
+For steps on how to host the bot on your own, and on using the bot itself, see https://github.com/synzen/Discord.RSS/wiki.
 
 ##Built With		
 * [Node.js] (https://nodejs.org/en/)		
@@ -14,12 +14,12 @@ For steps on how to start the bot on your own and on using the bot itself, see h
 
 ####Core Functions
  * [Feedparser] (https://www.npmjs.com/package/feedparser)		
- * [req-fast] (https://www.npmjs.com/package/req-fast)
- * Datebase Manager (choose one)		
+ * [fetch] (https://www.npmjs.com/package/fetch)
+ * Datebase Manager (one of two options)		
   * [sqlite3] (https://www.npmjs.com/package/sqlite3) (default)		
   * [mysql] (https://www.npmjs.com/package/mysql)
 
 ####Customization Functions
- * [striptags] (https://www.npmjs.com/package/striptags) - To remove HTML from feeds		
+ * [striptags] (https://www.npmjs.com/package/striptags) - Remove HTML content
  * [entities] (https://www.npmjs.com/package/entities) - Replace HTML content
- * [moment-timezone] (https://www.npmjs.com/package/moment-timezone) - Customizable timezones per guild		
+ * [moment-timezone] (https://www.npmjs.com/package/moment-timezone) - Customizable timezones

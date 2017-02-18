@@ -43,7 +43,7 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
   for (var x in currentRSSList) {
     let count = parseInt(x,10) + 1;
     let link = currentRSSList[x][0];
-    let title =  currentRSSList[x][2]
+    let title =  currentRSSList[x][2];
     let channelName = currentRSSList[x][3];
 
     if (isCallingCmd) var info = `Link: ${link}`;

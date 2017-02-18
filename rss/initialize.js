@@ -31,16 +31,16 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
   var feedparser = new FeedParser()
   var currentFeed = []
 
-  requestStream(rssLink, feedparser, con, function() {
-    callback()
+  requestStream(rssLink, feedparser, function(err) {
+    console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Unable to add feed ${rssLink} due to invalid response (${err}).`)
+    callback(`Could not connect to <${rssLink}> due to invalid response.`)
     feedparser.removeAllListeners('end')
   })
 
   feedparser.on('error', function (error) {
-    verifyMsg.edit(`<${rssLink}> is not a valid feed to add.`)
     console.log(`RSS Warning: ${rssLink} is not a valid feed to add.`)
     feedparser.removeAllListeners('end')
-    return callback()
+    return callback(`<${rssLink}> is not a valid feed to add.`)
   });
 
   feedparser.on('readable',function () {
@@ -110,7 +110,6 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
       processedItems++;
       if (processedItems == totalItems) {
         addToConfig();
-        callback();
       }
     }
 
@@ -119,7 +118,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
       else var metaTitle = currentFeed[0].meta.title;
 
       if (currentFeed[0].guid != null && currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
-      else if (currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
+      else if (currentFeed[0].meta.link != null && currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
       if (fileOps.exists(`./sources/${channel.guild.id}.json`)) {
         var guildRSS = require(`../sources/${channel.guild.id}.json`);
@@ -147,8 +146,8 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
       }
 
       fileOps.updateFile(channel.guild.id, guildRSS, `../sources/${channel.guild.id}.json`)
-      console.log("RSS Info: Successfully added new feed.")
-      verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`)
+      callback();
+
     }
 
     startDataProcessing();

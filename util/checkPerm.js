@@ -1,5 +1,4 @@
-module.exports = function (content, bot, channel) {
-
+exports.sendMessage = function (content, bot, channel) {
   let guild = bot.guilds.get(channel.guild.id)
   let guildBot = guild.members.get(bot.user.id)
   if (!guildBot.permissionsIn(channel).hasPermission("SEND_MESSAGES")) {
@@ -11,5 +10,14 @@ module.exports = function (content, bot, channel) {
     return false;
   }
   else return true;
+}
 
+exports.modifyRoles = function (bot, channel) {
+  let guild = bot.guilds.get(channel.guild.id)
+  let guildBot = guild.members.get(bot.user.id)
+  if (!guildBot.hasPermission("MANAGE_ROLES_OR_PERMISSIONS")) {
+    channel.sendMessage('This function has been disabled by the manager.');
+    return false;
+  }
+  else return true;
 }

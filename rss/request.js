@@ -1,27 +1,25 @@
-const request = require('req-fast'); // for fetching the feed
-const sqlCmds = require('./sql/commands.js')
+const FetchStream = require('fetch').FetchStream; // for fetching the feed
 
-module.exports = function (link, feedparser, con, callback) {
+module.exports = function (link, feedparser, callback) {
   var attempts = 0;
 
   (function requestStream() {
-    request(link, function (error, response) {
-      if (error || response === undefined || response.statusCode !== 200) {
-        if (attempts < 4) {
-          attempts++;
-          return requestStream();
-        }
-        else {
-          console.log(`RSS Request Error: Unable to connect to ${link}, skipping...`);
-          return callback();
-        }
+    var request = new FetchStream(link, {timeout: 15000})
+
+    request.on('error', function (err) {
+      if (attempts < 4) {
+        attempts++;
+        return requestStream();
       }
-      else if (attempts > 0) {
-        //console.log(`RSS Request: Successful connection to ${link} on attempt ${attempts+1}`);
+      else {
+        console.log(`RSS Request ${err} for ${link}, skipping...`);
+        return callback(err);
       }
     })
-    .pipe(feedparser)
 
+    request.on('meta', function (meta) {
+      if (meta.status !== 200) return this.emit('error', new Error(`Bad status code (${meta.status})`))
+      this.pipe(feedparser);
+    })
   })()
-
 }

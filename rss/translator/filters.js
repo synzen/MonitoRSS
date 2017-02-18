@@ -4,15 +4,15 @@ function foundFilterWords(filterType, content) {
 
   //filterType is title, description, summary, or author
 
-  if (content == null) return false;
+  if (!content) return false;
   var content = content.toLowerCase();
-  if (filterType != null && filterType.length !== 0) {
-    if (typeof filterType == "object") {
+  if (filterType && filterType.length !== 0) {
+    if (typeof filterType === "object") {
       for (var word in filterType)
         if (content.search(filterType[word].toLowerCase()) !== -1)
           return true;
     }
-    else if (typeof filterType == "string") {
+    else if (typeof filterType === "string") {
       if (content.search(filterType.toLowerCase()) !== -1)
         return true;
     }
@@ -41,7 +41,7 @@ module.exports = function (rssList, rssIndex, data, dataDescrip) {
   if (foundFilterWords(authorFilters, striptags(data.author)))
     filterFound = true;
 
-  if (data.guid != null && data.guid.startsWith("yt:video")) {
+  if (data.guid && data.guid.startsWith("yt:video")) {
     if (foundFilterWords(descrFilters, data['media:group']['media:description']['#']))
       filterFound = true;
   }

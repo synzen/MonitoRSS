@@ -1,12 +1,13 @@
 const configChecks = require('./configCheck.js')
-const getRSS = require('../rss/rss.js')
+const getFeed = require('../rss/rss.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./updateJSON.js')
 const config = require('../config.json')
+const fetchInterval = require('./fetchInterval.js')
 
 module.exports = function (bot) {
-  var cycleInProgress = false
+  fetchInterval.cycleInProgress = false
   var guildList = []
   var feedLength = 0
   var feedsProcessed = 0
@@ -16,23 +17,25 @@ module.exports = function (bot) {
 
   function endCon (startingCycle) {
     sqlCmds.end(con, function(err) {
-      if (err) console.log(err);
+      if (err) throw err;
+      fetchInterval.cycleInProgress = false
       if (!startingCycle) {
         var timeTaken = ((new Date() - startTime) / 1000).toFixed(2);
         console.log(`RSS Info: Finished feed retrieval cycle. Cycle Time: ${timeTaken}s`);
       }
+      else connect();
     }, startingCycle);
-    cycleInProgress = false
-    if (startingCycle) setTimeout(connect, 5000);
+    // fetchInterval.cycleInProgress = false
+    // if (startingCycle) setTimeout(connect, 1000);
   }
 
   function connect () {
-    if (cycleInProgress) {
+    if (fetchInterval.cycleInProgress) {
       console.log(`RSS Info: Previous cycle was unable to finish. Forcing cycle end and starting new cycle.`);
       endCon(true);
     }
     else {
-      cycleInProgress = true;
+      fetchInterval.cycleInProgress = true;
       feedLength = feedsProcessed = feedsSkipped = 0;
       guildList = [];
       fileOps.readDir('./sources', function (err, files) {
@@ -49,22 +52,22 @@ module.exports = function (bot) {
           else if (guildRSS !== "guild_id_here.json" && guildRSS !== "backup") console.log(`RSS Guild Profile: ${guildRSS} was not found in bot's guild list. Skipping.`);
         })
         if (feedLength == 0) {
-          cycleInProgress = false;
+          fetchInterval.cycleInProgress = false;
           return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
         }
-        else con = sqlConnect(startFeed);
+        else con = sqlConnect(startRetrieval);
       })
     }
   }
 
-  function startFeed () {
+  function startRetrieval () {
     startTime = new Date()
     for (let guildIndex in guildList) {
       let guildId = guildList[guildIndex].id
       let rssList = guildList[guildIndex].sources
       for (let rssIndex in rssList) {
         if (configChecks.checkExists(guildId, rssIndex, false) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
-          getRSS(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, false, function () {
+          getFeed(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, false, function () {
             feedsProcessed++
             //console.log(`${feedsProcessed} ${feedsSkipped} ${feedLength}`)
             if (feedsProcessed + feedsSkipped == feedLength) setTimeout(endCon, 5000);
@@ -73,11 +76,9 @@ module.exports = function (bot) {
         else feedsSkipped++;
       }
     }
-
     if (feedsSkipped + feedsProcessed == feedLength) return endCon();
   }
 
   connect()
-  setInterval(connect, config.feedSettings.refreshTimeMinutes*60000)
-
+  fetchInterval.startSchedule(connect)
 }

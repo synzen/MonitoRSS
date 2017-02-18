@@ -1,4 +1,5 @@
 const config = require('../config.json')
+const subscribeUser = require('../commands/subscribeUser.js')
 const rssAdd = require('../commands/rssAdd.js')
 const rssHelp = require('../commands/rssHelp.js')
 const printFeeds = require('../commands/util/printFeeds.js')
@@ -24,49 +25,65 @@ function isBotController (command, author) {
 module.exports = function (bot, message) {
   if (message.member == null || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
   var m = message.content.split(" ")
+  let checkMsgPerm = checkPerm.sendMessage
+  let checkRolePerm = checkPerm.modifyRoles
   let command = m[0].substr(config.botSettings.prefix.length)
 
   function logCommand(command) {
-    return console.log(`RSS Commands: (${message.guild.id}, ${message.guild.name}) => Used ${command}.`)
+    return console.log(`Commands: (${message.guild.id}, ${message.guild.name}) => Used ${command}.`)
   }
 
-  //ugly permission checking, but it'll have to do for now
+  //messy command handling, but it'll have to do for now
   if (channelTracker.hasActiveMenus(message.channel.id)) return;
 
-  if (command == "rssadd" && checkPerm(command, bot, message.channel)){
+  if (command === "subme" && checkRolePerm(bot, message.channel)) {
+    logCommand(command);
+    subscribeUser.add(bot, message);
+  }
+  else if (command === "unsubme" && checkRolePerm(bot, message.channel)) {
+    logCommand(command);
+    subscribeUser.remove(bot, message);
+  }
+  else if (command === "rssadd" && checkMsgPerm(command, bot, message.channel)){
     logCommand(command);
     rssAdd(bot, message);
   }
-  else if (command == "rsshelp" && checkPerm(command, bot, message.channel)) {
+  else if (command === "rsshelp" && checkMsgPerm(command, bot, message.channel)) {
     logCommand(command);
-    rssHelp(message, commandList);
+    rssHelp(message);
   }
-  else if (command == "rsslist" && checkPerm(command, bot, message.channel)) {
+  else if (command === "rsslist" && checkMsgPerm(command, bot, message.channel)) {
     logCommand(command);
     printFeeds(bot, message, false, "");
   }
-  else if (command == "rsstimezone" && checkPerm(command, bot, message.channel)) {
+  else if (command === "rsstimezone" && checkMsgPerm(command, bot, message.channel)) {
     logCommand(command);
     rssTimezone(message);
   }
-  else if (command == "rssroles" && checkPerm(command, bot, message.channel)) {
+  else if (command === "rssroles" && checkMsgPerm(command, bot, message.channel)) {
     logCommand(command);
     rssRoles(bot, message, command);
   }
-  else if (command == "stats" && isBotController(command, message.author.id) && checkPerm(command, bot, message.channel)) {
+  else if (command === "stats" && isBotController(command, message.author.id) && checkMsgPerm(command, bot, message.channel)) {
     message.channel.sendMessage(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`).catch(err => console.log("Could not send stats, reason:\n", err));
   }
-  else if (command == "setgame" && isBotController(command, message.author.id) && checkPerm(command, bot, message.channel)){
+  else if (command === "setgame" && isBotController(command, message.author.id) && checkMsgPerm(command, bot, message.channel)){
     let content = message.content.split(" ");
     content.shift();
     let game = content.join(" ");
     if (game == "null") game = null;
     bot.user.setGame(game);
   }
+  else if (command === "pingme") {
+    var pong = new Discord.RichEmbed()
+    .setTitle('Sending...')
+    .setDescription('pong!');
+    message.channel.sendEmbed(embed).catch(err => console.log(`Could not send the embed:\n`, pong));
+  }
 
   //for commands that needs menu selection, AKA collectors
   else for (let cmd in commandList) {
-    if (command == cmd && checkPerm(command, bot, message.channel)) {
+    if (command === cmd && commandList[cmd].file != null && checkMsgPerm(command, bot, message.channel)) {
       logCommand(command);
       printFeeds(bot, message, true, cmd);
     }
