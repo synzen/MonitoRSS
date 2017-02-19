@@ -7,6 +7,9 @@ const channelTracker = require('../../util/channelTracker.js')
 module.exports = function (bot, message, isCallingCmd, command, callback) {
   if (commandList[command] != null) var commandFile = commandList[command].file
   var rssList = []
+  var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : config.feedSettings.maxFeedsAllowed
+  maxFeedsAllowed = (config.feedSettings.maxFeedsAllowed == 0) ? 'Unlimited' : config.feedSettings.maxFeedsAllowed
+
   try {rssList = require(`../../sources/${message.guild.id}.json`).sources} catch(e) {}
 
   var embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
@@ -56,7 +59,7 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
 
   if (isCallingCmd) {
     embedMsg.setAuthor('Feed Selection Menu');
-    embedMsg.setDescription(`**Server Limit:** ${rssList.length}/${config.feedSettings.maxFeeds}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`);
+    embedMsg.setDescription(`**Server Limit:** ${rssList.length}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`);
     var error = false;
     message.channel.sendEmbed(embedMsg)
     .catch(err => {
@@ -66,7 +69,7 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
   }
   else {
     embedMsg.setAuthor('Current Active Feeds');
-    embedMsg.setDescription(`**Server Limit:** ${rssList.length}/${config.feedSettings.maxFeeds}\n_____`);
+    embedMsg.setDescription(`**Server Limit:** ${rssList.length}/${maxFeedsAllowed}\n_____`);
     return message.channel.sendEmbed(embedMsg).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err.response.body.message}`));
   }
 

@@ -18,9 +18,10 @@
   "feedSettings": {
     "refreshTimeMinutes": 15,
     "timezone": "America/New_York",
+    "timeFormat": "ddd, D MMMM YYYY, h:mm A z",
     "maxFeeds": 5,
     "sendOldMessages": false,
-    "defaultMaxAge": 2,
+    "defaultMaxAge": 1,
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
   }
 }

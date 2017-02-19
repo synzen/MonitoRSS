@@ -13,9 +13,10 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   if (!rssList[rssIndex]) {console.log("RSS Error: Unable to translate a null source."); return null;}
 
   var originalDate = data.pubdate;
-  if (guildTimezone && moment.tz.zone(guildTimezone)) var timezone = guildTimezone;
-  else var timezone = config.feedSettings.timezone;
-  var vanityDate = moment.tz(originalDate, timezone).format("ddd, MMMM Do YYYY, h:mm A z")
+
+  var timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
+  var timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : "ddd, D MMMM YYYY, h:mm A z"
+  var vanityDate = moment.tz(originalDate, timezone).format(timeFormat)
 
   var dataDescrip = ""
   if (data.guid && data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];

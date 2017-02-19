@@ -7,6 +7,7 @@ const config = require('../config.json')
 module.exports = function (bot, message) {
 
   var rssList = []
+  var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
 
   try {rssList = require(`../sources/${message.guild.id}.json`).sources;}
   catch (e) {}
@@ -27,7 +28,7 @@ module.exports = function (bot, message) {
 
   let rssLink = content[1].trim()
   if (!rssLink.startsWith("http")) return message.channel.sendMessage("Unable to add feed. Make sure it is a link, and there are no odd characters before your feed link.")
-  else if (rssList.length >= config.feedSettings.maxFeeds && config.feedSettings.maxFeeds !== 0)  {
+  else if (rssList.length >= maxFeedsAllowed && maxFeedsAllowed != 0)  {
     console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to limit of ${config.feedSettings.maxFeeds} feeds.`);
     return message.channel.sendMessage(`Unable to add feed. The server has reached the limit of: \`${config.feedSettings.maxFeeds}\` feeds.`);
   }

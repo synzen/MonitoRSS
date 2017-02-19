@@ -5,11 +5,11 @@ const fileOps = require('../util/updateJSON.js')
 
 module.exports = function (bot, guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
-  if (config.logging.discordChannelLog === undefined || config.logging.discordChannelLog === "") return;
+  if (!config.logging.discordChannelLog) return;
 
   let logChannelId = config.logging.discordChannelLog
   let logChannel = bot.channels.get(config.logging.discordChannelLog)
-  if (typeof logChannelId !== "string" || logChannel === undefined) console.log(`Error: Could not log guild removal to Discord, invalid channel ID.`);
+  if (typeof logChannelId !== "string" || !logChannel) console.log(`Error: Could not log guild removal to Discord, invalid channel ID.`);
   else logChannel.sendMessage(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size}`).catch(err => console.log(`Could not log guild removal to Discord, reason: `, err));
 
   if (!fileOps.exists(`./sources/${guild.id}.json`)) return;

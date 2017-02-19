@@ -11,7 +11,7 @@ const channelTracker = require('../util/channelTracker.js')
 
 function isBotController (command, author) {
   var controllerList = config.botSettings.controllerIds
-  if (controllerList === undefined || (typeof controllerList === "object" && controllerList.length === 0)) return false;
+  if (!controllerList || (typeof controllerList === "object" && controllerList.length === 0)) return false;
   else if (typeof controllerList !== "object" || (typeof controllerList === "object" && controllerList.length === undefined)) {
     console.log(`Could not execute command "${command} due to incorrectly defined bot controller."`);
     return false;
@@ -23,7 +23,7 @@ function isBotController (command, author) {
 }
 
 module.exports = function (bot, message) {
-  if (message.member == null || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
+  if (!message.member || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
   var m = message.content.split(" ")
   let checkMsgPerm = checkPerm.sendMessage
   let checkRolePerm = checkPerm.modifyRoles
@@ -78,12 +78,12 @@ module.exports = function (bot, message) {
     var pong = new Discord.RichEmbed()
     .setTitle('Sending...')
     .setDescription('pong!');
-    message.channel.sendEmbed(embed).catch(err => console.log(`Could not send the embed:\n`, pong));
+    message.channel.sendEmbed(embed).catch(err => console.info(`Could not send the embed:\n`, pong));
   }
 
   //for commands that needs menu selection, AKA collectors
   else for (let cmd in commandList) {
-    if (command === cmd && commandList[cmd].file != null && checkMsgPerm(command, bot, message.channel)) {
+    if (command === cmd && commandList[cmd].file && checkMsgPerm(command, bot, message.channel)) {
       logCommand(command);
       printFeeds(bot, message, true, cmd);
     }

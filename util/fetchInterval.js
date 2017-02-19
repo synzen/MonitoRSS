@@ -1,8 +1,9 @@
 const config = require('../config.json')
 var fetchInterval
+var refreshTime = (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15
 
 exports.startSchedule = function (command) {
-  fetchInterval = setInterval(command, config.feedSettings.refreshTimeMinutes*60000)
+  fetchInterval = setInterval(command, refreshTime*60000)
 }
 
 exports.stopSchedule = function () {

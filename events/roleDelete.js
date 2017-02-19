@@ -28,14 +28,14 @@ module.exports = function (bot, role) {
     }
 
     //delete from filtered role subscriptions if exists
-    if (source.filters != null && source.filters.roleSubscriptions != null && source.filters.roleSubscriptions[role.id] != null) {
+    if (source.filters && source.filters.roleSubscriptions && source.filters.roleSubscriptions[role.id]) {
       delete source.filters.roleSubscriptions[role.id];
       found = true;
     }
-    if (source.filters != null && isEmptyObject(source.filters.roleSubscriptions)) delete source.filters.roleSubscriptions;
+    if (source.filters && isEmptyObject(source.filters.roleSubscriptions)) delete source.filters.roleSubscriptions;
 
     //cleanup
-    if (source.filters != null && isEmptyObject(source.filters)) delete source.filters;
+    if (source.filters && isEmptyObject(source.filters)) delete source.filters;
     if (source.roleSubscriptions != null && source.roleSubscriptions.length == 0) delete source.roleSubscriptions;
   }
 

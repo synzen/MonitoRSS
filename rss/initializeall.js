@@ -112,7 +112,8 @@ module.exports = function (con, channel, rssIndex, callback) {
           let feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
             var cutoffDay;
-            if (rssList[rssIndex].maxAge == null || rssList[rssIndex].maxAge == "") cutoffDay = moment(new Date()).subtract(config.feedSettings.defaultMaxAge, 'd');
+            var defaultMaxAge = (config.feedSettings.defaultMaxAge) ? config.feedSettings.defaultMaxAge : 1;
+            if (!rssList[rssIndex].maxAge) cutoffDay = moment(new Date()).subtract(defaultMaxAge, 'd');
             else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
 
             if (currentFeed[x].pubdate >= cutoffDay){

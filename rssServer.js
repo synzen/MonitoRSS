@@ -8,6 +8,13 @@ if (config.logging.logDates) require('./util/logDates.js')();
 var initialized = false
 var bot
 
+if (!config.botSettings.token) throw 'Warning! Vital config missing: token undefined in config.';
+else if (!config.botSettings.prefix) throw 'Warning! Vital config missing: prefix undefined in config';
+else if (!config.feedManagement.databaseName) throw 'Warning! Vital config missing: databaseName undefined in config.';
+else if (!config.feedManagement.databaseName) throw 'Warning! Vital config missing: sqlType undefined in config.';
+else if (!config.feedSettings.defaultMessage) throw 'Warning! Vital config missing: defaultMssage undefined in config.';
+
+
 function beginFeedCycle (deleteCache) {
   if (deleteCache) delete require.cache[require.resolve(`./util/startFeedSchedule.js`)];
   require('./util/startFeedSchedule.js')(bot)

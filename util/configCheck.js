@@ -6,13 +6,8 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
 
   var valid = true;
 
-  if (config.feedSettings.defaultMessage == null || config.feedSettings.defaultMessage == "") {
-    throw `RSS Config Warning: A default message must be set in config. Terminating.`;
-  }
-  else if (config.botSettings.menuColor == null || isNaN(parseInt(config.botSettings.menuColor, 10))) {
-    throw "Menu color is not properly set in config. Terminating.";
-  }
-  else if (rssList[rssIndex].enabled == 0) {
+
+  if (rssList[rssIndex].enabled == 0) {
     console.log(`RSS Config Info: (${guild.id}, ${guild.name}) => Feed "${rssList[rssIndex].link}" is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
     return false;
   }
@@ -29,10 +24,6 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
     if (logging) console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${rssList[rssIndex].link} has no channel defined, skipping...`);
     valid = false;
   }
-  // else if (rssList[rssIndex].message == null){
-  //   if (logging && initializing) console.log(`RSS Config Info: ${rssList[rssIndex].name} has no Message defined, using default message...`);
-  //   valid = true;
-  // }
 
   return valid;
 

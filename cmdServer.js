@@ -6,6 +6,7 @@ var bot
 if (config.logging.logDates) require('./util/logDates.js')();
 
 (function login() {
+  if (!config.botSettings.menuColor || isNaN(parseInt(config.botSettings.menuColor))) config.botSettings.menuColor = 7833753;
   bot = new Discord.Client()
   bot.login(config.botSettings.token)
   .catch(err => {
