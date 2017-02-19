@@ -105,7 +105,10 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
       }
       else {
         sqlCmds.select(con, feedName, data, function (err, results, fields) {
-          if (err) throw err;
+          if (err) {
+            console.log(`RSS Error! (${guild.id}, ${guild.name}) => Error found at select table for feed ${feedName}, skipping...\n` + err);
+            return callback(); // when a table doesn't exist, means it is a removed feed
+          }
           if (!isEmptyObject(results)) {
             //console.log(`already seen ${feed.link}, not logging`);
             gatherResults();
@@ -123,7 +126,10 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
     function insertIntoTable(data) { //inserting the feed into the table marks it as "seen"
       sqlCmds.insert(con, feedName, data, function (err,res) {
-        if (err) throw err;
+        if (err) {
+          console.log(`RSS Error! (${guild.id}, ${guild.name}) => Error found at insert to table for feed ${feedName}, skipping..\n` + err);
+          return callback();
+        }
         gatherResults();
       })
     }

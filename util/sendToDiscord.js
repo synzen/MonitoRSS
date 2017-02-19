@@ -18,38 +18,57 @@ module.exports = function (rssIndex, channel, feed, isTestMessage, callback) {
 
   var message = translator(channel, rssList, rssIndex, feed, isTestMessage)
 
-  if (message != null) {
-    if (message.embedMsg != null) {
-      (function sendCombinedMsg() {
-        channel.sendMessage(message.textMsg,message.embedMsg)
-        .then(m => {
-          // console.log(successLog)
-          return callback()
-        })
-        .catch(err => {
-          if (attempts === 4) return callback(failLog + err);
-          attempts++
-          //console.log(errLog + err)
-          setTimeout(sendCombinedMsg, 500)
-        });
-      })();
+  if (message) {
+    function sendMain () {
+      if (message.embedMsg) {
+        (function sendCombinedMsg() {
+          channel.sendMessage(message.textMsg,message.embedMsg)
+          .then(m => {
+            // console.log(successLog)
+            return callback()
+          })
+          .catch(err => {
+            if (attempts === 4) return callback(failLog + err);
+            attempts++
+            //console.log(errLog + err)
+            setTimeout(sendCombinedMsg, 500)
+          });
+        })();
+      }
+
+      else {
+        (function sendTxtMsg() {
+          channel.sendMessage(message.textMsg)
+          .then(m => {
+            // console.log(successLog)
+            return callback()
+          })
+          .catch(err => {
+            if (attempts === 4) return callback(failLog + err);
+            attempts++
+            //console.log(errLog + err)
+            setTimeout(sendTxtMsg, 500)
+          });
+        })();
+      }
     }
 
-    else {
-      (function sendTxtMsg() {
-        channel.sendMessage(message.textMsg)
+    if (isTestMessage) {
+      (function sendTestDetails() {
+        channel.sendMessage(message.testDetails)
         .then(m => {
-          // console.log(successLog)
+          sendMain()
           return callback()
         })
         .catch(err => {
           if (attempts === 4) return callback(failLog + err);
           attempts++
           //console.log(errLog + err)
-          setTimeout(sendTxtMsg, 500)
+          setTimeout(sendTestDetails, 500)
         });
       })();
     }
+    else sendMain();
   }
 
 }

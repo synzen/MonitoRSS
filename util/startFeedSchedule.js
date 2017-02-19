@@ -25,8 +25,6 @@ module.exports = function (bot) {
       }
       else connect();
     }, startingCycle);
-    // fetchInterval.cycleInProgress = false
-    // if (startingCycle) setTimeout(connect, 1000);
   }
 
   function connect () {
@@ -41,10 +39,12 @@ module.exports = function (bot) {
       fileOps.readDir('./sources', function (err, files) {
         if (err) throw err;
         files.forEach(function(guildRSS) {
-          if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
+          let guildId = guildRSS.replace(/.json/g, "")
+          if (bot.guilds.get(guildId)) {
+            if (fileOps.isEmptySources(guildId)) return console.log(`RSS Info: (${guildId}) => 0 sources found, skipping.`);
             try {
-              let guild = require(`../sources/${guildRSS}`);
-              guildList.push(guild);
+              let guild = require(`../sources/${guildRSS}`)
+              guildList.push(guild)
               for (var y in guild.sources) feedLength++;
             }
             catch (err) {fileOps.checkBackup(guildRSS)}

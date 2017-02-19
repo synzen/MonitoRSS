@@ -22,13 +22,24 @@ exports.updateFile = function (guildId, inFile, cacheFile) {
   else updateContent(guildId, inFile, cacheFile);
 }
 
-exports.deleteFile = function(guildId, cacheFile, callback) {
-  fs.unlink(`./sources/${guildId}.json`, function(err) {
-    if (err) return console.log(`Error with delete file:\n`, err);
-    if (process.env.isCmdServer) process.send(guildId);
-    try {delete require.cache[require.resolve(cacheFile)]} catch (e) {console.log(e)}
-    return callback()
-  })
+exports.deleteFile = function (guildId, cacheFile, callback) {
+  if (process.env.isCmdServer) process.send(guildId);
+  fs.unlinkSync(`./sources/${guildId}.json`)
+  try {delete require.cache[require.resolve(cacheFile)]} catch (e) {}
+  return callback();
+}
+
+exports.isEmptySources = function (guildId, callback) {
+  var guildRss = require(`../sources/${guildId}.json`)
+  if (guildRss.sources.length === 0) {
+     if (!guildRss.timezone) {
+       exports.deleteFile(guildId, `../sources/${guildId}.json`, function () {
+         console.log(`RSS Info: (${guildId}) => 0 sources found, deleting.`)
+       });
+     }
+     return true;
+  }
+  else return false;
 }
 
 exports.readDir = function (dir, callback) {

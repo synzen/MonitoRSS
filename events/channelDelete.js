@@ -1,4 +1,5 @@
 const removeRSS = require('../commands/rssRemove.js')
+const fileOps = require('../util/updateJSON.js')
 
 module.exports = function (channel) {
   var rssList = require(`../sources/${channel.guild.id}.json`).sources
@@ -9,10 +10,14 @@ module.exports = function (channel) {
   }
   if (indexList.length === 0) return;
 
-  console.log(`Guild Info: (${channel.guild.id}, ${channel.guild.name}) => Channel (${channel.id}, ${channel.name}) deleted.`)
+  console.log(`Guild Info: (${channel.guild.id}, ${channel.guild.name}) => Channel (${channel.id}, ${channel.name}) deleted.`);
 
-  for (let index in indexList) {
-    removeRSS(channel, index);
-  }
+  (function removeFeedIndexes () {
+    removeRSS(channel, indexList[indexList.length - 1], function () {
+      indexList.splice(indexList.length - 1, 1)
+      if (indexList.length !== 0) removeFeedIndexes();
+    });
+  })()
+
 
 }

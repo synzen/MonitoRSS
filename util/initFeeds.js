@@ -48,7 +48,9 @@ module.exports = function (bot, callback) {
   fileOps.readDir('./sources', function (err, files) {
     if (err) throw err;
     files.forEach(function(guildRSS) {
-      if (bot.guilds.get(guildRSS.replace(/.json/g, "")) != null) {
+      let guildId = guildRSS.replace(/.json/g, "")
+      if (bot.guilds.get(guildId)) {
+        if (fileOps.isEmptySources(guildId)) return console.log(`RSS Info: (${guildId}) => 0 sources found, skipping.`);
         try {
           let guild = require(`../sources/${guildRSS}`)
           guildList.push(guild)

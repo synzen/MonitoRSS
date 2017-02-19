@@ -73,6 +73,7 @@ exports.add = function (bot, message) {
         if (found === false) message.channel.sendMessage('That is not a valid role subscription to add. Try again.');
         else {
           collector.stop();
+          if (message.member.roles.get(chosenRole.id)) return message.channel.sendMessage(`You already have that role.`);
           message.member.addRole(chosenRole)
           .then(m => {
             console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Role *${chosenRole.name}* successfully added to member. `)
