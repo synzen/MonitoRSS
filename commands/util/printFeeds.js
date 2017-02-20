@@ -7,8 +7,7 @@ const channelTracker = require('../../util/channelTracker.js')
 module.exports = function (bot, message, isCallingCmd, command, callback) {
   if (commandList[command] != null) var commandFile = commandList[command].file
   var rssList = []
-  var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : config.feedSettings.maxFeedsAllowed
-  maxFeedsAllowed = (config.feedSettings.maxFeedsAllowed == 0) ? 'Unlimited' : config.feedSettings.maxFeedsAllowed
+  var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
 
   try {rssList = require(`../../sources/${message.guild.id}.json`).sources} catch(e) {}
 
