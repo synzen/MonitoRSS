@@ -33,16 +33,13 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
 
-  requestStream(rssList[rssIndex].link, feedparser, function() {
-    if (sendingTestMessage) channel.sendMessage("Unable to get test feed. Could not connect to feed link.");
-    callback()
-    feedparser.removeAllListeners('end')
+  requestStream(rssList[rssIndex].link, feedparser, function(err) {
+    if (err) return callback(err);
   })
 
-  feedparser.on('error', function (error) {
-    console.log(`RSS Parsing Error: (${guild.id}, ${guild.name}) => ${error}, for link ${rssList[rssIndex].link}`)
+  feedparser.on('error', function (err) {
     feedparser.removeAllListeners('end')
-    return callback()
+    return callback(err)
   });
 
   feedparser.on('readable',function () {
@@ -68,7 +65,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
     //console.log("RSS Info: Starting retrieval for: " + guild.id);
 
     function startDataProcessing() {
-      checkTableExists();
+      checkTableExists()
     }
 
     function checkTableExists() {
@@ -142,6 +139,6 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
       }
     }
 
-    startDataProcessing();
+    return startDataProcessing()
   });
 }

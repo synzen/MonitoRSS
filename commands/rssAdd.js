@@ -50,7 +50,7 @@ module.exports = function (bot, message) {
     function init() {
       initializeRSS(con, verifyMsg, rssLink, message.channel, function(err) {
         channelTracker.removeCollector(message.channel.id)
-        if (err) return verifyMsg.edit(err + ' Be sure to validate your feed.');
+        if (err) return verifyMsg.edit(err);
         console.log("RSS Info: Successfully added new feed.")
         verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`)
         sqlCmds.end(con, function(err) {

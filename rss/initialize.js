@@ -32,15 +32,18 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
   var currentFeed = []
 
   requestStream(rssLink, feedparser, function(err) {
-    console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Unable to add feed ${rssLink} due to invalid response (${err}).`)
-    callback(`Could not connect to <${rssLink}> due to invalid response.`)
-    feedparser.removeAllListeners('end')
+    if (err) {
+      console.log(`RSS Warning: Unable to add ${rssLink}, could not connect due to invalid response. (${err})`);
+      return callback(`Unable to add <${rssLink}>, could not connect due to invalid response. Be sure to validate your feed.`);
+    }
   })
 
-  feedparser.on('error', function (error) {
-    console.log(`RSS Warning: ${rssLink} is not a valid feed to add.`)
-    feedparser.removeAllListeners('end')
-    return callback(`<${rssLink}> is not a valid feed to add.`)
+  feedparser.on('error', function (err) {
+    if (err)  {
+      feedparser.removeAllListeners('end');
+      console.log(`RSS Warning:: Unable to add ${rssLink} due to invalid feed.`);
+      return callback(`Unable to add <${rssLink}>, could not validate as a proper feed.`);
+    }
   });
 
   feedparser.on('readable',function () {
@@ -150,7 +153,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
 
     }
 
-    startDataProcessing();
+    return startDataProcessing()
   });
 
 }

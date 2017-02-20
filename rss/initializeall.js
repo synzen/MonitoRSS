@@ -53,15 +53,13 @@ module.exports = function (con, channel, rssIndex, callback) {
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
 
-  requestStream(rssList[rssIndex].link, feedparser, function () {
-    callback()
-    feedparser.removeAllListeners('end')
+  requestStream(rssList[rssIndex].link, feedparser, function (err) {
+    if (err) return callback(err);
   })
 
-  feedparser.on('error', function (error) {
-    console.log(`RSS Parsing Error: (${guild.id}, ${guild.name}) => ${error}`)
+  feedparser.on('error', function (err) {
     feedparser.removeAllListeners('end')
-    return callback()
+    return callback(err)
   });
 
   feedparser.on('readable',function () {
@@ -74,11 +72,6 @@ module.exports = function (con, channel, rssIndex, callback) {
 });
 
   feedparser.on('end', function() {
-    //sometimes feeds get deleted mid-retrieval process
-    //in that case re-requiring it is necessary
-    // delete require.cache[require.resolve(`../sources/${channel.guild.id}`)]
-    // guild = require(`../sources/${channel.guild.id}.json`)
-    // rssList = guild.sources
     if (currentFeed.length == 0) return callback();
 
     var feedName = rssList[rssIndex].name
@@ -90,7 +83,7 @@ module.exports = function (con, channel, rssIndex, callback) {
     var totalItems = currentFeed.length
 
     //var for when table exists
-    var filteredItems = 0;
+    var filteredItems = 0
 
     console.log(`RSS Info: (${guild.id}, ${guild.name}) => Starting default initializion for: ${feedName}`)
 
@@ -170,11 +163,11 @@ module.exports = function (con, channel, rssIndex, callback) {
     function gatherResults(){
       processedItems++;
       if (processedItems == totalItems) {
-        callback(con);
+        callback();
         //console.log(`RSS Info: (${guild.id}, ${guild.name}) => Finished default initialization for: ${feedName}`)
       }
     }
 
-    startDataProcessing()
+    return startDataProcessing()
   });
 }

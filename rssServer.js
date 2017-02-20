@@ -11,7 +11,7 @@ var bot
 if (!config.botSettings.token) throw 'Warning! Vital config missing: token undefined in config.';
 else if (!config.botSettings.prefix) throw 'Warning! Vital config missing: prefix undefined in config';
 else if (!config.feedManagement.databaseName) throw 'Warning! Vital config missing: databaseName undefined in config.';
-else if (!config.feedManagement.databaseName) throw 'Warning! Vital config missing: sqlType undefined in config.';
+else if (!config.feedManagement.sqlType) throw 'Warning! Vital config missing: sqlType undefined in config.';
 else if (!config.feedSettings.defaultMessage) throw 'Warning! Vital config missing: defaultMssage undefined in config.';
 
 
@@ -55,7 +55,7 @@ function startCmdServer () {
   bot.once('disconnect', function (e) {
     console.log('Error: RSS Module Disconnected from Discord. Attempting to reconnect and restart feed cycle.')
     var timer = setInterval(function () {
-      if (fetchInterval.cycleInProgress) return console.log('Cycle currently in progress. Waiting until cycle ends.');
+      if (fetchInterval.cycleInProgress) return console.log('Feed retrieval cycle currently in progress. Waiting until cycle ends to reconnect.');
       fetchInterval.stopSchedule()
       clearInterval(timer)
       login()

@@ -1,4 +1,4 @@
-const FetchStream = require('fetch').FetchStream; // for fetching the feed
+const FetchStream = require('fetch').FetchStream
 
 module.exports = function (link, feedparser, callback) {
   var attempts = 0;
@@ -12,14 +12,14 @@ module.exports = function (link, feedparser, callback) {
         return requestStream();
       }
       else {
-        console.log(`RSS Request ${err} for ${link}, skipping...`);
+        feedparser.removeAllListeners('end');
         return callback(err);
       }
     })
 
     request.on('meta', function (meta) {
-      if (meta.status !== 200) return this.emit('error', new Error(`Bad status code (${meta.status})`))
-      this.pipe(feedparser);
+      if (meta.status !== 200) return this.emit('error', new Error(`Bad status code (${meta.status})`));
+      this.pipe(feedparser)
     })
   })()
 }
