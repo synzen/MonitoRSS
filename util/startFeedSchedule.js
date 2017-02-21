@@ -63,11 +63,13 @@ module.exports = function (bot) {
   function startRetrieval () {
     startTime = new Date()
     for (let guildIndex in guildList) {
-      let guildId = guildList[guildIndex].id
-      let rssList = guildList[guildIndex].sources
+      let guildName = guildList[guildIndex].name;
+      let guildId = guildList[guildIndex].id;
+      let rssList = guildList[guildIndex].sources;
       for (let rssIndex in rssList) {
-        if (configChecks.checkExists(guildId, rssIndex, false) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
-          getFeed(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, false, function () {
+        if (configChecks.checkExists(guildId, rssIndex, false) && configChecks.validChannel(bot, guildId, rssIndex)) {
+          getFeed(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, false, function (err) {
+            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssIndex].link}, skipping...`);
             feedsProcessed++
             //console.log(`${feedsProcessed} ${feedsSkipped} ${feedLength}`)
             if (feedsProcessed + feedsSkipped == feedLength) setTimeout(endCon, 5000);

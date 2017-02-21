@@ -16,7 +16,8 @@ exports.modifyRoles = function (bot, channel) {
   let guild = bot.guilds.get(channel.guild.id)
   let guildBot = guild.members.get(bot.user.id)
   if (!guildBot.hasPermission("MANAGE_ROLES_OR_PERMISSIONS")) {
-    channel.sendMessage('This function has been disabled by the manager.');
+    console.log(`Self Subscriptions: (${channel.guild.id}, ${channel.guild.nane}) => SS disabled due to missing permission.`);
+    // channel.sendMessage('This function has been disabled by the manager.');
     return false;
   }
   else return true;

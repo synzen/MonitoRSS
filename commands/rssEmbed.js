@@ -58,7 +58,7 @@ module.exports = function (message, rssIndex) {
     if (chosenProp.content == "reset") {
       let resetMsg = message.channel.sendMessage(`Resetting and disabling embed...`);
       customCollect.stop();
-      if (rssList[rssIndex].embedMessage != null) delete rssList[rssIndex].embedMessage;
+      delete rssList[rssIndex].embedMessage;
       fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssIndex].link}.`);
       return resetMsg.then(m => m.edit("Embed has been disabled, and all properties have been removed."));;

@@ -27,13 +27,15 @@ module.exports = function (bot, callback) {
 
   function initFeeds () {
     for (var guildIndex in guildList) {
-      let guildId = guildList[guildIndex].id
-      let rssList = guildList[guildIndex].sources
+      let guildName = guildList[guildIndex].name;
+      let guildId = guildList[guildIndex].id;
+      let rssList = guildList[guildIndex].sources;
       checkGuild.names(bot, guildId);
       for (var rssIndex in rssList){
         checkGuild.roles(bot, guildId, rssIndex);
-        if (configChecks.checkExists(guildId, rssIndex, true, true) && configChecks.validChannel(bot, guildId, rssIndex) !== false) {
-          initAll(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, function() {
+        if (configChecks.checkExists(guildId, rssIndex, true, true) && configChecks.validChannel(bot, guildId, rssIndex)) {
+          initAll(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, function(err) {
+            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssIndex].link}, skipping...`);
             initializedFeeds++;
             console.log(`${initializedFeeds}, ${totalFeeds}`)
             if (initializedFeeds + skippedFeeds == totalFeeds) endCon();

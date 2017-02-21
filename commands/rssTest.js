@@ -7,10 +7,11 @@ module.exports = function (message, rssIndex) {
 
   var con = sqlConnect(getTestMsg)
 
-  var grabbing = message.channel.sendMessage(`Grabbing a random feed...`)
+  var grabbing = message.channel.sendMessage(`Grabbing a random feed article...`)
 
   function getTestMsg() {
-    getRSS(con, message.channel, rssIndex, true, function () {
+    getRSS(con, message.channel, rssIndex, true, function (err) {
+      if (err) channel.sendMessage('Unable to get test feed. Could not connect to feed link.');
       sqlCmds.end(con, function(err) {
         if (err) throw err;
       })

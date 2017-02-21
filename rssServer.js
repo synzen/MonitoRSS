@@ -45,7 +45,10 @@ function startCmdServer () {
 (function login () {
   bot = new Discord.Client()
   bot.login(config.botSettings.token)
-
+  .catch(err => {
+    console.log(`Discord.RSS RSS module could not login, retrying...`)
+    setTimeout(login, 1000)
+  })
   bot.once('ready', function() {
     if (typeof config.botSettings.defaultGame === "string" && config.botSettings.defaultGame !== "") bot.user.setGame(config.botSettings.defaultGame);
     console.log("Discord.RSS RSS Module has started.")
