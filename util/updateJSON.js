@@ -23,9 +23,9 @@ exports.updateFile = function (guildId, inFile, cacheFile) {
 }
 
 exports.deleteFile = function (guildId, cacheFile, callback) {
-  if (process.env.isCmdServer) process.send(guildId);
   fs.unlinkSync(`./sources/${guildId}.json`)
   try {delete require.cache[require.resolve(cacheFile)]} catch (e) {}
+  if (process.env.isCmdServer) process.send(guildId);
   return callback();
 }
 
