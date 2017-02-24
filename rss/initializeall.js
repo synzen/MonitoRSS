@@ -88,8 +88,8 @@ module.exports = function (con, channel, rssIndex, callback) {
       }
 
       if ((!article.guid || equalGuids) && article.title) return article.title;
-      else if ((!article.guid || equalGuids) && article.pubdate && article.pubdate !== "Invalid Date") return article.pubdate;
-      else return article.guid;
+      if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate !== "Invalid Date") return article.pubdate;
+      return article.guid;
     }
 
     function startDataProcessing() {

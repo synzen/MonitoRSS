@@ -105,7 +105,7 @@ module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage
   if (!rssList[rssIndex].embedMessage || !rssList[rssIndex].embedMessage.enabled) enabledEmbed = false;
   else enabledEmbed = true;
 
-  if (!enabledEmbed) finalMessageCombo;
+  if (!enabledEmbed) return finalMessageCombo;
   else {
     if (rssList[rssIndex].embedMessage.properties) finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssIndex, article, replaceKeywords);
     // channel.sendEmbed(finalMessageCombo.embedMsg, 'rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr');
