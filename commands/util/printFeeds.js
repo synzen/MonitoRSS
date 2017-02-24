@@ -38,8 +38,8 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
 
 
   if (currentRSSList.length == 0) {
-    if (isCallingCmd) return message.channel.sendMessage("No feeds assigned to this channel.");
-    else return message.channel.sendMessage("There are no existing feeds.");
+    if (isCallingCmd) return message.channel.sendMessage("No feeds assigned to this channel.").catch(err => console.log(`Promise Warning: printFeeds 1: ${err}`));
+    else return message.channel.sendMessage("There are no existing feeds.").catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
   }
 
   for (var x in currentRSSList) {
@@ -63,7 +63,7 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     message.channel.sendEmbed(embedMsg)
     .catch(err => {
       error = true;
-      message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`);
+      message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Promise Warning: printFeeds 3: ${err}`));
       console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}, embed is: `, embedMsg);});
   }
   else {
@@ -83,7 +83,7 @@ module.exports = function (bot, message, isCallingCmd, command, callback) {
     if (chosenOption.toLowerCase() == "exit") return collector.stop("RSS Feed selection menu closed.");
     let index = parseInt(chosenOption, 10) - 1;
 
-    if (isNaN(index) || chosenOption > currentRSSList.length || chosenOption < 1) return message.channel.sendMessage("That is not a valid number.");
+    if (isNaN(index) || chosenOption > currentRSSList.length || chosenOption < 1) return message.channel.sendMessage("That is not a valid number.").catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
     else {
       collector.stop();
       let rssIndex = currentRSSList[index][1];

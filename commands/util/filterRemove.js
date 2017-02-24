@@ -28,7 +28,7 @@ module.exports = function(message, rssIndex, role) {
   if (role == null) var filterList = rssList[rssIndex].filters;
   else var filterList = rssList[rssIndex].filters.roleSubscriptions[role.id].filters;
 
-  if (filterList == null || typeof filterList !== 'object') return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
+  if (filterList == null || typeof filterList !== 'object') return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`).catch(err => `Promise Warning: filterRemove 1: ${err}`);
 
   let filterObj = {
     Title: {exists: false, loc: filterList.Title},
@@ -44,7 +44,7 @@ module.exports = function(message, rssIndex, role) {
       if (rssList[rssIndex].filters.hasOwnProperty(prop) && prop !== "roleSubscriptions") isEmptyFilter = false;
   }
 
-  if (role == null && isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`);
+  if (role == null && isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`).catch(err => `Promise Warning: filterRemove 2: ${err}`);
 
   var msg = {embed: {
     color: config.botSettings.menuColor,
@@ -62,7 +62,7 @@ module.exports = function(message, rssIndex, role) {
     }
     msg.embed.fields.push(field);
   }
-  message.channel.sendMessage("**Type the filter category for which you would like you remove a filter from, type \`{reset}\` to remove all filters, or type exit to cancel.**", msg)
+  message.channel.sendMessage("**Type the filter category for which you would like you remove a filter from, type \`{reset}\` to remove all filters, or type exit to cancel.**", msg).catch(err => console.log(`Promise Warning: filterRemove 3: ${err}`))
 
   const filter = m => m.author.id == message.author.id
   const filterTypeCollect = message.channel.createCollector(filter,{time:240000})
@@ -81,16 +81,19 @@ module.exports = function(message, rssIndex, role) {
     }
 
     if (chosenFilterType == "{reset}") {
-      let resetMsg = message.channel.sendMessage(`Resetting all filters...`)
-      filterTypeCollect.stop();
-      delete filterList;
-      fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
-      return resetMsg.then(m => m.edit("All filters have been removed."));
+      message.channel.sendMessage(`Resetting all filters...`)
+      .then(resetMsg => {
+        filterTypeCollect.stop();
+        delete filterList;
+        fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
+        return resetMsg.edit("All filters have been removed.").catch(err => console.log(`Promise Warning: filterRemove 4a: ${err}`));
+      })
+      .catch(err => console.log(`Promise Warning: filterRemove 4: ${err}`));
     }
-    else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
+    else if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.").catch(err => console.log(`Promise Warning: filterRemove 5: ${err}`));
     else if (validFilterType) {
       filterTypeCollect.stop();
-      message.channel.sendMessage(`Confirm the filter word/phrase you would like to remove in the category \`${chosenFilterType}\` by typing it (case sensitive).`);
+      message.channel.sendMessage(`Confirm the filter word/phrase you would like to remove in the category \`${chosenFilterType}\` by typing it (case sensitive).`).catch(err => console.log(`Promise Warning: filterRemove 6: ${err}`));
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
       channelTracker.addCollector(message.channel.id)
@@ -106,31 +109,32 @@ module.exports = function(message, rssIndex, role) {
 
         if (chosenFilter.content == "exit") return filterCollect.stop("RSS Filter Removal menu closed.");
         else if (!validFilter) {
-          return message.channel.sendMessage(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again.`);
+          return message.channel.sendMessage(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again.`).catch(err => console.log(`Promise Warning: filterRemove 7: ${err}`));
         }
-        else if (validFilter !== false) {
-          let editing = message.channel.sendMessage(`Removing filter ${chosenFilter.content} from category ${chosenFilterType}...`);
+        else if (validFilter !== false) message.channel.sendMessage(`Removing filter ${chosenFilter.content} from category ${chosenFilterType}...`)
+        .then (editing => {
           filterCollect.stop();
           if (typeof validFilter == "object") {
             filterList[chosenFilterType].splice(validFilter[1], 1);
             if (filterList[chosenFilterType].length == 0) delete filterList[chosenFilterType];
           }
           else delete filterList[chosenFilterType];
-          if (role != null && isEmptyObject(filterList)) delete rssList[rssIndex].filters.roleSubscriptions[role.id];
-          if (role != null && isEmptyObject(rssList[rssIndex].filters.roleSubscriptions)) delete rssList[rssIndex].filters.roleSubscriptions;
+          if (role && isEmptyObject(filterList)) delete rssList[rssIndex].filters.roleSubscriptions[role.id];
+          if (role && isEmptyObject(rssList[rssIndex].filters.roleSubscriptions)) delete rssList[rssIndex].filters.roleSubscriptions;
           if (isEmptyObject(rssList[rssIndex].filters)) {
             delete rssList[rssIndex].filters;
           }
           fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
-          if (role == null) {
+          if (!role) {
             console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`));
+            editing.edit(`The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`).catch(err =>console.log( `Promise Warning: filterRemove 8a: ${err}`));
           }
           else {
             console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter '${chosenFilter.content}' removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return editing.then(m => m.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`));
+            editing.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully removed from the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}.`).catch(err => console.log(`Promise Warning: filterRemove 8b: ${err}`));
           }
-        }
+        })
+        .catch(err => console.log(`Promise Warning: filterRemove 8: ${err}`));
       })
       filterCollect.on('end', (collected, reason) => {
         channelTracker.removeCollector(message.channel.id)

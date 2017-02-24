@@ -68,7 +68,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
       return callback();
     }
 
-    //MySQL table names have a limit of 64 char
+    // MySQL table names have a limit of 64 char
     if (feedName.length >= 64 ) feedName = feedName.substr(0,64);
     feedName = feedName.replace(/\?/g, "")
 
@@ -78,6 +78,17 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
 
     console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Initializing new feed: ${rssLink}`)
 
+    function getArticleId (article) {
+      var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
+      if (equalGuids && currentFeed[0].guid) for (var x in currentFeed) {
+        if (x > 0 && currentFeed[x].guid != currentFeed[x - 1].guid) equalGuids = false;
+      }
+
+      if ((!article.guid || equalGuids) && article.title) return article.title;
+      else if ((!article.guid || equalGuids) && article.pubdate && article.pubdate !== "Invalid Date") return article.pubdate;
+      else return article.guid;
+    }
+
     function startDataProcessing() {
       createTable()
     }
@@ -85,24 +96,12 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
     function createTable() {
       sqlCmds.createTable(con, feedName, function (err, rows) {
         if (err) throw err;
-        for (var x in currentFeed){
-          if (currentFeed[0].guid == null && currentFeed[0].pubdate !== "Invalid Date") var feedId = currentFeed[x].pubdate;
-          else if (currentFeed[0].guid == null && currentFeed[0] === "Invalid Date" && currentFeed[0].title != null) var feedId = currentFeed[x].title;
-          else var feedId = currentFeed[x].guid;
-          checkTable(feedId);
-        }
+        for (var x in currentFeed) insertIntoTable(getArticleId(currentFeed[x]));
       })
     }
 
-    function checkTable(data) {
-      sqlCmds.select(con, feedName, data, function (err, results, fields) {
-        if (err) throw err;
-        insertIntoTable(data);
-      })
-    }
-
-    function insertIntoTable(data) {
-      sqlCmds.insert(con, feedName, data, function (err, res){
+    function insertIntoTable(articleId) {
+      sqlCmds.insert(con, feedName, articleId, function (err, res) {
         if (err) throw err;
         gatherResults();
       })
@@ -111,17 +110,14 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
 
     function gatherResults(){
       processedItems++;
-      if (processedItems == totalItems) {
-        addToConfig();
-      }
+      if (processedItems == totalItems) addToConfig();
     }
 
     function addToConfig() {
-      if (currentFeed[0].meta.title == null || currentFeed[0].meta.title == "") var metaTitle = "No feed title found.";
-      else var metaTitle = currentFeed[0].meta.title;
+      var metaTitle = (currentFeed[0].meta.title) ? currentFeed[0].meta.title : 'No feed title found.'
 
-      if (currentFeed[0].guid != null && currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
-      else if (currentFeed[0].meta.link != null && currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
+      if (currentFeed[0].guid && currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
+      else if (currentFeed[0].meta.link && currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
       if (fileOps.exists(`./sources/${channel.guild.id}.json`)) {
         var guildRSS = require(`../sources/${channel.guild.id}.json`);

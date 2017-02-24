@@ -17,7 +17,7 @@ module.exports = function (bot) {
 
   function endCon (startingCycle) {
     sqlCmds.end(con, function(err) {
-      if (err) throw err;
+      if (err) console.log('Error: Could not close MySQL connection. ' + err)
       fetchInterval.cycleInProgress = false
       if (!startingCycle) {
         var timeTaken = ((new Date() - startTime) / 1000).toFixed(2);

@@ -5,6 +5,7 @@ const fetchInterval = require('./util/fetchInterval.js')
 const startFeedSchedule = require('./util/startFeedSchedule.js')
 if (config.logging.logDates) require('./util/logDates.js')();
 
+fetchInterval.changedGuilds = {}
 var initialized = false
 var bot
 
@@ -26,10 +27,17 @@ function startCmdServer () {
 
   cmdServer.on('message', function (guildFile) {
     if (guildFile === 'kill') process.exit();
-    try {
-      delete require.cache[require.resolve(`./sources/${guildFile}.json`)]
-      console.log("RSS Module now using new and updated file for guild ID: " + guildFile)
-    } catch (e) {}
+    fetchInterval.changedGuilds[guildFile.id] = guildFile.contents
+    var timer = setInterval(function () {
+      if (fetchInterval.cycleInProgress) return console.log('Feed retrieval cycle currently in progress. Waiting until cycle ends to update guild data..');
+      try {
+        delete require.cache[require.resolve(`./sources/${guildFile.id}.json`)]
+        console.log("RSS Module now using updated file for guild ID: " + guildFile.id)
+      } catch (e) {}
+      delete fetchInterval.changedGuilds[guildFile.id]
+      clearInterval(timer)
+    }, 10000)
+
   })
 
   process.on('uncaughtException', function (err) {
@@ -40,8 +48,6 @@ function startCmdServer () {
   beginFeedCycle()
 }
 
-
-
 (function login () {
   bot = new Discord.Client()
   bot.login(config.botSettings.token)
@@ -51,7 +57,7 @@ function startCmdServer () {
   })
   bot.once('ready', function() {
     if (typeof config.botSettings.defaultGame === "string" && config.botSettings.defaultGame !== "") bot.user.setGame(config.botSettings.defaultGame);
-    console.log("Discord.RSS RSS Module has started.")
+    console.log("Discord.RSS RSS Module has started.");
     if (!initialized) startInit(bot, startCmdServer);
     else beginFeedCycle(true);
   })

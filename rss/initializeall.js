@@ -76,16 +76,21 @@ module.exports = function (con, channel, rssIndex, callback) {
 
     var feedName = rssList[rssIndex].name
     var tableAlreadyExisted = 0
-
     var processedItems = 0
-
-    //var for when table doesn't exist
     var totalItems = currentFeed.length
 
-    //var for when table exists
-    var filteredItems = 0
-
     console.log(`RSS Info: (${guild.id}, ${guild.name}) => Starting default initializion for: ${feedName}`)
+
+    function getArticleId (article) {
+      var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
+      if (equalGuids && currentFeed[0].guid) for (var x in currentFeed) {
+        if (x > 0 && currentFeed[x].guid != currentFeed[x - 1].guid) equalGuids = false;
+      }
+
+      if ((!article.guid || equalGuids) && article.title) return article.title;
+      else if ((!article.guid || equalGuids) && article.pubdate && article.pubdate !== "Invalid Date") return article.pubdate;
+      else return article.guid;
+    }
 
     function startDataProcessing() {
       checkTableExists()
@@ -103,24 +108,15 @@ module.exports = function (con, channel, rssIndex, callback) {
           tableAlreadyExisted = true;
 
           let feedLength = currentFeed.length - 1;
-          for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
+          for (var x = feedLength; x >= 0; x--) { //get feeds starting from oldest, ending with newest.
             var cutoffDay;
             var defaultMaxAge = (config.feedSettings.defaultMaxAge) ? config.feedSettings.defaultMaxAge : 1;
             if (!rssList[rssIndex].maxAge) cutoffDay = moment(new Date()).subtract(defaultMaxAge, 'd');
             else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
 
-            if (currentFeed[x].pubdate >= cutoffDay){
-              if (currentFeed[0].guid == null && currentFeed[0].pubdate !== "Invalid Date") var feedId = currentFeed[x].pubdate;
-              else if (currentFeed[0].guid == null && currentFeed[0] === "Invalid Date" && currentFeed[0].title != null) var feedId = currentFeed[x].title;
-              else var feedId = currentFeed[x].guid;
-              checkTable(feedId, currentFeed[x]); // .guid is the feed item for the table entry, the second param is the info needed to send the actual message
-            }
-            else if (currentFeed[x].pubdate < cutoffDay || currentFeed[x].pubdate == "Invalid Date"){
-              gatherResults();
-            }
-            else if (x == 0 && filteredItems == 0) { //when no feed items have been sent to checkTable and the foor loop is at its end
-              filteredItems++;
-              gatherResults();
+            if (currentFeed[x].pubdate >= cutoffDay) checkTable(currentFeed[x], getArticleId(currentFeed[x]));
+            else if (currentFeed[x].pubdate < cutoffDay || currentFeed[x].pubdate == "Invalid Date") {
+              checkTable(currentFeed[x], getArticleId(currentFeed[x]), true);
             }
           }
         }
@@ -130,37 +126,33 @@ module.exports = function (con, channel, rssIndex, callback) {
     function createTable() {
       sqlCmds.createTable(con, feedName, function (err, results) {
         if (err) throw err;
-        for (var x in currentFeed){
-          if (currentFeed[0].guid == null && currentFeed[0].pubdate !== "Invalid Date") var feedId = currentFeed[x].pubdate;
-          else if (currentFeed[0].guid == null && currentFeed[0] === "Invalid Date" && currentFeed[0].title != null) var feedId = currentFeed[x].title;
-          else var feedId = currentFeed[x].guid;
-          insertIntoTable(feedId);
-        }
+        for (var x in currentFeed) insertIntoTable(getArticleId(currentFeed[x]));
       })
     }
 
-    function checkTable(data, feed) {
-      sqlCmds.select(con, feedName, data, function (err, results) {
+    function checkTable(article, articleId, isOldArticle) {
+      sqlCmds.select(con, feedName, articleId, function (err, results) {
         if (err) throw err;
         if (!isEmptyObject(results)) gatherResults();
+        else if (isOldArticle) insertIntoTable(articleId);
         else {
-          if (config.feedSettings.sendOldMessages == true) sendToDiscord(rssIndex, channel, feed, false, function (err) { //this can result in great spam once the loads up after a period of downtime
+          if (config.feedSettings.sendOldMessages == true) sendToDiscord(rssIndex, channel, article, false, function (err) { //this can result in great spam once the loads up after a period of downtime
             if (err) console.log(err);
-            insertIntoTable(data);
+            insertIntoTable(articleId);
           });
-          else insertIntoTable(data);
+          else insertIntoTable(articleId);
         }
       })
     }
 
-    function insertIntoTable(data) {
-      sqlCmds.insert(con, feedName, data, function (err, res){
+    function insertIntoTable(articleId) {
+      sqlCmds.insert(con, feedName, articleId, function (err, res){
         if (err) throw err;
         gatherResults();
       })
     }
 
-    function gatherResults(){
+    function gatherResults() {
       processedItems++;
       if (processedItems == totalItems) {
         callback();

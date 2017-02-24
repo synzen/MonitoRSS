@@ -2,7 +2,7 @@ const fs = require('fs');
 const config = require('../config.json')
 
 function updateContent(realFile, inFile, cacheFile) {
-  if (process.env.isCmdServer) process.send(realFile); //child process
+  if (process.env.isCmdServer) process.send({id: realFile, contents: JSON.stringify(inFile, null, 2)}); //child process
   fs.writeFileSync(`./sources/${realFile}.json`, JSON.stringify(inFile, null, 2))
   try {delete require.cache[require.resolve(cacheFile)]} catch (e) {}
 }

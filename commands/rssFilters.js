@@ -26,7 +26,7 @@ module.exports = function(message, rssIndex, role) {
     footer: {}
   }}
 
-  message.channel.sendMessage("", menu)
+  message.channel.sendMessage("", menu).catch(err => `Promise Warning: rssFilters 1: ${err}`)
 
   const filter = m => m.author.id == message.author.id;
   const collector = message.channel.createCollector(filter,{time:60000});
@@ -49,7 +49,7 @@ module.exports = function(message, rssIndex, role) {
           if (rssList[rssIndex].filters.hasOwnProperty(prop) && prop !== "roleSubscriptions") foundFilters.push(prop);
       }
 
-      if (foundFilters.length == 0) return message.channel.sendMessage("There are no global filters assigned to this feed.");
+      if (foundFilters.length == 0) return message.channel.sendMessage("There are no global filters assigned to this feed.").catch(err => `Promise Warning: rssFilter 2: ${err}`);
 
       let filterList = rssList[rssIndex].filters;
       if (m.content == 3) {
@@ -58,7 +58,7 @@ module.exports = function(message, rssIndex, role) {
         }
         if (isEmptyObject(filterList)) delete rssList[rssIndex].filters;
         fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
-        return message.channel.sendMessage(`All global filters have been successfully removed from this feed.`);
+        return message.channel.sendMessage(`All global filters have been successfully removed from this feed.`).catch(err => `Promise Warning: rssFilters 3: ${err}`);
       }
       else if (m.content == 4) {
 
@@ -83,7 +83,7 @@ module.exports = function(message, rssIndex, role) {
         });
       }
     }
-    else message.channel.sendMessage("That is not a valid choice. Try again.");
+    else message.channel.sendMessage("That is not a valid choice. Try again.").catch(err => `Promise Warning: rssFilters 4: ${err}`);
   })
 
   collector.on('end', (collected, reason) => {

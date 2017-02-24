@@ -1,38 +1,26 @@
-module.exports = function (channel, rssList, rssIndex, data, replaceKeywords) {
-  var rssList = require(`../../sources/${channel.guild.id}`).sources
+const Discord = require('discord.js')
 
-  var embed = {embed: {
-    author: {},
-    fields: [],
-    footer: {},
-    image: {},
-    thumbnail: {}
-  }};
+module.exports = function (channel, rssList, rssIndex, article, replaceKeywords) {
+  var rssList = require(`../../sources/${channel.guild.id}`).sources
+  var embed = new Discord.RichEmbed()
 
   let embedSpecs = rssList[rssIndex].embedMessage.properties;
 
-  if (embedSpecs.message)
-    embed.embed.description = replaceKeywords(embedSpecs.message);
+  if (embedSpecs.message) embed.setDescription(replaceKeywords(embedSpecs.message));
 
-  if (embedSpecs.footerText)
-    embed.embed.footer.text = replaceKeywords(embedSpecs.footerText);
+  if (embedSpecs.footerText) embed.setFooter(replaceKeywords(embedSpecs.footerText));
 
-  if (embedSpecs.color && !isNaN(embedSpecs.color))
-    embed.embed.color = embedSpecs.color;
+  if (embedSpecs.color && !isNaN(embedSpecs.color)) embed.setColor(embedSpecs.color);
 
-  if (embedSpecs.authorTitle)
-    embed.embed.author.name = replaceKeywords(embedSpecs.authorTitle);
+  if (embedSpecs.authorTitle) embed.setAuthor(replaceKeywords(embedSpecs.authorTitle));
 
-  if (embedSpecs.authorAvatarURL && typeof embedSpecs.authorAvatarURL === 'string' && embedSpecs.authorAvatarURL.startsWith("http"))
-    embed.embed.author.icon_url = embedSpecs.authorAvatarURL;
+  if (embedSpecs.authorTitle && embedSpecs.authorAvatarURL && typeof embedSpecs.authorAvatarURL === 'string') embed.setAuthor(embedSpecs.authorTitle, embedSpecs.authorAvatarURL);
 
-  if (embedSpecs.thumbnailURL && typeof embedSpecs.thumbnailURL === 'string') {
-    if (data.guid && data.guid.startsWith("yt:video") && embedSpecs.thumbnailURL == "{thumbnail}") embed.embed.thumbnail.url = data['media:group']['media:thumbnail']['@']['url'];
-    else embed.embed.thumbnail.url = embedSpecs.thumbnailURL;
-  }
+  if (embedSpecs.thumbnailURL && typeof embedSpecs.thumbnailURL === 'string') embed.setThumbnail((new replaceKeywords('')).convertImgs(embedSpecs.thumbnailURL));
 
-  if (embedSpecs.url && typeof embedSpecs.url === 'string')
-    embed.embed.url = data.link;
+  if (embedSpecs.imageURL && typeof embedSpecs.imageURL === 'string') embed.setImage((new replaceKeywords('')).convertImgs(embedSpecs.imageURL))
+
+  if (embedSpecs.url && typeof embedSpecs.url === 'string') embed.setURL(article.link);
 
   return embed;
 

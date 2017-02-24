@@ -4,19 +4,19 @@ const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 
 module.exports = function (message, rssIndex) {
-
-  var con = sqlConnect(getTestMsg)
-
-  var grabbing = message.channel.sendMessage(`Grabbing a random feed article...`)
-
-  function getTestMsg() {
-    getRSS(con, message.channel, rssIndex, true, function (err) {
-      if (err) channel.sendMessage('Unable to get test feed. Could not connect to feed link.');
-      sqlCmds.end(con, function(err) {
-        if (err) throw err;
-      })
-      grabbing.then(m => m.delete())
-    });
-  }
+  message.channel.sendMessage(`Grabbing a random feed article...`)
+  .then(grabMsg => {
+    var con = sqlConnect(getTestMsg)
+    function getTestMsg() {
+      getRSS(con, message.channel, rssIndex, grabMsg, function (err) {
+        if (err) channel.sendMessage('Unable to get test feed. Could not connect to feed link.');
+        sqlCmds.end(con, function(err) {
+          if (err) throw err;
+        })
+        // grabbing.then(m => m.delete())
+      });
+    }
+  })
+  .catch(err => console.log(`Promise Warning: rssTest 1: ${err}`))
 
 }

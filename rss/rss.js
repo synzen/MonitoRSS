@@ -25,7 +25,7 @@ function isEmptyObject(obj) {
   return true;
 }
 
-module.exports = function (con, channel, rssIndex, sendingTestMessage, callback) {
+module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -53,7 +53,7 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
 
   feedparser.on('end', function() {
     if (currentFeed.length == 0) {
-      if (!sendingTestMessage) return callback();
+      if (!isTestMessage) return callback();
       callback();
       console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for rsstest.`);
       return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
@@ -64,6 +64,17 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
     var filteredItems = 0
     //console.log("RSS Info: Starting retrieval for: " + guild.id);
 
+    function getArticleId (article) {
+      var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
+      if (equalGuids && currentFeed[0].guid) for (var x in currentFeed) {
+        if (x > 0 && currentFeed[x].guid != currentFeed[x - 1].guid) equalGuids = false;
+      }
+
+      if ((!article.guid || equalGuids) && article.title) return article.title;
+      else if ((!article.guid || equalGuids) && article.pubdate && article.pubdate !== "Invalid Date") return article.pubdate;
+      else return article.guid;
+    }
+
     function startDataProcessing() {
       checkTableExists()
     }
@@ -71,69 +82,57 @@ module.exports = function (con, channel, rssIndex, sendingTestMessage, callback)
     function checkTableExists() {
       sqlCmds.selectTable(con, feedName, function (err, results) {
         if (err || isEmptyObject(results)) {
-          if (err) console.log(`Database fatal error!. (${guild.id}, ${guild.name}) => RSS index ${rssIndex} Feed ${rssList[rssIndex].link}. Skipping because of error:`, err);
+          if (err) console.log(`Database error! (${guild.id}, ${guild.name}) => RSS index ${rssIndex} Feed ${rssList[rssIndex].link}. Skipping because of error:`, err);
           else if (isEmptyObject(results)) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" appears to have been deleted, skipping...`);
           return callback();
         }
-        if (sendingTestMessage) {
+        if (isTestMessage) {
           let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1));
           checkTable(currentFeed[randFeedIndex]);
         }
         else {
           let feedLength = currentFeed.length - 1;
-          for (var x = feedLength; x >= 0; x--){ //get feeds starting from oldest, ending with newest.
-            if (currentFeed[0].guid == null && currentFeed[0].pubdate !== "Invalid Date") var feedId = currentFeed[x].pubdate;
-            else if (currentFeed[0].guid == null && currentFeed[0] === "Invalid Date" && currentFeed[0].title != null) var feedId = currentFeed[x].title;
-            else var feedId = currentFeed[x].guid;
-            checkTable(currentFeed[x], feedId);
+          for (var x = feedLength; x >= 0; x--){
+            checkTable(currentFeed[x], getArticleId(currentFeed[x]));
             filteredItems++;
           }
         }
       })
     }
 
-    function checkTable(feed, data) {
-      if (sendingTestMessage) {
+    function checkTable(article, articleId) {
+      if (isTestMessage) {
         filteredItems++;
         gatherResults();
-        sendToDiscord(rssIndex, channel, feed, true, function (err) {
+        sendToDiscord(rssIndex, channel, article, isTestMessage, function (err) {
           if (err) console.log(err);
         });
       }
       else {
-        sqlCmds.select(con, feedName, data, function (err, results, fields) {
-          if (err) {
-            console.log(`RSS Error! (${guild.id}, ${guild.name}) => Error found at select table for feed ${feedName}, skipping...\n` + err);
-            return callback(); // when a table doesn't exist, means it is a removed feed
-          }
-          if (!isEmptyObject(results)) {
-            //console.log(`already seen ${feed.link}, not logging`);
-            gatherResults();
-          }
+        sqlCmds.select(con, feedName, articleId, function (err, results, fields) {
+          if (err) return callback(); // when a table doesn't exist, means it is a removed feed
+          if (!isEmptyObject(results)) gatherResults();
           else {
-            sendToDiscord(rssIndex, channel, feed, false, function (err) {
+            sendToDiscord(rssIndex, channel, article, false, function (err) {
               if (err) console.log(err);
             });
-            insertIntoTable(data);
+            insertIntoTable(articleId);
           }
         })
       }
     }
 
 
-    function insertIntoTable(data) { //inserting the feed into the table marks it as "seen"
-      sqlCmds.insert(con, feedName, data, function (err,res) {
-        if (err) {
-          console.log(`RSS Error! (${guild.id}, ${guild.name}) => Error found at insert to table for feed ${feedName}, skipping..\n` + err);
-          return callback();
-        }
+    function insertIntoTable(articleId) { // inserting the feed into the table marks it as "seen"
+      sqlCmds.insert(con, feedName, articleId, function (err,res) {
+        if (err) return callback();
         gatherResults();
       })
     }
 
-    function gatherResults(){
+    function gatherResults() {
       processedItems++;
-      //console.log(`${rssList[rssIndex].name} ${filteredItems} ${processedItems}`) //for debugging
+      //console.log(`${rssList[rssIndex].name} ${filteredItems} ${processedItems}`) // for debugging
       if (processedItems == filteredItems) {
         callback();
       }

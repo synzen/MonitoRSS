@@ -21,30 +21,25 @@ function foundFilterWords(filterType, content) {
 }
 
 
-module.exports = function (rssList, rssIndex, data, dataDescrip) {
+module.exports = function (rssList, rssIndex, article) {
 
   var filterFound = false
 
   let titleFilters = rssList[rssIndex].filters.Title;
-  if (foundFilterWords(titleFilters, data.title))
+  if (foundFilterWords(titleFilters, article.title))
     filterFound = true;
 
   let descrFilters = rssList[rssIndex].filters.Description;
-  if (foundFilterWords(descrFilters, dataDescrip))
+  if (foundFilterWords(descrFilters, article.description))
     filterFound = true;
 
   let smryFilters = rssList[rssIndex].filters.Summary;
-  if (foundFilterWords(smryFilters, striptags(data.summary)))
+  if (foundFilterWords(smryFilters, article.rawSummary))
     filterFound = true;
 
   let authorFilters = rssList[rssIndex].filters.Author;
-  if (foundFilterWords(authorFilters, striptags(data.author)))
+  if (foundFilterWords(authorFilters, article.author))
     filterFound = true;
-
-  if (data.guid && data.guid.startsWith("yt:video")) {
-    if (foundFilterWords(descrFilters, data['media:group']['media:description']['#']))
-      filterFound = true;
-  }
 
   return filterFound
 

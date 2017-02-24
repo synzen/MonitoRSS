@@ -31,7 +31,7 @@ module.exports = function(message, rssIndex, role) {
     msg += `\n[Filter Category]: ${filterType}\n`;
   }
 
-  message.channel.sendMessage(msg + "```\n**Type the filter category for which you would like you add a filter to, or type exit to cancel.**")
+  message.channel.sendMessage(msg + '```\n**Type the filter category for which you would like you add a filter to, or type exit to cancel.**').catch(err => console.log(`Promise Warning: filterAdd 1: ${err}`))
 
   const filter = m => m.author.id == message.author.id
   const filterTypeCollect = message.channel.createCollector(filter,{time:240000})
@@ -49,10 +49,10 @@ module.exports = function(message, rssIndex, role) {
     }
 
 
-    if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.");
+    if (!validFilterType) return message.channel.sendMessage("That is not a valid filter category. Try again.").catch(err => console.log(`Promise Warning: filterAdd 2: ${err}`));
     else if (validFilterType) {
       filterTypeCollect.stop();
-      message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`)
+      message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`).catch(err => console.log(`Promise Warning: filterAdd 3: ${err}`))
 
       const filterCollect = message.channel.createCollector(filter,{time:240000});
       channelTracker.addCollector(message.channel.id)
@@ -60,22 +60,25 @@ module.exports = function(message, rssIndex, role) {
       filterCollect.on('message', function(chosenFilter) {
         if (chosenFilter.content == "{exit}") return filterCollect.stop("RSS Filter Addition menu closed.");
         else {
-          if (role != null) {
+          if (!role) {
             try {delete rssList[rssIndex].roleSubscriptions} catch(e) {}
           }
-          if (filterList[chosenFilterType] == null || filterList[chosenFilterType] == "") filterList[chosenFilterType] = [];
-          let editing = message.channel.sendMessage(`Updating filters...`);
-          filterCollect.stop();
-          filterList[chosenFilterType].push(chosenFilter.content);
-          fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
-          if (role == null) {
-            console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return editing.then(m => m.edit(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.botSettings.prefix}rsstest\` and see what kind of feeds pass through.`));
-          }
-          else {
-            console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            return editing.then(m => m.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.botSettings.prefix}rsstest\` and see what kind of feeds pass through.`));
-          }
+          if (!filterList[chosenFilterType]) filterList[chosenFilterType] = [];
+          message.channel.sendMessage(`Updating filters...`)
+          .then(editing => {
+            filterCollect.stop();
+            filterList[chosenFilterType].push(chosenFilter.content);
+            fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
+            if (!role) {
+              console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+              editing.edit(`The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.botSettings.prefix}rsstest\` and see what kind of feeds pass through.`).catch(err => console.log(`Promise Warning: filterAdd 4a: ${err}`));
+            }
+            else {
+              console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter '${chosenFilter.content}' added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+              editing.edit(`Subscription updated for role \`${role.name}\`. The filter \`${chosenFilter.content}\` has been successfully added for the filter category \`${chosenFilterType}\` for the feed ${rssList[rssIndex].link}. You may test your filters via \`${config.botSettings.prefix}rsstest\` and see what kind of feeds pass through.`).catch(err => console.log(`Promise Warning: filterAdd 4b: ${err}`));
+            }
+          })
+          .catch(err => console.log(`Promise Warning: filterAdd 4: ${err}`));
         }
       })
       filterCollect.on('end', (collected, reason) => {

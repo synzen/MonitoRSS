@@ -11,7 +11,7 @@ module.exports = function (message, rssIndex, callback) {
   var link = rssList[rssIndex].link
 
   //must be checked because this is called when chanels are deleted as well
-  if (message.channel) var msg = message.channel.sendMessage(`Removing ${link}...`);
+  if (message.channel) var msg = message.channel.sendMessage(`Removing ${link}...`).catch(err => `Promise Warning: rssRemove 1: ${err}`);
 
   console.log(`RSS Removal: (${message.guild.id}, ${message.guild.name}) => Starting removal of ${link}`)
   sqlCmds.dropTable(config.feedManagement.databaseName, rssList[rssIndex].name, function () {
@@ -26,6 +26,6 @@ module.exports = function (message, rssIndex, callback) {
 
   if (typeof callback === 'function') callback();
 
-  if (message.channel) msg.then(m => m.edit(`Successfully removed ${link} from this channel.`));
+  if (message.channel) msg.then(m => m.edit(`Successfully removed ${link} from this channel.`).catch(err => `Promise Warning: rssRemove 1a: ${err}`));
 
 }

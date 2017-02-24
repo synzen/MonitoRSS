@@ -1,78 +1,66 @@
 const config = require('../../config.json')
-const striptags = require('striptags')
 const filterFeed = require('./filters.js')
 const createEmbed = require('./embed.js')
-const cleanRandoms = require('./cleanup.js')
-const moment = require('moment-timezone')
-const getSubscriptions = require('./subscriptions.js')
+const Article = require('./article.js')
+const getSubs = require('./subscriptions.js')
 
-module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
-  const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone
+module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage) {
+  // if (channel.guild.id == "240535022820392961") console.info(data);
 
   // sometimes feeds get deleted mid process
   if (!rssList[rssIndex]) {console.log("RSS Error: Unable to translate a null source."); return null;}
 
-  var originalDate = data.pubdate;
+  var article = new Article(rawArticle, channel)
+  article.subscriptions = getSubs(channel, rssIndex, article)
 
-  var timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
-  var timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : "ddd, D MMMM YYYY, h:mm A z"
-  var vanityDate = moment.tz(originalDate, timezone).format(timeFormat)
+  function replaceKeywords(word) {
+    // simple replacements
+    var converted = word.replace(/{date}/g, article.pubdate)
+            .replace(/{title}/g, article.title)
+            .replace(/{author}/g, article.author)
+            .replace(/{summary}/g, article.summary)
+            .replace(/{subscriptions}/g, article.subscriptions)
+            .replace(/{link}/g, article.link)
+            .replace(/{description}/g, article.description);
 
-  var dataDescrip = ''
-  if (data.guid && data.guid.startsWith("yt:video")) dataDescrip = data['media:group']['media:description']['#'];
-  else if (data.description) dataDescrip = cleanRandoms(data.description);
-
-  var dataSummary = ''
-  if (data.summary) dataSummary = cleanRandoms(data.summary);
-
-  dataSummary = (dataSummary.length > 800) ? `${dataSummary.slice(0, 790)} [...]` : dataSummary
-  dataDescrip = (dataDescrip.length > 800) ? `${dataDescrip.slice(0, 790)} [...]` : dataDescrip
-
-  if (data.meta.link && data.meta.link.includes("reddit")) {
-    dataDescrip = dataDescrip.substr(0, dataDescrip.length - 22)
-    .replace("submitted by", "\n*Submitted by:*"); // truncate the useless end of reddit description
-  }
-
-  var subscriptions = getSubscriptions(channel, rssIndex, data, dataDescrip)
-
-  function replaceKeywords(word){
-    var a = word.replace(/{date}/g, vanityDate)
-            .replace(/{title}/g, striptags(data.title))
-            .replace(/{author}/g, data.author)
-            .replace(/{summary}/g, dataSummary)
-            .replace(/{image}/g, data.image.url)
-            .replace(/{subscriptions}/g, subscriptions)
-
-    if (data.link) var b = a.replace(/{link}/g, data.link);
-    else var b = a.replace(/{link}/g, "");
-
-    if (data.guid && data.guid.startsWith("yt:video")) { // youtube feeds have the property media:group that other feeds do not have
-      if (data['media:group']['media:description']['#'] != null) var c = b.replace(/{description}/g, data['media:group']['media:description']['#']);
-      else var c = b.replace(/{description}/g, "");
-
-      var d = c.replace(/{thumbnail}/g, data['media:group']['media:thumbnail']['@']['url']);
-      return d;
+    // replace images, defined as a separate function for use in embed.js
+    this.convertImgs = function (converted) {
+      var imgDictionary = {}
+      var imgLocs = converted.match(/{image.+}/g)
+      if (imgLocs && imgLocs.length > 0) {
+        for (var loc in imgLocs) {
+          if (imgLocs[loc].length === 8) { // only single digit image numbers
+            let imgNum = parseInt(imgLocs[loc].substr(6, 1), 10);
+            // key is {imageX}, value is article image URL
+            if (!isNaN(imgNum) && imgNum !== 0 && article.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = article.images[imgNum - 1];
+            else if (!isNaN(imgNum) || imgNum === 0) imgDictionary[imgLocs[loc]] = '';
+          }
+        }
+        for (var imgKeyword in imgDictionary) converted = converted.replace(new RegExp(imgKeyword, 'g'), imgDictionary[imgKeyword]);
+      }
+      return converted
     }
-    else return b.replace(/{description}/g, dataDescrip);
+    converted = this.convertImgs(converted)
+    return converted
   }
 
   // filter message
   var filterPropCount = 0;
   if (rssList[rssIndex].filters && typeof rssList[rssIndex].filters == "object") {
     for (var prop in rssList[rssIndex].filters)
-      if (rssList[rssIndex].filters.hasOwnProperty(prop) && prop !== "roleSubscriptions") filterPropCount++;
+      if (prop !== "roleSubscriptions") filterPropCount++;
   }
 
   var filterExists = false
   var filterFound = false
   if (filterPropCount !== 0) {
     filterExists = true;
-    filterFound = filterFeed(rssList, rssIndex, data, dataDescrip);
+    filterFound = filterFeed(rssList, rssIndex, article);
   }
 
   // feed article only passes through if the filter found the specified content
   if (!isTestMessage && filterExists && !filterFound) {
-    console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => ${data.link} did not pass filters and was not sent:\n`, rssList[rssIndex].filters);
+    console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => ${article.link} did not pass filters and was not sent:\n`, rssList[rssIndex].filters);
     return null;
   }
 
@@ -83,38 +71,30 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   if (isTestMessage) {
     var testDetails = '';
     let footer = "\nBelow is the configured message to be sent for this feed:\n\n--";
-    testDetails += `\`\`\`Markdown\n# Test Details\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${data.title}`;
+    testDetails += `\`\`\`Markdown\n# Test Details\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${article.title}`;
 
-    if (dataSummary) {
-      if (data.description != data.summary) var testSummary = (dataSummary.length > 700) ? `${dataSummary.slice(0, 690)} [...]\n\n**(Truncated summary for shorter rsstest)**` : dataSummary;
-      else var testSummary = (dataSummary.length > 375) ? `${dataSummary.slice(0, 365)} [...]\n\n**(Truncated summary for shorter rsstest)**` : dataSummary;
+    if (article.summary) {
+      if (article.rawDescrip != article.rawSummary) var testSummary = (article.summary.length > 700) ? `${article.summary.slice(0, 690)} [...]\n\n**(Truncated summary for shorter rsstest)**` : article.summary;
+      else var testSummary = (article.summary.length > 375) ? `${article.summary.slice(0, 365)} [...]\n\n**(Truncated summary for shorter rsstest)**` : article.summary;
+
+      testDetails += (article.rawSummary == article.rawDescrip) ? '' : `\n\n[Summary]: {summary}\n${testSummary}`;
     }
-    if (dataDescrip) {
-      if (data.description != data.summary) var testDescrip = (dataDescrip.length > 750) ? `${dataDescrip.slice(0, 690)} [...]\n\n**(Truncated description for shorter rsstest)**` : dataDescrip;
-      else var testDescrip = (dataDescrip.length > 375) ? `${dataDescrip.slice(0, 365)} [...]\n\n**(Truncated description for shorter rsstest)**` : dataDescrip;
+    if (article.description) {
+      if (article.rawDescrip != article.rawSummary) var testDescrip = (article.description.length > 750) ? `${article.description.slice(0, 690)} [...]\n\n**(Truncated description for shorter rsstest)**` : article.description;
+      else var testDescrip = (article.description.length > 375) ? `${article.description.slice(0, 365)} [...]\n\n**(Truncated description for shorter rsstest)**` : article.description;
       testDetails += `\n\n[Description]: {description}\n${testDescrip}`;
     }
-    testDetails += (data.summary == data.description) ? '' : `\n\n[Summary]: {summary}\n${testSummary}`;
 
-    if (vanityDate) testDetails += `\n\n[Published Date]: {date}\n${vanityDate}`;
-    if (data.author && data.author !== "") testDetails += `\n\n[Author]: {author}\n${data.author}`;
-    if (data.link) testDetails += `\n\n[Link]: {link}\n${data.link}`;
-    if (data.image.url && data.image.url !== "") testDetails += `\n\n[Image URL]: {image}\n${data.image.url}`;
-    if (subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${subscriptions.split(" ").length - 1} subscriber(s)`;
+
+    if (article.pubdate) testDetails += `\n\n[Published Date]: {date}\n${article.pubdate}`;
+    if (article.author && article.author !== "") testDetails += `\n\n[Author]: {author}\n${article.author}`;
+    if (article.link) testDetails += `\n\n[Link]: {link}\n${article.link}`;
+    if (article.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${article.subscriptions.split(" ").length - 1} subscriber(s)`;
     if (filterExists) testDetails += `\n\n[Passed Filters?]: ${filterFound}`;
-
-    if (data.guid && data.guid.startsWith("yt:video")) testDetails += `\n\n[Youtube Thumbnail]: {thumbnail}\n${data['media:group']['media:thumbnail']['@']['url']}\`\`\`` + footer;
-    else testDetails += "```" + footer;
+    if (article.images) testDetails += `\n\n${article.listImages()}`;
+    testDetails += "```" + footer;
   }
 
-  // account for final message length
-  if (configTxtMsg.length >= 1900) {
-    console.log(configTxtMsg);
-    configTxtMsg = `The article titled **<${data.title}>** is greater than or equal to 1900 characters cannot be sent as a precaution. The link to the article is:\n\n${data.link}`;
-    if (!isTestMessage) console.log(`RSS Delivery Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1900.`);
-    else console.log(`RSS Test Delivery Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed titled "${data.title}" cannot be sent to Discord because message length is >1900.`);
-
-  }
   var finalMessageCombo = {
     textMsg: configTxtMsg
   }
@@ -125,12 +105,10 @@ module.exports = function (channel, rssList, rssIndex, data, isTestMessage) {
   if (!rssList[rssIndex].embedMessage || !rssList[rssIndex].embedMessage.enabled) enabledEmbed = false;
   else enabledEmbed = true;
 
-  if (enabledEmbed !== true) {
-    if (!finalMessageCombo.textMsg) finalMessageCombo.textMsg = 'Cannot deliver an empty feed message.';
-    return finalMessageCombo;
-  }
+  if (!enabledEmbed) finalMessageCombo;
   else {
-    if (rssList[rssIndex].embedMessage.properties) finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssIndex, data, replaceKeywords);
+    if (rssList[rssIndex].embedMessage.properties) finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssIndex, article, replaceKeywords);
+    // channel.sendEmbed(finalMessageCombo.embedMsg, 'rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr');
     return finalMessageCombo;
   }
 }

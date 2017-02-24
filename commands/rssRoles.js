@@ -10,7 +10,7 @@ module.exports = function(bot, message, command) {
   const collectorFilter = m => m.author.id == message.author.id;
 
   try {var guildRss = require(`../sources/${message.guild.id}.json`)}
-  catch (e) {return message.channel.sendMessage("Cannot add role customizations without any active feeds.")}
+  catch (e) {return message.channel.sendMessage("Cannot add role customizations without any active feeds.").catch(err => console.log(`Promise Warning: rssRole 1: ${err}`))}
 
   var rssList = guildRss.sources
   var role
@@ -34,7 +34,7 @@ module.exports = function(bot, message, command) {
       roleID: role.id,
       roleName: role.name
     })
-    message.channel.sendMessage(`Global subscription successfully added for \`${message.guild.roles.get(role.id).name}\` to feed \`${rssList[rssIndex].title}\`.`);
+    message.channel.sendMessage(`Global subscription successfully added for \`${message.guild.roles.get(role.id).name}\` to feed \`${rssList[rssIndex].title}\`.`).catch(err => console.log(`Promise Warning: rssRoles/addGlobalSub 1: ${err}`));
     console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${message.guild.roles.get(role.id).id}, ${message.guild.roles.get(role.id).name}) => Global subscription added to feed \`${rssList[rssIndex].title}\`.`);
     return fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
   }
@@ -43,14 +43,14 @@ module.exports = function(bot, message, command) {
     let source = rssList[rssIndex]
     var found = false
     if (source.roleSubscriptions.length == 0) delete source.roleSubscriptions;
-    if (source.roleSubscriptions == null) return message.channel.sendMessage("This role is not globally subscribed to this feed.");
+    if (!source.roleSubscriptions) return message.channel.sendMessage("This role is not globally subscribed to this feed.").catch(err => console.log(`Promise Warning: rssRoles/remGlobalSub 1: ${err}`));
 
     for (let globalSubber in source.roleSubscriptions) {
       if (source.roleSubscriptions[globalSubber].roleID == role.id) {source.roleSubscriptions.splice(globalSubber, 1); found = true;}
     }
     if (source.roleSubscriptions.length == 0) delete source.roleSubscriptions;
-    if (found == false) return message.channel.sendMessage(`The role \`${role.name} does not have a global subscription to this feed.`);
-    else message.channel.sendMessage(`Successfully removed the global subscription of the role \`${role.name}\` from the feed \`${rssList[rssIndex].title}\``);
+    if (!found) return message.channel.sendMessage(`The role \`${role.name} does not have a global subscription to this feed.`).catch(err => console.log(`Promise Warning: rssRoles/remGlobalSub 2: ${err}`));
+    else message.channel.sendMessage(`Successfully removed the global subscription of the role \`${role.name}\` from the feed \`${rssList[rssIndex].title}\``).catch(err => console.log(`Promise Warning: rssRoles/remGlobalSub 3: ${err}`));
     console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${role.id}, ${role.name}) => Removed global subscription for feed \`${rssList[rssIndex].title}\``);
     return fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
   }
@@ -73,7 +73,7 @@ module.exports = function(bot, message, command) {
       subMenu.embed.author.name = `Role Cusotmization: Add/Remove Global Subscription`;
     }
 
-    message.channel.sendMessage("",subMenu)
+    message.channel.sendMessage("",subMenu).catch(err => console.log(`Promise Warning: rssRoles/openSubMenu 1: ${err}`))
 
     const filterOptionCollector = message.channel.createCollector(collectorFilter,{time:240000});
     channelTracker.addCollector(message.channel.id)
@@ -93,11 +93,11 @@ module.exports = function(bot, message, command) {
           removeFilter(message, rssIndex, role);
         }
         else {
-          if (rssList[rssIndex].roleSubscriptions == null) return message.channel.sendMessage("This feed has no global subscriptions to remove.");
+          if (rssList[rssIndex].roleSubscriptions == null) return message.channel.sendMessage("This feed has no global subscriptions to remove.").catch(err => console.log(`Promise Warning: rssRoles/openSubMenu 2: ${err}`));
           removeGlobalSub(rssIndex, role);
         }
       }
-      else message.channel.sendMessage("That is not a valid option. Try again.")
+      else message.channel.sendMessage("That is not a valid option. Try again.").catch(err => console.log(`Promise Warning: rssRoles/openSubMenu 3: ${err}`))
     })
 
     filterOptionCollector.on('end', (collected, reason) => {
@@ -143,7 +143,7 @@ module.exports = function(bot, message, command) {
       }
     }
 
-    if (isEmptyObject(subList)) return message.channel.sendMessage("There are no roles with subscriptions.");
+    if (isEmptyObject(subList)) return message.channel.sendMessage("There are no roles with subscriptions.").catch(err => console.log(`Promise Warning: rssRoles/printSub 1: ${err}`));
     else {
       for (let feed in subList) {
         var list = "";
@@ -161,7 +161,7 @@ module.exports = function(bot, message, command) {
         if (filteredSubList !== "\n**Filtered Subscriptions:**\n") list += filteredSubList;
         msg.embed.fields.push({name: `${feed} `, value: list, inline: true});
       }
-      return message.channel.sendMessage("", msg);
+      return message.channel.sendMessage("", msg).catch(err => console.log(`Promise Warning: rssRoles/printSub 2: ${err}`));
     }
   }
 
@@ -182,13 +182,13 @@ module.exports = function(bot, message, command) {
         }
       }
     }
-    if (found == false) return message.channel.sendMessage("This role has no subscriptions to remove.");
+    if (found == false) return message.channel.sendMessage("This role has no subscriptions to remove.").catch(err => console.log(`Promise Warning: rssRoles/delSub 1: ${err}`));
     if (source.roleSubscriptions != null && source.roleSubscriptions.length == 0) delete source.roleSubscriptions;
     if (source.filters != null && isEmptyObject(source.filters.roleSubscriptions)) delete source.filters.roleSubscriptions;
     if (source.filters != null && isEmptyObject(source.filters)) delete source.filters;
     fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`)
     console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${message.guild.roles.get(roleID).id}, ${message.guild.roles.get(roleID).name}) => All subscriptions deleted.`);
-    return message.channel.sendMessage(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`.`)
+    return message.channel.sendMessage(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`.`).catch(err => console.log(`Promise Warning: rssRoles/delSub 2: ${err}`))
   }
 
   var menu = {embed: {
@@ -202,7 +202,7 @@ module.exports = function(bot, message, command) {
     footer: {}
   }}
 
-  message.channel.sendMessage("", menu)
+  message.channel.sendMessage("", menu).catch(err => console.log(`Promise Warning: rssRoles 2: ${err}`))
 
   const collector = message.channel.createCollector(collectorFilter,{time:240000})
   channelTracker.addCollector(message.channel.id)
@@ -226,7 +226,7 @@ module.exports = function(bot, message, command) {
         })
       })
     }
-    else message.channel.sendMessage("That is not a valid option. Try again.");
+    else message.channel.sendMessage("That is not a valid option. Try again.").catch(err => console.log(`Promise Warning: rssRoles 3: ${err}`));
   })
 
   collector.on('end', (collected, reason) => {

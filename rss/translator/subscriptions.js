@@ -1,6 +1,6 @@
 const filterFeed = require('./filters.js')
 
-module.exports = function (channel, rssIndex, data, dataDescrip) {
+module.exports = function (channel, rssIndex, article) {
   var rssList = require(`../../sources/${channel.guild.id}.json`).sources
 
   var mentions = ''
@@ -15,7 +15,7 @@ module.exports = function (channel, rssIndex, data, dataDescrip) {
   if (rssList[rssIndex].filters && rssList[rssIndex].filters.roleSubscriptions) {
     let subscribedRoles = rssList[rssIndex].filters.roleSubscriptions;
     for (let role in subscribedRoles) {
-      var filterFound = filterFeed(subscribedRoles, role, data, dataDescrip);
+      var filterFound = filterFeed(subscribedRoles, role, article);
       if (filterFound) mentions += `<@&${role}> `;
     }
   }
