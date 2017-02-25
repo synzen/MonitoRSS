@@ -17,11 +17,11 @@ module.exports = function(message, rssIndex, role) {
 
   var menu = {embed: {
     color: config.botSettings.menuColor,
-    description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these global filters will be sent to Discord.\n_____`,
-    author: {name: `Global Filters Customization`},
-    fields: [{name: `1) Add a global filter`, value: `Add a new filter to a specific category.`},
-            {name: `2) Remove a global filter`, value: `Remove an existing filter, if any.`},
-            {name: `3) Remove all global filters`, value: `Remove all filters, if any.`},
+    description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\n_____`,
+    author: {name: `Feed Filters Customization`},
+    fields: [{name: `1) Add feed filter(s)`, value: `Add new filter(s) to a specific category in a feed.`},
+            {name: `2) Remove feed filter(s)`, value: `Remove existing filter(s), if any.`},
+            {name: `3) Remove all feed filters`, value: `Remove all filters, if any.`},
             {name: `4) List existing filters`, value: `List all filters in all categories, if any.`}],
     footer: {}
   }}
@@ -49,7 +49,7 @@ module.exports = function(message, rssIndex, role) {
           if (rssList[rssIndex].filters.hasOwnProperty(prop) && prop !== "roleSubscriptions") foundFilters.push(prop);
       }
 
-      if (foundFilters.length == 0) return message.channel.sendMessage("There are no global filters assigned to this feed.").catch(err => `Promise Warning: rssFilter 2: ${err}`);
+      if (foundFilters.length == 0) return message.channel.sendMessage("There are no feed filters assigned to this feed.").catch(err => `Promise Warning: rssFilter 2: ${err}`);
 
       let filterList = rssList[rssIndex].filters;
       if (m.content == 3) {
@@ -58,7 +58,7 @@ module.exports = function(message, rssIndex, role) {
         }
         if (isEmptyObject(filterList)) delete rssList[rssIndex].filters;
         fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
-        return message.channel.sendMessage(`All global filters have been successfully removed from this feed.`).catch(err => `Promise Warning: rssFilters 3: ${err}`);
+        return message.channel.sendMessage(`All feed filters have been successfully removed from this feed.`).catch(err => `Promise Warning: rssFilters 3: ${err}`);
       }
       else if (m.content == 4) {
 

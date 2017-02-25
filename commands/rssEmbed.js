@@ -6,7 +6,7 @@ module.exports = function (message, rssIndex) {
   var guildRss = require(`../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
-  var embedProperties = [["Color", "The sidebar color of the embed\nThis MUST be an integer color. See https://www.shodor.org/stella2java/rgbint.html", "color"],
+  var embedProperties = [["Color", "The sidebar color of the embed\nThis MUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html", "color"],
                         ["Author Title", "Title of the embed\nAccepts tags.", "authorTitle"],
                         ["Author Avatar URL", "The avatar picture to the left of author title.\nThis MUST be a link to an image. If an Author Title is not specified, the Author Avatar URL will not be shown.", "authorAvatarURL"],
                         ['Image URL', 'The main image on the bottom of the embed.\nThis MUST be a link to an image, OR an {imageX} tag.', 'imageURL'],
@@ -93,7 +93,10 @@ module.exports = function (message, rssIndex) {
 
       propertyCollect.on('message', function (propSetting) {
         if (propSetting.content.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
-        else if (choice == "color" && isNaN(parseInt(propSetting.content,10)) && propSetting.content !== "reset") return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 5: ${err}`));
+        else if (choice == "color" && propSetting.content !== "reset") {
+         if (isNaN(parseInt(propSetting.content,10))) return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`));
+         else if (propSetting.content < 0 || propSetting.content > '16777215') return message.channel.sendMessage('The color must be a number between 0 and 16777215. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`));
+       }
         else if (imageFields.includes(choice) && propSetting.content !== "reset" && !isValidImg(propSetting.content)) return message.channel.sendMessage("URLs must link to actual images or be `{imageX}` tags. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`));
         else if (choice == "attachURL" && propSetting.content !== "reset" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 7: ${err} `));}
         else message.channel.sendMessage(`Updating embed settings...`)
