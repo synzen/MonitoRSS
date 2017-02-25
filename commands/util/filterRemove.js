@@ -98,7 +98,7 @@ module.exports = function(message, rssIndex, role) {
               validFilter.push({filter: removeList[item], index: filterIndex});
             }
           }
-          if (!valid) invalidItems += `\n${removeList[item]}`;
+          if (!valid && removeList[item]) invalidItems += `\n${removeList[item]}`;
         }
 
         if (chosenFilter.content == 'exit') return filterCollect.stop('Feed Filter Removal menu closed.');

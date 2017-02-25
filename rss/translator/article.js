@@ -44,7 +44,7 @@ module.exports = function Article(rawArticle, channel) {
   var timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
   var timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : "ddd, D MMMM YYYY, h:mm A z"
   var vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
-  this.pubdate = vanityDate
+  this.pubdate = (vanityDate != 'Invalid date') ? vanityDate : ''
 
   // description
   var rawArticleDescrip = ''
