@@ -52,14 +52,14 @@ module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage
   }
 
   var filterExists = false
-  var filterFound = false
+  var filterResults = false
   if (filterPropCount !== 0) {
     filterExists = true;
-    filterFound = filterFeed(rssList, rssIndex, article);
+    filterResults = filterFeed(rssList, rssIndex, article, isTestMessage);
   }
 
   // feed article only passes through if the filter found the specified content
-  if (!isTestMessage && filterExists && !filterFound) {
+  if (!isTestMessage && filterExists && !filterResults) {
     console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => ${article.link} did not pass filters and was not sent:\n`, rssList[rssIndex].filters);
     return null;
   }
@@ -90,7 +90,10 @@ module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage
     if (article.author && article.author !== "") testDetails += `\n\n[Author]: {author}\n${article.author}`;
     if (article.link) testDetails += `\n\n[Link]: {link}\n${article.link}`;
     if (article.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${article.subscriptions.split(" ").length - 1} subscriber(s)`;
-    if (filterExists) testDetails += `\n\n[Passed Filters?]: ${filterFound}`;
+    if (filterExists) {
+      let passedFilters = (filterResults) ? 'Yes' : 'No';
+      testDetails += `\n\n[Passed Filters?]: ${passedFilters}${filterResults}`;
+    }
     if (article.images) testDetails += `\n\n${article.listImages()}`;
     testDetails += "```" + footer;
   }
