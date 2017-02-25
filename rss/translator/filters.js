@@ -10,7 +10,7 @@ module.exports = function (rssList, rssIndex, article, isTestMessage) {
     var content = content.toLowerCase();
     if (filterType && filterType.length !== 0 && typeof filterType === 'object') {
       for (var word in filterType) {
-        let expression = new RegExp(`(\\s|^)${word}(\\s|$)`, 'gi');
+        let expression = new RegExp(`(\\s|^)${filterType[word]}(\\s|$)`, 'gi');
         if (expression.test(content)) {
           if (isTestMessage) matches.push(filterType[word]);
           else return true;
