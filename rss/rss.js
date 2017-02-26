@@ -15,6 +15,7 @@ const translator = require('./translator/translate.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
+const config = require('../config.json')
 
 function isEmptyObject(obj) {
   for (var key in obj) {
@@ -34,7 +35,8 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
   var rssList = guild.sources
 
   requestStream(rssList[rssIndex].link, feedparser, function(err) {
-    if (err) return callback(err);
+    if (err && config.logging.showConnectErrs === true) return callback(err);
+    else if (err) return callback();
   })
 
   feedparser.on('error', function (err) {
@@ -43,8 +45,8 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
   });
 
   feedparser.on('readable',function () {
-    var stream = this;
-    var item;
+    var stream = this
+    var item
 
     while (item = stream.read()) {
       currentFeed.push(item);
@@ -52,17 +54,15 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
 });
 
   feedparser.on('end', function() {
-    if (currentFeed.length == 0) {
+    if (currentFeed.length === 0) {
       if (!isTestMessage) return callback();
-      callback();
-      console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" has no feeds to send for rsstest.`);
-      return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available RSS that can be sent.`);
+      callback(`${rssList[rssIndex].name}" has no feeds to send for rsstest.`);
+      return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available feeds to be sent.`);
     }
 
     let feedName = rssList[rssIndex].name
     var processedItems = 0
     var filteredItems = 0
-    //console.log("RSS Info: Starting retrieval for: " + guild.id);
 
     function getArticleId (article) {
       var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds

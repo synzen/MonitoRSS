@@ -13,7 +13,6 @@ module.exports = function (message, rssIndex) {
         sqlCmds.end(con, function(err) {
           if (err) throw err;
         })
-        // grabbing.then(m => m.delete())
       });
     }
   })

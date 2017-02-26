@@ -1,7 +1,8 @@
 {
   "logging": {
     "logDates": true,
-    "discordChannelLog": ""
+    "discordChannelLog": "",
+    "showConnectErrs": true
   },
   "botSettings": {
     "token": "",

@@ -38,7 +38,7 @@ module.exports = function (rssIndex, channel, article, isTestMessage, callback) 
         channel.sendEmbed(message.embedMsg, message.textMsg)
         .then(m => {
           if (isTestMessage) isTestMessage.delete().catch(err => {});
-          console.log(successLog)
+          // console.log(successLog)
           return callback()
         })
         .catch(err => {
@@ -60,7 +60,7 @@ module.exports = function (rssIndex, channel, article, isTestMessage, callback) 
         channel.sendMessage(message.textMsg)
         .then(m => {
           if (isTestMessage) isTestMessage.delete().catch(err => {});
-          console.log(successLog)
+          // console.log(successLog)
           return callback()
         })
         .catch(err => {

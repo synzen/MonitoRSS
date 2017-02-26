@@ -1,41 +1,43 @@
 const striptags = require('striptags')
 
-module.exports = function (rssList, rssIndex, article, isTestMessage) {
+function escapeRegExp(str) {
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
 
-  function findFilterWords(filterType, content) {
-    //filterType is array of title, description, summary, or author
-    if (!content) return false;
-    if (isTestMessage) var matches = []
-    console.log(filterType)
-    if (filterType && filterType.length !== 0 && typeof filterType === 'object') {
-      if (typeof content === 'string') {
-        var content = content.toLowerCase();
+function findFilterWords(filterType, content, isTestMessage) {
+  //filterType is array of title, description, summary, or author
+  if (!content) return false;
+  if (isTestMessage) var matches = []
+  if (filterType && filterType.length !== 0 && typeof filterType === 'object') {
+    if (typeof content === 'string') {
+      var content = content.toLowerCase();
+      for (var word in filterType) {
+        let expression = new RegExp(`(\\s|^)${escapeRegExp(filterType[word])}(\\s|$)`, 'gi');
+        if (expression.test(content)) {
+          if (isTestMessage) matches.push(filterType[word]);
+          else return true;
+        }
+      }
+    }
+    else if (typeof content === 'object') {
+      for (var item in content) {
         for (var word in filterType) {
-          let expression = new RegExp(`(\\s|^)${filterType[word]}(\\s|$)`, 'gi');
-          if (expression.test(content)) {
+          if (`'${filterType[word].toLowerCase()}'` == content[item].toLowerCase().trim()) {
             if (isTestMessage) matches.push(filterType[word]);
             else return true;
           }
         }
       }
-      else if (typeof content === 'object') {
-        for (var item in content) {
-          for (var word in filterType) {
-            console.log(`'${filterType[word].toLowerCase()}' => ${content[item].toLowerCase().trim()}`)
-            if (`'${filterType[word].toLowerCase()}'` == content[item].toLowerCase().trim()) {
-              if (isTestMessage) matches.push(filterType[word]);
-              else return true;
-            }
-          }
-        }
-      }
-    }
-    else return false;
-    if (isTestMessage) {
-      if (matches.length === 0) return false;
-      else return matches;
     }
   }
+  else return false;
+  if (isTestMessage) {
+    if (matches.length === 0) return false;
+    else return matches;
+  }
+}
+
+module.exports = function (rssList, rssIndex, article, isTestMessage) {
 
   var filterFound = ''
   var filterTypes = {'Title': {
