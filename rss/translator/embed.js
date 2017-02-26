@@ -11,7 +11,7 @@ module.exports = function (channel, rssList, rssIndex, article, replaceKeywords)
   if (embedSpecs.footerText) embed.setFooter(replaceKeywords(embedSpecs.footerText));
 
   if (embedSpecs.color && !isNaN(embedSpecs.color)) {
-    if (parseInt(embedSpecs.color) > 16777215 || parseInt(embedSpecs.color) < 0) {
+    if (parseInt(embedSpecs.color) > '16777215' || parseInt(embedSpecs.color) < 0) {
       console.log(`EMBED ERROR! (${channel.guild.id}, ${channel.guild.name}) => Invalid color.`);
       embed.setColor('100');
     }

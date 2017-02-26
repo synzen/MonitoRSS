@@ -15,7 +15,7 @@ module.exports = function(message, rssIndex, role) {
     }
 
   var filterList = (role) ? rssList[rssIndex].filters.roleSubscriptions[role.id].filters : rssList[rssIndex].filters
-  var validFilterTypes = ['Title', 'Description', 'Summary', 'Author']
+  var validFilterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
   var msg = `\`\`\`Markdown\n# Chosen Feed: ${rssList[rssIndex].link}\n# List of available filters to add\`\`\`\`\`\`Markdown\n`
   for (let filterType in validFilterTypes) {
     msg += `\n[Filter Category]: ${validFilterTypes[filterType]}\n`;
@@ -65,14 +65,14 @@ module.exports = function(message, rssIndex, role) {
             fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`)
             if (!role) {
               console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-              let msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n${addedList}\`\`\``;
-              if (invalidItems) msg += `\n\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n${invalidItems}\`\`\``;
+              let msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n\n${addedList}\`\`\``;
+              if (invalidItems) msg += `\n\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``;
               editing.edit(`${msg}\n\nYou may test your filters via \`${config.botSettings.prefix}rsstest\` and see what feeds pass through.`).catch(err => console.log(`Promise Warning: filterAdd 4a: ${err}`));
             }
             else {
               console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-              let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n${addedList}\`\`\``;
-              if (invalidItems) msg += `\n\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n${invalidItems}\`\`\``;
+              let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n\n${addedList}\`\`\``;
+              if (invalidItems) msg += `\n\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``;
               editing.edit(`${msg}\n\nYou may test your filters via \`${config.botSettings.prefix}rsstest\` and see what feeds will mention the role`).catch(err => console.log(`Promise Warning: filterAdd 4b: ${err}`));
             }
           })

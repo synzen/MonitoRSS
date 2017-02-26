@@ -50,7 +50,7 @@ module.exports = function (message, rssIndex) {
     let propertyList = rssList[rssIndex].embedMessage.properties;
     for (var property in propertyList) {
       for (var y in embedProperties)
-        if (embedProperties[y][2] == property && propertyList[property] != null && propertyList[property] != "") {
+        if (embedProperties[y][2] == property && propertyList[property]) {
           currentEmbedProps += `[${embedProperties[y][0]}]: ${propertyList[property]}\n`
         }
     }
@@ -92,17 +92,16 @@ module.exports = function (message, rssIndex) {
       channelTracker.addCollector(message.channel.id)
 
       propertyCollect.on('message', function (propSetting) {
-        if (propSetting.content.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
-        else if (choice == "color" && propSetting.content !== "reset") {
-         if (isNaN(parseInt(propSetting.content,10))) return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`));
-         else if (propSetting.content < 0 || propSetting.content > '16777215') return message.channel.sendMessage('The color must be a number between 0 and 16777215. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`));
+        var finalChange = propSetting.content
+        if (finalChange.toLowerCase() == "exit") return propertyCollect.stop("RSS customization menu closed.");
+        else if (choice == "color" && finalChange !== "reset") {
+         if (isNaN(parseInt(finalChange,10))) return message.channel.sendMessage("The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`));
+         else if (finalChange < 0 || finalChange > '16777215') return message.channel.sendMessage('The color must be a number between 0 and 16777215. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`));
        }
-        else if (imageFields.includes(choice) && propSetting.content !== "reset" && !isValidImg(propSetting.content)) return message.channel.sendMessage("URLs must link to actual images or be `{imageX}` tags. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`));
-        else if (choice == "attachURL" && propSetting.content !== "reset" && !propSetting.content.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 7: ${err} `));}
+        else if (imageFields.includes(choice) && finalChange !== "reset" && !isValidImg(finalChange)) return message.channel.sendMessage("URLs must link to actual images or be `{imageX}` tags. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`));
+        else if (choice == "attachURL" && finalChange !== "reset" && !finalChange.startsWith("http")) {return message.channel.sendMessage("URL option must be a link. Try again.").catch(err => console.log(`Promise Warning: rssEmbed 7: ${err} `));}
         else message.channel.sendMessage(`Updating embed settings...`)
         .then(editing => {
-          let finalChange = propSetting.content;
-          if (choice == "color") finalChange = parseInt(propSetting.content,10);
           propertyCollect.stop();
 
           if (!rssList[rssIndex].embedMessage || !rssList[rssIndex].embedMessage.properties)

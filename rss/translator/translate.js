@@ -5,9 +5,7 @@ const Article = require('./article.js')
 const getSubs = require('./subscriptions.js')
 
 module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage) {
-  // if (channel.guild.id == "240535022820392961") console.info(data);
-
-  // sometimes feeds get deleted mid process
+  // temporary check
   if (!rssList[rssIndex]) {console.log("RSS Error: Unable to translate a null source."); return null;}
 
   var article = new Article(rawArticle, channel)
@@ -21,7 +19,8 @@ module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage
             .replace(/{summary}/g, article.summary)
             .replace(/{subscriptions}/g, article.subscriptions)
             .replace(/{link}/g, article.link)
-            .replace(/{description}/g, article.description);
+            .replace(/{description}/g, article.description)
+            .replace(/{tags}/g, article.tags)
 
     // replace images, defined as a separate function for use in embed.js
     this.convertImgs = function (converted) {
@@ -60,7 +59,8 @@ module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage
 
   // feed article only passes through if the filter found the specified content
   if (!isTestMessage && filterExists && !filterResults) {
-    console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => ${article.link} did not pass filters and was not sent:\n`, rssList[rssIndex].filters);
+    let info = (article.link) ? article.link : article.title;
+    console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => '${info}' did not pass filters and was not sent:\n`, rssList[rssIndex].filters);
     return null;
   }
 
@@ -90,11 +90,12 @@ module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage
     if (article.author && article.author !== "") testDetails += `\n\n[Author]: {author}\n${article.author}`;
     if (article.link) testDetails += `\n\n[Link]: {link}\n${article.link}`;
     if (article.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${article.subscriptions.split(" ").length - 1} subscriber(s)`;
+    if (article.images) testDetails += `\n\n${article.listImages()}`;
+    if (article.tags) testDetails += `\n\n[Tags]: {tags}\n${article.tags}`
     if (filterExists) {
       let passedFilters = (filterResults) ? 'Yes' : 'No';
       testDetails += `\n\n[Passed Filters?]: ${passedFilters}${filterResults}`;
     }
-    if (article.images) testDetails += `\n\n${article.listImages()}`;
     testDetails += "```" + footer;
   }
 
@@ -111,7 +112,6 @@ module.exports = function (channel, rssList, rssIndex, rawArticle, isTestMessage
   if (!enabledEmbed) return finalMessageCombo;
   else {
     if (rssList[rssIndex].embedMessage.properties) finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssIndex, article, replaceKeywords);
-    // channel.sendEmbed(finalMessageCombo.embedMsg, 'rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr');
     return finalMessageCombo;
   }
 }

@@ -6,14 +6,27 @@ module.exports = function (rssList, rssIndex, article, isTestMessage) {
     //filterType is array of title, description, summary, or author
     if (!content) return false;
     if (isTestMessage) var matches = []
-
-    var content = content.toLowerCase();
+    console.log(filterType)
     if (filterType && filterType.length !== 0 && typeof filterType === 'object') {
-      for (var word in filterType) {
-        let expression = new RegExp(`(\\s|^)${filterType[word]}(\\s|$)`, 'gi');
-        if (expression.test(content)) {
-          if (isTestMessage) matches.push(filterType[word]);
-          else return true;
+      if (typeof content === 'string') {
+        var content = content.toLowerCase();
+        for (var word in filterType) {
+          let expression = new RegExp(`(\\s|^)${filterType[word]}(\\s|$)`, 'gi');
+          if (expression.test(content)) {
+            if (isTestMessage) matches.push(filterType[word]);
+            else return true;
+          }
+        }
+      }
+      else if (typeof content === 'object') {
+        for (var item in content) {
+          for (var word in filterType) {
+            console.log(`'${filterType[word].toLowerCase()}' => ${content[item].toLowerCase().trim()}`)
+            if (`'${filterType[word].toLowerCase()}'` == content[item].toLowerCase().trim()) {
+              if (isTestMessage) matches.push(filterType[word]);
+              else return true;
+            }
+          }
         }
       }
     }
@@ -40,6 +53,10 @@ module.exports = function (rssList, rssIndex, article, isTestMessage) {
                     'Author': {
                       user: rssList[rssIndex].filters.Author,
                       ref: article.author
+                      },
+                    'Tags': {
+                      user: rssList[rssIndex].filters.Tag,
+                      ref: article.tags.split(', ')
                       }
                     }
 
@@ -49,7 +66,7 @@ module.exports = function (rssList, rssIndex, article, isTestMessage) {
       var list = '';
       for (var x in foundList) {
         list += ` ${foundList[x]}`;
-        if (x !== foundList.length - 1) list += ' |'
+        if (x != foundList.length - 1) list += ' |'
       }
       filterFound += `\n${type}:${list}`;
     }

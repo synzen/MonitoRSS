@@ -70,9 +70,22 @@ module.exports = function Article(rawArticle, channel) {
   findImages(rawArticle, imageLinks)
   this.images = (imageLinks.length == 0) ? undefined : imageLinks
   this.listImages = function () {
-    var list = ''
-    for (var image in this.images) list += `[Image${parseInt(image, 10) + 1} URL]: {image${parseInt(image, 10) + 1}}\n${this.images[image]}\n`;
-    return list;
+    var imageList = ''
+    for (var image in this.images) {
+      imageList += `[Image${parseInt(image, 10) + 1} URL]: {image${parseInt(image, 10) + 1}}\n${this.images[image]}`;
+      if (image != this.images.length - 1) imageList += '\n';
+    }
+    return imageList;
+  }
+
+  // categories
+  if (rawArticle.categories) {
+    var categoryList = '';
+    for (var category in rawArticle.categories) {
+      categoryList += `'${rawArticle.categories[category].trim()}'`;
+      if (category != rawArticle.categories.length - 1) categoryList += ', ';
+    }
+    this.tags = categoryList;
   }
 
   return this

@@ -26,7 +26,7 @@ module.exports = function(message, rssIndex, role) {
   var filterList = (role) ? rssList[rssIndex].filters.roleSubscriptions[role.id].filters : rssList[rssIndex].filters
   if (!filterList || typeof filterList !== 'object') return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`).catch(err => `Promise Warning: filterRemove 1: ${err}`);
 
-  var validFilterTypes = ['Title', 'Description', 'Summary', 'Author']
+  var validFilterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
   var isEmptyFilter = true
 
   if (rssList[rssIndex].filters && typeof rssList[rssIndex].filters == 'object') {
@@ -122,14 +122,14 @@ module.exports = function(message, rssIndex, role) {
           fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
           if (!role) {
             console.log(`RSS Global Filters: (${message.guild.id}, ${message.guild.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n${deletedList}\`\`\``;
-            if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n${invalidItems}\`\`\``;
+            let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``;
+            if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``;
             editing.edit(msg).catch(err =>console.log(`Promise Warning: filterRemove 8a: ${err}`));
           }
           else {
             console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
-            let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n${deletedList}\`\`\``;
-            if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n${invalidItems}\`\`\``;
+            let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``;
+            if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``;
             editing.edit(msg).catch(err => console.log(`Promise Warning: filterRemove 8b: ${err}`));
           }
         })
