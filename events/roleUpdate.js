@@ -1,4 +1,4 @@
-const fileOps = require('../util/updateJSON.js')
+const fileOps = require('../util/fileOps.js')
 const checkGuild = require('../util/checkGuild.js')
 
 module.exports = function (bot, oldRole, newRole) {

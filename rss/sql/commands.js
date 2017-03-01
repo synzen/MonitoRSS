@@ -1,18 +1,13 @@
 const config = require('../../config.json')
-var mysql, sqlite3
-let sqlType = config.feedManagement.sqlType.toLowerCase()
-
-if (sqlType == "mysql") mysql = require('mysql');
-else sqlite3 = require('sqlite3').verbose();
-
+const sqlType = config.feedManagement.sqlType.toLowerCase()
 
 exports.selectTable = function (con, table, callback) {
-  if (sqlType == "mysql") return con.query(`select "${table}" from information_schema.tables where table_schema = "${config.feedManagement.databaseName}" and table_name = "${table}"`, callback);
+  if (sqlType === "mysql") return con.query(`select "${table}" from information_schema.tables where table_schema = "${config.feedManagement.databaseName}" and table_name = "${table}"`, callback);
   else return con.all(`select name from sqlite_master where type = 'table' and name = '${table}'`, callback);
 }
 
 exports.createTable = function (con, table, callback) {
-  if (sqlType == "mysql") {
+  if (sqlType === "mysql") {
     con.query(`create table if not exists \`${table}\` (link text)`, callback);
     return con.query(`alter table \`${table}\` convert to character set utf8 collate utf8_general_ci`);
   }
@@ -21,14 +16,14 @@ exports.createTable = function (con, table, callback) {
 }
 
 exports.select = function (con, table, data, callback) {
-  if (sqlType == "mysql") {
+  if (sqlType === 'mysql') {
     return con.query(`select * from \`${table}\` where link = ?`, [data], callback);
   }
   else return con.all(`select * from "${table}" where link = ?`, data, callback);
 }
 
 exports.insert = function (con, table, data, callback) {
-  if (sqlType == "mysql") return con.query(`insert ignore into \`${table}\` (link) values (?)`, [data], callback);
+  if (sqlType === "mysql") return con.query(`insert ignore into \`${table}\` (link) values (?)`, [data], callback);
   else {
     var prep = con.prepare(`insert into "${table}" (link) values (?)`);
     prep.run(data);
@@ -38,7 +33,7 @@ exports.insert = function (con, table, data, callback) {
 }
 
 exports.end = function (con, callback, startingCycle) {
-  if (sqlType == "mysql") return con.end(callback);
+  if (sqlType === "mysql") return con.end(callback);
   else  {
     if (!startingCycle) con.close();
     return callback();
@@ -47,15 +42,15 @@ exports.end = function (con, callback, startingCycle) {
 
 exports.dropTable = function (db, table, callback) {
 
-  if (sqlType == "mysql") {
-    var credentials = require('../../mysqlCred.json')
-    credentials.database = db
+  if (sqlType === "mysql") {
+    const mysql = require('mysql')
+    const credentials = require('../../mysqlCred.json');
+    credentials.database = db;
 
     var con = mysql.createConnection(credentials);
 
     con.connect(function (err) {
-      if (err) console.log(err);
-      //else console.log(`RSS Info: Starting removal of ${table} from config`)
+      if (err) throw err;
     })
 
     con.query(`drop table if exists \`${table}\``, function (err) {
@@ -69,8 +64,8 @@ exports.dropTable = function (db, table, callback) {
   }
 
   else {
+    const sqlite3 = require('sqlite3').verbose()
     var con = new sqlite3.Database(`./${config.feedManagement.databaseName}.db`, dropTable);
-    //console.log(`RSS Info: Starting removal of ${table} from config`);
 
     function dropTable() {
       con.run(`drop table if exists "${table}"`, closeDb)

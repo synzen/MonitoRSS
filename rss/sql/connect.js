@@ -1,21 +1,16 @@
-const mysqlCmds = require('./commands.js')
-var config = require('../../config.json')
-
-var mysql, sqlite3
-if (config.feedManagement.sqlType.toLowerCase() == "mysql") mysql = require('mysql');
-else if (config.feedManagement.sqlType.toLowerCase() == "sqlite3") sqlite3 = require('sqlite3').verbose();
-
 const credentials = require('../../mysqlCred.json')
+const config = require('../../config.json')
+const sqlType = config.feedManagement.sqlType.toLowerCase()
+const sql = (sqlType === 'mysql') ? require('mysql') : require('sqlite3').verbose()
 
 
 module.exports = function (callback) {
-  if (typeof config.feedManagement.sqlType !== "string") return null;
-  else if (config.feedManagement.sqlType.toLowerCase() === "mysql") {
+  if (sqlType === 'mysql') {
   var con, attempts = 0;
 
     (function connect (finalErr) {
       if (attempts === 9 && finalErr) throw `Could not connect to database after 10 attempts, terminating. (${finalErr})`;
-      con = mysql.createConnection(credentials); //MySQL connections will automatically close unless new connections are made
+      con = sql.createConnection(credentials); //MySQL connections will automatically close unless new connections are made
 
       con.connect(function(err){
         if(err) {
@@ -44,15 +39,12 @@ module.exports = function (callback) {
         else throw err;
       });
     })()
-
     return con;
-
   }
 
-
   //so much simpler!
-  else if (config.feedManagement.sqlType.toLowerCase() == "sqlite3") {
-    return new sqlite3.Database(`./${config.feedManagement.databaseName}.db`, callback);
+  else if (sqlType == "sqlite3") {
+    return new sql.Database(`./${config.feedManagement.databaseName}.db`, callback);
   }
   else throw 'Warning! SQL type is not correctly defined in config, terminating.';
 }

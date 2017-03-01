@@ -5,16 +5,15 @@ const fetchInterval = require('./util/fetchInterval.js')
 const startFeedSchedule = require('./util/startFeedSchedule.js')
 if (config.logging.logDates) require('./util/logDates.js')();
 
-fetchInterval.changedGuilds = {}
-var initialized = false
-var bot
-
 if (!config.botSettings.token) throw 'Warning! Vital config missing: token undefined in config.';
 else if (!config.botSettings.prefix) throw 'Warning! Vital config missing: prefix undefined in config';
 else if (!config.feedManagement.databaseName) throw 'Warning! Vital config missing: databaseName undefined in config.';
-else if (!config.feedManagement.sqlType) throw 'Warning! Vital config missing: sqlType undefined in config.';
+else if (!config.feedManagement.sqlType || typeof config.feedManagement.sqlType !== 'string' || (config.feedManagement.sqlType !== 'mysql' && config.feedManagement !== 'sqlite3')) throw 'Warning! Vital config missing: sqlType incorrectly defined in config.';
 else if (!config.feedSettings.defaultMessage) throw 'Warning! Vital config missing: defaultMssage undefined in config.';
 
+fetchInterval.changedGuilds = {}
+var initialized = false
+var bot
 
 function beginFeedCycle (deleteCache) {
   if (deleteCache) delete require.cache[require.resolve(`./util/startFeedSchedule.js`)];
@@ -28,16 +27,12 @@ function startCmdServer () {
   cmdServer.on('message', function (guildFile) {
     if (guildFile === 'kill') process.exit();
     fetchInterval.changedGuilds[guildFile.id] = guildFile.contents
-    var timer = setInterval(function () {
-      if (fetchInterval.cycleInProgress) return console.log('Feed retrieval cycle currently in progress. Waiting until cycle ends to update guild data..');
-      try {
-        delete require.cache[require.resolve(`./sources/${guildFile.id}.json`)]
-        console.log("RSS Module now using updated file for guild ID: " + guildFile.id)
-      } catch (e) {}
-      delete fetchInterval.changedGuilds[guildFile.id]
-      clearInterval(timer)
-    }, 10000)
-
+    if (fetchInterval.cycleInProgress) return;
+    try {
+      delete require.cache[require.resolve(`../sources/${guildId}.json`)]
+      console.log('RSS Module deleted cache for profile of guild ID: ' + guildId)
+      delete fetchInterval.changedGuilds[guildId]
+    } catch (e) {}
   })
 
   process.on('uncaughtException', function (err) {
@@ -56,8 +51,7 @@ function startCmdServer () {
     setTimeout(login, 1000)
   })
   bot.once('ready', function() {
-    if (typeof config.botSettings.defaultGame === "string" && config.botSettings.defaultGame !== "") bot.user.setGame(config.botSettings.defaultGame);
-    console.log("Discord.RSS RSS Module has started.");
+    console.log('Discord.RSS RSS Module has started.');
     if (!initialized) startInit(bot, startCmdServer);
     else beginFeedCycle(true);
   })
@@ -72,6 +66,6 @@ function startCmdServer () {
   })
 })()
 
-process.on("unhandledRejection", (err, promise) => {
+process.on('unhandledRejection', (err, promise) => {
   console.log('Unhandled Rejection at: Promise', promise, 'reason:', err)
 })

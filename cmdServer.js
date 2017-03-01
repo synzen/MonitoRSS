@@ -15,13 +15,13 @@ if (config.logging.logDates) require('./util/logDates.js')();
   })
   cmdListeners.createAllListeners(bot)
   bot.once('disconnect', function (e) {
-    console.log("Discord.RSS commands module has been disconneted. Reconnecting...")
+    console.log('Discord.RSS commands module has been disconneted. Reconnecting...')
     cmdListeners.removeAllListeners(bot)
     login()
   })
 })()
 
-process.on("unhandledRejection", function (err, promise) {
+process.on('unhandledRejection', function (err, promise) {
   console.log('Unhandled Rejection at: Promise', promise, 'reason:', err);
 })
 

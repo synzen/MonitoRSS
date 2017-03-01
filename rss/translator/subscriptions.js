@@ -15,8 +15,7 @@ module.exports = function (channel, rssIndex, article) {
   if (rssList[rssIndex].filters && rssList[rssIndex].filters.roleSubscriptions) {
     let subscribedRoles = rssList[rssIndex].filters.roleSubscriptions;
     for (let role in subscribedRoles) {
-      var filterFound = filterFeed(subscribedRoles, role, article);
-      if (filterFound) mentions += `<@&${role}> `;
+      if (filterFeed(subscribedRoles, role, article)) mentions += `<@&${role}> `;
     }
   }
 

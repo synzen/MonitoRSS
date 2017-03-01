@@ -1,10 +1,11 @@
 const eventHandler = (evnt) => require(`../events/${evnt}.js`)
-const fileOps = require('../util/updateJSON.js')
+const fileOps = require('../util/fileOps.js')
 const config = require('../config.json')
 
 exports.createAllListeners = function (bot) {
   bot.on('ready', function() {
-    console.log("Discord.RSS commands module activated and online.")
+    if (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') bot.user.setGame(config.botSettings.defaultGame);
+    console.log('Discord.RSS commands module activated and online.')
   })
 
   bot.on('message', function (message) {

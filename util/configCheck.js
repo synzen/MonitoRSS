@@ -7,7 +7,7 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
   var valid = true;
 
   if (rssList[rssIndex].enabled == 0) {
-    console.log(`RSS Config Info: (${guild.id}, ${guild.name}) => Feed "${rssList[rssIndex].link}" is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
+    console.log(`RSS Config Info: (${guild.id}, ${guild.name}) => Feed '${rssList[rssIndex].link}' is disabled in channel ${rssList[rssIndex].channel}, skipping...`);
     return false;
   }
 
@@ -15,7 +15,7 @@ exports.checkExists = function (guildId, rssIndex, logging, initializing) {
     if (logging) console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => Feed #${parseInt(rssIndex,10) + 1} has no name defined, skipping...`);
     valid = false;
   }
-  else if (!rssList[rssIndex].link || !rssList[rssIndex].link.startsWith("http")){
+  else if (!rssList[rssIndex].link || !rssList[rssIndex].link.startsWith('http')){
     if (logging) console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${rssList[rssIndex].link} has no valid link defined, skipping...`);
     valid = false;
   }
@@ -33,7 +33,7 @@ exports.validChannel = function (bot, guildId, rssIndex) {
   var rssList = guildRss.sources
 
   if (isNaN(parseInt(rssList[rssIndex].channel,10))) {
-    var channel = bot.channels.find("name", rssList[rssIndex].channel);
+    var channel = bot.channels.find('name', rssList[rssIndex].channel);
     if (!channel) {
       console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssList[rssIndex].name}'s string-defined channel was not found, skipping...`)
       return false;

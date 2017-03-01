@@ -35,13 +35,14 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
   var rssList = guild.sources
 
   requestStream(rssList[rssIndex].link, feedparser, function(err) {
-    if (err && config.logging.showConnectErrs === true) return callback(err);
+    if (err && config.logging.showFeedErrs === true) return callback(err);
     else if (err) return callback();
   })
 
   feedparser.on('error', function (err) {
     feedparser.removeAllListeners('end')
-    return callback(err)
+    if (config.logging.showFeedErrs === true) return callback(err)
+    else callback();
   });
 
   feedparser.on('readable',function () {

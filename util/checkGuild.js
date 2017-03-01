@@ -1,9 +1,8 @@
-const fileOps = require('./updateJSON.js')
+const fileOps = require('./fileOps.js')
 
 function isEmptyObject(obj) {
     for(var prop in obj) {
-        if(obj.hasOwnProperty(prop))
-            return false;
+        if(obj.hasOwnProperty(prop)) return false;
     }
     return JSON.stringify(obj) === JSON.stringify({});
 }
@@ -14,12 +13,12 @@ exports.roles = function (bot, guildId, rssIndex) {
   var guild = bot.guilds.get(guildId)
   var changedInfo = false
 
-  //global subs is an array of objects
-  if (rssList[rssIndex].roleSubscriptions != null && rssList[rssIndex].roleSubscriptions.length !== 0) {
+  // global subs is an array of objects
+  if (rssList[rssIndex].roleSubscriptions && rssList[rssIndex].roleSubscriptions.length !== 0) {
     var globalSubList = rssList[rssIndex].roleSubscriptions;
     for (let roleIndex in globalSubList) {
       var role = globalSubList[roleIndex]
-      if (guild.roles.get(role.roleID) == null) {
+      if (!guild.roles.get(role.roleID)) {
         console.log(`Guild Warning: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) has been deleted. Removing.`);
         guildRss.sources[rssIndex].roleSubscriptions.splice(roleIndex, 1);
         if (guildRss.sources[rssIndex].roleSubscriptions.length == 0) delete guildRss.sources[rssIndex].roleSubscriptions;
@@ -33,11 +32,11 @@ exports.roles = function (bot, guildId, rssIndex) {
     }
   }
 
-  //filtered subs is an object
-  if (rssList[rssIndex].filters != null && rssList[rssIndex].filters.roleSubscriptions != null && !isEmptyObject(rssList[rssIndex].filters.roleSubscriptions)) {
+  // filtered subs is an object
+  if (rssList[rssIndex].filters && rssList[rssIndex].filters.roleSubscriptions && !isEmptyObject(rssList[rssIndex].filters.roleSubscriptions)) {
     let filteredSubList = rssList[rssIndex].filters.roleSubscriptions
     for (let roleID in filteredSubList) {
-      if (guild.roles.get(roleID) == null) {
+      if (!guild.roles.get(roleID)) {
         console.log(`Guild Warning: (${guild.id}, ${guild.name}) => Role (${roleID}, ${filteredSubList[roleID].roleName}) has been deleted. Removing.`);
         delete guildRss.sources[rssIndex].filters.roleSubscriptions[roleID];
         if (isEmptyObject(guildRss.sources[rssIndex].filters.roleSubscriptions)) delete guildRss.sources[rssIndex].filters.roleSubscriptions;
@@ -61,7 +60,7 @@ exports.names = function (bot, guildId) {
   var guild = bot.guilds.get(guildId)
 
   if (guildRss.name !== guild.name) {
-    console.log(`Guild Info: (${guild.id}, ${guildRss.name}) => Name change detected, changed guild name from "${guildRss.name}" to "${guild.name}".`);
+    console.log(`Guild Info: (${guild.id}, ${guildRss.name}) => Name change detected, changed guild name from '${guildRss.name}' to '${guild.name}'.`);
     guildRss.name = guild.name;
     fileOps.updateFile(guildId, guildRss, `../sources/${guildId}.json`);
   }

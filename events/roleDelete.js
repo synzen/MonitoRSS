@@ -1,4 +1,4 @@
-const fileOps = require('../util/updateJSON.js')
+const fileOps = require('../util/fileOps.js')
 
 function isEmptyObject(obj) {
     for(var prop in obj) {

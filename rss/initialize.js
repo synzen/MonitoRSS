@@ -12,7 +12,7 @@
 */
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser');
-const fileOps = require('../util/updateJSON.js')
+const fileOps = require('../util/fileOps.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const startFeedSchedule = require('../util/startFeedSchedule.js')

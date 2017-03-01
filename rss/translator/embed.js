@@ -12,7 +12,7 @@ module.exports = function (channel, rssList, rssIndex, article, replaceKeywords)
 
   if (embedSpecs.color && !isNaN(embedSpecs.color)) {
     if (parseInt(embedSpecs.color) > '16777215' || parseInt(embedSpecs.color) < 0) {
-      console.log(`EMBED ERROR! (${channel.guild.id}, ${channel.guild.name}) => Invalid color.`);
+      console.log(`Embed color property error! (${channel.guild.id}, ${channel.guild.name}) => Found out of range color. Substituting in as '100'.`);
       embed.setColor('100');
     }
     else embed.setColor(embedSpecs.color);

@@ -1,7 +1,8 @@
 const striptags = require('striptags')
 
+// http://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
 function escapeRegExp(str) {
-  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+  return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
 
 function findFilterWords(filterType, content, isTestMessage) {
@@ -22,7 +23,7 @@ function findFilterWords(filterType, content, isTestMessage) {
     else if (typeof content === 'object') {
       for (var item in content) {
         for (var word in filterType) {
-          if (`'${filterType[word].toLowerCase()}'` == content[item].toLowerCase().trim()) {
+          if (filterType[word].toLowerCase() == content[item].toLowerCase().trim()) {
             if (isTestMessage) matches.push(filterType[word]);
             else return true;
           }
@@ -58,7 +59,7 @@ module.exports = function (rssList, rssIndex, article, isTestMessage) {
                       },
                     'Tags': {
                       user: rssList[rssIndex].filters.Tag,
-                      ref: article.tags.split(', ')
+                      ref: article.tags.split('\n')
                       }
                     }
 

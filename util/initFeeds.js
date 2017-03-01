@@ -2,7 +2,7 @@ const initAll = require('../rss/initializeall.js')
 const configChecks = require('./configCheck.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
-const fileOps = require('./updateJSON.js')
+const fileOps = require('./fileOps.js')
 const checkGuild = require('./checkGuild.js')
 
 module.exports = function (bot, callback) {
@@ -14,15 +14,15 @@ module.exports = function (bot, callback) {
 
   function endCon () {
     sqlCmds.end(con, function(err) {
-      console.log("RSS Info: Finished initialization cycle.")
+      console.log('RSS Info: Finished initialization cycle.')
     })
     callback()
   }
 
   function start () {
-    console.log("RSS Info: Starting initialization cycle.")
+    console.log('RSS Info: Starting initialization cycle.')
     con = sqlConnect(initFeeds)
-    if (con == null) throw "RSS Error: SQL type is not correctly defined in config";
+    if (con == null) throw 'RSS Error: SQL type is not correctly defined in config';
   }
 
   function initFeeds () {
@@ -50,7 +50,7 @@ module.exports = function (bot, callback) {
   fileOps.readDir('./sources', function (err, files) {
     if (err) throw err;
     files.forEach(function(guildRSS) {
-      let guildId = guildRSS.replace(/.json/g, "")
+      let guildId = guildRSS.replace(/.json/g, '')
       if (bot.guilds.get(guildId)) {
         if (fileOps.isEmptySources(guildId)) return console.log(`RSS Info: (${guildId}) => 0 sources found, skipping.`);
         try {
@@ -60,12 +60,12 @@ module.exports = function (bot, callback) {
         }
         catch (err) {fileOps.checkBackup(guildRSS)}
       }
-      else if (guildRSS !== "guild_id_here.json" && guildRSS !== "backup"){
+      else if (guildRSS !== 'guild_id_here.json' && guildRSS !== 'backup'){
         console.log(`RSS Guild Profile: ${guildRSS} was not found in bot's guild list. Skipping.`);
       }
     })
     if (totalFeeds == 0) {
-      console.log("RSS Info: There are no active feeds.");
+      console.log('RSS Info: There are no active feeds.');
       callback();
     }
     else return start();

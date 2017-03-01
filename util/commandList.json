@@ -1,47 +1,52 @@
 {
 	"rssadd": {
+		"reqPerm": "SEND_MESSAGES",
 		"description": "Add an RSS feed to the channel with the default message."
 	},
 	"rssremove": {
+		"reqPerm": "SEND_MESSAGES",
 		"action": "Feed Removal",
-		"description": "Open a menu to delete a feed from the channel.",
-		"file": "rssRemove"
+		"description": "Open a menu to delete a feed from the channel."
 	},
 	"rsslist": {
+		"reqPerm": "SEND_MESSAGES",
 		"description": "List all active feeds in server."
 	},
 	"rssmessage": {
+		"reqPerm": "SEND_MESSAGES",
 		"action": "Message Customization",
-		"description": "Open a menu to customize a feed's text message.",
-		"file": "rssMessage"
+		"description": "Open a menu to customize a feed's text message."
 	},
 	"rssembed": {
+		"reqPerm": "SEND_MESSAGES",
 		"action": "Embed Message Customization",
-		"description": "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted.",
-		"file": "rssEmbed"
+		"description": "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
 	},
 	"rsstest": {
+		"reqPerm": "SEND_MESSAGES",
 		"action": "Feed Delivery Test",
-		"description": "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization.",
-		"file": "rssTest"
+		"description": "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization."
 	},
 	"rsstimezone": {
+		"reqPerm": "SEND_MESSAGES",
 		"description": "Change the timezone for dates given by {date} tag customization. For a list of timezones, see the TZ column at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>."
 	},
 	"rssfilters": {
+		"reqPerm": "SEND_MESSAGES",
 		"action": "Global Filter Addition/Removal",
-		"description": "Opens a menu to add or remove global filters from a feed.",
-		"file": "rssFilters"
+		"description": "Opens a menu to add or remove global filters from a feed."
 	},
 	"rssroles": {
-		"specialCmd": true,
+		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"action": "Role Customization",
 		"description": "Add global/filtered subscriptions for roles to feeds."
 	},
 	"subme": {
+		"reqPerm": "SEND_MESSAGES",
 		"description": "Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Add a role with an active feed subscription to the user. Roles *must* be below the bot's role in role order in role settings."
 	},
 	"unsubme": {
+		"reqPerm": "SEND_MESSAGES",
 		"description": "Same as `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
 	}
 }

@@ -1,8 +1,7 @@
-
 var activeCollectors = {}
 
 exports.addCollector = function (channelID) {
-  if (activeCollectors[channelID] == null) activeCollectors[channelID] = 0;
+  if (!activeCollectors[channelID]) activeCollectors[channelID] = 0;
   activeCollectors[channelID]++
 }
 
@@ -12,6 +11,6 @@ exports.removeCollector = function (channelID) {
 }
 
 exports.hasActiveMenus = function (channelID) {
-  if (activeCollectors[channelID] == null) return false;
+  if (!activeCollectors[channelID]) return false;
   else return true;
 }

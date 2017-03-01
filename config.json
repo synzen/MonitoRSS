@@ -2,7 +2,8 @@
   "logging": {
     "logDates": true,
     "discordChannelLog": "",
-    "showConnectErrs": true
+    "showFeedErrs": true,
+    "showUnfiltered": true
   },
   "botSettings": {
     "token": "",

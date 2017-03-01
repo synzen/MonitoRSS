@@ -2,7 +2,7 @@ const configChecks = require('./configCheck.js')
 const getFeed = require('../rss/rss.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
-const fileOps = require('./updateJSON.js')
+const fileOps = require('./fileOps.js')
 const config = require('../config.json')
 const fetchInterval = require('./fetchInterval.js')
 
@@ -15,49 +15,57 @@ module.exports = function (bot) {
   var con
   var startTime
 
-  function endCon (startingCycle) {
+  function checkGuildUpdates() {
+    for (var guildId in fetchInterval.changedGuilds) {
+      try {
+        delete require.cache[require.resolve(`../sources/${guildId}.json`)]
+        console.log('RSS Module deleted cache for profile of guild ID: ' + guildId)
+        delete fetchInterval.changedGuilds[guildId]
+      } catch (e) {}
+    }
+  }
+
+  function endCon(startingCycle) {
     sqlCmds.end(con, function(err) {
       if (err) console.log('Error: Could not close MySQL connection. ' + err)
       fetchInterval.cycleInProgress = false
-      if (!startingCycle) {
-        var timeTaken = ((new Date() - startTime) / 1000).toFixed(2);
-        console.log(`RSS Info: Finished feed retrieval cycle. Cycle Time: ${timeTaken}s`);
-      }
-      else connect();
+      if (startingCycle) return connect();
+      var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
+      console.log(`RSS Info: Finished feed retrieval cycle. Cycle Time: ${timeTaken}s`)
     }, startingCycle);
   }
 
-  function connect () {
+  function connect() {
     if (fetchInterval.cycleInProgress) {
-      console.log(`RSS Info: Previous cycle was unable to finish. Forcing cycle end and starting new cycle.`);
-      endCon(true);
+      console.log(`RSS Info: Previous cycle was unable to finish. Starting new cycle using unclosed connection.`);
+      // return endCon(true);
     }
-    else {
-      fetchInterval.cycleInProgress = true;
-      feedLength = feedsProcessed = feedsSkipped = 0;
-      guildList = [];
-      fileOps.readDir('./sources', function (err, files) {
-        if (err) throw err;
-        files.forEach(function(guildRSS) {
-          let guildId = guildRSS.replace(/.json/g, "")
-          if (bot.guilds.get(guildId)) {
-            if (fileOps.isEmptySources(guildId)) return console.log(`RSS Info: (${guildId}) => 0 sources found, skipping.`);
-            try {
-              let guild = require(`../sources/${guildRSS}`)
-              guildList.push(guild)
-              for (var y in guild.sources) feedLength++;
-            }
-            catch (err) {fileOps.checkBackup(guildRSS)}
+    checkGuildUpdates()
+    fetchInterval.cycleInProgress = true
+    feedLength = feedsProcessed = feedsSkipped = 0
+    guildList = []
+    fileOps.readDir('./sources', function (err, files) {
+      if (err) throw err;
+      files.forEach(function(guildRSS) {
+        let guildId = guildRSS.replace(/.json/g, '')
+        if (bot.guilds.get(guildId)) {
+          if (fileOps.isEmptySources(guildId)) return console.log(`RSS Info: (${guildId}) => 0 sources found, skipping.`);
+          try {
+            let guild = require(`../sources/${guildRSS}`)
+            guildList.push(guild)
+            for (var y in guild.sources) feedLength++;
           }
-          else if (guildRSS !== "guild_id_here.json" && guildRSS !== "backup") console.log(`RSS Guild Profile: ${guildRSS} was not found in bot's guild list. Skipping.`);
-        })
-        if (feedLength == 0) {
-          fetchInterval.cycleInProgress = false;
-          return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
+          catch (err) {fileOps.checkBackup(guildRSS)}
         }
-        else con = sqlConnect(startRetrieval);
+        else if (guildRSS !== 'guild_id_here.json' && guildRSS !== 'backup') console.log(`RSS Guild Profile: ${guildRSS} was not found in bot's guild list. Skipping.`);
       })
-    }
+      if (feedLength == 0) {
+        fetchInterval.cycleInProgress = false;
+        return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
+      }
+      con = sqlConnect(startRetrieval);
+    })
+
   }
 
   function startRetrieval () {
