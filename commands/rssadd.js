@@ -6,9 +6,7 @@ const config = require('../config.json')
 
 module.exports = function (bot, message) {
 
-  var rssList = []
-  var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
-
+  var rssList = {}
   try {rssList = require(`../sources/${message.guild.id}.json`).sources;}
   catch (e) {}
 
@@ -23,19 +21,21 @@ module.exports = function (bot, message) {
     }
   }
 
+  let maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+
   let content = message.content.split(' ');
-  if (content.length == 1) return;
+  if (content.length === 1) return;
 
   let rssLink = content[1].trim()
   if (!rssLink.startsWith('http')) return message.channel.sendMessage('Unable to add feed. Make sure it is a link, and there are no odd characters before your feed link.').catch(err => console.log(`Promise Warning: rssAdd 1: ${err}`));
-  else if (rssList.length >= maxFeedsAllowed && maxFeedsAllowed != 0)  {
+  else if (rssList.size() >= maxFeedsAllowed && maxFeedsAllowed != 0)  {
     console.log(`RSS Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to limit of ${config.feedSettings.maxFeeds} feeds.`);
     return message.channel.sendMessage(`Unable to add feed. The server has reached the limit of: \`${config.feedSettings.maxFeeds}\` feeds.`).catch(err => console.log(`Promise Warning: rssAdd 2: ${err}`));
   }
 
   var verify = message.channel.sendMessage('Verifying link...').catch(err => console.log(`Promise Warning: rssAdd 3: ${err}`))
 
-  verify.then(function (verifyMsg) {
+  verify.then(function(verifyMsg) {
     channelTracker.addCollector(message.channel.id);
 
     for (var x in rssList) {
@@ -48,7 +48,7 @@ module.exports = function (bot, message) {
     var con = sqlConnect(init);
 
     function init() {
-      initializeRSS(con, verifyMsg, rssLink, message.channel, function(err) {
+      initializeRSS(con, rssLink, message.channel, function(err) {
         channelTracker.removeCollector(message.channel.id)
         if (err) return verifyMsg.edit(err);
         console.log('RSS Info: Successfully added new feed.')

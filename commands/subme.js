@@ -2,10 +2,10 @@ const Discord = require('discord.js')
 const channelTracker = require('../util/channelTracker.js')
 const getSubList = require('./util/getSubList.js')
 
-module.exports = function (bot, message, command) {
-  var rssList = []
+module.exports = function(bot, message, command) {
+  var rssList = {}
   try {rssList = require(`../sources/${message.guild.id}.json`).sources} catch (e) {}
-  if (rssList.length === 0) return message.channel.sendMessage('There are no active feeds to subscribe to.').catch(err => console.log(`Promise Warning: subAdd 1: ${err}`));
+  if (rssList.size() === 0) return message.channel.sendMessage('There are no active feeds to subscribe to.').catch(err => console.log(`Promise Warning: subAdd 1: ${err}`));
 
   var options = getSubList(bot, message.guild, rssList)
   if (!options) return message.channel.sendMessage('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.').catch(err => console.log(`Promise Warning: subAdd 2: ${err}`));
@@ -30,7 +30,7 @@ module.exports = function (bot, message, command) {
     const collectorFilter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(collectorFilter,{time:240000})
     channelTracker.addCollector(message.channel.id)
-    collector.on('message', function (response) {
+    collector.on('message', function(response) {
       let chosenRoleName = response.content
       if (chosenRoleName.toLowerCase() === 'exit') return collector.stop('Self-subscription addition canceled.');
       if (!bot.guilds.get(message.guild.id).roles.find('name', chosenRoleName)) message.channel.sendMessage('That is not a valid role subscription to add. Try again.').catch(err => console.log(`Promise Warning: subAdd 3: ${err}`));

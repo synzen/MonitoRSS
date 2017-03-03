@@ -17,16 +17,7 @@ const sqlCmds = require('./sql/commands.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 const config = require('../config.json')
 
-function isEmptyObject(obj) {
-  for (var key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
+module.exports = function (con, channel, rssName, isTestMessage, callback) {
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -34,38 +25,38 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
 
-  requestStream(rssList[rssIndex].link, feedparser, function(err) {
+  requestStream(rssList[rssName].link, feedparser, function(err) {
     if (err && config.logging.showFeedErrs === true) return callback(err);
     else if (err) return callback();
   })
 
-  feedparser.on('error', function (err) {
+  feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
     if (config.logging.showFeedErrs === true) return callback(err)
     else callback();
   });
 
-  feedparser.on('readable',function () {
+  feedparser.on('readable', function() {
     var stream = this
     var item
 
     while (item = stream.read()) {
       currentFeed.push(item);
     }
-});
+
+  });
 
   feedparser.on('end', function() {
     if (currentFeed.length === 0) {
       if (!isTestMessage) return callback();
-      callback(`${rssList[rssIndex].name}" has no feeds to send for rsstest.`);
-      return channel.sendMessage(`Feed "${rssList[rssIndex].link}" has no available feeds to be sent.`);
+      callback(`${rssName}" has no feeds to send for rsstest.`);
+      return channel.sendMessage(`Feed "<${rssList[rssName].link}>" has no available feeds to be send for test details.`);
     }
 
-    let feedName = rssList[rssIndex].name
     var processedItems = 0
     var filteredItems = 0
 
-    function getArticleId (article) {
+    function getArticleId(article) {
       var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
       if (equalGuids && currentFeed[0].guid) for (var x in currentFeed) {
         if (x > 0 && currentFeed[x].guid != currentFeed[x - 1].guid) equalGuids = false;
@@ -81,10 +72,10 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
     }
 
     function checkTableExists() {
-      sqlCmds.selectTable(con, feedName, function (err, results) {
-        if (err || isEmptyObject(results)) {
-          if (err) console.log(`Database error! (${guild.id}, ${guild.name}) => RSS index ${rssIndex} Feed ${rssList[rssIndex].link}. Skipping because of error:`, err);
-          else if (isEmptyObject(results)) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssList[rssIndex].name}" appears to have been deleted, skipping...`);
+      sqlCmds.selectTable(con, rssName, function (err, results) {
+        if (err || results.size() === 0) {
+          if (err) console.log(`Database error! (${guild.id}, ${guild.name}) => RSS index ${rssName} Feed ${rssName}. Skipping because of error:`, err);
+          else if (results.size() === 0) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssName}" appears to have been deleted, skipping...`);
           return callback();
         }
         if (isTestMessage) {
@@ -93,7 +84,7 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
         }
         else {
           let feedLength = currentFeed.length - 1;
-          for (var x = feedLength; x >= 0; x--){
+          for (var x = feedLength; x >= 0; x--) {
             checkTable(currentFeed[x], getArticleId(currentFeed[x]));
             filteredItems++;
           }
@@ -105,16 +96,16 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
       if (isTestMessage) {
         filteredItems++;
         gatherResults();
-        sendToDiscord(rssIndex, channel, article, isTestMessage, function (err) {
+        sendToDiscord(rssName, channel, article, isTestMessage, function (err) {
           if (err) console.log(err);
         });
       }
       else {
-        sqlCmds.select(con, feedName, articleId, function (err, results, fields) {
-          if (err) return callback(); // when a table doesn't exist, means it is a removed feed
-          if (!isEmptyObject(results)) gatherResults();
+        sqlCmds.select(con, rssName, articleId, function (err, results, fields) {
+          if (err) return callback();
+          if (results.size() > 0) gatherResults();
           else {
-            sendToDiscord(rssIndex, channel, article, false, function (err) {
+            sendToDiscord(rssName, channel, article, false, function (err) {
               if (err) console.log(err);
             });
             insertIntoTable(articleId);
@@ -123,9 +114,9 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
       }
     }
 
-
-    function insertIntoTable(articleId) { // inserting the feed into the table marks it as "seen"
-      sqlCmds.insert(con, feedName, articleId, function (err,res) {
+    function insertIntoTable(articleId) {
+      // inserting the feed into the table marks it as "seen"
+      sqlCmds.insert(con, rssName, articleId, function (err,res) {
         if (err) return callback();
         gatherResults();
       })
@@ -133,7 +124,7 @@ module.exports = function (con, channel, rssIndex, isTestMessage, callback) {
 
     function gatherResults() {
       processedItems++;
-      //console.log(`${rssList[rssIndex].name} ${filteredItems} ${processedItems}`) // for debugging
+      //console.log(`${rssList[rssName].name} ${filteredItems} ${processedItems}`) // for debugging
       if (processedItems == filteredItems) {
         callback();
       }

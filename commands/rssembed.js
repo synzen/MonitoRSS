@@ -13,7 +13,7 @@ const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be
 
 const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
 
-function isValidImg (input) {
+function isValidImg(input) {
   if (input.startsWith('http')) {
     var matches = input.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
     if (matches) return true;
@@ -28,9 +28,9 @@ function isValidImg (input) {
   else return false;
 }
 
-module.exports = function (bot, message, command) {
+module.exports = function(bot, message, command) {
 
-  getIndex(bot, message, command, function (rssIndex) {
+  getIndex(bot, message, command, function(rssName) {
 
       var guildRss = require(`../sources/${message.guild.id}.json`)
       var rssList = guildRss.sources
@@ -42,15 +42,15 @@ module.exports = function (bot, message, command) {
       embedListMsg += '```'
 
 
-      if (!rssList[rssIndex].embedMessage || !rssList[rssIndex].embedMessage.properties)
-        rssList[rssIndex].embedMessage = {
+      if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties)
+        rssList[rssName].embedMessage = {
           enabled: 0,
           properties: {}
         }
 
       let currentEmbedProps = '```Markdown\n';
-      if (rssList[rssIndex].embedMessage && rssList[rssIndex].embedMessage.properties) {
-        let propertyList = rssList[rssIndex].embedMessage.properties;
+      if (rssList[rssName].embedMessage && rssList[rssName].embedMessage.properties) {
+        let propertyList = rssList[rssName].embedMessage.properties;
         for (var property in propertyList) {
           for (var y in embedProperties) {
             if (embedProperties[y][2] == property && propertyList[property]) {
@@ -62,7 +62,7 @@ module.exports = function (bot, message, command) {
 
       if (currentEmbedProps == '```Markdown\n') currentEmbedProps = '```\nNo properties set.\n';
 
-      message.channel.sendMessage(`The current embed properties for ${rssList[rssIndex].link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type **exit** to cancel.`).catch(err => console.log(`Promise Warning: rssEmbed 1: ${err}`))
+      message.channel.sendMessage(`The current embed properties for ${rssList[rssName].link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type **exit** to cancel.`).catch(err => console.log(`Promise Warning: rssEmbed 1: ${err}`))
 
       const filter = m => m.author.id == message.author.id
       const customCollect = message.channel.createCollector(filter,{time:240000})
@@ -80,16 +80,16 @@ module.exports = function (bot, message, command) {
           message.channel.sendMessage(`Resetting and disabling embed...`)
           .then(resetting => {
             customCollect.stop();
-            delete rssList[rssIndex].embedMessage;
+            delete rssList[rssName].embedMessage;
             fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
-            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssIndex].link}.`);
+            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssName].link}.`);
             resetting.edit('Embed has been disabled, and all properties have been removed.').catch(err => console.log(`Promise Warning: rssEmbed 2a: ${err}`))
           })
           .catch(err => console.log(`Promise Warning: rssEmbed 2: ${err}`));
         }
         else if (!choice) message.channel.sendMessage('That is not a valid property.').catch(err => console.log(`Promise Warning: rssEmbed 3: ${err}`));
         else {
-          //property collector
+          // property collector
           customCollect.stop();
           message.channel.sendMessage(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other tags, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`).catch(err => console.log(`Promise Warning: rssEmbed 4: ${err}`));
           const propertyCollect = message.channel.createCollector(filter, {time: 240000});
@@ -108,17 +108,17 @@ module.exports = function (bot, message, command) {
             .then(editing => {
               propertyCollect.stop()
 
-              if (!rssList[rssIndex].embedMessage || !rssList[rssIndex].embedMessage.properties)
-                rssList[rssIndex].embedMessage = {
+              if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties)
+                rssList[rssName].embedMessage = {
                   enabled: 0,
                   properties: {}
                 }
 
-              if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() === 'reset') delete rssList[rssIndex].embedMessage.properties[choice];
-              else rssList[rssIndex].embedMessage.properties[choice] = finalChange;
+              if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() === 'reset') delete rssList[rssName].embedMessage.properties[choice];
+              else rssList[rssName].embedMessage.properties[choice] = finalChange;
 
-              rssList[rssIndex].embedMessage.enabled = 1
-              console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${rssList[rssIndex].link}.`)
+              rssList[rssName].embedMessage.enabled = 1
+              console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${rssList[rssName].link}.`)
               fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`)
 
               if (isNaN(parseInt(finalChange,10)) && finalChange.toLowerCase() == 'reset') return editing.edit(`Settings updated. The property \`${choice}\` has been reset.`).catch(err => console.log(`Promise Warning: rssEmbed 8a: ${err}`));

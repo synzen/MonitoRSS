@@ -1,9 +1,9 @@
-module.exports = function (bot, guild, rssList) {
+module.exports = function(bot, guild, rssList) {
   var finalList = []
   var botRole = guild.members.get(bot.user.id).highestRole;
-  for (var rssIndex in rssList) {
-    let globalSubList = rssList[rssIndex].roleSubscriptions;
-    let filterList = rssList[rssIndex].filters;
+  for (var rssName in rssList) {
+    let globalSubList = rssList[rssName].roleSubscriptions;
+    let filterList = rssList[rssName].filters;
     var roles = [];
     // globalSubList is an array
     if (typeof globalSubList === 'object' && globalSubList.length > 0) {
@@ -19,7 +19,7 @@ module.exports = function (bot, guild, rssList) {
         if (subbedRole.comparePositionTo(botRole) < 0) roles.push(filteredSubber);
       }
     }
-    if (roles.length !== 0) finalList.push({source: rssList[rssIndex], roleList: roles});
+    if (roles.length !== 0) finalList.push({source: rssList[rssName], roleList: roles});
   }
   if (finalList.length === 0) return null;
   else return finalList;

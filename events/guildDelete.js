@@ -13,8 +13,8 @@ module.exports = function (bot, guild) {
   if (!fileOps.exists(`./sources/${guild.id}.json`)) return;
   else var rssList = require(`../sources/${guild.id}.json`).sources;
 
-  for (let rssIndex in rssList) {
-    sqlCmds.dropTable(config.feedManagement.databaseName, rssList[rssIndex].name, function() {})
+  for (let rssName in rssList) {
+    sqlCmds.dropTable(config.feedManagement.databaseName, rssName, function() {})
   }
 
   fileOps.deleteFile(guild.id, `../sources/${guild.id}.json`, function() {

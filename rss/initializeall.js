@@ -37,49 +37,40 @@ const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 
-function isEmptyObject(obj) {
-  for (var key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-module.exports = function (con, channel, rssIndex, callback) {
+module.exports = function (con, channel, rssName, callback) {
   var feedparser = new FeedParser()
   var currentFeed = []
 
   var guild = require(`../sources/${channel.guild.id}.json`)
   var rssList = guild.sources
 
-  requestStream(rssList[rssIndex].link, feedparser, function (err) {
+  requestStream(rssList[rssName].link, feedparser, function (err) {
     if (err) return callback(err);
   })
 
-  feedparser.on('error', function (err) {
+  feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
     return callback(err)
   });
 
-  feedparser.on('readable',function () {
+  feedparser.on('readable', function() {
     var stream = this;
     var item;
 
     while (item = stream.read()) {
       currentFeed.push(item);
     }
-});
+    
+  });
 
   feedparser.on('end', function() {
-    if (currentFeed.length == 0) return callback();
+    if (currentFeed.length === 0) return callback();
 
-    var feedName = rssList[rssIndex].name
     var tableAlreadyExisted = 0
     var processedItems = 0
     var totalItems = currentFeed.length
 
-    console.log(`RSS Info: (${guild.id}, ${guild.name}) => Starting default initializion for: ${feedName}`)
+    console.log(`RSS Info: (${guild.id}, ${guild.name}) => Starting default initializion for: ${rssName}`)
 
     function getArticleId (article) {
       var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
@@ -97,22 +88,22 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function checkTableExists() {
-      sqlCmds.selectTable(con, feedName, function (err, results) {
+      sqlCmds.selectTable(con, rssName, function (err, results) {
         if (err) throw err;
-        if (isEmptyObject(results)) {
-          console.log(`RSS Info: Table does not exist for ${feedName}, creating now and initializing all`);
+        if (results.size() === 0) {
+          console.log(`RSS Info: Table does not exist for ${rssName}, creating now and initializing all`);
           createTable();
         }
         else {
-          //console.log(`RSS Info: Table already exists for ${feedName}, getting new feeds if exists`)
+          //console.log(`RSS Info: Table already exists for ${rssName}, getting new feeds if exists`)
           tableAlreadyExisted = true;
 
           let feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--) { //get feeds starting from oldest, ending with newest.
             var cutoffDay;
             var defaultMaxAge = (config.feedSettings.defaultMaxAge) ? config.feedSettings.defaultMaxAge : 1;
-            if (!rssList[rssIndex].maxAge) cutoffDay = moment(new Date()).subtract(defaultMaxAge, 'd');
-            else cutoffDay = moment(new Date()).subtract(rssList[rssIndex].maxAge, 'd');
+            if (!rssList[rssName].maxAge) cutoffDay = moment(new Date()).subtract(defaultMaxAge, 'd');
+            else cutoffDay = moment(new Date()).subtract(rssList[rssName].maxAge, 'd');
 
             if (currentFeed[x].pubdate >= cutoffDay) checkTable(currentFeed[x], getArticleId(currentFeed[x]));
             else if (currentFeed[x].pubdate < cutoffDay || currentFeed[x].pubdate == "Invalid Date") {
@@ -124,19 +115,19 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function createTable() {
-      sqlCmds.createTable(con, feedName, function (err, results) {
+      sqlCmds.createTable(con, rssName, function (err, results) {
         if (err) throw err;
         for (var x in currentFeed) insertIntoTable(getArticleId(currentFeed[x]));
       })
     }
 
     function checkTable(article, articleId, isOldArticle) {
-      sqlCmds.select(con, feedName, articleId, function (err, results) {
+      sqlCmds.select(con, rssName, articleId, function (err, results) {
         if (err) throw err;
-        if (!isEmptyObject(results)) gatherResults();
+        if (results.size() > 0) gatherResults();
         else if (isOldArticle) insertIntoTable(articleId);
         else {
-          if (config.feedSettings.sendOldMessages == true) sendToDiscord(rssIndex, channel, article, false, function (err) { //this can result in great spam once the loads up after a period of downtime
+          if (config.feedSettings.sendOldMessages == true) sendToDiscord(rssName, channel, article, false, function (err) { //this can result in great spam once the loads up after a period of downtime
             if (err) console.log(err);
             insertIntoTable(articleId);
           });
@@ -146,7 +137,7 @@ module.exports = function (con, channel, rssIndex, callback) {
     }
 
     function insertIntoTable(articleId) {
-      sqlCmds.insert(con, feedName, articleId, function (err, res){
+      sqlCmds.insert(con, rssName, articleId, function (err, res){
         if (err) throw err;
         gatherResults();
       })
@@ -156,7 +147,7 @@ module.exports = function (con, channel, rssIndex, callback) {
       processedItems++;
       if (processedItems == totalItems) {
         callback();
-        //console.log(`RSS Info: (${guild.id}, ${guild.name}) => Finished default initialization for: ${feedName}`)
+        //console.log(`RSS Info: (${guild.id}, ${guild.name}) => Finished default initialization for: ${rssName}`)
       }
     }
 

@@ -15,9 +15,9 @@ module.exports = function (bot, role) {
   var found = false
 
   //delete from global role subscriptions if exists
-  for (var rssIndex in rssList) {
-    let source = rssList[rssIndex]
-    if (source.roleSubscriptions != null) {
+  for (var rssName in rssList) {
+    let source = rssList[rssName]
+    if (source.roleSubscriptions) {
       var globalSubList = source.roleSubscriptions;
       for (var globalSub in globalSubList) {
         if (globalSubList[globalSub].roleID == role.id) {
@@ -36,7 +36,7 @@ module.exports = function (bot, role) {
 
     //cleanup
     if (source.filters && isEmptyObject(source.filters)) delete source.filters;
-    if (source.roleSubscriptions != null && source.roleSubscriptions.length == 0) delete source.roleSubscriptions;
+    if (source.roleSubscriptions && source.roleSubscriptions.length === 0) delete source.roleSubscriptions;
   }
 
   if (found) {

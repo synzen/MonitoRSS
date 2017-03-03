@@ -17,16 +17,7 @@ const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const startFeedSchedule = require('../util/startFeedSchedule.js')
 
-function isEmptyObject(obj) {
-  for (var key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-module.exports = function (con, verifyMsg, rssLink, channel, callback) {
+module.exports = function(con, rssLink, channel, callback) {
 
   var feedparser = new FeedParser()
   var currentFeed = []
@@ -38,7 +29,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
     }
   })
 
-  feedparser.on('error', function (err) {
+  feedparser.on('error', function(err) {
     if (err)  {
       feedparser.removeAllListeners('end');
       console.log(`RSS Warning:: Unable to add ${rssLink} due to invalid feed.`);
@@ -46,31 +37,32 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
     }
   });
 
-  feedparser.on('readable',function () {
+  feedparser.on('readable', function() {
     var stream = this;
     var item;
 
     while (item = stream.read()) {
       currentFeed.push(item);
     }
-});
+    
+  });
 
   feedparser.on('end', function() {
-    var metaLink = ""
+    var metaLink = ''
     var randomNum = Math.floor((Math.random() * 99) + 1)
-    if (currentFeed[0] != null) metaLink = (currentFeed[0].meta.link != null) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
+    if (currentFeed[0]) metaLink = (currentFeed[0].meta.link != null) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
 
-    var feedName = `${channel.id}_${randomNum}${metaLink}`
+    var rssName = `${channel.id}_${randomNum}${metaLink}`
 
-    if (metaLink == "" ) {
+    if (!metaLink) {
       channel.sendMessage("Cannot find meta link for this feed. Unable to add to database. This is most likely due to no existing articles in the feed.");
       console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Cannot initialize feed because of no meta link: ${rssLink}`)
       return callback();
     }
 
     // MySQL table names have a limit of 64 char
-    if (feedName.length >= 64 ) feedName = feedName.substr(0,64);
-    feedName = feedName.replace(/\?/g, "")
+    if (rssName.length >= 64 ) rssName = rssName.substr(0,64);
+    rssName = rssName.replace(/\?/g, '') // remove question marks to prevent sql from auto-escaping
 
 
     var processedItems = 0
@@ -78,7 +70,7 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
 
     console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Initializing new feed: ${rssLink}`)
 
-    function getArticleId (article) {
+    function getArticleId(article) {
       var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
       if (equalGuids && currentFeed[0].guid) for (var x in currentFeed) {
         if (x > 0 && currentFeed[x].guid != currentFeed[x - 1].guid) equalGuids = false;
@@ -94,21 +86,21 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
     }
 
     function createTable() {
-      sqlCmds.createTable(con, feedName, function (err, rows) {
+      sqlCmds.createTable(con, rssName, function (err, rows) {
         if (err) throw err;
         for (var x in currentFeed) insertIntoTable(getArticleId(currentFeed[x]));
       })
     }
 
     function insertIntoTable(articleId) {
-      sqlCmds.insert(con, feedName, articleId, function (err, res) {
+      sqlCmds.insert(con, rssName, articleId, function (err, res) {
         if (err) throw err;
         gatherResults();
       })
 
     }
 
-    function gatherResults(){
+    function gatherResults() {
       processedItems++;
       if (processedItems == totalItems) addToConfig();
     }
@@ -122,30 +114,30 @@ module.exports = function (con, verifyMsg, rssLink, channel, callback) {
       if (fileOps.exists(`./sources/${channel.guild.id}.json`)) {
         var guildRSS = require(`../sources/${channel.guild.id}.json`);
         var rssList = guildRSS.sources;
-        rssList.push({
+        rssList[rssName] = {
       		enabled: 1,
-      		name: feedName,
           title: metaTitle,
       		link: rssLink,
       		channel: channel.id
-      	});
+      	}
       }
       else {
         var guildRSS = {
           name: channel.guild.name,
           id: channel.guild.id,
-          sources: [{
-        		enabled: 1,
-        		name: feedName,
-            title: metaTitle,
-        		link: rssLink,
-        		channel: channel.id
-        	}]
+          sources: {
+            rssName: {
+              enabled: 1,
+              title: metaTitle,
+              link: rssLink,
+              channel: channel.id
+            }
+          }
         };
       }
 
       fileOps.updateFile(channel.guild.id, guildRSS, `../sources/${channel.guild.id}.json`)
-      callback();
+      callback()
 
     }
 

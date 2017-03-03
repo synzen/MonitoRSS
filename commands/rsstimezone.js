@@ -2,10 +2,10 @@ const config = require('../config.json')
 const moment = require('moment-timezone')
 const fileOps = require('../util/fileOps.js')
 
-module.exports = function (message) {
+module.exports = function(bot, message) {
   try {
     var guild = require(`../sources/${message.guild.id}.json`)
-    if (guild.sources.length === 0) return message.channel.sendMessage('You cannot set your timezone if you have not added any feeds.').catch(err => console.log(`Promise Warning: rssTimezone 1: ${err}`));
+    if (guild.sources.size() === 0) return message.channel.sendMessage('You cannot set your timezone if you have not added any feeds.').catch(err => console.log(`Promise Warning: rssTimezone 1: ${err}`));
   }
   catch (e) {
     return message.channel.sendMessage('You cannot set your timezone if you have not added any feeds.').catch(err => console.log(`Promise Warning: rssTimezone 2: ${err}`));
@@ -15,7 +15,7 @@ module.exports = function (message) {
   else var oldTimezone = guild.timezone;
 
   var msgArray = message.content.split(' ')
-  if (msgArray.length <= 1) return message.channel.sendMessage(`Setting your timezone is only useful if you intend on using customized messages with the \`{date}\` tag. To set your timezone, the syntax is \`${config.prefix}rsstimezone your_timezone_here\`. To reset back to the default (${config.feedSettings.timezone}), type \`${config.prefix}rsstimezone reset\`.\n\nSee <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`).catch(err => console.log(`Promise Warning: rssTimezone 3: ${err}`));
+  if (msgArray.length <= 1) return message.channel.sendMessage(`Setting your timezone is only useful if you intend on using customized messages with the \`{date}\` tag. To set your timezone, the syntax is \`${config.botSettings.prefix}rsstimezone your_timezone_here\`. To reset back to the default (${config.feedSettings.timezone}), type \`${config.prefix}rsstimezone reset\`.\n\nSee <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`).catch(err => console.log(`Promise Warning: rssTimezone 3: ${err}`));
   let timezone = msgArray[msgArray.length - 1]
 
   if (timezone !== 'reset' && !moment.tz.zone(timezone)) return message.channel.sendMessage(`\`${timezone}\` is not a valid timezone. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for more information. Valid timezones are in the \`TZ\` column.`).catch(err => console.log(`Promise Warning: rssTimezone 4: ${err}`));

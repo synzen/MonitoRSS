@@ -3,28 +3,22 @@ const config = require('../../config.json')
 const commandList = require('../../util/commandList.json')
 const channelTracker = require('../../util/channelTracker.js')
 
-module.exports = function (bot, message, command, callback) {
-  var rssList = []
-  var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
-
+module.exports = function(bot, message, command, callback) {
+  var rssList = {}
   try {rssList = require(`../../sources/${message.guild.id}.json`).sources} catch(e) {}
-
-  var embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
+  if (rssList.size() === 0) return message.channel.sendMessage('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
 
   function isCurrentChannel(channel) {
-    if (isNaN(parseInt(channel,10))) {
-      if (message.channel.name == channel) return true;
-      else return false;
-    }
-    else {
-      if (message.channel.id == channel) return true;
-      else return false;
-    }
+    if (isNaN(parseInt(channel,10))) return message.channel.name == channel;
+    else return message.channel.id == channel;
   }
 
+  var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
+  var embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
+
   var currentRSSList = []
-  for (var rssIndex in rssList){
-    if (isCurrentChannel(rssList[rssIndex].channel)) currentRSSList.push( [rssList[rssIndex].link, rssIndex, rssList[rssIndex].title] );
+  for (var rssName in rssList) {
+    if (isCurrentChannel(rssList[rssName].channel)) currentRSSList.push( [rssList[rssName].link, rssName, rssList[rssName].title] );
   }
 
 
@@ -41,7 +35,7 @@ module.exports = function (bot, message, command, callback) {
 
     var error = false;
     embedMsg.setAuthor('Feed Selection Menu');
-    embedMsg.setDescription(`**Server Limit:** ${rssList.length}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`);
+    embedMsg.setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`);
     message.channel.sendEmbed(embedMsg)
     .catch(err => {
       error = true;

@@ -11,6 +11,16 @@ else if (!config.feedManagement.databaseName) throw 'Warning! Vital config missi
 else if (!config.feedManagement.sqlType || typeof config.feedManagement.sqlType !== 'string' || (config.feedManagement.sqlType !== 'mysql' && config.feedManagement !== 'sqlite3')) throw 'Warning! Vital config missing: sqlType incorrectly defined in config.';
 else if (!config.feedSettings.defaultMessage) throw 'Warning! Vital config missing: defaultMssage undefined in config.';
 
+Object.defineProperty(Object.prototype, 'size', {
+    value: function() {
+      let c = 0
+      for (var x in this) if (this.hasOwnProperty(x)) c++;
+      return c
+    },
+    enumerable: false,
+    writable: true
+})
+
 fetchInterval.changedGuilds = {}
 var initialized = false
 var bot

@@ -6,7 +6,7 @@ module.exports = function (link, feedparser, callback) {
   (function requestStream() {
     var request = new FetchStream(link, {timeout: 15000})
 
-    request.on('error', function (err) {
+    request.on('error', function(err) {
       if (attempts < 4) {
         attempts++;
         return requestStream();

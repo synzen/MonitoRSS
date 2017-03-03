@@ -2,13 +2,13 @@ const Discord = require('discord.js')
 const channelTracker = require('../util/channelTracker.js')
 const getSubList = require('./util/getSubList.js')
 
-module.exports = function (bot, message, command) {
-  var rssList = []
+module.exports = function(bot, message, command) {
+  var rssList = {}
   try {rssList = require(`../sources/${message.guild.id}.json`).sources} catch (e) {}
 
   let botRole = message.guild.members.get(bot.user.id).highestRole
   let memberRoles = message.member.roles
-  let filteredMemberRoles = memberRoles.filterArray(function (role) {
+  let filteredMemberRoles = memberRoles.filterArray(function(role) {
     return (role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
   })
   let eligibleRoles = []
@@ -48,12 +48,12 @@ module.exports = function (bot, message, command) {
     const collectorFilter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(collectorFilter,{time:240000})
     channelTracker.addCollector(message.channel.id)
-    collector.on('message', function (response) {
+    collector.on('message', function(response) {
       let chosenRoleName = response.content
       if (chosenRoleName.toLowerCase() === 'exit') return collector.stop('Self-subscription removal canceled.');
       let chosenRole = message.guild.roles.find('name', chosenRoleName)
 
-      function isValidRole () {
+      function isValidRole() {
         if (eligibleRoles.includes(chosenRoleName)) return true;
       }
 

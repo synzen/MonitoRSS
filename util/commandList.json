@@ -1,4 +1,7 @@
 {
+	"rsshelp": {
+		"reqPerm": "SEND_MESSAGES"
+	},
 	"rssadd": {
 		"reqPerm": "SEND_MESSAGES",
 		"description": "Add an RSS feed to the channel with the default message."

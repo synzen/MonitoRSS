@@ -5,38 +5,38 @@ const channelTracker = require('../util/channelTracker.js')
 
 module.exports = function (bot, message, command) {
 
-  getIndex(bot, message, command, function (rssIndex) {
+  getIndex(bot, message, command, function(rssName) {
     var guildRss = require(`../sources/${message.guild.id}.json`)
     var rssList = guildRss.sources
 
     let currentMsg = '```Markdown\n'
-    if (rssList[rssIndex].message == '' || rssList[rssIndex].message == null) currentMsg += 'None has been set. Currently using default message below:\n\n``````\n' + config.feedSettings.defaultMessage;
-    else currentMsg += rssList[rssIndex].message;
+    if (!rssList[rssName].message) currentMsg += 'None has been set. Currently using default message below:\n\n``````\n' + config.feedSettings.defaultMessage;
+    else currentMsg += rssList[rssName].message;
 
-    message.channel.sendMessage(`The current message for ${rssList[rssIndex].link} is: \n${currentMsg + '```'}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${config.botSettings.prefix}rsstest\`.\n\n`).catch(err => console.log(`Promise Warning: rssMessage 1: ${err}`))
+    message.channel.sendMessage(`The current message for ${rssList[rssName].link} is: \n${currentMsg + '```'}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${config.botSettings.prefix}rsstest\`.\n\n`).catch(err => console.log(`Promise Warning: rssMessage 1: ${err}`))
 
     const filter = m => m.author.id == message.author.id
     const customCollect = message.channel.createCollector(filter,{time:240000})
     channelTracker.addCollector(message.channel.id)
 
-    customCollect.on('message', function (m) {
+    customCollect.on('message', function(m) {
       if (m.content.toLowerCase() === 'exit') return customCollect.stop('RSS Feed Message customization menu closed.');
       else if (m.content.toLowerCase() === 'reset') message.channel.sendMessage(`Resetting message...`)
       .then(resetMsg => {
         customCollect.stop();
-        delete rssList[rssIndex].message;
+        delete rssList[rssName].message;
         fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
-        console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Message reset for ${rssList[rssIndex].link}.`);
-        return resetMsg.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${rssList[rssIndex].link}`).catch(err => console.log(`Promise Warning: rssMessage 2a: ${err}`));
+        console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Message reset for ${rssList[rssName].link}.`);
+        return resetMsg.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${rssList[rssName].link}`).catch(err => console.log(`Promise Warning: rssMessage 2a: ${err}`));
       })
       .catch(err => console.log(`Promise Warning: rssMessage 2: ${err}`));
       else message.channel.sendMessage(`Updating message...`)
       .then(editing => {
         customCollect.stop();
-        rssList[rssIndex].message = m.content;
+        rssList[rssName].message = m.content;
         fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
-        console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New message recorded for ${rssList[rssIndex].link}.`);
-        editing.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssIndex].link}You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`).catch(err => console.log(`Promise Warning: rssMessage 3a: ${err}`));
+        console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New message recorded for ${rssList[rssName].link}.`);
+        editing.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssName].link}You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`).catch(err => console.log(`Promise Warning: rssMessage 3a: ${err}`));
       })
       .catch(err => console.log(`Promise Warning: rssMessage 3: ${err}`));
     });

@@ -1,6 +1,6 @@
 const channelTracker = require('../../util/channelTracker.js')
 
-module.exports = function (message, callback) {
+module.exports = function(message, callback) {
   var channel = message.channel
   channel.sendMessage('Enter a valid case-sensitive role name. Roles with duplicate names cannot be used.').catch(err => console.log(`Promise Warning: getRole 1: ${err}`))
 

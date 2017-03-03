@@ -5,8 +5,8 @@ module.exports = function (bot, oldRole, newRole) {
   var guildRss = require(`../sources/${oldRole.guild.id}.json`)
   var rssList = guildRss.sources
 
-  for (var rssIndex in rssList) {
-    checkGuild.roles(bot, oldRole.guild.id, rssIndex);
+  for (var rssName in rssList) {
+    checkGuild.roles(bot, oldRole.guild.id, rssName);
   }
 
 }

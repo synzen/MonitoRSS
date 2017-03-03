@@ -22,23 +22,30 @@ module.exports = function (bot, callback) {
   function start () {
     console.log('RSS Info: Starting initialization cycle.')
     con = sqlConnect(initFeeds)
-    if (con == null) throw 'RSS Error: SQL type is not correctly defined in config';
+    if (!con) throw 'RSS Error: SQL type is not correctly defined in config';
   }
 
   function initFeeds () {
     for (var guildIndex in guildList) {
-      let guildName = guildList[guildIndex].name;
-      let guildId = guildList[guildIndex].id;
-      let rssList = guildList[guildIndex].sources;
+      var guildName = guildList[guildIndex].name;
+      var guildId = guildList[guildIndex].id;
+      var rssList = guildList[guildIndex].sources;
       checkGuild.names(bot, guildId);
-      for (var rssIndex in rssList){
-        checkGuild.roles(bot, guildId, rssIndex);
-        if (configChecks.checkExists(guildId, rssIndex, true, true) && configChecks.validChannel(bot, guildId, rssIndex)) {
-          initAll(con, configChecks.validChannel(bot, guildId, rssIndex), rssIndex, function(err) {
-            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssIndex].link}, skipping...`);
+      for (var rssName in rssList){
+        checkGuild.roles(bot, guildId, rssName);
+        if (configChecks.checkExists(guildId, rssName, true, true) && configChecks.validChannel(bot, guildId, rssName)) {
+          initAll(con, configChecks.validChannel(bot, guildId, rssName), rssName, function(err) {
+            if (err) {
+              if (!rssList[rssName]) {
+                console.info(guildId + '\n\n')
+                console.info(rssList + '\n\n');
+                console.info(rssName);
+              }
+              console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssName].link}, skipping...`);
+            }
             initializedFeeds++;
             console.log(`${initializedFeeds}, ${totalFeeds}`)
-            if (initializedFeeds + skippedFeeds == totalFeeds) endCon();
+            if (initializedFeeds + skippedFeeds === totalFeeds) endCon();
           });
         }
         else skippedFeeds++;
@@ -49,22 +56,22 @@ module.exports = function (bot, callback) {
 
   fileOps.readDir('./sources', function (err, files) {
     if (err) throw err;
-    files.forEach(function(guildRSS) {
-      let guildId = guildRSS.replace(/.json/g, '')
+    files.forEach(function(guildRss) {
+      let guildId = guildRss.replace(/.json/g, '')
       if (bot.guilds.get(guildId)) {
         if (fileOps.isEmptySources(guildId)) return console.log(`RSS Info: (${guildId}) => 0 sources found, skipping.`);
         try {
-          let guild = require(`../sources/${guildRSS}`)
+          let guild = require(`../sources/${guildRss}`)
           guildList.push(guild)
           for (var y in guild.sources) totalFeeds++;
         }
-        catch (err) {fileOps.checkBackup(guildRSS)}
+        catch (err) {fileOps.checkBackup(guildRss)}
       }
-      else if (guildRSS !== 'guild_id_here.json' && guildRSS !== 'backup'){
-        console.log(`RSS Guild Profile: ${guildRSS} was not found in bot's guild list. Skipping.`);
+      else if (guildRss !== 'guild_id_here.json' && guildRss !== 'backup'){
+        console.log(`RSS Guild Profile: ${guildRss} was not found in bot's guild list. Skipping.`);
       }
     })
-    if (totalFeeds == 0) {
+    if (totalFeeds === 0) {
       console.log('RSS Info: There are no active feeds.');
       callback();
     }

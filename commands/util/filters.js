@@ -3,35 +3,20 @@ const config = require('../../config.json')
 const channelTracker = require('../../util/channelTracker.js')
 const validFilterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
 
-function isEmptyObject(obj) {
-    for(var prop in obj) {
-      if(obj.hasOwnProperty(prop)) return false;
-    }
-    return JSON.stringify(obj) === JSON.stringify({});
-}
-
-function getObjLength(obj) {
-  var count = 0
-  for (var prop in obj) {
-    if (obj.hasOwnProperty(prop)) count++;
-  }
-  return count
-}
-
-exports.add = function(message, rssIndex, role) {
+exports.add = function(message, rssName, role) {
   var guildRss = require(`../../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
-  if (!rssList[rssIndex].filters) rssList[rssIndex].filters = {};
-  if (role && !rssList[rssIndex].filters.roleSubscriptions) rssList[rssIndex].filters.roleSubscriptions = {};
-  if (role && !rssList[rssIndex].filters.roleSubscriptions[role.id])
-    rssList[rssIndex].filters.roleSubscriptions[role.id] = {
+  if (!rssList[rssName].filters) rssList[rssName].filters = {};
+  if (role && !rssList[rssName].filters.roleSubscriptions) rssList[rssName].filters.roleSubscriptions = {};
+  if (role && !rssList[rssName].filters.roleSubscriptions[role.id])
+    rssList[rssName].filters.roleSubscriptions[role.id] = {
       roleName: role.name,
       filters: {}
     }
 
-  var filterList = (role) ? rssList[rssIndex].filters.roleSubscriptions[role.id].filters : rssList[rssIndex].filters
-  var msg = `\`\`\`Markdown\n# Chosen Feed: ${rssList[rssIndex].link}\n# List of available filters to add\`\`\`\`\`\`Markdown\n`
+  var filterList = (role) ? rssList[rssName].filters.roleSubscriptions[role.id].filters : rssList[rssName].filters
+  var msg = `\`\`\`Markdown\n# Chosen Feed: ${rssList[rssName].link}\n# List of available filters to add\`\`\`\`\`\`Markdown\n`
   for (let filterType in validFilterTypes) {
     msg += `\n[Filter Category]: ${validFilterTypes[filterType]}\n`;
   }
@@ -62,7 +47,7 @@ exports.add = function(message, rssIndex, role) {
       filterCollect.on('message', function(chosenFilter) {
         if (chosenFilter.content == '{exit}') return filterCollect.stop('Feed Filter Addition menu closed.');
         else {
-          if (!role) delete rssList[rssIndex].roleSubscriptions;
+          if (!role) delete rssList[rssName].roleSubscriptions;
           if (!filterList[chosenFilterType]) filterList[chosenFilterType] = [];
           message.channel.sendMessage(`Updating filters...`)
           .then(editing => {
@@ -79,13 +64,13 @@ exports.add = function(message, rssIndex, role) {
             }
             fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`)
             if (!role) {
-              console.log(`RSS Filters: (${message.guild.id}, ${message.guild.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+              console.log(`RSS Filters: (${message.guild.id}, ${message.guild.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${rssList[rssName].link}.`);
               let msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n\n${addedList}\`\`\``;
               if (invalidItems) msg += `\n\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``;
               editing.edit(`${msg}\n\nYou may test your filters via \`${config.botSettings.prefix}rsstest\` and see what feeds pass through.`).catch(err => console.log(`Promise Warning: filterAdd 4a: ${err}`));
             }
             else {
-              console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+              console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${rssList[rssName].link}.`);
               let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n\n${addedList}\`\`\``;
               if (invalidItems) msg += `\n\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``;
               editing.edit(`${msg}\n\nYou may test your filters via \`${config.botSettings.prefix}rsstest\` and see what feeds will mention the role`).catch(err => console.log(`Promise Warning: filterAdd 4b: ${err}`));
@@ -109,25 +94,25 @@ exports.add = function(message, rssIndex, role) {
   })
 }
 
-exports.remove = function (message, rssIndex, role) {
+exports.remove = function(message, rssName, role) {
   var guildRss = require(`../../sources/${message.guild.id}.json`)
   var rssList = guildRss.sources
 
   //null role = not adding a filter for a role
-  var filterList = (role) ? rssList[rssIndex].filters.roleSubscriptions[role.id].filters : rssList[rssIndex].filters
-  if (!filterList || typeof filterList !== 'object') return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`).catch(err => `Promise Warning: filterRemove 1: ${err}`);
+  var filterList = (role) ? rssList[rssName].filters.roleSubscriptions[role.id].filters : rssList[rssName].filters
+  if (!filterList || typeof filterList !== 'object') return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssName].link}.`).catch(err => `Promise Warning: filterRemove 1: ${err}`);
 
   var isEmptyFilter = true
 
-  if (rssList[rssIndex].filters && typeof rssList[rssIndex].filters == 'object') {
-    for (let prop in rssList[rssIndex].filters) if (prop !== 'roleSubscriptions') isEmptyFilter = false;
+  if (rssList[rssName].filters && typeof rssList[rssName].filters == 'object') {
+    for (let prop in rssList[rssName].filters) if (prop !== 'roleSubscriptions') isEmptyFilter = false;
   }
 
-  if (!role && isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssIndex].link}.`).catch(err => `Promise Warning: filterRemove 2: ${err}`);
+  if (!role && isEmptyFilter) return message.channel.sendMessage(`There are no filters to remove for ${rssList[rssName].link}.`).catch(err => `Promise Warning: filterRemove 2: ${err}`);
 
   var msg = {embed: {
     color: config.botSettings.menuColor,
-    description: `**Feed Title:** ${rssList[rssIndex].title}\n**Feed Link:** ${rssList[rssIndex].link}\n\nBelow are the filter categories with their words/phrases under each.\n_____`,
+    description: `**Feed Title:** ${rssList[rssName].title}\n**Feed Link:** ${rssList[rssName].link}\n\nBelow are the filter categories with their words/phrases under each.\n_____`,
     author: {name: `List of Assigned Filters`},
     fields: [],
     footer: {}
@@ -204,19 +189,19 @@ exports.remove = function (message, rssIndex, role) {
             if (filterList[chosenFilterType].length === 0) delete filterList[chosenFilterType];
           }
 
-          if (role && isEmptyObject(filterList)) delete rssList[rssIndex].filters.roleSubscriptions[role.id];
-          if (role && isEmptyObject(rssList[rssIndex].filters.roleSubscriptions)) delete rssList[rssIndex].filters.roleSubscriptions;
-          if (isEmptyObject(rssList[rssIndex].filters)) delete rssList[rssIndex].filters;
+          if (role && filterList.size() === 0) delete rssList[rssName].filters.roleSubscriptions[role.id];
+          if (role && rssList[rssName].filters.roleSubscriptions.size() === 0) delete rssList[rssName].filters.roleSubscriptions;
+          if (rssList[rssName].filters.size() === 0) delete rssList[rssName].filters;
 
           fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
           if (!role) {
-            console.log(`RSS Filters: (${message.guild.id}, ${message.guild.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+            console.log(`RSS Filters: (${message.guild.id}, ${message.guild.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${rssList[rssName].link}.`);
             let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``;
             if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``;
             editing.edit(msg).catch(err =>console.log(`Promise Warning: filterRemove 8a: ${err}`));
           }
           else {
-            console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${rssList[rssIndex].link}.`);
+            console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${rssList[rssName].link}.`);
             let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``;
             if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``;
             editing.edit(msg).catch(err => console.log(`Promise Warning: filterRemove 8b: ${err}`));
