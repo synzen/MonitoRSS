@@ -18,9 +18,9 @@ module.exports = function(channel, rssList, rssName, article) {
     else embed.setColor(embedSpecs.color);
   }
 
-  if (embedSpecs.authorTitle) embed.setAuthor(replaceKeywords(embedSpecs.authorTitle));
+  if (embedSpecs.authorTitle) embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle));
 
-  if (embedSpecs.authorTitle && embedSpecs.authorAvatarURL && typeof embedSpecs.authorAvatarURL === 'string') embed.setAuthor(embedSpecs.authorTitle, embedSpecs.authorAvatarURL);
+  if (embedSpecs.authorTitle && embedSpecs.authorAvatarURL && typeof embedSpecs.authorAvatarURL === 'string') embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle), embedSpecs.authorAvatarURL);
 
   if (embedSpecs.thumbnailURL && typeof embedSpecs.thumbnailURL === 'string') embed.setThumbnail(article.convertImgs(embedSpecs.thumbnailURL));
 

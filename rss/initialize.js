@@ -44,7 +44,7 @@ module.exports = function(con, rssLink, channel, callback) {
     while (item = stream.read()) {
       currentFeed.push(item);
     }
-    
+
   });
 
   feedparser.on('end', function() {
@@ -112,8 +112,8 @@ module.exports = function(con, rssLink, channel, callback) {
       else if (currentFeed[0].meta.link && currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
       if (fileOps.exists(`./sources/${channel.guild.id}.json`)) {
-        var guildRSS = require(`../sources/${channel.guild.id}.json`);
-        var rssList = guildRSS.sources;
+        var guildRss = require(`../sources/${channel.guild.id}.json`);
+        var rssList = guildRss.sources;
         rssList[rssName] = {
       		enabled: 1,
           title: metaTitle,
@@ -122,21 +122,20 @@ module.exports = function(con, rssLink, channel, callback) {
       	}
       }
       else {
-        var guildRSS = {
+        var guildRss = {
           name: channel.guild.name,
           id: channel.guild.id,
-          sources: {
-            rssName: {
-              enabled: 1,
-              title: metaTitle,
-              link: rssLink,
-              channel: channel.id
-            }
-          }
+          sources: {}
         };
+        guildRss.sources[rssName] = {
+      		enabled: 1,
+          title: metaTitle,
+      		link: rssLink,
+      		channel: channel.id
+      	}
       }
 
-      fileOps.updateFile(channel.guild.id, guildRSS, `../sources/${channel.guild.id}.json`)
+      fileOps.updateFile(channel.guild.id, guildRss, `../sources/${channel.guild.id}.json`)
       callback()
 
     }

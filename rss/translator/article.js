@@ -33,7 +33,7 @@ function cleanRandoms (text) {
 module.exports = function Article(rawArticle, channel) {
   this.rawDescrip = striptags(rawArticle.description)
   this.rawSummary = striptags(rawArticle.summary)
-  this.title = (!rawArticle.title) ? '' : (striptags(rawArticle.title).length > 100) ? `${striptags(rawArticle.title).slice(0, 100)} [...]` : striptags(rawArticle.title)
+  this.title = (rawArticle.title) ? rawArticle.title : ''
   this.author = striptags(rawArticle.author)
   this.link = (rawArticle.link) ? rawArticle.link : ''
   this.meta = rawArticle.meta
@@ -69,7 +69,7 @@ module.exports = function Article(rawArticle, channel) {
   var imageLinks = []
   findImages(rawArticle, imageLinks)
   this.images = (imageLinks.length == 0) ? undefined : imageLinks
-  
+
   this.listImages = function () {
     var imageList = ''
     for (var image in this.images) {

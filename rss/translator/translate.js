@@ -31,8 +31,14 @@ module.exports = function (channel, rssList, rssName, rawArticle, isTestMessage)
     return null;
   }
 
-  // generate main message
-  var finalMessageCombo = {textMsg: (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : article.convertKeywords(config.feedSettings.defaultMessage)}
+  var finalMessageCombo = {}
+  // check if embed is enabled
+  if (rssList[rssName].embedMessage && rssList[rssName].embedMessage.enabled && rssList[rssName].embedMessage.properties) {
+    finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssName, article);
+    finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : ''; // allow empty messages if embed is enabled
+  }
+  else finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : article.convertKeywords(config.feedSettings.defaultMessage);
+
 
   // generate test details
   if (isTestMessage) {
@@ -62,9 +68,6 @@ module.exports = function (channel, rssList, rssName, rawArticle, isTestMessage)
     finalMessageCombo.testDetails = testDetails;
   }
 
-  // check if embed is enabled
-  if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.enabled) return finalMessageCombo;
-
-  if (rssList[rssName].embedMessage.properties) finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssName, article);
   return finalMessageCombo;
+
 }
