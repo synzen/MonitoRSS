@@ -1,5 +1,6 @@
 const Discord = require('discord.js')
 const config = require('../config.json')
+// const pageControls = require('../util/pageControls.js')   // reserved for when discord.js fixes their library
 
 module.exports = function (bot, message, command) {
   var rssList = {}
@@ -14,26 +15,44 @@ module.exports = function (bot, message, command) {
     else return undefined;
   }
 
-  var embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
   var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
-  
+  var embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
+    .setAuthor('Current Active Feeds')
+    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n_____`);
+
   var currentRSSList = []
   for (var rssName in rssList){
     currentRSSList.push( [rssList[rssName].link, rssName, rssList[rssName].title, getChannel(rssList[rssName].channel)] )
   }
 
+  var pages = []
   for (var x in currentRSSList) {
-    let count = parseInt(x,10) + 1;
+    let count = parseInt(x, 10) + 1;
     let link = currentRSSList[x][0];
     let title =  currentRSSList[x][2];
     let channelName = currentRSSList[x][3];
 
+    if ((count - 1) !== 0 && (count - 1) / 10 % 1 === 0) {
+      pages.push(embedMsg);
+      embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor);
+    }
+
     embedMsg.addField(`${count})  ${title}`, `Channel: #${channelName}\nLink: ${link}`);
   }
+  pages.push(embedMsg);
 
-  embedMsg.setAuthor('Current Active Feeds');
-  embedMsg.setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n_____`);
-  return message.channel.sendEmbed(embedMsg).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err.response.body.message}`));
+  for (let page in pages) {
+    message.channel.sendEmbed(pages[page]).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${page}/${pages.length}). Reason: ${err.response.body.message}`));
+  }
 
+  // reserved for when discord.js fixes their library
+  // message.channel.sendEmbed(pages[0])
+  // .then(m => {
+  //   if (pages.length === 1) return;
+  //   m.react('◀').catch(err => console.log(`yep`, err))
+  //   m.react('▶').catch(err => console.log(`yep2`, err))
+  //   pageControls.add(m.id, pages)
+  // })
+  // .catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err.response.body.message}`));
 
 }

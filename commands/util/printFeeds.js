@@ -14,7 +14,10 @@ module.exports = function(bot, message, command, callback) {
   }
 
   var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
-  var embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
+  var embedMsg = new Discord.RichEmbed()
+    .setColor(config.botSettings.menuColor)
+    .setAuthor('Feed Selection Menu')
+    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`);
 
   var currentRSSList = []
   for (var rssName in rssList) {
@@ -24,24 +27,31 @@ module.exports = function(bot, message, command, callback) {
 
   if (currentRSSList.length === 0) return message.channel.sendMessage('No feeds assigned to this channel.').catch(err => console.log(`Promise Warning: printFeeds 1: ${err}`));
 
+  var pages = []
   for (var x in currentRSSList) {
     let count = parseInt(x,10) + 1;
     let link = currentRSSList[x][0];
     let title =  currentRSSList[x][2];
     let channelName = currentRSSList[x][3];
 
+    if ((count - 1) !== 0 && (count - 1) / 10 % 1 === 0) {
+      pages.push(embedMsg);
+      embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
+    }
+
     embedMsg.addField(`${count})  ${title}`, `Link: ${link}`);
   }
+  pages.push(embedMsg);
 
-    var error = false;
-    embedMsg.setAuthor('Feed Selection Menu');
-    embedMsg.setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`);
-    message.channel.sendEmbed(embedMsg)
+  var error = false;
+  for (let page in pages) {
+    message.channel.sendEmbed(pages[page])
     .catch(err => {
       error = true;
       message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Promise Warning: printFeeds 3: ${err}`));
       console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}, embed is: `, embedMsg)
     });
+  }
 
   if (error) return console.log('print feeds returning due to error');
 
