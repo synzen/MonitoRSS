@@ -100,8 +100,8 @@ module.exports = function Article(rawArticle, channel) {
         // only single digit image numbers
         let imgNum = parseInt(imgLocs[loc].substr(6, 1), 10);
         // key is {imageX}, value is article image URL
-        if (!isNaN(imgNum) && imgNum !== 0 && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1];
-        else if (!isNaN(imgNum) || imgNum === 0) imgDictionary[imgLocs[loc]] = '';
+        if (!isNaN(imgNum) && imgNum !== 0 && this.images && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1];
+        else if (!isNaN(imgNum) || imgNum === 0 || !this.images) imgDictionary[imgLocs[loc]] = '';
       }
     }
     for (var imgKeyword in imgDictionary) content = content.replace(new RegExp(imgKeyword, 'g'), imgDictionary[imgKeyword]);
