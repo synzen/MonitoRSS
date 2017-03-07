@@ -15,9 +15,10 @@ module.exports = function(bot, message, command) {
   var rssList = guildRss.sources
   var role
 
+  // Add global subscriptions
   function addGlobalSub (rssName, role) {
     let source = rssList[rssName]
-    // remove any filtered subscriptions when adding global subscription
+    // remove any filtered subscriptions when adding global subscription, and delete parents if empty
     if (source.filters && source.filters.roleSubscriptions && source.filters.roleSubscriptions[role.id]) delete source.filters.roleSubscriptions[role.id];
     if (source.filters && source.filters.roleSubscriptions && source.filters.roleSubscriptions.size() === 0) delete source.filters.roleSubscriptions;
     if (source.filters && source.filters.size() === 0) delete source.filters;
@@ -34,6 +35,7 @@ module.exports = function(bot, message, command) {
     console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${message.guild.roles.get(role.id).id}, ${message.guild.roles.get(role.id).name}) => Global subscription added to feed \`${rssList[rssName].title}\`.`)
   }
 
+  // Remove global subscriptions
   function removeGlobalSub(rssName, role) {
     let source = rssList[rssName]
     var found = false
@@ -54,6 +56,7 @@ module.exports = function(bot, message, command) {
     return fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
   }
 
+  // Adding or removing filtered/global subscriptions
   function openSubMenu(rssName, role, isGlobalSub) {
     var subMenu = new Discord.RichEmbed()
       .setColor(config.botSettings.menuColor)
@@ -78,11 +81,13 @@ module.exports = function(bot, message, command) {
     filterOptionCollector.on('message', function (m) {
       let optionSelected = m.content
       if (optionSelected.toLowerCase() === 'exit') return filterOptionCollector.stop('RSS Role Customization menu closed.');
+      // Adding
       if (optionSelected == 1) {
         filterOptionCollector.stop();
         if (!isGlobalSub) filters.add(message, rssName, role);
         else addGlobalSub(rssName, role);
       }
+      // Removing
       else if (optionSelected == 2) {
         filterOptionCollector.stop();
         if (!isGlobalSub) {
@@ -104,7 +109,7 @@ module.exports = function(bot, message, command) {
     });
   }
 
-
+  // Printing current subscriptions
   function printSubscriptions() {
     let guild = message.guild
     var subList = {}
@@ -160,6 +165,7 @@ module.exports = function(bot, message, command) {
     }
   }
 
+  // Remove all subscriptions for a role
   function deleteSubscription(roleID) {
     var found = false
     for (var index in rssList) {
@@ -203,23 +209,26 @@ module.exports = function(bot, message, command) {
   collector.on('message', function(m) {
     let optionSelected = m.content
     if (optionSelected.toLowerCase() == 'exit') return collector.stop('RSS Role Customization menu closed.');
+    else if (!['1', '2', '3', '4'].includes(optionSelected)) return message.channel.sendMessage('That is not a valid option. Try again.').catch(err => console.log(`Promise Warning: rssRoles 3: ${err}`));
 
     if (optionSelected == 4) {
       collector.stop()
       return printSubscriptions(collector);
     }
+    // Options 1, 2, and 3 requires a role to be acquired first
     else if (optionSelected == 3 || optionSelected == 2 || optionSelected == 1) {
       collector.stop()
       getRole(message, function(role) {
         if (!role) return;
         if (optionSelected == 3) return deleteSubscription(role.id);
+        // Options 1 and 2 further requires a specific rss for adding/removing subscriptions
         else getIndex(bot, message, command, function(rssName) {
           if (optionSelected == 2) return openSubMenu(rssName, role, false);
           else if (optionSelected == 1) return openSubMenu(rssName, role, true);
         })
       })
     }
-    else message.channel.sendMessage('That is not a valid option. Try again.').catch(err => console.log(`Promise Warning: rssRoles 3: ${err}`));
+
   })
 
   collector.on('end', (collected, reason) => {

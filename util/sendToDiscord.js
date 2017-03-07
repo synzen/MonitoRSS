@@ -8,7 +8,11 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
   // check if any changes to feed article while article cycle was in progress
   if (!process.env.isCmdServer && fetchInterval.changedGuilds[channel.guild.id]) {
     let guildNew = fetchInterval.changedGuilds[channel.guild.id];
-    if (!guildNew.sources) return console.log(`RSS Warning: (${guild.id}, ${guild.name}) => No sources found in updated file, skipping Dscord message sending.`);
+    if (!guildNew.sources) {
+      console.info(guildNew.sources);
+      console.info(guildNew);
+      return console.log(`RSS Warning: (${guild.id}, ${guild.name}) => No sources found in updated file, skipping Discord message sending.`);
+    }
     let rssListNew = guildNew.sources;
     let found = false;
     for (var rssNameNew in rssListNew) if (rssNameNew == rssName) found = true;
@@ -19,12 +23,10 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
 
   if (isTestMessage) {
     var successLog = `RSS Test Delivery: (${guild.id}, ${guild.name}) => Sent test message for: ${rssList[rssName].link} in channel (${channel.id}, ${channel.name})`;
-    //var errLog = `RSS Test Error: Attempt #${attempts} (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) => Reason: `;
     var failLog = `RSS Test Delivery Failure: (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. Reason: `;
   }
   else {
     var successLog = `RSS Delivery: (${guild.id}, ${guild.name}) => Sent message: ${article.link} in channel (${channel.id}, ${channel.name})`;
-    //var errLog = `RSS Delivery Error: Attempt #${attempts} (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) => Reason: `;
     var failLog = `RSS Delivery Failure: (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. Reason: `;
   }
 
@@ -33,6 +35,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
   if (!message) return callback();
 
   function sendMain () {
+    // Main Message: If it contains both an embed and text, or only an embed.
     if (message.embedMsg) {
       function sendCombinedMsg() {
         channel.sendEmbed(message.embedMsg, message.textMsg)
@@ -47,7 +50,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
           setTimeout(sendCombinedMsg, 500)
         });
       }
-      if (message.textMsg.length > 1950) {
+      if (message.textMsg.length > 1950) { // Discord has a character limit of 2000
         console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssList[rssName].name}* due to character count >1950. Message is:\n\n `, message.textMsg);
         message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`;
         sendCombinedMsg();
@@ -55,6 +58,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
       else sendCombinedMsg();
     }
 
+    // Main Message: If it only contains a text message
     else {
       function sendTxtMsg() {
         channel.sendMessage(message.textMsg)
@@ -78,6 +82,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
     }
   }
 
+  // For test messages only. It will send the test details first, then the Main Message (above).
   if (isTestMessage) {
     function sendTestDetails() {
       channel.sendMessage(message.testDetails)

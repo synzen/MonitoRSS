@@ -9,6 +9,7 @@ module.exports = function(bot, message, command) {
   getIndex(bot, message, command, function(rssName) {
     message.channel.sendMessage(`Grabbing a random feed article...`)
     .then(grabMsg => {
+      // Replicate the RSS process for a test article
       var con = sqlConnect(getTestMsg)
       function getTestMsg() {
         getRSS(con, message.channel, rssName, grabMsg, function (err) {
@@ -21,4 +22,5 @@ module.exports = function(bot, message, command) {
     })
     .catch(err => console.log(`Promise Warning: rssTest 1: ${err}`))
   })
+  
 }

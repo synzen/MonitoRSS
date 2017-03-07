@@ -11,11 +11,13 @@ module.exports = function (channel, rssList, rssName, rawArticle, isTestMessage)
   var article = new Article(rawArticle, channel)
   article.subscriptions = getSubs(channel, rssName, article)
 
-  // filter message
+  // Filter message
   var filterPropCount = 0;
   if (rssList[rssName].filters && typeof rssList[rssName].filters === "object") {
-    for (var prop in rssList[rssName].filters)
+    for (var prop in rssList[rssName].filters) {
+      // Check if any filter categories exists, excluding roleSubs
       if (prop !== "roleSubscriptions") filterPropCount++;
+    }
   }
 
   var filterExists = false
@@ -25,14 +27,14 @@ module.exports = function (channel, rssList, rssName, rawArticle, isTestMessage)
     filterResults = filterFeed(rssList, rssName, article, isTestMessage);
   }
 
-  // feed article only passes through if the filter found the specified content
+  // Feed article only passes through if the filter found the specified content
   if (!isTestMessage && filterExists && !filterResults) {
     if (config.logging.showUnfiltered === true) console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => '${(article.link) ? article.link : article.title}' did not pass filters and was not sent.`);
     return null;
   }
 
   var finalMessageCombo = {}
-  // check if embed is enabled
+  // Check if embed is enabled
   if (rssList[rssName].embedMessage && rssList[rssName].embedMessage.enabled && rssList[rssName].embedMessage.properties) {
     finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssName, article);
     finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : ''; // allow empty messages if embed is enabled
@@ -40,7 +42,7 @@ module.exports = function (channel, rssList, rssName, rawArticle, isTestMessage)
   else finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : article.convertKeywords(config.feedSettings.defaultMessage);
 
 
-  // generate test details
+  // Generate test details
   if (isTestMessage) {
     var testDetails = '';
     let footer = "\nBelow is the configured message to be sent for this feed:\n\n--";

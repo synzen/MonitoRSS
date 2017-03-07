@@ -11,6 +11,7 @@ else if (!config.feedManagement.databaseName) throw 'Warning! Vital config missi
 else if (!config.feedManagement.sqlType || typeof config.feedManagement.sqlType !== 'string' || (config.feedManagement.sqlType !== 'mysql' && config.feedManagement !== 'sqlite3')) throw 'Warning! Vital config missing: sqlType incorrectly defined in config.';
 else if (!config.feedSettings.defaultMessage) throw 'Warning! Vital config missing: defaultMssage undefined in config.';
 
+// Ease the pains of having to rewrite a function every time to check an empty object
 Object.defineProperty(Object.prototype, 'size', {
     value: function() {
       let c = 0
@@ -21,6 +22,7 @@ Object.defineProperty(Object.prototype, 'size', {
     writable: true
 })
 
+// Initialize an object to hold updated guilds, sent from child process
 fetchInterval.changedGuilds = {}
 var initialized = false
 var bot
@@ -30,6 +32,7 @@ function beginFeedCycle (deleteCache) {
   require('./util/startFeedSchedule.js')(bot)
 }
 
+// Start Discord events handler child process
 function startCmdServer () {
   initialized = true
   const cmdServer = require('child_process').fork('./cmdServer.js', {env: {isCmdServer: true} })
@@ -37,6 +40,8 @@ function startCmdServer () {
   cmdServer.on('message', function (guildFile) {
     if (guildFile === 'kill') process.exit();
     fetchInterval.changedGuilds[guildFile.id] = guildFile.contents
+
+    // Delete the cache for an updated guild only when cycle is not in progress
     if (fetchInterval.cycleInProgress) return;
     try {
       delete require.cache[require.resolve(`../sources/${guildId}.json`)]
@@ -45,15 +50,22 @@ function startCmdServer () {
     } catch (e) {}
   })
 
+  // Send signal to kill child process if parent process (this) e3ncounters an error
   process.on('uncaughtException', function (err) {
     console.log(`Fatal Error for RSS Module! Stopping bot, printing error:\n\n`, err.stack)
     cmdServer.send('kill')
     process.exit(1)
   })
+
+  // Start feed fetch schedule after events handler process has begun
   beginFeedCycle()
 }
 
+
+// Function to handle login/relogin automatically
 (function login () {
+  let attempts = 0
+  if (attempts++ === 10) throw 'Discord.RSS RSS module failed to login after 10 attempts. Terminating.';
   bot = new Discord.Client()
   bot.login(config.botSettings.token)
   .catch(err => {

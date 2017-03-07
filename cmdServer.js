@@ -5,6 +5,7 @@ var bot
 
 if (config.logging.logDates) require('./util/logDates.js')();
 
+// Ease the pains of having to rewrite a function every time to check an empty object
 Object.defineProperty(Object.prototype, 'size', {
     value: function() {
       let c = 0
@@ -15,7 +16,13 @@ Object.defineProperty(Object.prototype, 'size', {
     writable: true
 });
 
+// Function to handle login/relogin automatically
 (function login() {
+  let attempts = 0
+  if (attempts++ === 10) {
+    process.send('kill');
+    throw 'Discord.RSS commands module failed to login after 10 attempts. Terminating.';
+  }
   if (!config.botSettings.menuColor || isNaN(parseInt(config.botSettings.menuColor))) config.botSettings.menuColor = '7833753';
   bot = new Discord.Client()
   bot.login(config.botSettings.token)
@@ -35,12 +42,14 @@ Object.defineProperty(Object.prototype, 'size', {
 //   console.log('Unhandled Rejection at: Promise', promise, 'reason:', err);
 // })
 
+// Kill the parent process if this child process encounters an error
 process.on('uncaughtException', function (err) {
   console.log(`Fatal Error for Commands Module! Stopping bot, printing error:\n\n`, err.stack)
   process.send('kill')
   process.exit(1)
 })
 
+// Exit process if parent process tells child process (this) to die
 process.on('message', function (message) {
   if (message === 'kill') process.exit(1);
 })

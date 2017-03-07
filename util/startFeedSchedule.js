@@ -16,6 +16,7 @@ module.exports = function (bot) {
   var startTime
 
   function checkGuildUpdates() {
+    // Check for guilds to be updated that were sent from child process
     for (var guildId in fetchInterval.changedGuilds) {
       try {
         delete require.cache[require.resolve(`../sources/${guildId}.json`)]
@@ -26,6 +27,7 @@ module.exports = function (bot) {
   }
 
   function endCon(startingCycle) {
+    // End SQL connection
     sqlCmds.end(con, function(err) {
       if (err) console.log('Error: Could not close MySQL connection. ' + err)
       fetchInterval.cycleInProgress = false
@@ -38,7 +40,7 @@ module.exports = function (bot) {
   function connect() {
     if (fetchInterval.cycleInProgress) {
       console.log(`RSS Info: Previous cycle was unable to finish. Starting new cycle using unclosed connection.`);
-      // return endCon(true);
+      return endCon(true);
     }
     checkGuildUpdates()
     fetchInterval.cycleInProgress = true
@@ -47,13 +49,14 @@ module.exports = function (bot) {
     fileOps.readDir('./sources', function (err, files) {
       if (err) throw err;
       files.forEach(function(guildRSS) {
-        let guildId = guildRSS.replace(/.json/g, '')
-        if (bot.guilds.get(guildId)) {
+        let guildId = guildRSS.replace(/.json/g, '') // Remove .json file ending since only the ID is needed
+        if (bot.guilds.get(guildId)) {   // Check if it is a valid guild in bot's guild collection
           if (fileOps.isEmptySources(guildId)) return console.log(`RSS Info: (${guildId}) => 0 sources found, skipping.`);
+          // Enclosed in a try/catch to account for invalid JSON
           try {
             let guild = require(`../sources/${guildRSS}`)
             guildList.push(guild)
-            for (var y in guild.sources) feedLength++;
+            for (var y in guild.sources) feedLength++; // Count how many feeds there will be in total
           }
           catch (err) {fileOps.checkBackup(guildRSS)}
         }
@@ -75,12 +78,12 @@ module.exports = function (bot) {
       let guildId = guildList[guildIndex].id;
       let rssList = guildList[guildIndex].sources;
       for (let rssName in rssList) {
-        if (configChecks.checkExists(guildId, rssName, false) && configChecks.validChannel(bot, guildId, rssName)) {
+        if (configChecks.checkExists(guildId, rssName, false) && configChecks.validChannel(bot, guildId, rssName)) { // Check valid source config and channel
           getFeed(con, configChecks.validChannel(bot, guildId, rssName), rssName, false, function (err) {
             if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssName].link}, skipping...`);
             feedsProcessed++
             //console.log(`${feedsProcessed} ${feedsSkipped} ${feedLength}`)
-            if (feedsProcessed + feedsSkipped == feedLength) setTimeout(endCon, 5000);
+            if (feedsProcessed + feedsSkipped == feedLength) setTimeout(endCon, 5000); // End SQL connection once all feeds have been processed
           });
         }
         else feedsSkipped++;

@@ -23,6 +23,7 @@ module.exports = function (bot, message) {
 
   let maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
 
+  // If there is no link after rssadd, return.
   let content = message.content.split(' ');
   if (content.length === 1) return;
 

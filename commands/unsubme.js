@@ -8,6 +8,8 @@ module.exports = function(bot, message, command) {
 
   let botRole = message.guild.members.get(bot.user.id).highestRole
   let memberRoles = message.member.roles
+
+  // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
   let filteredMemberRoles = memberRoles.filterArray(function(role) {
     return (role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
   })
@@ -20,6 +22,7 @@ module.exports = function(bot, message, command) {
   .setTitle('Self-Subscription Removal')
   .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name you want removed, or type *exit* to cancel.\n_____')
 
+  // Generate a list of feeds and eligible roles to be removed
   let options = getSubList(bot, message.guild, rssList)
   for (var option in options) {
     var roleList = '';
@@ -29,13 +32,14 @@ module.exports = function(bot, message, command) {
         filteredMemberRoles.splice(memberRole, 1);
       }
     }
-    if (roleList !== '') {
+    if (roleList) {
       let channelID = options[option].source.channel;
       let channelName = message.guild.channels.get(channelID).name;
       list.addField(options[option].source.title, `**Channel:**: #${channelName}\n${roleList}`, true);
     }
   }
 
+  // Some roles may not have a feed assigned since it prints all roles below the bot's role.
   if (filteredMemberRoles.length > 0) {
     var leftoverRoles = '';
     for (var leftoverRole in filteredMemberRoles) {
@@ -43,12 +47,14 @@ module.exports = function(bot, message, command) {
     }
     list.addField(`No Feed Assigned`, leftoverRoles, true);
   }
+
   message.channel.sendEmbed(list)
   .then(m => {
     const collectorFilter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(collectorFilter,{time:240000})
     channelTracker.addCollector(message.channel.id)
     collector.on('message', function(response) {
+      // Select a role here
       let chosenRoleName = response.content
       if (chosenRoleName.toLowerCase() === 'exit') return collector.stop('Self-subscription removal canceled.');
       let chosenRole = message.guild.roles.find('name', chosenRoleName)

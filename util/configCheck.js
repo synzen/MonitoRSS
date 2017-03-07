@@ -1,3 +1,5 @@
+// Check for invalid configs on startup and at the beginning of each feed retrieval cycle
+
 const config = require('../config.json')
 
 exports.checkExists = function (guildId, rssName, logging, initializing) {

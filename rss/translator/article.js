@@ -3,6 +3,7 @@ const striptags = require('striptags')
 const moment = require('moment-timezone')
 const cleanEntities = require('entities')
 
+// Used to find images in any object values of the article
 function findImages(object, results) {
   for (var key in object) {
     if (typeof object[key] === 'string') {
@@ -15,6 +16,7 @@ function findImages(object, results) {
   return false
 }
 
+// Clean up ridiculous spacings some articles may have in their descriptions/summaries
 function cleanRandoms (text) {
   var a = cleanEntities.decodeHTML(text)
           .replace(/<br>/g, '\n')
@@ -48,6 +50,7 @@ module.exports = function Article(rawArticle, channel) {
 
   // description
   var rawArticleDescrip = ''
+  // YouTube doesn't use the regular description field, thus manually setting it as the description
   if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#'];
   else if (rawArticle.description) rawArticleDescrip = cleanRandoms(rawArticle.description);
   rawArticleDescrip = (rawArticleDescrip.length > 800) ? `${rawArticleDescrip.slice(0, 790)} [...]` : rawArticleDescrip
@@ -89,7 +92,7 @@ module.exports = function Article(rawArticle, channel) {
     this.tags = categoryList;
   }
 
-  // replace images, defined as a separate function for use in embed.js
+  // replace images
   this.convertImgs = function(content) {
     var imgDictionary = {}
     var imgLocs = content.match(/{image.+}/g)

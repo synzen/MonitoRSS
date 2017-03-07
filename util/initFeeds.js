@@ -20,6 +20,7 @@ module.exports = function (bot, callback) {
   }
 
   function start () {
+    // Connect to the SQL database
     console.log('RSS Info: Starting initialization cycle.')
     con = sqlConnect(initFeeds)
     if (!con) throw 'RSS Error: SQL type is not correctly defined in config';
@@ -30,22 +31,15 @@ module.exports = function (bot, callback) {
       var guildName = guildList[guildIndex].name;
       var guildId = guildList[guildIndex].id;
       var rssList = guildList[guildIndex].sources;
-      checkGuild.names(bot, guildId);
+      checkGuild.names(bot, guildId); // Check for any guild name changes
       for (var rssName in rssList){
-        checkGuild.roles(bot, guildId, rssName);
-        if (configChecks.checkExists(guildId, rssName, true, true) && configChecks.validChannel(bot, guildId, rssName)) {
+        checkGuild.roles(bot, guildId, rssName); // Check for any role name changes
+        if (configChecks.checkExists(guildId, rssName, true, true) && configChecks.validChannel(bot, guildId, rssName)) { // Check valid source config and channel
           initAll(con, configChecks.validChannel(bot, guildId, rssName), rssName, function(err) {
-            if (err) {
-              if (!rssList[rssName]) {
-                console.info(guildId + '\n\n')
-                console.info(rssList + '\n\n');
-                console.info(rssName);
-              }
-              console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssName].link}, skipping...`);
-            }
+            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssName].link}, skipping...`);
             initializedFeeds++;
             console.log(`${initializedFeeds}, ${totalFeeds}`)
-            if (initializedFeeds + skippedFeeds === totalFeeds) endCon();
+            if (initializedFeeds + skippedFeeds === totalFeeds) endCon(); // End SQL connection once all feeds have been processed
           });
         }
         else skippedFeeds++;
@@ -57,13 +51,14 @@ module.exports = function (bot, callback) {
   fileOps.readDir('./sources', function (err, files) {
     if (err) throw err;
     files.forEach(function(guildRss) {
-      let guildId = guildRss.replace(/.json/g, '')
-      if (bot.guilds.get(guildId)) {
+      let guildId = guildRss.replace(/.json/g, '') // Remove .json file ending since only the ID is needed
+      if (bot.guilds.get(guildId)) { // Check if it is a valid guild in bot's guild collection
         if (fileOps.isEmptySources(guildId)) return console.log(`RSS Info: (${guildId}) => 0 sources found, skipping.`);
+        // Enclosed in a try/catch to account for invalid JSON
         try {
           let guild = require(`../sources/${guildRss}`)
           guildList.push(guild)
-          for (var y in guild.sources) totalFeeds++;
+          for (var y in guild.sources) totalFeeds++; // Count how many feeds there will be in total
         }
         catch (err) {fileOps.checkBackup(guildRss)}
       }

@@ -1,3 +1,5 @@
+// Check for guild names/role names changes
+
 const fileOps = require('./fileOps.js')
 
 exports.roles = function (bot, guildId, rssName) {

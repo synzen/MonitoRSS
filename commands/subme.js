@@ -14,6 +14,7 @@ module.exports = function(bot, message, command) {
   .setTitle('Self-Subscription Addition')
   .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name you want to be added to, or type *exit* to cancel.\n_____')
 
+  // Generate list of all feeds and roles that can be added
   for (var option in options) {
     var roleList = '';
     for (var roleID in options[option].roleList) {
@@ -25,12 +26,14 @@ module.exports = function(bot, message, command) {
     list.addField(options[option].source.title, `**Channel:** #${channelName}\n${roleList}`, true);
   }
 
+  // Send list
   message.channel.sendEmbed(list).catch(err => console.log(`Promise Warning: subAdd Embed: ${err}`))
   .then(m => {
     const collectorFilter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(collectorFilter,{time:240000})
     channelTracker.addCollector(message.channel.id)
     collector.on('message', function(response) {
+      // Select a role here
       let chosenRoleName = response.content
       if (chosenRoleName.toLowerCase() === 'exit') return collector.stop('Self-subscription addition canceled.');
       if (!bot.guilds.get(message.guild.id).roles.find('name', chosenRoleName)) message.channel.sendMessage('That is not a valid role subscription to add. Try again.').catch(err => console.log(`Promise Warning: subAdd 3: ${err}`));
@@ -44,7 +47,7 @@ module.exports = function(bot, message, command) {
             found = true;
           }
         }
-        if (found === false) message.channel.sendMessage('That is not a valid role subscription to add. Try again.').catch(err => console.log(`Promise Warning: subAdd 4: ${err}`));
+        if (!found) message.channel.sendMessage('That is not a valid role subscription to add. Try again.').catch(err => console.log(`Promise Warning: subAdd 4: ${err}`));
         else {
           collector.stop();
           if (message.member.roles.get(chosenRole.id)) return message.channel.sendMessage(`You already have that role.`).catch(err => console.log(`Promise Warning: subAdd 5: ${err}`));

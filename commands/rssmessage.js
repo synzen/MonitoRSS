@@ -21,6 +21,7 @@ module.exports = function (bot, message, command) {
 
     customCollect.on('message', function(m) {
       if (m.content.toLowerCase() === 'exit') return customCollect.stop('RSS Feed Message customization menu closed.');
+      // Reset custom message
       else if (m.content.toLowerCase() === 'reset') message.channel.sendMessage(`Resetting message...`)
       .then(resetMsg => {
         customCollect.stop();
@@ -30,6 +31,7 @@ module.exports = function (bot, message, command) {
         return resetMsg.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${rssList[rssName].link}`).catch(err => console.log(`Promise Warning: rssMessage 2a: ${err}`));
       })
       .catch(err => console.log(`Promise Warning: rssMessage 2: ${err}`));
+      // Set new message
       else message.channel.sendMessage(`Updating message...`)
       .then(editing => {
         customCollect.stop();

@@ -1,3 +1,6 @@
+// Asks the user to input a valid role
+// Invalid roles are ones with duplicate names
+
 const channelTracker = require('../../util/channelTracker.js')
 
 module.exports = function(message, callback) {

@@ -11,10 +11,11 @@ function findFilterWords(filterType, content, isTestMessage) {
   if (isTestMessage) var matches = []
   if (filterType && filterType.length !== 0 && typeof filterType === 'object') {
 
+    // For title, descriptions, summary, and author
     if (typeof content === 'string') {
       var content = content.toLowerCase();
       for (var word in filterType) {
-
+        // Broad filters, for phrases/words found anywhere
         if (filterType[word].startsWith('~')) {
           let cleanedWord = filterType[word].slice(1, filterType[word].length);
           let expression = new RegExp(`${escapeRegExp(cleanedWord)}`, 'gi');
@@ -23,7 +24,7 @@ function findFilterWords(filterType, content, isTestMessage) {
             else return true;
           }
         }
-
+        // Specific filters, for phrases/words with spaces around them
         else {
           let expression = new RegExp(`(\\s|^)${escapeRegExp(filterType[word])}(\\s|$)`, 'gi');
           if (expression.test(content)) {
@@ -35,6 +36,7 @@ function findFilterWords(filterType, content, isTestMessage) {
       }
     }
 
+    // For tags
     else if (typeof content === 'object') {
       for (var item in content) {
         for (var word in filterType) {
