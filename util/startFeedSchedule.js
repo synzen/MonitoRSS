@@ -80,7 +80,7 @@ module.exports = function (bot) {
       for (let rssName in rssList) {
         if (configChecks.checkExists(guildId, rssName, false) && configChecks.validChannel(bot, guildId, rssName)) { // Check valid source config and channel
           getFeed(con, configChecks.validChannel(bot, guildId, rssName), rssName, false, function (err) {
-            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssName].link}, skipping...`);
+            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => Skipping ${rssList[rssName].link}. Reason: ${err.content}`);
             feedsProcessed++
             //console.log(`${feedsProcessed} ${feedsSkipped} ${feedLength}`)
             if (feedsProcessed + feedsSkipped == feedLength) setTimeout(endCon, 5000); // End SQL connection once all feeds have been processed
@@ -89,7 +89,7 @@ module.exports = function (bot) {
         else feedsSkipped++;
       }
     }
-    if (feedsSkipped + feedsProcessed == feedLength) return endCon();
+    if (feedsSkipped + feedsProcessed === feedLength) return endCon();
   }
 
   fetchInterval.startSchedule(connect)

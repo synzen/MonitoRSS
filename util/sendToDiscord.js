@@ -51,7 +51,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
         });
       }
       if (message.textMsg.length > 1950) { // Discord has a character limit of 2000
-        console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssList[rssName].name}* due to character count >1950. Message is:\n\n `, message.textMsg);
+        console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n `, message.textMsg);
         message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`;
         sendCombinedMsg();
       }

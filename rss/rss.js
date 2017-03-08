@@ -26,13 +26,13 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
   var rssList = guild.sources
 
   requestStream(rssList[rssName].link, feedparser, function(err) {
-    if (err && config.logging.showFeedErrs === true) return callback(err);
+    if (err && config.logging.showFeedErrs === true) return callback({type: 'request', content: err});
     else if (err) return callback();
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    if (config.logging.showFeedErrs === true) return callback(err)
+    if (config.logging.showFeedErrs === true) return callback({type: 'feedparser', content: err})
     else callback();
   });
 
@@ -47,10 +47,9 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
   });
 
   feedparser.on('end', function() {
-    if (currentFeed.length === 0) {
-      if (!isTestMessage) return callback();
-      callback(`${rssName}" has no feeds to send for rsstest.`);
-      return channel.sendMessage(`Feed "<${rssList[rssName].link}>" has no available feeds to be send for test details.`);
+    if (currentFeed.length === 0) { // Return callback if there no articles in the feed are found
+      if (isTestMessage) return callback({type: 'feedparser', content: 'No existing feeds'})
+      return callback();
     }
 
     var processedItems = 0
@@ -76,7 +75,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
         if (err || results.size() === 0) {
           if (err) console.log(`Database error! (${guild.id}, ${guild.name}) => RSS index ${rssName} Feed ${rssName}. Skipping because of error:`, err);
           else if (results.size() === 0) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssName}" appears to have been deleted, skipping...`);
-          return callback();
+          return callback(); // Callback no error object because 99% of the time it is just a hiccup
         }
         if (isTestMessage) {
           let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1));

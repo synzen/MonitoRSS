@@ -202,39 +202,40 @@ module.exports = function(bot, message, command) {
     .addField(`4) List Roles with Subscriptions`, `List all roles with all types of subscriptions.`)
 
   message.channel.sendEmbed(menu).catch(err => console.log(`Promise Warning: rssRoles 2: ${err}`))
+  .then(menu => {
+    const collector = message.channel.createCollector(collectorFilter,{time:240000})
+    channelTracker.addCollector(message.channel.id)
 
-  const collector = message.channel.createCollector(collectorFilter,{time:240000})
-  channelTracker.addCollector(message.channel.id)
+    collector.on('message', function(m) {
+      let optionSelected = m.content
+      if (optionSelected.toLowerCase() == 'exit') return collector.stop('RSS Role Customization menu closed.');
+      else if (!['1', '2', '3', '4'].includes(optionSelected)) return message.channel.sendMessage('That is not a valid option. Try again.').catch(err => console.log(`Promise Warning: rssRoles 3: ${err}`));
 
-  collector.on('message', function(m) {
-    let optionSelected = m.content
-    if (optionSelected.toLowerCase() == 'exit') return collector.stop('RSS Role Customization menu closed.');
-    else if (!['1', '2', '3', '4'].includes(optionSelected)) return message.channel.sendMessage('That is not a valid option. Try again.').catch(err => console.log(`Promise Warning: rssRoles 3: ${err}`));
-
-    if (optionSelected == 4) {
-      collector.stop()
-      return printSubscriptions(collector);
-    }
-    // Options 1, 2, and 3 requires a role to be acquired first
-    else if (optionSelected == 3 || optionSelected == 2 || optionSelected == 1) {
-      collector.stop()
-      getRole(message, function(role) {
-        if (!role) return;
-        if (optionSelected == 3) return deleteSubscription(role.id);
-        // Options 1 and 2 further requires a specific rss for adding/removing subscriptions
-        else getIndex(bot, message, command, function(rssName) {
-          if (optionSelected == 2) return openSubMenu(rssName, role, false);
-          else if (optionSelected == 1) return openSubMenu(rssName, role, true);
+      if (optionSelected == 4) {
+        collector.stop()
+        return printSubscriptions(collector);
+      }
+      // Options 1, 2, and 3 requires a role to be acquired first
+      else if (optionSelected == 3 || optionSelected == 2 || optionSelected == 1) {
+        collector.stop()
+        getRole(message, function(role) {
+          if (!role) return;
+          if (optionSelected == 3) return deleteSubscription(role.id);
+          // Options 1 and 2 further requires a specific rss for adding/removing subscriptions
+          else getIndex(bot, message, command, function(rssName) {
+            if (optionSelected == 2) return openSubMenu(rssName, role, false);
+            else if (optionSelected == 1) return openSubMenu(rssName, role, true);
+          })
         })
-      })
-    }
+      }
 
-  })
+    })
 
-  collector.on('end', (collected, reason) => {
-    channelTracker.removeCollector(message.channel.id)
-    if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
-    else if (reason !== 'user') return message.channel.sendMessage(reason);
-  });
+    collector.on('end', (collected, reason) => {
+      channelTracker.removeCollector(message.channel.id)
+      if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
+      else if (reason !== 'user') return message.channel.sendMessage(reason);
+    });
+  }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send roles menu. (${err})`))
 
 }

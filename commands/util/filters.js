@@ -194,7 +194,7 @@ exports.remove = function(message, rssName, role) {
         .then(editing => {
           filterCollect.stop()
           var deletedList = ''
-          // Delet the filters stored from before from highest index to lowest
+          // Delete the filters stored from before from highest index to lowest
           for (var i = validFilter.length - 1; i >= 0; i--) {
             deletedList += `\n${validFilter[i].filter}`;
             filterList[chosenFilterType].splice(validFilter[i].index, 1);
@@ -221,8 +221,7 @@ exports.remove = function(message, rssName, role) {
             editing.edit(msg).catch(err => console.log(`Promise Warning: filterRemove 8b: ${err}`));
           }
 
-        })
-        .catch(err => console.log(`Promise Warning: filterRemove 8: ${err}`));
+        }).catch(err => console.log(`Promise Warning: filterRemove 8: ${err}`));
       })
       filterCollect.on('end', (collected, reason) => {
         channelTracker.removeCollector(message.channel.id)

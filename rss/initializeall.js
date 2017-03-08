@@ -45,12 +45,12 @@ module.exports = function (con, channel, rssName, callback) {
   var rssList = guild.sources
 
   requestStream(rssList[rssName].link, feedparser, function (err) {
-    if (err) return callback(err);
+    if (err) return callback({type: 'request', content: err});
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    return callback(err)
+    return callback({type: 'feedparser', content: err})
   });
 
   feedparser.on('readable', function() {
@@ -60,10 +60,11 @@ module.exports = function (con, channel, rssName, callback) {
     while (item = stream.read()) {
       currentFeed.push(item);
     }
-    
+
   });
 
   feedparser.on('end', function() {
+    // Return if no articles in feed found
     if (currentFeed.length === 0) return callback();
 
     var tableAlreadyExisted = 0

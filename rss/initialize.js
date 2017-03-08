@@ -23,17 +23,13 @@ module.exports = function(con, rssLink, channel, callback) {
   var currentFeed = []
 
   requestStream(rssLink, feedparser, function(err) {
-    if (err) {
-      console.log(`RSS Warning: Unable to add ${rssLink}, could not connect due to invalid response. (${err})`);
-      return callback(`Unable to add <${rssLink}>, could not connect due to invalid response. Be sure to validate your feed.`);
-    }
+    if (err) return callback({type: 'request', content: err});
   })
 
   feedparser.on('error', function(err) {
     if (err)  {
       feedparser.removeAllListeners('end');
-      console.log(`RSS Warning:: Unable to add ${rssLink} due to invalid feed.`);
-      return callback(`Unable to add <${rssLink}>, could not validate as a proper feed.`);
+      return callback({type: 'feedparser', content: err});
     }
   });
 
@@ -50,15 +46,11 @@ module.exports = function(con, rssLink, channel, callback) {
   feedparser.on('end', function() {
     var metaLink = ''
     var randomNum = Math.floor((Math.random() * 99) + 1)
-    if (currentFeed[0]) metaLink = (currentFeed[0].meta.link != null) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
+    if (currentFeed[0]) metaLink = (currentFeed[0].meta.link) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
 
     var rssName = `${channel.id}_${randomNum}${metaLink}`
 
-    if (!metaLink) {
-      channel.sendMessage("Cannot find meta link for this feed. Unable to add to database. This is most likely due to no existing articles in the feed.");
-      console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Cannot initialize feed because of no meta link: ${rssLink}`)
-      return callback();
-    }
+    if (!metaLink) return callback({type: 'initialization', content: 'No meta link available, most likely due to no existing articles.'});
 
     // MySQL table names have a limit of 64 char
     if (rssName.length >= 64 ) rssName = rssName.substr(0,64);

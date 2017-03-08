@@ -47,16 +47,18 @@ module.exports = function (channel, rssList, rssName, rawArticle, isTestMessage)
     var testDetails = '';
     let footer = "\nBelow is the configured message to be sent for this feed:\n\n--";
     testDetails += `\`\`\`Markdown\n# Test Details\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${article.title}`;
-    if (article.summary) {
-      if (article.rawDescrip !== article.rawSummary) var testSummary = (article.summary.length > 700) ? `${article.summary.slice(0, 690)} [...]\n\n**(Truncated summary for shorter rsstest)**` : article.summary;
-      else var testSummary = (article.summary.length > 375) ? `${article.summary.slice(0, 365)} [...]\n\n**(Truncated summary for shorter rsstest)**` : article.summary;
 
-      testDetails += (article.rawSummary === article.rawDescrip) ? '' : `\n\n[Summary]: {summary}\n${testSummary}`;
+    if (article.summary && article.summary !== article.description) {  // Do not add summary if summary = description
+      if (article.description && article.description.length > 500) var testSummary = (article.summary.length > 500) ? `${article.summary.slice(0, 490)} [...]\n\n**(Truncated summary for shorter rsstest)**` : article.summary; // If description is long, truncate summary.
+      else var testSummary = article.summary;
+      testDetails += `\n\n[Summary]: {summary}\n${testSummary}`;
     }
+
     if (article.description) {
-      if (article.rawDescrip !== article.rawSummary) var testDescrip = (article.description.length > 750) ? `${article.description.slice(0, 690)} [...]\n\n**(Truncated description for shorter rsstest)**` : article.description;
-      else var testDescrip = (article.description.length > 375) ? `${article.description.slice(0, 365)} [...]\n\n**(Truncated description for shorter rsstest)**` : article.description;
+      if (article.summary && article.summary.length > 500) var testDescrip = (article.description.length > 500) ? `${article.description.slice(0, 490)} [...]\n\n**(Truncated description for shorter rsstest)**` : article.description; // If summary is long, truncate description.
+      else var testDescrip = article.description;
       testDetails += `\n\n[Description]: {description}\n${testDescrip}`;
+
     }
     if (article.pubdate) testDetails += `\n\n[Published Date]: {date}\n${article.pubdate}`;
     if (article.author) testDetails += `\n\n[Author]: {author}\n${article.author}`;

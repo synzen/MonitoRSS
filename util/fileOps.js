@@ -4,35 +4,37 @@
 const fs = require('fs');
 const config = require('../config.json')
 
-function updateContent(realFile, inFile, cacheFile) {
+function updateContent(realFile, inFile, cacheLoc) {
   if (process.env.isCmdServer) process.send({id: realFile, contents: inFile}); //child process
   fs.writeFileSync(`./sources/${realFile}.json`, JSON.stringify(inFile, null, 2))
-  try {delete require.cache[require.resolve(cacheFile)]} catch (e) {}
+  try {delete require.cache[require.resolve(cacheLoc)]} catch (e) {}
 }
 
 exports.exists = function (file) {
   return fs.existsSync(file)
 }
 
-exports.updateFile = function (guildId, inFile, cacheFile) {
-  if (fs.existsSync(`./sources/${guildId}.json`)) {
+exports.updateFile = function (guildId, inFile, cacheLoc) {
+  // "inFile" is the new contents in memory, cacheLoc is the cache location of the file
+  if (fs.existsSync(`./sources/${guildId}.json`)) { // Back up the file first if possible
     fs.readFile(`./sources/${guildId}.json`, function (err, data) {
       if (err) throw err;
       fs.writeFileSync(`./sources/backup/${guildId}.json`, data)
-      updateContent(guildId, inFile, cacheFile)
+      updateContent(guildId, inFile, cacheLoc)
     });
   }
-  else updateContent(guildId, inFile, cacheFile);
+  else updateContent(guildId, inFile, cacheLoc);
 }
 
-exports.deleteFile = function (guildId, cacheFile, callback) {
+exports.deleteFile = function (guildId, cacheLoc, callback) {
   try {fs.unlinkSync(`./sources/${guildId}.json`)} catch (e) {}
-  try {delete require.cache[require.resolve(cacheFile)]} catch (e) {}
+  try {delete require.cache[require.resolve(cacheLoc)]} catch (e) {}
   if (process.env.isCmdServer) process.send(guildId);
   return callback();
 }
 
 exports.isEmptySources = function (guildId, callback) {
+  // Used on the beginning of each cycle to check for empty sources per guild
   var guildRss = require(`../sources/${guildId}.json`)
   if (guildRss.sources.length === 0) {
      if (!guildRss.timezone) {

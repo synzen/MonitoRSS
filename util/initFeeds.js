@@ -36,7 +36,7 @@ module.exports = function (bot, callback) {
         checkGuild.roles(bot, guildId, rssName); // Check for any role name changes
         if (configChecks.checkExists(guildId, rssName, true, true) && configChecks.validChannel(bot, guildId, rssName)) { // Check valid source config and channel
           initAll(con, configChecks.validChannel(bot, guildId, rssName), rssName, function(err) {
-            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => ${err.toString().slice(7, err.toString().length)} for ${rssList[rssName].link}, skipping...`);
+            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => Skipping ${rssList[rssName].link}. Reason: ${err.content}`);
             initializedFeeds++;
             console.log(`${initializedFeeds}, ${totalFeeds}`)
             if (initializedFeeds + skippedFeeds === totalFeeds) endCon(); // End SQL connection once all feeds have been processed
@@ -45,7 +45,7 @@ module.exports = function (bot, callback) {
         else skippedFeeds++;
       }
     }
-    if (skippedFeeds == totalFeeds) endCon();
+    if (skippedFeeds === totalFeeds) endCon();
   }
 
   fileOps.readDir('./sources', function (err, files) {

@@ -35,11 +35,12 @@ function cleanRandoms (text) {
 module.exports = function Article(rawArticle, channel) {
   this.rawDescrip = striptags(rawArticle.description)
   this.rawSummary = striptags(rawArticle.summary)
-  this.title = (rawArticle.title) ? rawArticle.title : ''
-  this.author = striptags(rawArticle.author)
-  this.link = (rawArticle.link) ? rawArticle.link : ''
   this.meta = rawArticle.meta
   this.guid = rawArticle.guid
+  // Must be replaced with empty string if it exists in source config since these are replaceable tags
+  this.title = (rawArticle.title) ? striptags(rawArticle.title) : ''
+  this.author = (rawArticle.author) ? striptags(rawArticle.author): ''
+  this.link = (rawArticle.link) ? rawArticle.link : ''
 
   // date
   const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone

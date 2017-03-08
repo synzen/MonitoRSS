@@ -17,7 +17,7 @@ function isBotController (command, author) {
 }
 
 function logCommand(message, command) {
-  return console.log(`Commands: (${message.guild.id}, ${message.guild.name}) => Used ${command}.`)
+  return console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Used ${command}.`)
 }
 
 module.exports = function (bot, message) {
@@ -36,8 +36,5 @@ module.exports = function (bot, message) {
   }
 
   // for bot controller commands
-  if (controllerCmds[command] && checkPerm(bot, message, 'SEND_MESSAGES')) {
-    if (!isBotController(command, message.author.id)) return;
-    return controllerCmds[command](bot, message);
-  }
+  if (controllerCmds[command] && isBotController(command, message.author.id)) return controllerCmds[command](bot, message);
 }

@@ -150,8 +150,7 @@ module.exports = function(bot, message, command) {
         if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== 'user') return message.channel.sendMessage(reason);
       });
-    })
-    .catch(err => console.log(`Promise Warning: rssEmbed 1: ${err}`))
+    }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send embed customization prompt. (${err})`))
   })
 
  }

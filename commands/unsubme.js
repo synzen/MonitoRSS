@@ -19,8 +19,8 @@ module.exports = function(bot, message, command) {
   if (filteredMemberRoles.length === 0) return message.channel.sendMessage('There are no eligible roles to be removed from you.').catch(err => console.log(`Promise Warning: subRem 1: ${err}`));
 
   var list = new Discord.RichEmbed()
-  .setTitle('Self-Subscription Removal')
-  .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name you want removed, or type *exit* to cancel.\n_____')
+    .setTitle('Self-Subscription Removal')
+    .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name you want removed, or type *exit* to cancel.\n_____')
 
   // Generate a list of feeds and eligible roles to be removed
   let options = getSubList(bot, message.guild, rssList)
@@ -83,5 +83,5 @@ module.exports = function(bot, message, command) {
       else if (reason !== 'user') return message.channel.sendMessage(reason);
     })
   })
-  .catch(err => console.log(`Promise Warning: subRem Embed: ${err}`))
+}).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send self subscription removal prompt. (${err})`))
 }

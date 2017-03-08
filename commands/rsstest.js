@@ -13,14 +13,29 @@ module.exports = function(bot, message, command) {
       var con = sqlConnect(getTestMsg)
       function getTestMsg() {
         getRSS(con, message.channel, rssName, grabMsg, function (err) {
-          if (err) channel.sendMessage('Unable to get test feed either because of connection error or invalid feed.');
+          if (err) {
+            let channelErrMsg = '';
+            switch(err.type) {
+              case 'request':
+                channelErrMsg = 'Unable to connect to feed link';
+                break;
+              case 'feedparser':
+                channelErrMsg = 'Invalid feed';
+                break;
+              default:
+                channelErrMsg = 'No reason available';
+            }
+            // Reserve err.content for console logs, which are more verbose
+            console.log(`RSS Warning: Unable to add ${rssLink}. Reason: ${err.content}`);
+            grabMsg.edit(`Unable to grab random feed article. Reason: ${channelErrMsg}.`);
+          }
+
           sqlCmds.end(con, function(err) {
             if (err) throw err;
           })
         });
       }
-    })
-    .catch(err => console.log(`Promise Warning: rssTest 1: ${err}`))
+    }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could initiate random feed grab for test (${err})`))
   })
-  
+
 }

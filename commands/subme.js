@@ -27,7 +27,7 @@ module.exports = function(bot, message, command) {
   }
 
   // Send list
-  message.channel.sendEmbed(list).catch(err => console.log(`Promise Warning: subAdd Embed: ${err}`))
+  message.channel.sendEmbed(list)
   .then(m => {
     const collectorFilter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(collectorFilter,{time:240000})
@@ -68,6 +68,5 @@ module.exports = function(bot, message, command) {
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.sendMessage(reason);
     })
-  })
-  .catch(err => console.log(`Self Subscription Error: (${message.guild.id}, ${message.guild.name}) => Could not send self-subscription prompt due to ` + err))
+  }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send self subscription addition prompt. (${err})`))
 }

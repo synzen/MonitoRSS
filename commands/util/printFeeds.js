@@ -35,7 +35,7 @@ module.exports = function(bot, message, command, callback) {
     let title =  currentRSSList[x][2];
     let channelName = currentRSSList[x][3];
 
-    // 10 feeds per embed
+    // 10 feeds per embed (AKA page)
     if ((count - 1) !== 0 && (count - 1) / 10 % 1 === 0) {
       pages.push(embedMsg);
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
@@ -47,37 +47,45 @@ module.exports = function(bot, message, command, callback) {
   // Push the leftover results into the last embed
   pages.push(embedMsg);
 
-  var error = false
-  for (let page in pages) {
-    message.channel.sendEmbed(pages[page])
-    .catch(err => {
-      error = true
-      message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Promise Warning: printFeeds 3: ${err}`))
-      console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: ${err.response.body.message}`)
+  function sendPages() {
+    // Embed sometimes fails to send for no reason - something yet to be fixed. Thus a temporary fix is this promise
+    return new Promise(function(resolve, reject) {
+      let successCount = 1
+      for (let page in pages) {
+        message.channel.sendEmbed(pages[page])
+        .then(m => successCount++)
+        .catch(err => {
+          message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Promise Warning: printFeeds 3: ${err}`))
+          .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`));
+        });
+      }
+      if (successCount === pages.length) resolve();
+      else reject();
     });
   }
 
-  if (error) return console.log('print feeds returning due to error');
+  // Only start message collector if all pages were sent
+  sendPages().then(() => {
+    const filter = m => m.author.id == message.author.id
+    const collector = message.channel.createCollector(filter,{time:60000})
+    channelTracker.addCollector(message.channel.id)
 
-  const filter = m => m.author.id == message.author.id
-  const collector = message.channel.createCollector(filter,{time:60000})
-  channelTracker.addCollector(message.channel.id)
+    collector.on('message', function (m) {
+      let chosenOption = m.content
+      if (chosenOption.toLowerCase() === 'exit') return collector.stop('RSS Feed selection menu closed.');
+      let index = parseInt(chosenOption, 10) - 1
 
-  collector.on('message', function (m) {
-    let chosenOption = m.content
-    if (chosenOption.toLowerCase() === 'exit') return collector.stop('RSS Feed selection menu closed.');
-    let index = parseInt(chosenOption, 10) - 1
+      if (isNaN(index) || chosenOption > currentRSSList.length || chosenOption < 1) return message.channel.sendMessage('That is not a valid number.').catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
 
-    if (isNaN(index) || chosenOption > currentRSSList.length || chosenOption < 1) return message.channel.sendMessage('That is not a valid number.').catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
+      collector.stop()
+      callback(currentRSSList[index][1])
 
-    collector.stop()
-    callback(currentRSSList[index][1])
-
+    })
+    collector.on('end', (collected, reason) => {
+      channelTracker.removeCollector(message.channel.id)
+      if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
+      else if (reason !== 'user') return message.channel.sendMessage(reason);
+    })
   })
-  collector.on('end', (collected, reason) => {
-    channelTracker.removeCollector(message.channel.id)
-    if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
-    else if (reason !== 'user') return message.channel.sendMessage(reason);
-  })
-
+  .catch(() => {})
 }

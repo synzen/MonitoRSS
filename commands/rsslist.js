@@ -47,10 +47,11 @@ module.exports = function (bot, message, command) {
   pages.push(embedMsg);
 
   for (let page in pages) {
-    message.channel.sendEmbed(pages[page]).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${page}/${pages.length}). Reason: ${err.response.body.message}`));
+    message.channel.sendEmbed(pages[page])
+    .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`));
   }
 
-  // reserved for when discord.js fixes their library
+  // Reserved for when discord.js fixes their library
   // message.channel.sendEmbed(pages[0])
   // .then(m => {
   //   if (pages.length === 1) return;
