@@ -8,7 +8,7 @@ if (config.logging.logDates) require('./util/logDates.js')();
 if (!config.botSettings.token) throw 'Warning! Vital config missing: token undefined in config.';
 else if (!config.botSettings.prefix) throw 'Warning! Vital config missing: prefix undefined in config';
 else if (!config.feedManagement.databaseName) throw 'Warning! Vital config missing: databaseName undefined in config.';
-else if (!config.feedManagement.sqlType || typeof config.feedManagement.sqlType !== 'string' || (config.feedManagement.sqlType !== 'mysql' && config.feedManagement !== 'sqlite3')) throw 'Warning! Vital config missing: sqlType incorrectly defined in config.';
+else if (!config.feedManagement.sqlType || typeof config.feedManagement.sqlType !== 'string' || (config.feedManagement.sqlType !== 'mysql' && config.feedManagement.sqlType !== 'sqlite3')) throw 'Warning! Vital config missing: sqlType incorrectly defined in config.';
 else if (!config.feedSettings.defaultMessage) throw 'Warning! Vital config missing: defaultMssage undefined in config.';
 
 // Ease the pains of having to rewrite a function every time to check an empty object
