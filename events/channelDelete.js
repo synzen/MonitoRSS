@@ -1,15 +1,15 @@
 const removeRSS = require('../commands/rssremove.js')
-const fileOps = require('../util/fileOps.js')
 const channelTracker = require('../util/channelTracker.js')
 const removeRss = require('../util/removeRss.js')
+const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function (channel) {
-  var rssList = require(`../sources/${channel.guild.id}.json`).sources
+  const rssList = currentGuilds[channel.guild.id].sources
 
   for (var channelId in channelTracker.activeCollectors) if (channelId === channel.id) delete channelTracker.activeCollectors[channelId];
 
-  var nameList = []
-  for (let rssName in rssList) {
+  let nameList = []
+  for (var rssName in rssList) {
     if (rssList[rssName].channel === channel.id || rssList[rssName].channel === channel.name) nameList.push(rssName);
   }
   if (nameList.length === 0) return;

@@ -40,14 +40,14 @@ exports.end = function(con, callback, startingCycle) {
   }
 }
 
-exports.dropTable = function(db, table, callback) {
+exports.dropTable = function(db, table) {
 
   if (sqlType === "mysql") {
     const mysql = require('mysql')
     const credentials = require('../../mysqlCred.json');
     credentials.database = db;
 
-    var con = mysql.createConnection(credentials);
+    const con = mysql.createConnection(credentials);
 
     con.connect(function(err) {
       if (err) throw err;
@@ -59,13 +59,12 @@ exports.dropTable = function(db, table, callback) {
 
     con.end(function(err) {
       if(err) console.log(err);
-      else return callback();
     })
   }
 
   else {
     const sqlite3 = require('sqlite3').verbose()
-    var con = new sqlite3.Database(`./${config.feedManagement.databaseName}.db`, dropTable);
+    const con = new sqlite3.Database(`./${config.feedManagement.databaseName}.db`, dropTable);
 
     function dropTable() {
       con.run(`drop table if exists "${table}"`, closeDb)
@@ -73,7 +72,6 @@ exports.dropTable = function(db, table, callback) {
 
     function closeDb() {
       con.close()
-      callback()
     }
 
   }

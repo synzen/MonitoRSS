@@ -6,7 +6,7 @@ const sql = (sqlType === 'mysql') ? require('mysql') : require('sqlite3').verbos
 
 module.exports = function(callback) {
   if (sqlType === 'mysql') {
-  var con, attempts = 0;
+  let con, attempts = 0;
 
     (function connect(finalErr) {
       if (attempts === 9 && finalErr) throw `Could not connect to database after 10 attempts, terminating. (${finalErr})`;

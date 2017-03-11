@@ -1,18 +1,19 @@
 // Check for guild names/role names changes
 
 const fileOps = require('./fileOps.js')
+const currentGuilds = require('./fetchInterval.js').currentGuilds
 
 exports.roles = function (bot, guildId, rssName) {
-  var guildRss = require(`../sources/${guildId}.json`)
-  var rssList = guildRss.sources
-  var guild = bot.guilds.get(guildId)
-  var changedInfo = false
+  const guildRss = currentGuilds[guildId]
+  const rssList = guildRss.sources
+  const guild = bot.guilds.get(guildId)
+  let changedInfo = false
 
   // global subs is an array of objects
   if (rssList[rssName].roleSubscriptions && rssList[rssName].roleSubscriptions.length !== 0) {
-    var globalSubList = rssList[rssName].roleSubscriptions;
-    for (let roleIndex in globalSubList) {
-      var role = globalSubList[roleIndex]
+    const globalSubList = rssList[rssName].roleSubscriptions;
+    for (var roleIndex in globalSubList) {
+      const role = globalSubList[roleIndex]
       if (!guild.roles.get(role.roleID)) {
         console.log(`Guild Warning: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) has been deleted. Removing.`);
         guildRss.sources[rssName].roleSubscriptions.splice(roleIndex, 1);
@@ -29,8 +30,8 @@ exports.roles = function (bot, guildId, rssName) {
 
   // filtered subs is an object
   if (rssList[rssName].filters && rssList[rssName].filters.roleSubscriptions && rssList[rssName].filters.roleSubscriptions.size() > 0) {
-    let filteredSubList = rssList[rssName].filters.roleSubscriptions
-    for (let roleID in filteredSubList) {
+    const filteredSubList = rssList[rssName].filters.roleSubscriptions;
+    for (var roleID in filteredSubList) {
       if (!guild.roles.get(roleID)) {
         console.log(`Guild Warning: (${guild.id}, ${guild.name}) => Role (${roleID}, ${filteredSubList[roleID].roleName}) has been deleted. Removing.`);
         delete guildRss.sources[rssName].filters.roleSubscriptions[roleID];
@@ -46,17 +47,17 @@ exports.roles = function (bot, guildId, rssName) {
     }
   }
 
-  if (changedInfo) return fileOps.updateFile(guildId, guildRss, `../sources/${guildId}.json`);
+  if (changedInfo) return fileOps.updateFile(guildId, guildRss);
 }
 
 exports.names = function (bot, guildId) {
-  var guildRss = require(`../sources/${guildId}.json`)
-  var rssList = guildRss.sources
-  var guild = bot.guilds.get(guildId)
+  const guildRss = currentGuilds[guildId]
+  const rssList = guildRss.sources
+  const guild = bot.guilds.get(guildId)
 
   if (guildRss.name !== guild.name) {
     console.log(`Guild Info: (${guild.id}, ${guildRss.name}) => Name change detected, changed guild name from '${guildRss.name}' to '${guild.name}'.`);
     guildRss.name = guild.name;
-    fileOps.updateFile(guildId, guildRss, `../sources/${guildId}.json`);
+    fileOps.updateFile(guildId, guildRss);
   }
 }

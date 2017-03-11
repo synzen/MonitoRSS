@@ -2,13 +2,13 @@
 // Returns the feed source and the role list
 
 module.exports = function(bot, guild, rssList) {
-  var finalList = []
-  var botRole = guild.members.get(bot.user.id).highestRole;
+  let finalList = []
+  const botRole = guild.members.get(bot.user.id).highestRole;
   for (var rssName in rssList) {
-    let globalSubList = rssList[rssName].roleSubscriptions;
-    let filterList = rssList[rssName].filters;
+    const globalSubList = rssList[rssName].roleSubscriptions;
+    const filterList = rssList[rssName].filters;
 
-    var roles = [];
+    let roles = [];
     // globalSubList is an array
     if (typeof globalSubList === 'object' && globalSubList.length > 0) {
       for (var globalSubber in globalSubList) {

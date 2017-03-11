@@ -1,7 +1,10 @@
+const fs = require('fs')
 const Discord = require('discord.js')
 const config = require('./config.json')
 const cmdListeners = require('./util/cmdListeners.js')
-var bot
+const fetchInterval = require('./util/fetchInterval.js')
+let initialized = false
+let bot
 
 if (config.logging.logDates) require('./util/logDates.js')();
 
@@ -16,8 +19,21 @@ Object.defineProperty(Object.prototype, 'size', {
     writable: true
 });
 
-// Function to handle login/relogin automatically
-(function login() {
+function getCurrentGuilds(bot) {
+  fs.readdir('./sources', function (err, files) {
+    if (err) throw err;
+    files.forEach(function(guildFile) {
+      const guildId = guildFile.replace(/.json/g, '')
+      if (bot.guilds.get(guildId)) {   // Check if it is a valid guild in bot's guild collection
+        try {fetchInterval.currentGuilds[guildId] = JSON.parse(fs.readFileSync(`./sources/${guildFile}`))} // Store the guild's profile
+        catch(e) {console.log(`Commands Warning: Unable to store ${guildFile}, could not read contents. (${e})`)}
+      }
+      else if (guildFile !== 'guild_id_here.json' && guildFile !== 'backup') console.log(`Commands Warning: Unable to store ${guildFile}, was not found in bot's guild list.`);
+    })
+  });
+}
+
+(function login() { // Function to handle login/relogin automatically
   let attempts = 0
   if (attempts++ === 10) {
     process.send('kill');
@@ -26,11 +42,14 @@ Object.defineProperty(Object.prototype, 'size', {
   if (!config.botSettings.menuColor || isNaN(parseInt(config.botSettings.menuColor))) config.botSettings.menuColor = '7833753';
   bot = new Discord.Client()
   bot.login(config.botSettings.token)
+  .then(tok => {
+    if (!initialized) getCurrentGuilds(bot);
+    cmdListeners.createAllListeners(bot)
+  })
   .catch(err => {
     console.log(`Discord.RSS commands module could not login, retrying...`)
     setTimeout(login, 1000)
   })
-  cmdListeners.createAllListeners(bot)
   bot.once('disconnect', function (e) {
     console.log('Discord.RSS commands module has been disconneted. Reconnecting...')
     cmdListeners.removeAllListeners(bot)

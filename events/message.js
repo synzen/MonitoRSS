@@ -6,7 +6,7 @@ const commandList = require('../util/commandList.json')
 const channelTracker = require('../util/channelTracker.js')
 
 function isBotController (command, author) {
-  var controllerList = config.botSettings.controllerIds
+  let controllerList = config.botSettings.controllerIds
   if (!controllerList || (typeof controllerList === "object" && controllerList.length === 0)) return false;
   else if (typeof controllerList !== "object" || (typeof controllerList === "object" && controllerList.length === undefined)) {
     console.log(`Could not execute command "${command} due to incorrectly defined bot controller."`);

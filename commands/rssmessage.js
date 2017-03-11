@@ -2,12 +2,13 @@ const fileOps = require('../util/fileOps.js')
 const getIndex = require('./util/printFeeds.js')
 const config = require('../config.json')
 const channelTracker = require('../util/channelTracker.js')
+const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function (bot, message, command) {
 
   getIndex(bot, message, command, function(rssName) {
-    var guildRss = require(`../sources/${message.guild.id}.json`)
-    var rssList = guildRss.sources
+    const guildRss = currentGuilds[message.guild.id]
+    const rssList = guildRss.sources
 
     let currentMsg = '```Markdown\n'
     if (!rssList[rssName].message) currentMsg += 'None has been set. Currently using default message below:\n\n``````\n' + config.feedSettings.defaultMessage;
@@ -26,7 +27,7 @@ module.exports = function (bot, message, command) {
         .then(resetMsg => {
           customCollect.stop();
           delete rssList[rssName].message;
-          fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
+          fileOps.updateFile(message.guild.id, guildRss);
           console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Message reset for ${rssList[rssName].link}.`);
           return resetMsg.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${rssList[rssName].link}`).catch(err => console.log(`Promise Warning: rssMessage 2a: ${err}`));
         })
@@ -36,7 +37,7 @@ module.exports = function (bot, message, command) {
         .then(editing => {
           customCollect.stop();
           rssList[rssName].message = m.content;
-          fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
+          fileOps.updateFile(message.guild.id, guildRss);
           console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New message recorded for ${rssList[rssName].link}.`);
           editing.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssName].link}You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`).catch(err => console.log(`Promise Warning: rssMessage 3a: ${err}`));
         })

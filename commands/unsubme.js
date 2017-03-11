@@ -1,31 +1,31 @@
 const Discord = require('discord.js')
 const channelTracker = require('../util/channelTracker.js')
 const getSubList = require('./util/getSubList.js')
+const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function(bot, message, command) {
-  var rssList = {}
-  try {rssList = require(`../sources/${message.guild.id}.json`).sources} catch (e) {}
-
-  let botRole = message.guild.members.get(bot.user.id).highestRole
-  let memberRoles = message.member.roles
+  const rssList = (currentGuilds[message.guild.id] && currentGuilds[message.guild.id].sources) ? currentGuilds[message.guild.id].sources : {}
+  const botRole = message.guild.members.get(bot.user.id).highestRole
+  const memberRoles = message.member.roles
 
   // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
-  let filteredMemberRoles = memberRoles.filterArray(function(role) {
+  const filteredMemberRoles = memberRoles.filterArray(function(role) {
     return (role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
   })
-  let eligibleRoles = []
+
+  const eligibleRoles = []
   for (var a in filteredMemberRoles) eligibleRoles.push(filteredMemberRoles[a].name);
 
   if (filteredMemberRoles.length === 0) return message.channel.sendMessage('There are no eligible roles to be removed from you.').catch(err => console.log(`Promise Warning: subRem 1: ${err}`));
 
-  var list = new Discord.RichEmbed()
+  const list = new Discord.RichEmbed()
     .setTitle('Self-Subscription Removal')
     .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name you want removed, or type *exit* to cancel.\n_____')
-
   // Generate a list of feeds and eligible roles to be removed
-  let options = getSubList(bot, message.guild, rssList)
+
+  const options = getSubList(bot, message.guild, rssList)
   for (var option in options) {
-    var roleList = '';
+    let roleList = '';
     for (var memberRole in filteredMemberRoles) {
       if (options[option].roleList.includes(filteredMemberRoles[memberRole].id)) {
         roleList += filteredMemberRoles[memberRole].name + '\n';
@@ -41,7 +41,7 @@ module.exports = function(bot, message, command) {
 
   // Some roles may not have a feed assigned since it prints all roles below the bot's role.
   if (filteredMemberRoles.length > 0) {
-    var leftoverRoles = '';
+    let leftoverRoles = '';
     for (var leftoverRole in filteredMemberRoles) {
       leftoverRoles += filteredMemberRoles[leftoverRole].name + '\n';
     }
@@ -55,33 +55,32 @@ module.exports = function(bot, message, command) {
     channelTracker.addCollector(message.channel.id)
     collector.on('message', function(response) {
       // Select a role here
-      let chosenRoleName = response.content
+      const chosenRoleName = response.content
       if (chosenRoleName.toLowerCase() === 'exit') return collector.stop('Self-subscription removal canceled.');
-      let chosenRole = message.guild.roles.find('name', chosenRoleName)
+      const chosenRole = message.guild.roles.find('name', chosenRoleName)
 
       function isValidRole() {
         if (eligibleRoles.includes(chosenRoleName)) return true;
       }
 
-      if (!chosenRole || !isValidRole()) message.channel.sendMessage('That is not a valid role to remove. Try again.').catch(err => console.log(`Promise Warning: subRem 2: ${err}`));
-      else {
-        collector.stop();
-        message.member.removeRole(chosenRole)
-        .then(m => {
-          console.log(`Self subscription: (${message.guild.id}, ${message.guild.name}) => Removed *${chosenRole.name}* from member.`)
-          message.channel.sendMessage(`You no longer have the role **${chosenRole.name}**.`).catch(err => console.log(`Promise Warning: subRem 3: ${err}`))
-        })
-        .catch(err => {
-          console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Could not remove role *${chosenRole.name}*, ` + err)
-          message.channel.sendMessage(`An error occured - could not remove your role *${chosenRole.name}*`).catch(err => console.log(`Promise Warning: subRem 4: ${err}`))
-        })
-      }
+      if (!chosenRole || !isValidRole()) return message.channel.sendMessage('That is not a valid role to remove. Try again.').catch(err => console.log(`Promise Warning: subRem 2: ${err}`));
+
+      collector.stop()
+      message.member.removeRole(chosenRole)
+      .then(m => {
+        console.log(`Self subscription: (${message.guild.id}, ${message.guild.name}) => Removed *${chosenRole.name}* from member.`)
+        message.channel.sendMessage(`You no longer have the role **${chosenRole.name}**.`).catch(err => console.log(`Promise Warning: subRem 3: ${err}`))
+      })
+      .catch(err => {
+        console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Could not remove role *${chosenRole.name}*, ` + err)
+        message.channel.sendMessage(`An error occured - could not remove your role *${chosenRole.name}*`).catch(err => console.log(`Promise Warning: subRem 4: ${err}`))
+      })
+
     })
     collector.on('end', (collected, reason) => {
       channelTracker.removeCollector(message.channel.id)
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.sendMessage(reason);
     })
-  })
-}).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send self subscription removal prompt. (${err})`))
+  }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send self subscription removal prompt. (${err})`))
 }

@@ -2,6 +2,7 @@ const config = require('../../config.json')
 const striptags = require('striptags')
 const moment = require('moment-timezone')
 const cleanEntities = require('entities')
+const currentGuilds = require('../../util/fetchInterval.js').currentGuilds
 
 // Used to find images in any object values of the article
 function findImages(object, results) {
@@ -11,14 +12,14 @@ function findImages(object, results) {
         results.push(object[key]);
       }
     }
-    if (typeof object[key] === 'object') findImages(object[key], results);
+    if (typeof object[key] === 'object') return findImages(object[key], results);
   }
   return false
 }
 
 // Clean up ridiculous spacings some articles may have in their descriptions/summaries
 function cleanRandoms (text) {
-  var a = cleanEntities.decodeHTML(text)
+  const a = cleanEntities.decodeHTML(text)
           .replace(/<br>/g, '\n')
           .replace(/<br \/>/g, '\n')
           .replace(/<br\/>/g, '\n')
@@ -32,7 +33,7 @@ function cleanRandoms (text) {
   return striptags(a).trim()
 }
 
-module.exports = function Article(rawArticle, channel) {
+module.exports = function Article(rawArticle, guildId) {
   this.rawDescrip = striptags(rawArticle.description)
   this.rawSummary = striptags(rawArticle.summary)
   this.meta = rawArticle.meta
@@ -43,14 +44,14 @@ module.exports = function Article(rawArticle, channel) {
   this.link = (rawArticle.link) ? rawArticle.link : ''
 
   // date
-  const guildTimezone = require(`../../sources/${channel.guild.id}`).timezone
-  var timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
-  var timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : "ddd, D MMMM YYYY, h:mm A z"
-  var vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
+  const guildTimezone = currentGuilds[guildId].timezone
+  const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
+  const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : "ddd, D MMMM YYYY, h:mm A z"
+  const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
   this.pubdate = (vanityDate !== 'Invalid date') ? vanityDate : ''
 
   // description
-  var rawArticleDescrip = ''
+  let rawArticleDescrip = ''
   // YouTube doesn't use the regular description field, thus manually setting it as the description
   if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#'];
   else if (rawArticle.description) rawArticleDescrip = cleanRandoms(rawArticle.description);
@@ -64,18 +65,18 @@ module.exports = function Article(rawArticle, channel) {
   this.description = rawArticleDescrip
 
   // summary
-  var rawArticleSummary = ''
+  let rawArticleSummary = ''
   if (rawArticle.summary) rawArticleSummary = cleanRandoms(rawArticle.summary);
   rawArticleSummary = (rawArticleSummary.length > 800) ? `${rawArticleSummary.slice(0, 790)} [...]` : rawArticleSummary
   this.summary = rawArticleSummary
 
   // image(s)
-  var imageLinks = []
+  const imageLinks = []
   findImages(rawArticle, imageLinks)
   this.images = (imageLinks.length == 0) ? undefined : imageLinks
 
   this.listImages = function () {
-    var imageList = ''
+    let imageList = ''
     for (var image in this.images) {
       imageList += `[Image${parseInt(image, 10) + 1} URL]: {image${parseInt(image, 10) + 1}}\n${this.images[image]}`;
       if (image != this.images.length - 1) imageList += '\n';
@@ -85,7 +86,7 @@ module.exports = function Article(rawArticle, channel) {
 
   // categories
   if (rawArticle.categories) {
-    var categoryList = '';
+    let categoryList = '';
     for (var category in rawArticle.categories) {
       categoryList += rawArticle.categories[category].trim();
       if (category != rawArticle.categories.length - 1) categoryList += '\n';
@@ -95,16 +96,14 @@ module.exports = function Article(rawArticle, channel) {
 
   // replace images
   this.convertImgs = function(content) {
-    var imgDictionary = {}
-    var imgLocs = content.match(/{image.+}/g)
+    const imgDictionary = {}
+    const imgLocs = content.match(/{image.+}/g)
     if (!imgLocs) return content;
 
     for (var loc in imgLocs) {
-      if (imgLocs[loc].length === 8) {
-        // only single digit image numbers
+      if (imgLocs[loc].length === 8) { // only single digit image numbers
         let imgNum = parseInt(imgLocs[loc].substr(6, 1), 10);
-        // key is {imageX}, value is article image URL
-        if (!isNaN(imgNum) && imgNum !== 0 && this.images && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1];
+        if (!isNaN(imgNum) && imgNum !== 0 && this.images && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1]; // key is {imageX}, value is article image URL
         else if (!isNaN(imgNum) || imgNum === 0 || !this.images) imgDictionary[imgLocs[loc]] = '';
       }
     }
@@ -114,7 +113,7 @@ module.exports = function Article(rawArticle, channel) {
 
   // replace simple keywords
   this.convertKeywords = function(word) {
-    var content = word.replace(/{date}/g, this.pubdate)
+    const content = word.replace(/{date}/g, this.pubdate)
             .replace(/{title}/g, this.title)
             .replace(/{author}/g, this.author)
             .replace(/{summary}/g, this.summary)

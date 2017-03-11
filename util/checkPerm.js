@@ -30,13 +30,15 @@ const validPerms = [
 
 module.exports = function (bot, message, permission) {
   if (!permission || !validPerms.includes(permission)) return true;
-  let channel = message.channel
-  let guild = bot.guilds.get(channel.guild.id)
-  let guildBot = guild.members.get(bot.user.id)
+  const channel = message.channel
+  const guild = bot.guilds.get(channel.guild.id)
+  const guildBot = guild.members.get(bot.user.id)
+  const hasPerm = guildBot.permissionsIn(channel).hasPermission(permission);
 
-  let hasPerm = guildBot.permissionsIn(channel).hasPermission(permission);
-
-  if (permission === 'MANAGE_ROLES_OR_PERMISSIONS' && !hasPerm) console.log(`Commands Warning: (${channel.guild.id}, ${channel.guild.nane}) => Self subscription disabled due to missing permission.`);
+  if (permission === 'MANAGE_ROLES_OR_PERMISSIONS' && !hasPerm) {
+    console.log(`Commands Warning: (${channel.guild.id}, ${channel.guild.name}) => Self subscription disabled due to missing permission.`);
+    message.channel.sendMessage('Function disabled due to missing `Manage Roles` permission.').then(m => m.delete(3000));
+  }
 
   return hasPerm;
 

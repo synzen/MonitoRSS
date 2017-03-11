@@ -12,6 +12,7 @@ const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be
                       ['URL', 'A link that clicking on the title will lead to.\nThis MUST be a link. By default this is set to the feed\'s url', 'url']]
 
 const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
+const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 // Check valid image URLs via extensions
 function isValidImg(input) {
@@ -33,8 +34,8 @@ module.exports = function(bot, message, command) {
 
   getIndex(bot, message, command, function(rssName) {
 
-    var guildRss = require(`../sources/${message.guild.id}.json`)
-    var rssList = guildRss.sources
+    const guildRss = currentGuilds[message.guild.id]
+    const rssList = guildRss.sources
 
     // Reset and disable entire embed
     function resetAll(collector) {
@@ -42,7 +43,7 @@ module.exports = function(bot, message, command) {
       .then(resetting => {
         collector.stop();
         delete rssList[rssName].embedMessage;
-        fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`);
+        fileOps.updateFile(message.guild.id, guildRss);
         console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssName].link}.`);
         resetting.edit('Embed has been disabled, and all properties have been removed.').catch(err => console.log(`Promise Warning: rssEmbed 2a: ${err}`))
       })
@@ -132,7 +133,7 @@ module.exports = function(bot, message, command) {
             rssList[rssName].embedMessage.properties[choice] = finalChange
 
             console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${rssList[rssName].link}.`)
-            fileOps.updateFile(message.guild.id, guildRss, `../sources/${message.guild.id}.json`)
+            fileOps.updateFile(message.guild.id, guildRss)
 
             return editing.edit(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`).catch(err => console.log(`Promise Warning: rssEmbed 8b: ${err}`));
           })

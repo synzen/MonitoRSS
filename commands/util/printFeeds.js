@@ -2,38 +2,36 @@ const Discord = require('discord.js')
 const config = require('../../config.json')
 const commandList = require('../../util/commandList.json')
 const channelTracker = require('../../util/channelTracker.js')
+const currentGuilds = require('../../util/fetchInterval.js').currentGuilds
 
 module.exports = function(bot, message, command, callback) {
-  var rssList = {}
-  try {rssList = require(`../../sources/${message.guild.id}.json`).sources} catch(e) {}
-  if (rssList.size() === 0) return message.channel.sendMessage('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
+  if (!currentGuilds[message.guild.id] || !currentGuilds[message.guild.id].sources || currentGuilds[message.guild.id].sources.size() === 0) return message.channel.sendMessage('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
 
-  // Function to check if this channel is the selected feed's channel, resolving for whether it the identifier is an ID or a string
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) return message.channel.name == channel;
     return message.channel.id == channel;
   }
 
-  var maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
-  var embedMsg = new Discord.RichEmbed()
+  const rssList = currentGuilds[message.guild.id].sources
+  const maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
+  const embedMsg = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
     .setAuthor('Feed Selection Menu')
-    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\n_____`);
+    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\u200b\n\u200b\n`);
+  const currentRSSList = []
 
-  // Generate the info for each feed as an array, and push into another array
-  var currentRSSList = []
-  for (var rssName in rssList) {
+  for (var rssName in rssList) { // Generate the info for each feed as an array, and push into another array
     if (isCurrentChannel(rssList[rssName].channel)) currentRSSList.push( [rssList[rssName].link, rssName, rssList[rssName].title] );
   }
 
   if (currentRSSList.length === 0) return message.channel.sendMessage('No feeds assigned to this channel.').catch(err => console.log(`Promise Warning: printFeeds 1: ${err}`));
 
-  var pages = []
+  const pages = []
   for (var x in currentRSSList) {
-    let count = parseInt(x,10) + 1;
-    let link = currentRSSList[x][0];
-    let title =  currentRSSList[x][2];
-    let channelName = currentRSSList[x][3];
+    const count = parseInt(x, 10) + 1;
+    const link = currentRSSList[x][0];
+    const title =  currentRSSList[x][2];
+    const channelName = currentRSSList[x][3];
 
     // 10 feeds per embed (AKA page)
     if ((count - 1) !== 0 && (count - 1) / 10 % 1 === 0) {
@@ -51,12 +49,11 @@ module.exports = function(bot, message, command, callback) {
     // Embed sometimes fails to send for no reason - something yet to be fixed. Thus a temporary fix is this promise
     return new Promise(function(resolve, reject) {
       let successCount = 1
-      for (let page in pages) {
+      for (var page in pages) {
         message.channel.sendEmbed(pages[page])
         .then(m => successCount++)
         .catch(err => {
-          message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Promise Warning: printFeeds 3: ${err}`))
-          .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`));
+          message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`));
         });
       }
       if (successCount === pages.length) resolve();
@@ -71,9 +68,9 @@ module.exports = function(bot, message, command, callback) {
     channelTracker.addCollector(message.channel.id)
 
     collector.on('message', function (m) {
-      let chosenOption = m.content
+      const chosenOption = m.content
       if (chosenOption.toLowerCase() === 'exit') return collector.stop('RSS Feed selection menu closed.');
-      let index = parseInt(chosenOption, 10) - 1
+      const index = parseInt(chosenOption, 10) - 1
 
       if (isNaN(index) || chosenOption > currentRSSList.length || chosenOption < 1) return message.channel.sendMessage('That is not a valid number.').catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
 

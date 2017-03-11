@@ -1,9 +1,10 @@
-const fileOps = require('../util/fileOps.js')
 const checkGuild = require('../util/checkGuild.js')
+const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function (bot, oldRole, newRole) {
-  var guildRss = require(`../sources/${oldRole.guild.id}.json`)
-  var rssList = guildRss.sources
+  const guildRss = currentGuilds[oldRole.guild.id]
+  if (!guildRss.sources) return;
+  const rssList = guildRss.sources
 
   for (var rssName in rssList) {
     checkGuild.roles(bot, oldRole.guild.id, rssName);

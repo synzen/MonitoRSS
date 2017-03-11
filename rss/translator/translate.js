@@ -1,51 +1,45 @@
 const config = require('../../config.json')
 const filterFeed = require('./filters.js')
-const createEmbed = require('./embed.js')
+const generateEmbed = require('./embed.js')
 const Article = require('./article.js')
 const getSubs = require('./subscriptions.js')
 
-module.exports = function (channel, rssList, rssName, rawArticle, isTestMessage) {
+module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage) {
   // temporary check, will probably be removed
   if (!rssList[rssName]) {console.log("RSS Error: Unable to translate a null source."); return null;}
 
-  var article = new Article(rawArticle, channel)
-  article.subscriptions = getSubs(channel, rssName, article)
+  const article = new Article(rawArticle, guildId)
+  article.subscriptions = getSubs(rssList, rssName, article)
 
   // Filter message
-  var filterPropCount = 0;
+  let filterPropCount = 0;
   if (rssList[rssName].filters && typeof rssList[rssName].filters === "object") {
     for (var prop in rssList[rssName].filters) {
-      // Check if any filter categories exists, excluding roleSubs
-      if (prop !== "roleSubscriptions") filterPropCount++;
+      if (prop !== "roleSubscriptions") filterPropCount++; // Check if any filter categories exists, excluding roleSubs
     }
   }
 
-  var filterExists = false
-  var filterResults = false
+  let filterExists = false
+  let filterResults = false
   if (filterPropCount > 0) {
     filterExists = true;
     filterResults = filterFeed(rssList, rssName, article, isTestMessage);
   }
 
-  // Feed article only passes through if the filter found the specified content
-  if (!isTestMessage && filterExists && !filterResults) {
-    if (config.logging.showUnfiltered === true) console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => '${(article.link) ? article.link : article.title}' did not pass filters and was not sent.`);
-    return null;
-  }
+  if (!isTestMessage && filterExists && !filterResults) return null; // Feed article delivery only passes through if the filter found the specified content
 
-  var finalMessageCombo = {}
-  // Check if embed is enabled
-  if (rssList[rssName].embedMessage && rssList[rssName].embedMessage.enabled && rssList[rssName].embedMessage.properties) {
-    finalMessageCombo.embedMsg = createEmbed(channel, rssList, rssName, article);
-    finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : ''; // allow empty messages if embed is enabled
+  const finalMessageCombo = {}
+  if (rssList[rssName].embedMessage && rssList[rssName].embedMessage.enabled && rssList[rssName].embedMessage.properties) { // Check if embed is enabled
+    finalMessageCombo.embedMsg = generateEmbed(rssList, rssName, article);
+    finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : ''; // Allow empty messages if embed is enabled
   }
   else finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : article.convertKeywords(config.feedSettings.defaultMessage);
 
 
   // Generate test details
   if (isTestMessage) {
-    var testDetails = '';
-    let footer = "\nBelow is the configured message to be sent for this feed:\n\n--";
+    let testDetails = '';
+    const footer = "\nBelow is the configured message to be sent for this feed:\n\n--";
     testDetails += `\`\`\`Markdown\n# Test Details\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${article.title}`;
 
     if (article.summary && article.summary !== article.description) {  // Do not add summary if summary = description
@@ -58,8 +52,8 @@ module.exports = function (channel, rssList, rssName, rawArticle, isTestMessage)
       if (article.summary && article.summary.length > 500) var testDescrip = (article.description.length > 500) ? `${article.description.slice(0, 490)} [...]\n\n**(Truncated description for shorter rsstest)**` : article.description; // If summary is long, truncate description.
       else var testDescrip = article.description;
       testDetails += `\n\n[Description]: {description}\n${testDescrip}`;
-
     }
+
     if (article.pubdate) testDetails += `\n\n[Published Date]: {date}\n${article.pubdate}`;
     if (article.author) testDetails += `\n\n[Author]: {author}\n${article.author}`;
     if (article.link) testDetails += `\n\n[Link]: {link}\n${article.link}`;

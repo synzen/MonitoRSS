@@ -1,13 +1,12 @@
 const filterFeed = require('./filters.js')
+const currentGuilds = require('../../util/fetchInterval.js').currentGuilds
 
-module.exports = function(channel, rssName, article) {
-  var rssList = require(`../../sources/${channel.guild.id}.json`).sources
-
-  var mentions = ''
+module.exports = function(rssList, rssName, article) {
+  let mentions = ''
 
   // Get global subscriptions
   if (rssList[rssName].roleSubscriptions) {
-    let globalSubList = rssList[rssName].roleSubscriptions;
+    const globalSubList = rssList[rssName].roleSubscriptions;
     for (let role in globalSubList) {
       mentions += `<@&${globalSubList[role].roleID}> `
     }
@@ -15,7 +14,7 @@ module.exports = function(channel, rssName, article) {
 
   // Get filtered subscriptions
   if (rssList[rssName].filters && rssList[rssName].filters.roleSubscriptions) {
-    let subscribedRoles = rssList[rssName].filters.roleSubscriptions;
+    const subscribedRoles = rssList[rssName].filters.roleSubscriptions;
     for (let role in subscribedRoles) {
       if (filterFeed(subscribedRoles, role, article)) mentions += `<@&${role}> `;
     }

@@ -1,38 +1,35 @@
+const config = require('../config.json')
 const translator = require('../rss/translator/translate.js')
 const fetchInterval = require('./fetchInterval.js')
+const currentGuilds = fetchInterval.currentGuilds
 
 module.exports = function (rssName, channel, article, isTestMessage, callback) {
-  var guild = require(`../sources/${channel.guild.id}.json`)
-  var rssList = guild.sources
+  const rssList = currentGuilds[channel.guild.id].sources
 
   // check if any changes to feed article while article cycle was in progress
   if (!process.env.isCmdServer && fetchInterval.changedGuilds[channel.guild.id]) {
-    let guildNew = fetchInterval.changedGuilds[channel.guild.id];
+    const guildNew = fetchInterval.changedGuilds[channel.guild.id];
     if (!guildNew.sources) {
       console.info(guildNew.sources);
       console.info(guildNew);
-      return console.log(`RSS Warning: (${guild.id}, ${guild.name}) => No sources found in updated file, skipping Discord message sending.`);
+      return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources found in updated file, skipping Discord message sending.`);
     }
-    let rssListNew = guildNew.sources;
+    const rssListNew = guildNew.sources;
     let found = false;
-    for (var rssNameNew in rssListNew) if (rssNameNew == rssName) found = true;
-    if (!found) return console.log(`RSS Warning: (${guild.id}, ${guild.name}) => Missing source (link: ${rssList[rssName].link}, name: ${rssName}) in updated file, skipping Discord message sending.`);
+    for (let rssNameNew in rssListNew) if (rssNameNew == rssName) found = true;
+    if (!found) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Missing source (link: ${rssList[rssName].link}, name: ${rssName}) in updated file, skipping Discord message sending.`);
   }
 
-  var attempts = 1
+  let attempts = 1
 
-  if (isTestMessage) {
-    var successLog = `RSS Test Delivery: (${guild.id}, ${guild.name}) => Sent test message for: ${rssList[rssName].link} in channel (${channel.id}, ${channel.name})`;
-    var failLog = `RSS Test Delivery Failure: (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. Reason: `;
+  const successLog = (isTestMessage) ? `RSS Test Delivery: (${channel.guild.id}, ${channel.guild.name}) => Sent test message for: ${rssList[rssName].link} in channel (${channel.id}, ${channel.name})` : `RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => Sent message: ${article.link} in channel (${channel.id}, ${channel.name})`
+  const failLog = (isTestMessage) ? `RSS Test Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. ` : `RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. `
+  const message = translator(channel.guild.id, rssList, rssName, article, isTestMessage)
+
+  if (!message) {
+    if (config.logging.showUnfiltered === true) console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => '${(article.link) ? article.link : article.title}' did not pass filters and was not sent.`);
+    return callback();
   }
-  else {
-    var successLog = `RSS Delivery: (${guild.id}, ${guild.name}) => Sent message: ${article.link} in channel (${channel.id}, ${channel.name})`;
-    var failLog = `RSS Delivery Failure: (${guild.id}, ${guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. Reason: `;
-  }
-
-  var message = translator(channel, rssList, rssName, article, isTestMessage)
-
-  if (!message) return callback();
 
   function sendMain () {
     // Main Message: If it contains both an embed and text, or only an embed.
@@ -45,7 +42,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
           return callback()
         })
         .catch(err => {
-          if (attempts === 4) return callback(failLog + err);
+          if (attempts === 4) return callback(failLog + `${err}`);
           attempts++
           setTimeout(sendCombinedMsg, 500)
         });
@@ -68,7 +65,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
           return callback()
         })
         .catch(err => {
-          if (attempts === 4) return callback(failLog + err);
+          if (attempts === 4) return callback(failLog + `${err}`);
           attempts++
           setTimeout(sendTxtMsg, 500)
         });
@@ -91,7 +88,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
         return callback()
       })
       .catch(err => {
-        if (attempts === 4) return callback(failLog + err);
+        if (attempts === 4) return callback(failLog + `${err}`);
         attempts++
         setTimeout(sendTestDetails, 500)
       });

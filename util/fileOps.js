@@ -1,63 +1,73 @@
 // Handle file operations and to accomodate communications between the RSS module and
 // the commands module.
 
-const fs = require('fs');
+const fs = require('fs')
+const currentGuilds = require('./fetchInterval.js').currentGuilds
 const config = require('../config.json')
 
-function updateContent(realFile, inFile, cacheLoc) {
-  if (process.env.isCmdServer) process.send({id: realFile, contents: inFile}); //child process
-  fs.writeFileSync(`./sources/${realFile}.json`, JSON.stringify(inFile, null, 2))
-  try {delete require.cache[require.resolve(cacheLoc)]} catch (e) {}
+function updateContent(guildId, inFile, cacheLoc) {
+  if (process.env.isCmdServer) process.send({type: 'update', id: guildId, contents: inFile}); //child process
+  fs.writeFileSync(`./sources/${guildId}.json`, JSON.stringify(inFile, null, 2))
+  currentGuilds[guildId] = inFile
 }
 
-exports.exists = function (file) {
+exports.exists = function(file) {
   return fs.existsSync(file)
 }
 
-exports.updateFile = function (guildId, inFile, cacheLoc) {
-  // "inFile" is the new contents in memory, cacheLoc is the cache location of the file
+exports.updateFile = function(guildId, inFile, cacheLoc) { // "inFile" is the new contents in memory, cacheLoc is the cache location of the file
   if (fs.existsSync(`./sources/${guildId}.json`)) { // Back up the file first if possible
     fs.readFile(`./sources/${guildId}.json`, function (err, data) {
       if (err) throw err;
-      fs.writeFileSync(`./sources/backup/${guildId}.json`, data)
+      fs.writeFileSync(`./sources/backup/${guildId}.json`, JSON.stringify(data, null, 2))
       updateContent(guildId, inFile, cacheLoc)
     });
   }
   else updateContent(guildId, inFile, cacheLoc);
 }
 
-exports.deleteFile = function (guildId, cacheLoc, callback) {
-  try {fs.unlinkSync(`./sources/${guildId}.json`)} catch (e) {}
-  try {delete require.cache[require.resolve(cacheLoc)]} catch (e) {}
-  if (process.env.isCmdServer) process.send(guildId);
-  return callback();
+exports.deleteFile = function(guildId, cacheLoc, callback) {
+  try {
+    fs.unlinkSync(`./sources/${guildId}.json`)
+    callback()
+  } catch (e) {}
+  delete currentGuilds[guildId]
+  if (process.env.isCmdServer) process.send({type: 'deletion', id: guildId});
 }
 
-exports.isEmptySources = function (guildId, callback) {
+exports.isEmptySources = function(guildRss) {
   // Used on the beginning of each cycle to check for empty sources per guild
-  var guildRss = require(`../sources/${guildId}.json`)
-  if (guildRss.sources.length === 0) {
-     if (!guildRss.timezone) {
-       exports.deleteFile(guildId, `../sources/${guildId}.json`, function () {
-         console.log(`RSS Info: (${guildId}) => 0 sources found, deleting.`)
+  if (!guildRss.sources || guildRss.sources.size() === 0) {
+     if (!guildRss.timezone) { // Delete only if a timezone is not found, preserving the customization
+       exports.deleteFile(guildRss.id, `../sources/${guildRss.id}.json`, function() {
+         console.log(`RSS Info: (${guildRss.id}) => 0 sources found, deleting.`)
        });
      }
+     else console.log(`RSS Info: (${guildRss.id}) => 0 sources found, skipping.`)
      return true;
   }
   else return false;
 }
 
-exports.readDir = function (dir, callback) {
+exports.readDir = function(dir, callback) {
   return fs.readdir(dir, callback)
 }
 
-exports.checkBackup = function (guildId) {
-  if (config.feedManagement.enableBackups !== true) return console.log(`Guild Profile: Cannot load guild profile ${guildId}. Backups disabled, skipping profile..`);
+exports.checkBackup = function(err, guildId) {
+  if (config.feedManagement.enableBackups !== true) return console.log(`Guild Profile Warning: Cannot load guild profile ${guildId} (${err}). Backups disabled, skipping profile..`);
 
-  console.log(`Guild Profile: Cannot load guild profile ${guildId}. Backups enabled, attempting to restore backup.`);
-  try {var backup = require(`../sources/backup/${guildId}`)}
-  catch (e) {return console.log(`RSS Warning: Unable to restore backup for ${guildId}. Reason: ${e}`)}
+  console.log(`Guild Profile Warning: Cannot load guild profile ${guildId} (${err}). Backups enabled, attempting to restore backup.`);
 
-  updateContent(guildId, backup, `../sources/${guildId}`);
-  console.log(`Guild Profile: Successfully restored backup of ${guildId}`);
+  fs.readFile(`./sources/backup/${guildId}`, function(err, backup) {
+    if (err) return console.log(`Guild Profile Warning: Unable to restore backup for ${guildId}. (${err})`);
+    updateContent(guildId, backup, `../sources/${guildId}.json`);
+    console.log(`Guild Profile Info: Successfully restored backup for ${guildId}`);
+  })
+
+  //
+  // try {var backup = require(`../sources/backup/${guildId}`)}
+  // catch (e) {return console.log(`RSS Warning: Unable to restore backup for ${guildId}. Reason: ${e}`)}
+  //
+  // updateContent(guildId, backup, `../sources/${guildId}`);
+  // console.log(`Guild Profile: Successfully restored backup of ${guildId}`);
 }

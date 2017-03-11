@@ -15,12 +15,13 @@ const FeedParser = require('feedparser');
 const fileOps = require('../util/fileOps.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const startFeedSchedule = require('../util/startFeedSchedule.js')
+const startFeedSchedule = require('../util/feedSchedule.js')
+const currentGuilds = require('../util/fetchInterval').currentGuilds
 
 module.exports = function(con, rssLink, channel, callback) {
 
-  var feedparser = new FeedParser()
-  var currentFeed = []
+  const feedparser = new FeedParser()
+  const currentFeed = []
 
   requestStream(rssLink, feedparser, function(err) {
     if (err) return callback({type: 'request', content: err});
@@ -34,40 +35,39 @@ module.exports = function(con, rssLink, channel, callback) {
   });
 
   feedparser.on('readable', function() {
-    var stream = this;
-    var item;
+    let item
 
-    while (item = stream.read()) {
+    while (item = this.read()) {
       currentFeed.push(item);
     }
 
   });
 
   feedparser.on('end', function() {
-    var metaLink = ''
-    var randomNum = Math.floor((Math.random() * 99) + 1)
-    if (currentFeed[0]) metaLink = (currentFeed[0].meta.link) ? currentFeed[0].meta.link : currentFeed[0].meta.title;
+    const randomNum = Math.floor((Math.random() * 99999999999) + 1)
+    let metaLink = ''
 
-    var rssName = `${channel.id}_${randomNum}${metaLink}`
+    if (currentFeed[0]) metaLink = (currentFeed[0].meta.link) ? currentFeed[0].meta.link : (currentFeed[0].meta.title) ? currentFeed[0].meta.title : `random_${Math.floor((Math.random() * 99999) + 1)}`;
+    else metaLink = `random_${Math.floor((Math.random() * 99999) + 1)}`;
 
-    if (!metaLink) return callback({type: 'initialization', content: 'No meta link available, most likely due to no existing articles.'});
+    let rssName = `${randomNum}_${metaLink}`;
 
     // MySQL table names have a limit of 64 char
     if (rssName.length >= 64 ) rssName = rssName.substr(0,64);
     rssName = rssName.replace(/\?/g, '') // remove question marks to prevent sql from auto-escaping
 
-
-    var processedItems = 0
-    var totalItems = currentFeed.length
+    const totalItems = currentFeed.length
+    let processedItems = 0
 
     console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Initializing new feed: ${rssLink}`)
 
     function getArticleId(article) {
-      var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
+      let equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
       if (equalGuids && currentFeed[0].guid) for (var x in currentFeed) {
         if (x > 0 && currentFeed[x].guid != currentFeed[x - 1].guid) equalGuids = false;
       }
 
+      // If all articles have the same guids, fall back to title, and if no title, fall back to pubdate
       if ((!article.guid || equalGuids) && article.title) return article.title;
       if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate !== "Invalid Date") return article.pubdate;
       return article.guid;
@@ -98,13 +98,14 @@ module.exports = function(con, rssLink, channel, callback) {
     }
 
     function addToConfig() {
-      var metaTitle = (currentFeed[0].meta.title) ? currentFeed[0].meta.title : 'No feed title found.'
+      let metaTitle = (currentFeed[0].meta.title) ? currentFeed[0].meta.title : 'No feed title found.'
 
       if (currentFeed[0].guid && currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
       else if (currentFeed[0].meta.link && currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
       if (fileOps.exists(`./sources/${channel.guild.id}.json`)) {
-        var guildRss = require(`../sources/${channel.guild.id}.json`);
+        if (!currentGuilds[channel.guild.id].sources) currentGuilds[channel.guild.id].sources = {};
+        var guildRss = currentGuilds[channel.guild.id];
         var rssList = guildRss.sources;
         rssList[rssName] = {
       		enabled: 1,
@@ -124,7 +125,7 @@ module.exports = function(con, rssLink, channel, callback) {
           title: metaTitle,
       		link: rssLink,
       		channel: channel.id
-      	}
+      	};
       }
 
       fileOps.updateFile(channel.guild.id, guildRss, `../sources/${channel.guild.id}.json`)

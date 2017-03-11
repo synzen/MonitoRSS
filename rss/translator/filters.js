@@ -17,16 +17,17 @@ function findFilterWords(filterType, content, isTestMessage) {
       for (var word in filterType) {
         // Broad filters, for phrases/words found anywhere
         if (filterType[word].startsWith('~')) {
-          let cleanedWord = filterType[word].slice(1, filterType[word].length);
-          let expression = new RegExp(`${escapeRegExp(cleanedWord)}`, 'gi');
+          var searchTerm = filterType[word].slice(1, filterType[word].length);
+          var expression = new RegExp(`${escapeRegExp(searchTerm)}`, 'gi');
           if (content.search(expression) !== -1) {
-            if (isTestMessage) matches.push(cleanedWord);
+            if (isTestMessage) matches.push(filterType[word]);
             else return true;
           }
         }
         // Specific filters, for phrases/words with spaces around them
         else {
-          let expression = new RegExp(`(\\s|^)${escapeRegExp(filterType[word])}(\\s|$)`, 'gi');
+          var searchTerm = (filterType[word].startsWith('\\~')) ? filterType[word].slice(1, filterType[word].length) : filterType[word]; // A slash-tilde (\~) will just read as a ~ to prevent broad filter
+          let expression = new RegExp(`(\\s|^)${escapeRegExp(searchTerm)}(\\s|$)`, 'gi');
           if (expression.test(content)) {
             if (isTestMessage) matches.push(filterType[word]);
             else return true;

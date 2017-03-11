@@ -1,10 +1,10 @@
 const FetchStream = require('fetch').FetchStream
 
 module.exports = function (link, feedparser, callback) {
-  var attempts = 0;
+  let attempts = 0;
 
   (function requestStream() {
-    var request = new FetchStream(link, {timeout: 15000})
+    const request = new FetchStream(link, {timeout: 15000})
 
     request.on('error', function(err) {
       if (attempts < 4) {

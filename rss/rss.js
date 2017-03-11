@@ -16,14 +16,14 @@ const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 const config = require('../config.json')
+const currentGuilds = require('../util/fetchInterval').currentGuilds
 
 module.exports = function (con, channel, rssName, isTestMessage, callback) {
 
-  var feedparser = new FeedParser()
-  var currentFeed = []
-
-  var guild = require(`../sources/${channel.guild.id}.json`)
-  var rssList = guild.sources
+  const feedparser = new FeedParser()
+  const currentFeed = []
+  const guildRss = currentGuilds[channel.guild.id]
+  const rssList = guildRss.sources
 
   requestStream(rssList[rssName].link, feedparser, function(err) {
     if (err && config.logging.showFeedErrs === true) return callback({type: 'request', content: err});
@@ -37,10 +37,9 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
   });
 
   feedparser.on('readable', function() {
-    var stream = this
-    var item
+    let item
 
-    while (item = stream.read()) {
+    while (item = this.read()) {
       currentFeed.push(item);
     }
 
@@ -52,11 +51,11 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
       return callback();
     }
 
-    var processedItems = 0
-    var filteredItems = 0
+    let processedItems = 0
+    let filteredItems = 0
 
     function getArticleId(article) {
-      var equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
+      let equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
       if (equalGuids && currentFeed[0].guid) for (var x in currentFeed) {
         if (x > 0 && currentFeed[x].guid != currentFeed[x - 1].guid) equalGuids = false;
       }
@@ -73,16 +72,16 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
     function checkTableExists() {
       sqlCmds.selectTable(con, rssName, function (err, results) {
         if (err || results.size() === 0) {
-          if (err) console.log(`Database error! (${guild.id}, ${guild.name}) => RSS index ${rssName} Feed ${rssName}. Skipping because of error:`, err);
-          else if (results.size() === 0) console.log(`RSS Info: (${guild.id}, ${guild.name}) => "${rssName}" appears to have been deleted, skipping...`);
+          if (err) return callback();
+          if (results.size() === 0) console.log(`RSS Info: (${guildRss.id}, ${guildRss.name}) => "${rssName}" appears to have been deleted, skipping...`);
           return callback(); // Callback no error object because 99% of the time it is just a hiccup
         }
         if (isTestMessage) {
-          let randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1));
+          const randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1)); // Grab a random feed from array
           checkTable(currentFeed[randFeedIndex]);
         }
         else {
-          let feedLength = currentFeed.length - 1;
+          const feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--) {
             checkTable(currentFeed[x], getArticleId(currentFeed[x]));
             filteredItems++;
@@ -92,7 +91,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
     }
 
     function checkTable(article, articleId) {
-      if (isTestMessage) {
+      if (isTestMessage) { // Do not interact with database if just test message
         filteredItems++;
         gatherResults();
         sendToDiscord(rssName, channel, article, isTestMessage, function (err) {
@@ -114,8 +113,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
     }
 
     function insertIntoTable(articleId) {
-      // inserting the feed into the table marks it as "seen"
-      sqlCmds.insert(con, rssName, articleId, function (err,res) {
+      sqlCmds.insert(con, rssName, articleId, function (err,res) { // inserting the feed into the table marks it as "seen"
         if (err) return callback();
         gatherResults();
       })

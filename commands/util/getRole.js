@@ -4,7 +4,7 @@
 const channelTracker = require('../../util/channelTracker.js')
 
 module.exports = function(message, callback) {
-  var channel = message.channel
+  const channel = message.channel
   channel.sendMessage('Enter a valid case-sensitive role name. Roles with duplicate names cannot be used.')
   .then(m => {
     const filter = m => m.author.id == message.author.id

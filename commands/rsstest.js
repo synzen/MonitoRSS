@@ -10,7 +10,7 @@ module.exports = function(bot, message, command) {
     message.channel.sendMessage(`Grabbing a random feed article...`)
     .then(grabMsg => {
       // Replicate the RSS process for a test article
-      var con = sqlConnect(getTestMsg)
+      const con = sqlConnect(getTestMsg)
       function getTestMsg() {
         getRSS(con, message.channel, rssName, grabMsg, function (err) {
           if (err) {

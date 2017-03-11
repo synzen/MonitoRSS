@@ -1,10 +1,16 @@
 /*
-    Used to control feed retrieval cycle on disconnects and file updates
+    Used to control feed retrieval cycle on disconnects, file updates and store guild profiles
 */
 
 const config = require('../config.json')
-var fetchInterval
-var refreshTime = (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15
+const refreshTime = (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15
+let fetchInterval
+
+exports.currentGuilds = {} // Object for holding all guild profiles
+
+exports.changedGuilds = {} // Hold any changed guild data here sent from child process
+
+exports.deletedGuilds = []
 
 exports.startSchedule = function (command) {
   fetchInterval = setInterval(command, refreshTime*60000)
