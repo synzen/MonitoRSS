@@ -12,9 +12,8 @@ function findImages(object, results) {
         results.push(object[key]);
       }
     }
-    if (typeof object[key] === 'object') return findImages(object[key], results);
+    else if (typeof object[key] === 'object') findImages(object[key], results);
   }
-  return false
 }
 
 // Clean up ridiculous spacings some articles may have in their descriptions/summaries

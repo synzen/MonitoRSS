@@ -11,10 +11,7 @@ module.exports = function (link, feedparser, callback) {
         attempts++;
         return requestStream();
       }
-      else {
-        feedparser.removeAllListeners('end');
-        return callback(err);
-      }
+      else return callback(err);
     })
 
     request.on('meta', function (meta) {
