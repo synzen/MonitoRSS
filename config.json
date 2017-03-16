@@ -15,7 +15,7 @@
   "feedManagement": {
     "sqlType": "sqlite3",
     "databaseName": "rss",
-    "enableBackups": true
+    "enableBackups": false
   },
   "feedSettings": {
     "refreshTimeMinutes": 15,
