@@ -9,7 +9,7 @@ exports.add = function(message, rssName, role) {
   const guildRss = currentGuilds[message.guild.id]
   const rssList = guildRss.sources
 
-  if (role && !rssList[rssName].filters) rssList[rssName].filters = {};
+  if (!rssList[rssName].filters) rssList[rssName].filters = {};
   if (role && !rssList[rssName].filters.roleSubscriptions) rssList[rssName].filters.roleSubscriptions = {};
   if (role && !rssList[rssName].filters.roleSubscriptions[role.id]) {
     rssList[rssName].filters.roleSubscriptions[role.id] = {

@@ -28,12 +28,13 @@ module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage)
 
   if (!isTestMessage && filterExists && !filterResults) return null; // Feed article delivery only passes through if the filter found the specified content
 
+
   const finalMessageCombo = {}
   if (rssList[rssName].embedMessage && rssList[rssName].embedMessage.enabled && rssList[rssName].embedMessage.properties) { // Check if embed is enabled
     finalMessageCombo.embedMsg = generateEmbed(rssList, rssName, article);
-    finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : ''; // Allow empty messages if embed is enabled
+    finalMessageCombo.textMsg = (!rssList[rssName].message) ? article.convertKeywords(config.feedSettings.defaultMessage) : (rssList[rssName].message === '{empty}') ? '' : article.convertKeywords(rssList[rssName].message); // Allow empty messages if embed is enabled with {empty}
   }
-  else finalMessageCombo.textMsg = (rssList[rssName].message) ? article.convertKeywords(rssList[rssName].message) : article.convertKeywords(config.feedSettings.defaultMessage);
+  else finalMessageCombo.textMsg = (!rssList[rssName].message || rssList[rssName].message === '{empty}') ? article.convertKeywords(config.feedSettings.defaultMessage) : article.convertKeywords(rssList[rssName].message); // Do not allow empty messages with just text and no embed
 
 
   // Generate test details
