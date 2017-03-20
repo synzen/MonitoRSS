@@ -16,7 +16,7 @@ module.exports = function (bot, message, command) {
   }
 
   const maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
-  const embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
+  let embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
     .setAuthor('Current Active Feeds')
     .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\u200b\n\u200b\n`);
 
