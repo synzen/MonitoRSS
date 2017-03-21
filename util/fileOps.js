@@ -8,7 +8,6 @@ const config = require('../config.json')
 function updateContent(guildId, inFile, cacheLoc) {
   if (process.env.isCmdServer) process.send({type: 'update', id: guildId, contents: inFile}); //child process
   fs.writeFileSync(`./sources/${guildId}.json`, JSON.stringify(inFile, null, 2))
-  currentGuilds[guildId] = inFile
 }
 
 exports.exists = function(file) {
