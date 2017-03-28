@@ -20,8 +20,8 @@ If this is your first time hosting the bot, you may ignore this.
  * [fetch](https://www.npmjs.com/package/fetch)
  * [cloudscraper](https://www.npmjs.com/package/cloudscraper)
  * Datebase Manager (one of two options)		
-  * [sqlite3](https://www.npmjs.com/package/sqlite3) (default)		
-  * [mysql](https://www.npmjs.com/package/mysql)
+     * [sqlite3](https://www.npmjs.com/package/sqlite3) (default)		
+     * [mysql](https://www.npmjs.com/package/mysql)
 
 #### Customization Functions
  * [striptags](https://www.npmjs.com/package/striptags) - Remove HTML content
