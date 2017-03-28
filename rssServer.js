@@ -36,7 +36,7 @@ let loginAttempts = 0;
   bot.login(config.botSettings.token)
   .catch(err => {
     console.log(`Discord.RSS RSS module could not login (${err}), retrying...`)
-    setTimeout(login, 5000)
+    setTimeout(login, 20000)
   })
   bot.once('ready', function() {
     loginAttempts = 0

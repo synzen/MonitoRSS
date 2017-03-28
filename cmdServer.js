@@ -57,7 +57,7 @@ let loginAttempts = 0;
   })
   .catch(err => {
     console.log(`Discord.RSS commands module could not login (${err}), retrying...`)
-    setTimeout(login, 5000)
+    setTimeout(login, 20000)
   })
 
   bot.once('disconnect', function (e) {
