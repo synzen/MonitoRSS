@@ -22,7 +22,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
 
   const feedparser = new FeedParser()
   const currentFeed = []
-  const guildRss = currentGuilds[channel.guild.id]
+  const guildRss = currentGuilds.get(channel.guild.id)
   const rssList = guildRss.sources
 
   requestStream(rssList[rssName].link, feedparser, function(err) {

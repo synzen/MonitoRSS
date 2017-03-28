@@ -1,3 +1,4 @@
+const fs = require('fs')
 const config = require('../config.json')
 const sqlCmds = require('../rss/sql/commands.js')
 const fileOps = require('../util/fileOps.js')
@@ -11,16 +12,16 @@ module.exports = function (bot, guild) {
     if(guild.channels[channelId]) delete channelTracker.activeCollectors[channelId];
   }
 
-  if (!fileOps.exists(`./sources/${guild.id}.json`)) return;
+  if (!fs.existsSync(`./sources/${guild.id}.json`)) return;
 
-  const rssList = currentGuilds[guild.id].sources
+  const rssList = currentGuilds.get(guild.id).sources
 
   for (var rssName in rssList) {
     sqlCmds.dropTable(config.feedManagement.databaseName, rssName)
   }
 
   fileOps.deleteFile(guild.id, `../sources/${guild.id}.json`, function() {
-    console.log(`RSS Info: Guild profile ${guild.id} (${guild.name}) deleted.`)
+    console.log(`RSS Info: Guild profile ${guild.id}.json (${guild.name}) deleted from sources folder.`)
   })
 
   if (!config.logging.discordChannelLog) return;

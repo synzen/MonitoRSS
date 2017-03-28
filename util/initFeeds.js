@@ -14,7 +14,7 @@ module.exports = function (bot, callback) {
   let totalFeeds = 0
   let con;
 
-  function genGuildList(guildFile) {
+  function addGuildRss(guildFile) {
     const guildId = guildFile.replace(/.json/g, '') // Remove .json file ending since only the ID is needed
     if (!bot.guilds.get(guildId)) { // Check if it is a valid guild in bot's guild collection
        if (guildFile === 'master.json' || guildFile === 'guild_id_here.json' || guildFile === 'backup') return;
@@ -24,16 +24,16 @@ module.exports = function (bot, callback) {
     try {
       const guildRss = JSON.parse(fs.readFileSync(`./sources/${guildFile}`))
       if (fileOps.isEmptySources(guildRss)) return; // Skip when empty source object
-      if (!currentGuilds[guildId] || currentGuilds[guildId] !== guildRss) currentGuilds[guildId] = guildRss;
+
+      if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) currentGuilds.set(guildId, guildRss);
       for (var y in guildRss.sources) totalFeeds++; // Count how many feeds there will be in total
     }
     catch(err) {return fileOps.checkBackup(err, guildId)}
-
   }
 
-  fileOps.readDir('./sources', function (err, files) {
+  fs.readdir('./sources', function (err, files) {
     if (err) throw err;
-    files.forEach(genGuildList)
+    files.forEach(addGuildRss)
     if (totalFeeds === 0) {
       console.log('RSS Info: There are no active feeds to initialize.');
       return callback();
@@ -43,14 +43,18 @@ module.exports = function (bot, callback) {
 
   function connect() {
     console.log('RSS Info: Starting initialization cycle.')
-    con = sqlConnect(initFeeds) // Connect to the SQL database
-    if (!con) throw 'RSS Error: SQL type is not correctly defined in config';
+    con = sqlConnect(function(err) {
+      if (!err) return initFeeds();
+      console.log(`Could not connect to SQL database for initialization. (${err})`)
+    })
+    if (!con) throw new Error('RSS Error: SQL type is not correctly defined in config');
   }
 
   function initFeeds() {
-    for (var guildId in currentGuilds) {
-      const guildName = currentGuilds[guildId].name;
-      const rssList = currentGuilds[guildId].sources;
+    currentGuilds.forEach(function(guildRss, guildId) {
+    // for (var guildId in currentGuilds) {
+      const guildName = guildRss.name;
+      const rssList = guildRss.sources;
       checkGuild.names(bot, guildId); // Check for any guild name changes
       for (var rssName in rssList) {
         checkGuild.roles(bot, guildId, rssName); // Check for any role name changes
@@ -65,7 +69,7 @@ module.exports = function (bot, callback) {
         }
         else skippedFeeds++;
       }
-    }
+    })
     if (skippedFeeds === totalFeeds) endCon();
   }
 

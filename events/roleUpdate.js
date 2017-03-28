@@ -2,7 +2,7 @@ const checkGuild = require('../util/checkGuild.js')
 const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function (bot, oldRole, newRole) {
-  const guildRss = currentGuilds[oldRole.guild.id]
+  const guildRss = currentGuilds.get(oldRole.guild.id)
   if (!guildRss.sources) return;
   const rssList = guildRss.sources
 

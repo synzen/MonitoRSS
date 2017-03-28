@@ -4,7 +4,7 @@ const removeRss = require('../util/removeRss.js')
 const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function (channel) {
-  const rssList = currentGuilds[channel.guild.id].sources
+  const rssList = currentGuilds.get(channel.guild.id).sources
 
   for (var channelId in channelTracker.activeCollectors) if (channelId === channel.id) delete channelTracker.activeCollectors[channelId];
 

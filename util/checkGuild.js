@@ -4,7 +4,7 @@ const fileOps = require('./fileOps.js')
 const currentGuilds = require('./fetchInterval.js').currentGuilds
 
 exports.roles = function (bot, guildId, rssName) {
-  const guildRss = currentGuilds[guildId]
+  const guildRss = currentGuilds.get(guildId)
   const rssList = guildRss.sources
   const guild = bot.guilds.get(guildId)
   let changedInfo = false
@@ -51,7 +51,7 @@ exports.roles = function (bot, guildId, rssName) {
 }
 
 exports.names = function (bot, guildId) {
-  const guildRss = currentGuilds[guildId]
+  const guildRss = currentGuilds.get(guildId)
   const rssList = guildRss.sources
   const guild = bot.guilds.get(guildId)
 

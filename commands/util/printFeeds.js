@@ -5,14 +5,15 @@ const channelTracker = require('../../util/channelTracker.js')
 const currentGuilds = require('../../util/fetchInterval.js').currentGuilds
 
 module.exports = function(bot, message, command, callback) {
-  if (!currentGuilds[message.guild.id] || !currentGuilds[message.guild.id].sources || currentGuilds[message.guild.id].sources.size() === 0) return message.channel.sendMessage('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
+  const guildRss = currentGuilds.get(message.guild.id)
+  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.sendMessage('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
 
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel,10))) return message.channel.name == channel;
     return message.channel.id == channel;
   }
 
-  const rssList = currentGuilds[message.guild.id].sources
+  const rssList = guildRss.sources
   const maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
   let embedMsg = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)

@@ -59,7 +59,7 @@ module.exports = function(con, rssLink, channel, callback) {
     const totalItems = currentFeed.length
     let processedItems = 0
 
-    console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Initializing new feed: ${rssLink}`)
+    // console.log(`RSS Info: (${channel.guild.id}, ${channel.guild.name}) => Initializing new feed: ${rssLink}`)
 
     function getArticleId(article) {
       let equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
@@ -75,6 +75,7 @@ module.exports = function(con, rssLink, channel, callback) {
 
     function startDataProcessing() {
       createTable()
+      // addToConfig()
     }
 
     function createTable() {
@@ -89,7 +90,6 @@ module.exports = function(con, rssLink, channel, callback) {
         if (err) throw err;
         gatherResults();
       })
-
     }
 
     function gatherResults() {
@@ -103,9 +103,10 @@ module.exports = function(con, rssLink, channel, callback) {
       if (currentFeed[0].guid && currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
       else if (currentFeed[0].meta.link && currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
 
-      if (fileOps.exists(`./sources/${channel.guild.id}.json`)) {
-        if (!currentGuilds[channel.guild.id].sources) currentGuilds[channel.guild.id].sources = {};
-        var guildRss = currentGuilds[channel.guild.id];
+      if (currentGuilds.has(channel.guild.id)) {
+        var guildRss = currentGuilds.get(channel.guild.id);
+        if (!guildRss.sources) guildRss.sources = {};
+
         var rssList = guildRss.sources;
         rssList[rssName] = {
       		enabled: 1,
@@ -119,13 +120,14 @@ module.exports = function(con, rssLink, channel, callback) {
           name: channel.guild.name,
           id: channel.guild.id,
           sources: {}
-        };
+        }
         guildRss.sources[rssName] = {
       		enabled: 1,
           title: metaTitle,
       		link: rssLink,
       		channel: channel.id
-      	};
+      	}
+        currentGuilds.set(channel.guild.id, guildRss);
       }
 
       fileOps.updateFile(channel.guild.id, guildRss, `../sources/${channel.guild.id}.json`)

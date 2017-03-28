@@ -4,9 +4,10 @@ const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 // const pageControls = require('../util/pageControls.js')   // reserved for when discord.js fixes their library
 
 module.exports = function (bot, message, command) {
-  if (!currentGuilds[message.guild.id] || !currentGuilds[message.guild.id].sources || currentGuilds[message.guild.id].sources.size() === 0) return message.channel.sendMessage('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
+  const guildRss = currentGuilds.get(message.guild.id)
+  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.sendMessage('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
 
-  const rssList = currentGuilds[message.guild.id].sources
+  const rssList = guildRss.sources
 
   // Function to get channel name, resolving for whether it the identifier is an ID or a string
   function getChannel(channel) {

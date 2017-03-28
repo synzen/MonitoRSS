@@ -9,36 +9,40 @@ const fetchInterval = require('./fetchInterval.js')
 const currentGuilds = fetchInterval.currentGuilds // Main directory of guild profiles (object)
 const changedGuilds = fetchInterval.changedGuilds // Directory of changed guilds profiles sent from child process (object)
 const deletedGuilds = fetchInterval.deletedGuilds // Directory of deleted guild IDs (array)
+const cmd = require('node-cmd')
 
 
-module.exports = function (bot) {
-  // fetchInterval.cycleInProgress = false
-  let guildList = []
+module.exports = function(bot) {
   let totalFeeds = 0
   let feedsProcessed = 0
   let feedsSkipped = 0
   let con
   let startTime
 
-  function checkGuildChanges() {
+  function checkGuildChanges() { // Check for any guilds profiles waiting to be updated
+
     for (var index in deletedGuilds) { // Get rid of deleted guild profiles
       const guildId = deletedGuilds[index];
-      if (currentGuilds[guildId]) {
-        delete currentGuilds[guildId];
+      if (currentGuilds.has(guildId)) {
+        currentGuilds.delete(guildId);
         console.log(`RSS Module deleted profile for guild ID: ${guildId}`);
       }
       deletedGuilds.splice(index, 1);
-      if (changedGuilds[guildId]) delete changedGuilds[guildId]; // Changed profile is useless now that the guild is deleted
+      if (changedGuilds.get(guildId)) delete changedGuilds.delete(guildId); // Changed profile is useless now that the guild is deleted
     }
-    for (var guildId in changedGuilds) { // Check for guilds to be updated that were sent from child process
-      currentGuilds[guildId] = changedGuilds[guildId];
-      delete changedGuilds[guildId];
+
+    changedGuilds.forEach(function(guildRss, guildId) { // Check for guilds to be updated that were sent from child process
+      currentGuilds.set(guildId, guildRss)
+      changedGuilds.delete(guildId)
       console.log('RSS Module updated profile for guild ID: ' + guildId)
-    }
+    })
+
   }
 
 function genGuildList(guildFile) {
+
   const guildId = guildFile.replace(/.json/g, '') // Remove .json file ending since only the ID is needed
+
   if (!bot.guilds.get(guildId)) { // Check if it is a valid guild in bot's guild collection
      if (guildFile === 'master.json' || guildFile === 'guild_id_here.json' || guildFile === 'backup') return;
      return console.log(`RSS Guild Profile: ${guildFile} was not found in bot's guild list. Skipping.`);
@@ -47,7 +51,10 @@ function genGuildList(guildFile) {
   try {
     const guildRss = JSON.parse(fs.readFileSync(`./sources/${guildFile}`))
     if (fileOps.isEmptySources(guildRss)) return; // Skip when empty source object
-    if (!currentGuilds[guildId] || currentGuilds[guildId] !== guildRss) currentGuilds[guildId] = guildRss;
+    if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
+      console.log('accounting for change');
+      currentGuilds.set(guildId, guildRss);
+    }
     for (var y in guildRss.sources) totalFeeds++; // Count how many feeds there will be in total
   }
   catch(err) {return fileOps.checkBackup(err, guildId)}
@@ -56,30 +63,38 @@ function genGuildList(guildFile) {
 
 
   function connect() {
+
     if (fetchInterval.cycleInProgress) {
       console.log(`RSS Info: Previous cycle was unable to finish. Starting new cycle using unclosed connection.`);
       return endCon(true);
     }
+
+    cmd.get('free -h', function(data) {
+      console.info(`MEMORY NOW: \n`, data)
+    });
+
     checkGuildChanges()
     fetchInterval.cycleInProgress = true
     totalFeeds = feedsProcessed = feedsSkipped = 0
-    guildList = []
-    fileOps.readDir('./sources', function (err, files) {
-      if (err) throw err;
-      files.forEach(genGuildList)
-      if (totalFeeds == 0) {
-        fetchInterval.cycleInProgress = false;
-        return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
-      }
-      con = sqlConnect(startRetrieval);
+
+    currentGuilds.forEach(function(guildRss, guildId) { // key is the guild ID, value is the guildRss
+      let rssList = guildRss.sources
+      for (var rssName in rssList) totalFeeds++;
     })
+
+    if (totalFeeds == 0) {
+      fetchInterval.cycleInProgress = false;
+      return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
+    }
+    con = sqlConnect(startRetrieval);
   }
 
   function startRetrieval() {
     startTime = new Date()
-    for (var guildId in currentGuilds) {
-      const guildName = currentGuilds[guildId].name;
-      const rssList = currentGuilds[guildId].sources;
+    // for (var guildId in currentGuilds) {
+    currentGuilds.forEach(function(guildRss, guildId) {
+      const guildName = guildRss.name;
+      const rssList = guildRss.sources;
       for (let rssName in rssList) {
         const channel = configChecks.validChannel(bot, guildId, rssList[rssName]);
         if (configChecks.checkExists(guildId, rssList[rssName], false) && channel) { // Check valid source config and channel
@@ -92,7 +107,7 @@ function genGuildList(guildFile) {
         }
         else feedsSkipped++;
       }
-    }
+    })
     if (feedsSkipped + feedsProcessed === totalFeeds) return endCon();
   }
 
@@ -106,6 +121,6 @@ function genGuildList(guildFile) {
     }, startingCycle);
   }
 
-  connect()
+  // connect()
   fetchInterval.startSchedule(connect)
 }

@@ -6,7 +6,7 @@ const currentGuilds = require('../../util/fetchInterval.js').currentGuilds
 const validFilterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
 
 exports.add = function(message, rssName, role) {
-  const guildRss = currentGuilds[message.guild.id]
+  const guildRss = currentGuilds.get(message.guild.id)
   const rssList = guildRss.sources
 
   if (!rssList[rssName].filters) rssList[rssName].filters = {};
@@ -115,7 +115,7 @@ exports.add = function(message, rssName, role) {
 }
 
 exports.remove = function(message, rssName, role) {
-  const guildRss = currentGuilds[message.guild.id]
+  const guildRss = currentGuilds.get(message.guild.id)
   const rssList = guildRss.sources
   const filterList = (role) ? rssList[rssName].filters.roleSubscriptions[role.id].filters : rssList[rssName].filters // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
 
@@ -135,12 +135,14 @@ exports.remove = function(message, rssName, role) {
   .setDescription(`**Feed Title:** ${rssList[rssName].title}\n**Feed Link:** ${rssList[rssName].link}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type exit to cancel.\u200b\n\u200b\n`)
   .setAuthor(`List of Assigned Filters`)
 
+  // console.info(filterList)
   for (var filterCategory in filterList)  {
-    let value = ''
     if (filterCategory !== 'roleSubscriptions') {
+      let value = ''
       for (var filter in filterList[filterCategory]) value += `${filterList[filterCategory][filter]}\n`;
+      // console.info(`${filterCategory}: ${value}`);
+      msg.addField(filterCategory, value, true)
     }
-    msg.addField(filterCategory, value, true)
   }
 
   message.channel.sendEmbed(msg)

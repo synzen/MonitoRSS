@@ -4,9 +4,10 @@ const getSubList = require('./util/getSubList.js')
 const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function(bot, message, command) {
-  if (!currentGuilds[message.guild.id] || !currentGuilds[message.guild.id].sources || currentGuilds[message.guild.id].sources.size() === 0) return message.channel.sendMessage('There are no active feeds to subscribe to.').catch(err => console.log(`Promise Warning: subAdd 1: ${err}`));
+  const guildRss = currentGuilds.get(message.guild.id)
+  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.sendMessage('There are no active feeds to subscribe to.').catch(err => console.log(`Promise Warning: subAdd 1: ${err}`));
 
-  const rssList = currentGuilds[message.guild.id].sources
+  const rssList = guildRss.sources
   const options = getSubList(bot, message.guild, rssList)
   if (!options) return message.channel.sendMessage('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.').catch(err => console.log(`Promise Warning: subAdd 2: ${err}`));
 

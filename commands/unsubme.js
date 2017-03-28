@@ -4,7 +4,8 @@ const getSubList = require('./util/getSubList.js')
 const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function(bot, message, command) {
-  const rssList = (currentGuilds[message.guild.id] && currentGuilds[message.guild.id].sources) ? currentGuilds[message.guild.id].sources : {}
+  const guildRss = currentGuilds.get(message.guild.id)
+  const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
   const botRole = message.guild.members.get(bot.user.id).highestRole
   const memberRoles = message.member.roles
 

@@ -4,7 +4,7 @@ const config = require('../config.json')
 const currentGuilds = require('./fetchInterval.js').currentGuilds
 
 module.exports = function (guildId, rssName, callback) {
-  const guildRss = currentGuilds[guildId]
+  const guildRss = currentGuilds.get(guildId)
   const rssList = guildRss.sources
   const link = rssList[rssName].link
   sqlCmds.dropTable(config.feedManagement.databaseName, rssName)

@@ -12,7 +12,7 @@ function findImages(object, results) {
         results.push(object[key]);
       }
     }
-    else if (typeof object[key] === 'object') findImages(object[key], results);
+    if (typeof object[key] === 'object') return findImages(object[key], results);
   }
 }
 
@@ -43,7 +43,7 @@ module.exports = function Article(rawArticle, guildId) {
   this.link = (rawArticle.link) ? rawArticle.link : ''
 
   // date
-  const guildTimezone = currentGuilds[guildId].timezone
+  const guildTimezone = currentGuilds.get(guildId).timezone
   const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
   const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : "ddd, D MMMM YYYY, h:mm A z"
   const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)

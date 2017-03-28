@@ -3,7 +3,7 @@ const config = require('../config.json')
 const currentGuilds = require('./fetchInterval').currentGuilds
 
 exports.checkExists = function (guildId, feed, logging, initializing) {
-  const guildRss = currentGuilds[guildId]
+  const guildRss = currentGuilds.get(guildId)
   let valid = true
 
   if (feed.enabled == 0) {
@@ -25,7 +25,7 @@ exports.checkExists = function (guildId, feed, logging, initializing) {
 }
 
 exports.validChannel = function(bot, guildId, feed) {
-  const guild = currentGuilds[guildId]
+  const guildRss = currentGuilds.get(guildId)
 
   if (isNaN(parseInt(feed.channel,10))) {
     const channel = bot.channels.find('name', feed.channel);
@@ -38,7 +38,7 @@ exports.validChannel = function(bot, guildId, feed) {
   else {
     const channel = bot.channels.get(`${feed.channel}`);
     if (!channel) {
-      console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssName}'s integer-defined channel was not found. skipping...`)
+      console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${feed.link}'s integer-defined channel was not found. skipping...`)
       return false;
     }
     else return channel;

@@ -4,11 +4,13 @@
 
 const config = require('../config.json')
 const refreshTime = (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15
+const currentGuilds = new Map()
+const changedGuilds = new Map()
 let fetchInterval
 
-exports.currentGuilds = {} // Object for holding all guild profiles
+exports.currentGuilds = currentGuilds // Object for holding all guild profiles
 
-exports.changedGuilds = {} // Hold any changed guild data here sent from child process
+exports.changedGuilds = changedGuilds // Hold any changed guild data here sent from child process
 
 exports.deletedGuilds = []
 

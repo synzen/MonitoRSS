@@ -6,7 +6,7 @@ const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 module.exports = function (bot, message, command, callback) {
 
   getIndex(bot, message, command, function(rssName) {
-    const guildRss = currentGuilds[message.guild.id]
+    const guildRss = currentGuilds.get(message.guild.id)
     const rssList = guildRss.sources
     const link = rssList[rssName].link
     message.channel.sendMessage(`Removing <${link}>...`)

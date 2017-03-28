@@ -1,5 +1,4 @@
 const Discord = require('discord.js')
-const currentGuilds = require('../../util/fetchInterval.js').currentGuilds
 
 module.exports = function(rssList, rssName, article) {
   const embed = new Discord.RichEmbed()

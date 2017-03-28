@@ -8,9 +8,9 @@ const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/fetchInterval.js').currentGuilds
 
 module.exports = function(bot, message, command) {
-  if (!currentGuilds[message.guild.id] || !currentGuilds[message.guild.id].sources || currentGuilds[message.guild.id].sources.size() === 0) return message.channel.sendMessage('Cannot add role customizations without any active feeds.').catch(err => console.log(`Promise Warning: rssRole 1: ${err}`));
+  const guildRss = currentGuilds.get(message.guild.id)
+  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.sendMessage('Cannot add role customizations without any active feeds.').catch(err => console.log(`Promise Warning: rssRole 1: ${err}`));
 
-  const guildRss = currentGuilds[message.guild.id]
   const rssList = guildRss.sources
   let role
 

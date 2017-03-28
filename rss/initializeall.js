@@ -30,7 +30,7 @@
 const config = require('../config.json')
 const moment = require('moment-timezone')
 const requestStream = require('./request.js')
-const FeedParser = require('feedparser');
+const FeedParser = require('feedparser')
 const translator = require('./translator/translate.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
@@ -41,7 +41,7 @@ module.exports = function (con, channel, rssName, callback) {
   const feedparser = new FeedParser()
   const currentFeed = []
 
-  const guildRss = currentGuilds[channel.guild.id]
+  const guildRss = currentGuilds.get(channel.guild.id)
   const rssList = guildRss.sources
 
   requestStream(rssList[rssName].link, feedparser, function (err) {
@@ -50,7 +50,6 @@ module.exports = function (con, channel, rssName, callback) {
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    console.info()
     return callback({type: 'feedparser', content: err, feed: rssList[rssName]})
   });
 

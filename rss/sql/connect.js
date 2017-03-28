@@ -7,16 +7,18 @@ const sql = (sqlType === 'mysql') ? require('mysql') : require('sqlite3').verbos
 module.exports = function(callback) {
   if (sqlType === 'mysql') {
   let con, attempts = 0;
+  // let con;
 
     (function connect(finalErr) {
       if (attempts === 9 && finalErr) throw `Could not connect to database after 10 attempts, terminating. (${finalErr})`;
       con = sql.createConnection(credentials); //MySQL connections will automatically close unless new connections are made
 
-      con.connect(function(err){
-        if(err) {
+      con.connect(function(err) {
+        if (err) {
           console.log(`Error connecting to database ${config.feedManagement.databaseName} (${err}). Attempting to reconnect.`);
           attempts++;
           return setTimeout(connect, 2000, err);
+          // return callback(err);
         }
 
         con.query(`create database if not exists \`${config.feedManagement.databaseName}\``, function(err) {
@@ -32,7 +34,7 @@ module.exports = function(callback) {
       });
 
       con.on('error', function(err) {
-        if(err.code === 'PROTOCOL_CONNECTION_LOST') {
+        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
           connect(err);
           attempts++;
         }
@@ -42,9 +44,9 @@ module.exports = function(callback) {
     return con;
   }
 
-  //so much simpler!
+  // So much simpler!
   else if (sqlType == "sqlite3") {
     return new sql.Database(`./${config.feedManagement.databaseName}.db`, callback);
   }
-  else throw 'Warning! SQL type is not correctly defined in config, terminating.';
+  else throw new Error('Warning! SQL type is not correctly defined in config, terminating.');
 }

@@ -34,7 +34,7 @@ module.exports = function(bot, message, command) {
 
   getIndex(bot, message, command, function(rssName) {
 
-    const guildRss = currentGuilds[message.guild.id]
+    const guildRss = currentGuilds.get(message.guild.id)
     const rssList = guildRss.sources
 
     // Reset and disable entire embed

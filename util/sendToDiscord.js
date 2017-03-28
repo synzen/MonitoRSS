@@ -4,16 +4,12 @@ const fetchInterval = require('./fetchInterval.js')
 const currentGuilds = fetchInterval.currentGuilds
 
 module.exports = function (rssName, channel, article, isTestMessage, callback) {
-  const rssList = currentGuilds[channel.guild.id].sources
+  const rssList = currentGuilds.get(channel.guild.id).sources
 
   // check if any changes to feed article while article cycle was in progress
-  if (!process.env.isCmdServer && fetchInterval.changedGuilds[channel.guild.id]) {
-    const guildNew = fetchInterval.changedGuilds[channel.guild.id];
-    if (!guildNew.sources) {
-      console.info(guildNew.sources);
-      console.info(guildNew);
-      return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources found in updated file, skipping Discord message sending.`);
-    }
+  if (!process.env.isCmdServer && fetchInterval.changedGuilds.has(channel.guild.id)) {
+    const guildNew = fetchInterval.changedGuilds.get(channel.guild.id);
+    if (!guildNew.sources) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources found in updated file, skipping Discord message sending.`);
     const rssListNew = guildNew.sources;
     let found = false;
     for (let rssNameNew in rssListNew) if (rssNameNew == rssName) found = true;
@@ -71,7 +67,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
         });
       }
       if (message.textMsg.length > 1950) {
-        console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssList[rssName].name}* due to character count >1950. Message is:\n\n`, message.textMsg);
+        console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n`, message.textMsg);
         return channel.sendMessage(`Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`);
       }
       else if (message.textMsg.length === 0) return channel.sendMessage(`Unable to send empty message for feed article *${article.link}*.`);
@@ -94,7 +90,7 @@ module.exports = function (rssName, channel, article, isTestMessage, callback) {
       });
     }
     if (message.testDetails.length > 1950) {
-      console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Test details could not be sent for *${rssList[rssName].name}* due to character count >1950. Test Details are:\n\n`, message.testDetails);
+      console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Test details could not be sent for *${rssName}* due to character count >1950. Test Details are:\n\n`, message.testDetails);
       channel.sendMessage(`Error: Test details could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution. Attempting to send configured message next...`);
       sendMain();
     }

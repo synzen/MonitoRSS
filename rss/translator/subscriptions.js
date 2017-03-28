@@ -1,5 +1,4 @@
 const filterFeed = require('./filters.js')
-const currentGuilds = require('../../util/fetchInterval.js').currentGuilds
 
 module.exports = function(rssList, rssName, article) {
   let mentions = ''

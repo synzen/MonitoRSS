@@ -12,7 +12,8 @@ module.exports = function (bot, message) {
     else if (message.channel.id == channel) return message.channel.id == channel;
   }
 
-  const rssList = (currentGuilds[message.guild.id] && currentGuilds[message.guild.id].sources) ? currentGuilds[message.guild.id].sources : {}
+  let guildRss = currentGuilds.get(message.guild.id)
+  const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
   const maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
 
   if (message.content.split(' ').length === 1) return; // If there is no link after rssadd, return.
@@ -58,7 +59,7 @@ module.exports = function (bot, message) {
           console.log(`Commands Warning: Unable to add ${rssLink}. (${err.content})`);
           return verifyMsg.edit(`Unable to add feed. Reason: ${channelErrMsg}.`);
         }
-        console.log('Commands Info: Successfully added new feed.')
+        console.log(`Commands Info: Successfully added ${rssLink}.`)
         verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`).catch(err => console.log(`Promise Warning: rssAdd 5: ${err}`))
         sqlCmds.end(con, function(err) {
           if (err) throw err;

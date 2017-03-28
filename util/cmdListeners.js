@@ -1,14 +1,9 @@
+const fs = require('fs')
 const eventHandler = (evnt) => require(`../events/${evnt}.js`)
-const fileOps = require('./fileOps.js')
 const config = require('../config.json')
-const pageControls = require('./pageControls.js')
+// const pageControls = require('./pageControls.js') // Reserved for when discord.js fixes their library
 
 exports.createAllListeners = function(bot) {
-  bot.on('ready', function() {
-    if (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') bot.user.setGame(config.botSettings.defaultGame);
-    console.log('Discord.RSS commands module activated and online.')
-  })
-
   bot.on('message', function(message) {
     eventHandler('message')(bot, message)
   })
@@ -22,12 +17,12 @@ exports.createAllListeners = function(bot) {
   })
 
   bot.on('channelDelete', function(channel) {
-    if (!fileOps.exists(`./sources/${channel.guild.id}.json`)) return;
+    if (!fs.existsSync(`./sources/${channel.guild.id}.json`)) return;
     eventHandler('channelDelete')(channel)
   })
 
   bot.on('roleUpdate', function(oldRole, newRole) {
-    if (oldRole.name === newRole.name || !fileOps.exists(`./sources/${oldRole.guild.id}.json`)) return;
+    if (oldRole.name === newRole.name || !fs.existsSync(`./sources/${oldRole.guild.id}.json`)) return;
     eventHandler('roleUpdate')(bot, oldRole, newRole)
   })
 
@@ -36,11 +31,11 @@ exports.createAllListeners = function(bot) {
   })
 
   bot.on('guildUpdate', function(oldGuild, newGuild) {
-    if (newGuild.name === oldGuild.name || !fileOps.exists(`./sources/${oldGuild.id}.json`)) return;
+    if (newGuild.name === oldGuild.name || !fs.existsSync(`./sources/${oldGuild.id}.json`)) return;
     eventHandler('guildUpdate')(bot, oldGuild, newGuild)
   })
 
-  // reserved for when discord.js fixes their library  
+  // reserved for when discord.js fixes their library
   // bot.on('messageReactionAdd', function(msgReaction, user) {
   //   console.log(msgReaction.me)
   //    if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || msgReaction.me) return;
@@ -54,7 +49,6 @@ exports.createAllListeners = function(bot) {
 }
 
 exports.removeAllListeners = function(bot) {
-  bot.removeAllListeners('ready')
   bot.removeAllListeners('message')
   bot.removeAllListeners('guildCreate')
   bot.removeAllListeners('guildUpdate')
