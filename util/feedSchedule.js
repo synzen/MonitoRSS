@@ -9,7 +9,6 @@ const fetchInterval = require('./fetchInterval.js')
 const currentGuilds = fetchInterval.currentGuilds // Main directory of guild profiles (object)
 const changedGuilds = fetchInterval.changedGuilds // Directory of changed guilds profiles sent from child process (object)
 const deletedGuilds = fetchInterval.deletedGuilds // Directory of deleted guild IDs (array)
-const cmd = require('node-cmd')
 
 
 module.exports = function(bot) {
@@ -68,10 +67,6 @@ function genGuildList(guildFile) {
       console.log(`RSS Info: Previous cycle was unable to finish. Starting new cycle using unclosed connection.`);
       return endCon(true);
     }
-
-    cmd.get('free -h', function(data) {
-      console.info(`MEMORY NOW: \n`, data)
-    });
 
     checkGuildChanges()
     fetchInterval.cycleInProgress = true
