@@ -23,7 +23,10 @@ module.exports = function (bot, callback) {
 
     try {
       const guildRss = JSON.parse(fs.readFileSync(`./sources/${guildFile}`))
-      if (fileOps.isEmptySources(guildRss)) return; // Skip when empty source object
+      if (fileOps.isEmptySources(guildRss)) {
+        console.log(`${guildId} is EMPTY! Skipping.`);
+        return; // Skip when empty source object
+      }
 
       if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) currentGuilds.set(guildId, guildRss);
       for (var y in guildRss.sources) totalFeeds++; // Count how many feeds there will be in total

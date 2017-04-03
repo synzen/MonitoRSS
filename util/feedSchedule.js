@@ -50,10 +50,7 @@ function genGuildList(guildFile) {
   try {
     const guildRss = JSON.parse(fs.readFileSync(`./sources/${guildFile}`))
     if (fileOps.isEmptySources(guildRss)) return; // Skip when empty source object
-    if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
-      console.log('accounting for change');
-      currentGuilds.set(guildId, guildRss);
-    }
+    if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) currentGuilds.set(guildId, guildRss);
     for (var y in guildRss.sources) totalFeeds++; // Count how many feeds there will be in total
   }
   catch(err) {return fileOps.checkBackup(err, guildId)}

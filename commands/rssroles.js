@@ -172,20 +172,26 @@ module.exports = function(bot, message, command) {
       // global sub list is an array
       if (source.roleSubscriptions) {
         for (var globalSubber in source.roleSubscriptions) {
-          if (source.roleSubscriptions[globalSubber].roleID == roleID) {source.roleSubscriptions.splice(globalSubber, 1); found = true;}
+          if (source.roleSubscriptions[globalSubber].roleID == roleID) {
+            source.roleSubscriptions.splice(globalSubber, 1);
+            if (source.roleSubscriptions.length === 0) delete source.roleSubscriptions;
+            found = true;
+          }
         }
       }
       // filtered sub list is an object
       if (source.filters && source.filters.roleSubscriptions) {
         for (var filteredSubber in source.filters.roleSubscriptions) {
-          if (filteredSubber == roleID) {delete source.filters.roleSubscriptions[filteredSubber]; found = true;}
+          if (filteredSubber == roleID) {
+            delete source.filters.roleSubscriptions[filteredSubber];
+            if (source.filters.roleSubscriptions.size() === 0) delete source.filters.roleSubscriptions;
+            if (source.filters.size() === 0) delete source.filters;
+            found = true;
+          }
         }
       }
     }
     if (!found) return message.channel.sendMessage('This role has no subscriptions to remove.').catch(err => console.log(`Promise Warning: rssRoles/delSub 1: ${err}`));
-    if (source.roleSubscriptions && source.roleSubscriptions.length === 0) delete source.roleSubscriptions;
-    if (source.filters && source.filters.roleSubscriptions.size() === 0) delete source.filters.roleSubscriptions;
-    if (source.filters && source.filters.size() === 0) delete source.filters;
     fileOps.updateFile(message.guild.id, guildRss)
     console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${message.guild.roles.get(roleID).id}, ${message.guild.roles.get(roleID).name}) => All subscriptions deleted.`);
     return message.channel.sendMessage(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`.`).catch(err => console.log(`Promise Warning: rssRoles/delSub 2: ${err}`))

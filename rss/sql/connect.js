@@ -10,7 +10,7 @@ module.exports = function(callback) {
   // let con;
 
     (function connect(finalErr) {
-      if (attempts === 9 && finalErr) throw `Could not connect to database after 10 attempts, terminating. (${finalErr})`;
+      if (attempts === 9 && finalErr) throw new Error(`Could not connect to database after 10 attempts, terminating. (${finalErr})`);
       con = sql.createConnection(credentials); //MySQL connections will automatically close unless new connections are made
 
       con.connect(function(err) {

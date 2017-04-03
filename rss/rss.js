@@ -19,6 +19,7 @@ const config = require('../config.json')
 const currentGuilds = require('../util/fetchInterval').currentGuilds
 
 module.exports = function (con, channel, rssName, isTestMessage, callback) {
+  if (rssName.includes('armoredpatrol') && channel.guild.id === '278618236545662976') console.log('inside rss.js now');
 
   const feedparser = new FeedParser()
   const currentFeed = []
@@ -26,13 +27,13 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
   const rssList = guildRss.sources
 
   requestStream(rssList[rssName].link, feedparser, function(err) {
-    if (err && config.logging.showFeedErrs === true) return callback({type: 'request', content: err});
+    if (err && config.logging.showFeedErrs === true) return callback({type: 'request', content: err, feed: rssList[rssName]});
     else if (err) return callback();
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    if (config.logging.showFeedErrs === true) return callback({type: 'feedparser', content: err})
+    if (config.logging.showFeedErrs === true) return callback({type: 'feedparser', content: err, feed: rssList[rssName]})
     else callback();
   });
 
@@ -47,7 +48,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
 
   feedparser.on('end', function() {
     if (currentFeed.length === 0) { // Return callback if there no articles in the feed are found
-      if (isTestMessage) return callback({type: 'feedparser', content: 'No existing feeds'})
+      if (isTestMessage) return callback({type: 'feedparser', content: 'No existing feeds', feed: rssList[rssName]})
       return callback();
     }
 
@@ -72,7 +73,9 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
     function checkTableExists() {
       sqlCmds.selectTable(con, rssName, function (err, results) {
         if (err || results.size() === 0) {
-          if (err) return callback();
+          if (err) {
+            return callback();
+          }
           if (results.size() === 0) console.log(`RSS Info: (${guildRss.id}, ${guildRss.name}) => "${rssName}" appears to have been deleted, skipping...`);
           return callback(); // Callback no error object because 99% of the time it is just a hiccup
         }
@@ -100,8 +103,12 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
       }
       else {
         sqlCmds.select(con, rssName, articleId, function (err, results, fields) {
-          if (err) return callback();
-          if (results.size() > 0) gatherResults();
+          if (err) {
+            return callback();
+          }
+          if (results.size() > 0) {
+            gatherResults();
+          }
           else {
             sendToDiscord(rssName, channel, article, false, function (err) {
               if (err) console.log(err);
@@ -121,10 +128,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
 
     function gatherResults() {
       processedItems++;
-      //console.log(`${rssList[rssName].name} ${filteredItems} ${processedItems}`) // for debugging
-      if (processedItems == filteredItems) {
-        callback();
-      }
+      if (processedItems == filteredItems) return callback();
     }
 
     return startDataProcessing()
