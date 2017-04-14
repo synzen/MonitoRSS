@@ -21,9 +21,9 @@ module.exports = function (bot, message) {
   const content = message.content.split(' ')
 
   message.channel.sendMessage('Verifying...')
-  .then(verifyMsg => {
+  .then(function(verifyMsg) {
     const rssLink = content[1].trim()
-    if (!rssLink.startsWith('http')) return verifyMsg.edit('Unable to add feed. Make sure it is a link, and there are no odd characters before your feed link.').catch(err => console.log(`Promise Warning: rssAdd 1: ${err}`));
+    if (!rssLink.startsWith('http')) return verifyMsg.edit('Unable to add feed. Make sure it is a valid link with no odd characters.').catch(err => console.log(`Promise Warning: rssAdd 1: ${err}`));
     else if (rssList.size() >= maxFeedsAllowed && maxFeedsAllowed != 0)  {
       console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to limit of ${config.feedSettings.maxFeeds} feeds.`);
       return verifyMsg.edit(`Unable to add feed. The server has reached the limit of: \`${config.feedSettings.maxFeeds}\` feeds.`).catch(err => console.log(`Promise Warning: rssAdd 2: ${err}`));

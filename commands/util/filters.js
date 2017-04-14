@@ -31,7 +31,7 @@ exports.add = function(message, rssName, role) {
   }
 
   message.channel.sendEmbed(msg)
-  .then(m => {
+  .then(function(m) {
     const filter = m => m.author.id == message.author.id
     const filterTypeCollect = message.channel.createCollector(filter,{time:240000})
     channelTracker.addCollector(message.channel.id)
@@ -39,7 +39,7 @@ exports.add = function(message, rssName, role) {
     filterTypeCollect.on('message', function (filterType) {
       // Select the filter category here
 
-      if (filterType.content === 'exit') return filterTypeCollect.stop('Feed Filter Addition menu closed.');
+      if (filterType.content === 'exit') return filterTypeCollect.stop('Filter addition menu closed.');
       let chosenFilterType = '';
 
       // Validate the chosen filter category
@@ -52,17 +52,17 @@ exports.add = function(message, rssName, role) {
       // Valid filter category was chosen
       filterTypeCollect.stop();
       message.channel.sendMessage(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, type multiple word/phrases on different lines to add more than one, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`)
-      .then(m => {
+      .then(function(m) {
         const filterCollect = message.channel.createCollector(filter,{time:240000})
         channelTracker.addCollector(message.channel.id)
 
         filterCollect.on('message', function(chosenFilter) {
-          if (chosenFilter.content === '{exit}') return filterCollect.stop('Feed Filter Addition menu closed.');
+          if (chosenFilter.content === '{exit}') return filterCollect.stop('Filter addition menu closed.');
           // Global subs are always deleted if filtered subs are added
           if (!role) delete rssList[rssName].roleSubscriptions;
           if (!filterList[chosenFilterType]) filterList[chosenFilterType] = [];
           message.channel.sendMessage(`Updating filters...`)
-          .then(editing => {
+          .then(function(editing) {
             filterCollect.stop()
 
             // Assume the chosen filters are an array
@@ -96,7 +96,7 @@ exports.add = function(message, rssName, role) {
           })
           .catch(err => console.log(`Promise Warning: filterAdd 4: ${err}`));
         });
-        filterCollect.on('end', (collected, reason) => {
+        filterCollect.on('end', function(collected, reason) {
           channelTracker.removeCollector(message.channel.id)
           if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
           else if (reason !== 'user') return message.channel.sendMessage(reason);
@@ -105,7 +105,7 @@ exports.add = function(message, rssName, role) {
       .catch(err => console.log(`Promise Warning: filterAdd 3: ${err}`));
     })
 
-    filterTypeCollect.on('end', (collected, reason) => {
+    filterTypeCollect.on('end', function(collected, reason) {
       channelTracker.removeCollector(message.channel.id)
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.sendMessage(reason);
@@ -146,14 +146,14 @@ exports.remove = function(message, rssName, role) {
   }
 
   message.channel.sendEmbed(msg)
-  .then(m => {
+  .then(function(m) {
     const filter = m => m.author.id == message.author.id
     const filterTypeCollect = message.channel.createCollector(filter,{time:240000})
     channelTracker.addCollector(message.channel.id)
 
     filterTypeCollect.on('message', function(filterType) {
       // Select filter category here
-      if (filterType.content === 'exit') return filterTypeCollect.stop('Feed Filter Removal menu closed.');
+      if (filterType.content === 'exit') return filterTypeCollect.stop('Filter removal menu closed.');
       var chosenFilterType = ''
 
       // Cross reference with valid filter types and see if valid
@@ -188,11 +188,11 @@ exports.remove = function(message, rssName, role) {
           if (!valid && removeList[item]) invalidItems += `\n${removeList[item]}`; // Invalid items are ones that do not exist
         }
 
-        if (chosenFilter.content === 'exit') return filterCollect.stop('Feed Filter Removal menu closed.');
+        if (chosenFilter.content === 'exit') return filterCollect.stop('Filter removal menu closed.');
         else if (!validFilter) return message.channel.sendMessage(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again.`).catch(err => console.log(`Promise Warning: filterRemove 7: ${err}`));
 
         message.channel.sendMessage(`Removing filter ${chosenFilter.content} from category ${chosenFilterType}...`)
-        .then(editing => {
+        .then(function(editing) {
           filterCollect.stop()
           let deletedList = '' // Valid items that were removed
           for (var i = validFilter.length - 1; i >= 0; i--) { // Delete the filters stored from before from highest index to lowest since it is an array
@@ -223,13 +223,13 @@ exports.remove = function(message, rssName, role) {
 
         }).catch(err => console.log(`Promise Warning: filterRemove 8: ${err}`));
       })
-      filterCollect.on('end', (collected, reason) => {
+      filterCollect.on('end', function(collected, reason) {
         channelTracker.removeCollector(message.channel.id)
         if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== 'user') return message.channel.sendMessage(reason);
       });
     })
-    filterTypeCollect.on('end', (collected, reason) => {
+    filterTypeCollect.on('end', function(collected, reason) {
       channelTracker.removeCollector(message.channel.id)
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.sendMessage(reason);

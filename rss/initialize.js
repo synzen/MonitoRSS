@@ -79,14 +79,14 @@ module.exports = function(con, rssLink, channel, callback) {
     }
 
     function createTable() {
-      sqlCmds.createTable(con, rssName, function (err, rows) {
+      sqlCmds.createTable(con, rssName, function(err, rows) {
         if (err) throw err;
         for (var x in currentFeed) insertIntoTable(getArticleId(currentFeed[x]));
       })
     }
 
     function insertIntoTable(articleId) {
-      sqlCmds.insert(con, rssName, articleId, function (err, res) {
+      sqlCmds.insert(con, rssName, articleId, function(err, res) {
         if (err) throw err;
         gatherResults();
       })

@@ -5,13 +5,7 @@ module.exports = function (link, feedparser, callback) {
   let attempts = 0;
 
   (function requestStream() {
-    const request = new FetchStream(link, {
-      timeout: 15000,
-      headers: {
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36',
-        'accept': 'text/html,application/xhtml+xml'
-      }
-    })
+    const request = new FetchStream(link, {timeout: 15000})
 
     request.on('error', function(err) {
       if (attempts < 4) {

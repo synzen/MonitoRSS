@@ -29,7 +29,7 @@ module.exports = function(bot, message, command) {
 
   // Send list
   message.channel.sendEmbed(list)
-  .then(m => {
+  .then(function(list) {
     const collectorFilter = m => m.author.id == message.author.id;
     const collector = message.channel.createCollector(collectorFilter,{time:240000})
     channelTracker.addCollector(message.channel.id)
@@ -55,17 +55,17 @@ module.exports = function(bot, message, command) {
         collector.stop();
         if (message.member.roles.get(chosenRole.id)) return message.channel.sendMessage(`You already have that role.`).catch(err => console.log(`Promise Warning: subAdd 5: ${err}`));
         message.member.addRole(chosenRole)
-        .then(m => {
+        .then(function(member) {
           console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Role *${chosenRole.name}* successfully added to member. `)
           message.channel.sendMessage(`You now have the role **${chosenRole.name}**, subscribed to the feed titled **${source}**.`).catch(err => console.log(`Promise Warning: subAdd 6: ${err}`))
         })
-        .catch(err => {
+        .catch(function(err) {
           message.channel.sendMessage(`Error: Unable to add role.`).catch(err => console.log(`Promise Warning: subAdd 7: ${err}`))
           console.log(`(${message.guild.id}, ${message.guild.name}) => Could not add role *${chosenRole.name}* to member due to ` + err)
         });
       }
     })
-    collector.on('end', (collected, reason) => {
+    collector.on('end', function(collected, reason) {
       channelTracker.removeCollector(message.channel.id)
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.sendMessage(reason);

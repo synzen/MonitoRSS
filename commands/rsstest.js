@@ -8,11 +8,11 @@ module.exports = function(bot, message, command) {
 
   getIndex(bot, message, command, function(rssName) {
     message.channel.sendMessage(`Grabbing a random feed article...`)
-    .then(grabMsg => {
+    .then(function(grabMsg) {
       // Replicate the RSS process for a test article
       const con = sqlConnect(getTestMsg)
       function getTestMsg() {
-        getRSS(con, message.channel, rssName, grabMsg, function (err) {
+        getRSS(con, message.channel, rssName, grabMsg, function(err) {
           if (err) {
             let channelErrMsg = '';
             switch(err.type) {

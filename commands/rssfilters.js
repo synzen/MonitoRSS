@@ -20,12 +20,12 @@ module.exports = function(bot, message, command, role) {
       .addField(`4) List existing filters`, `List all filters in all categories, if any.`)
 
     message.channel.sendEmbed(menu)
-    .then(menu => {
+    .then(function(menu) {
       const filter = m => m.author.id == message.author.id;
       const collector = message.channel.createCollector(filter,{time:60000});
 
       collector.on('message', function(m) {
-        if (m.content.toLowerCase() == 'exit') return collector.stop('RSS Filter Action selection menu closed.');
+        if (m.content.toLowerCase() === 'exit') return collector.stop('Filter Action selection menu closed.');
         else if (!['1', '2', '3', '4'].includes(m.content)) return message.channel.sendMessage('That is not a valid choice. Try again.').catch(err => `Promise Warning: rssFilters 5: ${err}`);
         // 1 = Add feed filters
         if (m.content == 1) {
@@ -80,7 +80,7 @@ module.exports = function(bot, message, command, role) {
         }
       })
 
-      collector.on('end', (collected, reason) => {
+      collector.on('end', function(collected, reason) {
         if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
         else if (reason !== 'user') return message.channel.sendMessage(reason);
       })

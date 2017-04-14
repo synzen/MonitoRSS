@@ -102,7 +102,7 @@ module.exports = function(bot, message, command) {
       else message.channel.sendMessage('That is not a valid option. Try again.').catch(err => console.log(`Promise Warning: rssRoles/openSubMenu 3: ${err}`))
     })
 
-    filterOptionCollector.on('end', (collected, reason) => {
+    filterOptionCollector.on('end', function(collected, reason) {
       channelTracker.removeCollector(message.channel.id)
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.sendMessage(reason);
@@ -199,7 +199,7 @@ module.exports = function(bot, message, command) {
 
   const menu = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
-    .setDescription(`\nCurrent Channel: #${message.channel.name}\n\nSelect an option by typing its number, or type *exit* to cancel.\u200b\n\u200b\n`)
+    .setDescription(`\n**Current Channel:** #${message.channel.name}\n\nSelect an option by typing its number, or type *exit* to cancel.\u200b\n\u200b\n`)
     .setAuthor('Role Subscription Options')
     .addField(`1) Add/Remove Global Subscriptions for a Role`, `Enable mentions for a role for all delivered articles of this feed.\n*Using global subscriptions will disable filtered subscriptions if enabled for that role.*`)
     .addField(`2) Add/Remove Filtered Subscriptions for a Role`, `Create role-specific filters where only selected articles will mention a role.\n*Using filtered subscriptions will disable global subscriptions if enabled for that role.*`)
@@ -207,7 +207,7 @@ module.exports = function(bot, message, command) {
     .addField(`4) List Roles with Subscriptions`, `List all roles with all types of subscriptions.`)
 
   message.channel.sendEmbed(menu).catch(err => console.log(`Promise Warning: rssRoles 2: ${err}`))
-  .then(menu => {
+  .then(function(menu) {
     const collectorFilter = m => m.author.id === message.author.id
     const collector = message.channel.createCollector(collectorFilter,{time:240000})
     channelTracker.addCollector(message.channel.id)
@@ -237,7 +237,7 @@ module.exports = function(bot, message, command) {
 
     })
 
-    collector.on('end', (collected, reason) => {
+    collector.on('end', function(collected, reason) {
       channelTracker.removeCollector(message.channel.id)
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.sendMessage(reason);

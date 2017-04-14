@@ -5,7 +5,7 @@ const Article = require('./article.js')
 const getSubs = require('./subscriptions.js')
 
 module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage) {
-  // temporary check, will probably be removed
+  // Just in case. If this happens, please report.
   if (!rssList[rssName]) {console.log("RSS Error: Unable to translate a null source."); return null;}
 
   const article = new Article(rawArticle, guildId)
@@ -15,7 +15,7 @@ module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage)
   let filterPropCount = 0;
   if (rssList[rssName].filters && typeof rssList[rssName].filters === "object") {
     for (var prop in rssList[rssName].filters) {
-      if (prop !== "roleSubscriptions") filterPropCount++; // Check if any filter categories exists, excluding roleSubs
+      if (prop !== "roleSubscriptions") filterPropCount++; // Check if any filter categories exists, excluding roleSubs as they are not filters
     }
   }
 
@@ -34,7 +34,7 @@ module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage)
     finalMessageCombo.embedMsg = generateEmbed(rssList, rssName, article);
     finalMessageCombo.textMsg = (!rssList[rssName].message) ? article.convertKeywords(config.feedSettings.defaultMessage) : (rssList[rssName].message === '{empty}') ? '' : article.convertKeywords(rssList[rssName].message); // Allow empty messages if embed is enabled with {empty}
   }
-  else finalMessageCombo.textMsg = (!rssList[rssName].message || rssList[rssName].message === '{empty}') ? article.convertKeywords(config.feedSettings.defaultMessage) : article.convertKeywords(rssList[rssName].message); // Do not allow empty messages with just text and no embed
+  else finalMessageCombo.textMsg = (!rssList[rssName].message || rssList[rssName].message === '{empty}') ? article.convertKeywords(config.feedSettings.defaultMessage) : article.convertKeywords(rssList[rssName].message); // Do not allow empty messages with just text and no embed, thus will fallback to default mesage
 
 
   // Generate test details

@@ -53,9 +53,7 @@ module.exports = function(bot, message, command, callback) {
       for (var page in pages) {
         message.channel.sendEmbed(pages[page])
         .then(m => successCount++)
-        .catch(err => {
-          message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`));
-        });
+        .catch(err => message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`)));
       }
       if (successCount === pages.length) resolve();
       else reject();
@@ -68,9 +66,9 @@ module.exports = function(bot, message, command, callback) {
     const collector = message.channel.createCollector(filter,{time:60000})
     channelTracker.addCollector(message.channel.id)
 
-    collector.on('message', function (m) {
+    collector.on('message', function(m) {
       const chosenOption = m.content
-      if (chosenOption.toLowerCase() === 'exit') return collector.stop('RSS Feed selection menu closed.');
+      if (chosenOption.toLowerCase() === 'exit') return collector.stop('Feed selection menu closed.');
       const index = parseInt(chosenOption, 10) - 1
 
       if (isNaN(index) || chosenOption > currentRSSList.length || chosenOption < 1) return message.channel.sendMessage('That is not a valid number.').catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
@@ -79,7 +77,7 @@ module.exports = function(bot, message, command, callback) {
       callback(currentRSSList[index][1])
 
     })
-    collector.on('end', (collected, reason) => {
+    collector.on('end', function(collected, reason) {
       channelTracker.removeCollector(message.channel.id)
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
       else if (reason !== 'user') return message.channel.sendMessage(reason);

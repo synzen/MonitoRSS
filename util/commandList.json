@@ -31,14 +31,15 @@
 		"description": "Opens a menu to add or remove global filters from a feed."
 	},
 	"rssroles": {
-		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"action": "Role Customization",
 		"description": "Add global/filtered subscriptions for roles to feeds."
 	},
 	"subme": {
+		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"description": "Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Add a role with an active feed subscription to the user. Roles *must* be below the bot's role in role order in role settings."
 	},
 	"unsubme": {
+		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"description": "Same as `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
 	}
 }

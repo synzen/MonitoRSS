@@ -6,7 +6,7 @@ const fetchInterval = require('./util/fetchInterval.js')
 const currentGuilds = fetchInterval.currentGuilds
 const changedGuilds = fetchInterval.changedGuilds
 const deletedGuilds = fetchInterval.deletedGuilds
-if (config.logging.logDates) require('./util/logDates.js')();
+if (config.logging.logDates) require('./util/logDates.js')()
 
 if (!config.botSettings.token) throw new Error('Vital config missing: token undefined in config.');
 else if (!config.botSettings.prefix) throw new Error('Vital config missing: prefix undefined in config');
@@ -31,7 +31,7 @@ let bot
 // Function to handle login/relogin automatically
 let loginAttempts = 0;
 (function login() {
-  if (loginAttempts++ === 20) throw 'Discord.RSS RSS module failed to login after 20 attempts. Terminating.';
+  if (loginAttempts++ === 20) throw new Error('Discord.RSS RSS module failed to login after 20 attempts. Terminating.');
   bot = new Discord.Client()
   bot.login(config.botSettings.token)
   .catch(err => {
@@ -40,9 +40,7 @@ let loginAttempts = 0;
   })
   bot.once('ready', function() {
     loginAttempts = 0
-    if (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') {
-      bot.user.setGame(config.botSettings.defaultGame);
-    }
+    bot.user.setGame((config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null)
     console.log('Discord.RSS RSS Module has started.');
     if (!initialized) startInit(bot, startCmdServer);
     else require('./util/feedSchedule.js')(bot);
@@ -62,6 +60,8 @@ let loginAttempts = 0;
 function startCmdServer() {
   initialized = true
   require('./util/feedSchedule.js')(bot) // Start feed fetch schedule after events handler process has begun
+
+  if (config.botSettings.enableCommands === false) return;
 
   const cmdServer = require('child_process').fork('./cmdServer.js', {env: {isCmdServer: true} })
 

@@ -42,7 +42,7 @@ let loginAttempts = 0;
 (function login() { // Function to handle login/relogin automatically
   if (loginAttempts++ === 20) {
     process.send('kill');
-    throw 'Discord.RSS commands module failed to login after 20 attempts. Terminating.';
+    throw new Error('Discord.RSS commands module failed to login after 20 attempts. Terminating.');
   }
   if (!config.botSettings.menuColor || isNaN(parseInt(config.botSettings.menuColor))) config.botSettings.menuColor = '7833753';
   bot = new Discord.Client()
@@ -50,7 +50,7 @@ let loginAttempts = 0;
   bot.login(config.botSettings.token)
   .then(tok => {
     loginAttempts = 0
-    if (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') bot.user.setGame(config.botSettings.defaultGame);
+    bot.user.setGame((config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null)
     console.log('Discord.RSS commands module activated and online.')
     if (!initialized) getCurrentGuilds(bot);
     cmdListeners.createAllListeners(bot)

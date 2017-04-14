@@ -18,9 +18,7 @@ const sendToDiscord = require('../util/sendToDiscord.js')
 const config = require('../config.json')
 const currentGuilds = require('../util/fetchInterval').currentGuilds
 
-module.exports = function (con, channel, rssName, isTestMessage, callback) {
-  if (rssName.includes('armoredpatrol') && channel.guild.id === '278618236545662976') console.log('inside rss.js now');
-
+module.exports = function(con, channel, rssName, isTestMessage, callback) {
   const feedparser = new FeedParser()
   const currentFeed = []
   const guildRss = currentGuilds.get(channel.guild.id)
@@ -71,7 +69,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
     }
 
     function checkTableExists() {
-      sqlCmds.selectTable(con, rssName, function (err, results) {
+      sqlCmds.selectTable(con, rssName, function(err, results) {
         if (err || results.size() === 0) {
           if (err) {
             return callback();
@@ -97,12 +95,12 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
       if (isTestMessage) { // Do not interact with database if just test message
         filteredItems++;
         gatherResults();
-        sendToDiscord(rssName, channel, article, isTestMessage, function (err) {
+        sendToDiscord(rssName, channel, article, isTestMessage, function(err) {
           if (err) console.log(err);
         });
       }
       else {
-        sqlCmds.select(con, rssName, articleId, function (err, results, fields) {
+        sqlCmds.select(con, rssName, articleId, function(err, results, fields) {
           if (err) {
             return callback();
           }
@@ -110,7 +108,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
             gatherResults();
           }
           else {
-            sendToDiscord(rssName, channel, article, false, function (err) {
+            sendToDiscord(rssName, channel, article, false, function(err) {
               if (err) console.log(err);
             });
             insertIntoTable(articleId);
@@ -120,7 +118,7 @@ module.exports = function (con, channel, rssName, isTestMessage, callback) {
     }
 
     function insertIntoTable(articleId) {
-      sqlCmds.insert(con, rssName, articleId, function (err,res) { // inserting the feed into the table marks it as "seen"
+      sqlCmds.insert(con, rssName, articleId, function(err,res) { // inserting the feed into the table marks it as "seen"
         if (err) return callback();
         gatherResults();
       })

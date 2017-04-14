@@ -10,7 +10,6 @@ const currentGuilds = fetchInterval.currentGuilds // Main directory of guild pro
 const changedGuilds = fetchInterval.changedGuilds // Directory of changed guilds profiles sent from child process (object)
 const deletedGuilds = fetchInterval.deletedGuilds // Directory of deleted guild IDs (array)
 
-
 module.exports = function(bot) {
   let totalFeeds = 0
   let feedsProcessed = 0
@@ -74,7 +73,7 @@ function genGuildList(guildFile) {
       for (var rssName in rssList) totalFeeds++;
     })
 
-    if (totalFeeds == 0) {
+    if (totalFeeds === 0) {
       fetchInterval.cycleInProgress = false;
       return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
     }
@@ -83,7 +82,6 @@ function genGuildList(guildFile) {
 
   function startRetrieval() {
     startTime = new Date()
-    // for (var guildId in currentGuilds) {
     currentGuilds.forEach(function(guildRss, guildId) {
       const guildName = guildRss.name;
       const rssList = guildRss.sources;
@@ -113,6 +111,5 @@ function genGuildList(guildFile) {
     }, startingCycle);
   }
 
-  // connect()
   fetchInterval.startSchedule(connect)
 }

@@ -10,9 +10,9 @@ module.exports = function (bot, message, command, callback) {
     const rssList = guildRss.sources
     const link = rssList[rssName].link
     message.channel.sendMessage(`Removing <${link}>...`)
-    .then(m => {
+    .then(function(removing) {
       removeRss(message.guild.id, rssName, function (link) {
-        m.edit(`Successfully removed <${link}> from this channel.`).catch(err => `Promise Warning: rssRemove 1a: ${err}`);
+        removing.edit(`Successfully removed <${link}> from this channel.`).catch(err => `Promise Warning: rssRemove 1a: ${err}`);
       })
     })
     .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send RSS removal success message (${err})`))

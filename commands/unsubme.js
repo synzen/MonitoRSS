@@ -50,8 +50,8 @@ module.exports = function(bot, message, command) {
   }
 
   message.channel.sendEmbed(list)
-  .then(m => {
-    const collectorFilter = m => m.author.id == message.author.id;
+  .then(function(list) {
+    const collectorFilter = m => m.author.id == message.author.id
     const collector = message.channel.createCollector(collectorFilter,{time:240000})
     channelTracker.addCollector(message.channel.id)
     collector.on('message', function(response) {
@@ -68,17 +68,17 @@ module.exports = function(bot, message, command) {
 
       collector.stop()
       message.member.removeRole(chosenRole)
-      .then(m => {
+      .then(function(member) {
         console.log(`Self subscription: (${message.guild.id}, ${message.guild.name}) => Removed *${chosenRole.name}* from member.`)
         message.channel.sendMessage(`You no longer have the role **${chosenRole.name}**.`).catch(err => console.log(`Promise Warning: subRem 3: ${err}`))
       })
-      .catch(err => {
+      .catch(function(err) {
         console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Could not remove role *${chosenRole.name}*, ` + err)
         message.channel.sendMessage(`An error occured - could not remove your role *${chosenRole.name}*`).catch(err => console.log(`Promise Warning: subRem 4: ${err}`))
       })
 
     })
-    collector.on('end', (collected, reason) => {
+    collector.on('end', function(collected, reason) {
       channelTracker.removeCollector(message.channel.id)
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.sendMessage(reason);
