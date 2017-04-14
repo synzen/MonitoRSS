@@ -1,14 +1,13 @@
 {
   "name": "my guild name",
   "id": "123456",
-  "sources": [
-    {
+  "sources": {
+    "WarframeTwitter": {
       "enabled": 1,
-      "name": "WarframeTwitter",
       "link": "https://queryfeed.net/tw?q=%40PlayWarframe",
       "channel": "twitter",
       "maxAge": 2,
-      "message": "",
+      "message": "{empty}",
       "embedMessage": {
         "enabled": 1,
         "properties": {
@@ -22,9 +21,8 @@
         }
       }
     },
-    {
+    "257938647771250688_https://www.rt.com": {
       "enabled": 1,
-      "name": "257938647771250688_https://www.rt.com",
       "link": "https://www.rt.com/rss/",
       "channel": "257931586721250688",
       "maxAge": 3,
@@ -33,12 +31,11 @@
         "description": ["more!"]
       }
     },
-    {
+    "WashingtonPost": {
       "enabled": 1,
-      "name": "washingtonPost",
       "link": "http://feeds.washingtonpost.com/rss/sports",
       "channel": "sports",
       "message": "A new article on sports!\n{title}\n\n{description}\nBy: {author}\n\n {link}"
     }
-  ]
+  }
 }
