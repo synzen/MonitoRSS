@@ -56,10 +56,10 @@ module.exports = function (bot, message) {
               channelErrMsg = 'No reason available';
           }
           // Reserve err.content for console logs, which are more verbose
-          console.log(`Commands Warning: Unable to add ${rssLink}. (${err.content})`);
+          console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})`);
           return verifyMsg.edit(`Unable to add feed. Reason: ${channelErrMsg}.`);
         }
-        console.log(`Commands Info: Successfully added ${rssLink}.`)
+        console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Successfully added ${rssLink}.`)
         verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`).catch(err => console.log(`Promise Warning: rssAdd 5: ${err}`))
         sqlCmds.end(con, function(err) {
           if (err) throw err;

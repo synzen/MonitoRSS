@@ -96,7 +96,7 @@ module.exports = function(con, channel, rssName, callback) {
         else {
           const feedLength = currentFeed.length - 1;
           const defaultMaxAge = (config.feedSettings.defaultMaxAge) ? config.feedSettings.defaultMaxAge : 1;
-          for (var x = feedLength; x >= 0; x--) { //get feeds starting from oldest, ending with newest.
+          for (var x = feedLength; x >= 0; x--) { // Get feeds starting from oldest, ending with newest.
             const cutoffDay = (rssList[rssName].maxAge) ? moment(new Date()).subtract(rssList[rssName].maxAge, 'd') : moment(new Date()).subtract(defaultMaxAge, 'd');
 
             if (currentFeed[x].pubdate >= cutoffDay) checkTable(currentFeed[x], getArticleId(currentFeed[x]));
@@ -111,27 +111,53 @@ module.exports = function(con, channel, rssName, callback) {
     function createTable() {
       sqlCmds.createTable(con, rssName, function(err, results) {
         if (err) throw err;
-        for (var x in currentFeed) insertIntoTable(getArticleId(currentFeed[x]));
+        for (var x in currentFeed) insertIntoTable({
+          id: getArticleId(currentFeed[x]),
+          title: currentFeed[x].title
+        });
       })
     }
 
     function checkTable(article, articleId, isOldArticle) {
-      sqlCmds.select(con, rssName, articleId, function(err, results) {
+
+      sqlCmds.selectId(con, rssName, articleId, function(err, IdMatches) {
         if (err) throw err;
-        if (results.size() > 0) gatherResults(); // Already exists in table
-        else if (isOldArticle) insertIntoTable(articleId);
-        else {
-          if (config.feedSettings.sendOldMessages == true) sendToDiscord(rssName, channel, article, false, function(err) { //this can result in great spam once the loads up after a period of downtime
-            if (err) console.log(err);
-            insertIntoTable(articleId);
-          });
-          else insertIntoTable(articleId);
-        }
+        if (IdMatches.length > 0) return decideAction(true);
+        sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
+          if (err) throw err;                                                     // Preventing articles with different GUIDs but same titles from sending is a priority
+          if (titleMatches.length > 0) return decideAction(true);
+          decideAction(false)
+        });
       })
+
+      function decideAction(seenArticle) {
+        if (seenArticle) return gatherResults(); // Stops here if it already exists in table, AKA "seen"
+        if (isOldArticle) return insertIntoTable({ // Stops here if it's unseen but is an old article
+          id: articleId,
+          title: article.title
+        });
+
+        if (config.feedSettings.sendOldMessages === true) {
+          sendToDiscord(rssName, channel, article, false, function(err) { // This can result in great spam once the loads up after a period of downtime
+          if (err) console.log(err);
+          insertIntoTable({ // Only insert when message is successfully sent for initialization
+            id: articleId,
+            title: article.title
+          });
+        });
+        }
+        else insertIntoTable({
+          id: articleId,
+          title: article.title
+        });
+
+
+      }
+
     }
 
-    function insertIntoTable(articleId) {
-      sqlCmds.insert(con, rssName, articleId, function(err, res){
+    function insertIntoTable(articleInfo) {
+      sqlCmds.insert(con, rssName, articleInfo, function(err, res) {
         if (err) throw err;
         gatherResults();
       })

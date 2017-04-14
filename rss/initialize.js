@@ -75,18 +75,22 @@ module.exports = function(con, rssLink, channel, callback) {
 
     function startDataProcessing() {
       createTable()
-      // addToConfig()
     }
 
     function createTable() {
       sqlCmds.createTable(con, rssName, function(err, rows) {
         if (err) throw err;
-        for (var x in currentFeed) insertIntoTable(getArticleId(currentFeed[x]));
+        for (var x in currentFeed) {
+          insertIntoTable({
+            id: getArticleId(currentFeed[x]),
+            title: currentFeed[x].title
+          });
+        }
       })
     }
 
-    function insertIntoTable(articleId) {
-      sqlCmds.insert(con, rssName, articleId, function(err, res) {
+    function insertIntoTable(articleInfo) {
+      sqlCmds.insert(con, rssName, articleInfo, function(err, res) {
         if (err) throw err;
         gatherResults();
       })

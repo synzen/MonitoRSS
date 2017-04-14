@@ -71,9 +71,7 @@ module.exports = function(con, channel, rssName, isTestMessage, callback) {
     function checkTableExists() {
       sqlCmds.selectTable(con, rssName, function(err, results) {
         if (err || results.size() === 0) {
-          if (err) {
-            return callback();
-          }
+          if (err) return callback();
           if (results.size() === 0) console.log(`RSS Info: (${guildRss.id}, ${guildRss.name}) => "${rssName}" appears to have been deleted, skipping...`);
           return callback(); // Callback no error object because 99% of the time it is just a hiccup
         }
@@ -94,39 +92,46 @@ module.exports = function(con, channel, rssName, isTestMessage, callback) {
     function checkTable(article, articleId) {
       if (isTestMessage) { // Do not interact with database if just test message
         filteredItems++;
-        gatherResults();
         sendToDiscord(rssName, channel, article, isTestMessage, function(err) {
           if (err) console.log(err);
         });
+        return gatherResults();
       }
-      else {
-        sqlCmds.select(con, rssName, articleId, function(err, results, fields) {
-          if (err) {
-            return callback();
-          }
-          if (results.size() > 0) {
-            gatherResults();
-          }
-          else {
-            sendToDiscord(rssName, channel, article, false, function(err) {
-              if (err) console.log(err);
-            });
-            insertIntoTable(articleId);
-          }
-        })
+
+      let seenArticle = false
+      sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
+        if (err) return callback();
+        if (idMatches.length > 0) return decideAction(true);
+        sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
+          if (err) throw err;                                                          // Preventing articles with different GUIDs but same titles from sending is a priority
+          if (titleMatches.length > 0) return decideAction(true);
+          decideAction(false);
+        });
+      })
+
+      function decideAction(seenArticle) {
+        if (seenArticle) return gatherResults();
+        sendToDiscord(rssName, channel, article, false, function(err) {
+          if (err) console.log(err);
+        });
+        insertIntoTable({
+          id: articleId,
+          title: article.title
+        });
       }
+
     }
 
-    function insertIntoTable(articleId) {
-      sqlCmds.insert(con, rssName, articleId, function(err,res) { // inserting the feed into the table marks it as "seen"
+    function insertIntoTable(articleInfo) {
+      sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
         if (err) return callback();
         gatherResults();
       })
     }
 
     function gatherResults() {
-      processedItems++;
-      if (processedItems == filteredItems) return callback();
+      processedItems++
+      if (processedItems === filteredItems) return callback();
     }
 
     return startDataProcessing()

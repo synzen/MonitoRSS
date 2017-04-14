@@ -8,25 +8,28 @@ exports.selectTable = function(con, table, callback) {
 
 exports.createTable = function(con, table, callback) {
   if (sqlType === "mysql") {
-    con.query(`create table if not exists \`${table}\` (link text)`, callback);
+    con.query(`create table if not exists \`${table}\` (ID text, TITLE text)`, callback);
     return con.query(`alter table \`${table}\` convert to character set utf8 collate utf8_general_ci`);
   }
-  else return con.run(`create table if not exists "${table}" (link text)`, callback);
+  else return con.run(`create table if not exists "${table}" (ID text, TITLE text)`, callback);
 
 }
 
-exports.select = function(con, table, data, callback) {
-  if (sqlType === 'mysql') {
-    return con.query(`select * from \`${table}\` where link = ?`, [data], callback);
-  }
-  else return con.all(`select * from "${table}" where link = ?`, data, callback);
+exports.selectId = function(con, table, articleId, callback) {
+  if (sqlType === 'mysql') return con.query(`select * from \`${table}\` where ID = ?`, [articleId], callback);
+  else return con.all(`select * from "${table}" where ID = ?`, articleId, callback);
 }
 
-exports.insert = function(con, table, data, callback) {
-  if (sqlType === "mysql") return con.query(`insert ignore into \`${table}\` (link) values (?)`, [data], callback);
+exports.selectTitle = function(con, table, articleTitle, callback) {
+  if (sqlType === 'mysql') return con.query(`select * from \`${table}\` where TITLE = ?`, [articleTitle], callback);
+  else return con.all(`select * from "${table}" where TITLE = ?`, articleTitle, callback);
+}
+
+exports.insert = function(con, table, articleInfo, callback) {
+  if (sqlType === "mysql") return con.query(`insert ignore into \`${table}\` (ID, TITLE) values (?, ?)`, [articleInfo.id, articleInfo.title], callback);
   else {
-    var prep = con.prepare(`insert into "${table}" (link) values (?)`);
-    prep.run(data);
+    var prep = con.prepare(`insert into "${table}" (ID, TITLE) values (?, ?)`);
+    prep.run(articleInfo.id, articleInfo.title);
     prep.finalize();
     return callback();
   }
@@ -43,7 +46,7 @@ exports.end = function(con, callback, startingCycle) {
 exports.dropTable = function(db, table) {
 
   if (sqlType === "mysql") {
-    const mysql = require('mysql')
+    const mysql = require('mysql');
     const credentials = require('../../mysqlCred.json');
     credentials.database = db;
 
