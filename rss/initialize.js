@@ -32,7 +32,7 @@ module.exports = function(con, rssLink, channel, callback) {
       feedparser.removeAllListeners('end');
       return callback({type: 'feedparser', content: err});
     }
-  });
+  })
 
   feedparser.on('readable', function() {
     let item
@@ -41,7 +41,7 @@ module.exports = function(con, rssLink, channel, callback) {
       currentFeed.push(item);
     }
 
-  });
+  })
 
   feedparser.on('end', function() {
     const randomNum = Math.floor((Math.random() * 99999999999) + 1)
@@ -54,7 +54,7 @@ module.exports = function(con, rssLink, channel, callback) {
 
     // MySQL table names have a limit of 64 char
     if (rssName.length >= 64 ) rssName = rssName.substr(0,64);
-    rssName = rssName.replace(/\?/g, '') // remove question marks to prevent sql from auto-escaping
+    rssName = rssName.replace(/\?/g, '') // Remove question marks to prevent sql from auto-escaping
 
     const totalItems = currentFeed.length
     let processedItems = 0
@@ -79,7 +79,7 @@ module.exports = function(con, rssLink, channel, callback) {
 
     function createTable() {
       sqlCmds.createTable(con, rssName, function(err, rows) {
-        if (err) throw err;
+        if (err) return callback({type: 'database', content: err});
         for (var x in currentFeed) {
           insertIntoTable({
             id: getArticleId(currentFeed[x]),
@@ -91,14 +91,14 @@ module.exports = function(con, rssLink, channel, callback) {
 
     function insertIntoTable(articleInfo) {
       sqlCmds.insert(con, rssName, articleInfo, function(err, res) {
-        if (err) throw err;
-        gatherResults();
+        if (err) callback({type: 'database', content: err});
+        gatherResults()
       })
     }
 
     function gatherResults() {
-      processedItems++;
-      if (processedItems == totalItems) addToConfig();
+      processedItems++
+      if (processedItems === totalItems) addToConfig();
     }
 
     function addToConfig() {
@@ -140,6 +140,6 @@ module.exports = function(con, rssLink, channel, callback) {
     }
 
     return startDataProcessing()
-  });
+  })
 
 }

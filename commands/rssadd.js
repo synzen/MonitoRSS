@@ -52,6 +52,9 @@ module.exports = function (bot, message) {
             case 'feedparser':
               channelErrMsg = 'Invalid feed';
               break;
+            case 'database':
+              channelErrMsg = 'Internal database error. Please try again';
+              break;
             default:
               channelErrMsg = 'No reason available';
           }
@@ -59,8 +62,10 @@ module.exports = function (bot, message) {
           console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})`);
           return verifyMsg.edit(`Unable to add feed. Reason: ${channelErrMsg}.`);
         }
-        console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Successfully added ${rssLink}.`)
-        verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`).catch(err => console.log(`Promise Warning: rssAdd 5: ${err}`))
+        else {
+          console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Successfully added ${rssLink}.`)
+          verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`).catch(err => console.log(`Promise Warning: rssAdd 5: ${err}`))
+        }
         sqlCmds.end(con, function(err) {
           if (err) throw err;
         });
