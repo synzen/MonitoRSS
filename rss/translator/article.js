@@ -52,7 +52,7 @@ module.exports = function Article(rawArticle, guildId) {
   // description
   let rawArticleDescrip = ''
   // YouTube doesn't use the regular description field, thus manually setting it as the description
-  if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#'];
+  if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#'];
   else if (rawArticle.description) rawArticleDescrip = cleanRandoms(rawArticle.description);
   rawArticleDescrip = (rawArticleDescrip.length > 800) ? `${rawArticleDescrip.slice(0, 790)} [...]` : rawArticleDescrip
 
