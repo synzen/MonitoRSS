@@ -12,7 +12,7 @@ function findImages(object, results) {
         results.push(object[key]);
       }
     }
-    if (typeof object[key] === 'object') return findImages(object[key], results);
+    if (typeof object[key] === 'object') findImages(object[key], results);
   }
 }
 
