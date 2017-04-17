@@ -14,7 +14,7 @@ module.exports = function (bot, message, command) {
     if (!rssList[rssName].message) currentMsg += 'None has been set. Currently using default message below:\n\n``````\n' + config.feedSettings.defaultMessage;
     else currentMsg += rssList[rssName].message;
 
-    message.channel.sendMessage(`The current message for ${rssList[rssName].link} is: \n${currentMsg + '```'}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. \`{empty} is also available, but only if an embed is enabled is used. \`Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${config.botSettings.prefix}rsstest\`.\n\n`)
+    message.channel.sendMessage(`The current message for ${rssList[rssName].link} is: \n${currentMsg + '```'}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. \`{empty}\` will create an empty message, but only if an embed is enabled is used. Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${config.botSettings.prefix}rsstest\`.\n\n`)
     .then(function(msgPrompt) {
       const filter = m => m.author.id == message.author.id
       const customCollect = message.channel.createCollector(filter,{time:240000})
