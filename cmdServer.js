@@ -45,7 +45,7 @@ let loginAttempts = 0;
     throw new Error('Discord.RSS commands module failed to login after 20 attempts. Terminating.');
   }
   if (!config.botSettings.menuColor || isNaN(parseInt(config.botSettings.menuColor))) config.botSettings.menuColor = '7833753';
-  bot = new Discord.Client()
+  bot = new Discord.Client({disabledEvents: ['TYPING_START']})
 
   bot.login(config.botSettings.token)
   .then(tok => {

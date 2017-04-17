@@ -32,7 +32,7 @@ let bot
 let loginAttempts = 0;
 (function login() {
   if (loginAttempts++ === 20) throw new Error('Discord.RSS RSS module failed to login after 20 attempts. Terminating.');
-  bot = new Discord.Client()
+  bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_CREATE', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
   bot.login(config.botSettings.token)
   .catch(err => {
     console.log(`Discord.RSS RSS module could not login (${err}), retrying...`)
