@@ -58,8 +58,8 @@ module.exports = function(bot, message, command) {
         collector.stop()
         if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties || !rssList[rssName].embedMessage.properties[choice]) return message.channel.sendMessage('This property has nothing to reset.');
         delete rssList[rssName].embedMessage.properties[choice]
-        if (!rssList[rssName].embedMessage.properties) {
-          delete rssList[rssName].embedMessage.properties;
+        if (rssList[rssName].embedMessage.properties.size() === 0) {
+          delete rssList[rssName].embedMessage;
           if (rssList[rssName].message === '{empty}') delete rssList[rssName].message; // An empty message is not allowed if there is no embed
         }
         fileOps.updateFile(message.guild.id, guildRss)
@@ -109,7 +109,7 @@ module.exports = function(bot, message, command) {
 
         // Delete the properties object to reset embed
         if (chosenProp.content === 'reset') return resetAll(customCollect);
-        else if (!choice) return message.channel.sendMessage('That is not a valid property.').catch(err => console.log(`Promise Warning: rssEmbed 3: ${err}`));
+        else if (!choice) return message.channel.sendMessage('That is not a valid property. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 3: ${err}`));
 
         // property collector
         customCollect.stop();
@@ -143,7 +143,7 @@ module.exports = function(bot, message, command) {
 
             rssList[rssName].embedMessage.properties[choice] = finalChange
 
-            console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${rssList[rssName].link}.`)
+            console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${rssList[rssName].link}. Property '${choice}' set to '${finalChange}'.`)
             fileOps.updateFile(message.guild.id, guildRss)
 
             return editing.edit(`Settings updated. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`).catch(err => console.log(`Promise Warning: rssEmbed 9a: ${err}`));
