@@ -16,7 +16,7 @@ module.exports = function (bot, message) {
   const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
   const maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
 
-  if (message.content.split(' ').length === 1) return; // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.sendMessage(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`.`).then(m => m.delete(3000)); // If there is no link after rssadd, return.
 
   const content = message.content.split(' ')
 

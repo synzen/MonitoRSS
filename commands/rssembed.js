@@ -120,7 +120,7 @@ module.exports = function(bot, message, command) {
         propertyCollect.on('message', function (propSetting) {
           // Define the new property here
           var finalChange = propSetting.content
-          if (finalChange.toLowerCase() === 'exit') return propertyCollect.stop('Embed.');
+          if (finalChange.toLowerCase() === 'exit') return propertyCollect.stop('Embed customization menu closed.');
           else if (finalChange.toLowerCase() === 'reset') return reset(propertyCollect, choice);
           else if (choice === 'color') {
            if (isNaN(parseInt(finalChange, 10))) return message.channel.sendMessage('The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`));

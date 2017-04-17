@@ -6,11 +6,6 @@ The bot performs fine on a private server (self-hosted) since you can track and 
 
 For steps on how to host the bot on your own, and on using the bot itself, see https://github.com/synzen/Discord.RSS/wiki.
 
-#### Attention Bot Hosters!
-3 March 2017 - If this is the first time you're seeing this message and you're upgrading from older files, note that profile sources organization has changed (array -> object). To change profiles to the new format, first backup your current sources folder in case anything goes wrong. Then proceed to use **conversion.js** to automatically convert all JSON files in the sources folder to the new format. Profiles formatted in the old way will not work and will potentially cause crashes.
-
-If this is your first time hosting the bot, you may ignore this.
-
 ## Built With		
 * [Node.js](https://nodejs.org/en/)		
 * [Discord.js](https://www.npmjs.com/package/discord.js)
