@@ -8,8 +8,6 @@ const fileOps = require('./fileOps.js')
 const checkGuild = require('./checkGuild.js')
 
 module.exports = function(bot, callback) {
-  bot.user.setGame('Initializing...')
-
   const guildList = []
   let skippedFeeds = 0
   let initializedFeeds = 0

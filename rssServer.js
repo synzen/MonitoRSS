@@ -60,7 +60,6 @@ let loginAttempts = 0;
 
 function finishInit() {
   initialized = true
-  bot.user.setGame((config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null)
 
   feedCycle = new FeedSchedule(bot) // Start feed fetch schedule after events handler process has begun
 
