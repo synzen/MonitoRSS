@@ -35,7 +35,7 @@ const translator = require('./translator/translate.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
-const currentGuilds = require('../util/fetchInterval').currentGuilds
+const currentGuilds = require('../util/guildStorage').currentGuilds
 
 module.exports = function(con, channel, rssName, callback) {
   const feedparser = new FeedParser()
@@ -138,7 +138,7 @@ module.exports = function(con, channel, rssName, callback) {
         });
 
         if (config.feedSettings.sendOldMessages === true) {
-          sendToDiscord(rssName, channel, article, false, function(err) { // This can result in great spam once the loads up after a period of downtime
+          sendToDiscord(rssName, channel, article, function(err) { // This can result in great spam once the loads up after a period of downtime
           if (err) console.log(err);
           insertIntoTable({ // Only insert when message is successfully sent for initialization
             id: articleId,

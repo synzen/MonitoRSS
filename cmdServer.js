@@ -2,8 +2,8 @@ const fs = require('fs')
 const Discord = require('discord.js')
 const config = require('./config.json')
 const cmdListeners = require('./util/cmdListeners.js')
-const fetchInterval = require('./util/fetchInterval.js')
-const currentGuilds = fetchInterval.currentGuilds
+const guildStorage = require('./util/guildStorage.js')
+const currentGuilds = guildStorage.currentGuilds
 let initialized = false
 let bot
 

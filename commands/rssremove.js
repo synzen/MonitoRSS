@@ -1,7 +1,7 @@
 const getIndex = require('./util/printFeeds.js')
 const removeRss = require('../util/removeRss.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function (bot, message, command, callback) {
 

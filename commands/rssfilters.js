@@ -3,7 +3,7 @@ const filters = require('./util/filters.js')
 const getIndex = require('./util/printFeeds.js')
 const config = require('../config.json')
 const fileOps = require('../util/fileOps.js')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function(bot, message, command, role) {
 

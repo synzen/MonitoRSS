@@ -12,7 +12,7 @@ const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be
                       ['URL', 'A link that clicking on the title will lead to.\nThis MUST be a link. By default this is set to the feed\'s url', 'url']]
 
 const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 // Check valid image URLs via extensions
 function isValidImg(input) {

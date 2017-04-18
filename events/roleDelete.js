@@ -1,5 +1,5 @@
 const fileOps = require('../util/fileOps.js')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function (bot, role) {
   const guildRss = currentGuilds.get(role.guild.id)

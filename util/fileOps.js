@@ -2,7 +2,7 @@
 // the commands module.
 
 const fs = require('fs')
-const currentGuilds = require('./fetchInterval.js').currentGuilds
+const currentGuilds = require('./guildStorage.js').currentGuilds
 const config = require('../config.json')
 
 function updateContent(guildId, inFile, cacheLoc) {

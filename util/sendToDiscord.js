@@ -1,14 +1,14 @@
 const config = require('../config.json')
 const translator = require('../rss/translator/translate.js')
-const fetchInterval = require('./fetchInterval.js')
-const currentGuilds = fetchInterval.currentGuilds
+const guildStorage = require('./guildStorage.js')
+const currentGuilds = guildStorage.currentGuilds
 
-module.exports = function (rssName, channel, article, isTestMessage, callback) {
+module.exports = function (rssName, channel, article, callback, isTestMessage) {
   const rssList = currentGuilds.get(channel.guild.id).sources
 
   // check if any changes to feed article while article cycle was in progress
-  if (!process.env.isCmdServer && fetchInterval.changedGuilds.has(channel.guild.id)) {
-    const guildNew = fetchInterval.changedGuilds.get(channel.guild.id);
+  if (!process.env.isCmdServer && guildStorage.changedGuilds.has(channel.guild.id)) {
+    const guildNew = guildStorage.changedGuilds.get(channel.guild.id);
     if (!guildNew.sources) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources found in updated file, skipping Discord message sending.`);
     const rssListNew = guildNew.sources;
     let found = false;

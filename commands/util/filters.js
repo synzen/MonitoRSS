@@ -2,7 +2,7 @@ const Discord = require('discord.js')
 const fileOps = require('../../util/fileOps.js')
 const config = require('../../config.json')
 const channelTracker = require('../../util/channelTracker.js')
-const currentGuilds = require('../../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../../util/guildStorage.js').currentGuilds
 const validFilterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
 
 exports.add = function(message, rssName, role) {

@@ -1,7 +1,7 @@
 const removeRSS = require('../commands/rssremove.js')
 const channelTracker = require('../util/channelTracker.js')
 const removeRss = require('../util/removeRss.js')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function (channel) {
   const rssList = currentGuilds.get(channel.guild.id).sources

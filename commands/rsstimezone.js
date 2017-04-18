@@ -1,7 +1,7 @@
 const config = require('../config.json')
 const moment = require('moment-timezone')
 const fileOps = require('../util/fileOps.js')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 function hasTimezone(object) {
   for (var key in object) {

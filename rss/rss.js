@@ -16,23 +16,21 @@ const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/fetchInterval').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function(con, channel, rssName, isTestMessage, callback) {
+  const rssList = currentGuilds.get(channel.guild.id).sources
   const feedparser = new FeedParser()
   const currentFeed = []
-  const guildRss = currentGuilds.get(channel.guild.id)
-  const rssList = guildRss.sources
 
   requestStream(rssList[rssName].link, feedparser, function(err) {
-    if (err && config.logging.showFeedErrs === true) return callback({type: 'request', content: err, feed: rssList[rssName]});
+    if (err) return callback({type: 'request', content: err, feed: rssList[rssName]});
     else if (err) return callback();
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    if (config.logging.showFeedErrs === true) return callback({type: 'feedparser', content: err, feed: rssList[rssName]})
-    else callback();
+    return callback({type: 'feedparser', content: err, feed: rssList[rssName]})
   });
 
   feedparser.on('readable', function() {
@@ -50,6 +48,7 @@ module.exports = function(con, channel, rssName, isTestMessage, callback) {
       return callback();
     }
 
+    let newArticles = []
     let processedItems = 0
     let filteredItems = 0
 
@@ -71,8 +70,8 @@ module.exports = function(con, channel, rssName, isTestMessage, callback) {
     function checkTableExists() {
       sqlCmds.selectTable(con, rssName, function(err, results) {
         if (err || results.size() === 0) {
-          if (err) return callback();
-          if (results.size() === 0) console.log(`RSS Info: (${guildRss.id}, ${guildRss.name}) => "${rssName}" appears to have been deleted, skipping...`);
+          if (err) return callback({type: 'database', content: err, feed: rssList[rssName]});
+          if (results.size() === 0) console.log(`RSS Info: '${rssName}' appears to have been deleted, skipping...`);
           return callback(); // Callback no error object because 99% of the time it is just a hiccup
         }
         if (isTestMessage) {
@@ -92,46 +91,47 @@ module.exports = function(con, channel, rssName, isTestMessage, callback) {
     function checkTable(article, articleId) {
       if (isTestMessage) { // Do not interact with database if just test message
         filteredItems++;
-        sendToDiscord(rssName, channel, article, isTestMessage, function(err) {
-          if (err) console.log(err);
-        });
+        newArticles.push(article);
         return gatherResults();
       }
 
       let seenArticle = false
       sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
-        if (err) return callback();
+        if (err) return callback({type: 'database', content: err, feed: rssList[rssName]});
         if (idMatches.length > 0) return decideAction(true);
         sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
           if (err) throw err;                                                          // Preventing articles with different GUIDs but same titles from sending is a priority
           if (titleMatches.length > 0) return decideAction(true);
-          decideAction(false);
-        });
+          decideAction(false)
+        })
       })
 
       function decideAction(seenArticle) {
         if (seenArticle) return gatherResults();
-        sendToDiscord(rssName, channel, article, false, function(err) {
-          if (err) console.log(err);
-        });
+        article.rssName = rssName
+        article.discordChannel = channel
+        newArticles.push(article)
         insertIntoTable({
           id: articleId,
           title: article.title
-        });
+        })
       }
 
     }
 
     function insertIntoTable(articleInfo) {
       sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
-        if (err) return callback();
+        if (err) return callback({type: 'database', content: err, feed: rssList[rssName]});
         gatherResults();
       })
     }
 
     function gatherResults() {
       processedItems++
-      if (processedItems === filteredItems) return callback();
+      if (processedItems === filteredItems) {
+        if (newArticles.length > 0) return callback(false, newArticles);
+        else return callback(false);
+      }
     }
 
     return startDataProcessing()

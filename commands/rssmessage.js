@@ -2,7 +2,7 @@ const fileOps = require('../util/fileOps.js')
 const getIndex = require('./util/printFeeds.js')
 const config = require('../config.json')
 const channelTracker = require('../util/channelTracker.js')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function (bot, message, command) {
 
@@ -41,7 +41,7 @@ module.exports = function (bot, message, command) {
           rssList[rssName].message = m.content;
           fileOps.updateFile(message.guild.id, guildRss);
           console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => New message recorded for ${rssList[rssName].link}.`);
-          editing.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed ${rssList[rssName].link}You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`).catch(err => console.log(`Promise Warning: rssMessage 3a: ${err}`));
+          editing.edit(`Message recorded:\n \`\`\`Markdown\n${m.content}\`\`\` \nfor feed <${rssList[rssName].link}>. You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`).catch(err => console.log(`Promise Warning: rssMessage 3a: ${err}`));
         })
         .catch(err => console.log(`Promise Warning: rssMessage 3: ${err}`));
       });

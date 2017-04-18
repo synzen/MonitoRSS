@@ -1,7 +1,7 @@
 const Discord = require('discord.js')
 const channelTracker = require('../util/channelTracker.js')
 const getSubList = require('./util/getSubList.js')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function(bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)

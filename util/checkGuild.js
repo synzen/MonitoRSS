@@ -1,7 +1,7 @@
 // Check for guild names/role names changes
 
 const fileOps = require('./fileOps.js')
-const currentGuilds = require('./fetchInterval.js').currentGuilds
+const currentGuilds = require('./guildStorage.js').currentGuilds
 
 exports.roles = function (bot, guildId, rssName) {
   const guildRss = currentGuilds.get(guildId)

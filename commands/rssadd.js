@@ -3,7 +3,7 @@ const initializeRSS = require('../rss/initialize.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function (bot, message) {
 
@@ -16,7 +16,7 @@ module.exports = function (bot, message) {
   const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
   const maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
 
-  if (message.content.split(' ').length === 1) return message.channel.sendMessage(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`.`).then(m => m.delete(3000)); // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.sendMessage(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`.`).then(m => m.delete(3000)).catch(err => console.log(`Promise Warning rssAdd 0: ${err}`)); // If there is no link after rssadd, return.
 
   const content = message.content.split(' ')
 
@@ -59,12 +59,12 @@ module.exports = function (bot, message) {
               channelErrMsg = 'No reason available';
           }
           // Reserve err.content for console logs, which are more verbose
-          console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})`);
-          return verifyMsg.edit(`Unable to add feed. Reason: ${channelErrMsg}.`);
+          console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content}).`);
+          return verifyMsg.edit(`Unable to add feed. Reason: ${channelErrMsg}.`).catch(err => console.log(`Promise Warning: rssAdd 5a`));
         }
         else {
-          console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Successfully added ${rssLink}.`)
-          verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`).catch(err => console.log(`Promise Warning: rssAdd 5: ${err}`))
+          console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${rssLink}.`)
+          verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`).catch(err => console.log(`Promise Warning: rssAdd 5b: ${err}`))
         }
         sqlCmds.end(con, function(err) {
           if (err) throw err;

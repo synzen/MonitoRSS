@@ -3,7 +3,7 @@ const config = require('../config.json')
 const sqlCmds = require('../rss/sql/commands.js')
 const fileOps = require('../util/fileOps.js')
 const channelTracker = require('../util/channelTracker.js')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function (bot, guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)

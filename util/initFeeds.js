@@ -1,13 +1,15 @@
 const fs = require('fs')
 const initAll = require('../rss/initializeall.js')
-const currentGuilds = require('./fetchInterval.js').currentGuilds
+const currentGuilds = require('./guildStorage.js').currentGuilds
 const configChecks = require('./configCheck.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./fileOps.js')
 const checkGuild = require('./checkGuild.js')
 
-module.exports = function (bot, callback) {
+module.exports = function(bot, callback) {
+  bot.user.setGame('Initializing...')
+
   const guildList = []
   let skippedFeeds = 0
   let initializedFeeds = 0

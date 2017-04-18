@@ -1,5 +1,5 @@
 const fileOps = require('../util/fileOps.js')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function (bot, oldGuild, newGuild) {
   if (!currentGuilds.get(oldGuild.id)) return;

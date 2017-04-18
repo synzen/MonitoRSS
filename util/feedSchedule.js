@@ -1,16 +1,21 @@
 const fs = require('fs')
 const configChecks = require('./configCheck.js')
-const getFeed = require('../rss/rss.js')
+const getArticles = require('../rss/rss.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./fileOps.js')
 const config = require('../config.json')
-const fetchInterval = require('./fetchInterval.js')
-const currentGuilds = fetchInterval.currentGuilds // Main directory of guild profiles (object)
-const changedGuilds = fetchInterval.changedGuilds // Directory of changed guilds profiles sent from child process (object)
-const deletedGuilds = fetchInterval.deletedGuilds // Directory of deleted guild IDs (array)
+const guildStorage = require('./guildStorage.js')
+const currentGuilds = guildStorage.currentGuilds // Main directory of guild profiles (object)
+const changedGuilds = guildStorage.changedGuilds // Directory of changed guilds profiles sent from child process (object)
+const deletedGuilds = guildStorage.deletedGuilds // Directory of deleted guild IDs (array)
+const events = require('events')
+var timer
 
 module.exports = function(bot) {
+  this.cycle = new events.EventEmitter()
+  let cycleInProgress = this.inProgress
+  let cycle = this.cycle
   let totalFeeds = 0
   let feedsProcessed = 0
   let feedsSkipped = 0
@@ -59,13 +64,13 @@ function genGuildList(guildFile) {
 
   function connect() {
 
-    if (fetchInterval.cycleInProgress) {
+    if (cycleInProgress) {
       console.log(`RSS Info: Previous cycle was unable to finish. Starting new cycle using unclosed connection.`);
       return endCon(true);
     }
 
     checkGuildChanges()
-    fetchInterval.cycleInProgress = true
+    cycleInProgress = true
     totalFeeds = feedsProcessed = feedsSkipped = 0
 
     currentGuilds.forEach(function(guildRss, guildId) { // key is the guild ID, value is the guildRss
@@ -74,7 +79,7 @@ function genGuildList(guildFile) {
     })
 
     if (totalFeeds === 0) {
-      fetchInterval.cycleInProgress = false;
+      cycleInProgress = false;
       return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
     }
     con = sqlConnect(startRetrieval);
@@ -88,11 +93,15 @@ function genGuildList(guildFile) {
       for (let rssName in rssList) {
         const channel = configChecks.validChannel(bot, guildId, rssList[rssName]);
         if (configChecks.checkExists(guildId, rssList[rssName], false) && channel) { // Check valid source config and channel
-          getFeed(con, channel, rssName, false, function (err) {
-            if (err) console.log(`RSS Error: (${guildId}, ${guildName}) => Skipping ${err.feed.link}. (${err.content})`);
+          getArticles(con, channel, rssName, false, function(err, articles) {
             feedsProcessed++
             //console.log(`${feedsProcessed} ${feedsSkipped} ${totalFeeds}`)
-            if (feedsProcessed + feedsSkipped == totalFeeds) setTimeout(endCon, 5000); // End SQL connection once all feeds have been processed
+            if (feedsProcessed + feedsSkipped === totalFeeds) setTimeout(endCon, 5000); // End SQL connection once all feeds have been processed
+            if (err) {
+              if (config.logging.showFeedErrs) console.log(`RSS Error: (${guildId}, ${guildName}) => Skipping ${err.feed.link}. (${err.content})`);
+              return;
+            }
+            if (articles) cycle.emit('articles', articles);
           });
         }
         else feedsSkipped++;
@@ -104,12 +113,24 @@ function genGuildList(guildFile) {
   function endCon(startingCycle) {
     sqlCmds.end(con, function(err) { // End SQL connection
       if (err) console.log('Error: Could not close MySQL connection. ' + err)
-      fetchInterval.cycleInProgress = false
+      cycleInProgress = false
       if (startingCycle) return connect();
       var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
       console.log(`RSS Info: Finished feed retrieval cycle. Cycle Time: ${timeTaken}s`)
     }, startingCycle);
   }
 
-  fetchInterval.startSchedule(connect)
+  this.start = function() {
+    let refreshTime = (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15;
+    timer = setInterval(connect, refreshTime*60000)
+  }
+
+  this.stop = function() {
+    clearInterval(timer)
+  }
+
+  this.start();
+
+  // guildStorage.startSchedule(connect)
+  return this
 }

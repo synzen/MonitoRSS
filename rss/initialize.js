@@ -16,7 +16,7 @@ const fileOps = require('../util/fileOps.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const startFeedSchedule = require('../util/feedSchedule.js')
-const currentGuilds = require('../util/fetchInterval').currentGuilds
+const currentGuilds = require('../util/guildStorage').currentGuilds
 
 module.exports = function(con, rssLink, channel, callback) {
 
@@ -91,7 +91,7 @@ module.exports = function(con, rssLink, channel, callback) {
 
     function insertIntoTable(articleInfo) {
       sqlCmds.insert(con, rssName, articleInfo, function(err, res) {
-        if (err) callback({type: 'database', content: err});
+        if (err) return callback({type: 'database', content: err});
         gatherResults()
       })
     }

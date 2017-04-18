@@ -24,7 +24,6 @@ module.exports = function (bot, message) {
   if (!message.member || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
   let m = message.content.split(" ")
   let command = m[0].substr(config.botSettings.prefix.length)
-
   if (channelTracker.hasActiveMenus(message.channel.id)) return;
 
   // for regular commands

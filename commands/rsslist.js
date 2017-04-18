@@ -1,6 +1,6 @@
 const Discord = require('discord.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/fetchInterval.js').currentGuilds
+const currentGuilds = require('../util/guildStorage.js').currentGuilds
 // const pageControls = require('../util/pageControls.js')   // reserved for when discord.js fixes their library
 
 module.exports = function (bot, message, command) {

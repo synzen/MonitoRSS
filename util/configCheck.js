@@ -1,6 +1,6 @@
 // Check for invalid configs on startup and at the beginning of each feed retrieval cycle
 const config = require('../config.json')
-const currentGuilds = require('./fetchInterval').currentGuilds
+const currentGuilds = require('./guildStorage').currentGuilds
 
 exports.checkExists = function (guildId, feed, logging, initializing) {
   const guildRss = currentGuilds.get(guildId)
