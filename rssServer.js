@@ -5,7 +5,7 @@ const FeedSchedule = require('./util/feedSchedule.js')
 const guildStorage = require('./util/guildStorage.js')
 const currentGuilds = guildStorage.currentGuilds
 const changedGuilds = guildStorage.changedGuilds
-const deletedGuilds = guildStorage.deletedGuild
+const deletedGuilds = guildStorage.deletedGuilds
 const sendToDiscord = require('./util/sendToDiscord.js')
 if (config.logging.logDates) require('./util/logDates.js')()
 
