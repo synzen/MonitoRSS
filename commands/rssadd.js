@@ -60,7 +60,7 @@ module.exports = function (bot, message) {
           }
           // Reserve err.content for console logs, which are more verbose
           console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content}).`);
-          return verifyMsg.edit(`Unable to add feed. Reason: ${channelErrMsg}.`).catch(err => console.log(`Promise Warning: rssAdd 5a`));
+          verifyMsg.edit(`Unable to add feed. Reason: ${channelErrMsg}.`).catch(err => console.log(`Promise Warning: rssAdd 5a`));
         }
         else {
           console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${rssLink}.`)

@@ -2,10 +2,11 @@ const config = require('../config.json')
 const moment = require('moment-timezone')
 const fileOps = require('../util/fileOps.js')
 const currentGuilds = require('../util/guildStorage.js').currentGuilds
+const allowedFieldKeys = ['message', 'embedMessage'] // Where {date} must be found for rsstimezone to work
 
 function hasTimezone(object) {
   for (var key in object) {
-    if (typeof object[key] === 'string' && object[key].search(/{date}/) !== -1) return true;
+    if (typeof object[key] === 'string' && allowedFieldKeys.includes(key) && object[key].search(/{date}/) !== -1) return true;
     else if (typeof object[key] === 'object' && hasTimezone(object[key])) return true;
   }
   return false
