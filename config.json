@@ -28,6 +28,6 @@
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
   },
   "advanced": {
-	"batchSize": 400
+	"batchSize": 300
   }
 }
