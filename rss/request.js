@@ -8,7 +8,7 @@ module.exports = function (link, feedparser, callback) {
     const request = new FetchStream(link, {timeout: 15000})
 
     request.on('error', function(err) {
-      if (attempts < 4) {
+      if (attempts < 3) {
         attempts++;
         return requestStream();
       }

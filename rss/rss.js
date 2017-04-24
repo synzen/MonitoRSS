@@ -11,26 +11,33 @@
 */
 const FeedParser = require('feedparser');
 const requestStream = require('./request.js')
-const translator = require('./translator/translate.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const sendToDiscord = require('../util/sendToDiscord.js')
 const config = require('../config.json')
 const currentGuilds = require('../util/guildStorage.js').currentGuilds
+const configChecks = require('../util/configCheck.js')
 
-module.exports = function(con, channel, rssName, isTestMessage, callback) {
-  const rssList = currentGuilds.get(channel.guild.id).sources
+function logFeedErrs(channel, err) {
+	if (!config.logging.showFeedErrs) return;
+	if (channel) console.log(`RSS Error: (${channel.guild.id}, ${channel.guild.name}) => Skipping ${err.feed.link}. (${err.content})`);
+	else console.log(`RSS Error: Skipping ${err.link}. (${err.content})`);
+}
+
+module.exports = function(con, link, rssList, bot, callback) {
   const feedparser = new FeedParser()
   const currentFeed = []
 
-  requestStream(rssList[rssName].link, feedparser, function(err) {
-    if (err) return callback({type: 'request', content: err, feed: rssList[rssName]});
-    else if (err) return callback();
+  requestStream(link, feedparser, function(err) {
+    if (err) {
+      logFeedErr(null, {link: link, content: err});
+      callback(true)
+    }
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    return callback({type: 'feedparser', content: err, feed: rssList[rssName]})
+    callback(true)
+    logFeedErr(null, {link: link, content: err});
   });
 
   feedparser.on('readable', function() {
@@ -43,14 +50,9 @@ module.exports = function(con, channel, rssName, isTestMessage, callback) {
   });
 
   feedparser.on('end', function() {
-    if (currentFeed.length === 0) { // Return callback if there no articles in the feed are found
-      if (isTestMessage) return callback({type: 'feedparser', content: 'No existing feeds', feed: rssList[rssName]})
-      return callback();
-    }
+    if (currentFeed.length === 0) return callback(true);
 
-    let newArticles = []
-    let processedItems = 0
-    let filteredItems = 0
+    let sourcesCompleted = 0
 
     function getArticleId(article) {
       let equalGuids = (currentFeed.length > 1) ? true : false // default to true for most feeds
@@ -63,77 +65,86 @@ module.exports = function(con, channel, rssName, isTestMessage, callback) {
       return article.guid;
     }
 
-    function startDataProcessing() {
-      checkTableExists()
-    }
+    for (var rssName in rssList) { // Per source in one link
+      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
+      if (channel && configChecks.checkExists(rssList[rssName].guildId, rssList[rssName], false)) startDataProcessing();
+      else {
+        sourcesCompleted++;
+        checkLinkCompletion();
+      }
 
-    function checkTableExists() {
-      sqlCmds.selectTable(con, rssName, function(err, results) {
-        if (err || results.size() === 0) {
-          if (err) return callback({type: 'database', content: err, feed: rssList[rssName]});
-          if (results.size() === 0) console.log(`RSS Info: '${rssName}' appears to have been deleted, skipping...`);
-          return callback(); // Callback no error object because 99% of the time it is just a hiccup
-        }
-        if (isTestMessage) {
-          const randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1)); // Grab a random feed from array
-          checkTable(currentFeed[randFeedIndex]);
-        }
-        else {
+      let newArticles = [];
+      let processedItems = 0;
+      let filteredItems = 0;
+
+      function startDataProcessing() {
+        checkTableExists()
+      }
+
+      function checkTableExists() {
+        sqlCmds.selectTable(con, rssName, function(err, results) {
+          if (err || results.size() === 0) {
+            if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
+            if (results.size() === 0) console.log(`RSS Info: '${rssName}' appears to have been deleted, skipping...`);
+            return callback(true); // Callback no error object because 99% of the time it is just a hiccup
+          }
+
           const feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--) {
             checkTable(currentFeed[x], getArticleId(currentFeed[x]));
             filteredItems++;
           }
+        })
+      }
+
+      function checkTable(article, articleId) {
+        let seenArticle = false
+        sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
+          if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
+          if (idMatches.length > 0) return decideAction(true);
+          sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
+            if (err) throw err;                                                          // Preventing articles with different GUIDs but same titles from sending is a priority
+            if (titleMatches.length > 0) return decideAction(true);
+            decideAction(false)
+          })
+        })
+
+        function decideAction(seenArticle) {
+          if (seenArticle) return gatherResults();
+          article.rssName = rssName
+          article.discordChannel = channel
+          newArticles.push(article)
+          insertIntoTable({
+            id: articleId,
+            title: article.title
+          })
         }
-      })
-    }
 
-    function checkTable(article, articleId) {
-      if (isTestMessage) { // Do not interact with database if just test message
-        filteredItems++;
-        newArticles.push(article);
-        return gatherResults();
       }
 
-      let seenArticle = false
-      sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
-        if (err) return callback({type: 'database', content: err, feed: rssList[rssName]});
-        if (idMatches.length > 0) return decideAction(true);
-        sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
-          if (err) throw err;                                                          // Preventing articles with different GUIDs but same titles from sending is a priority
-          if (titleMatches.length > 0) return decideAction(true);
-          decideAction(false)
-        })
-      })
-
-      function decideAction(seenArticle) {
-        if (seenArticle) return gatherResults();
-        article.rssName = rssName
-        article.discordChannel = channel
-        newArticles.push(article)
-        insertIntoTable({
-          id: articleId,
-          title: article.title
+      function insertIntoTable(articleInfo) {
+        sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
+          if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
+          gatherResults();
         })
       }
 
-    }
-
-    function insertIntoTable(articleInfo) {
-      sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
-        if (err) return callback({type: 'database', content: err, feed: rssList[rssName]});
-        gatherResults();
-      })
-    }
-
-    function gatherResults() {
-      processedItems++
-      if (processedItems === filteredItems) {
-        if (newArticles.length > 0) return callback(false, newArticles);
-        else return callback(false);
+      function gatherResults() {
+        processedItems++
+        if (processedItems === filteredItems) { // Handling on a source ends when processedItems = filteredItems
+          sourcesCompleted++;
+          if (newArticles.length > 0) callback(false, newArticles);
+          checkLinkCompletion()
+        }
       }
+
     }
 
-    return startDataProcessing()
-  });
+    function checkLinkCompletion() {
+      if (sourcesCompleted === rssList.size()) return callback(true)
+    }
+
+  })
+
+
 }

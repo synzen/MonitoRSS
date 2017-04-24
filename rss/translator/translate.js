@@ -6,7 +6,7 @@ const getSubs = require('./subscriptions.js')
 
 module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage) {
   // Just in case. If this happens, please report.
-  if (!rssList[rssName]) {console.log("RSS Error: Unable to translate a null source."); return null;}
+  if (!rssList[rssName]) {console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildId}\nrssName: ${rssName}`); return null;}
 
   const article = new Article(rawArticle, guildId)
   article.subscriptions = getSubs(rssList, rssName, article)
