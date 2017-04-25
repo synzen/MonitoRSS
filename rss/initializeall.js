@@ -84,6 +84,9 @@ module.exports = function(bot, con, link, rssList, callback) {
     }
 
     function processSource(rssName, rssList, channel) {
+      let processedItems = 0;
+      checkGuild.names(bot, rssList[rssName].guildId);
+      checkGuild.roles(bot, rssList[rssName].guildId, rssName); // Check for any role name changes
       checkTableExists(rssName)
 
       function checkTableExists(rssName) {
@@ -167,10 +170,6 @@ module.exports = function(bot, con, link, rssList, callback) {
     }
 
     for (var rssName in rssList) {
-      let processedItems = 0;
-      checkGuild.names(bot, rssList[rssName].guildId);
-      checkGuild.roles(bot, rssList[rssName].guildId, rssName); // Check for any role name changes
-
       const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
       if (channel && configChecks.checkExists(channel.guild.id, rssList[rssName], true, true)) {
         processSource(rssName, rssList, channel); // Check valid source config and channel
