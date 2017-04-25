@@ -173,7 +173,7 @@ module.exports = function(bot, con, link, rssList, callback) {
 
       const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
       if (channel && configChecks.checkExists(channel.guild.id, rssList[rssName], true, true)) {
-        startDataProcessing(rssName, rssList, channel); // Check valid source config and channel
+        processSource(rssName, rssList, channel); // Check valid source config and channel
       }
       else finishSource();
     }
