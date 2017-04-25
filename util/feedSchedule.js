@@ -104,6 +104,7 @@ module.exports = function(bot) {
     if (!batchNumber) batchNumber = 0;
     let completedLinks = 0
     let currentBatch = batchList[batchNumber]
+    // console.log(`Starting batch #${batchNumber}\n`)
     currentBatch.forEach(function(rssList, link) {
       getArticles(con, link, rssList, bot, function(completedLink, articles) {
 

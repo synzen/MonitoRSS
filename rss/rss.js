@@ -16,12 +16,7 @@ const sqlCmds = require('./sql/commands.js')
 const config = require('../config.json')
 const currentGuilds = require('../util/guildStorage.js').currentGuilds
 const configChecks = require('../util/configCheck.js')
-
-function logFeedErrs(channel, err) {
-	if (!config.logging.showFeedErrs) return;
-	if (channel) console.log(`RSS Error: (${channel.guild.id}, ${channel.guild.name}) => Skipping ${err.feed.link}. (${err.content})`);
-	else console.log(`RSS Error: Skipping ${err.link}. (${err.content})`);
-}
+const logFeedErr = require('../util/logFeedErrs.js')
 
 module.exports = function(con, link, rssList, bot, callback) {
   const feedparser = new FeedParser()
@@ -65,23 +60,14 @@ module.exports = function(con, link, rssList, bot, callback) {
       return article.guid;
     }
 
-    for (var rssName in rssList) { // Per source in one link
-      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
-      if (channel && configChecks.checkExists(rssList[rssName].guildId, rssList[rssName], false)) startDataProcessing();
-      else {
-        sourcesCompleted++;
-        checkLinkCompletion();
-      }
-
+    function processSource(rssName, rssList, channel) {
       let newArticles = [];
       let processedItems = 0;
       let filteredItems = 0;
 
-      function startDataProcessing() {
-        checkTableExists()
-      }
+      checkTableExists(rssName)
 
-      function checkTableExists() {
+      function checkTableExists(rssName) {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err || results.size() === 0) {
             if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
@@ -91,13 +77,13 @@ module.exports = function(con, link, rssList, bot, callback) {
 
           const feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--) {
-            checkTable(currentFeed[x], getArticleId(currentFeed[x]));
+            checkTable(rssName, currentFeed[x], getArticleId(currentFeed[x]));
             filteredItems++;
           }
         })
       }
 
-      function checkTable(article, articleId) {
+      function checkTable(rssName, article, articleId) {
         let seenArticle = false
         sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
           if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
@@ -114,7 +100,7 @@ module.exports = function(con, link, rssList, bot, callback) {
           article.rssName = rssName
           article.discordChannel = channel
           newArticles.push(article)
-          insertIntoTable({
+          insertIntoTable(rssName, {
             id: articleId,
             title: article.title
           })
@@ -122,7 +108,7 @@ module.exports = function(con, link, rssList, bot, callback) {
 
       }
 
-      function insertIntoTable(articleInfo) {
+      function insertIntoTable(rssName, articleInfo) {
         sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
           if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
           gatherResults();
@@ -132,15 +118,22 @@ module.exports = function(con, link, rssList, bot, callback) {
       function gatherResults() {
         processedItems++
         if (processedItems === filteredItems) { // Handling on a source ends when processedItems = filteredItems
-          sourcesCompleted++;
           if (newArticles.length > 0) callback(false, newArticles);
-          checkLinkCompletion()
+          finishSource()
         }
       }
-
     }
 
-    function checkLinkCompletion() {
+    for (var rssName in rssList) { // Per source in one link
+      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
+      if (channel && configChecks.checkExists(rssList[rssName].guildId, rssList[rssName], false)) processSource(rssName, rssList, channel);
+      else {
+        finishSource();
+      }
+    }
+
+    function finishSource() {
+      sourcesCompleted++
       if (sourcesCompleted === rssList.size()) return callback(true)
     }
 

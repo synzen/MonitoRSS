@@ -66,7 +66,8 @@ module.exports = function(bot, con, link, rssList, callback) {
   });
 
   feedparser.on('end', function() {
-    if (currentFeed.length === 0) return callback(); // Return if no articles in feed found
+    // Return if no articles in feed found
+    if (currentFeed.length === 0) return callback();
 
     const totalItems = currentFeed.length
     let sourcesCompleted = 0
@@ -82,31 +83,15 @@ module.exports = function(bot, con, link, rssList, callback) {
       return article.guid;
     }
 
-    for (var rssName in rssList) {
+    function processSource(rssName, rssList, channel) {
+      checkTableExists(rssName)
 
-      let processedItems = 0;
-      checkGuild.names(bot, rssList[rssName].guildId);
-      checkGuild.roles(bot, rssList[rssName].guildId, rssName); // Check for any role name changes
-
-      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
-      if (channel && configChecks.checkExists(channel.guild.id, rssList[rssName], true, true)) {
-        startDataProcessing(); // Check valid source config and channel
-      }
-      else {
-        sourcesCompleted++;
-        checkLinkCompletion();
-      }
-
-      function startDataProcessing() {
-        checkTableExists()
-      }
-
-      function checkTableExists() {
+      function checkTableExists(rssName) {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err) throw err;
           if (results.size() === 0) {
             console.log(`RSS Info: Table does not exist for ${rssName}, creating now and initializing all`);
-            createTable();
+            createTable(rssName);
           }
           else {
             const feedLength = currentFeed.length - 1;
@@ -114,26 +99,26 @@ module.exports = function(bot, con, link, rssList, callback) {
             for (var x = feedLength; x >= 0; x--) { // Get feeds starting from oldest, ending with newest.
               const cutoffDay = (rssList[rssName].maxAge) ? moment(new Date()).subtract(rssList[rssName].maxAge, 'd') : moment(new Date()).subtract(defaultMaxAge, 'd');
 
-              if (currentFeed[x].pubdate >= cutoffDay) checkTable(currentFeed[x], getArticleId(currentFeed[x]));
+              if (currentFeed[x].pubdate >= cutoffDay) checkTable(rssName, currentFeed[x], getArticleId(currentFeed[x]));
               else if (currentFeed[x].pubdate < cutoffDay || currentFeed[x].pubdate == "Invalid Date") {
-                checkTable(currentFeed[x], getArticleId(currentFeed[x]), true);
+                checkTable(rssName, currentFeed[x], getArticleId(currentFeed[x]), true);
               }
             }
           }
         })
       }
 
-      function createTable() {
+      function createTable(rssName) {
         sqlCmds.createTable(con, rssName, function(err, results) {
           if (err) throw err;
-          for (var x in currentFeed) insertIntoTable({
+          for (var x in currentFeed) insertIntoTable(rssName, {
             id: getArticleId(currentFeed[x]),
             title: currentFeed[x].title
           });
         })
       }
 
-      function checkTable(article, articleId, isOldArticle) {
+      function checkTable(rssName, article, articleId, isOldArticle) {
 
         sqlCmds.selectId(con, rssName, articleId, function(err, IdMatches) {
           if (err) throw err;
@@ -147,7 +132,7 @@ module.exports = function(bot, con, link, rssList, callback) {
 
         function decideAction(seenArticle) {
           if (seenArticle) return gatherResults(); // Stops here if it already exists in table, AKA "seen"
-          if (isOldArticle) return insertIntoTable({ // Stops here if it's unseen but is an old article
+          if (isOldArticle) return insertIntoTable(rssName, { // Stops here if it's unseen but is an old article
             id: articleId,
             title: article.title
           });
@@ -155,7 +140,7 @@ module.exports = function(bot, con, link, rssList, callback) {
           if (config.feedSettings.sendOldMessages === true) {
             sendToDiscord(rssName, channel, article, function(err) { // This can result in great spam once the loads up after a period of downtime
             if (err) console.log(err);
-            insertIntoTable({ // Only insert when message is successfully sent for initialization
+            insertIntoTable(rssName, { // Only insert when message is successfully sent for initialization
               id: articleId,
               title: article.title
             });
@@ -168,24 +153,33 @@ module.exports = function(bot, con, link, rssList, callback) {
         }
       }
 
-      function insertIntoTable(articleInfo) {
+      function insertIntoTable(rssName, articleInfo) {
         sqlCmds.insert(con, rssName, articleInfo, function(err, res) {
           if (err) throw err;
-          gatherResults();
+          gatherResults()
         })
       }
 
       function gatherResults() {
-        processedItems++;
-        if (processedItems === totalItems) {
-          sourcesCompleted++;
-          checkLinkCompletion();
-        }
+        processedItems++
+        if (processedItems === totalItems) finishSource();
       }
-
     }
 
-    function checkLinkCompletion() {
+    for (var rssName in rssList) {
+      let processedItems = 0;
+      checkGuild.names(bot, rssList[rssName].guildId);
+      checkGuild.roles(bot, rssList[rssName].guildId, rssName); // Check for any role name changes
+
+      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
+      if (channel && configChecks.checkExists(channel.guild.id, rssList[rssName], true, true)) {
+        startDataProcessing(rssName, rssList, channel); // Check valid source config and channel
+      }
+      else finishSource();
+    }
+
+    function finishSource() {
+      sourcesCompleted++
       if (sourcesCompleted === rssList.size()) return callback();
     }
   })

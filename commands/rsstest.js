@@ -1,4 +1,4 @@
-const getRandomArticle = require('../rss/randomArticle.js')
+const getRandomArticle = require('../rss/getTest.js')
 const getIndex = require('./util/printFeeds.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
