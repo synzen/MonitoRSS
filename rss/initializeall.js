@@ -87,14 +87,14 @@ module.exports = function(bot, con, link, rssList, callback) {
       let processedItems = 0;
       checkGuild.names(bot, rssList[rssName].guildId);
       checkGuild.roles(bot, rssList[rssName].guildId, rssName); // Check for any role name changes
-      checkTableExists(rssName)
+      checkTableExists()
 
-      function checkTableExists(rssName) {
+      function checkTableExists() {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err) throw err;
           if (results.size() === 0) {
             console.log(`RSS Info: Table does not exist for ${rssName}, creating now and initializing all`);
-            createTable(rssName);
+            createTable();
           }
           else {
             const feedLength = currentFeed.length - 1;
@@ -102,26 +102,26 @@ module.exports = function(bot, con, link, rssList, callback) {
             for (var x = feedLength; x >= 0; x--) { // Get feeds starting from oldest, ending with newest.
               const cutoffDay = (rssList[rssName].maxAge) ? moment(new Date()).subtract(rssList[rssName].maxAge, 'd') : moment(new Date()).subtract(defaultMaxAge, 'd');
 
-              if (currentFeed[x].pubdate >= cutoffDay) checkTable(rssName, currentFeed[x], getArticleId(currentFeed[x]));
+              if (currentFeed[x].pubdate >= cutoffDay) checkTable(currentFeed[x], getArticleId(currentFeed[x]));
               else if (currentFeed[x].pubdate < cutoffDay || currentFeed[x].pubdate == "Invalid Date") {
-                checkTable(rssName, currentFeed[x], getArticleId(currentFeed[x]), true);
+                checkTable(currentFeed[x], getArticleId(currentFeed[x]), true);
               }
             }
           }
         })
       }
 
-      function createTable(rssName) {
+      function createTable() {
         sqlCmds.createTable(con, rssName, function(err, results) {
           if (err) throw err;
-          for (var x in currentFeed) insertIntoTable(rssName, {
+          for (var x in currentFeed) insertIntoTable({
             id: getArticleId(currentFeed[x]),
             title: currentFeed[x].title
           });
         })
       }
 
-      function checkTable(rssName, article, articleId, isOldArticle) {
+      function checkTable(article, articleId, isOldArticle) {
 
         sqlCmds.selectId(con, rssName, articleId, function(err, IdMatches) {
           if (err) throw err;
@@ -135,7 +135,7 @@ module.exports = function(bot, con, link, rssList, callback) {
 
         function decideAction(seenArticle) {
           if (seenArticle) return gatherResults(); // Stops here if it already exists in table, AKA "seen"
-          if (isOldArticle) return insertIntoTable(rssName, { // Stops here if it's unseen but is an old article
+          if (isOldArticle) return insertIntoTable({ // Stops here if it's unseen but is an old article
             id: articleId,
             title: article.title
           });
@@ -143,7 +143,7 @@ module.exports = function(bot, con, link, rssList, callback) {
           if (config.feedSettings.sendOldMessages === true) {
             sendToDiscord(rssName, channel, article, function(err) { // This can result in great spam once the loads up after a period of downtime
             if (err) console.log(err);
-            insertIntoTable(rssName, { // Only insert when message is successfully sent for initialization
+            insertIntoTable({ // Only insert when message is successfully sent for initialization
               id: articleId,
               title: article.title
             });
@@ -156,7 +156,7 @@ module.exports = function(bot, con, link, rssList, callback) {
         }
       }
 
-      function insertIntoTable(rssName, articleInfo) {
+      function insertIntoTable(articleInfo) {
         sqlCmds.insert(con, rssName, articleInfo, function(err, res) {
           if (err) throw err;
           gatherResults()

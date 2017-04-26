@@ -17,6 +17,7 @@ const config = require('../config.json')
 const currentGuilds = require('../util/guildStorage.js').currentGuilds
 const configChecks = require('../util/configCheck.js')
 const logFeedErr = require('../util/logFeedErrs.js')
+const sendToDiscord = require('../util/sendToDiscord.js')
 
 module.exports = function(con, link, rssList, bot, callback) {
   const feedparser = new FeedParser()
@@ -60,14 +61,17 @@ module.exports = function(con, link, rssList, bot, callback) {
       return article.guid;
     }
 
-    function processSource(rssName, rssList, channel) {
+    function processSource(rssName) {
+      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName])
+      if (channel && configChecks.checkExists(rssList[rssName].guildId, rssList[rssName], false)) checkTableExists();
+      else return finishSource();
+
       let newArticles = [];
       let processedItems = 0;
       let filteredItems = 0;
 
-      checkTableExists(rssName)
 
-      function checkTableExists(rssName) {
+      function checkTableExists() {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err || results.size() === 0) {
             if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
@@ -77,13 +81,13 @@ module.exports = function(con, link, rssList, bot, callback) {
 
           const feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--) {
-            checkTable(rssName, currentFeed[x], getArticleId(currentFeed[x]));
+            checkTable(currentFeed[x], getArticleId(currentFeed[x]));
             filteredItems++;
           }
         })
       }
 
-      function checkTable(rssName, article, articleId) {
+      function checkTable(article, articleId) {
         let seenArticle = false
         sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
           if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
@@ -99,8 +103,8 @@ module.exports = function(con, link, rssList, bot, callback) {
           if (seenArticle) return gatherResults();
           article.rssName = rssName
           article.discordChannel = channel
-          newArticles.push(article)
-          insertIntoTable(rssName, {
+          callback(false, article)
+          insertIntoTable({
             id: articleId,
             title: article.title
           })
@@ -108,7 +112,7 @@ module.exports = function(con, link, rssList, bot, callback) {
 
       }
 
-      function insertIntoTable(rssName, articleInfo) {
+      function insertIntoTable(articleInfo) {
         sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
           if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
           gatherResults();
@@ -117,20 +121,11 @@ module.exports = function(con, link, rssList, bot, callback) {
 
       function gatherResults() {
         processedItems++
-        if (processedItems === filteredItems) { // Handling on a source ends when processedItems = filteredItems
-          if (newArticles.length > 0) callback(false, newArticles);
-          finishSource()
-        }
+        if (processedItems === filteredItems) return finishSource(); // Handling on a source ends when processedItems = filteredItems
       }
     }
 
-    for (var rssName in rssList) { // Per source in one link
-      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
-      if (channel && configChecks.checkExists(rssList[rssName].guildId, rssList[rssName], false)) processSource(rssName, rssList, channel);
-      else {
-        finishSource();
-      }
-    }
+    for (var rssName in rssList) processSource(rssName); // Per source in one link
 
     function finishSource() {
       sourcesCompleted++

@@ -63,12 +63,10 @@ function finishInit() {
 
   feedCycle = new FeedSchedule(bot) // Start feed fetch schedule after events handler process has begun
 
-  feedCycle.cycle.on('articles', function(articles) { // Each emission is an array of new articles for a particular feed
-    for (var index in articles) {
-      sendToDiscord(articles[index].rssName, articles[index].discordChannel, articles[index], function(err) {
-        if (err) console.log(err);
-      });
-    }
+  feedCycle.cycle.on('article', function(article) { // Each emission is an array of new articles for a particular feed
+    sendToDiscord(article.rssName, article.discordChannel, article, function(err) {
+      if (err) console.log(err);
+    });
   })
 
   if (config.botSettings.enableCommands === false) return;
