@@ -63,7 +63,7 @@ function finishInit() {
 
   feedCycle = new FeedSchedule(bot) // Start feed fetch schedule after events handler process has begun
 
-  feedCycle.cycle.on('article', function(article) { // Each emission is an array of new articles for a particular feed
+  feedCycle.cycle.on('article', function(article) { // New articles are sent as the raw object directly from feedparser
     sendToDiscord(article.rssName, article.discordChannel, article, function(err) {
       if (err) console.log(err);
     });
