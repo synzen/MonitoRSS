@@ -14,7 +14,7 @@ var timer
 module.exports = function(bot) {
   this.cycle = new events.EventEmitter()
   const sourceList = new Map()
-  const batchSize = (config.advanced.batchSize) ? config.advanced.batchSize : 400
+  const batchSize = (config.advanced && config.advanced.batchSize) ? config.advanced.batchSize : 400
   let batchList = []
   let cycleInProgress = this.inProgress
   let cycle = this.cycle
