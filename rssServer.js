@@ -7,6 +7,7 @@ const currentGuilds = guildStorage.currentGuilds
 const changedGuilds = guildStorage.changedGuilds
 const deletedGuilds = guildStorage.deletedGuilds
 const sendToDiscord = require('./util/sendToDiscord.js')
+const debugFeeds = require('./util/debugFeeds.js').list
 if (config.logging.logDates) require('./util/logDates.js')()
 
 if (!config.botSettings.token) throw new Error('Token undefined in config.');
@@ -14,6 +15,31 @@ else if (!config.botSettings.prefix) throw new Error('Prefix undefined in config
 else if (!config.feedManagement.databaseName) throw new Error('databaseName undefined in config.');
 else if (!config.feedManagement.sqlType || typeof config.feedManagement.sqlType !== 'string' || (config.feedManagement.sqlType !== 'mysql' && config.feedManagement.sqlType !== 'sqlite3')) throw new Error('sqlType incorrectly defined in config.');
 else if (!config.feedSettings.defaultMessage) throw new Error('defaultMssage undefined in config.');
+
+function addDebug(rssName) {
+  let found = false
+  currentGuilds.forEach(function(guildRss, guildId) {
+    const rssList = guildRss.sources
+    for (var name in rssList) {
+      if (rssName === name) {
+        found = true;
+        debugFeeds.push(rssName);
+        console.log(`Added ${rssName} to debugging list.`);
+      }
+    }
+  })
+  if (!found) console.log(`Unable to add ${rssName} to debugging list, not found in any guild sources.`);
+}
+
+function removeDebug(rssName) {
+  if (!debugFeeds.includes(rssName)) return console.log(`Cannot remove, ${rssName} is not in debugging list.`);
+  for (var index in debugFeeds) {
+    if (debugFeeds[index] === rssName) {
+      debugFeeds.splice(index, 1);
+      return console.log(`Removed ${rssName} from debugging list.`);
+    }
+  }
+}
 
 // Ease the pains of having to rewrite a function every time to check an empty object
 Object.defineProperty(Object.prototype, 'size', {
@@ -80,6 +106,8 @@ function finishInit() {
       config.botSettings.defaultGame = message.contents;
       return bot.user.setGame(message.contents);
     }
+    if (message.type === 'debug') addDebug(message.contents);
+    if (message.type === 'undebug') removeDebug(message.contents);
 
      // "Queue" guilds to be updated sent from child process if cycle is in progress
     if (message.type === 'guildUpdate') return changedGuilds.set(message.id, message.contents);

@@ -18,6 +18,7 @@ const currentGuilds = require('../util/guildStorage.js').currentGuilds
 const configChecks = require('../util/configCheck.js')
 const logFeedErr = require('../util/logFeedErrs.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
+const debugFeeds = require('../util/debugFeeds').list
 
 module.exports = function(con, link, rssList, bot, callback) {
   const feedparser = new FeedParser()
@@ -79,8 +80,11 @@ module.exports = function(con, link, rssList, bot, callback) {
             return callback(true); // Callback no error object because 99% of the time it is just a hiccup
           }
 
+          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Table has been selected.`)
+
           const feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--) {
+            if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(currentFeed[x])}, TITLE: ${currentFeed[x].title})`);
             checkTable(currentFeed[x], getArticleId(currentFeed[x]));
             filteredItems++;
           }
@@ -91,16 +95,23 @@ module.exports = function(con, link, rssList, bot, callback) {
         let seenArticle = false
         sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
           if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
-          if (idMatches.length > 0) return decideAction(true);
+          if (idMatches.length > 0) {
+            if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`);
+            return decideAction(true);
+          }
           sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
             if (err) throw err;                                                          // Preventing articles with different GUIDs but same titles from sending is a priority
-            if (titleMatches.length > 0) return decideAction(true);
+            if (titleMatches.length > 0) {
+              if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched TITLE in table for (ID: ${articleId}, TITLE: ${article.title}).`);
+              return decideAction(true);
+            }
             decideAction(false)
           })
         })
 
         function decideAction(seenArticle) {
           if (seenArticle) return gatherResults();
+          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Never seen article (ID: ${articleId}, TITLE: ${article.title}), sending now`);
           article.rssName = rssName
           article.discordChannel = channel
           callback(false, article)
@@ -115,6 +126,7 @@ module.exports = function(con, link, rssList, bot, callback) {
       function insertIntoTable(articleInfo) {
         sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
           if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
+          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Article (ID: ${articleInfo.id}, TITLE: ${articleInfo.title}) should have been sent, and now added into table`);
           gatherResults();
         })
       }

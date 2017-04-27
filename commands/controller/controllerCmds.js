@@ -1,6 +1,7 @@
 const config = require('../../config.json')
 const Discord = require('discord.js')
 const util = require('util')
+const currentGuilds = require('../../util/guildStorage.js').currentGuilds
 
 exports.stats = function(bot, message) {
   message.channel.sendMessage(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`).catch(err => console.log('Commands Info: Could not send stats, reason:\n', err))
@@ -22,4 +23,27 @@ exports.pingme = function(bot, message) {
   .setDescription('pong!')
 
   message.channel.sendEmbed(pong).catch(err => console.info(`Commands Warning: Could not send the pong embed:\n`, pong))
+}
+
+exports.getsources = function(bot, message) {
+  const content = message.content.split(' ')
+  if (content.length !== 2) return;
+  const sources = (currentGuilds.get(content[1]) && currentGuilds.get(content[1]).sources) ? currentGuilds.get(content[1]).sources : undefined
+
+  if (sources) console.info(sources);
+  else message.channel.sendMessage('No sources available.');
+}
+
+exports.debug = function(bot, message) {
+  const content = message.content.split(' ')
+  if (content.length !== 2) return;
+
+  process.send({type: 'debug', contents: content[1]})
+}
+
+exports.undebug = function(bot, message) {
+  const content = message.content.split(' ')
+  if (content.length !== 2) return;
+
+  process.send({type: 'undebug', contents: content[1]})
 }
