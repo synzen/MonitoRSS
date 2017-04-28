@@ -8,6 +8,7 @@ const currentGuilds = guildStorage.currentGuilds // Directory of guild profiles 
 const changedGuilds = guildStorage.changedGuilds // Directory of changed guilds profiles sent from child process (Map)
 const deletedGuilds = guildStorage.deletedGuilds // Directory of deleted guild IDs (array)
 const sourceList = guildStorage.sourceList // Directory of links to be requested on each cycle (Map)
+const debugFeeds = require('../util/debugFeeds').list
 const events = require('events')
 var timer
 
@@ -108,7 +109,10 @@ module.exports = function(bot) {
     currentBatch.forEach(function(rssList, link) {
       getArticles(con, link, rssList, bot, function(completedLink, article) {
 
-        if (article) cycle.emit('article', article);
+        if (article) {
+          if (debugFeeds.includes(article.rssName)) console.log(`DEBUG ${article.rssName}: Emitted article event.`);
+          cycle.emit('article', article);
+        }
         if (!completedLink) return;
         completedLinks++;
         if (completedLinks === currentBatch.size) {
@@ -141,6 +145,7 @@ module.exports = function(bot) {
     clearInterval(timer)
   }
 
+  setTimeout(connect, 10000)
   this.start()
 
   return this

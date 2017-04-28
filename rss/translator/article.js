@@ -38,8 +38,8 @@ module.exports = function Article(rawArticle, guildId) {
   this.meta = rawArticle.meta
   this.guid = rawArticle.guid
   // Must be replaced with empty string if it exists in source config since these are replaceable tags
-  this.title = (rawArticle.title) ? striptags(rawArticle.title) : ''
-  this.author = (rawArticle.author) ? striptags(rawArticle.author): ''
+  this.title = (rawArticle.title) ? cleanRandoms(rawArticle.title) : ''
+  this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author): ''
   this.link = (rawArticle.link) ? rawArticle.link : ''
 
   // date

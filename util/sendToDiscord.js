@@ -2,9 +2,11 @@ const config = require('../config.json')
 const translator = require('../rss/translator/translate.js')
 const guildStorage = require('./guildStorage.js')
 const currentGuilds = guildStorage.currentGuilds
+const debugFeeds = require('../util/debugFeeds').list
 
 module.exports = function (rssName, channel, article, callback, isTestMessage) {
   const rssList = currentGuilds.get(channel.guild.id).sources
+
 
   // check if any changes to feed article while article cycle was in progress
   if (!process.env.isCmdServer && guildStorage.changedGuilds.has(channel.guild.id)) {
@@ -21,6 +23,8 @@ module.exports = function (rssName, channel, article, callback, isTestMessage) {
   const successLog = (isTestMessage) ? `RSS Test Delivery: (${channel.guild.id}, ${channel.guild.name}) => Sent test message for: ${rssList[rssName].link} in channel (${channel.id}, ${channel.name})` : `RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => Sent message: ${article.link} in channel (${channel.id}, ${channel.name})`
   const failLog = (isTestMessage) ? `RSS Test Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. ` : `RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. `
   const message = translator(channel.guild.id, rssList, rssName, article, isTestMessage)
+
+  if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Has been translated and should send now.`);
 
   if (!message) {
     if (config.logging.showUnfiltered === true) console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => '${(article.link) ? article.link : article.title}' did not pass filters and was not sent.`);

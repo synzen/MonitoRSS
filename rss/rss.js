@@ -84,7 +84,7 @@ module.exports = function(con, link, rssList, bot, callback) {
 
           const feedLength = currentFeed.length - 1;
           for (var x = feedLength; x >= 0; x--) {
-            if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(currentFeed[x])}, TITLE: ${currentFeed[x].title})`);
+            // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(currentFeed[x])}, TITLE: ${currentFeed[x].title})`);
             checkTable(currentFeed[x], getArticleId(currentFeed[x]));
             filteredItems++;
           }
@@ -96,13 +96,13 @@ module.exports = function(con, link, rssList, bot, callback) {
         sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
           if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
           if (idMatches.length > 0) {
-            if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`);
+            // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`);
             return decideAction(true);
           }
           sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
             if (err) throw err;                                                          // Preventing articles with different GUIDs but same titles from sending is a priority
             if (titleMatches.length > 0) {
-              if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched TITLE in table for (ID: ${articleId}, TITLE: ${article.title}).`);
+              // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched TITLE in table for (ID: ${articleId}, TITLE: ${article.title}).`);
               return decideAction(true);
             }
             decideAction(false)

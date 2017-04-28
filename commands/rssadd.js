@@ -66,9 +66,7 @@ module.exports = function (bot, message) {
           console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${rssLink}.`)
           verifyMsg.edit(`Successfully verified and added <${rssLink}> for this channel.`).catch(err => console.log(`Promise Warning: rssAdd 5b: ${err}`))
         }
-        sqlCmds.end(con, function(err) {
-          if (err) throw err;
-        });
+        sqlCmds.end(con, function(err) {});
       });
     }
   }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not begin feed addition validation. (${err})`))

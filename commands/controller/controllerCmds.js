@@ -30,7 +30,7 @@ exports.getsources = function(bot, message) {
   if (content.length !== 2) return;
   const sources = (currentGuilds.get(content[1]) && currentGuilds.get(content[1]).sources) ? currentGuilds.get(content[1]).sources : undefined
 
-  if (sources) console.info(sources);
+  if (sources) message.channel.sendMessage(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``);
   else message.channel.sendMessage('No sources available.');
 }
 
