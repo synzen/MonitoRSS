@@ -25,6 +25,8 @@ module.exports = function(bot, message, command) {
               case 'database':
                 channelErrMsg = 'Internal database error. Please try again';
                 break;
+              case 'deleted':
+                channelErrMsg = 'Feed missing from database'
               default:
                 channelErrMsg = 'No reason available';
             }

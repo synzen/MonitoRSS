@@ -12,7 +12,6 @@ module.exports = function(con, guildId, rssName, callback) {
 
   requestStream(rssList[rssName].link, feedparser, function(err) {
     if (err) return callback({type: 'request', content: err, feed: rssList[rssName]});
-    else if (err) return callback();
   })
 
   feedparser.on('error', function(err) {
@@ -35,8 +34,7 @@ module.exports = function(con, guildId, rssName, callback) {
     sqlCmds.selectTable(con, rssName, function(err, results) {
       if (err || results.size() === 0) {
         if (err) return callback({type: 'database', content: err, feed: rssList[rssName]});
-        if (results.size() === 0) console.log(`RSS Info: '${rssName}' appears to have been deleted, cannot send test message...`);
-        return callback(); // Callback no error object because 99% of the time it is just a hiccup
+        if (results.size() === 0) return callback(true, {type: 'deleted', content: `Nonexistent in database`, feed: rssList[rssName]});
       }
       const randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1)); // Grab a random feed from array
       return callback(false, currentFeed[randFeedIndex]);
