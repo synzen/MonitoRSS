@@ -146,6 +146,6 @@ module.exports = function(bot, callback) {
   }
 
   this.start()
-  callback()
+  callback(this.cycle)
   return this
 }
