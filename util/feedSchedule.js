@@ -12,7 +12,7 @@ const debugFeeds = require('../util/debugFeeds').list
 const events = require('events')
 var timer
 
-module.exports = function(bot) {
+module.exports = function(bot, callback) {
   this.cycle = new events.EventEmitter()
   const sourceList = new Map()
   const batchSize = (config.advanced && config.advanced.batchSize) ? config.advanced.batchSize : 400
@@ -145,8 +145,7 @@ module.exports = function(bot) {
     clearInterval(timer)
   }
 
-  setTimeout(connect, 10000)
   this.start()
-
+  callback()
   return this
 }

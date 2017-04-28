@@ -71,7 +71,7 @@ let loginAttempts = 0;
     bot.user.setGame((config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null)
     console.log('Discord.RSS RSS Module has started.');
     if (!initialized) startInit(bot, finishInit);
-    else feedCycle = new FeedSchedule(bot);
+    else feedCycle = new FeedSchedule(bot, listenToArticles);
   })
   bot.once('disconnect', function(e) {
     console.log('Error: RSS Module Disconnected from Discord. Attempting to reconnect and restart feed cycle.')
@@ -84,20 +84,21 @@ let loginAttempts = 0;
   })
 })()
 
-function finishInit() {
-  initialized = true
-
-  feedCycle = new FeedSchedule(bot) // Start feed fetch schedule after events handler process has begun
-
+function listenToArticles() {
   feedCycle.cycle.on('article', function(article) { // New articles are sent as the raw object directly from feedparser
     if (debugFeeds.includes(article.rssName)) console.log(`DEBUG ${article.rssName}: Invoking sendToDiscord function`);
     sendToDiscord(article.rssName, article.discordChannel, article, function(err) {
       if (err) console.log(err);
     });
   })
+}
+
+function finishInit() {
+  initialized = true
+
+  feedCycle = new FeedSchedule(bot, listenToArticles) // Start feed fetch schedule after events handler process has begun
 
   if (config.botSettings.enableCommands === false) return;
-
 
   const cmdServer = require('child_process').fork('./cmdServer.js', {env: {isCmdServer: true} }) // Start Discord events handler child process
 
