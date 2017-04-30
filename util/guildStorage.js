@@ -8,6 +8,7 @@ const currentGuilds = new Map()
 const changedGuilds = new Map()
 const deletedGuilds = []
 const sourceList = new Map()
+const modSourceList = new Map()
 
 exports.currentGuilds = currentGuilds // Object for holding all guild profiles
 
@@ -17,4 +18,6 @@ exports.deletedGuilds = deletedGuilds
 
 exports.overriddenGuilds = overriddenGuilds // Guilds that have thier limits overridden
 
-exports.sourceList = sourceList
+exports.sourceList = sourceList // Regular source list, will be optimized for best performance in link fetching
+
+exports.modSourceList = modSourceList // 'Modded' source list with unique settings under 'advanced' key. Not optimized.

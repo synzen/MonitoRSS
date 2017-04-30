@@ -165,13 +165,13 @@ exports.undebug = function(bot, message) {
 exports.setoverride = function(bot, message) {
   const content = message.content.split(' ')
   if (content.length !== 3) return message.channel.sendMessage(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}setoverride <guildID> <#>\`.`);
-  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.sendMessage(`Unable to set limit, guild ID \`${content[1]}\` was not found in guild list.`);
+  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.sendMessage(`Unable to set limit, guild ID \`${content[1]}\` was either not found in guild list or has no active feeds.`);
 
   let newLimit = parseInt(content[2], 10)
 
   if (isNaN(newLimit) || newLimit % 1 !== 0) return message.channel.sendMessage(`That is not a valid number.`);
 
-  let guildRss = currentGuilds.get(content[1])
+  const guildRss = currentGuilds.get(content[1])
   guildRss.limitOverride = newLimit
   overriddenGuilds.set(content[1], guildRss.limitOverride)
 
@@ -202,8 +202,36 @@ exports.removeoverride = function(bot, message) {
 
   fileOps.updateFile(content[1], guildRss)
   message.channel.sendMessage(`Feed limit override for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}) has been removed.`)
-  console.log(`Bot Controller: Feed limit override for guild (${content[1]}, ${bot.guilds.get(content[1]).name}) has been removed.`)
+  console.log(`Bot Controller: Feed limit override for guild (${content[1]}, ${bot.guilds.get(content[1]).name}) has been removed`)
 
+}
+
+exports.allowcookies = function(bot, message) {
+  const content = message.content.split(' ')
+  if (content.length !== 2) return message.channel.sendMessage(`The proper syntax to allow cookies for a server is \`${config.botSettings.prefix}allowcookies <guildID>\`.`);
+
+  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.sendMessage(`Unable to allow cookies, guild ID \`${content[1]}\` was either not found in guild list or has no active feeds.`);
+
+  const guildRss = currentGuilds.get(content[1])
+  guildRss.allowCookies = true
+
+  fileOps.updateFile(content[1], guildRss)
+  message.channel.sendMessage(`Cookies are now allowed for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}).`)
+  console.log(`Bot Controller: Cokkies have been allowed for guild (${content[1]}, ${bot.guilds.get(content[1]).name})`)
+}
+
+exports.disallowcookies = function(bot, message) {
+  if (!config.advanced || config.advanced.restrictCookies === false || !config.advanced.restrictCookies) return message.channel.sendMessage(`Cannot disallow cookies if config \`restrictCookies\` is not set to \`true\`/\`1\`.`)
+  const content = message.content.split(' ')
+  if (content.length !== 2) return message.channel.sendMessage(`The proper syntax to allow cookies for a server is \`${config.botSettings.prefix}disallowcookies <guildID>\`.`);
+  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.sendMessage(`Guild ID \`${content[1]}\` was either not found in guild list or has no active feeds.`);
+
+  const guildRss = currentGuilds.get(content[1])
+  delete guildRss.allowCookies
+
+  fileOps.updateFile(content[1], guildRss)
+  message.channel.sendMessage(`Cookies are now disallowed for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name})\`.`)
+  console.log(`Bot Controller: Cokkies have been disallowed for guild (${content[1]}, ${bot.guilds.get(content[1]).name})`)
 }
 
 exports.setconfig = function(bot, message) {
@@ -260,7 +288,7 @@ exports.setconfig = function(bot, message) {
 
         if (!config[categoryName]) config[categoryName] = {};
         config[categoryName][configName] = setting;
-        process.send({type: 'configChange', contents: {configCategory: categoryName, configName: configName, configSetting: setting}});
+        process.send({type: 'configChange', configCategory: categoryName, configName: configName, configSetting: setting});
         fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
         console.log(`Bot Controller: Config '${configName}' value has been changed to to '${setting}'.`)
         return message.channel.sendMessage(`Config \`${configName}\`'s current value is now set to \`${setting}\`.`);

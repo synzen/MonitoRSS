@@ -41,5 +41,9 @@
 	"unsubme": {
 		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"description": "Same as `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
+	},
+	"rsscookies": {
+		"action": "Cookie Customization",
+		"description": "Add cookies for feeds that may require authorization."
 	}
 }

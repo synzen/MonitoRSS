@@ -3,7 +3,7 @@ const removeRss = require('../util/removeRss.js')
 const config = require('../config.json')
 const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
-module.exports = function (bot, message, command, callback) {
+module.exports = function(bot, message, command) {
 
   getIndex(bot, message, command, function(rssNameList) {
     const guildRss = currentGuilds.get(message.guild.id)

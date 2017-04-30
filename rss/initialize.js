@@ -18,12 +18,12 @@ const sqlCmds = require('./sql/commands.js')
 const startFeedSchedule = require('../util/feedSchedule.js')
 const currentGuilds = require('../util/guildStorage').currentGuilds
 
-module.exports = function(con, rssLink, channel, callback) {
+module.exports = function(con, rssLink, channel, cookies, callback) {
 
   const feedparser = new FeedParser()
   const currentFeed = []
 
-  requestStream(rssLink, feedparser, function(err) {
+  requestStream(rssLink, cookies, feedparser, function(err) {
     if (err) return callback({type: 'request', content: err});
   })
 
@@ -118,6 +118,8 @@ module.exports = function(con, rssLink, channel, callback) {
       		link: rssLink,
       		channel: channel.id
       	}
+
+        if (cookies) rssList[rssName].advanced = {cookies: cookies};
       }
       else {
         var guildRss = {
@@ -131,6 +133,8 @@ module.exports = function(con, rssLink, channel, callback) {
       		link: rssLink,
       		channel: channel.id
       	}
+        if (cookies) guildRss.sources[rssName].advanced = {cookies: cookies};
+
         currentGuilds.set(channel.guild.id, guildRss);
       }
 

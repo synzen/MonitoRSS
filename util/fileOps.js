@@ -5,23 +5,23 @@ const fs = require('fs')
 const currentGuilds = require('./guildStorage.js').currentGuilds
 const config = require('../config.json')
 
-function updateContent(guildId, inFile, cacheLoc) {
+function updateContent(guildId, inFile) {
   if (process.env.isCmdServer) process.send({type: 'guildUpdate', id: guildId, contents: inFile}); //child process
   fs.writeFileSync(`./sources/${guildId}.json`, JSON.stringify(inFile, null, 2))
 }
 
-exports.updateFile = function(guildId, inFile, cacheLoc) { // "inFile" is the new contents in memory, cacheLoc is the cache location of the file
+exports.updateFile = function(guildId, inFile) { // "inFile" is the new contents in memory
   if (fs.existsSync(`./sources/${guildId}.json`)) { // Back up the file first if possible
     fs.readFile(`./sources/${guildId}.json`, function (err, data) {
       if (err) throw err;
       fs.writeFileSync(`./sources/backup/${guildId}.json`, JSON.stringify(data, null, 2))
-      updateContent(guildId, inFile, cacheLoc)
+      updateContent(guildId, inFile)
     });
   }
-  else updateContent(guildId, inFile, cacheLoc);
+  else updateContent(guildId, inFile);
 }
 
-exports.deleteFile = function(guildId, cacheLoc, callback) {
+exports.deleteFile = function(guildId, callback) {
   try {
     fs.unlinkSync(`./sources/${guildId}.json`)
     callback()
@@ -33,7 +33,7 @@ exports.deleteFile = function(guildId, cacheLoc, callback) {
 exports.isEmptySources = function(guildRss) {
   // Used on the beginning of each cycle to check for empty sources per guild
   if (!guildRss.sources || guildRss.sources.size() === 0) {
-     if (!guildRss.timezone && !guildRss.limitOverride) { // Delete only if a timezone is not found, preserving the customization
+     if (!guildRss.timezone && guildRss.limitOverride == null && guildRss.allowCookies !== true) { // Delete only if a timezone is not found, preserving the customization
        exports.deleteFile(guildRss.id, `../sources/${guildRss.id}.json`, function() {
          console.log(`RSS Info: (${guildRss.id}) => 0 sources found with no custom settings, deleting.`)
        });

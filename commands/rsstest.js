@@ -11,6 +11,7 @@ module.exports = function(bot, message, command) {
     .then(function(grabMsg) {
       // Replicate the RSS process for a test article
       const con = sqlConnect(getTestMsg)
+      
       function getTestMsg() {
         getRandomArticle(con, message.guild.id, rssName, function(err, article) {
           if (err) {

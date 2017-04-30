@@ -20,11 +20,13 @@ const logFeedErr = require('../util/logFeedErrs.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 const debugFeeds = require('../util/debugFeeds').list
 
-module.exports = function(con, link, rssList, bot, callback) {
+module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
   const currentFeed = []
 
-  requestStream(link, feedparser, function(err) {
+  var cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
+
+  requestStream(link, cookies, feedparser, function(err) {
     if (err) {
       logFeedErr(null, {link: link, content: err});
       callback(true)

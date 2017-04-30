@@ -7,6 +7,15 @@ const currentGuilds = require('../util/guildStorage.js').currentGuilds
 
 module.exports = function (bot, message) {
 
+  function sanitize(array) {
+    for (var p = array.length - 1; p >= 0; p--) { // Sanitize by removing spaces and newlines
+      array[p] = array[p].trim();
+      if (!array[p]) array.splice(p, 1);
+    }
+
+    return array
+  }
+
   function isCurrentChannel(channel) {
     if (isNaN(parseInt(channel, 10))) return message.channel.name == channel;
     else if (message.channel.id == channel) return message.channel.id == channel;
@@ -17,18 +26,15 @@ module.exports = function (bot, message) {
   let maxFeedsAllowed = (guildRss.limitOverride != null) ? guildRss.limitOverride : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
 
-  if (message.content.split(' ').length === 1) return message.channel.sendMessage(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`.`).then(m => m.delete(3000)).catch(err => console.log(`Promise Warning rssAdd 0: ${err}`)); // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.sendMessage(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => console.log(`Promise Warning rssAdd 0: ${err}`)); // If there is no link after rssadd, return.
 
   let linkList = message.content.split(' ')
   linkList.shift()
   linkList = linkList.join(' ').split(',')
 
-  for (var p = linkList.length - 1; p >= 0; p--) { // Sanitize the links
-    linkList[p] = linkList[p].trim();
-    if (!linkList[p]) linkList.splice(p, 1);
-  }
+  linkList = sanitize(linkList)
 
-  const passedLinks = []
+  const passedLinks = {}
   const failedLinks = {}
   const totalLinks = linkList.length
 
@@ -36,18 +42,19 @@ module.exports = function (bot, message) {
 
   function finishLinkList(verifyMsg) {
     let msg = ''
-    if (passedLinks.length > 0) {
+    if (passedLinks.size() > 0) {
       let successBox = 'The following feed(s) have been successfully added:\n```\n';
-      for (var index in passedLinks) {
-        successBox += `\n* ${passedLinks[index]}`;
+      for (var passedLink in passedLinks) {
+        successBox += `\n* ${passedLink}`;
+        if (passedLinks[passedLink]) successBox += `\nCookies:\n${passedLinks[passedLink].join('\n')}`;
       }
       msg += successBox + '\n```\n\n';
     }
     if (failedLinks.size() > 0) {
       let failBox = 'The following feed(s) could not be added:\n```\n';
       let count = 1;
-      for (var link in failedLinks) {
-        failBox += `\n\n* ${link}\nReason: ${failedLinks[link]}`;
+      for (var failedLink in failedLinks) {
+        failBox += `\n\n* ${failedLink}\nReason: ${failedLinks[failedLink]}`;
       }
       msg += failBox + '\n```'
     }
@@ -59,11 +66,11 @@ module.exports = function (bot, message) {
   message.channel.sendMessage('Processing...')
   .then(function(verifyMsg) {
 
-    (function processLink(linkIndex) {
+    (function processLink(linkIndex) { // A self-invoking function for each link
 
       const linkItem = linkList[linkIndex].split(' ');
-      const rssLink = linkItem[0];
-      console.log(rssLink);
+      const rssLink = linkItem[0]; // One link may consist of the actual link, and its cookies
+
       if (!rssLink.startsWith('http')) {
         failedLinks[rssLink] = 'Invalid/improperly-formatted link.';
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1);
@@ -88,7 +95,14 @@ module.exports = function (bot, message) {
       const con = sqlConnect(init);
 
       function init() {
-        initializeRSS(con, rssLink, message.channel, function(err) {
+        linkItem.shift()
+        let cookieString = linkItem.join(' ');
+        var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitize(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined;
+        var cookiesFound = cookies ? true: false
+        if (config.advanced && config.advanced.restrictCookies === true && guildRss.allowCookies !== true || guildRss.allowCookies === false) cookies = undefined;
+        if (cookiesFound && !cookies) var cookieAccess = false;
+
+        initializeRSS(con, rssLink, message.channel, cookies, function(err) {
           channelTracker.removeCollector(message.channel.id)
           if (err) {
             let channelErrMsg = '';
@@ -106,12 +120,13 @@ module.exports = function (bot, message) {
                 channelErrMsg = 'No reason available';
             }
             // Reserve err.content for console logs, which are more verbose
-            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content}).`);
+            if (!cookieAccess) channelErrMsg += ' (Cookies were detected, but this server does not have access for usage)';
+            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})${!cookieAccess ? ' (Cookies found, access denied)' : ''}.`);
             failedLinks[rssLink] = channelErrMsg;
           }
           else {
-            console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${rssLink}.`)
-            passedLinks.push(rssLink)
+            console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${rssLink}.`);
+            passedLinks[rssLink] = cookies;
           }
           sqlCmds.end(con, function(err) {});
           if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1);

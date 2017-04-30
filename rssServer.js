@@ -109,9 +109,7 @@ function finishInit() {
       return bot.user.setGame(message.contents);
     }
 
-    if (message.type === 'configChange') {
-      if (!config[message.contents.configCategory]) config[message.contents.configCategory] = {};
-      config[message.contents.configCategory][message.contents.configName] = message.contents.configSetting;
+    if (message.type === 'configChange') {  config[message.configCategory][message.configName] = message.configSetting; console.info(config)
     }
 
     // For debugging feeds

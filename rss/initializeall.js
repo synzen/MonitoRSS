@@ -39,11 +39,13 @@ const currentGuilds = require('../util/guildStorage').currentGuilds
 const checkGuild = require('../util/checkGuild.js')
 const configChecks = require('../util/configCheck.js')
 
-module.exports = function(bot, con, link, rssList, callback) {
+module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
   const currentFeed = []
 
-  requestStream(link, feedparser, function(err) {
+  var cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
+
+  requestStream(link, cookies, feedparser, function(err) {
     if (err) {
       console.log(`RSS Error: Skipping ${link}. (${err})`);
       return callback(true)

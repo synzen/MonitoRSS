@@ -19,7 +19,7 @@ module.exports = function(bot, message, command, callback) {
   let embedMsg = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
     .setAuthor('Feed Selection Menu')
-    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. Type **exit** to cancel.\u200b\n\u200b\n`);
+    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${commandList[command].action === 'Feed Removal' ? 'You may select multiple feeds to remove by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`);
   const currentRSSList = []
 
   for (var rssName in rssList) { // Generate the info for each feed as an array, and push into another array

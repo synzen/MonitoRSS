@@ -10,7 +10,9 @@ module.exports = function(con, guildId, rssName, callback) {
   const feedparser = new FeedParser()
   const currentFeed = []
 
-  requestStream(rssList[rssName].link, feedparser, function(err) {
+  var cookies = (rssList[rssName].advanced && rssList[rssName].advanced.cookies) ? rssList[rssName].advanced.cookies : undefined
+
+  requestStream(rssList[rssName].link, cookies, feedparser, function(err) {
     if (err) return callback({type: 'request', content: err, feed: rssList[rssName]});
   })
 

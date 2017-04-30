@@ -26,7 +26,6 @@ exports.checkExists = function (guildId, feed, logging, initializing) {
 
 exports.validChannel = function(bot, guildId, feed) {
   const guildRss = currentGuilds.get(guildId)
-
   if (isNaN(parseInt(feed.channel,10))) {
     const channel = bot.channels.find('name', feed.channel);
     if (!channel) {

@@ -1,18 +1,21 @@
 const FetchStream = require('fetch').FetchStream
 const cloudscraper = require('cloudscraper') // For cloudflare
 
-module.exports = function (link, feedparser, callback) {
+module.exports = function(link, cookies, feedparser, callback) {
   let attempts = 0;
 
+  let options = {timeout:10000};
+  if (cookies) options.cookies = cookies;
+
   (function requestStream() {
-    const request = new FetchStream(link, {timeout: 10000})
+    const request = new FetchStream(link, options)
 
     request.on('error', function(err) {
       if (attempts < 2) {
         attempts++;
         return requestStream();
       }
-      else return callback(err);
+      else return callback(err + `${cookies ? ' (Cookies found)' : ''}`);
     })
 
     request.on('meta', function (meta) {
