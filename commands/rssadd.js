@@ -63,7 +63,6 @@ module.exports = function (bot, message) {
 
       const linkItem = linkList[linkIndex].split(' ');
       const rssLink = linkItem[0];
-      console.log(rssLink);
       if (!rssLink.startsWith('http')) {
         failedLinks[rssLink] = 'Invalid/improperly-formatted link.';
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1);
