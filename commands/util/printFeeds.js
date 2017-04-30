@@ -54,7 +54,11 @@ module.exports = function(bot, message, command, callback) {
       .then(m => {
         if (successCount++ === pages.length) selectFeed();
       })
-      .catch(err => message.channel.sendMessage(`An error has occured an could not send the feed selection list.`).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`)));
+      .catch(err => {
+        console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).\n\n`, pagees[page])
+        message.channel.sendMessage(`An error has occured and could not send the feed selection list.`)
+        .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`));
+      })
     }
 
   // Only start message collector if all pages were sent

@@ -120,8 +120,8 @@ module.exports = function (bot, message) {
                 channelErrMsg = 'No reason available';
             }
             // Reserve err.content for console logs, which are more verbose
-            if (!cookieAccess) channelErrMsg += ' (Cookies were detected, but this server does not have access for usage)';
-            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})${!cookieAccess ? ' (Cookies found, access denied)' : ''}.`);
+            if (!cookieAccess && cookies) channelErrMsg += ' (Cookies were detected, but this server does not have access for usage)';
+            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})${!cookieAccess && cookies ? ' (Cookies found, access denied) ' + cookies : ''}.`);
             failedLinks[rssLink] = channelErrMsg;
           }
           else {
