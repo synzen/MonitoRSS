@@ -39,7 +39,7 @@ function checkControllerIds(configName, input) {
 
 const validConfig = {
   'LOGGING': {
-    showConnectErrs: {
+    showFeedErrs: {
       type: 'bool',
       desc: 'Log connection failures on requests to feed URLs.',
       checkValid: isBool
@@ -241,12 +241,9 @@ exports.setconfig = function(bot, message) {
 
           case 'string':
             setting = content[2];
-            break;
-          default:
-            message.channel.sendMessage('Invalid type set for config. Unable to set.');
         }
 
-        if (!setting) return;
+        if (setting == null) return;
         let categoryName = '';
 
         switch(category) {
