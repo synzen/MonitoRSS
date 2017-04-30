@@ -6,6 +6,7 @@ const fileOps = require('../util/fileOps.js')
 
 module.exports = function(bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
+  if (!guildRss || !guildRss.sources) return message.channel.sendMessage('You must have at least one active feed to use this command.');
   if (config.advanced && config.advanced.restrictCookies === true && guildRss.allowCookies !== true || guildRss.allowCookies === false) return message.channel.sendMessage('You do not have access to cookie control.').then(m => m.delete(3500));
 
   const rssList = guildRss.sources
