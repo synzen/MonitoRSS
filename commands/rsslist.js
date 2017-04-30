@@ -16,7 +16,9 @@ module.exports = function (bot, message, command) {
     else return undefined;
   }
 
-  const maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
+  let maxFeedsAllowed = (guildRss.limitOverride != null) ? guildRss.limitOverride : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
+
   let embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
     .setAuthor('Current Active Feeds')
     .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\u200b\n\u200b\n`);

@@ -33,9 +33,9 @@ exports.deleteFile = function(guildId, cacheLoc, callback) {
 exports.isEmptySources = function(guildRss) {
   // Used on the beginning of each cycle to check for empty sources per guild
   if (!guildRss.sources || guildRss.sources.size() === 0) {
-     if (!guildRss.timezone) { // Delete only if a timezone is not found, preserving the customization
+     if (!guildRss.timezone && !guildRss.limitOverride) { // Delete only if a timezone is not found, preserving the customization
        exports.deleteFile(guildRss.id, `../sources/${guildRss.id}.json`, function() {
-         console.log(`RSS Info: (${guildRss.id}) => 0 sources found, deleting.`)
+         console.log(`RSS Info: (${guildRss.id}) => 0 sources found with no custom settings, deleting.`)
        });
      }
      else console.log(`RSS Info: (${guildRss.id}) => 0 sources found, skipping.`);

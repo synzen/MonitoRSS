@@ -3,6 +3,7 @@
 */
 
 const config = require('../config.json')
+const overriddenGuilds = new Map()
 const currentGuilds = new Map()
 const changedGuilds = new Map()
 const deletedGuilds = []
@@ -13,5 +14,7 @@ exports.currentGuilds = currentGuilds // Object for holding all guild profiles
 exports.changedGuilds = changedGuilds // Hold any changed guild data here sent from child process
 
 exports.deletedGuilds = deletedGuilds
+
+exports.overriddenGuilds = overriddenGuilds // Guilds that have thier limits overridden
 
 exports.sourceList = sourceList

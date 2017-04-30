@@ -5,10 +5,10 @@ module.exports = function (link, feedparser, callback) {
   let attempts = 0;
 
   (function requestStream() {
-    const request = new FetchStream(link, {timeout: 15000})
+    const request = new FetchStream(link, {timeout: 10000})
 
     request.on('error', function(err) {
-      if (attempts < 3) {
+      if (attempts < 2) {
         attempts++;
         return requestStream();
       }

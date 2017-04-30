@@ -108,6 +108,13 @@ function finishInit() {
       config.botSettings.defaultGame = message.contents;
       return bot.user.setGame(message.contents);
     }
+
+    if (message.type === 'configChange') {
+      if (!config[message.contents.configCategory]) config[message.contents.configCategory] = {};
+      config[message.contents.configCategory][message.contents.configName] = message.contents.configSetting;
+    }
+
+    // For debugging feeds
     if (message.type === 'debug') addDebug(message.contents);
     if (message.type === 'undebug') removeDebug(message.contents);
 

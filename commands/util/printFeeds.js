@@ -14,7 +14,8 @@ module.exports = function(bot, message, command, callback) {
   }
 
   const rssList = guildRss.sources
-  const maxFeedsAllowed = (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : (config.feedSettings.maxFeeds == 0) ? 'Unlimited' : config.feedSettings.maxFeeds
+  let maxFeedsAllowed = (guildRss.limitOverride != null) ? guildRss.limitOverride : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited'
   let embedMsg = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
     .setAuthor('Feed Selection Menu')
@@ -46,32 +47,62 @@ module.exports = function(bot, message, command, callback) {
   // Push the leftover results into the last embed
   pages.push(embedMsg);
 
-  function sendPages() {
     // Embed sometimes fails to send for no reason - something yet to be fixed. Thus a temporary fix is this promise
-    return new Promise(function(resolve, reject) {
-      let successCount = 1
-      for (var page in pages) {
-        message.channel.sendEmbed(pages[page])
-        .then(m => successCount++)
-        .catch(err => message.channel.sendMessage(`An error has occured an could not send the feed selection list. This is currently an issue that has yet to be resolved - you can try readding the feed/bot, or if it persists please ask me to come into your server and debug.`).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`)));
-      }
-      if (successCount === pages.length) resolve();
-      else reject();
-    });
-  }
+    let successCount = 1
+    for (var page in pages) {
+      message.channel.sendEmbed(pages[page])
+      .then(m => {
+        if (successCount++ === pages.length) selectFeed();
+      })
+      .catch(err => message.channel.sendMessage(`An error has occured an could not send the feed selection list.`).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`)));
+    }
 
   // Only start message collector if all pages were sent
-  sendPages().then(() => {
+  function selectFeed() {
     const filter = m => m.author.id == message.author.id
     const collector = message.channel.createCollector(filter,{time:60000})
     channelTracker.addCollector(message.channel.id)
 
     collector.on('message', function(m) {
-      const chosenOption = m.content
+      let chosenOption = m.content
       if (chosenOption.toLowerCase() === 'exit') return collector.stop('Feed selection menu closed.');
+
+      // Return an array of selected indices for feed removal
+      if (commandList[command].action === 'Feed Removal') {
+        let rawArray = chosenOption.split(',');
+
+        for (var p = rawArray.length - 1; p >= 0; p--) { // Sanitize the input
+          rawArray[p] = rawArray[p].trim();
+          if (!rawArray[p]) rawArray.splice(p, 1);
+        }
+
+        let chosenOptionList = rawArray.filter(function(elem, index, self) { // Remove duplicates
+          return index == self.indexOf(elem);
+        })
+
+        let validChosens = [];
+        let invalidChosens = [];
+
+        for (var z in chosenOptionList) {
+          let index = parseInt(chosenOptionList[z], 10) - 1;
+          if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) invalidChosens.push(chosenOptionList[z]);
+          else validChosens.push(index);
+        }
+
+        if (invalidChosens.length > 0) return message.channel.sendMessage(`The numbers \`${invalidChosens}\` are invalid. Try again.`).catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
+        else {
+          collector.stop();
+          for (var q in validChosens) {
+            validChosens[q] = currentRSSList[validChosens[q]][1];
+          }
+          return callback(validChosens);
+        }
+      }
+
+      // Return a single index for non feed removal actions
       const index = parseInt(chosenOption, 10) - 1
 
-      if (isNaN(index) || chosenOption > currentRSSList.length || chosenOption < 1) return message.channel.sendMessage('That is not a valid number.').catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
+      if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) return message.channel.sendMessage('That is not a valid number.').catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
 
       collector.stop()
       callback(currentRSSList[index][1])
@@ -82,6 +113,5 @@ module.exports = function(bot, message, command, callback) {
       if (reason === 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`);
       else if (reason !== 'user') return message.channel.sendMessage(reason);
     })
-  })
-  .catch(() => {})
+  }
 }

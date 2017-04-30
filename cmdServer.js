@@ -4,6 +4,7 @@ const config = require('./config.json')
 const cmdListeners = require('./util/cmdListeners.js')
 const guildStorage = require('./util/guildStorage.js')
 const currentGuilds = guildStorage.currentGuilds
+const overriddenGuilds = guildStorage.overriddenGuilds
 let initialized = false
 let bot
 
@@ -27,7 +28,9 @@ function getCurrentGuilds(bot) {
       const guildId = guildFile.replace(/.json/g, '')
       if (bot.guilds.get(guildId)) {   // Check if it is a valid guild in bot's guild collection
         try { // Store the guild's profile
-          currentGuilds.set(guildId, JSON.parse(fs.readFileSync(`./sources/${guildFile}`)))
+          let guildRss = JSON.parse(fs.readFileSync(`./sources/${guildFile}`))
+          currentGuilds.set(guildId, guildRss)
+          if (guildRss.limitOverride) overriddenGuilds.set(guildId, guildRss.limitOverride) // Guilds that have their feed limits overridden
         }
         catch(e) {
           console.log(`Commands Warning: Unable to store ${guildFile}, could not read contents. (${e})`)
