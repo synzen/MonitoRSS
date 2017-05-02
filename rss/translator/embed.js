@@ -11,9 +11,9 @@ module.exports = function(rssList, rssName, article) {
   if (embedSpecs.color && !isNaN(embedSpecs.color)) {
     if (embedSpecs.color > 16777215 || embedSpecs.color < 0) {
       console.log(`Embed color property error for ${rssName}: Out of range color. Substituting in as '100'.`);
-      embed.setColor('100');
+      embed.setColor(100);
     }
-    else embed.setColor(embedSpecs.color);
+    else embed.setColor(parseInt(embedSpecs.color,10));
   }
 
   if (embedSpecs.authorTitle) embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle));
