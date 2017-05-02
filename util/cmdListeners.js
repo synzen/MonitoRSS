@@ -1,7 +1,7 @@
 const fs = require('fs')
 const eventHandler = (evnt) => require(`../events/${evnt}.js`)
 const config = require('../config.json')
-// const pageControls = require('./pageControls.js') // Reserved for when discord.js fixes their library
+const pageControls = require('./pageControls.js')
 
 exports.createAllListeners = function(bot) {
   bot.on('message', function(message) {
@@ -35,16 +35,10 @@ exports.createAllListeners = function(bot) {
     eventHandler('guildUpdate')(bot, oldGuild, newGuild)
   })
 
-  // reserved for when discord.js fixes their library
-  // bot.on('messageReactionAdd', function(msgReaction, user) {
-  //   console.log(msgReaction.me)
-  //    if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || msgReaction.me) return;
-  //
-  //    if (pageControls.has(msgReaction.message.id)) {
-  //        if (msgReaction.emoji.name === '▶') pageControls.nextPage(msgReaction.message);
-  //        else pageControls.prevPage(msgReaction.message);
-  //    }
-  // })
+  bot.on('messageReactionAdd', function(msgReaction, user) {
+    if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || user.bot || !pageControls.has(msgReaction.message.id)) return;
+    eventHandler('messageReactionAdd')(bot, msgReaction, user)
+  })
 
 }
 

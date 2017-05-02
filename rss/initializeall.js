@@ -35,7 +35,7 @@ const FeedParser = require('feedparser')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
-const currentGuilds = require('../util/guildStorage').currentGuilds
+const currentGuilds = require('../util/storage').currentGuilds
 const checkGuild = require('../util/checkGuild.js')
 const configChecks = require('../util/configCheck.js')
 
@@ -47,15 +47,15 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
 
   requestStream(link, cookies, feedparser, function(err) {
     if (err) {
-      console.log(`RSS Error: Skipping ${link}. (${err})`);
-      return callback(true)
+      console.log(`INIT Error: Skipping ${link}. (${err})`);
+      return callback(link)
     }
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    console.log(`RSS Error: Skipping ${link}. (${err})`)
-    return callback(true)
+    console.log(`INIT Error: Skipping ${link}. (${err})`)
+    return callback(link)
   });
 
   feedparser.on('readable', function() {
@@ -69,7 +69,7 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
 
   feedparser.on('end', function() {
     // Return if no articles in feed found
-    if (currentFeed.length === 0) return callback();
+    if (currentFeed.length === 0) return callback(link);
 
     const totalItems = currentFeed.length
     let sourcesCompleted = 0
@@ -95,7 +95,7 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err) throw err;
           if (results.size() === 0) {
-            console.log(`RSS Info: Table does not exist for ${rssName}, creating now and initializing all`);
+            console.log(`INIT Info: Table does not exist for ${rssName}, creating now and initializing all`);
             createTable();
           }
           else {
@@ -181,7 +181,7 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
 
     function finishSource() {
       sourcesCompleted++
-      if (sourcesCompleted === rssList.size()) return callback();
+      if (sourcesCompleted === rssList.size()) return callback(link);
     }
   })
 }

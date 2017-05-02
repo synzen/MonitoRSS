@@ -1,13 +1,15 @@
 const channelTracker = require('../util/channelTracker.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/guildStorage.js').currentGuilds
+const storage =  require('../util/storage.js')
+const currentGuilds = storage.currentGuilds
+const cookieAccessors = storage.cookieAccessors
 const getIndex = require('./util/printFeeds.js')
 const fileOps = require('../util/fileOps.js')
 
 module.exports = function(bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources) return message.channel.sendMessage('You must have at least one active feed to use this command.');
-  if (config.advanced && config.advanced.restrictCookies === true && guildRss.allowCookies !== true || guildRss.allowCookies === false) return message.channel.sendMessage('You do not have access to cookie control.').then(m => m.delete(3500));
+  if (!guildRss || !guildRss.sources) return message.channel.send('You must have at least one active feed to use this command.');
+  if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id)) return message.channel.send('You do not have access to cookie control.').then(m => m.delete(3500));
 
   const rssList = guildRss.sources
 
@@ -31,13 +33,13 @@ module.exports = function(bot, message, command) {
       }
     }
 
-    message.channel.sendMessage(msg + '\`\`\`\n\nType your new cookies now, each one separated by a semicolon, or type exit to cancel.')
+    message.channel.send(msg + '\`\`\`\n\nType your new cookies now, each one separated by a semicolon, or type exit to cancel.')
     .then(function(msgPrompt) {
       const filter = m => m.author.id == message.author.id
-      const customCollect = message.channel.createCollector(filter,{time:240000})
+      const customCollect = message.channel.createMessageCollector(filter,{time:240000})
       channelTracker.addCollector(message.channel.id)
 
-      customCollect.on('message', function(m) {
+      customCollect.on('collect', function(m) {
         if (m.content.toLowerCase() === 'exit') return customCollect.stop('Cookie customization menu closed.');
 
         customCollect.stop()
@@ -53,14 +55,14 @@ module.exports = function(bot, message, command) {
           newCookieList += `\n* ${cookieList[newCookie]}`;
         }
 
-        message.channel.sendMessage(newCookieList + '```')
+        message.channel.send(newCookieList + '```')
         console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Cookies for ${rssList[rssName].link} has been set to `, cookieList);
       })
 
       customCollect.on('end', function(collected, reason) {
         channelTracker.removeCollector(message.channel.id)
-        if (reason == 'time') return message.channel.sendMessage(`I have closed the menu due to inactivity.`).catch(err => {});
-        else if (reason !== 'user') return message.channel.sendMessage(reason);
+        if (reason == 'time') return message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
+        else if (reason !== 'user') return message.channel.send(reason);
       });
     }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send custom cookies message (${err}).`));
 

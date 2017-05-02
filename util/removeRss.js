@@ -1,7 +1,7 @@
 const fileOps = require('../util/fileOps.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const config = require('../config.json')
-const currentGuilds = require('./guildStorage.js').currentGuilds
+const currentGuilds = require('./storage.js').currentGuilds
 
 module.exports = function (guildId, rssName, callback) {
   const guildRss = currentGuilds.get(guildId)

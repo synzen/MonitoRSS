@@ -3,7 +3,9 @@ const initializeRSS = require('../rss/initialize.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/guildStorage.js').currentGuilds
+const storage = require('../util/storage.js')
+const currentGuilds = storage.currentGuilds
+const cookieAccessors = storage.cookieAccessors
 
 module.exports = function (bot, message) {
 
@@ -26,7 +28,7 @@ module.exports = function (bot, message) {
   let maxFeedsAllowed = (guildRss.limitOverride != null) ? guildRss.limitOverride : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
 
-  if (message.content.split(' ').length === 1) return message.channel.sendMessage(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => console.log(`Promise Warning rssAdd 0: ${err}`)); // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => console.log(`Promise Warning rssAdd 0: ${err}`)); // If there is no link after rssadd, return.
 
   let linkList = message.content.split(' ')
   linkList.shift()
@@ -63,7 +65,7 @@ module.exports = function (bot, message) {
     verifyMsg.edit(msg).catch(err => console.log(`Promise Warning rssAdd 1: ${err}`))
   }
 
-  message.channel.sendMessage('Processing...')
+  message.channel.send('Processing...')
   .then(function(verifyMsg) {
 
     (function processLink(linkIndex) { // A self-invoking function for each link
@@ -96,10 +98,10 @@ module.exports = function (bot, message) {
 
       function init() {
         linkItem.shift()
-        let cookieString = linkItem.join(' ');
-        var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitize(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined;
+        let cookieString = linkItem.join(' ')
+        var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitize(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined
         var cookiesFound = cookies ? true: false
-        if (config.advanced && config.advanced.restrictCookies === true && guildRss.allowCookies !== true || guildRss.allowCookies === false) cookies = undefined;
+        if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id)) cookies = undefined;
         if (cookiesFound && !cookies) var cookieAccess = false;
 
         initializeRSS(con, rssLink, message.channel, cookies, function(err) {
@@ -120,8 +122,8 @@ module.exports = function (bot, message) {
                 channelErrMsg = 'No reason available';
             }
             // Reserve err.content for console logs, which are more verbose
-            if (!cookieAccess && cookies) channelErrMsg += ' (Cookies were detected, but this server does not have access for usage)';
-            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})${!cookieAccess && cookies ? ' (Cookies found, access denied) ' + cookies : ''}.`);
+            if (cookiesFound && !cookies) channelErrMsg += ' (Cookies were detected, but missing access for usage)';
+            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})${cookiesFound && !cookies ? ' (Cookies found, access denied)': ''}.`);
             failedLinks[rssLink] = channelErrMsg;
           }
           else {

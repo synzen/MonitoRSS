@@ -3,15 +3,17 @@ const getArticles = require('../rss/rss.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const config = require('../config.json')
-const guildStorage = require('./guildStorage.js')
-const currentGuilds = guildStorage.currentGuilds // Directory of guild profiles (Map)
-const changedGuilds = guildStorage.changedGuilds // Directory of changed guilds profiles sent from child process (Map)
-const deletedGuilds = guildStorage.deletedGuilds // Directory of deleted guild IDs (array)
+const storage = require('./storage.js')
+const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
+const changedGuilds = storage.changedGuilds // Directory of changed guilds profiles sent from child process (Map)
+const deletedGuilds = storage.deletedGuilds // Directory of deleted guild IDs (array)
+const feedTracker = storage.feedTracker // Directory object of rssNames with their values as schedule names
+const allScheduleWords = storage.allScheduleWords
 const debugFeeds = require('../util/debugFeeds').list
 const events = require('events')
 var timer
 
-module.exports = function(bot, callback) {
+module.exports = function(bot, callback, schedule) {
   this.cycle = new events.EventEmitter()
   const sourceList = new Map()
   const modSourceList = new Map()
@@ -20,8 +22,6 @@ module.exports = function(bot, callback) {
   let modBatchList = []
   let cycleInProgress = this.inProgress
   let cycle = this.cycle
-  let feedsProcessed = 0
-  let feedsSkipped = 0
   let con
   let startTime
 
@@ -54,7 +54,8 @@ module.exports = function(bot, callback) {
 
   function addToSourceLists(guildRss) { // rssList is an object per guildRss
     let rssList = guildRss.sources
-    for (var rssName in rssList) {
+
+    function delegateFeed(rssName) {
       if (rssList[rssName].advanced && rssList[rssName].advanced.size() > 0) { // Special source list for feeds with unique settings defined
         let linkList = {};
         linkList[rssName] = rssList[rssName];
@@ -70,6 +71,34 @@ module.exports = function(bot, callback) {
         sourceList.set(rssList[rssName].link, linkList);
       }
     }
+
+    for (var rssName in rssList) {
+
+      if (feedTracker[rssName] === schedule.name) { // If assigned to a schedule
+        delegateFeed(rssName);
+      }
+
+      else if (schedule.name !== 'default' && !feedTracker[rssName]) { // If current feed schedule is a custom one and is not assigned
+        let keywords = schedule.keywords;
+        for (var q in keywords) {
+          if (rssName.includes(keywords[q])) feedTracker[rssName] = schedule.name; // Assign this feed to this schedule so no other feed schedule can take it
+          delegateFeed(rssName);
+        }
+      }
+
+      else if (!feedTracker[rssName]) { // Has no schedule, was not previously assigned, so see if it can be assigned to default
+        let reserveForOtherSched = false;
+        for (var w in allScheduleWords) { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
+          if (rssName.includes(allScheduleWords[w])) reserveForOtherSched = true;
+        }
+        if (!reserveForOtherSched) {
+          feedTracker[rssName] = 'default';
+          delegateFeed(rssName);
+        }
+      }
+
+    }
+
   }
 
 
@@ -94,7 +123,7 @@ module.exports = function(bot, callback) {
 
   function connect() {
     if (cycleInProgress) {
-      console.log(`RSS Info: Previous cycle was unable to finish, attempting to start new cycle.`);
+      console.log(`RSS Info: Previous ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle.`);
       return endCon(true);
     }
     startTime = new Date()
@@ -103,7 +132,6 @@ module.exports = function(bot, callback) {
     cycleInProgress = true
     regBatchList = []
     modBatchList = []
-    feedsProcessed = feedsSkipped = 0
 
     modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     sourceList.clear()
@@ -112,7 +140,7 @@ module.exports = function(bot, callback) {
 
     if (sourceList.size + modSourceList.size === 0) {
       cycleInProgress = false;
-      return console.log(`RSS Info: Finished feed retrieval cycle. No feeds to retrieve.`);
+      return console.log(`RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''}. No feeds to retrieve.`);
     }
     con = sqlConnect(function() {
       getBatch(0, regBatchList, 'regular')
@@ -162,21 +190,19 @@ module.exports = function(bot, callback) {
       cycleInProgress = false
       if (startingCycle) return connect();
       var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
-      console.log(`RSS Info: Finished feed retrieval cycle. Cycle Time: ${timeTaken}s`)
+      console.log(`RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''}. Cycle Time: ${timeTaken}s`);
     }, startingCycle);
   }
 
 
-  this.start = function() {
-    let refreshTime = (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15;
-    timer = setInterval(connect, refreshTime*60000)
-  }
+  let refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15;
+  timer = setInterval(connect, refreshTime*60000)
+  console.log(`Schedule '${schedule.name}' has begun.`)
 
   this.stop = function() {
     clearInterval(timer)
   }
-  connect()
-  this.start()
+
   callback(this.cycle)
   return this
 }

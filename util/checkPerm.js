@@ -28,16 +28,16 @@ const validPerms = [
   "MANAGE_EMOJIS"
 ]
 
-module.exports = function (bot, message, permission) {
+module.exports = function(bot, message, permission) {
   if (!permission || !validPerms.includes(permission)) return true;
   const channel = message.channel
   const guild = bot.guilds.get(channel.guild.id)
   const guildBot = guild.members.get(bot.user.id)
-  const hasPerm = guildBot.permissionsIn(channel).hasPermission(permission);
+  const hasPerm = guildBot.permissionsIn(channel).has(permission);
 
   if (permission === 'MANAGE_ROLES_OR_PERMISSIONS' && !hasPerm) {
     console.log(`Commands Warning: (${channel.guild.id}, ${channel.guild.name}) => Self subscription disabled due to missing permission.`);
-    message.channel.sendMessage('Function disabled due to missing `Manage Roles` permission.').then(m => m.delete(3000));
+    message.channel.send('Function disabled due to missing `Manage Roles` permission.').then(m => m.delete(3000));
   }
 
   return hasPerm;

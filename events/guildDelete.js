@@ -3,7 +3,7 @@ const config = require('../config.json')
 const sqlCmds = require('../rss/sql/commands.js')
 const fileOps = require('../util/fileOps.js')
 const channelTracker = require('../util/channelTracker.js')
-const currentGuilds = require('../util/guildStorage.js').currentGuilds
+const currentGuilds = require('../util/storage.js').currentGuilds
 
 module.exports = function (bot, guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
@@ -29,5 +29,5 @@ module.exports = function (bot, guild) {
   const logChannelId = config.logging.discordChannelLog
   const logChannel = bot.channels.get(config.logging.discordChannelLog)
   if (typeof logChannelId !== "string" || !logChannel) console.log(`Error: Could not log guild removal to Discord, invalid channel ID.`);
-  else logChannel.sendMessage(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size}`).catch(err => console.log(`Could not log guild removal to Discord. (${err}) `));
+  else logChannel.send(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size}`).catch(err => console.log(`Could not log guild removal to Discord. (${err}) `));
 }

@@ -2,9 +2,9 @@ const fs = require('fs')
 const Discord = require('discord.js')
 const config = require('./config.json')
 const cmdListeners = require('./util/cmdListeners.js')
-const guildStorage = require('./util/guildStorage.js')
-const currentGuilds = guildStorage.currentGuilds
-const overriddenGuilds = guildStorage.overriddenGuilds
+const storage = require('./util/storage.js')
+const currentGuilds = storage.currentGuilds
+const overriddenGuilds = storage.overriddenGuilds
 let initialized = false
 let bot
 

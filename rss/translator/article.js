@@ -2,7 +2,7 @@ const config = require('../../config.json')
 const striptags = require('striptags')
 const moment = require('moment-timezone')
 const cleanEntities = require('entities')
-const currentGuilds = require('../../util/guildStorage.js').currentGuilds
+const currentGuilds = require('../../util/storage.js').currentGuilds
 
 // Used to find images in any object values of the article
 function findImages(object, results) {
@@ -12,7 +12,7 @@ function findImages(object, results) {
         results.push(object[key]);
       }
     }
-    if (typeof object[key] === 'object') findImages(object[key], results);
+    if (typeof object[key] === 'object') setTimeout(function() {findImages(object[key], results)}, 0)
   }
 }
 

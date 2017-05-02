@@ -7,7 +7,7 @@ const sendToDiscord = require('../util/sendToDiscord.js')
 module.exports = function(bot, message, command) {
 
   getIndex(bot, message, command, function(rssName) {
-    message.channel.sendMessage(`Grabbing a random feed article...`)
+    message.channel.send(`Grabbing a random feed article...`)
     .then(function(grabMsg) {
       // Replicate the RSS process for a test article
       const con = sqlConnect(getTestMsg)

@@ -14,10 +14,9 @@ const requestStream = require('./request.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/guildStorage.js').currentGuilds
+const currentGuilds = require('../util/storage.js').currentGuilds
 const configChecks = require('../util/configCheck.js')
 const logFeedErr = require('../util/logFeedErrs.js')
-const sendToDiscord = require('../util/sendToDiscord.js')
 const debugFeeds = require('../util/debugFeeds').list
 
 module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {

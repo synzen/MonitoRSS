@@ -15,8 +15,7 @@ const FeedParser = require('feedparser');
 const fileOps = require('../util/fileOps.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const startFeedSchedule = require('../util/feedSchedule.js')
-const currentGuilds = require('../util/guildStorage').currentGuilds
+const currentGuilds = require('../util/storage').currentGuilds
 
 module.exports = function(con, rssLink, channel, cookies, callback) {
 

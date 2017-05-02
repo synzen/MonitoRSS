@@ -2,7 +2,7 @@
 // the commands module.
 
 const fs = require('fs')
-const currentGuilds = require('./guildStorage.js').currentGuilds
+const currentGuilds = require('./storage.js').currentGuilds
 const config = require('../config.json')
 
 function updateContent(guildId, inFile) {
@@ -33,7 +33,7 @@ exports.deleteFile = function(guildId, callback) {
 exports.isEmptySources = function(guildRss) {
   // Used on the beginning of each cycle to check for empty sources per guild
   if (!guildRss.sources || guildRss.sources.size() === 0) {
-     if (!guildRss.timezone && guildRss.limitOverride == null && guildRss.allowCookies !== true) { // Delete only if a timezone is not found, preserving the customization
+     if (!guildRss.timezone && guildRss.limitOverride == null) { // Delete only if server-specific special settings are not found
        exports.deleteFile(guildRss.id, `../sources/${guildRss.id}.json`, function() {
          console.log(`RSS Info: (${guildRss.id}) => 0 sources found with no custom settings, deleting.`)
        });

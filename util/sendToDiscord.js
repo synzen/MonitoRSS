@@ -1,7 +1,7 @@
 const config = require('../config.json')
 const translator = require('../rss/translator/translate.js')
-const guildStorage = require('./guildStorage.js')
-const currentGuilds = guildStorage.currentGuilds
+const storage = require('./storage.js')
+const currentGuilds = storage.currentGuilds
 const debugFeeds = require('../util/debugFeeds').list
 
 module.exports = function (rssName, channel, article, callback, isTestMessage) {
@@ -9,8 +9,8 @@ module.exports = function (rssName, channel, article, callback, isTestMessage) {
 
 
   // check if any changes to feed article while article cycle was in progress
-  if (!process.env.isCmdServer && guildStorage.changedGuilds.has(channel.guild.id)) {
-    const guildNew = guildStorage.changedGuilds.get(channel.guild.id);
+  if (!process.env.isCmdServer && storage.changedGuilds.has(channel.guild.id)) {
+    const guildNew = storage.changedGuilds.get(channel.guild.id);
     if (!guildNew.sources) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources found in updated file, skipping Discord message sending.`);
     const rssListNew = guildNew.sources;
     let found = false;
@@ -35,7 +35,7 @@ module.exports = function (rssName, channel, article, callback, isTestMessage) {
     // Main Message: If it contains both an embed and text, or only an embed.
     if (message.embedMsg) {
       function sendCombinedMsg() {
-        channel.sendEmbed(message.embedMsg, message.textMsg)
+        channel.send(message.textMsg, {embed: message.embedMsg})
         .then(m => {
           if (isTestMessage) isTestMessage.delete().catch(err => {});
           // console.log(successLog)
@@ -58,7 +58,7 @@ module.exports = function (rssName, channel, article, callback, isTestMessage) {
     // Main Message: If it only contains a text message
     else {
       function sendTxtMsg() {
-        channel.sendMessage(message.textMsg)
+        channel.send(message.textMsg)
         .then(m => {
           if (isTestMessage) isTestMessage.delete().catch(err => {});
           // console.log(successLog)
@@ -72,9 +72,9 @@ module.exports = function (rssName, channel, article, callback, isTestMessage) {
       }
       if (message.textMsg.length > 1950) {
         console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n`, message.textMsg);
-        return channel.sendMessage(`Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`);
+        return channel.send(`Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`);
       }
-      else if (message.textMsg.length === 0) return channel.sendMessage(`Unable to send empty message for feed article *${article.link}*.`);
+      else if (message.textMsg.length === 0) return channel.send(`Unable to send empty message for feed article *${article.link}*.`);
       else sendTxtMsg();
     }
   }
@@ -82,7 +82,7 @@ module.exports = function (rssName, channel, article, callback, isTestMessage) {
   // For test messages only. It will send the test details first, then the Main Message (above).
   if (isTestMessage) {
     function sendTestDetails() {
-      channel.sendMessage(message.testDetails)
+      channel.send(message.testDetails)
       .then(m => {
         sendMain()
         return callback()
@@ -95,7 +95,7 @@ module.exports = function (rssName, channel, article, callback, isTestMessage) {
     }
     if (message.testDetails.length > 1950) {
       console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Test details could not be sent for *${rssName}* due to character count >1950. Test Details are:\n\n`, message.testDetails);
-      channel.sendMessage(`Error: Test details could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution. Attempting to send configured message next...`);
+      channel.send(`Error: Test details could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution. Attempting to send configured message next...`);
       sendMain();
     }
     else sendTestDetails();

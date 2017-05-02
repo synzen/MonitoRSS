@@ -2,9 +2,10 @@ const config = require('../../config.json')
 const Discord = require('discord.js')
 const util = require('util')
 const moment = require('moment-timezone')
-const guildStorage = require('../../util/guildStorage.js')
-const currentGuilds = guildStorage.currentGuilds
-const overriddenGuilds = guildStorage.overriddenGuilds
+const storage = require('../../util/storage.js')
+const currentGuilds = storage.currentGuilds
+const overriddenGuilds = storage.overriddenGuilds
+const cookieAccessors = storage.cookieAccessors
 const fs = require('fs')
 const fileOps = require('../../util/fileOps.js')
 
@@ -118,7 +119,7 @@ function printConfigHelp() {
 }
 
 exports.stats = function(bot, message) {
-  message.channel.sendMessage(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`).catch(err => console.log('Commands Info: Could not send stats, reason:\n', err))
+  message.channel.send(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`).catch(err => console.log('Commands Info: Could not send stats, reason:\n', err))
 }
 
 exports.setgame = function(bot, message) {
@@ -136,7 +137,7 @@ exports.pingme = function(bot, message) {
   .setTitle('Sending')
   .setDescription('pong!')
 
-  message.channel.sendEmbed(pong).catch(err => console.info(`Commands Warning: Could not send the pong embed:\n`, pong))
+  message.channel.send({embed: pong}).catch(err => console.info(`Commands Warning: Could not send the pong embed:\n`, pong))
 }
 
 exports.getsources = function(bot, message) {
@@ -144,8 +145,8 @@ exports.getsources = function(bot, message) {
   if (content.length !== 2) return;
   const sources = (currentGuilds.get(content[1]) && currentGuilds.get(content[1]).sources) ? currentGuilds.get(content[1]).sources : undefined
 
-  if (sources) message.channel.sendMessage(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``);
-  else message.channel.sendMessage('No sources available.');
+  if (sources) message.channel.send(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``);
+  else message.channel.send('No sources available.');
 }
 
 exports.debug = function(bot, message) {
@@ -164,85 +165,92 @@ exports.undebug = function(bot, message) {
 
 exports.setoverride = function(bot, message) {
   const content = message.content.split(' ')
-  if (content.length !== 3) return message.channel.sendMessage(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}setoverride <guildID> <#>\`.`);
-  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.sendMessage(`Unable to set limit, guild ID \`${content[1]}\` was either not found in guild list or has no active feeds.`);
+  if (content.length !== 3) return message.channel.send(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}setoverride <guildID> <#>\`.`);
+  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.send(`Unable to set limit, guild ID \`${content[1]}\` was either not found in guild list or has no active feeds.`);
 
   let newLimit = parseInt(content[2], 10)
 
-  if (isNaN(newLimit) || newLimit % 1 !== 0) return message.channel.sendMessage(`That is not a valid number.`);
+  if (isNaN(newLimit) || newLimit % 1 !== 0) return message.channel.send(`That is not a valid number.`);
 
   const guildRss = currentGuilds.get(content[1])
   guildRss.limitOverride = newLimit
   overriddenGuilds.set(content[1], guildRss.limitOverride)
 
   fileOps.updateFile(content[1], guildRss)
-  message.channel.sendMessage(`Feed limit for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}) has been overridden to \`${newLimit == 0 ? 'Unlimited' : newLimit}\``)
+  message.channel.send(`Feed limit for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}) has been overridden to \`${newLimit == 0 ? 'Unlimited' : newLimit}\``)
   console.log(`Bot Controller: Feed limit for guild (${content[1]}, ${bot.guilds.get(content[1]).name}) has been overridden to '${newLimit == 0 ? 'Unlimited' : newLimit}'`)
 }
 
 exports.showoverrides = function(bot, message) {
-  if (overriddenGuilds.size === 0) return message.channel.sendMessage('There are no guilds with their limits overridden.');
+  if (overriddenGuilds.size === 0) return message.channel.send('There are no guilds with their limits overridden.');
   let msg = '```md\n'
   overriddenGuilds.forEach(function(limit, guildId) {
     let guildRss = currentGuilds.get(guildId)
     msg += `\n\n[${guildId}]: ${bot.guilds.get(guildId).name}\nStatus: ${guildRss.sources.size()}/${limit === 0 ? 'Unlimited' : limit}`
   })
-  message.channel.sendMessage(msg += `\n\n\`\`\`\`\`\`Total Guilds: ${overriddenGuilds.size}\`\`\``)
+  message.channel.send(msg += `\n\n\`\`\`\`\`\`Total Guilds: ${overriddenGuilds.size}\`\`\``)
 }
 
 exports.removeoverride = function(bot, message) {
   const content = message.content.split(' ')
-  if (content.length !== 2) return message.channel.sendMessage(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}removeoverride <guildID>\`.`);
+  if (content.length !== 2) return message.channel.send(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}removeoverride <guildID>\`.`);
 
-  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1]) || !overriddenGuilds.has(content[1])) return message.channel.sendMessage(`Unable to remove limit, guild ID \`${content[1]}\` was either not found in guild list or does not have a limit override.`);
+  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1]) || !overriddenGuilds.has(content[1])) return message.channel.send(`Unable to remove limit, guild ID \`${content[1]}\` was either not found in guild list or does not have a limit override.`);
 
   const guildRss = currentGuilds.get(content[1])
   delete guildRss.limitOverride
   overriddenGuilds.delete(content[1])
 
   fileOps.updateFile(content[1], guildRss)
-  message.channel.sendMessage(`Feed limit override for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}) has been removed.`)
+  message.channel.send(`Feed limit override for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}) has been removed.`)
   console.log(`Bot Controller: Feed limit override for guild (${content[1]}, ${bot.guilds.get(content[1]).name}) has been removed`)
 
 }
 
 exports.allowcookies = function(bot, message) {
   const content = message.content.split(' ')
-  if (content.length !== 2) return message.channel.sendMessage(`The proper syntax to allow cookies for a server is \`${config.botSettings.prefix}allowcookies <guildID>\`.`);
+  if (content.length !== 2) return message.channel.send(`The proper syntax to allow cookies for a server is \`${config.botSettings.prefix}allowcookies <userID>\`.`);
 
-  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.sendMessage(`Unable to allow cookies, guild ID \`${content[1]}\` was either not found in guild list or has no active feeds.`);
+  cookieAccessors.ids.push(content[1])
 
-  const guildRss = currentGuilds.get(content[1])
-  guildRss.allowCookies = true
+  fs.writeFileSync('./util/cookieAccessors.json', JSON.stringify(cookieAccessors, null, 2))
 
-  fileOps.updateFile(content[1], guildRss)
-  message.channel.sendMessage(`Cookies are now allowed for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}).`)
-  console.log(`Bot Controller: Cokkies have been allowed for guild (${content[1]}, ${bot.guilds.get(content[1]).name})`)
+  message.channel.send(`Cookies are now allowed for user ID \`${content[1]}\` (${bot.users.get(content[1]).username}).`)
+  console.log(`Bot Controller: Cookies have been allowed for user ID ${content[1]}, (${bot.users.get(content[1]).username})`)
 }
 
 exports.disallowcookies = function(bot, message) {
-  if (!config.advanced || config.advanced.restrictCookies === false || !config.advanced.restrictCookies) return message.channel.sendMessage(`Cannot disallow cookies if config \`restrictCookies\` is not set to \`true\`/\`1\`.`)
+  if (!config.advanced || config.advanced.restrictCookies === false || !config.advanced.restrictCookies) return message.channel.send(`Cannot disallow cookies if config \`restrictCookies\` is not set to \`true\`/\`1\`.`)
   const content = message.content.split(' ')
-  if (content.length !== 2) return message.channel.sendMessage(`The proper syntax to allow cookies for a server is \`${config.botSettings.prefix}disallowcookies <guildID>\`.`);
-  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.sendMessage(`Guild ID \`${content[1]}\` was either not found in guild list or has no active feeds.`);
+  if (content.length !== 2) return message.channel.send(`The proper syntax to allow cookies for a user is \`${config.botSettings.prefix}disallowcookies <userID>\`.`);
 
-  const guildRss = currentGuilds.get(content[1])
-  delete guildRss.allowCookies
+  for (var index in cookieAccessors.ids) {
+    if (cookieAccessors.ids[index] === content[1]) {
+      cookieAccessors.ids.splice(index, 1);
+      fs.writeFileSync('./util/cookieAccessors.json', JSON.stringify(cookieAccessors, null, 2));
+      message.channel.send(`User ID \`${content[1]}\` (${bot.users.get(content[1]) ? bot.users.get(content[1]).username : 'User not found in bot user list.'}) removed from cookie accessor list.`);
+      return console.log(`Bot Controller: User ID \`(${content[1]}\`. (${bot.users.get(content[1]) ? bot.users.get(content[1]).username : 'User not found in bot user list.'}) removed from cookie accessor list.`);
+    }
+  }
 
-  fileOps.updateFile(content[1], guildRss)
-  message.channel.sendMessage(`Cookies are now disallowed for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name})\`.`)
-  console.log(`Bot Controller: Cokkies have been disallowed for guild (${content[1]}, ${bot.guilds.get(content[1]).name})`)
+  message.channel.send(`Cannot remove. User ID \`${content[1]}\` was not found in list of cookie accessors.`)
+}
+
+exports.test = function(bot, message) {
+  const a = new Discord.RichEmbed().setDescription('hello')
+
+  message.channel.send({embed: a})
 }
 
 exports.setconfig = function(bot, message) {
   const content = message.content.split(' ')
-  if (content.length === 1) return message.channel.sendEmbed(printConfigHelp());
-  if (content.length === 2) return message.channel.sendMessage(`The proper syntax to change certain configs through is ${config.botSettings.prefix}setconfig <config> <argument(s)>.`);
+  if (content.length === 1) return message.channel.send({embed: printConfigHelp()});
+  if (content.length === 2) return message.channel.send(`The proper syntax to change certain configs through is ${config.botSettings.prefix}setconfig <config> <argument(s)>.`);
   for (var category in validConfig) {
     for (var configName in validConfig[category]) {
       if (content[1] === configName) {
         let configObject = validConfig[category][configName];
-        if (configObject.checkValid && configObject.checkValid(configName, message.content) !== true) return message.channel.sendMessage(configObject.checkValid(configName, message.content));
+        if (configObject.checkValid && configObject.checkValid(configName, message.content) !== true) return message.channel.send(configObject.checkValid(configName, message.content));
         var setting;
 
         switch(configObject.type) {
@@ -262,7 +270,7 @@ exports.setconfig = function(bot, message) {
               }
               if (!found) {
                 setting = null;
-                message.channel.sendMessage('No such controller ID exists to be removed.');
+                message.channel.send('No such controller ID exists to be removed.');
               }
             }
             break;
@@ -291,11 +299,11 @@ exports.setconfig = function(bot, message) {
         process.send({type: 'configChange', configCategory: categoryName, configName: configName, configSetting: setting});
         fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
         console.log(`Bot Controller: Config '${configName}' value has been changed to to '${setting}'.`)
-        return message.channel.sendMessage(`Config \`${configName}\`'s current value is now set to \`${setting}\`.`);
+        return message.channel.send(`Config \`${configName}\`'s current value is now set to \`${setting}\`.`);
 
       }
     }
   }
 
-  message.channel.sendMessage('No such config found.')
+  message.channel.send('No such config found.')
 }

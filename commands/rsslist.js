@@ -1,11 +1,11 @@
 const Discord = require('discord.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/guildStorage.js').currentGuilds
-// const pageControls = require('../util/pageControls.js')   // reserved for when discord.js fixes their library
+const currentGuilds = require('../util/storage.js').currentGuilds
+const pageControls = require('../util/pageControls.js')   // reserved for when discord.js fixes their library
 
 module.exports = function (bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.sendMessage('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
+  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
 
   const rssList = guildRss.sources
 
@@ -39,7 +39,7 @@ module.exports = function (bot, message, command) {
     // 10 feeds per embed
     if ((count - 1) !== 0 && (count - 1) / 10 % 1 === 0) {
       pages.push(embedMsg);
-      embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor);
+      embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}\n\u200b`);
     }
 
     embedMsg.addField(`${count})  ${title}`, `Channel: #${channelName}\nLink: ${link}`);
@@ -48,19 +48,14 @@ module.exports = function (bot, message, command) {
   // Push the leftover results into the last embed
   pages.push(embedMsg);
 
-  for (var page in pages) {
-    message.channel.sendEmbed(pages[page])
-    .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list (${parseInt(page, 10) + 1}/${pages.length}) (${err}).`));
-  }
-
-  // Reserved for when discord.js fixes their library
-  // message.channel.sendEmbed(pages[0])
-  // .then(m => {
-  //   if (pages.length === 1) return;
-  //   m.react('◀').catch(err => console.log(`yep`, err))
-  //   m.react('▶').catch(err => console.log(`yep2`, err))
-  //   pageControls.add(m.id, pages)
-  // })
-  // .catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err.response.body.message}`));
+  message.channel.send({embed: pages[0]})
+  .then(m => {
+    if (pages.length === 1) return;
+    m.react('◀')
+    .then(rct => m.react('▶').catch(err => console.log(`yep2`, err)))
+    .catch(err => console.log(`yep`, err))
+    pageControls.add(m.id, pages)
+  })
+  .catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err}`));
 
 }

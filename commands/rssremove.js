@@ -1,7 +1,7 @@
 const getIndex = require('./util/printFeeds.js')
 const removeRss = require('../util/removeRss.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/guildStorage.js').currentGuilds
+const currentGuilds = require('../util/storage.js').currentGuilds
 
 module.exports = function(bot, message, command) {
 
@@ -9,7 +9,7 @@ module.exports = function(bot, message, command) {
     const guildRss = currentGuilds.get(message.guild.id)
     const rssList = guildRss.sources
 
-    message.channel.sendMessage(`Removing...`)
+    message.channel.send(`Removing...`)
     .then(function(removing) {
 
       let removed = 'Successfully removed the following link(s):\n```\n';
