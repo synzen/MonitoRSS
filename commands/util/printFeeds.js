@@ -50,10 +50,10 @@ module.exports = function(bot, message, command, callback) {
 
   message.channel.send({embed: pages[0]})
   .then(m => {
+    selectFeed()
     if (pages.length === 1) return;
     m.react('◀').then(rct => {
       m.react('▶').then(rct2 => {
-        selectFeed()
         pageControls.add(m.id, pages)
       }).catch(err => console.log(`Reaction Error: (${message.guild.id}, ${message.guild.name}) => Could not add emoticon >. Reason: `, err))
     }).catch(err => console.log(`Reaction Error: (${message.guild.id}, ${message.guild.name}) => Could not add emoticon <. Reason: `, err))
