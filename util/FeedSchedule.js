@@ -11,9 +11,10 @@ const feedTracker = storage.feedTracker // Directory object of rssNames with the
 const allScheduleWords = storage.allScheduleWords
 const debugFeeds = require('../util/debugFeeds').list
 const events = require('events')
-var timer
 
 module.exports = function(bot, callback, schedule) {
+  var timer
+
   this.cycle = new events.EventEmitter()
   const sourceList = new Map()
   const modSourceList = new Map()

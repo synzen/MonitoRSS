@@ -26,8 +26,6 @@ module.exports = function(bot, message) {
   let command = m[0].substr(config.botSettings.prefix.length)
   if (channelTracker.hasActiveMenus(message.channel.id)) return;
 
-  if (message === 'dingdong') return process.send('killbot');
-
   // for regular commands
   for (var cmd in commandList) {
     if (cmd === command && checkPerm(bot, message, commandList[cmd].reqPerm)) {

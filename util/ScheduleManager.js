@@ -6,7 +6,7 @@ const debugFeeds = require('./debugFeeds.js').list
 const fs = require('fs')
 
 module.exports = function(bot) {
-  const scheduleList = []
+  let scheduleList = []
   let feedSchedulesFinished = 0
 
   function startSchedules() {

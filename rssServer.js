@@ -101,7 +101,6 @@ function finishInit() {
   const cmdServer = require('child_process').fork('./cmdServer.js', {env: {isCmdServer: true} }) // Start Discord events handler child process
 
   cmdServer.on('message', function(message) {
-    if (message === 'killbot') return bot.destroy();
     if (message === 'kill') return process.exit();
     if (message.type === 'gameChange') {
       config.botSettings.defaultGame = message.contents;
