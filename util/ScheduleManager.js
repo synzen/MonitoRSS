@@ -14,18 +14,20 @@ module.exports = function(bot) {
     fs.readdir('./schedules', function(err, schedules) {
       if (err || schedules.length === 0 || schedules.length === 1 && schedules[0] === 'exampleSchedule.json') return;
       for (var a in schedules) {
-        let scheduleData
-        try {
-          scheduleData = JSON.parse( fs.readFileSync(`./schedules/${schedules[a]}`))
-        }
-        catch(e) {
-          console.log(`Schedule named '${schedules[a]}' is improperly configured.\n`);
-          throw e;
-        }
-        if (!scheduleData || !scheduleData.refreshTimeMinutes || typeof scheduleData.keywords !== 'object' || !scheduleData.keywords.length || scheduleData.keywords.length === 0) throw new Error(`Schedule named '${schedules[a]}' is improperly configured. keywords/refreshTimeMinutes are missing.`);
+        if (schedules[a] !== 'exampleSchedule.json') {
+          let scheduleData
+          try {
+            scheduleData = JSON.parse( fs.readFileSync(`./schedules/${schedules[a]}`))
+          }
+          catch(e) {
+            console.log(`Schedule named '${schedules[a]}' is improperly configured.\n`);
+            throw e;
+          }
+          if (!scheduleData || !scheduleData.refreshTimeMinutes || typeof scheduleData.keywords !== 'object' || !scheduleData.keywords.length || scheduleData.keywords.length === 0) throw new Error(`Schedule named '${schedules[a]}' is improperly configured. keywords/refreshTimeMinutes are missing.`);
 
-        scheduleData.name = schedules[a].replace(/\.json/gi, '');
-        scheduleList.push(new FeedSchedule(bot, listenToArticles, scheduleData))
+          scheduleData.name = schedules[a].replace(/\.json/gi, '');
+          scheduleList.push(new FeedSchedule(bot, listenToArticles, scheduleData))
+        }
       }
     })
   }
