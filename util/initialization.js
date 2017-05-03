@@ -13,18 +13,20 @@ module.exports = function(bot, callback) {
   try {
     var scheduleWordDir = {}
     const schedules = fs.readdirSync('./schedules') // Record all words in schedules for later use by FeedSchedules
-    if (schedules.length === 1 && schedules[0] === 'exampleSchedule.json') console.log('No custom schedules detected.')
+    if (schedules.length === 1 && schedules[0] === 'exampleSchedule.json') console.log('No custom schedules detected.');
     for (var i in schedules) {
-      const schedule = JSON.parse(fs.readFileSync(`./schedules/${schedules[i]}`));
-      if (!schedule.refreshTimeMinutes || typeof schedule.keywords !== 'object' || !schedule.keywords.length || schedule.keywords.length === 0) throw new Error(`Schedule named '${schedules[i]}' is improperly configured.`);
+      if (schedules[i] !== 'exampleSchedule.json') {
+        const schedule = JSON.parse(fs.readFileSync(`./schedules/${schedules[i]}`));
+        if (!schedule.refreshTimeMinutes || typeof schedule.keywords !== 'object' || !schedule.keywords.length || schedule.keywords.length === 0) throw new Error(`Schedule named '${schedules[i]}' is improperly configured.`);
 
-      const scheduleName = schedules[i].replace(/\.json/gi, '');
+        const scheduleName = schedules[i].replace(/\.json/gi, '');
 
-      scheduleWordDir[scheduleName] = [];
-      const keywords = schedule.keywords;
-      for (var x in keywords) {
-        allScheduleWords.push(keywords[x]);
-        scheduleWordDir[scheduleName].push(keywords[x]);
+        scheduleWordDir[scheduleName] = [];
+        const keywords = schedule.keywords;
+        for (var x in keywords) {
+          allScheduleWords.push(keywords[x]);
+          scheduleWordDir[scheduleName].push(keywords[x]);
+        }
       }
     }
   }
@@ -91,7 +93,8 @@ module.exports = function(bot, callback) {
         for (var scheduleName in scheduleWordDir) {
           let wordList = scheduleWordDir[scheduleName];
           for (var i in wordList) {
-            if (rssName.includes(wordList[i]) && !feedTracker[rssName]) {
+            if (rssList[rssName].link.includes(wordList[i]) && !feedTracker[rssName]) {
+              console.log(`INIT: Assigning feed ${rssName} to ${scheduleName}`);
               feedTracker[rssName] = scheduleName; // Assign a schedule to a feed if it doesn't already exist in the feedTracker to another schedule
             }
           }
@@ -161,7 +164,7 @@ module.exports = function(bot, callback) {
 
       initAll(bot, con, link, rssList, uniqueSettings, function(link) {
         completedLinks++
-        console.log(`Progress (B${batchNumber + 1}): ${completedLinks}/${currentBatch.size} ${link}`)
+        console.log(`Progress (B${batchNumber + 1}): ${completedLinks}/${currentBatch.size}`)
         if (completedLinks === currentBatch.size) {
           if (batchNumber !== batchList.length - 1) setTimeout(getBatch, 200, batchNumber + 1, batchList, type);
           else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatch, 200, 0, modBatchList, 'modded');

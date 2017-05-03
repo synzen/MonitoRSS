@@ -53,10 +53,12 @@ module.exports = function(bot, callback, schedule) {
   }
 
 
-  function addToSourceLists(guildRss) { // rssList is an object per guildRss
+  function addToSourceLists(guildRss, guildId) { // rssList is an object per guildRss
     let rssList = guildRss.sources
-
+    
     function delegateFeed(rssName) {
+      rssList[rssName].guildId = guildId // For configChecks by bot later
+
       if (rssList[rssName].advanced && rssList[rssName].advanced.size() > 0) { // Special source list for feeds with unique settings defined
         let linkList = {};
         linkList[rssName] = rssList[rssName];
@@ -82,7 +84,7 @@ module.exports = function(bot, callback, schedule) {
       else if (schedule.name !== 'default' && !feedTracker[rssName]) { // If current feed schedule is a custom one and is not assigned
         let keywords = schedule.keywords;
         for (var q in keywords) {
-          if (rssName.includes(keywords[q])) feedTracker[rssName] = schedule.name; // Assign this feed to this schedule so no other feed schedule can take it
+          if (rssList[rssName].link.includes(keywords[q])) feedTracker[rssName] = schedule.name; // Assign this feed to this schedule so no other feed schedule can take it
           delegateFeed(rssName);
         }
       }
@@ -90,7 +92,7 @@ module.exports = function(bot, callback, schedule) {
       else if (!feedTracker[rssName]) { // Has no schedule, was not previously assigned, so see if it can be assigned to default
         let reserveForOtherSched = false;
         for (var w in allScheduleWords) { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
-          if (rssName.includes(allScheduleWords[w])) reserveForOtherSched = true;
+          if (rssList[rssName].link.includes(allScheduleWords[w])) reserveForOtherSched = true;
         }
         if (!reserveForOtherSched) {
           feedTracker[rssName] = 'default';
@@ -155,7 +157,6 @@ module.exports = function(bot, callback, schedule) {
     let currentBatch = batchList[batchNumber]
     // console.log(`Starting ${type} batch #${batchNumber + 1}\n`)
     currentBatch.forEach(function(rssList, link) {
-
       var uniqueSettings = undefined
       if (type === 'modded') {
         for (var mod_rssName in rssList) {
@@ -199,7 +200,7 @@ module.exports = function(bot, callback, schedule) {
   let refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15;
   timer = setInterval(connect, refreshTime*60000)
   console.log(`Schedule '${schedule.name}' has begun.`)
-
+  connect()
   this.stop = function() {
     clearInterval(timer)
   }
