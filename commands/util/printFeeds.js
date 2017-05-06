@@ -2,7 +2,9 @@ const Discord = require('discord.js')
 const config = require('../../config.json')
 const commandList = require('../../util/commandList.json')
 const channelTracker = require('../../util/channelTracker.js')
-const currentGuilds = require('../../util/storage.js').currentGuilds
+const storage = require('../../util/storage.js')
+const currentGuilds = storage.currentGuilds
+const overriddenGuilds = storage.overriddenGuilds
 const pageControls = require('../../util/pageControls.js')   // reserved for when discord.js fixes their library
 
 module.exports = function(bot, message, command, callback) {
@@ -15,7 +17,7 @@ module.exports = function(bot, message, command, callback) {
   }
 
   const rssList = guildRss.sources
-  let maxFeedsAllowed = (guildRss.limitOverride != null) ? guildRss.limitOverride : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited'
   let embedMsg = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)

@@ -40,14 +40,6 @@ exports.createAllListeners = function(bot) {
     eventHandler('messageReactionAdd')(bot, msgReaction, user)
   })
 
-}
+  console.log(`All command and etc listeners have been enabled${bot.shard ? ' on shard ' + bot.shard.id : ''}.`)
 
-exports.removeAllListeners = function(bot) {
-  bot.removeAllListeners('message')
-  bot.removeAllListeners('guildCreate')
-  bot.removeAllListeners('guildUpdate')
-  bot.removeAllListeners('guildDelete')
-  bot.removeAllListeners('channelDelete')
-  bot.removeAllListeners('roleUpdate')
-  bot.removeAllListeners('roleDelete')
 }

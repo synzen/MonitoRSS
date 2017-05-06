@@ -11,7 +11,7 @@ module.exports = function(link, cookies, feedparser, callback) {
     const request = new FetchStream(link, options)
 
     request.on('error', function(err) {
-      if (attempts < 2 && err.message && !err.message.startsWith('Bad status code (4')) {
+      if (attempts < 2 && !err.message.startsWith('Bad status code (4')) {
         attempts++;
         return requestStream();
       }

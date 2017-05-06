@@ -3,7 +3,7 @@
 const fileOps = require('./fileOps.js')
 const currentGuilds = require('./storage.js').currentGuilds
 
-exports.roles = function (bot, guildId, rssName) {
+exports.roles = function(bot, guildId, rssName) {
   const guildRss = currentGuilds.get(guildId)
   const rssList = guildRss.sources
   const guild = bot.guilds.get(guildId)
@@ -50,7 +50,7 @@ exports.roles = function (bot, guildId, rssName) {
   if (changedInfo) return fileOps.updateFile(guildId, guildRss);
 }
 
-exports.names = function (bot, guildId) {
+exports.names = function(bot, guildId) {
   const guildRss = currentGuilds.get(guildId)
   const rssList = guildRss.sources
   const guild = bot.guilds.get(guildId)

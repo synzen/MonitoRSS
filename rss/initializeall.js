@@ -34,12 +34,11 @@ const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const sendToDiscord = require('../util/sendToDiscord.js')
 const currentGuilds = require('../util/storage').currentGuilds
 const checkGuild = require('../util/checkGuild.js')
 const configChecks = require('../util/configCheck.js')
 
-module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
+module.exports = function(con, link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
   const currentFeed = []
 
@@ -47,15 +46,15 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
 
   requestStream(link, cookies, feedparser, function(err) {
     if (err) {
-      console.log(`INIT Error: Skipping ${link}. (${err})`);
-      return callback(link)
+      console.log(`${bot.shard ? 'SH ' + bot.shard.id : ''} INIT Error: Skipping ${link}. (${err})`);
+      return callback(true)
     }
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    console.log(`INIT Error: Skipping ${link}. (${err})`)
-    return callback(link)
+    console.log(`${bot.shard ? 'SH ' + bot.shard.id : ''} INIT Error: Skipping ${link}. (${err})`)
+    return callback(true)
   });
 
   feedparser.on('readable', function() {
@@ -69,7 +68,7 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
 
   feedparser.on('end', function() {
     // Return if no articles in feed found
-    if (currentFeed.length === 0) return callback(link);
+    if (currentFeed.length === 0) return callback(true);
 
     const totalItems = currentFeed.length
     let sourcesCompleted = 0
@@ -85,20 +84,26 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
       return article.guid;
     }
 
-    function processSource(rssName, rssList, channel) {
+    function processSource(rssName) {
+      const channelId = rssList[rssName].channel
+      if (configChecks.checkExists(rssName, rssList[rssName], true, true)) checkTableExists();
+      else return finishSource();
+
       let processedItems = 0;
-      checkGuild.names(bot, rssList[rssName].guildId);
-      checkGuild.roles(bot, rssList[rssName].guildId, rssName); // Check for any role name changes
-      checkTableExists()
 
       function checkTableExists() {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err) throw err;
           if (results.size() === 0) {
-            console.log(`INIT Info: Table does not exist for ${rssName}, creating now and initializing all`);
+            console.log(`${bot.shard ? 'SH ' + bot.shard.id : ''} INIT Info: Table does not exist for ${rssName}, creating now and initializing all`);
             createTable();
           }
           else {
+            let idArray = [];
+            for (var p in currentFeed) idArray.push(getArticleId(currentFeed[p]))
+
+            sqlCmds.cleanTable(con, rssName, idArray);
+
             const feedLength = currentFeed.length - 1;
             const defaultMaxAge = (config.feedSettings.defaultMaxAge) ? config.feedSettings.defaultMaxAge : 1;
             for (var x = feedLength; x >= 0; x--) { // Get feeds starting from oldest, ending with newest.
@@ -137,21 +142,19 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
 
         function decideAction(seenArticle) {
           if (seenArticle) return gatherResults(); // Stops here if it already exists in table, AKA "seen"
-          if (isOldArticle) return insertIntoTable({ // Stops here if it's unseen but is an old article
-            id: articleId,
-            title: article.title
-          });
-
-          if (config.feedSettings.sendOldMessages === true) {
-            sendToDiscord(rssName, channel, article, function(err) { // This can result in great spam once the loads up after a period of downtime
-            if (err) console.log(err);
-            insertIntoTable({ // Only insert when message is successfully sent for initialization
+          if (isOldArticle) {
+            return insertIntoTable({ // Stops here if it's unseen but is an old article
               id: articleId,
               title: article.title
             });
-          });
           }
-          else insertIntoTable({
+
+          if (config.feedSettings.sendOldMessages == true) {
+            article.rssName = rssName;
+            article.discordChannelId = channelId;
+            callback(false, article)
+          }
+          insertIntoTable({
             id: articleId,
             title: article.title
           });
@@ -171,17 +174,11 @@ module.exports = function(bot, con, link, rssList, uniqueSettings, callback) {
       }
     }
 
-    for (var rssName in rssList) {
-      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName]);
-      if (channel && configChecks.checkExists(channel.guild.id, rssList[rssName], true, true)) {
-        processSource(rssName, rssList, channel); // Check valid source config and channel
-      }
-      else finishSource();
-    }
+    for (var rssName in rssList) processSource(rssName);
 
     function finishSource() {
       sourcesCompleted++
-      if (sourcesCompleted === rssList.size()) return callback(link);
+      if (sourcesCompleted === rssList.size()) return callback(true);
     }
   })
 }

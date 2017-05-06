@@ -2,21 +2,20 @@
 const config = require('../config.json')
 const currentGuilds = require('./storage').currentGuilds
 
-exports.checkExists = function (guildId, feed, logging, initializing) {
-  const guildRss = currentGuilds.get(guildId)
+exports.checkExists = function(rssName, feed, logging, initializing) {
   let valid = true
 
   if (feed.enabled == 0) {
-    console.log(`RSS Config Info: (${guildRss.id}, ${guildRss.name}) => Feed '${feed.link}' is disabled in channel ${feed.channel}, skipping...`);
+    if (logging) console.log(`RSS Config Info: ${rssName} is disabled in channel ${feed.channel}, skipping...`);
     return false;
   }
 
   if (!feed.link || !feed.link.startsWith('http')){
-    if (logging) console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${feed.link} has no valid link defined, skipping...`);
+    if (logging) console.log(`RSS Config Warning: ${rssName} has no valid link defined, skipping...`);
     valid = false;
   }
   else if (!feed.channel) {
-    if (logging) console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${feed.link} has no channel defined, skipping...`);
+    if (logging) console.log(`RSS Config Warning: ${rssName} has no channel defined, skipping...`);
     valid = false;
   }
 
@@ -26,6 +25,13 @@ exports.checkExists = function (guildId, feed, logging, initializing) {
 
 exports.validChannel = function(bot, guildId, feed) {
   const guildRss = currentGuilds.get(guildId)
+
+  if (!guildRss) {
+    console.info('CONFIGCHECK ERROR! GUILD ID IS ', guildId);
+    console.info(`FEED IS \n`, feed);
+    return false;
+  }
+
   if (isNaN(parseInt(feed.channel,10))) {
     const channel = bot.channels.find('name', feed.channel);
     if (!channel) {

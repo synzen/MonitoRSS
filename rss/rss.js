@@ -13,13 +13,10 @@ const FeedParser = require('feedparser');
 const requestStream = require('./request.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const config = require('../config.json')
-const currentGuilds = require('../util/storage.js').currentGuilds
-const configChecks = require('../util/configCheck.js')
 const logFeedErr = require('../util/logFeedErrs.js')
 const debugFeeds = require('../util/debugFeeds').list
 
-module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
+module.exports = function(con, link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
   const currentFeed = []
 
@@ -27,7 +24,7 @@ module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
 
   requestStream(link, cookies, feedparser, function(err) {
     if (err) {
-      logFeedErr(null, {link: link, content: err});
+      logFeedErr({link: link, content: err}, true);
       callback(true)
     }
   })
@@ -35,7 +32,7 @@ module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
     callback(true)
-    logFeedErr(null, {link: link, content: err});
+    logFeedErr({link: link, content: err}, true);
   });
 
   feedparser.on('readable', function() {
@@ -64,9 +61,8 @@ module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
     }
 
     function processSource(rssName) {
-      const channel = configChecks.validChannel(bot, rssList[rssName].guildId, rssList[rssName])
-      if (channel && configChecks.checkExists(rssList[rssName].guildId, rssList[rssName], false)) checkTableExists();
-      else return finishSource();
+      const channelId = rssList[rssName].channel
+      checkTableExists();
 
       let newArticles = [];
       let processedItems = 0;
@@ -76,7 +72,7 @@ module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
       function checkTableExists() {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err || results.size() === 0) {
-            if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
+            if (err) return logFeedErr({type: 'database', content: err, feed: rssList[rssName]});
             if (results.size() === 0) console.log(`RSS Info: '${rssName}' appears to have been deleted, skipping...`);
             return callback(true); // Callback no error object because 99% of the time it is just a hiccup
           }
@@ -95,7 +91,7 @@ module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
       function checkTable(article, articleId) {
         let seenArticle = false
         sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
-          if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
+          if (err) return logFeedErr({type: 'database', content: err, feed: rssList[rssName]});
           if (idMatches.length > 0) {
             // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`);
             return decideAction(true);
@@ -114,8 +110,8 @@ module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
           if (seenArticle) return gatherResults();
           if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Never seen article (ID: ${articleId}, TITLE: ${article.title}), sending now`);
           article.rssName = rssName
-          article.discordChannel = channel
-          callback(false, article)
+          article.discordChannelId = channelId
+          callback(false, article, rssList[rssName].guildId)
           insertIntoTable({
             id: articleId,
             title: article.title
@@ -126,7 +122,7 @@ module.exports = function(con, bot, link, rssList, uniqueSettings, callback) {
 
       function insertIntoTable(articleInfo) {
         sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
-          if (err) return logFeedErr(channel, {type: 'database', content: err, feed: rssList[rssName]});
+          if (err) return logFeedErr({type: 'database', content: err, feed: rssList[rssName]});
           if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Article (ID: ${articleInfo.id}, TITLE: ${articleInfo.title}) should have been sent, and now added into table`);
           gatherResults();
         })

@@ -4,8 +4,9 @@ const util = require('util')
 const moment = require('moment-timezone')
 const storage = require('../../util/storage.js')
 const currentGuilds = storage.currentGuilds
-const overriddenGuilds = storage.overriddenGuilds
 const cookieAccessors = storage.cookieAccessors
+const overriddenGuilds = storage.overriddenGuilds
+const debugFeeds = require('../../util/debugFeeds.js').list
 const fs = require('fs')
 const fileOps = require('../../util/fileOps.js')
 
@@ -145,89 +146,172 @@ exports.getsources = function(bot, message) {
   if (content.length !== 2) return;
   const sources = (currentGuilds.get(content[1]) && currentGuilds.get(content[1]).sources) ? currentGuilds.get(content[1]).sources : undefined
 
-  if (sources) message.channel.send(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``);
+  const msg = sources ? `\`\`\`js\n${JSON.stringify(currentGuilds.get(content[1]).sources, null, 2)}\n\`\`\`` : ''
+
+  if (msg.length < 2000) message.channel.send(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``);
+  else if (msg.length >= 2000) {
+    message.channel.send('Unable to send due to character length exceeding 2000. Logging to console instead.');
+    console.info(`Requested from user ${message.author.username}:\n`, sources);
+  }
   else message.channel.send('No sources available.');
+}
+
+exports.feedguild = function(bot, message) {
+  const content = message.content.split(' ')
+  if (content.length !== 2) return;
+  let found = false
+
+  currentGuilds.forEach(function(guildRss, guildId) {
+    let rssList = guildRss.sources
+    for (var rssName in rssList) {
+      if (rssName === content[1]) {
+        found = true
+        return message.channel.send(`Found guild ID: ${guildId}`);
+      }
+    }
+  })
+
+  if (!found) message.channel.send(`Could not find any feeds with that rssName.`);
 }
 
 exports.debug = function(bot, message) {
   const content = message.content.split(' ')
   if (content.length !== 2) return;
 
-  process.send({type: 'debug', contents: content[1]})
+  const rssName = content[1]
+
+  let found = false
+  currentGuilds.forEach(function(guildRss, guildId) {
+    const rssList = guildRss.sources
+    for (var name in rssList) {
+      if (rssName === name) {
+        found = true;
+        debugFeeds.push(rssName);
+        console.log(`Added ${rssName} to debugging list.`);
+      }
+    }
+  })
+  if (!found) console.log(`Unable to add ${rssName} to debugging list, not found in any guild sources.`);
 }
 
 exports.undebug = function(bot, message) {
   const content = message.content.split(' ')
   if (content.length !== 2) return;
 
-  process.send({type: 'undebug', contents: content[1]})
+  const rssName = content[1]
+
+  if (!debugFeeds.includes(rssName)) return console.log(`Cannot remove, ${rssName} is not in debugging list.`);
+  for (var index in debugFeeds) {
+    if (debugFeeds[index] === rssName) {
+      debugFeeds.splice(index, 1);
+      return console.log(`Removed ${rssName} from debugging list.`);
+    }
+  }
+
 }
 
 exports.setoverride = function(bot, message) {
   const content = message.content.split(' ')
-  if (content.length !== 3) return message.channel.send(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}setoverride <guildID> <#>\`.`);
+  if (content.length < 3 || content.length > 4) return message.channel.send(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}setoverride <guildID> <#>\`.`);
   if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.send(`Unable to set limit, guild ID \`${content[1]}\` was either not found in guild list or has no active feeds.`);
 
   let newLimit = parseInt(content[2], 10)
 
   if (isNaN(newLimit) || newLimit % 1 !== 0) return message.channel.send(`That is not a valid number.`);
+  if (newLimit == config.feedSettings.maxFeeds) return message.channel.send(`That is already the default limit.`);
 
-  const guildRss = currentGuilds.get(content[1])
-  guildRss.limitOverride = newLimit
-  overriddenGuilds.set(content[1], guildRss.limitOverride)
+  if (typeof overriddenGuilds !== 'object') overriddenGuilds = {};
+  overriddenGuilds[content[1]] = content[2];
+  fs.writeFile('./limitOverrides.json', JSON.stringify(overriddenGuilds, null, 2), function(err) {
+    if (err) throw err;
+    var enforced
 
-  fileOps.updateFile(content[1], guildRss)
-  message.channel.send(`Feed limit for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}) has been overridden to \`${newLimit == 0 ? 'Unlimited' : newLimit}\``)
-  console.log(`Bot Controller: Feed limit for guild (${content[1]}, ${bot.guilds.get(content[1]).name}) has been overridden to '${newLimit == 0 ? 'Unlimited' : newLimit}'`)
-}
+    if (content[3] === 'enforce') {
+      enforced = 0;
+      let guildRss = currentGuilds.get(content[1]);
+      let rssList = guildRss.sources;
+      if (rssList.size() > newLimit) {
+        for (var rssName in rssList) {
+          if (rssList.size() > newLimit) {
+            enforced++;
+            delete rssList[rssName];
+          }
+        }
+      }
+      if (enforced && fs.existsSync(`./sources/${content[1]}.json`)) fs.writeFile(`./sources/${content[1]}.json`, JSON.stringify(guildRss), function(err) {
+        if (err) throw err;
+      })
+    }
 
-exports.showoverrides = function(bot, message) {
-  if (overriddenGuilds.size === 0) return message.channel.send('There are no guilds with their limits overridden.');
-  let msg = '```md\n'
-  overriddenGuilds.forEach(function(limit, guildId) {
-    let guildRss = currentGuilds.get(guildId)
-    msg += `\n\n[${guildId}]: ${bot.guilds.get(guildId).name}\nStatus: ${guildRss.sources.size()}/${limit === 0 ? 'Unlimited' : limit}`
+    message.channel.send(`Override limit set to \`${content[2]}\` for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feed(s) have been removed.': ''}`);
+    console.log(`Bot Controller: Override limit set to \`${content[2]}\` for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feed(s) have been removed.': ''}`)
   })
-  message.channel.send(msg += `\n\n\`\`\`\`\`\`Total Guilds: ${overriddenGuilds.size}\`\`\``)
+
 }
 
 exports.removeoverride = function(bot, message) {
   const content = message.content.split(' ')
-  if (content.length !== 2) return message.channel.send(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}removeoverride <guildID>\`.`);
+  if (content.length < 2 || content.length > 3) return message.channel.send(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}removeoverride <guildID>\`.`);
 
-  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1]) || !overriddenGuilds.has(content[1])) return message.channel.send(`Unable to remove limit, guild ID \`${content[1]}\` was either not found in guild list or does not have a limit override.`);
+  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.send(`Unable to remove limit, guild ID \`${content[1]}\` was either not found in guild list.`);
 
-  const guildRss = currentGuilds.get(content[1])
-  delete guildRss.limitOverride
-  overriddenGuilds.delete(content[1])
+  if (overriddenGuilds[content[1]]) {
+    delete overriddenGuilds[content[1]];
+    fs.writeFile('./limitOverrides.json', JSON.stringify(overriddenGuilds, null, 2), function(err) {
+      if (err) throw err;
+      var enforced
 
-  fileOps.updateFile(content[1], guildRss)
-  message.channel.send(`Feed limit override for guild ID \`${content[1]}\` (${bot.guilds.get(content[1]).name}) has been removed.`)
-  console.log(`Bot Controller: Feed limit override for guild (${content[1]}, ${bot.guilds.get(content[1]).name}) has been removed`)
+      if (content[2] === 'enforce') {
+        enforced = 0;
+        const guildRss = currentGuilds.get(content[1]);
+        const rssList = guildRss.sources;
+        if (rssList.size() > config.feedSettings.maxFeeds) {
+          for (var rssName in rssList) {
+            if (rssList.size() > config.feedSettings.maxFeeds) {
+              enforced++;
+              delete rssList[rssName];
+            }
+          }
+        }
+        if (enforced && fs.existsSync(`./sources/${content[1]}.json`)) fs.writeFile(`./sources/${content[1]}.json`, JSON.stringify(guildRss), function(err) {
+          if (err) throw err;
+        })
+      }
+
+      message.channel.send(`Override limit reset for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feeds have been removed.': ''}`);
+      console.log(`Override limit reset for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feeds have been removed.': ''}`)
+    })
+  }
+  else return message.channel.send(`Unable to reset, there are no overrides set for that guild.`)
+
+
 
 }
 
 exports.allowcookies = function(bot, message) {
+  if (!config.advanced || config.advanced.restrictCookies != true) return message.channel.sendMessage('Cookie usage is allowed by default if \`restrictCookies\` is not set to true.');
   const content = message.content.split(' ')
-  if (content.length !== 2) return message.channel.send(`The proper syntax to allow cookies for a server is \`${config.botSettings.prefix}allowcookies <userID>\`.`);
+  if (content.length !== 2) return message.channel.send(`The proper syntax to allow cookies for a user is \`${config.botSettings.prefix}allowcookies <userID>\`.`);
+  if (!bot.users.get(content[1])) return message.channel(`Unable to allow cookies. User ID \`${content[1]}\` was not found in user list.`);
+  if (cookieAccessors.ids.includes(content[1])) return message.channel.sendMessage(`User ID \`${content[1]}\` already has permission for cookie usage.`);
 
   cookieAccessors.ids.push(content[1])
 
-  fs.writeFileSync('./util/cookieAccessors.json', JSON.stringify(cookieAccessors, null, 2))
+  fs.writeFileSync('./cookieAccessors.json', JSON.stringify(cookieAccessors, null, 2))
 
   message.channel.send(`Cookies are now allowed for user ID \`${content[1]}\` (${bot.users.get(content[1]).username}).`)
   console.log(`Bot Controller: Cookies have been allowed for user ID ${content[1]}, (${bot.users.get(content[1]).username})`)
 }
 
 exports.disallowcookies = function(bot, message) {
-  if (!config.advanced || config.advanced.restrictCookies === false || !config.advanced.restrictCookies) return message.channel.send(`Cannot disallow cookies if config \`restrictCookies\` is not set to \`true\`/\`1\`.`)
+  if (!config.advanced || config.advanced.restrictCookies == false || !config.advanced.restrictCookies) return message.channel.send(`Cannot disallow cookies if config \`restrictCookies\` is not set to \`true\`/\`1\`.`)
   const content = message.content.split(' ')
   if (content.length !== 2) return message.channel.send(`The proper syntax to allow cookies for a user is \`${config.botSettings.prefix}disallowcookies <userID>\`.`);
 
   for (var index in cookieAccessors.ids) {
     if (cookieAccessors.ids[index] === content[1]) {
       cookieAccessors.ids.splice(index, 1);
-      fs.writeFileSync('./util/cookieAccessors.json', JSON.stringify(cookieAccessors, null, 2));
+      fs.writeFileSync('./cookieAccessors.json', JSON.stringify(cookieAccessors, null, 2));
       message.channel.send(`User ID \`${content[1]}\` (${bot.users.get(content[1]) ? bot.users.get(content[1]).username : 'User not found in bot user list.'}) removed from cookie accessor list.`);
       return console.log(`Bot Controller: User ID \`(${content[1]}\`. (${bot.users.get(content[1]) ? bot.users.get(content[1]).username : 'User not found in bot user list.'}) removed from cookie accessor list.`);
     }
@@ -253,7 +337,7 @@ exports.setconfig = function(bot, message) {
         if (configObject.checkValid && configObject.checkValid(configName, message.content) !== true) return message.channel.send(configObject.checkValid(configName, message.content));
         var setting;
 
-        switch(configObject.type) {
+        switch(configObject.type) { // Set the actual setting
           case 'int':
           case 'bool':
             setting = parseInt(content[2], 10);
@@ -282,7 +366,7 @@ exports.setconfig = function(bot, message) {
         if (setting == null) return;
         let categoryName = '';
 
-        switch(category) {
+        switch(category) { // Set the category to proper case according to config.json
           case 'ADVANCED':
           case 'LOGGING':
             categoryName = category.toLowerCase();
@@ -296,7 +380,7 @@ exports.setconfig = function(bot, message) {
 
         if (!config[categoryName]) config[categoryName] = {};
         config[categoryName][configName] = setting;
-        process.send({type: 'configChange', configCategory: categoryName, configName: configName, configSetting: setting});
+
         fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
         console.log(`Bot Controller: Config '${configName}' value has been changed to to '${setting}'.`)
         return message.channel.send(`Config \`${configName}\`'s current value is now set to \`${setting}\`.`);

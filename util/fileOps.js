@@ -2,12 +2,14 @@
 // the commands module.
 
 const fs = require('fs')
-const currentGuilds = require('./storage.js').currentGuilds
+const storage = require('./storage.js')
+const currentGuilds = storage.currentGuilds
+const changedGuilds = storage.changedGuilds
 const config = require('../config.json')
 
 function updateContent(guildId, inFile) {
-  if (process.env.isCmdServer) process.send({type: 'guildUpdate', id: guildId, contents: inFile}); //child process
   fs.writeFileSync(`./sources/${guildId}.json`, JSON.stringify(inFile, null, 2))
+  changedGuilds.push(guildId)
 }
 
 exports.updateFile = function(guildId, inFile) { // "inFile" is the new contents in memory
@@ -21,20 +23,19 @@ exports.updateFile = function(guildId, inFile) { // "inFile" is the new contents
   else updateContent(guildId, inFile);
 }
 
-exports.deleteFile = function(guildId, callback) {
+exports.deleteGuild = function(guildId, callback) {
   try {
     fs.unlinkSync(`./sources/${guildId}.json`)
+    fs.unlinkSync(`./sources/backup/${guildId}.json`)
     callback()
   } catch (e) {}
-  delete currentGuilds[guildId]
-  if (process.env.isCmdServer) process.send({type: 'guildDeletion', id: guildId});
+  delete currentGuilds.delete(guildId)
 }
 
-exports.isEmptySources = function(guildRss) {
-  // Used on the beginning of each cycle to check for empty sources per guild
+exports.isEmptySources = function(guildRss) { // Used on the beginning of each cycle to check for empty sources per guild
   if (!guildRss.sources || guildRss.sources.size() === 0) {
-     if (!guildRss.timezone && guildRss.limitOverride == null) { // Delete only if server-specific special settings are not found
-       exports.deleteFile(guildRss.id, `../sources/${guildRss.id}.json`, function() {
+     if (!guildRss.timezone) { // Delete only if server-specific special settings are not found
+       exports.deleteGuild(guildRss.id, `../sources/${guildRss.id}.json`, function() {
          console.log(`RSS Info: (${guildRss.id}) => 0 sources found with no custom settings, deleting.`)
        });
      }
@@ -45,7 +46,7 @@ exports.isEmptySources = function(guildRss) {
 }
 
 exports.checkBackup = function(err, guildId) {
-  if (config.feedManagement.enableBackups !== true) return console.log(`Guild Profile Warning: Cannot load guild profile ${guildId} (${err}). Backups disabled, skipping profile..`);
+  if (config.feedManagement.enableBackups != true) return console.log(`Guild Profile Warning: Cannot load guild profile ${guildId} (${err}). Backups disabled, skipping profile..`);
 
   console.log(`Guild Profile Warning: Cannot load guild profile ${guildId} (${err}). Backups enabled, attempting to restore backup.`);
 

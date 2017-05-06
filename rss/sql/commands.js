@@ -15,6 +15,20 @@ exports.createTable = function(con, table, callback) {
 
 }
 
+exports.cleanTable = function(con, table, articleArray) {
+  let qMarks = ''
+  for (var i in articleArray) {
+    qMarks += (i == 0) ? '? ' : ', ?';
+  }
+
+  if (sqlType === "mysql") {
+    con.query(`delete from \`${table}\` where ID not in (${qMarks})`, articleArray, function(err, matches) {
+      if (err) console.log(err);
+    })
+  }
+  else con.run(`delete from "${table}" where ID not in (${qMarks})`, articleArray);
+}
+
 exports.selectId = function(con, table, articleId, callback) {
   if (sqlType === 'mysql') return con.query(`select * from \`${table}\` where ID = ?`, [articleId], callback);
   else return con.all(`select * from "${table}" where ID = ?`, articleId, callback);

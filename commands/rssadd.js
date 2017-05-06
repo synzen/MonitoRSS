@@ -5,9 +5,10 @@ const sqlCmds = require('../rss/sql/commands.js')
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
+const overriddenGuilds = storage.overriddenGuilds
 const cookieAccessors = storage.cookieAccessors
 
-module.exports = function (bot, message) {
+module.exports = function(bot, message) {
 
   function sanitize(array) {
     for (var p = array.length - 1; p >= 0; p--) { // Sanitize by removing spaces and newlines
@@ -25,7 +26,7 @@ module.exports = function (bot, message) {
 
   const guildRss = (currentGuilds.has(message.guild.id)) ? currentGuilds.get(message.guild.id) : {}
   const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
-  let maxFeedsAllowed = (guildRss.limitOverride != null) ? guildRss.limitOverride : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
 
   if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => console.log(`Promise Warning rssAdd 0: ${err}`)); // If there is no link after rssadd, return.
@@ -101,7 +102,7 @@ module.exports = function (bot, message) {
         let cookieString = linkItem.join(' ')
         var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitize(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined
         var cookiesFound = cookies ? true: false
-        if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id)) cookies = undefined;
+        if (config.advanced && config.advanced.restrictCookies == true && !cookieAccessors.ids.includes(message.author.id)) cookies = undefined;
         if (cookiesFound && !cookies) var cookieAccess = false;
 
         initializeRSS(con, rssLink, message.channel, cookies, function(err) {

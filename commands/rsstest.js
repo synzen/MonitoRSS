@@ -11,7 +11,7 @@ module.exports = function(bot, message, command) {
     .then(function(grabMsg) {
       // Replicate the RSS process for a test article
       const con = sqlConnect(getTestMsg)
-      
+
       function getTestMsg() {
         getRandomArticle(con, message.guild.id, rssName, function(err, article) {
           if (err) {
@@ -34,7 +34,9 @@ module.exports = function(bot, message, command) {
             console.log(`RSS Warning: Unable to send test article '${err.feed.link}'. Reason: ${err.content}`); // Reserve err.content for console logs, which are more verbose
             return grabMsg.edit(`Unable to grab random feed article. Reason: ${channelErrMsg}.`);
           }
-          sendToDiscord(rssName, message.channel, article, function(err) {
+          article.rssName = rssName
+          article.discordChannelId = message.channel.id
+          sendToDiscord(bot, message.guild.id, article, function(err) {
             if (err) console.log(err);
           }, grabMsg); // Last parameter indicating a test message
           sqlCmds.end(con, function(err) {

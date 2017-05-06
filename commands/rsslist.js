@@ -1,9 +1,11 @@
 const Discord = require('discord.js')
 const config = require('../config.json')
-const currentGuilds = require('../util/storage.js').currentGuilds
+const storage = require('../util/storage.js')
+const currentGuilds = storage.currentGuilds
+const overriddenGuilds = storage.overriddenGuilds
 const pageControls = require('../util/pageControls.js')   // reserved for when discord.js fixes their library
 
-module.exports = function (bot, message, command) {
+module.exports = function(bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
 
@@ -15,8 +17,8 @@ module.exports = function (bot, message, command) {
     else if (bot.channels.get(channel)) return bot.channels.get(channel).name;
     else return undefined;
   }
-
-  let maxFeedsAllowed = (guildRss.limitOverride != null) ? guildRss.limitOverride : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  console.info(overriddenGuilds)
+  let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
 
   let embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)

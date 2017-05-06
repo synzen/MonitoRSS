@@ -1,21 +1,34 @@
 const config = require('../config.json')
 const translator = require('../rss/translator/translate.js')
 const storage = require('./storage.js')
+const changedGuilds = storage.changedGuilds
 const currentGuilds = storage.currentGuilds
 const debugFeeds = require('../util/debugFeeds').list
 
-module.exports = function (rssName, channel, article, callback, isTestMessage) {
+module.exports = function(bot, article, callback, isTestMessage) {
+  const channel = bot.channels.get(article.discordChannelId)
+  const guild = bot.guilds.get(channel.guild.id)
+
+  if (!channel) return console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${article.rssName}'s defined channel was not found. skipping...`);
+
+  const rssName = article.rssName
   const rssList = currentGuilds.get(channel.guild.id).sources
 
+  // Sometimes feeds get deleted mid-retrieval cycle, thus check for empty rssList and if the feed itself was deleted
+  if (!rssList || rssList.size() === 0) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources for guild, skipping Discord message sending.`);
 
-  // check if any changes to feed article while article cycle was in progress
-  if (!process.env.isCmdServer && storage.changedGuilds.has(channel.guild.id)) {
-    const guildNew = storage.changedGuilds.get(channel.guild.id);
-    if (!guildNew.sources) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources found in updated file, skipping Discord message sending.`);
-    const rssListNew = guildNew.sources;
-    let found = false;
-    for (let rssNameNew in rssListNew) if (rssNameNew == rssName) found = true;
-    if (!found) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Missing source (link: ${rssList[rssName].link}, name: ${rssName}) in updated file, skipping Discord message sending.`);
+  for (var index in changedGuilds) {
+    if (changedGuilds[index] === guildId) {
+      let found = false;
+      for (var rssNameNew in rssList) {
+        if (rssNameNew === rssName) {
+          found = true;
+          break;
+        }
+      }
+      changedGuilds.splice(index, 1)
+      if (!found) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Missing source (link: ${rssList[rssName].link}, name: ${rssName}) in updated file, skipping Discord message sending.`);
+    }
   }
 
   let attempts = 1

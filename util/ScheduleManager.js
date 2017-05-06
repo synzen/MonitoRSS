@@ -35,7 +35,7 @@ module.exports = function(bot) {
   function listenToArticles(articleTracker) {
     articleTracker.on('article', function(article) { // New articles are sent as the raw object directly from feedparser
       if (debugFeeds.includes(article.rssName)) console.log(`DEBUG ${article.rssName}: Invoking sendToDiscord function`);
-      sendToDiscord(article.rssName, article.discordChannel, article, function(err) {
+      sendToDiscord(bot, article, function(err) {
         if (err) console.log(err);
       });
     })
