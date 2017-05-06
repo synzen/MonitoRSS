@@ -28,7 +28,9 @@
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
   },
   "advanced": {
+	"shards": 1,
 	"batchSize": 300,
-	"restrictCookies": false
+	"restrictCookies": false,
+	"processorMethod": "single"
   }
 }
