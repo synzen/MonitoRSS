@@ -36,7 +36,7 @@ module.exports = function(bot, message, command) {
           }
           article.rssName = rssName
           article.discordChannelId = message.channel.id
-          sendToDiscord(bot, message.guild.id, article, function(err) {
+          sendToDiscord(bot, article, function(err) {
             if (err) console.log(err);
           }, grabMsg); // Last parameter indicating a test message
           sqlCmds.end(con, function(err) {
