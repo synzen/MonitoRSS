@@ -18,7 +18,7 @@ module.exports = function(bot, article, callback, isTestMessage) {
   if (!rssList || rssList.size() === 0) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources for guild, skipping Discord message sending.`);
 
   for (var index in changedGuilds) {
-    if (changedGuilds[index] === guildId) {
+    if (changedGuilds[index] === guild.id) {
       let found = false;
       for (var rssNameNew in rssList) {
         if (rssNameNew === rssName) {
