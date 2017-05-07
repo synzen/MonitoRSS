@@ -33,8 +33,6 @@ module.exports = function(bot, callback, schedule) {
   function addFailedFeed(link, rssList) {
     failedFeeds[link] = (failedFeeds[link]) ? failedFeeds[link] + 1 : 1
 
-    console.log(failedFeeds[link])
-
     if (failedFeeds[link] > failLimit) {
       console.log(`RSS Error: ${link} has passed the fail limit (${failLimit}). Will no longer retrieve.`);
       if (config.feedSettings.notifyFail != true) return;

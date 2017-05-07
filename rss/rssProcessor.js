@@ -34,7 +34,6 @@ function rss(link, rssList, uniqueSettings, debugFeeds) {
   })
 
   feedparser.on('error', function(err) {
-    console.log('yea');
     logFeedErr({link: link, content: err}, true);
     process.send({status: 'failed', link: link, rssList: rssList})
     feedparser.removeAllListeners('end')
