@@ -12,7 +12,7 @@ For steps on how to host the bot on your own, and on using the bot itself, see h
 
 #### Core Functions
  * [Feedparser](https://www.npmjs.com/package/feedparser)		
- * [fetch](https://www.npmjs.com/package/fetch)
+ * [got](https://www.npmjs.com/package/got)
  * [cloudscraper](https://www.npmjs.com/package/cloudscraper)
  * Datebase Manager (one of two options)		
      * [sqlite3](https://www.npmjs.com/package/sqlite3) (default)		
