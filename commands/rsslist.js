@@ -17,7 +17,7 @@ module.exports = function(bot, message, command) {
     else if (bot.channels.get(channel)) return bot.channels.get(channel).name;
     else return undefined;
   }
-  console.info(overriddenGuilds)
+
   let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
 
