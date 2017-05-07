@@ -1,5 +1,5 @@
 const Discord = require('discord.js')
-const cmdListeners = require('./util/cmdListeners.js')
+const listeners = require('./util/listeners.js')
 const initialize = require('./util/initialization.js')
 const config = require('./config.json')
 const storage = require('./util/storage.js')
@@ -77,11 +77,11 @@ let loginAttempts = 0;
 
 function finishInit() {
   initialized = true
-
   scheduleManager = new ScheduleManager(bot)
+  listeners.createManagers(bot)
 
-  if (config.botSettings.enableCommands == false) return;
-  cmdListeners.createAllListeners(bot)
+  if (config.botSettings.enableCommands == true) listeners.enableCommands(bot);
+
 }
 
 process.on('unhandledRejection', function(err, promise) {

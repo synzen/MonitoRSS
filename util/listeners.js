@@ -3,11 +3,7 @@ const eventHandler = (evnt) => require(`../events/${evnt}.js`)
 const config = require('../config.json')
 const pageControls = require('./pageControls.js')
 
-exports.createAllListeners = function(bot) {
-  bot.on('message', function(message) {
-    eventHandler('message')(bot, message)
-  })
-
+exports.createManagers = function(bot) {
   bot.on('guildCreate', function(guild) {
     eventHandler('guildCreate')(bot, guild)
   })
@@ -40,6 +36,13 @@ exports.createAllListeners = function(bot) {
     eventHandler('messageReactionAdd')(bot, msgReaction, user)
   })
 
-  console.log(`All command and etc listeners have been enabled${bot.shard ? ' on shard ' + bot.shard.id : ''}.`)
+}
+
+exports.enableCommands = function(bot) {
+  bot.on('message', function(message) {
+    eventHandler('message')(bot, message)
+  })
+
+  console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Commands have been enabled.`)
 
 }
