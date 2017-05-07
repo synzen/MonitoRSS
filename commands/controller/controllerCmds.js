@@ -7,9 +7,11 @@ const blacklistGuilds = storage.blacklistGuilds
 const currentGuilds = storage.currentGuilds
 const cookieAccessors = storage.cookieAccessors
 const overriddenGuilds = storage.overriddenGuilds
+const failedFeeds = storage.failedFeeds
 const debugFeeds = require('../../util/debugFeeds.js').list
 const fs = require('fs')
 const fileOps = require('../../util/fileOps.js')
+const requestStream = require('../../rss/request.js')
 
 function isValidInt(configName, input) {
   const content = input.split(' ')
@@ -178,6 +180,55 @@ exports.unblacklist = function(bot, message) {
       break;
     }
   }
+
+}
+
+exports.showfailed = function(bot, message) {
+  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
+
+  let msg = ''
+  for (var link in failedFeeds) {
+    if (failedFeeds[link] >= failLimit) msg += `\n${link}`;
+  }
+  if (msg.length > 1950) {
+    console.info(`Failed link list requested by ${message.author.id} (${message.author.username}): `, msg)
+    return message.channel.send(`List is longer than 1950 characters. Logging to console instead.`);
+  }
+  message.channel.send('```' + msg + '```');
+}
+
+exports.refresh = function(bot, message) {
+  const content = message.content.split(' ')
+  if (content.length !== 2) return;
+
+  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
+
+  if (failLimit === 0) return message.channel.send(`No fail limit has been set.`);
+  if (failedFeeds.size() === 0) return message.channel.send(`There are no feeds that have exceeded the fail limit.`);
+  let found = false
+
+  currentGuilds.forEach(function(guildRss, guildId) {
+    const rssList = guildRss.sources
+    for (var rssName in rssList) {
+      if (rssList[rssName].link === content[1]) { // Arbitrarily choose a source from the link
+        found = true;
+        const source = rssList[rssName];
+
+        requestStream(source.link, null, null, function(err) {
+          if (err) {
+            console.log(`Bot Controller: Unable to refresh feed link ${source.link}, reason: `, err);
+            return message.channel.send(`Unable to refresh feed. Reason:\n\`\`\`${err}\n\`\`\``);
+          }
+          delete failedFeeds[source.link]
+          console.log(`Bot Controller: Link ${source.link} has been refreshed, and will be back on cycle.`);
+          message.channel.send(`Successfully refreshed <${source.link}>.`)
+        })
+        break;
+      }
+    }
+  })
+
+  if (!found) message.channel.send(`Unable to find source with this link.`)
 
 }
 
