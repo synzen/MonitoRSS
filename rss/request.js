@@ -10,25 +10,23 @@ module.exports = function(link, cookies, feedparser, callback) {
     options.headers.cookie = cookies;
   }
 
-  if (link.includes('feed43')) return callback('skipping feed43');
+ const request = got.stream(link, options)
 
-   const request = got.stream(link, options)
+ request.on('response', function(res) {
+   if (res.statusCode == 200) request.pipe(feedparser);
+ })
 
-   request.on('response', function(res) {
-     if (res.statusCode == 200) request.pipe(feedparser);
-   })
-
-   request.on('error', function(err, body, resp) {
-     if (resp && resp.headers && resp.headers.server && resp.headers.server.includes('cloudflare')) {
-       cloudscraper.get(link, function(err, res, body) { // For cloudflare
-         if (err) return callback(err + `${cookies ? ' (Cookies found)' : ''}`);
-         let Readable = require('stream').Readable
-         let feedStream = new Readable
-         feedStream.push(body)
-         feedStream.push(null)
-         feedStream.pipe(feedparser)
-       })
-     }
-     else callback(err + `${cookies ? ' (Cookies found)' : ''}`);
-   })
+ request.on('error', function(err, body, resp) {
+   if (resp && resp.headers && resp.headers.server && resp.headers.server.includes('cloudflare')) {
+     cloudscraper.get(link, function(err, res, body) { // For cloudflare
+       if (err) return callback(err + `${cookies ? ' (Cookies found)' : ''}`);
+       let Readable = require('stream').Readable
+       let feedStream = new Readable
+       feedStream.push(body)
+       feedStream.push(null)
+       feedStream.pipe(feedparser)
+     })
+   }
+   else callback(err + `${cookies ? ' (Cookies found)' : ''}`);
+ })
 }
