@@ -49,7 +49,7 @@ module.exports = function(bot, callback, schedule) {
     }
 
     for (var rssName in rssList) {
-      if (configChecks.checkExists(rssName, rssList[rssName], false)) {
+      if (configChecks.checkExists(rssName, rssList[rssName], false) && configChecks.validChannel(bot, guildId, rssList[rssName])) {
         if (feedTracker[rssName] === schedule.name) { // If assigned to a schedule
           delegateFeed(rssName);
         }

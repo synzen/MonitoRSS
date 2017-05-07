@@ -1,38 +1,34 @@
-const FetchStream = require('fetch').FetchStream
+const got = require('got')
 const cloudscraper = require('cloudscraper') // For cloudflare
 
 module.exports = function(link, cookies, feedparser, callback) {
   let attempts = 0;
 
-  let options = {timeout:10000};
-  if (cookies) options.cookies = cookies;
+  let options = {retries: 2, timeout: 5000};
+  if (cookies) {
+    options.headers = {};
+    options.headers.cookie = cookies;
+  }
 
-  (function requestStream() {
-    const request = new FetchStream(link, options)
+  if (link.includes('feed43')) return callback('skipping feed43');
 
-    request.on('error', function(err) {
-      if (attempts < 2 && !err.message.startsWith('Bad status code (4')) {
-        attempts++;
-        return requestStream();
-      }
-      else return callback(err + `${cookies ? ' (Cookies found)' : ''}`);
-    })
+   const request = got.stream(link, options)
 
-    request.on('meta', function (meta) {
-      if (meta.status !== 200) {
-        if (meta.responseHeaders.server && meta.responseHeaders.server.includes('cloudflare')) {
-          cloudscraper.get(link, function(err, res, body) { // For cloudflare
-            if (err) return callback(err);
-            let Readable = require('stream').Readable
-            let feedStream = new Readable
-            feedStream.push(body)
-            feedStream.push(null)
-            feedStream.pipe(feedparser)
-          })
-        }
-        else return this.emit('error', new Error(`Bad status code (${meta.status})`));
-      }
-      else this.pipe(feedparser)
-    })
-  })()
+   request.on('response', function(res) {
+     if (res.statusCode == 200) request.pipe(feedparser);
+   })
+
+   request.on('error', function(err, body, resp) {
+     if (resp && resp.headers && resp.headers.server && resp.headers.server.includes('cloudflare')) {
+       cloudscraper.get(link, function(err, res, body) { // For cloudflare
+         if (err) return callback(err + `${cookies ? ' (Cookies found)' : ''}`);
+         let Readable = require('stream').Readable
+         let feedStream = new Readable
+         feedStream.push(body)
+         feedStream.push(null)
+         feedStream.pipe(feedparser)
+       })
+     }
+     else callback(err + `${cookies ? ' (Cookies found)' : ''}`);
+   })
 }

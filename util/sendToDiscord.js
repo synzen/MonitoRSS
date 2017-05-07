@@ -9,8 +9,6 @@ module.exports = function(bot, article, callback, isTestMessage) {
   const channel = bot.channels.get(article.discordChannelId)
   const guild = bot.guilds.get(channel.guild.id)
 
-  if (!channel) return console.log(`RSS Config Warning: (${guild.id}, ${guild.name}) => ${article.rssName}'s defined channel was not found. skipping...`);
-
   const rssName = article.rssName
   const rssList = currentGuilds.get(channel.guild.id).sources
 

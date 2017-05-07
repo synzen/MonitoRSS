@@ -10,7 +10,6 @@ const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-const configChecks = require('../util/configCheck.js')
 if (config.logging.logDates) require('../util/logDates.js')()
 
 let con
@@ -73,8 +72,7 @@ function init(link, rssList, uniqueSettings) {
 
     function processSource(rssName) {
       const channelId = rssList[rssName].channel
-      if (configChecks.checkExists(rssName, rssList[rssName], true, true)) checkTableExists();
-      else return finishSource();
+      checkTableExists()
 
       let processedItems = 0;
 

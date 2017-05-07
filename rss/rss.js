@@ -62,7 +62,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
 
     function processSource(rssName) {
       const channelId = rssList[rssName].channel
-      checkTableExists();
+      checkTableExists()
 
       let newArticles = [];
       let processedItems = 0;

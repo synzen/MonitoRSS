@@ -36,7 +36,6 @@ const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const currentGuilds = require('../util/storage').currentGuilds
 const checkGuild = require('../util/checkGuild.js')
-const configChecks = require('../util/configCheck.js')
 
 module.exports = function(con, link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
@@ -86,8 +85,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
 
     function processSource(rssName) {
       const channelId = rssList[rssName].channel
-      if (configChecks.checkExists(rssName, rssList[rssName], true, true)) checkTableExists();
-      else return finishSource();
+      checkTableExists()
 
       let processedItems = 0;
 

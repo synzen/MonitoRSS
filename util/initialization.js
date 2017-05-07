@@ -11,6 +11,7 @@ const fileOps = require('./fileOps.js')
 const checkGuild = require('./checkGuild.js')
 const sendToDiscord = require('./sendToDiscord.js')
 const process = require('child_process')
+const configChecks = require('./configCheck.js')
 
 module.exports = function(bot, callback) {
   try {
@@ -78,37 +79,39 @@ module.exports = function(bot, callback) {
   function addToSourceLists(rssList, guildId) { // rssList is an object per guildRss
     for (var rssName in rssList) {
 
-      checkGuild.roles(bot, guildId, rssName); // Check for any role name changes
+      if (configChecks.checkExists(rssName, rssList[rssName], true, true) && configChecks.validChannel(bot, guildId, rssList[rssName])) {
 
-      if (rssList[rssName].advanced && rssList[rssName].advanced.size() > 0) { // Special source list for feeds with unique settings defined, each linkList only has 1 item
-        let linkList = {};
-        linkList[rssName] = rssList[rssName];
-        modSourceList.set(rssList[rssName].link, linkList);
-      }
-      else if (sourceList.has(rssList[rssName].link)) { // Regular source lists, optimized for faster operation by aggregating feeds of same links
-        let linkList = sourceList.get(rssList[rssName].link);
-        linkList[rssName] = rssList[rssName];
-      }
-      else {
-        let linkList = {};
-        linkList[rssName] = rssList[rssName];
-        sourceList.set(rssList[rssName].link, linkList);
-      }
+        checkGuild.roles(bot, guildId, rssName); // Check for any role name changes
 
-      // Assign feeds to specific schedules in feedTracker for use by feedSchedules
-      if (scheduleWordDir && scheduleWordDir.size() > 0) {
-        for (var scheduleName in scheduleWordDir) {
-          let wordList = scheduleWordDir[scheduleName];
-          for (var i in wordList) {
-            if (rssList[rssName].link.includes(wordList[i]) && !feedTracker[rssName]) {
-              console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}INIT: Assigning feed ${rssName} to ${scheduleName}`)
-              feedTracker[rssName] = scheduleName; // Assign a schedule to a feed if it doesn't already exist in the feedTracker to another schedule
+        if (rssList[rssName].advanced && rssList[rssName].advanced.size() > 0) { // Special source list for feeds with unique settings defined, each linkList only has 1 item
+          let linkList = {};
+          linkList[rssName] = rssList[rssName];
+          modSourceList.set(rssList[rssName].link, linkList);
+        }
+        else if (sourceList.has(rssList[rssName].link)) { // Regular source lists, optimized for faster operation by aggregating feeds of same links
+          let linkList = sourceList.get(rssList[rssName].link);
+          linkList[rssName] = rssList[rssName];
+        }
+        else {
+          let linkList = {};
+          linkList[rssName] = rssList[rssName];
+          sourceList.set(rssList[rssName].link, linkList);
+        }
+
+        // Assign feeds to specific schedules in feedTracker for use by feedSchedules
+        if (scheduleWordDir && scheduleWordDir.size() > 0) {
+          for (var scheduleName in scheduleWordDir) {
+            let wordList = scheduleWordDir[scheduleName];
+            for (var i in wordList) {
+              if (rssList[rssName].link.includes(wordList[i]) && !feedTracker[rssName]) {
+                console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}INIT: Assigning feed ${rssName} to ${scheduleName}`)
+                feedTracker[rssName] = scheduleName; // Assign a schedule to a feed if it doesn't already exist in the feedTracker to another schedule
+              }
             }
           }
+          if (!feedTracker[rssName]) feedTracker[rssName] = 'default'; // Assign to default schedule if it wasn't assigned to a custom schedule
         }
-        if (!feedTracker[rssName]) feedTracker[rssName] = 'default'; // Assign to default schedule if it wasn't assigned to a custom schedule
       }
-
 
     }
   }

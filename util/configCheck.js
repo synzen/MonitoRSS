@@ -24,29 +24,13 @@ exports.checkExists = function(rssName, feed, logging, initializing) {
 }
 
 exports.validChannel = function(bot, guildId, feed) {
-  const guildRss = currentGuilds.get(guildId)
+  const channel = bot.channels.has(feed.channel);
+  const guild = bot.guilds.get(guildId)
 
-  if (!guildRss) {
-    console.info('CONFIGCHECK ERROR! GUILD ID IS ', guildId);
-    console.info(`FEED IS \n`, feed);
+  if (!channel) {
+    console.log(`RSS Config Warning: (${guildId}, ${guild.name}) => ${feed.link}'s channel was not found. skipping...`)
     return false;
   }
-
-  if (isNaN(parseInt(feed.channel,10))) {
-    const channel = bot.channels.find('name', feed.channel);
-    if (!channel) {
-      console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${rssName}'s string-defined channel was not found, skipping...`)
-      return false;
-    }
-    else return channel;
-  }
-  else {
-    const channel = bot.channels.get(`${feed.channel}`);
-    if (!channel) {
-      console.log(`RSS Config Warning: (${guildRss.id}, ${guildRss.name}) => ${feed.link}'s integer-defined channel was not found. skipping...`)
-      return false;
-    }
-    else return channel;
-  }
+  else return true;
 
 }

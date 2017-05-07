@@ -67,7 +67,7 @@ function rss(link, rssList, uniqueSettings, debugFeeds) {
 
     function processSource(rssName) {
       const channelId = rssList[rssName].channel
-      checkTableExists();
+      checkTableExists()
 
       let newArticles = [];
       let processedItems = 0;

@@ -126,7 +126,9 @@ exports.stats = function(bot, message) {
 exports.setgame = function(bot, message) {
   const content = message.content.split(' ')
   if (content.length === 1) return;
-  let game = content[1]
+  content.shift()
+  let game = content.join(' ')
+
   if (game === 'null') game = null;
   bot.user.setGame(game)
   config.botSettings.defaultGame = game // Make sure the change is saved even after a login retry
