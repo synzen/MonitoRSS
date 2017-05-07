@@ -24,19 +24,20 @@ function rss(link, rssList, uniqueSettings, debugFeeds) {
   const feedparser = new FeedParser()
   const currentFeed = []
 
-  var cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
+  const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
 
   requestStream(link, cookies, feedparser, function(err) {
     if (err) {
       logFeedErr({link: link, content: err}, true);
-      process.send('linkComplete');
+      process.send({status: 'failed', link: link, rssList: rssList});
     }
   })
 
   feedparser.on('error', function(err) {
-    feedparser.removeAllListeners('end')
-    process.send('linkComplete')
+    console.log('yea');
     logFeedErr({link: link, content: err}, true);
+    process.send({status: 'failed', link: link, rssList: rssList})
+    feedparser.removeAllListeners('end')
   });
 
   feedparser.on('readable', function() {
@@ -50,7 +51,7 @@ function rss(link, rssList, uniqueSettings, debugFeeds) {
 
   feedparser.on('end', function() {
 
-    if (currentFeed.length === 0) return process.send('linkComplete');
+    if (currentFeed.length === 0) return process.send({status: 'success'});
 
     let sourcesCompleted = 0
 
@@ -79,7 +80,7 @@ function rss(link, rssList, uniqueSettings, debugFeeds) {
           if (err || results.length === 0) {
             if (err) return logFeedErr({type: 'database', content: err, feed: rssList[rssName]});
             if (results.length === 0) console.log(`RSS Info: '${rssName}' appears to have been deleted, skipping...`);
-            return process.send('linkComplete'); // Callback no error object because 99% of the time it is just a hiccup
+            return process.send({status: 'success'}); // Callback no error object because 99% of the time it is just a hiccup
           }
 
           if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Table has been selected.`)
@@ -116,7 +117,7 @@ function rss(link, rssList, uniqueSettings, debugFeeds) {
           if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Never seen article (ID: ${articleId}, TITLE: ${article.title}), sending now`);
           article.rssName = rssName
           article.discordChannelId = channelId
-          process.send({article: article})
+          process.send({status: 'article', article: article})
           insertIntoTable({
             id: articleId,
             title: article.title
@@ -142,7 +143,7 @@ function rss(link, rssList, uniqueSettings, debugFeeds) {
 
     function finishSource() {
       sourcesCompleted++
-      if (sourcesCompleted === rssList.size()) return process.send('linkComplete');
+      if (sourcesCompleted === rssList.size()) return process.send({status: 'success'});
     }
 
   })

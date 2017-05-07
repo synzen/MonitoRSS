@@ -25,13 +25,13 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
   requestStream(link, cookies, feedparser, function(err) {
     if (err) {
       logFeedErr({link: link, content: err}, true);
-      callback(true)
+      callback({status: 'failed', link: link, rssList: rssList})
     }
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    callback(true)
+    callback({status: 'failed', link: link, rssList: rssList})
     logFeedErr({link: link, content: err}, true);
   });
 
@@ -45,7 +45,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
   });
 
   feedparser.on('end', function() {
-    if (currentFeed.length === 0) return callback(true);
+    if (currentFeed.length === 0) return callback({status: 'success'});
 
     let sourcesCompleted = 0
 
@@ -74,7 +74,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
           if (err || results.size() === 0) {
             if (err) return logFeedErr({type: 'database', content: err, feed: rssList[rssName]});
             if (results.size() === 0) console.log(`RSS Info: '${rssName}' appears to have been deleted, skipping...`);
-            return callback(true); // Callback no error object because 99% of the time it is just a hiccup
+            return callback({status: 'success'}); // Callback no error object because 99% of the time it is just a hiccup
           }
 
           if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Table has been selected.`)
@@ -111,7 +111,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
           if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Never seen article (ID: ${articleId}, TITLE: ${article.title}), sending now`);
           article.rssName = rssName
           article.discordChannelId = channelId
-          callback(false, article, rssList[rssName].guildId)
+          callback({status: 'article', article: article})
           insertIntoTable({
             id: articleId,
             title: article.title
@@ -138,7 +138,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
 
     function finishSource() {
       sourcesCompleted++
-      if (sourcesCompleted === rssList.size()) return callback(true)
+      if (sourcesCompleted === rssList.size()) return callback({status: 'success'})
     }
 
   })

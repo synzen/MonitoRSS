@@ -23,6 +23,8 @@
     "timezone": "America/New_York",
     "timeFormat": "ddd, D MMMM YYYY, h:mm A z",
     "maxFeeds": 5,
+    "failLimit": 0,
+    "notifyFail": true,
     "sendOldMessages": false,
     "defaultMaxAge": 1,
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"

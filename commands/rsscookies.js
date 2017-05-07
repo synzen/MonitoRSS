@@ -13,27 +13,12 @@ module.exports = function(bot, message, command) {
 
   const rssList = guildRss.sources
 
-  function sanitize(array) {
-    for (var p = array.length - 1; p >= 0; p--) { // Sanitize by removing spaces and newlines
-      array[p] = array[p].trim();
-      if (!array[p]) array.splice(p, 1);
-    }
-
-    return array
-  }
-
   getIndex(bot, message, command, function(rssName) {
     const currentCookies = (rssList[rssName].advanced && rssList[rssName].advanced.cookies && rssList[rssName].advanced.cookies.length > 0) ? rssList[rssName].advanced.cookies : undefined
 
-    let msg = (currentCookies) ? `The current cookies set for <${rssList[rssName].link}> is shown below.\`\`\`\n` : '```No cookies set.```\n'
+    let msg = (currentCookies) ? `The current cookie set for <${rssList[rssName].link}> is shown below.\`\`\`\n${currentCookies}\n\`\`\`` : '```No cookies set.```\n'
 
-    if (currentCookies) {
-      for (var cookie in currentCookies) {
-        msg += `\n${currentCookies[cookie]}`;
-      }
-    }
-
-    message.channel.send(msg + '\`\`\`\n\nType your new cookies now, each one separated by a semicolon, or type exit to cancel.')
+    message.channel.send(msg + '\n\nType your new cookie now, or type exit to cancel.')
     .then(function(msgPrompt) {
       const filter = m => m.author.id == message.author.id
       const customCollect = message.channel.createMessageCollector(filter,{time:240000})
@@ -43,20 +28,15 @@ module.exports = function(bot, message, command) {
         if (m.content.toLowerCase() === 'exit') return customCollect.stop('Cookie customization menu closed.');
 
         customCollect.stop()
-        const cookieList = sanitize(m.content.split(';'));
+        const cookie = m.content;
 
         if (!rssList[rssName].advanced) rssList[rssName].advanced = {cookies: {}};
-        rssList[rssName].advanced.cookies = cookieList
+        rssList[rssName].advanced.cookies = cookie
 
         fileOps.updateFile(message.guild.id, guildRss)
 
-        let newCookieList = `Your new cookies for <${rssList[rssName].link}> are now\n\`\`\`\n`
-        for (var newCookie in cookieList) {
-          newCookieList += `\n* ${cookieList[newCookie]}`;
-        }
-
-        message.channel.send(newCookieList + '```')
-        console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Cookies for ${rssList[rssName].link} has been set to `, cookieList);
+        message.channel.send(`Your new cookie for <${rssList[rssName].link}> is now\n\`\`\`\n${cookie}\`\`\``)
+        console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Cookie for ${rssList[rssName].link} has been set to `, cookie);
       })
 
       customCollect.on('end', function(collected, reason) {

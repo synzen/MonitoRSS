@@ -46,14 +46,14 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
   requestStream(link, cookies, feedparser, function(err) {
     if (err) {
       console.log(`${bot.shard ? 'SH ' + bot.shard.id : ''} INIT Error: Skipping ${link}. (${err})`);
-      return callback(true)
+      return callback({status: 'failed', link: link, rssList: rssList})
     }
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
     console.log(`${bot.shard ? 'SH ' + bot.shard.id : ''} INIT Error: Skipping ${link}. (${err})`)
-    return callback(true)
+    return callback({status: 'failed', link: link, rssList: rssList})
   });
 
   feedparser.on('readable', function() {
@@ -67,7 +67,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
 
   feedparser.on('end', function() {
     // Return if no articles in feed found
-    if (currentFeed.length === 0) return callback(true);
+    if (currentFeed.length === 0) return callback({status: 'success'});
 
     const totalItems = currentFeed.length
     let sourcesCompleted = 0
@@ -150,7 +150,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
           if (config.feedSettings.sendOldMessages == true) {
             article.rssName = rssName;
             article.discordChannelId = channelId;
-            callback(false, article)
+            callback({status: 'article', article: article})
           }
           insertIntoTable({
             id: articleId,
@@ -176,7 +176,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
 
     function finishSource() {
       sourcesCompleted++
-      if (sourcesCompleted === rssList.size()) return callback(true);
+      if (sourcesCompleted === rssList.size()) return callback({status: 'success'});
     }
   })
 }

@@ -3,6 +3,7 @@ const Discord = require('discord.js')
 const util = require('util')
 const moment = require('moment-timezone')
 const storage = require('../../util/storage.js')
+const blacklistGuilds = storage.blacklistGuilds
 const currentGuilds = storage.currentGuilds
 const cookieAccessors = storage.cookieAccessors
 const overriddenGuilds = storage.overriddenGuilds
@@ -141,6 +142,43 @@ exports.pingme = function(bot, message) {
   .setDescription('pong!')
 
   message.channel.send({embed: pong}).catch(err => console.info(`Commands Warning: Could not send the pong embed:\n`, pong))
+}
+
+exports.blacklist = function(bot, message) {
+  const content = message.content.split(' ')
+  if (content.length !== 2) return;
+
+  const guild = bot.guilds.get(content[1])
+  if (!guild) return message.channel.send('No such guild exists.');
+  if (blacklistGuilds.ids.includes(content[1])) return message.channel.send(`Guild ${guild.id} (${guild.name}) is already blacklisted.`);
+
+  blacklistGuilds.ids.push(guild.id)
+
+  fs.writeFile('./blacklist.json', JSON.stringify(blacklistGuilds, null, 2), function(err) {
+    if (err) throw err;
+    console.log(`Guild ${guild.id} (${guild.name}) has been blacklisted.`)
+    message.channel.send(`Guild ${guild.id} (${guild.name}) successfully blacklisted.`)
+  })
+}
+
+exports.unblacklist = function(bot, message) {
+  const content = message.content.split(' ')
+  if (content.length !== 2) return;
+
+  if (!blacklistGuilds.ids.includes(content[1])) return message.channel.send(`No such blacklisted guild.`);
+
+  for (var x in blacklistGuilds.ids) {
+    if (blacklistGuilds.ids[x] === content[1]) {
+      blacklistGuilds.ids.splice(x, 1);
+      fs.writeFile('./blacklist.json', JSON.stringify(blacklistGuilds, null, 2), function(err) {
+        if (err) throw err;
+        console.log(`Guild \`${content[1]}\` ${bot.guilds.get(content[1]) ? '(' + bot.guilds.get(content[1]).name + ') ' : ''}has been unblacklisted.`)
+        message.channel.send(`Guild \`${content[1]}\` ${bot.guilds.get(content[1]) ? '(' + bot.guilds.get(content[1]).name + ') ' : ''}successfully unblacklisted.`)
+      })
+      break;
+    }
+  }
+
 }
 
 exports.getsources = function(bot, message) {
@@ -384,7 +422,8 @@ exports.setconfig = function(bot, message) {
         config[categoryName][configName] = setting;
 
         fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
-        console.log(`Bot Controller: Config '${configName}' value has been changed to to '${setting}'.`)
+        console.log(`Bot Controller: Config '${configName}' value has been changed to to '${setting}'.`);
+        delete require.cache[require.resolve('../../config.json')];
         return message.channel.send(`Config \`${configName}\`'s current value is now set to \`${setting}\`.`);
 
       }

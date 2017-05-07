@@ -5,16 +5,12 @@ const channelTracker = require('../../util/channelTracker.js')
 const storage = require('../../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const overriddenGuilds = storage.overriddenGuilds
+const failedFeeds = storage.failedFeeds
 const pageControls = require('../../util/pageControls.js')   // reserved for when discord.js fixes their library
 
 module.exports = function(bot, message, command, callback) {
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
-
-  function isCurrentChannel(channel) {
-    if (isNaN(parseInt(channel,10))) return message.channel.name == channel;
-    return message.channel.id == channel;
-  }
 
   const rssList = guildRss.sources
   let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
@@ -23,10 +19,28 @@ module.exports = function(bot, message, command, callback) {
     .setColor(config.botSettings.menuColor)
     .setAuthor('Feed Selection Menu')
     .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${commandList[command].action === 'Feed Removal' ? 'You may select multiple feeds to remove by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`);
+
+  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
+
   const currentRSSList = []
 
+  if (commandList[command].action === 'Refresh Feed') {
+    var failedFeedCount = 0;
+
+    function getFeedStatus(link) {
+      const failCount = failedFeeds[link]
+      if (!failCount || failCount <= failLimit) return 'OK';
+      else {
+          failedFeedCount++;
+          return 'FAILED';
+      }
+    }
+  }
+
   for (var rssName in rssList) { // Generate the info for each feed as an array, and push into another array
-    if (isCurrentChannel(rssList[rssName].channel)) currentRSSList.push( [rssList[rssName].link, rssName, rssList[rssName].title] );
+    let o = {link: rssList[rssName].link, rssName: rssName, title: rssList[rssName].title};
+    if (commandList[command].action === 'Refresh Feed') o.status = getFeedStatus(rssList[rssName].link);
+    if (message.channel.id === rssList[rssName].channel) currentRSSList.push(o);
   }
 
   if (currentRSSList.length === 0) return message.channel.send('No feeds assigned to this channel.').catch(err => console.log(`Promise Warning: printFeeds 1: ${err}`));
@@ -34,17 +48,17 @@ module.exports = function(bot, message, command, callback) {
   const pages = []
   for (var x in currentRSSList) {
     const count = parseInt(x, 10) + 1;
-    const link = currentRSSList[x][0];
-    const title =  currentRSSList[x][2];
-    const channelName = currentRSSList[x][3];
+    const link = currentRSSList[x].link;
+    const title =  currentRSSList[x].title;
+    const status = currentRSSList[x].status;
 
     // 10 feeds per embed (AKA page)
-    if ((count - 1) !== 0 && (count - 1) / 10 % 1 === 0) {
+    if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {
       pages.push(embedMsg);
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}`)
     }
 
-    embedMsg.addField(`${count})  ${title}`, `Link: ${link}`);
+    embedMsg.addField(`${count})  ${title}`, `${commandList[command].action === 'Refresh Feed' ? 'Status: ' + status + '\n' : ''}Link: ${link}`);
   }
 
   // Push the leftover results into the last embed
@@ -97,7 +111,7 @@ module.exports = function(bot, message, command, callback) {
         else {
           collector.stop();
           for (var q in validChosens) {
-            validChosens[q] = currentRSSList[validChosens[q]][1];
+            validChosens[q] = currentRSSList[validChosens[q]].rssName;
           }
           return callback(validChosens);
         }
@@ -109,7 +123,7 @@ module.exports = function(bot, message, command, callback) {
       if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) return message.channel.send('That is not a valid number.').catch(err => console.log(`Promise Warning: printFeeds 4: ${err}`));
 
       collector.stop()
-      callback(currentRSSList[index][1])
+      callback(currentRSSList[index].rssName)
 
     })
     collector.on('end', function(collected, reason) {

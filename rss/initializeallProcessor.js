@@ -1,6 +1,6 @@
 process.on('uncaughtException', function(err) {
   console.info(err)
-  process.send({type: 'kill', contents: err})
+  process.send({status: 'fatal', err: err})
   process.exit()
 })
 
@@ -33,14 +33,14 @@ function init(link, rssList, uniqueSettings) {
   requestStream(link, cookies, feedparser, function(err) {
     if (err) {
       console.log(`INIT Error: Skipping ${link}. (${err})`);
-      return process.send('linkComplete')
+      return process.send({status: 'failed', link: link, rssList: rssList})
     }
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
     console.log(`INIT Error: Skipping ${link}. (${err})`)
-    return process.send('linkComplete')
+    return process.send({status: 'failed', link: link, rssList: rssList})
   });
 
   feedparser.on('readable', function() {
@@ -54,7 +54,7 @@ function init(link, rssList, uniqueSettings) {
 
   feedparser.on('end', function() {
     // Return if no articles in feed found
-    if (currentFeed.length === 0) return process.send('linkComplete');
+    if (currentFeed.length === 0) return process.send({status: 'success'});
 
     const totalItems = currentFeed.length
     let sourcesCompleted = 0
@@ -137,7 +137,7 @@ function init(link, rssList, uniqueSettings) {
           if (config.feedSettings.sendOldMessages == true) {
             article.rssName = rssName;
             article.discordChannelId = channelId;
-            process.send({article: article})
+            process.send({status: 'article', article: article})
           }
           insertIntoTable({
             id: articleId,
@@ -163,7 +163,7 @@ function init(link, rssList, uniqueSettings) {
 
     function finishSource() {
       sourcesCompleted++
-      if (sourcesCompleted === rssList.size()) return process.send('linkComplete');
+      if (sourcesCompleted === rssList.size()) return process.send({status: 'success'});
     }
   })
 }

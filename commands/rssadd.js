@@ -19,11 +19,6 @@ module.exports = function(bot, message) {
     return array
   }
 
-  function isCurrentChannel(channel) {
-    if (isNaN(parseInt(channel, 10))) return message.channel.name == channel;
-    else if (message.channel.id == channel) return message.channel.id == channel;
-  }
-
   const guildRss = (currentGuilds.has(message.guild.id)) ? currentGuilds.get(message.guild.id) : {}
   const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
   let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
@@ -49,7 +44,7 @@ module.exports = function(bot, message) {
       let successBox = 'The following feed(s) have been successfully added:\n```\n';
       for (var passedLink in passedLinks) {
         successBox += `\n* ${passedLink}`;
-        if (passedLinks[passedLink]) successBox += `\nCookies:\n${passedLinks[passedLink].join('\n')}`;
+        if (passedLinks[passedLink]) successBox += `\nCookie:${passedLinks[passedLink]}`;
       }
       msg += successBox + '\n```\n\n';
     }
@@ -72,7 +67,7 @@ module.exports = function(bot, message) {
     (function processLink(linkIndex) { // A self-invoking function for each link
 
       const linkItem = linkList[linkIndex].split(' ');
-      const rssLink = linkItem[0]; // One link may consist of the actual link, and its cookies
+      const rssLink = linkItem[0].trim(); // One link may consist of the actual link, and its cookies
 
       if (!rssLink.startsWith('http')) {
         failedLinks[rssLink] = 'Invalid/improperly-formatted link.';
@@ -81,14 +76,14 @@ module.exports = function(bot, message) {
       }
       else if (maxFeedsAllowed !== 'Unlimited' && rssList.size() >= maxFeedsAllowed) {
         console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${rssLink} due to limit of ${maxFeedsAllowed} feeds.`);
-        failedLinks[rssLink] = `Maximum feed limit of \`${maxFeedsAllowed}\` has been reached.`;
+        failedLinks[rssLink] = `Maximum feed limit of ${maxFeedsAllowed} has been reached.`;
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1);
         else return finishLinkList(verifyMsg);
       }
 
 
       for (var x in rssList) {
-        if (rssList[x].link === rssLink && isCurrentChannel(rssList[x].channel)) {
+        if (rssList[x].link === rssLink && message.channel.id === rssList[x].channel) {
           failedLinks[rssLink] = 'Already exists for this channel.';
           if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1);
           else return finishLinkList(verifyMsg);
@@ -100,7 +95,7 @@ module.exports = function(bot, message) {
       function init() {
         linkItem.shift()
         let cookieString = linkItem.join(' ')
-        var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitize(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined
+        var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? cookieString.slice(1, cookieString.length - 1).trim() : undefined
         var cookiesFound = cookies ? true: false
         if (config.advanced && config.advanced.restrictCookies == true && !cookieAccessors.ids.includes(message.author.id)) cookies = undefined;
         if (cookiesFound && !cookies) var cookieAccess = false;
@@ -124,7 +119,7 @@ module.exports = function(bot, message) {
             }
             // Reserve err.content for console logs, which are more verbose
             if (cookiesFound && !cookies) channelErrMsg += ' (Cookies were detected, but missing access for usage)';
-            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})${cookiesFound && !cookies ? ' (Cookies found, access denied)': ''}.`);
+            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${rssLink}. (${err.content})${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}.`);
             failedLinks[rssLink] = channelErrMsg;
           }
           else {

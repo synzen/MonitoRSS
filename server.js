@@ -13,7 +13,7 @@ if (config.logging.logDates) require('./util/logDates.js')()
 var cmdServer
 
 if (Discord.version !== '11.1.0') throw new Error('Discord.js is not updated to 11.1.0, please update.');
-else if (config.advanced.processorMethod === 'parallel' && config.feedManagement.sqlType !== 'mysql') throw new Error('processingMethod cannot be isolated or parallel if database type is not mysql.');
+else if (config.advanced.processorMethod === 'parallel' && config.feedManagement.sqlType !== 'mysql') throw new Error('processorMethod cannot be isolated or parallel if database type is not mysql.');
 else if (!config.botSettings.token) throw new Error('Token undefined in config.');
 else if (!config.botSettings.prefix) throw new Error('Prefix undefined in config');
 else if (!config.feedManagement.databaseName) throw new Error('databaseName undefined in config.');

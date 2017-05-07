@@ -2,7 +2,7 @@
 	"rsshelp": {
 	},
 	"rssadd": {
-		"description": "Add an RSS feed to the channel with the default message."
+		"description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with commas."
 	},
 	"rssremove": {
 		"action": "Feed Removal",
@@ -32,11 +32,11 @@
 	},
 	"rssroles": {
 		"action": "Role Customization",
-		"description": "Add global/filtered subscriptions for roles to feeds."
+		"description": "Opens a menu to add global/filtered subscriptions for roles to feeds."
 	},
 	"subme": {
 		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
-		"description": "Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Add a role with an active feed subscription to the user. Roles *must* be below the bot's role in role order in role settings."
+		"description": "Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Opens a menu to add a role with an active feed subscription to the user. Roles *must* be below the bot's role in role order in role settings."
 	},
 	"unsubme": {
 		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
@@ -44,6 +44,10 @@
 	},
 	"rsscookies": {
 		"action": "Cookie Customization",
-		"description": "Add cookies for feeds that may require authorization."
+		"description": "Opens a menu tp add cookies for feeds that may require authorization."
+	},
+	"rssrefresh": {
+		"action": "Refresh Feed",
+		"description": "Opens a menu to readd the feed link back onto the regular cycle if it has surpassed the fail limit."
 	}
 }

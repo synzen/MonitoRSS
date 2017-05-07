@@ -7,6 +7,7 @@ const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const feedTracker = storage.feedTracker // Directory object of rssNames with their values as schedule names
 const allScheduleWords = storage.allScheduleWords
+const failedFeeds = storage.failedFeeds
 const configChecks = require('./configCheck.js')
 const debugFeeds = require('../util/debugFeeds').list
 const events = require('events')
@@ -19,6 +20,7 @@ module.exports = function(bot, callback, schedule) {
   const sourceList = new Map()
   const modSourceList = new Map()
   const batchSize = (config.advanced && config.advanced.batchSize) ? config.advanced.batchSize : 400
+  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
 
   let processorList = []
   let regBatchList = []
@@ -28,8 +30,27 @@ module.exports = function(bot, callback, schedule) {
   let con
   let startTime
 
+  function addFailedFeed(link, rssList) {
+    failedFeeds[link] = (failedFeeds[link]) ? failedFeeds[link] + 1 : 1
+
+    console.log(failedFeeds[link])
+
+    if (failedFeeds[link] > failLimit) {
+      console.log(`RSS Error: ${link} has passed the fail limit (${failLimit}). Will no longer retrieve.`);
+      if (config.feedSettings.notifyFail != true) return;
+      for (var rssName in rssList) {
+        bot.channels.get(rssList[rssName].channel).send(`**ATTENTION** - Feed link <${link}> has exceeded the connection failure limit and will not be retried until bot instance is restarted. *See ${config.botSettings.prefix}rsslist* for more information.`);
+      }
+    }
+  }
+
+  function exceedsFailCount(link) {
+    return failedFeeds[link] && failedFeeds[link] > failLimit
+  }
+
   function addToSourceLists(guildRss, guildId) { // rssList is an object per guildRss
     let rssList = guildRss.sources
+
     function delegateFeed(rssName) {
 
       if (rssList[rssName].advanced && rssList[rssName].advanced.size() > 0) { // Special source list for feeds with unique settings defined
@@ -49,7 +70,7 @@ module.exports = function(bot, callback, schedule) {
     }
 
     for (var rssName in rssList) {
-      if (configChecks.checkExists(rssName, rssList[rssName], false) && configChecks.validChannel(bot, guildId, rssList[rssName])) {
+      if (configChecks.checkExists(rssName, rssList[rssName], false) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !exceedsFailCount(rssList[rssName].link)) {
         if (feedTracker[rssName] === schedule.name) { // If assigned to a schedule
           delegateFeed(rssName);
         }
@@ -159,13 +180,14 @@ module.exports = function(bot, callback, schedule) {
         }
       }
 
-      getArticles(con, link, rssList, uniqueSettings, function(completedLink, article, guildId) {
+      getArticles(con, link, rssList, uniqueSettings, function(linkCompletion) {
 
-        if (article) {
-          if (debugFeeds.includes(article.rssName)) console.log(`DEBUG ${article.rssName}: Emitted article event.`);
-          cycle.emit('article', article);
+        if (linkCompletion.status === 'article') {
+          if (debugFeeds.includes(linkCompletion.article.rssName)) console.log(`DEBUG ${linkCompletion.article.rssName}: Emitted article event.`);
+          return cycle.emit('article', linkCompletion.article);
         }
-        if (!completedLink) return;
+        if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList);
+        if (linkCompletion.status === 'success' && failedFeeds[linkCompletion.link]) delete failedFeeds[linkCompletion.link];
 
         completedLinks++
         if (completedLinks === currentBatch.size) {
@@ -195,17 +217,18 @@ module.exports = function(bot, callback, schedule) {
       processor.send({link: link, rssList: rssList, uniqueSettings: uniqueSettings, debugFeeds: debugFeeds})
     })
 
-    processor.on('message', function(m) {
-      if (m === 'linkComplete') {
-        completedLinks++;
-        if (completedLinks === currentBatch.size) {
-          if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type);
-          else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded');
-          else finishCycle();
-          processor.kill();
-        }
+    processor.on('message', function(linkCompletion) {
+      if (linkCompletion.status === 'article') return cycle.emit('article', linkCompletion.article);
+      if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList);
+      if (linkCompletion.status === 'success' && failedFeeds[linkCompletion.link]) delete failedFeeds[linkCompletion.link];
+
+      completedLinks++;
+      if (completedLinks === currentBatch.size) {
+        if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type);
+        else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded');
+        else finishCycle();
+        processor.kill();
       }
-      else cycle.emit('article', m.article)
     })
 
   }
@@ -223,17 +246,18 @@ module.exports = function(bot, callback, schedule) {
       let processorIndex = processorList.length - 1
       let processor = processorList[processorIndex]
 
-      processor.on('message', function(m) {
-        if (m === 'linkComplete') {
-          completedLinks++;
-          if (completedLinks === currentBatch.size) {
-            completedBatches++;
-            processor.kill();
-            processorList.splice(processorIndex, 1);
-            if (completedBatches === totalBatchLengths) finishCycle();
-          }
+      processor.on('message', function(linkCompletion) {
+        if (linkCompletion.status === 'article') return cycle.emit('article', linkCompletion.article);
+        if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList);
+        if (linkCompletion.status === 'success' && failedFeeds[linkCompletion.link]) delete failedFeeds[linkCompletion.link];
+
+        completedLinks++;
+        if (completedLinks === currentBatch.size) {
+          completedBatches++;
+          processor.kill();
+          processorList.splice(processorIndex, 1);
+          if (completedBatches === totalBatchLengths) finishCycle();
         }
-        else cycle.emit('article', m.article)
       })
 
       currentBatch.forEach(function(rssList, link) {

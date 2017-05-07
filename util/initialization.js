@@ -5,6 +5,7 @@ const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const feedTracker = storage.feedTracker // Directory of all feeds, used to track between multiple feed schedules
 const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
+const failedFeeds = storage.failedFeeds
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const fileOps = require('./fileOps.js')
@@ -45,9 +46,17 @@ module.exports = function(bot, callback) {
   const regBatchList = []
   const modBatchList = []
   const batchSize = (config.advanced && config.advanced.batchSize) ? config.advanced.batchSize : 400
+  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
+
   let skippedFeeds = 0
   let initializedFeeds = 0
   let con
+
+  function addFailedFeed(link) {
+    let failCount = failedFeeds[link]
+    if (!failCount) failedFeeds[link] = 1;
+    else failedFeeds[link]++;
+  }
 
   function genBatchLists() {
     let batch = new Map()
@@ -181,11 +190,11 @@ module.exports = function(bot, callback) {
         }
       }
 
-      initAll(con, link, rssList, uniqueSettings, function(completedLink, article) {
-        if (article) sendToDiscord(bot, article, function(err) { // This can result in great spam once the loads up after a period of downtime
+      initAll(con, link, rssList, uniqueSettings, function(linkCompletion) {
+        if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, function(err) { // This can result in great spam once the loads up after a period of downtime
           if (err) console.log(err);
         });
-        if (!completedLink) return;
+        if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link);
 
         completedLinks++
         console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
@@ -216,25 +225,25 @@ module.exports = function(bot, callback) {
       processor.send({link: link, rssList: rssList, uniqueSettings: uniqueSettings})
     })
 
-    processor.on('message', function(m) {
-      if (m.type === 'kill') {
+    processor.on('message', function(linkCompletion) {
+      if (linkCompletion.status === 'fatal') {
         if (bot.shard) bot.shard.broadcastEval('process.exit()');
-        throw m.contents; // Full error is printed from the processor
+        throw linkCompletion.err; // Full error is printed from the processor
       }
-      if (m === 'linkComplete') {
-        completedLinks++;
-        console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
-
-        if (completedLinks === currentBatch.size) {
-          if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type);
-          else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded');
-          else finishCycle();
-          processor.kill();
-        }
-      }
-      else sendToDiscord(bot, m.article, function(err) { // This can result in great spam once the loads up after a period of downtime
+      if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, function(err) { // This can result in great spam once the loads up after a period of downtime
         if (err) console.log(err);
       });
+      if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link)
+
+      completedLinks++;
+      console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
+
+      if (completedLinks === currentBatch.size) {
+        if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type);
+        else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded');
+        else finishCycle();
+        processor.kill();
+      }
     })
   }
 
@@ -256,24 +265,25 @@ module.exports = function(bot, callback) {
       const processor = process.fork('./rss/initializeallProcessor.js')
       let currentBatch = batchList[index];
 
-      processor.on('message', function(m) {
-        if (m.type === 'kill') {
+      processor.on('message', function(linkCompletion) {
+        if (linkCompletion.status === 'kill') {
           if (bot.shard) bot.shard.broadcastEval('process.exit()');
-          throw m.contents; // Full error is printed from the processor
+          throw linkCompletion.err; // Full error is printed from the processor
         }
-        if (m === 'linkComplete') {
-          completedLinks++;
-          totalCompletedLinks++;
-          console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Parallel Progress: ${totalCompletedLinks}/${totalLinks}`)
-          if (completedLinks === currentBatch.size) {
-            completedBatches++;
-            processor.kill();
-            if (completedBatches === totalBatchLengths) finishCycle();
-          }
-        }
-        else sendToDiscord(bot, m.article, function(err) { // This can result in great spam once the loads up after a period of downtime
+        if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, function(err) { // This can result in great spam once the loads up after a period of downtime
           if (err) console.log(err);
         });
+        if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link);
+
+        completedLinks++;
+        totalCompletedLinks++;
+        console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Parallel Progress: ${totalCompletedLinks}/${totalLinks}`)
+        if (completedLinks === currentBatch.size) {
+          completedBatches++;
+          processor.kill();
+          if (completedBatches === totalBatchLengths) finishCycle();
+        }
+
       })
 
       currentBatch.forEach(function(rssList, link) {

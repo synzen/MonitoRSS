@@ -3,19 +3,29 @@ const config = require('../config.json')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const overriddenGuilds = storage.overriddenGuilds
-const pageControls = require('../util/pageControls.js')   // reserved for when discord.js fixes their library
+const failedFeeds = storage.failedFeeds
+const pageControls = require('../util/pageControls.js')
 
 module.exports = function(bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
 
   const rssList = guildRss.sources
+  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
+  let failedFeedCount = 0
 
   // Function to get channel name, resolving for whether it the identifier is an ID or a string
   function getChannel(channel) {
-    if (isNaN(parseInt(channel, 10)) && bot.channels.find('name', channel)) return `${bot.channels.find('name', channel).name}`;
-    else if (bot.channels.get(channel)) return bot.channels.get(channel).name;
-    else return undefined;
+    return bot.channels.get(channel) ? bot.channels.get(channel).name : undefined
+  }
+
+  function getFeedStatus(link) {
+    const failCount = failedFeeds[link]
+    if (!failCount || failCount <= failLimit) return 'OK';
+    else {
+        failedFeedCount++;
+        return 'FAILED';
+    }
   }
 
   let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
@@ -27,24 +37,33 @@ module.exports = function(bot, message, command) {
 
   // Generate the info for each feed as an array, and push into another array
   const currentRSSList = []
-  for (var rssName in rssList){
-    currentRSSList.push( [rssList[rssName].link, rssList[rssName].title, getChannel(rssList[rssName].channel)] )
+  for (var rssName in rssList) {
+    let o = {
+      link: rssList[rssName].link,
+      title: rssList[rssName].title,
+      channel: getChannel(rssList[rssName].channel)
+    }
+    if (failLimit !== 0) o.status = getFeedStatus(rssList[rssName].link);
+    currentRSSList.push(o);
   }
+
+  if (failedFeedCount) embedMsg.description += `**Attention!** Feeds that have had more than ${failLimit} connection failures have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.botSettings.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n`;
 
   const pages = []
   for (var x in currentRSSList) {
     const count = parseInt(x, 10) + 1;
-    const link = currentRSSList[x][0];
-    const title =  currentRSSList[x][1];
-    const channelName = currentRSSList[x][2];
+    const link = currentRSSList[x].link;
+    const title =  currentRSSList[x].title;
+    const channelName = currentRSSList[x].channel;
+    const status = currentRSSList[x].status;
 
-    // 10 feeds per embed
-    if ((count - 1) !== 0 && (count - 1) / 10 % 1 === 0) {
+    // 7 feeds per embed
+    if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {
       pages.push(embedMsg);
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}\n\u200b`);
     }
 
-    embedMsg.addField(`${count})  ${title}`, `Channel: #${channelName}\nLink: ${link}`);
+    embedMsg.addField(`${count})  ${title}`, `${status ? 'Status: ' + status + '\n' : ''}Channel: #${channelName}\nLink: ${link}`);
   }
 
   // Push the leftover results into the last embed

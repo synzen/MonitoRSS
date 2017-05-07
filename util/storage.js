@@ -7,8 +7,10 @@ const currentGuilds = new Map()
 const changedGuilds = []
 const feedTracker = {}
 const allScheduleWords = []
+const failedFeeds = {}
 var cookieAccessors
 var overriddenGuilds
+var blacklistGuilds = []
 
 try {
   cookieAccessors = JSON.parse(fs.readFileSync('./cookieAccessors.json'))
@@ -16,12 +18,22 @@ try {
 catch(e) {
   cookieAccessors = {ids: []}
 }
+
 try {
   overriddenGuilds = JSON.parse(fs.readFileSync('./limitOverrides.json'))
 }
 catch(e) {
   overriddenGuilds = {}
 }
+
+try {
+  blacklistGuilds = JSON.parse(fs.readFileSync('./blacklist.json'))
+}
+catch(e) {
+  blacklistGuilds = {ids: []}
+}
+
+exports.blacklistGuilds = blacklistGuilds
 
 exports.currentGuilds = currentGuilds // Object for holding all guild profiles
 
@@ -34,3 +46,5 @@ exports.overriddenGuilds = overriddenGuilds
 exports.feedTracker = feedTracker // Used to track schedule assignment to feeds
 
 exports.allScheduleWords = allScheduleWords // Holds all words across all schedules
+
+exports.failedFeeds = failedFeeds
