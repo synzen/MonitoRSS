@@ -6,6 +6,7 @@ const requestStream = require('./request.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const logFeedErr = require('../util/logFeedErrs.js')
+const moment = require('moment-timezone')
 if (require('../config.json').logging.logDates) require('../util/logDates.js')()
 
 let con
