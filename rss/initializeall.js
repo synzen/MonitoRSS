@@ -93,7 +93,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err) throw err;
           if (results.size() === 0) {
-            console.log(`${bot.shard ? 'SH ' + bot.shard.id : ''} INIT Info: Table does not exist for ${rssName}, creating now and initializing all`);
+            console.log(`INIT Info: Table does not exist for ${rssName}, creating now and initializing all`);
             createTable();
           }
           else {
