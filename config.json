@@ -7,7 +7,7 @@
   },
   "botSettings": {
     "token": "",
-    "enableCommands": "true",
+    "enableCommands": true,
     "prefix": "~",
     "defaultGame": "",
     "controllerIds": [],
