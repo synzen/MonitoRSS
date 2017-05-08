@@ -107,6 +107,7 @@ function rss(link, rssList, uniqueSettings, debugFeeds) {
               // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched TITLE in table for (ID: ${articleId}, TITLE: ${article.title}).`);
               return decideAction(true);
             }
+            if (article.pubdate && article.pubdate !== 'Invalid Date' && article.pubdate > moment().subtract(1, 'days')) return decideAction(false); // Only send if newer than a day
             decideAction(false)
           })
         })

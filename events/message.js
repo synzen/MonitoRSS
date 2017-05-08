@@ -22,7 +22,7 @@ function logCommand(message, command) {
 }
 
 module.exports = function(bot, message) {
-  if (!message.member || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot) return;
+  if (!message.member || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot || !message.content.startsWith(config.botSettings.prefix)) return;
   if (blacklistGuilds.ids.includes(message.guild.id)) return;
 
   let m = message.content.split(" ")

@@ -15,6 +15,7 @@ const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const logFeedErr = require('../util/logFeedErrs.js')
 const debugFeeds = require('../util/debugFeeds').list
+const moment = require('moment-timezone')
 
 module.exports = function(con, link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
@@ -102,7 +103,8 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
               // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched TITLE in table for (ID: ${articleId}, TITLE: ${article.title}).`);
               return decideAction(true);
             }
-            decideAction(false)
+            if (article.pubdate && article.pubdate !== 'Invalid Date' && article.pubdate > moment().subtract(1, 'days')) return decideAction(false); // Only send if newer than a day
+            decideAction(true)
           })
         })
 
