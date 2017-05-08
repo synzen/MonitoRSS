@@ -242,7 +242,7 @@ module.exports = function(bot, callback) {
         if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type);
         else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded');
         else finishCycle();
-        processor.kill();
+        processor.disconnect();
       }
     })
   }
@@ -280,7 +280,7 @@ module.exports = function(bot, callback) {
         console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Parallel Progress: ${totalCompletedLinks}/${totalLinks}`)
         if (completedLinks === currentBatch.size) {
           completedBatches++;
-          processor.kill();
+          processor.disconnect();
           if (completedBatches === totalBatchLengths) finishCycle();
         }
 
