@@ -33,17 +33,17 @@ module.exports = function(bot, callback, schedule) {
   function addFailedFeed(link, rssList) {
     failedFeeds[link] = (failedFeeds[link]) ? failedFeeds[link] + 1 : 1
 
-    if (failedFeeds[link] > failLimit) {
+    if (failedFeeds[link] === failLimit) {
       console.log(`RSS Error: ${link} has passed the fail limit (${failLimit}). Will no longer retrieve.`);
-      if (config.feedSettings.notifyFail != true) return;
-      for (var rssName in rssList) {
-        bot.channels.get(rssList[rssName].channel).send(`**ATTENTION** - Feed link <${link}> has exceeded the connection failure limit and will not be retried until bot instance is restarted. *See ${config.botSettings.prefix}rsslist* for more information.`);
+      if (config.feedSettings.notifyFail == true) for (var rssName in rssList) {
+        bot.channels.get(rssList[rssName].channel).send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`);
       }
+      failedFeeds[link] = (new Date).toString()
     }
   }
 
-  function exceedsFailCount(link) {
-    return failedFeeds[link] && failedFeeds[link] > failLimit
+  function reachedFailCount(link) {
+    return typeof failedFeeds[link] === 'string' // string indicates it has reached the fail count, and is the date of when it failed
   }
 
   function addToSourceLists(guildRss, guildId) { // rssList is an object per guildRss
@@ -68,7 +68,7 @@ module.exports = function(bot, callback, schedule) {
     }
 
     for (var rssName in rssList) {
-      if (configChecks.checkExists(rssName, rssList[rssName], false) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !exceedsFailCount(rssList[rssName].link)) {
+      if (configChecks.checkExists(rssName, rssList[rssName], false) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !reachedFailCount(rssList[rssName].link)) {
         if (feedTracker[rssName] === schedule.name) { // If assigned to a schedule
           delegateFeed(rssName);
         }
@@ -123,12 +123,12 @@ module.exports = function(bot, callback, schedule) {
 
   function connect() {
     if (cycleInProgress) {
-      if (processorList.length === 0) {
-        console.log(`RSS Info: Previous ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle.`);
+      if (!config.advanced.processorMethod || config.advanced.processorMethod === 'single') {
+        console.log(`RSS Info: Previous ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`);
         return endCon(true);
       }
       else {
-        console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Processors from previous cycle were not killed. Killing all processors now.`);
+        console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Processors from previous cycle were not killed. Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`);
         for (var x in processorList) {
           processorList[x].kill();
         }
@@ -225,7 +225,7 @@ module.exports = function(bot, callback, schedule) {
         if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type);
         else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded');
         else finishCycle();
-        processor.disconnect();
+        processor.kill();
       }
     })
 
@@ -252,7 +252,7 @@ module.exports = function(bot, callback, schedule) {
         completedLinks++;
         if (completedLinks === currentBatch.size) {
           completedBatches++;
-          processor.disconnect();
+          processor.kill();
           processorList.splice(processorIndex, 1);
           if (completedBatches === totalBatchLengths) finishCycle();
         }
@@ -285,6 +285,10 @@ module.exports = function(bot, callback, schedule) {
 
   function finishCycle() {
     if (processorList.length === 0) cycleInProgress = false;
+
+    try {fs.writeFileSync('./util/failedFeeds.json', JSON.stringify(failedFeeds, null, 2))}
+    catch(e) {console.log(`Unable to update failedFeeds.json on end of cycle, reason: ${e}`)}
+
     var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''}. Cycle Time: ${timeTaken}s`);
   }
@@ -293,7 +297,7 @@ module.exports = function(bot, callback, schedule) {
   let refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15;
   timer = setInterval(connect, refreshTime*60000)
 
-  console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Schedule '${schedule.name}' has begun.`)
+  if (timer) console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}RSS Info: Schedule '${schedule.name}' has begun.`)
 
   this.stop = function() {
     clearInterval(timer)

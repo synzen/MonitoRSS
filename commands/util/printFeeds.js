@@ -8,17 +8,17 @@ const overriddenGuilds = storage.overriddenGuilds
 const failedFeeds = storage.failedFeeds
 const pageControls = require('../../util/pageControls.js')   // reserved for when discord.js fixes their library
 
-module.exports = function(bot, message, command, callback) {
+module.exports = function(bot, message, command, callback, miscOption) { // miscOption is for rssoptions command
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
 
   const rssList = guildRss.sources
-  let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  let maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited'
   let embedMsg = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
     .setAuthor('Feed Selection Menu')
-    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${commandList[command].action === 'Feed Removal' ? 'You may select multiple feeds to remove by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`);
+    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${command === 'rssoptions' ? commandList[command].options[miscOption] : commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${commandList[command].action === 'Feed Removal' ? 'You may select multiple feeds to remove by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`);
 
   const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
 
@@ -29,10 +29,10 @@ module.exports = function(bot, message, command, callback) {
 
     function getFeedStatus(link) {
       const failCount = failedFeeds[link]
-      if (!failCount || failCount <= failLimit) return 'OK';
+      if (!failCount || typeof failCount === 'number' && failCount < failLimit) return 'Status: OK\n';
       else {
           failedFeedCount++;
-          return 'FAILED';
+          return 'Status: FAILED\n';
       }
     }
   }
@@ -40,6 +40,7 @@ module.exports = function(bot, message, command, callback) {
   for (var rssName in rssList) { // Generate the info for each feed as an array, and push into another array
     let o = {link: rssList[rssName].link, rssName: rssName, title: rssList[rssName].title};
     if (commandList[command].action === 'Refresh Feed') o.status = getFeedStatus(rssList[rssName].link);
+    if (miscOption === 'titleChecks') o.titleChecks = rssList[rssName].checkTitles == true ? 'Title Checks: Enabled\n' : 'Title Checks: Disabled\n';
     if (message.channel.id === rssList[rssName].channel) currentRSSList.push(o);
   }
 
@@ -51,6 +52,7 @@ module.exports = function(bot, message, command, callback) {
     const link = currentRSSList[x].link;
     const title =  currentRSSList[x].title;
     const status = currentRSSList[x].status;
+    const titleChecks = currentRSSList[x].titleChecks;
 
     // 10 feeds per embed (AKA page)
     if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {
@@ -58,7 +60,7 @@ module.exports = function(bot, message, command, callback) {
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}`)
     }
 
-    embedMsg.addField(`${count})  ${title}`, `${commandList[command].action === 'Refresh Feed' ? 'Status: ' + status + '\n' : ''}Link: ${link}`);
+    embedMsg.addField(`${count})  ${title}`, `${titleChecks ? titleChecks : ''}${status ? status: ''}Link: ${link}`);
   }
 
   // Push the leftover results into the last embed

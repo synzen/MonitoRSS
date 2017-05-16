@@ -13,7 +13,7 @@ module.exports = function(bot, message, command) {
 
   const list = new Discord.RichEmbed()
   .setTitle('Self-Subscription Addition')
-  .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name you want to be added to, or type *exit* to cancel.\u200b\n\u200b\n')
+  .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name you want to be added to, or type **exit** to cancel.\u200b\n\u200b\n')
 
   // Generate list of all feeds and roles that can be added
   for (let option in options) {
@@ -24,7 +24,7 @@ module.exports = function(bot, message, command) {
     }
     const channelID = options[option].source.channel;
     const channelName = message.guild.channels.get(channelID).name;
-    list.addField(options[option].source.title, `**Channel:** #${channelName}\n${roleList}`, true);
+    list.addField(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n${roleList}`, true);
   }
 
   // Send list

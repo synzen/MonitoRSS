@@ -23,7 +23,7 @@ exports.add = function(message, rssName, role) {
   const msg = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
     .setAuthor('List of Filter Categories')
-    .setDescription(`**Chosen Feed:** ${rssList[rssName].link}${(role) ? '\n**Chosen Role:** ' + role.name : ''}\n\nBelow is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type *exit* to cancel.\u200b\n\u200b\n`)
+    .setDescription(`**Chosen Feed:** ${rssList[rssName].link}${(role) ? '\n**Chosen Role:** ' + role.name : ''}\n\nBelow is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel.\u200b\n\u200b\n`)
 
   // Generate the filter categories here
   for (var filterType in validFilterTypes) {
@@ -132,7 +132,7 @@ exports.remove = function(message, rssName, role) {
 
   const msg = new Discord.RichEmbed()
   .setColor(config.botSettings.menuColor)
-  .setDescription(`**Feed Title:** ${rssList[rssName].title}\n**Feed Link:** ${rssList[rssName].link}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type exit to cancel.\u200b\n\u200b\n`)
+  .setDescription(`**Feed Title:** ${rssList[rssName].title}\n**Feed Link:** ${rssList[rssName].link}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type **exit** to cancel.\u200b\n\u200b\n`)
   .setAuthor(`List of Assigned Filters`)
 
   // console.info(filterList)

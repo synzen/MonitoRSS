@@ -10,7 +10,7 @@ const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
-if (config.logging.logDates) require('../util/logDates.js')()
+if (config.logging.logDates == true) require('../util/logDates.js')()
 
 let con
 
@@ -54,7 +54,7 @@ function init(link, rssList, uniqueSettings) {
 
   feedparser.on('end', function() {
     // Return if no articles in feed found
-    if (currentFeed.length === 0) return process.send({status: 'success'});
+    if (currentFeed.length === 0) return process.send({status: 'success', link: link});
 
     const totalItems = currentFeed.length
     let sourcesCompleted = 0
@@ -84,15 +84,17 @@ function init(link, rssList, uniqueSettings) {
             createTable();
           }
           else {
-            let idArray = [];
-            for (var p in currentFeed) idArray.push(getArticleId(currentFeed[p]))
-
-            sqlCmds.cleanTable(con, rssName, idArray);
+            if (config.feedManagement.cleanDatabase == true) {
+              let idArray = [];
+              for (var p in currentFeed) idArray.push(getArticleId(currentFeed[p]))
+              sqlCmds.cleanTable(con, rssName, idArray);
+            }
 
             const feedLength = currentFeed.length - 1;
-            const defaultMaxAge = (config.feedSettings.defaultMaxAge) ? config.feedSettings.defaultMaxAge : 1;
+            const defaultMaxAge = config.feedSettings.defaultMaxAge && !isNaN(parseInt(config.feedSettings.defaultMaxAge, 10)) ? parseInt(config.feedSettings.defaultMaxAge, 10) : 1
+
             for (var x = feedLength; x >= 0; x--) { // Get feeds starting from oldest, ending with newest.
-              const cutoffDay = (rssList[rssName].maxAge) ? moment(new Date()).subtract(rssList[rssName].maxAge, 'd') : moment(new Date()).subtract(defaultMaxAge, 'd');
+              const cutoffDay = (rssList[rssName].maxAge) ? moment().subtract(rssList[rssName].maxAge, 'days') : moment().subtract(defaultMaxAge, 'days');
 
               if (currentFeed[x].pubdate >= cutoffDay) checkTable(currentFeed[x], getArticleId(currentFeed[x]));
               else if (currentFeed[x].pubdate < cutoffDay || currentFeed[x].pubdate == "Invalid Date") {
@@ -117,28 +119,26 @@ function init(link, rssList, uniqueSettings) {
 
         sqlCmds.selectId(con, rssName, articleId, function(err, IdMatches) {
           if (err) throw err;
-          if (IdMatches.length > 0) return decideAction(true);
-          sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
-            if (err) throw err;                                                     // Preventing articles with different GUIDs but same titles from sending is a priority
-            if (titleMatches.length > 0) return decideAction(true);
-            decideAction(false)
+          if (IdMatches.length > 0) return seenArticle(true);
+
+          if (config.feedSettings.checkTitles != true && rssList[rssName].checkTitles != true || config.feedSettings.checkTitles == false && rssList[rssName].checkTitles == true) return seenArticle(false);
+
+          sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) {
+            if (err) throw err;
+            if (titleMatches.length > 0) return seenArticle(true);
+            seenArticle(false)
           });
         })
 
-        function decideAction(seenArticle) {
-          if (seenArticle) return gatherResults(); // Stops here if it already exists in table, AKA "seen"
-          if (isOldArticle) {
-            return insertIntoTable({ // Stops here if it's unseen but is an old article
-              id: articleId,
-              title: article.title
-            });
-          }
+        function seenArticle(seen) {
+          if (seen) return gatherResults(); // Stops here if it already exists in table, AKA "seen"
 
-          if (config.feedSettings.sendOldMessages == true) {
+          if (config.feedSettings.sendOldMessages == true && !isOldArticle) {
             article.rssName = rssName;
             article.discordChannelId = channelId;
             process.send({status: 'article', article: article})
           }
+
           insertIntoTable({
             id: articleId,
             title: article.title
@@ -163,7 +163,7 @@ function init(link, rssList, uniqueSettings) {
 
     function finishSource() {
       sourcesCompleted++
-      if (sourcesCompleted === rssList.size()) return process.send({status: 'success'});
+      if (sourcesCompleted === rssList.size()) return process.send({status: 'success', link: link});
     }
   })
 }

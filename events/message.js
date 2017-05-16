@@ -27,6 +27,8 @@ module.exports = function(bot, message) {
 
   let m = message.content.split(" ")
   let command = m[0].substr(config.botSettings.prefix.length)
+  if (command === 'forceexit') loadCommand(command)(bot, message); // To forcibly clear a channel of active menus
+
   if (channelTracker.hasActiveMenus(message.channel.id)) return;
 
   // for regular commands

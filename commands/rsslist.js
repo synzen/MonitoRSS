@@ -21,14 +21,14 @@ module.exports = function(bot, message, command) {
 
   function getFeedStatus(link) {
     const failCount = failedFeeds[link]
-    if (!failCount || failCount <= failLimit) return 'OK';
+    if (!failCount || typeof failCount === 'number' && failCount <= failLimit) return 'Status: OK\n';
     else {
         failedFeedCount++;
-        return 'FAILED';
+        return 'Status: FAILED\n';
     }
   }
 
-  let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  let maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
 
   let embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
@@ -41,13 +41,14 @@ module.exports = function(bot, message, command) {
     let o = {
       link: rssList[rssName].link,
       title: rssList[rssName].title,
-      channel: getChannel(rssList[rssName].channel)
+      channel: getChannel(rssList[rssName].channel),
+      titleChecks: rssList[rssName].titleChecks == true ? 'Title Checks: Enabled\n' : null
     }
     if (failLimit !== 0) o.status = getFeedStatus(rssList[rssName].link);
     currentRSSList.push(o);
   }
 
-  if (failedFeedCount) embedMsg.description += `**Attention!** Feeds that have had more than ${failLimit} connection failures have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.botSettings.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n`;
+  if (failedFeedCount) embedMsg.description += `**Attention!** Feeds that have reached ${failLimit} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.botSettings.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n`;
 
   const pages = []
   for (var x in currentRSSList) {
@@ -56,6 +57,7 @@ module.exports = function(bot, message, command) {
     const title =  currentRSSList[x].title;
     const channelName = currentRSSList[x].channel;
     const status = currentRSSList[x].status;
+    const titleChecks = currentRSSList[x].titleChecks;
 
     // 7 feeds per embed
     if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {
@@ -63,7 +65,7 @@ module.exports = function(bot, message, command) {
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}\n\u200b`);
     }
 
-    embedMsg.addField(`${count})  ${title}`, `${status ? 'Status: ' + status + '\n' : ''}Channel: #${channelName}\nLink: ${link}`);
+    embedMsg.addField(`${count})  ${title}`, `${titleChecks ? titleChecks : ''}${status ? status : ''}Channel: #${channelName}\nLink: ${link}`);
   }
 
   // Push the leftover results into the last embed

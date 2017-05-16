@@ -21,7 +21,7 @@ module.exports = function(bot, message, command) {
 
   const list = new Discord.RichEmbed()
     .setTitle('Self-Subscription Removal')
-    .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name you want removed, or type *exit* to cancel.\n_____')
+    .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name you want removed, or type **exit** to cancel.\u200b\n\u200b\n')
   // Generate a list of feeds and eligible roles to be removed
 
   const options = getSubList(bot, message.guild, rssList)
@@ -36,7 +36,7 @@ module.exports = function(bot, message, command) {
     if (roleList) {
       let channelID = options[option].source.channel;
       let channelName = message.guild.channels.get(channelID).name;
-      list.addField(options[option].source.title, `**Channel:**: #${channelName}\n${roleList}`, true);
+      list.addField(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:**: #${channelName}\n${roleList}`, true);
     }
   }
 

@@ -91,7 +91,7 @@ module.exports = function(bot, message, command) {
 
     if (currentEmbedProps == '```Markdown\n') currentEmbedProps = '```\nNo properties set.\n';
 
-    message.channel.send(`The current embed properties for ${rssList[rssName].link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type **exit** to cancel.`)
+    message.channel.send(`The current embed properties for ${rssList[rssName].link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type \`exit\` to cancel.`)
     .then(function(m) {
       const filter = m => m.author.id == message.author.id
       const customCollect = message.channel.createMessageCollector(filter,{time:240000})
@@ -124,7 +124,7 @@ module.exports = function(bot, message, command) {
           else if (finalChange.toLowerCase() === 'reset') return reset(propertyCollect, choice);
           else if (choice === 'color') {
            if (isNaN(parseInt(finalChange, 10))) return message.channel.send('The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`));
-           else if (finalChange < 0 || finalChange > '16777215') return message.channel.send('The color must be a number between 0 and 16777215. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`));
+           else if (parseInt(finalChange, 10) < 0 || parseInt(finalChange, 10) > 16777215) return message.channel.send('The color must be a number between 0 and 16777215. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`));
           }
           else if (imageFields.includes(choice) && !isValidImg(finalChange)) return message.channel.send('URLs must link to actual images or be `{imageX}` tags. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`));
           else if (choice === 'attachURL' && !finalChange.startsWith('http')) return message.channel.send('URL option must be a link. Try again.').catch(err => console.log(`Promise Warning: rssEmbed 7: ${err} `));

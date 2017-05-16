@@ -1,3 +1,4 @@
+const fs = require('fs')
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
@@ -6,6 +7,8 @@ const requestStream = require('../rss/request.js')
 const getIndex = require('./util/printFeeds.js')
 
 module.exports = function(bot, message, command) {
+  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
+
   if (failLimit === 0) return message.channel.send(`No fail limit has been set.`);
   if (failedFeeds.size() === 0) return message.channel.send(`There are no feeds that have exceeded the fail limit.`)
 
@@ -14,23 +17,25 @@ module.exports = function(bot, message, command) {
     const rssList = guildRss.sources
     const source = rssList[rssName]
 
-    const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
-
-    if (!failedFeeds[source.link] || failedFeeds[source.link] <= failLimit) return message.channel.send('Unable to refresh a feed if it has not reached the failure limit.');
-
-
+    if (!failedFeeds[source.link] || failedFeeds[source.link] < failLimit) return message.channel.send('Unable to refresh a feed if it has not reached the failure limit.');
 
     const cookies = (source.advanced && source.advanced.cookies && source.advanced.size() > 0) ? source.advanced.cookies : undefined
-    requestStream(source.link, cookies, null, function(err) {
-      if (err) {
-        console.log(`Commands Info: Unable to refresh feed link ${source.link}, reason: `, err);
-        return message.channel.send(`Unable to refresh feed. Reason:\n\`\`\`${err}\n\`\`\``);
-      }
-      delete failedFeeds[source.link]
-      console.log(`RSS Info: Link ${source.link} has been refreshed, and will be back on cycle.`);
-      message.channel.send(`Successfully refreshed <${source.link}>.`)
-    })
+    message.channel.send(`Processing request for refresh...`)
+    .then(function(processing) {
+      requestStream(source.link, cookies, null, function(err) {
+        if (err) {
+          console.log(`Commands Info: Unable to refresh feed link ${source.link}, reason: `, err);
+          return processing.edit(`Unable to refresh feed. Reason:\n\`\`\`${err}\n\`\`\``);
+        }
+        delete failedFeeds[source.link]
 
+        try {fs.writeFileSync('./util/failedFeeds.json', JSON.stringify(failedFeeds, null, 2))}
+        catch(e) {console.log(`Error: Unable to update failedFeeds.json from rssrefresh. Reason: ${e}`)}
+
+        console.log(`RSS Info: Link ${source.link} has been refreshed back on cycle.`);
+        processing.edit(`Successfully refreshed <${source.link}>. It will now be retrieved on subsequent cycles.`)
+      })
+    }).catch(err => console.log(`Promise Warning: rssrefresh 1: ${err}`))
   })
 
 }

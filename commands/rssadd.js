@@ -21,7 +21,7 @@ module.exports = function(bot, message) {
 
   const guildRss = (currentGuilds.has(message.guild.id)) ? currentGuilds.get(message.guild.id) : {}
   const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
-  let maxFeedsAllowed = overriddenGuilds[message.guild.id] ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  let maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
 
   if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => console.log(`Promise Warning rssAdd 0: ${err}`)); // If there is no link after rssadd, return.
@@ -44,7 +44,11 @@ module.exports = function(bot, message) {
       let successBox = 'The following feed(s) have been successfully added:\n```\n';
       for (var passedLink in passedLinks) {
         successBox += `\n* ${passedLink}`;
-        if (passedLinks[passedLink]) successBox += `\nCookie:${passedLinks[passedLink]}`;
+        if (passedLinks[passedLink]) { // passedLinks[passedLink] is the cookie object
+          let cookieList = '';
+          for (var cookieKey in passedLinks[passedLink]) cookieList += `\n${cookieKey} = ${passedLinks[passedLink][cookieKey]}`;
+          successBox += `\nCookies:${cookieList}`;
+        }
       }
       msg += successBox + '\n```\n\n';
     }
@@ -94,8 +98,17 @@ module.exports = function(bot, message) {
 
       function init() {
         linkItem.shift()
+
         let cookieString = linkItem.join(' ')
-        var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? cookieString.slice(1, cookieString.length - 1).trim() : undefined
+        var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitize(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined
+        if (cookies) {
+          let cookieObj = {}; // Convert cookie array into cookie object with key as key, and value as value
+          for (var c in cookies) {
+            let cookie = cookies[c].split('=');
+            if (cookie.length === 2) cookieObj[cookie[0].trim()] = cookie[1].trim();
+          }
+          cookies = cookieObj;
+        }
         var cookiesFound = cookies ? true: false
         if (config.advanced && config.advanced.restrictCookies == true && !cookieAccessors.ids.includes(message.author.id)) cookies = undefined;
         if (cookiesFound && !cookies) var cookieAccess = false;

@@ -12,6 +12,8 @@ const debugFeeds = require('../../util/debugFeeds.js').list
 const fs = require('fs')
 const fileOps = require('../../util/fileOps.js')
 const requestStream = require('../../rss/request.js')
+const channelTracker = require('../../util/channelTracker.js')
+const removeRss = require('../../util/removeRss.js')
 
 function isValidInt(configName, input) {
   const content = input.split(' ')
@@ -157,9 +159,28 @@ exports.blacklist = function(bot, message) {
   blacklistGuilds.ids.push(guild.id)
 
   fs.writeFile('./blacklist.json', JSON.stringify(blacklistGuilds, null, 2), function(err) {
-    if (err) throw err;
-    console.log(`Guild ${guild.id} (${guild.name}) has been blacklisted.`)
-    message.channel.send(`Guild ${guild.id} (${guild.name}) successfully blacklisted.`)
+    if (err) {
+      console.log(`Bot Controller: Unable to permanently blacklist (${guild.id} ${guild.name}) as requested by (${message.author.id}, ${message.author.username}), reason: `, err);
+      return message.channel.send(`Unable to permanently blacklist. Reason: `, err);
+    }
+    try {
+      fs.unlinkSync(`./sources/${guild.id}.json`)
+      const guildRss = currentGuilds.get(content[1])
+      if (guildRss) {
+        for (var rssName in guildRss.sources) {
+          removeRss(guild.id, rssName, function(link, rssName) {
+            console.log(`Bot Controller: Removed ${rssName} has part of blacklist operation.`)
+          })
+        }
+        currentGuilds.delete(guild.id);
+      }
+      console.log(`Bot Controller: Successfully blacklisted guild (${guild.id} ${guild.name}) and deleted source file as requested by (${message.author.id}, ${message.author.username}).`)
+      message.channel.send(`Successfully blacklisted guild ${guild.id} (${guild.name}) and deleted source file.`)
+    }
+    catch(e) {
+      console.log(`Bot Controller: Successfully blacklisted, but unable to delete source file for guild (${guild.id} ${guild.name}) as requested by (${message.author.id}, ${message.author.username}). Reason: `, e)
+    }
+
   })
 }
 
@@ -181,20 +202,6 @@ exports.unblacklist = function(bot, message) {
     }
   }
 
-}
-
-exports.showfailed = function(bot, message) {
-  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
-
-  let msg = ''
-  for (var link in failedFeeds) {
-    if (failedFeeds[link] >= failLimit) msg += `\n${link}`;
-  }
-  if (msg.length > 1950) {
-    console.info(`Failed link list requested by ${message.author.id} (${message.author.username}): `, msg)
-    return message.channel.send(`List is longer than 1950 characters. Logging to console instead.`);
-  }
-  message.channel.send('```' + msg + '```');
 }
 
 exports.refresh = function(bot, message) {
@@ -247,7 +254,7 @@ exports.getsources = function(bot, message) {
   else message.channel.send('No sources available.');
 }
 
-exports.feedguild = function(bot, message) {
+exports.feedguild = function(bot, message) { // Get guild ID from rssName
   const content = message.content.split(' ')
   if (content.length !== 2) return;
   let found = false
@@ -263,6 +270,103 @@ exports.feedguild = function(bot, message) {
   })
 
   if (!found) message.channel.send(`Could not find any feeds with that rssName.`);
+}
+
+exports.forceremove = function(bot, message) {
+  let content = message.content.split(' ')
+  if (content.length < 2) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}forceremove <keywords> <optional reason>\`.`);
+  content.shift()
+  linkPart = content.shift()
+  let reason = content.length > 0 ? content.join(' ').trim() : undefined
+
+  let found = false
+
+  const affectedGuilds = []
+  const links = []
+
+  currentGuilds.forEach(function(guildRss, guildId) {
+    let rssList = guildRss.sources
+
+    for (var rssName in rssList) {
+      if (rssList[rssName].link.includes(linkPart)) {
+        if (!links.includes(rssList[rssName].link)) links.push(rssList[rssName].link);
+        if (!affectedGuilds.includes(guildId)) affectedGuilds.push(guildId);
+      }
+    }
+  })
+
+  if (links.length === 0) return message.channel.send(`No such links of your criteria have been found.`).catch(err => console.log(`Promise Warning: forceremove 1: ${err}`))
+
+  let msg ='```'
+  for (var x in links) {
+    msg += `\n${links[x]}`;
+  }
+  msg += '```'
+
+  const collector = message.channel.createMessageCollector(m => m.author.id == message.author.id,{time:240000})
+  channelTracker.addCollector(message.channel.id)
+
+  message.channel.send(`The list of links to be removed ${reason ? 'and the reason for removal ' : ''}is shown below.\n\n${reason ? '```Reason: ' + reason + '```\n' : ''}${msg.length > 1950 ? '```Unable to print links to discord - exceeds 1950 chars. Please see console.```' : msg}\n\nDo you want to continue? Type **Yes** to confirm, or **No** to cancel.`)
+  .then(function(prompt) {
+
+    if (msg.length > 1950) {
+      console.log(`Bot Controller: Links that are about to be forcibly removed as requested by (${message.author.id}, ${message.author.username}): `)
+      for (var a in links) {
+        console.info(`\n${links[a]}`);
+      }
+    }
+
+    collector.on('collect', function(m) {
+      if (m.content !== 'Yes' && m.content !== 'No') return message.channel.send('That is not a valid Option. Please type either **Yes** or **No**.');
+      collector.stop()
+
+      if (m.content === 'No') return message.channel.send(`Force removal canceled.`);
+      let removedLinks = []
+
+      for (var i in affectedGuilds) {
+
+        const guildRss = currentGuilds.get(affectedGuilds[i]);
+        const rssList = guildRss.sources;
+        let names = []
+
+        for (var name in rssList) {
+          for (var e in links) {
+            if (rssList[name].link === links[e]) {
+              removedLinks.push(links[e]);
+              names.push(name);
+            }
+          }
+        }
+
+        for (var l in names) {
+          let channel = bot.channels.get(rssList[names[l]].channel);
+          if (reason && channel) channel.send(`**ATTENTION:** Feeds with link <${rssList[names[l]].link}> have been forcibly removed from all servers. Reason: ${reason}`).catch(err => console.log(`Could not send force removal notification to server ${channel.guild.id}, reason: ${err}`));
+          removeRss(channel.guild.id, names[l]);
+          delete rssList[names[l]];
+        }
+        fileOps.updateFile(affectedGuilds[i], guildRss);
+
+      }
+
+      if (removedLinks.length === 0) message.channel.send('Unable to remove any links.').catch(err => console.log(`Promise Warning: forceremove 2: ${err}`));
+
+      msg = '```';
+      for (var p in removedLinks) {
+        msg += `\n${removedLinks[p]}`;
+      }
+
+      message.channel.send(`Successfully removed \`${removedLinks.length}\` link(s). Links:\n${msg + '```'}`)
+      console.log(`Bot Controller: The following links have been forcibly removed by (${message.author.id}, ${message.author.username}): \n`, removedLinks);
+
+    })
+
+    collector.on('end', function(collected, reason) {
+      channelTracker.removeCollector(message.channel.id)
+      if (reason == 'time') return message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
+      else if (reason !== 'user') return message.channel.send(reason);
+    });
+  }).catch(err => console.log(`Could not send a list of links that are to be afffected, reason: `, err))
+
 }
 
 exports.debug = function(bot, message) {
@@ -312,7 +416,7 @@ exports.setoverride = function(bot, message) {
   if (newLimit == config.feedSettings.maxFeeds) return message.channel.send(`That is already the default limit.`);
 
   if (typeof overriddenGuilds !== 'object') overriddenGuilds = {};
-  overriddenGuilds[content[1]] = content[2];
+  overriddenGuilds[content[1]] = newLimit;
   fs.writeFile('./limitOverrides.json', JSON.stringify(overriddenGuilds, null, 2), function(err) {
     if (err) throw err;
     var enforced
@@ -325,6 +429,7 @@ exports.setoverride = function(bot, message) {
         for (var rssName in rssList) {
           if (rssList.size() > newLimit) {
             enforced++;
+            removeRss(content[1], rssName);
             delete rssList[rssName];
           }
         }
@@ -360,6 +465,7 @@ exports.removeoverride = function(bot, message) {
           for (var rssName in rssList) {
             if (rssList.size() > config.feedSettings.maxFeeds) {
               enforced++;
+              removeRss(content[1], rssName);
               delete rssList[rssName];
             }
           }

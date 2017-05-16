@@ -59,7 +59,7 @@ module.exports = function(bot, message, command) {
   function openSubMenu(rssName, role, isGlobalSub) {
     const subMenu = new Discord.RichEmbed()
       .setColor(config.botSettings.menuColor)
-      .setDescription(`**Selected Role**: ${role.name}\n**Feed Title:** ${rssList[rssName].title}\n**Feed Link:** ${rssList[rssName].link}\n\nSelect an option by typing its number, or type *exit* to cancel.\u200b\n\u200b\n`)
+      .setDescription(`**Selected Role**: ${role.name}\n**Feed Title:** ${rssList[rssName].title}\n**Feed Link:** ${rssList[rssName].link}\n\nSelect an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n`)
 
     if (!isGlobalSub) {
       subMenu.addField(`1) Add filter to filtered subscription`, `Add a filtered subscription so that this role will get mentioned everytime an article from a feed passes its filter tests.`);
@@ -69,7 +69,7 @@ module.exports = function(bot, message, command) {
     else {
       subMenu.addField(`1) Add global subscription`, `Have the role get mentioned every time a new article is posted from this feed.`);
       subMenu.addField(`2) Remove global subscription`, `Remove the role's subscription to this feed.`);
-      subMenu.setAuthor(`Role Cusotmization: Add/Remove Global Subscription`);
+      subMenu.setAuthor(`Role Cusotmization - Add/Remove Global Subscription`);
     }
 
     message.channel.send({embed: subMenu}).catch(err => console.log(`Promise Warning: rssRoles/openSubMenu 1: ${err}`))

@@ -7,10 +7,10 @@ const currentGuilds = new Map()
 const changedGuilds = []
 const feedTracker = {}
 const allScheduleWords = []
-const failedFeeds = {}
 var cookieAccessors
 var overriddenGuilds
-var blacklistGuilds = []
+var blacklistGuilds
+var failedFeeds
 
 try {
   cookieAccessors = JSON.parse(fs.readFileSync('./cookieAccessors.json'))
@@ -31,6 +31,13 @@ try {
 }
 catch(e) {
   blacklistGuilds = {ids: []}
+}
+
+try {
+  failedFeeds = JSON.parse(fs.readFileSync('./util/failedFeeds.json'))
+}
+catch(e) {
+  failedFeeds = {}
 }
 
 exports.blacklistGuilds = blacklistGuilds

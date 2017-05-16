@@ -16,6 +16,7 @@ const sqlCmds = require('./sql/commands.js')
 const logFeedErr = require('../util/logFeedErrs.js')
 const debugFeeds = require('../util/debugFeeds').list
 const moment = require('moment-timezone')
+const config = require('../config.json')
 
 module.exports = function(con, link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
@@ -46,7 +47,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
   });
 
   feedparser.on('end', function() {
-    if (currentFeed.length === 0) return callback({status: 'success'});
+    if (currentFeed.length === 0) return callback({status: 'success', link: link});
 
     let sourcesCompleted = 0
 
@@ -73,47 +74,62 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
       function checkTableExists() {
         sqlCmds.selectTable(con, rssName, function(err, results) {
           if (err || results.size() === 0) {
-            if (err) return logFeedErr({type: 'database', content: err, feed: rssList[rssName]});
+            if (err) return logFeedErr({type: 'database', link: link, content: err, feed: rssList[rssName]});
             if (results.size() === 0) console.log(`RSS Info: '${rssName}' appears to have been deleted, skipping...`);
-            return callback({status: 'success'}); // Callback no error object because 99% of the time it is just a hiccup
+            return callback({status: 'success', link: link}); // Callback no error object because 99% of the time it is just a hiccup
           }
 
-          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Table has been selected.`)
+          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Table has been selected. Size of currentFeed: ${currentFeed.length}`)
 
           const feedLength = currentFeed.length - 1;
+          const cycleMaxAge = config.feedSettings.cycleMaxAge && !isNaN(parseInt(config.feedSettings.cycleMaxAge, 10)) ? parseInt(config.feedSettings.cycleMaxAge, 10) : 1
+
           for (var x = feedLength; x >= 0; x--) {
-            // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(currentFeed[x])}, TITLE: ${currentFeed[x].title})`);
-            checkTable(currentFeed[x], getArticleId(currentFeed[x]));
+            if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(currentFeed[x])}, TITLE: ${currentFeed[x].title})`);
+
+            if (currentFeed[x].pubdate && currentFeed[x].pubdate !== 'Invalid Date' && currentFeed[x].pubdate > moment().subtract(cycleMaxAge, 'days')) checkTable(currentFeed[x], getArticleId(currentFeed[x]));
+            else checkTable(currentFeed[x], getArticleId(currentFeed[x]), true);
+
             filteredItems++;
           }
         })
       }
 
-      function checkTable(article, articleId) {
-        let seenArticle = false
+      function checkTable(article, articleId, isOldArticle) {
         sqlCmds.selectId(con, rssName, articleId, function(err, idMatches, fields) {
-          if (err) return logFeedErr({type: 'database', content: err, feed: rssList[rssName]});
+          if (err) return logFeedErr({type: 'database', link: link, content: err, feed: rssList[rssName]});
+
           if (idMatches.length > 0) {
-            // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`);
-            return decideAction(true);
+            if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`);
+            return seenArticle(true);
           }
-          sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) { // Double check if title exists if ID was not found in table and is apparently a new article
-            if (err) throw err;                                                          // Preventing articles with different GUIDs but same titles from sending is a priority
+
+          if (config.feedSettings.checkTitles != true && rssList[rssName].checkTitles != true || config.feedSettings.checkTitles == false && rssList[rssName].checkTitles == true) return seenArticle(false);
+
+          sqlCmds.selectTitle(con, rssName, article.title, function(err, titleMatches) {
+            if (err) throw err;
+
             if (titleMatches.length > 0) {
-              // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched TITLE in table for (ID: ${articleId}, TITLE: ${article.title}).`);
-              return decideAction(true);
+              if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched TITLE in table for (ID: ${articleId}, TITLE: ${article.title}).`);
+              return seenArticle(true);
             }
-            if (article.pubdate && article.pubdate !== 'Invalid Date' && article.pubdate > moment().subtract(1, 'days')) return decideAction(false); // Only send if newer than a day
-            decideAction(true)
+
+            seenArticle(false)
           })
         })
 
-        function decideAction(seenArticle) {
-          if (seenArticle) return gatherResults();
-          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Never seen article (ID: ${articleId}, TITLE: ${article.title}), sending now`);
-          article.rssName = rssName
-          article.discordChannelId = channelId
-          callback({status: 'article', article: article})
+        function seenArticle(seen) {
+          if (seen) return gatherResults();
+
+          if (debugFeeds.includes(rssName)) {
+            if (!isOldArticle) console.log(`DEBUG ${rssName}: Never seen article (ID: ${articleId}, TITLE: ${article.title}), sending now`);
+            else console.log(`DEBUG ${rssName}: Never seen article, but declared old - not sending (ID: ${articleId}, TITLE: ${article.title})`);
+          }
+          article.rssName = rssName;
+          article.discordChannelId = channelId;
+          if (!isOldArticle) callback({status: 'article', article: article});
+
+
           insertIntoTable({
             id: articleId,
             title: article.title
@@ -124,7 +140,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
 
       function insertIntoTable(articleInfo) {
         sqlCmds.insert(con, rssName, articleInfo, function(err, res) { // inserting the feed into the table marks it as "seen"
-          if (err) return logFeedErr({type: 'database', content: err, feed: rssList[rssName]});
+          if (err) return logFeedErr({type: 'database', link: link, content: err, feed: rssList[rssName]});
           if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Article (ID: ${articleInfo.id}, TITLE: ${articleInfo.title}) should have been sent, and now added into table`);
           gatherResults();
         })
@@ -140,7 +156,7 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
 
     function finishSource() {
       sourcesCompleted++
-      if (sourcesCompleted === rssList.size()) return callback({status: 'success'})
+      if (sourcesCompleted === rssList.size()) return callback({status: 'success', link: link})
     }
 
   })

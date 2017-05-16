@@ -4,15 +4,24 @@ const moment = require('moment-timezone')
 const cleanEntities = require('entities')
 const currentGuilds = require('../../util/storage.js').currentGuilds
 
+// To avoid stack call exceeded
+function trampoline(func, obj, results) {
+  var value = func(obj, results);
+  while (typeof value === "function") {
+    value = value();
+  }
+  return value;
+}
+
 // Used to find images in any object values of the article
-function findImages(object, results) {
-  for (var key in object) {
-    if (typeof object[key] === 'string') {
-      if (object[key].match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(object[key]) && results.length < 9) {
-        results.push(object[key]);
+function findImages(obj, results) {
+  for (var key in obj) {
+    if (Object.prototype.toString.call(obj[key]) === '[object Object]') {
+      return function() {
+        return findImages(obj[key], results);
       }
     }
-    if (typeof object[key] === 'object') setTimeout(function() {findImages(object[key], results)}, 0)
+    else if (typeof obj[key] === 'string' && obj[key].match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(obj[key]) && results.length < 9) results.push(obj[key]);
   }
 }
 
@@ -40,7 +49,7 @@ module.exports = function Article(rawArticle, guildId) {
   // Must be replaced with empty string if it exists in source config since these are replaceable tags
   this.title = (rawArticle.title) ? cleanRandoms(rawArticle.title) : ''
   this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author): ''
-  this.link = (rawArticle.link) ? rawArticle.link : ''
+  this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
 
   // date
   const guildTimezone = currentGuilds.get(guildId).timezone
@@ -71,7 +80,7 @@ module.exports = function Article(rawArticle, guildId) {
 
   // image(s)
   const imageLinks = []
-  findImages(rawArticle, imageLinks)
+  trampoline(findImages, rawArticle, imageLinks);
   this.images = (imageLinks.length == 0) ? undefined : imageLinks
 
   this.listImages = function () {

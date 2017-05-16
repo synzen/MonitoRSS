@@ -53,9 +53,14 @@ module.exports = function(bot, callback) {
   let con
 
   function addFailedFeed(link) {
-    let failCount = failedFeeds[link]
-    if (!failCount) failedFeeds[link] = 1;
+    if (!failedFeeds[link]) failedFeeds[link] = 1;
     else failedFeeds[link]++;
+  }
+
+  function reachedFailCount(link) {
+    let failed = typeof failedFeeds[link] === 'string' || typeof failedFeeds[link] === 'number' && failedFeeds[link] >= failLimit // string indicates it has reached the fail count, and is the date of when it failed
+    if (failed) console.log(`INIT Warning: Feeds with link ${link} will be skipped due to reaching fail limit (${failLimit}).`);
+    return failed
   }
 
   function genBatchLists() {
@@ -88,7 +93,7 @@ module.exports = function(bot, callback) {
   function addToSourceLists(rssList, guildId) { // rssList is an object per guildRss
     for (var rssName in rssList) {
 
-      if (configChecks.checkExists(rssName, rssList[rssName], true, true) && configChecks.validChannel(bot, guildId, rssList[rssName])) {
+      if (configChecks.checkExists(rssName, rssList[rssName], true, true) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !reachedFailCount(rssList[rssName].link)) {
 
         checkGuild.roles(bot, guildId, rssName); // Check for any role name changes
 
@@ -159,7 +164,7 @@ module.exports = function(bot, callback) {
   })
 
   function connect() {
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}RSS Info: Starting initialization cycle.`)
+    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}INIT Info: Starting initialization cycle.`)
     genBatchLists()
 
     switch(config.advanced.processorMethod) {
@@ -195,6 +200,7 @@ module.exports = function(bot, callback) {
           if (err) console.log(err);
         });
         if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link);
+        if (linkCompletion.status === 'success' && failedFeeds[linkCompletion.link]) delete failedFeeds[linkCompletion.link];
 
         completedLinks++
         console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
@@ -234,6 +240,7 @@ module.exports = function(bot, callback) {
         if (err) console.log(err);
       });
       if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link)
+      if (linkCompletion.status === 'success' && failedFeeds[linkCompletion.link]) delete failedFeeds[linkCompletion.link];
 
       completedLinks++;
       console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
@@ -241,8 +248,8 @@ module.exports = function(bot, callback) {
       if (completedLinks === currentBatch.size) {
         if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type);
         else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded');
-        else finishCycle();
-        processor.disconnect();
+        else finishInit();
+        processor.kill();
       }
     })
   }
@@ -274,14 +281,15 @@ module.exports = function(bot, callback) {
           if (err) console.log(err);
         });
         if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link);
+        if (linkCompletion.status === 'success' && failedFeeds[linkCompletion.link]) delete failedFeeds[linkCompletion.link];
 
         completedLinks++;
         totalCompletedLinks++;
         console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}Parallel Progress: ${totalCompletedLinks}/${totalLinks}`)
         if (completedLinks === currentBatch.size) {
           completedBatches++;
-          processor.disconnect();
-          if (completedBatches === totalBatchLengths) finishCycle();
+          processor.kill();
+          if (completedBatches === totalBatchLengths) finishInit();
         }
 
       })
@@ -303,13 +311,17 @@ module.exports = function(bot, callback) {
 
   function endCon() {
     sqlCmds.end(con, function(err) {
-      finishCycle()
+      finishInit()
     })
   }
 
-  function finishCycle() {
+  function finishInit() {
+    if (bot.shard) bot.shard.send({type: 'initComplete'});
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ': ''}INIT Info: Finished initialization cycle.`)
-    if (bot.shard) bot.shard.send({type: 'initComplete'})
+
+    try {fs.writeFileSync('./util/failedFeeds.json', JSON.stringify(failedFeeds, null, 2))}
+    catch(e) {console.log(`Unable to update failedFeeds.json on end of initialization, reason: ${e}`)}
+
     callback()
   }
 

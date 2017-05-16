@@ -1,6 +1,5 @@
 {
-	"rsshelp": {
-	},
+	"rsshelp": {},
 	"rssadd": {
 		"description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with commas."
 	},
@@ -43,11 +42,15 @@
 		"description": "Same as `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
 	},
 	"rsscookies": {
-		"action": "Cookie Customization",
-		"description": "Opens a menu tp add cookies for feeds that may require authorization."
+		"action": "Cookie Customization"
 	},
 	"rssrefresh": {
 		"action": "Refresh Feed",
 		"description": "Opens a menu to readd the feed link back onto the regular cycle if it has surpassed the fail limit."
+	},
+	"rssoptions": {
+		"options": {
+			"titleChecks": "Toggle Title Checks"
+		}
 	}
 }

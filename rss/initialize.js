@@ -79,6 +79,7 @@ module.exports = function(con, rssLink, channel, cookies, callback) {
     function createTable() {
       sqlCmds.createTable(con, rssName, function(err, rows) {
         if (err) return callback({type: 'database', content: err});
+        if (currentFeed.length === 0) return gatherResults(true);
         for (var x in currentFeed) {
           insertIntoTable({
             id: getArticleId(currentFeed[x]),
@@ -95,16 +96,18 @@ module.exports = function(con, rssLink, channel, cookies, callback) {
       })
     }
 
-    function gatherResults() {
-      processedItems++
+    function gatherResults(empty) {
+      if (!empty) processedItems++
+      else return addToConfig();
       if (processedItems === totalItems) addToConfig();
     }
 
     function addToConfig() {
-      let metaTitle = (currentFeed[0].meta.title) ? currentFeed[0].meta.title : 'No feed title found.'
+      let metaTitle = (currentFeed[0] && currentFeed[0].meta.title) ? currentFeed[0].meta.title : 'Untitled'
 
-      if (currentFeed[0].guid && currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
-      else if (currentFeed[0].meta.link && currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
+      if (currentFeed[0] && currentFeed[0].guid && currentFeed[0].guid.startsWith("yt:video")) metaTitle = `Youtube - ${currentFeed[0].meta.title}`;
+      else if (currentFeed[0] && currentFeed[0].meta.link && currentFeed[0].meta.link.includes("reddit")) metaTitle = `Reddit - ${currentFeed[0].meta.title}`;
+
 
       if (currentGuilds.has(channel.guild.id)) {
         var guildRss = currentGuilds.get(channel.guild.id);

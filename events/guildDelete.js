@@ -5,12 +5,12 @@ const fileOps = require('../util/fileOps.js')
 const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 
-module.exports = function (bot, guild) {
+module.exports = function(bot, guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
 
-  for (var channelId in channelTracker.activeCollectors) {
-    if(guild.channels[channelId]) delete channelTracker.activeCollectors[channelId];
-  }
+  guild.channels.forEach(function(channel, channelId) {
+    if (channelTracker.hasActiveMenus(channel.id)) channelTracker.removeCollector(channel.id);
+  })
 
   if (!fs.existsSync(`./sources/${guild.id}.json`)) return;
 
