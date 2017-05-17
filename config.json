@@ -16,10 +16,12 @@
   "feedManagement": {
     "sqlType": "sqlite3",
     "databaseName": "rss",
-    "enableBackups": false
+    "enableBackups": false,
+    "cleanDatabase": false,
   },
   "feedSettings": {
     "refreshTimeMinutes": 15,
+    "checkTitles": false,
     "timezone": "America/New_York",
     "timeFormat": "ddd, D MMMM YYYY, h:mm A z",
     "maxFeeds": 5,
@@ -27,12 +29,13 @@
     "notifyFail": true,
     "sendOldMessages": false,
     "defaultMaxAge": 1,
+    "cycleMaxAge": 1,
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
   },
-  "advanced": {
-	"shards": 1,
-	"batchSize": 300,
-	"restrictCookies": false,
-	"processorMethod": "single"
+    "advanced": {
+    "shards": 1,
+    "batchSize": 300,
+    "restrictCookies": false,
+    "processorMethod": "single"
   }
 }
