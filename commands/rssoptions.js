@@ -33,11 +33,13 @@ module.exports = function(bot, message, command) {
           if (rssList[rssName].checkTitles == true) {
             delete rssList[rssName].checkTitles;
             fileOps.updateFile(m.guild.id, guildRss)
+            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Title checks have been disabled for feed linked ${rssList[rssName].link}`)
             return message.channel.send(`Title checks have been disabled for <${rssList[rssName].link}>.`);
           }
           else {
             rssList[rssName].checkTitles = true;
             fileOps.updateFile(m.guild.id, guildRss)
+            console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Title checks have been enabled for feed linked ${rssList[rssName].link}`)
             return message.channel.send(`Title checks have been enabled for <${rssList[rssName].link}>.`);
           }
 

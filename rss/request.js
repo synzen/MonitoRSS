@@ -5,9 +5,10 @@ module.exports = function(link, cookies, feedparser, callback) {
 
   var options = {
     timeout: 10000,
-    follow_max :5,
+    read_timeout: 8000,
+    follow_max: 5,
     follow_set_cookies: true,
-    rejectUnauthorized : true
+    rejectUnauthorized: true
   }
 
   if (cookies) options.cookies = cookies
@@ -37,11 +38,7 @@ module.exports = function(link, cookies, feedparser, callback) {
     })
 
     request.on('err', function(err) {
-      if (attempts < 2 && !err.message.startsWith(`Bad status code (4`)) {
-        attempts++;
-        connectToLink();
-      }
-      else callback(err + `${cookies ? ' (Cookies found)' : ''}`);
+      callback(err + `${cookies ? ' (Cookies found)' : ''}`);
     })
 
   })()

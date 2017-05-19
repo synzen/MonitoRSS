@@ -49,6 +49,7 @@
 		"description": "Opens a menu to readd the feed link back onto the regular cycle if it has surpassed the fail limit."
 	},
 	"rssoptions": {
+		"description": "Miscellaneous RSS options",
 		"options": {
 			"titleChecks": "Toggle Title Checks"
 		}
