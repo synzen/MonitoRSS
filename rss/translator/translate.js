@@ -4,7 +4,7 @@ const generateEmbed = require('./embed.js')
 const Article = require('./article.js')
 const getSubs = require('./subscriptions.js')
 
-module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage) {
+module.exports = function(guildId, rssList, rssName, rawArticle, isTestMessage) {
   // Just in case. If this happens, please report.
   if (!rssList[rssName]) {console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildId}\nrssName: ${rssName}\nrssList:`, rssList); return null;}
 
@@ -12,19 +12,14 @@ module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage)
   article.subscriptions = getSubs(rssList, rssName, article)
 
   // Filter message
-  let filterPropCount = 0;
+  let filterExists = false
   if (rssList[rssName].filters && typeof rssList[rssName].filters === "object") {
     for (var prop in rssList[rssName].filters) {
-      if (prop !== "roleSubscriptions") filterPropCount++; // Check if any filter categories exists, excluding roleSubs as they are not filters
+      if (prop !== "roleSubscriptions") filterExists = true; // Check if any filter categories exists, excluding roleSubs as they are not filters
     }
   }
 
-  let filterExists = false
-  let filterResults = false
-  if (filterPropCount > 0) {
-    filterExists = true;
-    filterResults = filterFeed(rssList, rssName, article, isTestMessage);
-  }
+  const filterResults = filterExists ? filterFeed(rssList, rssName, article, isTestMessage) : false
 
   if (!isTestMessage && filterExists && !filterResults) return null; // Feed article delivery only passes through if the filter found the specified content
 

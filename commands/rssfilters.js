@@ -4,6 +4,8 @@ const getIndex = require('./util/printFeeds.js')
 const config = require('../config.json')
 const fileOps = require('../util/fileOps.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
+const getArticle = require('../rss/getArticle.js')
+const sendToDiscord = require('../util/sendToDiscord.js')
 
 module.exports = function(bot, message, command, role) {
 
@@ -16,8 +18,9 @@ module.exports = function(bot, message, command, role) {
       .setDescription(`**Feed Title:** ${rssList[rssName].title}\n**Feed Link:** ${rssList[rssName].link}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n`)
       .addField(`1) Add feed filter(s)`, `Add new filter(s) to a specific category in a feed.`)
       .addField(`2) Remove feed filter(s)`, `Remove existing filter(s), if any.`)
-      .addField(`3) Remove all feed filters`, `Remove all filters, if any.`)
-      .addField(`4) List existing filters`, `List all filters in all categories, if any.`)
+      .addField(`3) Remove all feed filter(s)`, `Remove all filters, if any.`)
+      .addField(`4) List existing filter(s)`, `List all filters in all categories, if any.`)
+      .addField(`5) Send passing article`, `Send a randomly chosen article that passes currently specified filters.`)
 
     message.channel.send({embed: menu})
     .then(function(menu) {
@@ -26,7 +29,7 @@ module.exports = function(bot, message, command, role) {
 
       collector.on('collect', function(m) {
         if (m.content.toLowerCase() === 'exit') return collector.stop('Filter Action selection menu closed.');
-        else if (!['1', '2', '3', '4'].includes(m.content)) return message.channel.send('That is not a valid choice. Try again.').catch(err => `Promise Warning: rssFilters 5: ${err}`);
+        else if (!['1', '2', '3', '4', '5'].includes(m.content)) return message.channel.send('That is not a valid choice. Try again.').catch(err => `Promise Warning: rssFilters 5: ${err}`);
         // 1 = Add feed filters
         if (m.content == 1) {
           collector.stop();
@@ -38,7 +41,7 @@ module.exports = function(bot, message, command, role) {
           return filters.remove(message, rssName);
         }
 
-        else if (m.content == 3 || m.content == 4) {
+        else if (m.content == 3 || m.content == 4 || m.content == 5) {
           collector.stop();
           const foundFilters = [];
           if (rssList[rssName].filters && typeof rssList[rssName].filters === 'object') {
@@ -76,6 +79,37 @@ module.exports = function(bot, message, command, role) {
               msg.addField(filterCategory, value, true)
             }
             return message.channel.send({embed: msg}).catch(err => console.log(`Promise Warning: rssFilters 4: ${err}`));
+          }
+          // 5 = Send passing article
+          else if (m.content == 5) {
+            getArticle(message.guild.id, rssName, true, function(err, article) {
+              if (err) {
+                let channelErrMsg = '';
+                switch(err.type) {
+                  case 'request':
+                    channelErrMsg = 'Unable to connect to feed link';
+                    break;
+                  case 'feedparser':
+                    channelErrMsg = 'Invalid feed';
+                    break;
+                  case 'database':
+                    channelErrMsg = 'Internal database error. Please try again';
+                    break;
+                  case 'deleted':
+                    channelErrMsg = 'Feed missing from database'
+                  default:
+                    channelErrMsg = 'No reason available';
+                }
+                console.log(`RSS Warning: Unable to send filtered test article '${err.feed.link}'. Reason: ${err.content}`); // Reserve err.content for console logs, which are more verbose
+                return message.channel.send(`Unable to grab feed article. Reason: ${channelErrMsg}.`);
+              }
+              article.rssName = rssName;
+              article.discordChannelId = message.channel.id;
+
+              sendToDiscord(bot, article, function(err) {
+                if (err) console.log(err);
+              });
+            })
           }
         }
       })
