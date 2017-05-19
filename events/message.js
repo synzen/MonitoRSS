@@ -1,7 +1,7 @@
 const config = require('../config.json')
 const controllerCmds = require('../commands/controller/controllerCmds.js')
 const loadCommand = (file) => require(`../commands/${file}.js`)
-const checkPerm = require('../util/checkPerm.js')
+const hasPerm = require('../util/hasPerm.js')
 const commandList = require('../util/commandList.json')
 const channelTracker = require('../util/channelTracker.js')
 const blacklistGuilds = require('../util/storage.js').blacklistGuilds
@@ -22,7 +22,7 @@ function logCommand(message, command) {
 }
 
 module.exports = function(bot, message) {
-  if (!message.member || !message.member.hasPermission("MANAGE_CHANNELS") || message.author.bot || !message.content.startsWith(config.botSettings.prefix)) return;
+  if (!message.member || message.author.bot || !message.content.startsWith(config.botSettings.prefix)) return;
   if (blacklistGuilds.ids.includes(message.guild.id)) return;
 
   let m = message.content.split(" ")
@@ -33,7 +33,7 @@ module.exports = function(bot, message) {
 
   // for regular commands
   for (var cmd in commandList) {
-    if (cmd === command && checkPerm(bot, message, commandList[cmd].reqPerm)) {
+    if (cmd === command && hasPerm.bot(bot, message, commandList[cmd].botPerm) && hasPerm.user(message, commandList[cmd].userPerm)) {
       logCommand(message, command);
       return loadCommand(command)(bot, message, command);
     }

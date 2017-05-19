@@ -1,54 +1,66 @@
 {
 	"rsshelp": {},
 	"rssadd": {
+		"userPerm": "MANAGE_CHANNELS",
 		"description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with commas."
 	},
 	"rssremove": {
+		"userPerm": "MANAGE_CHANNELS",
 		"action": "Feed Removal",
 		"description": "Open a menu to delete a feed from the channel."
 	},
 	"rsslist": {
+		"userPerm": "MANAGE_CHANNELS",
 		"description": "List all active feeds in server."
 	},
 	"rssmessage": {
+		"userPerm": "MANAGE_CHANNELS",
 		"action": "Message Customization",
 		"description": "Open a menu to customize a feed's text message."
 	},
 	"rssembed": {
+		"userPerm": "MANAGE_CHANNELS",
 		"action": "Embed Message Customization",
 		"description": "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
 	},
 	"rsstest": {
+		"userPerm": "MANAGE_CHANNELS",
 		"action": "Feed Delivery Test",
 		"description": "Opens a menu to send a test message for a specific feed, along with the available properties and tags for customization."
 	},
 	"rsstimezone": {
+		"userPerm": "MANAGE_CHANNELS",
 		"description": "Change the timezone for dates given by {date} tag customization. For a list of timezones, see the TZ column at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>."
 	},
 	"rssfilters": {
+		"userPerm": "MANAGE_CHANNELS",
 		"action": "Global Filter Addition/Removal",
 		"description": "Opens a menu to add or remove global filters from a feed."
 	},
 	"rssroles": {
+		"userPerm": "MANAGE_CHANNELS",
 		"action": "Role Customization",
 		"description": "Opens a menu to add global/filtered subscriptions for roles to feeds."
 	},
 	"subme": {
-		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
+		"botPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"description": "Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Opens a menu to add a role with an active feed subscription to the user. Roles *must* be below the bot's role in role order in role settings."
 	},
 	"unsubme": {
-		"reqPerm": "MANAGE_ROLES_OR_PERMISSIONS",
+		"botPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"description": "Same as `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
 	},
 	"rsscookies": {
+		"userPerm": "MANAGE_CHANNELS",
 		"action": "Cookie Customization"
 	},
 	"rssrefresh": {
+		"userPerm": "MANAGE_CHANNELS",
 		"action": "Refresh Feed",
 		"description": "Opens a menu to readd the feed link back onto the regular cycle if it has surpassed the fail limit."
 	},
 	"rssoptions": {
+		"userPerm": "MANAGE_CHANNELS",
 		"description": "Miscellaneous RSS options",
 		"options": {
 			"titleChecks": "Toggle Title Checks"
