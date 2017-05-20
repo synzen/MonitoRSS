@@ -20,7 +20,7 @@ module.exports = function(bot, message, command) {
     firstMsgHandler.add(msgPrompt)
     const filter = m => m.author.id == message.author.id
     const collector = message.channel.createMessageCollector(filter,{time:240000})
-    channelTracker.add(message.channel)
+    channelTracker.add(message.channel.id)
 
     collector.on('collect', function(m) {
       firstMsgHandler.add(m)
