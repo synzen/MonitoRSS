@@ -36,7 +36,6 @@ module.exports = function(bot, message) {
   const failedLinks = {}
   const totalLinks = linkList.length
 
-  channelTracker.addCollector(message.channel.id);
 
   function finishLinkList(verifyMsg) {
     let msg = ''
@@ -61,9 +60,11 @@ module.exports = function(bot, message) {
       msg += failBox + '\n```'
     }
 
-    channelTracker.removeCollector(message.channel.id)
+    channelTracker.remove(message.channel.id)
     verifyMsg.edit(msg).catch(err => console.log(`Promise Warning rssAdd 1: ${err}`))
   }
+  
+  channelTracker.add(message.channel.id);
 
   message.channel.send('Processing...')
   .then(function(verifyMsg) {
@@ -114,7 +115,7 @@ module.exports = function(bot, message) {
         if (cookiesFound && !cookies) var cookieAccess = false;
 
         initializeRSS(con, rssLink, message.channel, cookies, function(err) {
-          channelTracker.removeCollector(message.channel.id)
+          channelTracker.remove(message.channel.id)
           if (err) {
             let channelErrMsg = '';
             switch(err.type) {
@@ -148,6 +149,6 @@ module.exports = function(bot, message) {
 
   }).catch(err => {
     console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not begin feed addition validation. (${err})`)
-    channelTracker.removeCollector(message.channel.id)
+    channelTracker.remove(message.channel.id)
   })
 }

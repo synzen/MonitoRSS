@@ -304,7 +304,7 @@ exports.forceremove = function(bot, message) {
   msg += '```'
 
   const collector = message.channel.createMessageCollector(m => m.author.id == message.author.id,{time:240000})
-  channelTracker.addCollector(message.channel.id)
+  channelTracker.add(message.channel.id)
 
   message.channel.send(`The list of links to be removed ${reason ? 'and the reason for removal ' : ''}is shown below.\n\n${reason ? '```Reason: ' + reason + '```\n' : ''}${msg.length > 1950 ? '```Unable to print links to discord - exceeds 1950 chars. Please see console.```' : msg}\n\nDo you want to continue? Type **Yes** to confirm, or **No** to cancel.`)
   .then(function(prompt) {
@@ -361,7 +361,7 @@ exports.forceremove = function(bot, message) {
     })
 
     collector.on('end', function(collected, reason) {
-      channelTracker.removeCollector(message.channel.id)
+      channelTracker.remove(message.channel.id)
       if (reason == 'time') return message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
       else if (reason !== 'user') return message.channel.send(reason);
     });
@@ -519,8 +519,19 @@ exports.disallowcookies = function(bot, message) {
 
 exports.test = function(bot, message) {
   const a = new Discord.RichEmbed().setDescription('hello')
+  let arr = []
+  const filter = m => m.author.id == message.author.id
+  const customCollect = message.channel.createMessageCollector(filter,{time:240000})
 
-  message.channel.send({embed: a})
+  customCollect.on('collect', function(m) {
+    customCollect.stop()
+  })
+
+  customCollect.on('end', function(collected, reason) {
+    if (reason === 'time') return message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
+    else if (reason !== 'user') return message.channel.send(reason);
+    else if (reason === 'user') message.channel.send('user');
+  });
 }
 
 exports.setconfig = function(bot, message) {

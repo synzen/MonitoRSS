@@ -1,12 +1,12 @@
 const fileOps = require('../util/fileOps.js')
-const getIndex = require('./util/printFeeds.js')
+const chooseFeed = require('./util/chooseFeed.js')
 const config = require('../config.json')
 const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 
 module.exports = function (bot, message, command) {
 
-  getIndex(bot, message, command, function(rssName) {
+  chooseFeed(bot, message, command, function(rssName, msgHandler) {
     const guildRss = currentGuilds.get(message.guild.id)
     const rssList = guildRss.sources
 
@@ -16,11 +16,13 @@ module.exports = function (bot, message, command) {
 
     message.channel.send(`The current message for ${rssList[rssName].link} is: \n${currentMsg + '```'}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. \`{empty}\` will create an empty message, but only if an embed is used. Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${config.botSettings.prefix}rsstest\`.\n\n`)
     .then(function(msgPrompt) {
+      msgHandler.add(msgPrompt)
       const filter = m => m.author.id == message.author.id
       const customCollect = message.channel.createMessageCollector(filter,{time:240000})
-      channelTracker.addCollector(message.channel.id)
+      channelTracker.add(message.channel.id)
 
       customCollect.on('collect', function(m) {
+        msgHandler.add(m)
         if (m.content.toLowerCase() === 'exit') return customCollect.stop('Message customization menu closed.');
         // Reset custom message
         else if (m.content.toLowerCase() === 'reset') message.channel.send(`Resetting message...`)
@@ -47,9 +49,10 @@ module.exports = function (bot, message, command) {
       });
 
       customCollect.on('end', function(collected, reason) {
-        channelTracker.removeCollector(message.channel.id)
-        if (reason == 'time') return message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
-        else if (reason !== 'user') return message.channel.send(reason);
+        channelTracker.remove(message.channel.id)
+        msgHandler.deleteAll(message.channel)
+        if (reason == 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
+        else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000));
       });
     }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send custom message prompt (${err}).`));
   })

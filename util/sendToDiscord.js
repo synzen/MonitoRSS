@@ -48,7 +48,6 @@ module.exports = function(bot, article, callback, isTestMessage) {
       function sendCombinedMsg() {
         channel.send(message.textMsg, {embed: message.embedMsg})
         .then(m => {
-          if (isTestMessage) isTestMessage.delete().catch(err => {});
           // console.log(successLog)
           return callback()
         })
@@ -71,7 +70,6 @@ module.exports = function(bot, article, callback, isTestMessage) {
       function sendTxtMsg() {
         channel.send(message.textMsg)
         .then(m => {
-          if (isTestMessage) isTestMessage.delete().catch(err => {});
           // console.log(successLog)
           return callback()
         })
@@ -94,10 +92,7 @@ module.exports = function(bot, article, callback, isTestMessage) {
   if (isTestMessage) {
     function sendTestDetails() {
       channel.send(message.testDetails)
-      .then(m => {
-        sendMain()
-        return callback()
-      })
+      .then(m => sendMain())
       .catch(err => {
         if (attempts === 4) return callback(failLog + `${err}`);
         attempts++

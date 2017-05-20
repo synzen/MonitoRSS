@@ -1,17 +1,16 @@
 /*
     Used to keep track of channels with active menus, and to
     disallow any channels to activate commands with active menus.
-
 */
 
 const activeCollectors = {}
 
-exports.addCollector = function (channelID) {
+exports.add = function (channelID) {
   if (!activeCollectors[channelID]) activeCollectors[channelID] = 0;
   activeCollectors[channelID]++
 }
 
-exports.removeCollector = function (channelID) {
+exports.remove = function (channelID) {
   activeCollectors[channelID]--
   if (activeCollectors[channelID] <= 0) delete activeCollectors[channelID];
 }

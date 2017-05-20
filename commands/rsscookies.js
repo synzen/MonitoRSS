@@ -3,7 +3,7 @@ const config = require('../config.json')
 const storage =  require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const cookieAccessors = storage.cookieAccessors
-const getIndex = require('./util/printFeeds.js')
+const chooseFeed = require('./util/chooseFeed.js')
 const fileOps = require('../util/fileOps.js')
 
 module.exports = function(bot, message, command) {
@@ -13,7 +13,7 @@ module.exports = function(bot, message, command) {
 
   const rssList = guildRss.sources
 
-  getIndex(bot, message, command, function(rssName) {
+  chooseFeed(bot, message, command, function(rssName, msgHandler) {
     let currentCookies = ''
     const cookieObj = (rssList[rssName].advanced && rssList[rssName].advanced.cookies && rssList[rssName].advanced.cookies.size() > 0) ? rssList[rssName].advanced.cookies : undefined
     if (cookieObj) for (var cookieKey in cookieObj) {
@@ -24,11 +24,13 @@ module.exports = function(bot, message, command) {
 
     message.channel.send(msg + '\nType your new cookie(s) now with each one separated by a new line. Each cookie must have \`=\` between the key and its value. For example, \`cookieKey=myValue\`. Your current cookie(s) will be overwritten. To remove all cookies, type \`reset\`. To cancel, type \`exit\`.')
     .then(function(msgPrompt) {
+      msgHandler.add(msgPrompt)
       const filter = m => m.author.id == message.author.id
       const customCollect = message.channel.createMessageCollector(filter,{time:240000})
-      channelTracker.addCollector(message.channel.id)
+      channelTracker.add(message.channel.id)
 
       customCollect.on('collect', function(m) {
+        msgHandler.add(m)
         if (m.content.toLowerCase() === 'exit') return customCollect.stop('Cookie customization menu closed.');
         if (m.content.toLowerCase() === 'reset') {
           customCollect.stop();
@@ -38,9 +40,10 @@ module.exports = function(bot, message, command) {
           return message.channel.send(`Successfully removed all cookies for feed ${rssList[rssName].link}`);
         }
 
-        customCollect.stop()
         const cookieArray = m.content.split('\n');
+        if (cookieArray.length === 0) return message.channel.send(`No valid cookies found. Please try again.`).then(m => msgHandler.add(m))
 
+        customCollect.stop()
         if (!rssList[rssName].advanced) rssList[rssName].advanced = {cookies: {}};
         else rssList[rssName].advanced.cookies = {};
 
@@ -58,9 +61,10 @@ module.exports = function(bot, message, command) {
       })
 
       customCollect.on('end', function(collected, reason) {
-        channelTracker.removeCollector(message.channel.id)
-        if (reason == 'time') return message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
-        else if (reason !== 'user') return message.channel.send(reason);
+        channelTracker.remove(message.channel.id)
+        msgHandler.deleteAll(message.channel)
+        if (reason == 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
+        else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000));
       });
     }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send custom cookies message (${err}).`));
 

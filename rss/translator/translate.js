@@ -36,7 +36,7 @@ module.exports = function(guildId, rssList, rssName, rawArticle, isTestMessage) 
   if (isTestMessage) {
     let testDetails = '';
     const footer = "\nBelow is the configured message to be sent for this feed:\n\n--";
-    testDetails += `\`\`\`Markdown\n# Test Details\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${article.title}`;
+    testDetails += `\`\`\`Markdown\n# BEGIN TEST DETAILS #\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${article.title}`;
 
     if (article.summary && article.summary !== article.description) {  // Do not add summary if summary = description
       if (article.description && article.description.length > 500) var testSummary = (article.summary.length > 500) ? `${article.summary.slice(0, 490)} [...]\n\n**(Truncated summary for shorter rsstest)**` : article.summary; // If description is long, truncate summary.

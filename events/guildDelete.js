@@ -9,7 +9,7 @@ module.exports = function(bot, guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
 
   guild.channels.forEach(function(channel, channelId) {
-    if (channelTracker.hasActiveMenus(channel.id)) channelTracker.removeCollector(channel.id);
+    if (channelTracker.hasActiveMenus(channel.id)) channelTracker.remove(channel.id);
   })
 
   if (!fs.existsSync(`./sources/${guild.id}.json`)) return;

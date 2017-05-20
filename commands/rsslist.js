@@ -8,28 +8,22 @@ const pageControls = require('../util/pageControls.js')
 
 module.exports = function(bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: printFeeds 2: ${err}`));
+  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: chooseFeed 2: ${err}`));
 
   const rssList = guildRss.sources
   const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
   let failedFeedCount = 0
 
-  // Function to get channel name, resolving for whether it the identifier is an ID or a string
-  function getChannel(channel) {
-    return bot.channels.get(channel) ? bot.channels.get(channel).name : undefined
-  }
-
   function getFeedStatus(link) {
     const failCount = failedFeeds[link]
-    if (!failCount || typeof failCount === 'number' && failCount <= failLimit) return 'Status: OK\n';
+    if (!failCount || typeof failCount === 'number' && failCount <= failLimit) return `Status: OK ${failCount > Math.ceil(failLimit / 5) ? '(' + failCount + '/' + failLimit + ')': ''}\n`;
     else {
-        failedFeedCount++;
-        return 'Status: FAILED\n';
+      failedFeedCount++;
+      return 'Status: FAILED\n';
     }
   }
 
-  let maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
-  if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited';
+  let maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : config.feedSettings.maxFeeds
 
   let embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
     .setAuthor('Current Active Feeds')
@@ -41,7 +35,7 @@ module.exports = function(bot, message, command) {
     let o = {
       link: rssList[rssName].link,
       title: rssList[rssName].title,
-      channel: getChannel(rssList[rssName].channel),
+      channel: bot.channels.get(rssList[rssName].channel) ? bot.channels.get(rssList[rssName].channel).name : undefined,
       titleChecks: rssList[rssName].titleChecks == true ? 'Title Checks: Enabled\n' : null
     }
     if (failLimit !== 0) o.status = getFeedStatus(rssList[rssName].link);

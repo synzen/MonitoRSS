@@ -1,15 +1,16 @@
 const Discord = require('discord.js')
 const filters = require('./util/filters.js')
-const getIndex = require('./util/printFeeds.js')
+const chooseFeed = require('./util/chooseFeed.js')
 const config = require('../config.json')
 const fileOps = require('../util/fileOps.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const getArticle = require('../rss/getArticle.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
+const channelTracker = require('../util/channelTracker.js')
 
 module.exports = function(bot, message, command, role) {
 
-  getIndex(bot, message, command, function(rssName) {
+  chooseFeed(bot, message, command, function(rssName, msgHandler) {
     const guildRss = currentGuilds.get(message.guild.id)
     const rssList = guildRss.sources
     const menu = new Discord.RichEmbed()
@@ -24,21 +25,24 @@ module.exports = function(bot, message, command, role) {
 
     message.channel.send({embed: menu})
     .then(function(menu) {
+      msgHandler.add(menu)
       const filter = m => m.author.id == message.author.id;
       const collector = message.channel.createMessageCollector(filter,{time:60000});
+      channelTracker.add(message.channel.id)
 
       collector.on('collect', function(m) {
+        msgHandler.add(m)
         if (m.content.toLowerCase() === 'exit') return collector.stop('Filter Action selection menu closed.');
-        else if (!['1', '2', '3', '4', '5'].includes(m.content)) return message.channel.send('That is not a valid choice. Try again.').catch(err => `Promise Warning: rssFilters 5: ${err}`);
+        else if (!['1', '2', '3', '4', '5'].includes(m.content)) return message.channel.send('That is not a valid choice. Try again.').then(m => msgHandler.add(m)).catch(err => `Promise Warning: rssFilters 5: ${err}`);
         // 1 = Add feed filters
         if (m.content == 1) {
           collector.stop();
-          return filters.add(message, rssName);
+          return filters.add(message, rssName, null, msgHandler);
         }
         // 2 = Remove feed filters
         else if (m.content == 2) {
           collector.stop();
-          return filters.remove(message, rssName);
+          return filters.remove(message, rssName, null, msgHandler);
         }
 
         else if (m.content == 3 || m.content == 4 || m.content == 5) {
@@ -49,7 +53,7 @@ module.exports = function(bot, message, command, role) {
               if (rssList[rssName].filters.hasOwnProperty(prop) && prop !== 'roleSubscriptions') foundFilters.push(prop);
           }
 
-          if (foundFilters.length === 0) return message.channel.send('There are no feed filters assigned to this feed.').catch(err => `Promise Warning: rssFilter 2: ${err}`);
+          if (foundFilters.length === 0) return message.channel.send(`There are no feed filters assigned to <${rssList[rssName].link}>.`).catch(err => `Promise Warning: rssFilter 2: ${err}`);
 
           const filterList = rssList[rssName].filters;
           // 3 = Remove all feed filters
@@ -59,7 +63,8 @@ module.exports = function(bot, message, command, role) {
             }
             if (filterList.size() === 0) delete rssList[rssName].filters;
             fileOps.updateFile(message.guild.id, guildRss);
-            return message.channel.send(`All feed filters have been successfully removed from this feed.`).catch(err => `Promise Warning: rssFilters 3: ${err}`);
+            msgHandler.deleteAll(message.channel);
+            return message.channel.send(`All feed filters have been successfully removed from <${rssList[rssName].link}>.`).catch(err => `Promise Warning: rssFilters 3: ${err}`);
           }
           // 4 = List all existing filters
           else if (m.content == 4) {
@@ -78,6 +83,7 @@ module.exports = function(bot, message, command, role) {
               }
               msg.addField(filterCategory, value, true)
             }
+            msgHandler.deleteAll(message.channel);
             return message.channel.send({embed: msg}).catch(err => console.log(`Promise Warning: rssFilters 4: ${err}`));
           }
           // 5 = Send passing article
@@ -101,13 +107,15 @@ module.exports = function(bot, message, command, role) {
                     channelErrMsg = 'No reason available';
                 }
                 console.log(`RSS Warning: Unable to send filtered test article '${err.feed.link}'. Reason: ${err.content}`); // Reserve err.content for console logs, which are more verbose
-                return message.channel.send(`Unable to grab feed article. Reason: ${channelErrMsg}.`);
+                msgHandler.deleteAll()
+                return message.channel.send(`Unable to grab feed article for feed ${err.feed.link}. Reason: ${channelErrMsg}.`);
               }
+              console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Sending filtered article for ${rssList[rssName].link}`);
               article.rssName = rssName;
               article.discordChannelId = message.channel.id;
-
               sendToDiscord(bot, article, function(err) {
                 if (err) console.log(err);
+                msgHandler.deleteAll(message.channel);
               });
             })
           }
@@ -115,8 +123,9 @@ module.exports = function(bot, message, command, role) {
       })
 
       collector.on('end', function(collected, reason) {
-        if (reason === 'time') return message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
-        else if (reason !== 'user') return message.channel.send(reason);
+        channelTracker.add(message.channel.id)
+        if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
+        else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000));
       })
     }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send filters customization menu. (${err})`))
   })

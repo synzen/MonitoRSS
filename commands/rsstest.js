@@ -1,15 +1,14 @@
 const getRandomArticle = require('../rss/getArticle.js')
-const getIndex = require('./util/printFeeds.js')
+const chooseFeed = require('./util/chooseFeed.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 
 module.exports = function(bot, message, command) {
 
-  getIndex(bot, message, command, function(rssName) {
+  chooseFeed(bot, message, command, function(rssName, msgHandler) {
     message.channel.send(`Grabbing a random feed article...`)
     .then(function(grabMsg) {
-
       getRandomArticle(message.guild.id, rssName, false, function(err, article) {
         if (err) {
           let channelErrMsg = '';
@@ -29,13 +28,16 @@ module.exports = function(bot, message, command) {
               channelErrMsg = 'No reason available';
           }
           console.log(`RSS Warning: Unable to send test article '${err.feed.link}'. Reason: ${err.content}`); // Reserve err.content for console logs, which are more verbose
+          msgHandler.deleteAll(message.channel)
           return grabMsg.edit(`Unable to grab random feed article. Reason: ${channelErrMsg}.`);
         }
         article.rssName = rssName
         article.discordChannelId = message.channel.id
+        msgHandler.add(grabMsg)
 
         sendToDiscord(bot, article, function(err) {
           if (err) console.log(err);
+          msgHandler.deleteAll(message.channel)
         }, grabMsg); // Last parameter indicating a test message
 
       });
