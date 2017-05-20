@@ -47,8 +47,7 @@ module.exports = function(bot, message, command) {
         fileOps.updateFile(message.guild.id, guildRss)
         console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssName].link}.`)
         resetting.edit(`Embed has been disabled, and all properties have been removed for <${rssList[rssName].link}>.`).catch(err => console.log(`Promise Warning: rssEmbed 2a: ${err}`))
-      })
-      .catch(err => console.log(`Promise Warning: rssEmbed 2: ${err}`));
+      }).catch(err => console.log(`Promise Warning: rssEmbed 2: ${err}`));
     }
 
     // Reset an individual property
@@ -65,8 +64,7 @@ module.exports = function(bot, message, command) {
         fileOps.updateFile(message.guild.id, guildRss)
         console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Property '${choice}' reset for ${rssList[rssName].link}.`)
         resetting.edit(`Settings updated. The property \`${choice}\` has been reset for <${rssList[rssName].link}>.`).catch(err => console.log(`Promise Warning: rssEmbed 8a: ${err}`))
-      })
-      .catch(err => console.log(`Promise Warning: rssEmbed 8: ${err}`))
+      }).catch(err => console.log(`Promise Warning: rssEmbed 8: ${err}`))
     }
 
     // Generate list of all embed properties for user to see
@@ -152,8 +150,7 @@ module.exports = function(bot, message, command) {
               fileOps.updateFile(message.guild.id, guildRss)
 
               return editing.edit(`Settings updated for <${rssList[rssName].link}>. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`).catch(err => console.log(`Promise Warning: rssEmbed 9a: ${err}`));
-            })
-            .catch(err => console.log(`Promise Warning: rssEmbed 9: ${err}`));
+            }).catch(err => {console.log(`Promise Warning: rssEmbed 9: ${err}`); channelTracker.remove(message.channel.id)});
           });
           propertyCollect.on('end', function(collected, reason) {
             channelTracker.remove(message.channel.id)
@@ -161,7 +158,7 @@ module.exports = function(bot, message, command) {
             if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
             else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000));
           });
-        }).catch(err => console.log(`Promise Warning: rssEmbed 4: ${err}`));
+        }).catch(err => {console.log(`Promise Warning: rssEmbed 4: ${err}`); channelTracker.remove(message.channel.id)});
       });
       customCollect.on('end', function(collected, reason) {
         channelTracker.remove(message.channel.id)

@@ -32,8 +32,8 @@ module.exports = function(bot, message, command, callback, miscOption, firstMsgH
       const failCount = failedFeeds[link]
       if (!failCount || typeof failCount === 'number' && failCount < failLimit) return `Status: OK ${failCount > Math.ceil(failLimit / 10) ? '(' + failCount + '/' + failLimit + ')': ''}\n`;
       else {
-          failedFeedCount++;
-          return `Status: FAILED\n`;
+        failedFeedCount++;
+        return `Status: FAILED\n`;
       }
     }
   }
@@ -48,10 +48,7 @@ module.exports = function(bot, message, command, callback, miscOption, firstMsgH
   if (currentRSSList.length === 0) return message.channel.send('No feeds assigned to this channel.').catch(err => console.log(`Promise Warning: chooseFeed 1: ${err}`));
 
   const msgHandler = new MsgHandler(bot, message) // For deletion at the end of a series of menus
-  if (firstMsgHandler) {
-    firstMsgHandler.remove(0); // Remove the original message since it's added again by chooseFeed
-    msgHandler.merge(firstMsgHandler);
-  }
+  if (firstMsgHandler) msgHandler.merge(firstMsgHandler);
 
   const pages = []
   for (var x in currentRSSList) {

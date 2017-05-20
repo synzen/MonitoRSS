@@ -33,12 +33,12 @@ module.exports = function(bot, message) {
   if (timezone === 'reset') {
     delete guildRss.timezone;
     message.channel.send(`Timezone has been reset to the default: \`${config.feedSettings.timezone}\`.`).catch(err => console.log(`Promise Warning: rssTimezone 8: ${err}`));
-    console.log(`RSS Guild Info: (${message.guild.id}, ${message.guild.name}) => Timezone reset from '${oldTimezone}' to '${config.feedSettings.timezone}.'`);
+    console.log(`RSS Timezone: (${message.guild.id}, ${message.guild.name}) => Timezone reset from '${oldTimezone}' to '${config.feedSettings.timezone}.'`);
   }
   else {
     guildRss.timezone = timezone;
     message.channel.send(`Timezone has been successfully updated to \`${timezone}\``).catch(err => console.log(`Promise Warning: rssTimezone 9: ${err}`));
-    console.log(`RSS Guild Info: (${message.guild.id}, ${message.guild.name}) => Timezone updated from '${oldTimezone}' to '${timezone}.'`);
+    console.log(`RSS Timezone: (${message.guild.id}, ${message.guild.name}) => Timezone updated from '${oldTimezone}' to '${timezone}.'`);
   }
 
   return fileOps.updateFile(message.guild.id, guildRss)

@@ -6,7 +6,7 @@ module.exports = function(bot, msg) {
   const guildBot = msg.guild.members.get(bot.user.id)
   const allowed = !guildBot.permissionsIn(msg.channel).has("MANAGE_MESSAGES") ? false : config.botSettings.deleteMenus == true ? true : false
 
-  this.messageList = [msg]
+  this.messageList = []
 
   this.add = function(msg) {
     if (allowed) this.messageList.push(msg);

@@ -8,16 +8,23 @@ const currentGuilds = storage.currentGuilds
 const overriddenGuilds = storage.overriddenGuilds
 const cookieAccessors = storage.cookieAccessors
 
-module.exports = function(bot, message) {
-
-  function sanitize(array) {
-    for (var p = array.length - 1; p >= 0; p--) { // Sanitize by removing spaces and newlines
-      array[p] = array[p].trim();
-      if (!array[p]) array.splice(p, 1);
-    }
-
-    return array
+function sanitize(array) {
+  for (var p = array.length - 1; p >= 0; p--) { // Sanitize by removing spaces and newlines
+    array[p] = array[p].trim();
+    if (!array[p]) array.splice(p, 1);
   }
+  return array
+}
+
+function isBotController(authorId) {
+  let controllerList = config.botSettings.controllerIds
+  if (typeof controllerList !== 'object') return false;
+  for (var i in controllerList) {
+    if (controllerList[i] === authorId) return true;
+  }
+}
+
+module.exports = function(bot, message) {
 
   const guildRss = (currentGuilds.has(message.guild.id)) ? currentGuilds.get(message.guild.id) : {}
   const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
@@ -63,7 +70,7 @@ module.exports = function(bot, message) {
     channelTracker.remove(message.channel.id)
     verifyMsg.edit(msg).catch(err => console.log(`Promise Warning rssAdd 1: ${err}`))
   }
-  
+
   channelTracker.add(message.channel.id);
 
   message.channel.send('Processing...')
@@ -111,8 +118,7 @@ module.exports = function(bot, message) {
           cookies = cookieObj;
         }
         var cookiesFound = cookies ? true: false
-        if (config.advanced && config.advanced.restrictCookies == true && !cookieAccessors.ids.includes(message.author.id)) cookies = undefined;
-        if (cookiesFound && !cookies) var cookieAccess = false;
+        if (config.advanced && config.advanced.restrictCookies == true && !cookieAccessors.ids.includes(message.author.id) && !isBotController(message.author.id)) cookies = undefined;
 
         initializeRSS(con, rssLink, message.channel, cookies, function(err) {
           channelTracker.remove(message.channel.id)
