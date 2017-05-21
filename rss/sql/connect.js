@@ -24,7 +24,7 @@ module.exports = function(callback) {
         con.query(`create database if not exists \`${config.feedManagement.databaseName}\``, function(err) {
           if (err) throw err;
         })
-        con.query(`use ${config.feedManagement.databaseName}`, function(err) {
+        con.query(`use \`${config.feedManagement.databaseName}\``, function(err) {
           if (err) throw err;
         })
         con.query(`set collation_connection = 'utf8_general_ci'`, function(err) {
