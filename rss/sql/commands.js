@@ -2,7 +2,7 @@ const config = require('../../config.json')
 const sqlType = config.feedManagement.sqlType.toLowerCase()
 
 exports.selectTable = function(con, table, callback) {
-  if (sqlType === "mysql") return con.query(`select "${table}" from information_schema.tables where table_schema = "${config.feedManagement.databaseName}" and table_name = "${table}"`, callback);
+  if (sqlType === "mysql") return con.query(`select "${table}" from information_schema.tables where table_schema = \`${config.feedManagement.databaseName}\` and table_name = "${table}"`, callback);
   else return con.all(`select name from sqlite_master where type = 'table' and name = '${table}'`, callback);
 }
 
