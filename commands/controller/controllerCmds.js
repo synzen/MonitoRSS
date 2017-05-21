@@ -449,8 +449,6 @@ exports.removeoverride = function(bot, message) {
   const content = message.content.split(' ')
   if (content.length < 2 || content.length > 3) return message.channel.send(`The proper syntax to override a server's feed limit is \`${config.botSettings.prefix}removeoverride <guildID>\`.`);
 
-  if (!currentGuilds.has(content[1]) || !bot.guilds.has(content[1])) return message.channel.send(`Unable to remove limit, guild ID \`${content[1]}\` was either not found in guild list.`);
-
   if (overriddenGuilds[content[1]]) {
     delete overriddenGuilds[content[1]];
     fs.writeFile('./limitOverrides.json', JSON.stringify(overriddenGuilds, null, 2), function(err) {
