@@ -3,12 +3,12 @@ const config = require('../config.json')
 const chooseFeed = require('./util/chooseFeed.js')
 const channelTracker = require('../util/channelTracker.js')
 const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html', 'color'],
-                      ['Author Title', 'Title of the embed\nAccepts tags.', 'authorTitle'],
+                      ['Author Title', 'Title of the embed\nAccepts placeholders.', 'authorTitle'],
                       ['Author Avatar URL', 'The avatar picture to the left of author title.\nThis MUST be a link to an image. If an Author Title is not specified, the Author Avatar URL will not be shown.', 'authorAvatarURL'],
-                      ['Image URL', 'The main image on the bottom of the embed.\nThis MUST be a link to an image, OR an {imageX} tag.', 'imageURL'],
-                      ['Thumbnail URL', 'The picture on the right hand side of the embed\nThis MUST be a link to an image, OR an {imageX} tag.', 'thumbnailURL'],
-                      ['Message', 'Main message of the embed\nAcceps tags.', 'message'],
-                      ['Footer Text', 'The bottom-most text\nAccepts tags.', 'footerText'],
+                      ['Image URL', 'The main image on the bottom of the embed.\nThis MUST be a link to an image, OR an {imageX} placeholder.', 'imageURL'],
+                      ['Thumbnail URL', 'The picture on the right hand side of the embed\nThis MUST be a link to an image, OR an {imageX} placeholder.', 'thumbnailURL'],
+                      ['Message', 'Main message of the embed\nAccepts placeholders.', 'message'],
+                      ['Footer Text', 'The bottom-most text\nAccepts placeholders.', 'footerText'],
                       ['URL', 'A link that clicking on the title will lead to.\nThis MUST be a link. By default this is set to the feed\'s url', 'url']]
 
 const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
@@ -113,7 +113,7 @@ module.exports = function(bot, message, command) {
 
         // property collector
         customCollect.stop();
-        message.channel.send(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other tags, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`)
+        message.channel.send(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`)
         .then(function(msgPrompt) {
           msgHandler.add(msgPrompt)
           const propertyCollect = message.channel.createMessageCollector(filter, {time: 240000});
@@ -129,7 +129,7 @@ module.exports = function(bot, message, command) {
              if (isNaN(parseInt(finalChange, 10))) return message.channel.send('The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`));
              else if (parseInt(finalChange, 10) < 0 || parseInt(finalChange, 10) > 16777215) return message.channel.send('The color must be a number between 0 and 16777215. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`));
             }
-            else if (imageFields.includes(choice) && !isValidImg(finalChange)) return message.channel.send('URLs must link to actual images or be `{imageX}` tags. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`));
+            else if (imageFields.includes(choice) && !isValidImg(finalChange)) return message.channel.send('URLs must link to actual images or be `{imageX}` placeholders. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`));
             else if (choice === 'attachURL' && !finalChange.startsWith('http')) return message.channel.send('URL option must be a link. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 7: ${err} `));
 
             message.channel.send(`Updating embed settings...`)

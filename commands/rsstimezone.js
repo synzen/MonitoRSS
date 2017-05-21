@@ -19,9 +19,9 @@ module.exports = function(bot, message) {
   const oldTimezone = (guildRss.timezone) ? guildRss.timezone : config.feedSettings.timezone
   const msgArray = message.content.split(' ')
 
-  if (msgArray.length <= 1) return message.channel.send(`Setting your timezone is only useful if you intend on using customized messages with the \`{date}\` tag. To set your timezone, the syntax is \`${config.botSettings.prefix}rsstimezone your_timezone_here\`. To reset back to the default (${config.feedSettings.timezone}), type \`${config.botSettings.prefix}rsstimezone reset\`.\n\nSee <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`).catch(err => console.log(`Promise Warning: rssTimezone 3a: ${err}`));
+  if (msgArray.length <= 1) return message.channel.send(`Setting your timezone is only useful if you intend on using customized messages with the \`{date}\` placeholder. To set your timezone, the syntax is \`${config.botSettings.prefix}rsstimezone your_timezone_here\`. To reset back to the default (${config.feedSettings.timezone}), type \`${config.botSettings.prefix}rsstimezone reset\`.\n\nSee <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`).catch(err => console.log(`Promise Warning: rssTimezone 3a: ${err}`));
 
-  if (!hasTimezone(guildRss.sources)) return message.channel.send('You cannot set your timezone if you don\'t use the `{date}` tag in any of your feeds.').catch(err => console.log(`Promise Warning: rssTimezone 3b: ${err}`));
+  if (!hasTimezone(guildRss.sources)) return message.channel.send('You cannot set your timezone if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Promise Warning: rssTimezone 3b: ${err}`));
 
   const timezone = msgArray[msgArray.length - 1]
 

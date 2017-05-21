@@ -25,7 +25,7 @@ function findImages(obj, results) {
   }
 }
 
-// Clean up ridiculous spacings some articles may have in their descriptions/summaries
+// Try to clean up ridiculous spacings some articles may have in their descriptions/summaries
 function cleanRandoms (text) {
   const a = cleanEntities.decodeHTML(text)
           .replace(/<br>/g, '\n')
@@ -35,7 +35,6 @@ function cleanRandoms (text) {
           .replace(/\s\n/g, '\n')
           .replace(/\n /g, '\n')
           .replace(/ \n/g, '\n')
-          // .replace(/\n\s/g,'\n')
           .replace(/\n\n\n\n/g, '\n\n')
 
   return striptags(a).trim()
@@ -46,7 +45,7 @@ module.exports = function Article(rawArticle, guildId) {
   this.rawSummary = striptags(rawArticle.summary)
   this.meta = rawArticle.meta
   this.guid = rawArticle.guid
-  // Must be replaced with empty string if it exists in source config since these are replaceable tags
+  // Must be replaced with empty string if it exists in source config since these are replaceable placeholders
   this.title = (rawArticle.title) ? cleanRandoms(rawArticle.title) : ''
   this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author): ''
   this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason

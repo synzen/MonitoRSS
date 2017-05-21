@@ -74,9 +74,14 @@ const validConfig = {
     }
   },
   'FEED SETTINGS': {
+    checkTitles: {
+      type: 'bool',
+      desc: 'Only enable if necessary! Check all article titles during retrieval cycles to make sure no article with the same title is repeated.',
+      checkValid: isBool
+    },
     timezone: {
       type: 'string',
-      desc: 'This is for the {date} tag customization. By default the date will be in UTC if left blank. Must be from <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> under TZ column.',
+      desc: 'Only useful if {date} placeholder is used. By default the date will be in UTC if left blank. Must be from <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> under TZ column.',
       checkValid: isValidTimezone
     },
     timeFormat: {
@@ -241,6 +246,8 @@ exports.refresh = function(bot, message) {
             return message.channel.send(`Unable to refresh feed. Reason:\n\`\`\`${err}\n\`\`\``);
           }
           delete failedFeeds[source.link]
+          try {fs.writeFileSync('./util/failedFeeds.json', JSON.stringify(failedFeeds, null, 2));}
+          catch(e) {console.log(`Bot Controller: Unable to update failedFeeds.json from refresh (${e})`)}
           console.log(`Bot Controller: Link ${source.link} has been refreshed by (${message.author.id}, ${message.author.name}), and will be back on cycle.`);
           message.channel.send(`Successfully refreshed <${source.link}>.`)
         })
@@ -263,7 +270,7 @@ exports.getsources = function(bot, message) {
   if (msg.length < 2000) message.channel.send(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``);
   else if (msg.length >= 2000) {
     message.channel.send('Unable to send due to character length exceeding 2000. Logging to console instead.');
-    console.info(`Requested from user ${message.author.username}:\n`, sources);
+    console.info(`Bot Controller: Sources of guild ID ${content[1]} requested by (${message.author.id}, ${message.author.username}):\n`, sources);
   }
   else message.channel.send('No sources available.');
 }
