@@ -76,8 +76,11 @@ module.exports = function(bot, callback, schedule) {
         else if (schedule.name !== 'default' && !feedTracker[rssName]) { // If current feed schedule is a custom one and is not assigned
           let keywords = schedule.keywords;
           for (var q in keywords) {
-            if (rssList[rssName].link.includes(keywords[q])) feedTracker[rssName] = schedule.name; // Assign this feed to this schedule so no other feed schedule can take it
-            delegateFeed(rssName);
+            if (rssList[rssName].link.includes(keywords[q])) {
+              feedTracker[rssName] = schedule.name; // Assign this feed to this schedule so no other feed schedule can take it on subsequent cycles
+              delegateFeed(rssName);
+              console.log(`RSS Info: Undelegated feed ${rssName} (${rssList[rssName].link}) has been delegated to custom schedule ${schedule.name}`)
+            }
           }
         }
 

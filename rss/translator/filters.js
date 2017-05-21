@@ -9,7 +9,7 @@ function findFilterWords(filterType, content, isTestMessage) {
   //filterType is array of title, description, summary, or author
   if (!content) return false;
   if (isTestMessage) var matches = []
-  if (filterType && filterType.length !== 0 && typeof filterType === 'object') {
+  if (filterType && typeof filterType === 'object' && filterType.length && filterType.length !== 0 ) {
 
     // For title, descriptions, summary, and author
     if (typeof content === 'string') {
