@@ -10,7 +10,7 @@ module.exports = function (bot, message, command) {
     const guildRss = currentGuilds.get(message.guild.id)
     const rssList = guildRss.sources
 
-    const currentMsg = '```Markdown\n' += rssList[rssName].message ? rssList[rssName].message + '```' : 'None has been set. Currently using default message below:\n\n``````\n' + config.feedSettings.defaultMessage + '```'
+    const currentMsg = rssList[rssName].message ? '```Markdown\n' + rssList[rssName].message + '```' : '```Markdown\nNone has been set. Currently using default message below:\n\n``````\n' + config.feedSettings.defaultMessage + '```'
 
     message.channel.send(`The current message for ${rssList[rssName].link} is: \n${currentMsg}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the tags \`{title}\`, \`{description}\`, \`{link}\`, and etc. \`{empty}\` will create an empty message, but only if an embed is used. Regular formatting such as **bold** and etc. is also available. To find other tags, type \`exit\` then \`${config.botSettings.prefix}rsstest\`.\n\n`)
     .then(function(msgPrompt) {
