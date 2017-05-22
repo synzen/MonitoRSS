@@ -214,7 +214,7 @@ exports.unblacklist = function(bot, message) {
       blacklistGuilds.ids.splice(x, 1);
       fs.writeFile('./blacklist.json', JSON.stringify(blacklistGuilds, null, 2), function(err) {
         if (err) throw err;
-        console.log(`Guild \`${content[1]}\` ${bot.guilds.get(content[1]) ? '(' + bot.guilds.get(content[1]).name + ') ' : ''}has been unblacklisted by (${message.author.id}, ${message.author.name}).`)
+        console.log(`Guild \`${content[1]}\` ${bot.guilds.get(content[1]) ? '(' + bot.guilds.get(content[1]).name + ') ' : ''}has been unblacklisted by (${message.author.id}, ${message.author.username}).`)
         message.channel.send(`Guild \`${content[1]}\` ${bot.guilds.get(content[1]) ? '(' + bot.guilds.get(content[1]).name + ') ' : ''}successfully unblacklisted.`)
       })
       break;
@@ -242,13 +242,13 @@ exports.refresh = function(bot, message) {
 
         requestStream(source.link, null, null, function(err) {
           if (err) {
-            console.log(`Bot Controller: Unable to refresh feed link ${source.link} by (${message.author.id}, ${message.author.name}), reason: `, err);
+            console.log(`Bot Controller: Unable to refresh feed link ${source.link} by (${message.author.id}, ${message.author.username}), reason: `, err);
             return message.channel.send(`Unable to refresh feed. Reason:\n\`\`\`${err}\n\`\`\``);
           }
           delete failedFeeds[source.link]
           try {fs.writeFileSync('./util/failedFeeds.json', JSON.stringify(failedFeeds, null, 2));}
           catch(e) {console.log(`Bot Controller: Unable to update failedFeeds.json from refresh (${e})`)}
-          console.log(`Bot Controller: Link ${source.link} has been refreshed by (${message.author.id}, ${message.author.name}), and will be back on cycle.`);
+          console.log(`Bot Controller: Link ${source.link} has been refreshed by (${message.author.id}, ${message.author.username}), and will be back on cycle.`);
           message.channel.send(`Successfully refreshed <${source.link}>.`)
         })
         break;
@@ -461,7 +461,7 @@ exports.setoverride = function(bot, message) {
     }
 
     message.channel.send(`Override limit set to \`${content[2]}\` for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feed(s) have been removed.': ''}`);
-    console.log(`Bot Controller: Override limit set to \`${content[2]}\` for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feed(s) have been removed.': ''}. By (${message.author.id}, ${message.author.name})`)
+    console.log(`Bot Controller: Override limit set to \`${content[2]}\` for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feed(s) have been removed.': ''}. By (${message.author.id}, ${message.author.username})`)
   })
 
 }
@@ -495,7 +495,7 @@ exports.removeoverride = function(bot, message) {
       }
 
       message.channel.send(`Override limit reset for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feeds have been removed.': ''}`);
-      console.log(`Bot Controller: Override limit reset for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feeds have been removed.': ''} By (${message.author.id}, ${message.author.name})`)
+      console.log(`Bot Controller: Override limit reset for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, \`' + enforced + '\` feeds have been removed.': ''} By (${message.author.id}, ${message.author.username})`)
     })
   }
   else return message.channel.send(`Unable to reset, there are no overrides set for that guild.`)
@@ -516,7 +516,7 @@ exports.allowcookies = function(bot, message) {
   fs.writeFileSync('./cookieAccessors.json', JSON.stringify(cookieAccessors, null, 2))
 
   message.channel.send(`Cookies are now allowed for user ID \`${content[1]}\` (${bot.users.get(content[1]).username}).`)
-  console.log(`Bot Controller: Cookies have been allowed for user ID ${content[1]}, (${bot.users.get(content[1]).username}) by (${message.author.id}, ${message.author.name})`)
+  console.log(`Bot Controller: Cookies have been allowed for user ID ${content[1]}, (${bot.users.get(content[1]).username}) by (${message.author.id}, ${message.author.username})`)
 }
 
 exports.disallowcookies = function(bot, message) {
@@ -529,7 +529,7 @@ exports.disallowcookies = function(bot, message) {
       cookieAccessors.ids.splice(index, 1);
       fs.writeFileSync('./cookieAccessors.json', JSON.stringify(cookieAccessors, null, 2));
       message.channel.send(`User ID \`${content[1]}\` (${bot.users.get(content[1]) ? bot.users.get(content[1]).username : 'User not found in bot user list.'}) removed from cookie accessor list.`);
-      return console.log(`Bot Controller: User ID \`(${content[1]}\`. (${bot.users.get(content[1]) ? bot.users.get(content[1]).username : 'User not found in bot user list.'}) removed from cookie accessor list by (${message.author.id}, ${message.author.name}).`);
+      return console.log(`Bot Controller: User ID \`(${content[1]}\`. (${bot.users.get(content[1]) ? bot.users.get(content[1]).username : 'User not found in bot user list.'}) removed from cookie accessor list by (${message.author.id}, ${message.author.username}).`);
     }
   }
 
@@ -596,7 +596,7 @@ exports.setconfig = function(bot, message) {
         config[categoryName][configName] = setting;
 
         fs.writeFileSync('./config.json', JSON.stringify(config, null, 2));
-        console.log(`Bot Controller: Config '${configName}' value has been changed to to '${setting}' by (${message.author.id}, ${message.author.name}).`);
+        console.log(`Bot Controller: Config '${configName}' value has been changed to to '${setting}' by (${message.author.id}, ${message.author.username}).`);
         delete require.cache[require.resolve('../../config.json')];
         return message.channel.send(`Config \`${configName}\`'s current value is now set to \`${setting}\`.`);
 
