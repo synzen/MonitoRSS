@@ -29,7 +29,7 @@ module.exports = function(bot, message, command) {
           }
           console.log(`RSS Warning: Unable to send test article '${err.feed.link}'. Reason: ${err.content}`); // Reserve err.content for console logs, which are more verbose
           msgHandler.deleteAll(message.channel)
-          return grabMsg.edit(`Unable to grab random feed article. Reason: ${channelErrMsg}.`);
+          return grabMsg.edit(`Unable to grab random feed article. Reason: ${channelErrMsg}.`).catch(err => console.log(`Promise Warning: rsstest 1: ${err}`));
         }
         article.rssName = rssName
         article.discordChannelId = message.channel.id

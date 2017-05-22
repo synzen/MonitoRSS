@@ -45,14 +45,12 @@ module.exports = function(con, link, rssList, uniqueSettings, callback) {
 
   requestStream(link, cookies, feedparser, function(err) {
     if (err) {
-      console.log(`${bot.shard ? 'SH ' + bot.shard.id : ''} INIT Error: Skipping ${link}. (${err})`);
       return callback({status: 'failed', link: link, rssList: rssList})
     }
   })
 
   feedparser.on('error', function(err) {
     feedparser.removeAllListeners('end')
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id : ''} INIT Error: Skipping ${link}. (${err})`)
     return callback({status: 'failed', link: link, rssList: rssList})
   });
 

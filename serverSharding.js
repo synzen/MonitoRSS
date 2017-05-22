@@ -7,13 +7,13 @@ const Manager = new Discord.ShardingManager('./server.js', {respawn: false});
 let missingGuilds = {}
 let shardInitsFinished = 0
 
-if (!config.advanced || !config.advanced.shards) {
+if (!config.advanced || !config.advanced.shards || typeof config.advanced.shards !== 'number' || config.advanced.shards < 1) {
   if (!config.advanced) config.advanced = {};
   config.advanced.shards = 1;
-  console.log('SH MANAGER: No shard count found in config, setting default of 1')
+  console.log('SH MANAGER: No valid shard count found in config, setting default of 1')
 }
 
-Manager.spawn(config.advanced.shards ? config.adva);
+Manager.spawn(config.advanced.shards);
 
 Manager.on('message', function(shard, message) {
   if (message === 'kill') process.exit();

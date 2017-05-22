@@ -56,9 +56,9 @@ let bot
 
 // Function to handle login/relogin automatically
 let loginAttempts = 0;
-let maxAttempts = 2;
+let maxAttempts = 15
 
-(function login() {
+;(function login() {
   bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
 
   bot.login(config.botSettings.token)

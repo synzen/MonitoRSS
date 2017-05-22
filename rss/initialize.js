@@ -115,7 +115,6 @@ module.exports = function(con, rssLink, channel, cookies, callback) {
 
         var rssList = guildRss.sources;
         rssList[rssName] = {
-      		enabled: 1,
           title: metaTitle,
       		link: rssLink,
       		channel: channel.id
@@ -130,7 +129,6 @@ module.exports = function(con, rssLink, channel, cookies, callback) {
           sources: {}
         }
         guildRss.sources[rssName] = {
-      		enabled: 1,
           title: metaTitle,
       		link: rssLink,
       		channel: channel.id

@@ -53,7 +53,7 @@ exports.add = function(message, rssName, role, msgHandler) {
 
       // Valid filter category was chosen
       filterTypeCollect.stop();
-      message.channel.send(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, type multiple word/phrases on different lines to add more than one, or type \`{exit}\` to cancel. The filter will be applied as **case insensitive** to feeds.`)
+      message.channel.send(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, type multiple word/phrases on different lines to add more than one, or type \`{exit}\` to cancel. Broad filters can be used by adding \`~\` to the front, which will trigger even if they are found embedded inside words/phrases. The filter will be applied as **case insensitive** to feeds.`)
       .then(function(m) {
         msgHandler.add(m)
         const filterCollect = message.channel.createMessageCollector(filter,{time:240000})

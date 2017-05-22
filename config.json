@@ -17,7 +17,7 @@
   "feedManagement": {
     "sqlType": "sqlite3",
     "databaseName": "rss",
-    "enableBackups": false,
+    "enableRestores": false,
     "cleanDatabase": false
   },
   "feedSettings": {

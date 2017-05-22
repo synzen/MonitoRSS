@@ -1,3 +1,4 @@
+const config = require('../config.json')
 const storage = require('./storage.js')
 const feedTracker = storage.feedTracker // Directory of all feeds, used to track between multiple feed schedules
 const FeedSchedule = require('./FeedSchedule.js')
@@ -36,7 +37,7 @@ module.exports = function(bot) {
     articleTracker.on('article', function(article) { // New articles are sent as the raw object directly from feedparser
       if (debugFeeds.includes(article.rssName)) console.log(`DEBUG ${article.rssName}: Invoking sendToDiscord function`);
       sendToDiscord(bot, article, function(err) {
-        if (err) console.log(err);
+        if (err && config.logging.showFeedErrs != false) console.log(err);
       });
     })
   }
