@@ -8,37 +8,37 @@ const blacklistGuilds = require('../util/storage.js').blacklistGuilds
 
 function isBotController (command, author) {
   let controllerList = config.botSettings.controllerIds
-  if (!controllerList || (typeof controllerList === "object" && controllerList.length === 0)) return false;
-  else if (typeof controllerList !== "object" || (typeof controllerList === "object" && controllerList.length === undefined)) {
-    console.log(`Could not execute command "${command} due to incorrectly defined bot controller."`);
-    return false;
+  if (!controllerList || (typeof controllerList === 'object' && controllerList.length === 0)) return false
+  else if (typeof controllerList !== 'object' || (typeof controllerList === 'object' && controllerList.length === undefined)) {
+    console.log(`Could not execute command "${command} due to incorrectly defined bot controller."`)
+    return false
   }
-  for (var x in controllerList) return (controllerList[x] === author);
+  for (var x in controllerList) return (controllerList[x] === author)
   return false
 }
 
-function logCommand(message, command) {
-  return console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Used ${command}.`)
+function logCommand (message) {
+  return console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Used ${message.content}.`)
 }
 
-module.exports = function(bot, message) {
-  if (!message.member || message.author.bot || !message.content.startsWith(config.botSettings.prefix)) return;
-  if (blacklistGuilds.ids.includes(message.guild.id)) return;
+module.exports = function (bot, message) {
+  if (!message.member || message.author.bot || !message.content.startsWith(config.botSettings.prefix)) return
+  if (blacklistGuilds.ids.includes(message.guild.id)) return
 
-  let m = message.content.split(" ")
+  let m = message.content.split(' ')
   let command = m[0].substr(config.botSettings.prefix.length)
-  if (command === 'forceexit') loadCommand(command)(bot, message); // To forcibly clear a channel of active menus
+  if (command === 'forceexit') loadCommand(command)(bot, message) // To forcibly clear a channel of active menus
 
-  if (channelTracker.hasActiveMenus(message.channel.id)) return;
+  if (channelTracker.hasActiveMenus(message.channel.id)) return
 
   // for regular commands
   for (var cmd in commandList) {
     if (cmd === command && hasPerm.bot(bot, message, commandList[cmd].botPerm) && hasPerm.user(message, commandList[cmd].userPerm)) {
-      logCommand(message, command);
-      return loadCommand(command)(bot, message, command);
+      logCommand(message)
+      return loadCommand(command)(bot, message, command)
     }
   }
 
   // for bot controller commands
-  if (controllerCmds[command] && isBotController(command, message.author.id)) return controllerCmds[command](bot, message);
+  if (controllerCmds[command] && isBotController(command, message.author.id)) return controllerCmds[command](bot, message)
 }

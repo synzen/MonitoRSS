@@ -2,6 +2,7 @@ const fileOps = require('../util/fileOps.js')
 const config = require('../config.json')
 const chooseFeed = require('./util/chooseFeed.js')
 const channelTracker = require('../util/channelTracker.js')
+// embedProperties where [0] = property name, [1] = property description, [2] = internal reference to property
 const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html', 'color'],
                       ['Author Title', 'Title of the embed\nAccepts placeholders.', 'authorTitle'],
                       ['Author Avatar URL', 'The avatar picture to the left of author title.\nThis MUST be a link to an image. If an Author Title is not specified, the Author Avatar URL will not be shown.', 'authorAvatarURL'],
@@ -15,51 +16,47 @@ const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
 const currentGuilds = require('../util/storage.js').currentGuilds
 
 // Check valid image URLs via extensions
-function isValidImg(input) {
+function isValidImg (input) {
   if (input.startsWith('http')) {
-    var matches = input.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
-    if (matches) return true;
-    else return false;
-  }
-  else if (input.startsWith('{image')) {
-    if (input.length !== 8) return false;
-    let imgNum = parseInt(input.substr(6, 1), 10);
-    if (!isNaN(imgNum) && imgNum > 0) return true;
-    else return false;
-  }
-  else return false;
+    var matches = input.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)
+    if (matches) return true
+    else return false
+  } else if (input.startsWith('{image')) {
+    if (input.length !== 8) return false
+    let imgNum = parseInt(input.substr(6, 1), 10)
+    if (!isNaN(imgNum) && imgNum > 0) return true
+    else return false
+  } else return false
 }
 
-module.exports = function(bot, message, command) {
-
-  chooseFeed(bot, message, command, function(rssName, msgHandler) {
-
+module.exports = function (bot, message, command) {
+  chooseFeed(bot, message, command, function (rssName, msgHandler) {
     const guildRss = currentGuilds.get(message.guild.id)
     const rssList = guildRss.sources
 
     // Reset and disable entire embed
-    function resetAll(collector) {
+    function resetAll (collector) {
       return message.channel.send(`Resetting and disabling embed...`)
-      .then(function(resetting) {
+      .then(function (resetting) {
         collector.stop()
         delete rssList[rssName].embedMessage
-        if (rssList[rssName].message === '{empty}') delete rssList[rssName].message; // An empty message is not allowed if there is no embed
+        if (rssList[rssName].message === '{empty}') delete rssList[rssName].message // An empty message is not allowed if there is no embed
         fileOps.updateFile(message.guild.id, guildRss)
         console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssName].link}.`)
         resetting.edit(`Embed has been disabled, and all properties have been removed for <${rssList[rssName].link}>.`).catch(err => console.log(`Promise Warning: rssEmbed 2a: ${err}`))
-      }).catch(err => console.log(`Promise Warning: rssEmbed 2: ${err}`));
+      }).catch(err => console.log(`Promise Warning: rssEmbed 2: ${err}`))
     }
 
     // Reset an individual property
-    function reset(collector, choice) {
+    function reset (collector, choice) {
       return message.channel.send(`Retting property \`${choice}\`...`)
-      .then(function(resetting) {
+      .then(function (resetting) {
         collector.stop()
-        if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties || !rssList[rssName].embedMessage.properties[choice]) return message.channel.send('This property has nothing to reset.');
+        if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties || !rssList[rssName].embedMessage.properties[choice]) return message.channel.send('This property has nothing to reset.').catch(err => console.log(`Promise Warning: rssEmbed 2b: ${err}`))
         delete rssList[rssName].embedMessage.properties[choice]
         if (rssList[rssName].embedMessage.properties.size() === 0) {
-          delete rssList[rssName].embedMessage;
-          if (rssList[rssName].message === '{empty}') delete rssList[rssName].message; // An empty message is not allowed if there is no embed
+          delete rssList[rssName].embedMessage
+          if (rssList[rssName].message === '{empty}') delete rssList[rssName].message // An empty message is not allowed if there is no embed
         }
         fileOps.updateFile(message.guild.id, guildRss)
         console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Property '${choice}' reset for ${rssList[rssName].link}.`)
@@ -75,99 +72,91 @@ module.exports = function(bot, message, command) {
     embedListMsg += '```'
 
     // Generate lsit of embed properties currently set
-    let currentEmbedProps = '```Markdown\n';
+    let currentEmbedProps = '```Markdown\n'
     if (rssList[rssName].embedMessage && rssList[rssName].embedMessage.properties) {
-      let propertyList = rssList[rssName].embedMessage.properties;
+      let propertyList = rssList[rssName].embedMessage.properties
       for (var property in propertyList) {
         for (var y in embedProperties) {
-          if (embedProperties[y][2] == property && propertyList[property]) {
+          if ((embedProperties[y][2] === property) && propertyList[property]) {
             currentEmbedProps += `[${embedProperties[y][0]}]: ${propertyList[property]}\n`
           }
         }
       }
     }
 
-    if (currentEmbedProps == '```Markdown\n') currentEmbedProps = '```\nNo properties set.\n';
+    if (currentEmbedProps === '```Markdown\n') currentEmbedProps = '```\nNo properties set.\n'
 
     message.channel.send(`The current embed properties for ${rssList[rssName].link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${embedListMsg}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type \`exit\` to cancel.`)
-    .then(function(m) {
+    .then(function (m) {
       msgHandler.add(m)
-      const filter = m => m.author.id == message.author.id
-      const customCollect = message.channel.createMessageCollector(filter,{time:240000})
+      const filter = m => m.author.id === message.author.id
+      const customCollect = message.channel.createMessageCollector(filter, {time: 240000})
       channelTracker.add(message.channel.id)
 
-      customCollect.on('collect', function(chosenProp) {
+      customCollect.on('collect', function (chosenProp) {
         msgHandler.add(chosenProp)
         // Select an embed property here
-        if (chosenProp.content.toLowerCase() == 'exit') return customCollect.stop('Embed customization menu closed.');
+        if (chosenProp.content.toLowerCase() === 'exit') return customCollect.stop('Embed customization menu closed.')
 
-        var choice = '';
+        var choice = ''
         // Reference with valid properties and check if valid
         for (var e in embedProperties) {
-          if (chosenProp.content.toLowerCase() == embedProperties[e][0].toLowerCase()) choice = embedProperties[e][2];
+          if (chosenProp.content.toLowerCase() === embedProperties[e][0].toLowerCase()) choice = embedProperties[e][2]
         }
 
         // Delete the properties object to reset embed
-        if (chosenProp.content === 'reset') return resetAll(customCollect);
-        else if (!choice) return message.channel.send('That is not a valid property. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 3: ${err}`));
+        if (chosenProp.content === 'reset') return resetAll(customCollect)
+        else if (!choice) return message.channel.send('That is not a valid property. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 3: ${err}`))
 
         // property collector
-        customCollect.stop();
+        customCollect.stop()
         message.channel.send(`Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`)
-        .then(function(msgPrompt) {
+        .then(function (msgPrompt) {
           msgHandler.add(msgPrompt)
-          const propertyCollect = message.channel.createMessageCollector(filter, {time: 240000});
-          channelTracker.add(message.channel.id);
+          const propertyCollect = message.channel.createMessageCollector(filter, {time: 240000})
+          channelTracker.add(message.channel.id)
 
-          propertyCollect.on('collect', function(propSetting) {
+          propertyCollect.on('collect', function (propSetting) {
             msgHandler.add(propSetting)
             // Define the new property here
             var finalChange = propSetting.content
-            if (finalChange.toLowerCase() === 'exit') return propertyCollect.stop('Embed customization menu closed.');
-            else if (finalChange.toLowerCase() === 'reset') return reset(propertyCollect, choice);
+            if (finalChange.toLowerCase() === 'exit') return propertyCollect.stop('Embed customization menu closed.')
+            else if (finalChange.toLowerCase() === 'reset') return reset(propertyCollect, choice)
             else if (choice === 'color') {
-             if (isNaN(parseInt(finalChange, 10))) return message.channel.send('The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`));
-             else if (parseInt(finalChange, 10) < 0 || parseInt(finalChange, 10) > 16777215) return message.channel.send('The color must be a number between 0 and 16777215. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`));
-            }
-            else if (imageFields.includes(choice) && !isValidImg(finalChange)) return message.channel.send('URLs must link to actual images or be `{imageX}` placeholders. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`));
-            else if (choice === 'attachURL' && !finalChange.startsWith('http')) return message.channel.send('URL option must be a link. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 7: ${err} `));
+              if (isNaN(parseInt(finalChange, 10))) return message.channel.send('The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`))
+              else if (parseInt(finalChange, 10) < 0 || parseInt(finalChange, 10) > 16777215) return message.channel.send('The color must be a number between 0 and 16777215. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`))
+            } else if (imageFields.includes(choice) && !isValidImg(finalChange)) return message.channel.send('URLs must link to actual images or be `{imageX}` placeholders. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`))
+            else if (choice === 'attachURL' && !finalChange.startsWith('http')) return message.channel.send('URL option must be a link. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 7: ${err} `))
 
             message.channel.send(`Updating embed settings...`)
-            .then(function(editing) {
+            .then(function (editing) {
               propertyCollect.stop()
 
-              // Initialize if the embed message does not already exist
-              if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties) {
-                rssList[rssName].embedMessage = {
-                  enabled: 1,
-                  properties: {}
-                }
-              }
+              if (typeof rssList[rssName].embedMessage !== 'object' || typeof rssList[rssName].embedMessage.properties !== 'object') rssList[rssName].embedMessage = { properties: {} }
 
               rssList[rssName].embedMessage.properties[choice] = finalChange
 
               console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${rssList[rssName].link}. Property '${choice}' set to '${finalChange}'.`)
               fileOps.updateFile(message.guild.id, guildRss)
 
-              return editing.edit(`Settings updated for <${rssList[rssName].link}>. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`).catch(err => console.log(`Promise Warning: rssEmbed 9a: ${err}`));
-            }).catch(err => {console.log(`Promise Warning: rssEmbed 9: ${err}`); channelTracker.remove(message.channel.id)});
-          });
-          propertyCollect.on('end', function(collected, reason) {
+              return editing.edit(`Settings updated for <${rssList[rssName].link}>. The property \`${choice}\` has been set to \`\`\`${finalChange}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`).catch(err => console.log(`Promise Warning: rssEmbed 9a: ${err}`))
+            }).catch(err => { console.log(`Promise Warning: rssEmbed 9: ${err}`); channelTracker.remove(message.channel.id) })
+          })
+          propertyCollect.on('end', function (collected, reason) {
             channelTracker.remove(message.channel.id)
             msgHandler.deleteAll(message.channel)
-            if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
-            else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000));
-          });
-        }).catch(err => {console.log(`Promise Warning: rssEmbed 4: ${err}`); channelTracker.remove(message.channel.id)});
-      });
-      customCollect.on('end', function(collected, reason) {
+            if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Promise Warning: Unable to send expired menu message (${err})`))
+            else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000))
+          })
+        }).catch(err => { console.log(`Promise Warning: rssEmbed 4: ${err}`); channelTracker.remove(message.channel.id) })
+      })
+      customCollect.on('end', function (collected, reason) {
         channelTracker.remove(message.channel.id)
-        if (reason === 'user') return; // Do not execute msgHandler.deleteAll if is user, since this means menu series proceeded to the next step and has not ended
-        if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => {});
-        else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000));
+        if (reason === 'user') return // Do not execute msgHandler.deleteAll if is user, since this means menu series proceeded to the next step and has not ended
+        if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Promise Warning: Unable to send expired menu message (${err})`))
+        else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000))
         msgHandler.deleteAll(message.channel)
-      });
+      })
     }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send embed customization prompt. (${err})`))
   })
-
- }
+}

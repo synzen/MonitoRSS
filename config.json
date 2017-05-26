@@ -17,8 +17,10 @@
   "feedManagement": {
     "sqlType": "sqlite3",
     "databaseName": "rss",
+    "enableBackups": true,
     "enableRestores": false,
-    "cleanDatabase": false
+    "cleanDatabase": false,
+    "maxEntryAge": 14
   },
   "feedSettings": {
     "refreshTimeMinutes": 15,

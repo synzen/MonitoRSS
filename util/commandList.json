@@ -28,7 +28,7 @@
 	"rsstest": {
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Feed Delivery Test",
-		"description": "Opens a menu to send a test message for a specific feed, along with the available properties and placeholders for various customizations."
+		"description": "Opens a menu to send a test message for a specific feed, along with the available properties and placeholders for various customizations. You may add `simple` as a parameter to exclude the test details."
 	},
 	"rsstimezone": {
 		"userPerm": "MANAGE_CHANNELS",

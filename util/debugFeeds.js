@@ -1,3 +1,3 @@
-const debug_rssNames = []
+const debugRssNames = []
 
-exports.list = debug_rssNames
+exports.list = debugRssNames

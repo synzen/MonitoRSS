@@ -2,56 +2,51 @@
     Used to store data for various aperations across multiple files
 */
 const fs = require('fs')
-const config = require('../config.json')
 const currentGuilds = new Map()
-const changedGuilds = []
-const feedTracker = {}
+const linkTracker = {}
 const allScheduleWords = []
-var cookieAccessors
-var overriddenGuilds
-var blacklistGuilds
-var failedFeeds
+let deletedFeeds = []
+let cookieAccessors
+let overriddenGuilds
+let blacklistGuilds
+let failedLinks
 
 try {
-  cookieAccessors = JSON.parse(fs.readFileSync('./cookieAccessors.json'))
-}
-catch(e) {
+  cookieAccessors = JSON.parse(fs.readFileSync('./settings/cookieAccessors.json'))
+} catch (e) {
   cookieAccessors = {ids: []}
 }
 
 try {
-  overriddenGuilds = JSON.parse(fs.readFileSync('./limitOverrides.json'))
-}
-catch(e) {
+  overriddenGuilds = JSON.parse(fs.readFileSync('./settings/limitOverrides.json'))
+} catch (e) {
   overriddenGuilds = {}
 }
 
 try {
-  blacklistGuilds = JSON.parse(fs.readFileSync('./blacklist.json'))
-}
-catch(e) {
+  blacklistGuilds = JSON.parse(fs.readFileSync('./settings/blacklist.json'))
+} catch (e) {
   blacklistGuilds = {ids: []}
 }
 
 try {
-  failedFeeds = JSON.parse(fs.readFileSync('./util/failedFeeds.json'))
-}
-catch(e) {
-  failedFeeds = {}
+  failedLinks = JSON.parse(fs.readFileSync('./settings/failedLinks.json'))
+} catch (e) {
+  failedLinks = {}
 }
 
 exports.blacklistGuilds = blacklistGuilds
 
-exports.currentGuilds = currentGuilds // Object for holding all guild profiles
+exports.currentGuilds = currentGuilds // To hold all guild profiles
 
-exports.changedGuilds = changedGuilds // Hold any changed guild data here sent from child process
+exports.deletedFeeds = deletedFeeds // Any deleted rssNames to check during sendToDiscord if it was deleted during a cycle
 
 exports.cookieAccessors = cookieAccessors // If restrictCookies is true in config, this is the list of permitted user IDs
 
-exports.overriddenGuilds = overriddenGuilds
+exports.overriddenGuilds = overriddenGuilds // To track guilds with overridden limits
 
-exports.feedTracker = feedTracker // Used to track schedule assignment to feeds
+exports.linkTracker = linkTracker // To track schedule assignment to links
 
 exports.allScheduleWords = allScheduleWords // Holds all words across all schedules
 
-exports.failedFeeds = failedFeeds
+exports.failedLinks = failedLinks

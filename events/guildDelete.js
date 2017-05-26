@@ -5,14 +5,14 @@ const fileOps = require('../util/fileOps.js')
 const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 
-module.exports = function(bot, guild) {
+module.exports = function (bot, guild) {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
 
-  guild.channels.forEach(function(channel, channelId) {
-    if (channelTracker.hasActiveMenus(channel.id)) channelTracker.remove(channel.id);
+  guild.channels.forEach(function (channel, channelId) {
+    if (channelTracker.hasActiveMenus(channel.id)) channelTracker.remove(channel.id)
   })
 
-  if (!fs.existsSync(`./sources/${guild.id}.json`)) return;
+  if (!fs.existsSync(`./sources/${guild.id}.json`)) return
 
   const rssList = currentGuilds.get(guild.id).sources
 
@@ -20,14 +20,14 @@ module.exports = function(bot, guild) {
     sqlCmds.dropTable(config.feedManagement.databaseName, rssName)
   }
 
-  fileOps.deleteGuild(guild.id, function() {
+  fileOps.deleteGuild(guild.id, function () {
     console.log(`RSS Info: Guild profile ${guild.id}.json (${guild.name}) deleted from sources folder.`)
   })
 
-  if (!config.logging.discordChannelLog) return;
+  if (!config.logging.discordChannelLog) return
 
   const logChannelId = config.logging.discordChannelLog
   const logChannel = bot.channels.get(config.logging.discordChannelLog)
-  if (typeof logChannelId !== "string" || !logChannel) console.log(`Error: Could not log guild removal to Discord, invalid channel ID.`);
-  else logChannel.send(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size - 1}`).catch(err => console.log(`Could not log guild removal to Discord. (${err}) `));
+  if (typeof logChannelId !== 'string' || !logChannel) console.log(`Error: Could not log guild removal to Discord, invalid channel ID.`)
+  else logChannel.send(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size - 1}`).catch(err => console.log(`Could not log guild removal to Discord. (${err}) `))
 }

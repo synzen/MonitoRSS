@@ -5,23 +5,22 @@ const cleanEntities = require('entities')
 const currentGuilds = require('../../util/storage.js').currentGuilds
 
 // To avoid stack call exceeded
-function trampoline(func, obj, results) {
-  var value = func(obj, results);
-  while (typeof value === "function") {
-    value = value();
+function trampoline (func, obj, results) {
+  var value = func(obj, results)
+  while (typeof value === 'function') {
+    value = value()
   }
-  return value;
+  return value
 }
 
 // Used to find images in any object values of the article
-function findImages(obj, results) {
+function findImages (obj, results) {
   for (var key in obj) {
     if (Object.prototype.toString.call(obj[key]) === '[object Object]') {
-      return function() {
-        return findImages(obj[key], results);
+      return function () {
+        return findImages(obj[key], results)
       }
-    }
-    else if (typeof obj[key] === 'string' && obj[key].match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(obj[key]) && results.length < 9) results.push(obj[key]);
+    } else if (typeof obj[key] === 'string' && obj[key].match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(obj[key]) && results.length < 9) results.push(obj[key])
   }
 }
 
@@ -40,86 +39,86 @@ function cleanRandoms (text) {
   return striptags(a).trim()
 }
 
-module.exports = function Article(rawArticle, guildId) {
+module.exports = function Article (rawArticle, guildId) {
   this.rawDescrip = striptags(rawArticle.description)
   this.rawSummary = striptags(rawArticle.summary)
   this.meta = rawArticle.meta
   this.guid = rawArticle.guid
   // Must be replaced with empty string if it exists in source config since these are replaceable placeholders
   this.title = (rawArticle.title) ? cleanRandoms(rawArticle.title) : ''
-  this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author): ''
+  this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author) : ''
   this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
 
   // date
   const guildTimezone = currentGuilds.get(guildId).timezone
   const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
-  const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : "ddd, D MMMM YYYY, h:mm A z"
+  const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
   const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
   this.pubdate = (vanityDate !== 'Invalid date') ? vanityDate : ''
 
   // description
   let rawArticleDescrip = ''
   // YouTube doesn't use the regular description field, thus manually setting it as the description
-  if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#'];
-  else if (rawArticle.description) rawArticleDescrip = cleanRandoms(rawArticle.description);
+  if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#']
+  else if (rawArticle.description) rawArticleDescrip = cleanRandoms(rawArticle.description)
   rawArticleDescrip = (rawArticleDescrip.length > 800) ? `${rawArticleDescrip.slice(0, 790)} [...]` : rawArticleDescrip
 
-  if (this.meta.link && this.meta.link.includes("reddit")) {
+  if (this.meta.link && this.meta.link.includes('reddit')) {
     rawArticleDescrip = rawArticleDescrip.substr(0, rawArticleDescrip.length - 22)
-    .replace('submitted by', '\n*Submitted by:*'); // truncate the useless end of reddit description
+    .replace('submitted by', '\n*Submitted by:*') // truncate the useless end of reddit description
   }
 
   this.description = rawArticleDescrip
 
   // summary
   let rawArticleSummary = ''
-  if (rawArticle.summary) rawArticleSummary = cleanRandoms(rawArticle.summary);
+  if (rawArticle.summary) rawArticleSummary = cleanRandoms(rawArticle.summary)
   rawArticleSummary = (rawArticleSummary.length > 800) ? `${rawArticleSummary.slice(0, 790)} [...]` : rawArticleSummary
   this.summary = rawArticleSummary
 
   // image(s)
   const imageLinks = []
-  trampoline(findImages, rawArticle, imageLinks);
-  this.images = (imageLinks.length == 0) ? undefined : imageLinks
+  trampoline(findImages, rawArticle, imageLinks)
+  this.images = (imageLinks.length === 0) ? undefined : imageLinks
 
   this.listImages = function () {
     let imageList = ''
     for (var image in this.images) {
-      imageList += `[Image${parseInt(image, 10) + 1} URL]: {image${parseInt(image, 10) + 1}}\n${this.images[image]}`;
-      if (image != this.images.length - 1) imageList += '\n';
+      imageList += `[Image${parseInt(image, 10) + 1} URL]: {image${parseInt(image, 10) + 1}}\n${this.images[image]}`
+      if (parseInt(image, 10) !== this.images.length - 1) imageList += '\n'
     }
-    return imageList;
+    return imageList
   }
 
   // categories
   if (rawArticle.categories) {
-    let categoryList = '';
+    let categoryList = ''
     for (var category in rawArticle.categories) {
-      categoryList += rawArticle.categories[category].trim();
-      if (category != rawArticle.categories.length - 1) categoryList += '\n';
+      categoryList += rawArticle.categories[category].trim()
+      if (parseInt(category, 10) !== rawArticle.categories.length - 1) categoryList += '\n'
     }
-    this.tags = categoryList;
+    this.tags = categoryList
   }
 
   // replace images
-  this.convertImgs = function(content) {
+  this.convertImgs = function (content) {
     const imgDictionary = {}
     const imgLocs = content.match(/{image.+}/g)
-    if (!imgLocs) return content;
+    if (!imgLocs) return content
 
     for (var loc in imgLocs) {
       if (imgLocs[loc].length === 8) { // only single digit image numbers
-        let imgNum = parseInt(imgLocs[loc].substr(6, 1), 10);
-        if (!isNaN(imgNum) && imgNum !== 0 && this.images && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1]; // key is {imageX}, value is article image URL
-        else if (!isNaN(imgNum) || imgNum === 0 || !this.images) imgDictionary[imgLocs[loc]] = '';
+        let imgNum = parseInt(imgLocs[loc].substr(6, 1), 10)
+        if (!isNaN(imgNum) && imgNum !== 0 && this.images && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1] // key is {imageX}, value is article image URL
+        else if (!isNaN(imgNum) || imgNum === 0 || !this.images) imgDictionary[imgLocs[loc]] = ''
       }
     }
-    for (var imgKeyword in imgDictionary) content = content.replace(new RegExp(imgKeyword, 'g'), imgDictionary[imgKeyword]);
+    for (var imgKeyword in imgDictionary) content = content.replace(new RegExp(imgKeyword, 'g'), imgDictionary[imgKeyword])
     return content
   }
 
   // replace simple keywords
-  this.convertKeywords = function(word) {
+  this.convertKeywords = function (word) {
     const content = word.replace(/{date}/g, this.pubdate)
             .replace(/{title}/g, this.title)
             .replace(/{author}/g, this.author)
