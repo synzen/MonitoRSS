@@ -96,7 +96,7 @@ exports.addNewFeed = function (con, link, channel, cookies, callback) {
 
     // MySQL table names have a limit of 64 char
     if (rssName.length >= 64) rssName = rssName.substr(0, 64)
-    rssName = rssName.replace(/-\?/g, '') // Remove question marks to prevent sql from auto-escaping
+    rssName = rssName.replace(/-|\?/g, '') // Remove question marks to prevent sql from auto-escaping
 
     exports.addToDb(con, articleList, rssName, function (err) {
       if (err) return callback(err)
