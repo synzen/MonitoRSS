@@ -87,7 +87,7 @@ module.exports = function (con, rssList, articleList, debugFeeds, link, callback
 
         article.rssName = rssName
         article.discordChannelId = channelId
-        if (isOldArticle && !doNotSend) callback(null, {status: 'article', article: article})
+        if (!isOldArticle && !doNotSend) callback(null, {status: 'article', article: article})
 
         insertIntoTable({
           id: articleId,

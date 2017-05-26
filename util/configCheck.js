@@ -63,7 +63,7 @@ exports.checkMasterConfig = function (masterConfig) {
     cycleMaxAge: {type: 'number', default: 1},
     defaultMessage: {type: 'string', default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
 
-    shards: {type: 'number', default: '1'},
+    shards: {type: 'number', default: 1},
     batchSize: {type: 'number', default: '400'},
     restrictCookies: {type: 'boolean', default: false},
     processorMethod: {type: 'string', default: 'single'}
