@@ -42,7 +42,7 @@ function checkControllerIds (configName, string) {
 
 const validConfig = {
   'LOGGING': {
-    showFeedErrs: {
+    showLinkErrs: {
       type: 'boolean',
       desc: 'Log connection failures on requests to feed URLs. Default is `true`.',
       checkValid: isBool
@@ -359,7 +359,7 @@ exports.forceremove = function (bot, message) {
         msg += `\n${removedLinks[p]}`
       }
 
-      message.channel.send(`Successfully removed \`${removedLinks.length}\` link(s). Links:\n${msg + '```'}`)
+      message.channel.send(`Successfully removed \`${removedLinks.length}\` source(s). Links:\n${msg + '```'}`)
       console.log(`Bot Controller: The following links have been forcibly removed by (${message.author.id}, ${message.author.username}): \n`, removedLinks)
     })
 
@@ -442,7 +442,7 @@ exports.setoverride = function (bot, message) {
     }
 
     message.channel.send(`Override limit set to \`${content[2]}\` for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, `' + enforced + '` feed(s) have been removed.' : ''}`)
-    console.log(`Bot Controller: Override limit set to \`${content[2]}\` for guild ID \`${content[1]}\`.${enforced ? ' Limit has been enforced, `' + enforced + '` feed(s) have been removed.' : ''}. By (${message.author.id}, ${message.author.username})`)
+    console.log(`Bot Controller: Override limit set to \`${content[2]}\` for guild ID \`${content[1]}\` ${enforced ? ' (limit enforced, `' + enforced + '` feed(s) have been removed)' : ''} by (${message.author.id}, ${message.author.username}).`)
   })
 }
 

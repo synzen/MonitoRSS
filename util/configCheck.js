@@ -33,7 +33,7 @@ exports.checkMasterConfig = function (masterConfig) {
   let configTypes = {
     logDates: {type: 'boolean', default: false},
     discordChannelLog: {type: 'string', default: ''},
-    showFeedErrs: {type: 'boolean', default: true},
+    showLinkErrs: {type: 'boolean', default: true},
     showUnfiltered: {type: 'boolean', default: true},
 
     token: {type: 'string', default: undefined},

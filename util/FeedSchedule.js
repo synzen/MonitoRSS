@@ -1,13 +1,14 @@
 const fs = require('fs')
-const getArticles = require('../rss/rss.js')
+const getArticles = require('../rss/cycleSingle.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const sqlConnect = require('../rss/sql/connect.js')
 const config = require('../config.json')
 const configChecks = require('./configCheck.js')
-const debugFeeds = require('../util/debugFeeds').list
+const debugFeeds = require('../util/debugFeeds.js').list
 const events = require('events')
 const childProcess = require('child_process')
 const storage = require('./storage.js')
+const logLinkErr = require('./logLinkErrs.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const linkTracker = storage.linkTracker // Directory object of rssNames with their values as schedule names
 const allScheduleWords = storage.allScheduleWords
@@ -177,7 +178,8 @@ module.exports = function (bot, callback, schedule) {
         }
       }
 
-      getArticles(con, link, rssList, uniqueSettings, function (linkCompletion) {
+      getArticles(con, link, rssList, uniqueSettings, function (err, linkCompletion) {
+        if (err) logLinkErr({link: linkCompletion.link, content: err})
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) console.log(`DEBUG ${linkCompletion.article.rssName}: Emitted article event.`)
           return cycle.emit('article', linkCompletion.article)
@@ -200,7 +202,7 @@ module.exports = function (bot, callback, schedule) {
     let completedLinks = 0
     let currentBatch = batchList[batchNumber]
 
-    processorList.push(childProcess.fork('./rss/rssProcessor.js'))
+    processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
 
     let processorIndex = processorList.length - 1
     let processor = processorList[processorIndex]
@@ -238,7 +240,7 @@ module.exports = function (bot, callback, schedule) {
     function deployProcessor (batchList, index) {
       let completedLinks = 0
 
-      processorList.push(childProcess.fork('./rss/rssProcessor.js'))
+      processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
       let currentBatch = batchList[index]
 
       let processorIndex = processorList.length - 1
@@ -290,7 +292,7 @@ module.exports = function (bot, callback, schedule) {
     try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
 
     var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''}. Cycle Time: ${timeTaken}s`)
+    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. Cycle Time: ${timeTaken}s`)
   }
 
   let refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15

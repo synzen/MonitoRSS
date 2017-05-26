@@ -2,7 +2,7 @@
   "logging": {
     "logDates": true,
     "discordChannelLog": "",
-    "showFeedErrs": true,
+    "showLinkErrs": true,
     "showUnfiltered": true
   },
   "botSettings": {

@@ -1,6 +1,6 @@
 const fs = require('fs')
 const config = require('../config.json')
-const initAll = require('../rss/initializeall.js')
+const initAll = require('../rss/initSingle.js')
 const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const linkTracker = storage.linkTracker // Directory of all feeds, used to track between multiple feed schedules
@@ -208,7 +208,7 @@ module.exports = function (bot, callback) {
     let completedLinks = 0
     let currentBatch = batchList[batchNumber]
 
-    const processor = process.fork('./rss/initializeallProcessor.js')
+    const processor = process.fork('./rss/initProcessor.js')
 
     currentBatch.forEach(function (rssList, link) {
       var uniqueSettings
@@ -260,7 +260,7 @@ module.exports = function (bot, callback) {
     function deployProcessors (batchList, index) {
       let completedLinks = 0
 
-      const processor = process.fork('./rss/initializeallProcessor.js')
+      const processor = process.fork('./rss/initProcessor.js')
       let currentBatch = batchList[index]
 
       processor.on('message', function (linkCompletion) {

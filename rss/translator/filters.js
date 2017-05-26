@@ -51,8 +51,8 @@ module.exports = function (rssList, rssName, article, isTestMessage) {
   var filterFound = ''
   var filterTypes = {
     'Title': {
-    user: rssList[rssName].filters.Title,
-    ref: article.title
+      user: rssList[rssName].filters.Title,
+      ref: article.title
     },
     'Descriptipn': {
       user: rssList[rssName].filters.Description,
