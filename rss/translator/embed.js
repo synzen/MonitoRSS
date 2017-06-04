@@ -17,7 +17,7 @@ module.exports = function (rssList, rssName, article) {
 
   if (typeof embedSpecs.authorTitle === 'string') embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle))
 
-  if (typeof embedSpecs.authorTitle === 'string ' && typeof embedSpecs.authorAvatarURL === 'string') embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle), embedSpecs.authorAvatarURL)
+  if (typeof embedSpecs.authorTitle === 'string' && typeof embedSpecs.authorAvatarURL === 'string') embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle), embedSpecs.authorAvatarURL)
 
   if (typeof embedSpecs.thumbnailURL === 'string') embed.setThumbnail(article.convertImgs(embedSpecs.thumbnailURL))
 
