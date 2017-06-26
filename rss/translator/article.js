@@ -2,11 +2,10 @@ const config = require('../../config.json')
 const moment = require('moment-timezone')
 const cleanEntities = require('entities')
 const currentGuilds = require('../../util/storage.js').currentGuilds
-// const fs = require('fs')
 const htmlConvert = require('html-to-text')
 
 // To avoid stack call exceeded
-function checkObjType(item, results) {
+function checkObjType (item, results) {
   if (Object.prototype.toString.call(item) === '[object Object]') {
     return function () {
       return findImages(item, results)
@@ -35,8 +34,7 @@ function regexReplace (string, regexSearchQuery, replacementData, flags) {
       const newMatchIndex = replacementData.matchNumber
       const newRegExp = new RegExp(replacementData.content, flags)
       newMatch = newRegExp.exec(string)[newMatchIndex]
-    }
-    else if (replacementData.type === 'string') newMatch = replacementData.content
+    } else if (replacementData.type === 'string') newMatch = replacementData.content
 
     const oldRegExp = new RegExp(regexSearchQuery, flags)
     const oldMatches = []
@@ -79,31 +77,22 @@ module.exports = function Article (rawArticle, guildId, rssName) {
   const guildRss = currentGuilds.get(guildId)
   const rssList = guildRss.sources
 
-  function evalRegexConfig(text, articleProperty) {
+  function evalRegexConfig (text, articleProperty) {
     const source = rssList[rssName]
     let newText = text
-    let errors = false
-    if (typeof source.regexOps === 'object' && Array.isArray(source.regexOps[articleProperty])) { // Eval regex if specified
+
+    if (typeof source.regexOps === 'object' && source.regexOps.disabled !== true && Array.isArray(source.regexOps[articleProperty])) { // Eval regex if specified
       for (var u in source.regexOps[articleProperty]) {
         let regexSettings = source.regexOps[articleProperty][u]
-        // if (typeof regexSettings.search !== 'string') console.log(new TypeError(`Property key oldRegex is not a string for feed ${source.link}. Skipping all regex ops for this feed.`));
-        // if (typeof regexSettings.replacement !== 'object' && !Array.isArray(regexSettings.replacement)) console.log(new TypeError(`Property key newRegex is not an object for feed ${source.link}. Skipping all regex ops for this feed.`));
-        // if (typeof regexSettings.replacement.type !== 'string')
-        // if (typeof regexSettings.flags !== 'string') console.log(new TypeError(`Property key flags is not a string for feed ${source.link}. Skipping all regex ops for this feed.`));
-        // if (typeof regexSettings.newRegexMatchNum !== 'number') console.log(new TypeError(`Property key newRegexMatchNum is not a number for feed ${source.link}. Skipping all regex ops for this feed.`));
 
-        // if (typeof regexSettings.search === 'string' && typeof regexSettings.newRegex === 'string' && typeof regexSettings.flags === 'string' && typeof regexSettings.newRegexMatchNum === 'number') {
-          newText = regexReplace(newText, regexSettings.search, regexSettings.replacement, regexSettings.flags)
-          if (typeof newText !== 'string') {
-            console.log(`Error found while evaluating regex for feed ${source.link}:\n`, newText)
-            // errors = true
-          }
-        // } else errors = true
+        let modified = regexReplace(newText, regexSettings.search, regexSettings.replacement, regexSettings.flags)
+        if (typeof modified !== 'string') {
+          if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for feed ${source.link}:\n`, modified)
+        } else newText = modified
       }
-    }
-    else return text
+    } else return text
 
-    return errors ? text : newText
+    return newText
   }
 
   function cleanRandoms (text) {
@@ -112,16 +101,16 @@ module.exports = function Article (rawArticle, guildId, rssName) {
     text = text.replace(/\*/gi, '')
             .replace(/<(strong|b|h[1-6])>(.*?)<\/(strong|b|h[1-6])>/gi, '**$2**') // Bolded markdown
             .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
-            .replace(/<(u)>(.*?)<(\/(u))>/gi,  '__$2__') // Underlined markdown
+            .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
 
     text = htmlConvert.fromString(text, {
       ignoreHref: true,
       noLinkBrackets: true,
       format: {
-          image: function (node, options) {
-            if (rssList[rssName].disableImgLinks === true) return ''
-            else return rssList[rssName].disableImgLinkPreviews === true ? `<${node.attribs.src}>` : node.attribs.src
-          }
+        image: function (node, options) {
+          if (rssList[rssName].disableImgLinks === true) return ''
+          else return rssList[rssName].disableImgLinkPreviews === true ? `<${node.attribs.src}>` : node.attribs.src
+        }
       }
     })
 
@@ -134,7 +123,6 @@ module.exports = function Article (rawArticle, guildId, rssName) {
   this.guid = rawArticle.guid
   this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author) : ''
   this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
-
 
   // Must be replaced with empty string if it exists in source config since these are replaceable placeholders
   this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title)
@@ -156,8 +144,7 @@ module.exports = function Article (rawArticle, guildId, rssName) {
   rawArticleDescrip = (rawArticleDescrip.length > 800) ? `${rawArticleDescrip.slice(0, 790)} [...]` : rawArticleDescrip
 
   if (this.meta.link && this.meta.link.includes('reddit')) {
-    rawArticleDescrip = rawArticleDescrip.substr(0, rawArticleDescrip.length - 22)
-    .replace('submitted by', '\n*Submitted by:*') // truncate the useless end of reddit description
+    rawArticleDescrip = rawArticleDescrip.replace('\n[link] [comments]', '') // truncate the useless end of reddit description
   }
 
   rawArticleDescrip = evalRegexConfig(rawArticleDescrip, 'description')

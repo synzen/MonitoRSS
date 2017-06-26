@@ -48,7 +48,6 @@ module.exports = function (bot, message, command) {
 
           msgHandler.deleteAll(message.channel)
         }, 'titleChecks', firstMsgHandler)
-
       } else if (m.content === '2') {
         collector.stop()
         chooseFeed(bot, message, command, function (rssName, msgHandler) {

@@ -78,8 +78,7 @@ function findFilterWords (filterType, content, isTestMessage) {
       inverted: invertedFilter,
       matches: matches.length > 0 ? matches : null
     }
-  }
-  else if (invertedFilter) return true
+  } else if (invertedFilter) return true
   else return false
 }
 
@@ -125,9 +124,10 @@ module.exports = function (rssList, rssName, article, isTestMessage) {
     } else if (results === true) passedFilters = true
   }
 
-  if (isTestMessage) return {
-    passedFilters: passedFilters,
-    filterMatches: filterMatches
-  }
-  else return passedFilters
+  if (isTestMessage) {
+    return {
+      passedFilters: passedFilters,
+      filterMatches: filterMatches
+    }
+  } else return passedFilters
 }

@@ -62,7 +62,7 @@ exports.checkMasterConfig = function (masterConfig) {
     defaultMaxAge: {type: 'number', default: 1},
     cycleMaxAge: {type: 'number', default: 1},
     defaultMessage: {type: 'string', default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
-    showRegexErrs: {type: 'boolean', default: true}
+    showRegexErrs: {type: 'boolean', default: true},
 
     shards: {type: 'number', default: 1},
     batchSize: {type: 'number', default: '400'},
