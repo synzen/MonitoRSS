@@ -2,7 +2,7 @@
   "name": "Discord.RSS",
   "version": "1.0.0",
   "description": "Discord RSS bot with customizable feeds",
-  "main": "rssServer.js",
+  "main": "server.js",
   "author": "synzen",
   "license": "MIT",
   "bugs": {
