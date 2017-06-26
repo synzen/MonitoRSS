@@ -77,15 +77,21 @@ module.exports = function Article (rawArticle, guildId, rssName) {
   const guildRss = currentGuilds.get(guildId)
   const rssList = guildRss.sources
 
-  function evalRegexConfig (text, articleProperty) {
+  function evalRegexConfig (text, placeholder) {
     const source = rssList[rssName]
     let newText = text
 
-    if (typeof source.regexOps === 'object' && source.regexOps.disabled !== true && Array.isArray(source.regexOps[articleProperty])) { // Eval regex if specified
-      for (var u in source.regexOps[articleProperty]) {
-        let regexSettings = source.regexOps[articleProperty][u]
+    if (typeof source.regexOps === 'object' && source.regexOps.disabled !== true && Array.isArray(source.regexOps[placeholder])) { // Eval regex if specified
+      if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
+        for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
+          if (source.regexOps.disabled[y] === placeholder) return text
+        }
+      }
+      for (var regexOpIndex in source.regexOps[placeholder]) { // Looping through each regexOp for a placeholder
+        let regexOp = source.regexOps[placeholder][regexOpIndex]
+        if (regexOp.disabled === true) continue
 
-        let modified = regexReplace(newText, regexSettings.search, regexSettings.replacement, regexSettings.flags)
+        let modified = regexReplace(newText, regexOp.search, regexOp.replacement, regexOp.flags)
         if (typeof modified !== 'string') {
           if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for feed ${source.link}:\n`, modified)
         } else newText = modified
