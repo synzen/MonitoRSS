@@ -14,7 +14,7 @@ function findFilterWords (filterType, content, isTestMessage) {
     if (typeof content === 'string') {
       content = content.toLowerCase()
       for (var word in filterType) {
-        let searchTerm = filterType[word]
+        let searchTerm = filterType[word].toLowerCase()
 
         if (searchTerm.startsWith('!')) {
           invertedFilter = true
@@ -64,10 +64,6 @@ function findFilterWords (filterType, content, isTestMessage) {
               else return false
             }
           }
-          // if (filterType[w].toLowerCase() === content[item].toLowerCase().trim()) {
-          //   if (isTestMessage) matches.push(filterType[w])
-          //   else return true
-          // }
         }
       }
     }

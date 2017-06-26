@@ -18,13 +18,18 @@ const currentGuilds = require('../util/storage.js').currentGuilds
 // Check valid image URLs via extensions
 function isValidImg (input) {
   if (input.startsWith('http')) {
-    var matches = input.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)
+    const matches = input.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)
     if (matches) return true
     else return false
-  } else if (input.startsWith('{image')) {
+  } else if (input.startsWith('{image')) { // For {imageX}
     if (input.length !== 8) return false
-    let imgNum = parseInt(input.substr(6, 1), 10)
+    const imgNum = parseInt(input.substr(6, 1), 10)
     if (!isNaN(imgNum) && imgNum > 0) return true
+    else return false
+  } else if (input.startsWith('{')) { // For {placeholder:imageX}
+    const reg1 = new RegExp('^.*', 'gi');
+    const reg2 = new RegExp('{(description|image|title):image[1-5]}', 'gi')
+    if (JSON.stringify(input.match(reg2)) === JSON.stringify(input.match(reg1))) return true
     else return false
   } else return false
 }
@@ -119,7 +124,7 @@ module.exports = function (bot, message, command) {
           propertyCollect.on('collect', function (propSetting) {
             msgHandler.add(propSetting)
             // Define the new property here
-            var finalChange = propSetting.content
+            var finalChange = propSetting.content.trim()
             if (finalChange.toLowerCase() === 'exit') return propertyCollect.stop('Embed customization menu closed.')
             else if (finalChange.toLowerCase() === 'reset') return reset(propertyCollect, choice)
             else if (choice === 'color') {

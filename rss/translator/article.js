@@ -101,7 +101,7 @@ module.exports = function Article (rawArticle, guildId, rssName) {
     return newText
   }
 
-  function cleanRandoms (text) {
+  function cleanRandoms (text, imgSrcs) {
     if (!text) return text
 
     text = text.replace(/\*/gi, '')
@@ -114,11 +114,15 @@ module.exports = function Article (rawArticle, guildId, rssName) {
       noLinkBrackets: true,
       format: {
         image: function (node, options) {
+          if (Array.isArray(imgSrcs) && imgSrcs.length < 5) imgSrcs.push(node.attribs.src)
+
           if (rssList[rssName].disableImgLinks === true) return ''
           else return rssList[rssName].disableImgLinkPreviews === true ? `<${node.attribs.src}>` : node.attribs.src
         }
       }
     })
+
+    text = text.replace(/\n\s*\n\s*\n/g, '\n\n'); // Replace triple line breaks with double
 
     return text
   }
@@ -130,10 +134,12 @@ module.exports = function Article (rawArticle, guildId, rssName) {
   this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author) : ''
   this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
 
-  // Must be replaced with empty string if it exists in source config since these are replaceable placeholders
-  this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title)
+  // TITLE
+  const rawTitleImgs = []
+  this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title, rawTitleImgs)
   this.title = evalRegexConfig(this.title, 'title')
   this.title = this.title.length > 150 ? this.title.slice(0, 150) + ' [...]' : this.title
+  this.titleImgs = rawTitleImgs
 
   // date
   const guildTimezone = guildRss.timezone
@@ -142,11 +148,12 @@ module.exports = function Article (rawArticle, guildId, rssName) {
   const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
   this.pubdate = (vanityDate !== 'Invalid date') ? vanityDate : ''
 
-  // description
+  // DESCRIPTION
   let rawArticleDescrip = ''
+  const rawDescripImgs = []
   // YouTube doesn't use the regular description field, thus manually setting it as the description
   if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#']
-  else if (rawArticle.description) rawArticleDescrip = cleanRandoms(rawArticle.description)
+  else if (rawArticle.description) rawArticleDescrip = cleanRandoms(rawArticle.description, rawDescripImgs)
   rawArticleDescrip = (rawArticleDescrip.length > 800) ? `${rawArticleDescrip.slice(0, 790)} [...]` : rawArticleDescrip
 
   if (this.meta.link && this.meta.link.includes('reddit')) {
@@ -156,14 +163,24 @@ module.exports = function Article (rawArticle, guildId, rssName) {
   rawArticleDescrip = evalRegexConfig(rawArticleDescrip, 'description')
   this.description = rawArticleDescrip
 
-  // summary
+  let descripImgList = ''
+  if (rawDescripImgs.length > 0) {
+    for (var j in rawDescripImgs) {
+      descripImgList += `\n${parseInt(j, 10) + 1}) ${rawDescripImgs[j]}`
+    }
+  }
+  this.descriptionImgs = rawDescripImgs
+
+  // SUMMARY
   let rawArticleSummary = ''
-  if (rawArticle.summary) rawArticleSummary = cleanRandoms(rawArticle.summary)
+  const rawSummaryImgs = []
+  if (rawArticle.summary) rawArticleSummary = cleanRandoms(rawArticle.summary, rawSummaryImgs)
   rawArticleSummary = evalRegexConfig(rawArticleSummary, 'summary')
   rawArticleSummary = (rawArticleSummary.length > 800) ? `${rawArticleSummary.slice(0, 790)} [...]` : rawArticleSummary
   this.summary = rawArticleSummary
+  this.summaryImgs = rawSummaryImgs
 
-  // image(s)
+  // LIST all {imageX} to string
   const imageLinks = []
   findImages(rawArticle, imageLinks)
   this.images = (imageLinks.length === 0) ? undefined : imageLinks
@@ -177,7 +194,26 @@ module.exports = function Article (rawArticle, guildId, rssName) {
     return imageList
   }
 
-  // categories
+  // LIST all {placeholder:imageX} to string
+  this.listPlaceholderImages = function () {
+    const validPlaceholders = ['title', 'description', 'summary']
+    const listedImages = []
+    let list = ''
+    for (var k in validPlaceholders) {
+      const placeholderImgs = this[validPlaceholders[k] + 'Imgs']
+      for (var l in placeholderImgs) {
+        if (listedImages.includes(placeholderImgs[l])) continue
+        listedImages.push(placeholderImgs[l])
+        const placeholder = validPlaceholders[k].slice(0, 1).toUpperCase() + validPlaceholders[k].substr(1, validPlaceholders[k].length)
+        const imgNum = parseInt(l, 10) + 1
+        list += `\n[${placeholder} Image${imgNum}]: {${validPlaceholders[k]}:image${imgNum}}\n${placeholderImgs[l]}`
+      }
+    }
+
+    return list.trim()
+  }
+
+  // CATEGORIES
   if (rawArticle.categories) {
     let categoryList = ''
     for (var category in rawArticle.categories) {
@@ -187,26 +223,49 @@ module.exports = function Article (rawArticle, guildId, rssName) {
     this.tags = categoryList
   }
 
-  // replace images
+  this.resolvePlaceholderImg = function (input) {
+    const arr = input.split(':')
+    if (arr.length === 1 || !arr[1].startsWith('image') || arr[1].length !== 7) return
+
+    const validPlaceholders = ['title', 'description', 'summary']
+    const placeholder = arr[0].substr(1, arr[0].length)
+    const placeholderImgs = this[placeholder + 'Imgs']
+    if (!validPlaceholders.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) return
+
+    const imgNum = parseInt(arr[1].replace(/[^1-9]/g, ''), 10) - 1
+    if (isNaN(imgNum) || imgNum > 4 || imgNum < 0) return
+
+    return placeholderImgs[imgNum]
+  }
+
+  // {imageX} and {placeholder:imageX}
   this.convertImgs = function (content) {
     const imgDictionary = {}
     const imgLocs = content.match(/{image.+}/g)
-    if (!imgLocs) return content
+    const phImageLocs = content.match(/({(description|image|title):image[1-5]})/gi)
 
-    for (var loc in imgLocs) {
-      if (imgLocs[loc].length === 8) { // only single digit image numbers
-        let imgNum = parseInt(imgLocs[loc].substr(6, 1), 10)
-        if (!isNaN(imgNum) && imgNum !== 0 && this.images && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1] // key is {imageX}, value is article image URL
-        else if (!isNaN(imgNum) || imgNum === 0 || !this.images) imgDictionary[imgLocs[loc]] = ''
+    if (imgLocs) {
+      for (var loc in imgLocs) {
+        if (imgLocs[loc].length === 8) { // only single digit image numbers
+          let imgNum = parseInt(imgLocs[loc].substr(6, 1), 10)
+          if (!isNaN(imgNum) && imgNum !== 0 && this.images && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1] // key is {imageX}, value is article image URL
+          else if (!isNaN(imgNum) || imgNum === 0 || !this.images) imgDictionary[imgLocs[loc]] = ''
+        }
+      }
+      for (var imgKeyword in imgDictionary) content = content.replace(new RegExp(imgKeyword, 'g'), imgDictionary[imgKeyword])
+    }
+    else if (phImageLocs) {
+      for (var h in phImageLocs) {
+        content = this.resolvePlaceholderImg(phImageLocs[h]) ? content.replace(phImageLocs[h], this.resolvePlaceholderImg(phImageLocs[h])) : content.replace(phImageLocs[h], '')
       }
     }
-    for (var imgKeyword in imgDictionary) content = content.replace(new RegExp(imgKeyword, 'g'), imgDictionary[imgKeyword])
+
     return content
   }
 
   // replace simple keywords
   this.convertKeywords = function (word) {
-    const content = word.replace(/{date}/g, this.pubdate)
+    let content = word.replace(/{date}/g, this.pubdate)
             .replace(/{title}/g, this.title)
             .replace(/{author}/g, this.author)
             .replace(/{summary}/g, this.summary)

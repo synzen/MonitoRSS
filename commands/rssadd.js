@@ -132,7 +132,7 @@ module.exports = function (bot, message) {
             }
             // Reserve err.content for console logs, which are more verbose
             if (cookiesFound && !cookies) channelErrMsg += ' (Cookies were detected, but missing access for usage)'
-            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}\n`, err.content.message)
+            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}\n`, err.content.message || err.content)
             failedLinks[link] = channelErrMsg
           } else {
             console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${link}.`)
