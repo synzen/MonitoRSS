@@ -1,56 +1,148 @@
 const config = require('../../config.json')
-const striptags = require('striptags')
 const moment = require('moment-timezone')
 const cleanEntities = require('entities')
 const currentGuilds = require('../../util/storage.js').currentGuilds
+// const fs = require('fs')
+const htmlConvert = require('html-to-text')
 
 // To avoid stack call exceeded
-function trampoline (func, obj, results) {
-  var value = func(obj, results)
-  while (typeof value === 'function') {
-    value = value()
-  }
-  return value
+function checkObjType(item, results) {
+  if (Object.prototype.toString.call(item) === '[object Object]') {
+    return function () {
+      return findImages(item, results)
+    }
+  } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(item) && results.length < 9) results.push(item)
 }
 
 // Used to find images in any object values of the article
 function findImages (obj, results) {
   for (var key in obj) {
-    if (Object.prototype.toString.call(obj[key]) === '[object Object]') {
-      return function () {
-        return findImages(obj[key], results)
-      }
-    } else if (typeof obj[key] === 'string' && obj[key].match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(obj[key]) && results.length < 9) results.push(obj[key])
+    let value = checkObjType(obj[key], results)
+    while (typeof value === 'function') {
+      value = value()
+    }
   }
 }
 
-// Try to clean up ridiculous spacings some articles may have in their descriptions/summaries
-function cleanRandoms (text) {
-  const a = cleanEntities.decodeHTML(text)
-          .replace(/<br>/g, '\n')
-          .replace(/<br \/>/g, '\n')
-          .replace(/<br\/>/g, '\n')
-          .replace(/\r\n/g, '\n')
-          .replace(/\s\n/g, '\n')
-          .replace(/\n /g, '\n')
-          .replace(/ \n/g, '\n')
-          .replace(/\n\n\n\n/g, '\n\n')
-
-  return striptags(a).trim()
+function escapeRegExp (str) {
+  return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
 }
 
-module.exports = function Article (rawArticle, guildId) {
-  this.rawDescrip = striptags(rawArticle.description)
-  this.rawSummary = striptags(rawArticle.summary)
+function regexReplace (string, regexSearchQuery, replacementData, flags) {
+  try {
+    let newMatch
+    if (replacementData.type === 'regex') {
+      const newMatchIndex = replacementData.matchNumber
+      const newRegExp = new RegExp(replacementData.content, flags)
+      newMatch = newRegExp.exec(string)[newMatchIndex]
+    }
+    else if (replacementData.type === 'string') newMatch = replacementData.content
+
+    const oldRegExp = new RegExp(regexSearchQuery, flags)
+    const oldMatches = []
+    let oldMatch
+    while ((oldMatch = oldRegExp.exec(string)) && !oldMatches.includes(oldMatch[0])) {
+      oldMatches.push(oldMatch[0])
+    }
+    for (var x in oldMatches) { // oldMatches is an array of strings
+      let exp = new RegExp(escapeRegExp(oldMatches[x]), flags)
+      string = string.replace(exp, newMatch)
+    }
+
+    return string
+  } catch (e) {
+    return e
+  }
+}
+
+// To avoid stack call exceeded
+// function trampoline (func, obj, results) {
+//   var value = func(obj, results)
+//   while (typeof value === 'function') {
+//     value = value()
+//   }
+//   return value
+// }
+//
+// // Used to find images in any object values of the article
+// function findImages (obj, results) {
+//   for (var key in obj) {
+//     if (Object.prototype.toString.call(obj[key]) === '[object Object]' && isNotEmpty(obj[key])) {
+//       return function () {
+//         return findImages(obj[key], results)
+//       }
+//     } else if (typeof obj[key] === 'string' && obj[key].match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(obj[key]) && results.length < 9) results.push(obj[key])
+//   }
+// }
+
+module.exports = function Article (rawArticle, guildId, rssName) {
+  const guildRss = currentGuilds.get(guildId)
+  const rssList = guildRss.sources
+
+  function evalRegexConfig(text, articleProperty) {
+    const source = rssList[rssName]
+    let newText = text
+    let errors = false
+    if (typeof source.regexOps === 'object' && Array.isArray(source.regexOps[articleProperty])) { // Eval regex if specified
+      for (var u in source.regexOps[articleProperty]) {
+        let regexSettings = source.regexOps[articleProperty][u]
+        // if (typeof regexSettings.search !== 'string') console.log(new TypeError(`Property key oldRegex is not a string for feed ${source.link}. Skipping all regex ops for this feed.`));
+        // if (typeof regexSettings.replacement !== 'object' && !Array.isArray(regexSettings.replacement)) console.log(new TypeError(`Property key newRegex is not an object for feed ${source.link}. Skipping all regex ops for this feed.`));
+        // if (typeof regexSettings.replacement.type !== 'string')
+        // if (typeof regexSettings.flags !== 'string') console.log(new TypeError(`Property key flags is not a string for feed ${source.link}. Skipping all regex ops for this feed.`));
+        // if (typeof regexSettings.newRegexMatchNum !== 'number') console.log(new TypeError(`Property key newRegexMatchNum is not a number for feed ${source.link}. Skipping all regex ops for this feed.`));
+
+        // if (typeof regexSettings.search === 'string' && typeof regexSettings.newRegex === 'string' && typeof regexSettings.flags === 'string' && typeof regexSettings.newRegexMatchNum === 'number') {
+          newText = regexReplace(newText, regexSettings.search, regexSettings.replacement, regexSettings.flags)
+          if (typeof newText !== 'string') {
+            console.log(`Error found while evaluating regex for feed ${source.link}:\n`, newText)
+            // errors = true
+          }
+        // } else errors = true
+      }
+    }
+    else return text
+
+    return errors ? text : newText
+  }
+
+  function cleanRandoms (text) {
+    if (!text) return text
+
+    text = text.replace(/\*/gi, '')
+            .replace(/<(strong|b|h[1-6])>(.*?)<\/(strong|b|h[1-6])>/gi, '**$2**') // Bolded markdown
+            .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
+            .replace(/<(u)>(.*?)<(\/(u))>/gi,  '__$2__') // Underlined markdown
+
+    text = htmlConvert.fromString(text, {
+      ignoreHref: true,
+      noLinkBrackets: true,
+      format: {
+          image: function (node, options) {
+            if (rssList[rssName].disableImgLinks === true) return ''
+            else return rssList[rssName].disableImgLinkPreviews === true ? `<${node.attribs.src}>` : node.attribs.src
+          }
+      }
+    })
+
+    return text
+  }
+
+  this.rawDescrip = cleanRandoms(rawArticle.description)
+  this.rawSummary = cleanRandoms(rawArticle.summary)
   this.meta = rawArticle.meta
   this.guid = rawArticle.guid
-  // Must be replaced with empty string if it exists in source config since these are replaceable placeholders
-  this.title = (rawArticle.title) ? cleanRandoms(rawArticle.title) : ''
   this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author) : ''
   this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
 
+
+  // Must be replaced with empty string if it exists in source config since these are replaceable placeholders
+  this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title)
+  this.title = evalRegexConfig(this.title, 'title')
+  this.title = this.title.length > 150 ? this.title.slice(0, 150) + ' [...]' : this.title
+
   // date
-  const guildTimezone = currentGuilds.get(guildId).timezone
+  const guildTimezone = guildRss.timezone
   const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
   const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
   const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
@@ -68,17 +160,19 @@ module.exports = function Article (rawArticle, guildId) {
     .replace('submitted by', '\n*Submitted by:*') // truncate the useless end of reddit description
   }
 
+  rawArticleDescrip = evalRegexConfig(rawArticleDescrip, 'description')
   this.description = rawArticleDescrip
 
   // summary
   let rawArticleSummary = ''
   if (rawArticle.summary) rawArticleSummary = cleanRandoms(rawArticle.summary)
+  rawArticleSummary = evalRegexConfig(rawArticleSummary, 'summary')
   rawArticleSummary = (rawArticleSummary.length > 800) ? `${rawArticleSummary.slice(0, 790)} [...]` : rawArticleSummary
   this.summary = rawArticleSummary
 
   // image(s)
   const imageLinks = []
-  trampoline(findImages, rawArticle, imageLinks)
+  findImages(rawArticle, imageLinks)
   this.images = (imageLinks.length === 0) ? undefined : imageLinks
 
   this.listImages = function () {

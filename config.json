@@ -33,7 +33,8 @@
     "sendOldMessages": false,
     "defaultMaxAge": 1,
     "cycleMaxAge": 1,
-    "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
+    "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
+    "showRegexErrs": true
   },
     "advanced": {
     "shards": 1,

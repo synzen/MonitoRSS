@@ -8,7 +8,7 @@ module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage)
   // Just in case. If this happens, please report.
   if (!rssList[rssName]) { console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildId}\nrssName: ${rssName}\nrssList:`, rssList); return null }
 
-  const article = new Article(rawArticle, guildId)
+  const article = new Article(rawArticle, guildId, rssName)
   article.subscriptions = getSubs(rssList, rssName, article)
 
   // Filter message
@@ -33,7 +33,11 @@ module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage)
   if (isTestMessage) {
     let testDetails = ''
     const footer = '\nBelow is the configured message to be sent for this feed:\n\n--'
-    testDetails += `\`\`\`Markdown\n# BEGIN TEST DETAILS #\`\`\`\`\`\`Markdown\n\n[Title]: {title}\n${article.title}`
+    testDetails += `\`\`\`Markdown\n# BEGIN TEST DETAILS #\`\`\`\`\`\`Markdown`
+
+    if (article.title) {
+      testDetails += `\n\n[Title]: {title}\n${article.title}`
+    }
 
     if (article.summary && article.summary !== article.description) {  // Do not add summary if summary = description
       let testSummary
@@ -55,7 +59,7 @@ module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage)
     if (article.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${article.subscriptions.split(' ').length - 1} subscriber(s)`
     if (article.images) testDetails += `\n\n${article.listImages()}`
     if (article.tags) testDetails += `\n\n[Tags]: {tags}\n${article.tags}`
-    if (filterExists) testDetails += `\n\n[Passed Filters?]: ${(filterResults) ? 'Yes' : 'No'}${filterResults}`
+    if (filterExists) testDetails += `\n\n[Passed Filters?]: ${filterResults.passedFilters ? 'Yes' : 'No'}${filterResults.filterMatches}`
     testDetails += '```' + footer
 
     finalMessageCombo.testDetails = testDetails

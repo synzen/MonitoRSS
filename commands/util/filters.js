@@ -53,7 +53,11 @@ exports.add = function (message, rssName, role, msgHandler) {
 
       // Valid filter category was chosen
       filterTypeCollect.stop()
-      message.channel.send(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, type multiple word/phrases on different lines to add more than one, or type \`{exit}\` to cancel. Broad filters can be used by adding \`~\` to the front, which will trigger even if they are found embedded inside words/phrases. The filter will be applied as **case insensitive** to feeds.`)
+      message.channel.send(`Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, type multiple word/phrases on different lines to add more than one, or type \`{exit}\` to cancel. The following can be added in front of a search term to change its behavior:\n\n
+\`~\` - Broad filter modifier to trigger even if the term is found embedded inside words/phrases.
+\`!\` - NOT filter modifier to do the opposite of a normal search term. Can be added in front of any term, including one with broad filter mod.
+\`\\\` - Escape symbol added before modifiers to interpret them as regular characters and not modifiers.\n\n
+Filters will be applied as **case insensitive** to feeds.`)
       .then(function (m) {
         msgHandler.add(m)
         const filterCollect = message.channel.createMessageCollector(filter, {time: 240000})

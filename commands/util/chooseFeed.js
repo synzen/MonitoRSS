@@ -34,6 +34,9 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
     let o = {link: rssList[rssName].link, rssName: rssName, title: rssList[rssName].title}
     if (commandList[command].action === 'Refresh Feed') o.status = getFeedStatus(rssList[rssName].link, failLimit)
     if (miscOption === 'titleChecks') o.titleChecks = rssList[rssName].checkTitles === true ? 'Title Checks: Enabled\n' : 'Title Checks: Disabled\n'
+    else if (miscOption === 'disableImgLinkPreviews') o.disableImgLinkPreviews = rssList[rssName].disableImgLinkPreviews === true ? 'Image Link Previews: Disabled\n' : 'Image Link Previews: Enabled\n'
+    else if (miscOption === 'disableImgLinks') o.disableImgLinks = rssList[rssName].disableImgLinks === true ? 'Image Links Existence: Disabled\n' : 'Image Link Existence: Enabled\n'
+
     if (message.channel.id === rssList[rssName].channel) currentRSSList.push(o)
   }
 
@@ -47,16 +50,16 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
     const count = parseInt(x, 10) + 1
     const link = currentRSSList[x].link
     const title = currentRSSList[x].title
-    const status = currentRSSList[x].status
-    const titleChecks = currentRSSList[x].titleChecks
+    const status = currentRSSList[x].status || ''
+    const miscOption = currentRSSList[x].titleChecks || currentRSSList[x].disableImgLinkPreviews || currentRSSList[x].disableImgLinks || ''
 
-    // 10 feeds per embed (AKA page)
+    // 7 feeds per embed (AKA page)
     if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {
       pages.push(embedMsg)
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}`)
     }
 
-    embedMsg.addField(`${count})  ${title}`, `${titleChecks || ''}${status || ''}Link: ${link}`)
+    embedMsg.addField(`${count})  ${title}`, `${miscOption}${status}Link: ${link}`)
   }
 
   // Push the leftover results into the last embed

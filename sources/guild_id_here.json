@@ -3,9 +3,8 @@
   "id": "123456",
   "sources": {
     "WarframeTwitter": {
-      "enabled": 1,
       "link": "https://queryfeed.net/tw?q=%40PlayWarframe",
-      "channel": "twitter",
+      "channel": "34523124455",
       "maxAge": 2,
       "message": "{empty}",
       "embedMessage": {
@@ -22,19 +21,30 @@
       }
     },
     "257938647771250688_https://www.rt.com": {
-      "enabled": 1,
       "link": "https://www.rt.com/rss/",
       "channel": "257931586721250688",
       "maxAge": 3,
+      "message": "This description will be affected by the regexOps defined for description in the guild profile file for this feed. In this case, all new lines were removed:\n\n{description}",
       "filters": {
         "title": ["first", "second"],
         "description": ["more!"]
+      },
+      "regexOps": {
+        "description": [{
+          "search": "(?:\r\n|\r|\n)",
+          "replacement": {
+            "type": "regex",
+            "content": "",
+            "matchNumber": 0
+          },
+          "flags": "gi"
+        }]
       }
     },
     "WashingtonPost": {
-      "enabled": 1,
+      "enabled": 0,
       "link": "http://feeds.washingtonpost.com/rss/sports",
-      "channel": "sports",
+      "channel": "4523124436",
       "message": "A new article on sports!\n{title}\n\n{description}\nBy: {author}\n\n {link}"
     }
   }

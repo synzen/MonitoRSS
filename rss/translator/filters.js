@@ -7,49 +7,84 @@ function findFilterWords (filterType, content, isTestMessage) {
   // filterType is array of title, description, summary, or author
   if (!content) return false
   if (isTestMessage) var matches = []
-  if (filterType && typeof filterType === 'object' && filterType.length && filterType.length !== 0) {
+
+  let invertedFilter = false // Inverted results = NOT filters found
+  if (typeof filterType === 'object' && filterType.length && filterType.length !== 0) {
     // For title, descriptions, summary, and author
     if (typeof content === 'string') {
       content = content.toLowerCase()
       for (var word in filterType) {
-        let searchTerm
-        // Broad filters, for phrases/words found anywhere
-        if (filterType[word].startsWith('~')) {
-          searchTerm = filterType[word].slice(1, filterType[word].length)
-          var expression = new RegExp(`${escapeRegExp(searchTerm)}`, 'gi')
-          if (content.search(expression) !== -1) {
+        let searchTerm = filterType[word]
+
+        if (searchTerm.startsWith('!')) {
+          invertedFilter = true
+          searchTerm = searchTerm.slice(1, searchTerm.length)
+        }
+
+        if (searchTerm.startsWith('~')) { // Broad filters, for phrases/words found anywhere
+          searchTerm = searchTerm.slice(1, searchTerm.length)
+          if (content.includes(searchTerm)) {
             if (isTestMessage) matches.push(filterType[word])
-            else return true
+            else if (!invertedFilter) return true
+            else return false
           }
         } else { // Specific filters, for phrases/words with spaces around them
-          searchTerm = (filterType[word].startsWith('\\~')) ? filterType[word].slice(1, filterType[word].length) : filterType[word] // A slash-tilde (\~) will just read as a ~ to prevent broad filter
+          searchTerm = (searchTerm.startsWith('\\~')) ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('\!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
           let expression = new RegExp(`(\\s|^)${escapeRegExp(searchTerm)}(\\s|$)`, 'gi')
-          if (expression.test(content)) {
+          if (content.search(expression) !== -1) {
             if (isTestMessage) matches.push(filterType[word])
-            else return true
+            else if (!invertedFilter) return true
+            else return false
           }
         }
       }
     } else if (typeof content === 'object') { // For tags
       for (var item in content) {
         for (var w in filterType) {
-          if (filterType[w].toLowerCase() === content[item].toLowerCase().trim()) {
-            if (isTestMessage) matches.push(filterType[w])
-            else return true
+          let searchTerm = filterType[w]
+
+          if (searchTerm.startsWith('!')) {
+            invertedFilter = true
+            searchTerm = searchTerm.slice(1, searchTerm.length)
           }
+
+          if (searchTerm.startsWith('~')) { // Broad filters, for phrases/words found anywhere
+            searchTerm = searchTerm.slice(1, searchTerm.length)
+            if (content[item].includes(searchTerm)) {
+              if (isTestMessage) matches.push(filterType[w])
+              else if (!invertedFilter) return true
+              else return false
+            }
+          } else { // Specific filters, for phrases/words with spaces around them
+            searchTerm = (searchTerm.startsWith('\\~')) ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('\!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
+            let expression = new RegExp(`(\\s|^)${escapeRegExp(searchTerm)}(\\s|$)`, 'gi')
+            if (content[item].search(expression) !== -1) {
+              if (isTestMessage) matches.push(filterType[w])
+              else if (!invertedFilter) return true
+              else return false
+            }
+          }
+          // if (filterType[w].toLowerCase() === content[item].toLowerCase().trim()) {
+          //   if (isTestMessage) matches.push(filterType[w])
+          //   else return true
+          // }
         }
       }
     }
   } else return false
+
   if (isTestMessage) {
-    if (matches.length === 0) return false
-    else return matches
+    return {
+      inverted: invertedFilter,
+      matches: matches.length > 0 ? matches : null
+    }
   }
+  else if (invertedFilter) return true
+  else return false
 }
 
 module.exports = function (rssList, rssName, article, isTestMessage) {
-  var filterFound = ''
-  var filterTypes = {
+  let filterTypes = {
     'Title': {
       user: rssList[rssName].filters.Title,
       ref: article.title
@@ -72,17 +107,27 @@ module.exports = function (rssList, rssName, article, isTestMessage) {
     }
   }
 
+  let passedFilters = false
+  let filterMatches = ''
   for (var type in filterTypes) {
-    let foundList = findFilterWords(filterTypes[type].user, filterTypes[type].ref, isTestMessage)
-    if (foundList && isTestMessage) {
-      var list = ''
-      for (var x in foundList) {
-        list += ` ${foundList[x]}`
-        if (parseInt(x, 10) !== foundList.length - 1) list += ' |'
+    let results = findFilterWords(filterTypes[type].user, filterTypes[type].ref, isTestMessage)
+    if (isTestMessage) {
+      if (results.matches) {
+        var list = ''
+        for (var x in results.matches) {
+          list += ` ${results.matches[x]}`
+          if (parseInt(x, 10) !== results.matches.length - 1) list += ' |'
+        }
+        filterMatches += `\n${type}:${list}`
+        if (!results.inverted) passedFilters = true
       }
-      filterFound += `\n${type}:${list}`
-    } else if (foundList) filterFound = true
+      if (results.inverted && !results.matches) passedFilters = true
+    } else if (results === true) passedFilters = true
   }
 
-  return filterFound
+  if (isTestMessage) return {
+    passedFilters: passedFilters,
+    filterMatches: filterMatches
+  }
+  else return passedFilters
 }

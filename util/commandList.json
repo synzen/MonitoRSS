@@ -65,7 +65,9 @@
 		"userPerm": "MANAGE_CHANNELS",
 		"description": "Miscellaneous RSS options",
 		"options": {
-			"titleChecks": "Toggle Title Checks"
+			"titleChecks": "Toggle Title Checks",
+			"disableImgLinkPreviews": "Toggle Image Link Previews",
+			"disableImgLinks": "Toggle Image Links Existence"
 		}
 	}
 }
