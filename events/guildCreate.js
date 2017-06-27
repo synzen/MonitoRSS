@@ -8,5 +8,5 @@ module.exports = function (bot, guild) {
   const logChannelId = config.logging.discordChannelLog
   const logChannel = bot.channels.get(logChannelId)
   if (typeof logChannelId !== 'string' || !logChannel) console.log(`Error: Could not log guild addition to Discord, invalid channel ID.`)
-  else logChannel.send(`Guild Info: "${guild.name}" has been added.\nUsers: ${guild.members.size}`).catch(err => console.log(`Could not log guild addition to Discord, reason: `, err))
+  else logChannel.send(`Guild Info: "${guild.name}" has been added.\nUsers: ${guild.members.size - 1}`).catch(err => console.log(`Could not log guild addition to Discord, reason: `, err))
 }

@@ -105,7 +105,7 @@ module.exports = function Article (rawArticle, guildId, rssName) {
     if (!text) return text
 
     text = text.replace(/\*/gi, '')
-            .replace(/<(strong|b|h[1-6])>(.*?)<\/(strong|b|h[1-6])>/gi, '**$2**') // Bolded markdown
+            .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
             .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
             .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
 
@@ -118,12 +118,15 @@ module.exports = function Article (rawArticle, guildId, rssName) {
 
           if (rssList[rssName].disableImgLinks === true) return ''
           else return rssList[rssName].disableImgLinkPreviews === true ? `<${node.attribs.src}>` : node.attribs.src
+        },
+        heading: function (node, fn, options) {
+          let h = fn(node.children, options);
+          return h;
         }
       }
     })
 
     text = text.replace(/\n\s*\n\s*\n/g, '\n\n'); // Replace triple line breaks with double
-
     return text
   }
 

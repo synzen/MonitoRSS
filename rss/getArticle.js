@@ -34,7 +34,7 @@ module.exports = function (guildId, rssName, passFiltersOnly, callback) {
   })
 
   feedparser.on('end', function () {
-    if (currentFeed.length === 0) return callback({type: 'feedparser', content: 'No existing feeds', feed: rssList[rssName]})
+    if (currentFeed.length === 0) return callback({type: 'empty', content: 'No existing feeds', feed: rssList[rssName]})
 
     const con = sqlConnect(getArticle)
 

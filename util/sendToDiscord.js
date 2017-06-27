@@ -26,7 +26,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
   }
 
   function sendTestDetails () {
-    channel.send(message.testDetails)
+    channel.send(message.testDetails, {split: {prepend: '```md\n', append: '```'}})
     .then(m => sendMain())
     .catch(err => {
       if (attempts === 4) return callback(new Error(failLog + `${err}`))
@@ -88,11 +88,6 @@ module.exports = function (bot, article, callback, isTestMessage) {
   }
 
   // For test messages only. It will send the test details first, then the Main Message (above).
-  if (isTestMessage) {
-    if (message.testDetails.length > 1950) {
-      console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Test details could not be sent for *${rssName}* due to character count >1950. Test Details are:\n\n`, message.testDetails)
-      message.testDetails = `Error: Test details could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution. Attempting to send configured message next...`
-    }
-    sendTestDetails()
-  } else sendMain()
+  if (isTestMessage) sendTestDetails()
+  else sendMain()
 }
