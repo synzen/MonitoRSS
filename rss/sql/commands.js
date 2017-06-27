@@ -27,12 +27,12 @@ exports.cleanTable = function (con, table, articleArray) {
 }
 
 exports.selectId = function (con, table, articleId, callback) {
-  if (sqlType === 'mysql') return con.query(`select * from \`${table}\` where ID = ?`, [articleId], callback)
+  if (sqlType === 'mysql') return con.query(`select ID from \`${table}\` where ID = ?`, [articleId], callback)
   else return con.all(`select * from "${table}" where ID = ?`, articleId, callback)
 }
 
 exports.selectTitle = function (con, table, articleTitle, callback) {
-  if (sqlType === 'mysql') return con.query(`select * from \`${table}\` where TITLE = ?`, [articleTitle], callback)
+  if (sqlType === 'mysql') return con.query(`select TITLE from \`${table}\` where TITLE = ?`, [articleTitle], callback)
   else return con.all(`select * from "${table}" where TITLE = ?`, articleTitle, callback)
 }
 
