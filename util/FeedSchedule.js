@@ -28,6 +28,7 @@ module.exports = function (bot, callback, schedule) {
   this.cycle = new events.EventEmitter()
   let cycle = this.cycle
 
+  const refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15
   const sourceList = new Map()
   const modSourceList = new Map()
   const batchSize = (config.advanced && config.advanced.batchSize) ? config.advanced.batchSize : 400
@@ -293,16 +294,19 @@ module.exports = function (bot, callback, schedule) {
 
     var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. Cycle Time: ${timeTaken}s`)
+    if (bot.shard && bot.shard.count > 1) bot.shard.send({type: 'scheduleComplete', refreshTime: refreshTime})
   }
 
-  let refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15
-  timer = setInterval(connect, refreshTime * 60000)
+  if (!bot.shard || bot.shard && bot.shard.count === 1) timer = setInterval(connect, refreshTime * 60000) // Only create an interval for itself if there is no sharding
 
   if (timer) console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Schedule '${schedule.name}' has begun.`)
 
   this.stop = function () {
     clearInterval(timer)
   }
+
+  this.run = connect
+  this.refreshTime = refreshTime
 
   callback(this.cycle)
   return this

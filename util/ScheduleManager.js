@@ -38,6 +38,12 @@ module.exports = function (bot) {
     })
   }
 
+  this.run = function (refreshTime) { // Run schedules with respect to their refresh times
+    for (var i in scheduleList) {
+      if (scheduleList[i].refreshTime === refreshTime) scheduleList[i].run()
+    }
+  }
+
   this.stopSchedules = function () {
     for (var i in scheduleList) {
       scheduleList[i].stop()

@@ -24,15 +24,16 @@ Object.defineProperty(Object.prototype, 'size', {
 })
 
 let scheduleManager
-let initialized = false
 let bot
 
 // Function to handle login/relogin automatically
 let loginAttempts = 0
 let maxAttempts = 2;
 
-(function login () {
-  bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
+bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
+
+function login (firstStartup) {
+  if (!firstStartup) bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
 
   bot.login(config.botSettings.token)
   .catch(err => {
@@ -45,7 +46,7 @@ let maxAttempts = 2;
     loginAttempts = 0
     bot.user.setGame((config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null)
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS has logged in, processing set to ${config.advanced.processorMethod}.`)
-    if (!initialized) initialize(bot, finishInit)
+    if (firstStartup) initialize(bot, finishInit)
     else scheduleManager = new ScheduleManager(bot)
   })
 
@@ -65,14 +66,24 @@ let maxAttempts = 2;
       login()
     }, restartTime)
   })
-})()
+}
 
 function finishInit () {
-  initialized = true
   scheduleManager = new ScheduleManager(bot)
   listeners.createManagers(bot)
 
   if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)
+}
+
+if (!bot.shard || bot.shard && bot.shard.count === 1) login(true)
+else {
+  process.on('message', function(message) {
+    if (message.type === 'startInit' && bot.shard && bot.shard.id === message.shardId) {
+      login(true)
+    } else if (message.type === 'runSchedule' && bot.shard && bot.shard.id === message.shardId) {
+      scheduleManager.run(message.refreshTime)
+    }
+  })
 }
 
 process.on('uncaughtException', function (err) {

@@ -25,69 +25,69 @@ module.exports = function (bot, article, callback, isTestMessage) {
     return callback()
   }
 
-  function sendTestDetails () {
-    channel.send(message.testDetails, {split: {prepend: '```md\n', append: '```'}})
-    .then(m => sendMain())
-    .catch(err => {
-      if (attempts === 4) return callback(new Error(failLog + `${err}`))
-      attempts++
-      setTimeout(sendTestDetails, 500)
-    })
-  }
-
-  function sendCombinedMsg () {
-    channel.send(message.textMsg, {embed: message.embedMsg})
-    .then(m => {
-      // console.log(successLog)
-      if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated and has been sent (TITLE: ${article.title}).`)
-      return callback()
-    })
-    .catch(err => {
-      if (attempts === 4) {
-        if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated but could not be sent (TITLE: ${article.title}) (${err}).`)
-        return callback(new Error(failLog + `${err}`))
-      }
-      attempts++
-      setTimeout(sendCombinedMsg, 500)
-    })
-  }
-
-  function sendTxtMsg () {
-    channel.send(message.textMsg)
-    .then(m => {
-      // console.log(successLog)
-      if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated and has been sent (TITLE: ${article.title}).`)
-      return callback()
-    })
-    .catch(err => {
-      if (attempts === 4) {
-        if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated but could not be sent (TITLE: ${article.title}). (${err})`)
-        return callback(new Error(failLog + `${err}`))
-      }
-      attempts++
-      setTimeout(sendTxtMsg, 500)
-    })
-  }
-
-  function sendMain () { // Main Message: If it contains both an embed and text, or only an embed.
-    if (message.embedMsg) {
-      if (message.textMsg.length > 1950) { // Discord has a character limit of 2000
-        console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n `, message.textMsg)
-        message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`
-      }
-      sendCombinedMsg()
-    } else { // Main Message: If it only contains a text message
-      if (message.textMsg.length > 1950) {
-        console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n`, message.textMsg)
-        message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`
-      } else if (message.textMsg.length === 0) {
-        message.textMsg = `Unable to send empty message for feed article *${article.link}*.`
-      }
-      sendTxtMsg()
-    }
-  }
-
-  // For test messages only. It will send the test details first, then the Main Message (above).
-  if (isTestMessage) sendTestDetails()
-  else sendMain()
+  // function sendTestDetails () {
+  //   channel.send(message.testDetails, {split: {prepend: '```md\n', append: '```'}})
+  //   .then(m => sendMain())
+  //   .catch(err => {
+  //     if (attempts === 4) return callback(new Error(failLog + `${err}`))
+  //     attempts++
+  //     setTimeout(sendTestDetails, 500)
+  //   })
+  // }
+  //
+  // function sendCombinedMsg () {
+  //   channel.send(message.textMsg, {embed: message.embedMsg})
+  //   .then(m => {
+  //     // console.log(successLog)
+  //     if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated and has been sent (TITLE: ${article.title}).`)
+  //     return callback()
+  //   })
+  //   .catch(err => {
+  //     if (attempts === 4) {
+  //       if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated but could not be sent (TITLE: ${article.title}) (${err}).`)
+  //       return callback(new Error(failLog + `${err}`))
+  //     }
+  //     attempts++
+  //     setTimeout(sendCombinedMsg, 500)
+  //   })
+  // }
+  //
+  // function sendTxtMsg () {
+  //   channel.send(message.textMsg)
+  //   .then(m => {
+  //     // console.log(successLog)
+  //     if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated and has been sent (TITLE: ${article.title}).`)
+  //     return callback()
+  //   })
+  //   .catch(err => {
+  //     if (attempts === 4) {
+  //       if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated but could not be sent (TITLE: ${article.title}). (${err})`)
+  //       return callback(new Error(failLog + `${err}`))
+  //     }
+  //     attempts++
+  //     setTimeout(sendTxtMsg, 500)
+  //   })
+  // }
+  //
+  // function sendMain () { // Main Message: If it contains both an embed and text, or only an embed.
+  //   if (message.embedMsg) {
+  //     if (message.textMsg.length > 1950) { // Discord has a character limit of 2000
+  //       console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n `, message.textMsg)
+  //       message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`
+  //     }
+  //     sendCombinedMsg()
+  //   } else { // Main Message: If it only contains a text message
+  //     if (message.textMsg.length > 1950) {
+  //       console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n`, message.textMsg)
+  //       message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`
+  //     } else if (message.textMsg.length === 0) {
+  //       message.textMsg = `Unable to send empty message for feed article *${article.link}*.`
+  //     }
+  //     sendTxtMsg()
+  //   }
+  // }
+  //
+  // // For test messages only. It will send the test details first, then the Main Message (above).
+  // if (isTestMessage) sendTestDetails()
+  // else sendMain()
 }
