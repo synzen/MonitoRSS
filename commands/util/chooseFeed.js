@@ -11,8 +11,6 @@ const MsgHandler = require('../../util/MsgHandler.js')
 
 function getFeedStatus (link, failLimit) {
   const failCount = failedLinks[link]
-  console.log(failCount)
-  console.log(failLimit)
   if (!failCount || (typeof failCount === 'number' && failCount <= failLimit)) return `Status: OK ${failCount > Math.ceil(failLimit / 10) ? '(' + failCount + '/' + failLimit + ')' : ''}\n`
   else return `Status: FAILED\n`
 }
