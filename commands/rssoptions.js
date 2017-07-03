@@ -12,8 +12,8 @@ module.exports = function (bot, message, command) {
     .setAuthor('Miscellaneous Feed Options')
     .setDescription('\u200b\nPlease select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
     .addField('1) Toggle Title Checks for a feed', `**Only enable this if necessary!** Default is ${config.feedSettings.checkTitles === true ? 'enabled.' : 'disabled.'} Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.`)
-    .addField('2) Toggle Image Link Previews for a feed', `Default is enabled. Toggle Discord image link previews for image links found inside placeholders such as {description}.`)
-    .addField('3) Toggle Image Links Existence for a feed', `Default is enabled. Toggle the existence of image links for image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`)
+    .addField('2) Toggle Image Link Previews for a feed', `Default is ${config.feedSettings.iamgePreviews === false ? 'disabled' : 'enabled'}. Toggle Discord image link previews for image links found inside placeholders such as {description}.`)
+    .addField('3) Toggle Image Links Existence for a feed', `Default is ${config.feedSettings.imageLinksExistence === false ? 'disabled' : 'enabled'}. Toggle the existence of image links for image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`)
 
   const firstMsgHandler = new MsgHandler(bot, message)
 
@@ -54,40 +54,38 @@ module.exports = function (bot, message, command) {
           const guildRss = currentGuilds.get(m.guild.id)
           const rssList = guildRss.sources
 
-          if (rssList[rssName].disableImgLinkPreviews === true) {
-            delete rssList[rssName].disableImgLinkPreviews
-            fileOps.updateFile(m.guild.id, guildRss)
-            console.log(`Image Link Previews: (${message.guild.id}, ${message.guild.name}) => Enabled for feed linked ${rssList[rssName].link}`)
-            message.channel.send(`Image link previews have been enabled for <${rssList[rssName].link}>.`)
-          } else {
-            rssList[rssName].disableImgLinkPreviews = true
-            fileOps.updateFile(m.guild.id, guildRss)
-            console.log(`Image Link Previews: (${message.guild.id}, ${message.guild.name}) => Disabled for feed linked ${rssList[rssName].link}`)
-            message.channel.send(`Image link previews have been disabled for <${rssList[rssName].link}>.`)
-          }
+          // if (rssList[rssName].imagePreviews === config.feedSettings.imagePreviews) return message.channel.send(`Image Previews are already ${config.feedSettings.imagePreviews === false ? 'disabled' : 'enabled'} by default.`)
+
+          const globalSetting = config.feedSettings.imagePreviews
+          const specificSetting = rssList[rssName].imagePreviews
+
+          rssList[rssName].imagePreviews = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
+
+          fileOps.updateFile(m.guild.id, guildRss)
+          console.log(`Image Link Previews: (${message.guild.id}, ${message.guild.name}) => ${rssList[rssName].imagePreviews === true ? 'enabled' : 'disable'} for feed linked ${rssList[rssName].link}`)
+          message.channel.send(`Image link previews have been ${rssList[rssName].imagePreviews === true ? 'enabled' : 'disabled'} for <${rssList[rssName].link}>.`)
 
           msgHandler.deleteAll(message.channel)
-        }, 'disableImgLinkPreviews', firstMsgHandler)
+        }, 'imagePreviews', firstMsgHandler)
       } else if (m.content === '3') {
         collector.stop()
         chooseFeed(bot, message, command, function (rssName, msgHandler) {
           const guildRss = currentGuilds.get(m.guild.id)
           const rssList = guildRss.sources
 
-          if (rssList[rssName].disableImgLinks === true) {
-            delete rssList[rssName].disableImgLinks
-            fileOps.updateFile(m.guild.id, guildRss)
-            console.log(`Image Links Existence: (${message.guild.id}, ${message.guild.name}) => Enabled for feed linked ${rssList[rssName].link}`)
-            message.channel.send(`Image links existence have been enabled for <${rssList[rssName].link}>.`)
-          } else {
-            rssList[rssName].disableImgLinks = true
-            fileOps.updateFile(m.guild.id, guildRss)
-            console.log(`Image Links Existence: (${message.guild.id}, ${message.guild.name}) => Disabled for feed linked ${rssList[rssName].link}`)
-            message.channel.send(`Image links existence have been disabled for <${rssList[rssName].link}>.`)
-          }
+          // if (rssList[rssName].imageLinksExistence === config.feedSettings.imageLinksExistence) return message.channel.send(`Image Links Existence are already ${config.feedSettings.imageLinksExistence === false ? 'disabled' : 'enabled'} by default.`)
+
+          const globalSetting = config.feedSettings.imageLinksExistence
+          const specificSetting = rssList[rssName].imageLinksExistence
+
+          rssList[rssName].imageLinksExistence = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
+
+          fileOps.updateFile(m.guild.id, guildRss)
+          console.log(`Image Links Existence: (${message.guild.id}, ${message.guild.name}) => ${rssList[rssName].imageLinksExistence === true ? 'Enabled' : 'Disabled'} for feed linked ${rssList[rssName].link}`)
+          message.channel.send(`Image links existence have been ${rssList[rssName].imageLinksExistence === true ? 'enabled' : 'disabled'} for <${rssList[rssName].link}>.`)
 
           msgHandler.deleteAll(message.channel)
-        }, 'disableImgLinks', firstMsgHandler)
+        }, 'imageLinksExistence', firstMsgHandler)
       } else return message.channel.send(`That is not a valid option. Please try again.`).then(m => firstMsgHandler.add(m))
     })
 

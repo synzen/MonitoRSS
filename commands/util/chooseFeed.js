@@ -34,9 +34,17 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
     let o = {link: rssList[rssName].link, rssName: rssName, title: rssList[rssName].title}
     if (commandList[command].action === 'Refresh Feed') o.status = getFeedStatus(rssList[rssName].link, failLimit)
     if (miscOption === 'titleChecks') o.titleChecks = rssList[rssName].checkTitles === true ? 'Title Checks: Enabled\n' : 'Title Checks: Disabled\n'
-    else if (miscOption === 'disableImgLinkPreviews') o.disableImgLinkPreviews = rssList[rssName].disableImgLinkPreviews === true ? 'Image Link Previews: Disabled\n' : 'Image Link Previews: Enabled\n'
-    else if (miscOption === 'disableImgLinks') o.disableImgLinks = rssList[rssName].disableImgLinks === true ? 'Image Links Existence: Disabled\n' : 'Image Link Existence: Enabled\n'
+    else if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence') {
+      let statusText = miscOption === 'imagePreviews' ? 'Image Link Previews :' : 'Image Links Existence :'
+      let decision = ''
 
+      const globalOption = config.feedSettings[miscOption]
+      decision = globalOption ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
+      const specificOption = rssList[rssName][miscOption]
+      decision = specificOption == null ? decision : typeof specificOption !== 'boolean' ? decision : specificOption === true ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
+
+      o[miscOption] = decision
+    }
     if (message.channel.id === rssList[rssName].channel) currentRSSList.push(o)
   }
 
@@ -51,7 +59,7 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
     const link = currentRSSList[x].link
     const title = currentRSSList[x].title
     const status = currentRSSList[x].status || ''
-    const miscOption = currentRSSList[x].titleChecks || currentRSSList[x].disableImgLinkPreviews || currentRSSList[x].disableImgLinks || ''
+    const miscOption = currentRSSList[x].titleChecks || currentRSSList[x].imagePreviews || currentRSSList[x].imageLinksExistence || ''
 
     // 7 feeds per embed (AKA page)
     if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {

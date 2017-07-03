@@ -115,9 +115,23 @@ module.exports = function Article (rawArticle, guildId, rssName) {
       format: {
         image: function (node, options) {
           if (Array.isArray(imgSrcs) && imgSrcs.length < 5) imgSrcs.push(node.attribs.src)
+          const link = node.attribs.src
 
-          if (rssList[rssName].disableImgLinks === true || config.feedSettings.imageLinksExistence === false) return ''
-          else return rssList[rssName].disableImgLinkPreviews === true || config.feedSettings.imagePreviews === false ? `<${node.attribs.src}>` : node.attribs.src
+          let exist = true
+          const globalExistOption = config.feedSettings.imageLinksExistence // Always a boolean via startup checks
+          exist = globalExistOption
+          const specificExistOption = rssList[rssName].imageLinksExistence
+          exist = !specificExistOption ? exist : typeof specificExistOption !== 'boolean' ? exist : specificExistOption
+
+          if (!exist) return ''
+
+          let image = ''
+          const globalPreviewOption = config.feedSettings.imagePreviews // Always a boolean via startup checks
+          image = globalPreviewOption ? link : `<${link}>`
+          const specificPreviewOption = rssList[rssName].imagePreviews
+          image = specificPreviewOption == null ? image : typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
+
+          return image
         },
         heading: function (node, fn, options) {
           let h = fn(node.children, options);

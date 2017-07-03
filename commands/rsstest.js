@@ -13,7 +13,7 @@ module.exports = function (bot, message, command) {
           let channelErrMsg = ''
           switch (err.type) {
             case 'failedLink':
-              channelErrMsg = 'Reached fail limit. Please use `rssrefresh` to try validate again'
+              channelErrMsg = 'Reached fail limit. Please use `rssrefresh` to try to validate and refresh feed'
               break
             case 'request':
               channelErrMsg = 'Unable to connect to feed link'
@@ -28,12 +28,12 @@ module.exports = function (bot, message, command) {
               channelErrMsg = 'Feed missing from database'
               break
             case 'empty':
-              channelErrMsg = 'No existing feeds.'
+              channelErrMsg = 'No existing articles'
               break
             default:
               channelErrMsg = 'No reason available'
           }
-          console.log(`RSS Warning: Unable to send test article '${err.feed.link}'. Reason: ${err.content.message || err.content}`) // Reserve err.content for console logs, which are more verbose
+          console.log(`RSS Warning: Unable to send test article for feed ${err.feed.link}. Reason: ${err.content.message || err.content}`) // Reserve err.content for console logs, which are more verbose
           msgHandler.deleteAll(message.channel)
           return grabMsg.edit(`Unable to grab random feed article. Reason: ${channelErrMsg}.`).catch(err => console.log(`Promise Warning: rsstest 1: ${err}`))
         }
