@@ -34,7 +34,9 @@
     "defaultMaxAge": 1,
     "cycleMaxAge": 1,
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
-    "showRegexErrs": true
+    "showRegexErrs": true,
+    "imagePreviews": true,
+    "imageLinksExistence": true
   },
     "advanced": {
     "shards": 1,

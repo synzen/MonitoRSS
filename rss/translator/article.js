@@ -116,8 +116,8 @@ module.exports = function Article (rawArticle, guildId, rssName) {
         image: function (node, options) {
           if (Array.isArray(imgSrcs) && imgSrcs.length < 5) imgSrcs.push(node.attribs.src)
 
-          if (rssList[rssName].disableImgLinks === true) return ''
-          else return rssList[rssName].disableImgLinkPreviews === true ? `<${node.attribs.src}>` : node.attribs.src
+          if (rssList[rssName].disableImgLinks === true || config.feedSettings.imageLinksExistence === false) return ''
+          else return rssList[rssName].disableImgLinkPreviews === true || config.feedSettings.imagePreviews === false ? `<${node.attribs.src}>` : node.attribs.src
         },
         heading: function (node, fn, options) {
           let h = fn(node.children, options);
