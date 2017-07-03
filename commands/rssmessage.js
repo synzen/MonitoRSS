@@ -4,6 +4,10 @@ const config = require('../config.json')
 const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 
+function isNotEmpty (obj) {
+  for (var x in obj) return true
+}
+
 module.exports = function (bot, message, command) {
   chooseFeed(bot, message, command, function (rssName, msgHandler) {
     const guildRss = currentGuilds.get(message.guild.id)
@@ -30,7 +34,7 @@ module.exports = function (bot, message, command) {
             console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Message reset for ${rssList[rssName].link}.`)
             return resetMsg.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${rssList[rssName].link}`).catch(err => console.log(`Promise Warning: rssMessage 2a: ${err}`))
           }).catch(err => console.log(`Promise Warning: rssMessage 2: ${err}`))
-        } else if (m.content === '{empty}' && (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.enabled || !rssList[rssName].embedMessage.properties)) return message.channel.send('You cannot have an empty message if there is no embed enabled for this feed. Try again.') // Allow empty messages only if embed is enabled
+        } else if (m.content === '{empty}' && (typeof rssList[rssName].embedMessage !== 'object' || typeof rssList[rssName].embedMessage.properties !== 'object' || Array.isArray(rssList[rssName].embedMessage.properties) || !isNotEmpty(rssList[rssName].embedMessage.properties))) return message.channel.send('You cannot have an empty message if there is no embed used for this feed. Try again.') // Allow empty messages only if embed is enabled
         else { // Set new message
           message.channel.send(`Updating message...`).then(function (editing) {
             customCollect.stop()
