@@ -61,7 +61,12 @@ module.exports = function (con, rssList, articleList, debugFeeds, link, callback
           return seenArticle(true)
         }
 
-        if ((config.feedSettings.checkTitles !== true && rssList[rssName].checkTitles !== true) || (config.feedSettings.checkTitles === false && rssList[rssName].checkTitles !== true)) return seenArticle(false)
+        let check = false
+        const globalSetting = config.feedSettings.checkTitles
+        check = globalSetting
+        const specificSetting = rssList[rssName].checkTitles
+        check = typeof specificSetting !== 'boolean' ? check : specificSetting
+        if (!check) return seenArticle(false)
 
         sqlCmds.selectTitle(con, rssName, article.title, function (err, titleMatches) {
           if (err) {

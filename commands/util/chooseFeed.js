@@ -33,15 +33,14 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
   for (var rssName in rssList) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
     let o = {link: rssList[rssName].link, rssName: rssName, title: rssList[rssName].title}
     if (commandList[command].action === 'Refresh Feed') o.status = getFeedStatus(rssList[rssName].link, failLimit)
-    if (miscOption === 'titleChecks') o.titleChecks = rssList[rssName].checkTitles === true ? 'Title Checks: Enabled\n' : 'Title Checks: Disabled\n'
-    else if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence') {
-      let statusText = miscOption === 'imagePreviews' ? 'Image Link Previews :' : 'Image Links Existence :'
+    if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles') {
+      const statusText = miscOption === 'imagePreviews' ? 'Image Link Previews: ' : miscOption === 'ImageLinksExistence' ? 'Image Links Existence: ' : 'Title Checks: '
       let decision = ''
 
       const globalOption = config.feedSettings[miscOption]
       decision = globalOption ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
       const specificOption = rssList[rssName][miscOption]
-      decision = specificOption == null ? decision : typeof specificOption !== 'boolean' ? decision : specificOption === true ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
+      decision = typeof specificOption !== 'boolean' ? decision : specificOption === true ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
 
       o[miscOption] = decision
     }
@@ -59,7 +58,7 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
     const link = currentRSSList[x].link
     const title = currentRSSList[x].title
     const status = currentRSSList[x].status || ''
-    const miscOption = currentRSSList[x].titleChecks || currentRSSList[x].imagePreviews || currentRSSList[x].imageLinksExistence || ''
+    const miscOption = currentRSSList[x].checkTitles || currentRSSList[x].imagePreviews || currentRSSList[x].imageLinksExistence || ''
 
     // 7 feeds per embed (AKA page)
     if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {

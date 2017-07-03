@@ -129,7 +129,7 @@ module.exports = function Article (rawArticle, guildId, rssName) {
           const globalPreviewOption = config.feedSettings.imagePreviews // Always a boolean via startup checks
           image = globalPreviewOption ? link : `<${link}>`
           const specificPreviewOption = rssList[rssName].imagePreviews
-          image = specificPreviewOption == null ? image : typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
+          image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
 
           return image
         },

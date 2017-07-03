@@ -28,64 +28,34 @@ module.exports = function (bot, message, command) {
       firstMsgHandler.add(m)
       if (m.content.toLowerCase() === 'exit') return collector.stop(`Miscellaneous Feed Options menu closed.`)
 
-      if (m.content === '1') {
+      if (m.content === '1' || m.content === '2' || m.content === '3') {
+        const chosenProp = m.content === '1' ? 'checkTitles' : m.content === '2' ? 'imagePreviews' : 'imageLinksExistence'
         collector.stop()
         chooseFeed(bot, message, command, function (rssName, msgHandler) {
           const guildRss = currentGuilds.get(m.guild.id)
           const rssList = guildRss.sources
 
-          if (rssList[rssName].checkTitles === true) {
-            delete rssList[rssName].checkTitles
-            fileOps.updateFile(m.guild.id, guildRss)
-            console.log(`Title Checks: (${message.guild.id}, ${message.guild.name}) => Disabled for feed linked ${rssList[rssName].link}`)
-            message.channel.send(`Title checks have been disabled for <${rssList[rssName].link}>.`)
-          } else {
-            rssList[rssName].checkTitles = true
-            fileOps.updateFile(m.guild.id, guildRss)
-            console.log(`Title Checks: (${message.guild.id}, ${message.guild.name}) => Enabled for feed linked ${rssList[rssName].link}`)
-            message.channel.send(`Title checks have been enabled for <${rssList[rssName].link}>.`)
+          const globalSetting = config.feedSettings[chosenProp]
+          const specificSetting = rssList[rssName][chosenProp]
+
+          let followGlobal = false
+          rssList[rssName][chosenProp] = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
+
+          const finalSetting = rssList[rssName][chosenProp]
+
+          if (rssList[rssName][chosenProp] === globalSetting) {
+            delete rssList[rssName][chosenProp]
+            followGlobal = true
           }
 
-          msgHandler.deleteAll(message.channel)
-        }, 'titleChecks', firstMsgHandler)
-      } else if (m.content === '2') {
-        collector.stop()
-        chooseFeed(bot, message, command, function (rssName, msgHandler) {
-          const guildRss = currentGuilds.get(m.guild.id)
-          const rssList = guildRss.sources
-
-          // if (rssList[rssName].imagePreviews === config.feedSettings.imagePreviews) return message.channel.send(`Image Previews are already ${config.feedSettings.imagePreviews === false ? 'disabled' : 'enabled'} by default.`)
-
-          const globalSetting = config.feedSettings.imagePreviews
-          const specificSetting = rssList[rssName].imagePreviews
-
-          rssList[rssName].imagePreviews = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
+          const prettyPropName = m.content === '1' ? 'Title Checks' : m.content === '2' ? 'Image Previews' : 'Image Links Existence'
 
           fileOps.updateFile(m.guild.id, guildRss)
-          console.log(`Image Link Previews: (${message.guild.id}, ${message.guild.name}) => ${rssList[rssName].imagePreviews === true ? 'enabled' : 'disable'} for feed linked ${rssList[rssName].link}`)
-          message.channel.send(`Image link previews have been ${rssList[rssName].imagePreviews === true ? 'enabled' : 'disabled'} for <${rssList[rssName].link}>.`)
+          console.log(`${prettyPropName}: (${message.guild.id}, ${message.guild.name}) => ${finalSetting ? 'enabled' : 'disable'} for feed linked ${rssList[rssName].link}. ${followGlobal ? 'Now following global settings.' : ''}`)
+          message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${rssList[rssName].link}>${followGlobal ? ', and is now following the global setting.' : '.'}`)
 
           msgHandler.deleteAll(message.channel)
-        }, 'imagePreviews', firstMsgHandler)
-      } else if (m.content === '3') {
-        collector.stop()
-        chooseFeed(bot, message, command, function (rssName, msgHandler) {
-          const guildRss = currentGuilds.get(m.guild.id)
-          const rssList = guildRss.sources
-
-          // if (rssList[rssName].imageLinksExistence === config.feedSettings.imageLinksExistence) return message.channel.send(`Image Links Existence are already ${config.feedSettings.imageLinksExistence === false ? 'disabled' : 'enabled'} by default.`)
-
-          const globalSetting = config.feedSettings.imageLinksExistence
-          const specificSetting = rssList[rssName].imageLinksExistence
-
-          rssList[rssName].imageLinksExistence = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
-
-          fileOps.updateFile(m.guild.id, guildRss)
-          console.log(`Image Links Existence: (${message.guild.id}, ${message.guild.name}) => ${rssList[rssName].imageLinksExistence === true ? 'Enabled' : 'Disabled'} for feed linked ${rssList[rssName].link}`)
-          message.channel.send(`Image links existence have been ${rssList[rssName].imageLinksExistence === true ? 'enabled' : 'disabled'} for <${rssList[rssName].link}>.`)
-
-          msgHandler.deleteAll(message.channel)
-        }, 'imageLinksExistence', firstMsgHandler)
+        }, chosenProp, firstMsgHandler)
       } else return message.channel.send(`That is not a valid option. Please try again.`).then(m => firstMsgHandler.add(m))
     })
 
