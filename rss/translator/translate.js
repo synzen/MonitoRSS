@@ -4,6 +4,12 @@ const generateEmbed = require('./embed.js')
 const Article = require('./article.js')
 const getSubs = require('./subscriptions.js')
 
+function isNotEmpty (obj) {
+  for (var x in obj) {
+    return true
+  }
+}
+
 module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage) {
   // Just in case. If this happens, please report.
   if (!rssList[rssName]) { console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildId}\nrssName: ${rssName}\nrssList:`, rssList); return null }
@@ -24,10 +30,26 @@ module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage)
   if (!isTestMessage && filterExists && !filterResults) return null // Feed article delivery only passes through if the filter found the specified content
 
   const finalMessageCombo = {}
-  if (rssList[rssName].embedMessage && rssList[rssName].embedMessage.enabled !== false && rssList[rssName].embedMessage.properties) { // Check if embed is enabled
+  if (typeof rssList[rssName].embedMessage === 'object' && typeof rssList[rssName].embedMessage.properties === 'object' && isNotEmpty(rssList[rssName].embedMessage.properties)) { // Check if embed is enabled
     finalMessageCombo.embedMsg = generateEmbed(rssList, rssName, article)
-    finalMessageCombo.textMsg = (!rssList[rssName].message) ? article.convertKeywords(config.feedSettings.defaultMessage) : (rssList[rssName].message === '{empty}') ? '' : article.convertKeywords(rssList[rssName].message) // Allow empty messages if embed is enabled with {empty}
-  } else finalMessageCombo.textMsg = (!rssList[rssName].message || rssList[rssName].message === '{empty}') ? article.convertKeywords(config.feedSettings.defaultMessage) : article.convertKeywords(rssList[rssName].message) // Do not allow empty messages with just text and no embed, thus will fallback to default mesage
+
+    let txtMsg = ''
+    if (typeof rssList[rssName].message !== 'string') {
+      if (config.feedSettings.defaultMessage.trim() === '{empty}') txtMsg = ''
+      else txtMsg = article.convertKeywords(config.feedSettings.defaultMessage)
+    } else if (rssList[rssName].message.trim() === '{empty}') txtMsg = ''
+    else txtMsg = article.convertKeywords(rssList[rssName].message)
+
+    finalMessageCombo.textMsg = txtMsg
+  } else {
+    let txtMsg = ''
+    if (typeof rssList[rssName].message !== 'string' || rssList[rssName].message.trim() === '{empty}') {
+      if (config.feedSettings.defaultMessage.trim() === '{empty}') txtMsg = ''
+      else txtMsg = article.convertKeywords(config.feedSettings.defaultMessage)
+    } else txtMsg = article.convertKeywords(rssList[rssName].message)
+
+    finalMessageCombo.textMsg = txtMsg
+  }
 
   // Generate test details
   if (isTestMessage) {
