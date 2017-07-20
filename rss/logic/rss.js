@@ -40,9 +40,19 @@ module.exports = function (con, rssList, articleList, debugFeeds, link, callback
         const cycleMaxAge = config.feedSettings.cycleMaxAge && !isNaN(parseInt(config.feedSettings.cycleMaxAge, 10)) ? parseInt(config.feedSettings.cycleMaxAge, 10) : 1
 
         for (var x = feedLength; x >= 0; x--) {
-          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(articleList, articleList[x])}, TITLE: ${articleList[x].title})`)
+          // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(articleList, articleList[x])}, TITLE: ${articleList[x].title})`)
 
-          if (articleList[x].pubdate && articleList[x].pubdate.toString() !== 'Invalid Date' && articleList[x].pubdate > moment().subtract(cycleMaxAge, 'days')) checkTable(articleList[x], getArticleId(articleList, articleList[x]))
+          if (articleList[x].pubdate && articleList[x].pubdate > moment().subtract(cycleMaxAge, 'days')) checkTable(articleList[x], getArticleId(articleList, articleList[x]))
+          else if (articleList[x].pubdate === 'Invalid Date') {
+            let checkDate = false
+            const globalSetting = config.feedSettings.checkDates
+            checkDate = globalSetting
+            const specificSetting = rssList[rssName].checkDates
+            checkDate = typeof specificSetting !== 'boolean' ? checkDate : specificSetting
+
+            if (checkDate) checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)  // Mark as old if date checking is enabled
+            else checkTable(articleList[x], getArticleId(articleList, articleList[x])) // Otherwise mark as new
+          }
           else checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)
 
           totalArticles++
@@ -57,7 +67,7 @@ module.exports = function (con, rssList, articleList, debugFeeds, link, callback
           return incrementProgress()
         }
         if (idMatches.length > 0) {
-          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`)
+          // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`)
           return seenArticle(true)
         }
 

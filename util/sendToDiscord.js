@@ -8,7 +8,8 @@ const debugFeeds = require('../util/debugFeeds').list
 module.exports = function (bot, article, callback, isTestMessage) {
   const channel = bot.channels.get(article.discordChannelId)
   const rssName = article.rssName
-  const rssList = currentGuilds.get(channel.guild.id).sources
+  const guildRss = currentGuilds.get(channel.guild.id)
+  const rssList = guildRss.sources
 
   // Sometimes feeds get deleted mid-retrieval cycle, thus check for empty rssList and if the feed itself was deleted
   if (!rssList || rssList.size() === 0) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources for guild, skipping Discord message sending.`)
@@ -18,7 +19,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
 
   // const successLog = (isTestMessage) ? `RSS Test Delivery: (${channel.guild.id}, ${channel.guild.name}) => Sent test message for: ${rssList[rssName].link} in channel (${channel.id}, ${channel.name})` : `RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => Sent message: ${article.link} in channel (${channel.id}, ${channel.name})`
   const failLog = (isTestMessage) ? `RSS Test Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. ` : `RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. `
-  const message = translator(channel.guild.id, rssList, rssName, article, isTestMessage)
+  const message = translator(guildRss, rssList, rssName, article, isTestMessage)
 
   if (!message) {
     if (config.logging.showUnfiltered === true) console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => '${(article.link) ? article.link : article.title}' did not pass filters and was not sent.`)

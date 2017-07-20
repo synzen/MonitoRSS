@@ -1,14 +1,18 @@
 const getRandomArticle = require('../rss/getArticle.js')
 const chooseFeed = require('./util/chooseFeed.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
+const currentGuilds = require('../util/storage.js').currentGuilds
 
 module.exports = function (bot, message, command) {
   let simple = !!(message.content.split(' ').length > 1 && message.content.split(' ')[1] === 'simple')
 
   chooseFeed(bot, message, command, function (rssName, msgHandler) {
+    const guildRss = currentGuilds.get(message.guild.id)
+    const rssList = guildRss.sources
+
     message.channel.send(`Grabbing a random feed article...`)
     .then(function (grabMsg) {
-      getRandomArticle(message.guild.id, rssName, false, function (err, article) {
+      getRandomArticle(guildRss, rssList, rssName, false, function (err, article) {
         if (err) {
           let channelErrMsg = ''
           switch (err.type) {

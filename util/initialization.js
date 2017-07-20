@@ -54,7 +54,7 @@ module.exports = function (bot, callback) {
 
   function reachedFailCount (link) {
     let failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= failLimit) // string indicates it has reached the fail count, and is the date of when it failed
-    if (failed) console.log(`INIT Warning: Feeds with link ${link} will be skipped due to reaching fail limit (${failLimit}).`)
+    if (failed && config.logging.showFailedFeeds !== false) console.log(`INIT Warning: Feeds with link ${link} will be skipped due to reaching fail limit (${failLimit}).`)
     return failed
   }
 

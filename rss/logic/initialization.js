@@ -45,9 +45,19 @@ module.exports = function (con, rssList, articleList, link, callback) {
             const cutoffDay = (rssList[rssName].maxAge) ? moment().subtract(rssList[rssName].maxAge, 'days') : moment().subtract(defaultMaxAge, 'days')
 
             if (articleList[x].pubdate >= cutoffDay) checkTable(articleList[x], getArticleId(articleList, articleList[x]))
-            else if (articleList[x].pubdate < cutoffDay || articleList[x].pubdate.toString() === 'Invalid Date') {
+            else if (articleList[x].pubdate < cutoffDay) {
               checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)
             }
+            else if (articleList[x].pubdate.toString() === 'Invalid Date') {
+              let checkDate = false
+              const globalSetting = config.feedSettings.checkDates
+              checkDate = globalSetting
+              const specificSetting = rssList[rssName].checkDates
+              checkDate = typeof specificSetting !== 'boolean' ? checkDate : specificSetting
+
+              if (checkDate) checkTable(articleList[x], getArticleId(articleList, articleList[x]), true) // Mark as old if date checking is enabled
+              else checkTable(articleList[x], getArticleId(articleList, articleList[x])) // Otherwise mark it new
+            } else checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)
           }
         }
       })

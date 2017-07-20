@@ -38,12 +38,7 @@ exports.selectTitle = function (con, table, articleTitle, callback) {
 
 exports.insert = function (con, table, articleInfo, callback) {
   if (sqlType === 'mysql') return con.query(`insert ignore into \`${table}\` (DATE, ID, TITLE) values (curdate(), ?, ?)`, [articleInfo.id, articleInfo.title], callback)
-  else {
-    var prep = con.prepare(`insert into "${table}" (DATE, ID, TITLE) values (date('now'), ?, ?)`)
-    prep.run(articleInfo.id, articleInfo.title)
-    prep.finalize()
-    return callback()
-  }
+  else con.run(`insert into "${table}" (DATE, ID, TITLE) values (date('now'), ?, ?)`, [articleInfo.id, articleInfo.title], callback)
 }
 
 exports.end = function (con, callback, startingCycle) {

@@ -53,29 +53,9 @@ function regexReplace (string, regexSearchQuery, replacementData, flags) {
   }
 }
 
-// To avoid stack call exceeded
-// function trampoline (func, obj, results) {
-//   var value = func(obj, results)
-//   while (typeof value === 'function') {
-//     value = value()
-//   }
-//   return value
-// }
-//
-// // Used to find images in any object values of the article
-// function findImages (obj, results) {
-//   for (var key in obj) {
-//     if (Object.prototype.toString.call(obj[key]) === '[object Object]' && isNotEmpty(obj[key])) {
-//       return function () {
-//         return findImages(obj[key], results)
-//       }
-//     } else if (typeof obj[key] === 'string' && obj[key].match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(obj[key]) && results.length < 9) results.push(obj[key])
-//   }
-// }
-
-module.exports = function Article (rawArticle, guildId, rssName) {
-  const guildRss = currentGuilds.get(guildId)
-  const rssList = guildRss.sources
+module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
+  // const guildRss = currentGuilds.get(guildId)
+  // const rssList = guildRss.sources
 
   function evalRegexConfig (text, placeholder) {
     const source = rssList[rssName]
@@ -159,11 +139,13 @@ module.exports = function Article (rawArticle, guildId, rssName) {
   this.titleImgs = rawTitleImgs
 
   // date
-  const guildTimezone = guildRss.timezone
-  const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
-  const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
-  const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
-  this.pubdate = (vanityDate !== 'Invalid date') ? vanityDate : ''
+  if (guildRss) { // guildRss may be undefined from web requests to "simulate" filters that only need to pass in modified rssLists
+    const guildTimezone = guildRss.timezone
+    const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
+    const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
+    const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
+    this.pubdate = (vanityDate !== 'Invalid date') ? vanityDate : ''
+  }
 
   // DESCRIPTION
   let rawArticleDescrip = ''

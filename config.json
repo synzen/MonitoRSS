@@ -36,9 +36,10 @@
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
     "showRegexErrs": true,
     "imagePreviews": true,
-    "imageLinksExistence": true
+    "imageLinksExistence": true,
+    "checkDates": true
   },
-    "advanced": {
+  "advanced": {
     "shards": 1,
     "batchSize": 300,
     "restrictCookies": false,

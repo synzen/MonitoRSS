@@ -14,6 +14,7 @@ module.exports = function (bot, message, command) {
     .addField('1) Toggle Title Checks for a feed', `**Only enable this if necessary!** Default is ${config.feedSettings.checkTitles === true ? 'enabled.' : 'disabled.'} Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.`)
     .addField('2) Toggle Image Link Previews for a feed', `Default is ${config.feedSettings.iamgePreviews === false ? 'disabled' : 'enabled'}. Toggle Discord image link previews for image links found inside placeholders such as {description}.`)
     .addField('3) Toggle Image Links Existence for a feed', `Default is ${config.feedSettings.imageLinksExistence === false ? 'disabled' : 'enabled'}. Toggle the existence of image links for image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`)
+    .addField('4) Toggle Date Checks for a feed', `Default is ${config.feedSettings.checkDates === false ? 'disabled' : 'enabled'}. Date checking ensures that articles that are ${config.feedSettings.cycleMaxAge} day(s) old and articles with invalid/no pubdates are't sent.`)
 
   const firstMsgHandler = new MsgHandler(bot, message)
 
@@ -28,8 +29,8 @@ module.exports = function (bot, message, command) {
       firstMsgHandler.add(m)
       if (m.content.toLowerCase() === 'exit') return collector.stop(`Miscellaneous Feed Options menu closed.`)
 
-      if (m.content === '1' || m.content === '2' || m.content === '3') {
-        const chosenProp = m.content === '1' ? 'checkTitles' : m.content === '2' ? 'imagePreviews' : 'imageLinksExistence'
+      if (m.content === '1' || m.content === '2' || m.content === '3' || m.content === '4') {
+        const chosenProp = m.content === '1' ? 'checkTitles' : m.content === '2' ? 'imagePreviews' : m.content === '3' ? 'imageLinksExistence' : 'checkDates'
         collector.stop()
         chooseFeed(bot, message, command, function (rssName, msgHandler) {
           const guildRss = currentGuilds.get(m.guild.id)
@@ -48,10 +49,10 @@ module.exports = function (bot, message, command) {
             followGlobal = true
           }
 
-          const prettyPropName = m.content === '1' ? 'Title Checks' : m.content === '2' ? 'Image Previews' : 'Image Links Existence'
+          const prettyPropName = m.content === '1' ? 'Title Checks' : m.content === '2' ? 'Image Previews' : m.content === '3' ? 'Image Links Existence' : 'Date Checks'
 
           fileOps.updateFile(m.guild.id, guildRss)
-          console.log(`${prettyPropName}: (${message.guild.id}, ${message.guild.name}) => ${finalSetting ? 'enabled' : 'disable'} for feed linked ${rssList[rssName].link}. ${followGlobal ? 'Now following global settings.' : ''}`)
+          console.log(`${prettyPropName}: (${message.guild.id}, ${message.guild.name}) => ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${rssList[rssName].link}. ${followGlobal ? 'Now following global settings.' : ''}`)
           message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${rssList[rssName].link}>${followGlobal ? ', and is now following the global setting.' : '.'}`)
 
           msgHandler.deleteAll(message.channel)

@@ -1,22 +1,10 @@
-/*
-    This is only used when adding new feeds through Discord channels.
-
-    The process is:
-    1. Retrieve the feed through request
-    2. Feedparser sends the feed into an array
-    3. Connect to SQL database
-    4. Create table for feed for that Discord channel
-    7. Log all current feed items in table
-    8. incrementProgress() and close connection
-    9. Add to config
-*/
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const fileOps = require('../util/fileOps.js')
 const sqlCmds = require('./sql/commands.js')
 const currentGuilds = require('../util/storage').currentGuilds
 
-exports.addToDb = function (con, articleList, rssName, callback) {
+exports.addToDb = function (con, articleList, rssName, callback, customTitle) {
   const totalArticles = articleList.length
   let processedArticles = 0
 
@@ -63,7 +51,7 @@ exports.addToDb = function (con, articleList, rssName, callback) {
   }
 }
 
-exports.addNewFeed = function (con, link, channel, cookies, callback) {
+exports.addNewFeed = function (con, link, channel, cookies, callback, customTitle) {
   const feedparser = new FeedParser()
   const articleList = []
 
@@ -104,7 +92,7 @@ exports.addNewFeed = function (con, link, channel, cookies, callback) {
     })
 
     function addToConfig () {
-      let metaTitle = (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
+      let metaTitle = customTitle ? customTitle : (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
 
       if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
       else if (articleList[0] && articleList[0].meta.link && articleList[0].meta.link.includes('reddit')) metaTitle = `Reddit - ${articleList[0].meta.title}`
@@ -139,7 +127,7 @@ exports.addNewFeed = function (con, link, channel, cookies, callback) {
       }
 
       fileOps.updateFile(channel.guild.id, guildRss, `../sources/${channel.guild.id}.json`)
-      callback()
+      callback(null, metaTitle, rssName)
     }
   })
 }

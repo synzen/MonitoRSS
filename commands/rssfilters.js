@@ -77,7 +77,7 @@ module.exports = function (bot, message, command, role) {
             msgHandler.deleteAll(message.channel)
             return message.channel.send({embed: msg}).catch(err => console.log(`Promise Warning: rssFilters 4: ${err}`))
           } else if (m.content === '5') { // 5 = Send passing article
-            getArticle(message.guild.id, rssName, true, function (err, article) {
+            getArticle(guildRss, rssList, rssName, true, function (err, article) {
               if (err) {
                 let channelErrMsg = ''
                 switch (err.type) {

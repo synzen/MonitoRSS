@@ -10,12 +10,14 @@ function isNotEmpty (obj) {
   }
 }
 
-module.exports = function (guildId, rssList, rssName, rawArticle, isTestMessage) {
+module.exports = function (guildRss, rssList, rssName, rawArticle, isTestMessage, returnObject) {
   // Just in case. If this happens, please report.
-  if (!rssList[rssName]) { console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildId}\nrssName: ${rssName}\nrssList:`, rssList); return null }
+  if (!rssList[rssName]) { console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildRss ? guildRss.id : undefined}\nrssName: ${rssName}\nrssList:`, rssList); return null }
 
-  const article = new Article(rawArticle, guildId, rssName)
+  const article = new Article(rawArticle, guildRss, rssList, rssName)
   article.subscriptions = getSubs(rssList, rssName, article)
+
+  if (returnObject) return article
 
   // Filter message
   let filterExists = false

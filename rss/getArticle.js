@@ -7,9 +7,8 @@ const currentGuilds = storage.currentGuilds
 const failedLinks = storage.failedLinks
 const passesFilters = require('./translator/translate.js')
 
-module.exports = function (guildId, rssName, passFiltersOnly, callback) {
-  const rssList = currentGuilds.get(guildId).sources
-
+module.exports = function (guildRss, rssList, rssName, passFiltersOnly, callback) {
+  console.info(rssName)
   if (typeof failedLinks[rssList[rssName].link] === 'string') return callback({type: 'failedLink', content: 'Reached fail limit', feed: rssList[rssName]})
 
   const feedparser = new FeedParser()
@@ -51,16 +50,22 @@ module.exports = function (guildId, rssName, passFiltersOnly, callback) {
         if (passFiltersOnly) {
           const filteredCurrentFeed = []
 
-          for (var i in currentFeed) if (passesFilters(guildId, rssList, rssName, currentFeed[i], false)) filteredCurrentFeed.push(currentFeed[i])
+          for (var i in currentFeed) if (passesFilters(guildRss, rssList, rssName, currentFeed[i], false)) filteredCurrentFeed.push(currentFeed[i]) // returns null if no article is sent from passesFilters
 
           if (filteredCurrentFeed.length === 0) callback({type: 'feed', content: 'No articles that pass current filters.', feed: rssList[rssName]})
           else {
             const randFeedIndex = Math.floor(Math.random() * (filteredCurrentFeed.length - 1)) // Grab a random feed from array
-            callback(false, filteredCurrentFeed[randFeedIndex])
+            callback(false, filteredCurrentFeed[randFeedIndex], null, filteredCurrentFeed)
           }
         } else {
           const randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1)) // Grab a random feed from array
-          callback(false, currentFeed[randFeedIndex])
+          const feedLinkList = []
+          const rawArticleList = {}
+          for (var x in currentFeed) {
+            if (!feedLinkList.includes(currentFeed[x].link)) feedLinkList.push(currentFeed[x].link)
+            if (!rawArticleList[currentFeed[x].link]) rawArticleList[currentFeed[x].link] = currentFeed[x]
+          }
+          callback(false, currentFeed[randFeedIndex], feedLinkList, rawArticleList)
         }
 
         return sqlCmds.end(con, function (err) {
