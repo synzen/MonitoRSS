@@ -52,7 +52,7 @@ exports.checkMasterConfig = function (masterConfig) {
       enableBackups: {type: 'boolean', default: true},
       enableRestores: {type: 'boolean', default: false},
       cleanDatabase: {type: 'boolean', default: false},
-      maxEntryAge: {type: 'number', defualt: 14}
+      maxEntryAge: {type: 'number', default: 14}
     },
     feedSettings: {
       refreshTimeMinutes: {type: 'number', default: 10},
@@ -123,7 +123,7 @@ exports.checkMasterConfig = function (masterConfig) {
   if (errMsg) {
     return {
       fatal: true,
-      message: `Fatal invalid configuration(s) found, must be fixed:\n${errMsg + '\n'}`
+      message: `Fatal invalid configuration(s) found, must be fixed:\n${errMsg}\n`
     }
   }
 
@@ -132,7 +132,7 @@ exports.checkMasterConfig = function (masterConfig) {
   if (errMsg) {
     return {
       fatal: false,
-      message: `Invalid configuration(s) found, forced defaults have been set:\n${errMsg + '\n'}`
+      message: `Invalid configuration(s) found, forced defaults have been set:\n${errMsg}\n`
     }
   }
 }
