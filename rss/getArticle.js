@@ -8,7 +8,6 @@ const failedLinks = storage.failedLinks
 const passesFilters = require('./translator/translate.js')
 
 module.exports = function (guildRss, rssList, rssName, passFiltersOnly, callback) {
-  console.info(rssName)
   if (typeof failedLinks[rssList[rssName].link] === 'string') return callback({type: 'failedLink', content: 'Reached fail limit', feed: rssList[rssName]})
 
   const feedparser = new FeedParser()

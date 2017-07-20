@@ -3,6 +3,7 @@ const moment = require('moment-timezone')
 const cleanEntities = require('entities')
 const currentGuilds = require('../../util/storage.js').currentGuilds
 const htmlConvert = require('html-to-text')
+const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 
 // To avoid stack call exceeded
 function checkObjType (item, results) {
@@ -98,7 +99,7 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
           const link = node.attribs.src
 
           let exist = true
-          const globalExistOption = config.feedSettings.imageLinksExistence // Always a boolean via startup checks
+          const globalExistOption = config.feedSettings.imageLinksExistence != null ? config.feedSettings.imageLinksExistence : defaultConfigs.feedSettings.imageLinksExistence.default // Always a boolean via startup checks
           exist = globalExistOption
           const specificExistOption = rssList[rssName].imageLinksExistence
           exist = !specificExistOption ? exist : typeof specificExistOption !== 'boolean' ? exist : specificExistOption
@@ -106,7 +107,7 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
           if (!exist) return ''
 
           let image = ''
-          const globalPreviewOption = config.feedSettings.imagePreviews // Always a boolean via startup checks
+          const globalPreviewOption = config.feedSettings.imagePreviews != null ? config.feedSettings.imagePreviews : defaultConfigs.feedSettings.imagePreviews.default // Always a boolean via startup checks
           image = globalPreviewOption ? link : `<${link}>`
           const specificPreviewOption = rssList[rssName].imagePreviews
           image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`

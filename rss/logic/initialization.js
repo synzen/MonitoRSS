@@ -1,6 +1,7 @@
 const config = require('../../config.json')
 const sqlCmds = require('../sql/commands.js')
 const moment = require('moment-timezone')
+const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 
 function getArticleId (articleList, article) {
   let equalGuids = (articleList.length > 1) // default to true for most feeds
@@ -50,7 +51,7 @@ module.exports = function (con, rssList, articleList, link, callback) {
             }
             else if (articleList[x].pubdate.toString() === 'Invalid Date') {
               let checkDate = false
-              const globalSetting = config.feedSettings.checkDates
+              const globalSetting = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
               checkDate = globalSetting
               const specificSetting = rssList[rssName].checkDates
               checkDate = typeof specificSetting !== 'boolean' ? checkDate : specificSetting
@@ -81,7 +82,7 @@ module.exports = function (con, rssList, articleList, link, callback) {
         if (IdMatches.length > 0) return seenArticle(true)
 
         let check = false
-        const globalSetting = config.feedSettings.checkTitles
+        const globalSetting = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
         check = globalSetting
         const specificSetting = rssList[rssName].checkTitles
         check = typeof specificSetting !== 'boolean' ? check : specificSetting

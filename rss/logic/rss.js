@@ -1,6 +1,7 @@
 const config = require('../../config.json')
 const sqlCmds = require('../sql/commands.js')
 const moment = require('moment-timezone')
+const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 
 function getArticleId (articleList, article) {
   let equalGuids = (articleList.length > 1) // default to true for most feeds
@@ -43,9 +44,9 @@ module.exports = function (con, rssList, articleList, debugFeeds, link, callback
           // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(articleList, articleList[x])}, TITLE: ${articleList[x].title})`)
 
           if (articleList[x].pubdate && articleList[x].pubdate > moment().subtract(cycleMaxAge, 'days')) checkTable(articleList[x], getArticleId(articleList, articleList[x]))
-          else if (articleList[x].pubdate === 'Invalid Date') {
+          else { // Invalid dates are pubdate.toString() === 'Invalid Date'
             let checkDate = false
-            const globalSetting = config.feedSettings.checkDates
+            const globalSetting = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
             checkDate = globalSetting
             const specificSetting = rssList[rssName].checkDates
             checkDate = typeof specificSetting !== 'boolean' ? checkDate : specificSetting
@@ -53,7 +54,6 @@ module.exports = function (con, rssList, articleList, debugFeeds, link, callback
             if (checkDate) checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)  // Mark as old if date checking is enabled
             else checkTable(articleList[x], getArticleId(articleList, articleList[x])) // Otherwise mark as new
           }
-          else checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)
 
           totalArticles++
         }
@@ -72,7 +72,7 @@ module.exports = function (con, rssList, articleList, debugFeeds, link, callback
         }
 
         let check = false
-        const globalSetting = config.feedSettings.checkTitles
+        const globalSetting = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
         check = globalSetting
         const specificSetting = rssList[rssName].checkTitles
         check = typeof specificSetting !== 'boolean' ? check : specificSetting

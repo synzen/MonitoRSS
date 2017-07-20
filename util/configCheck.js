@@ -29,61 +29,61 @@ exports.validChannel = function (bot, guildId, feed) {
   } else return true
 }
 
-exports.checkMasterConfig = function (masterConfig) {
-  let configTypes = {
-    logging: {
-      logDates: {type: 'boolean', default: false},
-      discordChannelLog: {type: 'string', default: ''},
-      showLinkErrs: {type: 'boolean', default: true},
-      showUnfiltered: {type: 'boolean', default: true}
-    },
-    botSettings: {
-      token: {type: 'string', default: undefined},
-      enableCommands: {type: 'boolean', default: true},
-      prefix: {type: 'string', default: undefined},
-      defaultGame: {type: 'string', default: null},
-      controllerIds: {type: 'object', default: []},
-      menuColor: {type: 'number', default: 7833753},
-      deleteMenus: {type: 'boolean', default: false}
-    },
-    feedManagement: {
-      sqlType: {type: 'string', default: 'sqlite3'},
-      databaseName: {type: 'string', default: 'rss'},
-      enableBackups: {type: 'boolean', default: true},
-      enableRestores: {type: 'boolean', default: false},
-      cleanDatabase: {type: 'boolean', default: false},
-      maxEntryAge: {type: 'number', default: 14}
-    },
-    feedSettings: {
-      refreshTimeMinutes: {type: 'number', default: 10},
-      checkTitles: {type: 'boolean', default: false},
-      timezone: {type: 'string', default: 'America/New_York'},
-      timeFormat: {type: 'string', default: 'ddd, D MMMM YYYY, h:mm A z'},
-      maxFeeds: {type: 'number', default: 0},
-      failLimit: {type: 'number', default: 0},
-      notifyFail: {type: 'boolean', default: true},
-      sendOldMessages: {type: 'boolean', default: false},
-      defaultMaxAge: {type: 'number', default: 1},
-      cycleMaxAge: {type: 'number', default: 1},
-      defaultMessage: {type: 'string', default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
-      showRegexErrs: {type: 'boolean', default: true},
-      imagePreviews: {type: 'boolean', default: true},
-      imageLinksExistence: {type: 'boolean', default: true},
-      checkDates: {type: 'boolean', default: true}
-    },
-    advanced: {
-      shards: {type: 'number', default: 1},
-      batchSize: {type: 'number', default: '400'},
-      restrictCookies: {type: 'boolean', default: false},
-      processorMethod: {type: 'string', default: 'single'}
-    }
+exports.defaultConfigs = {
+  logging: {
+    logDates: {type: 'boolean', default: false},
+    discordChannelLog: {type: 'string', default: ''},
+    showLinkErrs: {type: 'boolean', default: true},
+    showUnfiltered: {type: 'boolean', default: true}
+  },
+  botSettings: {
+    token: {type: 'string', default: undefined},
+    enableCommands: {type: 'boolean', default: true},
+    prefix: {type: 'string', default: undefined},
+    defaultGame: {type: 'string', default: null},
+    controllerIds: {type: 'object', default: []},
+    menuColor: {type: 'number', default: 7833753},
+    deleteMenus: {type: 'boolean', default: false}
+  },
+  feedManagement: {
+    sqlType: {type: 'string', default: 'sqlite3'},
+    databaseName: {type: 'string', default: 'rss'},
+    enableBackups: {type: 'boolean', default: true},
+    enableRestores: {type: 'boolean', default: false},
+    cleanDatabase: {type: 'boolean', default: false},
+    maxEntryAge: {type: 'number', default: 14}
+  },
+  feedSettings: {
+    refreshTimeMinutes: {type: 'number', default: 10},
+    checkTitles: {type: 'boolean', default: false},
+    timezone: {type: 'string', default: 'America/New_York'},
+    timeFormat: {type: 'string', default: 'ddd, D MMMM YYYY, h:mm A z'},
+    maxFeeds: {type: 'number', default: 0},
+    failLimit: {type: 'number', default: 0},
+    notifyFail: {type: 'boolean', default: true},
+    sendOldMessages: {type: 'boolean', default: false},
+    defaultMaxAge: {type: 'number', default: 1},
+    cycleMaxAge: {type: 'number', default: 1},
+    defaultMessage: {type: 'string', default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
+    showRegexErrs: {type: 'boolean', default: true},
+    imagePreviews: {type: 'boolean', default: true},
+    imageLinksExistence: {type: 'boolean', default: true},
+    checkDates: {type: 'boolean', default: true}
+  },
+  advanced: {
+    shards: {type: 'number', default: 1},
+    batchSize: {type: 'number', default: '400'},
+    restrictCookies: {type: 'boolean', default: false},
+    processorMethod: {type: 'string', default: 'single'}
   }
+}
 
+exports.checkMasterConfig = function (masterConfig) {
   let fatalInvalidConfigs = {}
   let invalidConfigs = {}
 
   function checkIfRequired (configCategory, configName, errMsg) {
-    let config = configTypes[configCategory][configName]
+    let config = exports.defaultConfigs[configCategory][configName]
     // if (configName === 'checkDates') console.log(21)
     if (config.default === undefined) fatalInvalidConfigs[configCategory + '.' + configName] = errMsg
     else {
@@ -93,11 +93,11 @@ exports.checkMasterConfig = function (masterConfig) {
   }
 
   // for (var configCategory in masterConfig) {
-  for (var configCategory in configTypes) {
+  for (var configCategory in exports.defaultConfigs) {
     // for (var configName in masterConfig[configCategory]) {
-    for (var configName in configTypes[configCategory]) {
+    for (var configName in exports.defaultConfigs[configCategory]) {
       // let configValue = masterConfig[configCategory][configName]
-      const configValue = configTypes[configCategory][configName]
+      const configValue = exports.defaultConfigs[configCategory][configName]
       const userConfig =  masterConfig[configCategory][configName]
 
       if (configValue.type !== typeof userConfig) checkIfRequired(configCategory, configName, `Expected ${configValue.type}, found ${typeof userConfig}`)
