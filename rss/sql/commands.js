@@ -1,5 +1,6 @@
 const config = require('../../config.json')
 const sqlType = config.feedManagement.sqlType.toLowerCase()
+const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 
 exports.selectTable = function (con, table, callback) {
   if (sqlType === 'mysql') return con.query(`select table_name from information_schema.tables where table_schema="${config.feedManagement.databaseName}" and table_name="${table}"`, callback)
@@ -20,10 +21,13 @@ exports.cleanTable = function (con, table, articleArray) {
   }
   // Delete articles that are not in current article list, and past X days of of original insertion
   if (sqlType === 'mysql') {
-    con.query(`delete from \`${table}\` where ID not in (${qMarks}) and DATE not between date_sub(now(), interval ${config.feedManagement.maxEntryAge} day) and now()`, articleArray, function (err, matches) {
-      if (err) console.log(err)
+    const maxDaysAge = config.feedManagement.maxEntryAge ? config.feedManagement.maxEntryAge : defaultConfigs.feedManagement.maxEntryAge.default
+    con.query(`delete from \`${table}\` where ID not in (${qMarks}) and DATE not between date_sub(now(), interval ${maxDaysAge} day) and now()`, articleArray, function (err, matches) {
+      if (err) console.log('Datebase Cleaning ' + err)
     })
-  } else con.run(`delete from "${table}" where ID not in (${qMarks}) and DATE not between date('now', '-${config.feedManagement.maxEntryAge} day') and date('now')`, articleArray)
+  } else con.run(`delete from "${table}" where ID not in (${qMarks}) and DATE not between date('now', '-${maxDaysAge} day') and date('now')`, articleArray, function(err) {
+      if (err) console.log('Database Cleaning ' + err)
+  })
 }
 
 exports.selectId = function (con, table, articleId, callback) {

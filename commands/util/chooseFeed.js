@@ -58,14 +58,13 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
     const link = currentRSSList[x].link
     const title = currentRSSList[x].title
     const status = currentRSSList[x].status || ''
-    const miscOption = currentRSSList[x].checkTitles || currentRSSList[x].imagePreviews || currentRSSList[x].imageLinksExistence || currentRSSList[x].checkDates
+    const miscOption = currentRSSList[x].checkTitles || currentRSSList[x].imagePreviews || currentRSSList[x].imageLinksExistence || currentRSSList[x].checkDates || ''
 
     // 7 feeds per embed (AKA page)
     if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {
       pages.push(embedMsg)
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}`)
     }
-
     embedMsg.addField(`${count})  ${title}`, `${miscOption}${status}Link: ${link}`)
   }
 

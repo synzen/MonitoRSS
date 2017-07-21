@@ -55,31 +55,35 @@ function regexReplace (string, regexSearchQuery, replacementData, flags) {
 }
 
 module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
-  // const guildRss = currentGuilds.get(guildId)
-  // const rssList = guildRss.sources
-
   function evalRegexConfig (text, placeholder) {
     const source = rssList[rssName]
-    let newText = text
+    const customPlaceholders = {}
 
     if (typeof source.regexOps === 'object' && source.regexOps.disabled !== true && Array.isArray(source.regexOps[placeholder])) { // Eval regex if specified
+
       if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
         for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
-          if (source.regexOps.disabled[y] === placeholder) return text
+          if (source.regexOps.disabled[y] === placeholder) return null // text
         }
       }
+
       for (var regexOpIndex in source.regexOps[placeholder]) { // Looping through each regexOp for a placeholder
         let regexOp = source.regexOps[placeholder][regexOpIndex]
-        if (regexOp.disabled === true) continue
+        if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
 
-        let modified = regexReplace(newText, regexOp.search, regexOp.replacement, regexOp.flags)
+        if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
+
+        const clone = Object.assign({}, customPlaceholders)
+
+        let modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement, regexOp.flags)
         if (typeof modified !== 'string') {
           if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for feed ${source.link}:\n`, modified)
-        } else newText = modified
+        } else customPlaceholders[regexOp.name] = modified // newText = modified
       }
-    } else return text
 
-    return newText
+    } else return null
+
+    return customPlaceholders
   }
 
   function cleanRandoms (text, imgSrcs) {
@@ -135,11 +139,10 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
   // TITLE
   const rawTitleImgs = []
   this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title, rawTitleImgs)
-  this.title = evalRegexConfig(this.title, 'title')
   this.title = this.title.length > 150 ? this.title.slice(0, 150) + ' [...]' : this.title
   this.titleImgs = rawTitleImgs
 
-  // date
+  // Date
   if (guildRss) { // guildRss may be undefined from web requests to "simulate" filters that only need to pass in modified rssLists
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
@@ -148,7 +151,7 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
     this.pubdate = (vanityDate !== 'Invalid date') ? vanityDate : ''
   }
 
-  // DESCRIPTION
+  // Description
   let rawArticleDescrip = ''
   const rawDescripImgs = []
   // YouTube doesn't use the regular description field, thus manually setting it as the description
@@ -160,7 +163,6 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
     rawArticleDescrip = rawArticleDescrip.replace('\n[link] [comments]', '') // truncate the useless end of reddit description
   }
 
-  rawArticleDescrip = evalRegexConfig(rawArticleDescrip, 'description')
   this.description = rawArticleDescrip
 
   let descripImgList = ''
@@ -171,16 +173,15 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
   }
   this.descriptionImgs = rawDescripImgs
 
-  // SUMMARY
+  // Summary
   let rawArticleSummary = ''
   const rawSummaryImgs = []
   if (rawArticle.summary) rawArticleSummary = cleanRandoms(rawArticle.summary, rawSummaryImgs)
-  rawArticleSummary = evalRegexConfig(rawArticleSummary, 'summary')
   rawArticleSummary = (rawArticleSummary.length > 800) ? `${rawArticleSummary.slice(0, 790)} [...]` : rawArticleSummary
   this.summary = rawArticleSummary
   this.summaryImgs = rawSummaryImgs
 
-  // LIST all {imageX} to string
+  // List all {imageX} to string
   const imageLinks = []
   findImages(rawArticle, imageLinks)
   this.images = (imageLinks.length === 0) ? undefined : imageLinks
@@ -194,7 +195,7 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
     return imageList
   }
 
-  // LIST all {placeholder:imageX} to string
+  // List all {placeholder:imageX} to string
   this.listPlaceholderImages = function () {
     const validPlaceholders = ['title', 'description', 'summary']
     const listedImages = []
@@ -213,7 +214,7 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
     return list.trim()
   }
 
-  // CATEGORIES
+  // Categories/Tags
   if (rawArticle.categories) {
     let categoryList = ''
     for (var category in rawArticle.categories) {
@@ -263,6 +264,15 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
     return content
   }
 
+  // Regex-defined custom placeholders
+  const validRegexPlaceholder = ['title', 'description', 'summary']
+  const regexPlaceholders = {} // Each key is a validRegexPlaceholder, and their values are an object of named placeholders with the modified content
+  for (var b in validRegexPlaceholder) {
+    const type = validRegexPlaceholder[b]
+    const regexResults = evalRegexConfig(this[type], type)
+    regexPlaceholders[type] = regexResults
+  }
+
   // replace simple keywords
   this.convertKeywords = function (word) {
     let content = word.replace(/{date}/g, this.pubdate)
@@ -273,6 +283,14 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
             .replace(/{link}/g, this.link)
             .replace(/{description}/g, this.description)
             .replace(/{tags}/g, this.tags)
+
+    for (var placeholder in regexPlaceholders) {
+      for (var customName in regexPlaceholders[placeholder]) {
+        const replacementQuery = new RegExp(`{${placeholder}:${escapeRegExp(customName)}}`, 'g')
+        const replacementContent = regexPlaceholders[placeholder][customName]
+        content = content.replace(replacementQuery, replacementContent)
+      }
+    }
 
     return this.convertImgs(content)
   }

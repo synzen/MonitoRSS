@@ -84,7 +84,6 @@ exports.checkMasterConfig = function (masterConfig) {
 
   function checkIfRequired (configCategory, configName, errMsg) {
     let config = exports.defaultConfigs[configCategory][configName]
-    // if (configName === 'checkDates') console.log(21)
     if (config.default === undefined) fatalInvalidConfigs[configCategory + '.' + configName] = errMsg
     else {
       masterConfig[configCategory][configName] = config.default
@@ -92,11 +91,8 @@ exports.checkMasterConfig = function (masterConfig) {
     }
   }
 
-  // for (var configCategory in masterConfig) {
   for (var configCategory in exports.defaultConfigs) {
-    // for (var configName in masterConfig[configCategory]) {
     for (var configName in exports.defaultConfigs[configCategory]) {
-      // let configValue = masterConfig[configCategory][configName]
       const configValue = exports.defaultConfigs[configCategory][configName]
       const userConfig =  masterConfig[configCategory][configName]
 
