@@ -13,7 +13,7 @@ module.exports = function (rssList, rssName, article) {
       console.log(`Translation Error: Embed color property error for ${rssName}: Out of range color. Substituting in as '100'.`)
       embed.setColor(100)
     } else embed.setColor(parseInt(embedSpecs.color, 10))
-  }
+  } else if (typeof embedSpecs.color === 'string' && embedSpecs.color.startsWith('#') && embedSpecs.color.length === 7) embed.setColor(embedSpecs.color)
 
   if (typeof embedSpecs.authorTitle === 'string') embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle))
 
