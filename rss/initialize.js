@@ -54,13 +54,16 @@ exports.addToDb = function (con, articleList, rssName, callback, customTitle) {
 exports.addNewFeed = function (con, link, channel, cookies, callback, customTitle) {
   const feedparser = new FeedParser()
   const articleList = []
+  let errored = false // Sometimes feedparser emits error twice
 
   requestStream(link, cookies, feedparser, function (err) {
     if (err) return callback({type: 'request', content: err})
   })
 
   feedparser.on('error', function (err) {
-    if (err) {
+    if (err && errored === false) {
+      errored = true
+      console.log('emitted')
       feedparser.removeAllListeners('end')
       return callback({type: 'feedparser', content: err})
     }

@@ -144,7 +144,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   this.titleImgs = rawTitleImgs
 
   // Date
-  if (guildRss && rawArticle.pubdate) {
+  if (rawArticle.pubdate) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
     const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
