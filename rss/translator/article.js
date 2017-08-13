@@ -54,7 +54,9 @@ function regexReplace (string, regexSearchQuery, replacementData, flags) {
   }
 }
 
-module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
+module.exports = function Article (rawArticle, guildRss, rssName) {
+  const rssList = guildRss.sources
+
   function evalRegexConfig (text, placeholder) {
     const source = rssList[rssName]
     const customPlaceholders = {}
@@ -82,7 +84,6 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
       }
 
     } else return null
-
     return customPlaceholders
   }
 
@@ -143,12 +144,12 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
   this.titleImgs = rawTitleImgs
 
   // Date
-  if (guildRss) { // guildRss may be undefined from web requests to "simulate" filters that only need to pass in modified rssLists
+  if (guildRss && rawArticle.pubdate) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
     const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
     const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
-    this.pubdate = (vanityDate !== 'Invalid date') ? vanityDate : ''
+    this.date = (vanityDate !== 'Invalid date') ? vanityDate : ''
   }
 
   // Description
@@ -275,7 +276,7 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
 
   // replace simple keywords
   this.convertKeywords = function (word) {
-    let content = word.replace(/{date}/g, this.pubdate)
+    let content = word.replace(/{date}/g, this.date)
             .replace(/{title}/g, this.title)
             .replace(/{author}/g, this.author)
             .replace(/{summary}/g, this.summary)
@@ -288,7 +289,9 @@ module.exports = function Article (rawArticle, guildRss, rssList, rssName) {
       for (var customName in regexPlaceholders[placeholder]) {
         const replacementQuery = new RegExp(`{${placeholder}:${escapeRegExp(customName)}}`, 'g')
         const replacementContent = regexPlaceholders[placeholder][customName]
+        console.log(replacementContent)
         content = content.replace(replacementQuery, replacementContent)
+        console.log(content)
       }
     }
 

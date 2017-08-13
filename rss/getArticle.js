@@ -7,9 +7,10 @@ const currentGuilds = storage.currentGuilds
 const failedLinks = storage.failedLinks
 const passesFilters = require('./translator/translate.js')
 
-module.exports = function (guildRss, rssList, rssName, passFiltersOnly, callback) {
-  if (typeof failedLinks[rssList[rssName].link] === 'string') return callback({type: 'failedLink', content: 'Reached fail limit', feed: rssList[rssName]})
+module.exports = function (guildRss, rssName, passFiltersOnly, callback) {
+  const rssList = guildRss.sources
 
+  if (typeof failedLinks[rssList[rssName].link] === 'string') return callback({type: 'failedLink', content: 'Reached fail limit', feed: rssList[rssName]})
   const feedparser = new FeedParser()
   const currentFeed = []
   const cookies = (rssList[rssName].advanced && rssList[rssName].advanced.cookies) ? rssList[rssName].advanced.cookies : undefined
@@ -49,7 +50,7 @@ module.exports = function (guildRss, rssList, rssName, passFiltersOnly, callback
         if (passFiltersOnly) {
           const filteredCurrentFeed = []
 
-          for (var i in currentFeed) if (passesFilters(guildRss, rssList, rssName, currentFeed[i], false)) filteredCurrentFeed.push(currentFeed[i]) // returns null if no article is sent from passesFilters
+          for (var i in currentFeed) if (passesFilters(guildRss, rssName, currentFeed[i], false)) filteredCurrentFeed.push(currentFeed[i]) // returns null if no article is sent from passesFilters
 
           if (filteredCurrentFeed.length === 0) callback({type: 'feed', content: 'No articles that pass current filters.', feed: rssList[rssName]})
           else {

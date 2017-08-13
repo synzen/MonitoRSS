@@ -8,11 +8,10 @@ module.exports = function (bot, message, command) {
 
   chooseFeed(bot, message, command, function (rssName, msgHandler) {
     const guildRss = currentGuilds.get(message.guild.id)
-    const rssList = guildRss.sources
 
     message.channel.send(`Grabbing a random feed article...`)
     .then(function (grabMsg) {
-      getRandomArticle(guildRss, rssList, rssName, false, function (err, article) {
+      getRandomArticle(guildRss, rssName, false, function (err, article) {
         if (err) {
           let channelErrMsg = ''
           switch (err.type) {

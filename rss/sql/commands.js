@@ -20,8 +20,9 @@ exports.cleanTable = function (con, table, articleArray) {
     qMarks += (i === '0') ? '? ' : ', ?'
   }
   // Delete articles that are not in current article list, and past X days of of original insertion
+  const maxDaysAge = config.feedManagement.maxEntryAge ? config.feedManagement.maxEntryAge : defaultConfigs.feedManagement.maxEntryAge.default
+
   if (sqlType === 'mysql') {
-    const maxDaysAge = config.feedManagement.maxEntryAge ? config.feedManagement.maxEntryAge : defaultConfigs.feedManagement.maxEntryAge.default
     con.query(`delete from \`${table}\` where ID not in (${qMarks}) and DATE not between date_sub(now(), interval ${maxDaysAge} day) and now()`, articleArray, function (err, matches) {
       if (err) console.log('Datebase Cleaning ' + err)
     })

@@ -10,14 +10,15 @@ function isNotEmpty (obj) {
   }
 }
 
-module.exports = function (guildRss, rssList, rssName, rawArticle, isTestMessage, returnObject) {
+module.exports = function (guildRss, rssName, rawArticle, isTestMessage, returnObject) {
+  const rssList = guildRss.sources
+  
   // Just in case. If this happens, please report.
   if (!rssList[rssName]) { console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildRss ? guildRss.id : undefined}\nrssName: ${rssName}\nrssList:`, rssList); return null }
-
-  const article = new Article(rawArticle, guildRss, rssList, rssName)
+  const article = new Article(rawArticle, guildRss, rssName)
   article.subscriptions = getSubs(rssList, rssName, article)
 
-  if (returnObject) return article
+  // if (returnObject) return article
 
   // Filter message
   let filterExists = false
@@ -27,7 +28,12 @@ module.exports = function (guildRss, rssList, rssName, rawArticle, isTestMessage
     }
   }
 
-  const filterResults = filterExists ? filterFeed(rssList, rssName, article, isTestMessage) : false
+  const filterResults = filterExists ? filterFeed(rssList, rssName, article, isTestMessage) : isTestMessage ? {passedFilters: true} : false
+
+  if (returnObject) {
+    article.filterResults = filterResults
+    return article
+  }
 
   if (!isTestMessage && filterExists && !filterResults) return null // Feed article delivery only passes through if the filter found the specified content
 
@@ -77,7 +83,7 @@ module.exports = function (guildRss, rssList, rssName, rawArticle, isTestMessage
       testDetails += `\n\n[Description]: {description}\n${testDescrip}`
     }
 
-    if (article.pubdate) testDetails += `\n\n[Published Date]: {date}\n${article.pubdate}`
+    if (article.date) testDetails += `\n\n[Published Date]: {date}\n${article.date}`
     if (article.author) testDetails += `\n\n[Author]: {author}\n${article.author}`
     if (article.link) testDetails += `\n\n[Link]: {link}\n${article.link}`
     if (article.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${article.subscriptions.split(' ').length - 1} subscriber(s)`
@@ -85,7 +91,7 @@ module.exports = function (guildRss, rssList, rssName, rawArticle, isTestMessage
     let placeholderImgs = article.listPlaceholderImages()
     if (placeholderImgs) testDetails += `\n\n${placeholderImgs}`
     if (article.tags) testDetails += `\n\n[Tags]: {tags}\n${article.tags}`
-    if (filterExists) testDetails += `\n\n[Passed Filters?]: ${filterResults.passedFilters ? 'Yes' : 'No'}${filterResults.filterMatches}`
+    if (filterExists) testDetails += `\n\n[Passed Filters?]: ${filterResults.passedFilters ? 'Yes' : 'No'}${filterResults.passedFilters ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
     testDetails += '```' + footer
 
     finalMessageCombo.testDetails = testDetails

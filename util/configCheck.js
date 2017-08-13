@@ -1,4 +1,5 @@
 // Check for invalid configs on startup and at the beginning of each feed retrieval cycle
+const moment = require('moment-timezone')
 
 exports.checkExists = function (rssName, feed, logging, initializing) {
   let valid = true
@@ -99,6 +100,7 @@ exports.checkMasterConfig = function (masterConfig) {
       if (configValue.type !== typeof userConfig) checkIfRequired(configCategory, configName, `Expected ${configValue.type}, found ${typeof userConfig}`)
       else {
         if (typeof userConfig === 'number' && userConfig < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
+        else if (configName === 'timezone' && !moment.tz.zone(userConfig)) checkIfRequired(configCategory, configName, 'Invalid timezone')
         else if (configName === 'menuColor' && userConfig > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
         else if (configName === 'sqlType' && (userConfig !== 'sqlite3' && userConfig !== 'mysql')) checkIfRequired(configCategory, configName, 'Must be either "mysql" or "sqlite3"')
         else if (configName === 'processorMethod' && userConfig !== 'single' && userConfig !== 'isolated' && userConfig !== 'parallel') checkIfRequired(configCategory, configName, 'Must be either "single", "isolated", or "parallel"')
