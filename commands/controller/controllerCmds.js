@@ -134,7 +134,8 @@ exports.setgame = function (bot, message) {
   content.shift()
   let game = content.join(' ')
   if (game === 'null') game = null
-  bot.user.setGame(game)
+  //bot.user.setGame(game)
+  bot.user.setPresence({ game: { name: game, type: 0 } })
   config.botSettings.defaultGame = game // Make sure the change is saved even after a login retry
 }
 

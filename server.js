@@ -44,7 +44,8 @@ function login (firstStartup) {
 
   bot.once('ready', function () {
     loginAttempts = 0
-    bot.user.setGame((config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null)
+    //bot.user.setGame((config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null)
+    bot.user.setPresence({ game: { name: (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null, type: 0 } })
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS has logged in, processing set to ${config.advanced.processorMethod}.`)
     if (firstStartup) initialize(bot, finishInit)
     else scheduleManager = new ScheduleManager(bot)
