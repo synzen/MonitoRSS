@@ -32,7 +32,7 @@ function findFilterWords (filterType, content, isTestMessage) {
             results.push({passed: true, inverted: invertedFilter})
           } else results.push({passed: false, inverted: invertedFilter})
         } else { // Specific filters, for phrases/words with spaces around them
-          searchTerm = (searchTerm.startsWith('\\~')) ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('\!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
+          searchTerm = (searchTerm.startsWith('\\~')) ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
           let expression = new RegExp(`(\\s|^)${escapeRegExp(searchTerm)}(\\s|$)`, 'gi')
           if (content.search(expression) !== -1) {
             if (isTestMessage && !invertedFilter) matches.push(filterType[word])
@@ -60,7 +60,7 @@ function findFilterWords (filterType, content, isTestMessage) {
               results.push({passed: true, inverted: invertedFilter})
             } else results.push({passed: false, inverted: invertedFilter})
           } else { // Specific filters, for phrases/words with spaces around them
-            searchTerm = (searchTerm.startsWith('\\~')) ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('\!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
+            searchTerm = (searchTerm.startsWith('\\~')) ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
             let expression = new RegExp(`(\\s|^)${escapeRegExp(searchTerm)}(\\s|$)`, 'gi')
             if (content[item].search(expression) !== -1) {
               if (isTestMessage && !invertedFilter) matches.push(filterType[w])
@@ -79,20 +79,19 @@ function findFilterWords (filterType, content, isTestMessage) {
       matches: matches.length > 0 ? matches : null,
       invertedMatches: invertedMatches.length > 0 ? invertedMatches : null
     }
-  }
-  else return {resultsList: results}
+  } else return {resultsList: results}
 }
 
-function FilterResults() {
+function FilterResults () {
   this.matches = {}
   this.invertedMatches = {}
 
-  this.add = function(type, matches, inverted) {
+  this.add = function (type, matches, inverted) {
     if (inverted) this.invertedMatches[type] = matches
     else this.matches[type] = matches
   }
 
-  this.listMatches = function(inverted) {
+  this.listMatches = function (inverted) {
     const matchList = inverted ? this.invertedMatches : this.matches
     let str = ''
     for (var type in matchList) {
@@ -106,7 +105,6 @@ function FilterResults() {
     }
     return str
   }
-
 }
 
 module.exports = function (rssList, rssName, article, isTestMessage) {
@@ -140,8 +138,6 @@ module.exports = function (rssList, rssName, article, isTestMessage) {
   }
   let regularFiltersHasTrueInstance = false // Used for OR operation between regularFilters
 
-  let filterMatches = ''
-  let invertedFilterMatches = ''
   const filterResults = new FilterResults()
   for (var type in filterTypes) {
     const allResults = findFilterWords(filterTypes[type].user, filterTypes[type].ref, isTestMessage)

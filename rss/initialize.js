@@ -95,7 +95,7 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
     })
 
     function addToConfig () {
-      let metaTitle = customTitle ? customTitle : (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
+      let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
 
       if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
       else if (articleList[0] && articleList[0].meta.link && articleList[0].meta.link.includes('reddit')) metaTitle = `Reddit - ${articleList[0].meta.title}`

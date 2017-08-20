@@ -12,7 +12,7 @@ function isNotEmpty (obj) {
 
 module.exports = function (guildRss, rssName, rawArticle, isTestMessage, returnObject) {
   const rssList = guildRss.sources
-  
+
   // Just in case. If this happens, please report.
   if (!rssList[rssName]) { console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildRss ? guildRss.id : undefined}\nrssName: ${rssName}\nrssList:`, rssList); return null }
   const article = new Article(rawArticle, guildRss, rssName)

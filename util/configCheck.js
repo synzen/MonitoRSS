@@ -95,7 +95,7 @@ exports.checkMasterConfig = function (masterConfig) {
   for (var configCategory in exports.defaultConfigs) {
     for (var configName in exports.defaultConfigs[configCategory]) {
       const configValue = exports.defaultConfigs[configCategory][configName]
-      const userConfig =  masterConfig[configCategory][configName]
+      const userConfig = masterConfig[configCategory][configName]
 
       if (configValue.type !== typeof userConfig) checkIfRequired(configCategory, configName, `Expected ${configValue.type}, found ${typeof userConfig}`)
       else {

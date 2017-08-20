@@ -3,7 +3,6 @@ const requestStream = require('./request.js')
 const sqlConnect = require('./sql/connect.js')
 const sqlCmds = require('./sql/commands.js')
 const storage = require('../util/storage.js')
-const currentGuilds = storage.currentGuilds
 const failedLinks = storage.failedLinks
 const passesFilters = require('./translator/translate.js')
 

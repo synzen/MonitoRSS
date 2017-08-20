@@ -297,7 +297,7 @@ module.exports = function (bot, callback, schedule) {
     if (bot.shard && bot.shard.count > 1) bot.shard.send({type: 'scheduleComplete', refreshTime: refreshTime})
   }
 
-  if (!bot.shard || bot.shard && bot.shard.count === 1) timer = setInterval(connect, refreshTime * 60000) // Only create an interval for itself if there is no sharding
+  if (!bot.shard || (bot.shard && bot.shard.count === 1)) timer = setInterval(connect, refreshTime * 60000) // Only create an interval for itself if there is no sharding
 
   if (timer) console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Schedule '${schedule.name}' has begun.`)
 

@@ -27,7 +27,7 @@ function isValidImg (input) {
     if (!isNaN(imgNum) && imgNum > 0) return true
     else return false
   } else if (input.startsWith('{')) { // For {placeholder:imageX}
-    const reg1 = new RegExp('^.*', 'gi');
+    const reg1 = new RegExp('^.*', 'gi')
     const reg2 = new RegExp('{(description|image|title):image[1-5]}', 'gi')
     if (JSON.stringify(input.match(reg2)) === JSON.stringify(input.match(reg1))) return true
     else return false

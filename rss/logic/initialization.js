@@ -48,8 +48,7 @@ module.exports = function (con, rssList, articleList, link, callback) {
             if (articleList[x].pubdate >= cutoffDay) checkTable(articleList[x], getArticleId(articleList, articleList[x]))
             else if (articleList[x].pubdate < cutoffDay) {
               checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)
-            }
-            else if (articleList[x].pubdate.toString() === 'Invalid Date') {
+            } else if (articleList[x].pubdate.toString() === 'Invalid Date') {
               let checkDate = false
               const globalSetting = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
               checkDate = globalSetting

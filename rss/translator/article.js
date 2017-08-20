@@ -1,7 +1,5 @@
 const config = require('../../config.json')
 const moment = require('moment-timezone')
-const cleanEntities = require('entities')
-const currentGuilds = require('../../util/storage.js').currentGuilds
 const htmlConvert = require('html-to-text')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 
@@ -62,7 +60,6 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     const customPlaceholders = {}
 
     if (typeof source.regexOps === 'object' && source.regexOps.disabled !== true && Array.isArray(source.regexOps[placeholder])) { // Eval regex if specified
-
       if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
         for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
           if (source.regexOps.disabled[y] === placeholder) return null // text
@@ -82,7 +79,6 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
           if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for feed ${source.link}:\n`, modified)
         } else customPlaceholders[regexOp.name] = modified // newText = modified
       }
-
     } else return null
     return customPlaceholders
   }
@@ -120,13 +116,13 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
           return image
         },
         heading: function (node, fn, options) {
-          let h = fn(node.children, options);
-          return h;
+          let h = fn(node.children, options)
+          return h
         }
       }
     })
 
-    text = text.replace(/\n\s*\n\s*\n/g, '\n\n'); // Replace triple line breaks with double
+    text = text.replace(/\n\s*\n\s*\n/g, '\n\n') // Replace triple line breaks with double
     return text
   }
 
@@ -137,7 +133,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author) : ''
   this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
 
-  // TITLE
+  // Title
   const rawTitleImgs = []
   this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title, rawTitleImgs)
   this.title = this.title.length > 150 ? this.title.slice(0, 150) + ' [...]' : this.title
@@ -165,13 +161,6 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   }
 
   this.description = rawArticleDescrip
-
-  let descripImgList = ''
-  if (rawDescripImgs.length > 0) {
-    for (var j in rawDescripImgs) {
-      descripImgList += `\n${parseInt(j, 10) + 1}) ${rawDescripImgs[j]}`
-    }
-  }
   this.descriptionImgs = rawDescripImgs
 
   // Summary
@@ -255,8 +244,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
         }
       }
       for (var imgKeyword in imgDictionary) content = content.replace(new RegExp(imgKeyword, 'g'), imgDictionary[imgKeyword])
-    }
-    else if (phImageLocs) {
+    } else if (phImageLocs) {
       for (var h in phImageLocs) {
         content = this.resolvePlaceholderImg(phImageLocs[h]) ? content.replace(phImageLocs[h], this.resolvePlaceholderImg(phImageLocs[h])) : content.replace(phImageLocs[h], '')
       }
@@ -289,9 +277,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
       for (var customName in regexPlaceholders[placeholder]) {
         const replacementQuery = new RegExp(`{${placeholder}:${escapeRegExp(customName)}}`, 'g')
         const replacementContent = regexPlaceholders[placeholder][customName]
-        console.log(replacementContent)
         content = content.replace(replacementQuery, replacementContent)
-        console.log(content)
       }
     }
 

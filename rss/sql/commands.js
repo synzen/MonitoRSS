@@ -26,9 +26,11 @@ exports.cleanTable = function (con, table, articleArray) {
     con.query(`delete from \`${table}\` where ID not in (${qMarks}) and DATE not between date_sub(now(), interval ${maxDaysAge} day) and now()`, articleArray, function (err, matches) {
       if (err) console.log('Datebase Cleaning ' + err)
     })
-  } else con.run(`delete from "${table}" where ID not in (${qMarks}) and DATE not between date('now', '-${maxDaysAge} day') and date('now')`, articleArray, function(err) {
+  } else {
+    con.run(`delete from "${table}" where ID not in (${qMarks}) and DATE not between date('now', '-${maxDaysAge} day') and date('now')`, articleArray, function (err) {
       if (err) console.log('Database Cleaning ' + err)
-  })
+    })
+  }
 }
 
 exports.selectId = function (con, table, articleId, callback) {
