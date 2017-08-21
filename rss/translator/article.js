@@ -103,8 +103,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
           const globalExistOption = config.feedSettings.imageLinksExistence != null ? config.feedSettings.imageLinksExistence : defaultConfigs.feedSettings.imageLinksExistence.default // Always a boolean via startup checks
           exist = globalExistOption
           const specificExistOption = rssList[rssName].imageLinksExistence
-          exist = !specificExistOption ? exist : typeof specificExistOption !== 'boolean' ? exist : specificExistOption
-
+          exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
           if (!exist) return ''
 
           let image = ''

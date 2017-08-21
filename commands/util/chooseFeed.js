@@ -34,7 +34,7 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
     let o = {link: rssList[rssName].link, rssName: rssName, title: rssList[rssName].title}
     if (commandList[command].action === 'Refresh Feed') o.status = getFeedStatus(rssList[rssName].link, failLimit)
     if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates') {
-      const statusText = miscOption === 'imagePreviews' ? 'Image Link Previews: ' : miscOption === 'ImageLinksExistence' ? 'Image Links Existence: ' : miscOption === 'checkTitles' ? 'Title Checks: ' : 'Date Checks: '
+      const statusText = miscOption === 'imagePreviews' ? 'Image Link Previews: ' : miscOption === 'imageLinksExistence' ? 'Image Links Existence: ' : miscOption === 'checkTitles' ? 'Title Checks: ' : 'Date Checks: '
       let decision = ''
 
       const globalSetting = config.feedSettings[miscOption]
