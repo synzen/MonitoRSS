@@ -59,7 +59,6 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
   requestStream(link, cookies, feedparser, function (err) {
     if (err && errored === false) {
       errored = true
-      console.log('trigg')
       return callback({type: 'request', content: err})
     }
   })
@@ -68,7 +67,6 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
     feedparser.removeAllListeners('end')
     if (err && errored === false) {
       errored = true
-      console.log('trigger')
       return callback({type: 'feedparser', content: err})
     }
   })
@@ -92,7 +90,7 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
 
     // MySQL table names have a limit of 64 char
     if (rssName.length >= 64) rssName = rssName.substr(0, 64)
-    rssName = rssName.replace(/-|\?/g, '') // Remove question marks to prevent sql from auto-escaping
+    rssName = rssName.replace(/-|\?/g, '').replace(/\./g, '') // Remove question marks to prevent sql from auto-escaping, along with periods
 
     exports.addToDb(con, articleList, rssName, function (err) {
       if (err) return callback(err)

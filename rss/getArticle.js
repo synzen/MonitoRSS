@@ -40,7 +40,7 @@ module.exports = function (guildRss, rssName, passFiltersOnly, callback) {
       sqlCmds.selectTable(con, rssName, function (err, results) {
         if (err || results.size() === 0) {
           if (err) callback({type: 'database', content: err, feed: rssList[rssName]})
-          if (results.size() === 0) callback(true, {type: 'deleted', content: `Nonexistent in database`, feed: rssList[rssName]})
+          if (results.size() === 0) callback({type: 'deleted', content: `Nonexistent in database`, feed: rssList[rssName]})
           return sqlCmds.end(con, function (err) {
             if (err) throw err
           })

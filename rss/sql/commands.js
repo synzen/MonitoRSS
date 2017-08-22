@@ -3,14 +3,14 @@ const sqlType = config.feedManagement.sqlType.toLowerCase()
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 
 exports.selectTable = function (con, table, callback) {
-  if (sqlType === 'mysql') return con.query(`select table_name from information_schema.tables where table_schema="${config.feedManagement.databaseName}" and table_name="${table}"`, callback)
-  else return con.all(`select name from sqlite_master where type = 'table' and name = '${table}'`, callback)
+  if (sqlType === 'mysql') return con.query(`select table_name from information_schema.tables where table_schema="${config.feedManagement.databaseName}" and table_name=?`, [table], callback)
+  else return con.all(`select name from sqlite_master where type = 'table' and name = "${table}"`, callback)
 }
 
 exports.createTable = function (con, table, callback) {
   if (sqlType === 'mysql') {
-    con.query(`create table if not exists \`${table}\` (DATE date, ID text, TITLE text)`, callback)
-    return con.query(`alter table \`${table}\` convert to character set utf8 collate utf8_general_ci`)
+    con.query(`create table if not exists ?? (DATE date, ID text, TITLE text)`, table, callback)
+    return con.query(`alter table ?? convert to character set utf8 collate utf8_general_ci`, table)
   } else return con.run(`create table if not exists "${table}" (DATE text, ID text, TITLE text)`, callback)
 }
 
@@ -23,28 +23,28 @@ exports.cleanTable = function (con, table, articleArray) {
   const maxDaysAge = config.feedManagement.maxEntryAge ? config.feedManagement.maxEntryAge : defaultConfigs.feedManagement.maxEntryAge.default
 
   if (sqlType === 'mysql') {
-    con.query(`delete from \`${table}\` where ID not in (${qMarks}) and DATE not between date_sub(now(), interval ${maxDaysAge} day) and now()`, articleArray, function (err, matches) {
+    con.query(`delete from ?? where ID not in (${qMarks}) and DATE not between date_sub(now(), interval ${maxDaysAge} day) and now()`, [table].concat(articleArray), function (err, matches) {
       if (err) console.log('Datebase Cleaning ' + err)
     })
   } else {
-    con.run(`delete from "${table}" where ID not in (${qMarks}) and DATE not between date('now', '-${maxDaysAge} day') and date('now')`, articleArray, function (err) {
+    con.run(`delete from ?? where ID not in (${qMarks}) and DATE not between date('now', '-${maxDaysAge} day') and date('now')`, [table].concat(articleArray), function (err) {
       if (err) console.log('Database Cleaning ' + err)
     })
   }
 }
 
 exports.selectId = function (con, table, articleId, callback) {
-  if (sqlType === 'mysql') return con.query(`select ID from \`${table}\` where ID = ? limit 1`, [articleId], callback)
+  if (sqlType === 'mysql') return con.query(`select ID from ?? where ID = ? limit 1`, [table, articleId], callback)
   else return con.all(`select ID from "${table}" where ID = ? limit 1`, articleId, callback)
 }
 
 exports.selectTitle = function (con, table, articleTitle, callback) {
-  if (sqlType === 'mysql') return con.query(`select TITLE from \`${table}\` where TITLE = ? limit 1`, [articleTitle], callback)
+  if (sqlType === 'mysql') return con.query(`select TITLE from ?? where TITLE = ? limit 1`, [table, articleTitle], callback)
   else return con.all(`select TITLE from "${table}" where TITLE = ? limit 1`, articleTitle, callback)
 }
 
 exports.insert = function (con, table, articleInfo, callback) {
-  if (sqlType === 'mysql') return con.query(`insert ignore into \`${table}\` (DATE, ID, TITLE) values (curdate(), ?, ?)`, [articleInfo.id, articleInfo.title], callback)
+  if (sqlType === 'mysql') return con.query(`insert ignore into ?? (DATE, ID, TITLE) values (curdate(), ?, ?)`, [table, articleInfo.id, articleInfo.title], callback)
   else con.run(`insert into "${table}" (DATE, ID, TITLE) values (date('now'), ?, ?)`, [articleInfo.id, articleInfo.title], callback)
 }
 
@@ -68,7 +68,7 @@ exports.dropTable = function (db, table) {
       if (err) throw err
     })
 
-    con.query(`drop table if exists \`${table}\``, function (err) {
+    con.query(`drop table if exists ??`, [table], function (err) {
       if (err) console.log(err)
     })
 
