@@ -4,12 +4,32 @@ const fileOps = require('../util/fileOps.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const allowedFieldKeys = ['message', 'embedMessage'] // Where {date} must be found for rsstimezone to work
 
-function hasTimezone (object) {
-  for (var key in object) {
-    if (typeof object[key] === 'string' && allowedFieldKeys.includes(key) && object[key].search(/{date}/) !== -1) return true
-    else if (typeof object[key] === 'object' && hasTimezone(object[key])) return true
+// function hasTimezone (object, results) {
+//   for (var key in object) {
+//     if (typeof object[key] === 'string' && allowedFieldKeys.includes(key) && object[key].search(/{date}/) !== -1) results = true
+//     else if (typeof object[key] === 'object') {
+//       hasTimezone(object)
+//     }
+//   }
+// }
+
+// To avoid stack call exceeded
+function checkObjType (item, results) {
+  if (Object.prototype.toString.call(item) === '[object Object]') {
+    return function () {
+      return findDatePlaceholders(item, results)
+    }
+  } else if (typeof item === 'string' && item.search(/{date}/) !== -1) results.push(true)
+}
+
+// Used to find images in any object values of the article
+function findDatePlaceholders (obj, results) {
+  for (var key in obj) {
+    let value = checkObjType(obj[key], results)
+    while (typeof value === 'function') {
+      value = value()
+    }
   }
-  return false
 }
 
 module.exports = function (bot, message) {
@@ -21,7 +41,9 @@ module.exports = function (bot, message) {
 
   if (msgArray.length <= 1) return message.channel.send(`Setting your timezone is only useful if you intend on using customized messages with the \`{date}\` placeholder. To set your timezone, the syntax is \`${config.botSettings.prefix}rsstimezone your_timezone_here\`. To reset back to the default (${config.feedSettings.timezone}), type \`${config.botSettings.prefix}rsstimezone reset\`.\n\nSee <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`).catch(err => console.log(`Promise Warning: rssTimezone 3a: ${err}`))
 
-  if (!hasTimezone(guildRss.sources)) return message.channel.send('You cannot set your timezone if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Promise Warning: rssTimezone 3b: ${err}`))
+  let results = []
+  findDatePlaceholders(guildRss.sources, results)
+  if (results.length === 0) return message.channel.send('You cannot set your timezone if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Promise Warning: rssTimezone 3b: ${err}`))
 
   const timezone = msgArray[msgArray.length - 1]
 

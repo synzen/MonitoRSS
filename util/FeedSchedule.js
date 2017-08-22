@@ -23,6 +23,8 @@ module.exports = function (bot, callback, schedule) {
   let modBatchList = [] // Batch of sources with cookies
   let con // SQL connection
   let startTime // Tracks cycle times
+  let cycleFailCount = 0
+  let cycleTotalCount = 0
 
   this.inProgress = cycleInProgress
   this.cycle = new events.EventEmitter()
@@ -141,6 +143,8 @@ module.exports = function (bot, callback, schedule) {
     regBatchList = []
     modBatchList = []
     deletedFeeds = []
+    cycleFailCount = 0
+    cycleTotalCount = 0
 
     modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     sourceList.clear()
@@ -220,10 +224,14 @@ module.exports = function (bot, callback, schedule) {
 
     processor.on('message', function (linkCompletion) {
       if (linkCompletion.status === 'article') return cycle.emit('article', linkCompletion.article)
-      if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+      if (linkCompletion.status === 'failed') {
+        cycleFailCount++
+        if (failLimit !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+      }
       if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
       completedLinks++
+      cycleTotalCount++
       if (completedLinks === currentBatch.size) {
         processor.kill()
         processorList.splice(processorIndex, 1)
@@ -293,7 +301,7 @@ module.exports = function (bot, callback, schedule) {
     try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
 
     var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. Cycle Time: ${timeTaken}s`)
+    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s.`)
     if (bot.shard && bot.shard.count > 1) bot.shard.send({type: 'scheduleComplete', refreshTime: refreshTime})
   }
 

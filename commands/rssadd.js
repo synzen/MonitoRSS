@@ -139,7 +139,7 @@ module.exports = function (bot, message) {
             passedLinks[link] = cookies
           }
           sqlCmds.end(con, function (err) {
-            if (err) throw err
+            if (err) console.log(err)
           })
           if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
           else return finishLinkList(verifyMsg)

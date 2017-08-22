@@ -57,14 +57,18 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
   let errored = false // Sometimes feedparser emits error twice
 
   requestStream(link, cookies, feedparser, function (err) {
-    if (err) return callback({type: 'request', content: err})
+    if (err && errored === false) {
+      errored = true
+      console.log('trigg')
+      return callback({type: 'request', content: err})
+    }
   })
 
   feedparser.on('error', function (err) {
+    feedparser.removeAllListeners('end')
     if (err && errored === false) {
       errored = true
-      console.log('emitted')
-      feedparser.removeAllListeners('end')
+      console.log('trigger')
       return callback({type: 'feedparser', content: err})
     }
   })
@@ -77,9 +81,10 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
   })
 
   feedparser.on('end', function () {
+    if (errored) return
+
     const randomNum = Math.floor((Math.random() * 99999999999) + 1)
     let metaLink = ''
-
     if (articleList[0]) metaLink = (articleList[0].meta.link) ? articleList[0].meta.link : (articleList[0].meta.title) ? articleList[0].meta.title : `random_${Math.floor((Math.random() * 99999) + 1)}`
     else metaLink = `random_${Math.floor((Math.random() * 99999) + 1)}`
 
