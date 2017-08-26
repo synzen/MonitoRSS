@@ -27,7 +27,7 @@ exports.cleanTable = function (con, table, articleArray) {
       if (err) console.log('Datebase Cleaning ' + err)
     })
   } else {
-    con.run(`delete from ?? where ID not in (${qMarks}) and DATE not between date('now', '-${maxDaysAge} day') and date('now')`, [table].concat(articleArray), function (err) {
+    con.run(`delete from "${table}" where ID not in (${qMarks}) and DATE not between date('now', '-${maxDaysAge} day') and date('now')`, function (err) {
       if (err) console.log('Database Cleaning ' + err)
     })
   }

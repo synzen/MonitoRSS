@@ -129,13 +129,14 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     return text
   }
 
-  this.rawDescrip = cleanRandoms(rawArticle.description)
+  this.rawDescrip = rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#'] ? cleanRandoms(rawArticle['media:group']['media:description']['#']) : cleanRandoms(rawArticle.description) // Account for youtube's description
   this.rawSummary = cleanRandoms(rawArticle.summary)
   this.meta = rawArticle.meta
   this.guid = rawArticle.guid
   this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author) : ''
   this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
-
+  if (this.meta.link && this.meta.link.includes('www.reddit.com') && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
+  
   // Title
   const rawTitleImgs = []
   this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title, rawTitleImgs)

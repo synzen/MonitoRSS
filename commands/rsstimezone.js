@@ -4,15 +4,6 @@ const fileOps = require('../util/fileOps.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const allowedFieldKeys = ['message', 'embedMessage'] // Where {date} must be found for rsstimezone to work
 
-// function hasTimezone (object, results) {
-//   for (var key in object) {
-//     if (typeof object[key] === 'string' && allowedFieldKeys.includes(key) && object[key].search(/{date}/) !== -1) results = true
-//     else if (typeof object[key] === 'object') {
-//       hasTimezone(object)
-//     }
-//   }
-// }
-
 // To avoid stack call exceeded
 function checkObjType (item, results) {
   if (Object.prototype.toString.call(item) === '[object Object]') {
@@ -50,9 +41,8 @@ module.exports = function (bot, message) {
   if (timezone !== 'reset' && !moment.tz.zone(timezone)) return message.channel.send(`\`${timezone}\` is not a valid timezone. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for more information. Valid timezones are in the \`TZ\` column.`).catch(err => console.log(`Promise Warning: rssTimezone 4: ${err}`))
   else if (timezone === 'reset' && !guildRss.timezone) return message.channel.send(`Your timezone is already at default.`).catch(err => console.log(`Promise Warning: rssTimezone 5: ${err}`))
   else if (timezone === guildRss.timezone) return message.channel.send(`Your timezone is already set as \`${guildRss.timezone}\`.`).catch(err => console.log(`Promise Warning: rssTimezone 6: ${err}`))
-  else if (timezone === config.feedSettings.timezone) return message.channel.send(`${timezone} is already the default timezone.`).catch(err => console.log(`Promise Warning: rssTimezone 7: ${err}`))
 
-  if (timezone === 'reset') {
+  if (timezone === 'reset' || timezone === config.feedSettings.timezone) {
     delete guildRss.timezone
     message.channel.send(`Timezone has been reset to the default: \`${config.feedSettings.timezone}\`.`).catch(err => console.log(`Promise Warning: rssTimezone 8: ${err}`))
     console.log(`RSS Timezone: (${message.guild.id}, ${message.guild.name}) => Timezone reset from '${oldTimezone}' to '${config.feedSettings.timezone}.'`)

@@ -5,16 +5,14 @@ function escapeRegExp (str) {
 
 function findFilterWords (filterType, content, isTestMessage) {
   // filterType is array of title, description, summary, or author
-  if (!content) return {passed: false, inverted: false}
   if (isTestMessage) {
     var matches = []
     var invertedMatches = []
   }
   const results = []
 
-  if (typeof filterType === 'object' && filterType.length && filterType.length !== 0) {
-    // For title, descriptions, summary, and author
-    if (typeof content === 'string') {
+  if (Array.isArray(filterType) && filterType.length > 0) {
+    if (typeof content === 'string') { // For title, descriptions, summary, and author
       content = content.toLowerCase()
       for (var word in filterType) {
         let invertedFilter = false // Inverted results = NOT filters found
@@ -38,7 +36,9 @@ function findFilterWords (filterType, content, isTestMessage) {
             if (isTestMessage && !invertedFilter) matches.push(filterType[word])
             else if (isTestMessage && invertedFilter) invertedMatches.push(filterType[word])
             results.push({passed: true, inverted: invertedFilter})
-          } else results.push({passed: false, inverted: invertedFilter})
+          } else {
+            results.push({passed: false, inverted: invertedFilter})
+          }
         }
       }
     } else if (typeof content === 'object') { // For tags
@@ -131,39 +131,44 @@ module.exports = function (rssList, rssName, article, isTestMessage) {
     }
   }
 
-  // Inverted and regular filters are ultimately calculated together with AND
-  const passed = {
-    invertedFilters: true, // If an inverted filter is found, invertedFilters is set to false for the AND operation
-    regularFilters: true // If a regular filter is not found, regularFilters is set to true
+  const passed = {   // Inverted and regular filters are ultimately calculated together with AND
+    invertedFilters: false,
+    regularFilters: false
   }
-  let regularFiltersHasTrueInstance = false // Used for OR operation between regularFilters
+  let regularFiltersExists = false
+  let invertedFiltersExists = false
+  let userDefinedFiltersExists = false
 
   const filterResults = new FilterResults()
   for (var type in filterTypes) {
+    if (filterTypes[type].user && filterTypes[type].user.length > 0) userDefinedFiltersExists = true
     const allResults = findFilterWords(filterTypes[type].user, filterTypes[type].ref, isTestMessage)
     // Get match words for test messages
     if (isTestMessage && allResults.matches) filterResults.add(type, allResults.matches, false)
     if (isTestMessage && allResults.invertedMatches) filterResults.add(type, allResults.invertedMatches, true)
 
-    // Decide whether it passes for each filter
+    // Decide whether it passes for each filter, iterating through each search word's results
     for (var i in allResults.resultsList) {
       const results = allResults.resultsList[i]
       if (results.length === 0) continue
 
-      // AND operation saved for future reference
-      // if (results.inverted && results.passed === true) passed.invertedFilters = false
-      // else if (!results.inverted && results.passed === false) passed.regularFilters = false
-
-      // OR operation
-      if (results.inverted && results.passed === true) passed.invertedFilters = false // Maintain the first line from the AND operation between NOT nad non-NOT
-      else if (!results.inverted) {
-        if (results.passed === false) passed.regularFilters = false // Only account for false since the default is true
-        else if (results.passed === true) regularFiltersHasTrueInstance = true
+      if (results.inverted) {
+        invertedFiltersExists = true
+        if (results.passed === false) passed.invertedFilters = true
+      } else if (!results.inverted) {
+        regularFiltersExists = true
+        if (results.passed === true) passed.regularFilters = true
       }
     }
   }
 
-  if (regularFiltersHasTrueInstance) passed.regularFilters = true
+  if (!userDefinedFiltersExists || (!invertedFiltersExists && !regularFiltersExists)) {
+    passed.invertedFilters = true
+    passed.regularFilters = true
+  } else if (userDefinedFiltersExists) {
+    if (!invertedFiltersExists && regularFiltersExists) passed.invertedFilters = true
+    else if (!regularFiltersExists && invertedFiltersExists) passed.regularFilters = true
+  }
 
   filterResults.passedFilters = passed.invertedFilters && passed.regularFilters
   if (isTestMessage) return filterResults
