@@ -64,7 +64,7 @@ module.exports = function (guildRss, rssName, passFiltersOnly, callback) {
             if (!feedLinkList.includes(currentFeed[x].link)) feedLinkList.push(currentFeed[x].link)
             if (!rawArticleList[currentFeed[x].link]) rawArticleList[currentFeed[x].link] = currentFeed[x]
           }
-          callback(false, currentFeed[randFeedIndex], feedLinkList, rawArticleList)
+          callback(null, currentFeed[randFeedIndex], feedLinkList, rawArticleList)
         }
 
         return sqlCmds.end(con, function (err) {

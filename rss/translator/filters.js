@@ -132,7 +132,7 @@ module.exports = function (rssList, rssName, article, isTestMessage) {
   }
 
   const passed = {   // Inverted and regular filters are ultimately calculated together with AND
-    invertedFilters: false,
+    invertedFilters: true,
     regularFilters: false
   }
   let regularFiltersExists = false
@@ -154,7 +154,7 @@ module.exports = function (rssList, rssName, article, isTestMessage) {
 
       if (results.inverted) {
         invertedFiltersExists = true
-        if (results.passed === false) passed.invertedFilters = true
+        if (results.passed === true) passed.invertedFilters = false
       } else if (!results.inverted) {
         regularFiltersExists = true
         if (results.passed === true) passed.regularFilters = true

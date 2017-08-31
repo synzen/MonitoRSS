@@ -92,6 +92,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
             .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
 
     text = htmlConvert.fromString(text, {
+      wordwrap: null,
       ignoreHref: true,
       noLinkBrackets: true,
       format: {
@@ -136,7 +137,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author) : ''
   this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
   if (this.meta.link && this.meta.link.includes('www.reddit.com') && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
-  
+
   // Title
   const rawTitleImgs = []
   this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title, rawTitleImgs)

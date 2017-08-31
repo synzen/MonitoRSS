@@ -2,9 +2,9 @@ const needle = require('needle')
 const cloudscraper = require('cloudscraper') // For cloudflare
 
 module.exports = function (link, cookies, feedparser, callback) {
-  var options = {
-    timeout: 10000,
-    read_timeout: 8000,
+  const options = {
+    timeout: 30000,
+    read_timeout: 27000,
     follow_max: 5,
     follow_set_cookies: true,
     rejectUnauthorized: true
@@ -17,11 +17,12 @@ module.exports = function (link, cookies, feedparser, callback) {
 
     request.on('header', function (statusCode, headers) {
       if (statusCode === 200) {
+        callback(null)
         if (feedparser) request.pipe(feedparser)
-        else callback(false)
       } else if (headers.server && headers.server.includes('cloudflare')) {
         cloudscraper.get(link, function (err, res, body) { // For cloudflare
           if (err || res.statusCode !== 200) return callback(err || new Error(`Bad status code (${res.statusCode})` + `${cookies ? ' (Cookies found)' : ''}`))
+          callback(null)
           if (!feedparser) return
           let Readable = require('stream').Readable
           let feedStream = new Readable()

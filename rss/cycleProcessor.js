@@ -24,8 +24,17 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
   const articleList = []
 
   const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
+  let requested = false
+
+  setTimeout(function() {
+    if (!requested) try {
+      process.send({status: 'failed', link: link, rssList: rssList})
+      console.log(`RSS Error: Unable to complete request for link ${link} during cycle, forcing status update to parent process`)
+    } catch(e) {}
+  }, 90000)
 
   requestStream(link, cookies, feedparser, function (err) {
+    requested = true
     if (!err) return
     logLinkErr({link: link, content: err})
     process.send({status: 'failed', link: link, rssList: rssList})

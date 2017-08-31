@@ -28,8 +28,17 @@ function init (link, rssList, uniqueSettings) {
   const articleList = []
 
   var cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
+  let requested = false
+
+  setTimeout(function() {
+    if (!requested) try {
+      process.send({status: 'failed', link: link, rssList: rssList})
+      console.log(`RSS Error! Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
+    } catch(e) {}
+  }, 180000)
 
   requestStream(link, cookies, feedparser, function (err) {
+    requested = true
     if (err) {
       console.log(`INIT Error: Skipping ${link}. (${err})`)
       return process.send({status: 'failed', link: link, rssList: rssList})
