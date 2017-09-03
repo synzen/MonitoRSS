@@ -6,8 +6,6 @@ const configCheck = require('./util/configCheck.js')
 const ScheduleManager = require('./util/ScheduleManager.js')
 if (config.logging.logDates === true) require('./util/logDates.js')()
 
-if (Discord.version !== '11.1.0') throw new Error('Discord.js is not updated to 11.1.0, please update.')
-
 const results = configCheck.checkMasterConfig(config)
 if (results && results.fatal) throw new Error(results.message)
 else if (results) console.info(results.message)
