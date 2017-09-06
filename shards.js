@@ -18,17 +18,19 @@ const activeShardIds = []
 const refreshTimes = [config.feedSettings.refreshTimeMinutes ? config.feedSettings.refreshTimeMinutes : 15] // Store the refresh times for the setIntervals of the cycles for each shard
 const scheduleIntervals = [] // Array of intervals for each different refresh time
 const scheduleTracker = {} // Key is refresh time, value is index for activeShardIds
-let currentScheduleIndex = 0
-Manager.shards.forEach(function(val, key)  {
+
+Manager.shards.forEach(function (val, key) {
   activeShardIds.push(key)
 })
 let initShardIndex = 0
 
 Manager.broadcast({type: 'startInit', shardId: activeShardIds[0]}) // Send the signal for first shard to initialize
 
-fs.readdir('./settings/schedules', function(err, files) {
+fs.readdir('./settings/schedules', function (err, files) {
+  if (err) return console.log(err)
   for (var i in files) {
-    fs.readFile('./settings/schedules/' + files[i], function(err, data) {
+    fs.readFile('./settings/schedules/' + files[i], function (err, data) {
+      if (err) return console.log(err)
       let refreshTime = JSON.parse(data).refreshTimeMinutes
       refreshTimes.push(refreshTime)
     })
@@ -36,7 +38,6 @@ fs.readdir('./settings/schedules', function(err, files) {
 })
 
 Manager.on('message', function (shard, message) {
-
   if (message === 'kill') process.exit()
   if (message.type === 'missingGuild') {
     if (!missingGuilds[message.content]) missingGuilds[message.content] = 1
@@ -57,8 +58,7 @@ Manager.on('message', function (shard, message) {
           Manager.broadcast({type: 'runSchedule', shardId: activeShardIds[p], refreshTime: refreshTime})
         }, refreshTime * 60000))
       }
-    }
-    else if (initShardIndex < Manager.totalShards) Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
+    } else if (initShardIndex < Manager.totalShards) Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
   } else if (message.type === 'scheduleComplete') {
     scheduleTracker[message.refreshTime]++ // Index for activeShardIds
     if (scheduleTracker[message.refreshTime] !== Manager.totalShards) Manager.broadcast({shardId: activeShardIds[scheduleTracker[message.refreshTime]], type: 'runSchedule', refreshTime: message.refreshTime}) // Send signal for next shard to start cycle

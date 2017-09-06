@@ -26,7 +26,7 @@ let bot
 
 // Function to handle login/relogin automatically
 let loginAttempts = 0
-let maxAttempts = 2;
+let maxAttempts = 2
 
 bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
 
@@ -42,7 +42,7 @@ function login (firstStartup) {
 
   bot.once('ready', function () {
     loginAttempts = 0
-    bot.user.setGame((config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null)
+    bot.user.setPresence({ game: { name: (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null, type: 0 } })
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS has logged in, processing set to ${config.advanced.processorMethod}.`)
     if (firstStartup) initialize(bot, finishInit)
     else scheduleManager = new ScheduleManager(bot)
@@ -68,14 +68,15 @@ function login (firstStartup) {
 
 function finishInit () {
   scheduleManager = new ScheduleManager(bot)
+  try { require('./web/app.js')(bot) } catch (e) {}
   listeners.createManagers(bot)
 
   if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)
 }
 
-if (!bot.shard || bot.shard && bot.shard.count === 1) login(true)
+if (!bot.shard || (bot.shard && bot.shard.count === 1)) login(true)
 else {
-  process.on('message', function(message) {
+  process.on('message', function (message) {
     if (message.type === 'startInit' && bot.shard && bot.shard.id === message.shardId) {
       login(true)
     } else if (message.type === 'runSchedule' && bot.shard && bot.shard.id === message.shardId) {
