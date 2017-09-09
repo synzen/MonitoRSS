@@ -30,11 +30,13 @@ function init (link, rssList, uniqueSettings) {
   var cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
   let requested = false
 
-  setTimeout(function() {
-    if (!requested) try {
-      process.send({status: 'failed', link: link, rssList: rssList})
-      console.log(`RSS Error! Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
-    } catch(e) {}
+  setTimeout(function () {
+    if (!requested) {
+      try {
+        process.send({status: 'failed', link: link, rssList: rssList})
+        console.log(`RSS Error! Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
+      } catch (e) {}
+    }
   }, 180000)
 
   requestStream(link, cookies, feedparser, function (err) {

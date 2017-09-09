@@ -4,6 +4,7 @@ const initialize = require('./util/initialization.js')
 const config = require('./config.json')
 const configCheck = require('./util/configCheck.js')
 const ScheduleManager = require('./util/ScheduleManager.js')
+const currentGuilds = require('./util/storage.js').currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
 
 const results = configCheck.checkMasterConfig(config)
@@ -68,7 +69,9 @@ function login (firstStartup) {
 
 function finishInit () {
   scheduleManager = new ScheduleManager(bot)
-  try { require('./web/app.js')(bot) } catch (e) {}
+  if (!bot.shard) try {
+    require('./web/app.js')(bot)
+   } catch (e) {}
   listeners.createManagers(bot)
 
   if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)
@@ -81,6 +84,11 @@ else {
       login(true)
     } else if (message.type === 'runSchedule' && bot.shard && bot.shard.id === message.shardId) {
       scheduleManager.run(message.refreshTime)
+    } else if (message.type === 'updateGuild' && bot.shard) {
+      const guildRss = message.guildRss
+      if (!bot.guilds.get(guildRss.id)) return
+      if (guildRss === undefined) currentGuilds.delete(guildRss.id)
+      else currentGuilds.set(guildRss.id, guildRss)
     }
   })
 }

@@ -44,6 +44,7 @@ module.exports = function (bot, callback) {
   const modBatchList = []
   const batchSize = (config.advanced && config.advanced.batchSize) ? config.advanced.batchSize : 400
   const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
+  const serversInfo = {}
 
   let con
   let cycleFailCount = 0
@@ -139,6 +140,7 @@ module.exports = function (bot, callback) {
         checkGuild.names(bot, guildId)
       }
       addToSourceLists(rssList, guildId)
+      serversInfo[guildId] = guildRss
     } catch (err) { return fileOps.checkBackup(err, guildId) }
   }
 
@@ -315,7 +317,7 @@ module.exports = function (bot, callback) {
   }
 
   function finishInit () {
-    if (bot.shard) bot.shard.send({type: 'initComplete'})
+    if (bot.shard) bot.shard.send({type: 'initComplete', guilds: serversInfo})
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}INIT Info: Finished initialization cycle.${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
 
     try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of initialization, reason: ${e}`) }

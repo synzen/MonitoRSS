@@ -55,7 +55,7 @@ module.exports = function (bot, callback, schedule) {
   }
 
   function addToSourceLists (guildRss, guildId) { // rssList is an object per guildRss
-    let rssList = guildRss.sources
+    const rssList = guildRss.sources
 
     function delegateFeed (rssName) {
       if (rssList[rssName].advanced && rssList[rssName].advanced.size() > 0) { // Special source list for feeds with unique settings defined
@@ -153,7 +153,7 @@ module.exports = function (bot, callback, schedule) {
 
     if (sourceList.size + modSourceList.size === 0) {
       cycleInProgress = false
-      return console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. No feeds to retrieve.`)
+      return finishCycle(true)// console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. No feeds to retrieve.`)
     }
 
     switch (config.advanced.processorMethod) {
@@ -295,9 +295,11 @@ module.exports = function (bot, callback, schedule) {
     }, startingCycle)
   }
 
-  function finishCycle () {
-    if (processorList.length === 0) cycleInProgress = false
+  function finishCycle (noFeeds) {
+    if (bot.shard && bot.shard.count > 1) bot.shard.send({type: 'scheduleComplete', refreshTime: refreshTime})
+    if (noFeeds) return console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. No feeds to retrieve.`)
 
+    if (processorList.length === 0) cycleInProgress = false
     try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
 
     var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)

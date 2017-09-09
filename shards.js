@@ -1,6 +1,9 @@
 const fs = require('fs')
 const Discord = require('discord.js')
 const config = require('./config.json')
+const storage = require('./util/storage.js')
+const fileOps = require('./util/fileOps.js')
+const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
 
 const Manager = new Discord.ShardingManager('./server.js', {respawn: false})
@@ -46,6 +49,11 @@ Manager.on('message', function (shard, message) {
     initShardIndex++
     if (initShardIndex === Manager.totalShards) {
       console.log(`SH MANAGER: All shards initialized.`)
+
+      for (var gId in message.guilds) { // All guild profiles, with guild id as keys and guildRss as value
+        currentGuilds.set(gId, message.guilds[gId])
+      }
+
       for (var guildId in missingGuilds) {
         if (missingGuilds[guildId] === Manager.totalShards) console.log('SH MANAGER: WARNING - Missing Guild from bot lists: ' + guildId)
       }
@@ -58,9 +66,16 @@ Manager.on('message', function (shard, message) {
           Manager.broadcast({type: 'runSchedule', shardId: activeShardIds[p], refreshTime: refreshTime})
         }, refreshTime * 60000))
       }
+      const data = JSON.stringify(fs.readFileSync('./settings/limitOverrides.json', 'utf8'))
+      try { require('./web/app.js')(null, Manager) } catch (e) {}
     } else if (initShardIndex < Manager.totalShards) Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
   } else if (message.type === 'scheduleComplete') {
     scheduleTracker[message.refreshTime]++ // Index for activeShardIds
     if (scheduleTracker[message.refreshTime] !== Manager.totalShards) Manager.broadcast({shardId: activeShardIds[scheduleTracker[message.refreshTime]], type: 'runSchedule', refreshTime: message.refreshTime}) // Send signal for next shard to start cycle
+    // else console.log(`SH MANAGER: Cycles for all shards complete. for interval ${message.refreshTime} minutes`)
+  } else if (message.type === 'updateGuild') {
+    const guildRss = message.guildRss
+    if (guildRss === undefined) currentGuilds.delete(guildRss.id)
+    else currentGuilds.set(guildRss.id, guildRss)
   }
 })

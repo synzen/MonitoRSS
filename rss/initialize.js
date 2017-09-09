@@ -132,7 +132,7 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
         currentGuilds.set(channel.guild.id, guildRss)
       }
 
-      fileOps.updateFile(channel.guild.id, guildRss, `../sources/${channel.guild.id}.json`)
+      fileOps.updateFile(channel.guild.id, guildRss)
       callback(null, metaTitle, rssName)
     }
   })

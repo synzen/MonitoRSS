@@ -38,7 +38,7 @@ module.exports = function (guildRss, rssName, passFiltersOnly, callback) {
 
     function getArticle () {
       sqlCmds.selectTable(con, rssName, function (err, results) {
-        if (err || results.size() === 0) {
+        if (err || results.length === 0) {
           if (err) callback({type: 'database', content: err, feed: rssList[rssName]})
           if (results.size() === 0) callback({type: 'deleted', content: `Nonexistent in database`, feed: rssList[rssName]})
           return sqlCmds.end(con, function (err) {
@@ -64,7 +64,7 @@ module.exports = function (guildRss, rssName, passFiltersOnly, callback) {
             if (!feedLinkList.includes(currentFeed[x].link)) feedLinkList.push(currentFeed[x].link)
             if (!rawArticleList[currentFeed[x].link]) rawArticleList[currentFeed[x].link] = currentFeed[x]
           }
-          callback(null, currentFeed[randFeedIndex], feedLinkList, rawArticleList)
+          callback(false, currentFeed[randFeedIndex], feedLinkList, rawArticleList)
         }
 
         return sqlCmds.end(con, function (err) {

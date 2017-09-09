@@ -213,7 +213,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   if (rawArticle.categories) {
     let categoryList = ''
     for (var category in rawArticle.categories) {
-      if (typeof rawArticle.categories[category] != 'string') continue
+      if (typeof rawArticle.categories[category] !== 'string') continue
       categoryList += rawArticle.categories[category].trim()
       if (parseInt(category, 10) !== rawArticle.categories.length - 1) categoryList += '\n'
     }
