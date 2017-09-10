@@ -146,12 +146,13 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   this.titleImgs = rawTitleImgs
 
   // Date
-  if (rawArticle.pubdate) {
+  if ((rawArticle.pubdate && rawArticle.toString() !== 'Invalid Date') || config.feedSettings.dateFallback === true) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
     const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
-    const vanityDate = moment.tz(config.feedSettings.timeFallback === true && rawArticle.pubdate.getTime().toString() === '1505001600000' ? new Date() : rawArticle.pubdate, timezone).format(timeFormat) // The string of numbers indicates T00:00:00.000Z
-    this.date = (vanityDate !== 'Invalid date') ? vanityDate : ''
+    const date = (config.feedSettings.timeFallback === true && rawArticle.pubdate.getTime().toString() === '1505001600000') || ((!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date') && config.feedSettings.dateFallback === true) ? new Date() : rawArticle.pubdate
+    const vanityDate = moment.tz(, timezone).format(timeFormat) // The string of numbers indicates T00:00:00.000Z
+    this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
   }
 
   // Description

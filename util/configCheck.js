@@ -59,6 +59,7 @@ exports.defaultConfigs = {
     checkTitles: {type: 'boolean', default: false},
     timezone: {type: 'string', default: 'America/New_York'},
     timeFormat: {type: 'string', default: 'ddd, D MMMM YYYY, h:mm A z'},
+    dateFallback: {type: 'boolean', defualt: false},
     timeFallback: {type: 'boolean', default: false},
     maxFeeds: {type: 'number', default: 0},
     failLimit: {type: 'number', default: 0},

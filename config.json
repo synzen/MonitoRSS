@@ -27,6 +27,7 @@
     "checkTitles": false,
     "timezone": "America/New_York",
     "timeFormat": "ddd, D MMMM YYYY, h:mm A z",
+    "dateFallback": false,
     "timeFallback": false,
     "maxFeeds": 5,
     "failLimit": 0,
