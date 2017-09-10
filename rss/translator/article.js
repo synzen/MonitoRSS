@@ -99,7 +99,8 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
         image: function (node, options) {
           if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && typeof node.attribs.src === 'string' && node.attribs.src) {
             let link = node.attribs.src
-            if (!link.startsWith('http')) link = 'http://' + link
+            if (!link.startsWith('http') && link.startsWith('//')) link = 'http:' + link
+            else if (!link.startsWith('http')) link = 'http://' + link
             imgSrcs.push(link)
           }
           const link = node.attribs.src
@@ -149,7 +150,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
     const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
-    const vanityDate = moment.tz(rawArticle.pubdate, timezone).format(timeFormat)
+    const vanityDate = moment.tz(config.feedSettings.timeFallback === true && rawArticle.pubdate.getTime().toString() === '1505001600000' ? new Date() : rawArticle.pubdate, timezone).format(timeFormat) // The string of numbers indicates T00:00:00.000Z
     this.date = (vanityDate !== 'Invalid date') ? vanityDate : ''
   }
 
