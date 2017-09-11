@@ -20,7 +20,7 @@ module.exports = function (bot, guild) {
     sqlCmds.dropTable(config.feedManagement.databaseName, rssName)
   }
 
-  fileOps.deleteGuild(guild.id, function () {
+  fileOps.deleteGuild(guild.id, null, function () {
     console.log(`RSS Info: Guild profile ${guild.id}.json (${guild.name}) deleted from sources folder.`)
   })
 
