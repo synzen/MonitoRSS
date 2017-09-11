@@ -3,6 +3,14 @@ const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 
+function dateHasNoTime(date) { // Determine if the time is T00:00:00.000Z
+  const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
+  for (var x in timeParts) {
+    if (timeParts[x] !== 0) return false
+  }
+  return true
+}
+
 // To avoid stack call exceeded
 function checkObjType (item, results) {
   if (Object.prototype.toString.call(item) === '[object Object]') {
@@ -150,8 +158,8 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
     const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
-    const date = (config.feedSettings.timeFallback === true && rawArticle.pubdate.getTime().toString() === '1505001600000') || ((!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date') && config.feedSettings.dateFallback === true) ? new Date() : rawArticle.pubdate
-    const vanityDate = moment.tz(date, timezone).format(timeFormat) // The string of numbers indicates T00:00:00.000Z
+    const date = ((!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date') && config.feedSettings.dateFallback === true) || (config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)) ? new Date() : rawArticle.pubdate
+    const vanityDate = moment.tz(date, timezone).format(timeFormat)
     this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
   }
 
