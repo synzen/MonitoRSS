@@ -151,7 +151,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
     const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
     const date = (config.feedSettings.timeFallback === true && rawArticle.pubdate.getTime().toString() === '1505001600000') || ((!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date') && config.feedSettings.dateFallback === true) ? new Date() : rawArticle.pubdate
-    const vanityDate = moment.tz(, timezone).format(timeFormat) // The string of numbers indicates T00:00:00.000Z
+    const vanityDate = moment.tz(date, timezone).format(timeFormat) // The string of numbers indicates T00:00:00.000Z
     this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
   }
 
