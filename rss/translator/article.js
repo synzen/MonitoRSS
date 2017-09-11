@@ -11,6 +11,11 @@ function dateHasNoTime(date) { // Determine if the time is T00:00:00.000Z
   return true
 }
 
+function setCurrentTime(momentObj) {
+  const now = new Date()
+  return momentObj.hours(now.getUTCHours()).minutes(now.getMinutes()).seconds(now.getSeconds()).millisecond(now.getMilliseconds())
+}
+
 // To avoid stack call exceeded
 function checkObjType (item, results) {
   if (Object.prototype.toString.call(item) === '[object Object]') {
@@ -158,8 +163,14 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
     const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
-    const date = ((!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date') && config.feedSettings.dateFallback === true) || (config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)) ? new Date() : rawArticle.pubdate
-    const vanityDate = moment.tz(date, timezone).format(timeFormat)
+
+    const useDateFallback = config.feedSettings.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
+    const useTimeFallback = config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)
+    const date = useDateFallback || useTimeFallback ? new Date() : rawArticle.pubdate
+    const vanityDateMoment = moment(date)
+    if (useDateFallback) vanityDateMoment = setCurrentTime(vanityDateMoment)
+
+    const vanityDate = vanityDateMoment.tz(timezone).format(timeFormat)
     this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
   }
 
