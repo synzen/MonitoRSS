@@ -282,6 +282,119 @@ exports.feedguild = function (bot, message) { // Get guild ID from rssName
   if (!found) message.channel.send(`Could not find any feeds with that rssName.`)
 }
 
+exports.cleanfailed = function (bot, message) {
+  let content = message.content.split(' ')
+  content.shift()
+  const reason = content.join(' ').trim()
+
+  const affectedGuilds = []
+  const links = []
+
+  currentGuilds.forEach(function (guildRss, guildId) {
+    const rssList = guildRss.sources
+
+    for (var failedLink in failedLinks) {
+      if (typeof failedLinks[failedLink] !== 'string' || failedLinks[failedLink] !== 100) continue
+      for (var rssName in rssList) {
+        if (rssList[rssName].link === failedLink) {
+          if (!links.includes(rssList[rssName].link)) links.push(rssList[rssName].link)
+          if (!affectedGuilds.includes(guildId)) affectedGuilds.push(guildId)
+        }
+      }
+    }
+  })
+
+
+  if (links.length === 0) {
+    let cleaned = false
+    if (!bot.shard) for (var j in failedLinks) {
+      if (typeof failedLinks[j] === 'string' || failedLinks[j] === 100) {
+        cleaned = true
+        delete failedLinks[j]
+      }
+    }
+
+    fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2))
+    return message.channel.send(cleaned ? `No links were eligible to be removed from guilds, but outdated links have been deleted from failedLinks.json.` : `No links are eligible to be cleaned out from failedLinks.json.`).catch(err => console.log(`Promise Warning: forceremove 1: ${err}`))
+  }
+
+  let msg = '```'
+  for (var x in links) {
+    msg += `\n${links[x]}`
+  }
+  msg += '```'
+
+  const collector = message.channel.createMessageCollector(m => m.author.id === message.author.id, {time: 240000})
+  channelTracker.add(message.channel.id)
+
+  message.channel.send(`The list of links (${links.length}) to be cleaned out from failedLinks.json ${reason ? 'and the reason for removal ' : ''}is shown below.\n\n${reason ? '```Reason: ' + reason + '```\n' : ''}${msg.length > 1950 ? '```Unable to print links to discord - exceeds 1950 chars. Please see console.```' : msg}\n\nDo you want to continue? Type **Yes** to confirm, or **No** to cancel.`)
+  .then(function (prompt) {
+    if (msg.length > 1950) {
+      console.log(`Bot Controller: Links that are about to be forcibly removed for cleanup as requested by (${message.author.id}, ${message.author.username}): `)
+      for (var a in links) {
+        console.info(`\n${links[a]}`)
+      }
+    }
+
+    collector.on('collect', function (m) {
+      if (m.content !== 'Yes' && m.content !== 'No') return message.channel.send('That is not a valid Option. Please type either **Yes** or **No**.')
+      collector.stop()
+
+      if (m.content === 'No') return message.channel.send(`Force removal canceled.`)
+      let removedLinks = []
+
+      for (var i in affectedGuilds) {
+        const guildRss = currentGuilds.get(affectedGuilds[i])
+        const rssList = guildRss.sources
+        let names = []
+
+        for (var name in rssList) {
+          for (var e in links) {
+            if (rssList[name].link === links[e]) {
+              removedLinks.push(links[e])
+              names.push(name)
+            }
+          }
+
+        }
+        for (var l in names) {
+          const rssName = names[l]
+          const link = rssList[rssName].link
+          let channel = bot.channels.get(rssList[rssName].channel)
+          if (reason && channel) channel.send(`**ATTENTION:** Feeds with link <${link}> have been forcibly removed from all servers. Reason: ${reason}`).catch(err => console.log(`Could not send force removal notification to server ${channel.guild.id}, reason: ${err}`))
+          removeRss(channel.guild.id, rssName)
+          delete failedLinks[link]
+          delete rssList[rssName]
+
+        }
+        fileOps.updateFile(affectedGuilds[i], guildRss)
+      }
+
+      if (removedLinks.length === 0) message.channel.send('Unable to remove any links.').catch(err => console.log(`Promise Warning: forceremove 2: ${err}`))
+
+      msg = '```'
+      for (var p in removedLinks) {
+        msg += `\n${removedLinks[p]}`
+      }
+
+      message.channel.send(`Successfully removed \`${removedLinks.length}\` source(s). ${msg.length > 1950 ? '' : 'Links:\`\`\`\n' + removedLinks + '\`\`\`'}`)
+      console.log(`Bot Controller: The following links have been forcibly removed by (${message.author.id}, ${message.author.username}): \n`, removedLinks)
+
+      if (!bot.shard) for (var j in failedLinks) {
+        if (typeof failedLinks[j] === 'string' || failedLinks[j] === 100) delete failedLinks[j]
+      }
+
+      fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2))
+    })
+
+    collector.on('end', function (collected, reason) {
+      channelTracker.remove(message.channel.id)
+      if (reason === 'time') return message.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Promise Warning: Unable to send expired menu message (${err})`))
+      else if (reason !== 'user') return message.channel.send(reason)
+    })
+  }).catch(err => console.log(`Could not send a list of links that are to be afffected, reason: `, err))
+}
+
 exports.forceremove = function (bot, message) {
   let content = message.content.split(' ')
   if (content.length < 2) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}forceremove <keywords> <optional reason>\`.`)

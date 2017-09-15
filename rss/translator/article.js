@@ -246,19 +246,25 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     let img = ''
     for (var x = inputArr.length - 1; x >= 0; x--) {
       const term = inputArr[x]
+      if (term.startsWith('http')) {
+        img = term
+        continue
+      }
       const arr = term.split(':')
-      if (arr.length === 1 || !arr[1].startsWith('image') || arr[1].length !== 7) continue
-
+      if (term.startsWith('{image')) {
+        img = this.convertImgs(term)
+        continue
+      } else if (arr.length === 1 || arr[1].search(/image[1-9]/) === -1) continue
       const validPlaceholders = ['title', 'description', 'summary']
-      const placeholder = arr[0].substr(1, arr[0].length)
+      const placeholder = arr[0].replace(/{|}/, '') //
       const placeholderImgs = this[placeholder + 'Imgs']
       if (!validPlaceholders.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
 
-      const imgNum = parseInt(arr[1].replace(/[^1-9]/g, ''), 10) - 1
+      const imgNum = parseInt(arr[1].substr(arr[1].search(/[1-9]/), 1), 10) - 1
       if (isNaN(imgNum) || imgNum > 4 || imgNum < 0) continue
-
       img = placeholderImgs[imgNum]
     }
+    return img
   }
 
   // {imageX} and {placeholder:imageX}
