@@ -49,21 +49,24 @@ module.exports = function (bot, message, command) {
     function resetAll (collector) {
       return message.channel.send(`Resetting and disabling embed...`)
       .then(function (resetting) {
-        collector.stop()
+        collector.stop('endMenu')
         delete rssList[rssName].embedMessage
         if (rssList[rssName].message === '{empty}') delete rssList[rssName].message // An empty message is not allowed if there is no embed
         fileOps.updateFile(message.guild.id, guildRss)
         console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${rssList[rssName].link}.`)
         resetting.edit(`Embed has been disabled, and all properties have been removed for <${rssList[rssName].link}>.`).catch(err => console.log(`Promise Warning: rssEmbed 2a: ${err}`))
-      }).catch(err => console.log(`Promise Warning: rssEmbed 2: ${err}`))
+      }).catch(err => {
+        collector.stop()
+        console.log(`Promise Warning: rssEmbed 2: ${err}`)
+      })
     }
 
     // Reset an individual property
     function reset (collector, choice) {
-      return message.channel.send(`Retting property \`${choice}\`...`)
+      return message.channel.send(`Resetting property \`${choice}\`...`)
       .then(function (resetting) {
         collector.stop()
-        if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties || !rssList[rssName].embedMessage.properties[choice]) return message.channel.send('This property has nothing to reset.').catch(err => console.log(`Promise Warning: rssEmbed 2b: ${err}`))
+        if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties || !rssList[rssName].embedMessage.properties[choice]) return resetting.edit('This property has nothing to reset.').catch(err => console.log(`Promise Warning: rssEmbed 2b: ${err}`))
         delete rssList[rssName].embedMessage.properties[choice]
         if (rssList[rssName].embedMessage.properties.size() === 0) {
           delete rssList[rssName].embedMessage
@@ -72,7 +75,10 @@ module.exports = function (bot, message, command) {
         fileOps.updateFile(message.guild.id, guildRss)
         console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Property '${choice}' reset for ${rssList[rssName].link}.`)
         resetting.edit(`Settings updated. The property \`${choice}\` has been reset for <${rssList[rssName].link}>.`).catch(err => console.log(`Promise Warning: rssEmbed 8a: ${err}`))
-      }).catch(err => console.log(`Promise Warning: rssEmbed 8: ${err}`))
+      }).catch(err => {
+        console.log(`Promise Warning: rssEmbed 8: ${err}`)
+        collector.stop()
+      })
     }
 
     // Generate list of all embed properties for user to see
@@ -163,9 +169,9 @@ module.exports = function (bot, message, command) {
       })
       customCollect.on('end', function (collected, reason) {
         channelTracker.remove(message.channel.id)
-        if (reason === 'user') return // Do not execute msgHandler.deleteAll if is user, since this means menu series proceeded to the next step and has not ended
+        if (reason === 'user') return // Do not execute msgHandler.deleteAll if is user, since this means menu series proceeded to the next step and has not ended, unless reason is 'endMenu'
         if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Promise Warning: Unable to send expired menu message (${err})`))
-        else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000))
+        else if (reason !== 'user' && reason !== 'endMenu') message.channel.send(reason).then(m => m.delete(6000))
         msgHandler.deleteAll(message.channel)
       })
     }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send embed customization prompt. (${err})`))
