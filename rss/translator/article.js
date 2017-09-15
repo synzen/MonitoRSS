@@ -242,41 +242,56 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   }
 
   this.resolvePlaceholderImg = function (input) {
-    const arr = input.split(':')
-    if (arr.length === 1 || !arr[1].startsWith('image') || arr[1].length !== 7) return
+    const inputArr = input.split('||')
+    let img = ''
+    for (var x = inputArr.length - 1; x <= 0; x--) {
+      const term = inputArr[x]
+      const arr = term.split(':')
+      if (arr.length === 1 || !arr[1].startsWith('image') || arr[1].length !== 7) continue
 
-    const validPlaceholders = ['title', 'description', 'summary']
-    const placeholder = arr[0].substr(1, arr[0].length)
-    const placeholderImgs = this[placeholder + 'Imgs']
-    if (!validPlaceholders.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) return
+      const validPlaceholders = ['title', 'description', 'summary']
+      const placeholder = arr[0].substr(1, arr[0].length)
+      const placeholderImgs = this[placeholder + 'Imgs']
+      if (!validPlaceholders.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
 
-    const imgNum = parseInt(arr[1].replace(/[^1-9]/g, ''), 10) - 1
-    if (isNaN(imgNum) || imgNum > 4 || imgNum < 0) return
+      const imgNum = parseInt(arr[1].replace(/[^1-9]/g, ''), 10) - 1
+      if (isNaN(imgNum) || imgNum > 4 || imgNum < 0) continue
 
-    return placeholderImgs[imgNum]
+      img = placeholderImgs[imgNum]
+    }
   }
 
   // {imageX} and {placeholder:imageX}
   this.convertImgs = function (content) {
     const imgDictionary = {}
-    const imgLocs = content.match(/{image.+}/g)
-    const phImageLocs = content.match(/({(description|image|title):image[1-5]})/gi)
-
+    const imgLocs = content.match(/{image[1-9](\|\|(.+))*}/g)
+    const phImageLocs = content.match(/({(description|image|title):image[1-5](\|\|(.+))*})/gi)
     if (imgLocs) {
       for (var loc in imgLocs) {
-        if (imgLocs[loc].length === 8) { // only single digit image numbers
-          let imgNum = parseInt(imgLocs[loc].substr(6, 1), 10)
-          if (!isNaN(imgNum) && imgNum !== 0 && this.images && this.images[imgNum - 1]) imgDictionary[imgLocs[loc]] = this.images[imgNum - 1] // key is {imageX}, value is article image URL
-          else if (!isNaN(imgNum) || imgNum === 0 || !this.images) imgDictionary[imgLocs[loc]] = ''
+        const term = imgLocs[loc]
+        const termList = term.split('||')
+        if (termList.length === 1) {
+          const imgNum = parseInt(term[term.search(/[1-9]/)], 10)
+          if (this.images && this.images[imgNum - 1]) imgDictionary[term] = this.images[imgNum - 1] // key is {imageX}, value is article image URL
+          else imgDictionary[term] = ''
+        } else {
+          let decidedImage = ''
+          for (var p = termList.length - 1; p >= 0; p--) { // Work though fallback images backwards - not very efficient but it works
+            const subTerm = p === 0 ? `${termList[p]}}` : p === termList.length - 1 ? `{${termList[p]}` : `{${termList[p]}}` // Format for use in convertImgs
+            const subImg = this.convertImgs(subTerm)
+            if (subImg) decidedImage = subImg
+          }
+          imgDictionary[term] = decidedImage
         }
       }
-      for (var imgKeyword in imgDictionary) content = content.replace(new RegExp(imgKeyword, 'g'), imgDictionary[imgKeyword])
+      for (var imgKeyword in imgDictionary) {
+        content = content.replace(new RegExp(escapeRegExp(imgKeyword), 'g'), imgDictionary[imgKeyword])
+      }
     } else if (phImageLocs) {
       for (var h in phImageLocs) {
         content = this.resolvePlaceholderImg(phImageLocs[h]) ? content.replace(phImageLocs[h], this.resolvePlaceholderImg(phImageLocs[h])) : content.replace(phImageLocs[h], '')
       }
     }
-
     return content
   }
 
@@ -307,8 +322,9 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
         content = content.replace(replacementQuery, replacementContent)
       }
     }
-
-    return this.convertImgs(content)
+    const t = this.convertImgs(content)
+    console.log(t)
+    return t
   }
 
   return this

@@ -1,6 +1,21 @@
 const fs = require('fs')
 const eventHandler = (evnt) => require(`../events/${evnt}.js`)
 const pageControls = require('./pageControls.js')
+let cmdsExtension
+if (fs.existsSync('./settings/commands.js')) try { cmdsExtension = require('../settings/commands.js') } catch (e) { console.log(`Error: Unable to load commands extension file. Reason:\n`, e) }
+
+if (fs.existsSync('./settings/commands.js')) {
+  fs.watchFile('./settings/commands.js', function (cur, prev) {
+    delete require.cache[require.resolve('../settings/commands.js')]
+    try {
+      cmdsExtension = require('../settings/commands.js')
+      console.log(`Commands extension file has been updated`)
+    } catch (e) {
+      console.log(`Commands extension file was changed, but could not be updated. Reason:\n`, e)
+
+    }
+  })
+}
 
 exports.createManagers = function (bot) {
   bot.on('guildCreate', function (guild) {
@@ -39,6 +54,7 @@ exports.createManagers = function (bot) {
 exports.enableCommands = function (bot) {
   bot.on('message', function (message) {
     eventHandler('message')(bot, message)
+    try { if (cmdsExtension) cmdsExtension(bot, message) } catch (e) {}
   })
 
   console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Commands have been enabled.`)

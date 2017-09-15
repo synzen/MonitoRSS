@@ -59,7 +59,7 @@ exports.defaultConfigs = {
     checkTitles: {type: 'boolean', default: false},
     timezone: {type: 'string', default: 'America/New_York'},
     timeFormat: {type: 'string', default: 'ddd, D MMMM YYYY, h:mm A z'},
-    dateFallback: {type: 'boolean', defualt: false},
+    dateFallback: {type: 'boolean', default: false},
     timeFallback: {type: 'boolean', default: false},
     maxFeeds: {type: 'number', default: 0},
     failLimit: {type: 'number', default: 0},
@@ -87,8 +87,9 @@ exports.checkMasterConfig = function (masterConfig) {
 
   function checkIfRequired (configCategory, configName, errMsg) {
     let config = exports.defaultConfigs[configCategory][configName]
-    if (config.default === undefined) fatalInvalidConfigs[configCategory + '.' + configName] = errMsg
-    else {
+    if (config.default === undefined) {
+      fatalInvalidConfigs[configCategory + '.' + configName] = errMsg
+    } else {
       masterConfig[configCategory][configName] = config.default
       invalidConfigs[configCategory + '.' + configName] = `${errMsg}. Defaulting to ${config.default}`
     }
@@ -99,8 +100,9 @@ exports.checkMasterConfig = function (masterConfig) {
       const configValue = exports.defaultConfigs[configCategory][configName]
       const userConfig = masterConfig[configCategory][configName]
 
-      if (configValue.type !== typeof userConfig) checkIfRequired(configCategory, configName, `Expected ${configValue.type}, found ${typeof userConfig}`)
-      else {
+      if (configValue.type !== typeof userConfig) {
+        checkIfRequired(configCategory, configName, `Expected ${configValue.type}, found ${typeof userConfig}`)
+      } else {
         if (typeof userConfig === 'number' && userConfig < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
         else if (configName === 'timezone' && !moment.tz.zone(userConfig)) checkIfRequired(configCategory, configName, 'Invalid timezone')
         else if (configName === 'menuColor' && userConfig > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)

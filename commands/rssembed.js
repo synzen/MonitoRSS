@@ -15,22 +15,28 @@ const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be
 const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
 const currentGuilds = require('../util/storage.js').currentGuilds
 
+function escapeRegExp (str) {
+  return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
+}
+
 // Check valid image URLs via extensions
 function isValidImg (input) {
   if (input.startsWith('http')) {
     const matches = input.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)
     if (matches) return true
     else return false
-  } else if (input.startsWith('{image')) { // For {imageX}
-    if (input.length !== 8) return false
-    const imgNum = parseInt(input.substr(6, 1), 10)
-    if (!isNaN(imgNum) && imgNum > 0) return true
-    else return false
-  } else if (input.startsWith('{')) { // For {placeholder:imageX}
-    const reg1 = new RegExp('^.*', 'gi')
-    const reg2 = new RegExp('{(description|image|title):image[1-5]}', 'gi')
-    if (JSON.stringify(input.match(reg2)) === JSON.stringify(input.match(reg1))) return true
-    else return false
+  } else if (input.startsWith('{')) {
+    const results = input.startsWith('{image') ? input.search(/^{image[1-9](\|\|(.+))*}$/) : input.search(/^{(description|image|title):image[1-5](\|\|(.+))*}$/)
+    if (results === -1) return false
+    const arr = input.split('||')
+    if (arr.length === 1) return true;
+    let valid = true
+    for (var x in arr) {
+      if (!valid) continue;
+      const term = x === '0'  ? `${arr[x]}}` : x === (arr.length - 1).toString() ? `{${arr[x]}` : `{${arr[x]}}`
+      if (!isValidImg(term)) valid = false;
+    }
+    return valid
   } else return false
 }
 

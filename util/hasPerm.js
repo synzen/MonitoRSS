@@ -46,5 +46,9 @@ exports.bot = function (bot, message, permission) {
 exports.user = function (message, permission) {
   if (!permission || !validPerms.includes(permission)) return true
 
-  return message.member.hasPermission(permission)
+  const serverPerm = message.member.hasPermission(permission)
+  const channelPerm = message.member.permissionsIn(message.channel).has(permission)
+
+  if (serverPerm || channelPerm) return true
+  else return false
 }

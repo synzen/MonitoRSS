@@ -34,8 +34,8 @@ exports.deleteGuild = function (guildId, shardingManager, callback) {
     if (typeof callback === 'function') callback()
   } catch (e) {}
   currentGuilds.delete(guildId)
-  if (shardingManager) shardingManager.broadcast({type: 'updateGuild', guildRss: undefined})
-  else if (process.send) process.send({type: 'updateGuild', guildRss: undefined}) // If this is a child process
+  if (shardingManager) shardingManager.broadcast({type: 'deleteGuild', guildId: guildId})
+  else if (process.send) process.send({type: 'deleteGuild', guildId: guildId}) // If this is a child process
 }
 
 exports.isEmptySources = function (guildRss, shardingManager) { // Used on the beginning of each cycle to check for empty sources per guild
