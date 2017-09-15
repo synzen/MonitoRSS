@@ -39,7 +39,7 @@ module.exports = function (bot, callback, schedule) {
   function addFailedFeed (link, rssList) {
     failedLinks[link] = (failedLinks[link]) ? failedLinks[link] + 1 : 1
 
-    if (failedLinks[link] === failLimit) {
+    if (failedLinks[link] >= failLimit) {
       console.log(`RSS Error: ${link} has passed the fail limit (${failLimit}). Will no longer retrieve.`)
       if (config.feedSettings.notifyFail === true) {
         for (var rssName in rssList) {

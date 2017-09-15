@@ -294,7 +294,7 @@ exports.cleanfailed = function (bot, message) {
     const rssList = guildRss.sources
 
     for (var failedLink in failedLinks) {
-      if (typeof failedLinks[failedLink] !== 'string' || failedLinks[failedLink] !== 100) continue
+      if (typeof failedLinks[failedLink] !== 'string' || failedLinks[failedLink] < 100) continue
       for (var rssName in rssList) {
         if (rssList[rssName].link === failedLink) {
           if (!links.includes(rssList[rssName].link)) links.push(rssList[rssName].link)
@@ -308,7 +308,7 @@ exports.cleanfailed = function (bot, message) {
   if (links.length === 0) {
     let cleaned = false
     if (!bot.shard) for (var j in failedLinks) {
-      if (typeof failedLinks[j] === 'string' || failedLinks[j] === 100) {
+      if (typeof failedLinks[j] === 'string' || failedLinks[j] >= 100) {
         cleaned = true
         delete failedLinks[j]
       }
