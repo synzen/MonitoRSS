@@ -103,6 +103,8 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
       if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
       else if (articleList[0] && articleList[0].meta.link && articleList[0].meta.link.includes('reddit')) metaTitle = `Reddit - ${articleList[0].meta.title}`
 
+      if (metaTitle.length > 200) metaTitle = metaTitle.slice(0, 200) + ' [...]'
+
       var guildRss
       if (currentGuilds.has(channel.guild.id)) {
         guildRss = currentGuilds.get(channel.guild.id)

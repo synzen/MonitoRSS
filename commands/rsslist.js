@@ -59,7 +59,7 @@ module.exports = function (bot, message, command) {
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}\n\u200b`)
     }
 
-    embedMsg.addField(`${count})  ${title}`, `${titleChecks || ''}${status || ''}Channel: #${channelName}\nLink: ${link}`)
+    embedMsg.addField(`${count})  ${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}Channel: #${channelName}\nLink: ${link}`)
   }
 
   // Push the leftover results into the last embed

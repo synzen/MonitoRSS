@@ -65,7 +65,7 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
       pages.push(embedMsg)
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}`)
     }
-    embedMsg.addField(`${count})  ${title}`, `${miscOption}${status}Link: ${link}`)
+    embedMsg.addField(`${count})  ${title.length > 200 ? title.slice(0, 200) + ' [...]' : title}`, `${miscOption}${status}Link: ${link}`)
   }
 
   // Push the leftover results into the last embed
@@ -86,7 +86,7 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
   // Only start message collector if all pages were sent
   function selectFeed () {
     const filter = m => m.author.id === message.author.id
-    const collector = message.channel.createMessageCollector(filter, {time: 60000})
+    const collector = message.channel.createMessageCollector(filter, {time: 5000})
     channelTracker.add(message.channel.id)
 
     collector.on('collect', function (m) {
