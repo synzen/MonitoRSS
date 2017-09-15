@@ -244,7 +244,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   this.resolvePlaceholderImg = function (input) {
     const inputArr = input.split('||')
     let img = ''
-    for (var x = inputArr.length - 1; x <= 0; x--) {
+    for (var x = inputArr.length - 1; x >= 0; x--) {
       const term = inputArr[x]
       const arr = term.split(':')
       if (arr.length === 1 || !arr[1].startsWith('image') || arr[1].length !== 7) continue
