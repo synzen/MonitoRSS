@@ -322,9 +322,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
         content = content.replace(replacementQuery, replacementContent)
       }
     }
-    const t = this.convertImgs(content)
-    console.log(t)
-    return t
+    return this.convertImgs(content)
   }
 
   return this
