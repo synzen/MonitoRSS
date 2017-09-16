@@ -13,7 +13,7 @@ function isBotController (command, author) {
     console.log(`Could not execute command "${command} due to incorrectly defined bot controller."`)
     return false
   }
-  for (var x in controllerList) return (controllerList[x] === author)
+  for (var x in controllerList) if (controllerList[x] === author) return true
   return false
 }
 
