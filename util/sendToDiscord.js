@@ -74,13 +74,13 @@ module.exports = function (bot, article, callback, isTestMessage) {
     if (message.embedMsg) {
       if (message.textMsg.length > 1950) { // Discord has a character limit of 2000
         console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n `, message.textMsg)
-        message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`
+        message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950.`
       }
       sendCombinedMsg()
     } else { // Main Message: If it only contains a text message
       if (message.textMsg.length > 1950) {
         console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n`, message.textMsg)
-        message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950. This issue has been logged for resolution.`
+        message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950.`
       } else if (message.textMsg.length === 0) {
         message.textMsg = `Unable to send empty message for feed article *${article.link}*.`
       }
