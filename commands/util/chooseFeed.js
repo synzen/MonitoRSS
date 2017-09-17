@@ -86,7 +86,7 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
   // Only start message collector if all pages were sent
   function selectFeed () {
     const filter = m => m.author.id === message.author.id
-    const collector = message.channel.createMessageCollector(filter, {time: 5000})
+    const collector = message.channel.createMessageCollector(filter, {time: 60000})
     channelTracker.add(message.channel.id)
 
     collector.on('collect', function (m) {

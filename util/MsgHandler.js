@@ -14,11 +14,19 @@ module.exports = function (bot, msg) {
 
   this.deleteAll = function (channel) {
     if (allowed && this.messageList.length === 1) {
-      this.messageList[0].delete().catch(err => console.log(`Warning: Unable to delete single message after menu series\n`, err))
+      this.messageList[0].delete().then(m => {
+        this.messageList = []
+      }).catch(err => {
+        console.log(`Warning: Unable to delete single message after menu series\n`, err)
+        this.messageList = []
+      })
     } else if (allowed && this.messageList.length > 1) {
       channel.bulkDelete(this.messageList).then(function () {
         this.messageList = []
-      }).catch(err => console.log(`Warning: Unable to bulk delete messages after menu series\n`, err))
+      }).catch(err => {
+        this.messageList = []
+        console.log(`Warning: Unable to bulk delete messages after menu series\n`, err)
+      })
     }
   }
 
