@@ -143,7 +143,7 @@ exports.setavatar = function (bot, message) {
   const content = message.content.split(' ')
   if (content.length === 1) return
   content.shift()
-  bot.user.setAvatar(content[1]).catch(err => console.log(`Bot Controller: Unable to set avatar. (${err})`))
+  bot.user.setAvatar(content[0]).catch(err => console.log(`Bot Controller: Unable to set avatar. (${err})`))
 }
 
 exports.setusername = function (bot, message) { // Heavily rate limited at 2 requests per hour, use sparingly
