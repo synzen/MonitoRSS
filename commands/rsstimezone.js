@@ -2,7 +2,6 @@ const config = require('../config.json')
 const moment = require('moment-timezone')
 const fileOps = require('../util/fileOps.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
-const allowedFieldKeys = ['message', 'embedMessage'] // Where {date} must be found for rsstimezone to work
 
 // To avoid stack call exceeded
 function checkObjType (item, results) {

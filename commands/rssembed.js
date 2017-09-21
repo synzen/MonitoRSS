@@ -15,10 +15,6 @@ const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be
 const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
 const currentGuilds = require('../util/storage.js').currentGuilds
 
-function escapeRegExp (str) {
-  return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
-}
-
 // Check valid image URLs via extensions
 function isValidImg (input) {
   if (input.startsWith('http')) {
@@ -29,12 +25,12 @@ function isValidImg (input) {
     const results = input.startsWith('{image') ? input.search(/^{image[1-9](\|\|(.+))*}$/) : input.search(/^{(description|image|title):image[1-5](\|\|(.+))*}$/)
     if (results === -1) return false
     const arr = input.split('||')
-    if (arr.length === 1) return true;
+    if (arr.length === 1) return true
     let valid = true
     for (var x in arr) {
-      if (!valid) continue;
-      const term = x === '0'  ? `${arr[x]}}` : x === (arr.length - 1).toString() ? `{${arr[x]}` : `{${arr[x]}}`
-      if (!isValidImg(term)) valid = false;
+      if (!valid) continue
+      const term = x === '0' ? `${arr[x]}}` : x === (arr.length - 1).toString() ? `{${arr[x]}` : `{${arr[x]}}`
+      if (!isValidImg(term)) valid = false
     }
     return valid
   } else return false

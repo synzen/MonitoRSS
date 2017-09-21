@@ -304,13 +304,14 @@ exports.cleanfailed = function (bot, message) {
     }
   })
 
-
   if (links.length === 0) {
     let cleaned = false
-    if (!bot.shard) for (var j in failedLinks) {
-      if (typeof failedLinks[j] === 'string' || failedLinks[j] >= 100) {
-        cleaned = true
-        delete failedLinks[j]
+    if (!bot.shard) {
+      for (var j in failedLinks) {
+        if (typeof failedLinks[j] === 'string' || failedLinks[j] >= 100) {
+          cleaned = true
+          delete failedLinks[j]
+        }
       }
     }
 
@@ -355,7 +356,6 @@ exports.cleanfailed = function (bot, message) {
               names.push(name)
             }
           }
-
         }
         for (var l in names) {
           const rssName = names[l]
@@ -365,7 +365,6 @@ exports.cleanfailed = function (bot, message) {
           removeRss(channel.guild.id, rssName)
           delete failedLinks[link]
           delete rssList[rssName]
-
         }
         fileOps.updateFile(affectedGuilds[i], guildRss)
       }
@@ -377,11 +376,13 @@ exports.cleanfailed = function (bot, message) {
         msg += `\n${removedLinks[p]}`
       }
 
-      message.channel.send(`Successfully removed \`${removedLinks.length}\` source(s). ${msg.length > 1950 ? '' : 'Links:\`\`\`\n' + removedLinks + '\`\`\`'}`)
+      message.channel.send(`Successfully removed \`${removedLinks.length}\` source(s). ${msg.length > 1950 ? '' : 'Links:```\n' + removedLinks + '```'}`)
       console.log(`Bot Controller: The following links have been forcibly removed by (${message.author.id}, ${message.author.username}): \n`, removedLinks)
 
-      if (!bot.shard) for (var j in failedLinks) {
-        if (typeof failedLinks[j] === 'string' || failedLinks[j] === 100) delete failedLinks[j]
+      if (!bot.shard) {
+        for (var j in failedLinks) {
+          if (typeof failedLinks[j] === 'string' || failedLinks[j] === 100) delete failedLinks[j]
+        }
       }
 
       fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2))

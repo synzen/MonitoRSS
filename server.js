@@ -67,11 +67,14 @@ function login (firstStartup) {
   })
 }
 
-function finishInit () {
+function finishInit (guildsInfo) {
+  if (bot.shard) process.send({type: 'initComplete', guilds: guildsInfo})
   scheduleManager = new ScheduleManager(bot)
-  if (!bot.shard) try {
-    require('./web/app.js')(bot)
-   } catch (e) {}
+  if (!bot.shard) {
+    try {
+      require('./web/app.js')(bot)
+    } catch (e) {}
+  }
   listeners.createManagers(bot)
 
   if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)

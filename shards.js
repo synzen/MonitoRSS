@@ -34,8 +34,8 @@ fs.readdir('./settings/schedules', function (err, files) {
   for (var i in files) {
     fs.readFile('./settings/schedules/' + files[i], function (err, data) {
       if (err) return console.log(err)
-      let refreshTime = JSON.parse(data).refreshTimeMinutes
-      refreshTimes.push(refreshTime)
+      const refreshTime = JSON.parse(data).refreshTimeMinutes
+      if (!refreshTimes.includes(refreshTime)) refreshTimes.push(refreshTime)
     })
   }
 })
@@ -72,10 +72,9 @@ Manager.on('message', function (shard, message) {
   } else if (message.type === 'scheduleComplete') {
     scheduleTracker[message.refreshTime]++ // Index for activeShardIds
     if (scheduleTracker[message.refreshTime] !== Manager.totalShards) Manager.broadcast({shardId: activeShardIds[scheduleTracker[message.refreshTime]], type: 'runSchedule', refreshTime: message.refreshTime}) // Send signal for next shard to start cycle
-    // else console.log(`SH MANAGER: Cycles for all shards complete. for interval ${message.refreshTime} minutes`)
   } else if (message.type === 'updateGuild') {
-    const guildRss = message.guildRss
-    if (guildRss === undefined) currentGuilds.delete(guildRss.id)
-    else currentGuilds.set(guildRss.id, guildRss)
+    currentGuilds.set(message.guildRss.id, message.guildRss)
+  } else if (message.type === 'deleteGuild') {
+    currentGuilds.delete(message.guildId)
   }
 })

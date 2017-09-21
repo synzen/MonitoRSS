@@ -12,7 +12,6 @@ if (fs.existsSync('./settings/commands.js')) {
       console.log(`Commands extension file has been updated`)
     } catch (e) {
       console.log(`Commands extension file was changed, but could not be updated. Reason:\n`, e)
-
     }
   })
 }

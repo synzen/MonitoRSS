@@ -3,7 +3,7 @@ const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 
-function dateHasNoTime(date) { // Determine if the time is T00:00:00.000Z
+function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
   const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
   for (var x in timeParts) {
     if (timeParts[x] !== 0) return false
@@ -11,7 +11,7 @@ function dateHasNoTime(date) { // Determine if the time is T00:00:00.000Z
   return true
 }
 
-function setCurrentTime(momentObj) {
+function setCurrentTime (momentObj) {
   const now = new Date()
   return momentObj.hours(now.getHours()).minutes(now.getMinutes()).seconds(now.getSeconds()).millisecond(now.getMilliseconds())
 }
