@@ -77,7 +77,9 @@ exports.defaultConfigs = {
     shards: {type: 'number', default: 1},
     batchSize: {type: 'number', default: '400'},
     restrictCookies: {type: 'boolean', default: false},
-    processorMethod: {type: 'string', default: 'single'}
+    restrictWebhooks: {type: 'boolean', default: false},
+    processorMethod: {type: 'string', default: 'single'},
+    minifyJSON: {type: 'boolean', default: false}
   }
 }
 

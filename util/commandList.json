@@ -70,5 +70,10 @@
 			"imageLinksExistence": "Toggle Image Links Existence",
 			"checkDates": "Toggle Date Checks"
 		}
+	},
+	"usewebhook": {
+		"userPerm": "MANAGE_CHANNELS",
+		"action": "Webhook Connection",
+		"description": "Connect a webhook to send feed messages instead."
 	}
 }

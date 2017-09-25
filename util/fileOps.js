@@ -11,7 +11,7 @@ function getLength (obj) {
 
 function updateContent (guildId, inFile, shardingManager) {
   try {
-    fs.writeFileSync(`./sources/${guildId}.json`, JSON.stringify(inFile, null, 2))
+    fs.writeFileSync(`./sources/${guildId}.json`, config.advanced.minifyJSON === true ? JSON.stringify(inFile) : JSON.stringify(inFile, null, 2))
   } catch (e) { console.log(`Guild Profile Warning: Unable to update file ${guildId}.json (${e})`) }
   if (shardingManager) shardingManager.broadcast({type: 'updateGuild', guildRss: inFile})
   else if (process.send) process.send({type: 'updateGuild', guildRss: inFile}) // If this is a child process

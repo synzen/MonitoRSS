@@ -4,9 +4,11 @@
 const fs = require('fs')
 const currentGuilds = new Map()
 const linkTracker = {}
+const webhooks = {}
 const allScheduleWords = []
 let deletedFeeds = []
 let cookieAccessors
+let webhookAccessors
 let overriddenGuilds
 let blacklistGuilds
 let failedLinks
@@ -15,6 +17,12 @@ try {
   cookieAccessors = JSON.parse(fs.readFileSync('./settings/cookieAccessors.json'))
 } catch (e) {
   cookieAccessors = {ids: []}
+}
+
+try {
+  webhookAccessors = JSON.parse(fs.readFileSync('./settings/webhookAccessors.json'))
+} catch (e) {
+  webhookAccessors = {ids: []}
 }
 
 try {
@@ -43,9 +51,13 @@ exports.deletedFeeds = deletedFeeds // Any deleted rssNames to check during send
 
 exports.cookieAccessors = cookieAccessors // If restrictCookies is true in config, this is the list of permitted user IDs
 
+exports.webhookAccessors = webhookAccessors
+
 exports.overriddenGuilds = overriddenGuilds // To track guilds with overridden limits
 
 exports.linkTracker = linkTracker // To track schedule assignment to links
+
+exports.webhooks = webhooks // Holds webhooks for each source if applicable
 
 exports.allScheduleWords = allScheduleWords // Holds all words across all schedules
 

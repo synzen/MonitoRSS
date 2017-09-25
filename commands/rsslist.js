@@ -35,6 +35,7 @@ module.exports = function (bot, message, command) {
     let o = {
       link: rssList[rssName].link,
       title: rssList[rssName].title,
+      webhook: rssList[rssName].webhook,
       channel: bot.channels.get(rssList[rssName].channel) ? bot.channels.get(rssList[rssName].channel).name : undefined,
       titleChecks: rssList[rssName].titleChecks === true ? 'Title Checks: Enabled\n' : null
     }
@@ -52,6 +53,7 @@ module.exports = function (bot, message, command) {
     const channelName = currentRSSList[x].channel
     const status = currentRSSList[x].status
     const titleChecks = currentRSSList[x].titleChecks
+    const webhook = currentRSSList[x].webhook
 
     // 7 feeds per embed
     if ((count - 1) !== 0 && (count - 1) / 7 % 1 === 0) {
@@ -59,7 +61,7 @@ module.exports = function (bot, message, command) {
       embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor).setDescription(`Page ${pages.length + 1}\n\u200b`)
     }
 
-    embedMsg.addField(`${count})  ${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}Channel: #${channelName}\nLink: ${link}`)
+    embedMsg.addField(`${count})  ${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}Channel: #${channelName}\n${webhook ? 'Webhook: ' + webhook + '\n' : ''}Link: ${link}`)
   }
 
   // Push the leftover results into the last embed

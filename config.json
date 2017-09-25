@@ -45,6 +45,8 @@
     "shards": 1,
     "batchSize": 300,
     "restrictCookies": false,
-    "processorMethod": "single"
+    "restrictWebhooks": false,
+    "processorMethod": "single",
+    "minifyJSON": false
   }
 }
