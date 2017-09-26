@@ -66,7 +66,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
     }
 
     function sendCombinedMsg () {
-      channel.send(message.textMsg, {embed: message.embedMsg})
+      channel.send(message.textMsg, message.embedMsg)
       .then(m => {
         // console.log(successLog)
         if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated and has been sent (TITLE: ${article.title}).`)

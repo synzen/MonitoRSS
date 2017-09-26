@@ -21,7 +21,7 @@ module.exports = function (bot, message, command) {
     const existingWebhook = rssList[rssName].webhook
 
     message.channel.fetchWebhooks().then(function (hooks) {
-      message.channel.send(`${typeof existingWebhook === 'string' ? 'An existing webhook was found (' + existingWebhook + '). Your new setting will overwrite this. ' : ''}Type the name of the webhook in this channel you wish to use (case sensitive).`)
+      message.channel.send(`${typeof existingWebhook === 'string' ? 'An existing webhook was found (' + existingWebhook + '). You may type \`{remove}\` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n' : ''}Type the name of the webhook in this channel you wish to use (case sensitive), or type exit to cancel.`)
       .then(function (prompt) {
         msgHandler.add(prompt)
 
@@ -35,16 +35,31 @@ module.exports = function (bot, message, command) {
           msgHandler.add(m)
           const webhookName = m.content
           if (webhookName.toLowerCase() === 'exit') return collector.stop(`Webhook setting menu closed.`)
-          const hook = hooks.find('name', m.content)
-          if (!hook) return message.channel.send(`No such webhook found for this channel. Try again.`).then(m => msgHandler.add(m)).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1: `, e.message || e))
-          rssList[rssName].webhook = hook.name
+          if (webhookName === '{remove}') {
+            collector.stop()
+            if (!rssList[rssName].webhook) {
+              msgHandler.deleteAll(message.channel)
+              return message.channel.send(`There is no webhook assigned to this feed.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1a: `, e.message || e))
+            }
+            else {
+              let name = rssList[rssName].webhook
+              delete rssList[rssName].webhook
+              delete webhooks[rssName]
+              message.channel.send(`Successfully removed webhook ${name} from the feed <${rssList[rssName].link}>.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1b: `, e.message || e))
+            }
+          } else {
+            const hook = hooks.find('name', m.content)
+            if (!hook) return message.channel.send(`No such webhook found for this channel. Try again.`).then(m => msgHandler.add(m)).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2a: `, e.message || e))
+            collector.stop()
+            rssList[rssName].webhook = hook.name
 
-          webhooks[rssName] = hook
-          webhooks[rssName].guild = {id: m.guild.id, name: m.guild.name}
+            webhooks[rssName] = hook
+            webhooks[rssName].guild = {id: m.guild.id, name: m.guild.name}
 
-          fileOps.updateFile(m.guild.id, guildRss)
-          webhooks[rssName].send(`I am now connected to ${bot.user}!`).catch(e => console.log(`Commands warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2: `, e.message || e))
+            webhooks[rssName].send(`I am now connected to ${bot.user}, and will send feed articles for <${rssList[rssName].link}>!`).catch(e => console.log(`Commands warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2b: `, e.message || e))
+          }
           msgHandler.deleteAll(message.channel)
+          fileOps.updateFile(m.guild.id, guildRss)
 
 
         })
