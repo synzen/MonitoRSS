@@ -6,7 +6,6 @@ const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const webhooks = storage.webhooks
 const webhookAccessors = storage.webhookAccessors
-const MsgHandler = require('../util/MsgHandler.js')
 
 module.exports = function (bot, message, command) {
   if (config.advanced.restrictWebhooks === true && !webhookAccessors.ids.includes(message.author.id)) {
@@ -22,7 +21,7 @@ module.exports = function (bot, message, command) {
 
     message.channel.fetchWebhooks().then(function (hooks) {
       message.channel.send(`
-${typeof existingWebhook === 'object' ? 'An existing webhook was found (' + existingWebhook + '). You may type \`{remove}\` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n' : ''}
+${typeof existingWebhook === 'object' ? 'An existing webhook was found (' + existingWebhook + '). You may type {remove} to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n' : ''}
 Type the name of the webhook in this channel you wish to use (case sensitive), or type exit to cancel.\n\n
 To use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters \`--name="my new name here"\` or \`--avatar="http://website.com/image.jpg"\``)
       .then(function (prompt) {
@@ -41,8 +40,7 @@ To use a different name or avatar url of the webhook when articles are sent for 
             if (typeof existingWebhook !== 'object') {
               msgHandler.deleteAll(message.channel)
               return message.channel.send(`There is no webhook assigned to this feed.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1a: `, e.message || e))
-            }
-            else {
+            } else {
               let name = rssList[rssName].webhook
               delete rssList[rssName].webhook
               delete webhooks[rssName]
@@ -54,7 +52,7 @@ To use a different name or avatar url of the webhook when articles are sent for 
 
             const hookName = m.content.replace(nameRegex, '').replace(avatarRegex, '').trim()
             const hook = hooks.find('name', hookName)
-            if (!hook) return message.channel.send(`No such webhook named "${hookName}" found for this channel. Try again.`).then(m => msgHandler.add(m)).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2a: `, e.message || e))
+            if (!hook) return message.channel.send(`No such webhook named "${hookName}" found for this channel. Try again, or type exit to cancel.`).then(m => msgHandler.add(m)).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2a: `, e.message || e))
 
             const customNameSrch = m.content.match(nameRegex)
             const customAvatarSrch = m.content.match(avatarRegex)
@@ -80,8 +78,6 @@ To use a different name or avatar url of the webhook when articles are sent for 
           }
           msgHandler.deleteAll(message.channel)
           fileOps.updateFile(m.guild.id, guildRss)
-
-
         })
 
         collector.on('end', function (collected, reason) {
@@ -97,7 +93,5 @@ To use a different name or avatar url of the webhook when articles are sent for 
       message.channel.send(`Error: Unable to fetch webhooks for this channel. `, e.message ? e.message : '')
       console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to fetch webhooks for channel for webhook setting: `, e.message || e)
     })
-
   })
-
 }
