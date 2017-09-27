@@ -21,7 +21,10 @@ module.exports = function (bot, message, command) {
     const existingWebhook = rssList[rssName].webhook
 
     message.channel.fetchWebhooks().then(function (hooks) {
-      message.channel.send(`${typeof existingWebhook === 'string' ? 'An existing webhook was found (' + existingWebhook + '). You may type \`{remove}\` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n' : ''}Type the name of the webhook in this channel you wish to use (case sensitive), or type exit to cancel.`)
+      message.channel.send(`
+${typeof existingWebhook === 'object' ? 'An existing webhook was found (' + existingWebhook + '). You may type \`{remove}\` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n' : ''}
+Type the name of the webhook in this channel you wish to use (case sensitive), or type exit to cancel.\n\n
+To use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters \`--name="my new name here"\` or \`--avatar="http://website.com/image.jpg"\``)
       .then(function (prompt) {
         msgHandler.add(prompt)
 
@@ -29,15 +32,13 @@ module.exports = function (bot, message, command) {
         const collector = message.channel.createMessageCollector(filter, {time: 240000})
         channelTracker.add(message.channel.id)
 
-
-
         collector.on('collect', function (m) {
           msgHandler.add(m)
           const webhookName = m.content
           if (webhookName.toLowerCase() === 'exit') return collector.stop(`Webhook setting menu closed.`)
           if (webhookName === '{remove}') {
             collector.stop()
-            if (!rssList[rssName].webhook) {
+            if (typeof existingWebhook !== 'object') {
               msgHandler.deleteAll(message.channel)
               return message.channel.send(`There is no webhook assigned to this feed.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1a: `, e.message || e))
             }
@@ -48,13 +49,32 @@ module.exports = function (bot, message, command) {
               message.channel.send(`Successfully removed webhook ${name} from the feed <${rssList[rssName].link}>.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1b: `, e.message || e))
             }
           } else {
-            const hook = hooks.find('name', m.content)
-            if (!hook) return message.channel.send(`No such webhook found for this channel. Try again.`).then(m => msgHandler.add(m)).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2a: `, e.message || e))
+            const nameRegex = /--name="(.*)"/
+            const avatarRegex = /--avatar="(.*)"/
+
+            const hookName = m.content.replace(nameRegex, '').replace(avatarRegex, '').trim()
+            const hook = hooks.find('name', hookName)
+            if (!hook) return message.channel.send(`No such webhook named "${hookName}" found for this channel. Try again.`).then(m => msgHandler.add(m)).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2a: `, e.message || e))
+
+            const customNameSrch = m.content.match(nameRegex)
+            const customAvatarSrch = m.content.match(avatarRegex)
+
             collector.stop()
-            rssList[rssName].webhook = hook.name
+            rssList[rssName].webhook = {
+              id: hook.id
+            }
 
             webhooks[rssName] = hook
             webhooks[rssName].guild = {id: m.guild.id, name: m.guild.name}
+
+            if (customNameSrch) {
+              rssList[rssName].webhook.name = customNameSrch[1]
+              webhooks[rssName].name = customNameSrch[1]
+            }
+            if (customAvatarSrch) {
+              rssList[rssName].webhook.avatar = customAvatarSrch[1]
+              webhooks[rssName].avatar = customAvatarSrch[1]
+            }
 
             webhooks[rssName].send(`I am now connected to ${bot.user}, and will send feed articles for <${rssList[rssName].link}>!`).catch(e => console.log(`Commands warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2b: `, e.message || e))
           }

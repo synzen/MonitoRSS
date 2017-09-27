@@ -11,15 +11,20 @@ module.exports = function (bot, article, callback, isTestMessage) {
   const rssName = article.rssName
   const guildRss = currentGuilds.get(channel.guild.id)
   const rssList = guildRss.sources
+  const source = rssList[rssName]
 
-  if (typeof rssList[rssName].webhook === 'string') {
+  if (typeof rssList[rssName].webhook === 'object') {
     if (!channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) return body()
     if (!webhooks[rssName]) {
       channel.fetchWebhooks().then(function (hooks) {
-        const hook = hooks.find('name', rssList[rssName].webhook)
+        const hook = hooks.get(rssList[rssName].webhook.id)
         if (!hook) return body()
-        if (!webhooks[rssName]) webhooks[rssName] = hook
-        webhooks[rssName].guild = {id: channel.guild.id, name: channel.guild.name}
+        if (!webhooks[rssName]) {
+          webhooks[rssName] = hook
+          webhooks[rssName].guild = {id: channel.guild.id, name: channel.guild.name}
+          if (source.webhook.name) webhooks[rssName].name = source.webhook.name
+          if (source.webhook.avatar) webhooks[rssName].avatar = source.webhook.avatar
+        }
         channel = webhooks[rssName]
         body()
       }).catch(function (e) {
