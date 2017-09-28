@@ -47,8 +47,8 @@ To use a different name or avatar url of the webhook when articles are sent for 
               message.channel.send(`Successfully removed webhook ${name} from the feed <${rssList[rssName].link}>.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1b: `, e.message || e))
             }
           } else {
-            const nameRegex = /--name="(.*)"/
-            const avatarRegex = /--avatar="(.*)"/
+            const nameRegex = /--name="([^--]+)"/
+            const avatarRegex = /--avatar="([^--]+)"/
 
             const hookName = m.content.replace(nameRegex, '').replace(avatarRegex, '').trim()
             const hook = hooks.find('name', hookName)
