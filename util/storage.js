@@ -4,7 +4,6 @@
 const fs = require('fs')
 const currentGuilds = new Map()
 const linkTracker = {}
-const webhooks = {}
 const allScheduleWords = []
 let deletedFeeds = []
 let cookieAccessors
@@ -56,8 +55,6 @@ exports.webhookAccessors = webhookAccessors
 exports.overriddenGuilds = overriddenGuilds // To track guilds with overridden limits
 
 exports.linkTracker = linkTracker // To track schedule assignment to links
-
-exports.webhooks = webhooks // Holds webhooks for each source if applicable
 
 exports.allScheduleWords = allScheduleWords // Holds all words across all schedules
 

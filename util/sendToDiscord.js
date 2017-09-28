@@ -3,7 +3,6 @@ const translator = require('../rss/translator/translate.js')
 const storage = require('./storage.js')
 const deletedFeeds = storage.deletedFeeds
 const currentGuilds = storage.currentGuilds
-const webhooks = storage.webhooks
 const debugFeeds = require('../util/debugFeeds').list
 
 module.exports = function (bot, article, callback, isTestMessage) {
@@ -12,39 +11,28 @@ module.exports = function (bot, article, callback, isTestMessage) {
   const guildRss = currentGuilds.get(channel.guild.id)
   const rssList = guildRss.sources
   const source = rssList[rssName]
+  let channelType = 'textChannel'
 
   if (typeof rssList[rssName].webhook === 'object') {
     if (!channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) return body()
-    if (!webhooks[rssName]) {
-      channel.fetchWebhooks().then(function (hooks) {
-        const hook = hooks.get(rssList[rssName].webhook.id)
-        if (!hook) return body()
-        if (!webhooks[rssName]) {
-          webhooks[rssName] = hook
-          webhooks[rssName].guild = {id: channel.guild.id, name: channel.guild.name}
-          if (source.webhook.name) webhooks[rssName].name = source.webhook.name
-          if (source.webhook.avatar) webhooks[rssName].avatar = source.webhook.avatar
-        }
-        channel = webhooks[rssName]
-        body()
-      }).catch(function (e) {
-        console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Cannot fetch webhooks for webhook initialization to send message:  `, e)
-        body()
-      })
-    } else {
-      channel.fetchWebhooks().then(function (hooks) {
-        const hookID = webhooks[rssName].id
-        if (!hooks.get(hookID)) delete webhooks[rssName]
-        else channel = webhooks[rssName]
-        body()
-      }).catch(function (e) {
-        console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Cannot verify webhook before message sending. `, e)
-        body()
-      })
-    }
+    channel.fetchWebhooks().then(function (hooks) {
+      const hook = hooks.get(rssList[rssName].webhook.id)
+      if (!hook) return body()
+      const guildId = channel.guild.id
+      const guildName = channel.guild.name
+      channel = hook
+      channel.guild = {id: guildId, name: guildName}
+      if (source.webhook.name) channel.name = source.webhook.name
+      if (source.webhook.avatar) channel.avatar = source.webhook.avatar
+      channelType = 'webhook'
+      body()
+    }).catch(function (e) {
+      console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Cannot fetch webhooks for webhook initialization to send message:  `, e)
+      body()
+    })
   } else body()
 
-  function body() {
+  function body () {
     // Sometimes feeds get deleted mid-retrieval cycle, thus check for empty rssList and if the feed itself was deleted
     if (!rssList || rssList.size() === 0) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources for guild, skipping Discord message sending.`)
     if (deletedFeeds.includes(rssName)) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed (rssName ${rssName}, link: ${rssList[rssName].link}) was deleted during cycle, skipping Discord message sending.`)
@@ -61,7 +49,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
     }
 
     function sendTestDetails () {
-      channel.send(message.testDetails, {split: {prepend: '```md\n', append: '```'}})
+      channel.send(message.testDetails, channelType === 'textChannel' ? {split: {prepend: '```md\n', append: '```'}} : {split: {prepend: '```md\n', append: '```'}, username: channel.name, avatarURL: channel.avatar})
       .then(m => sendMain())
       .catch(err => {
         if (attempts === 4) return callback(new Error(failLog + `${err}`))
@@ -71,7 +59,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
     }
 
     function sendCombinedMsg () {
-      channel.send(message.textMsg, message.embedMsg)
+      channel.send(message.textMsg, channelType === 'textChannel' ? message.embedMsg : {username: channel.name, avatarURL: channel.avatar, embeds: [message.embedMsg]})
       .then(m => {
         // console.log(successLog)
         if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated and has been sent (TITLE: ${article.title}).`)
@@ -88,7 +76,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
     }
 
     function sendTxtMsg () {
-      channel.send(message.textMsg)
+      channel.send(message.textMsg, {username: channel.name, avatarURL: channel.avatar})
       .then(m => {
         // console.log(successLog)
         if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated and has been sent (TITLE: ${article.title}).`)

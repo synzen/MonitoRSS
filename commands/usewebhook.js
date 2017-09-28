@@ -4,7 +4,6 @@ const config = require('../config.json')
 const channelTracker = require('../util/channelTracker.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
-const webhooks = storage.webhooks
 const webhookAccessors = storage.webhookAccessors
 
 module.exports = function (bot, message, command) {
@@ -21,7 +20,7 @@ module.exports = function (bot, message, command) {
 
     message.channel.fetchWebhooks().then(function (hooks) {
       message.channel.send(`
-${typeof existingWebhook === 'object' ? 'An existing webhook was found (' + existingWebhook + '). You may type {remove} to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n' : ''}
+${typeof existingWebhook === 'object' ? 'An existing webhook was found (' + existingWebhook.name + '). You may type {remove} to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n' : ''}
 Type the name of the webhook in this channel you wish to use (case sensitive), or type exit to cancel.\n\n
 To use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters \`--name="my new name here"\` or \`--avatar="http://website.com/image.jpg"\``)
       .then(function (prompt) {
@@ -43,12 +42,11 @@ To use a different name or avatar url of the webhook when articles are sent for 
             } else {
               let name = rssList[rssName].webhook.name
               delete rssList[rssName].webhook
-              delete webhooks[rssName]
               message.channel.send(`Successfully removed webhook ${name} from the feed <${rssList[rssName].link}>.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1b: `, e.message || e))
             }
           } else {
-            const nameRegex = /--name="([^--]+)"/
-            const avatarRegex = /--avatar="([^--]+)"/
+            const nameRegex = /--name="(((?!(--name|--avatar)).)*)"/
+            const avatarRegex = /--avatar="(((?!(--name|--avatar)).)*)"/
 
             const hookName = m.content.replace(nameRegex, '').replace(avatarRegex, '').trim()
             const hook = hooks.find('name', hookName)
@@ -62,19 +60,11 @@ To use a different name or avatar url of the webhook when articles are sent for 
               id: hook.id
             }
 
-            webhooks[rssName] = hook
-            webhooks[rssName].guild = {id: m.guild.id, name: m.guild.name}
 
-            if (customNameSrch) {
-              rssList[rssName].webhook.name = customNameSrch[1]
-              webhooks[rssName].name = customNameSrch[1]
-            }
-            if (customAvatarSrch) {
-              rssList[rssName].webhook.avatar = customAvatarSrch[1]
-              webhooks[rssName].avatar = customAvatarSrch[1]
-            }
-
-            webhooks[rssName].send(`I am now connected to ${bot.user}, and will send feed articles for <${rssList[rssName].link}>!`).catch(e => console.log(`Commands warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2b: `, e.message || e))
+            if (customNameSrch) rssList[rssName].webhook.name = customNameSrch[1]
+            if (customAvatarSrch) rssList[rssName].webhook.avatar = customAvatarSrch[1]
+            console.info({name: customNameSrch ? customNameSrch[1] : null, avatarURL: customAvatarSrch ? customAvatarSrch[1] : null})
+            hook.send(`I am now connected to ${bot.user}, and will send feed articles for <${rssList[rssName].link}>!`, {username: customNameSrch ? customNameSrch[1] : null, avatarURL: customAvatarSrch ? customAvatarSrch[1] : null}).catch(e => console.log(`Commands warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 2b: `, e.message || e))
           }
           msgHandler.deleteAll(message.channel)
           fileOps.updateFile(m.guild.id, guildRss)
