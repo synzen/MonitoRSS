@@ -41,7 +41,7 @@ To use a different name or avatar url of the webhook when articles are sent for 
               msgHandler.deleteAll(message.channel)
               return message.channel.send(`There is no webhook assigned to this feed.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1a: `, e.message || e))
             } else {
-              let name = rssList[rssName].webhook
+              let name = rssList[rssName].webhook.name
               delete rssList[rssName].webhook
               delete webhooks[rssName]
               message.channel.send(`Successfully removed webhook ${name} from the feed <${rssList[rssName].link}>.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => usewebhook 1b: `, e.message || e))
