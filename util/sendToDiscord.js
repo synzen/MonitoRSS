@@ -22,8 +22,8 @@ module.exports = function (bot, article, callback, isTestMessage) {
       const guildName = channel.guild.name
       channel = hook
       channel.guild = {id: guildId, name: guildName}
-      if (source.webhook.name) channel.name = source.webhook.name
-      if (source.webhook.avatar) channel.avatar = source.webhook.avatar
+      channel.name = source.webhook.name ? source.webhook.name : undefined
+      channel.avatar = source.webhook.avatar ? source.webhook.avatar : undefined
       channelType = 'webhook'
       body()
     }).catch(function (e) {
