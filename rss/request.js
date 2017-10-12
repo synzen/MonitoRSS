@@ -7,7 +7,8 @@ module.exports = function (link, cookies, feedparser, callback) {
     read_timeout: 27000,
     follow_max: 5,
     follow_set_cookies: true,
-    rejectUnauthorized: true
+    rejectUnauthorized: true,
+    headers: {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36'}
   }
 
   if (cookies) options.cookies = cookies
