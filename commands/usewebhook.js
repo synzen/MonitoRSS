@@ -7,9 +7,9 @@ const currentGuilds = storage.currentGuilds
 const webhookAccessors = storage.webhookAccessors
 
 module.exports = function (bot, message, command) {
-  if (config.advanced.restrictWebhooks === true && !webhookAccessors.ids.includes(message.author.id)) {
+  if (config.advanced.restrictWebhooks === true && !webhookAccessors.ids.includes(message.guild.id)) {
     console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => User "${message.author.username}" attempted to access webhooks as an unauthorized user`)
-    return message.channel.send(`You do not have access to webhook use.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to send unauthorized message: `, e.message || e))
+    return message.channel.send(`This server does not have access to webhook use.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to send unauthorized message: `, e.message || e))
   }
   if (!message.guild.me.permissionsIn(message.channel).has('MANAGE_WEBHOOKS')) return message.channel.send(`I do not have permission to use webhooks in this channel. Please provide me Manage Webhooks permission.`).catch(e => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to send MANAGE_WEBHOOKS permission error message: `, e.message || e))
 

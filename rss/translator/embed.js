@@ -6,7 +6,7 @@ module.exports = function (rssList, rssName, article) {
 
   if (typeof embedSpecs.message === 'string') embed.setDescription(article.convertKeywords(embedSpecs.message))
 
-  if (typeof embedSpecs.footerText === 'string') embed.setFooter(article.convertKeywords(embedSpecs.footerText))
+  if (typeof embedSpecs.footerText === 'string') embed.setFooter(article.convertKeywords(embedSpecs.footerText), typeof embedSpecs.footerIconURL === 'string' ? embedSpecs.footerIconURL : null)
 
   if (embedSpecs.color && !isNaN(embedSpecs.color)) {
     if (embedSpecs.color > 16777215 || embedSpecs.color < 0) {
