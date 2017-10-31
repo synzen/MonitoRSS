@@ -22,7 +22,10 @@ function checkObjType (item, results) {
     return function () {
       return findImages(item, results)
     }
-  } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(item) && results.length < 9) results.push(item)
+  } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(item) && results.length < 9) {
+    if (item.startsWith('//')) item = 'http:' + item
+    results.push(item)
+  }
 }
 
 // Used to find images in any object values of the article
@@ -112,8 +115,8 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
         image: function (node, options) {
           if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && typeof node.attribs.src === 'string' && node.attribs.src) {
             let link = node.attribs.src
-            if (!link.startsWith('http') && link.startsWith('//')) link = 'http:' + link
-            else if (!link.startsWith('http')) link = 'http://' + link
+            if (link.startsWith('//')) link = 'http:' + link
+            else if (!link.startsWith('http://')) link = 'http://' + link
             imgSrcs.push(link)
           }
           const link = node.attribs.src
