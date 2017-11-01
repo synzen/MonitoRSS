@@ -116,7 +116,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
           if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && typeof node.attribs.src === 'string' && node.attribs.src) {
             let link = node.attribs.src
             if (link.startsWith('//')) link = 'http:' + link
-            else if (!link.startsWith('http://')) link = 'http://' + link
+            else if (!link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
             imgSrcs.push(link)
           }
           const link = node.attribs.src

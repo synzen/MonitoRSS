@@ -35,7 +35,7 @@ module.exports = function (bot, message, command) {
     let o = {
       link: rssList[rssName].link,
       title: rssList[rssName].title,
-      webhook: rssList[rssName].webhook,
+      webhook: rssList[rssName].webhook.id,
       channel: bot.channels.get(rssList[rssName].channel) ? bot.channels.get(rssList[rssName].channel).name : undefined,
       titleChecks: rssList[rssName].titleChecks === true ? 'Title Checks: Enabled\n' : null
     }
