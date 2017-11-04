@@ -32,14 +32,15 @@ module.exports = function (bot, message, command) {
   // Generate the info for each feed as an array, and push into another array
   const currentRSSList = []
   for (var rssName in rssList) {
+    const feed = rssList[rssName]
     let o = {
-      link: rssList[rssName].link,
-      title: rssList[rssName].title,
-      webhook: rssList[rssName].webhook.id,
-      channel: bot.channels.get(rssList[rssName].channel) ? bot.channels.get(rssList[rssName].channel).name : undefined,
-      titleChecks: rssList[rssName].titleChecks === true ? 'Title Checks: Enabled\n' : null
+      link: feed.link,
+      title: feed.title,
+      webhook: feed.webhook ? feed.webhook.id : undefined,
+      channel: bot.channels.get(feed.channel) ? bot.channels.get(feed.channel).name : undefined,
+      titleChecks: feed.titleChecks === true ? 'Title Checks: Enabled\n' : null
     }
-    if (failLimit !== 0) o.status = getFeedStatus(rssList[rssName].link)
+    if (failLimit !== 0) o.status = getFeedStatus(feed.link)
     currentRSSList.push(o)
   }
 
