@@ -110,8 +110,8 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
       noLinkBrackets: true,
       format: {
         image: function (node, options) {
-          if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && typeof node.attribs.src === 'string' && node.attribs.src) {
-            let link = node.attribs.src
+          if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && typeof node.attribs.src === 'string' && node.attribs.src.trim()) {
+            let link = node.attribs.src.trim()
             if (!link.startsWith('http') && link.startsWith('//')) link = 'http:' + link
             else if (!link.startsWith('http')) link = 'http://' + link
             imgSrcs.push(link)
