@@ -320,12 +320,12 @@ module.exports = function (bot, callback) {
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}INIT Info: Finished initialization cycle.${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
 
     if (bot.shard) {
-      bot.shard.broadcastEval(`
-      require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');
-    `).then(() => {
-      try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of initialization. `, e.message || e) }
-    }).catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on initialization end for shard ${bot.shard.id}. `, err.message || err))
-    }
+      bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');`)
+      .then(() => {
+        try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of initialization. `, e.message || e) }
+      })
+      .catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on initialization end for shard ${bot.shard.id}. `, err.message || err))
+    } else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of initialization. `, e.message || e) }
 
     callback(guildsInfo)
   }

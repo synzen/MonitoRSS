@@ -303,12 +303,13 @@ module.exports = function (bot, callback, schedule) {
     if (processorList.length === 0) cycleInProgress = false
 
     if (bot.shard) {
-      bot.shard.broadcastEval(`
-      require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');
-    `).then(() => {
-      try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
-    }).catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on cycle end for shard ${bot.shard.id}. `, err.message || err))
-    }
+      bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');`)
+      .then(() => {
+        try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
+      })
+      .catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on cycle end for shard ${bot.shard.id}. `, err.message || err))
+    } else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
+
 
     var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s.`)
