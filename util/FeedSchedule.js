@@ -7,13 +7,9 @@ const configChecks = require('./configCheck.js')
 const debugFeeds = require('../util/debugFeeds.js').list
 const events = require('events')
 const childProcess = require('child_process')
-const storage = require('./storage.js')
+const storage = require('./storage.js') // All properties of storage must be accessed directly due to constant changes
 const logLinkErr = require('./logLinkErrs.js')
-const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
-const linkTracker = storage.linkTracker // Directory object of rssNames with their values as schedule names
 const allScheduleWords = storage.allScheduleWords
-const failedLinks = storage.failedLinks
-let deletedFeeds = storage.deletedFeeds
 
 module.exports = function (bot, callback, schedule) {
   var timer // Timer for the setInterval
@@ -37,7 +33,8 @@ module.exports = function (bot, callback, schedule) {
   const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
 
   function addFailedFeed (link, rssList) {
-    failedLinks[link] = (failedLinks[link]) ? failedLinks[link] + 1 : 1
+    const failedLinks = storage.failedLinks
+    storage.failedLinks[link] = (failedLinks[link]) ? failedLinks[link] + 1 : 1
 
     if (failedLinks[link] >= failLimit) {
       console.log(`RSS Error: ${link} has passed the fail limit (${failLimit}). Will no longer retrieve.`)
@@ -46,12 +43,12 @@ module.exports = function (bot, callback, schedule) {
           bot.channels.get(rssList[rssName].channel).send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`)
         }
       }
-      failedLinks[link] = (new Date()).toString()
+      storage.failedLinks[link] = (new Date()).toString()
     }
   }
 
   function reachedFailCount (link) {
-    return typeof failedLinks[link] === 'string' // string indicates it has reached the fail count, and is the date of when it failed
+    return typeof storage.failedLinks[link] === 'string' // string indicates it has reached the fail count, and is the date of when it failed
   }
 
   function addToSourceLists (guildRss, guildId) { // rssList is an object per guildRss
@@ -74,24 +71,24 @@ module.exports = function (bot, callback, schedule) {
 
     for (var rssName in rssList) {
       if (configChecks.checkExists(rssName, rssList[rssName], false) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !reachedFailCount(rssList[rssName].link)) {
-        if (linkTracker[rssName] === schedule.name) { // If assigned to a schedule
+        if (storage.linkTracker[rssName] === schedule.name) { // If assigned to a schedule
           delegateFeed(rssName)
-        } else if (schedule.name !== 'default' && !linkTracker[rssName]) { // If current feed schedule is a custom one and is not assigned
+        } else if (schedule.name !== 'default' && !storage.linkTracker[rssName]) { // If current feed schedule is a custom one and is not assigned
           let keywords = schedule.keywords
           for (var q in keywords) {
             if (rssList[rssName].link.includes(keywords[q])) {
-              linkTracker[rssName] = schedule.name // Assign this feed to this schedule so no other feed schedule can take it on subsequent cycles
+              storage.linkTracker[rssName] = schedule.name // Assign this feed to this schedule so no other feed schedule can take it on subsequent cycles
               delegateFeed(rssName)
               console.log(`RSS Info: Undelegated feed ${rssName} (${rssList[rssName].link}) has been delegated to custom schedule ${schedule.name}`)
             }
           }
-        } else if (!linkTracker[rssName]) { // Has no schedule, was not previously assigned, so see if it can be assigned to default
+        } else if (!storage.linkTracker[rssName]) { // Has no schedule, was not previously assigned, so see if it can be assigned to default
           let reserveForOtherSched = false
           for (var w in allScheduleWords) { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
             if (rssList[rssName].link.includes(allScheduleWords[w])) reserveForOtherSched = true
           }
           if (!reserveForOtherSched) {
-            linkTracker[rssName] = 'default'
+            storage.linkTracker[rssName] = 'default'
             delegateFeed(rssName)
           }
         }
@@ -148,7 +145,7 @@ module.exports = function (bot, callback, schedule) {
 
     modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     sourceList.clear()
-    currentGuilds.forEach(addToSourceLists)
+    storage.currentGuilds.forEach(addToSourceLists)
     genBatchLists()
 
     if (sourceList.size + modSourceList.size === 0) {
@@ -171,6 +168,7 @@ module.exports = function (bot, callback, schedule) {
   }
 
   function getBatch (batchNumber, batchList, type) {
+    const failedLinks = storage.failedLinks
     if (batchList.length === 0) return getBatch(0, modBatchList, 'modded')
     let completedLinks = 0
     let currentBatch = batchList[batchNumber]
@@ -203,6 +201,7 @@ module.exports = function (bot, callback, schedule) {
   }
 
   function getBatchIsolated (batchNumber, batchList, type) {
+    const failedLinks = storage.failedLinks
     if (batchList.length === 0) return getBatchIsolated(0, modBatchList, 'modded')
     let completedLinks = 0
     let currentBatch = batchList[batchNumber]
@@ -243,6 +242,7 @@ module.exports = function (bot, callback, schedule) {
   }
 
   function getBatchParallel () {
+    const failedLinks = storage.failedLinks
     let totalBatchLengths = regBatchList.length + modBatchList.length
     let completedBatches = 0
 
@@ -296,11 +296,19 @@ module.exports = function (bot, callback, schedule) {
   }
 
   function finishCycle (noFeeds) {
+    const failedLinks = storage.failedLinks
     if (bot.shard && bot.shard.count > 1) bot.shard.send({type: 'scheduleComplete', refreshTime: refreshTime})
     if (noFeeds) return console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. No feeds to retrieve.`)
 
     if (processorList.length === 0) cycleInProgress = false
-    try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
+
+    if (bot.shard) {
+      bot.shard.broadcastEval(`
+      require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');
+    `).then(() => {
+      try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
+    }).catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on cycle end for shard ${bot.shard.id}. `, err.message || err))
+    }
 
     var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s.`)

@@ -12,11 +12,6 @@ module.exports = function (guildId, rssName, callback) {
   const rssList = guildRss.sources
   const link = rssList[rssName].link
 
-  if (failedLinks[rssList[rssName].link]) {
-    delete failedLinks[rssList[rssName].link]
-    try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Error: Unable to update failedLinks.json from removeRss. Reason: ${e}`) }
-  }
-
   sqlCmds.dropTable(config.feedManagement.databaseName, rssName)
   delete rssList[rssName]
   fileOps.updateFile(guildId, guildRss)

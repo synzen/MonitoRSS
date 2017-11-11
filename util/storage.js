@@ -6,11 +6,11 @@ const currentGuilds = new Map()
 const linkTracker = {}
 const allScheduleWords = []
 let deletedFeeds = []
-let cookieAccessors
-let webhookAccessors
-let overriddenGuilds
-let blacklistGuilds
-let failedLinks
+let cookieAccessors = {ids: []} // User IDs
+let webhookAccessors = {ids: []} // Guild IDs
+let overriddenGuilds = {}
+let blacklistGuilds = {ids: []}
+let failedLinks = {}
 
 try {
   cookieAccessors = JSON.parse(fs.readFileSync('./settings/cookieAccessors.json'))

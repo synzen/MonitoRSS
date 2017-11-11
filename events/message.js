@@ -1,5 +1,5 @@
 const config = require('../config.json')
-const controllerCmds = require('../commands/controller/controllerCmds.js')
+const controllerCmds = require('../commands/controller/main.js')
 const loadCommand = (file) => require(`../commands/${file}.js`)
 const hasPerm = require('../util/hasPerm.js')
 const commandList = require('../util/commandList.json')
@@ -40,5 +40,5 @@ module.exports = function (bot, message) {
   }
 
   // for bot controller commands
-  if (controllerCmds[command] && isBotController(command, message.author.id)) return controllerCmds[command](bot, message)
+  if (controllerCmds[command] && isBotController(command, message.author.id)) return controllerCmds[command][bot.shard ? 'sharded' : 'normal'](bot, message)
 }

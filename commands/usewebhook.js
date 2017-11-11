@@ -60,7 +60,6 @@ To use a different name or avatar url of the webhook when articles are sent for 
               id: hook.id
             }
 
-
             if (customNameSrch) rssList[rssName].webhook.name = customNameSrch[1]
             if (customAvatarSrch) rssList[rssName].webhook.avatar = customAvatarSrch[1]
             console.info({name: customNameSrch ? customNameSrch[1] : null, avatarURL: customAvatarSrch ? customAvatarSrch[1] : null})

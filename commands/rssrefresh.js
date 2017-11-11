@@ -32,6 +32,8 @@ module.exports = function (bot, message, command) {
         }
         delete failedLinks[source.link]
 
+        if (bot.shard) bot.shard.broadcastEval(`delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${source.link}'];`).catch(err => console.log(`Error: Unable to broadcast failed links update on rssrefresh. `, err.message || err))
+
         try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Error: Unable to update failedLinks.json from rssrefresh. Reason: ${e}`) }
 
         console.log(`RSS Info: Link ${source.link} has been refreshed back on cycle.`)

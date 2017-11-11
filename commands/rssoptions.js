@@ -3,10 +3,11 @@ const fileOps = require('../util/fileOps.js')
 const chooseFeed = require('./util/chooseFeed.js')
 const config = require('../config.json')
 const channelTracker = require('../util/channelTracker.js')
-const currentGuilds = require('../util/storage.js').currentGuilds
+const storage = require('../util/storage.js')
 const MsgHandler = require('../util/MsgHandler.js')
 
 module.exports = function (bot, message, command) {
+  const currentGuilds = storage.currentGuilds
   const menu = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
     .setAuthor('Miscellaneous Feed Options')
