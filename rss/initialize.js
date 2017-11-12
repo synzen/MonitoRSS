@@ -56,6 +56,13 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
   const articleList = []
   let errored = false // Sometimes feedparser emits error twice
 
+  while (true) { // Make links uniform
+    if (link.endsWith('/')) link = link.slice(0, -1)
+    if (link.endsWith('?')) link = link.slice(0, -1)
+
+    if (!link.endsWith('/') && !link.endsWith('?')) break
+  }
+
   requestStream(link, cookies, feedparser, function (err) {
     if (err && errored === false) {
       errored = true
