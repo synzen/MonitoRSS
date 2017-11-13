@@ -86,13 +86,13 @@ module.exports = function (bot, message, command) {
         // Adding
         if (optionSelected === '1') {
           filterOptionCollector.stop()
-          if (!isGlobalSub) filters.add(message, rssName, role)
+          if (!isGlobalSub) filters.add(message, rssName, role, msgHandler)
           else addGlobalSub(rssName, role)
         } else if (optionSelected === '2') { // Removing
           filterOptionCollector.stop()
           if (!isGlobalSub) {
             if (!rssList[rssName].filters || !rssList[rssName].filters.roleSubscriptions) return message.channel.send(`There are no filtered subscriptions to remove from the feed <${rssList[rssName].link}>.`)
-            filters.remove(message, rssName, role)
+            filters.remove(message, rssName, role, msgHandler)
           } else {
             if (!rssList[rssName].roleSubscriptions) return message.channel.send(`There are no global subscriptions to remove from the feed <${rssList[rssName].link}>.`).catch(err => console.log(`Promise Warning: rssRoles/openSubMenu 2: ${err}`))
             removeGlobalSub(rssName, role)
