@@ -1,10 +1,8 @@
-const fs = require('fs')
 const fileOps = require('../util/fileOps.js')
 const sqlCmds = require('../rss/sql/commands.js')
 const config = require('../config.json')
 const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds
-const failedLinks = storage.failedLinks
 const deletedFeeds = storage.deletedFeeds
 
 module.exports = function (guildId, rssName, callback) {

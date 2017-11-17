@@ -165,7 +165,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   if ((rawArticle.pubdate && rawArticle.toString() !== 'Invalid Date') || config.feedSettings.dateFallback === true) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
-    const timeFormat = (config.feedSettings.timeFormat) ? config.feedSettings.timeFormat : 'ddd, D MMMM YYYY, h:mm A z'
+    const timeFormat = guildRss.timeFormat ? guildRss.timeFormat : config.feedSettings.timeFormat
 
     const useDateFallback = config.feedSettings.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
     const useTimeFallback = config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)

@@ -34,6 +34,10 @@
 		"userPerm": "MANAGE_CHANNELS",
 		"description": "Change the timezone for dates given by the {date} placeholder. For a list of timezones, see the TZ column at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>."
 	},
+	"rsstimeformat": {
+		"userPerm": "MANAGE_CHANNELS",
+		"description": "Change the date format displayed with the {date} placeholder. To see how how to properly set a custom format for dates, see <https://momentjs.com/docs/#/displaying/>."
+	},
 	"rssfilters": {
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Global Filter Addition/Removal",
@@ -59,11 +63,11 @@
 	"rssrefresh": {
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Refresh Feed",
-		"description": "Opens a menu to readd the feed link back onto the regular cycle if it has surpassed the fail limit."
+		"description": "Opens a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit."
 	},
 	"rssoptions": {
 		"userPerm": "MANAGE_CHANNELS",
-		"description": "Miscellaneous RSS options",
+		"description": "Miscellaneous feed options",
 		"options": {
 			"checkTitles": "Toggle Title Checks",
 			"imgPreviews": "Toggle Image Link Previews",
@@ -71,7 +75,7 @@
 			"checkDates": "Toggle Date Checks"
 		}
 	},
-	"usewebhook": {
+	"rsswebhook": {
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Webhook Connection",
 		"description": "Connect a webhook to send feed messages instead."
