@@ -40,7 +40,7 @@ exports.deleteGuild = function (guildId, shardingManager, callback) {
 
 exports.isEmptySources = function (guildRss, shardingManager) { // Used on the beginning of each cycle to check for empty sources per guild
   if (!guildRss.sources || getLength(guildRss.sources) === 0) {
-    if (!guildRss.timezone) { // Delete only if server-specific special settings are not found
+    if (!guildRss.timezone && !guildRss.timeFormat) { // Delete only if server-specific special settings are not found
       exports.deleteGuild(guildRss.id, shardingManager, function () {
         console.log(`RSS Info: (${guildRss.id}) => 0 sources found with no custom settings, deleting.`)
       })
