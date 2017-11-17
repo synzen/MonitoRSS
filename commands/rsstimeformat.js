@@ -34,7 +34,9 @@ module.exports = function (bot, message) {
   findDatePlaceholders(guildRss.sources, results)
   if (results.length === 0) return message.channel.send('You cannot set your a custom time format if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Promise Warning: rsstimeformat 3b: ${err}`))
 
-  const dateFormat = msgArray[msgArray.length - 1].trim()
+  msgArray.shift()
+
+  const dateFormat = msgArray.join(' ').trim()
 
   if (dateFormat === 'reset' && !guildRss.timeFormat) return message.channel.send(`Your time format is already at default.`).catch(err => console.log(`Promise Warning: rsstimeformat 5: ${err}`))
   else if (dateFormat === guildRss.timeFormat) return message.channel.send(`Your time format is already set as \`${guildRss.timeFormat}\`.`).catch(err => console.log(`Promise Warning: rsstimeformat 6: ${err}`))
