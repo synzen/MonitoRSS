@@ -1,7 +1,7 @@
 const config = require('../../config.json')
 const filterFeed = require('./filters.js')
 const generateEmbed = require('./embed.js')
-const Article = require('./article.js')
+const Article = require('./Article.js')
 const getSubs = require('./subscriptions.js')
 
 function isNotEmpty (obj) {
