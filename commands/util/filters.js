@@ -88,7 +88,7 @@ Filters will be applied as **case insensitive** to feeds.`)
 
             if (!role) {
               console.log(`RSS Filters: (${message.guild.id}, ${message.guild.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${rssList[rssName].link}.`)
-              let msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n\n${addedList}\`\`\``
+              let msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n\n${addedList}\`\`\`You may test random articles with \`${config.botSettings.prefix}rsstest\`, or specifically send filtered articles with \`${config.botSettings.prefix}rssfilters\` option 5.`
               if (invalidItems) {
                 msg += `\n\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
                 editing.edit(msg).catch(err => console.log(`Promise Warning: filterAdd 4a1: ${err}`))
@@ -97,7 +97,7 @@ Filters will be applied as **case insensitive** to feeds.`)
               console.log(`RSS Roles: (${message.guild.id}, ${message.guild.name}) => Role (${role.id}, ${role.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${rssList[rssName].link}.`)
               let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\`\`\`\n\n${addedList}\`\`\``
               if (invalidItems) msg += `\n\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-              editing.edit(`${msg}\n\nYou may test your filters via \`${config.botSettings.prefix}rsstest\` and see what feeds will mention the role`).catch(err => console.log(`Promise Warning: filterAdd 4b: ${err}`))
+              editing.edit(`${msg}\n\nYou may test your filters on random articles via \`${config.botSettings.prefix}rsstest\` and see what articles will mention the role`).catch(err => console.log(`Promise Warning: filterAdd 4b: ${err}`))
             }
           })
           .catch(err => console.log(`Promise Warning: filterAdd 4: ${err}`))

@@ -126,7 +126,7 @@ module.exports = function (bot, message) {
                 channelErrMsg = 'Unable to connect to feed link'
                 break
               case 'feedparser':
-                channelErrMsg = 'Invalid feed. Be sure to first validate your feed online'
+                channelErrMsg = 'Invalid feed. Note that you cannot simply put any link - it must be formatted as an RSS feed page. To check if it is so, you may search for online RSS feed validators'
                 break
               case 'database':
                 channelErrMsg = 'Internal database error. Please try again'
