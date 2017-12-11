@@ -160,7 +160,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   this.titleImgs = rawTitleImgs
 
   // Date
-  if ((rawArticle.pubdate && rawArticle.toString() !== 'Invalid Date') || config.feedSettings.dateFallback === true) {
+  if ((rawArticle.pubdate && rawArticle.pubdate.toString() !== 'Invalid Date') || config.feedSettings.dateFallback === true) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
     const timeFormat = guildRss.timeFormat ? guildRss.timeFormat : config.feedSettings.timeFormat
@@ -168,10 +168,8 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     const useDateFallback = config.feedSettings.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
     const useTimeFallback = config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)
     const date = useDateFallback ? new Date() : rawArticle.pubdate
-    let vanityDateMoment = moment(date)
-    if (useTimeFallback) vanityDateMoment = setCurrentTime(vanityDateMoment)
+    const vanityDate = useTimeFallback ? setCurrentTime(moment(date)).tz(timezone).format(timeFormat) : moment(date).tz(timezone).format(timeFormat)
 
-    const vanityDate = vanityDateMoment.tz(timezone).format(timeFormat)
     this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
   }
 
