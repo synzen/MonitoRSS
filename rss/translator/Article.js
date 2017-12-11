@@ -113,11 +113,12 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
       noLinkBrackets: true,
       format: {
         image: function (node, options) {
-          let link = node.attribs.src.trim()
-          if (link.startsWith('//')) link = 'http:' + link
-          else if (!link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
+          const isStr = typeof node.attribs.src === 'string'
+          let link = isStr ? node.attribs.src.trim() : node.attribs.src
+          if (isStr && link.startsWith('//')) link = 'http:' + link
+          else if (isStr && !link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
 
-          if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && typeof link === 'string' && link) imgSrcs.push(link)
+          if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && isStr && link) imgSrcs.push(link)
 
           let exist = true
           const globalExistOption = config.feedSettings.imageLinksExistence != null ? config.feedSettings.imageLinksExistence : defaultConfigs.feedSettings.imageLinksExistence.default // Always a boolean via startup checks
