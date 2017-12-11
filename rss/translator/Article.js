@@ -69,7 +69,6 @@ function regexReplace (string, regexSearchQuery, replacementData, flags) {
 }
 
 module.exports = function Article (rawArticle, guildRss, rssName) {
-  console.info(rawArticle)
   const rssList = guildRss.sources
 
   function evalRegexConfig (text, placeholder) {
