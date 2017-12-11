@@ -69,6 +69,7 @@ function regexReplace (string, regexSearchQuery, replacementData, flags) {
 }
 
 module.exports = function Article (rawArticle, guildRss, rssName) {
+  console.info(rawArticle)
   const rssList = guildRss.sources
 
   function evalRegexConfig (text, placeholder) {
@@ -113,13 +114,11 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
       noLinkBrackets: true,
       format: {
         image: function (node, options) {
-          if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && typeof node.attribs.src === 'string' && node.attribs.src.trim()) {
-            let link = node.attribs.src.trim()
-            if (link.startsWith('//')) link = 'http:' + link
-            else if (!link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
-            imgSrcs.push(link)
-          }
-          const link = node.attribs.src
+          const link = node.attribs.src.trim()
+          if (link.startsWith('//')) link = 'http:' + link
+          else if (!link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
+
+          if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && typeof link === 'string' && link) imgSrcs.push(link)
 
           let exist = true
           const globalExistOption = config.feedSettings.imageLinksExistence != null ? config.feedSettings.imageLinksExistence : defaultConfigs.feedSettings.imageLinksExistence.default // Always a boolean via startup checks

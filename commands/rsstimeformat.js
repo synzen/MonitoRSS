@@ -11,7 +11,7 @@ function checkObjType (item, results) {
   } else if (typeof item === 'string' && item.search(/{date}/) !== -1) results.push(true)
 }
 
-// Used to find images in any object values of the article
+// Used to find {date} in any object values
 function findDatePlaceholders (obj, results) {
   for (var key in obj) {
     let value = checkObjType(obj[key], results)
@@ -30,16 +30,16 @@ module.exports = function (bot, message) {
 
   if (msgArray.length <= 1) return message.channel.send(`Setting a custom date format is only useful if you intend on using customized messages with the \`{date}\` placeholder. To set a custom date format, the syntax is \`${config.botSettings.prefix}rsstimeformat date_format_here\`. To reset back to the default (\`${config.feedSettings.timeFormat}\`), type \`${config.botSettings.prefix}rsstimeformat reset\`.\n\nSee <https://momentjs.com/docs/#/displaying/> on how to format a date.`).catch(err => console.log(`Promise Warning: rsstimeformat 3a: ${err}`))
 
-  let results = []
-  findDatePlaceholders(guildRss.sources, results)
-  if (results.length === 0) return message.channel.send('You cannot set your a custom time format if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Promise Warning: rsstimeformat 3b: ${err}`))
-
   msgArray.shift()
 
   const dateFormat = msgArray.join(' ').trim()
 
   if (dateFormat === 'reset' && !guildRss.timeFormat) return message.channel.send(`Your time format is already at default.`).catch(err => console.log(`Promise Warning: rsstimeformat 5: ${err}`))
   else if (dateFormat === guildRss.timeFormat) return message.channel.send(`Your time format is already set as \`${guildRss.timeFormat}\`.`).catch(err => console.log(`Promise Warning: rsstimeformat 6: ${err}`))
+
+  let results = []
+  findDatePlaceholders(guildRss.sources, results)
+  if (results.length === 0) return message.channel.send('You cannot set your a custom time format if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Promise Warning: rsstimeformat 3b: ${err}`))
 
   if (dateFormat === 'reset' || dateFormat === config.feedSettings.timeFormat) {
     delete guildRss.timeFormat

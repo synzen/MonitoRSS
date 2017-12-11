@@ -13,9 +13,9 @@ module.exports = function (bot, message, command) {
     .setAuthor('Miscellaneous Feed Options')
     .setDescription('\u200b\nPlease select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
     .addField('1) Toggle Title Checks for a feed', `**Only enable this if necessary!** Default is ${config.feedSettings.checkTitles === true ? 'enabled.' : 'disabled.'} Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.`)
-    .addField('2) Toggle Image Link Previews for a feed', `Default is ${config.feedSettings.iamgePreviews === false ? 'disabled' : 'enabled'}. Toggle Discord image link previews for image links found inside placeholders such as {description}.`)
-    .addField('3) Toggle Image Links Existence for a feed', `Default is ${config.feedSettings.imageLinksExistence === false ? 'disabled' : 'enabled'}. Toggle the existence of image links for image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`)
-    .addField('4) Toggle Date Checks for a feed', `Default is ${config.feedSettings.checkDates === false ? 'disabled' : 'enabled'}. Date checking ensures that articles that are ${config.feedSettings.cycleMaxAge} day(s) old and articles with invalid/no pubdates are't sent.`)
+    .addField('2) Toggle Image Link Previews for a feed', `Default is ${config.feedSettings.iamgePreviews === false ? 'disabled' : 'enabled'}. Toggle automatic Discord image link embedded previews for image links found inside placeholders such as {description}.`)
+    .addField('3) Toggle Image Links Existence for a feed', `Default is ${config.feedSettings.imageLinksExistence === false ? 'disabled' : 'enabled'}. Remove image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`)
+    .addField('4) Toggle Date Checks for a feed', `Default is ${config.feedSettings.checkDates === false ? 'disabled' : 'enabled'}. Date checking ensures that articles that are ${config.feedSettings.cycleMaxAge} day(s) old or has invalid/no pubdates are't sent.`)
 
   const firstMsgHandler = new MsgHandler(bot, message)
 

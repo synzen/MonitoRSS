@@ -21,7 +21,6 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
 
   const rssList = guildRss.sources
   const maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] === 0 ? 'Unlimited' : overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds, 10))) ? 'Unlimited' : config.feedSettings.maxFeeds
-
   let embedMsg = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
     .setAuthor('Feed Selection Menu')

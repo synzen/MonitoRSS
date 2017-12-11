@@ -42,7 +42,7 @@ module.exports = function (bot, callback) {
   const sourceList = new Map()
   const regBatchList = []
   const modBatchList = []
-  const batchSize = (config.advanced && config.advanced.batchSize) ? config.advanced.batchSize : 400
+  const batchSize = 100
   const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
   const guildsInfo = {}
 
