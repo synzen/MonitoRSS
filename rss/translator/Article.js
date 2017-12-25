@@ -164,12 +164,14 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   if ((rawArticle.pubdate && rawArticle.pubdate.toString() !== 'Invalid Date') || config.feedSettings.dateFallback === true) {
     const guildTimezone = guildRss.timezone
     const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
-    const timeFormat = guildRss.timeFormat ? guildRss.timeFormat : config.feedSettings.timeFormat
+    const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feedSettings.dateFormat
 
     const useDateFallback = config.feedSettings.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
     const useTimeFallback = config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)
     const date = useDateFallback ? new Date() : rawArticle.pubdate
-    const vanityDate = useTimeFallback ? setCurrentTime(moment(date)).tz(timezone).format(timeFormat) : moment(date).tz(timezone).format(timeFormat)
+    const localMoment = moment(date)
+    if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)
+    const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
 
     this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
   }
