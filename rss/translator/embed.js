@@ -3,10 +3,12 @@ const Discord = require('discord.js')
 module.exports = function (rssList, rssName, article) {
   const embed = new Discord.RichEmbed()
   const embedSpecs = rssList[rssName].embedMessage.properties
+  const convert = article.convertKeywords
+  const convertImgs = article.convertImgs
 
-  if (typeof embedSpecs.message === 'string') embed.setDescription(article.convertKeywords(embedSpecs.message))
+  if (typeof embedSpecs.message === 'string') embed.setDescription(convert(embedSpecs.message))
 
-  if (typeof embedSpecs.footerText === 'string') embed.setFooter(article.convertKeywords(embedSpecs.footerText), typeof embedSpecs.footerIconURL === 'string' ? embedSpecs.footerIconURL : null)
+  if (typeof embedSpecs.footerText === 'string') embed.setFooter(convert(embedSpecs.footerText), typeof embedSpecs.footerIconURL === 'string' ? embedSpecs.footerIconURL : null)
 
   if (embedSpecs.color && !isNaN(embedSpecs.color)) {
     if (embedSpecs.color > 16777215 || embedSpecs.color < 0) {
@@ -15,18 +17,18 @@ module.exports = function (rssList, rssName, article) {
     } else embed.setColor(parseInt(embedSpecs.color, 10))
   } else if (typeof embedSpecs.color === 'string' && embedSpecs.color.startsWith('#') && embedSpecs.color.length === 7) embed.setColor(embedSpecs.color)
 
-  if (typeof embedSpecs.authorTitle === 'string') embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle))
+  if (typeof embedSpecs.authorTitle === 'string') embed.setAuthor(convert(embedSpecs.authorTitle))
 
-  if (typeof embedSpecs.authorTitle === 'string' && typeof embedSpecs.authorAvatarURL === 'string') embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle), article.convertKeywords(embedSpecs.authorAvatarURL))
+  if (typeof embedSpecs.authorTitle === 'string' && typeof embedSpecs.authorAvatarURL === 'string') embed.setAuthor(convert(embedSpecs.authorTitle), convert(embedSpecs.authorAvatarURL))
 
-  if (typeof embedSpecs.thumbnailURL === 'string') embed.setThumbnail(article.convertImgs(embedSpecs.thumbnailURL))
+  if (typeof embedSpecs.thumbnailURL === 'string') embed.setThumbnail(convertImgs(embedSpecs.thumbnailURL))
 
-  if (typeof embedSpecs.imageURL === 'string') embed.setImage(article.convertImgs(embedSpecs.imageURL))
+  if (typeof embedSpecs.imageURL === 'string') embed.setImage(convertImgs(embedSpecs.imageURL))
 
-  if (typeof embedSpecs.url === 'string') embed.setURL(embedSpecs.url)
+  if (typeof embedSpecs.url === 'string') embed.setURL(convert(embedSpecs.url))
   else embed.setURL(article.link)
 
-  if (typeof embedSpecs.title === 'string') embed.setTitle(article.convertKeywords(embedSpecs.title))
+  if (typeof embedSpecs.title === 'string') embed.setTitle(convert(embedSpecs.title))
 
   const fields = embedSpecs.fields
   if (Array.isArray(fields)) {
@@ -36,7 +38,7 @@ module.exports = function (rssList, rssName, article) {
       const title = field.title
       const value = field.value
       if (typeof title === 'string' && !title) embed.addBlankField(inline)
-      else embed.addField(article.convertKeywords(title), article.convertKeywords(value), inline)
+      else embed.addField(convert(title), convert(value), inline)
     }
   }
 
