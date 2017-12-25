@@ -23,9 +23,22 @@ module.exports = function (rssList, rssName, article) {
 
   if (typeof embedSpecs.imageURL === 'string') embed.setImage(article.convertImgs(embedSpecs.imageURL))
 
-  if (typeof embedSpecs.url === 'string') embed.setURL(article.link)
+  if (typeof embedSpecs.url === 'string') embed.setURL(embedSpecs.url)
+  else embed.setURL(article.link)
 
   if (typeof embedSpecs.title === 'string') embed.setTitle(article.convertKeywords(embedSpecs.title))
+
+  const fields = embedSpecs.fields
+  if (Array.isArray(fields)) {
+    for (var x in fields) {
+      const field = fields[x]
+      const inline = field.inline === true ? true : false
+      const title = field.title
+      const value = field.value
+      if (typeof title === 'string' && !title) embed.addBlankField(inline)
+      else embed.addField(article.convertKeywords(title), article.convertKeywords(value), inline)
+    }
+  }
 
   return embed
 }
