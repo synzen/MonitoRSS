@@ -4,7 +4,8 @@ const initialize = require('./util/initialization.js')
 const config = require('./config.json')
 const configCheck = require('./util/configCheck.js')
 const ScheduleManager = require('./util/ScheduleManager.js')
-const currentGuilds = require('./util/storage.js').currentGuilds
+const storage = require('./util/storage.js')
+const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
 
 const results = configCheck.checkMasterConfig(config)
@@ -27,7 +28,7 @@ let bot
 
 // Function to handle login/relogin automatically
 let loginAttempts = 0
-let maxAttempts = 2
+let maxAttempts = 5
 
 bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
 
@@ -44,7 +45,7 @@ function login (firstStartup) {
   bot.once('ready', function () {
     loginAttempts = 0
     bot.user.setPresence({ game: { name: (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null, type: 0 } })
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS has logged in, processing set to ${config.advanced.processorMethod}.`)
+    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}.`)
     if (firstStartup) initialize(bot, finishInit)
     else scheduleManager = new ScheduleManager(bot)
   })

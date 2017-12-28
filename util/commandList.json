@@ -32,7 +32,7 @@
 	},
 	"rssdate": {
 		"userPerm": "MANAGE_CHANNELS",
-		"description": "Customize how dates are displayed"
+		"description": "Opens a menu to customize how dates are displayed."
 	},
 	"rssfilters": {
 		"userPerm": "MANAGE_CHANNELS",
