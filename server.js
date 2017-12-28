@@ -12,6 +12,10 @@ const results = configCheck.checkMasterConfig(config)
 if (results && results.fatal) throw new Error(results.message)
 else if (results) console.info(results.message)
 
+let restartTime = config.feedSettings.refreshTimeMinutes * 60000 / 4 * 10
+restartTime = restartTime < 60000 ? Math.ceil(restartTime * 4) : Math.ceil(restartTime) // Try to make sure it's never below a minute
+const restartTimeDisp = (restartTime / 1000 / 60).toFixed(2)
+
 // Ease the pains of having to rewrite a function every time to check an empty object
 Object.defineProperty(Object.prototype, 'size', {
   value: function () {
@@ -38,8 +42,8 @@ function login (firstStartup) {
   bot.login(config.botSettings.token)
   .catch(err => {
     if (loginAttempts++ >= maxAttempts) throw new Error(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS failed to login after ${maxAttempts} attempts.`)
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS could not login (${err}), retrying in 60 seconds...`)
-    setTimeout(login, 20000)
+    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS failed to login (${err}), retrying in ${restartTimeDisp} minutes...`)
+    setTimeout(login, restartTime)
   })
 
   bot.once('ready', function () {
@@ -53,11 +57,7 @@ function login (firstStartup) {
   bot.once('disconnect', function (e) {
     if (loginAttempts++ >= maxAttempts) throw new Error(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS failed to login after ${maxAttempts} attempts.`)
 
-    let restartTime = config.feedSettings.refreshTimeMinutes * 60000 / 4 * 10
-    restartTime = restartTime < 60000 ? Math.ceil(restartTime * 4) : Math.ceil(restartTime) // Try to make sure it's never below a minute
-    restartTime = 5000
-
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Error: Disconnected from Discord. Attempting to reconnect after ~${restartTime / 1000 / 60} minutes.`)
+    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Error: Disconnected from Discord. Attempting to reconnect after ${restartTimeDisp} minutes.`)
 
     var timer = setInterval(function () {
       if (scheduleManager && scheduleManager.cyclesInProgress()) return console.log('Feed retrieval cycles are currently in progress. Waiting until cycles end to reconnect.')
