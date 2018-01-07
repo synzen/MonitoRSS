@@ -63,6 +63,8 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
     if (!link.endsWith('/') && !link.endsWith('?')) break
   }
 
+  link += '/' // Some links won't work without the trailing slash
+
   requestStream(link, cookies, feedparser, function (err) {
     if (err && errored === false) {
       errored = true
