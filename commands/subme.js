@@ -62,7 +62,7 @@ module.exports = function (bot, message, command) {
         message.member.addRole(chosenRole)
         .then(function (member) {
           console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Role *${chosenRole.name}* successfully added to member. `)
-          message.channel.send(`You now have the role \`${chosenRole.name}\`, subscribed to the feed titled **${source.link}**.`).catch(err => console.log(`Promise Warning: subAdd 6: ${err}`))
+          message.channel.send(`You now have the role \`${chosenRole.name}\`, subscribed to **<${source.link}>**.`).catch(err => console.log(`Promise Warning: subAdd 6: ${err}`))
         })
         .catch(function (err) {
           message.channel.send(`Error: Unable to add role.`).catch(err => console.log(`Promise Warning: subAdd 7: ${err}`))
