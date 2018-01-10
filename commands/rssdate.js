@@ -32,7 +32,7 @@ module.exports = (bot, message) => {
 
   let results = []
   findDatePlaceholders(guildRss.sources, results)
-  if (results.length === 0) return message.channel.send('You cannot set your timezone if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Commands Warning: rssdate 2:`, err))
+  if (results.length === 0) return message.channel.send('You cannot customize the date placeholder if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Commands Warning: rssdate 2:`, err))
 
   const menu = new Discord.RichEmbed()
     .setColor(config.botSettings.menuColor)
