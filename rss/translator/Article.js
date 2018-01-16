@@ -42,25 +42,33 @@ function escapeRegExp (str) {
   return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
 }
 
-function regexReplace (string, regexSearchQuery, replacementData, flags) {
+function regexReplace (string, searchOptions, replacement) {
+  const flags = searchOptions.flags ? searchOptions.flags : 'gi'
   try {
-    let newMatch
-    if (replacementData.type === 'regex') {
-      const newMatchIndex = replacementData.matchNumber
-      const newRegExp = new RegExp(replacementData.content, flags)
-      newMatch = newRegExp.exec(string)[newMatchIndex]
-    } else if (replacementData.type === 'string') newMatch = replacementData.content
+    const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined
+    const groupNum = searchOptions.group !== undefined ? parseInt(searchOptions.group, 10) : undefined
+    const regExp = new RegExp(searchOptions.regex, flags)
+    const matches = []
+    let match
+    while (match = regExp.exec(string)) { // Find everything that matches the search regex query and push it to matches.
+      matches.push(match)
+    }
+    match = matches[matchIndex ? matchIndex : 0][groupNum ? groupNum : 0]
 
-    const oldRegExp = new RegExp(regexSearchQuery, flags)
-    const oldMatches = []
-    let oldMatch
-    while ((oldMatch = oldRegExp.exec(string)) && !oldMatches.includes(oldMatch[0])) {
-      oldMatches.push(oldMatch[0])
-    }
-    for (var x in oldMatches) { // oldMatches is an array of strings
-      let exp = new RegExp(escapeRegExp(oldMatches[x]), flags)
-      string = string.replace(exp, newMatch)
-    }
+    if (replacement !== undefined) {
+      if (matchIndex === undefined && groupNum === undefined) { // If no match or group is defined, replace every full match of the search in the original string
+        for (var x in matches) {
+          const exp = new RegExp(escapeRegExp(matches[x][0]), flags)
+          string = string.replace(exp, replacement)
+        }
+      } else if (matchIndex && groupNum === undefined) {  // If no group number is defined, use the full match of this particular match number in the original string
+        const exp = new RegExp(escapeRegExp(matches[matchIndex][0]), flags)
+        string = string.replace(exp, replacement)
+      } else {
+        const exp = new RegExp(escapeRegExp(matches[matchIndex][groupNum]), flags)
+        string = string.replace(exp, replacement)
+      }
+    } else string = match
 
     return string
   } catch (e) {
@@ -82,17 +90,18 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
         }
       }
 
-      for (var regexOpIndex in source.regexOps[placeholder]) { // Looping through each regexOp for a placeholder
-        let regexOp = source.regexOps[placeholder][regexOpIndex]
+      const phRegexOps = source.regexOps[placeholder]
+      for (var regexOpIndex in phRegexOps) { // Looping through each regexOp for a placeholder
+        const regexOp = phRegexOps[regexOpIndex]
         if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
 
         if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
 
         const clone = Object.assign({}, customPlaceholders)
 
-        let modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement, regexOp.flags)
+        const modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
         if (typeof modified !== 'string') {
-          if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for feed ${source.link}:\n`, modified)
+          if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for article ${source.link}\n`, modified)
         } else customPlaceholders[regexOp.name] = modified // newText = modified
       }
     } else return null
