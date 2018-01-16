@@ -43,7 +43,7 @@ function escapeRegExp (str) {
 }
 
 function regexReplace (string, searchOptions, replacement) {
-  const flags = searchOptions.flags ? searchOptions.flags : 'gi'
+  const flags = searchOptions.flags
   try {
     const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined
     const groupNum = searchOptions.group !== undefined ? parseInt(searchOptions.group, 10) : undefined
@@ -313,7 +313,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   }
 
   // Regex-defined custom placeholders
-  const validRegexPlaceholder = ['title', 'description', 'summary']
+  const validRegexPlaceholder = ['title', 'description', 'summary', 'author']
   const regexPlaceholders = {} // Each key is a validRegexPlaceholder, and their values are an object of named placeholders with the modified content
   for (var b in validRegexPlaceholder) {
     const type = validRegexPlaceholder[b]
