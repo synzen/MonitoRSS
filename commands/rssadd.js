@@ -57,15 +57,16 @@ module.exports = function (bot, message) {
           successBox += `\nCookies:${cookieList}`
         }
       }
-      msg += successBox + '\n```\n\n'
+      msg += successBox + '\n```\n'
     }
     if (failedAddLinks.size() > 0) {
-      let failBox = 'The following feed(s) could not be added:\n```\n'
+      let failBox = '\nThe following feed(s) could not be added:\n```\n'
       for (var failedLink in failedAddLinks) {
         failBox += `\n\n* ${failedLink}\nReason: ${failedAddLinks[failedLink]}`
       }
-      msg += failBox + '\n```'
+      msg += failBox + '\n```\n'
     }
+    msg += 'Articles will be automatically delivered once new articles are found from this point forward.'
 
     channelTracker.remove(message.channel.id)
     verifyMsg.edit(msg).catch(err => console.log(`Promise Warning rssAdd 1: ${err}`))
