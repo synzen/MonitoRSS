@@ -66,7 +66,7 @@ module.exports = function (bot, message) {
       }
       msg += failBox + '\n```\n'
     }
-    msg += 'Articles will be automatically delivered once new articles are found from this point forward.'
+    if (passedAddLinks.size() > 0) msg += 'Articles will be automatically delivered once new articles are found.'
 
     channelTracker.remove(message.channel.id)
     verifyMsg.edit(msg).catch(err => console.log(`Promise Warning rssAdd 1: ${err}`))
