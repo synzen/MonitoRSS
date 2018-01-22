@@ -8,11 +8,11 @@ const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be
                       ['Author URL', 'Clicking on the Atuhor Title will lead to this URL.\nThis MUST be a link.', 'authorURL'],
                       ['Author Avatar URL', 'The avatar picture to the left of author title.\nThis MUST be a link to an image. If an Author Title is not specified, the Author Avatar URL will not be shown.', 'authorAvatarURL'],
                       ['Title', 'Subtitle of the embed\nAccepts placeholders', 'title'],
+                      ['Title URL', 'Clicking on the Title will lead to this URL.\nThis MUST be a link. By default this is set to the feed\'s url', 'url']],
                       ['Image URL', 'The main image on the bottom of the embed.\nThis MUST be a link to an image, OR an {imageX} placeholder', 'imageURL'],
                       ['Thumbnail URL', 'The picture on the right hand side of the embed\nThis MUST be a link to an image, OR an {imageX} placeholder', 'thumbnailURL'],
                       ['Message', 'Main message of the embed\nAccepts placeholders', 'message'],
-                      ['Footer Text', 'The bottom-most text\nAccepts placeholders', 'footerText'],
-                      ['Title URL', 'Clicking on the Title will lead to this URL.\nThis MUST be a link. By default this is set to the feed\'s url', 'url']]
+                      ['Footer Text', 'The bottom-most text\nAccepts placeholders', 'footerText']
 
 const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
 const currentGuilds = require('../util/storage.js').currentGuilds

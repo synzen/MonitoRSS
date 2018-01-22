@@ -38,17 +38,20 @@ module.exports = function (bot, message, command) {
           }
           console.log(`RSS Warning: Unable to send test article for feed ${err.feed.link}. `, err.content.message || err.content) // Reserve err.content for console logs, which are more verbose
           msgHandler.deleteAll(message.channel)
-          return grabMsg.edit(`Unable to grab random feed article. Reason: ${channelErrMsg}.`).catch(err => console.log(`Promise Warning: rsstest 1: ${err}`))
+          return grabMsg.edit(`Unable to grab random feed article. Reason: ${channelErrMsg}.`).catch(err => console.log(`Commands Warning: rsstest 1: `, err.message || err))
         }
         article.rssName = rssName
         article.discordChannelId = message.channel.id
         msgHandler.add(grabMsg)
 
         sendToDiscord(bot, article, function (err) {
-          if (err) console.log(err)
+          if (err) {
+            console.log(err)
+            message.channel.send(`Failed to send test article. \`\`\`${err.message}\`\`\``).catch(err => console.log(`Commands Warning: rsstest 2: `, err.message || err))
+          }
           msgHandler.deleteAll(message.channel)
         }, simple ? null : grabMsg) // Last parameter indicating a test message
       })
-    }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could initiate random feed grab for test (${err})`))
+    }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could initiate random feed grab for test (${err.message || err})`))
   })
 }
