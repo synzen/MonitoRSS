@@ -1,6 +1,6 @@
 const Discord = require('discord.js')
 
-function isStr(str) { return typeof str === 'string' }
+function isStr(str) { return str && typeof str === 'string' }
 
 module.exports = function (rssList, rssName, article) {
   const embed = new Discord.RichEmbed()
@@ -17,7 +17,7 @@ module.exports = function (rssList, rssName, article) {
     } else embed.setColor(parseInt(embedSpecs.color, 10))
   } else if (isStr(embedSpecs.color) && embedSpecs.color.startsWith('#') && embedSpecs.color.length === 7) embed.setColor(embedSpecs.color)
 
-  embed.setAuthor(isStr(embedSpecs.authorTitle) ? article.convertKeywords(embedSpecs.authorTitle) : undefined, isStr(embedSpecs.authorAvatarURL) ? article.convertKeywords(embedSpecs.authorAvatarURL) : undefined, isStr(embedSpecs.authorURL) ? article.convertKeywords(embedSpecs.authorURL) : undefined)
+  if (isStr(embedSpecs.authorTitle)) embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle), isStr(embedSpecs.authorAvatarURL) ? article.convertKeywords(embedSpecs.authorAvatarURL) : undefined, isStr(embedSpecs.authorURL) ? article.convertKeywords(embedSpecs.authorURL) : undefined)
 
   if (isStr(embedSpecs.thumbnailURL)) embed.setThumbnail(article.convertImgs(embedSpecs.thumbnailURL))
 
