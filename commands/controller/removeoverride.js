@@ -22,9 +22,9 @@ exports.normal = function (bot, message) {
         enforced = 0
         const guildRss = currentGuilds.get(guildID)
         const rssList = guildRss.sources
-        if (rssList.size() > defLimit) {
+        if (Object.keys(rssList).length > defLimit) {
           for (var rssName in rssList) {
-            if (rssList.size() > defLimit) {
+            if (Object.keys(rssList).length > defLimit) {
               enforced++
               removeRss(guildID, rssName)
               delete rssList[rssName]
@@ -90,9 +90,9 @@ exports.sharded = function (bot, message, Manager) {
           enforced = 0;
           const guildRss = currentGuilds.get('${guildID}');
           const rssList = guildRss.sources;
-          if (rssList.size() > defLimit) {
+          if (Object.keys(rssList).length > defLimit) {
             for (var rssName in rssList) {
-              if (rssList.size() > defLimit) {
+              if (Object.keys(rssList).length > defLimit) {
                 enforced++;
                 removeRss('${guildID}', rssName);
                 delete rssList[rssName];

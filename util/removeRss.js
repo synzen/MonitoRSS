@@ -1,6 +1,5 @@
 const fileOps = require('../util/fileOps.js')
-const sqlCmds = require('../rss/sql/commands.js')
-const config = require('../config.json')
+const dbCmds = require('../rss/db/commands.js')
 const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds
 const deletedFeeds = storage.deletedFeeds
@@ -10,7 +9,7 @@ module.exports = function (guildId, rssName, callback) {
   const rssList = guildRss.sources
   const link = rssList[rssName].link
 
-  sqlCmds.dropTable(config.feedManagement.databaseName, rssName)
+  dbCmds.dropCollection(rssName)
   delete rssList[rssName]
   fileOps.updateFile(guildId, guildRss)
   deletedFeeds.push(rssName)

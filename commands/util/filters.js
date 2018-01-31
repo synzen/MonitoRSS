@@ -218,9 +218,9 @@ exports.remove = function (message, rssName, role, msgHandler) {
           }
 
           // Check after removal if there are any empty objects
-          if (role && filterList.size() === 0) delete rssList[rssName].filters.roleSubscriptions[role.id]
-          if (role && rssList[rssName].filters.roleSubscriptions.size() === 0) delete rssList[rssName].filters.roleSubscriptions
-          if (rssList[rssName].filters.size() === 0) delete rssList[rssName].filters
+          if (role && Object.keys(filterList).length === 0) delete rssList[rssName].filters.roleSubscriptions[role.id]
+          if (role && Object.keys(rssList[rssName].filters.roleSubscriptions).length === 0) delete rssList[rssName].filters.roleSubscriptions
+          if (Object.keys(rssList[rssName].filters).length === 0) delete rssList[rssName].filters
 
           fileOps.updateFile(message.guild.id, guildRss)
 

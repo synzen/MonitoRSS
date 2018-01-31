@@ -2,30 +2,18 @@ const Discord = require('discord.js')
 const listeners = require('./util/listeners.js')
 const initialize = require('./util/initialization.js')
 const config = require('./config.json')
-const configCheck = require('./util/configCheck.js')
 const ScheduleManager = require('./util/ScheduleManager.js')
 const storage = require('./util/storage.js')
 const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
-
-const results = configCheck.checkMasterConfig(config)
-if (results && results.fatal) throw new Error(results.message)
-else if (results) console.info(results.message)
+const configRes = require('./util/configCheck.js').check(config)
+const connectDb = require('./rss/db/connect.js')
+if (configRes && configRes.fatal) throw new Error(configRes.message)
+else if (configRes) console.info(configRes.message)
 
 let restartTime = config.feedSettings.refreshTimeMinutes * 60000 / 4 * 10
 restartTime = restartTime < 60000 ? Math.ceil(restartTime * 4) : Math.ceil(restartTime) // Try to make sure it's never below a minute
 const restartTimeDisp = (restartTime / 1000 / 60).toFixed(2)
-
-// Ease the pains of having to rewrite a function every time to check an empty object
-Object.defineProperty(Object.prototype, 'size', {
-  value: function () {
-    let c = 0
-    for (var x in this) if (this.hasOwnProperty(x)) c++
-    return c
-  },
-  enumerable: false,
-  writable: true
-})
 
 let scheduleManager
 let bot
@@ -50,8 +38,15 @@ function login (firstStartup) {
     loginAttempts = 0
     bot.user.setPresence({ game: { name: (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null, type: 0 } })
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}.`)
-    if (firstStartup) initialize(bot, finishInit)
-    else scheduleManager = new ScheduleManager(bot)
+    if (firstStartup) {
+      connectDb((err) => {
+        if (err) throw err
+        initialize(bot, finishInit)
+        bot.guilds.forEach(guild => {
+          if (!guild.me) console.log(123)
+        })
+      })
+    } else scheduleManager = new ScheduleManager(bot)
   })
 
   bot.once('disconnect', function (e) {

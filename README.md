@@ -10,11 +10,9 @@ For steps on how to host the bot on your own, and on using the bot itself, see h
 
 #### Core Functions
  * [Feedparser](https://www.npmjs.com/package/feedparser)		
- * [needle](https://www.npmjs.com/package/needle)
+ * [Needle](https://www.npmjs.com/package/needle)
  * [cloudscraper](https://www.npmjs.com/package/cloudscraper)
- * Datebase Manager (one of two options)		
-     * [sqlite3](https://www.npmjs.com/package/sqlite3) (default)		
-     * [mysql](https://www.npmjs.com/package/mysql)
+ * [Mongoose](https://www.npmjs.com/package/mongoose)
 
 #### Customization Functions
  * [html-to-text](https://www.npmjs.com/package/html-to-text) - Convert HTML content

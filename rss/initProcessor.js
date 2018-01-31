@@ -7,21 +7,10 @@ process.on('uncaughtException', function (err) {
 const config = require('../config.json')
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
-const sqlConnect = require('./sql/connect.js')
+const connectDb = require('./db/connect.js')
 const initAllSources = require('./logic/initialization.js')
 if (config.logging.logDates === true) require('../util/logDates.js')()
-
-let con
-
-Object.defineProperty(Object.prototype, 'size', {
-  value: function () {
-    let c = 0
-    for (var x in this) if (this.hasOwnProperty(x)) c++
-    return c
-  },
-  enumerable: false,
-  writable: true
-})
+let connected = false
 
 function init (link, rssList, uniqueSettings) {
   const feedparser = new FeedParser()
@@ -42,7 +31,7 @@ function init (link, rssList, uniqueSettings) {
   requestStream(link, cookies, feedparser, function (err) {
     requested = true
     if (err) {
-      console.log(`INIT Error: Skipping ${link}. (${err})`)
+      console.log(`INIT Error: Skipping ${link}\n`, err)
       return process.send({status: 'failed', link: link, rssList: rssList})
     }
   })
@@ -64,7 +53,7 @@ function init (link, rssList, uniqueSettings) {
   feedparser.on('end', function () {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
 
-    initAllSources(con, rssList, articleList, link, function (err, results) {
+    initAllSources(rssList, articleList, link, function (err, results) {
       if (err) throw err
       if (results) process.send(results)
     })
@@ -72,9 +61,10 @@ function init (link, rssList, uniqueSettings) {
 }
 
 process.on('message', function (m) {
-  if (!con) {
-    con = sqlConnect(function (err) {
-      if (err) throw new Error(`Could not connect to SQL database for initialization. (${err})`)
+  if (!connected) {
+    connected = true
+    connectDb(function (err) {
+      if (err) throw new Error(`Could not connect to database for initialization\n`, err)
       init(m.link, m.rssList, m.uniqueSettings)
     })
   } else init(m.link, m.rssList, m.uniqueSettings)

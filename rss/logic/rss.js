@@ -1,14 +1,15 @@
 const config = require('../../config.json')
-const sqlCmds = require('../sql/commands.js')
+const dbCmds = require('../db/commands.js')
 const moment = require('moment-timezone')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
+const ArticleModel = require('../../util/storage.js').models.Article
 
 function getArticleId (articleList, article) {
   let equalGuids = (articleList.length > 1) // default to true for most feeds
   if (equalGuids && articleList[0].guid) {
-    for (var x in articleList) {
-      if (parseInt(x, 10) > 0 && articleList[x].guid !== articleList[x - 1].guid) equalGuids = false
-    }
+    articleList.forEach((article, index) => {
+      if (index > 0 && article.guid !== articleList[index - 1].guid) equalGuids = false
+    })
   }
 
   if ((!article.guid || equalGuids) && article.title) return article.title
@@ -16,115 +17,114 @@ function getArticleId (articleList, article) {
   return article.guid
 }
 
-module.exports = function (con, rssList, articleList, debugFeeds, link, callback) {
+module.exports = function (rssList, articleList, debugFeeds, link, callback) {
   let sourcesCompleted = 0
 
   function processSource (rssName) {
+    const Article = ArticleModel(rssName)
     const channelId = rssList[rssName].channel
 
     let processedArticles = 0
     let totalArticles = 0
+    const bulkInsert = []
+    const olderArticles = []
+    const newerArticles = []
+    // checkTableExists()
 
-    checkTableExists()
+    if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Table has been selected. Size of articleList: ${articleList.length}`)
 
-    function checkTableExists () {
-      sqlCmds.selectTable(con, rssName, function (err, results) {
-        if (err) {
-          return callback(new Error(`Unable to select table ${rssName}, skipping source.\n`, err), {status: 'success', link: link})
-        } else if (results.length === 0) { // When no error, but the table does not exist and was not a feed that was deleted during this cycle
-          return callback(new Error(`Unable to select table ${rssName}, may be a deleted source. Skipping.`), {status: 'success', link: link})
-        }
+    const feedLength = articleList.length - 1
+    const cycleMaxAge = config.feedSettings.cycleMaxAge && !isNaN(parseInt(config.feedSettings.cycleMaxAge, 10)) ? parseInt(config.feedSettings.cycleMaxAge, 10) : 1
 
-        if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Table has been selected. Size of articleList: ${articleList.length}`)
+    for (var x = feedLength; x >= 0; x--) {
+      articleList[x]._id = getArticleId(articleList, articleList[x])
+      // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(articleList, articleList[x])}, TITLE: ${articleList[x].title})`)
 
-        const feedLength = articleList.length - 1
-        const cycleMaxAge = config.feedSettings.cycleMaxAge && !isNaN(parseInt(config.feedSettings.cycleMaxAge, 10)) ? parseInt(config.feedSettings.cycleMaxAge, 10) : 1
+      if (articleList[x].pubdate && articleList[x].pubdate > moment().subtract(cycleMaxAge, 'days')) newerArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x]))
+      else { // Invalid dates are pubdate.toString() === 'Invalid Date'
+        let checkDate = false
+        const globalSetting = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
+        checkDate = globalSetting
+        const specificSetting = rssList[rssName].checkDates
+        checkDate = typeof specificSetting !== 'boolean' ? checkDate : specificSetting
 
-        for (var x = feedLength; x >= 0; x--) {
-          // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(articleList, articleList[x])}, TITLE: ${articleList[x].title})`)
+        if (checkDate) olderArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)  // Mark as old if date checking is enabled
+        else newerArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x])) // Otherwise mark as new
+      }
 
-          if (articleList[x].pubdate && articleList[x].pubdate > moment().subtract(cycleMaxAge, 'days')) checkTable(articleList[x], getArticleId(articleList, articleList[x]))
-          else { // Invalid dates are pubdate.toString() === 'Invalid Date'
-            let checkDate = false
-            const globalSetting = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
-            checkDate = globalSetting
-            const specificSetting = rssList[rssName].checkDates
-            checkDate = typeof specificSetting !== 'boolean' ? checkDate : specificSetting
-
-            if (checkDate) checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)  // Mark as old if date checking is enabled
-            else checkTable(articleList[x], getArticleId(articleList, articleList[x])) // Otherwise mark as new
-          }
-
-          totalArticles++
-        }
-      })
+      totalArticles++
     }
 
-    function checkTable (article, articleId, isOldArticle) {
-      sqlCmds.selectId(con, rssName, articleId, function (err, idMatches, fields) {
-        if (err) {
-          callback(new Error(`Database Error: Unable to select ID ${articleId} in table ${rssName} (${err})`))
-          return incrementProgress()
-        }
-        if (idMatches.length > 0) {
-          // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched ID in table for (ID: ${articleId}, TITLE: ${article.title}).`)
-          return seenArticle(true)
-        }
+    checkTableAlt(olderArticles, newerArticles, articleList)
 
-        let check = false
-        const globalSetting = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
-        check = globalSetting
-        const specificSetting = rssList[rssName].checkTitles
-        check = typeof specificSetting !== 'boolean' ? check : specificSetting
-        if (!check) return seenArticle(false)
+    function checkTableAlt (olderArticles, newerArticles, allArticles) {
+      let checkTitle = false
+      const globalSetting = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
+      checkTitle = globalSetting
+      const specificSetting = rssList[rssName].checkTitles
+      checkTitle = typeof specificSetting !== 'boolean' ? checkTitle : specificSetting
+      const allIds = []
+      const allTitles = []
+      const newerIds = []
+      olderArticles.forEach(article => {
+        allIds.push(article._id)
+        if (checkTitle) allTitles.push(article.title)
+      })
+      newerArticles.forEach(article => {
+        allIds.push(article._id)
+        newerIds.push(article._id)
+        if (checkTitle) allTitles.push(article.title)
+      })
+      const foundIds = []
+      const foundTitles = []
 
-        sqlCmds.selectTitle(con, rssName, article.title, function (err, titleMatches) {
-          if (err) {
-            callback(new Error(`Database Error: Unable to select title ${articleId} in table ${rssName} (${err})`))
-            return incrementProgress()
-          }
+      Article.find({
+        $or: [{id: { $in: allIds }}, {title: { $in: allTitles }}]
+      }, (err, docs) => {
+        if (err) throw err
+        docs.forEach(item => {
+          foundIds.push(item.id)
+          foundTitles.push(item.title)
+        })
 
-          if (titleMatches.length > 0) {
-            if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Matched TITLE in table for (ID: ${articleId}, TITLE: ${article.title}).`)
-            return seenArticle(false, true) // Still mark as unseen because its articleId was different, and thus needs to be inserted to table
-          }
+        allArticles.forEach(article => {
+          if (foundIds.length === 0) return seenArticle(false, article, true) // If the collection was uninitialized, initialize all articles without sending
 
-          seenArticle(false)
+          if (foundIds.includes(article._id)) return seenArticle(true, article)
+          else if (foundTitles.includes(article.title)) seenArticle(false, article, true)
+          else seenArticle(false, article)
         })
       })
 
-      function seenArticle (seen, doNotSend) {
-        if (seen) return incrementProgress()
-        if (debugFeeds.includes(rssName)) {
-          if (!isOldArticle) console.log(`DEBUG ${rssName}: Never seen article (ID: ${articleId}, TITLE: ${article.title}), sending now`)
-          else console.log(`DEBUG ${rssName}: Never seen article, but declared old - not sending (ID: ${articleId}, TITLE: ${article.title})`)
+      function seenArticle (seen, article, doNotSend) {
+        if (seen) return incrementProgress() // Stops here if it already exists in table, AKA "seen"
+
+        if (config.feedSettings.sendOldMessages === true && newerIds.includes(article._id) && !doNotSend) {
+          article.rssName = rssName
+          article.discordChannelId = channelId
+          callback(null, {status: 'article', article: article})
         }
 
-        article.rssName = rssName
-        article.discordChannelId = channelId
-        if (!isOldArticle && !doNotSend) callback(null, {status: 'article', article: article})
-
         insertIntoTable({
-          id: articleId,
+          id: article._id,
           title: article.title
         })
       }
     }
 
     function insertIntoTable (articleInfo) {
-      sqlCmds.insert(con, rssName, articleInfo, function (err, res) { // inserting the feed into the table marks it as "seen"
-        if (err) {
-          callback(new Error(`Database Error: Unable to insert ${articleInfo.id} in table ${rssName} (${err})`))
-          return incrementProgress()
-        }
-        if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Article (ID: ${articleInfo.id}, TITLE: ${articleInfo.title}) should have been sent, and now added into table`)
-        incrementProgress()
-      })
+      bulkInsert.push(articleInfo)
+      incrementProgress()
     }
 
     function incrementProgress () {
       processedArticles++
-      if (processedArticles === totalArticles) return finishSource()
+      if (processedArticles === totalArticles) {
+        dbCmds.bulkInsert(Article, bulkInsert, (err, res) => {
+          if (err) throw err
+          finishSource()
+        })
+      }
     }
   }
 
@@ -132,6 +132,6 @@ module.exports = function (con, rssList, articleList, debugFeeds, link, callback
 
   function finishSource () {
     sourcesCompleted++
-    if (sourcesCompleted === rssList.size()) return callback(null, {status: 'success', link: link})
+    if (sourcesCompleted === Object.keys(rssList).length) return callback(null, {status: 'success', link: link})
   }
 }

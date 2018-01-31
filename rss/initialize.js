@@ -1,19 +1,20 @@
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const fileOps = require('../util/fileOps.js')
-const sqlCmds = require('./sql/commands.js')
+const dbCmds = require('./db/commands.js')
 const currentGuilds = require('../util/storage').currentGuilds
+const ArticleModel = require('../util/storage.js').models.Article
 
-exports.addToDb = function (con, articleList, rssName, callback, customTitle) {
-  const totalArticles = articleList.length
-  let processedArticles = 0
+exports.addToDb = function (articleList, rssName, callback, customTitle) {
+  const total = articleList.length
+  if (total === 0) return callback()
 
   function getArticleId (article) {
     let equalGuids = (articleList.length > 1) // default to true for most feeds
     if (equalGuids && articleList[0].guid) {
-      for (var x in articleList) {
-        if (parseInt(x, 10) > 0 && articleList[x].guid !== articleList[x - 1].guid) equalGuids = false
-      }
+      articleList.forEach((article, index) => {
+        if (index > 0 && article.guid !== articleList[index - 1].guid) equalGuids = false
+      })
     }
 
     // If all articles have the same guids, fall back to title, and if no title, fall back to pubdate
@@ -22,36 +23,23 @@ exports.addToDb = function (con, articleList, rssName, callback, customTitle) {
     return article.guid
   }
 
-  createTable()
+  const Article = ArticleModel(rssName)
+  const articles = []
 
-  function createTable () {
-    sqlCmds.createTable(con, rssName, function (err, rows) {
-      if (err) return callback({type: 'database', content: err})
-      if (articleList.length === 0) return incrementProgress(true)
-      for (var x in articleList) {
-        insertIntoTable({
-          id: getArticleId(articleList[x]),
-          title: articleList[x].title
-        })
-      }
-    })
-  }
+  articleList.forEach(article => {
+    articles.push(new Article({
+      id: getArticleId(article),
+      title: article.title
+    }))
+  })
 
-  function insertIntoTable (articleInfo) {
-    sqlCmds.insert(con, rssName, articleInfo, function (err, res) {
-      if (err) return callback({type: 'database', content: err})
-      incrementProgress()
-    })
-  }
-
-  function incrementProgress (emptyFeed) {
-    if (!emptyFeed) processedArticles++
-    else return callback()
-    if (processedArticles === totalArticles) callback()
-  }
+  dbCmds.bulkInsert(Article, articles, err => {
+    if (err) return callback({type: 'database', content: err})
+    callback()
+  })
 }
 
-exports.addNewFeed = function (con, link, channel, cookies, callback, customTitle) {
+exports.addNewFeed = function (link, channel, cookies, callback, customTitle) {
   const feedparser = new FeedParser()
   const articleList = []
   let errored = false // Sometimes feedparser emits error twice
@@ -86,13 +74,12 @@ exports.addNewFeed = function (con, link, channel, cookies, callback, customTitl
     if (articleList[0]) metaLink = (articleList[0].meta.link) ? articleList[0].meta.link : (articleList[0].meta.title) ? articleList[0].meta.title : `random_${Math.floor((Math.random() * 99999) + 1)}`
     else metaLink = `random_${Math.floor((Math.random() * 99999) + 1)}`
 
-    let rssName = `${randomNum}_${metaLink}`
+    let rssName = `${randomNum}_${metaLink}`.replace(/\./g, '')
 
-    // MySQL table names have a limit of 64 char
     if (rssName.length >= 64) rssName = rssName.substr(0, 64)
     rssName = rssName.replace(/-|\?/g, '').replace(/\./g, '') // Remove question marks to prevent sql from auto-escaping, along with periods
 
-    exports.addToDb(con, articleList, rssName, function (err) {
+    exports.addToDb(articleList, rssName, function (err) {
       if (err) return callback(err)
       addToConfig()
     })

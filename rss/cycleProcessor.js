@@ -3,21 +3,11 @@
 */
 const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
-const sqlConnect = require('./sql/connect.js')
+const connectDb = require('./db/connect.js')
 const logLinkErr = require('../util/logLinkErrs.js')
 const processAllSources = require('./logic/rss.js')
 if (require('../config.json').logging.logDates === true) require('../util/logDates.js')()
-let con
-
-Object.defineProperty(Object.prototype, 'size', {
-  value: function () {
-    let c = 0
-    for (var x in this) if (this.hasOwnProperty(x)) c++
-    return c
-  },
-  enumerable: false,
-  writable: true
-})
+let connected = false
 
 function getFeed (link, rssList, uniqueSettings, debugFeeds) {
   const feedparser = new FeedParser()
@@ -59,7 +49,7 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
   feedparser.on('end', function () {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
 
-    processAllSources(con, rssList, articleList, debugFeeds, link, function (err, results) {
+    processAllSources(rssList, articleList, debugFeeds, link, function (err, results) {
       if (err) console.log(err)
       if (results) process.send(results)
     })
@@ -67,8 +57,10 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
 }
 
 process.on('message', function (m) {
-  if (!con) {
-    con = sqlConnect(function () {
+  if (!connected) {
+    connected = true
+    connectDb(function (err) {
+      if (err) throw new Error(`Could not connect to SQL database for cycle.\n`, err)
       getFeed(m.link, m.rssList, m.uniqueSettings, m.debugFeeds)
     })
   } else getFeed(m.link, m.rssList, m.uniqueSettings, m.debugFeeds)

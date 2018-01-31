@@ -7,7 +7,7 @@ exports.normal = function (bot, message) {
 
   const illegals = []
   currentGuilds.forEach(function (guildRss, guildId) {
-    const guildSourcesCnt = guildRss.sources.size()
+    const guildSourcesCnt = Object.keys(guildRss.sources).length
     const guildLimit = overriddenGuilds[guildId] ? overriddenGuilds[guildId] : config.feedSettings.maxFeeds
     if (guildSourcesCnt > guildLimit) illegals.push(guildId)
   })
@@ -28,7 +28,7 @@ exports.sharded = function (bot, message) {
 
     const illegals = [];
     currentGuilds.forEach(function (guildRss, guildId) {
-      const guildSourcesCnt = guildRss.sources.size();
+      const guildSourcesCnt = Object.keys(guildRss.sources).length;
       const guildLimit = overriddenGuilds[guildId] ? overriddenGuilds[guildId] : ${defLimit};
       if (guildSourcesCnt > guildLimit) illegals.push(guildId);
     })

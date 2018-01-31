@@ -3,7 +3,7 @@ const currentGuilds = require('../util/storage.js').currentGuilds
 
 module.exports = function (bot, role) {
   const guildRss = currentGuilds.get(role.guild.id)
-  if (!guildRss || !guildRss.sources || !guildRss.sources.size() === 0) return
+  if (!guildRss || !guildRss.sources || !Object.keys(guildRss.sources).length === 0) return
   const rssList = guildRss.sources
   let found = false
 
@@ -28,8 +28,8 @@ module.exports = function (bot, role) {
     }
 
     // Cleanup for empty objects
-    if (source.filters && source.filters.roleSubscriptions && source.filters.roleSubscriptions.size() === 0) delete source.filters.roleSubscriptions
-    if (source.filters && source.filters.size() === 0) delete source.filters
+    if (source.filters && source.filters.roleSubscriptions && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
+    if (source.filters && Object.keys(source.filters).length === 0) delete source.filters
     if (source.roleSubscriptions && source.roleSubscriptions.length === 0) delete source.roleSubscriptions
   }
 

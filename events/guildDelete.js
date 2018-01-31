@@ -1,6 +1,6 @@
 const fs = require('fs')
 const config = require('../config.json')
-const sqlCmds = require('../rss/sql/commands.js')
+const dbCmds = require('../rss/db/commands.js')
 const fileOps = require('../util/fileOps.js')
 const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
@@ -17,7 +17,7 @@ module.exports = function (bot, guild) {
   const rssList = currentGuilds.get(guild.id).sources
 
   for (var rssName in rssList) {
-    sqlCmds.dropTable(config.feedManagement.databaseName, rssName)
+    dbCmds.dropCollection(rssName)
   }
 
   fileOps.deleteGuild(guild.id, null, function () {

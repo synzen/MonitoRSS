@@ -8,7 +8,7 @@ const pageControls = require('../util/pageControls.js')
 
 module.exports = function (bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: chooseFeed 2: ${err}`))
+  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: chooseFeed 2: ${err}`))
 
   const rssList = guildRss.sources
   const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
@@ -27,7 +27,7 @@ module.exports = function (bot, message, command) {
 
   let embedMsg = new Discord.RichEmbed().setColor(config.botSettings.menuColor)
     .setAuthor('Current Active Feeds')
-    .setDescription(`**Server Limit:** ${rssList.size()}/${maxFeedsAllowed}\u200b\n\u200b\n`)
+    .setDescription(`**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\u200b\n\u200b\n`)
 
   // Generate the info for each feed as an array, and push into another array
   const currentRSSList = []

@@ -53,7 +53,7 @@ function regexReplace (string, searchOptions, replacement) {
     while (match = regExp.exec(string)) { // Find everything that matches the search regex query and push it to matches.
       matches.push(match)
     }
-    match = matches[matchIndex ? matchIndex : 0][groupNum ? groupNum : 0]
+    match = matches[matchIndex || 0][groupNum || 0]
 
     if (replacement !== undefined) {
       if (matchIndex === undefined && groupNum === undefined) { // If no match or group is defined, replace every full match of the search in the original string
@@ -181,7 +181,6 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     const localMoment = moment(date)
     if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)
     const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
-
     this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
   }
 

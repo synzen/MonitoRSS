@@ -3,7 +3,7 @@ const requestStream = require('./request.js')
 const debugFeeds = require('../util/debugFeeds').list
 const processAllSources = require('./logic/rss.js')
 
-module.exports = function (con, link, rssList, uniqueSettings, callback) {
+module.exports = function (link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
   const articleList = []
 
@@ -29,7 +29,7 @@ module.exports = function (con, link, rssList, uniqueSettings, callback) {
   feedparser.on('end', function () {
     if (articleList.length === 0) return callback(null, {status: 'success', link: link})
 
-    processAllSources(con, rssList, articleList, debugFeeds, link, function (err, results) {
+    processAllSources(rssList, articleList, debugFeeds, link, function (err, results) {
       if (err) console.log(err)
       if (results) callback(null, results)
     })

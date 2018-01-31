@@ -6,7 +6,7 @@ const MsgHandler = require('../util/MsgHandler.js')
 
 module.exports = function (bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('There are no active feeds to subscribe to.').catch(err => console.log(`Promise Warning: subAdd 1: ${err}`))
+  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no active feeds to subscribe to.').catch(err => console.log(`Promise Warning: subAdd 1: ${err}`))
 
   const rssList = guildRss.sources
   const options = getSubList(bot, message.guild, rssList)

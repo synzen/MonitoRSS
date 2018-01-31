@@ -1,7 +1,5 @@
 const fs = require('fs')
 const getArticles = require('../rss/cycleSingle.js')
-const sqlCmds = require('../rss/sql/commands.js')
-const sqlConnect = require('../rss/sql/connect.js')
 const config = require('../config.json')
 const configChecks = require('./configCheck.js')
 const debugFeeds = require('../util/debugFeeds.js').list
@@ -17,7 +15,6 @@ module.exports = function (bot, callback, schedule) {
   let processorList = []
   let regBatchList = []
   let modBatchList = [] // Batch of sources with cookies
-  let con // SQL connection
   let startTime // Tracks cycle times
   let cycleFailCount = 0
   let cycleTotalCount = 0
@@ -59,7 +56,7 @@ module.exports = function (bot, callback, schedule) {
         let linkList = {}
         linkList[rssName] = rssList[rssName]
         modSourceList.set(rssList[rssName].link, linkList)
-      } else if (sourceList.has(rssList[rssName].link)) {
+      } else if (sourceList.has(rssList[rssName].link)) { // Each item in the sourceList has a unique URL, with every source with this the same link aggregated below it
         let linkList = sourceList.get(rssList[rssName].link)
         linkList[rssName] = rssList[rssName]
       } else {
@@ -126,7 +123,7 @@ module.exports = function (bot, callback, schedule) {
     if (cycleInProgress) {
       if (!config.advanced.processorMethod || config.advanced.processorMethod === 'single') {
         console.log(`RSS Info: Previous ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
-        return endCon(true)
+        cycleInProgress = false
       } else {
         console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Processors from previous cycle were not killed (${processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
         for (var x in processorList) {
@@ -155,9 +152,7 @@ module.exports = function (bot, callback, schedule) {
 
     switch (config.advanced.processorMethod) {
       case 'single':
-        con = sqlConnect(function () {
-          getBatch(0, regBatchList, 'regular')
-        })
+        getBatch(0, regBatchList, 'regular')
         break
       case 'isolated':
         getBatchIsolated(0, regBatchList, 'regular')
@@ -181,7 +176,7 @@ module.exports = function (bot, callback, schedule) {
         }
       }
 
-      getArticles(con, link, rssList, uniqueSettings, function (err, linkCompletion) {
+      getArticles(link, rssList, uniqueSettings, function (err, linkCompletion) {
         if (err) logLinkErr({link: linkCompletion.link, content: err})
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) console.log(`DEBUG ${linkCompletion.article.rssName}: Emitted article event.`)
@@ -194,7 +189,7 @@ module.exports = function (bot, callback, schedule) {
         if (completedLinks === currentBatch.size) {
           if (batchNumber !== batchList.length - 1) setTimeout(getBatch, 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatch, 200, 0, modBatchList, 'modded')
-          else return endCon()
+          else return finishCycle()
         }
       })
     })
@@ -284,15 +279,6 @@ module.exports = function (bot, callback, schedule) {
 
     for (var i in regBatchList) { deployProcessor(regBatchList, i) }
     for (var y in modBatchList) { deployProcessor(modBatchList, y) }
-  }
-
-  function endCon (startingCycle) {
-    sqlCmds.end(con, function (err) { // End SQL connection
-      if (err) console.log('Error: Could not close SQL connection. ' + err)
-      cycleInProgress = false
-      if (startingCycle) return connect()
-      finishCycle()
-    }, startingCycle)
   }
 
   function finishCycle (noFeeds) {

@@ -6,15 +6,24 @@ const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const linkTracker = storage.linkTracker // Directory of all feeds, used to track between multiple feed schedules
 const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
 const failedLinks = storage.failedLinks
-const sqlCmds = require('../rss/sql/commands.js')
-const sqlConnect = require('../rss/sql/connect.js')
-const fileOps = require('./fileOps.js')
 const checkGuild = require('./checkGuild.js')
 const sendToDiscord = require('./sendToDiscord.js')
 const process = require('child_process')
 const configChecks = require('./configCheck.js')
+const GuildRss = storage.models.GuildRss()
 
 module.exports = function (bot, callback) {
+  const modSourceList = new Map()
+  const sourceList = new Map()
+  const regBatchList = []
+  const modBatchList = []
+  const batchSize = 400
+  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
+  const guildsInfo = {}
+
+  let cycleFailCount = 0
+  let cycleTotalCount = 0
+
   try {
     var scheduleWordDir = {}
     const schedules = fs.readdirSync('./settings/schedules') // Record all words in schedules for later use by FeedSchedules
@@ -38,25 +47,39 @@ module.exports = function (bot, callback) {
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}INIT Info: No schedules found due to no schedules folder.`)
   }
 
-  const modSourceList = new Map()
-  const sourceList = new Map()
-  const regBatchList = []
-  const modBatchList = []
-  const batchSize = 100
-  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
-  const guildsInfo = {}
+  GuildRss.find((err, results) => {
+    if (err) throw err
+    for (var x in results) {
+      const guildRss = results[x]
+      const guildId = guildRss.id
+      const rssList = guildRss.sources
+      if (!bot.guilds.get(guildId)) { // Check if it is a valid guild in bot's guild collection
+        if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
+        else console.log(`RSS Guild Profile: ${guildId} was not found in bot's guild list. Skipping.`)
+        continue
+      }
+      if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
+        currentGuilds.set(guildId, guildRss)
+        checkGuild.names(bot, guildId)
+      }
+      guildsInfo[guildId] = guildRss
+      addToSourceLists(rssList, guildId)
+    }
 
-  let con
-  let cycleFailCount = 0
-  let cycleTotalCount = 0
+    if (sourceList.size + modSourceList.size === 0) {
+      console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: There are no active feeds to initialize.`)
+      if (bot.shard) bot.shard.send({type: 'initComplete'})
+      return finishInit()
+    }
+    return connect()
+  })
 
   function addFailedFeed (link) {
-    if (!failedLinks[link]) failedLinks[link] = 1
-    else failedLinks[link]++
+    failedLinks[link] = failedLinks[link] ? failedLinks[link] + 1 : 1
   }
 
   function reachedFailCount (link) {
-    let failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= failLimit) // string indicates it has reached the fail count, and is the date of when it failed
+    const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= failLimit) // string indicates it has reached the fail count, and is the date of when it failed
     if (failed && config.logging.showFailedFeeds !== false) console.log(`INIT Warning: Feeds with link ${link} will be skipped due to reaching fail limit (${failLimit}).`)
     return failed
   }
@@ -89,6 +112,12 @@ module.exports = function (bot, callback) {
 
   function addToSourceLists (rssList, guildId) { // rssList is an object per guildRss
     for (var rssName in rssList) {
+      const Article = storage.models.Article(rssName)
+      if (config.database.clean !== true) {
+        Article.collection.dropIndexes(err => {
+          if (err) console.log(`Unable to drop indexes for collection ${rssName}\n`, err)
+        })
+      }
       if (configChecks.checkExists(rssName, rssList[rssName], true, true) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !reachedFailCount(rssList[rssName].link)) {
         checkGuild.roles(bot, guildId, rssName) // Check for any role name changes
 
@@ -106,7 +135,7 @@ module.exports = function (bot, callback) {
         }
 
         // Assign feeds to specific schedules in linkTracker for use by feedSchedules
-        if (scheduleWordDir && scheduleWordDir.size() > 0) {
+        if (scheduleWordDir && Object.keys(scheduleWordDir).length > 0) {
           for (var scheduleName in scheduleWordDir) {
             let wordList = scheduleWordDir[scheduleName]
             for (var i in wordList) {
@@ -122,49 +151,13 @@ module.exports = function (bot, callback) {
     }
   }
 
-  function addGuildRss (guildFile) {
-    const guildId = guildFile.replace(/.json/g, '') // Remove .json file ending since only the ID is needed
-    if (!bot.guilds.get(guildId)) { // Check if it is a valid guild in bot's guild collection
-      if (guildFile === 'master.json' || guildFile === 'guild_id_here.json' || guildFile === 'backup') return
-      if (bot.shard) return bot.shard.send({type: 'missingGuild', content: guildId})
-      else return console.log(`RSS Guild Profile: ${guildFile} was not found in bot's guild list. Skipping.`)
-    }
-
-    try {
-      const guildRss = JSON.parse(fs.readFileSync(`./sources/${guildFile}`))
-      const rssList = guildRss.sources
-      if (fileOps.isEmptySources(guildRss)) return // Skip when empty source object
-
-      if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
-        currentGuilds.set(guildId, guildRss)
-        checkGuild.names(bot, guildId)
-      }
-      addToSourceLists(rssList, guildId)
-      guildsInfo[guildId] = guildRss
-    } catch (err) { return fileOps.checkBackup(err, guildId) }
-  }
-
-  fs.readdir('./sources', function (err, files) {
-    if (err) throw err
-    files.forEach(addGuildRss)
-    if (sourceList.size + modSourceList.size === 0) {
-      console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: There are no active feeds to initialize.`)
-      if (bot.shard) bot.shard.send({type: 'initComplete'})
-      return callback()
-    }
-    return connect()
-  })
-
   function connect () {
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}INIT Info: Starting initialization cycle.`)
     genBatchLists()
 
     switch (config.advanced.processorMethod) {
       case 'single':
-        con = sqlConnect(function (err) {
-          if (err) throw new Error(`Could not connect to SQL database for initialization. (${err})`)
-          getBatch(0, regBatchList, 'regular')
-        })
+        getBatch(0, regBatchList, 'regular')
         break
       case 'isolated':
         getBatchIsolated(0, regBatchList, 'regular')
@@ -187,7 +180,7 @@ module.exports = function (bot, callback) {
         }
       }
 
-      initAll(con, link, rssList, uniqueSettings, function (linkCompletion) {
+      initAll(link, rssList, uniqueSettings, function (linkCompletion) {
         if (linkCompletion.status === 'article') {
           return sendToDiscord(bot, linkCompletion.article, function (err) { // This can result in great spam once the loads up after a period of downtime
             if (err) console.log(err)
@@ -201,7 +194,7 @@ module.exports = function (bot, callback) {
         if (completedLinks === currentBatch.size) {
           if (batchNumber !== batchList.length - 1) setTimeout(getBatch, 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatch, 200, 0, modBatchList, 'modded')
-          else return endCon()
+          else return finishInit()
         }
       })
     })
@@ -307,13 +300,6 @@ module.exports = function (bot, callback) {
 
     for (var i in regBatchList) { deployProcessors(regBatchList, i) }
     for (var j in modBatchList) { deployProcessors(modBatchList, j) }
-  }
-
-  function endCon () {
-    sqlCmds.end(con, function (err) {
-      if (err) throw err
-      finishInit()
-    })
   }
 
   function finishInit () {

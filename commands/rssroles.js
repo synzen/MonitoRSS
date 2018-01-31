@@ -10,7 +10,7 @@ const MsgHandler = require('../util/MsgHandler.js')
 
 module.exports = function (bot, message, command) {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || guildRss.sources.size() === 0) return message.channel.send('Cannot add role customizations without any active feeds.').catch(err => console.log(`Promise Warning: rssRole 1: ${err}`))
+  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('Cannot add role customizations without any active feeds.').catch(err => console.log(`Promise Warning: rssRole 1: ${err}`))
 
   const rssList = guildRss.sources
 
@@ -19,8 +19,8 @@ module.exports = function (bot, message, command) {
     const source = rssList[rssName]
     // remove any filtered subscriptions when adding global subscription, and delete parents if empty
     if (source.filters && source.filters.roleSubscriptions && source.filters.roleSubscriptions[role.id]) delete source.filters.roleSubscriptions[role.id]
-    if (source.filters && source.filters.roleSubscriptions && source.filters.roleSubscriptions.size() === 0) delete source.filters.roleSubscriptions
-    if (source.filters && source.filters.size() === 0) delete source.filters
+    if (source.filters && source.filters.roleSubscriptions && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
+    if (source.filters && Object.keys(source.filters).length === 0) delete source.filters
     if (!source.roleSubscriptions) source.roleSubscriptions = []
     for (var globalSubber in source.roleSubscriptions) {
       if (source.roleSubscriptions[globalSubber].roleID === role.id) return message.channel.send(`Unable to add global subscription. Role \`${role.name}\` is already subscribed to this feed.`)
@@ -142,7 +142,7 @@ module.exports = function (bot, message, command) {
       }
     }
 
-    if (subList.size() === 0) return message.channel.send(`There are no roles with subscriptions for the feed <${rssList[rssName].link}>.`).catch(err => console.log(`Promise Warning: rssRoles/printSub 1: ${err}`))
+    if (Object.keys(subList).length === 0) return message.channel.send(`There are no roles with subscriptions for the feed <${rssList[rssName].link}>.`).catch(err => console.log(`Promise Warning: rssRoles/printSub 1: ${err}`))
     else {
       for (var feed in subList) {
         let list = ''
@@ -184,8 +184,8 @@ module.exports = function (bot, message, command) {
         for (var filteredSubber in source.filters.roleSubscriptions) {
           if (filteredSubber === roleID) {
             delete source.filters.roleSubscriptions[filteredSubber]
-            if (source.filters.roleSubscriptions.size() === 0) delete source.filters.roleSubscriptions
-            if (source.filters.size() === 0) delete source.filters
+            if (Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
+            if (Object.keys(source.filters).length === 0) delete source.filters
             found = true
           }
         }

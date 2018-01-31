@@ -56,7 +56,7 @@ module.exports = function (bot, message, command, role) {
             for (var filterCategory in filterList) {
               if (filterCategory !== 'roleSubscriptions') delete filterList[filterCategory]
             }
-            if (filterList.size() === 0) delete rssList[rssName].filters
+            if (Object.keys(filterList).length === 0) delete rssList[rssName].filters
             fileOps.updateFile(message.guild.id, guildRss)
             msgHandler.deleteAll(message.channel)
             return message.channel.send(`All feed filters have been successfully removed from <${rssList[rssName].link}>.`).catch(err => `Promise Warning: rssFilters 3: ${err}`)

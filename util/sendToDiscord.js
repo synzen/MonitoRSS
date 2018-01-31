@@ -34,7 +34,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
 
   function body () {
     // Sometimes feeds get deleted mid-retrieval cycle, thus check for empty rssList and if the feed itself was deleted
-    if (!rssList || rssList.size() === 0) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources for guild, skipping Discord message sending.`)
+    if (!rssList || Object.keys(rssList).length === 0) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources for guild, skipping Discord message sending.`)
     if (deletedFeeds.includes(rssName)) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed (rssName ${rssName}, link: ${rssList[rssName].link}) was deleted during cycle, skipping Discord message sending.`)
 
     let attempts = 1

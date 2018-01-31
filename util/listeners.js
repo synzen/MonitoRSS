@@ -26,7 +26,6 @@ exports.createManagers = function (bot) {
   })
 
   bot.on('channelDelete', function (channel) {
-    if (!fs.existsSync(`./sources/${channel.guild.id}.json`)) return
     eventHandler('channelDelete')(channel)
   })
 

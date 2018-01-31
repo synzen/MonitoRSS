@@ -1,6 +1,6 @@
 const Discord = require('discord.js')
 
-function isStr(str) { return str && typeof str === 'string' }
+function isStr (str) { return str && typeof str === 'string' }
 
 module.exports = function (rssList, rssName, article) {
   const embed = new Discord.RichEmbed()
@@ -32,7 +32,7 @@ module.exports = function (rssList, rssName, article) {
   if (Array.isArray(fields)) {
     for (var x in fields) {
       const field = fields[x]
-      const inline = field.inline === true ? true : false
+      const inline = field.inline === true
       const title = field.title
       const value = field.value
       if (isStr(title) && !title) embed.addBlankField(inline)

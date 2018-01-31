@@ -66,7 +66,7 @@ module.exports = function (bot, message, command) {
         collector.stop()
         if (!rssList[rssName].embedMessage || !rssList[rssName].embedMessage.properties || !rssList[rssName].embedMessage.properties[choice]) return resetting.edit('This property has nothing to reset.').catch(err => console.log(`Promise Warning: rssEmbed 2b: ${err}`))
         delete rssList[rssName].embedMessage.properties[choice]
-        if (rssList[rssName].embedMessage.properties.size() === 0) {
+        if (Object.keys(rssList[rssName].embedMessage.properties).length === 0) {
           delete rssList[rssName].embedMessage
           if (rssList[rssName].message === '{empty}') delete rssList[rssName].message // An empty message is not allowed if there is no embed
         }

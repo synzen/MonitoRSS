@@ -1,8 +1,6 @@
 const fs = require('fs')
 const channelTracker = require('../util/channelTracker.js')
 const initialize = require('../rss/initialize.js')
-const sqlConnect = require('../rss/sql/connect.js')
-const sqlCmds = require('../rss/sql/commands.js')
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 
@@ -47,7 +45,7 @@ module.exports = function (bot, message) {
 
   function finishLinkList (verifyMsg) {
     let msg = ''
-    if (passedAddLinks.size() > 0) {
+    if (Object.keys(passedAddLinks).length > 0) {
       let successBox = 'The following feed(s) have been successfully added:\n```\n'
       for (var passedLink in passedAddLinks) {
         successBox += `\n* ${passedLink}`
@@ -59,14 +57,14 @@ module.exports = function (bot, message) {
       }
       msg += successBox + '\n```\n'
     }
-    if (failedAddLinks.size() > 0) {
+    if (Object.keys(failedAddLinks).length > 0) {
       let failBox = '\nThe following feed(s) could not be added:\n```\n'
       for (var failedLink in failedAddLinks) {
         failBox += `\n\n* ${failedLink}\nReason: ${failedAddLinks[failedLink]}`
       }
       msg += failBox + '\n```\n'
     }
-    if (passedAddLinks.size() > 0) msg += 'Articles will be automatically delivered once new articles are found.'
+    if (Object.keys(passedAddLinks).length > 0) msg += 'Articles will be automatically delivered once new articles are found.'
 
     channelTracker.remove(message.channel.id)
     verifyMsg.edit(msg).catch(err => console.log(`Promise Warning rssAdd 1: ${err}`))
@@ -85,7 +83,7 @@ module.exports = function (bot, message) {
         failedAddLinks[link] = 'Invalid/improperly-formatted link.'
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
         else return finishLinkList(verifyMsg)
-      } else if (maxFeedsAllowed !== 'Unlimited' && rssList.size() + checkedSoFar >= maxFeedsAllowed) {
+      } else if (maxFeedsAllowed !== 'Unlimited' && Object.keys(rssList).length + checkedSoFar >= maxFeedsAllowed) {
         console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${link} due to limit of ${maxFeedsAllowed} feeds.`)
         failedAddLinks[link] = `Maximum feed limit of ${maxFeedsAllowed} has been reached.`
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
@@ -100,72 +98,65 @@ module.exports = function (bot, message) {
         }
       }
 
-      const con = sqlConnect(init)
+      linkItem.shift()
 
-      function init () {
-        linkItem.shift()
-
-        let cookieString = linkItem.join(' ')
-        var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitize(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined
-        if (cookies) {
-          let cookieObj = {} // Convert cookie array into cookie object with key as key, and value as value
-          for (var c in cookies) {
-            let cookie = cookies[c].split('=')
-            if (cookie.length === 2) cookieObj[cookie[0].trim()] = cookie[1].trim()
-          }
-          cookies = cookieObj
+      let cookieString = linkItem.join(' ')
+      var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitize(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined
+      if (cookies) {
+        let cookieObj = {} // Convert cookie array into cookie object with key as key, and value as value
+        for (var c in cookies) {
+          let cookie = cookies[c].split('=')
+          if (cookie.length === 2) cookieObj[cookie[0].trim()] = cookie[1].trim()
         }
-        var cookiesFound = !!cookies
-        if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id) && !isBotController(message.author.id)) cookies = undefined
-
-        initialize.addNewFeed(con, link, message.channel, cookies, function (err) {
-          channelTracker.remove(message.channel.id)
-          if (err) {
-            let channelErrMsg = ''
-            switch (err.type) {
-              case 'request':
-                channelErrMsg = 'Unable to connect to feed link'
-                break
-              case 'feedparser':
-                channelErrMsg = 'Invalid feed. Note that you cannot simply put any link - it must be formatted as an RSS feed page. To check if it is so, you may search for online RSS feed validators'
-                break
-              case 'database':
-                channelErrMsg = 'Internal database error. Please try again'
-                break
-              default:
-                channelErrMsg = 'No reason available'
-            }
-            // Reserve err.content for console logs, which are more verbose
-            if (cookiesFound && !cookies) channelErrMsg += ' (Cookies were detected, but missing access for usage)'
-            console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''} `, err.content.message || err.content)
-            failedAddLinks[link] = channelErrMsg
-          } else {
-            console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${link}.`)
-            if (failedLinks[link]) {
-              if (bot.shard) {
-                bot.shard.broadcastEval(`
-                  delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${link}'];
-                `)
-                .then(() => {
-                  console.log('broadcast successful')
-                  try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition after broadcast.`, e.message || e) }
-                })
-                .catch(err => console.log(`Error: Unable to broadcast failed links update on rssrefresh. `, err.message || err))
-              } else {
-                delete storage.failedLinks[link]
-                try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition. `, e.message || e) }
-              }
-            }
-            passedAddLinks[link] = cookies
-          }
-          sqlCmds.end(con, function (err) {
-            if (err) console.log(err)
-          })
-          ++checkedSoFar
-          if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
-          else return finishLinkList(verifyMsg)
-        })
+        cookies = cookieObj
       }
+      var cookiesFound = !!cookies
+      if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id) && !isBotController(message.author.id)) cookies = undefined
+
+      initialize.addNewFeed(link, message.channel, cookies, function (err) {
+        channelTracker.remove(message.channel.id)
+        if (err) {
+          let channelErrMsg = ''
+          switch (err.type) {
+            case 'request':
+              channelErrMsg = 'Unable to connect to feed link'
+              break
+            case 'feedparser':
+              channelErrMsg = 'Invalid feed. Note that you cannot simply put any link - it must be formatted as an RSS feed page. To check if it is so, you may search for online RSS feed validators'
+              break
+            case 'database':
+              channelErrMsg = 'Internal database error. Please try again'
+              break
+            default:
+              channelErrMsg = 'No reason available'
+          }
+          // Reserve err.content for console logs, which are more verbose
+          if (cookiesFound && !cookies) channelErrMsg += ' (Cookies were detected, but missing access for usage)'
+          console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}`, err.content.message || err.content)
+          failedAddLinks[link] = channelErrMsg
+        } else {
+          console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${link}.`)
+          if (failedLinks[link]) {
+            if (bot.shard) {
+              bot.shard.broadcastEval(`
+                delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${link}'];
+              `)
+              .then(() => {
+                console.log('broadcast successful')
+                try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition after broadcast.`, e.message || e) }
+              })
+              .catch(err => console.log(`Error: Unable to broadcast failed links update on rssrefresh. `, err.message || err))
+            } else {
+              delete storage.failedLinks[link]
+              try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition. `, e.message || e) }
+            }
+          }
+          passedAddLinks[link] = cookies
+        }
+        ++checkedSoFar
+        if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
+        else return finishLinkList(verifyMsg)
+      })
     })(0)
   }).catch(err => {
     console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not begin feed addition validation. (${err})`)

@@ -1,7 +1,10 @@
 /*
     Used to store data for various aperations across multiple files
 */
+const dbSettings = require('../config.json').database
+const maxDays = dbSettings.clean === true && dbSettings.maxDays > 0 ? dbSettings.maxDays : -1
 const fs = require('fs')
+const mongoose = require('mongoose')
 const currentGuilds = new Map()
 const linkTracker = {}
 const allScheduleWords = []
@@ -42,6 +45,30 @@ try {
   failedLinks = {}
 }
 
+const articleSchema = {
+  id: String,
+  title: String,
+  date: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+const guildRssSchema = {
+  id: String,
+  name: String,
+  sources: Object,
+  checkTitles: Boolean,
+  imgPreviews: Boolean,
+  imageLinksExistence: Boolean,
+  checkDates: Boolean,
+  dateFormat: String,
+  dateLanguage: String,
+  timezone: String
+}
+
+if (maxDays > 0) articleSchema.date.index = { expires: 60 * 60 * 24 * maxDays }
+
 exports.blacklistGuilds = blacklistGuilds
 
 exports.currentGuilds = currentGuilds // To hold all guild profiles
@@ -59,3 +86,13 @@ exports.linkTracker = linkTracker // To track schedule assignment to links
 exports.allScheduleWords = allScheduleWords // Holds all words across all schedules
 
 exports.failedLinks = failedLinks
+
+exports.schemas = {
+  guildRss: mongoose.Schema(guildRssSchema),
+  article: mongoose.Schema(articleSchema)
+}
+
+exports.models = {
+  GuildRss: () => mongoose.model('Guild', exports.schemas.guildRss),
+  Article: collection => mongoose.model(collection, exports.schemas.article)
+}

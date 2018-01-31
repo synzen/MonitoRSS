@@ -10,7 +10,7 @@ module.exports = function (bot, message, command) {
   const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
 
   if (failLimit === 0) return message.channel.send(`No fail limit has been set.`)
-  if (failedLinks.size() === 0) return message.channel.send(`There are no feeds that have exceeded the fail limit.`)
+  if (Object.keys(failedLinks).length === 0) return message.channel.send(`There are no feeds that have exceeded the fail limit.`)
 
   chooseFeed(bot, message, command, function (rssName, msgHandler) {
     const guildRss = currentGuilds.get(message.guild.id)
@@ -22,7 +22,7 @@ module.exports = function (bot, message, command) {
       return message.channel.send(`Unable to refresh the feed <${rssList[rssName].link}> if it has not reached the failure limit.`)
     }
 
-    const cookies = (source.advanced && source.advanced.cookies && source.advanced.size() > 0) ? source.advanced.cookies : undefined
+    const cookies = (source.advanced && source.advanced.cookies && Object.keys(source.advanced).length > 0) ? source.advanced.cookies : undefined
     message.channel.send(`Processing request for refresh...`)
     .then(function (processing) {
       requestStream(source.link, cookies, null, function (err) {

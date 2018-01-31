@@ -2,7 +2,7 @@ const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const initAllSources = require('./logic/initialization.js')
 
-module.exports = function (con, link, rssList, uniqueSettings, callback) {
+module.exports = function (link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()
   const articleList = []
 
@@ -16,7 +16,7 @@ module.exports = function (con, link, rssList, uniqueSettings, callback) {
 
   feedparser.on('error', function (err) {
     feedparser.removeAllListeners('end')
-    console.log(`INIT Error: Skipping ${link}. (${err})`)
+    console.log(`INIT Error: Skipping ${link}\n`, err)
     return callback({status: 'failed', link: link, rssList: rssList})
   })
 
@@ -31,7 +31,7 @@ module.exports = function (con, link, rssList, uniqueSettings, callback) {
   feedparser.on('end', function () {
     if (articleList.length === 0) return callback({status: 'success', link: link})
 
-    initAllSources(con, rssList, articleList, link, function (err, results) {
+    initAllSources(rssList, articleList, link, function (err, results) {
       if (err) throw err
       if (results) callback(results)
     })

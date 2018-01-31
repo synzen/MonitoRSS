@@ -2,10 +2,11 @@ const fs = require('fs')
 const Discord = require('discord.js')
 const config = require('./config.json')
 const storage = require('./util/storage.js')
+const connectDb = require('./rss/db/connect.js')
 const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
 
-const Manager = new Discord.ShardingManager('./server.js', {respawn: false})
+const Manager = new Discord.ShardingManager('./server.js', { respawn: false })
 const missingGuilds = {}
 
 if (!config.advanced || typeof config.advanced.shards !== 'number' || config.advanced.shards < 1) {
@@ -14,30 +15,34 @@ if (!config.advanced || typeof config.advanced.shards !== 'number' || config.adv
   console.log('SH MANAGER: No valid shard count found in config, setting default of 1')
 }
 
-Manager.spawn(config.advanced.shards, 0)
-
 const activeShardIds = []
 const refreshTimes = [config.feedSettings.refreshTimeMinutes ? config.feedSettings.refreshTimeMinutes : 15] // Store the refresh times for the setIntervals of the cycles for each shard
 const scheduleIntervals = [] // Array of intervals for each different refresh time
 const scheduleTracker = {} // Key is refresh time, value is index for activeShardIds
-
-Manager.shards.forEach(function (val, key) {
-  activeShardIds.push(key)
-})
 let initShardIndex = 0
 
-Manager.broadcast({type: 'startInit', shardId: activeShardIds[0]}) // Send the signal for first shard to initialize
+connectDb((err) => {
+  if (err) throw err
+  Manager.spawn(config.advanced.shards, 0)
 
-fs.readdir('./settings/schedules', function (err, files) {
-  if (err) return console.log(err)
-  for (var i in files) {
-    fs.readFile('./settings/schedules/' + files[i], function (err, data) {
-      if (err) return console.log(err)
-      const refreshTime = JSON.parse(data).refreshTimeMinutes
-      if (!refreshTimes.includes(refreshTime)) refreshTimes.push(refreshTime)
-    })
-  }
+  Manager.shards.forEach(function (val, key) {
+    activeShardIds.push(key)
+  })
+  Manager.broadcast({type: 'startInit', shardId: activeShardIds[0]}) // Send the signal for first shard to initialize
+
+  fs.readdir('./settings/schedules', function (err, files) {
+    if (err) return console.log(err)
+    for (var i in files) {
+      fs.readFile('./settings/schedules/' + files[i], function (err, data) {
+        if (err) return console.log(err)
+        const refreshTime = JSON.parse(data).refreshTimeMinutes
+        if (!refreshTimes.includes(refreshTime)) refreshTimes.push(refreshTime)
+      })
+    }
+  })
+
 })
+
 
 Manager.on('message', function (shard, message) {
   if (message === 'kill') process.exit()

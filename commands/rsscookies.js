@@ -15,7 +15,7 @@ module.exports = function (bot, message, command) {
 
   chooseFeed(bot, message, command, function (rssName, msgHandler) {
     let currentCookies = ''
-    const cookieObj = (rssList[rssName].advanced && rssList[rssName].advanced.cookies && rssList[rssName].advanced.cookies.size() > 0) ? rssList[rssName].advanced.cookies : undefined
+    const cookieObj = (rssList[rssName].advanced && rssList[rssName].advanced.cookies && Object.keys(rssList[rssName].advanced.cookies).length > 0) ? rssList[rssName].advanced.cookies : undefined
     if (cookieObj) {
       for (var cookieKey in cookieObj) {
         currentCookies += `\n${cookieKey} = ${cookieObj[cookieKey]}`

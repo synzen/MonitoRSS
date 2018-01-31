@@ -28,14 +28,14 @@ exports.roles = function (bot, guildId, rssName) {
   }
 
   // filtered subs is an object
-  if (rssList[rssName].filters && rssList[rssName].filters.roleSubscriptions && rssList[rssName].filters.roleSubscriptions.size() > 0) {
+  if (rssList[rssName].filters && rssList[rssName].filters.roleSubscriptions && Object.keys(rssList[rssName].filters.roleSubscriptions).length > 0) {
     const filteredSubList = rssList[rssName].filters.roleSubscriptions
     for (var roleID in filteredSubList) {
       if (!guild.roles.get(roleID)) {
         console.log(`Guild Warning: (${guild.id}, ${guild.name}) => Role (${roleID}, ${filteredSubList[roleID].roleName}) has been deleted. Removing.`)
         delete guildRss.sources[rssName].filters.roleSubscriptions[roleID]
-        if (guildRss.sources[rssName].filters.roleSubscriptions.size() === 0) delete guildRss.sources[rssName].filters.roleSubscriptions
-        if (guildRss.sources[rssName].filters.size() === 0) delete guildRss.sources[rssName].filters
+        if (Object.keys(guildRss.sources[rssName].filters.roleSubscriptions).length === 0) delete guildRss.sources[rssName].filters.roleSubscriptions
+        if (Object.keys(guildRss.sources[rssName].filters).length === 0) delete guildRss.sources[rssName].filters
         changedInfo = true
       } else if (guild.roles.get(roleID).name !== filteredSubList[roleID].roleName) {
         console.log(`Guild Info: (${guild.id}, ${guild.name}) => Role (${roleID}, ${filteredSubList[roleID].roleName}) => Changed role name to ${guild.roles.get(roleID).name}`)

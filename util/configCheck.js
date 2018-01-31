@@ -46,13 +46,10 @@ exports.defaultConfigs = {
     menuColor: {type: 'number', default: 7833753},
     deleteMenus: {type: 'boolean', default: false}
   },
-  feedManagement: {
-    sqlType: {type: 'string', default: 'sqlite3'},
-    databaseName: {type: 'string', default: 'rss'},
-    enableBackups: {type: 'boolean', default: true},
-    enableRestores: {type: 'boolean', default: false},
-    cleanDatabase: {type: 'boolean', default: false},
-    maxEntryAge: {type: 'number', default: 14}
+  database: {
+    uri: {type: 'string', default: 'mongodb://localhost/rss'},
+    clean: {type: 'boolean', default: false},
+    maxDays: {type: 'number', default: 14}
   },
   feedSettings: {
     refreshTimeMinutes: {type: 'number', default: 10},
@@ -85,7 +82,7 @@ exports.defaultConfigs = {
   }
 }
 
-exports.checkMasterConfig = function (masterConfig) {
+exports.check = function (userConfig) {
   const locales = moment.locales()
   let fatalInvalidConfigs = {}
   let invalidConfigs = {}
@@ -95,29 +92,28 @@ exports.checkMasterConfig = function (masterConfig) {
     if (config.default === undefined) {
       fatalInvalidConfigs[configCategory + '.' + configName] = errMsg
     } else {
-      masterConfig[configCategory][configName] = config.default
+      userConfig[configCategory][configName] = config.default
       invalidConfigs[configCategory + '.' + configName] = `${errMsg}. Defaulting to ${Array.isArray(config.default) ? `[${config.default}]` : config.default}`
     }
   }
 
   for (var configCategory in exports.defaultConfigs) {
     for (var configName in exports.defaultConfigs[configCategory]) {
-      const configValue = exports.defaultConfigs[configCategory][configName]
-      const userConfig = masterConfig[configCategory][configName]
+      const configVal = exports.defaultConfigs[configCategory][configName]
+      const userVal = userConfig[configCategory][configName]
 
-      if (configValue.type !== typeof userConfig) {
-        checkIfRequired(configCategory, configName, `Expected ${configValue.type}, found ${typeof userConfig}`)
+      if (configVal.type !== typeof userVal) {
+        checkIfRequired(configCategory, configName, `Expected ${configVal.type}, found ${typeof userVal}`)
       } else {
-        if (typeof userConfig === 'number' && userConfig < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
-        else if (configName === 'timezone' && !moment.tz.zone(userConfig)) checkIfRequired(configCategory, configName, 'Invalid timezone')
-        else if (configName === 'dateLanguage' && !locales.includes(userConfig)) checkIfRequired(configCategory, configName, 'Invalid/unsupported locale')
-        else if (configName === 'menuColor' && userConfig > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
-        else if (configName === 'sqlType' && (userConfig !== 'sqlite3' && userConfig !== 'mysql')) checkIfRequired(configCategory, configName, 'Must be either "mysql" or "sqlite3"')
-        else if (configName === 'processorMethod' && userConfig !== 'single' && userConfig !== 'isolated' && userConfig !== 'parallel') checkIfRequired(configCategory, configName, 'Must be either "single", "isolated", or "parallel"')
-        else if (configName === 'controllerIds' || configName === 'dateLanguageList') {
-          for (var i in userConfig) {
-            if (typeof userConfig[i] !== 'string') {
-              checkIfRequired(configCategory, configName, `Detected non-string value (${userConfig[i]})`)
+        if (typeof userVal === 'number' && userVal < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
+        else if (configName === 'timezone' && !moment.tz.zone(userVal)) checkIfRequired(configCategory, configName, 'Invalid timezone')
+        else if (configName === 'menuColor' && userVal > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
+        else if (configName === 'sqlType' && (userVal !== 'sqlite3' && userVal !== 'mysql')) checkIfRequired(configCategory, configName, 'Must be either "mysql" or "sqlite3"')
+        else if (configName === 'processorMethod' && userVal !== 'single' && userVal !== 'isolated' && userVal !== 'parallel') checkIfRequired(configCategory, configName, 'Must be either "single", "isolated", or "parallel"')
+        else if (configName === 'controllerIds') {
+          for (var i in userVal) {
+            if (typeof userVal[i] !== 'string') {
+              checkIfRequired(configCategory, configName, `Detected non-string value (${userVal[i]})`)
               break
             }
           }
@@ -126,9 +122,10 @@ exports.checkMasterConfig = function (masterConfig) {
     }
   }
 
-  const langList = masterConfig.feedSettings.dateLanguageList
+  const defLang = userConfig.feedSettings.dateLanguage
+  const langList = userConfig.feedSettings.dateLanguageList
+  if (!langList.includes(defLang)) langList.unshift(defLang)
   for (var u = langList.length - 1; u >= 0; --u) moment.locale(langList[u])  // Set the global moment locale/language to the 0 index item
-
 
   let errMsg
   for (var e in fatalInvalidConfigs) errMsg += `\n${e}: ${fatalInvalidConfigs[e]}`
