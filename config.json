@@ -14,13 +14,10 @@
     "menuColor": 7833753,
     "deleteMenus": false
   },
-  "feedManagement": {
-    "sqlType": "sqlite3",
-    "databaseName": "rss",
-    "enableBackups": true,
-    "enableRestores": false,
-    "cleanDatabase": false,
-    "maxEntryAge": 14
+  "database": {
+    "uri": "mongodb://localhost/rss",
+    "clean": true,
+    "maxDays": 14
   },
   "feedSettings": {
     "refreshTimeMinutes": 15,
