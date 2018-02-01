@@ -121,7 +121,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       processedArticles++
       if (processedArticles === totalArticles) {
         dbCmds.bulkInsert(Article, bulkInsert, (err, res) => {
-          if (err) return callback new Error(`Database Error: Unable to bulk insert articles for ${rssName}`, err.message || err)
+          if (err) return callback(new Error(`Database Error: Unable to bulk insert articles for ${rssName}`, err.message || err))
           finishSource()
         })
       }
