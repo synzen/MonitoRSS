@@ -81,7 +81,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       Article.find({
         $or: [{id: { $in: allIds }}, {title: { $in: allTitles }}]
       }, (err, docs) => {
-        if (err) return callback(new Error(`Database Error: Unable to query find articles for ${rssName}\n`, err))
+        if (err) return callback(new Error(`Database Error: Unable to query find articles for ${rssName}`, err.message || err))
         docs.forEach(item => {
           foundIds.push(item.id)
           foundTitles.push(item.title)
@@ -121,7 +121,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       processedArticles++
       if (processedArticles === totalArticles) {
         dbCmds.bulkInsert(Article, bulkInsert, (err, res) => {
-          if (err) return callback new Error(`Database Error: Unable to bulk insert articles for ${rssName}\n`, err)
+          if (err) return callback new Error(`Database Error: Unable to bulk insert articles for ${rssName}`, err.message || err)
           finishSource()
         })
       }

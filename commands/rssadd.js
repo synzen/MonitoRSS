@@ -142,7 +142,7 @@ module.exports = function (bot, message) {
               .then(() => {
                 try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition after broadcast.`, e.message || e) }
               })
-              .catch(err => console.log(`Error: Unable to broadcast failed links update on rssrefresh. `, err.message || err))
+              .catch(err => console.log(`Error: Unable to broadcast failed links update on rssadd.`, err.message || err))
             } else {
               delete storage.failedLinks[link]
               try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition. `, e.message || e) }
