@@ -77,13 +77,11 @@ exports.defaultConfigs = {
     batchSize: {type: 'number', default: '400'},
     restrictCookies: {type: 'boolean', default: false},
     restrictWebhooks: {type: 'boolean', default: false},
-    processorMethod: {type: 'string', default: 'single'},
-    minifyJSON: {type: 'boolean', default: false}
+    processorMethod: {type: 'string', default: 'single'}
   }
 }
 
 exports.check = function (userConfig) {
-  const locales = moment.locales()
   let fatalInvalidConfigs = {}
   let invalidConfigs = {}
 

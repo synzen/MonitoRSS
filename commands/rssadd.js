@@ -138,11 +138,8 @@ module.exports = function (bot, message) {
           console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${link}.`)
           if (failedLinks[link]) {
             if (bot.shard) {
-              bot.shard.broadcastEval(`
-                delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${link}'];
-              `)
+              bot.shard.broadcastEval(`delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${link}'];`)
               .then(() => {
-                console.log('broadcast successful')
                 try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition after broadcast.`, e.message || e) }
               })
               .catch(err => console.log(`Error: Unable to broadcast failed links update on rssrefresh. `, err.message || err))
@@ -159,7 +156,7 @@ module.exports = function (bot, message) {
       })
     })(0)
   }).catch(err => {
-    console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not begin feed addition validation. (${err})`)
+    console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not begin feed addition validation.`, err.message || err)
     channelTracker.remove(message.channel.id)
   })
 }

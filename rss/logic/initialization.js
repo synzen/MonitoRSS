@@ -78,7 +78,7 @@ module.exports = function (rssList, articleList, link, callback) {
       Article.find({
         $or: [{id: { $in: allIds }}, {title: { $in: allTitles }}]
       }, (err, docs) => {
-        if (err) throw err
+        if (err) return callback(err)
         docs.forEach(item => {
           foundIds.push(item.id)
           foundTitles.push(item.title)
@@ -100,7 +100,6 @@ module.exports = function (rssList, articleList, link, callback) {
           article.rssName = rssName
           article.discordChannelId = channelId
           callback(null, {status: 'article', article: article})
-          // process.send({status: 'article', article: article})
         }
 
         insertIntoTable({
@@ -119,7 +118,7 @@ module.exports = function (rssList, articleList, link, callback) {
       processedArticles++
       if (processedArticles === totalArticles) {
         dbCmds.bulkInsert(Article, bulkInsert, (err, res) => {
-          if (err) throw err
+          if (err) return callback(err)
           finishSource()
         })
       }

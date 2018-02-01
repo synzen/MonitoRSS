@@ -45,7 +45,6 @@
     "batchSize": 300,
     "restrictCookies": false,
     "restrictWebhooks": false,
-    "processorMethod": "single",
-    "minifyJSON": false
+    "processorMethod": "single"
   }
 }
