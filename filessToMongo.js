@@ -1,7 +1,7 @@
 /*
   ONLY RUN THIS ONCE. If ran multiple times, set DROP_DATABASE to true, run again, and set to false for do-over
 */
-const DROP_DATABASE = true
+const DROP_DATABASE = false
 
 const fs = require('fs')
 const config = require('./config.json')
