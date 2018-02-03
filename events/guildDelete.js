@@ -12,9 +12,9 @@ module.exports = function (bot, guild) {
     if (channelTracker.hasActiveMenus(channel.id)) channelTracker.remove(channel.id)
   })
 
-  if (!fs.existsSync(`./sources/${guild.id}.json`)) return
-
-  const rssList = currentGuilds.get(guild.id).sources
+  const guildRss = currentGuilds.get(guild.id)
+  if (!guildRss) return
+  const rssList = guildRss.sources
 
   for (var rssName in rssList) {
     dbCmds.dropCollection(rssName)

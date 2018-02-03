@@ -2,6 +2,7 @@ const fs = require('fs')
 const storage = require('../../util/storage.js')
 const config = require('../../config.json')
 const removeRss = require('../../util/removeRss.js')
+const fileOps = require('../../util/fileOps.js')
 
 exports.normal = function (bot, message) {
   const currentGuilds = storage.currentGuilds
@@ -35,11 +36,7 @@ exports.normal = function (bot, message) {
           }
         }
       }
-      if (enforced && fs.existsSync(`./sources/${guildID}.json`)) {
-        fs.writeFile(`./sources/${guildID}.json`, JSON.stringify(guildRss), function (err) {
-          if (err) throw err
-        })
-      }
+      if (enforced) fileOps.updateFile(guildID, guildRss)
     }
 
     const enforceTxt = enforced ? ` Limit has been enforced, ${enforced} feed(s) have been removed.` : ''

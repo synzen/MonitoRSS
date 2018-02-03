@@ -30,7 +30,7 @@ exports.createManagers = function (bot) {
   })
 
   bot.on('roleUpdate', function (oldRole, newRole) {
-    if (oldRole.name === newRole.name || !fs.existsSync(`./sources/${oldRole.guild.id}.json`)) return
+    if (oldRole.name === newRole.name) return
     eventHandler('roleUpdate')(bot, oldRole, newRole)
   })
 
@@ -39,7 +39,7 @@ exports.createManagers = function (bot) {
   })
 
   bot.on('guildUpdate', function (oldGuild, newGuild) {
-    if (newGuild.name === oldGuild.name || !fs.existsSync(`./sources/${oldGuild.id}.json`)) return
+    if (newGuild.name === oldGuild.name) return
     eventHandler('guildUpdate')(bot, oldGuild, newGuild)
   })
 

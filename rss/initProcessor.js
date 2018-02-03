@@ -31,14 +31,14 @@ function init (link, rssList, uniqueSettings) {
   requestStream(link, cookies, feedparser, function (err) {
     requested = true
     if (err) {
-      console.log(`INIT Error: Skipping ${link}\n`, err)
+      console.log(`INIT Error: Skipping ${link}`, err.message || err)
       return process.send({status: 'failed', link: link, rssList: rssList})
     }
   })
 
   feedparser.on('error', function (err) {
     feedparser.removeAllListeners('end')
-    console.log(`INIT Error: Skipping ${link}. (${err})`)
+    console.log(`INIT Error: Skipping ${link}`, err.message || err)
     return process.send({status: 'failed', link: link, rssList: rssList})
   })
 

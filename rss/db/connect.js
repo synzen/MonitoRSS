@@ -1,7 +1,7 @@
 const config = require('../../config.json')
 const mongoose = require('mongoose')
 
-module.exports = function (callback, type) {
+module.exports = function (callback) {
   mongoose.connect(config.database.uri, {
     keepAlive: 120
   })

@@ -26,7 +26,10 @@ module.exports = function (rssList, rssName, article) {
   if (isStr(embedSpecs.url)) embed.setURL(article.convertKeywords(embedSpecs.url))
   else embed.setURL(article.link)
 
-  if (isStr(embedSpecs.title)) embed.setTitle(article.convertKeywords(embedSpecs.title))
+  if (isStr(embedSpecs.title)) {
+    const t = article.convertKeywords(embedSpecs.title)
+    embed.setTitle(t.length > 256 ? t.slice(0, 250) + '...' : t)
+  }
 
   const fields = embedSpecs.fields
   if (Array.isArray(fields)) {
