@@ -4,7 +4,7 @@ const GuildRss = require('./storage.js').models.GuildRss()
 
 exports.updateFile = function (guildId, contents, shardingManager) {
   GuildRss.update({ id: guildId }, contents, { overwrite: true, upsert: true, strict: true }, (err, res) => {
-    if (err) throw err
+    if (err) console.info(`Guilds Info: Unable to update profile ${guildId}`, err.message || err)
   })
   if (shardingManager) shardingManager.broadcast({type: 'updateGuild', guildRss: contents})
   else if (process.send) process.send({type: 'updateGuild', guildRss: contents}) // If this is a child process
@@ -12,7 +12,7 @@ exports.updateFile = function (guildId, contents, shardingManager) {
 
 exports.deleteGuild = function (guildId, shardingManager, callback) {
   GuildRss.find({id: guildId}).remove((err, res) => {
-    if (err) return console.log(err)
+    if (err) return console.log(`Guilds Info: Unable to delete profile ${guildId}`, err.message || err)
     console.log(res)
   })
 
