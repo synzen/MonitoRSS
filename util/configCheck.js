@@ -68,8 +68,8 @@ exports.defaultConfigs = {
     cycleMaxAge: {type: 'number', default: 1},
     defaultMessage: {type: 'string', default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
     showRegexErrs: {type: 'boolean', default: true},
-    imagePreviews: {type: 'boolean', default: true},
-    imageLinksExistence: {type: 'boolean', default: true},
+    imgPreviews: {type: 'boolean', default: true},
+    imgLinksExistence: {type: 'boolean', default: true},
     checkDates: {type: 'boolean', default: true}
   },
   advanced: {
