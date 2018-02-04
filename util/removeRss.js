@@ -9,12 +9,12 @@ module.exports = function (guildId, rssName, callback) {
   const rssList = guildRss.sources
   const link = rssList[rssName].link
 
-  dbCmds.dropCollection(rssName)
-  delete rssList[rssName]
-  fileOps.updateFile(guildId, guildRss)
-  deletedFeeds.push(rssName)
+  dbCmds.dropCollection(rssName, err => {
+    delete rssList[rssName]
+    fileOps.updateFile(guildId, guildRss)
+    deletedFeeds.push(rssName)
+    if (!err) console.log(`RSS Removal: (${guildId}, ${guildRss.name}) => Removed ${link}`)
 
-  console.log(`RSS Removal: (${guildId}, ${guildRss.name}) => Removed ${link}`)
-
-  if (typeof callback === 'function') callback(link, rssName)
+    if (typeof callback === 'function') callback(err, link, rssName)
+  })
 }

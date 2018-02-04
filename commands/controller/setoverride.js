@@ -31,7 +31,9 @@ exports.normal = function (bot, message) {
         for (var rssName in rssList) {
           if (Object.keys(rssList).length > newLimit) {
             enforced++
-            removeRss(guildID, rssName)
+            removeRss(guildID, rssName, err => {
+              if (err) console.log(`Bot Controller: setoverride error`, err.message || err)
+            })
             delete rssList[rssName]
           }
         }
@@ -94,7 +96,9 @@ exports.sharded = function (bot, message, Manager) {
             for (var rssName in rssList) {
               if (Object.keys(rssList).length > newLimit) {
                 enforced++;
-                removeRss('${guildID}', rssName);
+                removeRss('${guildID}', rssName, err => {
+                  console.log('Bot Controller: setoverride error', err.message || err)
+                });
                 delete rssList[rssName];
               }
             }

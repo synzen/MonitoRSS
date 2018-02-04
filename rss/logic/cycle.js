@@ -105,16 +105,9 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
           callback(null, {status: 'article', article: article})
         }
 
-        insertIntoTable({
-          id: article._id,
-          title: article.title
-        })
+        bulkInsert.push(article)
+        incrementProgress()
       }
-    }
-
-    function insertIntoTable (articleInfo) {
-      bulkInsert.push(articleInfo)
-      incrementProgress()
     }
 
     function incrementProgress () {

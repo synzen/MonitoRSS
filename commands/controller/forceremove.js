@@ -68,9 +68,11 @@ exports.normal = function (bot, message) {
         }
 
         for (var l in names) {
-          let channel = bot.channels.get(rssList[names[l]].channel)
+          const channel = bot.channels.get(rssList[names[l]].channel)
           if (reason && channel) channel.send(`**ATTENTION:** Feeds with link <${rssList[names[l]].link}> have been forcibly removed from all servers. Reason: ${reason}`).catch(err => console.log(`Could not send force removal notification to server ${channel.guild.id}. `, err.message || err))
-          removeRss(channel.guild.id, names[l])
+          removeRss(channel.guild.id, names[l], err => {
+            if (err) console.log(`Bot Controller: forceremove error`, err.message || err)
+          })
           delete rssList[names[l]]
         }
         fileOps.updateFile(affectedGuilds[i], guildRss)
@@ -190,7 +192,9 @@ exports.sharded = function (bot, message, Manager) {
             for (var l in names) {
               const channel = this.channels.get(rssList[names[l]].channel);
               if (${reason ? '"' + reason + '"' : undefined} && channel) channel.send('**ATTENTION:** Feeds with link <' + rssList[names[l]].link + '> have been forcibly removed from all servers. Reason: ${'"' + reason + '"'}').catch(err => console.log('Could not send force removal notification to server ' + channel.guild.id + '. ', err.message || err))
-              removeRss(channel.guild.id, names[l]);
+              removeRss(channel.guild.id, names[l], err => {
+                if (err) console.log('Bot Controller: for forceremove error', err.message || err)
+              });
               delete rssList[names[l]];
             }
             fileOps.updateFile(affectedGuilds[i], guildRss);

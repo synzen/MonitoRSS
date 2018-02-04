@@ -52,9 +52,9 @@ module.exports = function (rssList, articleList, link, callback) {
       } else olderArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)
     }
 
-    checkTableAlt(olderArticles, newerArticles, articleList)
+    checkCollection(olderArticles, newerArticles, articleList)
 
-    function checkTableAlt (olderArticles, newerArticles, allArticles) {
+    function checkCollection (olderArticles, newerArticles, allArticles) {
       let checkTitle = false
       const globalSetting = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
       checkTitle = globalSetting
@@ -102,16 +102,9 @@ module.exports = function (rssList, articleList, link, callback) {
           callback(null, {status: 'article', article: article})
         }
 
-        insertIntoTable({
-          id: article._id,
-          title: article.title
-        })
+        bulkInsert.push(article)
+        incrementProgress()
       }
-    }
-
-    function insertIntoTable (articleInfo) {
-      bulkInsert.push(articleInfo)
-      incrementProgress()
     }
 
     function incrementProgress () {

@@ -5,7 +5,7 @@ const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
 const connectDb = require('./db/connect.js')
 const logLinkErr = require('../util/logLinkErrs.js')
-const processAllSources = require('./logic/rss.js')
+const processAllSources = require('./logic/cycle.js')
 if (require('../config.json').logging.logDates === true) require('../util/logDates.js')()
 let connected = false
 

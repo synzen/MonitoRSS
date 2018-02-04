@@ -1,7 +1,7 @@
 const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
 const debugFeeds = require('../util/debugFeeds').list
-const processAllSources = require('./logic/rss.js')
+const processAllSources = require('./logic/cycle.js')
 
 module.exports = function (link, rssList, uniqueSettings, callback) {
   const feedparser = new FeedParser()

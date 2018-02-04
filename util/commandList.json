@@ -67,7 +67,7 @@
 		"options": {
 			"checkTitles": "Toggle Title Checks",
 			"imgPreviews": "Toggle Image Link Previews",
-			"imageLinksExistence": "Toggle Image Links Existence",
+			"imgLinksExistence": "Toggle Image Links Existence",
 			"checkDates": "Toggle Date Checks"
 		}
 	},

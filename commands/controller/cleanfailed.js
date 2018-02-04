@@ -87,7 +87,9 @@ exports.normal = function (bot, message) {
           const link = rssList[rssName].link
           const channel = bot.channels.get(rssList[rssName].channel)
           if (reason && channel) channel.send(`**ATTENTION:** Feeds with link <${link}> have been forcibly removed from all servers. Reason: ${reason}`).catch(err => console.log(`Could not send force removal notification to server ${channel.guild.id}. `, err.message || err))
-          removeRss(channel.guild.id, rssName)
+          removeRss(channel.guild.id, rssName, err => {
+            if (err) console.log(`Bot Controller: cleanfailed error`, err.message || err)
+          })
           delete failedLinks[link]
           delete rssList[rssName]
         }
@@ -236,7 +238,9 @@ exports.sharded = function (bot, message, Manager) {
               const link = rssList[rssName].link;
               const channel = this.channels.get(rssList[rssName].channel);
               if (${reason ? '"' + reason + '"' : undefined} && channel) channel.send('**ATTENTION:** Feeds with link <' + link + '> have been forcibly removed from all servers. Reason: ${reason ? '"' + reason + '"' : undefined}').catch(err => console.log('Could not send force removal notification to server ' + channel.guild.id + '. ', err.message || err))
-              removeRss(channel.guild.id, rssName);
+              removeRss(channel.guild.id, rssName, err => {
+                if (err) console.log('Bot Controller: cleanfailed error', err.message || err)
+              });
               delete failedLinks[link];
               delete rssList[rssName];
             }

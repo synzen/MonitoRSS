@@ -26,8 +26,9 @@ exports.normal = function (bot, message) {
       const guildRss = currentGuilds.get(guildID)
       if (guildRss) {
         for (var rssName in guildRss.sources) {
-          removeRss(guildID, rssName, function (link, rssName) {
-            console.log(`Bot Controller: Removed ${rssName} has part of blacklist operation.`)
+          removeRss(guildID, rssName, function (err, link, rssName) {
+            if (err) console.log(`Bot Controller: Blacklist error`, err.message || err)
+            else console.log(`Bot Controller: Removed ${rssName} for blacklist.`)
           })
         }
         currentGuilds.delete(guildID)
@@ -69,8 +70,9 @@ exports.sharded = function (bot, message, Manager) {
             const guildRss = currentGuilds.get(guildID);
             if (guildRss) {
               for (var rssName in guildRss.sources) {
-                removeRss(guildID, rssName, function (link, rssName) {
-                  console.log('Bot Controller: Removed ' + rssName + ' has part of blacklist operation.');
+                removeRss(guildID, rssName, function (err, link, rssName) {
+                  if (err) console.log('Bot Controller: Blacklist error', err.message || err);
+                  else console.log('Bot Controller: Removed ' + rssName + ' for blacklist.');
                 });
               }
               currentGuilds.delete(guildID);

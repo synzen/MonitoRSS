@@ -18,6 +18,8 @@ module.exports = function (channel) {
   console.log(`Guild Info: (${channel.guild.id}, ${channel.guild.name}) => Channel (${channel.id}, ${channel.name}) deleted.`)
 
   for (var name in nameList) {
-    removeRss(channel.guild.id, nameList[name])
+    removeRss(channel.guild.id, nameList[name], err => {
+      if (err) console.log(`Guild Warning: channelDelete error`, err.message || err)
+    })
   }
 }

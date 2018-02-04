@@ -130,17 +130,18 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
           if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && isStr && link) imgSrcs.push(link)
 
           let exist = true
-          const globalExistOption = config.feedSettings.imageLinksExistence != null ? config.feedSettings.imageLinksExistence : defaultConfigs.feedSettings.imageLinksExistence.default // Always a boolean via startup checks
+          const globalExistOption = config.feedSettings.imgLinksExistence != null ? config.feedSettings.imgLinksExistence : defaultConfigs.feedSettings.imgLinksExistence.default // Always a boolean via startup checks
           exist = globalExistOption
-          const specificExistOption = rssList[rssName].imageLinksExistence
+          const specificExistOption = rssList[rssName].imgLinksExistence
           exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
           if (!exist) return ''
 
           let image = ''
-          const globalPreviewOption = config.feedSettings.imagePreviews != null ? config.feedSettings.imagePreviews : defaultConfigs.feedSettings.imagePreviews.default // Always a boolean via startup checks
+          const globalPreviewOption = config.feedSettings.imgPreviews != null ? config.feedSettings.imgPreviews : defaultConfigs.feedSettings.imgPreviews.default // Always a boolean via startup checks
           image = globalPreviewOption ? link : `<${link}>`
-          const specificPreviewOption = rssList[rssName].imagePreviews
+          const specificPreviewOption = rssList[rssName].imgPreviews
           image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
+          console.log(image)
 
           return image
         },

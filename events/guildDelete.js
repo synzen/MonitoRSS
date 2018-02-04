@@ -1,4 +1,3 @@
-const fs = require('fs')
 const config = require('../config.json')
 const dbCmds = require('../rss/db/commands.js')
 const fileOps = require('../util/fileOps.js')
@@ -17,7 +16,9 @@ module.exports = function (bot, guild) {
   const rssList = guildRss.sources
 
   for (var rssName in rssList) {
-    dbCmds.dropCollection(rssName)
+    dbCmds.dropCollection(rssName, err => {
+      if (err) console.log(`Guild Warning: Unable to drop ${rssName} for guildDelete`, err.message || err)
+    })
   }
 
   fileOps.deleteGuild(guild.id, null, function () {
