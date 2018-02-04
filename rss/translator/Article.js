@@ -141,7 +141,6 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
           image = globalPreviewOption ? link : `<${link}>`
           const specificPreviewOption = rssList[rssName].imgPreviews
           image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
-          console.log(image)
 
           return image
         },
