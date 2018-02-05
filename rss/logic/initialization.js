@@ -75,9 +75,7 @@ module.exports = function (rssList, articleList, link, callback) {
       const foundIds = []
       const foundTitles = []
 
-      Article.find({
-        $or: [{id: { $in: allIds }}, {title: { $in: allTitles }}]
-      }, (err, docs) => {
+      dbCmds.selectIdsOrTitles(Article, allIds, allTitles, (err, docs) => {
         if (err) return callback(err)
         docs.forEach(item => {
           foundIds.push(item.id)

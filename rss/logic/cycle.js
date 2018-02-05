@@ -55,9 +55,9 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       totalArticles++
     }
 
-    checkTableAlt(olderArticles, newerArticles, articleList)
+    checkCollection(olderArticles, newerArticles, articleList)
 
-    function checkTableAlt (olderArticles, newerArticles, allArticles) {
+    function checkCollection (olderArticles, newerArticles, allArticles) {
       let checkTitle = false
       const globalSetting = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
       checkTitle = globalSetting
@@ -78,9 +78,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       const foundIds = []
       const foundTitles = []
 
-      Article.find({
-        $or: [{id: { $in: allIds }}, {title: { $in: allTitles }}]
-      }, (err, docs) => {
+      dbCmds.selectIdsOrTitles(Article, allIds, allTitles, (err, docs) => {
         if (err) return callback(new Error(`Database Error: Unable to query find articles for ${rssName}`, err.message || err))
         docs.forEach(item => {
           foundIds.push(item.id)
