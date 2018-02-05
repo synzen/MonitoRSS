@@ -17,7 +17,7 @@ const Guild = mongoose.model('Guild', mongoose.Schema({
   sources: Object,
   checkTitles: Boolean,
   imgPreviews: Boolean,
-  imageLinksExistence: Boolean,
+  imgLinksExistence: Boolean,
   checkDates: Boolean,
   dateFormat: String,
   dateLanguage: String,
