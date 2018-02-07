@@ -21,6 +21,11 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
   let sourcesCompleted = 0
 
   function processSource (rssName) {
+    function debug (log) {
+      if (!debugFeeds.includes(rssName)) return
+      console.log(`DEBUG ${rssName}: ${log}`)
+    }
+
     const Article = ArticleModel(rssName)
     const channelId = rssList[rssName].channel
 
@@ -29,93 +34,96 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     const bulkInsert = []
     const olderArticles = []
     const newerArticles = []
-    // checkTableExists()
-
-    if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Table has been selected. Size of articleList: ${articleList.length}`)
+    debug(`Processing collection. Total article list length: ${articleList.length}`)
 
     const feedLength = articleList.length - 1
-    const cycleMaxAge = config.feedSettings.cycleMaxAge && !isNaN(parseInt(config.feedSettings.cycleMaxAge, 10)) ? parseInt(config.feedSettings.cycleMaxAge, 10) : 1
+    const cycleMaxAge = config.feedSettings.cycleMaxAge
+    const globalDateCheck = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
 
     for (var x = feedLength; x >= 0; x--) {
       articleList[x]._id = getArticleId(articleList, articleList[x])
-      // if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Checking table for (ID: ${getArticleId(articleList, articleList[x])}, TITLE: ${articleList[x].title})`)
 
       if (articleList[x].pubdate && articleList[x].pubdate > moment().subtract(cycleMaxAge, 'days')) newerArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x]))
-      else { // Invalid dates are pubdate.toString() === 'Invalid Date'
+      else {
         let checkDate = false
-        const globalSetting = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
-        checkDate = globalSetting
-        const specificSetting = rssList[rssName].checkDates
-        checkDate = typeof specificSetting !== 'boolean' ? checkDate : specificSetting
+        checkDate = globalDateCheck
+        const localDateSetting = rssList[rssName].checkDates
+        checkDate = typeof localDateSetting !== 'boolean' ? checkDate : localDateSetting
 
-        if (checkDate) olderArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)  // Mark as old if date checking is enabled
-        else newerArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x])) // Otherwise mark as new
+        if (checkDate) {
+          olderArticles.push(articleList[x]) // Mark as old if date checking is enabled
+          articleList[x]._old = true
+        } else newerArticles.push(articleList[x]) // Otherwise mark as new
       }
 
-      totalArticles++
+      ++totalArticles
     }
 
-    checkCollection(olderArticles, newerArticles, articleList)
+    let checkTitle = false
+    const globalTitleCheck = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
+    checkTitle = globalTitleCheck
+    const localTitleCheck = rssList[rssName].checkTitles
+    checkTitle = typeof localTitleCheck !== 'boolean' ? checkTitle : localTitleCheck
+    const allIds = []
+    const allTitles = []
+    const newerIds = []
+    olderArticles.forEach(article => {
+      allIds.push(article._id)
+      if (checkTitle) allTitles.push(article.title)
+    })
+    newerArticles.forEach(article => {
+      allIds.push(article._id)
+      newerIds.push(article._id)
+      if (checkTitle) allTitles.push(article.title)
+    })
+    const foundIds = []
+    const foundTitles = []
 
-    function checkCollection (olderArticles, newerArticles, allArticles) {
-      let checkTitle = false
-      const globalSetting = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
-      checkTitle = globalSetting
-      const specificSetting = rssList[rssName].checkTitles
-      checkTitle = typeof specificSetting !== 'boolean' ? checkTitle : specificSetting
-      const allIds = []
-      const allTitles = []
-      const newerIds = []
-      olderArticles.forEach(article => {
-        allIds.push(article._id)
-        if (checkTitle) allTitles.push(article.title)
-      })
-      newerArticles.forEach(article => {
-        allIds.push(article._id)
-        newerIds.push(article._id)
-        if (checkTitle) allTitles.push(article.title)
-      })
-      const foundIds = []
-      const foundTitles = []
-
-      dbCmds.selectIdsOrTitles(Article, allIds, allTitles, (err, docs) => {
-        if (err) return callback(new Error(`Database Error: Unable to query find articles for ${rssName}`, err.message || err))
-        docs.forEach(item => {
-          foundIds.push(item.id)
-          foundTitles.push(item.title)
-        })
-
-        allArticles.forEach(article => {
-          if (foundIds.length === 0) return seenArticle(false, article, true) // If the collection was uninitialized, initialize all articles without sending
-
-          if (foundIds.includes(article._id)) return seenArticle(true, article)
-          else if (foundTitles.includes(article.title)) seenArticle(false, article, true)
-          else seenArticle(false, article)
-        })
+    dbCmds.selectIdsOrTitles(Article, allIds, allTitles, (err, docs) => {
+      if (err) return callback(new Error(`Database Error: Unable to query find articles for ${rssName}`, err.message || err))
+      docs.forEach(item => {
+        foundIds.push(item.id)
+        foundTitles.push(item.title)
       })
 
-      function seenArticle (seen, article, doNotSend) {
-        if (seen) return incrementProgress() // Stops here if it already exists in table, AKA "seen"
-
-        if (config.feedSettings.sendOldMessages === true && newerIds.includes(article._id) && !doNotSend) {
-          article.rssName = rssName
-          article.discordChannelId = channelId
-          callback(null, {status: 'article', article: article})
+      articleList.forEach(article => {
+        if (foundIds.length === 0) {
+          debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection. Initializing.`)
+          seenArticle(false, article, true) // If the collection was uninitialized, initialize all articles without sending
+        } else if (foundIds.includes(article._id)) {
+          debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched.`)
+          seenArticle(true, article)
+        } else if (foundTitles.includes(article.title)) {
+          debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID. Inserting into collection.`)
+          seenArticle(false, article, true) // Don't send to Discord but still insert into collection because it has a unique ID
+        } else if (article._old) {
+          debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}), due to date check. Inserting into collection.`)
+          seenArticle(false, article, true)
+        } else {
+          debug(`Sending article (ID: ${article._id}, TITLE: ${article.title}) to sendToDiscord.`)
+          seenArticle(false, article)
         }
+      })
+    })
 
-        bulkInsert.push(article)
-        incrementProgress()
+    function seenArticle (seen, article, doNotSend) {
+      if (seen) return incrementProgress() // Stops here if it already exists in table, AKA "seen"
+
+      if (config.feedSettings.sendOldMessages === true && newerIds.includes(article._id) && !doNotSend) {
+        article.rssName = rssName
+        article.discordChannelId = channelId
+        callback(null, {status: 'article', article: article})
       }
+      bulkInsert.push(article)
+      incrementProgress()
     }
 
     function incrementProgress () {
-      processedArticles++
-      if (processedArticles === totalArticles) {
-        dbCmds.bulkInsert(Article, bulkInsert, (err, res) => {
-          if (err) return callback(new Error(`Database Error: Unable to bulk insert articles for ${rssName}`, err.message || err))
-          finishSource()
-        })
-      }
+      if (++processedArticles !== totalArticles) return
+      dbCmds.bulkInsert(Article, bulkInsert, (err, res) => {
+        if (err) return callback(new Error(`Database Error: Unable to bulk insert articles for ${rssName}`, err.message || err))
+        finishSource()
+      })
     }
   }
 

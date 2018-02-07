@@ -7,7 +7,7 @@ const fs = require('fs')
 const config = require('./config.json')
 const mongoose = require('mongoose')
 const files = fs.readdirSync('./sources')
-mongoose.connect(config.database.uri)//config.database.uri)
+mongoose.connect(config.database.uri)// config.database.uri)
 const db = mongoose.connection
 let c = 0
 
@@ -24,7 +24,7 @@ const Guild = mongoose.model('Guild', mongoose.Schema({
   timezone: String
 }))
 
-function addFileToDb(name, i) {
+function addFileToDb (name, i) {
   const id = name.replace(/\.json/i, '')
   if (!/^\d+$/.test(id)) return files.splice(i, 1)
   const guild = new Guild(JSON.parse(fs.readFileSync(`./sources/${id}.json`)))
@@ -37,14 +37,15 @@ function addFileToDb(name, i) {
 
 db.on('error', console.log)
 db.once('open', () => {
-
   // Add to database
   if (!DROP_DATABASE) files.forEach(addFileToDb)
 
   // Drop database for do-over
-  else Guild.collection.drop((err, res) => {
-    if (err) throw err
-    console.log(`Database drop successful`)
-    db.close()
-  })
+  else {
+    Guild.collection.drop((err, res) => {
+      if (err) throw err
+      console.log(`Database drop successful`)
+      db.close()
+    })
+  }
 })

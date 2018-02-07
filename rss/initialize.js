@@ -23,6 +23,8 @@ exports.addToDb = function (articleList, rssName, callback, customTitle) {
     return article.guid
   }
 
+  articleList.forEach(article => article._id = getArticleId(article))
+
   dbCmds.bulkInsert(ArticleModel(rssName), articleList, err => {
     if (err) return callback({type: 'database', content: err})
     callback()

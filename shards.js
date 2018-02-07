@@ -40,9 +40,7 @@ connectDb((err) => {
       })
     }
   })
-
 })
-
 
 Manager.on('message', function (shard, message) {
   if (message === 'kill') process.exit()
