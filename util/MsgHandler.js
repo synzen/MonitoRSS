@@ -3,8 +3,10 @@ const config = require('../config.json')
 // For deletion at the end of a series of menus
 
 module.exports = function (bot, msg) {
-  const guildBot = msg.guild.members.get(bot.user.id)
-  const allowed = !guildBot.permissionsIn(msg.channel).has('MANAGE_MESSAGES') ? false : config.botSettings.deleteMenus === true
+  const guildBot = msg.guild.me
+  let allowed
+  if (!guildBot) msg.guild.fetchMember(bot.user).then(m => allowed = m.permissionsIn(msg.channel).has('MANAGE_MESSAGES') ? false : config.botSettings.deleteMenus === true)
+  else allowed = !guildBot.permissionsIn(msg.channel).has('MANAGE_MESSAGES') ? false : config.botSettings.deleteMenus === true
 
   this.messageList = []
 
