@@ -109,7 +109,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     function seenArticle (seen, article, doNotSend) {
       if (seen) return incrementProgress() // Stops here if it already exists in table, AKA "seen"
 
-      if (config.feedSettings.sendOldMessages === true && newerIds.includes(article._id) && !doNotSend) {
+      if (newerIds.includes(article._id) && !doNotSend) {
         article.rssName = rssName
         article.discordChannelId = channelId
         callback(null, {status: 'article', article: article})
