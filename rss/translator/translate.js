@@ -4,12 +4,6 @@ const generateEmbed = require('./embed.js')
 const Article = require('./Article.js')
 const getSubs = require('./subscriptions.js')
 
-function isNotEmpty (obj) {
-  for (var x in obj) {
-    return true
-  }
-}
-
 module.exports = function (guildRss, rssName, rawArticle, isTestMessage, returnObject) {
   const rssList = guildRss.sources
 
@@ -38,7 +32,7 @@ module.exports = function (guildRss, rssName, rawArticle, isTestMessage, returnO
   if (!isTestMessage && filterExists && !filterResults) return null // Feed article delivery only passes through if the filter found the specified content
 
   const finalMessageCombo = {}
-  if (typeof rssList[rssName].embedMessage === 'object' && typeof rssList[rssName].embedMessage.properties === 'object' && isNotEmpty(rssList[rssName].embedMessage.properties)) { // Check if embed is enabled
+  if (typeof rssList[rssName].embedMessage === 'object' && typeof rssList[rssName].embedMessage.properties === 'object' && Object.keys(rssList[rssName].embedMessage.properties).length > 0) { // Check if embed is enabled
     finalMessageCombo.embedMsg = generateEmbed(rssList, rssName, article)
 
     let txtMsg = ''

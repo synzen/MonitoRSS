@@ -72,9 +72,9 @@ module.exports = function (bot, message, command) {
   .then(m => {
     if (pages.length === 1) return
     m.react('◀')
-    .then(rct => m.react('▶').catch(err => console.log(`yep2`, err)))
-    .catch(err => console.log(`yep`, err))
+    .then(rct => m.react('▶').catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not add reaction > after reacting <`, err.message || err)))
+    .catch(err => console.log(`Reaction Warning: (${message.guild.id}, ${message.guild.name}) => Could not add < reaction.`, err.message || err))
     pageControls.add(m.id, pages)
   })
-  .catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list. Reason: ${err}`))
+  .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed list`, err.message || err))
 }

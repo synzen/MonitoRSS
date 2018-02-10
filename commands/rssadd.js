@@ -31,7 +31,7 @@ module.exports = function (bot, message) {
   let maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited'
 
-  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => console.log(`Promise Warning rssAdd 0: ${err}`)) // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => console.log(`Commands Warning rssAdd 0:`, err.message || err)) // If there is no link after rssadd, return.
 
   let linkList = message.content.split(' ')
   linkList.shift()
@@ -67,7 +67,7 @@ module.exports = function (bot, message) {
     if (Object.keys(passedAddLinks).length > 0) msg += 'Articles will be automatically delivered once new articles are found.'
 
     channelTracker.remove(message.channel.id)
-    verifyMsg.edit(msg).catch(err => console.log(`Promise Warning rssAdd 1: ${err}`))
+    verifyMsg.edit(msg).catch(err => console.log(`Commands Warning rssAdd 1:`, err.message || err))
   }
 
   channelTracker.add(message.channel.id)

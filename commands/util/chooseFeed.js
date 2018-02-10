@@ -78,9 +78,9 @@ module.exports = function (bot, message, command, callback, miscOption, firstMsg
     m.react('◀').then(rct => {
       m.react('▶').then(rct2 => {
         pageControls.add(m.id, pages)
-      }).catch(err => console.log(`Reaction Error: (${message.guild.id}, ${message.guild.name}) => Could not add emoticon >. Reason: `, err))
-    }).catch(err => console.log(`Reaction Error: (${message.guild.id}, ${message.guild.name}) => Could not add emoticon <. Reason: `, err))
-  }).catch(err => console.log(`Message Error: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list. Reason: `, err))
+      }).catch(err => console.log(`Reaction Warning: (${message.guild.id}, ${message.guild.name}) => Could not add reaction > after reacting <.`, err.message || err))
+    }).catch(err => console.log(`Reaction Warning: (${message.guild.id}, ${message.guild.name}) => Could not add reaction <.`, err.message || err))
+  }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send message of embed feed selection list.`, err.message || err))
 
   // Only start message collector if all pages were sent
   function selectFeed () {

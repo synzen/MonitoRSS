@@ -13,7 +13,6 @@ exports.updateFile = function (guildId, contents, shardingManager) {
 exports.deleteGuild = function (guildId, shardingManager, callback) {
   GuildRss.find({id: guildId}).remove((err, res) => {
     if (err) return console.log(`Guilds Info: Unable to delete profile ${guildId}`, err.message || err)
-    console.log(res)
   })
 
   currentGuilds.delete(guildId)
