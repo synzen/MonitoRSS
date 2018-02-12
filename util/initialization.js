@@ -11,6 +11,7 @@ const sendToDiscord = require('./sendToDiscord.js')
 const process = require('child_process')
 const configChecks = require('./configCheck.js')
 const GuildRss = storage.models.GuildRss()
+const FAIL_LIMIT = config.feedSettings.failLimit
 
 module.exports = function (bot, callback) {
   const modSourceList = new Map()
@@ -18,7 +19,6 @@ module.exports = function (bot, callback) {
   const regBatchList = []
   const modBatchList = []
   const batchSize = 400
-  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
   const guildsInfo = {}
 
   let cycleFailCount = 0
@@ -79,8 +79,8 @@ module.exports = function (bot, callback) {
   }
 
   function reachedFailCount (link) {
-    const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= failLimit) // string indicates it has reached the fail count, and is the date of when it failed
-    if (failed && config.logging.showFailedFeeds !== false) console.log(`INIT Warning: Feeds with link ${link} will be skipped due to reaching fail limit (${failLimit}).`)
+    const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
+    if (failed && config.logging.showFailedFeeds !== false) console.log(`INIT Warning: Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT}).`)
     return failed
   }
 
@@ -186,7 +186,7 @@ module.exports = function (bot, callback) {
             if (err) console.log(err)
           })
         }
-        if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link)
+        if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
         if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         completedLinks++
@@ -229,7 +229,7 @@ module.exports = function (bot, callback) {
       }
       if (linkCompletion.status === 'failed') {
         cycleFailCount++
-        if (failLimit !== 0) addFailedFeed(linkCompletion.link)
+        if (FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
       }
       if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
@@ -274,7 +274,7 @@ module.exports = function (bot, callback) {
             if (err) console.log(err)
           })
         }
-        if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link)
+        if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
         if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         completedLinks++

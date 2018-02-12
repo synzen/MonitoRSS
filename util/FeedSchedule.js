@@ -8,9 +8,13 @@ const childProcess = require('child_process')
 const storage = require('./storage.js') // All properties of storage must be accessed directly due to constant changes
 const logLinkErr = require('./logLinkErrs.js')
 const allScheduleWords = storage.allScheduleWords
+const FAIL_LIMIT = config.feedSettings.failLimit
+const WARN_LIMIT = Math.floor(config.feedSettings.failLimit * 0.75) < FAIL_LIMIT ? Math.floor(config.feedSettings.failLimit * 0.75) : Math.floor(config.feedSettings.failLimit * 0.5) < FAIL_LIMIT ? Math.floor(config.feedSettings.failLimit * 0.5) : 0
+const BATCH_SIZE = config.advanced.batchSize
 
 module.exports = function (bot, callback, schedule) {
-  var timer // Timer for the setInterval
+  const refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : config.feedSettings.refreshTimeMinutes
+  let timer // Timer for the setInterval
   let cycleInProgress
   let processorList = []
   let regBatchList = []
@@ -23,24 +27,27 @@ module.exports = function (bot, callback, schedule) {
   this.cycle = new events.EventEmitter()
   let cycle = this.cycle
 
-  const refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : (config.feedSettings.refreshTimeMinutes) ? config.feedSettings.refreshTimeMinutes : 15
   const sourceList = new Map()
   const modSourceList = new Map()
-  const batchSize = (config.advanced && config.advanced.batchSize) ? config.advanced.batchSize : 400
-  const failLimit = (config.feedSettings.failLimit && !isNaN(parseInt(config.feedSettings.failLimit, 10))) ? parseInt(config.feedSettings.failLimit, 10) : 0
 
   function addFailedFeed (link, rssList) {
     const failedLinks = storage.failedLinks
     storage.failedLinks[link] = (failedLinks[link]) ? failedLinks[link] + 1 : 1
 
-    if (failedLinks[link] >= failLimit) {
-      console.log(`RSS Error: ${link} has passed the fail limit (${failLimit}). Will no longer retrieve.`)
-      if (config.feedSettings.notifyFail === true) {
-        for (var rssName in rssList) {
-          bot.channels.get(rssList[rssName].channel).send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`)
-        }
+    if (failedLinks[link] === WARN_LIMIT) {
+      if (config.feedSettings.notifyFail !== true) return
+      for (var i in rssList) {
+        const source = rssList[i]
+        if (source.link === link) bot.channels.get(source.channel).send(`**ATTENTION** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => console.log(`Unable to send reached warning limit for feed ${link} in channel ${source.channel}`, err.message || err))
       }
+    } else if (failedLinks[link] >= FAIL_LIMIT) {
       storage.failedLinks[link] = (new Date()).toString()
+      console.log(`RSS Error: ${link} has passed the fail limit (${FAIL_LIMIT}). Will no longer retrieve.`)
+      if (config.feedSettings.notifyFail !== true) return
+      for (var j in rssList) {
+        const source = rssList[j]
+        if (source.link === link) bot.channels.get(source.channel).send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => console.log(`Unable to send reached failure limit for feed ${link} in channel ${source.channel}`, err.message || err))
+      }
     }
   }
 
@@ -71,7 +78,7 @@ module.exports = function (bot, callback, schedule) {
         if (storage.linkTracker[rssName] === schedule.name) { // If assigned to a schedule
           delegateFeed(rssName)
         } else if (schedule.name !== 'default' && !storage.linkTracker[rssName]) { // If current feed schedule is a custom one and is not assigned
-          let keywords = schedule.keywords
+          const keywords = schedule.keywords
           for (var q in keywords) {
             if (rssList[rssName].link.includes(keywords[q])) {
               storage.linkTracker[rssName] = schedule.name // Assign this feed to this schedule so no other feed schedule can take it on subsequent cycles
@@ -80,11 +87,11 @@ module.exports = function (bot, callback, schedule) {
             }
           }
         } else if (!storage.linkTracker[rssName]) { // Has no schedule, was not previously assigned, so see if it can be assigned to default
-          let reserveForOtherSched = false
+          let reserved = false
           for (var w in allScheduleWords) { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
-            if (rssList[rssName].link.includes(allScheduleWords[w])) reserveForOtherSched = true
+            if (rssList[rssName].link.includes(allScheduleWords[w])) reserved = true
           }
-          if (!reserveForOtherSched) {
+          if (!reserved) {
             storage.linkTracker[rssName] = 'default'
             delegateFeed(rssName)
           }
@@ -97,7 +104,7 @@ module.exports = function (bot, callback, schedule) {
     let batch = new Map()
 
     sourceList.forEach(function (rssList, link) { // rssList per link
-      if (batch.size >= batchSize) {
+      if (batch.size >= BATCH_SIZE) {
         regBatchList.push(batch)
         batch = new Map()
       }
@@ -109,7 +116,7 @@ module.exports = function (bot, callback, schedule) {
     batch = new Map()
 
     modSourceList.forEach(function (source, link) { // One RSS source per link instead of an rssList
-      if (batch.size >= batchSize) {
+      if (batch.size >= BATCH_SIZE) {
         modBatchList.push(batch)
         batch = new Map()
       }
@@ -165,8 +172,8 @@ module.exports = function (bot, callback, schedule) {
   function getBatch (batchNumber, batchList, type) {
     const failedLinks = storage.failedLinks
     if (batchList.length === 0) return getBatch(0, modBatchList, 'modded')
+    const currentBatch = batchList[batchNumber]
     let completedLinks = 0
-    let currentBatch = batchList[batchNumber]
 
     currentBatch.forEach(function (rssList, link) {
       var uniqueSettings
@@ -182,11 +189,12 @@ module.exports = function (bot, callback, schedule) {
           if (debugFeeds.includes(linkCompletion.article.rssName)) console.log(`DEBUG ${linkCompletion.article.rssName}: Emitted article event.`)
           return cycle.emit('article', linkCompletion.article)
         }
-        if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList)
-        if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) {
+          ++cycleFailCount
+          addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+        } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
-        completedLinks++
-        if (completedLinks === currentBatch.size) {
+        if (++completedLinks === currentBatch.size) {
           if (batchNumber !== batchList.length - 1) setTimeout(getBatch, 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatch, 200, 0, modBatchList, 'modded')
           else return finishCycle()
@@ -198,16 +206,16 @@ module.exports = function (bot, callback, schedule) {
   function getBatchIsolated (batchNumber, batchList, type) {
     const failedLinks = storage.failedLinks
     if (batchList.length === 0) return getBatchIsolated(0, modBatchList, 'modded')
+    const currentBatch = batchList[batchNumber]
     let completedLinks = 0
-    let currentBatch = batchList[batchNumber]
 
     processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
 
-    let processorIndex = processorList.length - 1
-    let processor = processorList[processorIndex]
+    const processorIndex = processorList.length - 1
+    const processor = processorList[processorIndex]
 
     currentBatch.forEach(function (rssList, link) {
-      var uniqueSettings
+      let uniqueSettings
       for (var modRssName in rssList) {
         if (rssList[modRssName].advanced && rssList[modRssName].advanced.size() > 0) {
           uniqueSettings = rssList[modRssName].advanced
@@ -219,14 +227,12 @@ module.exports = function (bot, callback, schedule) {
     processor.on('message', function (linkCompletion) {
       if (linkCompletion.status === 'article') return cycle.emit('article', linkCompletion.article)
       if (linkCompletion.status === 'failed') {
-        cycleFailCount++
-        if (failLimit !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList)
-      }
-      if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        ++cycleFailCount
+        if (FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+      } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
-      completedLinks++
       cycleTotalCount++
-      if (completedLinks === currentBatch.size) {
+      if (++completedLinks === currentBatch.size) {
         processor.kill()
         processorList.splice(processorIndex, 1)
         if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type)
@@ -238,25 +244,25 @@ module.exports = function (bot, callback, schedule) {
 
   function getBatchParallel () {
     const failedLinks = storage.failedLinks
-    let totalBatchLengths = regBatchList.length + modBatchList.length
+    const totalBatchLengths = regBatchList.length + modBatchList.length
     let completedBatches = 0
 
     function deployProcessor (batchList, index) {
       let completedLinks = 0
-
+      const currentBatch = batchList[index]
       processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
-      let currentBatch = batchList[index]
 
-      let processorIndex = processorList.length - 1
-      let processor = processorList[processorIndex]
+      const processorIndex = processorList.length - 1
+      const processor = processorList[processorIndex]
 
       processor.on('message', function (linkCompletion) {
         if (linkCompletion.status === 'article') return cycle.emit('article', linkCompletion.article)
-        if (linkCompletion.status === 'failed' && failLimit !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList)
-        if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) {
+          ++cycleFailCount
+          addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+        } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
-        completedLinks++
-        if (completedLinks === currentBatch.size) {
+        if (++completedLinks === currentBatch.size) {
           completedBatches++
           processor.kill()
           if (completedBatches === totalBatchLengths) {

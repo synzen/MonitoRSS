@@ -87,7 +87,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       })
 
       articleList.forEach(article => {
-        if (foundIds.length === 0) {
+        if (foundIds.length === 0 && articleList.length !== 1) { // Only skip if the articleList length is !== 1, otherwise a feed with only 1 article to send since it may have been the first item added
           debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection. Initializing.`)
           seenArticle(false, article, true) // If the collection was uninitialized, initialize all articles without sending
         } else if (foundIds.includes(article._id)) {
