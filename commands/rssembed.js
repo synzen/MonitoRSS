@@ -15,10 +15,15 @@ const embedProperties = [['Color', 'The sidebar color of the embed\nThis MUST be
                       ['URL', 'Clicking on the Title/Thumbnail will lead to this URL.\nThis MUST be a link. By default this is set to the feed\'s url', 'url']]
 
 const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
+const urlFields = ['authorURL', 'url']
 const currentGuilds = require('../util/storage.js').currentGuilds
 
+function validURL (input) { // A simple check is enough
+  return input.startsWith('http://') || input.startsWith('https://') || input === '{link}'
+}
+
 // Check valid image URLs via extensions
-function isValidImg (input) {
+function validImg (input) {
   if (input.startsWith('http')) {
     const matches = input.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)
     if (matches) return true
@@ -32,7 +37,7 @@ function isValidImg (input) {
     for (var x in arr) {
       if (!valid) continue
       const term = x === '0' ? `${arr[x]}}` : x === (arr.length - 1).toString() ? `{${arr[x]}` : `{${arr[x]}}`
-      if (!isValidImg(term)) valid = false
+      if (!validImg(term)) valid = false
     }
     return valid
   } else return false
@@ -140,7 +145,8 @@ module.exports = function (bot, message, command) {
             else if (choice === 'color') {
               if (isNaN(parseInt(finalChange, 10))) return message.channel.send('The color must be an **number**. See https://www.shodor.org/stella2java/rgbint.html. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 5a: ${err}`))
               else if (parseInt(finalChange, 10) < 0 || parseInt(finalChange, 10) > 16777215) return message.channel.send('The color must be a number between 0 and 16777215. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 5b: ${err}`))
-            } else if (imageFields.includes(choice) && !isValidImg(finalChange)) return message.channel.send('URLs must link to actual images or be `{imageX}` placeholders. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 6: ${err}`))
+            } else if (imageFields.includes(choice) && !validImg(finalChange)) return message.channel.send('URLs must link to actual images or be `{imageX}` placeholders. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 6a: ${err}`))
+            else if (urlFields.includes(choice) && !validURL(finalChange)) return message.channel.send('URLs must be links or the {link} placeholder. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 6b: ${err}`))
             else if (choice === 'attachURL' && !finalChange.startsWith('http')) return message.channel.send('URL option must be a link. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: rssEmbed 7: ${err} `))
 
             message.channel.send(`Updating embed settings...`)

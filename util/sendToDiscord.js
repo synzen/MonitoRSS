@@ -26,8 +26,8 @@ module.exports = function (bot, article, callback, isTestMessage) {
       channel.avatar = source.webhook.avatar ? source.webhook.avatar : undefined
       channelType = 'webhook'
       body()
-    }).catch(function (e) {
-      console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Cannot fetch webhooks for webhook initialization to send message:  `, e)
+    }).catch(err => {
+      console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Cannot fetch webhooks for webhook initialization to send message:  `, err.message || err)
       body()
     })
   } else body()
@@ -40,7 +40,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
     let attempts = 1
 
     // const successLog = (isTestMessage) ? `RSS Test Delivery: (${channel.guild.id}, ${channel.guild.name}) => Sent test message for: ${rssList[rssName].link} in channel (${channel.id}, ${channel.name})` : `RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => Sent message: ${article.link} in channel (${channel.id}, ${channel.name})`
-    const failLog = (isTestMessage) ? `RSS Test Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. ` : `RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. `
+    // const failLog = (isTestMessage) ? `RSS Test Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. ` : `RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}. `
     const message = translator(guildRss, rssName, article, isTestMessage)
 
     if (!message) {
@@ -52,7 +52,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
       channel.send(message.testDetails, channelType === 'textChannel' ? {split: {prepend: '```md\n', append: '```'}} : {split: {prepend: '```md\n', append: '```'}, username: channel.name, avatarURL: channel.avatar})
       .then(m => sendMain())
       .catch(err => {
-        if (attempts === 4) return callback(new Error(failLog + `${err}`))
+        if (attempts === 4) return callback(err)
         attempts++
         setTimeout(sendTestDetails, 500)
       })
@@ -67,8 +67,8 @@ module.exports = function (bot, article, callback, isTestMessage) {
       })
       .catch(err => {
         if (attempts === 4) {
-          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated but could not be sent (TITLE: ${article.title}) (${err}).`)
-          return callback(new Error(failLog + `${err}`))
+          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated but could not be sent (TITLE: ${article.title})`, err.message || err)
+          return callback(err)
         }
         attempts++
         setTimeout(sendCombinedMsg, 500)
@@ -84,8 +84,8 @@ module.exports = function (bot, article, callback, isTestMessage) {
       })
       .catch(err => {
         if (attempts === 4) {
-          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated but could not be sent (TITLE: ${article.title}). (${err})`)
-          return callback(new Error(failLog + `${err}`))
+          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated but could not be sent (TITLE: ${article.title})`, err.message || err)
+          return callback(err)
         }
         attempts++
         setTimeout(sendTxtMsg, 500)

@@ -110,7 +110,7 @@ module.exports = function (bot, message, command, role) {
               article.rssName = rssName
               article.discordChannelId = message.channel.id
               sendToDiscord(bot, article, function (err) {
-                if (err) console.log(err)
+                if (err) console.log(`RSS Delivery Failure: (${message.guild.id}, ${message.guild.name}) => channel (${message.channel.id}, ${message.channel.name}) for article ${article.link}`, err.message || err)
                 msgHandler.deleteAll(message.channel)
               })
             })

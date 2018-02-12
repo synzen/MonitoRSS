@@ -63,7 +63,7 @@
 	},
 	"rssoptions": {
 		"userPerm": "MANAGE_CHANNELS",
-		"description": "Miscellaneous feed options",
+		"description": "Opens a menu for miscellaneous feed options.",
 		"options": {
 			"checkTitles": "Toggle Title Checks",
 			"imgPreviews": "Toggle Image Link Previews",
@@ -75,5 +75,9 @@
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Webhook Connection",
 		"description": "Connect a webhook to send feed messages instead."
+	},
+	"rssbackup": {
+		"userPerm": "MANAGE_CHANNELS",
+		"description": "Send server profile as a JSON attachment for backups."
 	}
 }

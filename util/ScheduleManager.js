@@ -33,7 +33,10 @@ module.exports = function (bot) {
     articleTracker.on('article', function (article) { // New articles are sent as the raw object directly from feedparser
       if (debugFeeds.includes(article.rssName)) console.log(`DEBUG ${article.rssName}: Invoking sendToDiscord function`)
       sendToDiscord(bot, article, function (err) {
-        if (err && config.logging.showLinkErrs === true) console.log(err)
+        if (err && config.logging.showLinkErrs === true) {
+          const channel = bot.channels.get(article.discordChannelId)
+          console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}`, err.message || err)
+        }
       })
     })
   }

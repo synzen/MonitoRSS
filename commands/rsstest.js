@@ -46,7 +46,7 @@ module.exports = function (bot, message, command) {
 
         sendToDiscord(bot, article, function (err) {
           if (err) {
-            console.log(err)
+            console.log(`RSS Test Delivery Failure: (${message.guild.id}, ${message.guild.name}) => channel (${message.channel.id}, ${message.channel.name}) for article ${article.link}`, err.message || err)
             message.channel.send(`Failed to send test article. \`\`\`${err.message}\`\`\``).catch(err => console.log(`Commands Warning: rsstest 2: `, err.message || err))
           }
           msgHandler.deleteAll(message.channel)
