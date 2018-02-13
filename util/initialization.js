@@ -184,7 +184,10 @@ module.exports = function (bot, callback) {
         if (linkCompletion.status === 'article') {
           return sendToDiscord(bot, linkCompletion.article, function (err) { // This can result in great spam once the loads up after a period of downtime
             const channel = bot.channels.get(linkCompletion.article.discordChannelId)
-            if (err) console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
+            if (err) {
+              console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
+              if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
+            }
           })
         }
         if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
@@ -226,7 +229,10 @@ module.exports = function (bot, callback) {
       if (linkCompletion.status === 'article') {
         return sendToDiscord(bot, linkCompletion.article, function (err) { // This can result in great spam once the loads up after a period of downtime
           const channel = bot.channels.get(linkCompletion.article.discordChannelId)
-          if (err) console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
+          if (err) {
+            console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
+            if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
+          }
         })
       }
       if (linkCompletion.status === 'failed') {
@@ -274,7 +280,11 @@ module.exports = function (bot, callback) {
         if (linkCompletion.status === 'article') {
           return sendToDiscord(bot, linkCompletion.article, function (err) { // This can result in great spam once the loads up after a period of downtime
             const channel = bot.channels.get(linkCompletion.article.discordChannelId)
-            if (err) console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
+            if (err) {
+              console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
+              if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
+            }
+
           })
         }
         if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)

@@ -36,6 +36,7 @@ module.exports = function (bot) {
         if (err && config.logging.showLinkErrs === true) {
           const channel = bot.channels.get(article.discordChannelId)
           console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}`, err.message || err)
+          if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
         }
       })
     })
