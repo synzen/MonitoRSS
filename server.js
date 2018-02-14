@@ -8,6 +8,8 @@ const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
 const configRes = require('./util/configCheck.js').check(config)
 const connectDb = require('./rss/db/connect.js')
+const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
+
 if (configRes && configRes.fatal) throw new Error(configRes.message)
 else if (configRes) console.info(configRes.message)
 
@@ -22,10 +24,10 @@ let bot
 let loginAttempts = 0
 let maxAttempts = 5
 
-bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
+bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
 
 function login (firstStartup) {
-  if (!firstStartup) bot = new Discord.Client({disabledEvents: ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE']})
+  if (!firstStartup) bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
 
   bot.login(config.botSettings.token)
   .catch(err => {
@@ -88,15 +90,17 @@ else {
       if (!bot.guilds.get(guildRss.id)) return
       if (guildRss === undefined) currentGuilds.delete(guildRss.id)
       else currentGuilds.set(guildRss.id, guildRss)
+    } else if (message.type === 'dbRestoreSend') {
+      const channel = bot.channels.get(message.channelID)
+      if (!channel) return
+      const channelMsg = channel.messages.get(message.messageID)
+      if (channelMsg) channelMsg.edit('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send('kill'))
+      else channel.send('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send('kill'))
     }
   })
 }
 
 process.on('uncaughtException', function (err) {
   console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Fatal Error!\n`, err)
-  if (bot.shard) {
-    bot.shard.broadcastEval('process.exit()')
-    bot.shard.send('kill')
-  }
-  process.exit()
+  if (bot.shard) bot.shard.send('kill')
 })

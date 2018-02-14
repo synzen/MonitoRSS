@@ -3,6 +3,7 @@ const Discord = require('discord.js')
 const config = require('./config.json')
 const storage = require('./util/storage.js')
 const connectDb = require('./rss/db/connect.js')
+const dbRestore = require('./commands/controller/dbrestore.js')
 const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
 
@@ -21,7 +22,7 @@ const scheduleIntervals = [] // Array of intervals for each different refresh ti
 const scheduleTracker = {} // Key is refresh time, value is index for activeShardIds
 let initShardIndex = 0
 
-connectDb((err) => {
+connectDb(err => {
   if (err) throw err
   Manager.spawn(config.advanced.shards, 0)
 
@@ -42,42 +43,66 @@ connectDb((err) => {
   })
 })
 
+function createIntervals() {
+  refreshTimes.forEach((refreshTime, i) => {
+    scheduleIntervals.push(setInterval(function () {
+      scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the activeShardIds index
+      let p = scheduleTracker[refreshTime]
+      Manager.broadcast({type: 'runSchedule', shardId: activeShardIds[p], refreshTime: refreshTime})
+    }, refreshTime * 60000))
+  })
+}
+
 Manager.on('message', function (shard, message) {
   if (message === 'kill') process.exit()
-  if (message.type === 'missingGuild') {
-    if (!missingGuilds[message.content]) missingGuilds[message.content] = 1
-    else missingGuilds[message.content]++
-  } else if (message.type === 'initComplete') {
-    initShardIndex++
-    if (initShardIndex === Manager.totalShards) {
-      console.log(`SH MANAGER: All shards initialized.`)
 
-      for (var gId in message.guilds) { // All guild profiles, with guild id as keys and guildRss as value
-        currentGuilds.set(gId, message.guilds[gId])
-      }
+  switch(message.type) {
+    case 'missingGuild':
+      if (!missingGuilds[message.content]) missingGuilds[message.content] = 1
+      else missingGuilds[message.content]++
+      break
 
-      for (var guildId in missingGuilds) {
-        if (missingGuilds[guildId] === Manager.totalShards) console.log('SH MANAGER: WARNING - Missing Guild from bot lists: ' + guildId)
-      }
+    case 'initComplete':
+      initShardIndex++
+      if (initShardIndex === Manager.totalShards) {
+        console.log(`SH MANAGER: All shards initialized.`)
 
-      for (var i in refreshTimes) {
-        const refreshTime = refreshTimes[i]
-        scheduleIntervals.push(setInterval(function () {
-          scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the activeShardIds index
-          let p = scheduleTracker[refreshTime]
-          Manager.broadcast({type: 'runSchedule', shardId: activeShardIds[p], refreshTime: refreshTime})
-        }, refreshTime * 60000))
-      }
+        for (var gId in message.guilds) { // All guild profiles, with guild id as keys and guildRss as value
+          currentGuilds.set(gId, message.guilds[gId])
+        }
 
-      try { require('./web/app.js')(null, Manager) } catch (e) {}
-    } else if (initShardIndex < Manager.totalShards) Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
-  } else if (message.type === 'scheduleComplete') {
-    scheduleTracker[message.refreshTime]++ // Index for activeShardIds
-    if (scheduleTracker[message.refreshTime] !== Manager.totalShards) Manager.broadcast({shardId: activeShardIds[scheduleTracker[message.refreshTime]], type: 'runSchedule', refreshTime: message.refreshTime}) // Send signal for next shard to start cycle
-    // else console.log(`SH MANAGER: Cycles for all shards complete. for interval ${message.refreshTime} minutes`)
-  } else if (message.type === 'updateGuild') {
-    currentGuilds.set(message.guildRss.id, message.guildRss)
-  } else if (message.type === 'deleteGuild') {
-    currentGuilds.delete(message.guildId)
+        for (var guildId in missingGuilds) {
+          if (missingGuilds[guildId] === Manager.totalShards) console.log('SH MANAGER: WARNING - Missing Guild from bot lists: ' + guildId)
+        }
+
+        createIntervals()
+
+        try { require('./web/app.js')(null, Manager) } catch (e) {}
+      } else if (initShardIndex < Manager.totalShards) Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
+      break
+
+    case 'scheduleComplete':
+      scheduleTracker[message.refreshTime]++ // Index for activeShardIds
+      if (scheduleTracker[message.refreshTime] !== Manager.totalShards) Manager.broadcast({shardId: activeShardIds[scheduleTracker[message.refreshTime]], type: 'runSchedule', refreshTime: message.refreshTime}) // Send signal for next shard to start cycle
+      // else console.log(`SH MANAGER: Cycles for all shards complete. for interval ${message.refreshTime} minutes`)
+      break
+
+    case 'updateGuild':
+      currentGuilds.set(message.guildRss.id, message.guildRss)
+      break
+
+    case 'deleteGuild':
+      currentGuilds.delete(message.guildId)
+      break
+
+    case 'dbRestore': 
+      scheduleIntervals.forEach(it => {
+        clearInterval(it)
+      })
+      dbRestore.restoreUtil(undefined, message.fileName, message.url, message.databaseName)
+      .then(() => Manager.broadcast({type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID}))
+      .catch(err => {
+        throw err
+      })
   }
 })

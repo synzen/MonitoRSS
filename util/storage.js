@@ -14,6 +14,7 @@ let webhookAccessors = {ids: []} // Guild IDs
 let overriddenGuilds = {}
 let blacklistGuilds = {ids: []}
 let failedLinks = {}
+let scheduleManager
 
 try {
   cookieAccessors = JSON.parse(fs.readFileSync('./settings/cookieAccessors.json'))
@@ -86,6 +87,8 @@ exports.linkTracker = linkTracker // To track schedule assignment to links
 exports.allScheduleWords = allScheduleWords // Holds all words across all schedules
 
 exports.failedLinks = failedLinks
+
+exports.scheduleManager = scheduleManager
 
 exports.schemas = {
   guildRss: mongoose.Schema(guildRssSchema),

@@ -3,6 +3,7 @@ const FeedSchedule = require('./FeedSchedule.js')
 const sendToDiscord = require('./sendToDiscord.js')
 const debugFeeds = require('./debugFeeds.js').list
 const fs = require('fs')
+const storage = require('./storage.js')
 
 module.exports = function (bot) {
   let scheduleList = []
@@ -11,21 +12,21 @@ module.exports = function (bot) {
     scheduleList.push(new FeedSchedule(bot, listenToArticles, {name: 'default'}))
     fs.readdir('./settings/schedules', function (err, schedules) {
       if (err || schedules.length === 0 || (schedules.length === 1 && schedules[0] === 'exampleSchedule.json')) return
-      for (var a in schedules) {
-        if (schedules[a] !== 'exampleSchedule.json') {
+      schedules.forEach(schedule => {
+        if (schedule !== 'exampleSchedule.json') {
           let scheduleData
           try {
-            scheduleData = JSON.parse(fs.readFileSync(`./settings/schedules/${schedules[a]}`))
+            scheduleData = JSON.parse(fs.readFileSync(`./settings/schedules/${schedule}`))
           } catch (e) {
-            console.log(`Schedule named '${schedules[a]}' is improperly configured.\n`)
+            console.log(`Schedule named '${schedule}' is improperly configured.\n`)
             throw e
           }
-          if (!scheduleData || !scheduleData.refreshTimeMinutes || typeof scheduleData.keywords !== 'object' || !scheduleData.keywords.length || scheduleData.keywords.length === 0) throw new Error(`Schedule named '${schedules[a]}' is improperly configured. keywords/refreshTimeMinutes are missing.`)
+          if (!scheduleData || !scheduleData.refreshTimeMinutes || typeof scheduleData.keywords !== 'object' || !scheduleData.keywords.length || scheduleData.keywords.length === 0) throw new Error(`Schedule named '${schedule}' is improperly configured. keywords/refreshTimeMinutes are missing.`)
 
-          scheduleData.name = schedules[a].replace(/\.json/gi, '')
+          scheduleData.name = schedule.replace(/\.json/gi, '')
           scheduleList.push(new FeedSchedule(bot, listenToArticles, scheduleData))
         }
-      }
+      })
     })
   }
 
@@ -43,24 +44,25 @@ module.exports = function (bot) {
   }
 
   this.run = function (refreshTime) { // Run schedules with respect to their refresh times
-    for (var i in scheduleList) {
-      if (scheduleList[i].refreshTime === refreshTime) scheduleList[i].run()
-    }
+    scheduleList.forEach(schedule => {
+      if (schedule.refreshTime === refreshTime) schedule.run()
+    })
   }
 
   this.stopSchedules = function () {
-    for (var i in scheduleList) {
-      scheduleList[i].stop()
-    }
-    scheduleList = []
+    scheduleList.forEach(schedule => schedule.stop())
+    scheduleList.length = 0
   }
 
+  this.startSchedules = startSchedules
+
   this.cyclesInProgress = function () {
-    for (var cycle in scheduleList) {
+    for (var cycle = 0; cycle < scheduleList.length; ++cycle) {
       if (scheduleList[cycle].inProgress) return true
     }
     return false
   }
 
+  storage.scheduleManager = this
   startSchedules()
 }

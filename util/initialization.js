@@ -115,7 +115,7 @@ module.exports = function (bot, callback) {
       const Article = storage.models.Article(rssName)
       if (config.database.clean !== true) {
         Article.collection.dropIndexes(err => {
-          if (err) console.log(`Unable to drop indexes for collection ${rssName}\n`, err)
+          if (err) console.log(`Unable to drop indexes for collection ${rssName}:`, err.message || err)
         })
       }
       if (configChecks.checkExists(rssName, rssList[rssName], true, true) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !reachedFailCount(rssList[rssName].link)) {

@@ -18,6 +18,8 @@ const allowCookies = require('./allowcookies.js')
 const disallowCookies = require('./disallowcookies.js')
 const setConfig = require('./setconfig.js')
 const checkLimits = require('./checklimits.js')
+const dbBackup = require('./dbbackup.js')
+const dbRestore = require('./dbrestore.js')
 
 exports.stats = stats
 exports.setgame = setGame
@@ -39,3 +41,5 @@ exports.allowcookies = allowCookies
 exports.disallowcookies = disallowCookies
 exports.setconfig = setConfig
 exports.checklimits = checkLimits
+exports.dbbackup = dbBackup
+exports.dbrestore = dbRestore

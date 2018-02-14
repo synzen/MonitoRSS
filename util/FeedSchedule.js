@@ -299,7 +299,7 @@ module.exports = function (bot, callback, schedule) {
       .then(() => {
         try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
       })
-      .catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on cycle end for shard ${bot.shard.id}. `, err.message || err))
+      .catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on cycle end for shard ${bot.shard.id}:`, err.message || err))
     } else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
 
     var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
@@ -313,6 +313,11 @@ module.exports = function (bot, callback, schedule) {
 
   this.stop = function () {
     clearInterval(timer)
+    if (timer) console.log(`RSS Info: Schedule '${schedule.name}' has stopped.`)
+  }
+
+  this.start = function () {
+    if (!bot.shard || (bot.shard && bot.shard.count === 1)) timer = setInterval(connect, refreshTime * 60000)
   }
 
   this.run = connect
