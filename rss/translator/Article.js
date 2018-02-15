@@ -2,6 +2,7 @@ const config = require('../../config.json')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
+const VALID_PH_IMGS = ['title', 'description', 'summary']
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
   const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
@@ -76,182 +77,194 @@ function regexReplace (string, searchOptions, replacement) {
   }
 }
 
-module.exports = function Article (rawArticle, guildRss, rssName) {
-  const rssList = guildRss.sources
+function evalRegexConfig (source, text, placeholder) {
+  const customPlaceholders = {}
 
-  function evalRegexConfig (text, placeholder) {
+  if (typeof source.regexOps === 'object' && source.regexOps.disabled !== true && Array.isArray(source.regexOps[placeholder])) { // Eval regex if specified
+    if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
+      for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
+        if (source.regexOps.disabled[y] === placeholder) return null // text
+      }
+    }
+
+    const phRegexOps = source.regexOps[placeholder]
+    for (var regexOpIndex in phRegexOps) { // Looping through each regexOp for a placeholder
+      const regexOp = phRegexOps[regexOpIndex]
+      if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
+
+      if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
+
+      const clone = Object.assign({}, customPlaceholders)
+
+      const modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
+      if (typeof modified !== 'string') {
+        if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for article ${source.link}\n`, modified)
+      } else customPlaceholders[regexOp.name] = modified // newText = modified
+    }
+  } else return null
+  return customPlaceholders
+}
+
+function cleanup (source, text, imgSrcs) {
+  if (!text) return text
+
+  text = text.replace(/\*/gi, '')
+          .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
+          .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
+          .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
+
+  text = htmlConvert.fromString(text, {
+    wordwrap: null,
+    ignoreHref: true,
+    noLinkBrackets: true,
+    format: {
+      image: function (node, options) {
+        const isStr = typeof node.attribs.src === 'string'
+        let link = isStr ? node.attribs.src.trim() : node.attribs.src
+        if (isStr && link.startsWith('//')) link = 'http:' + link
+        else if (isStr && !link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
+
+        if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && isStr && link) imgSrcs.push(link)
+
+        let exist = true
+        const globalExistOption = config.feedSettings.imgLinksExistence != null ? config.feedSettings.imgLinksExistence : defaultConfigs.feedSettings.imgLinksExistence.default // Always a boolean via startup checks
+        exist = globalExistOption
+        const specificExistOption = source.imgLinksExistence
+        exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
+        if (!exist) return ''
+
+        let image = ''
+        const globalPreviewOption = config.feedSettings.imgPreviews != null ? config.feedSettings.imgPreviews : defaultConfigs.feedSettings.imgPreviews.default // Always a boolean via startup checks
+        image = globalPreviewOption ? link : `<${link}>`
+        const specificPreviewOption = source.imgPreviews
+        image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
+
+        return image
+      },
+      heading: function (node, fn, options) {
+        let h = fn(node.children, options)
+        return h
+      }
+    }
+  })
+
+  text = text.replace(/\n\s*\n\s*\n/g, '\n\n') // Replace triple line breaks with double
+  return text
+}
+
+module.exports = class Article {
+  constructor (rawArticle, guildRss, rssName) {
+    const rssList = guildRss.sources
     const source = rssList[rssName]
-    const customPlaceholders = {}
 
-    if (typeof source.regexOps === 'object' && source.regexOps.disabled !== true && Array.isArray(source.regexOps[placeholder])) { // Eval regex if specified
-      if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
-        for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
-          if (source.regexOps.disabled[y] === placeholder) return null // text
-        }
+    this.rawDescrip = rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#'] ? cleanup(source, rawArticle['media:group']['media:description']['#']) : cleanup(source, rawArticle.description) // Account for youtube's description
+    this.rawSummary = cleanup(source, rawArticle.summary)
+    this.meta = rawArticle.meta
+    this.guid = rawArticle.guid
+    this.author = (rawArticle.author) ? cleanup(source, rawArticle.author) : ''
+    this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
+    if (this.meta.link && this.meta.link.includes('www.reddit.com') && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
+
+    // Title
+    const rawTitleImgs = []
+    this.title = (!rawArticle.title) ? '' : cleanup(source, rawArticle.title, rawTitleImgs)
+    this.title = this.title.length > 150 ? this.title.slice(0, 150) + ' [...]' : this.title
+    this.titleImgs = rawTitleImgs
+
+    // Date
+    if ((rawArticle.pubdate && rawArticle.pubdate.toString() !== 'Invalid Date') || config.feedSettings.dateFallback === true) {
+      const guildTimezone = guildRss.timezone
+      const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
+      const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feedSettings.dateFormat
+
+      const useDateFallback = config.feedSettings.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
+      const useTimeFallback = config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)
+      const date = useDateFallback ? new Date() : rawArticle.pubdate
+      const localMoment = moment(date)
+      if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)
+      const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
+      this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
+    }
+
+    // Description
+    let rawArticleDescrip = ''
+    const rawDescripImgs = []
+    // YouTube doesn't use the regular description field, thus manually setting it as the description
+    if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#']
+    else if (rawArticle.description) rawArticleDescrip = cleanup(source, rawArticle.description, rawDescripImgs)
+    rawArticleDescrip = (rawArticleDescrip.length > 800) ? `${rawArticleDescrip.slice(0, 790)} [...]` : rawArticleDescrip
+
+    if (this.meta.link && this.meta.link.includes('reddit')) {
+      rawArticleDescrip = rawArticleDescrip.replace('\n[link] [comments]', '') // truncate the useless end of reddit description
+    }
+
+    this.description = rawArticleDescrip
+    this.descriptionImgs = rawDescripImgs
+
+    // Summary
+    let rawArticleSummary = ''
+    const rawSummaryImgs = []
+    if (rawArticle.summary) rawArticleSummary = cleanup(source, rawArticle.summary, rawSummaryImgs)
+    rawArticleSummary = (rawArticleSummary.length > 800) ? `${rawArticleSummary.slice(0, 790)} [...]` : rawArticleSummary
+    this.summary = rawArticleSummary
+    this.summaryImgs = rawSummaryImgs
+
+    // Image links
+    const imageLinks = []
+    findImages(rawArticle, imageLinks)
+    this.images = (imageLinks.length === 0) ? undefined : imageLinks
+
+    // Categories/Tags
+    if (rawArticle.categories) {
+      let categoryList = ''
+      for (var category in rawArticle.categories) {
+        if (typeof rawArticle.categories[category] !== 'string') continue
+        categoryList += rawArticle.categories[category].trim()
+        if (parseInt(category, 10) !== rawArticle.categories.length - 1) categoryList += '\n'
       }
+      this.tags = categoryList
+    }
 
-      const phRegexOps = source.regexOps[placeholder]
-      for (var regexOpIndex in phRegexOps) { // Looping through each regexOp for a placeholder
-        const regexOp = phRegexOps[regexOpIndex]
-        if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
-
-        if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
-
-        const clone = Object.assign({}, customPlaceholders)
-
-        const modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
-        if (typeof modified !== 'string') {
-          if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for article ${source.link}\n`, modified)
-        } else customPlaceholders[regexOp.name] = modified // newText = modified
-      }
-    } else return null
-    return customPlaceholders
+    // Regex-defined custom placeholders
+    const validRegexPlaceholder = ['title', 'description', 'summary', 'author']
+    this.regexPlaceholders = {} // Each key is a validRegexPlaceholder, and their values are an object of named placeholders with the modified content
+    for (var b in validRegexPlaceholder) {
+      const type = validRegexPlaceholder[b]
+      const regexResults = evalRegexConfig(source, this[type], type)
+      this.regexPlaceholders[type] = regexResults
+    }
   }
-
-  function cleanRandoms (text, imgSrcs) {
-    if (!text) return text
-
-    text = text.replace(/\*/gi, '')
-            .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
-            .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
-            .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
-
-    text = htmlConvert.fromString(text, {
-      wordwrap: null,
-      ignoreHref: true,
-      noLinkBrackets: true,
-      format: {
-        image: function (node, options) {
-          const isStr = typeof node.attribs.src === 'string'
-          let link = isStr ? node.attribs.src.trim() : node.attribs.src
-          if (isStr && link.startsWith('//')) link = 'http:' + link
-          else if (isStr && !link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
-
-          if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && isStr && link) imgSrcs.push(link)
-
-          let exist = true
-          const globalExistOption = config.feedSettings.imgLinksExistence != null ? config.feedSettings.imgLinksExistence : defaultConfigs.feedSettings.imgLinksExistence.default // Always a boolean via startup checks
-          exist = globalExistOption
-          const specificExistOption = rssList[rssName].imgLinksExistence
-          exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
-          if (!exist) return ''
-
-          let image = ''
-          const globalPreviewOption = config.feedSettings.imgPreviews != null ? config.feedSettings.imgPreviews : defaultConfigs.feedSettings.imgPreviews.default // Always a boolean via startup checks
-          image = globalPreviewOption ? link : `<${link}>`
-          const specificPreviewOption = rssList[rssName].imgPreviews
-          image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
-
-          return image
-        },
-        heading: function (node, fn, options) {
-          let h = fn(node.children, options)
-          return h
-        }
-      }
-    })
-
-    text = text.replace(/\n\s*\n\s*\n/g, '\n\n') // Replace triple line breaks with double
-    return text
-  }
-
-  this.rawDescrip = rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#'] ? cleanRandoms(rawArticle['media:group']['media:description']['#']) : cleanRandoms(rawArticle.description) // Account for youtube's description
-  this.rawSummary = cleanRandoms(rawArticle.summary)
-  this.meta = rawArticle.meta
-  this.guid = rawArticle.guid
-  this.author = (rawArticle.author) ? cleanRandoms(rawArticle.author) : ''
-  this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
-  if (this.meta.link && this.meta.link.includes('www.reddit.com') && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
-
-  // Title
-  const rawTitleImgs = []
-  this.title = (!rawArticle.title) ? '' : cleanRandoms(rawArticle.title, rawTitleImgs)
-  this.title = this.title.length > 150 ? this.title.slice(0, 150) + ' [...]' : this.title
-  this.titleImgs = rawTitleImgs
-
-  // Date
-  if ((rawArticle.pubdate && rawArticle.pubdate.toString() !== 'Invalid Date') || config.feedSettings.dateFallback === true) {
-    const guildTimezone = guildRss.timezone
-    const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
-    const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feedSettings.dateFormat
-
-    const useDateFallback = config.feedSettings.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
-    const useTimeFallback = config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)
-    const date = useDateFallback ? new Date() : rawArticle.pubdate
-    const localMoment = moment(date)
-    if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)
-    const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
-    this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
-  }
-
-  // Description
-  let rawArticleDescrip = ''
-  const rawDescripImgs = []
-  // YouTube doesn't use the regular description field, thus manually setting it as the description
-  if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#']
-  else if (rawArticle.description) rawArticleDescrip = cleanRandoms(rawArticle.description, rawDescripImgs)
-  rawArticleDescrip = (rawArticleDescrip.length > 800) ? `${rawArticleDescrip.slice(0, 790)} [...]` : rawArticleDescrip
-
-  if (this.meta.link && this.meta.link.includes('reddit')) {
-    rawArticleDescrip = rawArticleDescrip.replace('\n[link] [comments]', '') // truncate the useless end of reddit description
-  }
-
-  this.description = rawArticleDescrip
-  this.descriptionImgs = rawDescripImgs
-
-  // Summary
-  let rawArticleSummary = ''
-  const rawSummaryImgs = []
-  if (rawArticle.summary) rawArticleSummary = cleanRandoms(rawArticle.summary, rawSummaryImgs)
-  rawArticleSummary = (rawArticleSummary.length > 800) ? `${rawArticleSummary.slice(0, 790)} [...]` : rawArticleSummary
-  this.summary = rawArticleSummary
-  this.summaryImgs = rawSummaryImgs
 
   // List all {imageX} to string
-  const imageLinks = []
-  findImages(rawArticle, imageLinks)
-  this.images = (imageLinks.length === 0) ? undefined : imageLinks
-
-  this.listImages = function () {
+  listImages () {
+    const images = this.images
     let imageList = ''
-    for (var image in this.images) {
-      imageList += `[Image${parseInt(image, 10) + 1} URL]: {image${parseInt(image, 10) + 1}}\n${this.images[image]}`
-      if (parseInt(image, 10) !== this.images.length - 1) imageList += '\n'
+    for (var image in images) {
+      imageList += `[Image${parseInt(image, 10) + 1} URL]: {image${parseInt(image, 10) + 1}}\n${images[image]}`
+      if (parseInt(image, 10) !== images.length - 1) imageList += '\n'
     }
     return imageList
   }
 
   // List all {placeholder:imageX} to string
-  this.listPlaceholderImages = function () {
-    const validPlaceholders = ['title', 'description', 'summary']
+  listPlaceholderImages () {
     const listedImages = []
     let list = ''
-    for (var k in validPlaceholders) {
-      const placeholderImgs = this[validPlaceholders[k] + 'Imgs']
+    for (var k in VALID_PH_IMGS) {
+      const placeholderImgs = this[VALID_PH_IMGS[k] + 'Imgs']
       for (var l in placeholderImgs) {
         if (listedImages.includes(placeholderImgs[l])) continue
         listedImages.push(placeholderImgs[l])
-        const placeholder = validPlaceholders[k].slice(0, 1).toUpperCase() + validPlaceholders[k].substr(1, validPlaceholders[k].length)
+        const placeholder = VALID_PH_IMGS[k].slice(0, 1).toUpperCase() + VALID_PH_IMGS[k].substr(1, VALID_PH_IMGS[k].length)
         const imgNum = parseInt(l, 10) + 1
-        list += `\n[${placeholder} Image${imgNum}]: {${validPlaceholders[k]}:image${imgNum}}\n${placeholderImgs[l]}`
+        list += `\n[${placeholder} Image${imgNum}]: {${VALID_PH_IMGS[k]}:image${imgNum}}\n${placeholderImgs[l]}`
       }
     }
 
     return list.trim()
   }
 
-  // Categories/Tags
-  if (rawArticle.categories) {
-    let categoryList = ''
-    for (var category in rawArticle.categories) {
-      if (typeof rawArticle.categories[category] !== 'string') continue
-      categoryList += rawArticle.categories[category].trim()
-      if (parseInt(category, 10) !== rawArticle.categories.length - 1) categoryList += '\n'
-    }
-    this.tags = categoryList
-  }
-
-  this.resolvePlaceholderImg = function (input) {
+  resolvePlaceholderImg (input) {
     const inputArr = input.split('||')
     let img = ''
     for (var x = inputArr.length - 1; x >= 0; x--) {
@@ -266,7 +279,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
         continue
       } else if (arr.length === 1 || arr[1].search(/image[1-9]/) === -1) continue
       const validPlaceholders = ['title', 'description', 'summary']
-      const placeholder = arr[0].replace(/{|}/, '') //
+      const placeholder = arr[0].replace(/{|}/, '')
       const placeholderImgs = this[placeholder + 'Imgs']
       if (!validPlaceholders.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
 
@@ -278,7 +291,7 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
   }
 
   // {imageX} and {placeholder:imageX}
-  this.convertImgs = function (content) {
+  convertImgs (content) {
     const imgDictionary = {}
     const imgLocs = content.match(/{image[1-9](\|\|(.+))*}/g)
     const phImageLocs = content.match(/({(description|image|title):image[1-5](\|\|(.+))*})/gi)
@@ -311,17 +324,9 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     return content
   }
 
-  // Regex-defined custom placeholders
-  const validRegexPlaceholder = ['title', 'description', 'summary', 'author']
-  const regexPlaceholders = {} // Each key is a validRegexPlaceholder, and their values are an object of named placeholders with the modified content
-  for (var b in validRegexPlaceholder) {
-    const type = validRegexPlaceholder[b]
-    const regexResults = evalRegexConfig(this[type], type)
-    regexPlaceholders[type] = regexResults
-  }
-
   // replace simple keywords
-  this.convertKeywords = function (word) {
+  convertKeywords (word) {
+    const regexPlaceholders = this.regexPlaceholders
     let content = word.replace(/{date}/g, this.date)
             .replace(/{title}/g, this.title)
             .replace(/{author}/g, this.author)
@@ -340,6 +345,4 @@ module.exports = function Article (rawArticle, guildRss, rssName) {
     }
     return this.convertImgs(content)
   }
-
-  return this
 }

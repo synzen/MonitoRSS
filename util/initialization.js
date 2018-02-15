@@ -13,6 +13,15 @@ const configChecks = require('./configCheck.js')
 const GuildRss = storage.models.GuildRss()
 const FAIL_LIMIT = config.feedSettings.failLimit
 
+// Callback for messages sent to Discord
+function discordMsgResult (err, article, bot) {
+  const channel = bot.channels.get(article.discordChannelId)
+  if (err) {
+    console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}`, err.message || err)
+    if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
+  }
+}
+
 module.exports = function (bot, callback) {
   const modSourceList = new Map()
   const sourceList = new Map()
@@ -181,15 +190,7 @@ module.exports = function (bot, callback) {
       }
 
       initAll(link, rssList, uniqueSettings, function (linkCompletion) {
-        if (linkCompletion.status === 'article') {
-          return sendToDiscord(bot, linkCompletion.article, function (err) { // This can result in great spam once the loads up after a period of downtime
-            const channel = bot.channels.get(linkCompletion.article.discordChannelId)
-            if (err) {
-              console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
-              if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
-            }
-          })
-        }
+        if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
         if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
         if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
@@ -226,15 +227,7 @@ module.exports = function (bot, callback) {
         if (bot.shard) bot.shard.broadcastEval('process.exit()')
         throw linkCompletion.err // Full error is printed from the processor
       }
-      if (linkCompletion.status === 'article') {
-        return sendToDiscord(bot, linkCompletion.article, function (err) { // This can result in great spam once the loads up after a period of downtime
-          const channel = bot.channels.get(linkCompletion.article.discordChannelId)
-          if (err) {
-            console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
-            if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
-          }
-        })
-      }
+      if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
       if (linkCompletion.status === 'failed') {
         cycleFailCount++
         if (FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
@@ -277,16 +270,7 @@ module.exports = function (bot, callback) {
           if (bot.shard) bot.shard.broadcastEval('process.exit()')
           throw linkCompletion.err // Full error is printed from the processor
         }
-        if (linkCompletion.status === 'article') {
-          return sendToDiscord(bot, linkCompletion.article, function (err) { // This can result in great spam once the loads up after a period of downtime
-            const channel = bot.channels.get(linkCompletion.article.discordChannelId)
-            if (err) {
-              console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${linkCompletion.article.link}`, err.message || err)
-              if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
-            }
-
-          })
-        }
+        if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
         if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
         if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 

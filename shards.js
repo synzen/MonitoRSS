@@ -43,7 +43,7 @@ connectDb(err => {
   })
 })
 
-function createIntervals() {
+function createIntervals () {
   refreshTimes.forEach((refreshTime, i) => {
     scheduleIntervals.push(setInterval(function () {
       scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the activeShardIds index
@@ -56,7 +56,7 @@ function createIntervals() {
 Manager.on('message', function (shard, message) {
   if (message === 'kill') process.exit()
 
-  switch(message.type) {
+  switch (message.type) {
     case 'missingGuild':
       if (!missingGuilds[message.content]) missingGuilds[message.content] = 1
       else missingGuilds[message.content]++
@@ -95,7 +95,7 @@ Manager.on('message', function (shard, message) {
       currentGuilds.delete(message.guildId)
       break
 
-    case 'dbRestore': 
+    case 'dbRestore':
       scheduleIntervals.forEach(it => {
         clearInterval(it)
       })

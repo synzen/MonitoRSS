@@ -12,6 +12,10 @@ const FAIL_LIMIT = config.feedSettings.failLimit
 const WARN_LIMIT = Math.floor(config.feedSettings.failLimit * 0.75) < FAIL_LIMIT ? Math.floor(config.feedSettings.failLimit * 0.75) : Math.floor(config.feedSettings.failLimit * 0.5) < FAIL_LIMIT ? Math.floor(config.feedSettings.failLimit * 0.5) : 0
 const BATCH_SIZE = config.advanced.batchSize
 
+function reachedFailCount (link) {
+  return typeof storage.failedLinks[link] === 'string' // string indicates it has reached the fail count, and is the date of when it failed
+}
+
 module.exports = function (bot, callback, schedule) {
   const refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : config.feedSettings.refreshTimeMinutes
   let timer // Timer for the setInterval
@@ -49,10 +53,6 @@ module.exports = function (bot, callback, schedule) {
         if (source.link === link) bot.channels.get(source.channel).send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => console.log(`Unable to send reached failure limit for feed ${link} in channel ${source.channel}`, err.message || err))
       }
     }
-  }
-
-  function reachedFailCount (link) {
-    return typeof storage.failedLinks[link] === 'string' // string indicates it has reached the fail count, and is the date of when it failed
   }
 
   function addToSourceLists (guildRss, guildId) { // rssList is an object per guildRss

@@ -26,17 +26,16 @@ function validURL (input) { // A simple check is enough
 function validImg (input) {
   if (input.startsWith('http')) {
     const matches = input.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i)
-    if (matches) return true
-    else return false
+    return !!matches
   } else if (input.startsWith('{')) {
     const results = input.startsWith('{image') ? input.search(/^{image[1-9](\|\|(.+))*}$/) : input.search(/^{(description|image|title):image[1-5](\|\|(.+))*}$/)
     if (results === -1) return false
     const arr = input.split('||')
     if (arr.length === 1) return true
     let valid = true
-    for (var x in arr) {
+    for (var x = 0; x < arr.length; ++x) {
       if (!valid) continue
-      const term = x === '0' ? `${arr[x]}}` : x === (arr.length - 1).toString() ? `{${arr[x]}` : `{${arr[x]}}`
+      const term = x === 0 ? `${arr[x]}}` : x === arr.length - 1 ? `{${arr[x]}` : `{${arr[x]}}`
       if (!validImg(term)) valid = false
     }
     return valid
