@@ -46,7 +46,8 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       if (articleList[x].pubdate && articleList[x].pubdate > moment().subtract(cycleMaxAge, 'days')) newerArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x]))
       else {
         let checkDate = globalDateCheck
-        checkDate = typeof rssList[rssName].checkDates !== 'boolean' ? checkDate : localDateSetting
+        const localDateSetting = rssList[rssName].checkDates
+        checkDate = typeof localDateSetting !== 'boolean' ? checkDate : localDateSetting
 
         if (checkDate) {
           olderArticles.push(articleList[x]) // Mark as old if date checking is enabled
@@ -58,7 +59,8 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     }
 
     let checkTitle = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
-    checkTitle = typeof rssList[rssName].checkTitles !== 'boolean' ? checkTitle : localTitleCheck
+    const localTitleSetting = rssList[rssName].checkTitles
+    checkTitle = typeof localTitleSetting !== 'boolean' ? checkTitle : localTitleSetting
     const allIds = []
     const allTitles = []
     const newerIds = []
