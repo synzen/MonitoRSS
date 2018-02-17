@@ -73,7 +73,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     })
     const foundIds = []
     const foundTitles = []
-    
+
     dbCmds.selectIdsOrTitles(Article, allIds, allTitles, (err, docs) => {
       if (err) return callback(new Error(`Database Error: Unable to query find articles for ${rssName}`, err.message || err))
       docs.forEach(item => {

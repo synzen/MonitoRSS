@@ -11,7 +11,7 @@ module.exports = function (guildId, rssName, callback) {
   const link = rssList[rssName].link
   const index = linkList.indexOf(link)
   if (index > -1) linkList.splice(index, 1)
-  
+
   dbCmds.dropCollection(rssName, err => {
     delete rssList[rssName]
     fileOps.updateFile(guildId, guildRss)
