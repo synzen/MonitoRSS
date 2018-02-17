@@ -46,7 +46,7 @@ module.exports = function (bot, message) {
   function finishLinkList (verifyMsg) {
     let msg = ''
     if (Object.keys(passedAddLinks).length > 0) {
-      let successBox = 'The following feed(s) have been successfully added:\n```\n'
+      let successBox = 'The following feed(s) have been successfully added to this channel:\n```\n'
       for (var passedLink in passedAddLinks) {
         successBox += `\n* ${passedLink}`
         if (passedAddLinks[passedLink]) { // passedAddLinks[passedLink] is the cookie object
@@ -77,7 +77,7 @@ module.exports = function (bot, message) {
   .then(function (verifyMsg) {
     (function processLink (linkIndex) { // A self-invoking function for each link
       const linkItem = linkList[linkIndex].split(' ')
-      const link = linkItem[0].trim() // One link may consist of the actual link, and its cookies
+      let link = linkItem[0].trim() // One link may consist of the actual link, and its cookies
 
       if (!link.startsWith('http')) {
         failedAddLinks[link] = 'Invalid/improperly-formatted link.'
@@ -113,7 +113,8 @@ module.exports = function (bot, message) {
       var cookiesFound = !!cookies
       if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id) && !isBotController(message.author.id)) cookies = undefined
 
-      initialize.addNewFeed(link, message.channel, cookies, function (err) {
+      initialize.addNewFeed({link: link, channel: message.channel, cookies: cookies}, function (err, addedLink) {
+        link = addedLink // addedLink may have been changed from string approximation to another similar link for performance
         channelTracker.remove(message.channel.id)
         if (err) {
           let channelErrMsg = ''

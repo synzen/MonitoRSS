@@ -31,6 +31,7 @@ module.exports = function (rssList, articleList, link, callback) {
 
     const feedLength = articleList.length - 1
     const defaultMaxAge = config.feedSettings.defaultMaxAge && !isNaN(parseInt(config.feedSettings.defaultMaxAge, 10)) ? parseInt(config.feedSettings.defaultMaxAge, 10) : 1
+    const globalDateCheck = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
 
     for (var x = feedLength; x >= 0; x--) { // Get feeds starting from oldest, ending with newest.
       articleList[x]._id = getArticleId(articleList, articleList[x])
@@ -40,22 +41,16 @@ module.exports = function (rssList, articleList, link, callback) {
       else if (articleList[x].pubdate < cutoffDay) {
         olderArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x]), true)
       } else if (articleList[x].pubdate.toString() === 'Invalid Date') {
-        let checkDate = false
-        const globalDateCheck = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
-        checkDate = globalDateCheck
-        const specificSetting = rssList[rssName].checkDates
-        checkDate = typeof specificSetting !== 'boolean' ? checkDate : specificSetting
+        let checkDate = globalDateCheck
+        checkDate = typeof rssList[rssName].checkDates !== 'boolean' ? checkDate : specificSetting
 
         if (checkDate) olderArticles.push(articleList[x]) // Mark as old if date checking is enabled
         else newerArticles.push(articleList[x]) // Otherwise mark it new
       } else olderArticles.push(articleList[x]) // for all other cases
     }
 
-    let checkTitle = false
-    const globalTitleCheck = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
-    checkTitle = globalTitleCheck
-    const specificSetting = rssList[rssName].checkTitles
-    checkTitle = typeof specificSetting !== 'boolean' ? checkTitle : specificSetting
+    let checkTitle = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
+    checkTitle = typeof rssList[rssName].checkTitles !== 'boolean' ? checkTitle : specificSetting
     const allIds = []
     const allTitles = []
     const newerIds = []
@@ -109,8 +104,6 @@ module.exports = function (rssList, articleList, link, callback) {
   for (var rssName in rssList) processSource(rssName)
 
   function finishSource () {
-    sourcesCompleted++
-    // if (sourcesCompleted === rssList.size()) return process.send({status: 'success', link: link})
-    if (sourcesCompleted === Object.keys(rssList).length) return callback(null, {status: 'success'})
+    if (++sourcesCompleted === Object.keys(rssList).length) return callback(null, {status: 'success'})
   }
 }

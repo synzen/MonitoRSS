@@ -6,6 +6,7 @@ const maxDays = dbSettings.clean === true && dbSettings.maxDays > 0 ? dbSettings
 const fs = require('fs')
 const mongoose = require('mongoose')
 const currentGuilds = new Map()
+const linkList = []
 const linkTracker = {}
 const allScheduleWords = []
 let deletedFeeds = []
@@ -69,6 +70,8 @@ const guildRssSchema = {
 }
 
 if (maxDays > 0) articleSchema.date.index = { expires: 60 * 60 * 24 * maxDays }
+
+exports.linkList = linkList
 
 exports.blacklistGuilds = blacklistGuilds
 

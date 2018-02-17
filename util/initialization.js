@@ -6,6 +6,7 @@ const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const linkTracker = storage.linkTracker // Directory of all feeds, used to track between multiple feed schedules
 const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
 const failedLinks = storage.failedLinks
+const feedLinkList = storage.linkList
 const checkGuild = require('./checkGuild.js')
 const sendToDiscord = require('./sendToDiscord.js')
 const process = require('child_process')
@@ -121,26 +122,28 @@ module.exports = function (bot, callback) {
 
   function addToSourceLists (rssList, guildId) { // rssList is an object per guildRss
     for (var rssName in rssList) {
+      const source = rssList[rssName]
+      feedLinkList.push(source.link)
       const Article = storage.models.Article(rssName)
       if (config.database.clean !== true) {
         Article.collection.dropIndexes(err => {
           if (err) console.log(`Unable to drop indexes for collection ${rssName}:`, err.message || err)
         })
       }
-      if (configChecks.checkExists(rssName, rssList[rssName], true, true) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !reachedFailCount(rssList[rssName].link)) {
+      if (configChecks.checkExists(rssName, source, true, true) && configChecks.validChannel(bot, guildId, source) && !reachedFailCount(source.link)) {
         checkGuild.roles(bot, guildId, rssName) // Check for any role name changes
 
-        if (rssList[rssName].advanced && rssList[rssName].advanced.size() > 0) { // Special source list for feeds with unique settings defined, each linkList only has 1 item
+        if (source.advanced && source.advanced.size() > 0) { // Special source list for feeds with unique settings defined, each linkList only has 1 item
           let linkList = {}
-          linkList[rssName] = rssList[rssName]
-          modSourceList.set(rssList[rssName].link, linkList)
-        } else if (sourceList.has(rssList[rssName].link)) { // Regular source lists, optimized for faster operation by aggregating feeds of same links
-          let linkList = sourceList.get(rssList[rssName].link)
-          linkList[rssName] = rssList[rssName]
+          linkList[rssName] = source
+          modSourceList.set(source.link, linkList)
+        } else if (sourceList.has(source.link)) { // Regular source lists, optimized for faster operation by aggregating feeds of same links
+          let linkList = sourceList.get(source.link)
+          linkList[rssName] = source
         } else {
           let linkList = {}
-          linkList[rssName] = rssList[rssName]
-          sourceList.set(rssList[rssName].link, linkList)
+          linkList[rssName] = source
+          sourceList.set(source.link, linkList)
         }
 
         // Assign feeds to specific schedules in linkTracker for use by feedSchedules
@@ -148,7 +151,7 @@ module.exports = function (bot, callback) {
           for (var scheduleName in scheduleWordDir) {
             let wordList = scheduleWordDir[scheduleName]
             for (var i in wordList) {
-              if (rssList[rssName].link.includes(wordList[i]) && !linkTracker[rssName]) {
+              if (source.link.includes(wordList[i]) && !linkTracker[rssName]) {
                 console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}INIT: Assigning feed ${rssName} to schedule ${scheduleName}`)
                 linkTracker[rssName] = scheduleName // Assign a schedule to a feed if it doesn't already exist in the linkTracker to another schedule
               }

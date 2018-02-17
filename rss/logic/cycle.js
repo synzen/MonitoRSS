@@ -20,12 +20,12 @@ function getArticleId (articleList, article) {
 module.exports = function (rssList, articleList, debugFeeds, link, callback) {
   let sourcesCompleted = 0
 
-  function processSource (rssName) {
-    function debug (log) {
-      if (!debugFeeds.includes(rssName)) return
-      console.log(`DEBUG ${rssName}: ${log}`)
-    }
+  function debug (rssName, log) {
+    if (!debugFeeds.includes(rssName)) return
+    console.log(`DEBUG ${rssName}: ${log}`)
+  }
 
+  function processSource (rssName) {
     const Article = ArticleModel(rssName)
     const channelId = rssList[rssName].channel
 
@@ -34,7 +34,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     const bulkInsert = []
     const olderArticles = []
     const newerArticles = []
-    debug(`Processing collection. Total article list length: ${articleList.length}`)
+    debug(rssName, `Processing collection. Total article list length: ${articleList.length}`)
 
     const feedLength = articleList.length - 1
     const cycleMaxAge = config.feedSettings.cycleMaxAge
@@ -45,10 +45,8 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
 
       if (articleList[x].pubdate && articleList[x].pubdate > moment().subtract(cycleMaxAge, 'days')) newerArticles.push(articleList[x])// checkTable(articleList[x], getArticleId(articleList, articleList[x]))
       else {
-        let checkDate = false
-        checkDate = globalDateCheck
-        const localDateSetting = rssList[rssName].checkDates
-        checkDate = typeof localDateSetting !== 'boolean' ? checkDate : localDateSetting
+        let checkDate = globalDateCheck
+        checkDate = typeof rssList[rssName].checkDates !== 'boolean' ? checkDate : localDateSetting
 
         if (checkDate) {
           olderArticles.push(articleList[x]) // Mark as old if date checking is enabled
@@ -59,11 +57,8 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       ++totalArticles
     }
 
-    let checkTitle = false
-    const globalTitleCheck = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
-    checkTitle = globalTitleCheck
-    const localTitleCheck = rssList[rssName].checkTitles
-    checkTitle = typeof localTitleCheck !== 'boolean' ? checkTitle : localTitleCheck
+    let checkTitle = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
+    checkTitle = typeof rssList[rssName].checkTitles !== 'boolean' ? checkTitle : localTitleCheck
     const allIds = []
     const allTitles = []
     const newerIds = []
@@ -78,7 +73,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     })
     const foundIds = []
     const foundTitles = []
-
+    
     dbCmds.selectIdsOrTitles(Article, allIds, allTitles, (err, docs) => {
       if (err) return callback(new Error(`Database Error: Unable to query find articles for ${rssName}`, err.message || err))
       docs.forEach(item => {
@@ -88,19 +83,19 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
 
       articleList.forEach(article => {
         if (foundIds.length === 0 && articleList.length !== 1) { // Only skip if the articleList length is !== 1, otherwise a feed with only 1 article to send since it may have been the first item added
-          debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection. Initializing.`)
+          debug(rssName, `Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection. Initializing.`)
           seenArticle(false, article, true) // If the collection was uninitialized, initialize all articles without sending
         } else if (foundIds.includes(article._id)) {
-          debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched.`)
+          debug(rssName, `Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched.`)
           seenArticle(true, article)
         } else if (foundTitles.includes(article.title)) {
-          debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID. Inserting into collection.`)
+          debug(rssName, `Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID. Inserting into collection.`)
           seenArticle(false, article, true) // Don't send to Discord but still insert into collection because it has a unique ID
         } else if (article._old) {
-          debug(`Not sending article (ID: ${article._id}, TITLE: ${article.title}), due to date check. Inserting into collection.`)
+          debug(rssName, `Not sending article (ID: ${article._id}, TITLE: ${article.title}), due to date check. Inserting into collection.`)
           seenArticle(false, article, true)
         } else {
-          debug(`Sending article (ID: ${article._id}, TITLE: ${article.title}) to sendToDiscord.`)
+          debug(rssName, `Sending article (ID: ${article._id}, TITLE: ${article.title}) to sendToDiscord.`)
           seenArticle(false, article)
         }
       })
@@ -130,7 +125,6 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
   for (var rssName in rssList) processSource(rssName) // Per source in one link
 
   function finishSource () {
-    sourcesCompleted++
-    if (sourcesCompleted === Object.keys(rssList).length) return callback(null, {status: 'success', link: link})
+    if (++sourcesCompleted === Object.keys(rssList).length) return callback(null, {status: 'success', link: link})
   }
 }

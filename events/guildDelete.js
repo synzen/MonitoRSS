@@ -5,7 +5,7 @@ const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 
 module.exports = function (bot, guild) {
-  console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been removed.`)
+  console.log(`Guild "${guild.name}" (ID: ${guild.id}, Users: ${guild.members.size}) has been removed.`)
 
   guild.channels.forEach(function (channel, channelId) {
     if (channelTracker.hasActiveMenus(channel.id)) channelTracker.remove(channel.id)
@@ -21,8 +21,8 @@ module.exports = function (bot, guild) {
     })
   }
 
-  fileOps.deleteGuild(guild.id, null, function () {
-    console.log(`RSS Info: Guild profile ${guild.id}.json (${guild.name}) deleted from sources folder.`)
+  fileOps.deleteGuild(guild.id, null, function (err) {
+    if (err) console.log(`Guild Warning: Unable to delete guild ${guild.id} (${guild.name}) after guildDelete:`, err.message)
   })
 
   if (!config.logging.discordChannelLog) return
