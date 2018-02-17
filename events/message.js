@@ -25,7 +25,7 @@ function logCommand (message) {
 module.exports = function (bot, message) {
   if (!message.member || message.author.bot || !message.content.startsWith(config.botSettings.prefix)) return
   if (blacklistGuilds.ids.includes(message.guild.id)) return
-  if (storage.initializing) return message.channel.send(`Currently booting up, please wait.`).then(m => m.delete(6000))
+  if (storage.initializing) return message.channel.send(`Currently booting up, please wait.`).then(m => m.delete(4000))
 
   let m = message.content.split(' ')
   let command = m[0].substr(config.botSettings.prefix.length)

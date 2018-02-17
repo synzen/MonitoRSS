@@ -41,6 +41,7 @@ function login (firstStartup) {
     bot.user.setPresence({ game: { name: (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null, type: 0 } })
     console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}.`)
     if (firstStartup) {
+      if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)
       connectDb((err) => {
         if (err) throw err
         initialize(bot, finishInit)
@@ -75,8 +76,6 @@ function finishInit (guildsInfo) {
     } catch (e) {}
   }
   listeners.createManagers(bot)
-
-  if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)
 }
 
 if (!bot.shard || (bot.shard && bot.shard.count === 1)) login(true)
