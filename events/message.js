@@ -4,6 +4,7 @@ const loadCommand = (file) => require(`../commands/${file}.js`)
 const hasPerm = require('../util/hasPerm.js')
 const commandList = require('../util/commandList.json')
 const channelTracker = require('../util/channelTracker.js')
+const storage = require('../util/storage.js')
 const blacklistGuilds = require('../util/storage.js').blacklistGuilds
 
 function isBotController (command, author) {
@@ -24,6 +25,7 @@ function logCommand (message) {
 module.exports = function (bot, message) {
   if (!message.member || message.author.bot || !message.content.startsWith(config.botSettings.prefix)) return
   if (blacklistGuilds.ids.includes(message.guild.id)) return
+  if (storage.initializing) return message.channel.send(`Currently booting up, please wait.`).then(m => m.delete(6000))
 
   let m = message.content.split(' ')
   let command = m[0].substr(config.botSettings.prefix.length)

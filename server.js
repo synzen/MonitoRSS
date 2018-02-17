@@ -66,6 +66,7 @@ function login (firstStartup) {
 }
 
 function finishInit (guildsInfo) {
+  storage.initializing = false
   if (bot.shard) process.send({type: 'initComplete', guilds: guildsInfo})
   scheduleManager = new ScheduleManager(bot)
   if (!bot.shard) {

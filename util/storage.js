@@ -9,6 +9,7 @@ const currentGuilds = new Map()
 const linkList = []
 const linkTracker = {}
 const allScheduleWords = []
+let initializing = true
 let deletedFeeds = []
 let cookieAccessors = {ids: []} // User IDs
 let webhookAccessors = {ids: []} // Guild IDs
@@ -68,36 +69,24 @@ const guildRssSchema = {
   dateLanguage: String,
   timezone: String
 }
-
 if (maxDays > 0) articleSchema.date.index = { expires: 60 * 60 * 24 * maxDays }
 
+exports.initializing = initializing
 exports.linkList = linkList
-
 exports.blacklistGuilds = blacklistGuilds
-
 exports.currentGuilds = currentGuilds // To hold all guild profiles
-
 exports.deletedFeeds = deletedFeeds // Any deleted rssNames to check during sendToDiscord if it was deleted during a cycle
-
 exports.cookieAccessors = cookieAccessors // If restrictCookies is true in config, this is the list of permitted user IDs
-
 exports.webhookAccessors = webhookAccessors
-
 exports.overriddenGuilds = overriddenGuilds // To track guilds with overridden limits
-
 exports.linkTracker = linkTracker // To track schedule assignment to links
-
 exports.allScheduleWords = allScheduleWords // Holds all words across all schedules
-
 exports.failedLinks = failedLinks
-
 exports.scheduleManager = scheduleManager
-
 exports.schemas = {
   guildRss: mongoose.Schema(guildRssSchema),
   article: mongoose.Schema(articleSchema)
 }
-
 exports.models = {
   GuildRss: () => mongoose.model('Guild', exports.schemas.guildRss),
   Article: collection => mongoose.model(collection, exports.schemas.article)
