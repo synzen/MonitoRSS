@@ -1,6 +1,6 @@
 const config = require('../../config.json')
 const storage = require('../../util/storage.js')
-const removeRss = require('../../util/removeRss.js')
+const removeRss = require('../../util/removeFeed.js')
 const fileOps = require('../../util/fileOps.js')
 const channelTracker = require('../../util/channelTracker.js')
 
@@ -167,7 +167,7 @@ exports.sharded = function (bot, message, Manager) {
           const appDir = require('path').dirname(require.main.filename);
           const storage = require(appDir + '/util/storage.js');
           const currentGuilds = storage.currentGuilds;
-          const removeRss = require(appDir + '/util/removeRss.js');
+          const removeRss = require(appDir + '/util/removeFeed.js');
           const fileOps = require(appDir + '/util/fileOps.js');
 
           const links = JSON.parse('${JSON.stringify(links)}');

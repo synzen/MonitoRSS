@@ -5,12 +5,14 @@ const debugFeeds = require('./debugFeeds.js').list
 const fs = require('fs')
 const storage = require('./storage.js')
 
-module.exports = function (bot) {
-  let scheduleList = []
+class ScheduleManager {
+  constructor (bot) {
+    this.bot = bot
+    this.scheduleList = []
+    storage.scheduleManager = this
 
-  function startSchedules () {
-    scheduleList.push(new FeedSchedule(bot, listenToArticles, {name: 'default'}))
-    fs.readdir('./settings/schedules', function (err, schedules) {
+    this.scheduleList.push(new FeedSchedule(this.bot, {name: 'default'}))
+    fs.readdir('./settings/schedules', (err, schedules) => {
       if (err || schedules.length === 0 || (schedules.length === 1 && schedules[0] === 'exampleSchedule.json')) return
       schedules.forEach(schedule => {
         if (schedule !== 'exampleSchedule.json') {
@@ -24,45 +26,44 @@ module.exports = function (bot) {
           if (!scheduleData || !scheduleData.refreshTimeMinutes || typeof scheduleData.keywords !== 'object' || !scheduleData.keywords.length || scheduleData.keywords.length === 0) throw new Error(`Schedule named '${schedule}' is improperly configured. keywords/refreshTimeMinutes are missing.`)
 
           scheduleData.name = schedule.replace(/\.json/gi, '')
-          scheduleList.push(new FeedSchedule(bot, listenToArticles, scheduleData))
+          this.scheduleList.push(new FeedSchedule(this.bot, scheduleData))
         }
       })
     })
+
+    this.scheduleList.forEach(schedule => this._listenToArticles(schedule.cycle))
   }
 
-  function listenToArticles (articleTracker) {
-    articleTracker.on('article', function (article) { // New articles are sent as the raw object directly from feedparser
+  _listenToArticles (articleTracker) {
+    articleTracker.on('article', article => { // New articles are sent as the raw object directly from feedparser
       if (debugFeeds.includes(article.rssName)) console.log(`DEBUG ${article.rssName}: Invoking sendToDiscord function`)
-      sendToDiscord(bot, article, function (err) {
+      sendToDiscord(this.bot, article, err => {
         if (err && config.logging.showLinkErrs === true) {
-          const channel = bot.channels.get(article.discordChannelId)
+          const channel = this.bot.channels.get(article.discordChannelId)
           console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}`, err.message || err)
-          if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
+          if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``).catch(err => console.log(`ScheduleManager Warning: Unable to send failed message for article:`, err.message || err))
         }
       })
     })
   }
 
-  this.run = function (refreshTime) { // Run schedules with respect to their refresh times
-    scheduleList.forEach(schedule => {
+  run (refreshTime) { // Run schedules with respect to their refresh times
+    this.scheduleList.forEach(schedule => {
       if (schedule.refreshTime === refreshTime) schedule.run()
     })
   }
 
-  this.stopSchedules = function () {
-    scheduleList.forEach(schedule => schedule.stop())
-    scheduleList.length = 0
+  stopSchedules () {
+    this.scheduleList.forEach(schedule => schedule.stop())
+    this.scheduleList.length = 0
   }
 
-  this.startSchedules = startSchedules
-
-  this.cyclesInProgress = function () {
-    for (var cycle = 0; cycle < scheduleList.length; ++cycle) {
-      if (scheduleList[cycle].inProgress) return true
+  cyclesInProgress () {
+    for (var cycle = 0; cycle < this.scheduleList.length; ++cycle) {
+      if (this.scheduleList[cycle].inProgress) return true
     }
     return false
   }
-
-  storage.scheduleManager = this
-  startSchedules()
 }
+
+module.exports = ScheduleManager

@@ -15,26 +15,28 @@ const BATCH_SIZE = config.advanced.batchSize
 function reachedFailCount (link) {
   return typeof storage.failedLinks[link] === 'string' // string indicates it has reached the fail count, and is the date of when it failed
 }
+class FeedSchedule {
+  constructor (bot, schedule) {
+    this.SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
+    this.bot = bot
+    this.schedule = schedule
+    this.refreshTime = this.schedule.refreshTimeMinutes ? this.schedule.refreshTimeMinutes : config.feedSettings.refreshTimeMinutes
+    this.cycle = new events.EventEmitter()
+    this._processorList = []
+    this._regBatchList = []
+    this._modBatchList = [] // Batch of sources with cookies
+    this._cycleFailCount = 0
+    this._cycleTotalCount = 0
+    this._sourceList = new Map()
+    this._modSourceList = new Map()
 
-module.exports = function (bot, callback, schedule) {
-  const refreshTime = schedule.refreshTimeMinutes ? schedule.refreshTimeMinutes : config.feedSettings.refreshTimeMinutes
-  let timer // Timer for the setInterval
-  let cycleInProgress
-  let processorList = []
-  let regBatchList = []
-  let modBatchList = [] // Batch of sources with cookies
-  let startTime // Tracks cycle times
-  let cycleFailCount = 0
-  let cycleTotalCount = 0
+    if (!this.bot.shard || (this.bot.shard && this.bot.shard.count === 1)) {
+      this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
+      console.log(`${this.SHARD_ID}RSS Info: Schedule '${this.schedule.name}' has begun.`)
+    }
+  }
 
-  this.inProgress = cycleInProgress
-  this.cycle = new events.EventEmitter()
-  let cycle = this.cycle
-
-  const sourceList = new Map()
-  const modSourceList = new Map()
-
-  function addFailedFeed (link, rssList) {
+  _addFailedFeed (link, rssList) {
     const failedLinks = storage.failedLinks
     storage.failedLinks[link] = (failedLinks[link]) ? failedLinks[link] + 1 : 1
 
@@ -42,7 +44,7 @@ module.exports = function (bot, callback, schedule) {
       if (config.feedSettings.notifyFail !== true) return
       for (var i in rssList) {
         const source = rssList[i]
-        if (source.link === link) bot.channels.get(source.channel).send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => console.log(`Unable to send reached warning limit for feed ${link} in channel ${source.channel}`, err.message || err))
+        if (source.link === link) this.bot.channels.get(source.channel).send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => console.log(`Unable to send reached warning limit for feed ${link} in channel ${source.channel}`, err.message || err))
       }
     } else if (failedLinks[link] >= FAIL_LIMIT) {
       storage.failedLinks[link] = (new Date()).toString()
@@ -50,232 +52,236 @@ module.exports = function (bot, callback, schedule) {
       if (config.feedSettings.notifyFail !== true) return
       for (var j in rssList) {
         const source = rssList[j]
-        if (source.link === link) bot.channels.get(source.channel).send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => console.log(`Unable to send reached failure limit for feed ${link} in channel ${source.channel}`, err.message || err))
+        if (source.link === link) this.bot.channels.get(source.channel).send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => console.log(`Unable to send reached failure limit for feed ${link} in channel ${source.channel}`, err.message || err))
       }
     }
   }
 
-  function addToSourceLists (guildRss, guildId) { // rssList is an object per guildRss
+  _delegateFeed (guildRss, rssName) {
+    const source = guildRss.sources[rssName]
+
+    if (source.advanced && Object.keys(source.advanced).length > 0) { // Special source list for feeds with unique settings defined
+      let linkList = {}
+      linkList[rssName] = source
+      this._modSourceList.set(source.link, linkList)
+    } else if (this._sourceList.has(source.link)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
+      let linkList = this._sourceList.get(source.link)
+      linkList[rssName] = source
+    } else {
+      let linkList = {}
+      linkList[rssName] = source
+      this._sourceList.set(source.link, linkList)
+    }
+  }
+
+  _addToSourceLists (guildRss) { // rssList is an object per guildRss
     const rssList = guildRss.sources
 
-    function delegateFeed (rssName) {
-      if (rssList[rssName].advanced && rssList[rssName].advanced.size() > 0) { // Special source list for feeds with unique settings defined
-        let linkList = {}
-        linkList[rssName] = rssList[rssName]
-        modSourceList.set(rssList[rssName].link, linkList)
-      } else if (sourceList.has(rssList[rssName].link)) { // Each item in the sourceList has a unique URL, with every source with this the same link aggregated below it
-        let linkList = sourceList.get(rssList[rssName].link)
-        linkList[rssName] = rssList[rssName]
-      } else {
-        let linkList = {}
-        linkList[rssName] = rssList[rssName]
-        sourceList.set(rssList[rssName].link, linkList)
-      }
-    }
-
     for (var rssName in rssList) {
-      if (configChecks.checkExists(rssName, rssList[rssName], false) && configChecks.validChannel(bot, guildId, rssList[rssName]) && !reachedFailCount(rssList[rssName].link)) {
-        if (storage.linkTracker[rssName] === schedule.name) { // If assigned to a schedule
-          delegateFeed(rssName)
-        } else if (schedule.name !== 'default' && !storage.linkTracker[rssName]) { // If current feed schedule is a custom one and is not assigned
-          const keywords = schedule.keywords
-          for (var q in keywords) {
-            if (rssList[rssName].link.includes(keywords[q])) {
-              storage.linkTracker[rssName] = schedule.name // Assign this feed to this schedule so no other feed schedule can take it on subsequent cycles
-              delegateFeed(rssName)
-              console.log(`RSS Info: Undelegated feed ${rssName} (${rssList[rssName].link}) has been delegated to custom schedule ${schedule.name}`)
+      const source = rssList[rssName]
+      if (configChecks.checkExists(rssName, source, false) && configChecks.validChannel(this.bot, guildRss.id, source) && !reachedFailCount(source.link)) {
+        if (storage.linkTracker[rssName] === this.schedule.name) { // If assigned to a this.schedule
+          this._delegateFeed(guildRss, rssName)
+        } else if (this.schedule.name !== 'default' && !storage.linkTracker[rssName]) { // If current feed this.schedule is a custom one and is not assigned
+          this.schedule.keywords.forEach(word => {
+            if (source.link.includes(word)) {
+              storage.linkTracker[rssName] = this.schedule.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
+              this._delegateFeed(guildRss, rssName)
+              console.log(`RSS Info: Undelegated feed ${rssName} (${source.link}) has been delegated to custom this.schedule ${this.schedule.name}`)
             }
-          }
-        } else if (!storage.linkTracker[rssName]) { // Has no schedule, was not previously assigned, so see if it can be assigned to default
+          })
+        } else if (!storage.linkTracker[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
           let reserved = false
-          for (var w in allScheduleWords) { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
-            if (rssList[rssName].link.includes(allScheduleWords[w])) reserved = true
-          }
+          allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
+            if (source.link.includes(item)) reserved = true
+          })
           if (!reserved) {
             storage.linkTracker[rssName] = 'default'
-            delegateFeed(rssName)
+            this._delegateFeed(guildRss, rssName)
           }
         }
       }
     }
   }
 
-  function genBatchLists () { // Each batch is a bunch of links. Too many links at once will cause request failures.
+  _genBatchLists () { // Each batch is a bunch of links. Too many links at once will cause request failures.
     let batch = new Map()
 
-    sourceList.forEach(function (rssList, link) { // rssList per link
+    this._sourceList.forEach((rssList, link) => { // rssList per link
       if (batch.size >= BATCH_SIZE) {
-        regBatchList.push(batch)
+        this._regBatchList.push(batch)
         batch = new Map()
       }
       batch.set(link, rssList)
     })
 
-    if (batch.size > 0) regBatchList.push(batch)
+    if (batch.size > 0) this._regBatchList.push(batch)
 
     batch = new Map()
 
-    modSourceList.forEach(function (source, link) { // One RSS source per link instead of an rssList
+    this._modSourceList.forEach((source, link) => { // One RSS source per link instead of an rssList
       if (batch.size >= BATCH_SIZE) {
-        modBatchList.push(batch)
+        this._modBatchList.push(batch)
         batch = new Map()
       }
       batch.set(link, source)
     })
 
-    if (batch.size > 0) modBatchList.push(batch)
+    if (batch.size > 0) this._modBatchList.push(batch)
   }
 
-  function connect () {
-    if (cycleInProgress) {
+  run () {
+    if (this.inProgress) {
       if (!config.advanced.processorMethod || config.advanced.processorMethod === 'single') {
-        console.log(`RSS Info: Previous ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
-        cycleInProgress = false
+        console.log(`RSS Info: Previous ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
+        this.inProgress = false
       } else {
-        console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Processors from previous cycle were not killed (${processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
-        for (var x in processorList) {
-          processorList[x].kill()
+        console.log(`${this.SHARD_ID}Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
+        for (var x in this._processorList) {
+          this._processorList[x].kill()
         }
-        processorList = []
+        this._processorList = []
       }
     }
     const currentGuilds = storage.currentGuilds
-    startTime = new Date()
-    cycleInProgress = true
-    regBatchList = []
-    modBatchList = []
-    cycleFailCount = 0
-    cycleTotalCount = 0
+    this._startTime = new Date()
+    this.inProgress = true
+    this._regBatchList = []
+    this._modBatchList = []
+    this._cycleFailCount = 0
+    this._cycleTotalCount = 0
 
-    modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
-    sourceList.clear()
-    currentGuilds.forEach(addToSourceLists)
-    genBatchLists()
+    this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
+    this._sourceList.clear()
+    currentGuilds.forEach(item => this._addToSourceLists(item))
+    this._genBatchLists()
 
-    if (sourceList.size + modSourceList.size === 0) {
-      cycleInProgress = false
-      return finishCycle(true)// console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. No feeds to retrieve.`)
+    if (this._sourceList.size + this._modSourceList.size === 0) {
+      this.inProgress = false
+      return this._finishCycle(true)
     }
 
     switch (config.advanced.processorMethod) {
       case 'single':
-        getBatch(0, regBatchList, 'regular')
+        this._getBatch(0, this._regBatchList, 'regular')
         break
       case 'isolated':
-        getBatchIsolated(0, regBatchList, 'regular')
+        this._getBatchIsolated(0, this._regBatchList, 'regular')
         break
       case 'parallel':
-        getBatchParallel()
+        this._getBatchParallel()
     }
   }
 
-  function getBatch (batchNumber, batchList, type) {
+  _getBatch (batchNumber, batchList, type) {
     const failedLinks = storage.failedLinks
-    if (batchList.length === 0) return getBatch(0, modBatchList, 'modded')
+    if (batchList.length === 0) return this._getBatch(0, this._modBatchList, 'modded')
     const currentBatch = batchList[batchNumber]
     let completedLinks = 0
 
-    currentBatch.forEach(function (rssList, link) {
+    currentBatch.forEach((rssList, link) => {
       var uniqueSettings
       for (var modRssName in rssList) {
-        if (rssList[modRssName].advanced && rssList[modRssName].advanced.size() > 0) {
+        if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
 
-      getArticles(link, rssList, uniqueSettings, function (err, linkCompletion) {
+      getArticles(link, rssList, uniqueSettings, (err, linkCompletion) => {
         if (err) logLinkErr({link: linkCompletion.link, content: err})
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) console.log(`DEBUG ${linkCompletion.article.rssName}: Emitted article event.`)
-          return cycle.emit('article', linkCompletion.article)
+          return this.cycle.emit('article', linkCompletion.article)
         }
         if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) {
-          ++cycleFailCount
-          addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+          ++this._cycleFailCount
+          this._addFailedFeed(linkCompletion.link, linkCompletion.rssList)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
+        ++this._cycleTotalCount
         if (++completedLinks === currentBatch.size) {
-          if (batchNumber !== batchList.length - 1) setTimeout(getBatch, 200, batchNumber + 1, batchList, type)
-          else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatch, 200, 0, modBatchList, 'modded')
-          else return finishCycle()
+          if (batchNumber !== batchList.length - 1) setTimeout(this._getBatch.bind(this), 200, batchNumber + 1, batchList, type)
+          else if (type === 'regular' && this._modBatchList.length > 0) setTimeout(this._getBatch.bind(this), 200, 0, this._modBatchList, 'modded')
+          else return this._finishCycle()
         }
       })
     })
   }
 
-  function getBatchIsolated (batchNumber, batchList, type) {
+  _getBatchIsolated (batchNumber, batchList, type) {
     const failedLinks = storage.failedLinks
-    if (batchList.length === 0) return getBatchIsolated(0, modBatchList, 'modded')
+    if (batchList.length === 0) return this._getBatchIsolated(0, this._modBatchList, 'modded')
     const currentBatch = batchList[batchNumber]
     let completedLinks = 0
 
-    processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
+    this._processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
 
-    const processorIndex = processorList.length - 1
-    const processor = processorList[processorIndex]
+    const processorIndex = this._processorList.length - 1
+    const processor = this._processorList[processorIndex]
 
-    currentBatch.forEach(function (rssList, link) {
+    currentBatch.forEach((rssList, link) => {
       let uniqueSettings
       for (var modRssName in rssList) {
-        if (rssList[modRssName].advanced && rssList[modRssName].advanced.size() > 0) {
+        if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
       processor.send({type: 'initial', link: link, rssList: rssList, uniqueSettings: uniqueSettings, debugFeeds: debugFeeds})
     })
 
-    processor.on('message', function (linkCompletion) {
-      if (linkCompletion.status === 'article') return cycle.emit('article', linkCompletion.article)
+    processor.on('message', linkCompletion => {
+      if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
       if (linkCompletion.status === 'failed') {
-        ++cycleFailCount
-        if (FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+        ++this._cycleFailCount
+        if (FAIL_LIMIT !== 0) this._addFailedFeed(linkCompletion.link, linkCompletion.rssList)
       } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
-      cycleTotalCount++
+      this._cycleTotalCount++
       if (++completedLinks === currentBatch.size) {
         processor.kill()
-        processorList.splice(processorIndex, 1)
-        if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type)
-        else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded')
-        else finishCycle()
+        this._processorList.splice(processorIndex, 1)
+        if (batchNumber !== batchList.length - 1) setTimeout(this._getBatchIsolated.bind(this), 200, batchNumber + 1, batchList, type)
+        else if (type === 'regular' && this._modBatchList.length > 0) setTimeout(this._getBatchIsolated.bind(this), 200, 0, this._modBatchList, 'modded')
+        else this._finishCycle()
       }
     })
   }
 
-  function getBatchParallel () {
+  _getBatchParallel () {
     const failedLinks = storage.failedLinks
-    const totalBatchLengths = regBatchList.length + modBatchList.length
+    const totalBatchLengths = this._regBatchList.length + this._modBatchList.length
     let completedBatches = 0
 
     function deployProcessor (batchList, index) {
       let completedLinks = 0
       const currentBatch = batchList[index]
-      processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
+      this._processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
 
-      const processorIndex = processorList.length - 1
-      const processor = processorList[processorIndex]
+      const processorIndex = this._processorList.length - 1
+      const processor = this._processorList[processorIndex]
 
-      processor.on('message', function (linkCompletion) {
-        if (linkCompletion.status === 'article') return cycle.emit('article', linkCompletion.article)
+      processor.on('message', linkCompletion => {
+        if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
         if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) {
-          ++cycleFailCount
-          addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+          ++this._cycleFailCount
+          this._addFailedFeed(linkCompletion.link, linkCompletion.rssList)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
+        ++this._cycleTotalCount
         if (++completedLinks === currentBatch.size) {
           completedBatches++
           processor.kill()
           if (completedBatches === totalBatchLengths) {
-            processorList = []
-            finishCycle()
+            this._processorList = []
+            this._finishCycle()
           }
         }
       })
 
-      currentBatch.forEach(function (rssList, link) {
+      currentBatch.forEach((rssList, link) => {
         var uniqueSettings
         for (var modRssName in rssList) {
-          if (rssList[modRssName].advanced && rssList[modRssName].advanced.size() > 0) {
+          if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
             uniqueSettings = rssList[modRssName].advanced
           }
         }
@@ -283,46 +289,38 @@ module.exports = function (bot, callback, schedule) {
       })
     }
 
-    for (var i in regBatchList) { deployProcessor(regBatchList, i) }
-    for (var y in modBatchList) { deployProcessor(modBatchList, y) }
+    for (var i = 0; i < this._regBatchList.length; ++i) { deployProcessor.bind(this)(this._regBatchList, i) }
+    for (var y = 0; y < this._modBatchList.length; ++y) { deployProcessor.bind(this)(this._modBatchList, y) }
   }
 
-  function finishCycle (noFeeds) {
+  _finishCycle (noFeeds) {
     const failedLinks = storage.failedLinks
-    if (bot.shard && bot.shard.count > 1) bot.shard.send({type: 'scheduleComplete', refreshTime: refreshTime})
-    if (noFeeds) return console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}. No feeds to retrieve.`)
+    if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({type: 'scheduleComplete', refreshTime: this.refreshTime})
+    if (noFeeds) return console.log(`${this.SHARD_ID}RSS Info: Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve.`)
 
-    if (processorList.length === 0) cycleInProgress = false
+    if (this._processorList.length === 0) this.inProgress = false
 
-    if (bot.shard) {
-      bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');`)
+    if (this.bot.shard) {
+      this.bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');`)
       .then(() => {
         try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
       })
-      .catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on cycle end for shard ${bot.shard.id}:`, err.message || err))
+      .catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on cycle end for shard ${this.bot.shard.id}:`, err.message || err))
     } else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
 
-    var timeTaken = ((new Date() - startTime) / 1000).toFixed(2)
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Finished ${schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${schedule.name !== 'default' ? ' (' + schedule.name + ')' : ''}${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s.`)
-    if (bot.shard && bot.shard.count > 1) bot.shard.send({type: 'scheduleComplete', refreshTime: refreshTime})
+    var timeTaken = ((new Date() - this._startTime) / 1000).toFixed(2)
+    console.log(`${this.SHARD_ID}RSS Info: Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s.`)
+    if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({type: 'scheduleComplete', refreshTime: this.refreshTime})
   }
 
-  if (!bot.shard || (bot.shard && bot.shard.count === 1)) timer = setInterval(connect, refreshTime * 60000) // Only create an interval for itself if there is no sharding
-
-  if (timer) console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}RSS Info: Schedule '${schedule.name}' has begun.`)
-
-  this.stop = function () {
-    clearInterval(timer)
-    if (timer) console.log(`RSS Info: Schedule '${schedule.name}' has stopped.`)
+  stop () {
+    clearInterval(this._timer)
+    if (this._timer) console.log(`RSS Info: Schedule '${this.schedule.name}' has stopped.`)
   }
 
-  this.start = function () {
-    if (!bot.shard || (bot.shard && bot.shard.count === 1)) timer = setInterval(connect, refreshTime * 60000)
+  start () {
+    if (!this.bot.shard || (this.bot.shard && this.bot.shard.count === 1)) this._timer = setInterval(this.run, this.refreshTime * 60000)
   }
-
-  this.run = connect
-  this.refreshTime = refreshTime
-
-  callback(this.cycle)
-  return this
 }
+
+module.exports = FeedSchedule

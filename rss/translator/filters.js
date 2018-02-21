@@ -3,6 +3,33 @@ function escapeRegExp (str) {
   return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
 }
 
+class _FilterResults {
+  constructor () {
+    this.matches = {}
+    this.invertedMatches = {}
+  }
+
+  add (type, matches, inverted) {
+    if (inverted) this.invertedMatches[type] = matches
+    else this.matches[type] = matches
+  }
+
+  listMatches (inverted) {
+    const matchList = inverted ? this.invertedMatches : this.matches
+    let str = ''
+    for (var type in matchList) {
+      let list = ''
+      const typeMatches = matchList[type]
+      for (var x in typeMatches) {
+        list += ` ${typeMatches[x]}`
+        if (parseInt(x, 10) !== typeMatches.length - 1) list += ' |'
+      }
+      str += `\n${type}:${list}`
+    }
+    return str
+  }
+}
+
 function findFilterWords (filterType, content, isTestMessage) {
   // filterType is array of title, description, summary, or author
   if (isTestMessage) {
@@ -82,52 +109,27 @@ function findFilterWords (filterType, content, isTestMessage) {
   } else return {resultsList: results}
 }
 
-function FilterResults () {
-  this.matches = {}
-  this.invertedMatches = {}
-
-  this.add = function (type, matches, inverted) {
-    if (inverted) this.invertedMatches[type] = matches
-    else this.matches[type] = matches
-  }
-
-  this.listMatches = function (inverted) {
-    const matchList = inverted ? this.invertedMatches : this.matches
-    let str = ''
-    for (var type in matchList) {
-      let list = ''
-      const typeMatches = matchList[type]
-      for (var x in typeMatches) {
-        list += ` ${typeMatches[x]}`
-        if (parseInt(x, 10) !== typeMatches.length - 1) list += ' |'
-      }
-      str += `\n${type}:${list}`
-    }
-    return str
-  }
-}
-
-module.exports = function (rssList, rssName, article, isTestMessage) {
-  let filterTypes = {
+module.exports = (source, article, isTestMessage) => {
+  const filterTypes = {
     'Title': {
-      user: rssList[rssName].filters.Title,
+      user: source.filters.Title,
       ref: article.title
     },
     'Description': {
-      user: rssList[rssName].filters.Description,
+      user: source.filters.Description,
       ref: article.rawDescrip
     },
     'Summary': {
-      user: rssList[rssName].filters.Summary,
+      user: source.filters.Summary,
       ref: article.rawSummary
     },
     'Author': {
-      user: rssList[rssName].filters.Author,
+      user: source.filters.Author,
       ref: article.author
     },
     'Tags': {
-      user: rssList[rssName].filters.Tag,
-      ref: article.tags.split('\n')
+      user: source.filters.Tag,
+      ref: article.tags ? article.tags.split('\n') : []
     }
   }
 
@@ -139,10 +141,11 @@ module.exports = function (rssList, rssName, article, isTestMessage) {
   let invertedFiltersExists = false
   let userDefinedFiltersExists = false
 
-  const filterResults = new FilterResults()
+  const filterResults = new _FilterResults()
   for (var type in filterTypes) {
-    if (filterTypes[type].user && filterTypes[type].user.length > 0) userDefinedFiltersExists = true
-    const allResults = findFilterWords(filterTypes[type].user, filterTypes[type].ref, isTestMessage)
+    const item = filterTypes[type]
+    if (item.user && item.user.length > 0) userDefinedFiltersExists = true
+    const allResults = findFilterWords(item.user, item.ref, isTestMessage)
     // Get match words for test messages
     if (isTestMessage && allResults.matches) filterResults.add(type, allResults.matches, false)
     if (isTestMessage && allResults.invertedMatches) filterResults.add(type, allResults.invertedMatches, true)

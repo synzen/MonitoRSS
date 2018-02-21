@@ -2,38 +2,33 @@ const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const initAllSources = require('./logic/initialization.js')
 
-module.exports = function (link, rssList, uniqueSettings, callback) {
+module.exports = (link, rssList, uniqueSettings, callback) => {
   const feedparser = new FeedParser()
   const articleList = []
 
   var cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
 
-  requestStream(link, cookies, feedparser, function (err) {
-    if (!err) return
-    console.log(`INIT Error: Skipping ${link}. (${err})`)
-    return callback({status: 'failed', link: link, rssList: rssList})
+  requestStream(link, cookies, feedparser, err => {
+    if (err) return callback(err, {status: 'failed', link: link, rssList: rssList})
   })
 
-  feedparser.on('error', function (err) {
+  feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
-    console.log(`INIT Error: Skipping ${link}\n`, err)
-    return callback({status: 'failed', link: link, rssList: rssList})
+    return callback(err, {status: 'failed', link: link, rssList: rssList})
   })
 
   feedparser.on('readable', function () {
     let item
 
-    while (item = this.read()) {
-      articleList.push(item)
-    }
+    while (item = this.read()) articleList.push(item)
   })
 
-  feedparser.on('end', function () {
-    if (articleList.length === 0) return callback({status: 'success', link: link})
+  feedparser.on('end', () => {
+    if (articleList.length === 0) return callback(null, {status: 'success', link: link})
 
-    initAllSources(rssList, articleList, link, function (err, results) {
+    initAllSources(rssList, articleList, link, (err, results) => {
       if (err) throw err
-      if (results) callback(results)
+      if (results) callback(null, results)
     })
   })
 }

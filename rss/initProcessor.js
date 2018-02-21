@@ -19,7 +19,7 @@ function init (link, rssList, uniqueSettings) {
   var cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
   let requested = false
 
-  setTimeout(function () {
+  setTimeout(() => {
     if (!requested) {
       try {
         process.send({status: 'failed', link: link, rssList: rssList})
@@ -28,42 +28,40 @@ function init (link, rssList, uniqueSettings) {
     }
   }, 180000)
 
-  requestStream(link, cookies, feedparser, function (err) {
+  requestStream(link, cookies, feedparser, err => {
     requested = true
     if (err) {
-      console.log(`INIT Error: Skipping ${link}`, err.message || err)
+      console.log(`INIT Error: Skipping ${link}:`, err.message || err)
       return process.send({status: 'failed', link: link, rssList: rssList})
     }
   })
 
-  feedparser.on('error', function (err) {
+  feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
-    console.log(`INIT Error: Skipping ${link}`, err.message || err)
+    console.log(`INIT Error: Skipping ${link}:`, err.message || err)
     return process.send({status: 'failed', link: link, rssList: rssList})
   })
 
   feedparser.on('readable', function () {
     let item
 
-    while (item = this.read()) {
-      articleList.push(item)
-    }
+    while (item = this.read()) articleList.push(item)
   })
 
-  feedparser.on('end', function () {
+  feedparser.on('end', () => {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
 
-    initAllSources(rssList, articleList, link, function (err, results) {
+    initAllSources(rssList, articleList, link, (err, results) => {
       if (err) throw err
       if (results) process.send(results)
     })
   })
 }
 
-process.on('message', function (m) {
+process.on('message', m => {
   if (!connected) {
     connected = true
-    connectDb(function (err) {
+    connectDb(err => {
       if (err) throw new Error(`Could not connect to database for initialization\n`, err)
       init(m.link, m.rssList, m.uniqueSettings)
     })

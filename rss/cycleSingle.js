@@ -3,17 +3,17 @@ const requestStream = require('./request.js')
 const debugFeeds = require('../util/debugFeeds').list
 const processAllSources = require('./logic/cycle.js')
 
-module.exports = function (link, rssList, uniqueSettings, callback) {
+module.exports = (link, rssList, uniqueSettings, callback) => {
   const feedparser = new FeedParser()
   const articleList = []
 
   const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
 
-  requestStream(link, cookies, feedparser, function (err) {
+  requestStream(link, cookies, feedparser, err => {
     if (err) callback(err, {status: 'failed', link: link, rssList: rssList})
   })
 
-  feedparser.on('error', function (err) {
+  feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
     callback(err, {status: 'failed', link: link, rssList: rssList})
   })
@@ -26,10 +26,10 @@ module.exports = function (link, rssList, uniqueSettings, callback) {
     }
   })
 
-  feedparser.on('end', function () {
+  feedparser.on('end', () => {
     if (articleList.length === 0) return callback(null, {status: 'success', link: link})
 
-    processAllSources(rssList, articleList, debugFeeds, link, function (err, results) {
+    processAllSources(rssList, articleList, debugFeeds, link, (err, results) => {
       if (err) console.log(err)
       if (results) callback(null, results)
     })

@@ -22,47 +22,35 @@ let bot
 
 // Function to handle login/relogin automatically
 let loginAttempts = 0
-let maxAttempts = 5
+const maxAttempts = 5
 
 bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
+const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
 
 function login (firstStartup) {
   if (!firstStartup) bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
 
   bot.login(config.botSettings.token)
   .catch(err => {
-    if (loginAttempts++ >= maxAttempts) throw new Error(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS failed to login after ${maxAttempts} attempts.`)
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS failed to login (${err}), retrying in ${restartTimeDisp} minutes...`)
+    if (loginAttempts++ >= maxAttempts) {
+      console.log(`${SHARD_ID}Discord.RSS failed to login after ${maxAttempts} attempts. Terminating.`)
+      if (bot.shard) bot.shard.send('kill')
+    }
+    console.log(`${SHARD_ID}Discord.RSS failed to login (${err}) on attempt #${loginAttempts}, retrying in ${restartTimeDisp} minutes...`)
     setTimeout(login, restartTime)
   })
 
   bot.once('ready', function () {
     loginAttempts = 0
     bot.user.setPresence({ game: { name: (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null, type: 0 } })
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}.`)
+    console.log(`${SHARD_ID}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}.`)
     if (firstStartup) {
       if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)
       connectDb((err) => {
         if (err) throw err
         initialize(bot, finishInit)
-        bot.guilds.forEach(guild => {
-          if (!guild.me) console.log(123)
-        })
       })
     } else scheduleManager = new ScheduleManager(bot)
-  })
-
-  bot.once('disconnect', function (e) {
-    if (loginAttempts++ >= maxAttempts) throw new Error(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Discord.RSS failed to login after ${maxAttempts} attempts.`)
-
-    console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Error: Disconnected from Discord. Attempting to reconnect after ${restartTimeDisp} minutes.`)
-
-    var timer = setInterval(function () {
-      if (scheduleManager && scheduleManager.cyclesInProgress()) return console.log('Feed retrieval cycles are currently in progress. Waiting until cycles end to reconnect.')
-      if (scheduleManager) scheduleManager.stopSchedules()
-      clearInterval(timer)
-      login()
-    }, restartTime)
   })
 }
 
@@ -70,11 +58,6 @@ function finishInit (guildsInfo) {
   storage.initializing = false
   if (bot.shard) process.send({type: 'initComplete', guilds: guildsInfo})
   scheduleManager = new ScheduleManager(bot)
-  if (!bot.shard) {
-    try {
-      require('./web/app.js')(bot)
-    } catch (e) {}
-  }
   listeners.createManagers(bot)
 }
 
@@ -87,7 +70,8 @@ else {
       scheduleManager.run(message.refreshTime)
     } else if (message.type === 'updateGuild' && bot.shard) {
       const guildRss = message.guildRss
-      if (!bot.guilds.get(guildRss.id)) return
+      const guild = bot.guilds.get(guildRss.id)
+      if (!guild) return
       if (guildRss === undefined) currentGuilds.delete(guildRss.id)
       else currentGuilds.set(guildRss.id, guildRss)
     } else if (message.type === 'dbRestoreSend') {
@@ -100,7 +84,11 @@ else {
   })
 }
 
-process.on('uncaughtException', function (err) {
-  console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Fatal Error!\n`, err)
-  if (bot.shard) bot.shard.send('kill')
+process.on('uncaughtException', err => {
+  console.log(`${SHARD_ID}Fatal Error\n`, err)
+  if (bot.shard) {
+    bot.shard.broadcastEval('process.exit()')
+    bot.shard.send('kill')
+  }
+  process.exit()
 })

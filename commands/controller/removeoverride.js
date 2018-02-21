@@ -1,7 +1,7 @@
 const fs = require('fs')
 const storage = require('../../util/storage.js')
 const config = require('../../config.json')
-const removeRss = require('../../util/removeRss.js')
+const removeRss = require('../../util/removeFeed.js')
 
 exports.normal = function (bot, message) {
   const defLimit = config.feedSettings.maxFeeds

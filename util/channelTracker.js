@@ -5,17 +5,14 @@
 
 const activeCollectors = {}
 
-exports.add = function (channelID) {
+exports.add = channelID => {
   if (!activeCollectors[channelID]) activeCollectors[channelID] = 0
   activeCollectors[channelID]++
 }
 
-exports.remove = function (channelID) {
+exports.remove = channelID => {
   activeCollectors[channelID]--
   if (activeCollectors[channelID] <= 0) delete activeCollectors[channelID]
 }
 
-exports.hasActiveMenus = function (channelID) {
-  if (!activeCollectors[channelID]) return false
-  else return true
-}
+exports.hasActiveMenus = channelID => !!activeCollectors[channelID]

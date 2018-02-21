@@ -16,7 +16,7 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
   const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
   let requested = false
 
-  setTimeout(function () {
+  setTimeout(() => {
     if (!requested) {
       try {
         process.send({status: 'failed', link: link, rssList: rssList})
@@ -25,14 +25,14 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
     }
   }, 90000)
 
-  requestStream(link, cookies, feedparser, function (err) {
+  requestStream(link, cookies, feedparser, err => {
     requested = true
     if (!err) return
     logLinkErr({link: link, content: err})
     process.send({status: 'failed', link: link, rssList: rssList})
   })
 
-  feedparser.on('error', function (err) {
+  feedparser.on('error', err => {
     logLinkErr({link: link, content: err})
     process.send({status: 'failed', link: link, rssList: rssList})
     feedparser.removeAllListeners('end')
@@ -46,20 +46,20 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
     }
   })
 
-  feedparser.on('end', function () {
+  feedparser.on('end', () => {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
 
-    processAllSources(rssList, articleList, debugFeeds, link, function (err, results) {
+    processAllSources(rssList, articleList, debugFeeds, link, (err, results) => {
       if (err) console.log(err)
       if (results) process.send(results)
     })
   })
 }
 
-process.on('message', function (m) {
+process.on('message', m => {
   if (!connected) {
     connected = true
-    connectDb(function (err) {
+    connectDb(err => {
       if (err) throw new Error(`Could not connect to SQL database for cycle.\n`, err)
       getFeed(m.link, m.rssList, m.uniqueSettings, m.debugFeeds)
     })

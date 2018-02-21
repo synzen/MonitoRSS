@@ -1,7 +1,7 @@
 const needle = require('needle')
 const cloudscraper = require('cloudscraper') // For cloudflare
 
-module.exports = function (link, cookies, feedparser, callback) {
+module.exports = (link, cookies, feedparser, callback) => {
   const options = {
     timeout: 27000,
     read_timeout: 24000,
@@ -17,13 +17,13 @@ module.exports = function (link, cookies, feedparser, callback) {
   ;(function connectToLink () {
     const request = needle.get(link, options)
 
-    request.on('header', function (statusCode, headers) {
+    request.on('header', (statusCode, headers) => {
       if (statusCode === 200) {
         callback(null)
         if (feedparser) request.pipe(feedparser)
       } else if (headers.server && headers.server.includes('cloudflare')) {
-        cloudscraper.get(link, function (err, res, body) { // For cloudflare
-          if (err || res.statusCode !== 200) return callback(err || new Error(`Bad status code (${res.statusCode})` + `${cookies ? ' (Cookies found)' : ''}`))
+        cloudscraper.get(link, (err, res, body) => { // For cloudflare
+          if (err || res.statusCode !== 200) return callback(err || new Error(`Bad status code (${res.statusCode})` + `${cookies ? ' (cookies detected)' : ''}`))
           callback(null)
           if (!feedparser) return
           let Readable = require('stream').Readable
@@ -35,8 +35,6 @@ module.exports = function (link, cookies, feedparser, callback) {
       } else request.emit('err', new Error(`Bad status code (${statusCode})`))
     })
 
-    request.on('err', function (err) {
-      callback(err + `${cookies ? ' (Cookies found)' : ''}`)
-    })
+    request.on('err', err => callback(new Error(err.message || err + `${cookies ? ' (cookies detected)' : ''}`)))
   })()
 }

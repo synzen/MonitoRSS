@@ -20,9 +20,7 @@ function setCurrentTime (momentObj) {
 // To avoid stack call exceeded
 function checkObjType (item, results) {
   if (Object.prototype.toString.call(item) === '[object Object]') {
-    return function () {
-      return findImages(item, results)
-    }
+    return () => findImages(item, results)
   } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(item) && results.length < 9) {
     if (item.startsWith('//')) item = 'http:' + item
     results.push(item)
@@ -118,7 +116,7 @@ function cleanup (source, text, imgSrcs) {
     ignoreHref: true,
     noLinkBrackets: true,
     format: {
-      image: function (node, options) {
+      image: (node, options) => {
         const isStr = typeof node.attribs.src === 'string'
         let link = isStr ? node.attribs.src.trim() : node.attribs.src
         if (isStr && link.startsWith('//')) link = 'http:' + link
@@ -141,7 +139,7 @@ function cleanup (source, text, imgSrcs) {
 
         return image
       },
-      heading: function (node, fn, options) {
+      heading: (node, fn, options) => {
         let h = fn(node.children, options)
         return h
       }
@@ -154,8 +152,7 @@ function cleanup (source, text, imgSrcs) {
 
 module.exports = class Article {
   constructor (rawArticle, guildRss, rssName) {
-    const rssList = guildRss.sources
-    const source = rssList[rssName]
+    const source = guildRss.sources[rssName]
 
     this.rawDescrip = rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#'] ? cleanup(source, rawArticle['media:group']['media:description']['#']) : cleanup(source, rawArticle.description) // Account for youtube's description
     this.rawSummary = cleanup(source, rawArticle.summary)

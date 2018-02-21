@@ -1,7 +1,9 @@
-// Used to generate a list of roles that are both lower than the bot's role, and subscribed to feeds
-// Returns the feed source and the role list
+/*
+* Used to generate a list of roles that are both lower than the bot's role, and subscribed to feeds
+* Returns the feed source and the role list
+*/
 
-module.exports = function (bot, guild, rssList) {
+module.exports = (bot, guild, rssList) => {
   let finalList = []
   const botRole = guild.members.get(bot.user.id).highestRole
   for (var rssName in rssList) {

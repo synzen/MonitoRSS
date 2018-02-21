@@ -1,21 +1,21 @@
 const filterFeed = require('./filters.js')
 
-module.exports = function (rssList, rssName, article) {
+module.exports = (source, article) => {
   let mentions = ''
 
   // Get global subscriptions
-  if (rssList[rssName].roleSubscriptions) {
-    const globalSubList = rssList[rssName].roleSubscriptions
+  if (source.roleSubscriptions) {
+    const globalSubList = source.roleSubscriptions
     for (let role in globalSubList) {
       mentions += `<@&${globalSubList[role].roleID}> `
     }
   }
 
   // Get filtered subscriptions
-  if (rssList[rssName].filters && rssList[rssName].filters.roleSubscriptions) {
-    const subscribedRoles = rssList[rssName].filters.roleSubscriptions
+  if (source.filters && source.filters.roleSubscriptions) {
+    const subscribedRoles = source.filters.roleSubscriptions
     for (let role in subscribedRoles) {
-      if (filterFeed(subscribedRoles, role, article)) mentions += `<@&${role}> `
+      if (filterFeed(subscribedRoles[role], article)) mentions += `<@&${role}> `
     }
   }
 

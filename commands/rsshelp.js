@@ -7,5 +7,5 @@ module.exports = function (bot, message, command) {
     if (commands[cmd].description) msg += `\`${config.botSettings.prefix}${cmd}\` - ${commands[cmd].description}\n`
   }
   message.channel.send(msg + '\nSupport can be found at https://discord.gg/WPWRyxK')
-  .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send help menu. (${err})`))
+  .catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send help menu:`, err.message || err))
 }

@@ -1,5 +1,5 @@
 const channelTracker = require('../util/channelTracker.js')
-const removeRss = require('../util/removeRss.js')
+const removeRss = require('../util/removeFeed.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 
 module.exports = function (channel) {

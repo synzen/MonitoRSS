@@ -28,7 +28,7 @@ const validPerms = [
   'MANAGE_EMOJIS'
 ]
 
-exports.bot = function (bot, message, permission) {
+exports.bot = (bot, message, permission) => {
   if (!permission || !validPerms.includes(permission)) return true
   const channel = message.channel
   const guild = bot.guilds.get(channel.guild.id)
@@ -43,7 +43,7 @@ exports.bot = function (bot, message, permission) {
   return hasPerm
 }
 
-exports.user = function (message, permission) {
+exports.user = (message, permission) => {
   if (!permission || !validPerms.includes(permission)) return true
 
   const serverPerm = message.member.hasPermission(permission)

@@ -5,7 +5,7 @@ const deletedFeeds = storage.deletedFeeds
 const currentGuilds = storage.currentGuilds
 const debugFeeds = require('../util/debugFeeds').list
 
-module.exports = function (bot, article, callback, isTestMessage) {
+module.exports = (bot, article, callback, isTestMessage) => {
   let channel = bot.channels.get(article.discordChannelId)
   const rssName = article.rssName
   const guildRss = currentGuilds.get(channel.guild.id)
@@ -15,7 +15,7 @@ module.exports = function (bot, article, callback, isTestMessage) {
 
   if (typeof rssList[rssName].webhook === 'object') {
     if (!channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) return body()
-    channel.fetchWebhooks().then(function (hooks) {
+    channel.fetchWebhooks().then(hooks => {
       const hook = hooks.get(rssList[rssName].webhook.id)
       if (!hook) return body()
       const guildId = channel.guild.id

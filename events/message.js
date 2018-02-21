@@ -5,17 +5,16 @@ const hasPerm = require('../util/hasPerm.js')
 const commandList = require('../util/commandList.json')
 const channelTracker = require('../util/channelTracker.js')
 const storage = require('../util/storage.js')
-const blacklistGuilds = require('../util/storage.js').blacklistGuilds
+const blacklistGuilds = storage.blacklistGuilds
 
 function isBotController (command, author) {
-  let controllerList = config.botSettings.controllerIds
-  if (!controllerList || (typeof controllerList === 'object' && controllerList.length === 0)) return false
-  else if (typeof controllerList !== 'object' || (typeof controllerList === 'object' && controllerList.length === undefined)) {
-    console.log(`Could not execute command "${command} due to incorrectly defined bot controller."`)
+  const controllerList = config.botSettings.controllerIds
+  if (!controllerList || (Array.isArray(controllerList) && controllerList.length === 0)) return false
+  else if (typeof controllerList !== 'object' || (typeof controllerList === 'object' && !Array.isArray(controllerList))) {
+    console.log(`Commands Warning: Could not execute command "${command} due to incorrectly defined bot controller."`)
     return false
   }
-  for (var x in controllerList) if (controllerList[x] === author) return true
-  return false
+  return controllerList.includes(author)
 }
 
 function logCommand (message) {
@@ -33,7 +32,7 @@ module.exports = function (bot, message) {
 
   if (channelTracker.hasActiveMenus(message.channel.id)) return
 
-  // for regular commands
+  // Regular commands
   for (var cmd in commandList) {
     if (cmd === command && hasPerm.bot(bot, message, commandList[cmd].botPerm) && hasPerm.user(message, commandList[cmd].userPerm)) {
       logCommand(message)
@@ -41,6 +40,6 @@ module.exports = function (bot, message) {
     }
   }
 
-  // for bot controller commands
+  // Bot controller commands
   if (controllerCmds[command] && isBotController(command, message.author.id)) return controllerCmds[command][bot.shard ? 'sharded' : 'normal'](bot, message)
 }

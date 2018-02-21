@@ -1,10 +1,9 @@
-const channelTracker = require('../util/channelTracker.js')
 const config = require('../config.json')
 const moment = require('moment-timezone')
 const storage = require('../util/storage.js')
+const currentGuilds = storage.currentGuilds
 const fileOps = require('../util/fileOps.js')
-const Discord = require('discord.js')
-const MsgHandler = require('../util/MsgHandler.js')
+const MenuUtils = require('./util/MenuUtils.js')
 
 // To avoid stack call exceeded
 function checkObjType (item, results) {
@@ -25,8 +24,56 @@ function findDatePlaceholders (obj, results) {
   }
 }
 
+function selectOption (m, data, callback) {
+  const input = m.content
+  const num = parseInt(input, 10)
+
+  if (isNaN(num) || num <= 0 || num > 4) return callback(new SyntaxError(`That is not a valid option. Try again, or type \`exit\` to cancel.`))
+
+  if (num === 4) return callback(null, { num: num }, true)
+
+  // Message collector for options 1, 2 and 3
+  let desc = ''
+  let locales = []
+  let localesList = ''
+  if (num === 3) {
+    locales = moment.locales()
+    localesList = locales.join(', ')
+    desc = `Type the abbreviation for a new language now, \`reset\` to reset back to default, or \`exit\` to cancel. The available list of languages supported at this time are (separated by commas):\n\n${localesList}`
+  } else if (num === 2) desc = `Type your new date format now, \`reset\` to reset back to default, or \`exit\` to cancel. See <https://momentjs.com/docs/#/displaying/> on how to format a date.`
+  else if (num === 1) desc = `Type your new timezone now, \`reset\` to reset back to default, or \`exit\` to cancel. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`
+
+  callback(null, { ...data,
+    num: num,
+    locales: locales,
+    localesList: localesList,
+    next: {
+      text: desc,
+      embed: null
+    }})
+}
+
+function setOption (m, data, callback) {
+  const { num, locales, localesList } = data
+  const input = m.content
+  const inputLow = input.toLowerCase()
+
+  const settingName = num === 3 ? 'Date language' : num === 2 ? 'Date format' : 'Timezone'
+
+  if (inputLow === 'reset') return callback(null, { ...data, settingName: settingName, setting: input })
+
+  if (num === 3) {
+    if (!locales.includes(input)) return callback(new SyntaxError(`\`${input}\` is not a supported language abbreviation. The available languages are:\n\n${localesList}\n\nTry again, or type \`exit\` to cancel.`))
+    return callback(null, { ...data, settingName: settingName, setting: input })
+  } else if (num === 2) {
+    return callback(null, { ...data, settingName: settingName, setting: input })
+  } else if (num === 1) {
+    if (!moment.tz.zone(input)) return callback(new SyntaxError(`\`${input}\` is not a valid timezone. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for more information. Valid timezones are in the \`TZ\` column. Try again, or type \`exit\` to cancel.`))
+    return callback(null, { ...data, settingName: settingName, setting: input })
+  }
+}
+
 module.exports = (bot, message) => {
-  const currentGuilds = storage.currentGuilds
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => console.log(`Commands Warning: rssdate 1:`, err))
 
@@ -34,109 +81,48 @@ module.exports = (bot, message) => {
   findDatePlaceholders(guildRss.sources, results)
   if (results.length === 0) return message.channel.send('You cannot customize the date placeholder if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Commands Warning: rssdate 2:`, err))
 
-  const menu = new Discord.RichEmbed()
-    .setColor(config.botSettings.menuColor)
-    .setAuthor('Date Customizations')
+  const select = new MenuUtils.Menu(message, selectOption).setAuthor('Date Customizations')
     .setDescription('\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
-    .addField('1) Change Timezone', `Default is \`${config.feedSettings.timezone}\`.${guildRss.timezone ? ' Your current setting is `' + guildRss.timezone + '`.' : ''}`)
-    .addField('2) Customize Format', `Default is \`${config.feedSettings.dateFormat}\`. Customize the formatting of the date.${guildRss.dateFormat ? ' Your current setting is `' + guildRss.dateFormat + '`.' : ''}`)
-    .addField('3) Change Language', `Default is \`${config.feedSettings.dateLanguage}\`. Change the language of the date.${guildRss.dateLanguage ? ' Your current setting is `' + guildRss.dateLanguage + '`.' : ''}`)
-    .addField('4) Reset', `Reset all of the above back to default.`)
+    .addOption('Change Timezone', `Default is \`${config.feedSettings.timezone}\`.${guildRss.timezone ? ' Your current setting is `' + guildRss.timezone + '`.' : ''}`)
+    .addOption('Customize Format', `Default is \`${config.feedSettings.dateFormat}\`. Customize the formatting of the date.${guildRss.dateFormat ? ' Your current setting is `' + guildRss.dateFormat + '`.' : ''}`)
+    .addOption('Change Language', `Default is \`${config.feedSettings.dateLanguage}\`. Change the language of the date.${guildRss.dateLanguage ? ' Your current setting is `' + guildRss.dateLanguage + '`.' : ''}`)
+    .addOption('Reset', `Reset all of the above back to default.`)
 
-  const firstMsgHandler = new MsgHandler(bot, message)
+  const set = new MenuUtils.Menu(message, setOption)
 
-  message.channel.send({embed: menu})
-  .then(msgPrompt => {
-    firstMsgHandler.add(msgPrompt)
-    const filter = m => m.author.id === message.author.id
-    const collector = message.channel.createMessageCollector(filter, {time: 240000})
-    channelTracker.add(message.channel.id)
-
-    collector.on('collect', m => {
-      firstMsgHandler.add(m)
-      const resp = m.content
-      if (resp.toLowerCase() === 'exit') return collector.stop(`Date Customizations menu closed.`)
-      const num = parseInt(resp, 10)
-
-      if (isNaN(num) || num <= 0 || num > 4) return message.channel.send(`That is not a valid option. Please try again, or type exit to cancel.`).then(m => firstMsgHandler.add(m))
-      collector.stop()
+  new MenuUtils.MenuSeries(message, [select, set], { guildRss: guildRss }).start(async (err, data) => {
+    try {
+      if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
+      const { num, settingName, setting } = data
 
       if (num === 4) {
         guildRss.timezone = undefined
         guildRss.dateFormat = undefined
         guildRss.dateLanguage = undefined
-        message.channel.send(`All date customizations have been reset back to default.`).catch(err => console.log(`Commands Warning: rssdate 3:`, err))
         console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => All reset to default`)
-        return fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(message.guild.id, guildRss)
+        return await message.channel.send(`All date customizations have been reset back to default.`)
       }
 
-      // Message collector for options 1, 2 and 3
-      let desc = ''
-      let locales = []
-      let localesList = ''
-      if (num === 3) {
-        locales = moment.locales()
-        localesList = locales.join(', ')
-        desc = `Type the abbreviation for a new language now, **reset** to reset back to default, or **exit** to cancel. The available list of languages supported at this time are (separated by commas):\n\n${localesList}`
-      } else if (num === 2) desc = `Type your new date format now, **reset** to reset back to default, or **exit** to cancel. See <https://momentjs.com/docs/#/displaying/> on how to format a date.`
-      else if (num === 1) desc = `Type your new timezone now, **reset** to reset back to default, or **exit** to cancel. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.`
-      message.channel.send(desc)
-      .then(descrip => {
-        firstMsgHandler.add(descrip)
-        const filter = m => m.author.id === message.author.id
-        const collectorTwo = message.channel.createMessageCollector(filter, {time: 240000})
-        channelTracker.add(message.channel.id)
+      if (setting.toLowerCase() === 'reset') {
+        if (num === 3) guildRss.dateLanguage = undefined
+        else if (num === 2) guildRss.dateFormat = undefined
+        else guildRss.timezone = undefined
 
-        collectorTwo.on('collect', m2 => {
-          firstMsgHandler.add(m2)
-          const secondResp = m2.content
-          const secondRespLow = secondResp.toLowerCase()
-          if (secondRespLow === 'exit') return collectorTwo.stop(`Date Customizations menu closed.`)
+        await message.channel.send(`${settingName} has been reset to the default: \`${config.feedSettings[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone']}\`.`)
+        console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} reset to default`)
+        fileOps.updateFile(message.guild.id, guildRss)
+      } else {
+        if (num === 3) guildRss.dateLanguage = setting.toLowerCase() === config.feedSettings.dateLanguage.toLowerCase() ? undefined : setting
+        else if (num === 2) guildRss.dateFormat = setting.toLowerCase() === config.feedSettings.dateFormat ? undefined : setting
+        else if (num === 1) guildRss.timezone = setting.toLowerCase() === config.feedSettings.timezone.toLowerCase() ? undefined : setting
 
-          const settingName = num === 3 ? 'Date language' : num === 2 ? 'Date format' : 'Timezone'
-
-          if (secondRespLow === 'reset') {
-            collectorTwo.stop()
-            if (num === 3) guildRss.dateLanguage = undefined
-            else if (num === 2) guildRss.dateFormat = undefined
-            else guildRss.timezone = undefined
-
-            message.channel.send(`${settingName} has been reset to the default: \`${config.feedSettings[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone']}\`.`).catch(err => console.log(`Commands Warning: rssdate 5:`, err))
-            console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} reset to default`)
-            return fileOps.updateFile(message.guild.id, guildRss)
-          }
-
-          if (num === 3) {
-            if (!locales.includes(secondResp)) return message.channel.send(`\`${secondResp}\` is not a supported language abbreviation. The available languages are:\n\n${localesList}\n\nTry again, or type exit to cancel.`).catch(err => console.log(`Commands Warning: rssdate 5b1:`, err))
-            guildRss.dateLanguage = secondRespLow === config.feedSettings.dateLanguage.toLowerCase() ? undefined : secondResp
-          } else if (num === 2) guildRss.dateFormat = secondResp === config.feedSettings.dateFormat ? undefined : secondResp
-          else if (num === 1) {
-            if (!moment.tz.zone(secondResp)) return message.channel.send(`\`${secondResp}\` is not a valid timezone. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for more information. Valid timezones are in the \`TZ\` column. Try again, or type exit to cancel.`).catch(err => console.log(`Commands Warning: rssdate 5b2:`, err))
-            guildRss.timezone = secondRespLow === config.feedSettings.timezone.toLowerCase() ? undefined : secondResp
-          }
-
-          collectorTwo.stop()
-          message.channel.send(`${settingName} has been successfully updated to \`${secondResp}\`.`).catch(err => console.log(`Commands Warning: rssdate 6:`, err))
-          console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} updated to '${secondResp}.'`)
-          fileOps.updateFile(message.guild.id, guildRss)
-        })
-
-        collectorTwo.on('end', (collected, reason) => {
-          channelTracker.remove(message.channel.id)
-          if (reason === 'user') return // Do not execute msgHandler.deleteAll if is user, since this means menu series proceeded to the next step and has not ended
-          if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Commands Warning: Unable to send expired menu message (${err})`))
-          else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000))
-          firstMsgHandler.deleteAll(message.channel)
-        })
-      }).catch(err => console.log(`Commands Warning: rssdate 4:`, err))
-    })
-
-    collector.on('end', (collected, reason) => {
-      channelTracker.remove(message.channel.id)
-      if (reason === 'user') return // Do not execute msgHandler.deleteAll if is user, since this means menu series proceeded to the next step and has not ended
-      if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Commands Warning: Unable to send expired menu message (${err})`))
-      else if (reason !== 'user') message.channel.send(reason).then(m => m.delete(6000))
-      firstMsgHandler.deleteAll(message.channel)
-    })
-  }).catch(err => console.log(`Commands Warning: Could not send RSS Date menu:`, err))
+        console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} updated to '${setting}.'`)
+        fileOps.updateFile(message.guild.id, guildRss)
+        await message.channel.send(`${settingName} has been successfully updated to \`${setting}\`.`)
+      }
+    } catch (err) {
+      console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rssdate:`, err.message || err)
+    }
+  })
 }

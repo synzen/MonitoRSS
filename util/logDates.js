@@ -1,5 +1,5 @@
 // http://stackoverflow.com/questions/18814221/adding-timestamps-to-all-console-messages
-module.exports = function () {
+module.exports = () => {
   let log = console.log
 
   console.log = function () {

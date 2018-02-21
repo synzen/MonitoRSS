@@ -2,7 +2,8 @@
     Used to store data for various aperations across multiple files
 */
 const dbSettings = require('../config.json').database
-const maxDays = dbSettings.clean === true && dbSettings.maxDays > 0 ? dbSettings.maxDays : -1
+const articlesExpire = dbSettings.clean === true && dbSettings.articlesExpire > 0 ? dbSettings.articlesExpire : -1
+const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 ? dbSettings.articlesExpire : -1
 const fs = require('fs')
 const mongoose = require('mongoose')
 const currentGuilds = new Map()
@@ -69,7 +70,26 @@ const guildRssSchema = {
   dateLanguage: String,
   timezone: String
 }
-if (maxDays > 0) articleSchema.date.index = { expires: 60 * 60 * 24 * maxDays }
+
+const guildRssBackupSchema = {
+  id: String,
+  name: String,
+  sources: Object,
+  checkTitles: Boolean,
+  imgPreviews: Boolean,
+  imageLinksExistence: Boolean,
+  checkDates: Boolean,
+  dateFormat: String,
+  dateLanguage: String,
+  timezone: String,
+  date: {
+    type: Date,
+    default: Date.now
+  }
+}
+
+if (articlesExpire > 0) articleSchema.date.index = { expires: 60 * 60 * 24 * articlesExpire }
+if (guildBackupsExpire > 0) guildRssBackupSchema.date.index = { expires: 60 * 60 * 24 * guildBackupsExpire }
 
 exports.initializing = initializing
 exports.linkList = linkList
@@ -85,9 +105,11 @@ exports.failedLinks = failedLinks
 exports.scheduleManager = scheduleManager
 exports.schemas = {
   guildRss: mongoose.Schema(guildRssSchema),
+  guildRssBackup: mongoose.Schema(guildRssBackupSchema),
   article: mongoose.Schema(articleSchema)
 }
 exports.models = {
   GuildRss: () => mongoose.model('Guild', exports.schemas.guildRss),
+  GuildRssBackup: () => mongoose.model('Guild_Backup', exports.schemas.guildRssBackup),
   Article: collection => mongoose.model(collection, exports.schemas.article)
 }

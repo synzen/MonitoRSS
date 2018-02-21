@@ -66,18 +66,13 @@ Manager.on('message', function (shard, message) {
       initShardIndex++
       if (initShardIndex === Manager.totalShards) {
         console.log(`SH MANAGER: All shards initialized.`)
-
         for (var gId in message.guilds) { // All guild profiles, with guild id as keys and guildRss as value
           currentGuilds.set(gId, message.guilds[gId])
         }
-
         for (var guildId in missingGuilds) {
           if (missingGuilds[guildId] === Manager.totalShards) console.log('SH MANAGER: WARNING - Missing Guild from bot lists: ' + guildId)
         }
-
         createIntervals()
-
-        try { require('./web/app.js')(null, Manager) } catch (e) {}
       } else if (initShardIndex < Manager.totalShards) Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
       break
 
@@ -89,6 +84,7 @@ Manager.on('message', function (shard, message) {
 
     case 'updateGuild':
       currentGuilds.set(message.guildRss.id, message.guildRss)
+      Manager.broadcast({ type: 'updateGuild', guildRss: message.guildRss })
       break
 
     case 'deleteGuild':
@@ -96,13 +92,9 @@ Manager.on('message', function (shard, message) {
       break
 
     case 'dbRestore':
-      scheduleIntervals.forEach(it => {
-        clearInterval(it)
-      })
+      scheduleIntervals.forEach(it => clearInterval(it))
       dbRestore.restoreUtil(undefined, message.fileName, message.url, message.databaseName)
       .then(() => Manager.broadcast({type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID}))
-      .catch(err => {
-        throw err
-      })
+      .catch(err => { throw err })
   }
 })

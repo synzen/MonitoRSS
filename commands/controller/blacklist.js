@@ -1,6 +1,6 @@
 const fs = require('fs')
 const storage = require('../../util/storage.js')
-const removeRss = require('../../util/removeRss.js')
+const removeRss = require('../../util/removeFeed.js')
 
 exports.normal = function (bot, message) {
   const currentGuilds = storage.currentGuilds
@@ -51,7 +51,7 @@ exports.sharded = function (bot, message, Manager) {
     const path = require('path');
     const appDir = path.dirname(require.main.filename);
     const storage = require(appDir + '/util/storage.js');
-    const removeRss = require(appDir + '/util/removeRss.js');
+    const removeRss = require(appDir + '/util/removeFeed.js');
     const currentGuilds = storage.currentGuilds;
     const blacklistGuilds = storage.blacklistGuilds;
 

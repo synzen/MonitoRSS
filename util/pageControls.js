@@ -1,43 +1,43 @@
-// Used for pagination on feed lists that exceeds a certain amount
-
-function PageContainer () {
-  this.messageList = {}
-
-  this.nextPage = function (msg) {
-    if (this.messageList[msg.id].currentPage + 1 > this.messageList[msg.id].pages.length - 1) return
-    this.messageList[msg.id].currentPage++
-
-    let pageMsg = this.messageList[msg.id]
-
-    msg.channel.fetchMessage(msg.id).then(m => m.edit({embed: pageMsg.pages[pageMsg.currentPage]})).catch(console.error)
+class PageContainer {
+  constructor () {
+    this.messageList = {}
   }
 
-  this.prevPage = function (msg) {
-    if (this.messageList[msg.id].currentPage - 1 < 0) return
-    this.messageList[msg.id].currentPage--
+  async nextPage (message) {
+    if (this.messageList[message.id].currentPage + 1 > this.messageList[message.id].pages.length - 1) return
+    this.messageList[message.id].currentPage++
+    const pageMsg = this.messageList[message.id]
 
-    let pageMsg = this.messageList[msg.id]
-    msg.channel.fetchMessage(msg.id).then(m => m.edit({embed: pageMsg.pages[pageMsg.currentPage]})).catch(console.error)
+    try {
+      const m = await message.channel.fetchMessage(message.id)
+      await m.edit({embed: pageMsg.pages[pageMsg.currentPage]})
+    } catch (err) {
+      console.log(`Page Controls Warning: nextPage:`, err.message || err)
+    }
+  }
+
+  async prevPage (message) {
+    if (this.messageList[message.id].currentPage - 1 < 0) return
+    this.messageList[message.id].currentPage--
+    const pageMsg = this.messageList[message.id]
+
+    try {
+      const m = await message.channel.fetchMessage(message.id)
+      await m.edit({embed: pageMsg.pages[pageMsg.currentPage]})
+    } catch (err) {
+      console.log(`Page Controls Warning: prevPage:`, err.message || err)
+    }
   }
 }
 
-let pageMsgs = new PageContainer()
+const pageMsgs = new PageContainer()
 
-exports.add = function (msgId, pages) {
+exports.add = (msgId, pages) => {
   pageMsgs.messageList[msgId] = {
     currentPage: 0,
     pages: pages
   }
 }
-
-exports.nextPage = function (msg) {
-  pageMsgs.nextPage(msg)
-}
-
-exports.prevPage = function (msg) {
-  pageMsgs.prevPage(msg)
-}
-
-exports.has = function (id) {
-  return pageMsgs.messageList[id]
-}
+exports.nextPage = message => pageMsgs.nextPage(message)
+exports.prevPage = message => pageMsgs.prevPage(message)
+exports.has = id => pageMsgs.messageList[id]

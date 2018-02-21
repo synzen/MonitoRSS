@@ -20,6 +20,7 @@ const setConfig = require('./setconfig.js')
 const checkLimits = require('./checklimits.js')
 const dbBackup = require('./dbbackup.js')
 const dbRestore = require('./dbrestore.js')
+const restore = require('./restore.js')
 
 exports.stats = stats
 exports.setgame = setGame
@@ -43,3 +44,4 @@ exports.setconfig = setConfig
 exports.checklimits = checkLimits
 exports.dbbackup = dbBackup
 exports.dbrestore = dbRestore
+exports.restore = restore

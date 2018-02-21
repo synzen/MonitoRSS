@@ -1,24 +1,66 @@
-const Discord = require('discord.js')
-const channelTracker = require('../util/channelTracker.js')
 const getSubList = require('./util/getSubList.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
-const MsgHandler = require('../util/MsgHandler.js')
+const MenuUtils = require('./util/MenuUtils.js')
 
-module.exports = function (bot, message, command) {
+function verifyRole (m, data, callback) {
+  const { options } = data
+  const chosenRoleName = m.content
+  const chosenRole = m.guild.roles.find('name', chosenRoleName)
+  if (!chosenRole) return callback(new SyntaxError('That is not a valid role subscription to add. Try again, or type `exit` to cancel.'))
+  const chosenRoleID = chosenRole.id
+  let found = false
+
+  for (var option in options) {
+    if (options[option].roleList.includes(chosenRoleID)) {
+      var source = options[option].source
+      found = true
+    }
+  }
+
+  if (!found) return callback(new SyntaxError('That is not a valid role subscription to add. Try again, or type `exit` to cancel.'))
+
+  if (m.member.roles.get(chosenRole.id)) return callback(new Error(`You already have the role \`${chosenRole.name}\`.`))
+  callback(null, { ...data, role: chosenRole, source: source })
+}
+
+async function addRole (err, data, direct) {
+  const { role, source, message } = data
+  try {
+    if (err && direct) return await message.channel.send('That is not a valid role subscription to add.')
+    else if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
+
+    message.member.addRole(role).catch(err => {
+      message.channel.send(`Error: Unable to add role.` + err.message ? ` (${err.message})` : '')
+      console.log(`Roles Warning: Unable to add role (${role.id}, ${role.name}) to (${message.member.id}, ${message.author.username}):`, err.message || err)
+    })
+    console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Role *${role.name}* successfully added to member. `)
+    await message.channel.send(`You now have the role \`${role.name}\`, subscribed to **<${source.link}>**.`)
+  } catch (err) {
+    console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => subme`, err.message || err)
+  }
+}
+
+module.exports = (bot, message, command) => {
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no active feeds to subscribe to.').catch(err => console.log(`Promise Warning: subAdd 1: ${err}`))
 
   const rssList = guildRss.sources
   const options = getSubList(bot, message.guild, rssList)
   if (!options) return message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.').catch(err => console.log(`Promise Warning: subAdd 2: ${err}`))
+  const msgArr = message.content.split(' ')
+  if (msgArr.length > 1) {
+    msgArr.shift()
+    const predeclared = msgArr.join(' ')
+    const role = message.guild.roles.find('name', predeclared)
+    for (var option in options) {
+      if (role && options[option].roleList.includes(role && role.id ? role.id : null)) return addRole(null, { role: role, message: message, source: options[option].source }, true)
+    }
+  }
 
-  const msgHandler = new MsgHandler(bot, message) // For deletion at the end of a series of menus
+  const ask = new MenuUtils.Menu(message, verifyRole, { numbered: false })
+    .setTitle('Self-Subscription Addition')
+    .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name you want to be added to, or type **exit** to cancel.\u200b\n\u200b\n')
 
-  const list = new Discord.RichEmbed()
-  .setTitle('Self-Subscription Addition')
-  .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name you want to be added to, or type **exit** to cancel.\u200b\n\u200b\n')
-
-  // Generate list of all feeds and roles that can be added
   for (let option in options) {
     let roleList = '**Roles:**\n'
     for (var roleID in options[option].roleList) {
@@ -27,54 +69,10 @@ module.exports = function (bot, message, command) {
     }
     const channelID = options[option].source.channel
     const channelName = message.guild.channels.get(channelID).name
-    list.addField(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n${roleList}`, true)
+    ask.addOption(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n${roleList}`, true)
   }
 
-  // Send list
-  message.channel.send({embed: list})
-  .then(function (list) {
-    msgHandler.add(list)
-    const collectorFilter = m => m.author.id === message.author.id
-    const collector = message.channel.createMessageCollector(collectorFilter, {time: 240000})
-    channelTracker.add(message.channel.id)
-    collector.on('collect', function (response) {
-      msgHandler.add(response)
-      // Select a role here
-      const chosenRoleName = response.content
-      if (chosenRoleName.toLowerCase() === 'exit') return collector.stop('Self-subscription addition canceled.')
-      if (!bot.guilds.get(message.guild.id).roles.find('name', chosenRoleName)) message.channel.send('That is not a valid role subscription to add. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: subAdd 3: ${err}`))
-      else {
-        const chosenRole = message.guild.roles.find('name', chosenRoleName)
-        const chosenRoleID = chosenRole.id
-        let found = false
-
-        for (var option in options) {
-          if (options[option].roleList.includes(chosenRoleID)) {
-            var source = options[option].source
-            found = true
-          }
-        }
-
-        if (!found) return message.channel.send('That is not a valid role subscription to add. Try again.').then(m => msgHandler.add(m)).catch(err => console.log(`Promise Warning: subAdd 4: ${err}`))
-
-        collector.stop()
-        if (message.member.roles.get(chosenRole.id)) return message.channel.send(`You already have the role \`${chosenRole.name}\`.`).catch(err => console.log(`Promise Warning: subAdd 5: ${err}`))
-        message.member.addRole(chosenRole)
-        .then(function (member) {
-          console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Role *${chosenRole.name}* successfully added to member. `)
-          message.channel.send(`You now have the role \`${chosenRole.name}\`, subscribed to **<${source.link}>**.`).catch(err => console.log(`Promise Warning: subAdd 6: ${err}`))
-        })
-        .catch(function (err) {
-          message.channel.send(`Error: Unable to add role.`).catch(err => console.log(`Promise Warning: subAdd 7: ${err}`))
-          console.log(`(${message.guild.id}, ${message.guild.name}) => Could not add role *${chosenRole.name}* to member due to ` + err)
-        })
-      }
-    })
-    collector.on('end', function (collected, reason) {
-      channelTracker.remove(message.channel.id)
-      msgHandler.deleteAll(message.channel)
-      if (reason === 'time') message.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Promise Warning: Unable to send expired menu message (${err})`))
-      else if (reason !== 'user') message.channel.send(reason)
-    })
-  }).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not send self subscription addition prompt. (${err})`))
+  ask.send({ options: options }, (err, data) => {
+    addRole(err, { ...data, message: message })
+  })
 }

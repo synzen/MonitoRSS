@@ -4,25 +4,24 @@ const generateEmbed = require('./embed.js')
 const Article = require('./Article.js')
 const getSubs = require('./subscriptions.js')
 
-module.exports = function (guildRss, rssName, rawArticle, isTestMessage, returnObject) {
+module.exports = (guildRss, rssName, rawArticle, isTestMessage, returnObject) => {
   const rssList = guildRss.sources
+  const source = rssList[rssName]
 
-  // Just in case. If this happens, please report.
-  if (!rssList[rssName]) { console.log(`RSS Error: Unable to translate a null source:\nguildId: ${guildRss ? guildRss.id : undefined}\nrssName: ${rssName}\nrssList:`, rssList); return null }
   const article = new Article(rawArticle, guildRss, rssName)
-  article.subscriptions = getSubs(rssList, rssName, article)
+  article.subscriptions = getSubs(source, article)
 
   // if (returnObject) return article
 
   // Filter message
   let filterExists = false
-  if (rssList[rssName].filters && typeof rssList[rssName].filters === 'object') {
-    for (var prop in rssList[rssName].filters) {
+  if (source.filters && typeof source.filters === 'object') {
+    for (var prop in source.filters) {
       if (prop !== 'roleSubscriptions') filterExists = true // Check if any filter categories exists, excluding roleSubs as they are not filters
     }
   }
 
-  const filterResults = filterExists ? filterFeed(rssList, rssName, article, isTestMessage) : isTestMessage ? {passedFilters: true} : false
+  const filterResults = filterExists ? filterFeed(source, article, isTestMessage) : isTestMessage ? {passedFilters: true} : false
 
   if (returnObject) {
     article.filterResults = filterResults
@@ -32,23 +31,23 @@ module.exports = function (guildRss, rssName, rawArticle, isTestMessage, returnO
   if (!isTestMessage && filterExists && !filterResults) return null // Feed article delivery only passes through if the filter found the specified content
 
   const finalMessageCombo = {}
-  if (typeof rssList[rssName].embedMessage === 'object' && typeof rssList[rssName].embedMessage.properties === 'object' && Object.keys(rssList[rssName].embedMessage.properties).length > 0) { // Check if embed is enabled
+  if (typeof source.embedMessage === 'object' && typeof source.embedMessage.properties === 'object' && Object.keys(source.embedMessage.properties).length > 0) { // Check if embed is enabled
     finalMessageCombo.embedMsg = generateEmbed(rssList, rssName, article)
 
     let txtMsg = ''
-    if (typeof rssList[rssName].message !== 'string') {
+    if (typeof source.message !== 'string') {
       if (config.feedSettings.defaultMessage.trim() === '{empty}') txtMsg = ''
       else txtMsg = article.convertKeywords(config.feedSettings.defaultMessage)
-    } else if (rssList[rssName].message.trim() === '{empty}') txtMsg = ''
-    else txtMsg = article.convertKeywords(rssList[rssName].message)
+    } else if (source.message.trim() === '{empty}') txtMsg = ''
+    else txtMsg = article.convertKeywords(source.message)
 
     finalMessageCombo.textMsg = txtMsg
   } else {
     let txtMsg = ''
-    if (typeof rssList[rssName].message !== 'string' || rssList[rssName].message.trim() === '{empty}') {
+    if (typeof source.message !== 'string' || source.message.trim() === '{empty}') {
       if (config.feedSettings.defaultMessage.trim() === '{empty}') txtMsg = ''
       else txtMsg = article.convertKeywords(config.feedSettings.defaultMessage)
-    } else txtMsg = article.convertKeywords(rssList[rssName].message)
+    } else txtMsg = article.convertKeywords(source.message)
 
     finalMessageCombo.textMsg = txtMsg
   }
@@ -63,7 +62,7 @@ module.exports = function (guildRss, rssName, rawArticle, isTestMessage, returnO
       testDetails += `\n\n[Title]: {title}\n${article.title}`
     }
 
-    if (article.summary && article.summary !== article.description) {  // Do not add summary if summary = description
+    if (article.summary && article.summary !== article.description) {  // Do not add summary if summary === description
       let testSummary
       if (article.description && article.description.length > 500) testSummary = (article.summary.length > 500) ? `${article.summary.slice(0, 490)} [...]\n\n**(Truncated summary for shorter rsstest)**` : article.summary // If description is long, truncate summary.
       else testSummary = article.summary

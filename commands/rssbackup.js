@@ -26,7 +26,7 @@ function sendFile (guildRss, message) {
   })
 }
 
-module.exports = function (bot, message, automatic) { // automatic indicates invokation by the bot
+module.exports = (bot, message, automatic) => { // automatic indicates invokation by the bot
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss && !automatic) message.channel.send('This server does not have a profile.')
   if (!guildRss) return

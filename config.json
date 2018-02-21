@@ -17,7 +17,8 @@
   "database": {
     "uri": "mongodb://localhost/rss",
     "clean": true,
-    "maxDays": 14
+    "articlesExpire": 14,
+    "guildBackupsExpire": 14
   },
   "feedSettings": {
     "refreshTimeMinutes": 15,
@@ -41,7 +42,7 @@
     "checkDates": true
   },
   "advanced": {
-    "shards": 1,
+    "shards": 2,
     "batchSize": 300,
     "restrictCookies": false,
     "restrictWebhooks": false,

@@ -12,15 +12,13 @@ function sanitize (array) {
   return array
 }
 
-function isBotController (authorId) {
-  let controllerList = config.botSettings.controllerIds
+function isBotController (id) {
+  const controllerList = config.botSettings.controllerIds
   if (typeof controllerList !== 'object') return false
-  for (var i in controllerList) {
-    if (controllerList[i] === authorId) return true
-  }
+  return controllerList.includes(id)
 }
 
-module.exports = function (bot, message) {
+module.exports = (bot, message) => {
   const currentGuilds = storage.currentGuilds
   const overriddenGuilds = storage.overriddenGuilds
   const cookieAccessors = storage.cookieAccessors
@@ -78,7 +76,6 @@ module.exports = function (bot, message) {
     (function processLink (linkIndex) { // A self-invoking function for each link
       const linkItem = linkList[linkIndex].split(' ')
       let link = linkItem[0].trim() // One link may consist of the actual link, and its cookies
-
       if (!link.startsWith('http')) {
         failedAddLinks[link] = 'Invalid/improperly-formatted link.'
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
@@ -110,11 +107,10 @@ module.exports = function (bot, message) {
         }
         cookies = cookieObj
       }
-      var cookiesFound = !!cookies
+      const cookiesFound = !!cookies
       if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id) && !isBotController(message.author.id)) cookies = undefined
 
-      initialize.addNewFeed({link: link, channel: message.channel, cookies: cookies}, function (err, addedLink) {
-        link = addedLink // addedLink may have been changed from string approximation to another similar link for performance
+      initialize.addNewFeed({link: link, channel: message.channel, cookies: cookies}, err => {
         channelTracker.remove(message.channel.id)
         if (err) {
           let channelErrMsg = ''
@@ -123,7 +119,7 @@ module.exports = function (bot, message) {
               channelErrMsg = 'Unable to connect to feed link'
               break
             case 'feedparser':
-              channelErrMsg = 'Invalid feed. Note that you cannot simply put any link - it must be formatted as an RSS feed page. To check if it is so, you may search for online RSS feed validators'
+              channelErrMsg = 'Invalid feed. Note that you cannot simply put any link - it must be formatted as an RSS feed page. To check if it is, you may search for online RSS feed validators'
               break
             case 'database':
               channelErrMsg = 'Internal database error. Please try again'
@@ -131,9 +127,8 @@ module.exports = function (bot, message) {
             default:
               channelErrMsg = 'No reason available'
           }
-          // Reserve err.content for console logs, which are more verbose
           if (cookiesFound && !cookies) channelErrMsg += ' (Cookies were detected, but missing access for usage)'
-          console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}`, err.content.message || err.content)
+          console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}`, err.message || err)
           failedAddLinks[link] = channelErrMsg
         } else {
           console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${link}.`)
@@ -152,8 +147,7 @@ module.exports = function (bot, message) {
           passedAddLinks[link] = cookies
         }
         ++checkedSoFar
-        if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
-        else return finishLinkList(verifyMsg)
+        return linkIndex + 1 < totalLinks ? processLink(linkIndex + 1) : finishLinkList(verifyMsg)
       })
     })(0)
   }).catch(err => {

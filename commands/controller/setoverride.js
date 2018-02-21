@@ -1,7 +1,7 @@
 const fs = require('fs')
 const storage = require('../../util/storage.js')
 const config = require('../../config.json')
-const removeRss = require('../../util/removeRss.js')
+const removeRss = require('../../util/removeFeed.js')
 const fileOps = require('../../util/fileOps.js')
 
 exports.normal = function (bot, message) {
@@ -76,7 +76,7 @@ exports.sharded = function (bot, message, Manager) {
     const storage = require(appDir + '/util/storage.js');
     const currentGuilds = storage.currentGuilds;
     const overriddenGuilds = storage.overriddenGuilds;
-    const removeRss = require(appDir + '/util/removeRss.js');
+    const removeRss = require(appDir + '/util/removeFeed.js');
 
 
     if (currentGuilds.has('${guildID}') && this.guilds.has('${guildID}')) {

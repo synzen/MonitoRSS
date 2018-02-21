@@ -2,23 +2,35 @@ const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
 const storage = require('../util/storage.js')
 const failedLinks = storage.failedLinks
-const passesFilters = require('./translator/translate.js')
+const filterFeed = require('./translator/filters.js')
 
-module.exports = function (guildRss, rssName, passFiltersOnly, callback) {
+module.exports = (guildRss, rssName, passFiltersOnly, callback) => {
   const rssList = guildRss.sources
+  const source = rssList[rssName]
 
-  if (typeof failedLinks[rssList[rssName].link] === 'string') return callback({type: 'failedLink', content: 'Reached fail limit', feed: rssList[rssName]})
+  if (typeof failedLinks[source.link] === 'string') {
+    const err = new Error('Reached connection failure limit')
+    err.type = 'failedLink'
+    err.feed = source
+    return callback(err)
+  }
   const feedparser = new FeedParser()
   const currentFeed = []
-  const cookies = (rssList[rssName].advanced && rssList[rssName].advanced.cookies) ? rssList[rssName].advanced.cookies : undefined
+  const cookies = (source.advanced && source.advanced.cookies) ? source.advanced.cookies : undefined
 
-  requestStream(rssList[rssName].link, cookies, feedparser, function (err) {
-    if (err) return callback({type: 'request', content: err, feed: rssList[rssName]})
+  requestStream(source.link, cookies, feedparser, err => {
+    if (err) {
+      err.type = 'request'
+      err.feed = source
+      return callback(err)
+    }
   })
 
-  feedparser.on('error', function (err) {
+  feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
-    return callback({type: 'feedparser', content: err, feed: rssList[rssName]})
+    err.type = 'feedparser'
+    err.feed = source
+    return callback(err)
   })
 
   feedparser.on('readable', function () {
@@ -29,27 +41,38 @@ module.exports = function (guildRss, rssName, passFiltersOnly, callback) {
     }
   })
 
-  feedparser.on('end', function () {
-    if (currentFeed.length === 0) return callback({type: 'empty', content: 'No existing articles', feed: rssList[rssName]})
+  feedparser.on('end', () => {
+    if (currentFeed.length === 0) {
+      const err = new Error('No articles in feed to send')
+      err.type = 'empty'
+      err.feed = source
+      return callback(err)
+    }
 
     if (passFiltersOnly) {
       const filteredCurrentFeed = []
 
-      for (var i in currentFeed) if (passesFilters(guildRss, rssName, currentFeed[i], false)) filteredCurrentFeed.push(currentFeed[i]) // returns null if no article is sent from passesFilters
+      currentFeed.forEach(article => {
+        if (filterFeed(guildRss.sources[rssName], article)) filteredCurrentFeed.push(article) // returns null if no article is sent from passesFilters
+      })
 
-      if (filteredCurrentFeed.length === 0) callback({type: 'feed', content: 'No articles that pass current filters.', feed: rssList[rssName]})
-      else {
+      if (filteredCurrentFeed.length === 0) {
+        const err = new Error('No articles that pass current filters')
+        err.type = 'feed'
+        err.feed = source
+        return callback(err)
+      } else {
         const randFeedIndex = Math.floor(Math.random() * (filteredCurrentFeed.length - 1)) // Grab a random feed from array
-        callback(null, filteredCurrentFeed[randFeedIndex], null, filteredCurrentFeed)
+        return callback(null, filteredCurrentFeed[randFeedIndex], null, filteredCurrentFeed)
       }
     } else {
       const randFeedIndex = Math.floor(Math.random() * (currentFeed.length - 1)) // Grab a random feed from array
       const feedLinkList = []
       const rawArticleList = {}
-      for (var x in currentFeed) {
-        if (!feedLinkList.includes(currentFeed[x].link)) feedLinkList.push(currentFeed[x].link)
-        if (!rawArticleList[currentFeed[x].link]) rawArticleList[currentFeed[x].link] = currentFeed[x]
-      }
+      currentFeed.forEach(article => {
+        if (!feedLinkList.includes(article.link)) feedLinkList.push(article.link)
+        if (!rawArticleList[article.link]) rawArticleList[article.link] = article
+      })
       callback(null, currentFeed[randFeedIndex], feedLinkList, rawArticleList)
     }
   })

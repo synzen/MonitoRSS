@@ -1,12 +1,8 @@
 const config = require('../../config.json')
 const mongoose = require('mongoose')
 
-module.exports = function (callback) {
-  mongoose.connect(config.database.uri, {
-    keepAlive: 120
-  })
-  const db = mongoose.connection
-
-  db.on('error', callback)
-  db.once('open', callback)
+module.exports = callback => {
+  mongoose.connect(config.database.uri, { keepAlive: 120 })
+  mongoose.connection.on('error', callback)
+  mongoose.connection.once('open', callback)
 }

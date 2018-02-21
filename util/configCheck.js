@@ -1,7 +1,7 @@
 // Check for invalid configs on startup and at the beginning of each feed retrieval cycle
 const moment = require('moment-timezone')
 
-exports.checkExists = function (rssName, feed, logging, initializing) {
+exports.checkExists = (rssName, feed, logging, initializing) => {
   let valid = true
 
   if (feed.enabled === false) {
@@ -20,7 +20,7 @@ exports.checkExists = function (rssName, feed, logging, initializing) {
   return valid
 }
 
-exports.validChannel = function (bot, guildId, feed) {
+exports.validChannel = (bot, guildId, feed) => {
   const channel = bot.channels.has(feed.channel)
   const guild = bot.guilds.get(guildId)
 
@@ -49,7 +49,8 @@ exports.defaultConfigs = {
   database: {
     uri: {type: 'string', default: 'mongodb://localhost/rss'},
     clean: {type: 'boolean', default: false},
-    maxDays: {type: 'number', default: 14}
+    articlesExpire: {type: 'number', default: 14},
+    guildBackupsExpire: {type: 'number', default: 14}
   },
   feedSettings: {
     refreshTimeMinutes: {type: 'number', default: 10},
@@ -81,7 +82,7 @@ exports.defaultConfigs = {
   }
 }
 
-exports.check = function (userConfig) {
+exports.check = userConfig => {
   let fatalInvalidConfigs = {}
   let invalidConfigs = {}
 
