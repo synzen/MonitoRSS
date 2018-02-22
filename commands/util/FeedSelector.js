@@ -166,8 +166,7 @@ class FeedSelector extends Menu {
         this._msgCleaner.add(m)
         if (m.content.toLowerCase() === 'exit') {
           collector.stop('Menu closed.')
-          // __end will cause the MenuSeries, if it exists, to skip its callback function
-          return callback(null, { __end: true }, this._msgCleaner)
+          return
         }
 
         // Call the function defined in the constructor

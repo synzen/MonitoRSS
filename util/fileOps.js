@@ -25,7 +25,7 @@ exports.deleteGuild = (guildId, shardingManager, callback) => {
     currentGuilds.delete(guildId)
     if (shardingManager) shardingManager.broadcast({type: 'deleteGuild', guildId: guildId})
     else if (process.send) process.send({type: 'deleteGuild', guildId: guildId}) // If this is a child process
-    if (guildRss) models.GuildRssBackup().update({ id: guildId }, guildRss, { overwrite: true, upsert: true, strict: true }, (err, res) => callback(err))
+    if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) models.GuildRssBackup().update({ id: guildId }, guildRss, { overwrite: true, upsert: true, strict: true }, (err, res) => callback(err))
   })
 }
 
