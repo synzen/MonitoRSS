@@ -36,5 +36,5 @@ module.exports = function (bot, role) {
   if (!found) return
 
   console.log(`Guild Info: (${role.guild.id}, ${role.guild.name}) => Role (${role.id}, ${role.name}) has been removed from config by guild role deletion.`)
-  fileOps.updateFile(role.guild.id, guildRss)
+  fileOps.updateFile(guildRss)
 }

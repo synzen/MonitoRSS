@@ -45,7 +45,7 @@ async function filterAddTerm (m, data, callback) {
       } else invalidItems += `\n${item}`
     })
 
-    fileOps.updateFile(m.guild.id, guildRss)
+    fileOps.updateFile(guildRss)
     callback()
 
     if (!role) {
@@ -159,7 +159,7 @@ function filterRemoveTerm (m, data, callback) {
     if (role && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
     if (Object.keys(source.filters).length === 0) delete source.filters
 
-    fileOps.updateFile(m.guild.id, guildRss)
+    fileOps.updateFile(guildRss)
 
     if (!role) {
       console.log(`RSS Filters: (${m.guild.id}, ${m.guild.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}.`)

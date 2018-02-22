@@ -38,13 +38,13 @@ module.exports = (bot, message, command) => {
       if (setting === null) {
         const m = await message.channel.send(`Resetting message...`)
         delete guildRss.sources[rssName].message
-        fileOps.updateFile(m.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
         console.log(`RSS Customization: (${m.guild.id}, ${m.guild.name}) => Message reset for ${source.link}.`)
         await m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${source.link}`)
       } else {
         const m = await message.channel.send(`Updating message...`)
         source.message = setting
-        fileOps.updateFile(m.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
         console.log(`RSS Customization: (${m.guild.id}, ${m.guild.name}) => New message recorded for ${source.link}.`)
         await m.edit(`Message recorded:\n \`\`\`Markdown\n${setting}\`\`\` \nfor feed <${source.link}>. You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`)
       }

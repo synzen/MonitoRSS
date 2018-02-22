@@ -74,7 +74,7 @@ module.exports = async (bot, message, command) => {
           if (customAvatarSrch) source.webhook.avatar = customAvatarSrch
           await webhook.send(`I am now connected to ${bot.user}, and will send feed articles for <${source.link}>!`, { username: customNameSrch, avatarURL: customAvatarSrch })
         }
-        fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
       } catch (err) {
         console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rsswebhook2:`, err.message || err)
         if (err.code !== 50013) message.channel.send('Unable to fetch webhooks for this channel. ', err.message).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rsswebhook 2:`, err.message || err))

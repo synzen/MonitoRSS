@@ -45,7 +45,7 @@ exports.roles = (bot, guildId, rssName) => {
     }
   }
 
-  if (changedInfo) return fileOps.updateFile(guildId, guildRss)
+  if (changedInfo) return fileOps.updateFile(guildRss)
 }
 
 exports.names = (bot, guildId) => {
@@ -55,6 +55,6 @@ exports.names = (bot, guildId) => {
   if (guildRss.name !== guild.name) {
     console.log(`Guild Info: (${guild.id}, ${guildRss.name}) => Name change detected, changed guild name from '${guildRss.name}' to '${guild.name}'.`)
     guildRss.name = guild.name
-    fileOps.updateFile(guildId, guildRss)
+    fileOps.updateFile(guildRss)
   }
 }

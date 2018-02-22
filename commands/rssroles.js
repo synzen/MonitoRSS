@@ -90,7 +90,7 @@ function deleteSubscription (message, guildRss, roleID) {
     }
   }
   if (!found) return message.channel.send('This role has no subscriptions to remove.').catch(err => console.log(`Promise Warning: rssRoles/delSub 1: ${err}`))
-  fileOps.updateFile(message.guild.id, guildRss)
+  fileOps.updateFile(guildRss)
   console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${message.guild.roles.get(roleID).id}, ${message.guild.roles.get(roleID).name}) => All subscriptions deleted.`)
   return message.channel.send(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`.`).catch(err => console.log(`Promise Warning: rssRoles/delSub 2: ${err}`))
 }
@@ -110,7 +110,7 @@ function addGlobalSub (message, guildRss, rssName, role) {
     roleID: role.id,
     roleName: role.name
   })
-  fileOps.updateFile(message.guild.id, guildRss)
+  fileOps.updateFile(guildRss)
   message.channel.send(`Global subscription successfully added for \`${message.guild.roles.get(role.id).name}\` to feed <${source.link}>.`).catch(err => console.log(`Promise Warning: rssRoles/addGlobalSub 1: ${err}`))
   console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${message.guild.roles.get(role.id).id}, ${message.guild.roles.get(role.id).name}) => Global subscription added to feed ${source.link}.`)
 }
@@ -133,7 +133,7 @@ function removeGlobalSub (message, guildRss, rssName, role) {
 
   message.channel.send(`Successfully removed the global subscription of the role \`${role.name}\` from the feed <${source.link}>`).catch(err => console.log(`Promise Warning: rssRoles/remGlobalSub 3: ${err}`))
   console.log(`Guild Roles: (${message.guild.id}, ${message.guild.name}) => (${role.id}, ${role.name}) => Removed global subscription for feed <${source.link}>.`)
-  return fileOps.updateFile(message.guild.id, guildRss)
+  return fileOps.updateFile(guildRss)
 }
 
 function filteredSubFn (m, data, callback) {

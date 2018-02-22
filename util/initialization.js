@@ -11,6 +11,7 @@ const checkGuild = require('./checkGuild.js')
 const sendToDiscord = require('./sendToDiscord.js')
 const process = require('child_process')
 const configChecks = require('./configCheck.js')
+const fileOps = require('./fileOps.js')
 const GuildRss = storage.models.GuildRss()
 const FAIL_LIMIT = config.feedSettings.failLimit
 
@@ -70,20 +71,24 @@ module.exports = (bot, callback) => {
   // Remove expires index, but ignores the log if it's "ns not found" error (meaning the collection doesn't exist)
   if (config.database.guildBackupsExpire <= 0) {
     storage.models.GuildRssBackup().collection.dropIndexes(err => {
-      if (err && err.code !== 26) console.log(`Unable to drop indexes for collection for Guild_Backup:`,err)
+      if (err && err.code !== 26) console.log(`Unable to drop indexes for collection for Guild_Backup:`, err.message || err)
     })
   }
 
   GuildRss.find((err, results) => {
     if (err) throw err
-    for (var x in results) {
-      const guildRss = results[x]
+    results.forEach(guildRss => {
       const guildId = guildRss.id
       const rssList = guildRss.sources
-      if (!bot.guilds.get(guildId)) { // Check if it is a valid guild in bot's guild collection
+      if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
         if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
-        else console.log(`RSS Guild Profile: ${guildId} was not found in bot's guild list. Skipping.`)
-        continue
+        else {
+          fileOps.deleteGuild(guildId, null, err => {
+            if (err) return console.log(`INIT Warning: Guild ${guildId} deletion error based on missing guild:`, err.message || err)
+            console.log(`INIT Info: Guild ${guildId} is missing and has been removed and backed up.`)
+          })
+        }
+        return
       }
       if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
         currentGuilds.set(guildId, guildRss)
@@ -91,7 +96,7 @@ module.exports = (bot, callback) => {
       }
       guildsInfo[guildId] = guildRss
       addToSourceLists(rssList, guildId)
-    }
+    })
 
     if (sourceList.size + modSourceList.size === 0) {
       console.log(`${SHARD_ID}RSS Info: There are no active feeds to initialize.`)

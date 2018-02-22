@@ -45,7 +45,7 @@ module.exports = (bot, message, command) => {
 
       const prettyPropName = chosenProp === 'checkTitles' ? 'Title Checks' : chosenProp === 'imgPreviews' ? 'Image Previews' : chosenProp === 'imgLinksExistence' ? 'Image Links Existence' : 'Date Checks'
 
-      fileOps.updateFile(message.guild.id, guildRss)
+      fileOps.updateFile(guildRss)
       console.log(`${prettyPropName}: (${message.guild.id}, ${message.guild.name}) => ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`)
       await message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${source.link}>${followGlobal ? ', and is now following the global setting.' : '.'}`)
     } catch (err) {

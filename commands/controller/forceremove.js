@@ -75,7 +75,7 @@ exports.normal = function (bot, message) {
           })
           delete rssList[names[l]]
         }
-        fileOps.updateFile(affectedGuilds[i], guildRss)
+        fileOps.updateFile(guildRss)
       }
 
       if (removedLinks.length === 0) message.channel.send('Unable to remove any links.').catch(err => console.log(`Promise Warning: forceremove 2. `, err.message || err))
@@ -197,7 +197,7 @@ exports.sharded = function (bot, message, Manager) {
               });
               delete rssList[names[l]];
             }
-            fileOps.updateFile(affectedGuilds[i], guildRss);
+            fileOps.updateFile(guildRss);
           }
 
           removedLinks;

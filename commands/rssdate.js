@@ -100,7 +100,7 @@ module.exports = (bot, message) => {
         guildRss.dateFormat = undefined
         guildRss.dateLanguage = undefined
         console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => All reset to default`)
-        fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
         return await message.channel.send(`All date customizations have been reset back to default.`)
       }
 
@@ -111,14 +111,14 @@ module.exports = (bot, message) => {
 
         await message.channel.send(`${settingName} has been reset to the default: \`${config.feedSettings[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone']}\`.`)
         console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} reset to default`)
-        fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
       } else {
         if (num === 3) guildRss.dateLanguage = setting.toLowerCase() === config.feedSettings.dateLanguage.toLowerCase() ? undefined : setting
         else if (num === 2) guildRss.dateFormat = setting.toLowerCase() === config.feedSettings.dateFormat ? undefined : setting
         else if (num === 1) guildRss.timezone = setting.toLowerCase() === config.feedSettings.timezone.toLowerCase() ? undefined : setting
 
         console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} updated to '${setting}.'`)
-        fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
         await message.channel.send(`${settingName} has been successfully updated to \`${setting}\`.`)
       }
     } catch (err) {

@@ -14,7 +14,7 @@ module.exports = (guildId, rssName, callback) => {
 
   dbCmds.dropCollection(rssName, err => {
     delete rssList[rssName]
-    fileOps.updateFile(guildId, guildRss)
+    fileOps.updateFile(guildRss)
     deletedFeeds.push(rssName)
     if (!err) console.log(`RSS Removal: (${guildId}, ${guildRss.name}) => Removed ${link}`)
 

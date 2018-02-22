@@ -49,7 +49,7 @@ module.exports = (bot, message, command) => {
 
       if (setting === 'reset') {
         delete source.advanced.cookies
-        fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
         console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Cookies have been reset for ${source.link}.`)
         return await message.channel.send(`Successfully removed all cookies for feed ${source.link}`)
       }
@@ -63,7 +63,7 @@ module.exports = (bot, message, command) => {
         newCookies += `\n${pair[0].trim()} = ${pair[1].trim()}`
       })
 
-      fileOps.updateFile(message.guild.id, guildRss)
+      fileOps.updateFile(guildRss)
 
       console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Cookies for ${source.link} have been set to\n${newCookies}\n`)
       await message.channel.send(`Your new cookie(s) for <${source.link}> is now\n\`\`\`\n${newCookies}\`\`\``)

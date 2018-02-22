@@ -65,7 +65,7 @@ module.exports = (bot, message, command, role) => {
           if (filterCategory !== 'roleSubscriptions') delete filterList[filterCategory]
         }
         if (Object.keys(filterList).length === 0) delete source.filters
-        fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
         return await message.channel.send(`All feed filters have been successfully removed from <${source.link}>.`)
       } else if (selectedOption === '4') { // 4 = List all existing filters
         const msg = new Discord.RichEmbed()

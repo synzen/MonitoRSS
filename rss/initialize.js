@@ -124,7 +124,7 @@ exports.addNewFeed = (settings, callback, customTitle) => {
         currentGuilds.set(channel.guild.id, guildRss)
       }
 
-      fileOps.updateFile(channel.guild.id, guildRss)
+      fileOps.updateFile(guildRss)
       linkList.push(link)
       callback(null, link, metaTitle, rssName)
     }

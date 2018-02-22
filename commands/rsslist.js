@@ -32,10 +32,7 @@ module.exports = (bot, message, command) => {
       titleChecks: feed.titleChecks === true ? 'Title Checks: Enabled\n' : null
     }
     if (FAIL_LIMIT !== 0) o.status = feedStatus(feed.link)
-    if (o.status.startsWith('STATUS: FAILED')) {
-      console.log('started')
-      ++failedFeedCount
-    }
+    if (o.status.startsWith('STATUS: FAILED')) ++failedFeedCount
     currentRSSList.push(o)
   }
 

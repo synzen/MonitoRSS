@@ -3,6 +3,7 @@ const Discord = require('discord.js')
 const config = require('./config.json')
 const storage = require('./util/storage.js')
 const connectDb = require('./rss/db/connect.js')
+const fileOps = require('./util/fileOps.js')
 const dbRestore = require('./commands/controller/dbrestore.js')
 const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
@@ -70,7 +71,12 @@ Manager.on('message', function (shard, message) {
           currentGuilds.set(gId, message.guilds[gId])
         }
         for (var guildId in missingGuilds) {
-          if (missingGuilds[guildId] === Manager.totalShards) console.log('SH MANAGER: WARNING - Missing Guild from bot lists: ' + guildId)
+          if (missingGuilds[guildId] === Manager.totalShards) {
+            fileOps.deleteGuild(guildId, null, err => {
+              if (err) return console.log(`INIT Warning: Guild ${guildId} deletion error based on missing guild:`, err.message || err)
+              console.log(`INIT Info: Guild ${guildId} is missing and has been removed and backed up.`)
+            })
+          }
         }
         createIntervals()
       } else if (initShardIndex < Manager.totalShards) Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init

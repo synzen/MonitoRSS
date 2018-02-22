@@ -122,7 +122,7 @@ module.exports = (bot, message) => {
               channelErrMsg = 'Invalid feed. Note that you cannot simply put any link - it must be formatted as an RSS feed page. To check if it is, you may search for online RSS feed validators'
               break
             case 'database':
-              channelErrMsg = 'Internal database error. Please try again'
+              channelErrMsg = 'Internal database error'
               break
             default:
               channelErrMsg = 'No reason available'

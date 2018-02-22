@@ -113,7 +113,7 @@ module.exports = (bot, message, command) => {
         const resetting = await message.channel.send(`Resetting and disabling embed...`)
         delete source.embedMessage
         if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
-        fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
         console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${source.link}.`)
         return await resetting.edit(`Embed has been disabled, and all properties have been removed for <${source.link}>.`)
       } else if (setting === 'reset') {
@@ -124,7 +124,7 @@ module.exports = (bot, message, command) => {
           delete source.embedMessage
           if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
         }
-        fileOps.updateFile(message.guild.id, guildRss)
+        fileOps.updateFile(guildRss)
         console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Property '${property}' reset for ${source.link}.`)
         return await resetting.edit(`Settings updated. The property \`${property}\` has been reset for <${source.link}>.`)
       }
@@ -133,7 +133,7 @@ module.exports = (bot, message, command) => {
       if (typeof source.embedMessage !== 'object' || typeof source.embedMessage.properties !== 'object') source.embedMessage = { properties: {} }
       source.embedMessage.properties[property] = setting
       console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${source.link}. Property '${property}' set to '${setting}'.`)
-      fileOps.updateFile(message.guild.id, guildRss)
+      fileOps.updateFile(guildRss)
 
       return await editing.edit(`Settings updated for <${source.link}>. The property \`${property}\` has been set to \`\`\`${setting}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`)
     } catch (err) {

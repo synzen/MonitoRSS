@@ -18,7 +18,7 @@
     "uri": "mongodb://localhost/rss",
     "clean": true,
     "articlesExpire": 14,
-    "guildBackupsExpire": 14
+    "guildBackupsExpire": 7
   },
   "feedSettings": {
     "refreshTimeMinutes": 15,

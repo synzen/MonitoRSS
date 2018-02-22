@@ -38,7 +38,7 @@ exports.normal = function (bot, message) {
           }
         }
       }
-      if (enforced) fileOps.updateFile(guildID, guildRss)
+      if (enforced) fileOps.updateFile(guildRss)
     }
 
     const enforceTxt = enforced ? ` Limit has been enforced, ${enforced} feed(s) have been removed.` : ''

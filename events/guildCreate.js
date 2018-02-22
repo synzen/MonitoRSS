@@ -1,7 +1,13 @@
 const config = require('../config.json')
+const fileOps = require('../util/fileOps.js')
 
-module.exports = function (bot, guild) {
+module.exports = (bot, guild) => {
   console.log(`Guild "${guild.name}" (Users: ${guild.members.size}) has been added.`)
+
+  fileOps.restoreBackup(guild.id, null, err => {
+    if (err) console.log(`Guild Warning: (${guild.id}, ${guild.name}) => Unable to restore backup:`, err.message || err)
+    console.log(`Guild Info: (${guild.id}, ${guild.name}) => Restored backup.`)
+  })
 
   if (!config.logging.discordChannelLog) return
 

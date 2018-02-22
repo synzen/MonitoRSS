@@ -50,7 +50,7 @@ exports.defaultConfigs = {
     uri: {type: 'string', default: 'mongodb://localhost/rss'},
     clean: {type: 'boolean', default: false},
     articlesExpire: {type: 'number', default: 14},
-    guildBackupsExpire: {type: 'number', default: 14}
+    guildBackupsExpire: {type: 'number', default: 7}
   },
   feedSettings: {
     refreshTimeMinutes: {type: 'number', default: 10},
