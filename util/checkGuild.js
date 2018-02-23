@@ -2,6 +2,7 @@
 
 const fileOps = require('./fileOps.js')
 const currentGuilds = require('./storage.js').currentGuilds
+const log = require('./logger.js')
 
 exports.roles = (bot, guildId, rssName) => {
   const guildRss = currentGuilds.get(guildId)
@@ -15,12 +16,11 @@ exports.roles = (bot, guildId, rssName) => {
     for (var roleIndex in globalSubList) {
       const role = globalSubList[roleIndex]
       if (!guild.roles.get(role.roleID)) {
-        console.log(`Guild Warning: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) has been deleted. Removing.`)
         guildRss.sources[rssName].roleSubscriptions.splice(roleIndex, 1)
         if (guildRss.sources[rssName].roleSubscriptions.length === 0) delete guildRss.sources[rssName].roleSubscriptions
+        log.guild.info(`(${role.roleID}, ${role.roleName}) Role has been removed due to guild deletion`, guild)
         changedInfo = true
       } else if (guild.roles.get(role.roleID).name !== role.roleName) {
-        console.log(`Guild Info: (${guild.id}, ${guild.name}) => Role (${role.roleID}, ${role.roleName}) => Changed role name to ${guild.roles.get(role.roleID).name}`)
         role.roleName = guild.roles.get(role.roleID).name
         changedInfo = true
       }
@@ -32,13 +32,12 @@ exports.roles = (bot, guildId, rssName) => {
     const filteredSubList = rssList[rssName].filters.roleSubscriptions
     for (var roleID in filteredSubList) {
       if (!guild.roles.get(roleID)) {
-        console.log(`Guild Warning: (${guild.id}, ${guild.name}) => Role (${roleID}, ${filteredSubList[roleID].roleName}) has been deleted. Removing.`)
         delete guildRss.sources[rssName].filters.roleSubscriptions[roleID]
         if (Object.keys(guildRss.sources[rssName].filters.roleSubscriptions).length === 0) delete guildRss.sources[rssName].filters.roleSubscriptions
         if (Object.keys(guildRss.sources[rssName].filters).length === 0) delete guildRss.sources[rssName].filters
+        log.guild.info(`(${roleID}, ${filteredSubList[roleID].roleName}) Role has been removed due to guild deletion`, guild)
         changedInfo = true
       } else if (guild.roles.get(roleID).name !== filteredSubList[roleID].roleName) {
-        console.log(`Guild Info: (${guild.id}, ${guild.name}) => Role (${roleID}, ${filteredSubList[roleID].roleName}) => Changed role name to ${guild.roles.get(roleID).name}`)
         filteredSubList[roleID].roleName = guild.roles.get(roleID).name
         changedInfo = true
       }
@@ -53,7 +52,6 @@ exports.names = (bot, guildId) => {
   const guild = bot.guilds.get(guildId)
 
   if (guildRss.name !== guild.name) {
-    console.log(`Guild Info: (${guild.id}, ${guildRss.name}) => Name change detected, changed guild name from '${guildRss.name}' to '${guild.name}'.`)
     guildRss.name = guild.name
     fileOps.updateFile(guildRss)
   }

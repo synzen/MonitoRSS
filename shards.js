@@ -4,6 +4,7 @@ const config = require('./config.json')
 const storage = require('./util/storage.js')
 const connectDb = require('./rss/db/connect.js')
 const fileOps = require('./util/fileOps.js')
+const log = require('./util/logger.js')
 const dbRestore = require('./commands/controller/dbrestore.js')
 const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
@@ -14,7 +15,7 @@ const missingGuilds = {}
 if (!config.advanced || typeof config.advanced.shards !== 'number' || config.advanced.shards < 1) {
   if (!config.advanced) config.advanced = {}
   config.advanced.shards = 1
-  console.log('SH MANAGER: No valid shard count found in config, setting default of 1')
+  console.log('SH MANAGER: No valid shard count configured, setting default of 1')
 }
 
 const activeShardIds = []
@@ -27,16 +28,14 @@ connectDb(err => {
   if (err) throw err
   Manager.spawn(config.advanced.shards, 0)
 
-  Manager.shards.forEach(function (val, key) {
-    activeShardIds.push(key)
-  })
+  Manager.shards.forEach((val, key) => activeShardIds.push(key))
   Manager.broadcast({type: 'startInit', shardId: activeShardIds[0]}) // Send the signal for first shard to initialize
 
-  fs.readdir('./settings/schedules', function (err, files) {
-    if (err) return console.log(err)
+  fs.readdir('./settings/schedules', (err, files) => {
+    if (err) return log.init.warning('', err)
     for (var i in files) {
-      fs.readFile('./settings/schedules/' + files[i], function (err, data) {
-        if (err) return console.log(err)
+      fs.readFile('./settings/schedules/' + files[i], (err, data) => {
+        if (err) return log.init.warning('', err)
         const refreshTime = JSON.parse(data).refreshTimeMinutes
         if (!refreshTimes.includes(refreshTime)) refreshTimes.push(refreshTime)
       })
@@ -46,7 +45,7 @@ connectDb(err => {
 
 function createIntervals () {
   refreshTimes.forEach((refreshTime, i) => {
-    scheduleIntervals.push(setInterval(function () {
+    scheduleIntervals.push(setInterval(() => {
       scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the activeShardIds index
       let p = scheduleTracker[refreshTime]
       Manager.broadcast({type: 'runSchedule', shardId: activeShardIds[p], refreshTime: refreshTime})
@@ -54,7 +53,7 @@ function createIntervals () {
   })
 }
 
-Manager.on('message', function (shard, message) {
+Manager.on('message', (shard, message) => {
   if (message === 'kill') process.exit()
 
   switch (message.type) {
@@ -73,8 +72,8 @@ Manager.on('message', function (shard, message) {
         for (var guildId in missingGuilds) {
           if (missingGuilds[guildId] === Manager.totalShards) {
             fileOps.deleteGuild(guildId, null, err => {
-              if (err) return console.log(`INIT Warning: Guild ${guildId} deletion error based on missing guild:`, err.message || err)
-              console.log(`INIT Info: Guild ${guildId} is missing and has been removed and backed up.`)
+              if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild`, err)
+              log.init.warning(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
             })
           }
         }
@@ -85,7 +84,6 @@ Manager.on('message', function (shard, message) {
     case 'scheduleComplete':
       scheduleTracker[message.refreshTime]++ // Index for activeShardIds
       if (scheduleTracker[message.refreshTime] !== Manager.totalShards) Manager.broadcast({shardId: activeShardIds[scheduleTracker[message.refreshTime]], type: 'runSchedule', refreshTime: message.refreshTime}) // Send signal for next shard to start cycle
-      // else console.log(`SH MANAGER: Cycles for all shards complete. for interval ${message.refreshTime} minutes`)
       break
 
     case 'updateGuild':
@@ -95,6 +93,15 @@ Manager.on('message', function (shard, message) {
 
     case 'deleteGuild':
       currentGuilds.delete(message.guildId)
+      break
+
+    case 'updateFailedLinks':
+      Manager.broadcast({ type: 'updateFailedLinks', failedLinks: message.failedLinks })
+      try {
+        fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(message.failedLinks, null, 2))
+      } catch (err) {
+
+      }
       break
 
     case 'dbRestore':

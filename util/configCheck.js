@@ -1,31 +1,29 @@
 // Check for invalid configs on startup and at the beginning of each feed retrieval cycle
 const moment = require('moment-timezone')
+const log = require('./logger.js')
 
 exports.checkExists = (rssName, feed, logging, initializing) => {
-  let valid = true
-
   if (feed.enabled === false) {
-    if (logging) console.log(`RSS Config Info: ${rssName} is disabled in channel ${feed.channel}, skipping...`)
+    if (logging) log.rss.info(`${rssName} is disabled in channel ${feed.channel}, skipping...`)
     return false
   }
-
   if (!feed.link || !feed.link.startsWith('http')) {
-    if (logging) console.log(`RSS Config Warning: ${rssName} has no valid link defined, skipping...`)
-    valid = false
-  } else if (!feed.channel) {
-    if (logging) console.log(`RSS Config Warning: ${rssName} has no channel defined, skipping...`)
-    valid = false
+    if (logging) log.rss.warning(`${rssName} has no valid link defined, skipping...`)
+    return false
   }
-
-  return valid
+  if (!feed.channel) {
+    if (logging) log.rss.warning(`${rssName} has no channel defined, skipping...`)
+    return false
+  }
+  return true
 }
 
 exports.validChannel = (bot, guildId, feed) => {
-  const channel = bot.channels.has(feed.channel)
+  const channel = bot.channels.get(feed.channel)
   const guild = bot.guilds.get(guildId)
 
   if (!channel) {
-    console.log(`RSS Config Warning: (${guildId}, ${guild.name}) => ${feed.link}'s channel (${feed.channel}) was not found. skipping...`)
+    log.rss.warning(`Channel for feed ${feed.link} was not found, skipping feed`, guild, channel)
     return false
   } else return true
 }

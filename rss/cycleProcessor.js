@@ -6,6 +6,7 @@ const requestStream = require('./request.js')
 const connectDb = require('./db/connect.js')
 const logLinkErr = require('../util/logLinkErrs.js')
 const processAllSources = require('./logic/cycle.js')
+const log = require('../util/logger.js')
 if (require('../config.json').logging.logDates === true) require('../util/logDates.js')()
 let connected = false
 
@@ -19,8 +20,8 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
   setTimeout(() => {
     if (!requested) {
       try {
-        process.send({status: 'failed', link: link, rssList: rssList})
-        console.log(`RSS Error: Unable to complete request for link ${link} during cycle, forcing status update to parent process`)
+        process.send({ status: 'failed', link: link, rssList: rssList })
+        log.rss.error(`Unable to complete request for link ${link} during cycle, forcing status update to parent process`)
       } catch (e) {}
     }
   }, 90000)
@@ -29,12 +30,12 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
     requested = true
     if (!err) return
     logLinkErr({link: link, content: err})
-    process.send({status: 'failed', link: link, rssList: rssList})
+    process.send({ status: 'failed', link: link, rssList: rssList })
   })
 
   feedparser.on('error', err => {
     logLinkErr({link: link, content: err})
-    process.send({status: 'failed', link: link, rssList: rssList})
+    process.send({ status: 'failed', link: link, rssList: rssList })
     feedparser.removeAllListeners('end')
   })
 
@@ -50,7 +51,7 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
 
     processAllSources(rssList, articleList, debugFeeds, link, (err, results) => {
-      if (err) console.log(err)
+      if (err) log.rss.error(`Cycle logic`, err)
       if (results) process.send(results)
     })
   })

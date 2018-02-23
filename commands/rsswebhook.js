@@ -4,6 +4,7 @@ const storage = require('../util/storage.js')
 const webhookAccessors = storage.webhookAccessors
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
+const log = require('../util/logger.js')
 
 async function feedSelectorFn (m, data, callback) {
   const { guildRss, rssName } = data
@@ -42,7 +43,7 @@ function collectWebhook (m, data, callback) {
 module.exports = async (bot, message, command) => {
   try {
     if (config.advanced.restrictWebhooks === true && !webhookAccessors.ids.includes(message.guild.id)) {
-      console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => User "${message.author.username}" attempted to access webhooks as an unauthorized user`)
+      log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
       return await message.channel.send(`This server does not have access to webhook use.`)
     }
     if (!message.guild.me.permissionsIn(message.channel).has('MANAGE_WEBHOOKS')) return await message.channel.send(`I must have Manage Webhooks permission in this channel in order to work.`)
@@ -57,7 +58,6 @@ module.exports = async (bot, message, command) => {
         const { guildRss, rssName, existingWebhook, webhookName, webhook, customAvatarSrch, customNameSrch } = data
         const source = guildRss.sources[rssName]
         if (webhookName === '{remove}') {
-          console.log('here')
           if (typeof existingWebhook !== 'object') await message.channel.send(`There is no webhook assigned to this feed.`)
           else {
             const name = source.webhook.name
@@ -76,11 +76,11 @@ module.exports = async (bot, message, command) => {
         }
         fileOps.updateFile(guildRss)
       } catch (err) {
-        console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rsswebhook2:`, err.message || err)
-        if (err.code !== 50013) message.channel.send('Unable to fetch webhooks for this channel. ', err.message).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rsswebhook 2:`, err.message || err))
+        log.command.warning(`rsswebhook2`, message.guild, err)
+        if (err.code !== 50013) message.channel.send('Unable to fetch webhooks for this channel. ', err.message).catch(err => log.command.warning(`rsswebhook`, message.guild, err))
       }
     })
   } catch (err) {
-    console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rsswebhook1:`, err.message || err)
+    log.command.warning(`rsswebhook`, message.guild, err)
   }
 }

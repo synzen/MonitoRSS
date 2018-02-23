@@ -1,4 +1,5 @@
 const config = require('../config.json')
+const log = require('./logger.js')
 
 /**
  * Handles message tracking and bulk deletion
@@ -41,7 +42,7 @@ class MessageCleaner {
       this._messageList[0].delete().then(m => {
         this._messageList = []
       }).catch(err => {
-        console.log(`Warning: Unable to delete single message after menu series:`, err.message || err)
+        log.general.warning(`Unable to delete single message after menu series`, err)
         this._messageList = []
       })
     } else if (this._allowed && this._messageList.length > 1) {
@@ -49,7 +50,7 @@ class MessageCleaner {
         this._messageList = []
       }).catch(err => {
         this._messageList = []
-        console.log(`Warning: Unable to bulk delete messages after menu series\n`, err)
+        log.general.warning(`Unable to bulk delete messages after menu series`, err)
       })
     }
   }

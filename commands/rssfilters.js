@@ -6,6 +6,7 @@ const getArticle = require('../rss/getArticle.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
+const log = require('../util/logger.js')
 const VALID_OPTIONS = ['1', '2', '3', '4', '5']
 
 function feedSelectorFn (m, data, callback) {
@@ -109,22 +110,22 @@ module.exports = (bot, message, command, role) => {
               default:
                 channelErrMsg = 'No reason available'
             }
-            console.log(`RSS Warning: Unable to send filtered test article '${err.feed.link}':`, err.message || err)
+            log.command.warning(`Unable to send filtered test article '${err.feed.link}':`, message.guild, err)
             return message.channel.send(`Unable to grab feed article for feed <${err.feed.link}> (${channelErrMsg}).`).catch(err => console.log(`Commands Warning: Unable to grab feed article for ${err.feed.link} for rssfilters:`, err.message || err))
           }
-          console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Sending filtered article for ${source.link}`)
+          log.command.info(`Sending filtered article for ${source.link}`, message.guild)
           article.rssName = rssName
           article.discordChannelId = message.channel.id
           sendToDiscord(bot, article, err => {
             if (err) {
-              console.log(`RSS Delivery Failure: (${message.guild.id}, ${message.guild.name}) => channel (${message.channel.id}, ${message.channel.name}) for article ${article.link}`, err.message || err)
+              log.command.error(`Article ${article.link} failed to send`, message.guild, err)
               if (err.code === 50035) message.channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
             }
           })
         })
       }
     } catch (err) {
-      console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rssfilters:`, err.message || err)
+      log.command.warning(`rssfilters:`, message.guild, err)
     }
   })
 }

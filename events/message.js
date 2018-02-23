@@ -4,24 +4,16 @@ const loadCommand = (file) => require(`../commands/${file}.js`)
 const hasPerm = require('../util/hasPerm.js')
 const commandList = require('../util/commandList.json')
 const channelTracker = require('../util/channelTracker.js')
+const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
 const blacklistGuilds = storage.blacklistGuilds
 
 function isBotController (command, author) {
   const controllerList = config.botSettings.controllerIds
-  if (!controllerList || (Array.isArray(controllerList) && controllerList.length === 0)) return false
-  else if (typeof controllerList !== 'object' || (typeof controllerList === 'object' && !Array.isArray(controllerList))) {
-    console.log(`Commands Warning: Could not execute command "${command} due to incorrectly defined bot controller."`)
-    return false
-  }
-  return controllerList.includes(author)
+  return controllerList.length === 0 ? false : controllerList.includes(author)
 }
 
-function logCommand (message) {
-  return console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Used ${message.content}.`)
-}
-
-module.exports = function (bot, message) {
+module.exports = (bot, message) => {
   if (!message.member || message.author.bot || !message.content.startsWith(config.botSettings.prefix)) return
   if (blacklistGuilds.ids.includes(message.guild.id)) return
   if (storage.initializing) return message.channel.send(`Currently booting up, please wait.`).then(m => m.delete(4000))
@@ -35,7 +27,7 @@ module.exports = function (bot, message) {
   // Regular commands
   for (var cmd in commandList) {
     if (cmd === command && hasPerm.bot(bot, message, commandList[cmd].botPerm) && hasPerm.user(message, commandList[cmd].userPerm)) {
-      logCommand(message)
+      log.command.info(`Used ${message.content}`, message.guild)
       return loadCommand(command)(bot, message, command)
     }
   }

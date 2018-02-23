@@ -3,7 +3,7 @@ const config = require('../../config.json')
 const channelTracker = require('../../util/channelTracker.js')
 const MessageCleaner = require('../../util/MessageCleaner.js')
 const pageControls = require('../../util/pageControls.js')
-
+const log = require('../../util/logger.js')
 /**
  * A model that automatically handles pagination via reactions for multiple embeds and able to be used in series with data passed in a sequence.
  */
@@ -198,11 +198,11 @@ class Menu {
         // Remove the channel tracker to allow commands in this channel again
         channelTracker.remove(this.channel.id)
         if (reason === 'user') return
-        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Commands Warning: Unable to send expired menu message:`, err.message))
+        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.info(`Unable to send expired menu message:`, this.channel.guild, err))
         else this.channel.send(reason).then(m => m.delete(6000))
       })
     } catch (err) {
-      console.log(`Commands Warning: Failed to send Menu:`, err.message)
+      log.command.warning(`Failed to send Menu:`, this.channel.guild, err)
       callback(err, { __end: true })
     }
   }

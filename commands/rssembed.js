@@ -2,6 +2,7 @@ const fileOps = require('../util/fileOps.js')
 const config = require('../config.json')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
+const log = require('../util/logger.js')
 // EMBED_PROPERTIES where [0] = property name, [1] = property description, [2] = internal reference to property
 const EMBED_PROPERTIES = [['Color', 'The sidebar color of the embed\nThis MUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html', 'color'],
                       ['Author Title', 'Title of the embed\nAccepts placeholders', 'authorTitle'],
@@ -114,7 +115,7 @@ module.exports = (bot, message, command) => {
         delete source.embedMessage
         if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
         fileOps.updateFile(guildRss)
-        console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed reset for ${source.link}.`)
+        log.command.info(`Embed reset for ${source.link}`, message.guild)
         return await resetting.edit(`Embed has been disabled, and all properties have been removed for <${source.link}>.`)
       } else if (setting === 'reset') {
         const resetting = await message.channel.send(`Resetting property \`${property}\`...`)
@@ -125,19 +126,19 @@ module.exports = (bot, message, command) => {
           if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
         }
         fileOps.updateFile(guildRss)
-        console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Property '${property}' reset for ${source.link}.`)
+        log.command.info(`Property '${property}' reset for ${source.link}`, message.guild)
         return await resetting.edit(`Settings updated. The property \`${property}\` has been reset for <${source.link}>.`)
       }
 
       const editing = await message.channel.send(`Updating embed settings...`)
       if (typeof source.embedMessage !== 'object' || typeof source.embedMessage.properties !== 'object') source.embedMessage = { properties: {} }
       source.embedMessage.properties[property] = setting
-      console.log(`Embed Customization: (${message.guild.id}, ${message.guild.name}) => Embed updated for ${source.link}. Property '${property}' set to '${setting}'.`)
+      log.command.info(`Embed updated for ${source.link}. Property '${property}' set to '${setting}'`, message.guild)
       fileOps.updateFile(guildRss)
 
       return await editing.edit(`Settings updated for <${source.link}>. The property \`${property}\` has been set to \`\`\`${setting}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`)
     } catch (err) {
-      console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rssembed:`, err.message || err)
+      log.command.warning(`rssembed:`, message.guild, err)
     }
   })
 }

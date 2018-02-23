@@ -7,6 +7,7 @@ const events = require('events')
 const childProcess = require('child_process')
 const storage = require('./storage.js') // All properties of storage must be accessed directly due to constant changes
 const logLinkErr = require('./logLinkErrs.js')
+const log = require('./logger.js')
 const allScheduleWords = storage.allScheduleWords
 const FAIL_LIMIT = config.feedSettings.failLimit
 const WARN_LIMIT = Math.floor(config.feedSettings.failLimit * 0.75) < FAIL_LIMIT ? Math.floor(config.feedSettings.failLimit * 0.75) : Math.floor(config.feedSettings.failLimit * 0.5) < FAIL_LIMIT ? Math.floor(config.feedSettings.failLimit * 0.5) : 0
@@ -32,7 +33,7 @@ class FeedSchedule {
 
     if (!this.bot.shard || (this.bot.shard && this.bot.shard.count === 1)) {
       this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
-      console.log(`${this.SHARD_ID}RSS Info: Schedule '${this.schedule.name}' has begun.`)
+      log.rss.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
     }
   }
 
@@ -44,15 +45,17 @@ class FeedSchedule {
       if (config.feedSettings.notifyFail !== true) return
       for (var i in rssList) {
         const source = rssList[i]
-        if (source.link === link) this.bot.channels.get(source.channel).send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => console.log(`Unable to send reached warning limit for feed ${link} in channel ${source.channel}`, err.message || err))
+        const channel = this.bot.channels.get(source.channel)
+        if (source.link === link) channel.send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => log.general.warning(`Unable to send reached warning limit for feed ${link}`, channel.guild, channel, err))
       }
     } else if (failedLinks[link] >= FAIL_LIMIT) {
       storage.failedLinks[link] = (new Date()).toString()
-      console.log(`RSS Error: ${link} has passed the fail limit (${FAIL_LIMIT}). Will no longer retrieve.`)
+      log.rss.error(`${link} has passed the fail limit (${FAIL_LIMIT}). Will no longer retrieve`)
       if (config.feedSettings.notifyFail !== true) return
       for (var j in rssList) {
         const source = rssList[j]
-        if (source.link === link) this.bot.channels.get(source.channel).send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => console.log(`Unable to send reached failure limit for feed ${link} in channel ${source.channel}`, err.message || err))
+        const channel = this.bot.channels.get(source.channel)
+        if (source.link === link) channel.send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => log.general.warning(`Unable to send reached failure limit for feed ${link}`, channel.guild, channel, err))
       }
     }
   }
@@ -87,7 +90,7 @@ class FeedSchedule {
             if (source.link.includes(word)) {
               storage.linkTracker[rssName] = this.schedule.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
               this._delegateFeed(guildRss, rssName)
-              console.log(`RSS Info: Undelegated feed ${rssName} (${source.link}) has been delegated to custom this.schedule ${this.schedule.name}`)
+              log.rss.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom this.schedule ${this.schedule.name}`)
             }
           })
         } else if (!storage.linkTracker[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
@@ -133,10 +136,10 @@ class FeedSchedule {
   run () {
     if (this.inProgress) {
       if (!config.advanced.processorMethod || config.advanced.processorMethod === 'single') {
-        console.log(`RSS Info: Previous ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
+        log.rss.warning(`Previous ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
         this.inProgress = false
       } else {
-        console.log(`${this.SHARD_ID}Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
+        log.rss.warning(`${this.SHARD_ID}Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
         for (var x in this._processorList) {
           this._processorList[x].kill()
         }
@@ -190,7 +193,7 @@ class FeedSchedule {
       getArticles(link, rssList, uniqueSettings, (err, linkCompletion) => {
         if (err) logLinkErr({link: linkCompletion.link, content: err})
         if (linkCompletion.status === 'article') {
-          if (debugFeeds.includes(linkCompletion.article.rssName)) console.log(`DEBUG ${linkCompletion.article.rssName}: Emitted article event.`)
+          if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
           return this.cycle.emit('article', linkCompletion.article)
         }
         if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) {
@@ -295,27 +298,22 @@ class FeedSchedule {
 
   _finishCycle (noFeeds) {
     const failedLinks = storage.failedLinks
-    if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({type: 'scheduleComplete', refreshTime: this.refreshTime})
-    if (noFeeds) return console.log(`${this.SHARD_ID}RSS Info: Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve.`)
+    if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({ type: 'scheduleComplete', refreshTime: this.refreshTime })
+    if (noFeeds) return log.rss.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
 
     if (this._processorList.length === 0) this.inProgress = false
 
-    if (this.bot.shard) {
-      this.bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');`)
-      .then(() => {
-        try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
-      })
-      .catch(err => console.log(`Error: Unable to broadcast eval failedLinks update on cycle end for shard ${this.bot.shard.id}:`, err.message || err))
-    } else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of cycle, reason: ${e}`) }
+    if (this.bot.shard) process.send({ type: 'updateFailedLinks', failedLinks: failedLinks })
+    else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (err) { log.general.warning(`Unable to update failedLinks.json on end of cycle`, err) }
 
     var timeTaken = ((new Date() - this._startTime) / 1000).toFixed(2)
-    console.log(`${this.SHARD_ID}RSS Info: Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s.`)
+    log.rss.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
     if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({type: 'scheduleComplete', refreshTime: this.refreshTime})
   }
 
   stop () {
     clearInterval(this._timer)
-    if (this._timer) console.log(`RSS Info: Schedule '${this.schedule.name}' has stopped.`)
+    if (this._timer) log.rss.info(`Schedule '${this.schedule.name}' has stopped`)
   }
 
   start () {

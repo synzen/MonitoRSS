@@ -1,5 +1,6 @@
 const fileOps = require('../util/fileOps.js')
 const config = require('../config.json')
+const log = require('../util/logger.js')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
 
@@ -46,10 +47,10 @@ module.exports = (bot, message, command) => {
       const prettyPropName = chosenProp === 'checkTitles' ? 'Title Checks' : chosenProp === 'imgPreviews' ? 'Image Previews' : chosenProp === 'imgLinksExistence' ? 'Image Links Existence' : 'Date Checks'
 
       fileOps.updateFile(guildRss)
-      console.log(`${prettyPropName}: (${message.guild.id}, ${message.guild.name}) => ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`)
+      log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)
       await message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${source.link}>${followGlobal ? ', and is now following the global setting.' : '.'}`)
     } catch (err) {
-      console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rssoptions:`, err.message || err)
+      log.comamnd.warning(`rssoptions`, message.guild, err)
     }
   })
 }

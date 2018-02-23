@@ -1,7 +1,7 @@
-const fs = require('fs')
 const channelTracker = require('../util/channelTracker.js')
 const initialize = require('../rss/initialize.js')
 const config = require('../config.json')
+const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
 
 function sanitize (array) {
@@ -29,7 +29,7 @@ module.exports = (bot, message) => {
   let maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited'
 
-  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => console.log(`Commands Warning rssAdd 0:`, err.message || err)) // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
 
   let linkList = message.content.split(' ')
   linkList.shift()
@@ -65,7 +65,7 @@ module.exports = (bot, message) => {
     if (Object.keys(passedAddLinks).length > 0) msg += 'Articles will be automatically delivered once new articles are found.'
 
     channelTracker.remove(message.channel.id)
-    verifyMsg.edit(msg).catch(err => console.log(`Commands Warning rssAdd 1:`, err.message || err))
+    verifyMsg.edit(msg).catch(err => log.command.warning(`rssAdd 1:`, err))
   }
 
   channelTracker.add(message.channel.id)
@@ -81,7 +81,7 @@ module.exports = (bot, message) => {
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
         else return finishLinkList(verifyMsg)
       } else if (maxFeedsAllowed !== 'Unlimited' && Object.keys(rssList).length + checkedSoFar >= maxFeedsAllowed) {
-        console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Unable to add feed ${link} due to limit of ${maxFeedsAllowed} feeds.`)
+        log.command.info(`Unable to add feed ${link} due to limit of ${maxFeedsAllowed} feeds`, message.guild)
         failedAddLinks[link] = `Maximum feed limit of ${maxFeedsAllowed} has been reached.`
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
         else return finishLinkList(verifyMsg)
@@ -128,21 +128,14 @@ module.exports = (bot, message) => {
               channelErrMsg = 'No reason available'
           }
           if (cookiesFound && !cookies) channelErrMsg += ' (Cookies were detected, but missing access for usage)'
-          console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}`, err.message || err)
+          log.command.warning(`Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}`, message.guild, err)
           failedAddLinks[link] = channelErrMsg
         } else {
-          console.log(`Commands Info: (${message.guild.id}, ${message.guild.name}) => Added ${link}.`)
+          log.command.info(`Added ${link}`, message.guild)
+          // log.command.info(`Added ${link}`, { guild: message.guild })
           if (failedLinks[link]) {
-            if (bot.shard) {
-              bot.shard.broadcastEval(`delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${link}'];`)
-              .then(() => {
-                try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition after broadcast.`, e.message || e) }
-              })
-              .catch(err => console.log(`Error: Unable to broadcast failed links update on rssadd.`, err.message || err))
-            } else {
-              delete storage.failedLinks[link]
-              try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on feed addition. `, e.message || e) }
-            }
+            delete storage.failedLinks[link]
+            if (bot.shard) process.send('updateFailedLinks', { failedLinks: failedLinks })
           }
           passedAddLinks[link] = cookies
         }
@@ -151,7 +144,7 @@ module.exports = (bot, message) => {
       })
     })(0)
   }).catch(err => {
-    console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could not begin feed addition validation.`, err.message || err)
+    log.command.warning(`Could not begin feed addition validation.`, message.guild, err)
     channelTracker.remove(message.channel.id)
   })
 }

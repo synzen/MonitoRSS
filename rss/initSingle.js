@@ -9,12 +9,12 @@ module.exports = (link, rssList, uniqueSettings, callback) => {
   var cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
 
   requestStream(link, cookies, feedparser, err => {
-    if (err) return callback(err, {status: 'failed', link: link, rssList: rssList})
+    if (err) return callback(err, { status: 'failed', link: link, rssList: rssList })
   })
 
   feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
-    return callback(err, {status: 'failed', link: link, rssList: rssList})
+    return callback(err, { status: 'failed', link: link, rssList: rssList })
   })
 
   feedparser.on('readable', function () {
@@ -24,7 +24,7 @@ module.exports = (link, rssList, uniqueSettings, callback) => {
   })
 
   feedparser.on('end', () => {
-    if (articleList.length === 0) return callback(null, {status: 'success', link: link})
+    if (articleList.length === 0) return callback(null, { status: 'success', link: link })
 
     initAllSources(rssList, articleList, link, (err, results) => {
       if (err) throw err

@@ -9,6 +9,7 @@ const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const connectDb = require('./db/connect.js')
 const initAllSources = require('./logic/initialization.js')
+const log = require('../util/logger.js')
 if (config.logging.logDates === true) require('../util/logDates.js')()
 let connected = false
 
@@ -22,8 +23,8 @@ function init (link, rssList, uniqueSettings) {
   setTimeout(() => {
     if (!requested) {
       try {
-        process.send({status: 'failed', link: link, rssList: rssList})
-        console.log(`RSS Error! Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
+        process.send({ status: 'failed', link: link, rssList: rssList })
+        log.rss.error(`Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
       } catch (e) {}
     }
   }, 180000)
@@ -31,15 +32,15 @@ function init (link, rssList, uniqueSettings) {
   requestStream(link, cookies, feedparser, err => {
     requested = true
     if (err) {
-      console.log(`INIT Error: Skipping ${link}:`, err.message || err)
+      log.init.error(`Skipping ${link}`, err)
       return process.send({status: 'failed', link: link, rssList: rssList})
     }
   })
 
   feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
-    console.log(`INIT Error: Skipping ${link}:`, err.message || err)
-    return process.send({status: 'failed', link: link, rssList: rssList})
+    log.init.error(`Skipping ${link}`, err)
+    return process.send({ status: 'failed', link: link, rssList: rssList })
   })
 
   feedparser.on('readable', function () {

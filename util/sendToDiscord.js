@@ -4,6 +4,7 @@ const storage = require('./storage.js')
 const deletedFeeds = storage.deletedFeeds
 const currentGuilds = storage.currentGuilds
 const debugFeeds = require('../util/debugFeeds').list
+const log = require('./logger.js')
 
 module.exports = (bot, article, callback, isTestMessage) => {
   let channel = bot.channels.get(article.discordChannelId)
@@ -27,15 +28,15 @@ module.exports = (bot, article, callback, isTestMessage) => {
       channelType = 'webhook'
       body()
     }).catch(err => {
-      console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Cannot fetch webhooks for webhook initialization to send message:  `, err.message || err)
+      log.general.warning(`Cannot fetch webhooks for webhook initialization to send message`, channel, err)
       body()
     })
   } else body()
 
   function body () {
     // Sometimes feeds get deleted mid-retrieval cycle, thus check for empty rssList and if the feed itself was deleted
-    if (!rssList || Object.keys(rssList).length === 0) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => No sources for guild, skipping Discord message sending.`)
-    if (deletedFeeds.includes(rssName)) return console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed (rssName ${rssName}, link: ${rssList[rssName].link}) was deleted during cycle, skipping Discord message sending.`)
+    if (!rssList || Object.keys(rssList).length === 0) return log.general.warning(`No sources for guild, skipping Discord message sending`, channel)
+    if (deletedFeeds.includes(rssName)) return log.general.warning(`Feed (rssName ${rssName}, link: ${rssList[rssName].link}) was deleted during cycle, skipping Discord message sending`, channel)
 
     let attempts = 1
 
@@ -44,7 +45,7 @@ module.exports = (bot, article, callback, isTestMessage) => {
     const message = translator(guildRss, rssName, article, isTestMessage)
 
     if (!message) {
-      if (config.logging.showUnfiltered === true) console.log(`RSS Delivery: (${channel.guild.id}, ${channel.guild.name}) => '${(article.link) ? article.link : article.title}' did not pass filters and was not sent.`)
+      if (config.logging.showUnfiltered === true) log.general.info(`'${article.link ? article.link : article.title}' did not pass filters and was not sent`, channel)
       return callback()
     }
 
@@ -62,12 +63,12 @@ module.exports = (bot, article, callback, isTestMessage) => {
       channel.send(message.textMsg, channelType === 'textChannel' ? message.embedMsg : {username: channel.name, avatarURL: channel.avatar, embeds: [message.embedMsg]})
       .then(m => {
         // console.log(successLog)
-        if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated and has been sent (TITLE: ${article.title}).`)
+        if (debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Message combo has been translated and has been sent (TITLE: ${article.title})`)
         return callback()
       })
       .catch(err => {
         if (attempts === 4) {
-          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message combo has been translated but could not be sent (TITLE: ${article.title})`, err.message || err)
+          if (debugFeeds.includes(rssName)) log.debug.error(`${rssName}: Message combo has been translated but could not be sent (TITLE: ${article.title})`, err)
           return callback(err)
         }
         attempts++
@@ -79,12 +80,12 @@ module.exports = (bot, article, callback, isTestMessage) => {
       channel.send(message.textMsg, {username: channel.name, avatarURL: channel.avatar})
       .then(m => {
         // console.log(successLog)
-        if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated and has been sent (TITLE: ${article.title}).`)
+        if (debugFeeds.includes(rssName)) log.debug.info(`DEBUG ${rssName}: Message has been translated and has been sent (TITLE: ${article.title}).`)
         return callback()
       })
       .catch(err => {
         if (attempts === 4) {
-          if (debugFeeds.includes(rssName)) console.log(`DEBUG ${rssName}: Message has been translated but could not be sent (TITLE: ${article.title})`, err.message || err)
+          if (debugFeeds.includes(rssName)) log.debug.error(`DEBUG ${rssName}: Message has been translated but could not be sent (TITLE: ${article.title})`, err)
           return callback(err)
         }
         attempts++
@@ -95,13 +96,13 @@ module.exports = (bot, article, callback, isTestMessage) => {
     function sendMain () { // Main Message: If it contains both an embed and text, or only an embed.
       if (message.embedMsg) {
         if (message.textMsg.length > 1950) { // Discord has a character limit of 2000
-          console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n `, message.textMsg)
+          log.general.warning(`Feed article could not be sent for ${rssName} due to character count >1950. Message is:\n\n${message.textMsg}`, channel)
           message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950.`
         }
         sendCombinedMsg()
       } else { // Main Message: If it only contains a text message
         if (message.textMsg.length > 1950) {
-          console.log(`RSS Warning: (${channel.guild.id}, ${channel.guild.name}) => Feed article could not be sent for *${rssName}* due to character count >1950. Message is:\n\n`, message.textMsg)
+          log.general.warning(`Feed article could not be sent for ${rssName} due to character count >1950. Message is:\n\n${message.textMsg}`, channel)
           message.textMsg = `Error: Feed Article could not be sent for *${article.link}* due to character count >1950.`
         } else if (message.textMsg.length === 0) {
           message.textMsg = `Unable to send empty message for feed article *${article.link}*.`

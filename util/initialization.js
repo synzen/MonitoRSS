@@ -12,6 +12,7 @@ const sendToDiscord = require('./sendToDiscord.js')
 const process = require('child_process')
 const configChecks = require('./configCheck.js')
 const fileOps = require('./fileOps.js')
+const log = require('./logger.js')
 const GuildRss = storage.models.GuildRss()
 const FAIL_LIMIT = config.feedSettings.failLimit
 
@@ -21,7 +22,7 @@ function addFailedFeed (link) {
 
 function reachedFailCount (link) {
   const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
-  if (failed && config.logging.showFailedFeeds !== false) console.log(`INIT Warning: Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT}).`)
+  if (failed && config.logging.showFailedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
   return failed
 }
 
@@ -29,7 +30,7 @@ function reachedFailCount (link) {
 function discordMsgResult (err, article, bot) {
   const channel = bot.channels.get(article.discordChannelId)
   if (err) {
-    console.log(`RSS Delivery Failure: (${channel.guild.id}, ${channel.guild.name}) => channel (${channel.id}, ${channel.name}) for article ${article.link}`, err.message || err)
+    log.init.warning(`Failed to deliver article ${article.link}`, channel.guild, channel, err)
     if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
   }
 }
@@ -49,7 +50,7 @@ module.exports = (bot, callback) => {
   try {
     var scheduleWordDir = {}
     const schedules = fs.readdirSync('./settings/schedules') // Record all words in schedules for later use by FeedSchedules
-    if (schedules.length === 1 && schedules[0] === 'exampleSchedule.json') console.log(`${SHARD_ID}No custom schedules detected.`)
+    if (schedules.length === 1 && schedules[0] === 'exampleSchedule.json') log.init.info(`${SHARD_ID}No custom schedules detected`)
     for (var i in schedules) {
       if (schedules[i] !== 'exampleSchedule.json') {
         const schedule = JSON.parse(fs.readFileSync(`./settings/schedules/${schedules[i]}`))
@@ -65,41 +66,43 @@ module.exports = (bot, callback) => {
       }
     }
   } catch (e) {
-    console.log(`${SHARD_ID}INIT Info: No schedules found due to no schedules folder.`)
+    log.init.info(`${SHARD_ID}No schedules found due to no schedules folder`)
   }
 
   // Remove expires index, but ignores the log if it's "ns not found" error (meaning the collection doesn't exist)
   if (config.database.guildBackupsExpire <= 0) {
     storage.models.GuildRssBackup().collection.dropIndexes(err => {
-      if (err && err.code !== 26) console.log(`Unable to drop indexes for collection for Guild_Backup:`, err.message || err)
+      if (err && err.code !== 26) log.init.warning(`Unable to drop indexes for collection for Guild_Backup`, err)
     })
   }
 
   GuildRss.find((err, results) => {
     if (err) throw err
-    results.forEach(guildRss => {
+    for (var r = 0; r < results.length; ++r) {
+      const guildRss = results[r]
       const guildId = guildRss.id
       const rssList = guildRss.sources
       if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
         if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
         else {
           fileOps.deleteGuild(guildId, null, err => {
-            if (err) return console.log(`INIT Warning: Guild ${guildId} deletion error based on missing guild:`, err.message || err)
-            console.log(`INIT Info: Guild ${guildId} is missing and has been removed and backed up.`)
+            if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
+            log.init.info(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
           })
         }
-        return
+        continue
       }
+      if (fileOps.isEmptySources(guildRss)) continue
       if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
         currentGuilds.set(guildId, guildRss)
         checkGuild.names(bot, guildId)
       }
       guildsInfo[guildId] = guildRss
       addToSourceLists(rssList, guildId)
-    })
+    }
 
     if (sourceList.size + modSourceList.size === 0) {
-      console.log(`${SHARD_ID}RSS Info: There are no active feeds to initialize.`)
+      log.init.info(`${SHARD_ID}There are no active feeds to initialize`)
       return finishInit()
     }
     return connect()
@@ -138,7 +141,7 @@ module.exports = (bot, callback) => {
       const Article = storage.models.Article(rssName)
       if (config.database.clean !== true) {
         Article.collection.dropIndexes(err => {
-          if (err) console.log(`Unable to drop indexes for collection ${rssName}:`, err.message || err)
+          if (err) log.init.warning(`Unable to drop indexes for collection ${rssName}:`, err)
         })
       }
       if (configChecks.checkExists(rssName, source, true, true) && configChecks.validChannel(bot, guildId, source) && !reachedFailCount(source.link)) {
@@ -163,7 +166,7 @@ module.exports = (bot, callback) => {
             let wordList = scheduleWordDir[scheduleName]
             wordList.forEach(item => {
               if (source.link.includes(item) && !linkTracker[rssName]) {
-                console.log(`${SHARD_ID}INIT: Assigning feed ${rssName} to schedule ${scheduleName}`)
+                log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName}`)
                 linkTracker[rssName] = scheduleName // Assign a schedule to a feed if it doesn't already exist in the linkTracker to another schedule
               }
             })
@@ -175,7 +178,7 @@ module.exports = (bot, callback) => {
   }
 
   function connect () {
-    console.log(`${SHARD_ID}INIT Info: Starting initialization cycle.`)
+    log.init.info(`${SHARD_ID}Starting initialization cycle`)
     genBatchLists()
 
     switch (config.advanced.processorMethod) {
@@ -204,13 +207,13 @@ module.exports = (bot, callback) => {
       }
 
       initAll(link, rssList, uniqueSettings, (err, linkCompletion) => {
-        if (err) console.log(`INIT Error: Skipping ${linkCompletion.link}:`, err.message || err)
+        if (err) log.init.error(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
         if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
         if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         completedLinks++
-        console.log(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
+        log.init.info(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
         if (completedLinks === currentBatch.size) {
           if (batchNumber !== batchList.length - 1) setTimeout(getBatch, 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatch, 200, 0, modBatchList, 'modded')
@@ -251,7 +254,7 @@ module.exports = (bot, callback) => {
 
       completedLinks++
       cycleTotalCount++
-      console.log(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
+      log.init.info(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
 
       if (completedLinks === currentBatch.size) {
         if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type)
@@ -291,7 +294,7 @@ module.exports = (bot, callback) => {
 
         completedLinks++
         totalCompletedLinks++
-        console.log(`${SHARD_ID}Parallel Progress: ${totalCompletedLinks}/${totalLinks}`)
+        log.init.info(`${SHARD_ID}Parallel Progress: ${totalCompletedLinks}/${totalLinks}`)
         if (completedLinks === currentBatch.size) {
           completedBatches++
           processor.kill()
@@ -315,15 +318,10 @@ module.exports = (bot, callback) => {
   }
 
   function finishInit () {
-    console.log(`${SHARD_ID}INIT Info: Finished initialization cycle.${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
+    log.init.info(`${SHARD_ID}INIT Info: Finished initialization cycle ${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
 
-    if (bot.shard) {
-      bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks = JSON.parse('${JSON.stringify(failedLinks)}');`)
-      .then(() => {
-        try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`${SHARD_ID}Unable to update failedLinks.json on end of initialization. `, e.message || e) }
-      })
-      .catch(err => console.log(`${SHARD_ID}Error: Unable to broadcast eval failedLinks update on initialization end for shard ${bot.shard.id}. `, err.message || err))
-    } else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Unable to update failedLinks.json on end of initialization. `, e.message || e) }
+    if (bot.shard) bot.shard.send({ type: 'updateFailedLinks', failedLinks: failedLinks })
+    else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (err) { log.general.warning(`Unable to update failedLinks.json on end of initialization`, err) }
 
     callback(guildsInfo)
   }

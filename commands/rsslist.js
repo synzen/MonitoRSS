@@ -1,5 +1,6 @@
 const config = require('../config.json')
 const storage = require('../util/storage.js')
+const log = require('../util/logger.js')
 const currentGuilds = storage.currentGuilds
 const overriddenGuilds = storage.overriddenGuilds
 const failedLinks = storage.failedLinks
@@ -13,7 +14,7 @@ function feedStatus (link) {
 
 module.exports = (bot, message, command) => {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no existing feeds.').catch(err => console.log(`Promise Warning: chooseFeed 2: ${err}`))
+  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no existing feeds.').catch(err => log.command.warning(`chooseFeed 2`, message.guild, err))
 
   const rssList = guildRss.sources
   let failedFeedCount = 0
@@ -58,7 +59,7 @@ module.exports = (bot, message, command) => {
     try {
       if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
     } catch (err) {
-      console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rsslist:`, err.message || err)
+      log.command.warning(`rsslist`, message.guild, err)
     }
   })
 }

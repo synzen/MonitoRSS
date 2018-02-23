@@ -1,6 +1,7 @@
 const getSubList = require('./util/getSubList.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const MenuUtils = require('./util/MenuUtils.js')
+const log = require('../util/logger.js')
 
 function verifyRole (m, data, callback) {
   const { options } = data
@@ -31,22 +32,22 @@ async function addRole (err, data, direct) {
 
     message.member.addRole(role).catch(err => {
       message.channel.send(`Error: Unable to add role.` + err.message ? ` (${err.message})` : '')
-      console.log(`Roles Warning: Unable to add role (${role.id}, ${role.name}) to (${message.member.id}, ${message.author.username}):`, err.message || err)
+      log.command.warning(`Unable to add role to user`, message.guild, role, message.author, err)
     })
-    console.log(`Self Subscription: (${message.guild.id}, ${message.guild.name}) => Role *${role.name}* successfully added to member. `)
+    log.command.info(`Role successfully added to member`, message.guild, role)
     await message.channel.send(`You now have the role \`${role.name}\`, subscribed to **<${source.link}>**.`)
   } catch (err) {
-    console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => subme`, err.message || err)
+    log.command.warning(`subme`, message.guild, err)
   }
 }
 
 module.exports = (bot, message, command) => {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no active feeds to subscribe to.').catch(err => console.log(`Promise Warning: subAdd 1: ${err}`))
+  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no active feeds to subscribe to.').catch(err => log.command.warning(`subAdd`, message.guild, err))
 
   const rssList = guildRss.sources
   const options = getSubList(bot, message.guild, rssList)
-  if (!options) return message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.').catch(err => console.log(`Promise Warning: subAdd 2: ${err}`))
+  if (!options) return message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.').catch(err => log.command.warning(`subAdd 2`, message.guild, err))
   const msgArr = message.content.split(' ')
   if (msgArr.length > 1) {
     msgArr.shift()

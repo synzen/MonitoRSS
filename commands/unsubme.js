@@ -1,6 +1,7 @@
 const getSubList = require('./util/getSubList.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const MenuUtils = require('./util/MenuUtils.js')
+const log = require('../util/logger.js')
 
 function selectRole (m, data, callback) {
   const { eligibleRoles } = data
@@ -18,12 +19,12 @@ async function removeRole (err, data, direct) {
     else if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
     message.member.removeRole(role).catch(err => {
       message.channel.send(`Error: Unable to remove role.` + err.message ? ` (${err.message})` : '')
-      console.log(`Roles Warning: Unable to remove role (${role.id}, ${role.name}) to (${message.member.id}, ${message.author.username}):`, err.message || err)
+      log.command.warning(`Unable to remove role`, message.guild, role, message.author, err)
     })
-    console.log(`Self subscription: (${message.guild.id}, ${message.guild.name}) => Removed *${role.name}* from member.`)
+    log.command.info(`Removed role from member`, message.guild, role, message.author)
     await message.channel.send(`You no longer have the role \`${role.name}\`.`)
   } catch (err) {
-    console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => unsubme:`, err.message || err)
+    log.command.warning(`unsubme:`, message.guild, err)
   }
 }
 
@@ -41,7 +42,7 @@ module.exports = (bot, message, command) => {
   const eligibleRoles = []
   for (var a in filteredMemberRoles) eligibleRoles.push(filteredMemberRoles[a].name)
 
-  if (filteredMemberRoles.length === 0) return message.channel.send('There are no eligible roles to be removed from you.').catch(err => console.log(`Promise Warning: subRem 1: ${err}`))
+  if (filteredMemberRoles.length === 0) return message.channel.send('There are no eligible roles to be removed from you.').catch(err => log.command.warning(`subRem`, message.guild, err))
 
   const msgArr = message.content.split(' ')
   msgArr.shift()

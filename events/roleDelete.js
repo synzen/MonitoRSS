@@ -1,7 +1,8 @@
 const fileOps = require('../util/fileOps.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
+const log = require('../util/logger.js')
 
-module.exports = function (bot, role) {
+module.exports = (bot, role) => {
   const guildRss = currentGuilds.get(role.guild.id)
   if (!guildRss || !guildRss.sources || !Object.keys(guildRss.sources).length === 0) return
   const rssList = guildRss.sources
@@ -35,6 +36,8 @@ module.exports = function (bot, role) {
 
   if (!found) return
 
-  console.log(`Guild Info: (${role.guild.id}, ${role.guild.name}) => Role (${role.id}, ${role.name}) has been removed from config by guild role deletion.`)
-  fileOps.updateFile(guildRss)
+  fileOps.updateFile(guildRss, null, err => {
+    if (err) log.guild.warning(`Role could not be removed from config by guild role deletion`, role.guild, role)
+    else log.guild.info(`Role has been removed from config by guild role deletion`, role.guild, role)
+  })
 }

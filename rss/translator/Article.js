@@ -2,6 +2,7 @@ const config = require('../../config.json')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
+const log = require('../../util/logger.js')
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
@@ -96,7 +97,7 @@ function evalRegexConfig (source, text, placeholder) {
 
       const modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
       if (typeof modified !== 'string') {
-        if (config.feedSettings.showRegexErrs !== false) console.log(`Error found while evaluating regex for article ${source.link}\n`, modified)
+        if (config.feedSettings.showRegexErrs !== false) log.general.error(`Evaluation of regex for article ${source.link}`, modified)
       } else customPlaceholders[regexOp.name] = modified // newText = modified
     }
   } else return null

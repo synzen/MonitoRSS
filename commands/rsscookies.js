@@ -4,6 +4,7 @@ const cookieAccessors = storage.cookieAccessors
 const fileOps = require('../util/fileOps.js')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
+const log = require('../util/logger.js')
 
 function feedSelectorFn (m, data, callback) {
   const { guildRss, rssName } = data
@@ -37,7 +38,7 @@ function setNewCookies (m, data, callback) {
 }
 
 module.exports = (bot, message, command) => {
-  if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id)) return message.channel.send('You do not have access to cookie control.').then(m => m.delete(3500)).catch(err => console.log(`Commands Warning: Unable to send restricted access to rsscookies command:`, err.message || err))
+  if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id)) return message.channel.send('You do not have access to cookie control.').then(m => m.delete(3500)).catch(err => log.command.warning(`Unable to send restricted access to rsscookies command:`, message.guild, err))
   const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
   const cookiePrompt = new MenuUtils.Menu(message, setNewCookies)
 
@@ -50,7 +51,7 @@ module.exports = (bot, message, command) => {
       if (setting === 'reset') {
         delete source.advanced.cookies
         fileOps.updateFile(guildRss)
-        console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Cookies have been reset for ${source.link}.`)
+        log.command.info(`Cookies have been reset for ${source.link}`, message.guild)
         return await message.channel.send(`Successfully removed all cookies for feed ${source.link}`)
       }
       if (!source.advanced) source.advanced = {cookies: {}}
@@ -65,10 +66,10 @@ module.exports = (bot, message, command) => {
 
       fileOps.updateFile(guildRss)
 
-      console.log(`RSS Customization: (${message.guild.id}, ${message.guild.name}) => Cookies for ${source.link} have been set to\n${newCookies}\n`)
+      log.command.info(`Cookies for ${source.link} have been set to ${newCookies.split('\n').join(',')}`, message.guild)
       await message.channel.send(`Your new cookie(s) for <${source.link}> is now\n\`\`\`\n${newCookies}\`\`\``)
     } catch (err) {
-      console.log(`Commands Warning: rsscookies:`, err.message || err)
+      log.command.warning(`rsscookies:`, message.guild, err)
     }
   })
 }

@@ -1,8 +1,9 @@
 const channelTracker = require('../util/channelTracker.js')
-const removeRss = require('../util/removeFeed.js')
+const removeFeed = require('../util/removeFeed.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
+const log = require('../util/logger.js')
 
-module.exports = function (channel) {
+module.exports = channel => {
   const guildRss = currentGuilds.get(channel.guild.id)
   if (!guildRss) return
   const rssList = guildRss.sources
@@ -15,11 +16,12 @@ module.exports = function (channel) {
   }
   if (nameList.length === 0) return
 
-  console.log(`Guild Info: (${channel.guild.id}, ${channel.guild.name}) => Channel (${channel.id}, ${channel.name}) deleted.`)
+  log.guild.info(`Channel deleted`, channel.guild, channel)
 
   for (var name in nameList) {
-    removeRss(channel.guild.id, nameList[name], err => {
-      if (err) console.log(`Guild Warning: channelDelete error`, err.message || err)
+    removeFeed(channel.guild.id, nameList[name], (err, link) => {
+      if (err) return log.guild.warning(`Unable to remove feed ${link} triggered by channel deletion`, channel.guild, err)// console.log(`Guild Warning: channelDelete error`, err.message || err)
+      log.guild.info(`Removed feed ${link}`, channel.guild)
     })
   }
 }

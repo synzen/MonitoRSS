@@ -16,8 +16,7 @@ module.exports = (guildId, rssName, callback) => {
     delete rssList[rssName]
     fileOps.updateFile(guildRss)
     deletedFeeds.push(rssName)
-    if (!err) console.log(`RSS Removal: (${guildId}, ${guildRss.name}) => Removed ${link}`)
-
+    fileOps.isEmptySources(guildRss)
     if (typeof callback === 'function') callback(err, link, rssName)
   })
 }

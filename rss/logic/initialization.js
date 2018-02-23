@@ -56,30 +56,34 @@ module.exports = function (rssList, articleList, link, callback) {
     const allIds = []
     const allTitles = []
     const newerIds = []
-    olderArticles.forEach(article => {
+    for (var o = 0; o < olderArticles.length; ++o) {
+      const article = olderArticles[o]
       allIds.push(article._id)
       if (checkTitle) allTitles.push(article.title)
-    })
-    newerArticles.forEach(article => {
+    }
+    for (var n = 0; n < newerArticles.length; ++n) {
+      const article = newerArticles[n]
       allIds.push(article._id)
       newerIds.push(article._id)
       if (checkTitle) allTitles.push(article.title)
-    })
+    }
     const foundIds = []
     const foundTitles = []
 
     dbCmds.selectIdsOrTitles(Article, allIds, allTitles, (err, docs) => {
       if (err) return callback(err)
-      docs.forEach(item => {
+      for (var d = 0; d < docs.length; ++d) {
+        const item = docs[d]
         foundIds.push(item.id)
         foundTitles.push(item.title)
-      })
-      articleList.forEach(article => {
+      }
+      for (var a = 0; a < articleList.length; ++a) {
+        const article = articleList[a]
         if (foundIds.length === 0) seenArticle(false, article, true) // If the collection was uninitialized, initialize all articles without sending
         else if (foundIds.includes(article._id)) seenArticle(true, article)
         else if (foundTitles.includes(article.title)) seenArticle(false, article, true)
         else seenArticle(false, article)
-      })
+      }
     })
 
     function seenArticle (seen, article, doNotSend) {

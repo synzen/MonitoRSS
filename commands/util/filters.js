@@ -2,6 +2,7 @@ const fileOps = require('../../util/fileOps.js')
 const config = require('../../config.json')
 const filterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
 const MenuUtils = require('./MenuUtils.js')
+const log = require('../../util/logger.js')
 
 function filterAddCategory (m, data, callback) {
   let chosenFilterType = ''
@@ -49,21 +50,21 @@ async function filterAddTerm (m, data, callback) {
     callback()
 
     if (!role) {
-      console.log(`RSS Filters: (${m.guild.id}, ${m.guild.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}.`)
+      log.command.info(`New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}`, m.guild)
       let msg = ''
       if (addedList) msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
       if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
       if (addedList) msg += `\nYou may test random articles with \`${config.botSettings.prefix}rsstest\` to see what articles pass your filters, or specifically send filtered articles with \`${config.botSettings.prefix}rssfilters\` option 5.`
       await editing.edit(msg)
     } else {
-      console.log(`RSS Roles: (${m.guild.id}, ${m.guild.name}) => Role (${role.id}, ${role.name}) => New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}.`)
+      log.command.info(`New role filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}.`, m.guild, role)
       let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
       if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
       if (addedList) msg += `\nYou may test your filters on random articles via \`${config.botSettings.prefix}rsstest\` and see what articles will mention the role`
       await editing.edit(`${msg}`)
     }
   } catch (err) {
-    console.log(`Commands Warning: util/filters:`, err.message || err)
+    log.command.warning(`util/filters:`, m.guild, err)
     callback(err)
   }
 }
@@ -113,7 +114,6 @@ function filterRemoveCategory (m, data, callback) {
   })
 
   if (!chosenFilterType) return callback(new SyntaxError('That is not a valid filter category. Try again, or type `exit` to cancel.'))
-  console.log(chosenFilterType)
   callback(null, { ...data,
     chosenFilterType: chosenFilterType,
     next: {
@@ -162,17 +162,17 @@ function filterRemoveTerm (m, data, callback) {
     fileOps.updateFile(guildRss)
 
     if (!role) {
-      console.log(`RSS Filters: (${m.guild.id}, ${m.guild.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}.`)
+      log.command.info(`Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild)
       let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
       if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-      editing.edit(msg).catch(err => console.log(`Commands Warning: filterRemove 8a:`, err.message || err))
+      editing.edit(msg).catch(err => log.command.warning(`filterRemove 8a:`, m.guild, err))
     } else {
-      console.log(`RSS Roles: (${m.guild.id}, ${m.guild.name}) => Role (${role.id}, ${role.name}) => Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}.`)
+      log.command.info(`Role Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild, role)
       let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
       if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-      editing.edit(msg).catch(err => console.log(`Commands Warning: filterRemove 8b:`, err.message || err))
+      editing.edit(msg).catch(err => log.command.warning(`filterRemove 8b:`, m.guild, err))
     }
-  }).catch(err => console.log(`Commands Warning: filterRemove 8:`, err.message || err))
+  }).catch(err => log.command.warning(`filterRemove 8:`, m.guild, err))
 }
 
 exports.remove = (message, guildRss, rssName, role) => {

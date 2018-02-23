@@ -1,5 +1,6 @@
 const fs = require('fs')
 const eventHandler = evnt => require(`../events/${evnt}.js`)
+const log = require('./logger.js')
 const pageControls = require('./pageControls.js')
 let cmdsExtension
 if (fs.existsSync('./settings/commands.js')) try { cmdsExtension = require('../settings/commands.js') } catch (e) { console.log(`Error: Unable to load commands extension file. Reason:\n`, e) }
@@ -55,5 +56,5 @@ exports.enableCommands = bot => {
     try { if (cmdsExtension) cmdsExtension(bot, message) } catch (e) {}
   })
 
-  console.log(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Commands have been enabled.`)
+  log.general.info(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Commands have been enabled`)
 }

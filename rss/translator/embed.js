@@ -1,5 +1,5 @@
 const Discord = require('discord.js')
-
+const log = require('../../util/logger.js')
 function isStr (str) { return str && typeof str === 'string' }
 
 module.exports = (rssList, rssName, article) => {
@@ -10,7 +10,7 @@ module.exports = (rssList, rssName, article) => {
   if (isStr(embedSpecs.footerText)) embed.setFooter(article.convertKeywords(embedSpecs.footerText), isStr(embedSpecs.footerIconURL) ? embedSpecs.footerIconURL : undefined)
   if (embedSpecs.color && !isNaN(embedSpecs.color)) {
     if (embedSpecs.color > 16777215 || embedSpecs.color < 0) {
-      console.log(`Translation Error: Embed color property error for ${rssName}: Out of range color. Substituting in as '100'.`)
+      log.general.error(`Embed color property error for ${rssName}: Out of range color. Substituting in as '100'`)
       embed.setColor(100)
     } else embed.setColor(parseInt(embedSpecs.color, 10))
   } else if (isStr(embedSpecs.color) && embedSpecs.color.startsWith('#') && embedSpecs.color.length === 7) embed.setColor(embedSpecs.color)

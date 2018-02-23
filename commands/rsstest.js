@@ -2,6 +2,7 @@ const getRandomArticle = require('../rss/getArticle.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const FeedSelector = require('./util/FeedSelector.js')
+const log = require('../util/logger.js')
 
 module.exports = (bot, message, command) => {
   let simple = !!(message.content.split(' ').length > 1 && message.content.split(' ')[1] === 'simple')
@@ -40,9 +41,9 @@ module.exports = (bot, message, command) => {
             default:
               channelErrMsg = 'No reason available'
           }
-          console.log(`RSS Warning: Unable to send test article for feed ${err.feed.link}:`, err.message || err)
+          log.command.warning(`Unable to send test article for feed ${err.feed.link}`, message.guild, err)
           msgHandler.deleteAll(message.channel)
-          return grabMsg.edit(`Unable to grab random feed article for <${err.feed.link}>. (${channelErrMsg})`).catch(err => console.log(`Commands Warning: rsstest 1: `, err.message || err))
+          return grabMsg.edit(`Unable to grab random feed article for <${err.feed.link}>. (${channelErrMsg})`).catch(err => log.command.warning(`rsstest 1: `, message.guild, err))
         }
         article.rssName = rssName
         article.discordChannelId = message.channel.id
@@ -50,14 +51,14 @@ module.exports = (bot, message, command) => {
 
         sendToDiscord(bot, article, (err) => {
           if (err) {
-            console.log(`RSS Test Delivery Failure: (${message.guild.id}, ${message.guild.name}) => channel (${message.channel.id}, ${message.channel.name}) for article ${article.link}`, err.message || err)
-            message.channel.send(`Failed to send test article. \`\`\`${err.message}\`\`\``).catch(err => console.log(`Commands Warning: rsstest 2: `, err.message || err))
+            log.command.warning(`Failed to deliver article ${article.link}`, message.guild, err)
+            message.channel.send(`Failed to send test article. \`\`\`${err.message}\`\`\``).catch(err => log.command.warning(`rsstest 2`, message.guild, err))
           }
           msgHandler.deleteAll(message.channel)
         }, simple ? null : grabMsg) // Last parameter indicating a test message
       })
     } catch (err) {
-      console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => Could initiate random feed grab for test:`, err.message || err)
+      log.command.warning(`Could initiate random feed grab for test:`, message.guild)
     }
   })
 }

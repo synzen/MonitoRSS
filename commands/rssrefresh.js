@@ -1,6 +1,6 @@
-const fs = require('fs')
 const config = require('../config.json')
 const storage = require('../util/storage.js')
+const log = require('../util/logger.js')
 const failedLinks = storage.failedLinks
 const requestStream = require('../rss/request.js')
 const FeedSelector = require('./util/FeedSelector.js')
@@ -31,23 +31,17 @@ module.exports = (bot, message, command) => {
 
       requestStream(source.link, cookies, null, err => {
         if (err) {
-          console.log(`Commands Info: Unable to refresh feed link ${source.link}, reason: `, err.message || err)
-          console.info(err.message)
-          console.info(err)
-          return processing.edit(`Unable to refresh feed ${source.link}. Reason:\`\`\`${err.message || err}\n\`\`\``)
+          log.command.warning(`Unable to refresh feed link ${source.link}`, message.guild, err)
+          return processing.edit(`Unable to refresh feed ${source.link}. Reason:\`\`\`${err.message || err}\n\`\`\``).catch(err => log.command.warning(`rssrefresh 1`, message.guild, err))
         }
         delete failedLinks[source.link]
-
-        if (bot.shard) bot.shard.broadcastEval(`delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${source.link}'];`).catch(err => console.log(`Error: Unable to broadcast failed links update on rssrefresh:`, err.message || err))
-
-        try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (e) { console.log(`Error: Unable to update failedLinks.json from rssrefresh:`, e.message || e) }
-
-        console.log(`RSS Info: Link ${source.link} has been refreshed back on cycle.`)
+        if (bot.shard) process.send({ type: 'updateFailedLinks', failedLinks: failedLinks })
+        log.command.info(`Refreshed ${source.link} and is back on cycle`, message.guild)
         msgHandler.deleteAll(message.channel)
-        processing.edit(`Successfully refreshed <${source.link}>. It will now be retrieved on subsequent cycles.`).catch(err => console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rssrefresh 1`, err.message || err))
+        processing.edit(`Successfully refreshed <${source.link}>. It will now be retrieved on subsequent cycles.`).catch(err => log.command.warning(`rssrefresh 2`, message.guild, err))
       })
     } catch (err) {
-      console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rssrefresh:`, err.message || err)
+      log.command.warning(`rssrefresh`, message.guild, err)
     }
   })
 }

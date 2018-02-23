@@ -4,6 +4,7 @@ const initialize = require('./util/initialization.js')
 const config = require('./config.json')
 const ScheduleManager = require('./util/ScheduleManager.js')
 const storage = require('./util/storage.js')
+const log = require('./util/logger.js')
 const currentGuilds = storage.currentGuilds
 if (config.logging.logDates === true) require('./util/logDates.js')()
 const configRes = require('./util/configCheck.js').check(config)
@@ -11,7 +12,7 @@ const connectDb = require('./rss/db/connect.js')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 
 if (configRes && configRes.fatal) throw new Error(configRes.message)
-else if (configRes) console.info(configRes.message)
+else if (configRes) log.general.info(configRes.message)
 
 let restartTime = config.feedSettings.refreshTimeMinutes * 60000 / 4 * 10
 restartTime = restartTime < 60000 ? Math.ceil(restartTime * 4) : Math.ceil(restartTime) // Try to make sure it's never below a minute
@@ -33,17 +34,17 @@ function login (firstStartup) {
   bot.login(config.botSettings.token)
   .catch(err => {
     if (loginAttempts++ >= maxAttempts) {
-      console.log(`${SHARD_ID}Discord.RSS failed to login after ${maxAttempts} attempts. Terminating.`)
+      log.general.error(`${SHARD_ID}Discord.RSS failed to login after ${maxAttempts} attempts. Terminating.`)
       if (bot.shard) bot.shard.send('kill')
     }
-    console.log(`${SHARD_ID}Discord.RSS failed to login (${err}) on attempt #${loginAttempts}, retrying in ${restartTimeDisp} minutes...`)
+    log.general.error(`${SHARD_ID}Discord.RSS failed to login (${err}) on attempt #${loginAttempts}, retrying in ${restartTimeDisp} minutes...`)
     setTimeout(login, restartTime)
   })
 
   bot.once('ready', function () {
     loginAttempts = 0
     bot.user.setPresence({ game: { name: (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null, type: 0 } })
-    console.log(`${SHARD_ID}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}.`)
+    log.general.info(`${SHARD_ID}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}.`)
     if (firstStartup) {
       if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)
       connectDb((err) => {
@@ -74,6 +75,8 @@ else {
       if (!guild) return
       if (guildRss === undefined) currentGuilds.delete(guildRss.id)
       else currentGuilds.set(guildRss.id, guildRss)
+    } else if (message.type === 'updateFailedLinks') {
+      storage.failedLinks = message.failedLinks
     } else if (message.type === 'dbRestoreSend') {
       const channel = bot.channels.get(message.channelID)
       if (!channel) return

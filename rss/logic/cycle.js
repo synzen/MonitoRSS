@@ -3,6 +3,7 @@ const dbCmds = require('../db/commands.js')
 const moment = require('moment-timezone')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 const ArticleModel = require('../../util/storage.js').models.Article
+const log = require('../../util/logger.js')
 
 function getArticleId (articleList, article) {
   let equalGuids = (articleList.length > 1) // default to true for most feeds
@@ -20,11 +21,6 @@ function getArticleId (articleList, article) {
 module.exports = function (rssList, articleList, debugFeeds, link, callback) {
   let sourcesCompleted = 0
 
-  function debug (rssName, log) {
-    if (!debugFeeds.includes(rssName)) return
-    console.log(`DEBUG ${rssName}: ${log}`)
-  }
-
   function processSource (rssName) {
     const Article = ArticleModel(rssName)
     const channelId = rssList[rssName].channel
@@ -34,7 +30,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     const bulkInsert = []
     const olderArticles = []
     const newerArticles = []
-    debug(rssName, `Processing collection. Total article list length: ${articleList.length}`)
+    if (debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Processing collection. Total article list length: ${articleList.length}`)
 
     const feedLength = articleList.length - 1
     const cycleMaxAge = config.feedSettings.cycleMaxAge
@@ -64,43 +60,47 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     const allIds = []
     const allTitles = []
     const newerIds = []
-    olderArticles.forEach(article => {
+    for (var o = 0; o < olderArticles.length; ++o) {
+      const article = olderArticles[o]
       allIds.push(article._id)
       if (checkTitle) allTitles.push(article.title)
-    })
-    newerArticles.forEach(article => {
+    }
+    for (var n = 0; n < newerArticles.length; ++n) {
+      const article = newerArticles[n]
       allIds.push(article._id)
       newerIds.push(article._id)
       if (checkTitle) allTitles.push(article.title)
-    })
+    }
     const foundIds = []
     const foundTitles = []
 
     dbCmds.selectIdsOrTitles(Article, allIds, allTitles, (err, docs) => {
       if (err) return callback(new Error(`Database Error: Unable to query find articles for ${rssName}`, err.message || err))
-      docs.forEach(item => {
+      for (var d = 0; d < docs.length; ++d) {
+        const item = docs[d]
         foundIds.push(item.id)
         foundTitles.push(item.title)
-      })
+      }
 
-      articleList.forEach(article => {
+      for (var a = 0; a < articleList.length; ++a) {
+        const article = articleList[a]
         if (foundIds.length === 0 && articleList.length !== 1) { // Only skip if the articleList length is !== 1, otherwise a feed with only 1 article to send since it may have been the first item added
-          debug(rssName, `Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection. Initializing.`)
+          if (debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection. Initializing.`)
           seenArticle(false, article, true) // If the collection was uninitialized, initialize all articles without sending
         } else if (foundIds.includes(article._id)) {
-          debug(rssName, `Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched.`)
+          if (debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched.`)
           seenArticle(true, article)
         } else if (foundTitles.includes(article.title)) {
-          debug(rssName, `Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID. Inserting into collection.`)
+          if (debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID. Inserting into collection.`)
           seenArticle(false, article, true) // Don't send to Discord but still insert into collection because it has a unique ID
         } else if (article._old) {
-          debug(rssName, `Not sending article (ID: ${article._id}, TITLE: ${article.title}), due to date check. Inserting into collection.`)
+          if (debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), due to date check. Inserting into collection.`)
           seenArticle(false, article, true)
         } else {
-          debug(rssName, `Sending article (ID: ${article._id}, TITLE: ${article.title}) to sendToDiscord.`)
+          if (debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) to sendToDiscord.`)
           seenArticle(false, article)
         }
-      })
+      }
     })
 
     function seenArticle (seen, article, doNotSend) {

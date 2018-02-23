@@ -1,5 +1,6 @@
 const fileOps = require('../util/fileOps.js')
 const config = require('../config.json')
+const log = require('../util/logger.js')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
 
@@ -21,8 +22,9 @@ function setMessage (m, data, callback) {
   const input = m.content
 
   if (input.toLowerCase() === 'reset') callback(null, { setting: null, guildRss: guildRss, rssName: rssName })
-  else if (input === '{empty}' && (typeof source.embedMessage !== 'object' || typeof source.embedMessage.properties !== 'object' || Array.isArray(source.embedMessage.properties) || Object.keys(source.embedMessage.properties).length > 0)) callback(new SyntaxError('You cannot have an empty message if there is no embed used for this feed. Try again.')) // Allow empty messages only if embed is enabled
-  else callback(null, { setting: input, guildRss: guildRss, rssName: rssName })
+  else if (input === '{empty}' && (typeof source.embedMessage !== 'object' || typeof source.embedMessage.properties !== 'object' || Array.isArray(source.embedMessage.properties) || Object.keys(source.embedMessage.properties).length === 0)) {
+    callback(new SyntaxError('You cannot have an empty message if there is no embed used for this feed. Try again.')) // Allow empty messages only if embed is enabled
+  } else callback(null, { setting: input, guildRss: guildRss, rssName: rssName })
 }
 
 module.exports = (bot, message, command) => {
@@ -39,17 +41,17 @@ module.exports = (bot, message, command) => {
         const m = await message.channel.send(`Resetting message...`)
         delete guildRss.sources[rssName].message
         fileOps.updateFile(guildRss)
-        console.log(`RSS Customization: (${m.guild.id}, ${m.guild.name}) => Message reset for ${source.link}.`)
+        log.command.info(`Message reset for ${source.link}`, message.guild)
         await m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${source.link}`)
       } else {
         const m = await message.channel.send(`Updating message...`)
         source.message = setting
         fileOps.updateFile(guildRss)
-        console.log(`RSS Customization: (${m.guild.id}, ${m.guild.name}) => New message recorded for ${source.link}.`)
+        log.command.info(`New message recorded for ${source.link}`, message.guild)
         await m.edit(`Message recorded:\n \`\`\`Markdown\n${setting}\`\`\` \nfor feed <${source.link}>. You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`)
       }
     } catch (err) {
-      console.log(`Commands Warning: rssmessage:`, err.message || err)
+      log.command.warning(`rssmessage`, message.guild, err)
     }
   })
 }
