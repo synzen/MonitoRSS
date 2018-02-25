@@ -12,7 +12,7 @@ function selectOption (m, data, callback) {
   callback(null, { ...data,
     chosenProp: chosenProp,
     next: {
-      add: new FeedSelector(m, null, { command: data.command, miscOption: chosenProp })
+      menu: new FeedSelector(m, null, { command: data.command, miscOption: chosenProp })
     }})
 }
 

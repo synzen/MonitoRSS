@@ -3,26 +3,44 @@ const config = require('../config.json')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
 const log = require('../util/logger.js')
-// EMBED_PROPERTIES where [0] = property name, [1] = property description, [2] = internal reference to property
-const EMBED_PROPERTIES = [['Color', 'The sidebar color of the embed\nThis MUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html', 'color'],
-                      ['Author Title', 'Title of the embed\nAccepts placeholders', 'authorTitle'],
-                      ['Author URL', 'Clicking on the Atuhor Title will lead to this URL\nThis MUST be a link', 'authorURL'],
-                      ['Author Avatar URL', 'The avatar icon to the left of Author Title\nThis MUST be a link to an image. If an Author Title is not specified, the Author Avatar will not be shown', 'authorAvatarURL'],
-                      ['Title', 'Subtitle of the embed\nAccepts placeholders', 'title'],
-                      ['Image URL', 'The main image on the bottom of the embed\nThis MUST be a link to an image, OR an {imageX} placeholder', 'imageURL'],
-                      ['Thumbnail URL', 'The picture on the right hand side of the embed\nThis MUST be a link to an image, OR an {imageX} placeholder', 'thumbnailURL'],
-                      ['Message', 'Main message of the embed\nAccepts placeholders', 'message'],
-                      ['Footer Text', 'The bottom-most text\nAccepts placeholders', 'footerText'],
-                      ['URL', 'Clicking on the Title/Thumbnail will lead to this URL\nThis MUST be a link. By default this is set to the feed\'s url', 'url']]
-const EMBED_PROPERTIES_LIST = EMBED_PROPERTIES.reduce((acc, cur, i) => {
-  acc += `[${cur[0]}]: ${cur[1]}\n\n${i === EMBED_PROPERTIES.length - 1 ? '```' : ''}`
-  return acc
-}, '```Markdown\n')
+const EMBED_PROPERTIES = {
+  color: { name: 'Color', description: 'Sidebar color\nMUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html' },
+  authorTitle: { name: 'Author Title', description: 'Title at the top\nAccepts placeholders' },
+  authorAvatarURL: { name: 'Author Avatar URL', description: 'Avatar icon to the left of Author Title\nMUST be a link to an image. If Author Title is unspecified, the Author Avatar will be hidden' },
+  title: { name: 'Title', description: 'Title under Author Title\nAccepts placeholders' },
+  imageURL: { name: 'Image URL', description: 'Image on the bottom\nMUST be a link to an image, OR an {imageX} placeholder' },
+  thumbnailURL: { name: 'Thumbnail Image URL', description: 'Image on the right side\nMUST be a link to an image, OR an {imageX} placeholder' },
+  message: { name: 'Message', description: 'Main message\nAccepts placeholders' },
+  footerText: { name: 'Footer Text', description: 'Bottom-most text\nAccepts placeholders' },
+  footerIconURL: { name: 'Footer Icon URL', description: 'Icon to the left of Footer Text\nMUST be a link to an image. If Footer Text is unspecified, the Footer Icon will be hidden\nAccepts placeholders' },
+  url: { name: 'URL', description: 'Clicking on the Title/Thumbnail will lead to this URL\nMUST be a link. Set to the article\'s url by default' }
+}
 
-const imageFields = ['thumbnailURL', 'authorAvatarURL', 'imageURL']
-const urlFields = ['authorURL', 'url']
+let EMBED_PROPERTIES_LIST = '```Markdown\n'
+for (var pn in EMBED_PROPERTIES) {
+  const cur = EMBED_PROPERTIES[pn]
+  EMBED_PROPERTIES_LIST += `[${cur.name}]: ${cur.description}\n\n${pn === 'url' ? '```' : ''}`
+}
+
 function validURL (input) { // A simple check is enough
   return input.startsWith('http://') || input.startsWith('https://') || input === '{link}'
+}
+
+function validate (prop, setting) {
+  const lprop = prop.toLowerCase()
+  switch (lprop) {
+    case 'color':
+      return isNaN(parseInt(setting, 10)) ? 'The color must be an **number**. See <https://www.shodor.org/stella2java/rgbint.html>. Try again, or type `exit` to cancel.' : parseInt(setting, 10) < 0 || parseInt(setting, 10) > 16777215 ? 'The color must be a number between 0 and 16777215. Try again, or type `exit` to cancel.' : true
+    case 'thumbnailURL':
+    case 'authorAvatarURL':
+    case 'imageURL':
+    case 'footerIconURL':
+      return validImg(setting) ? true : 'URLs must link to actual images or be `{imageX}` placeholders. Try again, or type `exit` to cancel.'
+    case 'authorURL':
+    case 'url':
+      return validURL(setting) ? true : 'URLs must be links or the {link} placeholder. Try again, or type `exit` to cancel.'
+  }
+  return true
 }
 
 // Check valid image URLs via extensions
@@ -53,9 +71,9 @@ function feedSelectorFn (m, data, callback) {
   if (source.embedMessage && source.embedMessage.properties) {
     const propertyList = source.embedMessage.properties
     for (var property in propertyList) {
-      EMBED_PROPERTIES.forEach(item => {
-        if ((item[2] === property) && propertyList[property]) currentEmbedProps += `[${item[0]}]: ${propertyList[property]}\n`
-      })
+      for (var p in EMBED_PROPERTIES) {
+        if (p === property && propertyList[property]) currentEmbedProps += `[${EMBED_PROPERTIES[p].name}]: ${propertyList[property]}\n`
+      }
     }
   }
 
@@ -63,51 +81,69 @@ function feedSelectorFn (m, data, callback) {
 
   callback(null, { ...data,
     next: {
-      text: `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, type \`reset\` to disable and remove all properties, or type \`exit\` to cancel.`,
+      text: `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, or multiple properties by separation with commas. Type \`reset\` to disable and remove all properties, or type \`exit\` to cancel.`,
       embed: null }
   })
 }
 
 function selectProperty (m, data, callback) {
-  let choice = ''
-  const input = m.content
-  EMBED_PROPERTIES.forEach(item => {
-    if (input.toLowerCase() === item[0].toLowerCase()) choice = item[2]
-  })
-
+  const input = m.content.toLowerCase()
   if (input === 'reset') return callback(null, { ...data, property: 'resetAll' }, true)
-  else if (!choice) return callback(new SyntaxError('That is not a valid property. Try again, or type `exit` to cancel.'))
+  const choices = []
+  const arr = input.split(',').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Trim items, remove empty elements and remove duplicates
+  const invalids = []
+  for (var q = 0; q < arr.length; ++q) {
+    const pChoice = arr[q].toLowerCase()
+    let valid = false
+    for (var p in EMBED_PROPERTIES) {
+      if (pChoice === EMBED_PROPERTIES[p].name.toLowerCase()) {
+        valid = true
+        choices.push(p)
+      }
+    }
+    if (!valid) invalids.push(arr[q])
+  }
+
+  if (invalids.length > 0) return callback(new SyntaxError(`The ${invalids.length === 1 ? 'property' : 'following properties'} \`${invalids.join('`,`')}\` ${invalids.length === 1 ? 'is' : 'are'} invalid. Try again, or type \`exit\` to cancel.`))
+  if (choices.length === 0) return callback(new SyntaxError(`No valid properties selected. Try again, or type \`exit\` to cancel.`))
+  const setMenus = []
+  for (var x = 0; x < choices.length; ++x) setMenus.push(new MenuUtils.Menu(m, setProperty))
 
   callback(null, { ...data,
-    property: choice,
+    properties: choices,
+    settings: {},
     next: {
-      text: `Set the property now. To reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`
+      menu: setMenus,
+      text: `Set the **${EMBED_PROPERTIES[choices[0]].name}** now. To reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`
     }})
 }
 
 function setProperty (m, data, callback) {
-  const { property } = data
-  var setting = m.content.trim()
-  if (setting.toLowerCase() === 'reset') return callback(null, { ...data, setting: 'reset' })
-  if (property === 'color') {
-    if (isNaN(parseInt(setting, 10))) return callback(new SyntaxError('The color must be an **number**. See <https://www.shodor.org/stella2java/rgbint.html>. Try again, or type `exit` to cancel.'))
-    else if (parseInt(setting, 10) < 0 || parseInt(setting, 10) > 16777215) return callback(new SyntaxError('The color must be a number between 0 and 16777215. Try again, or type `exit` to cancel.'))
+  const { properties } = data
+  const property = properties.shift()
+  const setting = m.content.trim()
+  data.next = {
+    text: `Set the **${properties[0] ? EMBED_PROPERTIES[properties[0]].name : ''}** now. To reset the property, type \`reset\`.`
   }
-  if (imageFields.includes(property) && !validImg(setting)) return callback(new SyntaxError('URLs must link to actual images or be `{imageX}` placeholders. Try again, or type `exit` to cancel.'))
-  if (urlFields.includes(property) && !validURL(setting)) return callback(new SyntaxError('URLs must be links or the {link} placeholder. Try again, or type `exit` to cancel.'))
-  if (property === 'attachURL' && !setting.startsWith('http')) return callback(new SyntaxError('URL option must be a link. Try again, or type `exit` to cancel.'))
 
-  return callback(null, { ...data, setting: setting })
+  if (setting.toLowerCase() === 'reset') {
+    data.settings[property] = 'reset'
+    return callback(null, data)
+  }
+  const valid = validate(property, setting)
+  if (valid === true) data.settings[property] = setting
+  else return callback(new SyntaxError(valid))
+  callback(null, data)
 }
 
 module.exports = (bot, message, command) => {
   const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
   const selectProp = new MenuUtils.Menu(message, selectProperty)
-  const setProp = new MenuUtils.Menu(message, setProperty)
-  new MenuUtils.MenuSeries(message, [feedSelector, selectProp, setProp]).start(async (err, data) => {
+  // const setProp = new MenuUtils.Menu(message, setProperty)
+  new MenuUtils.MenuSeries(message, [feedSelector, selectProp]).start(async (err, data) => {
     try {
       if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      const { guildRss, rssName, property, setting } = data
+      const { guildRss, rssName, property, settings } = data
       const source = guildRss.sources[rssName]
 
       if (property === 'resetAll') {
@@ -117,26 +153,37 @@ module.exports = (bot, message, command) => {
         fileOps.updateFile(guildRss)
         log.command.info(`Embed reset for ${source.link}`, message.guild)
         return await resetting.edit(`Embed has been disabled, and all properties have been removed for <${source.link}>.`)
-      } else if (setting === 'reset') {
-        const resetting = await message.channel.send(`Resetting property \`${property}\`...`)
-        if (!source.embedMessage || !source.embedMessage.properties || !source.embedMessage.properties[property]) return await resetting.edit('This property has nothing to reset.')
-        delete source.embedMessage.properties[property]
-        if (Object.keys(source.embedMessage.properties).length === 0) {
-          delete source.embedMessage
-          if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
-        }
-        fileOps.updateFile(guildRss)
-        log.command.info(`Property '${property}' reset for ${source.link}`, message.guild)
-        return await resetting.edit(`Settings updated. The property \`${property}\` has been reset for <${source.link}>.`)
       }
 
-      const editing = await message.channel.send(`Updating embed settings...`)
-      if (typeof source.embedMessage !== 'object' || typeof source.embedMessage.properties !== 'object') source.embedMessage = { properties: {} }
-      source.embedMessage.properties[property] = setting
-      log.command.info(`Embed updated for ${source.link}. Property '${property}' set to '${setting}'`, message.guild)
-      fileOps.updateFile(guildRss)
+      let status = ''
+      let reset = ''
+      const updating = await message.channel.send('Updating settings...')
+      for (var prop in settings) {
+        const propName = EMBED_PROPERTIES[prop].name
+        const setting = settings[prop]
+        if (setting === 'reset') {
+          if (!source.embedMessage || !source.embedMessage.properties || !source.embedMessage.properties[prop]) {
+            reset += `🇽 **${propName}** has nothing to reset\n`
+            continue
+          }
+          delete source.embedMessage.properties[prop]
+          if (Object.keys(source.embedMessage.properties).length === 0) {
+            delete source.embedMessage
+            if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
+          }
+          fileOps.updateFile(guildRss)
+          log.command.info(`Property '${prop}' reset for ${source.link}`, message.guild)
+          reset += `☑ **${propName}** has been reset\n`
+          continue
+        }
+        if (typeof source.embedMessage !== 'object' || typeof source.embedMessage.properties !== 'object') source.embedMessage = { properties: {} }
+        source.embedMessage.properties[prop] = setting
+        log.command.info(`Embed updated for ${source.link}. Property '${prop}' set to '${setting}'`, message.guild)
+        status += `☑ **${propName}** updated to \n\`\`\`\n${setting}\n\`\`\`\n`
+      }
 
-      return await editing.edit(`Settings updated for <${source.link}>. The property \`${property}\` has been set to \`\`\`${setting}\`\`\`\nYou may use \`${config.botSettings.prefix}rsstest\` to see your new embed format.`)
+      fileOps.updateFile(guildRss)
+      await updating.edit(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format.`)
     } catch (err) {
       log.command.warning(`rssembed:`, message.guild, err)
     }

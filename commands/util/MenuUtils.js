@@ -172,7 +172,7 @@ class Menu {
 
       if (!this.fn) return callback()
 
-      const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, {time: 60000})
+      const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, { time: 90000 })
       // Add a channel tracker to prohibit any other commands while the Menu is in use
       channelTracker.add(this.channel.id)
 
@@ -327,17 +327,17 @@ class MenuSeries {
       else if (err) this._end(err, null, callback)
 
       // Add any Menus requested to be added by the Menu that just finished
-      if (next && next.add) {
-        if (next.add instanceof Menu) this.add(next.add)
-        else if (Array.isArray(next.add)) next.add.forEach(item => this.add(item))
-        delete next.add
+      if (next && next.menu) {
+        if (next.menu instanceof Menu) this.add(next.menu)
+        else if (Array.isArray(next.menu)) next.menu.forEach(item => this.add(item))
+        delete next.menu
       }
 
       // Merge any MenuSeries requested to be added by the Menu that just finished
-      if (next && next.merge) {
-        if (next.merge instanceof MenuSeries) this.merge(next.merge)
-        else if (Array.isArray(next.merge)) next.merge.forEach(item => this.merge(item))
-        delete next.merge
+      if (next && next.series) {
+        if (next.series instanceof MenuSeries) this.merge(next.series)
+        else if (Array.isArray(next.series)) next.series.forEach(item => this.merge(item))
+        delete next.series
       }
 
       if (!this._menus[++index]) return this._end(null, passover, callback)

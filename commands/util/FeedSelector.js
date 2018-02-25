@@ -8,7 +8,7 @@ const overriddenGuilds = storage.overriddenGuilds
 const failedLinks = storage.failedLinks
 const FAIL_LIMIT = config.feedSettings.failLimit
 const Menu = require('./MenuUtils.js').Menu
-
+const MULTI_SELECT = ['rssremove']
 function feedStatus (link) {
   const failCount = failedLinks[link]
   return !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
@@ -20,31 +20,21 @@ function selectFeed (m, data, callback) {
   const chosenOption = m.content
 
   // Return an array of selected indices for feed removal
-  if (commandList[command].action === 'Feed Removal') {
-    let rawArray = chosenOption.split(',')
-
-    for (var p = rawArray.length - 1; p >= 0; p--) { // Sanitize the input
-      rawArray[p] = rawArray[p].trim()
-      if (!rawArray[p]) rawArray.splice(p, 1)
-    }
-
-    const chosenOptionList = rawArray.filter((elem, index, self) => { // Remove duplicates
-      return index.toString() === self.indexOf(elem).toString()
-    })
-
-    let validChosens = []
-    let invalidChosens = []
+  if (MULTI_SELECT.includes(command)) {
+    let chosenOptionList = chosenOption.split(',').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item))  // Trim items, remove duplicates and empty items
+    let valid = []
+    let invalid = []
 
     chosenOptionList.forEach(item => {
-      let index = parseInt(item, 10) - 1
-      if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) invalidChosens.push(item)
-      else validChosens.push(index)
+      const index = parseInt(item, 10) - 1
+      if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) invalid.push(item)
+      else valid.push(index)
     })
 
-    if (invalidChosens.length > 0) return callback(new SyntaxError(`The number(s) \`${invalidChosens}\` are invalid. Try again, or type \`exit\` to cancel.`))
+    if (invalid.length > 0) return callback(new SyntaxError(`The number(s) \`${invalid}\` are invalid. Try again, or type \`exit\` to cancel.`))
     else {
-      for (var q = 0; q < validChosens.length; ++q) validChosens[q] = currentRSSList[validChosens[q]].rssName
-      return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssNameList: validChosens }, callback)
+      for (var q = 0; q < valid.length; ++q) valid[q] = currentRSSList[valid[q]].rssName
+      return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssNameList: valid }, callback)
     }
   }
 
@@ -113,7 +103,7 @@ class FeedSelector extends Menu {
     }
 
     this.setAuthor('Feed Selection Menu')
-    this.setDescription(`**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${command === 'rssoptions' ? commandList[command].options[miscOption] : commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${commandList[command].action === 'Feed Removal' ? 'You may select multiple feeds to remove by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`)
+    this.setDescription(`**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${command === 'rssoptions' ? commandList[command].options[miscOption] : commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`)
 
     this._currentRSSList.forEach(item => {
       const link = item.link

@@ -100,7 +100,7 @@ Manager.on('message', (shard, message) => {
       try {
         fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(message.failedLinks, null, 2))
       } catch (err) {
-
+        log.general.warning('Sharding Manager unable to update failed links', err)
       }
       break
 

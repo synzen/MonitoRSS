@@ -28,8 +28,8 @@ function setMessage (m, data, callback) {
   const input = m.content
   if (!VALID_OPTIONS.includes(input)) return callback(new SyntaxError('That is not a valid choice. Try again, or type `exit` to cancel.'))
 
-  if (input === '1') callback(null, { guildRss: guildRss, rssName: rssName, next: { merge: filters.add(m, guildRss, rssName) } }) // filters.add(m, rssName, null, msgHandler)
-  else if (input === '2') callback(null, { guildRss: guildRss, rssName: rssName, next: { merge: filters.remove(m, guildRss, rssName) } }) // filters.remove(m, rssName, null, msgHandler)
+  if (input === '1') callback(null, { guildRss: guildRss, rssName: rssName, next: { series: filters.add(m, guildRss, rssName) } }) // filters.add(m, rssName, null, msgHandler)
+  else if (input === '2') callback(null, { guildRss: guildRss, rssName: rssName, next: { series: filters.remove(m, guildRss, rssName) } }) // filters.remove(m, rssName, null, msgHandler)
   else if (input === '3' || input === '4' || input === '5') {
     const foundFilters = []
     if (typeof source.filters === 'object') {

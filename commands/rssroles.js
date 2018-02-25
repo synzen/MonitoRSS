@@ -144,13 +144,13 @@ function filteredSubFn (m, data, callback) {
   if (input === '1') {
     callback(null, { ...data,
       next: {
-        merge: filters.add(m, guildRss, rssName, role)
+        series: filters.add(m, guildRss, rssName, role)
       }})
   } else if (input === '2') {
     if (!source.filters || !source.filters.roleSubscriptions) return callback(new Error(`There are no filtered subscriptions to remove from the feed <${source.link}>.`))
     callback(null, { ...data,
       next: {
-        merge: filters.remove(m, guildRss, rssName, role)
+        series: filters.remove(m, guildRss, rssName, role)
       }})
   } else callback(new SyntaxError('That is not a valid option. Try again, or type `exit` to cancel.'))
 }
@@ -198,7 +198,7 @@ function selectOption (m, data, callback) {
   else if (optionSelected === '3' || optionSelected === '2' || optionSelected === '1') { // Options 1, 2, and 3 requires a role to be acquired first
     const getRole = new MenuUtils.Menu(m, checkRole, { text: 'Enter a valid case-sensitive role name, or mention a role. The `@everyone` role cannot be used.' })
     if (optionSelected === '3') {
-      callbackObj.next = { add: getRole }
+      callbackObj.next = { menu: getRole }
       return callback(null, callbackObj)
     }
 
@@ -209,13 +209,13 @@ function selectOption (m, data, callback) {
         .setAuthor(`Role Customization - Add/Remove Filtered Subscription`)
         .addOption(`Add filter to filtered subscription`, `Add a filtered subscription so that this role will get mentioned everytime an article from a feed passes its filter tests.`)
         .addOption(`Remove filter from filtered subscription`, `Remove a word/phrase from this role's subscription to a feed.`)
-      callbackObj.next = { add: [getRole, feedSelector, filteredSubMenu] }
+      callbackObj.next = { menu: [getRole, feedSelector, filteredSubMenu] }
     } else { // Global Sub Menu
       const globalSubMenu = new MenuUtils.Menu(m, globalSubFn)
         .setAuthor(`Role Customization - Add/Remove Global Subscription`)
         .addOption(`Add global subscription`, `Have the role get mentioned every time a new article is posted from this feed.`)
         .addOption(`Remove global subscription`, `Remove the role's subscription to this feed.`)
-      callbackObj.next = { add: [getRole, feedSelector, globalSubMenu] }
+      callbackObj.next = { menu: [getRole, feedSelector, globalSubMenu] }
     }
 
     return callback(null, callbackObj)

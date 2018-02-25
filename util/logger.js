@@ -1,8 +1,8 @@
 const Discord = require('discord.js')
 const COLORS = {
-  Error: '\x1b[31m%s\x1b[0m',
-  Warning: '\x1b[33m%s\x1b[0m',
-  Debug: '\x1b[33m%s\x1b[0m'
+  Error: '\x1b[31m',
+  Warning: '\x1b[33m',
+  Debug: '\x1b[33m'
 }
 const CONSTRUCTORS = [Discord.Guild, Discord.TextChannel, Discord.Role, Discord.User]
 const PREFIXES = ['G', 'C', 'R', 'U']
