@@ -40,11 +40,11 @@ class Logger {
     for (let i = intro.length; i < MAXLEN; ++i) {
       intro += ' '
     }
-    const color = COLORS[level]
+    const color = COLORS[level] ? COLORS[level] : ''
+    const reset = COLORS.reset ? COLORS.reset : ''
     return (contents, ...details) => {
       const extra = this._parseDetails(details)
-      if (color) console.log(color, `${intro} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err})` : ''}`)
-      else console.log(`${intro} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err})` : ''}`)
+      console.log(`${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err})` : ''}`)
     }
   }
 }
