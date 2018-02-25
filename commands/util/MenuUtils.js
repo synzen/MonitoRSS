@@ -202,7 +202,7 @@ class Menu {
         else this.channel.send(reason).then(m => m.delete(6000))
       })
     } catch (err) {
-      log.command.warning(`Failed to send Menu:`, this.channel.guild, err)
+      log.command.warning(`Failed to send Menu`, this.channel.guild, err)
       callback(err, { __end: true })
     }
   }

@@ -8,7 +8,7 @@ const config = require('../config.json')
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const connectDb = require('./db/connect.js')
-const initAllSources = require('./logic/initialization.js')
+const initLinkSources = require('./logic/initialization.js')
 const log = require('../util/logger.js')
 if (config.logging.logDates === true) require('../util/logDates.js')()
 let connected = false
@@ -51,11 +51,20 @@ function init (link, rssList, uniqueSettings) {
 
   feedparser.on('end', () => {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
+    let done = 0
+    const total = Object.keys(rssList).length
 
-    initAllSources(rssList, articleList, link, (err, results) => {
-      if (err) throw err
-      if (results) process.send(results)
-    })
+    for (var rssName in rssList) {
+      initLinkSources({ rssName: rssName, rssList: rssList, link: link, articleList: articleList }, (err, results) => {
+        if (err) return log.rss.error(`Cycle logic`, err)
+        if (results) process.send(results) // Could be Articles
+        if (++done === total) process.send({ status: 'success', link: link })
+      })
+    }
+    // initAllSources(rssList, articleList, link, (err, results) => {
+    //   if (err) throw err
+    //   if (results) process.send(results)
+    // })
   })
 }
 

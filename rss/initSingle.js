@@ -1,6 +1,7 @@
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
-const initAllSources = require('./logic/initialization.js')
+const initLinkSources = require('./logic/initialization.js')
+const log = require('../util/logger.js')
 
 module.exports = (link, rssList, uniqueSettings, callback) => {
   const feedparser = new FeedParser()
@@ -25,10 +26,15 @@ module.exports = (link, rssList, uniqueSettings, callback) => {
 
   feedparser.on('end', () => {
     if (articleList.length === 0) return callback(null, { status: 'success', link: link })
+    let done = 0
+    const total = Object.keys(rssList).length
 
-    initAllSources(rssList, articleList, link, (err, results) => {
-      if (err) throw err
-      if (results) callback(null, results)
-    })
+    for (var rssName in rssList) {
+      initLinkSources({ rssName: rssName, rssList: rssList, link: link, articleList: articleList }, (err, results) => {
+        if (err) return log.rss.error(`Cycle logic`, err)
+        if (results) callback(null, results) // Could be Articles
+        if (++done === total) callback(null, { status: 'success', link: link })
+      })
+    }
   })
 }
