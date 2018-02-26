@@ -6,10 +6,21 @@ const COLORS = {
   reset: '\x1b[0m'
 }
 const CONSTRUCTORS = [Discord.Guild, Discord.TextChannel, Discord.Role, Discord.User]
+const LOG_DATES = require('../config.json').logging.logDates === true
 const PREFIXES = ['G', 'C', 'R', 'U']
 const TYPES = ['Command', 'Guild', 'RSS', 'INIT', 'General', 'Debug', 'Controller']
 const LEVELS = ['Error', 'Warning', 'Info']
 const MAXLEN = TYPES.reduce((a, b) => a.length > b.length ? a : b).length + LEVELS.reduce((a, b) => a.length > b.length ? a : b).length + 1 // Calculate uniform spacing
+
+function formatConsoleDate (date) {
+  // http://stackoverflow.com/questions/18814221/adding-timestamps-to-all-console-messages
+  const hour = date.getHours()
+  const minutes = date.getMinutes()
+  const seconds = date.getSeconds()
+  const milliseconds = date.getMilliseconds()
+
+  return `[${((hour < 10) ? '0' + hour : hour)}:${((minutes < 10) ? '0' + minutes : minutes)}:${((seconds < 10) ? '0' + seconds : seconds)}.${('00' + milliseconds).slice(-3)}] `
+}
 
 class Logger {
   constructor (type) {
@@ -45,7 +56,7 @@ class Logger {
     const reset = COLORS.reset ? COLORS.reset : ''
     return (contents, ...details) => {
       const extra = this._parseDetails(details)
-      console.log(`${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err})` : ''}`)
+      console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err})` : ''}`)
     }
   }
 }
