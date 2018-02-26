@@ -4,13 +4,12 @@ const channelTracker = require('../../util/channelTracker.js')
 const pageControls = require('../../util/pageControls.js')
 const storage = require('../../util/storage.js')
 const currentGuilds = storage.currentGuilds
-const overriddenGuilds = storage.overriddenGuilds
-const failedLinks = storage.failedLinks
 const FAIL_LIMIT = config.feedSettings.failLimit
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove']
+
 function feedStatus (link) {
-  const failCount = failedLinks[link]
+  const failCount = storage.failedLinks[link]
   return !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
 }
 
@@ -75,7 +74,7 @@ class FeedSelector extends Menu {
     this.miscOption = miscOption
 
     const rssList = this.guildRss.sources
-    const maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] === 0 ? 'Unlimited' : overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds, 10))) ? 'Unlimited' : config.feedSettings.maxFeeds
+    const maxFeedsAllowed = storage.overrides[message.guild.id] != null ? storage.overrides[message.guild.id] === 0 ? 'Unlimited' : storage.overrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds, 10))) ? 'Unlimited' : config.feedSettings.maxFeeds
 
     this._currentRSSList = []
 

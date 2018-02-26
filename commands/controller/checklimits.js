@@ -1,14 +1,14 @@
 const storage = require('../../util/storage.js')
 const config = require('../../config.json')
+const currentGuilds = storage.currentGuilds
 
 exports.normal = function (bot, message) {
-  const currentGuilds = storage.currentGuilds
-  const overriddenGuilds = storage.overriddenGuilds
+  const overrides = storage.limitOverrides
 
   const illegals = []
   currentGuilds.forEach(function (guildRss, guildId) {
     const guildSourcesCnt = Object.keys(guildRss.sources).length
-    const guildLimit = overriddenGuilds[guildId] ? overriddenGuilds[guildId] : config.feedSettings.maxFeeds
+    const guildLimit = overrides[guildId] ? overrides[guildId] : config.feedSettings.maxFeeds
     if (guildSourcesCnt > guildLimit) illegals.push(guildId)
   })
 
@@ -17,19 +17,18 @@ exports.normal = function (bot, message) {
 }
 
 exports.sharded = function (bot, message) {
-  const overriddenGuilds = storage.overriddenGuilds
   const defLimit = config.feedSettings.maxFeeds
 
   bot.shard.broadcastEval(`
     const appDir = require('path').dirname(require.main.filename);
     const storage = require(appDir + '/util/storage.js');
     const currentGuilds = storage.currentGuilds;
-    const overriddenGuilds = JSON.parse('${JSON.stringify(overriddenGuilds)}');
+    const overrides = storage.limitOverrides;
 
     const illegals = [];
     currentGuilds.forEach(function (guildRss, guildId) {
       const guildSourcesCnt = Object.keys(guildRss.sources).length;
-      const guildLimit = overriddenGuilds[guildId] ? overriddenGuilds[guildId] : ${defLimit};
+      const guildLimit = overrides[guildId] ? overrides[guildId] : ${defLimit};
       if (guildSourcesCnt > guildLimit) illegals.push(guildId);
     })
 

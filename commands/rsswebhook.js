@@ -1,7 +1,6 @@
 const fileOps = require('../util/fileOps.js')
 const config = require('../config.json')
 const storage = require('../util/storage.js')
-const webhookAccessors = storage.webhookAccessors
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
 const log = require('../util/logger.js')
@@ -42,7 +41,7 @@ function collectWebhook (m, data, callback) {
 
 module.exports = async (bot, message, command) => {
   try {
-    if (config.advanced.restrictWebhooks === true && !webhookAccessors.ids.includes(message.guild.id)) {
+    if (config.advanced.restrictWebhooks === true && !storage.webhookServers.includes(message.guild.id)) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
       return await message.channel.send(`This server does not have access to webhook use.`)
     }

@@ -10,7 +10,6 @@ const FeedParser = require('feedparser')
 const connectDb = require('./db/connect.js')
 const initAllSources = require('./logic/initialization.js')
 const log = require('../util/logger.js')
-if (config.logging.logDates === true) require('../util/logDates.js')()
 let connected = false
 
 function init (link, rssList, uniqueSettings) {

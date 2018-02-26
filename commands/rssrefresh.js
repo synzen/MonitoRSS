@@ -1,7 +1,6 @@
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
-const failedLinks = storage.failedLinks
 const requestStream = require('../rss/request.js')
 const FeedSelector = require('./util/FeedSelector.js')
 const FAIL_LIMIT = config.feedSettings.failLimit
@@ -12,6 +11,8 @@ function feedSelectorFn (m, data, callback) {
 
 module.exports = (bot, message, command) => {
   if (FAIL_LIMIT === 0) return message.channel.send(`No fail limit has been set.`)
+  const failedLinks = storage.failedLinks
+
   if (Object.keys(failedLinks).length === 0) return message.channel.send(`There are no feeds that have exceeded the fail limit.`)
 
   new FeedSelector(message, feedSelectorFn, { command: command }).send(null, async (err, data, msgHandler) => {

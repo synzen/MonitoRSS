@@ -1,13 +1,5 @@
 const ArticleModel = require('../../util/storage.js').models.Article
 
-// exports.selectId = (Model, articleId, callback) => {
-//   Model.find({id: articleId}, callback)
-// }
-
-// exports.selectTitle = (Model, articleTitle, callback) => {
-//   Model.find({title: articleTitle}, callback)
-// }
-
 exports.selectIdsOrTitles = (Model, ids, titles, callback) => {
   Model.find({$or: [{id: { $in: ids }}, {title: { $in: titles }}]}, callback)
 }

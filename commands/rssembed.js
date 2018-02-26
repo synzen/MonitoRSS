@@ -109,13 +109,14 @@ function selectProperty (m, data, callback) {
   const setMenus = []
   for (var x = 0; x < choices.length; ++x) setMenus.push(new MenuUtils.Menu(m, setProperty))
 
+  data.next = {
+    text: `Set the **${EMBED_PROPERTIES[choices[0]].name}** now. To reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`,
+    menu: setMenus
+  }
   callback(null, { ...data,
     properties: choices,
-    settings: {},
-    next: {
-      menu: setMenus,
-      text: `Set the **${EMBED_PROPERTIES[choices[0]].name}** now. To reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`
-    }})
+    settings: {}
+  })
 }
 
 function setProperty (m, data, callback) {

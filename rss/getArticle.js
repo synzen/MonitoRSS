@@ -1,10 +1,10 @@
 const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
 const storage = require('../util/storage.js')
-const failedLinks = storage.failedLinks
 const filterFeed = require('./translator/filters.js')
 
 module.exports = (guildRss, rssName, passFiltersOnly, callback) => {
+  const failedLinks = storage.failedLinks
   const rssList = guildRss.sources
   const source = rssList[rssName]
 

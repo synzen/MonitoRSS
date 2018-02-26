@@ -14,6 +14,8 @@ module.exports = (bot, article, callback, isTestMessage) => {
   const source = rssList[rssName]
   let channelType = 'textChannel'
 
+  if (!source) return log.general.error(`Unable to send an article due to missing source ${rssName}`, channel.guild, channel)
+
   if (typeof rssList[rssName].webhook === 'object') {
     if (!channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) return body()
     channel.fetchWebhooks().then(hooks => {

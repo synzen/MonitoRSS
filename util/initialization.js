@@ -76,6 +76,32 @@ module.exports = (bot, callback) => {
     })
   }
 
+  // Cache VIPs
+  storage.models.VIP().find((err, docs) => {
+    if (err) return log.general.error('Unable to load VIPs', err)
+    for (var d = 0; d < docs.length; ++d) {
+      const vip = docs[d]
+      const servers = vip.servers
+      for (var s = 0; s < servers.length; ++s) {
+        const serverID = servers[s]
+        storage.limitOverrides[serverID] = vip.maxFeeds
+        if (vip.allowWebhooks) storage.webhookServers.push(serverID)
+      }
+      if (vip.allowCookies) storage.cookieUsers.push(vip.id)
+    }
+  })
+
+  // Cache blacklisted users and guilds
+  storage.models.Blacklist().find((err, docs) => {
+    if (err) throw err
+    for (var d = 0; d < docs.length; ++d) {
+      const blisted = docs[d]
+      if (blisted.isGuild) storage.blacklistGuilds.push(blisted.id)
+      else storage.blacklistUsers.push(blisted.id)
+    }
+  })
+
+  // Cache guilds
   GuildRss.find((err, results) => {
     if (err) throw err
     for (var r = 0; r < results.length; ++r) {

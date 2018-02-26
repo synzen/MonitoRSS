@@ -6,7 +6,6 @@ const ScheduleManager = require('./util/ScheduleManager.js')
 const storage = require('./util/storage.js')
 const log = require('./util/logger.js')
 const currentGuilds = storage.currentGuilds
-if (config.logging.logDates === true) require('./util/logDates.js')()
 const configRes = require('./util/configCheck.js').check(config)
 const connectDb = require('./rss/db/connect.js')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
@@ -77,6 +76,13 @@ else {
       else currentGuilds.set(guildRss.id, guildRss)
     } else if (message.type === 'updateFailedLinks') {
       storage.failedLinks = message.failedLinks
+    } else if (message.type === 'updateVIPs') {
+      storage.webhookServers = message.webhookServers
+      storage.cookieUsers = message.cookieUsers
+      storage.limitOverrides = message.limitOverrides
+    } else if (message.type === 'updateBlacklists') {
+      storage.blacklistGuilds = message.blacklistGuilds
+      storage.blacklistUsers = message.blacklistUsers
     } else if (message.type === 'dbRestoreSend') {
       const channel = bot.channels.get(message.channelID)
       if (!channel) return

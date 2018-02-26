@@ -3,6 +3,8 @@ const initialize = require('../rss/initialize.js')
 const config = require('../config.json')
 const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
+const currentGuilds = storage.currentGuilds
+const failedLinks = storage.failedLinks
 
 function sanitize (array) {
   for (var p = array.length - 1; p >= 0; p--) { // Sanitize by removing spaces and newlines
@@ -19,14 +21,9 @@ function isBotController (id) {
 }
 
 module.exports = (bot, message) => {
-  const currentGuilds = storage.currentGuilds
-  const overriddenGuilds = storage.overriddenGuilds
-  const cookieAccessors = storage.cookieAccessors
-  const failedLinks = storage.failedLinks
-
-  const guildRss = (currentGuilds.has(message.guild.id)) ? currentGuilds.get(message.guild.id) : {}
-  const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
-  let maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  const guildRss = currentGuilds.has(message.guild.id) ? currentGuilds.get(message.guild.id) : {}
+  const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
+  let maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited'
 
   if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
@@ -108,7 +105,7 @@ module.exports = (bot, message) => {
         cookies = cookieObj
       }
       const cookiesFound = !!cookies
-      if (config.advanced && config.advanced.restrictCookies === true && !cookieAccessors.ids.includes(message.author.id) && !isBotController(message.author.id)) cookies = undefined
+      if (config.advanced && config.advanced.restrictCookies === true && !storage.cookieUsers.includes(message.author.id) && !isBotController(message.author.id)) cookies = undefined
 
       initialize.addNewFeed({link: link, channel: message.channel, cookies: cookies}, err => {
         channelTracker.remove(message.channel.id)

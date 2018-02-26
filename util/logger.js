@@ -2,11 +2,12 @@ const Discord = require('discord.js')
 const COLORS = {
   Error: '\x1b[31m',
   Warning: '\x1b[33m',
-  Debug: '\x1b[33m'
+  Debug: '\x1b[33m',
+  reset: '\x1b[0m'
 }
 const CONSTRUCTORS = [Discord.Guild, Discord.TextChannel, Discord.Role, Discord.User]
 const PREFIXES = ['G', 'C', 'R', 'U']
-const TYPES = ['Command', 'Guild', 'RSS', 'INIT', 'General', 'Debug']
+const TYPES = ['Command', 'Guild', 'RSS', 'INIT', 'General', 'Debug', 'Controller']
 const LEVELS = ['Error', 'Warning', 'Info']
 const MAXLEN = TYPES.reduce((a, b) => a.length > b.length ? a : b).length + LEVELS.reduce((a, b) => a.length > b.length ? a : b).length + 1 // Calculate uniform spacing
 

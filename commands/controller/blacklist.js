@@ -1,102 +1,65 @@
-const fs = require('fs')
 const storage = require('../../util/storage.js')
-const removeRss = require('../../util/removeFeed.js')
+const fileOps = require('../../util/fileOps.js')
+const blacklistGuilds = storage.blacklistGuilds
+const blacklistUsers = storage.blacklistUsers
+const log = require('../../util/logger.js')
 
-exports.normal = function (bot, message) {
-  const currentGuilds = storage.currentGuilds
+exports.normal = (bot, message) => {
   const blacklistGuilds = storage.blacklistGuilds
 
   const content = message.content.split(' ')
   if (content.length !== 2) return
-  const guildID = content[1]
+  const id = content[1]
 
-  const guild = bot.guilds.get(guildID)
-  if (!guild) return message.channel.send('No such guild exists.')
-  if (blacklistGuilds.ids.includes(guildID)) return message.channel.send(`Guild ${guildID} (${guild.name}) is already blacklisted.`)
+  const guild = bot.guilds.get(id)
+  const user = bot.users.get(id)
+  if (!guild && !user) return message.channel.send('No such guild or user exists.')
+  else if (guild && blacklistGuilds.includes(id)) return message.channel.send(`Guild ${id} (${user.username}) is already blacklisted.`)
+  else if (user && blacklistUsers.includes(id)) return message.channel.send(`User ${id} (${user.username}) is already blacklisted.`)
 
-  blacklistGuilds.ids.push(guildID)
-
-  fs.writeFile('./settings/blacklist.json', JSON.stringify(blacklistGuilds, null, 2), function (err) {
+  fileOps.addBlacklist({ isGuild: !!guild, id: id, name: guild ? guild.name : user.username }, err => {
     if (err) {
-      console.log(`Bot Controller: Unable to permanently blacklist (${guildID} ${guild.name}) as requested by (${message.author.id}, ${message.author.username}), reason: `, err)
-      return message.channel.send(`Unable to permanently blacklist. Reason: `, err)
+      log.controller.error('Unable to add blacklist', message.author, err)
+      return message.channel.send(`Blacklist failed. ${err.message}`)
     }
-    try {
-      fs.unlinkSync(`./sources/${guildID}.json`)
-      const guildRss = currentGuilds.get(guildID)
-      if (guildRss) {
-        for (var rssName in guildRss.sources) {
-          removeRss(guildID, rssName, function (err, link, rssName) {
-            if (err) console.log(`Bot Controller: Blacklist error`, err.message || err)
-            else console.log(`Bot Controller: Removed ${rssName} for blacklist.`)
-          })
-        }
-        currentGuilds.delete(guildID)
-      }
-      console.log(`Bot Controller: Successfully blacklisted guild (${guildID} ${guild.name}) and deleted source file as requested by (${message.author.id}, ${message.author.username}).`)
-      message.channel.send(`Successfully blacklisted guild ${guildID} (${guild.name}) and deleted source file.`)
-    } catch (e) {
-      console.log(`Bot Controller: Successfully blacklisted, but unable to delete source file for guild (${guildID} ${guild.name}) as requested by (${message.author.id}, ${message.author.username}). Reason: `, e)
-    }
+    if (guild) guild.leave().catch(err => log.general.warning(`Unable to leave guild after blacklisted`, guild, err))
+    message.channel.send(`Added ${guild ? `guild ${id} named "${guild.name}"` : `user ${id} named "${user.username}`}" to blacklist`)
+    log.controller.info(`Added ${guild ? `guild ${id} named "${guild.name}"` : `user ${id} named "${user.username}`}" to blacklist`, message.author)
   })
 }
 
 exports.sharded = function (bot, message, Manager) {
   const content = message.content.split(' ')
   if (content.length !== 2) return
-  const guildID = content[1]
+  const id = content[1]
 
   bot.shard.broadcastEval(`
-    const fs = require('fs');
-    const path = require('path');
-    const appDir = path.dirname(require.main.filename);
-    const storage = require(appDir + '/util/storage.js');
-    const removeRss = require(appDir + '/util/removeFeed.js');
-    const currentGuilds = storage.currentGuilds;
-    const blacklistGuilds = storage.blacklistGuilds;
-
-    const guild = this.guilds.get('${guildID}');
-    if (guild) {
-      const guildName = guild.name;
-      const guildID = guild.id;
-      if (!blacklistGuilds.ids.includes(guildID)) {
-
-        blacklistGuilds.ids.push(guildID);
-
-        try {
-          fs.writeFileSync('./settings/blacklist.json', JSON.stringify(blacklistGuilds, null, 2));
-          try {
-            fs.unlinkSync('./sources/' + guildID + '.json');
-            const guildRss = currentGuilds.get(guildID);
-            if (guildRss) {
-              for (var rssName in guildRss.sources) {
-                removeRss(guildID, rssName, function (err, link, rssName) {
-                  if (err) console.log('Bot Controller: Blacklist error', err.message || err);
-                  else console.log('Bot Controller: Removed ' + rssName + ' for blacklist.');
-                });
-              }
-              currentGuilds.delete(guildID);
-            }
-            console.log('Bot Controller: Successfully blacklisted guild (' + guildID + ', ' + guildName + ') and deleted source file as requested by (${message.author.id}, ${message.author.username}).');
-            'Successfully blacklisted guild ' + guildID + ' (' + guildName + ') and deleted source file.';
-          } catch (e) {
-            console.log('Bot Controller: Successfully blacklisted, but unable to delete source file for guild (' + guildID + ', ' + guildName + ') as requested by (${message.author.id}, ${message.author.username}). Reason: ', e);
-            'Successfully blacklisted, but unable to delete source file for guild:\\n' + e.message || e;
-          }
-        } catch (err) {
-          console.log('Bot Controller: Unable to permanently blacklist (' + guildID + ', ' +  guild.name + ') as requested by (${message.author.id}, ${message.author.username}), reason: ', err);
-          'Unable to permanently blacklist. Reason:\\n' + err.message || err;
-        }
-
-      } else 'Guild ' + guildID + '(' + guildName + ') is already blacklisted.';
-    }
+    const guild = this.guilds.get('${id}');
+    const user = this.users.get('${id}');
+    if (guild) guild.leave();
+    guild ? '_guild ' + guild.name : user ? '_user ' + user.username : null
   `).then(results => {
-    for (var x in results) {
-      const result = results[x]
-      if (result) message.channel.send(result)
+    let found
+    for (var x = 0; x < results.length; ++x) {
+      if (!results[x]) continue
+      const arr = results[x].split(' ')
+      const type = arr.shift().replace('_', '')
+      found = { type: type, name: arr.join(' ') }
     }
+    if (!found) return message.channel.send('No such guild or user exists.')
+    else if (found.type === 'guild' && blacklistGuilds.includes(id)) return message.channel.send(`Guild ${id} (${found.name}) is already blacklisted.`)
+    else if (found.type === 'user' && blacklistUsers.includes(id)) return message.channel.send(`User ${id} (${found.name}) is already blacklisted.`)
+
+    fileOps.addBlacklist({ isGuild: found.type === 'guild', id: id, name: found.name }, err => {
+      if (err) {
+        log.controller.error('Unable to add blacklist', message.author, err)
+        return message.channel.send(`Blacklist failed. ${err.message}`)
+      }
+      message.channel.send(`Added ${found.type} ${id} named "${found.name}" to blacklist`)
+      log.controller.info(`Added ${found.type} ${id} named "${found.name}" to blacklist`, message.author)
+    })
   }).catch(err => {
-    console.log(`Bot Controller: Unable to broadcast eval blacklist, reason:\n`, err.message || err)
-    message.channel.send(`Bot Controller: Unable to broadcast eval blacklist, reason:\n`, err.message || err)
+    log.controller.error(`Unable to broadcast eval blacklist`, message.author, err)
+    message.channel.send(`Unable to broadcast eval blacklist, reason:\n`, err.message || err)
   })
 }

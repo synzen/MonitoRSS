@@ -2,12 +2,11 @@ const config = require('../config.json')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const currentGuilds = storage.currentGuilds
-const overriddenGuilds = storage.overriddenGuilds
-const failedLinks = storage.failedLinks
+const overrides = storage.limitOverrides
 const MenuUtils = require('./util/MenuUtils.js')
 const FAIL_LIMIT = config.feedSettings.failLimit
 
-function feedStatus (link) {
+function feedStatus (failedLinks, link) {
   const failCount = failedLinks[link]
   return !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : 'Status: FAILED\n'
 }
@@ -16,10 +15,11 @@ module.exports = (bot, message, command) => {
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no existing feeds.').catch(err => log.command.warning(`chooseFeed 2`, message.guild, err))
 
+  const failedLinks = storage.failedLinks
   const rssList = guildRss.sources
   let failedFeedCount = 0
 
-  const maxFeedsAllowed = overriddenGuilds[message.guild.id] != null ? overriddenGuilds[message.guild.id] === 0 ? 'Unlimited' : overriddenGuilds[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : config.feedSettings.maxFeeds
+  const maxFeedsAllowed = overrides[message.guild.id] != null ? overrides[message.guild.id] === 0 ? 'Unlimited' : overrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : config.feedSettings.maxFeeds
 
   // Generate the info for each feed as an array, and push into another array
   const currentRSSList = []
@@ -32,7 +32,7 @@ module.exports = (bot, message, command) => {
       channel: bot.channels.get(feed.channel) ? bot.channels.get(feed.channel).name : undefined,
       titleChecks: feed.titleChecks === true ? 'Title Checks: Enabled\n' : null
     }
-    if (FAIL_LIMIT !== 0) o.status = feedStatus(feed.link)
+    if (FAIL_LIMIT !== 0) o.status = feedStatus(failedLinks, feed.link)
     if (o.status.startsWith('STATUS: FAILED')) ++failedFeedCount
     currentRSSList.push(o)
   }

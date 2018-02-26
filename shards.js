@@ -7,7 +7,6 @@ const fileOps = require('./util/fileOps.js')
 const log = require('./util/logger.js')
 const dbRestore = require('./commands/controller/dbrestore.js')
 const currentGuilds = storage.currentGuilds
-if (config.logging.logDates === true) require('./util/logDates.js')()
 
 const Manager = new Discord.ShardingManager('./server.js', { respawn: false })
 const missingGuilds = {}
@@ -96,12 +95,17 @@ Manager.on('message', (shard, message) => {
       break
 
     case 'updateFailedLinks':
-      Manager.broadcast({ type: 'updateFailedLinks', failedLinks: message.failedLinks })
+      Manager.broadcast(message)
       try {
         fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(message.failedLinks, null, 2))
       } catch (err) {
         log.general.warning('Sharding Manager unable to update failed links', err)
       }
+      break
+
+    case 'updateBlacklists':
+    case 'updateVIPs':
+      Manager.broadcast(message)
       break
 
     case 'dbRestore':
