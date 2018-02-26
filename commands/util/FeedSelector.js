@@ -74,7 +74,7 @@ class FeedSelector extends Menu {
     this.miscOption = miscOption
 
     const rssList = this.guildRss.sources
-    const maxFeedsAllowed = storage.overrides[message.guild.id] != null ? storage.overrides[message.guild.id] === 0 ? 'Unlimited' : storage.overrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds, 10))) ? 'Unlimited' : config.feedSettings.maxFeeds
+    const maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] === 0 ? 'Unlimited' : storage.limitOverrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds, 10))) ? 'Unlimited' : config.feedSettings.maxFeeds
 
     this._currentRSSList = []
 
