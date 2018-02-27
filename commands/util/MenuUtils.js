@@ -324,7 +324,7 @@ class MenuSeries {
       // Check for any indicators to stop the MenuSeries
       if (passover.__end) return this._msgCleaner.deleteAll() // Do not execute the ending callback function
       else if (endPrematurely === true) return this._end(null, passover, callback)
-      else if (err) this._end(err, null, callback)
+      else if (err) return this._end(err, null, callback)
 
       // Add any Menus requested to be added by the Menu that just finished
       if (next && next.menu) {

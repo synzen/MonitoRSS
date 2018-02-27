@@ -81,7 +81,7 @@ function feedSelectorFn (m, data, callback) {
 
   callback(null, { ...data,
     next: {
-      text: `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset**, or multiple properties by separation with commas. Type \`reset\` to disable and remove all properties, or type \`exit\` to cancel.`,
+      text: `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset, or multiple properties by separation with commas.** Type \`reset\` to disable and remove all properties, or type \`exit\` to cancel.`,
       embed: null }
   })
 }
@@ -95,10 +95,12 @@ function selectProperty (m, data, callback) {
   for (var q = 0; q < arr.length; ++q) {
     const pChoice = arr[q].toLowerCase()
     let valid = false
-    for (var p in EMBED_PROPERTIES) {
-      if (pChoice === EMBED_PROPERTIES[p].name.toLowerCase()) {
-        valid = true
-        choices.push(p)
+    if (pChoice === 'add field' || pChoice === 'remove field') {
+      for (var p in EMBED_PROPERTIES) {
+        if (pChoice === EMBED_PROPERTIES[p].name.toLowerCase()) {
+          valid = true
+          choices.push(p)
+        }
       }
     }
     if (!valid) invalids.push(arr[q])
@@ -110,7 +112,7 @@ function selectProperty (m, data, callback) {
   for (var x = 0; x < choices.length; ++x) setMenus.push(new MenuUtils.Menu(m, setProperty))
 
   data.next = {
-    text: `Set the **${EMBED_PROPERTIES[choices[0]].name}** now. To reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`,
+    text: `You are now customizing the **${EMBED_PROPERTIES[choices[0]].name}**. Type your input now\n\nTo reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`,
     menu: setMenus
   }
   callback(null, { ...data,
@@ -124,7 +126,7 @@ function setProperty (m, data, callback) {
   const property = properties.shift()
   const setting = m.content.trim()
   data.next = {
-    text: `Set the **${properties[0] ? EMBED_PROPERTIES[properties[0]].name : ''}** now. To reset the property, type \`reset\`.`
+    text: `You are now customizing the **${properties[0] ? EMBED_PROPERTIES[properties[0]].name : ''}**. Type your input now. To reset the property, type \`reset\`.`
   }
 
   if (setting.toLowerCase() === 'reset') {
@@ -137,11 +139,122 @@ function setProperty (m, data, callback) {
   callback(null, data)
 }
 
+function fieldAction (m, data, callback) {
+  const { guildRss, rssName } = data
+  const input = parseInt(m.content, 10)
+  if (isNaN(input) || input < 1 || input > 5) return new SyntaxError('That is not a valid option. Try again, or type `exit` to cancel.')
+  const source = guildRss.sources[rssName]
+
+  if (input === 5) {
+    if (!source.embedMessage || !source.embedMessage.properties || !Array.isArray(source.embedMessage.properties.fields) || source.embedMessage.properties.fields.length === 0) {
+      return callback(new Error('There are no embed fields to remove for this feed.'))
+    }
+    const fields = source.embedMessage.properties.fields
+    const rmList = new MenuUtils.Menu(m, fieldRem)
+      .setAuthor('Embed Fields Removal')
+      .setDescription(`\u200b\nYour Fields are listed below, ordered by when they were added. Type the Field's number to remove it, or type multiple Field numbers separateed by commas (\`,\`). Type **exit** to cancel.\n\u200b`)
+    const reference = {}
+    for (var x = 0; x < fields.length; ++x) {
+      const field = fields[x]
+      const inline = field.inline === true ? '(Inline)' : '(Regular)'
+      if (!field.title && typeof field.title === 'string') rmList.addOption(`${inline} Blank Field`, '\u200b')
+      else rmList.addOption(`${inline} ${field.title}`, field.value)
+    }
+
+    callback(null, { ...data, next: { menu: rmList } })
+
+  } else {
+    if (source.embedMessage && source.embedMessage.properties.fields.length === 10) return callback(new Error('You have reached the maximum number of fields you can add (10).'))
+
+    if (input === 3 || input === 4) { // Non-inline blank field
+      if (!source.embedMessage) source.embedMessage = { properties: { fields: [] }}
+      source.embedMessage.properties.fields.push({ title: '' })
+      return callback(null, { ...data, successText: `An blank Field has been added to the embed for the feed <${source.link}>.` })
+    } else if (input === 4) { // Inline blank field
+      if (!source.embedMessage) source.embedMessage = { properties: { fields: [] }}
+      source.embedMessage.properties.fields.push({ title: '', inline: true })
+      return callback(null, { ...data, successText: `An inline blank Field has been added to the embed for the feed <${source.link}>.` })
+    }
+
+    const specMenu = new MenuUtils.Menu(m, fieldAddSpec)
+    callback(null, { ...data,
+      selectedOption: input,
+      next:
+      { menu: specMenu,
+        text: 'Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type *exit* to cancel.' }
+    })
+  }
+
+}
+
+function fieldAddSpec (m, data, callback) {
+  const { guildRss, rssName, selectedOption } = data
+
+  const arr = m.content.split('\n')
+  while (!arr[0]) arr.shift()
+  const title = arr.shift().trim()
+  if (!title) return callback(new SyntaxError('No valid title found. Try again, or type `exit` to cancel.'))
+  const val = arr.join('\n').trim()
+  const setting = { title: title, value: val || '\u200b' }
+  if (selectedOption === 2) setting.inline = true
+  
+  const source = guildRss.sources[rssName]
+  if (!source.embedMessage) source.embedMessage = { properties: { fields: [] }}
+  const embedFields = guildRss.sources[rssName].embedMessage.properties.fields
+
+  embedFields.push(setting)
+  callback(null, { ...data, successText: `A new${selectedOption === 2 ? ' inline' : ''} Field has been added to the embed with the following details:\n\n**Title**\`\`\`${title}\n\`\`\`\n**Value**\`\`\`${val || '```\n```'}\`\`\`\n for the feed <${source.link}>.` })
+}
+
+function fieldRem (m, data, callback) {
+  const { guildRss, rssName, fieldsLen } = data
+  const source = guildRss.sources[rssName]
+  const fields = source.embedMessage.properties.fields
+  const inputs = m.content.split(',').map(item => item.trim()).filter((item, index, self) => {
+    const num = parseInt(item, 10)
+    return item && index === self.indexOf(item) && !isNaN(num) && num > 0 && num <= fields.length
+  })
+  if (inputs.length === 0) return callback(new SyntaxError('No valid Fields chosen. Try again, or type `exit` to cancel.'))
+
+  for (var x = inputs.length; x >= 0; --x) fields.splice(inputs[x] - 1, 1)
+  if (fields.length === 0) delete source.embedMessage.properties.fields
+  if (Object.keys(source.embedMessage.properties).length === 0) delete source.embedMessage.properties
+  if (Object.keys(source.embedMessage).length === 0) delete source.embedMessage
+  callback(null, { ...data, successText: `The Field(s) numbered ${inputs.join(', ')} have been removed from the embed for the feed <${source.link}>.` })
+}
+
 module.exports = (bot, message, command) => {
-  const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
+  const setFields = message.content.split(' ')[1] === 'fields'
+  const feedSelectorField = new FeedSelector(message, null, { command: command })
+  const fieldActionMenu = new MenuUtils.Menu(message, fieldAction)
+    .setAuthor('Embed Fields')
+    .setDescription('\u200b\nSelect whether to add or remove a field from this feed\'s embed. For an example of what a field looks like, see https://i.imgur.com/WSHwmyB.png. Type **exit** to cancel.\n\u200b')
+    .addOption('Add a regular Field', 'This is the "regular" type of field. All fields will be stacked on top of each other.')
+    .addOption('Add an inline Field', 'Fields will be able to be placed beside each other whenever possible rather than being stacked.')
+    .addOption('Add a regular Blank Field', 'A blank field that contains no title or description. This is used to take up empty space.')
+    .addOption('Add a inline Blank Field', 'A Blank Field, but inline.')
+    .addOption('Remove a Field', 'Remove a Field if it exists.')
+
+  // Fields
+  if (setFields) {
+    return new MenuUtils.MenuSeries(message, [feedSelectorField, fieldActionMenu]).start(async (err, data) => {
+      try {
+        if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
+        const { guildRss, successText } = data
+        fileOps.updateFile(guildRss)
+        await message.channel.send(successText)
+      } catch (err) {
+        console.info(err)
+        log.command.warning(`rssembed fields:`, message.guild, err)
+      }
+    })
+  }
+
+  // Regular properties
+  const feedSelectorProp = new FeedSelector(message, feedSelectorFn, { command: command })
   const selectProp = new MenuUtils.Menu(message, selectProperty)
-  // const setProp = new MenuUtils.Menu(message, setProperty)
-  new MenuUtils.MenuSeries(message, [feedSelector, selectProp]).start(async (err, data) => {
+
+  new MenuUtils.MenuSeries(message, [feedSelectorProp, selectProp]).start(async (err, data) => {
     try {
       if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
       const { guildRss, rssName, property, settings } = data
