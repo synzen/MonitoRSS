@@ -16,10 +16,10 @@ module.exports = (bot, article, callback, isTestMessage) => {
 
   if (!source) return log.general.error(`Unable to send an article due to missing source ${rssName}`, channel.guild, channel)
 
-  if (typeof rssList[rssName].webhook === 'object') {
+  if (typeof source.webhook === 'object' && storage.webhookServers.includes(channel.guild.id)) {
     if (!channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) return body()
     channel.fetchWebhooks().then(hooks => {
-      const hook = hooks.get(rssList[rssName].webhook.id)
+      const hook = hooks.get(source.webhook.id)
       if (!hook) return body()
       const guildId = channel.guild.id
       const guildName = channel.guild.name
@@ -38,7 +38,7 @@ module.exports = (bot, article, callback, isTestMessage) => {
   function body () {
     // Sometimes feeds get deleted mid-retrieval cycle, thus check for empty rssList and if the feed itself was deleted
     if (!rssList || Object.keys(rssList).length === 0) return log.general.warning(`No sources for guild, skipping Discord message sending`, channel)
-    if (deletedFeeds.includes(rssName)) return log.general.warning(`Feed (rssName ${rssName}, link: ${rssList[rssName].link}) was deleted during cycle, skipping Discord message sending`, channel)
+    if (deletedFeeds.includes(rssName)) return log.general.warning(`Feed (rssName ${rssName}, link: ${source.link}) was deleted during cycle, skipping Discord message sending`, channel)
 
     let attempts = 1
 

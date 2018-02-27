@@ -23,6 +23,7 @@ class FeedSchedule {
     this.schedule = schedule
     this.refreshTime = this.schedule.refreshTimeMinutes ? this.schedule.refreshTimeMinutes : config.feedSettings.refreshTimeMinutes
     this.cycle = new events.EventEmitter()
+    this._cookieServers = storage.cookieServers
     this._processorList = []
     this._regBatchList = []
     this._modBatchList = [] // Batch of sources with cookies
@@ -60,10 +61,16 @@ class FeedSchedule {
     }
   }
 
+  _verifyCookieUse (id, advanced) {
+    if (this._cookieServers.includes(id)) return true
+    delete advanced.cookies
+    return false
+  }
+
   _delegateFeed (guildRss, rssName) {
     const source = guildRss.sources[rssName]
 
-    if (source.advanced && Object.keys(source.advanced).length > 0) { // Special source list for feeds with unique settings defined
+    if (source.advanced && Object.keys(source.advanced).length > 0 && this._verifyCookieUse(guildRss.id, source.advanced)) { // Special source list for feeds with unique settings defined
       let linkList = {}
       linkList[rssName] = source
       this._modSourceList.set(source.link, linkList)
@@ -147,6 +154,7 @@ class FeedSchedule {
       }
     }
     const currentGuilds = storage.currentGuilds
+    this._cookieServers = storage.cookieServers
     this._startTime = new Date()
     this.inProgress = true
     this._regBatchList = []

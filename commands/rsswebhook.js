@@ -41,7 +41,7 @@ function collectWebhook (m, data, callback) {
 
 module.exports = async (bot, message, command) => {
   try {
-    if (config.advanced.restrictWebhooks === true && !storage.webhookServers.includes(message.guild.id)) {
+    if (config.advanced._restrictWebhooks === true && !storage.webhookServers.includes(message.guild.id)) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
       return await message.channel.send(`This server does not have access to webhook use.`)
     }

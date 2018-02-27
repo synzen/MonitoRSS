@@ -78,7 +78,7 @@ else {
       storage.failedLinks = message.failedLinks
     } else if (message.type === 'updateVIPs') {
       storage.webhookServers = message.webhookServers
-      storage.cookieUsers = message.cookieUsers
+      storage.cookieServers = message.cookieServers
       storage.limitOverrides = message.limitOverrides
     } else if (message.type === 'updateBlacklists') {
       storage.blacklistGuilds = message.blacklistGuilds

@@ -4,7 +4,6 @@ const config = require('../config.json')
 const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
-const failedLinks = storage.failedLinks
 
 function sanitize (array) {
   for (var p = array.length - 1; p >= 0; p--) { // Sanitize by removing spaces and newlines
@@ -21,6 +20,8 @@ function isBotController (id) {
 }
 
 module.exports = (bot, message) => {
+  const failedLinks = storage.failedLinks
+
   const guildRss = currentGuilds.has(message.guild.id) ? currentGuilds.get(message.guild.id) : {}
   const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
   let maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
@@ -105,7 +106,7 @@ module.exports = (bot, message) => {
         cookies = cookieObj
       }
       const cookiesFound = !!cookies
-      if (config.advanced && config.advanced.restrictCookies === true && !storage.cookieUsers.includes(message.author.id) && !isBotController(message.author.id)) cookies = undefined
+      if (config.advanced && config.advanced._restrictCookies === true && !storage.cookieServers.includes(message.guild.id) && !isBotController(message.author.id)) cookies = undefined
 
       initialize.addNewFeed({link: link, channel: message.channel, cookies: cookies}, err => {
         channelTracker.remove(message.channel.id)
@@ -132,7 +133,7 @@ module.exports = (bot, message) => {
           // log.command.info(`Added ${link}`, { guild: message.guild })
           if (failedLinks[link]) {
             delete storage.failedLinks[link]
-            if (bot.shard) process.send('updateFailedLinks', { failedLinks: failedLinks })
+            if (bot.shard) bot.shard.send('updateFailedLinks', { failedLinks: failedLinks }).catch(err => log.general.warning('Failed to send updateFailedLinks to Sharding Manager', err))
           }
           passedAddLinks[link] = cookies
         }

@@ -4,7 +4,7 @@ const blacklistGuilds = storage.blacklistGuilds
 const blacklistUsers = storage.blacklistUsers
 const currentGuilds = storage.currentGuilds
 const webhookServers = storage.webhookServers
-const cookieUsers = storage.cookieUsers
+const cookieServers = storage.cookieServers
 const models = storage.models
 const log = require('./logger.js')
 const UPDATE_SETTINGS = { overwrite: true, upsert: true, strict: true }
@@ -60,6 +60,8 @@ exports.restoreBackup = (guildId, shardingManager, callback) => {
   })
 }
 
+exports.getBlacklists = callback => models.Blacklist().find(callback)
+
 exports.addBlacklist = (settings, callback) => {
   models.Blacklist().update({ id: settings.id }, settings, UPDATE_SETTINGS, err => {
     if (err && typeof callback === 'function') return callback(err)
@@ -86,27 +88,29 @@ exports.removeBlacklist = (id, callback) => {
   })
 }
 
+exports.getVIP = callback => models.VIP().find(callback)
+
 exports.updateVIP = (settings, callback) => {
-  models.VIP().update({ id: settings.id }, settings, UPDATE_SETTINGS, (err, doc) => {
+  models.VIP().update({ id: settings.id }, settings, { upsert: true, strict: true }, err => {
     if (err && typeof callback === 'function') return callback(err)
     else if (err) return log.general.error(`Unable to add VIP for id ${settings.id}`, err)
     const limitOverrides = storage.limitOverrides
     const DEF_MAX = config.feedSettings.maxFeeds
 
-    const servers = doc.servers
-    const l = servers.length
-    for (var x = 0; x < l; ++x) {
-      const serverID = servers[x]
-      if (doc.maxFeeds > DEF_MAX) limitOverrides[serverID] = doc.maxFeeds
-      else delete limitOverrides[serverID]
-      if (doc.allowWebhooks) webhookServers.push(serverID)
-      else webhookServers.splice(webhookServers.indexOf(serverID))
+    const servers = settings.servers
+    if (servers) {
+      for (var x = 0; x < servers.length; ++x) {
+        const serverID = servers[x]
+        if (settings.maxFeeds > DEF_MAX) limitOverrides[serverID] = settings.maxFeeds
+        else delete limitOverrides[serverID]
+        if (settings.allowWebhooks) webhookServers.push(serverID)
+        else webhookServers.splice(webhookServers.indexOf(serverID))
+        if (settings.allowCookies) cookieServers.push(serverID)
+        else cookieServers.splice(cookieServers.indexOf(serverID))
+      }
     }
 
-    if (doc.allowCookies) cookieUsers.push(doc.id)
-    else cookieUsers.splice(cookieUsers.indexOf(doc.id))
-
-    if (process.send) process.send({ type: 'updateVIPs', webhookServers: webhookServers, cookieUsers: cookieUsers, limitOverrides: limitOverrides })
+    if (process.send) process.send({ type: 'updateVIPs', webhookServers: webhookServers, cookieServers: cookieServers, limitOverrides: limitOverrides })
     if (typeof callback === 'function') callback()
   })
 }
@@ -118,15 +122,16 @@ exports.removeVIP = (id, callback) => {
     const limitOverrides = storage.limitOverrides
 
     const servers = doc.servers
-    const l = servers.length
-    for (var x = 0; x < l; ++x) {
-      const serverID = servers[x]
-      delete limitOverrides[serverID]
-      webhookServers.splice(webhookServers.indexOf(serverID))
+    if (servers) {
+      for (var x = 0; x < servers.length; ++x) {
+        const serverID = servers[x]
+        delete limitOverrides[serverID]
+        webhookServers.splice(webhookServers.indexOf(serverID))
+        cookieServers.splice(cookieServers.indexOf(serverID))
+      }
     }
-    cookieUsers.splice(cookieUsers.indexOf(doc.id))
 
-    if (process.send) process.send({ type: 'updateVIPs', webhookServers: webhookServers, cookieUsers: cookieUsers, limitOverrides: limitOverrides })
+    if (process.send) process.send({ type: 'updateVIPs', webhookServers: webhookServers, cookieServers: cookieServers, limitOverrides: limitOverrides })
     if (typeof callback === 'function') callback()
   })
 }
@@ -138,10 +143,8 @@ exports.refreshVIP = callback => {
     const limitOverrides = storage.limitOverrides
 
     Object.keys(limitOverrides).forEach(id => delete limitOverrides[id])
-    console.info(storage.webhookServers)
     webhookServers.length = 0
-    console.info(storage.webhookServers)
-    cookieUsers.length = 0
+    cookieServers.length = 0
     const DEF_MAX = config.feedSettings.maxFeeds
 
     const len = docs.length
@@ -153,11 +156,11 @@ exports.refreshVIP = callback => {
         const serverID = servers[y]
         if (doc.maxFeeds > DEF_MAX) limitOverrides[serverID] = doc.maxFeeds
         if (doc.allowWebhooks) webhookServers.push(serverID)
+        if (doc.allowCookies) cookieServers.push(serverID)
       }
-      if (doc.allowCookies) cookieUsers.push(doc.id)
     }
 
-    if (process.send) process.send({ type: 'updateVIPs', webhookServers: webhookServers, cookieUsers: cookieUsers, limitOverrides: limitOverrides })
+    if (process.send) process.send({ type: 'updateVIPs', webhookServers: webhookServers, cookieServers: cookieServers, limitOverrides: limitOverrides })
     if (typeof callback === 'function') callback()
   })
 }

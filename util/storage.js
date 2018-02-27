@@ -12,7 +12,7 @@ const linkTracker = {}
 const allScheduleWords = []
 let limitOverrides = {}
 let webhookServers = [] // Server IDs
-let cookieUsers = [] // User IDs
+let cookieServers = [] // Server IDs
 let blacklistUsers = []
 let blacklistGuilds = []
 let initializing = true
@@ -66,8 +66,13 @@ const guildRssBackupSchema = {
 }
 
 const vipSchema = {
-  id: String,
-  username: String,
+  id: {
+    type: String,
+    index: {
+      unique: true
+    }
+  },
+  name: String,
   servers: [String],
   maxFeeds: Number,
   allowWebhooks: Boolean,
@@ -97,7 +102,7 @@ exports.failedLinks = failedLinks
 exports.scheduleManager = scheduleManager
 exports.limitOverrides = limitOverrides
 exports.webhookServers = webhookServers
-exports.cookieUsers = cookieUsers
+exports.cookieServers = cookieServers
 exports.blacklistUsers = blacklistUsers
 exports.blacklistGuilds = blacklistGuilds
 exports.schemas = {

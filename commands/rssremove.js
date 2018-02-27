@@ -12,7 +12,7 @@ module.exports = (bot, message, command) => {
 
       (function remove (index) {
         removeFeed(message.guild.id, rssNameList[index], (err, link) => {
-          if (err) log.guild.error(`Unable to remove feed`, message.guild, err)
+          if (err && err.code !== 26) log.guild.error(`Unable to remove feed ${link}`, message.guild, err)
           removed += `\n${link}`
           if (index + 1 < rssNameList.length) remove(index + 1)
           else {
