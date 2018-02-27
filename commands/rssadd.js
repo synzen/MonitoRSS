@@ -130,10 +130,9 @@ module.exports = (bot, message) => {
           failedAddLinks[link] = channelErrMsg
         } else {
           log.command.info(`Added ${link}`, message.guild)
-          // log.command.info(`Added ${link}`, { guild: message.guild })
           if (failedLinks[link]) {
             delete storage.failedLinks[link]
-            if (bot.shard) bot.shard.send('updateFailedLinks', { failedLinks: failedLinks }).catch(err => log.general.warning('Failed to send updateFailedLinks to Sharding Manager', err))
+            if (bot.shard) bot.shard.send({ type: 'updateFailedLinks', failedLinks: failedLinks }).catch(err => log.general.warning('Failed to send updateFailedLinks to Sharding Manager', err))
           }
           passedAddLinks[link] = cookies
         }
