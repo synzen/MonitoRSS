@@ -164,7 +164,7 @@ function fieldAction (m, data, callback) {
     callback(null, { ...data, next: { menu: rmList } })
 
   } else {
-    if (source.embedMessage && source.embedMessage.properties.fields.length === 10) return callback(new Error('You have reached the maximum number of fields you can add (10).'))
+    if (source.embedMessage && source.embedMessage.properties && Array.isArray(source.embedMessage.properties.fields) && source.embedMessage.properties.fields.length === 10) return callback(new Error('You have reached the maximum number of fields you can add (10).'))
 
     if (input === 3 || input === 4) { // Non-inline blank field
       if (!source.embedMessage) source.embedMessage = { properties: { fields: [] }}
