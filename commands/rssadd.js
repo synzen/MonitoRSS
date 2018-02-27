@@ -38,13 +38,14 @@ module.exports = (bot, message) => {
   const passedAddLinks = {}
   const failedAddLinks = {}
   const totalLinks = linkList.length
+  let limitExceeded = false
 
   function finishLinkList (verifyMsg) {
     let msg = ''
     if (Object.keys(passedAddLinks).length > 0) {
       let successBox = 'The following feed(s) have been successfully added to this channel:\n```\n'
       for (var passedLink in passedAddLinks) {
-        successBox += `\n* ${passedLink}`
+        successBox += `\n${passedLink}`
         if (passedAddLinks[passedLink]) { // passedAddLinks[passedLink] is the cookie object
           let cookieList = ''
           for (var cookieKey in passedAddLinks[passedLink]) cookieList += `\n${cookieKey} = ${passedAddLinks[passedLink][cookieKey]}`
@@ -54,13 +55,13 @@ module.exports = (bot, message) => {
       msg += successBox + '\n```\n'
     }
     if (Object.keys(failedAddLinks).length > 0) {
-      let failBox = '\nThe following feed(s) could not be added:\n```\n'
+      let failBox = `\n${limitExceeded ? `Feed(s) not listed here could not be added due to the feed limit ${${maxFeedsAllowed}}. ` : ''}The following feed(s) could not be added:\n\`\`\`\n`
       for (var failedLink in failedAddLinks) {
-        failBox += `\n\n* ${failedLink}\nReason: ${failedAddLinks[failedLink]}`
+        failBox += `\n\n${failedLink}\nReason: ${failedAddLinks[failedLink]}`
       }
       msg += failBox + '\n```\n'
-    }
-    if (Object.keys(passedAddLinks).length > 0) msg += 'Articles will be automatically delivered once new articles are found.'
+    } else if (limitExceeded) msg += `Some feed(s) could not be added due to to the feed limit (${maxFeedsAllowed}).`
+    if (Object.keys(passedAddLinks).length > 0) msg += `Articles will be automatically delivered once new articles are found.`
 
     channelTracker.remove(message.channel.id)
     verifyMsg.edit(msg).catch(err => log.command.warning(`rssAdd 1:`, err))
@@ -80,7 +81,9 @@ module.exports = (bot, message) => {
         else return finishLinkList(verifyMsg)
       } else if (maxFeedsAllowed !== 'Unlimited' && Object.keys(rssList).length + checkedSoFar >= maxFeedsAllowed) {
         log.command.info(`Unable to add feed ${link} due to limit of ${maxFeedsAllowed} feeds`, message.guild)
-        failedAddLinks[link] = `Maximum feed limit of ${maxFeedsAllowed} has been reached.`
+        // Only show link-specific error if it's one link since they user may be trying to add a huge number of links that exceeds the message size limit
+        if (totalLinks.length === 1) failedAddLinks[link] = `Maximum feed limit of ${maxFeedsAllowed} has been reached.`
+        else limitExceeded = true
         if (linkIndex + 1 < totalLinks) return processLink(linkIndex + 1)
         else return finishLinkList(verifyMsg)
       }

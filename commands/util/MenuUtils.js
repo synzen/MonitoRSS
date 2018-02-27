@@ -20,12 +20,12 @@ class Menu {
    * @memberof Menu
    */
   constructor (message, fn, settings) {
-    this.maxPerPage = settings && typeof settings.maxPerPage === 'number' && settings.maxPerPage > 0 ? settings.maxPerPage : 7
+    this.maxPerPage = settings && typeof settings.maxPerPage === 'number' && settings.maxPerPage > 0 && settings.maxPerPage <= 10 ? settings.maxPerPage : 7
     this.message = message
     this.channel = message.channel
     this.fn = fn
     this.pages = []
-    this._page = 0
+    this._pageNum = 0
     this._numbered = settings && settings.numbered != null ? settings.numbered : true
     this._msgCleaner = new MessageCleaner(message)
     if (!settings) return
@@ -33,7 +33,7 @@ class Menu {
     if (!settings.embed) return
     const { embed } = settings
     this.pages[0] = new RichEmbed(embed).setColor(config.botSettings.menuColor)
-    this._curPage = this.pages[this._page]
+    this._curPage = this.pages[this._pageNum]
     this.pages[0].fields.length = 0
   }
 
@@ -43,8 +43,10 @@ class Menu {
    * @memberof Menu
    */
   _embedExists () {
-    if (this._page === 0 && !this._curPage) this.pages[0] = new RichEmbed().setColor(config.botSettings.menuColor)
-    this._curPage = this.pages[0]
+    if (this._pageNum === 0 && !this._curPage) {
+      this.pages[0] = new RichEmbed().setColor(config.botSettings.menuColor)
+      this._curPage = this.pages[0]
+    }
   }
 
   /**
@@ -54,10 +56,10 @@ class Menu {
    * @memberof Menu
    */
   addPage () {
-    const newPage = new RichEmbed(this.pages[0]).setFooter(`Page ${++this._page + 1}/${this.pages.length + 1}`)
+    const newPage = new RichEmbed(this.pages[0]).setFooter(`Page ${++this._pageNum + 1}/${this.pages.length + 1}`)
     newPage.fields = []
-    this.pages[this._page] = newPage
-    this._curPage = this.pages[this._page]
+    this.pages[this._pageNum] = newPage
+    this._curPage = this.pages[this._pageNum]
     return this
   }
 
@@ -121,7 +123,7 @@ class Menu {
    */
   removeAllEmbeds () {
     this.pages.length = 0
-    this._page = 0
+    this._pageNum = 0
     this._curPage = 0
   }
 

@@ -181,7 +181,7 @@ function fieldAction (m, data, callback) {
       selectedOption: input,
       next:
       { menu: specMenu,
-        text: 'Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type *exit* to cancel.' }
+        text: 'Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type `exit` to cancel.' }
     })
   }
 

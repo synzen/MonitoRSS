@@ -48,6 +48,11 @@ exports.createManagers = bot => {
     if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || user.bot || !pageControls.has(msgReaction.message.id)) return
     eventHandler('messageReactionAdd')(bot, msgReaction, user)
   })
+
+  bot.on('messageReactionRemove', (msgReaction, user) => {
+    if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || user.bot || !pageControls.has(msgReaction.message.id)) return
+    eventHandler('messageReactionRemove')(bot, msgReaction, user)
+  })
 }
 
 exports.enableCommands = bot => {
