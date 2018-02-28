@@ -153,7 +153,7 @@ function fieldAction (m, data, callback) {
     const rmList = new MenuUtils.Menu(m, fieldRem)
       .setAuthor('Embed Fields Removal')
       .setDescription(`\u200b\nYour Fields are listed below, ordered by when they were added. Type the Field's number to remove it, or type multiple Field numbers separateed by commas (\`,\`). Type **exit** to cancel.\n\u200b`)
-    const reference = {}
+
     for (var x = 0; x < fields.length; ++x) {
       const field = fields[x]
       const inline = field.inline === true ? '(Inline)' : '(Regular)'
@@ -162,16 +162,15 @@ function fieldAction (m, data, callback) {
     }
 
     callback(null, { ...data, next: { menu: rmList } })
-
   } else {
     if (source.embedMessage && source.embedMessage.properties && Array.isArray(source.embedMessage.properties.fields) && source.embedMessage.properties.fields.length === 10) return callback(new Error('You have reached the maximum number of fields you can add (10).'))
 
     if (input === 3 || input === 4) { // Non-inline blank field
-      if (!source.embedMessage) source.embedMessage = { properties: { fields: [] }}
+      if (!source.embedMessage) source.embedMessage = { properties: { fields: [] } }
       source.embedMessage.properties.fields.push({ title: '' })
       return callback(null, { ...data, successText: `An blank Field has been added to the embed for the feed <${source.link}>.` })
     } else if (input === 4) { // Inline blank field
-      if (!source.embedMessage) source.embedMessage = { properties: { fields: [] }}
+      if (!source.embedMessage) source.embedMessage = { properties: { fields: [] } }
       source.embedMessage.properties.fields.push({ title: '', inline: true })
       return callback(null, { ...data, successText: `An inline blank Field has been added to the embed for the feed <${source.link}>.` })
     }
@@ -184,7 +183,6 @@ function fieldAction (m, data, callback) {
         text: 'Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type `exit` to cancel.' }
     })
   }
-
 }
 
 function fieldAddSpec (m, data, callback) {
@@ -197,9 +195,9 @@ function fieldAddSpec (m, data, callback) {
   const val = arr.join('\n').trim()
   const setting = { title: title, value: val || '\u200b' }
   if (selectedOption === 2) setting.inline = true
-  
+
   const source = guildRss.sources[rssName]
-  if (!source.embedMessage) source.embedMessage = { properties: { fields: [] }}
+  if (!source.embedMessage) source.embedMessage = { properties: { fields: [] } }
   const embedFields = guildRss.sources[rssName].embedMessage.properties.fields
 
   embedFields.push(setting)
@@ -207,7 +205,7 @@ function fieldAddSpec (m, data, callback) {
 }
 
 function fieldRem (m, data, callback) {
-  const { guildRss, rssName, fieldsLen } = data
+  const { guildRss, rssName } = data
   const source = guildRss.sources[rssName]
   const fields = source.embedMessage.properties.fields
   const inputs = m.content.split(',').map(item => item.trim()).filter((item, index, self) => {

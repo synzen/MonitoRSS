@@ -27,11 +27,11 @@ module.exports = (bot, message) => {
   let maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited'
 
-  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by commas.`).then(m => m.delete(3000)).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by \`>\`.`).then(m => m.delete(3000)).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
 
   let linkList = message.content.split(' ')
   linkList.shift()
-  linkList = linkList.join(' ').split(',')
+  linkList = linkList.join(' ').split('>')
 
   linkList = sanitize(linkList)
 
@@ -55,7 +55,7 @@ module.exports = (bot, message) => {
       msg += successBox + '\n```\n'
     }
     if (Object.keys(failedAddLinks).length > 0) {
-      let failBox = `\n${limitExceeded ? `Feed(s) not listed here could not be added due to the feed limit ${${maxFeedsAllowed}}. ` : ''}The following feed(s) could not be added:\n\`\`\`\n`
+      let failBox = `\n${limitExceeded ? `Feed(s) not listed here could not be added due to the feed limit (${maxFeedsAllowed}). ` : ''}The following feed(s) could not be added:\n\`\`\`\n`
       for (var failedLink in failedAddLinks) {
         failBox += `\n\n${failedLink}\nReason: ${failedAddLinks[failedLink]}`
       }

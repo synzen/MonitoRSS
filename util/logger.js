@@ -56,7 +56,7 @@ class Logger {
     const reset = COLORS.reset ? COLORS.reset : ''
     return (contents, ...details) => {
       const extra = this._parseDetails(details)
-      console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err})` : ''}`)
+      console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
     }
   }
 }

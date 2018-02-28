@@ -139,7 +139,7 @@ class Menu {
   addOption (title, desc, inline) {
     this._embedExists()
     if (this._curPage && this._curPage.fields.length >= this.maxPerPage) this.addPage()
-    this._curPage.addField(`${this._numbered ? (this.pages.length - 1) * this.maxPerPage + (this._curPage.fields.length + 1) + ') ' : ''}${title}`, desc, inline)
+    this._curPage.addField(`${this._numbered ? (this.pages.length - 1) * this.maxPerPage + (this._curPage.fields.length + 1) + ') ' : ''}${title}`, desc.length > 1024 ? desc.slice(0, 1000) + '...' : desc, inline)
     return this
   }
 
