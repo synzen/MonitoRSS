@@ -7,20 +7,24 @@
 		"description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with commas."
 	},
 	"rssremove": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Feed Removal",
 		"description": "Open a menu to delete a feed from the channel."
 	},
 	"rsslist": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"description": "List all active feeds in server."
 	},
 	"rssmessage": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Message Customization",
 		"description": "Open a menu to customize a feed's text message."
 	},
 	"rssembed": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"args": {
 			"fields": "Customize Fields for the embed."
@@ -29,6 +33,7 @@
 		"description": "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
 	},
 	"rsstest": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"args": {
 			"simple": "Omit the test results and only send the message."
@@ -37,15 +42,18 @@
 		"description": "Opens a menu to send a test message for a random article in a feed, along with the available properties and placeholders for various customizations. You may add `simple` as a parameter to exclude the test details."
 	},
 	"rssdate": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"description": "Opens a menu to customize how dates are displayed."
 	},
 	"rssfilters": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Global Filter Addition/Removal",
 		"description": "Opens a menu to add or remove global filters from a feed. Messages that do not have any of the words in any of your filters won't be sent to your Discord."
 	},
 	"rssroles": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Role Customization",
 		"description": "Opens a menu to add global/filtered subscriptions for roles to feeds."
@@ -59,15 +67,18 @@
 		"description": "Opens a menu similar to `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
 	},
 	"rsscookies": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Cookie Customization"
 	},
 	"rssrefresh": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Refresh Feed",
 		"description": "Opens a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit."
 	},
 	"rssoptions": {
+		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"description": "Opens a menu for miscellaneous feed options.",
 		"options": {
