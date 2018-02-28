@@ -4,7 +4,6 @@ process.on('uncaughtException', function (err) {
   process.exit()
 })
 
-const config = require('../config.json')
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const connectDb = require('./db/connect.js')

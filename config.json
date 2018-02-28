@@ -29,7 +29,6 @@
     "dateLanguageList": ["en"],
     "dateFallback": false,
     "timeFallback": false,
-    "maxFeeds": 5,
     "failLimit": 0,
     "notifyFail": true,
     "sendOldMessages": false,
@@ -44,8 +43,6 @@
   "advanced": {
     "shards": 2,
     "batchSize": 300,
-    "restrictCookies": false,
-    "restrictWebhooks": false,
     "processorMethod": "single"
   }
 }

@@ -37,7 +37,7 @@ module.exports = (bot, message, command) => {
     currentRSSList.push(o)
   }
 
-  let desc = `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\u200b\n\u200b\n`
+  let desc = maxFeedsAllowed === 'Unlimited' ? '\n\u200b\n' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n\u200b\n`
   desc += failedFeedCount > 0 ? `**Attention!** Feeds that have reached ${FAIL_LIMIT} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.botSettings.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n` : ''
 
   const list = new MenuUtils.Menu(message)

@@ -100,9 +100,10 @@ class FeedSelector extends Menu {
       this.text = 'No feeds assigned to this channel.'
       return
     }
-
+    let desc = maxFeedsAllowed === 'Unlimited' ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
+    desc += `**Channel:** #${message.channel.name}\n**Action**: ${command === 'rssoptions' ? commandList[command].options[miscOption] : commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
     this.setAuthor('Feed Selection Menu')
-    this.setDescription(`**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n**Channel:** #${message.channel.name}\n**Action**: ${command === 'rssoptions' ? commandList[command].options[miscOption] : commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`)
+    this.setDescription(desc)
 
     this._currentRSSList.forEach(item => {
       const link = item.link

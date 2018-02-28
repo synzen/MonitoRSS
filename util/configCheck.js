@@ -59,7 +59,6 @@ exports.defaultConfigs = {
     dateLanguageList: {type: 'object', default: ['en']},
     dateFallback: {type: 'boolean', default: false},
     timeFallback: {type: 'boolean', default: false},
-    maxFeeds: {type: 'number', default: 0},
     failLimit: {type: 'number', default: 0},
     notifyFail: {type: 'boolean', default: true},
     sendOldMessages: {type: 'boolean', default: false},
