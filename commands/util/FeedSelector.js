@@ -9,8 +9,7 @@ const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove']
 
 function feedStatus (link) {
-  const failCount = storage.failedLinks[link]
-  return !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
+  
 }
 
 function selectFeed (m, data, callback) {
@@ -81,7 +80,10 @@ class FeedSelector extends Menu {
     for (var rssName in rssList) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
       const source = rssList[rssName]
       let o = { link: source.link, rssName: rssName, title: source.title }
-      if (commandList[command].action === 'Refresh Feed') o.status = feedStatus(source.link)
+      if (commandList[command].action === 'Refresh Feed') {
+        const failCount = storage.failedLinks[link]
+        o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
+      }
       if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates') {
         const statusText = miscOption === 'imagePreviews' ? 'Image Link Previews: ' : miscOption === 'imageLinksExistence' ? 'Image Links Existence: ' : miscOption === 'checkTitles' ? 'Title Checks: ' : 'Date Checks: '
         let decision = ''

@@ -6,11 +6,6 @@ const overrides = storage.limitOverrides
 const MenuUtils = require('./util/MenuUtils.js')
 const FAIL_LIMIT = config.feedSettings.failLimit
 
-function feedStatus (failedLinks, link) {
-  const failCount = failedLinks[link]
-  return !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : 'Status: FAILED\n'
-}
-
 module.exports = (bot, message, command) => {
   const guildRss = currentGuilds.get(message.guild.id)
   if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no existing feeds.').catch(err => log.command.warning(`chooseFeed 2`, message.guild, err))
@@ -32,8 +27,11 @@ module.exports = (bot, message, command) => {
       channel: bot.channels.get(feed.channel) ? bot.channels.get(feed.channel).name : undefined,
       titleChecks: feed.titleChecks === true ? 'Title Checks: Enabled\n' : null
     }
-    if (FAIL_LIMIT !== 0) o.status = feedStatus(failedLinks, feed.link)
-    if (o.status.startsWith('STATUS: FAILED')) ++failedFeedCount
+    if (FAIL_LIMIT !== 0) {
+      const failCount = failedLinks[feed.link]
+      o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : 'Status: FAILED\n'
+      if (o.status.startsWith('STATUS: FAILED')) ++failedFeedCount
+    }
     currentRSSList.push(o)
   }
 
