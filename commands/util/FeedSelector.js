@@ -8,10 +8,6 @@ const FAIL_LIMIT = config.feedSettings.failLimit
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove']
 
-function feedStatus (link) {
-  
-}
-
 function selectFeed (m, data, callback) {
   const command = this.command
   const currentRSSList = this._currentRSSList
