@@ -23,7 +23,7 @@ exports.validChannel = (bot, guildId, feed) => {
   const guild = bot.guilds.get(guildId)
 
   if (!channel) {
-    log.rss.warning(`Channel for feed ${feed.link} was not found, skipping feed`, guild)
+    log.rss.warning(`Channel ${feed.channel} for feed ${feed.link} was not found, skipping feed`, guild)
     return false
   } else return true
 }

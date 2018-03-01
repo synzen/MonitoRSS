@@ -17,6 +17,8 @@ module.exports = (bot, message, command) => {
     }
     msg += '\n\n'
   }
-  message.channel.send(msg + '\nSupport can be found at https://discord.gg/WPWRyxK')
+  message.channel.send(msg + '\nSupport can be found at https://discord.gg/WPWRyxK', { split: {
+    prepend: '\u200b\n'
+  }})
   .catch(err => log.command.warning(`Could not send help menu:`, message.guild, err))
 }
