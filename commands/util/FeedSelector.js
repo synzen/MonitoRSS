@@ -77,7 +77,7 @@ class FeedSelector extends Menu {
       const source = rssList[rssName]
       let o = { link: source.link, rssName: rssName, title: source.title }
       if (commandList[command].action === 'Refresh Feed') {
-        const failCount = storage.failedLinks[link]
+        const failCount = storage.failedLinks[source.link]
         o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
       }
       if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates') {

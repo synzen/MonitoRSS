@@ -198,6 +198,8 @@ function fieldAddSpec (m, data, callback) {
 
   const source = guildRss.sources[rssName]
   if (!source.embedMessage) source.embedMessage = { properties: { fields: [] } }
+  else if (!source.embedMessage.properties) source.embedMessage.properties = { fields: [] }
+  else if (!source.embedMessage.properties.fields) source.embedMessage.properties.fields = []
   const embedFields = guildRss.sources[rssName].embedMessage.properties.fields
 
   embedFields.push(setting)
