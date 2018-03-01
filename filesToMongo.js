@@ -1,13 +1,13 @@
 /*
-  ONLY RUN THIS ONCE. If ran multiple times, set DROP_DATABASE to true, run again, and set to false for do-over
+  ONLY RUN THIS ONCE. If ran multiple times, set WIPE_DATABASE to true, run again to wipe the database, and set to false for do-over
 */
-const DROP_DATABASE = false
+const WIPE_DATABASE = false
 
 const fs = require('fs')
 const config = require('./config.json')
 const mongoose = require('mongoose')
 const files = fs.readdirSync('./sources')
-mongoose.connect(config.database.uri)// config.database.uri)
+mongoose.connect(config.database.uri)
 const db = mongoose.connection
 let c = 0
 
@@ -24,28 +24,26 @@ const Guild = mongoose.model('Guild', mongoose.Schema({
   timezone: String
 }))
 
-function addFileToDb (name, i) {
+function addFileToDb (name, i, arr) {
   const id = name.replace(/\.json/i, '')
-  if (!/^\d+$/.test(id)) return files.splice(i, 1)
-  const guild = new Guild(JSON.parse(fs.readFileSync(`./sources/${id}.json`)))
-  guild.save(err => {
+  const guild = JSON.parse(fs.readFileSync(`./sources/${id}.json`))
+  Guild.update({ id: id }, guild, { overwrite: true, upsert: true, strict: true }, err => {
     if (err) throw err
-    console.log(`Completed ${name} (${++c}/${files.length})`)
-    if (c === files.length) db.close()
+    console.log(`Completed ${name} (${++c}/${arr.length})`)
+    if (c === arr.length) db.close()
   })
 }
 
 db.on('error', console.log)
 db.once('open', () => {
-  // Add to database
-  if (!DROP_DATABASE) files.forEach(addFileToDb)
+  // Add to database if WIPE_DATABASE is false
+  if (!WIPE_DATABASE) return files.filter((f, i) => /^\d+$/.test(f.replace(/\.json/i, ''))).forEach(addFileToDb)
 
-  // Drop database for do-over
-  else {
-    Guild.collection.drop((err, res) => {
-      if (err) throw err
-      console.log(`Database drop successful`)
-      db.close()
-    })
-  }
+  // Drop database for do-over if WIPE_DATABASE is true
+  Guild.collection.drop((err, res) => {
+    if (err) throw err
+    console.log(`Database drop successful`)
+    db.close()
+  })
+
 })
