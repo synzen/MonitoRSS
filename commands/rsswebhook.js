@@ -43,7 +43,7 @@ module.exports = async (bot, message, command) => {
   try {
     if (config.advanced._restrictWebhooks === true && !storage.webhookServers.includes(message.guild.id)) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
-      return await message.channel.send(`This server does not have access to webhook use.`)
+      return await message.channel.send(`Only patrons have access to webhook use.`)
     }
     if (!message.guild.me.permissionsIn(message.channel).has('MANAGE_WEBHOOKS')) return await message.channel.send(`I must have Manage Webhooks permission in this channel in order to work.`)
 

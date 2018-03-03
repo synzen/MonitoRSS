@@ -4,7 +4,7 @@
 	},
 	"rssadd": {
 		"userPerm": "MANAGE_CHANNELS",
-		"description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with commas."
+		"description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with `>`."
 	},
 	"rssremove": {
 		"botPerm": "EMBED_LINKS",

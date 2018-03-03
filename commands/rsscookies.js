@@ -38,7 +38,7 @@ function setNewCookies (m, data, callback) {
 }
 
 module.exports = (bot, message, command) => {
-  if (config.advanced && config.advanced._restrictCookies === true && !cookieServers.includes(message.guild.id)) return message.channel.send('This server does not have access to cookie control.').then(m => m.delete(3500)).catch(err => log.command.warning(`Unable to send restricted access to rsscookies command:`, message.guild, err))
+  if (config.advanced && config.advanced._restrictCookies === true && !cookieServers.includes(message.guild.id)) return message.channel.send('Only patrons have access to cookie control.').then(m => m.delete(3500)).catch(err => log.command.warning(`Unable to send restricted access to rsscookies command:`, message.guild, err))
   const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
   const cookiePrompt = new MenuUtils.Menu(message, setNewCookies)
 
