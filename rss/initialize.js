@@ -5,10 +5,11 @@ const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const ArticleModel = require('../util/storage.js').models.Article
-const log = require('../util/log.js')
+const log = require('../util/logger.js')
 
 function resolveLink (link) {
   let newLink
+
   if (link.startsWith('http:')) {
     const temp = link.replace('http:', 'https:')
     if (storage.linkList.includes(temp)) newLink = temp
@@ -19,7 +20,7 @@ function resolveLink (link) {
     if (storage.linkList.includes(temp)) newLink = temp
   }
 
-  if (newLink) log.general.info(`New link ${link} has been resolved to ${temp}`)
+  if (newLink) log.general.info(`New link ${link} has been resolved to ${newLink}`)
   return newLink
 }
 
@@ -62,6 +63,19 @@ exports.addNewFeed = (settings, callback, customTitle) => {
   let errored = false // Sometimes feedparser emits error twice
 
   link = resolveLink(link) || link
+  const currentGuildRss = currentGuilds.get(channel.guild.id)
+  if (currentGuildRss) {
+    const currentRSSList = currentGuildRss.sources
+    if (currentRSSList) {
+      for (var n in currentRSSList) {
+        const source = currentRSSList[n]
+        if (source.link !== link) continue
+        const err = new Error('Already exists for this channel.')
+        err.type = 'resolved'
+        return callback(err, link)
+      }
+    }
+  }
 
   requestStream(link, cookies, feedparser, err => {
     if (err && errored === false) {

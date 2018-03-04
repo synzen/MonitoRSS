@@ -65,6 +65,7 @@ Manager.on('message', (shard, message) => {
       initShardIndex++
       if (initShardIndex === Manager.totalShards) {
         console.log(`SH MANAGER: All shards initialized.`)
+        Manager.broadcast({ type: 'finishedInit' })
         for (var gId in message.guilds) { // All guild profiles, with guild id as keys and guildRss as value
           currentGuilds.set(gId, message.guilds[gId])
         }
@@ -87,11 +88,12 @@ Manager.on('message', (shard, message) => {
 
     case 'updateGuild':
       currentGuilds.set(message.guildRss.id, message.guildRss)
-      Manager.broadcast({ type: 'updateGuild', guildRss: message.guildRss })
+      Manager.broadcast(message)
       break
 
     case 'deleteGuild':
       currentGuilds.delete(message.guildId)
+      Manager.broadcast(message)
       break
 
     case 'updateFailedLinks':
@@ -104,6 +106,7 @@ Manager.on('message', (shard, message) => {
       break
 
     case 'updateLinkList':
+    case 'mergeLinkList':
     case 'updateBlacklists':
     case 'updateVIPs':
       Manager.broadcast(message)

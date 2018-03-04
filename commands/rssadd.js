@@ -117,6 +117,9 @@ module.exports = (bot, message) => {
         if (err) {
           let channelErrMsg = ''
           switch (err.type) {
+            case 'resolved':
+              channelErrMsg = 'Already exists for this channel'
+              break
             case 'request':
               channelErrMsg = 'Unable to connect to feed link'
               break

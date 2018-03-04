@@ -151,7 +151,7 @@ module.exports = (bot, callback) => {
   function addToSourceLists (rssList, guildId) { // rssList is an object per guildRss
     for (var rssName in rssList) {
       const source = rssList[rssName]
-      feedLinkList.push(source.link)
+      feedLinkList.push(source.link) // Duplicates are necessary for every feed
       const Article = storage.models.Article(rssName)
       if (config.database.clean !== true) {
         Article.collection.dropIndexes(err => {

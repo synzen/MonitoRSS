@@ -17,5 +17,6 @@ exports.bulkInsert = (Model, articles, callback) => {
 }
 
 exports.dropCollection = (collection, callback) => {
+  console.log(collection)
   ArticleModel(collection).collection.drop(callback)
 }

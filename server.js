@@ -55,42 +55,73 @@ function login (firstStartup) {
 }
 
 function finishInit (guildsInfo) {
-  storage.initializing = false
-  if (bot.shard) process.send({type: 'initComplete', guilds: guildsInfo})
+  storage.initialized = 1
+  if (bot.shard) {
+    process.send({ type: 'initComplete', guilds: guildsInfo })
+    process.send({ type: 'mergeLinkList', linkList: storage.linkList })
+  }
   scheduleManager = new ScheduleManager(bot)
   listeners.createManagers(bot)
 }
 
 if (!bot.shard || (bot.shard && bot.shard.count === 1)) login(true)
 else {
-  process.on('message', function (message) {
-    if (message.type === 'startInit' && bot.shard && bot.shard.id === message.shardId) {
-      login(true)
-    } else if (message.type === 'runSchedule' && bot.shard && bot.shard.id === message.shardId) {
-      scheduleManager.run(message.refreshTime)
-    } else if (message.type === 'updateGuild' && bot.shard) {
-      const guildRss = message.guildRss
-      const guild = bot.guilds.get(guildRss.id)
-      if (!guild) return
-      if (guildRss === undefined) currentGuilds.delete(guildRss.id)
-      else currentGuilds.set(guildRss.id, guildRss)
-    } else if (message.type === 'updateFailedLinks') {
-      storage.failedLinks = message.failedLinks
-    } else if (message.type === 'updateVIPs') {
-      storage.webhookServers = message.webhookServers
-      storage.cookieServers = message.cookieServers
-      storage.limitOverrides = message.limitOverrides
-    } else if (message.type === 'updateBlacklists') {
-      storage.blacklistGuilds = message.blacklistGuilds
-      storage.blacklistUsers = message.blacklistUsers
-    } else if (message.type === 'updateLinkList') {
-      storage.linkList = message.linkList
-    } else if (message.type === 'dbRestoreSend') {
-      const channel = bot.channels.get(message.channelID)
-      if (!channel) return
-      const channelMsg = channel.messages.get(message.messageID)
-      if (channelMsg) channelMsg.edit('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send('kill'))
-      else channel.send('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send('kill'))
+  process.on('message', message => {
+    switch (message.type) {
+      case 'startInit':
+        if (bot.shard.id === message.shardId) login(true)
+        break
+
+      case 'finishedInit':
+        storage.initialized = 2
+        break
+
+      case 'runSchedule':
+        if (bot.shard.id === message.shardId) scheduleManager.run(message.refreshTime)
+        break
+
+      case 'updateGuild':
+        if (!bot.guilds.has(message.guildRss.id)) return
+        currentGuilds.set(message.guildRss.id, message.guildRss)
+        break
+
+      case 'deleteGuild':
+        if (!bot.guilds.has(message.guildId)) return
+        currentGuilds.delete(message.guildId)
+        break
+
+      case 'updateFailedLinks':
+        storage.failedLinks = message.failedLinks
+        break
+
+      case 'updateBlacklists':
+        storage.blacklistGuilds = message.blacklistGuilds
+        storage.blacklistUsers = message.blacklistUsers
+        break
+
+      case 'updateLinkList':
+        storage.linkList = message.linkList
+        break
+
+      case 'mergeLinkList':
+        message.linkList.forEach(link => {
+          if (!storage.linkList.includes(link)) storage.linkList.push(link)
+        })
+        break
+
+      case 'updateVIPs':
+        storage.webhookServers = message.webhookServers
+        storage.cookieServers = message.cookieServers
+        storage.limitOverrides = message.limitOverrides
+        break
+
+      case 'dbRestoreSend':
+        const channel = bot.channels.get(message.channelID)
+        if (!channel) return
+        const channelMsg = channel.messages.get(message.messageID)
+        if (channelMsg) channelMsg.edit('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send('kill'))
+        else channel.send('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send('kill'))
+        break
     }
   })
 }

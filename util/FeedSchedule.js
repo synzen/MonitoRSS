@@ -97,7 +97,7 @@ class FeedSchedule {
             if (source.link.includes(word)) {
               storage.linkTracker[rssName] = this.schedule.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
               this._delegateFeed(guildRss, rssName)
-              log.rss.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom this.schedule ${this.schedule.name}`)
+              log.rss.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.schedule.name}`)
             }
           })
         } else if (!storage.linkTracker[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default

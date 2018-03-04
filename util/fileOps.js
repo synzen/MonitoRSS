@@ -1,5 +1,6 @@
 const storage = require('./storage.js')
 const config = require('../config.json')
+const dbCmds = require('../rss/db/commands.js')
 const currentGuilds = storage.currentGuilds
 const models = storage.models
 const log = require('./logger.js')
@@ -14,7 +15,7 @@ exports.updateFile = (guildRss, shardingManager, callback) => {
     if (typeof callback === 'function') callback()
     if (!process.send) currentGuilds.set(guildRss.id, guildRss) // Only do this for non-sharded instances since this function may not be called by a process that has this guild
 
-    // For sharded instances
+    // For sharded instances. Other shards don't cache guilds that it doesn't have - it's just for the sharding manager to keep track
     if (shardingManager) shardingManager.broadcast({ type: 'updateGuild', guildRss: guildRss })
     else if (process.send) process.send({ type: 'updateGuild', guildRss: guildRss }) // If this is a child process
   })
@@ -23,11 +24,8 @@ exports.updateFile = (guildRss, shardingManager, callback) => {
 exports.addToLinkList = link => {
   if (!link) return
   const linkList = storage.linkList
-  if (Array.isArray(link)) {
-    link.forEach(l => {
-      if (!linkList.includes(l)) linkList.push(l)
-    })
-  } else if (!linkList.includes(link)) linkList.push(link)
+  if (Array.isArray(link)) link.forEach(l => linkList.push(l))
+  else linkList.push(link)
   if (process.send) process.send({ type: 'updateLinkList', linkList: linkList })
 }
 
@@ -52,17 +50,27 @@ exports.removeFromLinkList = link => {
 exports.deleteGuild = (guildId, shardingManager, callback) => {
   const guildRss = currentGuilds.get(guildId)
   models.GuildRss().find({ id: guildId }).remove((err, res) => {
-    if (err) return callback(err)
+    if (err) {
+      if (typeof callback === 'function') callback(err)
+      else log.general.warning(`Unable to remove GuildRss document ${guildId}`, err)
+    }
     const rssList = guildRss ? guildRss.sources : undefined
     if (rssList) {
       const links = []
-      for (var rssName in rssList) links.push(rssList[rssName].link)
+      for (let rssName in rssList) {
+        links.push(rssList[rssName].link)
+        dbCmds.dropCollection(rssName, err => {
+          if (err) log.guild.warning(`Unable to drop ${rssName} for deleteGuild fileOps`, err)
+        })
+      }
       exports.removeFromLinkList(links)
     }
     currentGuilds.delete(guildId)
     if (shardingManager) shardingManager.broadcast({type: 'deleteGuild', guildId: guildId})
     else if (process.send) process.send({type: 'deleteGuild', guildId: guildId}) // If this is a child process
     if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) models.GuildRssBackup().update({ id: guildId }, guildRss, UPDATE_SETTINGS, (err, res) => callback(err))
+    if (typeof callback === 'function') callback()
+    else log.general.info(`Removed GuildRss document ${guildId}`)
   })
 }
 
