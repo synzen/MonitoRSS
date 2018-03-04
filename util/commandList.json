@@ -61,14 +61,14 @@
 	"subme": {
 		"botPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"args": {
-			"<role_name>": "Directly input the role instead of going through the menu."
+			"<role name/mention>": "Directly input the role instead of going through the menu."
 		},
 		"description": "Opens a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
 	},
 	"unsubme": {
 		"botPerm": "MANAGE_ROLES_OR_PERMISSIONS",
 		"args": {
-			"<role_name>": "Directly input the role instead of going through the menu."
+			"<role name/mention>": "Directly input the role instead of going through the menu."
 		},
 		"description": "Opens a menu similar to `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
 	},

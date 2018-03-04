@@ -24,7 +24,7 @@ async function removeRole (err, data, direct) {
     log.command.info(`Removed role from member`, message.guild, role, message.author)
     await message.channel.send(`You no longer have the role \`${role.name}\`.`)
   } catch (err) {
-    log.command.warning(`unsubme:`, message.guild, err)
+    log.command.warning(`unsubme`, message.guild, err)
   }
 }
 
@@ -35,9 +35,7 @@ module.exports = (bot, message, command) => {
   const memberRoles = message.member.roles
 
   // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
-  const filteredMemberRoles = memberRoles.filterArray(role => {
-    return (role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
-  })
+  const filteredMemberRoles = memberRoles.filterArray(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
 
   const eligibleRoles = []
   for (var a in filteredMemberRoles) eligibleRoles.push(filteredMemberRoles[a].name)
@@ -46,10 +44,12 @@ module.exports = (bot, message, command) => {
 
   const msgArr = message.content.split(' ')
   msgArr.shift()
+  const mention = message.mentions.roles.first()
   const predeclared = msgArr.join(' ')
   if (predeclared) {
     const role = message.guild.roles.find('name', predeclared)
-    if (role && eligibleRoles.includes(predeclared)) return removeRole(null, { role: role, message: message }, message, true)
+    if (role && eligibleRoles.includes(predeclared)) return removeRole(null, { role: role, message: message }, true)
+    else if (mention && eligibleRoles.includes(mention.name)) return removeRole(null, { role: mention, message: message }, true)
   }
 
   const ask = new MenuUtils.Menu(message, selectRole, { numbered: false })

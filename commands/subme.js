@@ -49,12 +49,14 @@ module.exports = (bot, message, command) => {
   const options = getSubList(bot, message.guild, rssList)
   if (!options) return message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.').catch(err => log.command.warning(`subAdd 2`, message.guild, err))
   const msgArr = message.content.split(' ')
+  const mention = message.mentions.roles.first()
   if (msgArr.length > 1) {
     msgArr.shift()
     const predeclared = msgArr.join(' ')
     const role = message.guild.roles.find('name', predeclared)
     for (var option in options) {
-      if (role && options[option].roleList.includes(role && role.id ? role.id : null)) return addRole(null, { role: role, message: message, source: options[option].source }, true)
+      if (role && options[option].roleList.includes(role.id)) return addRole(null, { role: role, message: message, source: options[option].source }, true)
+      else if (mention && options[option].roleList.includes(mention.id)) return addRole(null, { role: mention, message: message, source: options[option].source }, true)
     }
   }
 
