@@ -111,7 +111,8 @@ module.exports = (bot, message) => {
       const cookiesFound = !!cookies
       if (config.advanced && config.advanced._restrictCookies === true && !storage.cookieServers.includes(message.guild.id) && !isBotController(message.author.id)) cookies = undefined
 
-      initialize.addNewFeed({link: link, channel: message.channel, cookies: cookies}, err => {
+      initialize.addNewFeed({link: link, channel: message.channel, cookies: cookies}, (err, addedLink) => {
+        if (addedLink) link = addedLink
         channelTracker.remove(message.channel.id)
         if (err) {
           let channelErrMsg = ''

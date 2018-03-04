@@ -44,5 +44,5 @@ module.exports = (bot, guild) => {
         log.general.error(`Could not log guild addition to Discord, invalid channel ID`)
       }).catch(err => log.guild.warning(`Could not broadcast eval log channel send for guildDelete`, err))
     } else log.general.error(`Error: Could not log guild removal to Discord, invalid channel ID.`)
-  } else logChannel.send(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size}`).catch(err => console.log(`Could not log guild removal to Discord. (${err}) `))
+  } else logChannel.send(`Guild Info: "${guild.name}" has been removed.\nUsers: ${guild.members.size}`).catch(err => log.general.warning(`Could not log guild removal to Discord`, err))
 }

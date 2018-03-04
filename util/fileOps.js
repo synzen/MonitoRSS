@@ -1,10 +1,6 @@
 const storage = require('./storage.js')
 const config = require('../config.json')
-const blacklistGuilds = storage.blacklistGuilds
-const blacklistUsers = storage.blacklistUsers
 const currentGuilds = storage.currentGuilds
-const webhookServers = storage.webhookServers
-const cookieServers = storage.cookieServers
 const models = storage.models
 const log = require('./logger.js')
 const UPDATE_SETTINGS = { overwrite: true, upsert: true, strict: true }
@@ -24,10 +20,45 @@ exports.updateFile = (guildRss, shardingManager, callback) => {
   })
 }
 
+exports.addToLinkList = link => {
+  if (!link) return
+  const linkList = storage.linkList
+  if (Array.isArray(link)) {
+    link.forEach(l => {
+      if (!linkList.includes(l)) linkList.push(l)
+    })
+  } else if (!linkList.includes(link)) linkList.push(link)
+  if (process.send) process.send({ type: 'updateLinkList', linkList: linkList })
+}
+
+exports.removeFromLinkList = link => {
+  if (!link) return
+  const linkList = storage.linkList
+  if (Array.isArray(link)) {
+    link.forEach(l => {
+      const index = linkList.indexOf(l)
+      if (index > -1) linkList.splice(index, 1)
+    })
+    if (process.send) process.send({ type: 'updateLinkList', linkList: linkList })
+    return
+  }
+  const index = linkList.indexOf(link)
+  if (index > -1) {
+    linkList.splice(index, 1)
+    if (process.send) process.send({ type: 'updateLinkList', linkList: linkList })
+  }
+}
+
 exports.deleteGuild = (guildId, shardingManager, callback) => {
   const guildRss = currentGuilds.get(guildId)
   models.GuildRss().find({ id: guildId }).remove((err, res) => {
     if (err) return callback(err)
+    const rssList = guildRss ? guildRss.sources : undefined
+    if (rssList) {
+      const links = []
+      for (var rssName in rssList) links.push(rssList[rssName].link)
+      exports.removeFromLinkList(links)
+    }
     currentGuilds.delete(guildId)
     if (shardingManager) shardingManager.broadcast({type: 'deleteGuild', guildId: guildId})
     else if (process.send) process.send({type: 'deleteGuild', guildId: guildId}) // If this is a child process
@@ -53,6 +84,12 @@ exports.restoreBackup = (guildId, shardingManager, callback) => {
     exports.updateFile(docs[0], shardingManager, err => {
       callback(err)
       if (err) return
+      const rssList = docs[0].sources
+      if (rssList) {
+        const links = []
+        for (var rssName in rssList) links.push(rssList[rssName].link)
+        exports.addToLinkList(links)
+      }
       models.GuildRssBackup().find({ id: guildId }).remove((err, res) => {
         if (err) log.general.warning(`(G: ${guildId}) Unable to remove backup for guild after restore`, err)
       })
@@ -66,6 +103,8 @@ exports.addBlacklist = (settings, callback) => {
   models.Blacklist().update({ id: settings.id }, settings, UPDATE_SETTINGS, err => {
     if (err && typeof callback === 'function') return callback(err)
     else if (err) return log.general.error(`Unable to add blacklist for id ${settings.id}`, err)
+    const blacklistGuilds = storage.blacklistGuilds
+    const blacklistUsers = storage.blacklistUsers
 
     if (settings.isGuild) blacklistGuilds.push(settings.id)
     else blacklistUsers.push(settings.id)
@@ -79,6 +118,8 @@ exports.removeBlacklist = (id, callback) => {
   models.Blacklist().find({ id: id }).remove((err, doc) => {
     if (err && typeof callback === 'function') return callback(err)
     else if (err) return log.general.error(`Unable to remove blacklist for id ${id}`, err)
+    const blacklistGuilds = storage.blacklistGuilds
+    const blacklistUsers = storage.blacklistUsers
 
     if (doc.isGuild) blacklistGuilds.splice(blacklistGuilds.indexOf(doc.id), 1)
     else blacklistUsers.splice(blacklistUsers.indexOf(doc.id), 1)
@@ -95,6 +136,8 @@ exports.updateVIP = (settings, callback) => {
     if (err && typeof callback === 'function') return callback(err)
     else if (err) return log.general.error(`Unable to add VIP for id ${settings.id}`, err)
     const limitOverrides = storage.limitOverrides
+    const cookieServers = storage.cookieServers
+    const webhookServers = storage.webhookServers
     const DEF_MAX = config.feedSettings.maxFeeds
 
     const servers = settings.servers
@@ -120,6 +163,8 @@ exports.removeVIP = (id, callback) => {
     if (err && typeof callback === 'function') return callback(err)
     else if (err) return log.general.error(`Unable to add VIP for id ${id}`, err)
     const limitOverrides = storage.limitOverrides
+    const cookieServers = storage.cookieServers
+    const webhookServers = storage.webhookServers
 
     const servers = doc.servers
     if (servers) {
@@ -141,7 +186,8 @@ exports.refreshVIP = callback => {
     if (err && typeof callback === 'function') return callback(err)
     else if (err) return log.general.error(`Unable to query VIPs for refresh`, err)
     const limitOverrides = storage.limitOverrides
-
+    const webhookServers = storage.webhookServers
+    const cookieServers = storage.cookieServers
     Object.keys(limitOverrides).forEach(id => delete limitOverrides[id])
     webhookServers.length = 0
     cookieServers.length = 0

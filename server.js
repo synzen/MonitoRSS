@@ -83,6 +83,8 @@ else {
     } else if (message.type === 'updateBlacklists') {
       storage.blacklistGuilds = message.blacklistGuilds
       storage.blacklistUsers = message.blacklistUsers
+    } else if (message.type === 'updateLinkList') {
+      storage.linkList = message.linkList
     } else if (message.type === 'dbRestoreSend') {
       const channel = bot.channels.get(message.channelID)
       if (!channel) return

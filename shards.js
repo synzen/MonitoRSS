@@ -103,6 +103,7 @@ Manager.on('message', (shard, message) => {
       }
       break
 
+    case 'updateLinkList':
     case 'updateBlacklists':
     case 'updateVIPs':
       Manager.broadcast(message)
