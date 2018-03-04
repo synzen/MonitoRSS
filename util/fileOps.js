@@ -60,7 +60,8 @@ exports.deleteGuild = (guildId, shardingManager, callback) => {
       for (let rssName in rssList) {
         links.push(rssList[rssName].link)
         dbCmds.dropCollection(rssName, err => {
-          if (err) log.guild.warning(`Unable to drop ${rssName} for deleteGuild fileOps`, err)
+          if (err) log.general.warning(`Unable to drop ${rssName} for deleteGuild fileOps`, err)
+          else log.general.info(`Dropped ${rssName} for deleteGuild fileOps`)
         })
       }
       exports.removeFromLinkList(links)
