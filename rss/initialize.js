@@ -69,10 +69,11 @@ exports.addNewFeed = (settings, callback, customTitle) => {
     if (currentRSSList) {
       for (var n in currentRSSList) {
         const source = currentRSSList[n]
-        if (source.link !== link) continue
-        const err = new Error('Already exists for this channel.')
-        err.type = 'resolved'
-        return callback(err, link)
+        if (source.link === link && source.channel === channel.id) {
+          const err = new Error('Already exists for this channel.')
+          err.type = 'resolved'
+          return callback(err, link)
+        }
       }
     }
   }

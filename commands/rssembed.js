@@ -201,14 +201,17 @@ function fieldAddSpec (m, data, callback) {
   else if (!source.embedMessage.properties.fields) source.embedMessage.properties.fields = []
   const embedFields = guildRss.sources[rssName].embedMessage.properties.fields
 
+  log.command.info(`Embed field added. Title: '${title}', Value: ${val}`, m.guild)
+
   embedFields.push(setting)
-  callback(null, { ...data, successText: `A new${selectedOption === 2 ? ' inline' : ''} Field has been added to the embed with the following details:\n\n**Title**
+  callback(null, { ...data,
+    successText: `A new${selectedOption === 2 ? ' inline' : ''} Field has been added to the embed with the following details:\n\n**Title**
 \`\`\`
 ${title}
 \`\`\`
 **Value**
 \`\`\`
-${val && val.length > 1500 ? val.slice(0,1500) + '...' : val || '\u200b'}
+${val && val.length > 1500 ? val.slice(0, 1500) + '...' : val || '\u200b'}
 \`\`\`\n for the feed <${source.link}>.` })
 }
 
@@ -222,7 +225,10 @@ function fieldRem (m, data, callback) {
   })
   if (inputs.length === 0) return callback(new SyntaxError('No valid Fields chosen. Try again, or type `exit` to cancel.'))
 
-  for (var x = inputs.length; x >= 0; --x) fields.splice(inputs[x] - 1, 1)
+  for (var x = inputs.length; x >= 0; --x) {
+    log.command.info(`Embed field removed. ${JSON.stringify(fields[inputs[x] - 1])}`, m.guild)
+    fields.splice(inputs[x] - 1, 1)
+  }
   if (fields.length === 0) delete source.embedMessage.properties.fields
   if (Object.keys(source.embedMessage.properties).length === 0) delete source.embedMessage.properties
   if (Object.keys(source.embedMessage).length === 0) delete source.embedMessage
@@ -250,8 +256,7 @@ module.exports = (bot, message, command) => {
         fileOps.updateFile(guildRss)
         await message.channel.send(successText)
       } catch (err) {
-        console.info(err)
-        log.command.warning(`rssembed fields:`, message.guild, err)
+        log.command.warning(`rssembed fields`, message.guild, err)
       }
     })
   }
@@ -305,7 +310,7 @@ module.exports = (bot, message, command) => {
       fileOps.updateFile(guildRss)
       await updating.edit(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format.`)
     } catch (err) {
-      log.command.warning(`rssembed:`, message.guild, err)
+      log.command.warning(`rssembed`, message.guild, err)
     }
   })
 }
