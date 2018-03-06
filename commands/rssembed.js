@@ -190,7 +190,9 @@ function fieldAddSpec (m, data, callback) {
   while (!arr[0]) arr.shift()
   const title = arr.shift().trim()
   if (!title) return callback(new SyntaxError('No valid title found. Try again, or type `exit` to cancel.'))
+  else if (title.length > 256) return callback(new SyntaxError('Titles cannot exceed 256 characters. Try again, or type `exit` to cancel.'))
   const val = arr.join('\n').trim()
+  if (val.length > 2048) return callback(new SyntaxError('The field description cannot exceed 2048 characters. Try again, or type exit to cancel.'))
   const setting = { title: title, value: val || '\u200b' }
   if (selectedOption === 2) setting.inline = true
 
@@ -201,7 +203,14 @@ function fieldAddSpec (m, data, callback) {
   const embedFields = guildRss.sources[rssName].embedMessage.properties.fields
 
   embedFields.push(setting)
-  callback(null, { ...data, successText: `A new${selectedOption === 2 ? ' inline' : ''} Field has been added to the embed with the following details:\n\n**Title**\`\`\`${title}\n\`\`\`\n**Value**\`\`\`${val || '```\n```'}\`\`\`\n for the feed <${source.link}>.` })
+  callback(null, { ...data, successText: `A new${selectedOption === 2 ? ' inline' : ''} Field has been added to the embed with the following details:\n\n**Title**
+\`\`\`
+${title}
+\`\`\`
+**Value**
+\`\`\`
+${val && val.length > 1500 ? val.slice(0,1500) + '...' : val || '\u200b'}
+\`\`\`\n for the feed <${source.link}>.` })
 }
 
 function fieldRem (m, data, callback) {

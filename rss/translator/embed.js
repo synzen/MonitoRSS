@@ -28,10 +28,10 @@ module.exports = (rssList, rssName, article) => {
   if (Array.isArray(fields)) {
     fields.forEach(field => {
       const inline = field.inline === true
-      const title = field.title
-      const value = field.value
+      const title = field.title.length > 256 ? field.title.slice(0, 250) + '...' : field.title
+      const value = field.value.length > 2048 ? field.value.slice(0, 2040) + '...' : field.value
       if (typeof title === 'string' && !title) embed.addBlankField(inline)
-      else embed.addField(article.convertKeywords(title), article.convertKeywords(value), inline)
+      else if (embed.fields.length < 10) embed.addField(article.convertKeywords(title), article.convertKeywords(value), inline)
     })
   }
 
