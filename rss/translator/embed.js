@@ -26,13 +26,19 @@ module.exports = (rssList, rssName, article) => {
 
   const fields = embedSpecs.fields
   if (Array.isArray(fields)) {
-    fields.forEach(field => {
+    for (var x = 0; x < fields.length; ++x) {
+      const field = fields[x]
       const inline = field.inline === true
-      const title = field.title.length > 256 ? field.title.slice(0, 250) + '...' : field.title
-      const value = field.value.length > 2048 ? field.value.slice(0, 2040) + '...' : field.value
+      
+      let title = article.convertKeywords(field.title) 
+      title = title.length > 256 ? title.slice(0, 250) + '...' : title
+      
+      let value = article.convertKeywords(field.value)
+      value = value.length > 2048 ? value.slice(0, 2040) + '...' : value
+
       if (typeof title === 'string' && !title) embed.addBlankField(inline)
-      else if (embed.fields.length < 10) embed.addField(article.convertKeywords(title), article.convertKeywords(value), inline)
-    })
+      else if (embed.fields.length < 10) embed.addField(title, value, inline)
+    }
   }
 
   return embed
