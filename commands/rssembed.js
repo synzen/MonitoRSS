@@ -87,7 +87,7 @@ function feedSelectorFn (m, data, callback) {
 }
 
 function selectProperty (m, data, callback) {
-  const input = m.content.toLowerCase()
+  const input = m.content
   if (input === 'reset') return callback(null, { ...data, property: 'resetAll' }, true)
   const choices = []
   const arr = input.split(',').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Trim items, remove empty elements and remove duplicates
@@ -95,12 +95,10 @@ function selectProperty (m, data, callback) {
   for (var q = 0; q < arr.length; ++q) {
     const pChoice = arr[q].toLowerCase()
     let valid = false
-    if (pChoice === 'add field' || pChoice === 'remove field') {
-      for (var p in EMBED_PROPERTIES) {
-        if (pChoice === EMBED_PROPERTIES[p].name.toLowerCase()) {
-          valid = true
-          choices.push(p)
-        }
+    for (var p in EMBED_PROPERTIES) {
+      if (pChoice === EMBED_PROPERTIES[p].name.toLowerCase()) {
+        valid = true
+        choices.push(p)
       }
     }
     if (!valid) invalids.push(arr[q])
