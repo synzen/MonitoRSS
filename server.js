@@ -59,7 +59,7 @@ function finishInit (guildsInfo) {
   if (bot.shard) {
     process.send({ type: 'initComplete', guilds: guildsInfo })
     process.send({ type: 'mergeLinkList', linkList: storage.linkList })
-  }
+  } else storage.initialized = 2
   scheduleManager = new ScheduleManager(bot)
   listeners.createManagers(bot)
 }
