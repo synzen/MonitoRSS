@@ -192,7 +192,6 @@ function fieldAddSpec (m, data, callback) {
   if (!title) return callback(new SyntaxError('No valid title found. Try again, or type `exit` to cancel.'))
   else if (title.length > 256) return callback(new SyntaxError('Titles cannot exceed 256 characters. Try again, or type `exit` to cancel.'))
   const val = arr.join('\n').trim()
-  if (val.length > 2048) return callback(new SyntaxError('The field description cannot exceed 2048 characters. Try again, or type exit to cancel.'))
   const setting = { title: title, value: val || '\u200b' }
   if (selectedOption === 2) setting.inline = true
 
