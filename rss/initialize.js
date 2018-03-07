@@ -115,12 +115,12 @@ exports.addNewFeed = (settings, callback, customTitle) => {
     if (rssName.length >= 64) rssName = rssName.substr(0, 64)
     rssName = rssName.replace(/\$|\./g, '') // Remove MongoDB illegal characters
 
-    // exports.addToDb(articleList, rssName, err => {
-    //   if (err) return callback(err)
-    //   addToConfig()
-    // })
+    exports.addToDb(articleList, rssName, err => {
+      if (err) return callback(err)
+      addToConfig()
+    })
 
-    addToConfig()
+    // addToConfig()
 
     function addToConfig () {
       let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
