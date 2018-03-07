@@ -79,7 +79,7 @@ exports.isEmptySources = (guildRss, shardingManager) => { // Used on the beginni
   if (guildRss.sources && Object.keys(guildRss.sources).length > 0) return false
   if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage) { // Delete only if server-specific special settings are not found
     exports.deleteGuild(guildRss.id, shardingManager, err => {
-      if (err) return log.general.error(`(G: ${guildRss.id}) Could not delete guild due to 0 sourcee`, err)
+      if (err) return log.general.error(`(G: ${guildRss.id}) Could not delete guild due to 0 sources`, err)
       log.general.info(`(G: ${guildRss.id}) 0 sources found with no custom settings deleted`)
     })
   } else log.general.info(`(G: ${guildRss.id}) 0 sources found, skipping`)

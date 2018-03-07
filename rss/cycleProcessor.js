@@ -60,7 +60,7 @@ process.on('message', m => {
   if (!connected) {
     connected = true
     connectDb(err => {
-      if (err) throw new Error(`Could not connect to SQL database for cycle.\n`, err)
+      if (err) throw new Error(`Could not connect to database for cycle.\n`, err)
       getFeed(m.link, m.rssList, m.uniqueSettings, m.debugFeeds)
     })
   } else getFeed(m.link, m.rssList, m.uniqueSettings, m.debugFeeds)

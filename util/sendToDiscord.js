@@ -7,6 +7,7 @@ const debugFeeds = require('../util/debugFeeds').list
 const log = require('./logger.js')
 
 module.exports = (bot, article, callback, isTestMessage) => {
+  if (config._skipMessages === true) return log.general.info(`Inhibiting article sending due to skipMessages`)
   let channel = bot.channels.get(article.discordChannelId)
   const rssName = article.rssName
   const guildRss = currentGuilds.get(channel.guild.id)

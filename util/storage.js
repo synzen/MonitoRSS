@@ -109,6 +109,7 @@ exports.schemas = {
   guildRss: mongoose.Schema(guildRssSchema),
   guildRssBackup: mongoose.Schema(guildRssBackupSchema),
   article: mongoose.Schema(articleSchema),
+  feed: mongoose.Schema(articleSchema),
   vip: mongoose.Schema(vipSchema),
   blacklist: mongoose.Schema(blacklistSchema)
 }
@@ -116,6 +117,7 @@ exports.models = {
   GuildRss: () => mongoose.model('Guild', exports.schemas.guildRss),
   GuildRssBackup: () => mongoose.model('Guild_Backup', exports.schemas.guildRssBackup),
   Article: collection => mongoose.model(collection, exports.schemas.article),
+  Feed: link => mongoose.model(link.replace(/\.|^\$/g, ''), exports.schemas.feed),
   VIP: () => mongoose.model('VIP', exports.schemas.vip),
   Blacklist: () => mongoose.model('Blacklist', exports.schemas.blacklist)
 }

@@ -20,7 +20,7 @@ module.exports = channel => {
 
   for (var name in nameList) {
     removeFeed(channel.guild.id, nameList[name], (err, link) => {
-      if (err) return log.guild.warning(`Unable to remove feed ${link} triggered by channel deletion`, channel.guild, err)// console.log(`Guild Warning: channelDelete error`, err.message || err)
+      if (err) return log.guild.warning(`Unable to remove feed ${link} triggered by channel deletion`, channel.guild, err)
       log.guild.info(`Removed feed ${link}`, channel.guild)
     })
   }

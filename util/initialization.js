@@ -31,7 +31,7 @@ function discordMsgResult (err, article, bot) {
   const channel = bot.channels.get(article.discordChannelId)
   if (err) {
     log.init.warning(`Failed to deliver article ${article.link}`, channel.guild, channel, err)
-    if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
+    if (err.code === 50035 && config._skipMessages !== true) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
   }
 }
 

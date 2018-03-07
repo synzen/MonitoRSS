@@ -47,7 +47,7 @@ class FeedSchedule {
       for (var i in rssList) {
         const source = rssList[i]
         const channel = this.bot.channels.get(source.channel)
-        if (source.link === link) channel.send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => log.general.warning(`Unable to send reached warning limit for feed ${link}`, channel.guild, channel, err))
+        if (source.link === link && config._skipMessages !== true) channel.send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => log.general.warning(`Unable to send reached warning limit for feed ${link}`, channel.guild, channel, err))
       }
     } else if (failedLinks[link] >= FAIL_LIMIT) {
       storage.failedLinks[link] = (new Date()).toString()
@@ -56,7 +56,7 @@ class FeedSchedule {
       for (var j in rssList) {
         const source = rssList[j]
         const channel = this.bot.channels.get(source.channel)
-        if (source.link === link) channel.send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => log.general.warning(`Unable to send reached failure limit for feed ${link}`, channel.guild, channel, err))
+        if (source.link === link  && config._skipMessages !== true) channel.send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => log.general.warning(`Unable to send reached failure limit for feed ${link}`, channel.guild, channel, err))
       }
     }
   }

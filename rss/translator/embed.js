@@ -29,10 +29,10 @@ module.exports = (rssList, rssName, article) => {
     for (var x = 0; x < fields.length; ++x) {
       const field = fields[x]
       const inline = field.inline === true
-      
-      let title = article.convertKeywords(field.title) 
+
+      let title = article.convertKeywords(field.title)
       title = title.length > 256 ? title.slice(0, 250) + '...' : title
-      
+
       let value = article.convertKeywords(field.value)
       value = value.length > 2048 ? value.slice(0, 2040) + '...' : value
 
