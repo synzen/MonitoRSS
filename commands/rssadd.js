@@ -14,7 +14,7 @@ function sanitize (array) {
 }
 
 function isBotController (id) {
-  const controllerList = config.botSettings.controllerIds
+  const controllerList = config.bot.controllerIds
   if (typeof controllerList !== 'object') return false
   return controllerList.includes(id)
 }
@@ -24,10 +24,10 @@ module.exports = (bot, message) => {
 
   const guildRss = currentGuilds.has(message.guild.id) ? currentGuilds.get(message.guild.id) : {}
   const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
-  let maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 0 : config.feedSettings.maxFeeds
+  let maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max))) ? 0 : config.feeds.max
   if (maxFeedsAllowed === 0) maxFeedsAllowed = 'Unlimited'
 
-  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}rssadd <link>\`. Multiple links can be added at once, separated by \`>\`.`).then(m => m.delete(3000)).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.bot.prefix}rssadd <link>\`. Multiple links can be added at once, separated by \`>\`.`).then(m => m.delete(3000)).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
 
   let linkList = message.content.split(' ')
   linkList.shift()

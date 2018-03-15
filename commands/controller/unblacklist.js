@@ -1,5 +1,5 @@
 const storage = require('../../util/storage.js')
-const fileOps = require('../../util/fileOps.js')
+const dbOps = require('../../util/dbOps.js')
 const log = require('../../util/logger.js')
 const blacklistGuilds = storage.blacklistGuilds
 const blacklistUsers = storage.blacklistUsers
@@ -11,7 +11,7 @@ exports.normal = function (bot, message) {
 
   if (!blacklistUsers.includes(id) && !blacklistGuilds.includes(id)) return message.channel.send(`ID ${id} is not blacklisted.`)
 
-  fileOps.removeBlacklist(id, err => {
+  dbOps.blacklists.remove(id, err => {
     if (err) {
       log.controller.error('Unable to remove blacklist', message.author, err)
       return message.channel.send(`Unblacklist failed. ${err.message}`)

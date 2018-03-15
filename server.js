@@ -13,7 +13,7 @@ const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PR
 if (configRes && configRes.fatal) throw new Error(configRes.message)
 else if (configRes) log.general.info(configRes.message)
 
-let restartTime = config.feedSettings.refreshTimeMinutes * 60000 / 4 * 10
+let restartTime = config.feeds.refreshTimeMinutes * 60000 / 4 * 10
 restartTime = restartTime < 60000 ? Math.ceil(restartTime * 4) : Math.ceil(restartTime) // Try to make sure it's never below a minute
 const restartTimeDisp = (restartTime / 1000 / 60).toFixed(2)
 
@@ -30,7 +30,7 @@ const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
 function login (firstStartup) {
   if (!firstStartup) bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
 
-  bot.login(config.botSettings.token)
+  bot.login(config.bot.token)
   .catch(err => {
     if (loginAttempts++ >= maxAttempts) {
       log.general.error(`${SHARD_ID}Discord.RSS failed to login after ${maxAttempts} attempts. Terminating.`)
@@ -42,10 +42,10 @@ function login (firstStartup) {
 
   bot.once('ready', function () {
     loginAttempts = 0
-    bot.user.setPresence({ game: { name: (config.botSettings.defaultGame && typeof config.botSettings.defaultGame === 'string') ? config.botSettings.defaultGame : null, type: 0 } })
+    bot.user.setPresence({ game: { name: (config.bot.game && typeof config.bot.game === 'string') ? config.bot.game : null, type: 0 } })
     log.general.info(`${SHARD_ID}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
     if (firstStartup) {
-      if (config.botSettings.enableCommands !== false) listeners.enableCommands(bot)
+      if (config.bot.enableCommands !== false) listeners.enableCommands(bot)
       connectDb((err) => {
         if (err) throw err
         initialize(bot, finishInit)
@@ -97,16 +97,6 @@ else {
       case 'updateBlacklists':
         storage.blacklistGuilds = message.blacklistGuilds
         storage.blacklistUsers = message.blacklistUsers
-        break
-
-      case 'updateLinkList':
-        storage.linkList = message.linkList
-        break
-
-      case 'mergeLinkList':
-        message.linkList.forEach(link => {
-          if (!storage.linkList.includes(link)) storage.linkList.push(link)
-        })
         break
 
       case 'updateVIPs':

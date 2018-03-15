@@ -39,7 +39,7 @@ class ScheduleManager {
     articleTracker.on('article', article => { // New articles are sent as the raw object directly from feedparser
       if (debugFeeds.includes(article.rssName)) log.debug.info(`${article.rssName} Invoking sendToDiscord function`)
       sendToDiscord(this.bot, article, err => {
-        if (err && config.logging.showLinkErrs === true) {
+        if (err && config.log.linkErrs === true) {
           const channel = this.bot.channels.get(article.discordChannelId)
           log.general.warning(`Failed to send article ${article.link}`, channel.guild, channel, err)
           if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``).catch(err => log.general.warning(`Unable to send failed-to-send message for article`, err))

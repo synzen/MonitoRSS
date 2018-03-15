@@ -24,25 +24,25 @@ function isValidTimezone (configName, string) {
 
 function checkControllerIds (configName, string) {
   const input = string.split(' ')
-  if (input.length !== 4 || (input[2] !== 'add' && input[2] !== 'remove')) return `Incorrect usage. Proper syntax is \`${config.botSettings.prefix}setconfig controllerids <add/remove> <id>\`.`
+  if (input.length !== 4 || (input[2] !== 'add' && input[2] !== 'remove')) return `Incorrect usage. Proper syntax is \`${config.bot.prefix}setconfig controllerids <add/remove> <id>\`.`
   if (isNaN(input[3])) return 'That is an invalid ID - not an integer.'
   return true
 }
 
 const validConfig = {
-  'LOGGING': {
-    showLinkErrs: {
+  'LOG': {
+    linkErrs: {
       type: 'boolean',
       desc: 'Log connection failures on requests to feed URLs. Default is `true`.',
       checkValid: isBool
     },
-    showUnfiltered: {
+    unfiltered: {
       type: 'boolean',
       desc: 'Log article links/titles that weren\'t sent due to failing to pass specified filters. Default is `true`.',
       checkValid: isBool
     }
   },
-  'BOT SETTINGS': {
+  'BOT': {
     prefix: {
       type: 'string',
       desc: 'Prefix for Discord commands.'
@@ -58,7 +58,7 @@ const validConfig = {
       checkValid: checkControllerIds
     }
   },
-  'FEED SETTINGS': {
+  'FEEDS': {
     timezone: {
       type: 'string',
       desc: 'Only useful if {date} placeholder is used. By default the date will be in UTC if left blank. Must be from <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> under TZ column.',
@@ -68,7 +68,7 @@ const validConfig = {
       type: 'string',
       desc: 'Format how {date} is shown. See details at <http://momentjs.com/docs/#/displaying/format/>. Whatever is here, will be inside `.format(<timeFormat>)` Default is `ddd, D MMMM YYYY, h:mm A z`.'
     },
-    maxFeeds: {
+    max: {
       type: 'number',
       desc: 'The maximum amount of feeds each server is allowed to have. Default is `0` (unlimited).',
       checkValid: isNumber
@@ -99,8 +99,8 @@ const validConfig = {
 function printConfigHelp () {
   const message = new Discord.RichEmbed()
   .setTitle('List of Confirgurable Configs')
-  .setColor(config.botSettings.menuColor)
-  .setDescription(`The syntax to change certain configs through is \`${config.botSettings.prefix}setconfig <config> <argument(s)>\`\n\u200b`)
+  .setColor(config.bot.menuColor)
+  .setDescription(`The syntax to change certain configs through is \`${config.bot.prefix}setconfig <config> <argument(s)>\`\n\u200b`)
 
   for (var category in validConfig) {
     let description = ''
@@ -116,7 +116,7 @@ function printConfigHelp () {
 exports.normal = function (bot, message) {
   const content = message.content.split(' ')
   if (content.length === 1) return message.channel.send({embed: printConfigHelp()})
-  if (content.length === 2) return message.channel.send(`The proper syntax to change certain configs through is ${config.botSettings.prefix}setconfig <config> <argument(s)>.`)
+  if (content.length === 2) return message.channel.send(`The proper syntax to change certain configs through is ${config.bot.prefix}setconfig <config> <argument(s)>.`)
   for (var category in validConfig) {
     for (var configName in validConfig[category]) {
       if (content[1] === configName) {
@@ -132,7 +132,7 @@ exports.normal = function (bot, message) {
             setting = content[2] === 'true'
             break
           case 'array':
-            setting = config.botSettings.controllerIds
+            setting = config.bot.controllerIds
             if (content[2] === 'add') setting.push(content[3])
             else if (content[2] === 'remove') {
               let found = false

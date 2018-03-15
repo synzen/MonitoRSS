@@ -9,8 +9,8 @@ const storage = require('./storage.js') // All properties of storage must be acc
 const logLinkErr = require('./logLinkErrs.js')
 const log = require('./logger.js')
 const allScheduleWords = storage.allScheduleWords
-const FAIL_LIMIT = config.feedSettings.failLimit
-const WARN_LIMIT = Math.floor(config.feedSettings.failLimit * 0.75) < FAIL_LIMIT ? Math.floor(config.feedSettings.failLimit * 0.75) : Math.floor(config.feedSettings.failLimit * 0.5) < FAIL_LIMIT ? Math.floor(config.feedSettings.failLimit * 0.5) : 0
+const FAIL_LIMIT = config.feeds.failLimit
+const WARN_LIMIT = Math.floor(config.feeds.failLimit * 0.75) < FAIL_LIMIT ? Math.floor(config.feeds.failLimit * 0.75) : Math.floor(config.feeds.failLimit * 0.5) < FAIL_LIMIT ? Math.floor(config.feeds.failLimit * 0.5) : 0
 const BATCH_SIZE = config.advanced.batchSize
 
 function reachedFailCount (link) {
@@ -21,7 +21,7 @@ class FeedSchedule {
     this.SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
     this.bot = bot
     this.schedule = schedule
-    this.refreshTime = this.schedule.refreshTimeMinutes ? this.schedule.refreshTimeMinutes : config.feedSettings.refreshTimeMinutes
+    this.refreshTime = this.schedule.refreshTimeMinutes ? this.schedule.refreshTimeMinutes : config.feeds.refreshTimeMinutes
     this.cycle = new events.EventEmitter()
     this._cookieServers = storage.cookieServers
     this._processorList = []
@@ -31,9 +31,11 @@ class FeedSchedule {
     this._cycleTotalCount = 0
     this._sourceList = new Map()
     this._modSourceList = new Map()
+    // this._leftoverBatch = new Map() // Batch of failed links to merge into the batchLists after each cycle for second retry
 
     if (!this.bot.shard || (this.bot.shard && this.bot.shard.count === 1)) {
       this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
+      this.run.bind(this)
       log.rss.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
     }
   }
@@ -43,20 +45,20 @@ class FeedSchedule {
     storage.failedLinks[link] = (failedLinks[link]) ? failedLinks[link] + 1 : 1
 
     if (failedLinks[link] === WARN_LIMIT) {
-      if (config.feedSettings.notifyFail !== true) return
+      if (config.feeds.notifyFail !== true) return
       for (var i in rssList) {
         const source = rssList[i]
         const channel = this.bot.channels.get(source.channel)
-        if (source.link === link && config._skipMessages !== true) channel.send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information.`).catch(err => log.general.warning(`Unable to send reached warning limit for feed ${link}`, channel.guild, channel, err))
+        if (source.link === link && config._skipMessages !== true) channel.send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.bot.prefix}rsslist\` for more information.`).catch(err => log.general.warning(`Unable to send reached warning limit for feed ${link}`, channel.guild, channel, err))
       }
     } else if (failedLinks[link] >= FAIL_LIMIT) {
       storage.failedLinks[link] = (new Date()).toString()
       log.rss.error(`${link} has passed the fail limit (${FAIL_LIMIT}). Will no longer retrieve`)
-      if (config.feedSettings.notifyFail !== true) return
+      if (config.feeds.notifyFail !== true) return
       for (var j in rssList) {
         const source = rssList[j]
         const channel = this.bot.channels.get(source.channel)
-        if (source.link === link  && config._skipMessages !== true) channel.send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.botSettings.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => log.general.warning(`Unable to send reached failure limit for feed ${link}`, channel.guild, channel, err))
+        if (source.link === link && config._skipMessages !== true) channel.send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.bot.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => log.general.warning(`Unable to send reached failure limit for feed ${link}`, channel.guild, channel, err))
       }
     }
   }

@@ -6,7 +6,7 @@ const COLORS = {
   reset: '\x1b[0m'
 }
 const CONSTRUCTORS = [Discord.Guild, Discord.TextChannel, Discord.Role, Discord.User]
-const LOG_DATES = require('../config.json').logging.logDates === true
+const LOG_DATES = require('../config.json').log.dates === true
 const PREFIXES = ['G', 'C', 'R', 'U']
 const TYPES = ['Command', 'Guild', 'RSS', 'INIT', 'General', 'Debug', 'Controller']
 const LEVELS = ['Error', 'Warning', 'Info']
@@ -54,9 +54,10 @@ class Logger {
     }
     const color = COLORS[level] ? COLORS[level] : ''
     const reset = COLORS.reset ? COLORS.reset : ''
+    const func = level === 'Error' ? console.error : 'Info' ? console.info : console.log
     return (contents, ...details) => {
       const extra = this._parseDetails(details)
-      console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
+      func(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
     }
   }
 }

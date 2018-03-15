@@ -1,4 +1,4 @@
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const log = require('../util/logger.js')
 
@@ -36,7 +36,7 @@ module.exports = (bot, role) => {
 
   if (!found) return
 
-  fileOps.updateFile(guildRss, null, err => {
+  dbOps.guildRss.update(guildRss, null, err => {
     if (err) log.guild.warning(`Role could not be removed from config by guild role deletion`, role.guild, role)
     else log.guild.info(`Role has been removed from config by guild role deletion`, role.guild, role)
   })

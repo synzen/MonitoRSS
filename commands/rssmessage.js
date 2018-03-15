@@ -1,4 +1,4 @@
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const config = require('../config.json')
 const log = require('../util/logger.js')
 const MenuUtils = require('./util/MenuUtils.js')
@@ -7,12 +7,12 @@ const FeedSelector = require('./util/FeedSelector.js')
 function feedSelectorFn (m, data, callback) {
   const { guildRss, rssName } = data
   const source = guildRss.sources[rssName]
-  const currentMsg = source.message ? '```Markdown\n' + source.message + '```' : '```Markdown\nNone has been set. Currently using default message below:\n\n``````\n' + config.feedSettings.defaultMessage + '```'
+  const currentMsg = source.message ? '```Markdown\n' + source.message + '```' : '```Markdown\nNone has been set. Currently using default message below:\n\n``````\n' + config.feeds.defaultMessage + '```'
 
   callback(null, { guildRss: guildRss,
     rssName: rssName,
     next: {
-      text: `The current message for ${source.link} is: \n${currentMsg}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. \`{empty}\` will create an empty message, but only if an embed is used. Regular formatting such as **bold** and etc. is also available. To find other placeholders, type \`exit\` then \`${config.botSettings.prefix}rsstest\`.\n\n` }
+      text: `The current message for ${source.link} is: \n${currentMsg}\nType your new customized message now, type \`reset\` to use the default message, or type \`exit\` to cancel. \n\nRemember that you can use the placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. \`{empty}\` will create an empty message, but only if an embed is used. Regular formatting such as **bold** and etc. is also available. To find other placeholders, type \`exit\` then \`${config.bot.prefix}rsstest\`.\n\n` }
   })
 }
 
@@ -40,15 +40,15 @@ module.exports = (bot, message, command) => {
       if (setting === null) {
         const m = await message.channel.send(`Resetting message...`)
         delete guildRss.sources[rssName].message
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
         log.command.info(`Message reset for ${source.link}`, message.guild)
-        await m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feedSettings.defaultMessage}\`\`\` \nfor feed ${source.link}`)
+        await m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feeds.defaultMessage}\`\`\` \nfor feed ${source.link}`)
       } else {
         const m = await message.channel.send(`Updating message...`)
         source.message = setting
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
         log.command.info(`New message recorded for ${source.link}`, message.guild)
-        await m.edit(`Message recorded:\n \`\`\`Markdown\n${setting}\`\`\` \nfor feed <${source.link}>. You may use \`${config.botSettings.prefix}rsstest\` to see your new message format.`)
+        await m.edit(`Message recorded:\n \`\`\`Markdown\n${setting}\`\`\` \nfor feed <${source.link}>. You may use \`${config.bot.prefix}rsstest\` to see your new message format.`)
       }
     } catch (err) {
       log.command.warning(`rssmessage`, message.guild, err)

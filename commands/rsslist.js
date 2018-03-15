@@ -4,7 +4,7 @@ const log = require('../util/logger.js')
 const currentGuilds = storage.currentGuilds
 const overrides = storage.limitOverrides
 const MenuUtils = require('./util/MenuUtils.js')
-const FAIL_LIMIT = config.feedSettings.failLimit
+const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = (bot, message, command) => {
   const guildRss = currentGuilds.get(message.guild.id)
@@ -14,7 +14,7 @@ module.exports = (bot, message, command) => {
   const rssList = guildRss.sources
   let failedFeedCount = 0
 
-  const maxFeedsAllowed = overrides[message.guild.id] != null ? overrides[message.guild.id] === 0 ? 'Unlimited' : overrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds))) ? 'Unlimited' : config.feedSettings.maxFeeds
+  const maxFeedsAllowed = overrides[message.guild.id] != null ? overrides[message.guild.id] === 0 ? 'Unlimited' : overrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max))) ? 'Unlimited' : config.feeds.max
 
   // Generate the info for each feed as an array, and push into another array
   const currentRSSList = []
@@ -36,7 +36,7 @@ module.exports = (bot, message, command) => {
   }
 
   let desc = maxFeedsAllowed === 'Unlimited' ? '\n\u200b\n' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n\u200b\n`
-  desc += failedFeedCount > 0 ? `**Attention!** Feeds that have reached ${FAIL_LIMIT} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.botSettings.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n` : ''
+  desc += failedFeedCount > 0 ? `**Attention!** Feeds that have reached ${FAIL_LIMIT} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.bot.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n` : ''
 
   const list = new MenuUtils.Menu(message)
     .setAuthor('Current Active Feeds')

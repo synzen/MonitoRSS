@@ -4,7 +4,7 @@ const channelTracker = require('../../util/channelTracker.js')
 const pageControls = require('../../util/pageControls.js')
 const storage = require('../../util/storage.js')
 const currentGuilds = storage.currentGuilds
-const FAIL_LIMIT = config.feedSettings.failLimit
+const FAIL_LIMIT = config.feeds.failLimit
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove']
 
@@ -69,7 +69,7 @@ class FeedSelector extends Menu {
     this.miscOption = miscOption
 
     const rssList = this.guildRss.sources
-    const maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] === 0 ? 'Unlimited' : storage.limitOverrides[message.guild.id] : (!config.feedSettings.maxFeeds || isNaN(parseInt(config.feedSettings.maxFeeds, 10))) ? 'Unlimited' : config.feedSettings.maxFeeds
+    const maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] === 0 ? 'Unlimited' : storage.limitOverrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max, 10))) ? 'Unlimited' : config.feeds.max
 
     this._currentRSSList = []
 
@@ -84,7 +84,7 @@ class FeedSelector extends Menu {
         const statusText = miscOption === 'imagePreviews' ? 'Image Link Previews: ' : miscOption === 'imageLinksExistence' ? 'Image Links Existence: ' : miscOption === 'checkTitles' ? 'Title Checks: ' : 'Date Checks: '
         let decision = ''
 
-        const globalSetting = config.feedSettings[miscOption]
+        const globalSetting = config.feeds[miscOption]
         decision = globalSetting ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
         const specificSetting = source[miscOption]
         decision = typeof specificSetting !== 'boolean' ? decision : specificSetting === true ? `${statusText} Enabled\n` : `${statusText} Disabled\n`

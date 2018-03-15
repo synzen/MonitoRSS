@@ -1,4 +1,4 @@
-const fileOps = require('../../util/fileOps.js')
+const dbOps = require('../../util/dbOps.js')
 const config = require('../../config.json')
 const filterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
 const MenuUtils = require('./MenuUtils.js')
@@ -46,7 +46,7 @@ async function filterAddTerm (m, data, callback) {
       } else invalidItems += `\n${item}`
     })
 
-    fileOps.updateFile(guildRss)
+    dbOps.guildRss.update(guildRss)
     callback()
 
     if (!role) {
@@ -54,13 +54,13 @@ async function filterAddTerm (m, data, callback) {
       let msg = ''
       if (addedList) msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
       if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-      if (addedList) msg += `\nYou may test random articles with \`${config.botSettings.prefix}rsstest\` to see what articles pass your filters, or specifically send filtered articles with \`${config.botSettings.prefix}rssfilters\` option 5.`
+      if (addedList) msg += `\nYou may test random articles with \`${config.bot.prefix}rsstest\` to see what articles pass your filters, or specifically send filtered articles with \`${config.bot.prefix}rssfilters\` option 5.`
       await editing.edit(msg)
     } else {
       log.command.info(`New role filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}.`, m.guild, role)
       let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
       if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-      if (addedList) msg += `\nYou may test your filters on random articles via \`${config.botSettings.prefix}rsstest\` and see what articles will mention the role`
+      if (addedList) msg += `\nYou may test your filters on random articles via \`${config.bot.prefix}rsstest\` and see what articles will mention the role`
       await editing.edit(`${msg}`)
     }
   } catch (err) {
@@ -159,7 +159,7 @@ function filterRemoveTerm (m, data, callback) {
     if (role && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
     if (Object.keys(source.filters).length === 0) delete source.filters
 
-    fileOps.updateFile(guildRss)
+    dbOps.guildRss.update(guildRss)
 
     if (!role) {
       log.command.info(`Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild)

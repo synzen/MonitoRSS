@@ -10,15 +10,15 @@ const blacklistGuilds = storage.blacklistGuilds
 const blacklistUsers = storage.blacklistUsers
 
 function isBotController (author) {
-  const controllerList = config.botSettings.controllerIds
+  const controllerList = config.bot.controllerIds
   return controllerList.length === 0 ? false : controllerList.includes(author)
 }
 
 module.exports = (bot, message) => {
-  if (!message.member || message.author.bot || !message.content.startsWith(config.botSettings.prefix) || blacklistGuilds.includes(message.guild.id) || blacklistUsers.includes(message.author.id)) return
+  if (!message.member || message.author.bot || !message.content.startsWith(config.bot.prefix) || blacklistGuilds.includes(message.guild.id) || blacklistUsers.includes(message.author.id)) return
   let m = message.content.split(' ')
-  let command = m[0].substr(config.botSettings.prefix.length)
-  if (command === 'forceexit') loadCommand(command)(bot, message) // To forcibly clear a channel of active menus
+  let command = m[0].substr(config.bot.prefix.length)
+  if (command === 'forceexit') return loadCommand(command)(bot, message) // To forcibly clear a channel of active menus
 
   if (channelTracker.hasActiveMenus(message.channel.id)) return
 

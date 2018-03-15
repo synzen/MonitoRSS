@@ -1,15 +1,15 @@
 {
-  "logging": {
-    "logDates": true,
-    "discordChannelLog": "",
-    "showLinkErrs": true,
-    "showUnfiltered": true
+  "log": {
+    "dates": true,
+    "linkErrs": true,
+    "unfiltered": true,
+    "failedFeeds": true
   },
-  "botSettings": {
+  "bot": {
     "token": "",
     "enableCommands": true,
     "prefix": "~",
-    "defaultGame": "",
+    "game": "",
     "controllerIds": [],
     "menuColor": 7833753,
     "deleteMenus": false
@@ -20,7 +20,7 @@
     "articlesExpire": 14,
     "guildBackupsExpire": 7
   },
-  "feedSettings": {
+  "feeds": {
     "refreshTimeMinutes": 15,
     "checkTitles": false,
     "timezone": "America/New_York",

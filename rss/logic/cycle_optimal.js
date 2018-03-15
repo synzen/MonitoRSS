@@ -56,8 +56,8 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
     if (debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Processing collection. Total article list length: ${articleList.length}`)
 
     const feedLength = articleList.length - 1
-    const cycleMaxAge = config.feedSettings.cycleMaxAge
-    const globalDateCheck = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
+    const cycleMaxAge = config.feeds.cycleMaxAge
+    const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : defaultConfigs.feeds.checkDates.default
 
     for (var x = feedLength; x >= 0; x--) {
       const article = articleList[x]
@@ -77,7 +77,7 @@ module.exports = function (rssList, articleList, debugFeeds, link, callback) {
       ++totalArticles
     }
 
-    let checkTitle = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
+    let checkTitle = config.feeds.checkTitles != null ? config.feeds.checkTitles : defaultConfigs.feeds.checkTitles.default
     const localTitleSetting = rssList[rssName].checkTitles
     checkTitle = typeof localTitleSetting !== 'boolean' ? checkTitle : localTitleSetting
     const allIds = []

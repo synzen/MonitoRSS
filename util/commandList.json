@@ -52,21 +52,21 @@
 		"initLevel": 1,
 		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
-		"description": "Opens a menu to customize how dates are displayed."
+		"description": "Open a menu to customize how dates are displayed."
 	},
 	"rssfilters": {
 		"initLevel": 1,
 		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Global Filter Addition/Removal",
-		"description": "Opens a menu to add or remove global filters from a feed. Messages that do not have any of the words in any of your filters won't be sent to your Discord."
+		"description": "Open a menu to add or remove global filters from a feed. Messages that do not have any of the words in any of your filters won't be sent to your Discord."
 	},
 	"rssroles": {
 		"initLevel": 1,
 		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Role Customization",
-		"description": "Opens a menu to add global/filtered subscriptions for roles to feeds."
+		"description": "Open a menu to add global/filtered subscriptions for roles to feeds."
 	},
 	"subme": {
 		"initLevel": 1,
@@ -74,7 +74,7 @@
 		"args": {
 			"<role name/mention>": "Directly input the role instead of going through the menu."
 		},
-		"description": "Opens a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
+		"description": "Open a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
 	},
 	"unsubme": {
 		"initLevel": 1,
@@ -82,7 +82,7 @@
 		"args": {
 			"<role name/mention>": "Directly input the role instead of going through the menu."
 		},
-		"description": "Opens a menu similar to `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
+		"description": "Open a menu similar to `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
 	},
 	"rsscookies": {
 		"initLevel": 1,
@@ -95,13 +95,13 @@
 		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Refresh Feed",
-		"description": "Opens a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit."
+		"description": "Open a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit."
 	},
 	"rssoptions": {
 		"initLevel": 1,
 		"botPerm": "EMBED_LINKS",
 		"userPerm": "MANAGE_CHANNELS",
-		"description": "Opens a menu for miscellaneous feed options.",
+		"description": "Open a menu for miscellaneous feed options.",
 		"options": {
 			"checkTitles": "Toggle Title Checks",
 			"imgPreviews": "Toggle Image Link Previews",
@@ -109,15 +109,21 @@
 			"checkDates": "Toggle Date Checks"
 		}
 	},
+	"rssmove": {
+		"initLevel": 1,
+		"userPerm": "MANAGE_CHANNELS",
+		"description": "Open a menu to move a feed into another channel.",
+		"action": "Feed Channel Transfer"
+	},
 	"rsswebhook": {
 		"initLevel": 1,
 		"userPerm": "MANAGE_CHANNELS",
 		"action": "Webhook Connection",
-		"description": "Connect a webhook to send feed messages instead."
+		"description": "Open a menu to connect a webhook to a feed to send messages instead."
 	},
 	"rssbackup": {
 		"initLevel": 1,
 		"userPerm": "MANAGE_CHANNELS",
-		"description": "Send server profile as a JSON attachment for backups."
+		"description": "Send server profile as a JSON attachment for personal backups."
 	}
 }

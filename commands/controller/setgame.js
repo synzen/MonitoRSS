@@ -12,7 +12,7 @@ exports.normal = function (bot, message) {
   const game = getGame(message)
   // bot.user.setGame(game)
   bot.user.setPresence({ game: { name: game, type: 0 } })
-  config.botSettings.defaultGame = game // Make sure the change is saved even after a login retry
+  config.bot.game = game // Make sure the change is saved even after a login retry
 }
 
 exports.sharded = function (bot, message) {
@@ -28,7 +28,7 @@ exports.sharded = function (bot, message) {
       if (game === 'null') game = null;
 
       this.user.setPresence({ game: { name: game, type: 0 } });
-      config.botSettings.defaultGame = game;
+      config.bot.game = game;
     }
   `).catch(err => console.log(`Bot Controller: Unable to send setgame eval. `, err.message || err))
 }

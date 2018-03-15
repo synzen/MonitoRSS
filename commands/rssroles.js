@@ -1,5 +1,5 @@
 const Discord = require('discord.js')
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const filters = require('./util/filters.js')
 const config = require('../config.json')
 const log = require('../util/logger.js')
@@ -12,7 +12,7 @@ function printSubscriptions (message, rssList) {
   const guild = message.guild
   const subList = {}
   const msg = new Discord.RichEmbed()
-    .setColor(config.botSettings.menuColor)
+    .setColor(config.bot.menuColor)
     .setDescription(`\nBelow are the feed titles with any roles subscribed to that feed under it. Each role is then categorized as either a global or filtered subscription.\u200b\n\u200b\n`)
     .setAuthor('Subscribed Roles List')
 
@@ -91,7 +91,7 @@ function deleteSubscription (message, guildRss, roleID) {
     }
   }
   if (!found) return message.channel.send('This role has no subscriptions to remove.').catch(err => log.command.warning(`rssRoles/delSub 1`, message.guild, err))
-  fileOps.updateFile(guildRss)
+  dbOps.guildRss.update(guildRss)
   log.command.info(`All subscriptions deleted`, message.guild, message.guild.roles.get(roleID))
   return message.channel.send(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`.`).catch(err => log.command.warning(`rssRoles/delSub 2`, message.guild, err))
 }
@@ -111,7 +111,7 @@ function addGlobalSub (message, guildRss, rssName, role) {
     roleID: role.id,
     roleName: role.name
   })
-  fileOps.updateFile(guildRss)
+  dbOps.guildRss.update(guildRss)
   message.channel.send(`Global subscription successfully added for \`${message.guild.roles.get(role.id).name}\` to feed <${source.link}>.`).catch(err => log.command.warning(`rssRoles/addGlobalSub 1`, message.guild, err))
   log.command.info(`Global subscription added to feed ${source.link}`, message.guild, message.guild.roles.get(role.id))
 }
@@ -134,7 +134,7 @@ function removeGlobalSub (message, guildRss, rssName, role) {
 
   message.channel.send(`Successfully removed the global subscription of the role \`${role.name}\` from the feed <${source.link}>`).catch(err => log.command.warning(`rssRoles/remGlobalSub 3`, message.guild, err))
   log.command.info(`Removed global subscription for feed ${source.link}`, message.guild, role)
-  return fileOps.updateFile(guildRss)
+  return dbOps.guildRss.update(guildRss)
 }
 
 function filteredSubFn (m, data, callback) {

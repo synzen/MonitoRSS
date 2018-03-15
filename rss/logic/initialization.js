@@ -30,8 +30,8 @@ module.exports = function (rssList, articleList, link, callback) {
     let processedArticles = 0
 
     const feedLength = articleList.length - 1
-    const defaultMaxAge = config.feedSettings.defaultMaxAge && !isNaN(parseInt(config.feedSettings.defaultMaxAge, 10)) ? parseInt(config.feedSettings.defaultMaxAge, 10) : 1
-    const globalDateCheck = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
+    const defaultMaxAge = config.feeds.defaultMaxAge && !isNaN(parseInt(config.feeds.defaultMaxAge, 10)) ? parseInt(config.feeds.defaultMaxAge, 10) : 1
+    const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : defaultConfigs.feeds.checkDates.default
 
     for (var x = feedLength; x >= 0; x--) { // Get feeds starting from oldest, ending with newest.
       articleList[x]._id = getArticleId(articleList, articleList[x])
@@ -50,7 +50,7 @@ module.exports = function (rssList, articleList, link, callback) {
       } else olderArticles.push(articleList[x]) // for all other cases
     }
 
-    let checkTitle = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
+    let checkTitle = config.feeds.checkTitles != null ? config.feeds.checkTitles : defaultConfigs.feeds.checkTitles.default
     const feedSet = rssList[rssName].checkTitles
     checkTitle = typeof feedSet !== 'boolean' ? checkTitle : feedSet
     const allIds = []
@@ -88,7 +88,7 @@ module.exports = function (rssList, articleList, link, callback) {
 
     function seenArticle (seen, article, doNotSend) {
       if (seen) return incrementProgress() // Stops here if it already exists in table, AKA "seen"
-      if (config.feedSettings.sendOldMessages === true && newerIds.includes(article._id) && !doNotSend) {
+      if (config.feeds.sendOldMessages === true && newerIds.includes(article._id) && !doNotSend) {
         article.rssName = rssName
         article.discordChannelId = channelId
         callback(null, {status: 'article', article: article})

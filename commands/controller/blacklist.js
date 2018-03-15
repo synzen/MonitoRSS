@@ -1,5 +1,5 @@
 const storage = require('../../util/storage.js')
-const fileOps = require('../../util/fileOps.js')
+const dbOps = require('../../util/dbOps.js')
 const blacklistGuilds = storage.blacklistGuilds
 const blacklistUsers = storage.blacklistUsers
 const log = require('../../util/logger.js')
@@ -17,7 +17,7 @@ exports.normal = (bot, message) => {
   else if (guild && blacklistGuilds.includes(id)) return message.channel.send(`Guild ${id} (${user.username}) is already blacklisted.`)
   else if (user && blacklistUsers.includes(id)) return message.channel.send(`User ${id} (${user.username}) is already blacklisted.`)
 
-  fileOps.addBlacklist({ isGuild: !!guild, id: id, name: guild ? guild.name : user.username }, err => {
+  dbOps.blacklists.add({ isGuild: !!guild, id: id, name: guild ? guild.name : user.username }, err => {
     if (err) {
       log.controller.error('Unable to add blacklist', message.author, err)
       return message.channel.send(`Blacklist failed. ${err.message}`)
@@ -50,7 +50,7 @@ exports.sharded = function (bot, message, Manager) {
     else if (found.type === 'guild' && blacklistGuilds.includes(id)) return message.channel.send(`Guild ${id} (${found.name}) is already blacklisted.`)
     else if (found.type === 'user' && blacklistUsers.includes(id)) return message.channel.send(`User ${id} (${found.name}) is already blacklisted.`)
 
-    fileOps.addBlacklist({ isGuild: found.type === 'guild', id: id, name: found.name }, err => {
+    dbOps.blacklists.add({ isGuild: found.type === 'guild', id: id, name: found.name }, err => {
       if (err) {
         log.controller.error('Unable to add blacklist', message.author, err)
         return message.channel.send(`Blacklist failed. ${err.message}`)

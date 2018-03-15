@@ -8,7 +8,7 @@ exports.normal = function (bot, message) {
   const illegals = []
   currentGuilds.forEach(function (guildRss, guildId) {
     const guildSourcesCnt = Object.keys(guildRss.sources).length
-    const guildLimit = overrides[guildId] ? overrides[guildId] : config.feedSettings.maxFeeds
+    const guildLimit = overrides[guildId] ? overrides[guildId] : config.feeds.max
     if (guildSourcesCnt > guildLimit) illegals.push(guildId)
   })
 
@@ -17,7 +17,7 @@ exports.normal = function (bot, message) {
 }
 
 exports.sharded = function (bot, message) {
-  const defLimit = config.feedSettings.maxFeeds
+  const defLimit = config.feeds.max
 
   bot.shard.broadcastEval(`
     const appDir = require('path').dirname(require.main.filename);

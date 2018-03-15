@@ -29,17 +29,17 @@ exports.validChannel = (bot, guildId, feed) => {
 }
 
 exports.defaultConfigs = {
-  logging: {
-    logDates: {type: 'boolean', default: false},
-    discordChannelLog: {type: 'string', default: ''},
-    showLinkErrs: {type: 'boolean', default: true},
-    showUnfiltered: {type: 'boolean', default: true}
+  log: {
+    dates: {type: 'boolean', default: false},
+    linkErrs: {type: 'boolean', default: true},
+    unfiltered: {type: 'boolean', default: true},
+    failedFeeds: {type: 'boolean', default: true}
   },
-  botSettings: {
+  bot: {
     token: {type: 'string', default: undefined},
     enableCommands: {type: 'boolean', default: true},
     prefix: {type: 'string', default: undefined},
-    defaultGame: {type: 'string', default: null},
+    game: {type: 'string', default: null},
     controllerIds: {type: 'object', default: []},
     menuColor: {type: 'number', default: 7833753},
     deleteMenus: {type: 'boolean', default: false}
@@ -50,7 +50,7 @@ exports.defaultConfigs = {
     articlesExpire: {type: 'number', default: 14},
     guildBackupsExpire: {type: 'number', default: 7}
   },
-  feedSettings: {
+  feeds: {
     refreshTimeMinutes: {type: 'number', default: 10},
     checkTitles: {type: 'boolean', default: false},
     timezone: {type: 'string', default: 'America/New_York'},
@@ -116,8 +116,8 @@ exports.check = userConfig => {
     }
   }
 
-  const defLang = userConfig.feedSettings.dateLanguage
-  const langList = userConfig.feedSettings.dateLanguageList
+  const defLang = userConfig.feeds.dateLanguage
+  const langList = userConfig.feeds.dateLanguageList
   if (!langList.includes(defLang)) langList.unshift(defLang)
   for (var u = langList.length - 1; u >= 0; --u) moment.locale(langList[u])  // Set the global moment locale/language to the 0 index item
 

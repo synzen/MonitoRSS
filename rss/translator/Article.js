@@ -97,7 +97,7 @@ function evalRegexConfig (source, text, placeholder) {
 
       const modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
       if (typeof modified !== 'string') {
-        if (config.feedSettings.showRegexErrs !== false) log.general.error(`Evaluation of regex for article ${source.link}`, modified)
+        if (config.feeds.showRegexErrs !== false) log.general.error(`Evaluation of regex for article ${source.link}`, modified)
       } else customPlaceholders[regexOp.name] = modified // newText = modified
     }
   } else return null
@@ -126,14 +126,14 @@ function cleanup (source, text, imgSrcs) {
         if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && isStr && link) imgSrcs.push(link)
 
         let exist = true
-        const globalExistOption = config.feedSettings.imgLinksExistence != null ? config.feedSettings.imgLinksExistence : defaultConfigs.feedSettings.imgLinksExistence.default // Always a boolean via startup checks
+        const globalExistOption = config.feeds.imgLinksExistence != null ? config.feeds.imgLinksExistence : defaultConfigs.feeds.imgLinksExistence.default // Always a boolean via startup checks
         exist = globalExistOption
         const specificExistOption = source.imgLinksExistence
         exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
         if (!exist) return ''
 
         let image = ''
-        const globalPreviewOption = config.feedSettings.imgPreviews != null ? config.feedSettings.imgPreviews : defaultConfigs.feedSettings.imgPreviews.default // Always a boolean via startup checks
+        const globalPreviewOption = config.feeds.imgPreviews != null ? config.feeds.imgPreviews : defaultConfigs.feeds.imgPreviews.default // Always a boolean via startup checks
         image = globalPreviewOption ? link : `<${link}>`
         const specificPreviewOption = source.imgPreviews
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
@@ -170,13 +170,13 @@ module.exports = class Article {
     this.titleImgs = rawTitleImgs
 
     // Date
-    if ((rawArticle.pubdate && rawArticle.pubdate.toString() !== 'Invalid Date') || config.feedSettings.dateFallback === true) {
+    if ((rawArticle.pubdate && rawArticle.pubdate.toString() !== 'Invalid Date') || config.feeds.dateFallback === true) {
       const guildTimezone = guildRss.timezone
-      const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feedSettings.timezone
-      const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feedSettings.dateFormat
+      const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feeds.timezone
+      const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feeds.dateFormat
 
-      const useDateFallback = config.feedSettings.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
-      const useTimeFallback = config.feedSettings.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)
+      const useDateFallback = config.feeds.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
+      const useTimeFallback = config.feeds.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)
       const date = useDateFallback ? new Date() : rawArticle.pubdate
       const localMoment = moment(date)
       if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)

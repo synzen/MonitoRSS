@@ -1,18 +1,18 @@
 const config = require('../config.json')
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 
 module.exports = (bot, guild) => {
   log.guild.info(`Guild (Users: ${guild.members.size}) has been added`, guild)
 
-  fileOps.restoreBackup(guild.id, null, err => {
+  dbOps.guildRss.restore(guild.id, null, err => {
     if (err) log.guild.warning(`Unable to restore backup`, guild, err)
     log.guild.info(`Restored backup`, guild)
   })
 
-  if (!config.logging.discordChannelLog) return
+  if (!config.log.discordChannel) return
 
-  const logChannelId = config.logging.discordChannelLog
+  const logChannelId = config.log.discordChannel
   const logChannel = bot.channels.get(logChannelId)
   if (typeof logChannelId !== 'string' || !logChannel) {
     if (bot.shard) {

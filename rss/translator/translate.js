@@ -36,8 +36,8 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, returnObject) =>
 
     let txtMsg = ''
     if (typeof source.message !== 'string') {
-      if (config.feedSettings.defaultMessage.trim() === '{empty}') txtMsg = ''
-      else txtMsg = article.convertKeywords(config.feedSettings.defaultMessage)
+      if (config.feeds.defaultMessage.trim() === '{empty}') txtMsg = ''
+      else txtMsg = article.convertKeywords(config.feeds.defaultMessage)
     } else if (source.message.trim() === '{empty}') txtMsg = ''
     else txtMsg = article.convertKeywords(source.message)
 
@@ -45,8 +45,8 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, returnObject) =>
   } else {
     let txtMsg = ''
     if (typeof source.message !== 'string' || source.message.trim() === '{empty}') {
-      if (config.feedSettings.defaultMessage.trim() === '{empty}') txtMsg = ''
-      else txtMsg = article.convertKeywords(config.feedSettings.defaultMessage)
+      if (config.feeds.defaultMessage.trim() === '{empty}') txtMsg = ''
+      else txtMsg = article.convertKeywords(config.feeds.defaultMessage)
     } else txtMsg = article.convertKeywords(source.message)
 
     finalMessageCombo.textMsg = txtMsg

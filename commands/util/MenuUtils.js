@@ -32,7 +32,7 @@ class Menu {
     if (settings.text) this.text = settings.text
     if (!settings.embed) return
     const { embed } = settings
-    this.pages[0] = new RichEmbed(embed).setColor(config.botSettings.menuColor)
+    this.pages[0] = new RichEmbed(embed).setColor(config.bot.menuColor)
     this._curPage = this.pages[this._pageNum]
     this.pages[0].fields.length = 0
   }
@@ -44,7 +44,7 @@ class Menu {
    */
   _embedExists () {
     if (this._pageNum === 0 && !this._curPage) {
-      this.pages[0] = new RichEmbed().setColor(config.botSettings.menuColor)
+      this.pages[0] = new RichEmbed().setColor(config.bot.menuColor)
       this._curPage = this.pages[0]
     }
   }

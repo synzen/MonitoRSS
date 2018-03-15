@@ -3,11 +3,11 @@ const commands = require('../util/commandList.json')
 const log = require('../util/logger.js')
 
 module.exports = (bot, message, command) => {
-  let msg = `Arguments for commands are added after the command. For example: \`${config.botSettings.prefix}rsstest simple\`.\n\n`
+  let msg = `Arguments for commands are added after the command. For example: \`${config.bot.prefix}rsstest simple\`.\n\n`
   for (var name in commands) {
     const command = commands[name]
     if (!command.description) continue
-    msg += `\`${config.botSettings.prefix}${name}\` - ${command.description}`
+    msg += `\`${config.bot.prefix}${name}\` - ${command.description}`
     const args = command.args
     if (args) {
       msg += `\n    **Arguments:**\n`

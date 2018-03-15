@@ -25,7 +25,7 @@ module.exports = function (rssList, articleList, link, callback) {
   const Feed = FeedModel(link)
 
   dbCmds.findAll(Feed, (err, docs) => {
-    if (err) return callback(err)
+    if (err) throw err // return callback(err)
     const oldIds = []
 
     for (var d = 0; d < docs.length; ++d) oldIds.push(docs[d].id)
@@ -37,9 +37,9 @@ module.exports = function (rssList, articleList, link, callback) {
     }
 
     dbCmds.bulkInsert(Feed, toInsert, (err, res) => {
-      if (err) return callback(err)
+      if (err) throw err// return callback(err)
       if (oldIds.length > 0) for (var rssName in rssList) processSource(rssName, docs)
-      else callback(null, { status: 'success' })
+      else callback(null, { status: 'success', link: link })
     })
   })
 
@@ -52,8 +52,8 @@ module.exports = function (rssList, articleList, link, callback) {
     let processedArticles = 0
 
     const feedLength = articleList.length - 1
-    const defaultMaxAge = config.feedSettings.defaultMaxAge && !isNaN(parseInt(config.feedSettings.defaultMaxAge, 10)) ? parseInt(config.feedSettings.defaultMaxAge, 10) : 1
-    const globalDateCheck = config.feedSettings.checkDates != null ? config.feedSettings.checkDates : defaultConfigs.feedSettings.checkDates.default
+    const defaultMaxAge = config.feeds.defaultMaxAge && !isNaN(parseInt(config.feeds.defaultMaxAge, 10)) ? parseInt(config.feeds.defaultMaxAge, 10) : 1
+    const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : defaultConfigs.feeds.checkDates.default
 
     for (var x = feedLength; x >= 0; x--) { // Get feeds starting from oldest, ending with newest.
       // articleList[x]._id = getArticleId(articleList, articleList[x])
@@ -73,7 +73,7 @@ module.exports = function (rssList, articleList, link, callback) {
       } else olderArticles.push(article) // for all other cases
     }
 
-    let checkTitle = config.feedSettings.checkTitles != null ? config.feedSettings.checkTitles : defaultConfigs.feedSettings.checkTitles.default
+    let checkTitle = config.feeds.checkTitles != null ? config.feeds.checkTitles : defaultConfigs.feeds.checkTitles.default
     const feedSet = source.checkTitles
     checkTitle = typeof feedSet !== 'boolean' ? checkTitle : feedSet
     const allIds = []
@@ -111,7 +111,7 @@ module.exports = function (rssList, articleList, link, callback) {
 
     function seenArticle (seen, article, doNotSend) {
       if (seen) return incrementProgress() // Stops here if it already exists in table, AKA "seen"
-      if (config.feedSettings.sendOldMessages === true && newerIds.includes(article._id) && !doNotSend) {
+      if (config.feeds.sendOldMessages === true && newerIds.includes(article._id) && !doNotSend) {
         article.rssName = rssName
         article.discordChannelId = channelId
         callback(null, { status: 'article', article: article })
@@ -125,10 +125,6 @@ module.exports = function (rssList, articleList, link, callback) {
   }
 
   function finishSource () {
-    if (++sourcesCompleted !== Object.keys(rssList).length) return
-    dbCmds.bulkInsert(Feed, toInsert, (err, res) => {
-      if (err) return callback(err)
-      callback(null, { status: 'success' })
-    })
+    if (++sourcesCompleted === Object.keys(rssList).length) callback(null, { status: 'success', link: link })
   }
 }

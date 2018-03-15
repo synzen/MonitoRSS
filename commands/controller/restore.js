@@ -2,7 +2,7 @@
 const storage = require('../../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const needle = require('needle')
-const fileOps = require('../../util/fileOps.js')
+const dbOps = require('../../util/dbOps.js')
 
 function getID (message) {
   return new Promise((resolve, reject) => {
@@ -31,7 +31,7 @@ exports.normal = async (bot, message) => {
     const id = file.id
     if (!bot.guilds.has(id)) return await message.chanel.send(`Unable to restore server, ID ${id} was not found in bot's cache.`)
     currentGuilds.set(id, file)
-    fileOps.updateFile(file)
+    dbOps.guildRss.update(file)
     await message.channel.send(`Server (ID: ${id}, Name: ${bot.guilds.get(id).name}) has been restored.`)
   } catch (err) {
     message.channel.send(err.message).catch(console.log)
@@ -47,7 +47,7 @@ exports.sharded = async (bot, message) => {
     for (var i = 0; i < res.length; ++i) {
       if (!res[i]) continue
       // currentGuilds.set(id, file) // Let the sharding manager handle the currentGuilds update
-      fileOps.updateFile(file)
+      dbOps.guildRss.update(file)
       await message.channel.send(`Server (ID: ${id}, Name: ${bot.guilds.get(id).name}) has been restored.`)
     }
   } catch (err) {

@@ -1,4 +1,4 @@
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 const MenuUtils = require('./util/MenuUtils.js')
@@ -73,7 +73,7 @@ module.exports = async (bot, message, command) => {
           if (customAvatarSrch) source.webhook.avatar = customAvatarSrch
           await webhook.send(`I am now connected to ${bot.user}, and will send feed articles for <${source.link}>!`, { username: customNameSrch, avatarURL: customAvatarSrch })
         }
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
       } catch (err) {
         log.command.warning(`rsswebhook2`, message.guild, err)
         if (err.code !== 50013) message.channel.send('Unable to fetch webhooks for this channel. ', err.message).catch(err => log.command.warning(`rsswebhook`, message.guild, err))

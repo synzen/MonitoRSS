@@ -1,6 +1,6 @@
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
-const initAllSources = require('./logic/initialization.js')
+const initAllSources = require('./logic/initialization_optimal.js')
 
 module.exports = (link, rssList, uniqueSettings, callback) => {
   const feedparser = new FeedParser()

@@ -7,7 +7,7 @@ const debugFeeds = require('../util/debugFeeds').list
 const log = require('./logger.js')
 
 module.exports = (bot, article, callback, isTestMessage) => {
-  if (config._skipMessages === true) return log.general.info(`Inhibiting article sending due to skipMessages`)
+  if (config._skipMessages === true) return
   let channel = bot.channels.get(article.discordChannelId)
   const rssName = article.rssName
   const guildRss = currentGuilds.get(channel.guild.id)
@@ -48,7 +48,7 @@ module.exports = (bot, article, callback, isTestMessage) => {
     const message = translator(guildRss, rssName, article, isTestMessage)
 
     if (!message) {
-      if (config.logging.showUnfiltered === true) log.general.info(`'${article.link ? article.link : article.title}' did not pass filters and was not sent`, channel)
+      if (config.log.unfiltered === true) log.general.info(`'${article.link ? article.link : article.title}' did not pass filters and was not sent`, channel)
       return callback()
     }
 

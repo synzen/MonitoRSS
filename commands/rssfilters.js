@@ -1,7 +1,7 @@
 const Discord = require('discord.js')
 const filters = require('./util/filters.js')
 const config = require('../config.json')
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const getArticle = require('../rss/getArticle.js')
 const sendToDiscord = require('../util/sendToDiscord.js')
 const MenuUtils = require('./util/MenuUtils.js')
@@ -66,11 +66,11 @@ module.exports = (bot, message, command, role) => {
           if (filterCategory !== 'roleSubscriptions') delete filterList[filterCategory]
         }
         if (Object.keys(filterList).length === 0) delete source.filters
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
         return await message.channel.send(`All feed filters have been successfully removed from <${source.link}>.`)
       } else if (selectedOption === '4') { // 4 = List all existing filters
         const msg = new Discord.RichEmbed()
-          .setColor(config.botSettings.menuColor)
+          .setColor(config.bot.menuColor)
           .setAuthor('List of Assigned Filters')
           .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n`)
 

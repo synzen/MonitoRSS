@@ -3,8 +3,8 @@ const cloudscraper = require('cloudscraper') // For cloudflare
 
 module.exports = (link, cookies, feedparser, callback) => {
   const options = {
-    timeout: 27000,
-    read_timeout: 24000,
+    timeout: 20000,
+    read_timeout: 17000,
     follow_max: 5,
     follow_set_cookies: true,
     rejectUnauthorized: true,

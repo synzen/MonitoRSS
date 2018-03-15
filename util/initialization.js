@@ -6,15 +6,13 @@ const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const linkTracker = storage.linkTracker // Directory of all feeds, used to track between multiple feed schedules
 const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
 const failedLinks = storage.failedLinks
-const feedLinkList = storage.linkList
 const checkGuild = require('./checkGuild.js')
 const sendToDiscord = require('./sendToDiscord.js')
 const process = require('child_process')
 const configChecks = require('./configCheck.js')
-const fileOps = require('./fileOps.js')
+const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
-const GuildRss = storage.models.GuildRss()
-const FAIL_LIMIT = config.feedSettings.failLimit
+const FAIL_LIMIT = config.feeds.failLimit
 
 function addFailedFeed (link) {
   failedLinks[link] = failedLinks[link] ? failedLinks[link] + 1 : 1
@@ -22,7 +20,7 @@ function addFailedFeed (link) {
 
 function reachedFailCount (link) {
   const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
-  if (failed && config.logging.showFailedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
+  if (failed && config.log.failedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
   return failed
 }
 
@@ -36,6 +34,9 @@ function discordMsgResult (err, article, bot) {
 }
 
 module.exports = (bot, callback) => {
+  const GuildRss = storage.models.GuildRss()
+  const linkCounts = {}
+  let oldLinkCounts
   const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
   const modSourceList = new Map()
   const sourceList = new Map()
@@ -77,7 +78,7 @@ module.exports = (bot, callback) => {
   }
 
   // Cache blacklisted users and guilds
-  fileOps.getBlacklists((err, docs) => {
+  dbOps.blacklists.get((err, docs) => {
     if (err) throw err
     for (var d = 0; d < docs.length; ++d) {
       const blisted = docs[d]
@@ -89,38 +90,56 @@ module.exports = (bot, callback) => {
   // For patron tracking on the public bot
   try { require('../settings/vips.js')(bot) } catch (e) { if (config._server) log.general.error(`Failed to load VIP module`, e) }
 
-  // Cache guilds and start initialization
-  GuildRss.find((err, results) => {
+  dbOps.linkList.get((err, counts) => {
     if (err) throw err
-    for (var r = 0; r < results.length; ++r) {
-      const guildRss = results[r]
-      const guildId = guildRss.id
-      const rssList = guildRss.sources
-      if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
-        if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
-        else {
-          fileOps.deleteGuild(guildId, null, err => {
-            if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
-            log.init.info(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
+    oldLinkCounts = counts
+    readGuilds()
+  })
+
+  // Cache guilds and start initialization
+  function readGuilds () {
+    GuildRss.find((err, results) => {
+      if (err) throw err
+      for (var r = 0; r < results.length; ++r) {
+        const guildRss = results[r]
+        const guildId = guildRss.id
+        const rssList = guildRss.sources
+        if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
+          if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
+          else {
+            dbOps.guildRss.remove(guildId, null, err => {
+              if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
+              log.init.info(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
+            })
+          }
+          continue
+        }
+        if (dbOps.guildRss.empty(guildRss)) continue
+        if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
+          currentGuilds.set(guildId, guildRss)
+          checkGuild.names(bot, guildId)
+        }
+        guildsInfo[guildId] = guildRss
+        addToSourceLists(rssList, guildId)
+      }
+
+      for (var t in linkCounts) {
+        const link = t
+        const Feed = storage.models.Feed(link)
+        if (config.database.clean !== true) {
+          Feed.collection.dropIndexes(err => {
+            if (err && err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${link}:`, err)
           })
         }
-        continue
       }
-      if (fileOps.isEmptySources(guildRss)) continue
-      if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
-        currentGuilds.set(guildId, guildRss)
-        checkGuild.names(bot, guildId)
-      }
-      guildsInfo[guildId] = guildRss
-      addToSourceLists(rssList, guildId)
-    }
 
-    if (sourceList.size + modSourceList.size === 0) {
-      log.init.info(`${SHARD_ID}There are no active feeds to initialize`)
-      return finishInit()
-    }
-    return connect()
-  })
+      if (sourceList.size + modSourceList.size === 0) {
+        log.init.info(`${SHARD_ID}There are no active feeds to initialize`)
+        return finishInit()
+      }
+      return connect()
+    })
+  }
 
   function genBatchLists () {
     let batch = new Map()
@@ -151,13 +170,10 @@ module.exports = (bot, callback) => {
   function addToSourceLists (rssList, guildId) { // rssList is an object per guildRss
     for (var rssName in rssList) {
       const source = rssList[rssName]
-      feedLinkList.push(source.link) // Duplicates are necessary for every feed
-      const Article = storage.models.Article(rssName)
-      if (config.database.clean !== true) {
-        Article.collection.dropIndexes(err => {
-          if (err && err.code !== 26) log.init.warning(`Unable to drop indexes Article collection ${rssName}:`, err)
-        })
-      }
+
+      if (!linkCounts[source.link]) linkCounts[source.link] = 1
+      else ++linkCounts[source.link]
+
       if (configChecks.checkExists(rssName, source, true, true) && configChecks.validChannel(bot, guildId, source) && !reachedFailCount(source.link)) {
         checkGuild.roles(bot, guildId, rssName) // Check for any role name changes
 
@@ -237,6 +253,8 @@ module.exports = (bot, callback) => {
     })
   }
 
+  let batchTracker = {}
+
   function getBatchIsolated (batchNumber, batchList, type) {
     if (batchList.length === 0) return getBatchIsolated(0, modBatchList, 'modded')
     let completedLinks = 0
@@ -252,6 +270,10 @@ module.exports = (bot, callback) => {
         }
       }
       processor.send({link: link, rssList: rssList, uniqueSettings: uniqueSettings})
+      setTimeout(() => {
+        const localLink = link
+        if (!batchTracker[localLink]) console.log('FAILED TO LOAD LINK: ' + localLink)
+      }, 60000)
     })
 
     processor.on('message', linkCompletion => {
@@ -265,6 +287,7 @@ module.exports = (bot, callback) => {
         if (FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
       }
       if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+      if (linkCompletion.link) batchTracker[linkCompletion.link] = true
 
       completedLinks++
       cycleTotalCount++
@@ -333,10 +356,18 @@ module.exports = (bot, callback) => {
 
   function finishInit () {
     log.init.info(`${SHARD_ID}INIT Info: Finished initialization cycle ${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
-
+    const linksToRemove = []
+    for (var oldLink in oldLinkCounts) {
+      if (!linkCounts[oldLink]) linksToRemove.push(oldLink)
+    }
+    dbOps.linkList.drop(err => {
+      if (err && err.code !== 26) throw err
+      dbOps.linkList.write(linkCounts, err => {
+        if (err) throw err
+        callback(guildsInfo)
+      })
+    })
     if (bot.shard) bot.shard.send({ type: 'updateFailedLinks', failedLinks: failedLinks })
     else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (err) { log.general.warning(`Unable to update failedLinks.json on end of initialization`, err) }
-
-    callback(guildsInfo)
   }
 }

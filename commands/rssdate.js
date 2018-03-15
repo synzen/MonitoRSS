@@ -2,7 +2,7 @@ const config = require('../config.json')
 const moment = require('moment-timezone')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('./util/MenuUtils.js')
 
 // To avoid stack call exceeded
@@ -83,9 +83,9 @@ module.exports = (bot, message) => {
 
   const select = new MenuUtils.Menu(message, selectOption).setAuthor('Date Customizations')
     .setDescription('\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
-    .addOption('Change Timezone', `Default is \`${config.feedSettings.timezone}\`.${guildRss.timezone ? ' Your current setting is `' + guildRss.timezone + '`.' : ''}`)
-    .addOption('Customize Format', `Default is \`${config.feedSettings.dateFormat}\`. Customize the formatting of the date.${guildRss.dateFormat ? ' Your current setting is `' + guildRss.dateFormat + '`.' : ''}`)
-    .addOption('Change Language', `Default is \`${config.feedSettings.dateLanguage}\`. Change the language of the date.${guildRss.dateLanguage ? ' Your current setting is `' + guildRss.dateLanguage + '`.' : ''}`)
+    .addOption('Change Timezone', `Default is \`${config.feeds.timezone}\`.${guildRss.timezone ? ' Your current setting is `' + guildRss.timezone + '`.' : ''}`)
+    .addOption('Customize Format', `Default is \`${config.feeds.dateFormat}\`. Customize the formatting of the date.${guildRss.dateFormat ? ' Your current setting is `' + guildRss.dateFormat + '`.' : ''}`)
+    .addOption('Change Language', `Default is \`${config.feeds.dateLanguage}\`. Change the language of the date.${guildRss.dateLanguage ? ' Your current setting is `' + guildRss.dateLanguage + '`.' : ''}`)
     .addOption('Reset', `Reset all of the above back to default.`)
 
   const set = new MenuUtils.Menu(message, setOption)
@@ -100,7 +100,7 @@ module.exports = (bot, message) => {
         guildRss.dateFormat = undefined
         guildRss.dateLanguage = undefined
         console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => All reset to default`)
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
         return await message.channel.send(`All date customizations have been reset back to default.`)
       }
 
@@ -109,16 +109,16 @@ module.exports = (bot, message) => {
         else if (num === 2) guildRss.dateFormat = undefined
         else guildRss.timezone = undefined
 
-        await message.channel.send(`${settingName} has been reset to the default: \`${config.feedSettings[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone']}\`.`)
+        await message.channel.send(`${settingName} has been reset to the default: \`${config.feeds[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone']}\`.`)
         console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} reset to default`)
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
       } else {
-        if (num === 3) guildRss.dateLanguage = setting.toLowerCase() === config.feedSettings.dateLanguage.toLowerCase() ? undefined : setting
-        else if (num === 2) guildRss.dateFormat = setting.toLowerCase() === config.feedSettings.dateFormat ? undefined : setting
-        else if (num === 1) guildRss.timezone = setting.toLowerCase() === config.feedSettings.timezone.toLowerCase() ? undefined : setting
+        if (num === 3) guildRss.dateLanguage = setting.toLowerCase() === config.feeds.dateLanguage.toLowerCase() ? undefined : setting
+        else if (num === 2) guildRss.dateFormat = setting.toLowerCase() === config.feeds.dateFormat ? undefined : setting
+        else if (num === 1) guildRss.timezone = setting.toLowerCase() === config.feeds.timezone.toLowerCase() ? undefined : setting
 
         console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} updated to '${setting}.'`)
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
         await message.channel.send(`${settingName} has been successfully updated to \`${setting}\`.`)
       }
     } catch (err) {

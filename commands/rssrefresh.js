@@ -3,7 +3,7 @@ const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const requestStream = require('../rss/request.js')
 const FeedSelector = require('./util/FeedSelector.js')
-const FAIL_LIMIT = config.feedSettings.failLimit
+const FAIL_LIMIT = config.feeds.failLimit
 
 function feedSelectorFn (m, data, callback) {
   callback(null, data)

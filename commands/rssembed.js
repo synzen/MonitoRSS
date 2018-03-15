@@ -1,4 +1,4 @@
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const config = require('../config.json')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
@@ -110,7 +110,7 @@ function selectProperty (m, data, callback) {
   for (var x = 0; x < choices.length; ++x) setMenus.push(new MenuUtils.Menu(m, setProperty))
 
   data.next = {
-    text: `You are now customizing the **${EMBED_PROPERTIES[choices[0]].name}**. Type your input now\n\nTo reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.botSettings.prefix}rsstest\`.`,
+    text: `You are now customizing the **${EMBED_PROPERTIES[choices[0]].name}**. Type your input now\n\nTo reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.bot.prefix}rsstest\`.`,
     menu: setMenus
   }
   callback(null, { ...data,
@@ -253,7 +253,7 @@ module.exports = (bot, message, command) => {
       try {
         if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
         const { guildRss, successText } = data
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
         await message.channel.send(successText)
       } catch (err) {
         log.command.warning(`rssembed fields`, message.guild, err)
@@ -275,7 +275,7 @@ module.exports = (bot, message, command) => {
         const resetting = await message.channel.send(`Resetting and disabling embed...`)
         delete source.embedMessage
         if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
         log.command.info(`Embed reset for ${source.link}`, message.guild)
         return await resetting.edit(`Embed has been disabled, and all properties have been removed for <${source.link}>.`)
       }
@@ -296,7 +296,7 @@ module.exports = (bot, message, command) => {
             delete source.embedMessage
             if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
           }
-          fileOps.updateFile(guildRss)
+          dbOps.guildRss.update(guildRss)
           log.command.info(`Property '${prop}' reset for ${source.link}`, message.guild)
           reset += `☑ **${propName}** has been reset\n`
           continue
@@ -307,7 +307,7 @@ module.exports = (bot, message, command) => {
         status += `☑ **${propName}** updated to \n\`\`\`\n${setting}\n\`\`\`\n`
       }
 
-      fileOps.updateFile(guildRss)
+      dbOps.guildRss.update(guildRss)
       await updating.edit(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format.`)
     } catch (err) {
       log.command.warning(`rssembed`, message.guild, err)

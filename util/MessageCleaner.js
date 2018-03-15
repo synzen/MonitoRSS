@@ -17,9 +17,9 @@ class MessageCleaner {
     this._allowed = false
     if (!guildBot) {
       message.guild.fetchMember(message.client.user).then(m => {
-        this._allowed = m.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.botSettings.deleteMenus === true
-      })
-    } else this._allowed = !guildBot.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.botSettings.deleteMenus === true
+        this._allowed = m.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true
+      }).catch(err => log.general.warning('Unable to fetch client as member to determine message deletion permissions', err))
+    } else this._allowed = !guildBot.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true
   }
 
     /**

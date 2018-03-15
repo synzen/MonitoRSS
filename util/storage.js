@@ -2,17 +2,18 @@
 *   Used to store data for various aperations across multiple files
 */
 const fs = require('fs')
+const { URL } = require('url')
 const dbSettings = require('../config.json').database
 const articlesExpire = dbSettings.clean === true && dbSettings.articlesExpire > 0 ? dbSettings.articlesExpire : -1
 const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 ? dbSettings.articlesExpire : -1
 const mongoose = require('mongoose')
 const currentGuilds = new Map()
-const linkList = []
 const linkTracker = {}
+const collectionIds = {}
 const allScheduleWords = []
 let limitOverrides = {}
-let webhookServers = [] // Server IDs
-let cookieServers = [] // Server IDs
+let webhookServers = []
+let cookieServers = []
 let blacklistUsers = []
 let blacklistGuilds = []
 let initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
@@ -20,19 +21,36 @@ let deletedFeeds = []
 let failedLinks = {}
 let scheduleManager
 
+function hash (str) {
+  // https://stackoverflow.com/questions/6122571/simple-non-secure-hash-function-for-javascript
+  let hash = 0
+  if (str.length === 0) return hash
+  for (var i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  return hash
+}
+
 try {
   failedLinks = JSON.parse(fs.readFileSync('./settings/failedLinks.json'))
 } catch (e) {
   failedLinks = {}
 }
 
-const articleSchema = {
+const feedSchema = {
   id: String,
   title: String,
   date: {
     type: Date,
     default: Date.now
   }
+}
+
+const linkTrackerSchema = {
+  link: String,
+  count: Number
 }
 
 const guildRssSchema = {
@@ -89,11 +107,10 @@ const blacklistSchema = {
   }
 }
 
-if (articlesExpire > 0) articleSchema.date.index = { expires: 60 * 60 * 24 * articlesExpire }
+if (articlesExpire > 0) feedSchema.date.index = { expires: 60 * 60 * 24 * articlesExpire }
 if (guildBackupsExpire > 0) guildRssBackupSchema.date.index = { expires: 60 * 60 * 24 * guildBackupsExpire }
 
 exports.initialized = initialized
-exports.linkList = linkList
 exports.currentGuilds = currentGuilds // To hold all guild profiles
 exports.deletedFeeds = deletedFeeds // Any deleted rssNames to check during sendToDiscord if it was deleted during a cycle
 exports.linkTracker = linkTracker // To track schedule assignment to links
@@ -108,16 +125,25 @@ exports.blacklistGuilds = blacklistGuilds
 exports.schemas = {
   guildRss: mongoose.Schema(guildRssSchema),
   guildRssBackup: mongoose.Schema(guildRssBackupSchema),
-  article: mongoose.Schema(articleSchema),
-  feed: mongoose.Schema(articleSchema),
+  linkTracker: mongoose.Schema(linkTrackerSchema),
+  feed: mongoose.Schema(feedSchema),
   vip: mongoose.Schema(vipSchema),
   blacklist: mongoose.Schema(blacklistSchema)
 }
+exports.collectionId = link => {
+  if (collectionIds[link]) return collectionIds[link]
+  let res = (new URL(link)).hostname.replace(/\.|\$/g, '') + hash(link).toString()
+  const len = res.length + mongoose.connection.name.length + 1
+  if (len > 115) res = res.slice(0, 115)
+  collectionIds[link] = res
+  return res
+}
+
 exports.models = {
   GuildRss: () => mongoose.model('Guild', exports.schemas.guildRss),
   GuildRssBackup: () => mongoose.model('Guild_Backup', exports.schemas.guildRssBackup),
-  Article: collection => mongoose.model(collection, exports.schemas.article),
-  Feed: link => mongoose.model(link.replace(/\.|^\$/g, ''), exports.schemas.feed),
+  LinkTracker: () => mongoose.model('Link_Tracker', exports.schemas.linkTracker),
+  Feed: link => mongoose.model(exports.collectionId(link), exports.schemas.feed),
   VIP: () => mongoose.model('VIP', exports.schemas.vip),
   Blacklist: () => mongoose.model('Blacklist', exports.schemas.blacklist)
 }

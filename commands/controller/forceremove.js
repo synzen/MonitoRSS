@@ -1,13 +1,13 @@
 const config = require('../../config.json')
 const storage = require('../../util/storage.js')
 const removeRss = require('../../util/removeFeed.js')
-const fileOps = require('../../util/fileOps.js')
+const dbOps = require('../../util/dbOps.js')
 const channelTracker = require('../../util/channelTracker.js')
 
 exports.normal = function (bot, message) {
   const currentGuilds = storage.currentGuilds
   let content = message.content.split(' ')
-  if (content.length < 2) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}forceremove <keywords> <optional reason>\`.`)
+  if (content.length < 2) return message.channel.send(`The correct syntax is \`${config.bot.prefix}forceremove <keywords> <optional reason>\`.`)
   content.shift()
   let linkPart = content.shift()
   let reason = content.length > 0 ? content.join(' ').trim() : undefined
@@ -75,7 +75,7 @@ exports.normal = function (bot, message) {
           })
           delete rssList[names[l]]
         }
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
       }
 
       if (removedLinks.length === 0) message.channel.send('Unable to remove any links.').catch(err => console.log(`Promise Warning: forceremove 2. `, err.message || err))
@@ -99,7 +99,7 @@ exports.normal = function (bot, message) {
 
 exports.sharded = function (bot, message, Manager) {
   let content = message.content.split(' ')
-  if (content.length < 2) return message.channel.send(`The correct syntax is \`${config.botSettings.prefix}forceremove <keywords> <optional reason>\`.`)
+  if (content.length < 2) return message.channel.send(`The correct syntax is \`${config.bot.prefix}forceremove <keywords> <optional reason>\`.`)
   content.shift()
   let linkPart = content.shift()
   let reason = content.length > 0 ? content.join(' ').trim() : undefined
@@ -168,7 +168,7 @@ exports.sharded = function (bot, message, Manager) {
           const storage = require(appDir + '/util/storage.js');
           const currentGuilds = storage.currentGuilds;
           const removeRss = require(appDir + '/util/removeFeed.js');
-          const fileOps = require(appDir + '/util/fileOps.js');
+          const dbOps = require(appDir + '/util/dbOps.js');
 
           const links = JSON.parse('${JSON.stringify(links)}');
           const affectedGuilds = JSON.parse('${JSON.stringify(affectedGuilds)}');
@@ -197,7 +197,7 @@ exports.sharded = function (bot, message, Manager) {
               });
               delete rssList[names[l]];
             }
-            fileOps.updateFile(guildRss);
+            dbOps.guildRss.update(guildRss);
           }
 
           removedLinks;

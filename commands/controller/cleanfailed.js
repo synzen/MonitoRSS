@@ -2,7 +2,7 @@ const fs = require('fs')
 const storage = require('../../util/storage.js')
 const removeRss = require('../../util/removeFeed.js')
 const channelTracker = require('../../util/channelTracker.js')
-const fileOps = require('../../util/fileOps.js')
+const dbOps = require('../../util/dbOps.js')
 
 exports.normal = function (bot, message) {
   const currentGuilds = storage.currentGuilds
@@ -93,7 +93,7 @@ exports.normal = function (bot, message) {
           delete failedLinks[link]
           delete rssList[rssName]
         }
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
       }
 
       if (removedLinks.length === 0) return message.channel.send('Unable to remove any links.').catch(err => console.log(`Promise Warning: forceremove 2. `, err.message || err))
@@ -214,7 +214,7 @@ exports.sharded = function (bot, message, Manager) {
           const currentGuilds = storage.currentGuilds;
           const failedLinks = storage.failedLinks;
           const removeRss = require(appDir + '/util/removeFeed.js');
-          const fileOps = require(appDir + '/util/fileOps.js');
+          const dbOps = require(appDir + '/util/dbOps.js');
           const removedLinks = [];
           const affectedGuilds = JSON.parse('${JSON.stringify(affectedGuilds)}');
           const links = JSON.parse('${JSON.stringify(links)}')
@@ -244,7 +244,7 @@ exports.sharded = function (bot, message, Manager) {
               delete failedLinks[link];
               delete rssList[rssName];
             }
-            fileOps.updateFile(guildRss);
+            dbOps.guildRss.update(guildRss);
           }
 
           removedLinks;

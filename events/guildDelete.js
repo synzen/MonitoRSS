@@ -1,6 +1,6 @@
 const config = require('../config.json')
 const dbCmds = require('../rss/db/commands.js')
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const log = require('../util/logger.js')
@@ -16,20 +16,14 @@ module.exports = (bot, guild) => {
   if (!guildRss) return
   const rssList = guildRss.sources
 
-  for (var rssName in rssList) {
-    dbCmds.dropCollection(rssName, err => {
-      if (err) log.guild.warning(`Unable to drop ${rssName} for guildDelete`, guild, err)
-    })
-  }
-
-  fileOps.deleteGuild(guild.id, null, err => {
+  dbOps.guildRss.remove(guild.id, null, err => {
     if (err) log.guild.warning(`Unable to delete guild from database`, guild, err)
   })
 
-  if (!config.logging.discordChannelLog) return
+  if (!config.log.discordChannel) return
 
-  const logChannelId = config.logging.discordChannelLog
-  const logChannel = bot.channels.get(config.logging.discordChannelLog)
+  const logChannelId = config.log.discordChannel
+  const logChannel = bot.channels.get(config.log.discordChannel)
   if (typeof logChannelId !== 'string' || !logChannel) {
     if (bot.shard) {
       bot.shard.broadcastEval(`

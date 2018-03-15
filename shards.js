@@ -3,7 +3,7 @@ const Discord = require('discord.js')
 const config = require('./config.json')
 const storage = require('./util/storage.js')
 const connectDb = require('./rss/db/connect.js')
-const fileOps = require('./util/fileOps.js')
+const dbOps = require('./util/dbOps.js')
 const log = require('./util/logger.js')
 const dbRestore = require('./commands/controller/dbrestore.js')
 const currentGuilds = storage.currentGuilds
@@ -18,7 +18,7 @@ if (!config.advanced || typeof config.advanced.shards !== 'number' || config.adv
 }
 
 const activeShardIds = []
-const refreshTimes = [config.feedSettings.refreshTimeMinutes ? config.feedSettings.refreshTimeMinutes : 15] // Store the refresh times for the setIntervals of the cycles for each shard
+const refreshTimes = [config.feeds.refreshTimeMinutes ? config.feeds.refreshTimeMinutes : 15] // Store the refresh times for the setIntervals of the cycles for each shard
 const scheduleIntervals = [] // Array of intervals for each different refresh time
 const scheduleTracker = {} // Key is refresh time, value is index for activeShardIds
 let initShardIndex = 0
@@ -71,7 +71,7 @@ Manager.on('message', (shard, message) => {
         }
         for (var guildId in missingGuilds) {
           if (missingGuilds[guildId] === Manager.totalShards) {
-            fileOps.deleteGuild(guildId, null, err => {
+            dbOps.guildRss.remove(guildId, null, err => {
               if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild`, err)
               log.init.warning(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
             })
@@ -105,7 +105,6 @@ Manager.on('message', (shard, message) => {
       }
       break
 
-    case 'updateLinkList':
     case 'mergeLinkList':
     case 'updateBlacklists':
     case 'updateVIPs':

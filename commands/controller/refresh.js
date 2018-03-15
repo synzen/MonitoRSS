@@ -10,7 +10,7 @@ exports.normal = function (bot, message) {
   if (content.length !== 2) return
   const link = content[1]
 
-  if (config.feedSettings.failLimit === 0) return message.channel.send(`No fail limit has been set.`)
+  if (config.feeds.failLimit === 0) return message.channel.send(`No fail limit has been set.`)
   if (typeof failedLinks[link] !== 'string') return message.channel.send('That is not a failed link.')
 
   requestStream(link, null, null, function (err) {
@@ -36,7 +36,7 @@ exports.sharded = function (bot, message, Manager) {
   const content = message.content.split(' ')
   if (content.length !== 2) return
   const link = content[1]
-  if (config.feedSettings.failLimit === 0) return message.channel.send(`No fail limit has been set.`)
+  if (config.feeds.failLimit === 0) return message.channel.send(`No fail limit has been set.`)
   if (typeof failedLinks[link] !== 'string') return message.channel.send('That is not a failed link.')
 
   requestStream(link, null, null, function (err) {

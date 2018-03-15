@@ -1,6 +1,6 @@
 // Check for guild names/role names changes
 
-const fileOps = require('./fileOps.js')
+const dbOps = require('./dbOps.js')
 const currentGuilds = require('./storage.js').currentGuilds
 const log = require('./logger.js')
 
@@ -44,7 +44,7 @@ exports.roles = (bot, guildId, rssName) => {
     }
   }
 
-  if (changedInfo) return fileOps.updateFile(guildRss)
+  if (changedInfo) return dbOps.guildRss.update(guildRss)
 }
 
 exports.names = (bot, guildId) => {
@@ -53,6 +53,6 @@ exports.names = (bot, guildId) => {
 
   if (guildRss.name !== guild.name) {
     guildRss.name = guild.name
-    fileOps.updateFile(guildRss)
+    dbOps.guildRss.update(guildRss)
   }
 }

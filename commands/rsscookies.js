@@ -1,7 +1,7 @@
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 const cookieServers = storage.cookieServers
-const fileOps = require('../util/fileOps.js')
+const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
 const log = require('../util/logger.js')
@@ -50,7 +50,7 @@ module.exports = (bot, message, command) => {
 
       if (setting === 'reset') {
         delete source.advanced.cookies
-        fileOps.updateFile(guildRss)
+        dbOps.guildRss.update(guildRss)
         log.command.info(`Cookies have been reset for ${source.link}`, message.guild)
         return await message.channel.send(`Successfully removed all cookies for feed ${source.link}`)
       }
@@ -64,7 +64,7 @@ module.exports = (bot, message, command) => {
         newCookies += `\n${pair[0].trim()} = ${pair[1].trim()}`
       })
 
-      fileOps.updateFile(guildRss)
+      dbOps.guildRss.update(guildRss)
 
       log.command.info(`Cookies for ${source.link} have been set to ${newCookies.split('\n').join(',')}`, message.guild)
       await message.channel.send(`Your new cookie(s) for <${source.link}> is now\n\`\`\`\n${newCookies}\`\`\``)

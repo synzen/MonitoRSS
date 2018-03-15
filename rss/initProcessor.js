@@ -1,5 +1,5 @@
 process.on('uncaughtException', function (err) {
-  console.info(err)
+  console.err(err)
   process.send({status: 'fatal', err: err})
   process.exit()
 })
@@ -7,7 +7,7 @@ process.on('uncaughtException', function (err) {
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const connectDb = require('./db/connect.js')
-const initAllSources = require('./logic/initialization.js')
+const initAllSources = require('./logic/initialization_optimal.js')
 const log = require('../util/logger.js')
 let connected = false
 
