@@ -43,6 +43,17 @@ exports.guildRss = {
       else log.general.info(`Removed GuildRss document ${guildId}`)
     })
   },
+  removeFeed: (guildRss, rssName, callback) => {
+    const link = guildRss.sources[rssName].link
+    exports.linkList.decrement(link, err => {
+      if (err) log.general.warning('Unable to decrement link for guildRss.removeFeed dbOps', err)
+      delete guildRss.sources[rssName]
+      exports.guildRss.update(guildRss)
+      exports.guildRss.empty(guildRss)
+      storage.deletedFeeds.push(rssName)
+      callback(null, link)
+    })
+  },
   restore: (guildId, shardingManager, callback) => {
     models.GuildRssBackup().find({ id: guildId }, (err, docs) => {
       if (err) return callback(err)

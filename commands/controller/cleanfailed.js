@@ -1,6 +1,5 @@
 const fs = require('fs')
 const storage = require('../../util/storage.js')
-const removeRss = require('../../util/removeFeed.js')
 const channelTracker = require('../../util/channelTracker.js')
 const dbOps = require('../../util/dbOps.js')
 
@@ -87,7 +86,7 @@ exports.normal = function (bot, message) {
           const link = rssList[rssName].link
           const channel = bot.channels.get(rssList[rssName].channel)
           if (reason && channel) channel.send(`**ATTENTION:** Feeds with link <${link}> have been forcibly removed from all servers. Reason: ${reason}`).catch(err => console.log(`Could not send force removal notification to server ${channel.guild.id}. `, err.message || err))
-          removeRss(channel.guild.id, rssName, err => {
+          dbOps.guildRss.removeFeed(guildRss, rssName, err => {
             if (err) console.log(`Bot Controller: cleanfailed error`, err.message || err)
           })
           delete failedLinks[link]
@@ -213,7 +212,6 @@ exports.sharded = function (bot, message, Manager) {
           const storage = require(appDir + '/util/storage.js');
           const currentGuilds = storage.currentGuilds;
           const failedLinks = storage.failedLinks;
-          const removeRss = require(appDir + '/util/removeFeed.js');
           const dbOps = require(appDir + '/util/dbOps.js');
           const removedLinks = [];
           const affectedGuilds = JSON.parse('${JSON.stringify(affectedGuilds)}');
@@ -238,7 +236,7 @@ exports.sharded = function (bot, message, Manager) {
               const link = rssList[rssName].link;
               const channel = this.channels.get(rssList[rssName].channel);
               if (${reason ? '"' + reason + '"' : undefined} && channel) channel.send('**ATTENTION:** Feeds with link <' + link + '> have been forcibly removed from all servers. Reason: ${reason ? '"' + reason + '"' : undefined}').catch(err => console.log('Could not send force removal notification to server ' + channel.guild.id + '. ', err.message || err))
-              removeRss(channel.guild.id, rssName, err => {
+              dbOps.guildRss.removeFeed(guildRss, rssName, err => {
                 if (err) console.log('Bot Controller: cleanfailed error', err.message || err)
               });
               delete failedLinks[link];

@@ -270,10 +270,6 @@ module.exports = (bot, callback) => {
         }
       }
       processor.send({link: link, rssList: rssList, uniqueSettings: uniqueSettings})
-      setTimeout(() => {
-        const localLink = link
-        if (!batchTracker[localLink]) console.log('FAILED TO LOAD LINK: ' + localLink)
-      }, 60000)
     })
 
     processor.on('message', linkCompletion => {

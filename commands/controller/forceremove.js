@@ -1,6 +1,5 @@
 const config = require('../../config.json')
 const storage = require('../../util/storage.js')
-const removeRss = require('../../util/removeFeed.js')
 const dbOps = require('../../util/dbOps.js')
 const channelTracker = require('../../util/channelTracker.js')
 
@@ -70,7 +69,7 @@ exports.normal = function (bot, message) {
         for (var l in names) {
           const channel = bot.channels.get(rssList[names[l]].channel)
           if (reason && channel) channel.send(`**ATTENTION:** Feeds with link <${rssList[names[l]].link}> have been forcibly removed from all servers. Reason: ${reason}`).catch(err => console.log(`Could not send force removal notification to server ${channel.guild.id}. `, err.message || err))
-          removeRss(channel.guild.id, names[l], err => {
+          dbOps.guildRss.removeFeed(guildRss, names[l], err => {
             if (err) console.log(`Bot Controller: forceremove error`, err.message || err)
           })
           delete rssList[names[l]]
@@ -167,7 +166,6 @@ exports.sharded = function (bot, message, Manager) {
           const appDir = require('path').dirname(require.main.filename);
           const storage = require(appDir + '/util/storage.js');
           const currentGuilds = storage.currentGuilds;
-          const removeRss = require(appDir + '/util/removeFeed.js');
           const dbOps = require(appDir + '/util/dbOps.js');
 
           const links = JSON.parse('${JSON.stringify(links)}');
@@ -192,7 +190,7 @@ exports.sharded = function (bot, message, Manager) {
             for (var l in names) {
               const channel = this.channels.get(rssList[names[l]].channel);
               if (${reason ? '"' + reason + '"' : undefined} && channel) channel.send('**ATTENTION:** Feeds with link <' + rssList[names[l]].link + '> have been forcibly removed from all servers. Reason: ${'"' + reason + '"'}').catch(err => console.log('Could not send force removal notification to server ' + channel.guild.id + '. ', err.message || err))
-              removeRss(channel.guild.id, names[l], err => {
+              dbOps.guildRss.removeFeed(guildRss, names[l], err => {
                 if (err) console.log('Bot Controller: for forceremove error', err.message || err)
               });
               delete rssList[names[l]];

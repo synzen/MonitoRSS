@@ -45,5 +45,4 @@ db.once('open', () => {
     console.log(`Database drop successful`)
     db.close()
   })
-
 })
