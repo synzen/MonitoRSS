@@ -6,21 +6,24 @@ const log = require('../util/logger.js')
 const EMBED_PROPERTIES = {
   color: { name: 'Color', description: 'Sidebar color\nMUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html' },
   authorTitle: { name: 'Author Title', description: 'Title at the top\nAccepts placeholders' },
+  authorURL: { name: 'Author URL', description: 'Clicking on the Author Title will lead to this URL\nMUST be a link' },
   authorAvatarURL: { name: 'Author Avatar URL', description: 'Avatar icon to the left of Author Title\nMUST be a link to an image. If Author Title is unspecified, the Author Avatar will be hidden' },
   title: { name: 'Title', description: 'Title under Author Title\nAccepts placeholders' },
-  imageURL: { name: 'Image URL', description: 'Image on the bottom\nMUST be a link to an image, OR an {imageX} placeholder' },
   thumbnailURL: { name: 'Thumbnail Image URL', description: 'Image on the right side\nMUST be a link to an image, OR an {imageX} placeholder' },
+  url: { name: 'URL', description: 'Clicking on the Title/Thumbnail will lead to this URL\nMUST be a link. Set to the article\'s url by default' },
+  imageURL: { name: 'Image URL', description: 'Image on the bottom\nMUST be a link to an image, OR an {imageX} placeholder' },
   message: { name: 'Message', description: 'Main message\nAccepts placeholders' },
   footerText: { name: 'Footer Text', description: 'Bottom-most text\nAccepts placeholders' },
-  footerIconURL: { name: 'Footer Icon URL', description: 'Icon to the left of Footer Text\nMUST be a link to an image. If Footer Text is unspecified, the Footer Icon will be hidden\nAccepts placeholders' },
-  url: { name: 'URL', description: 'Clicking on the Title/Thumbnail will lead to this URL\nMUST be a link. Set to the article\'s url by default' }
+  footerIconURL: { name: 'Footer Icon URL', description: 'Icon to the left of Footer Text\nMUST be a link to an image. If Footer Text is unspecified, the Footer Icon will be hidden\nAccepts placeholders' }
 }
 
 let EMBED_PROPERTIES_LIST = '```Markdown\n'
 for (var pn in EMBED_PROPERTIES) {
   const cur = EMBED_PROPERTIES[pn]
-  EMBED_PROPERTIES_LIST += `[${cur.name}]: ${cur.description}\n\n${pn === 'url' ? '```' : ''}`
+  EMBED_PROPERTIES_LIST += `[${cur.name}]: ${cur.description}\n\n${pn === 'footerIconURL' ? '```' : ''}`
 }
+
+console.log(EMBED_PROPERTIES_LIST)
 
 function validURL (input) { // A simple check is enough
   return input.startsWith('http://') || input.startsWith('https://') || input === '{link}'
@@ -81,7 +84,7 @@ function feedSelectorFn (m, data, callback) {
 
   callback(null, { ...data,
     next: {
-      text: `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset, or multiple properties by separation with commas.** Type \`reset\` to disable and remove all properties, or type \`exit\` to cancel.`,
+      text: `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset, or multiple properties by separation with commas.** Type \`reset\` to remove all properties, or type \`exit\` to cancel.`,
       embed: null }
   })
 }

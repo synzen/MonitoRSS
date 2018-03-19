@@ -48,7 +48,7 @@ module.exports = (bot, message, command) => {
         source.message = setting
         dbOps.guildRss.update(guildRss)
         log.command.info(`New message recorded for ${source.link}`, message.guild)
-        await m.edit(`Message recorded:\n \`\`\`Markdown\n${setting}\`\`\` \nfor feed <${source.link}>. You may use \`${config.bot.prefix}rsstest\` to see your new message format.`)
+        await m.edit(`Message recorded:\n \`\`\`Markdown\n${setting}\`\`\` \nfor feed <${source.link}>. You may use \`${config.bot.prefix}rsstest\` to see your new message format.${setting.search(/{subscriptions}/) === -1 ? ` Note that because there is no \`{subscriptions}\`, whatever role subscriptions you add through ${config.bot.prefix}rssroles will *not* appear in this feed's article messages.` : ''}`)
       }
     } catch (err) {
       log.command.warning(`rssmessage`, message.guild, err)

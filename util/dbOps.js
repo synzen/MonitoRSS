@@ -49,9 +49,9 @@ exports.guildRss = {
     }
     delete guildRss.sources[rssName]
     exports.guildRss.update(guildRss)
-    exports.guildRss.empty(guildRss)
     storage.deletedFeeds.push(rssName)
     exports.linkList.decrement(link, err => {
+      exports.guildRss.empty(guildRss)
       if (err) log.general.warning('Unable to decrement link for guildRss.removeFeed dbOps', err)
       return callback ? callback(null, link) : !skipProcessSend ? log.general.info(`Feed ${link} has been removed from guild ${guildRss.id} (${guildRss.name})`) : null
     })
