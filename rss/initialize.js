@@ -8,7 +8,7 @@ const FeedModel = storage.models.Feed
 const log = require('../util/logger.js')
 
 function resolveLink (link, callback) {
-  dbOps.linkList.get((err, linkCounts) => {
+  dbOps.linkList.get((err, linkList) => {
     if (err) {
       log.general.warning(`Unable to get linkList for link resolution for ${link}`, err)
       return callback(err)
@@ -17,12 +17,12 @@ function resolveLink (link, callback) {
 
     if (link.startsWith('http:')) {
       const temp = link.replace('http:', 'https:')
-      if (linkCounts[temp]) newLink = temp
+      if (linkList.get(temp)) newLink = temp
     }
 
     if (link.endsWith('/')) {
       const temp = link.slice(0, -1)
-      if (linkCounts[temp]) newLink = temp
+      if (linkList.get(temp)) newLink = temp
     }
 
     if (newLink) log.general.info(`New link ${link} has been resolved to ${newLink}`)
@@ -46,8 +46,7 @@ exports.addToDb = (articleList, link, callback, customTitle) => {
     if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
     return article.guid
   }
-
-  const Feed = FeedModel(link)
+  const Feed = FeedModel(link, storage.bot.shard ? storage.bot.shard.id : null)
 
   dbCmds.findAll(Feed, (err, docs) => {
     if (err) {
@@ -124,7 +123,7 @@ exports.addNewFeed = (settings, callback, customTitle) => {
     exports.addToDb(articleList, link, addToConfig)
 
     function addToConfig () {
-      const rssName = `${storage.collectionId(link)}_${Math.floor((Math.random() * 99999) + 1)}`
+      const rssName = `${storage.collectionId(link, storage.bot.shard ? storage.bot.shard.id : null)}_${Math.floor((Math.random() * 99999) + 1)}`
       let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
 
       if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`

@@ -8,7 +8,7 @@ const COLORS = {
 const CONSTRUCTORS = [Discord.Guild, Discord.TextChannel, Discord.Role, Discord.User]
 const LOG_DATES = require('../config.json').log.dates === true
 const PREFIXES = ['G', 'C', 'R', 'U']
-const TYPES = ['Command', 'Guild', 'RSS', 'INIT', 'General', 'Debug', 'Controller']
+const TYPES = ['Command', 'Guild', 'Cycle', 'INIT', 'General', 'Debug', 'Controller']
 const LEVELS = ['Error', 'Warning', 'Info']
 const MAXLEN = TYPES.reduce((a, b) => a.length > b.length ? a : b).length + LEVELS.reduce((a, b) => a.length > b.length ? a : b).length + 1 // Calculate uniform spacing
 
@@ -18,11 +18,10 @@ function formatConsoleDate (date) {
   const minutes = date.getMinutes()
   const seconds = date.getSeconds()
   const milliseconds = date.getMilliseconds()
-
   return `[${((hour < 10) ? '0' + hour : hour)}:${((minutes < 10) ? '0' + minutes : minutes)}:${((seconds < 10) ? '0' + seconds : seconds)}.${('00' + milliseconds).slice(-3)}] `
 }
 
-class Logger {
+class _Logger {
   constructor (type) {
     this.type = type
     LEVELS.forEach(level => {
@@ -49,19 +48,16 @@ class Logger {
 
   _log (level) {
     let intro = `${this.type} ${level}`
-    for (let i = intro.length; i < MAXLEN; ++i) {
-      intro += ' '
-    }
+    for (let i = intro.length; i < MAXLEN; ++i) intro += ' '
     const color = COLORS[level] ? COLORS[level] : ''
     const reset = COLORS.reset ? COLORS.reset : ''
-    const func = level === 'Error' ? console.error : 'Info' ? console.info : console.log
     return (contents, ...details) => {
       const extra = this._parseDetails(details)
-      func(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
+      console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
     }
   }
 }
 
 TYPES.forEach(type => {
-  exports[type.toLowerCase()] = new Logger(type)
+  exports[type.toLowerCase()] = new _Logger(type)
 })

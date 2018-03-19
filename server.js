@@ -5,7 +5,7 @@ const config = require('./config.json')
 const ScheduleManager = require('./util/ScheduleManager.js')
 const storage = require('./util/storage.js')
 const log = require('./util/logger.js')
-const currentGuilds = storage.currentGuilds
+const dbOps = require('./util/dbOps.js')
 const configRes = require('./util/configCheck.js').check(config)
 const connectDb = require('./rss/db/connect.js')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
@@ -29,6 +29,7 @@ const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
 
 function login (firstStartup) {
   if (!firstStartup) bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
+  storage.bot = bot
 
   bot.login(config.bot.token)
   .catch(err => {
@@ -56,10 +57,8 @@ function login (firstStartup) {
 
 function finishInit (guildsInfo) {
   storage.initialized = 1
-  if (bot.shard) {
-    process.send({ type: 'initComplete', guilds: guildsInfo })
-    process.send({ type: 'mergeLinkList', linkList: storage.linkList })
-  } else storage.initialized = 2
+  if (bot.shard) process.send({ type: 'initComplete', guilds: guildsInfo })
+  else storage.initialized = 2
   scheduleManager = new ScheduleManager(bot)
   listeners.createManagers(bot)
 }
@@ -71,40 +70,35 @@ else {
       case 'startInit':
         if (bot.shard.id === message.shardId) login(true)
         break
-
       case 'finishedInit':
         storage.initialized = 2
+        dbOps.vips.refresh()
+        dbOps.blacklists.refresh()
         break
-
       case 'runSchedule':
         if (bot.shard.id === message.shardId) scheduleManager.run(message.refreshTime)
         break
-
-      case 'updateGuild':
-        if (!bot.guilds.has(message.guildRss.id)) return
-        currentGuilds.set(message.guildRss.id, message.guildRss)
+      case 'guildRss.update':
+        if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.update(message.guildRss, null, true)
         break
-
-      case 'deleteGuild':
-        if (!bot.guilds.has(message.guildId)) return
-        currentGuilds.delete(message.guildId)
+      case 'guildRss.remove':
+        if (bot.guilds.has(message.guildId)) dbOps.guildRss.remove(message.guildId, null, true)
         break
-
-      case 'updateFailedLinks':
-        storage.failedLinks = message.failedLinks
+      case 'guildRss.removeFeed':
+        if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.removeFeed(message.guildRss, message.rssName, null, true)
         break
-
-      case 'updateBlacklists':
-        storage.blacklistGuilds = message.blacklistGuilds
-        storage.blacklistUsers = message.blacklistUsers
+      case 'failedLinks.uniformize':
+        if (storage.initialized) dbOps.failedLinks.uniformize(message.failedLinks, null, true)
         break
-
-      case 'updateVIPs':
-        storage.webhookServers = message.webhookServers
-        storage.cookieServers = message.cookieServers
-        storage.limitOverrides = message.limitOverrides
+      case 'failedLinks._sendAlert':
+        dbOps.failedLinks._sendAlert(message.link, message.message, true)
         break
-
+      case 'blacklists.uniformize':
+        if (storage.initialized) dbOps.blacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, null, true)
+        break
+      case 'vips.uniformize':
+        if (storage.initialized) dbOps.vips.uniformize(message.limitOverrides, message.cookieServers, message.webhookServers, null, true)
+        break
       case 'dbRestoreSend':
         const channel = bot.channels.get(message.channelID)
         if (!channel) return

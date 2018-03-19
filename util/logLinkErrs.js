@@ -10,5 +10,5 @@ module.exports = err => { // "linkOnly" refers to whether it will skip ALL feeds
   if (linkErrs === false || linkErrs !== true) return
   const failCount = failedLinks[err.link] ? failedLinks[err.link] + 1 : null
 
-  log.rss.warning(`Skipping all feeds with link ${err.link}. ${failLimit && failedLinks[err.link] ? ' (Consecutive fails: ' + failCount + ')' : ''}`, err)
+  log.cycle.warning(`Skipping all feeds with link ${err.link}. ${failLimit && failedLinks[err.link] ? ' (Consecutive fails: ' + failCount + ')' : ''}`, err)
 }

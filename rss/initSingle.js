@@ -1,8 +1,9 @@
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
-const initAllSources = require('./logic/initialization_optimal.js')
+const initAllSources = require('./logic/initialization.js')
 
-module.exports = (link, rssList, uniqueSettings, callback) => {
+module.exports = (data, callback) => {
+  const { link, rssList, uniqueSettings } = data
   const feedparser = new FeedParser()
   const articleList = []
 
@@ -26,7 +27,7 @@ module.exports = (link, rssList, uniqueSettings, callback) => {
   feedparser.on('end', () => {
     if (articleList.length === 0) return callback(null, { status: 'success', link: link })
 
-    initAllSources(rssList, articleList, link, (err, results) => {
+    initAllSources({ articleList: articleList, ...data }, (err, results) => {
       if (err) throw err
       if (results) callback(null, results)
     })

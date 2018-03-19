@@ -4,6 +4,7 @@ const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('./util/MenuUtils.js')
+const log = require('../util/logger.js')
 
 // To avoid stack call exceeded
 function checkObjType (item, results) {
@@ -75,11 +76,11 @@ function setOption (m, data, callback) {
 
 module.exports = (bot, message) => {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => console.log(`Commands Warning: rssdate 1:`, err))
+  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
 
   let results = []
   findDatePlaceholders(guildRss.sources, results)
-  if (results.length === 0) return message.channel.send('You cannot customize the date placeholder if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => console.log(`Commands Warning: rssdate 2:`, err))
+  if (results.length === 0) return message.channel.send('You cannot customize the date placeholder if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => log.command.warning(`rssdate 2`, message.guild, err))
 
   const select = new MenuUtils.Menu(message, selectOption).setAuthor('Date Customizations')
     .setDescription('\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
@@ -99,7 +100,7 @@ module.exports = (bot, message) => {
         guildRss.timezone = undefined
         guildRss.dateFormat = undefined
         guildRss.dateLanguage = undefined
-        console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => All reset to default`)
+        log.command.info(`Date settings reset to default`, message.guild)
         dbOps.guildRss.update(guildRss)
         return await message.channel.send(`All date customizations have been reset back to default.`)
       }
@@ -110,19 +111,19 @@ module.exports = (bot, message) => {
         else guildRss.timezone = undefined
 
         await message.channel.send(`${settingName} has been reset to the default: \`${config.feeds[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone']}\`.`)
-        console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} reset to default`)
+        log.command.info(`Date setting ${settingName} reset to default`, message.guild)
         dbOps.guildRss.update(guildRss)
       } else {
         if (num === 3) guildRss.dateLanguage = setting.toLowerCase() === config.feeds.dateLanguage.toLowerCase() ? undefined : setting
         else if (num === 2) guildRss.dateFormat = setting.toLowerCase() === config.feeds.dateFormat ? undefined : setting
         else if (num === 1) guildRss.timezone = setting.toLowerCase() === config.feeds.timezone.toLowerCase() ? undefined : setting
 
-        console.log(`RSS Date: (${message.guild.id}, ${message.guild.name}) => ${settingName} updated to '${setting}.'`)
+        log.command.info(`Date setting ${settingName} updated to '${setting}'`, message.guild)
         dbOps.guildRss.update(guildRss)
         await message.channel.send(`${settingName} has been successfully updated to \`${setting}\`.`)
       }
     } catch (err) {
-      console.log(`Commands Warning: (${message.guild.id}, ${message.guild.name}) => rssdate:`, err.message || err)
+      log.command.warning(`rssdate`, message.guild, err)
     }
   })
 }

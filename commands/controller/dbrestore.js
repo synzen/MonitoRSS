@@ -4,47 +4,51 @@ const mongoose = require('mongoose')
 const exec = require('child_process').exec
 const DATABASE_NAME = require('mongoose').connection.name
 const scheduleManager = require('../../util/storage.js').scheduleManager
+const log = require('../../util/logger.js')
 
 function restore (fileName, databaseName, callback) {
   exec(`mongorestore --gzip --archive=${fileName} --nsInclude ${databaseName}.guilds`, callback)
 }
 
-exports.normal = (bot, message) => {
-  if (scheduleManager.cyclesInProgress()) return message.channel.send(`Unable to start restore while a retrieval cycle is in progress. Try again later.`).catch(err => console.log(`Bot Controller: Unable to send cycles in progress message for dbrestore:`, err.message || err))
-  const archive = message.attachments.first()
-  if (!archive) return message.channel.send('No archive found as an attachment.').catch(err => console.log(`Bot Controller: Unable to send no archive found message for dbrestore:`, err.message || err))
-
-  const fileName = archive.filename
-  if (!fileName.endsWith('.archive')) return message.channel.send('That is not a valid archive to restore.').catch(err => console.log(`Bot Controller: Unable to send invalid archive message for dbrestore:`, err.message || err))
-  console.log(`Bot Controller: Database restore has been started by ${message.author.username}`)
-  message.channel.send('Restoring...')
-    .then(m => {
-      scheduleManager.stopSchedules()
-      exports.restoreUtil(m, fileName, archive.url)
-        .then(() => process.exit())
-        .catch(err => {
-          throw err
-        })
-    }).catch(err => console.log(`Bot Controller: Unable to send restoring message for dbrestore:`, err.message || err))
-}
-
-exports.sharded = (bot, message) => {
-  bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').scheduleManager.cyclesInProgress() ? true : false`).then(results => {
-    for (var i = 0; i < results.length; ++i) {
-      if (results[i]) return message.channel.send(`Unable to start restore while a retrieval cycle is in progress. Try again later.`).catch(err => console.log(`Bot Controller: Unable to send cycles in progress message for dbrestore:`, err.message || err))
-    }
-
+exports.normal = async (bot, message) => {
+  try {
+    if (scheduleManager.cyclesInProgress()) return await message.channel.send(`Unable to start restore while a retrieval cycle is in progress. Try again later.`)
     const archive = message.attachments.first()
-    if (!archive) return message.channel.send('No archive found as an attachment.').catch(err => console.log(`Bot Controller: Unable to send no archive found message for dbrestore:`, err.message || err))
+    if (!archive) return await message.channel.send('No archive found as an attachment.')
 
     const fileName = archive.filename
     if (!fileName.endsWith('.archive')) return message.channel.send('That is not a valid archive to restore.').catch(err => console.log(`Bot Controller: Unable to send invalid archive message for dbrestore:`, err.message || err))
     console.log(`Bot Controller: Database restore has been started by ${message.author.username}`)
-    message.channel.send('Restoring...')
-        .then(m => {
-          process.send({type: 'dbRestore', fileName: fileName, url: archive.url, channelID: message.channel.id, messageID: m.id, databaseName: DATABASE_NAME})
-        }).catch(err => console.log(`Bot Controller: Unable to send restoring message for dbrestore:`, err.message || err))
-  })
+    const m = await message.channel.send('Restoring...')
+    scheduleManager.stopSchedules()
+    exports.restoreUtil(m, fileName, archive.url)
+    .then(() => process.exit())
+    .catch(err => {
+      throw err
+    })
+  } catch (err) {
+    log.controller.warning('dbrestore', err)
+  }
+}
+
+exports.sharded = async (bot, message) => {
+  try {
+    const results = await bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').scheduleManager.cyclesInProgress() ? true : false`)
+    for (var i = 0; i < results.length; ++i) {
+      if (results[i]) return await message.channel.send(`Unable to start restore while a retrieval cycle is in progress. Try again later.`)
+    }
+
+    const archive = message.attachments.first()
+    if (!archive) return await message.channel.send('No archive found as an attachment.')
+
+    const fileName = archive.filename
+    if (!fileName.endsWith('.archive')) return await message.channel.send('That is not a valid archive to restore.')
+    console.log(`Bot Controller: Database restore has been started by ${message.author.username}`)
+    const m = await message.channel.send('Restoring...')
+    process.send({type: 'dbRestore', fileName: fileName, url: archive.url, channelID: message.channel.id, messageID: m.id, databaseName: DATABASE_NAME})
+  } catch (err) {
+    log.controller.warning('dbrestore', err)
+  }
 }
 
 exports.restoreUtil = (m, fileName, url, databaseName = DATABASE_NAME) => {
@@ -89,8 +93,8 @@ exports.restoreUtil = (m, fileName, url, databaseName = DATABASE_NAME) => {
         console.log('Bot Controller: Database restore is complete. The database has been wiped clean with the backup guilds collection restored. The process will stop for a manual reboot.')
         if (!m) return resolve()
         m.edit('Database restore complete! Stopping bot process for manual reboot.')
-                .then(() => resolve())
-                .catch(err => console.log(`Bot Controller: Unable to edit restoring message to success for dbrestore:`, err.message || err))
+        .then(() => resolve())
+        .catch(err => console.log(`Bot Controller: Unable to edit restoring message to success for dbrestore:`, err.message || err))
       })
     }
   })

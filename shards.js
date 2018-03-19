@@ -14,13 +14,14 @@ const missingGuilds = {}
 if (!config.advanced || typeof config.advanced.shards !== 'number' || config.advanced.shards < 1) {
   if (!config.advanced) config.advanced = {}
   config.advanced.shards = 1
-  console.log('SH MANAGER: No valid shard count configured, setting default of 1')
+  log.general.info('No valid shard count configured, setting default of 1 for Sharding Manager.')
 }
 
 const activeShardIds = []
 const refreshTimes = [config.feeds.refreshTimeMinutes ? config.feeds.refreshTimeMinutes : 15] // Store the refresh times for the setIntervals of the cycles for each shard
 const scheduleIntervals = [] // Array of intervals for each different refresh time
 const scheduleTracker = {} // Key is refresh time, value is index for activeShardIds
+const linkList = new dbOps.LinkList()
 let initShardIndex = 0
 
 connectDb(err => {
@@ -44,7 +45,7 @@ connectDb(err => {
 
 function createIntervals () {
   refreshTimes.forEach((refreshTime, i) => {
-    scheduleIntervals.push(setInterval(() => {
+    scheduleIntervals.push(setInterval(() => { // The "master interval" for a particular refresh time to determine when shards should start running their schedules
       scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the activeShardIds index
       let p = scheduleTracker[refreshTime]
       Manager.broadcast({type: 'runSchedule', shardId: activeShardIds[p], refreshTime: refreshTime})
@@ -52,69 +53,64 @@ function createIntervals () {
   })
 }
 
-Manager.on('message', (shard, message) => {
+Manager.on('message', async (shard, message) => {
   if (message === 'kill') process.exit()
-
-  switch (message.type) {
-    case 'missingGuild':
-      if (!missingGuilds[message.content]) missingGuilds[message.content] = 1
-      else missingGuilds[message.content]++
-      break
-
-    case 'initComplete':
-      initShardIndex++
-      if (initShardIndex === Manager.totalShards) {
-        console.log(`SH MANAGER: All shards initialized.`)
-        Manager.broadcast({ type: 'finishedInit' })
-        for (var gId in message.guilds) { // All guild profiles, with guild id as keys and guildRss as value
-          currentGuilds.set(gId, message.guilds[gId])
+  try {
+    if (message._loopback) return await Manager.broadcast(message)
+    switch (message.type) {
+      case 'shardLinks':
+        const docs = message.linkDocs
+        for (var x = 0; x < docs.length; ++x) {
+          const doc = docs[x]
+          linkList.set(doc.link, doc.count, doc.shard)
         }
-        for (var guildId in missingGuilds) {
-          if (missingGuilds[guildId] === Manager.totalShards) {
-            dbOps.guildRss.remove(guildId, null, err => {
-              if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild`, err)
-              log.init.warning(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
-            })
-          }
-        }
-        createIntervals()
-      } else if (initShardIndex < Manager.totalShards) Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
-      break
+        break
 
-    case 'scheduleComplete':
-      scheduleTracker[message.refreshTime]++ // Index for activeShardIds
-      if (scheduleTracker[message.refreshTime] !== Manager.totalShards) Manager.broadcast({shardId: activeShardIds[scheduleTracker[message.refreshTime]], type: 'runSchedule', refreshTime: message.refreshTime}) // Send signal for next shard to start cycle
-      break
+      case 'missingGuild':
+        if (!missingGuilds[message.content]) missingGuilds[message.content] = 1
+        else missingGuilds[message.content]++
+        break
 
-    case 'updateGuild':
-      currentGuilds.set(message.guildRss.id, message.guildRss)
-      Manager.broadcast(message)
-      break
+      case 'initComplete':
+        initShardIndex++
+        if (initShardIndex === Manager.totalShards) {
+          dbOps.linkList.write(linkList, err => {
+            if (err) throw err
+            Manager.broadcast({ type: 'finishedInit' })
+            log.general.info(`All shards have initialized by the Sharding Manager.`)
+            for (var gId in message.guilds) { // All guild profiles, with guild id as keys and guildRss as value
+              currentGuilds.set(gId, message.guilds[gId])
+            }
+            for (var guildId in missingGuilds) {
+              if (missingGuilds[guildId] === Manager.totalShards) {
+                dbOps.guildRss.remove(guildId, err => {
+                  if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild`, err)
+                  log.init.warning(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
+                })
+              }
+            }
+            createIntervals()
+          })
+        } else if (initShardIndex < Manager.totalShards) await Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
+        break
 
-    case 'deleteGuild':
-      currentGuilds.delete(message.guildId)
-      Manager.broadcast(message)
-      break
+      case 'scheduleComplete':
+        scheduleTracker[message.refreshTime]++ // Index for activeShardIds
+        if (scheduleTracker[message.refreshTime] !== Manager.totalShards) {
+          await Manager.broadcast({
+            shardId: activeShardIds[scheduleTracker[message.refreshTime]],
+            type: 'runSchedule',
+            refreshTime: message.refreshTime})
+        } // Send signal for next shard to start cycle
+        break
 
-    case 'updateFailedLinks':
-      Manager.broadcast(message)
-      try {
-        fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(message.failedLinks, null, 2))
-      } catch (err) {
-        log.general.warning('Sharding Manager unable to update failed links', err)
-      }
-      break
-
-    case 'mergeLinkList':
-    case 'updateBlacklists':
-    case 'updateVIPs':
-      Manager.broadcast(message)
-      break
-
-    case 'dbRestore':
-      scheduleIntervals.forEach(it => clearInterval(it))
-      dbRestore.restoreUtil(undefined, message.fileName, message.url, message.databaseName)
-      .then(() => Manager.broadcast({type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID}))
-      .catch(err => { throw err })
+      case 'dbRestore':
+        scheduleIntervals.forEach(it => clearInterval(it))
+        dbRestore.restoreUtil(undefined, message.fileName, message.url, message.databaseName)
+        .then(() => Manager.broadcast({type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID}))
+        .catch(err => { throw err })
+    }
+  } catch (err) {
+    log.general.error(`Sharding Manager broadcast message handling error ${JSON.stringify(message)}`, err)
   }
 })

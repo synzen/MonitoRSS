@@ -2,6 +2,7 @@ const config = require('../config.json')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const requestStream = require('../rss/request.js')
+const dbOps = require('../util/dbOps.js')
 const FeedSelector = require('./util/FeedSelector.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
@@ -35,11 +36,15 @@ module.exports = (bot, message, command) => {
           log.command.warning(`Unable to refresh feed link ${source.link}`, message.guild, err)
           return processing.edit(`Unable to refresh feed ${source.link}. Reason:\`\`\`${err.message || err}\n\`\`\``).catch(err => log.command.warning(`rssrefresh 1`, message.guild, err))
         }
-        delete failedLinks[source.link]
-        if (bot.shard) process.send({ type: 'updateFailedLinks', failedLinks: failedLinks })
-        log.command.info(`Refreshed ${source.link} and is back on cycle`, message.guild)
-        msgHandler.deleteAll(message.channel)
-        processing.edit(`Successfully refreshed <${source.link}>. It will now be retrieved on subsequent cycles.`).catch(err => log.command.warning(`rssrefresh 2`, message.guild, err))
+        dbOps.failedLinks.reset(source.link, err => {
+          if (err) {
+            processing.edit(`Unable to refresh <${source.link}> due to internal error.`).catch(err => log.command.warning(`rssrefresh 2a`, message.guild, err))
+            return log.command.error(`Unable to refresh link ${source.link} via rssrefresh`, message.guild, err)
+          }
+          log.command.info(`Refreshed ${source.link} and is back on cycle`, message.guild)
+          msgHandler.deleteAll(message.channel)
+          processing.edit(`Successfully refreshed <${source.link}>. It will now be retrieved on subsequent cycles.`).catch(err => log.command.warning(`rssrefresh 2b`, message.guild, err))
+        })
       })
     } catch (err) {
       log.command.warning(`rssrefresh`, message.guild, err)

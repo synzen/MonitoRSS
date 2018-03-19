@@ -64,7 +64,7 @@ async function filterAddTerm (m, data, callback) {
       await editing.edit(`${msg}`)
     }
   } catch (err) {
-    log.command.warning(`util/filters:`, m.guild, err)
+    log.command.warning(`util/filters`, m.guild, err)
     callback(err)
   }
 }
@@ -165,14 +165,14 @@ function filterRemoveTerm (m, data, callback) {
       log.command.info(`Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild)
       let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
       if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-      editing.edit(msg).catch(err => log.command.warning(`filterRemove 8a:`, m.guild, err))
+      editing.edit(msg).catch(err => log.command.warning(`filterRemove 8a`, m.guild, err))
     } else {
       log.command.info(`Role Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild, role)
       let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
       if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-      editing.edit(msg).catch(err => log.command.warning(`filterRemove 8b:`, m.guild, err))
+      editing.edit(msg).catch(err => log.command.warning(`filterRemove 8b`, m.guild, err))
     }
-  }).catch(err => log.command.warning(`filterRemove 8:`, m.guild, err))
+  }).catch(err => log.command.warning(`filterRemove 8`, m.guild, err))
 }
 
 exports.remove = (message, guildRss, rssName, role) => {
@@ -182,7 +182,7 @@ exports.remove = (message, guildRss, rssName, role) => {
   const removeFilter = new MenuUtils.Menu(message, filterRemoveTerm)
 
   if (!filterList || typeof filterList !== 'object') {
-    return message.channel.send(`There are no filters to remove for ${source.link}.`).catch(err => `Promise Warning: filterRemove 1: ${err}`)
+    return message.channel.send(`There are no filters to remove for ${source.link}.`).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
   }
 
   let isEmptyFilter = true
@@ -192,7 +192,7 @@ exports.remove = (message, guildRss, rssName, role) => {
     for (var prop in source.filters) if (prop !== 'roleSubscriptions') isEmptyFilter = false
   }
 
-  if (!role && isEmptyFilter) return message.channel.send(`There are no filters to remove for ${source.link}.`).catch(err => `Promise Warning: filterRemove 2: ${err}`)
+  if (!role && isEmptyFilter) return message.channel.send(`There are no filters to remove for ${source.link}.`).catch(err => log.command.warning(`filterRemove 2`, message.guild, err))
 
   const options = []
   for (var filterCategory in filterList) {

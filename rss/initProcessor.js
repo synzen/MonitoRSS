@@ -7,11 +7,12 @@ process.on('uncaughtException', function (err) {
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const connectDb = require('./db/connect.js')
-const initAllSources = require('./logic/initialization_optimal.js')
+const initAllSources = require('./logic/initialization.js')
 const log = require('../util/logger.js')
 let connected = false
 
-function init (link, rssList, uniqueSettings) {
+function init (data) {
+  const { link, rssList, uniqueSettings } = data
   const feedparser = new FeedParser()
   const articleList = []
 
@@ -22,7 +23,7 @@ function init (link, rssList, uniqueSettings) {
     if (!requested) {
       try {
         process.send({ status: 'failed', link: link, rssList: rssList })
-        log.rss.error(`Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
+        log.cycle.error(`Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
       } catch (e) {}
     }
   }, 180000)
@@ -50,7 +51,7 @@ function init (link, rssList, uniqueSettings) {
   feedparser.on('end', () => {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
 
-    initAllSources(rssList, articleList, link, (err, results) => {
+    initAllSources({ articleList: articleList, ...data }, (err, results) => {
       if (err) throw err
       if (results) process.send(results)
     })
@@ -58,11 +59,12 @@ function init (link, rssList, uniqueSettings) {
 }
 
 process.on('message', m => {
+  const data = { link: m.link, rssList: m.rssList, uniqueSettings: m.uniqueSettings, shardId: m.shardId }
   if (!connected) {
     connected = true
     connectDb(err => {
       if (err) throw new Error(`Could not connect to database for initialization\n`, err)
-      init(m.link, m.rssList, m.uniqueSettings)
+      init(data)
     })
-  } else init(m.link, m.rssList, m.uniqueSettings)
+  } else init(data)
 })

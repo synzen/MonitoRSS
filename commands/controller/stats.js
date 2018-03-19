@@ -1,9 +1,10 @@
+const log = require('../../util/logger.js')
 
-exports.normal = function (bot, message) {
-  message.channel.send(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`).catch(err => console.log('Bot Controller: Could not send stats, reason:\n', err))
+exports.normal = (bot, message) => {
+  message.channel.send(`Guilds: ${bot.guilds.size}\nUsers: ${bot.users.size}\nChannels: ${bot.channels.size}`).catch(err => log.controller.warning('Could not send stats', message.author, err))
 }
 
-exports.sharded = function (bot, message) {
+exports.sharded = (bot, message) => {
   bot.shard.broadcastEval('[this.guilds.size,this.users.size,this.channels.size]').then(results => {
     let guilds = 0
     let users = 0
@@ -13,6 +14,6 @@ exports.sharded = function (bot, message) {
       users += results[x][1]
       channels += results[x][2]
     }
-    message.channel.send(`Guilds: ${guilds}\nUsers: ${users}\nChannels: ${channels}`).catch(err => console.log('Bot Controller: Could not send stats. ', err.message || err))
-  }).catch(err => console.log('Bot Controller: Unable to broadcast eval stats. ', err.message || err))
+    message.channel.send(`Guilds: ${guilds}\nUsers: ${users}\nChannels: ${channels}`).catch(err => log.controller.warning('Could not send stats', message.author, err))
+  }).catch(err => log.controller.warning('Unable to broadcast eval stats', message.author, err))
 }

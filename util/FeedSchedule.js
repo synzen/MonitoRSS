@@ -1,21 +1,16 @@
-const fs = require('fs')
 const getArticles = require('../rss/cycleSingle.js')
 const config = require('../config.json')
 const configChecks = require('./configCheck.js')
-const debugFeeds = require('../util/debugFeeds.js').list
+const dbOps = require('./dbOps.js')
+const debugFeeds = require('./debugFeeds.js').list
 const events = require('events')
 const childProcess = require('child_process')
 const storage = require('./storage.js') // All properties of storage must be accessed directly due to constant changes
 const logLinkErr = require('./logLinkErrs.js')
 const log = require('./logger.js')
 const allScheduleWords = storage.allScheduleWords
-const FAIL_LIMIT = config.feeds.failLimit
-const WARN_LIMIT = Math.floor(config.feeds.failLimit * 0.75) < FAIL_LIMIT ? Math.floor(config.feeds.failLimit * 0.75) : Math.floor(config.feeds.failLimit * 0.5) < FAIL_LIMIT ? Math.floor(config.feeds.failLimit * 0.5) : 0
 const BATCH_SIZE = config.advanced.batchSize
 
-function reachedFailCount (link) {
-  return typeof storage.failedLinks[link] === 'string' // string indicates it has reached the fail count, and is the date of when it failed
-}
 class FeedSchedule {
   constructor (bot, schedule) {
     this.SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
@@ -36,30 +31,7 @@ class FeedSchedule {
     if (!this.bot.shard || (this.bot.shard && this.bot.shard.count === 1)) {
       this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
       this.run.bind(this)
-      log.rss.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
-    }
-  }
-
-  _addFailedFeed (link, rssList) {
-    const failedLinks = storage.failedLinks
-    storage.failedLinks[link] = (failedLinks[link]) ? failedLinks[link] + 1 : 1
-
-    if (failedLinks[link] === WARN_LIMIT) {
-      if (config.feeds.notifyFail !== true) return
-      for (var i in rssList) {
-        const source = rssList[i]
-        const channel = this.bot.channels.get(source.channel)
-        if (source.link === link && config._skipMessages !== true) channel.send(`**WARNING** - Feed link <${link}> is nearing the connection failure limit. Once it has failed, it will not be retried until is manually refreshed. See \`${config.bot.prefix}rsslist\` for more information.`).catch(err => log.general.warning(`Unable to send reached warning limit for feed ${link}`, channel.guild, channel, err))
-      }
-    } else if (failedLinks[link] >= FAIL_LIMIT) {
-      storage.failedLinks[link] = (new Date()).toString()
-      log.rss.error(`${link} has passed the fail limit (${FAIL_LIMIT}). Will no longer retrieve`)
-      if (config.feeds.notifyFail !== true) return
-      for (var j in rssList) {
-        const source = rssList[j]
-        const channel = this.bot.channels.get(source.channel)
-        if (source.link === link && config._skipMessages !== true) channel.send(`**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until is manually refreshed. See \`${config.bot.prefix}rsslist\` for more information. A backup for this server has been provided in case this feed is subjected to forced removal in the future.`).catch(err => log.general.warning(`Unable to send reached failure limit for feed ${link}`, channel.guild, channel, err))
-      }
+      log.cycle.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
     }
   }
 
@@ -91,7 +63,7 @@ class FeedSchedule {
 
     for (var rssName in rssList) {
       const source = rssList[rssName]
-      if (configChecks.checkExists(rssName, source, false) && configChecks.validChannel(this.bot, guildRss.id, source) && !reachedFailCount(source.link)) {
+      if (configChecks.checkExists(rssName, source, false) && configChecks.validChannel(this.bot, guildRss.id, source) && typeof storage.failedLinks[source.link] !== 'string') {
         if (storage.linkTracker[rssName] === this.schedule.name) { // If assigned to a this.schedule
           this._delegateFeed(guildRss, rssName)
         } else if (this.schedule.name !== 'default' && !storage.linkTracker[rssName]) { // If current feed this.schedule is a custom one and is not assigned
@@ -99,7 +71,7 @@ class FeedSchedule {
             if (source.link.includes(word)) {
               storage.linkTracker[rssName] = this.schedule.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
               this._delegateFeed(guildRss, rssName)
-              log.rss.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.schedule.name}`)
+              log.cycle.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.schedule.name}`)
             }
           })
         } else if (!storage.linkTracker[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
@@ -145,10 +117,10 @@ class FeedSchedule {
   run () {
     if (this.inProgress) {
       if (!config.advanced.processorMethod || config.advanced.processorMethod === 'single') {
-        log.rss.warning(`Previous ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
+        log.cycle.warning(`Previous ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
         this.inProgress = false
       } else {
-        log.rss.warning(`${this.SHARD_ID}Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
+        log.cycle.warning(`${this.SHARD_ID}Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
         for (var x in this._processorList) {
           this._processorList[x].kill()
         }
@@ -163,6 +135,7 @@ class FeedSchedule {
     this._modBatchList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
+    storage.deletedFeeds.length = 0
 
     this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     this._sourceList.clear()
@@ -200,15 +173,15 @@ class FeedSchedule {
         }
       }
 
-      getArticles(link, rssList, uniqueSettings, (err, linkCompletion) => {
-        if (err) logLinkErr({link: linkCompletion.link, content: err})
+      getArticles({ link: link, rssList: rssList, uniqueSettings: uniqueSettings }, (err, linkCompletion) => {
+        if (err) logLinkErr({ link: linkCompletion.link, content: err })
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
           return this.cycle.emit('article', linkCompletion.article)
         }
-        if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) {
+        if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          this._addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+          dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         ++this._cycleTotalCount
@@ -239,14 +212,14 @@ class FeedSchedule {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
-      processor.send({type: 'initial', link: link, rssList: rssList, uniqueSettings: uniqueSettings, debugFeeds: debugFeeds})
+      processor.send({type: 'initial', link: link, rssList: rssList, uniqueSettings: uniqueSettings, debugFeeds: debugFeeds, shardId: this.bot.shard ? this.bot.shard.id : null})
     })
 
     processor.on('message', linkCompletion => {
       if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
       if (linkCompletion.status === 'failed') {
         ++this._cycleFailCount
-        if (FAIL_LIMIT !== 0) this._addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+        dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
       } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
       this._cycleTotalCount++
@@ -275,9 +248,9 @@ class FeedSchedule {
 
       processor.on('message', linkCompletion => {
         if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
-        if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) {
+        if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          this._addFailedFeed(linkCompletion.link, linkCompletion.rssList)
+          dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         ++this._cycleTotalCount
@@ -298,7 +271,7 @@ class FeedSchedule {
             uniqueSettings = rssList[modRssName].advanced
           }
         }
-        processor.send({type: 'initial', link: link, rssList: rssList, uniqueSettings: uniqueSettings, debugFeeds: debugFeeds})
+        processor.send({type: 'initial', link: link, rssList: rssList, uniqueSettings: uniqueSettings, debugFeeds: debugFeeds, shardId: this.bot.shard ? this.bot.shard.id : null})
       })
     }
 
@@ -307,23 +280,19 @@ class FeedSchedule {
   }
 
   _finishCycle (noFeeds) {
-    const failedLinks = storage.failedLinks
     if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({ type: 'scheduleComplete', refreshTime: this.refreshTime })
-    if (noFeeds) return log.rss.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
+    if (noFeeds) return log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
 
     if (this._processorList.length === 0) this.inProgress = false
 
-    if (this.bot.shard) process.send({ type: 'updateFailedLinks', failedLinks: failedLinks })
-    else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (err) { log.general.warning(`Unable to update failedLinks.json on end of cycle`, err) }
-
-    var timeTaken = ((new Date() - this._startTime) / 1000).toFixed(2)
-    log.rss.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
+    const timeTaken = ((new Date() - this._startTime) / 1000).toFixed(2)
+    log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
     if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({type: 'scheduleComplete', refreshTime: this.refreshTime})
   }
 
   stop () {
     clearInterval(this._timer)
-    if (this._timer) log.rss.info(`Schedule '${this.schedule.name}' has stopped`)
+    if (this._timer) log.cycle.info(`Schedule '${this.schedule.name}' has stopped`)
   }
 
   start () {

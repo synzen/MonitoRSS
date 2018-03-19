@@ -10,18 +10,15 @@ module.exports = channel => {
 
   for (var channelId in channelTracker.activeCollectors) if (channelId === channel.id) delete channelTracker.activeCollectors[channelId]
 
-  let nameList = []
+  let removed = false
   for (var rssName in rssList) {
-    if (rssList[rssName].channel === channel.id) nameList.push(rssName)
-  }
-  if (nameList.length === 0) return
-
-  log.guild.info(`Channel deleted`, channel.guild, channel)
-
-  for (var name in nameList) {
-    dbOps.guildRss.removeFeed(guildRss, nameList[name], (err, link) => {
+    if (rssList[rssName].channel !== channel.id) continue
+    removed = true
+    dbOps.guildRss.removeFeed(guildRss, rssName, (err, link) => {
       if (err) return log.guild.warning(`Unable to remove feed ${link} triggered by channel deletion`, channel.guild, err)
       log.guild.info(`Removed feed ${link}`, channel.guild)
     })
   }
+
+  if (removed) log.guild.info(`Channel deleted`, channel.guild, channel)
 }

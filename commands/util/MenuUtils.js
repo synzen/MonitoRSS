@@ -200,7 +200,7 @@ class Menu {
         // Remove the channel tracker to allow commands in this channel again
         channelTracker.remove(this.channel.id)
         if (reason === 'user') return
-        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.info(`Unable to send expired menu message:`, this.channel.guild, err))
+        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
         else this.channel.send(reason).then(m => m.delete(6000))
       })
     } catch (err) {

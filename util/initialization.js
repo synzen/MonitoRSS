@@ -14,10 +14,6 @@ const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
-function addFailedFeed (link) {
-  failedLinks[link] = failedLinks[link] ? failedLinks[link] + 1 : 1
-}
-
 function reachedFailCount (link) {
   const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
   if (failed && config.log.failedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
@@ -35,8 +31,8 @@ function discordMsgResult (err, article, bot) {
 
 module.exports = (bot, callback) => {
   const GuildRss = storage.models.GuildRss()
-  const linkCounts = {}
-  let oldLinkCounts
+  const linkCounts = new dbOps.LinkList()
+  // let oldLinkList
   const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
   const modSourceList = new Map()
   const sourceList = new Map()
@@ -90,11 +86,14 @@ module.exports = (bot, callback) => {
   // For patron tracking on the public bot
   try { require('../settings/vips.js')(bot) } catch (e) { if (config._server) log.general.error(`Failed to load VIP module`, e) }
 
-  dbOps.linkList.get((err, counts) => {
+  // dbOps.linkList.get((err, linkList) => {
+    // if (err) throw err
+    // oldLinkList = linkList
+  dbOps.failedLinks.initalize(err => {
     if (err) throw err
-    oldLinkCounts = counts
     readGuilds()
   })
+  // })
 
   // Cache guilds and start initialization
   function readGuilds () {
@@ -107,7 +106,7 @@ module.exports = (bot, callback) => {
         if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
           if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
           else {
-            dbOps.guildRss.remove(guildId, null, err => {
+            dbOps.guildRss.remove(guildId, err => {
               if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
               log.init.info(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
             })
@@ -123,9 +122,11 @@ module.exports = (bot, callback) => {
         addToSourceLists(rssList, guildId)
       }
 
-      for (var t in linkCounts) {
-        const link = t
-        const Feed = storage.models.Feed(link)
+      const linkCountArr = linkCounts.toArray()
+
+      for (var t in linkCountArr) {
+        const link = linkCountArr[t]
+        const Feed = storage.models.Feed(link, linkCounts.shardId)
         if (config.database.clean !== true) {
           Feed.collection.dropIndexes(err => {
             if (err && err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${link}:`, err)
@@ -141,39 +142,10 @@ module.exports = (bot, callback) => {
     })
   }
 
-  function genBatchLists () {
-    let batch = new Map()
-
-    sourceList.forEach((rssList, link) => { // rssList per link
-      if (batch.size >= batchSize) {
-        regBatchList.push(batch)
-        batch = new Map()
-      }
-      batch.set(link, rssList)
-    })
-
-    if (batch.size > 0) regBatchList.push(batch)
-
-    batch = new Map()
-
-    modSourceList.forEach((source, link) => { // One RSS source per link instead of an rssList
-      if (batch.size >= batchSize) {
-        modBatchList.push(batch)
-        batch = new Map()
-      }
-      batch.set(link, source)
-    })
-
-    if (batch.size > 0) modBatchList.push(batch)
-  }
-
   function addToSourceLists (rssList, guildId) { // rssList is an object per guildRss
     for (var rssName in rssList) {
       const source = rssList[rssName]
-
-      if (!linkCounts[source.link]) linkCounts[source.link] = 1
-      else ++linkCounts[source.link]
-
+      linkCounts.increment(source.link)
       if (configChecks.checkExists(rssName, source, true, true) && configChecks.validChannel(bot, guildId, source) && !reachedFailCount(source.link)) {
         checkGuild.roles(bot, guildId, rssName) // Check for any role name changes
 
@@ -207,6 +179,32 @@ module.exports = (bot, callback) => {
     }
   }
 
+  function genBatchLists () {
+    let batch = new Map()
+
+    sourceList.forEach((rssList, link) => { // rssList per link
+      if (batch.size >= batchSize) {
+        regBatchList.push(batch)
+        batch = new Map()
+      }
+      batch.set(link, rssList)
+    })
+
+    if (batch.size > 0) regBatchList.push(batch)
+
+    batch = new Map()
+
+    modSourceList.forEach((source, link) => { // One RSS source per link instead of an rssList
+      if (batch.size >= batchSize) {
+        modBatchList.push(batch)
+        batch = new Map()
+      }
+      batch.set(link, source)
+    })
+
+    if (batch.size > 0) modBatchList.push(batch)
+  }
+
   function connect () {
     log.init.info(`${SHARD_ID}Starting initialization cycle`)
     genBatchLists()
@@ -236,11 +234,11 @@ module.exports = (bot, callback) => {
         }
       }
 
-      initAll(link, rssList, uniqueSettings, (err, linkCompletion) => {
+      initAll({ link: link, rssList: rssList, uniqueSettings: uniqueSettings }, (err, linkCompletion) => {
         if (err) log.init.error(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
-        if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
-        if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
+        else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link)
 
         completedLinks++
         log.init.info(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
@@ -269,7 +267,7 @@ module.exports = (bot, callback) => {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
-      processor.send({link: link, rssList: rssList, uniqueSettings: uniqueSettings})
+      processor.send({ link: link, rssList: rssList, uniqueSettings: uniqueSettings, shardId: bot.shard ? bot.shard.id : null })
     })
 
     processor.on('message', linkCompletion => {
@@ -280,9 +278,8 @@ module.exports = (bot, callback) => {
       if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
       if (linkCompletion.status === 'failed') {
         cycleFailCount++
-        if (FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
-      }
-      if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
+      } else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link)
       if (linkCompletion.link) batchTracker[linkCompletion.link] = true
 
       completedLinks++
@@ -322,8 +319,8 @@ module.exports = (bot, callback) => {
           throw linkCompletion.err // Full error is printed from the processor
         }
         if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
-        if (linkCompletion.status === 'failed' && FAIL_LIMIT !== 0) addFailedFeed(linkCompletion.link)
-        if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
+        else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link)
 
         completedLinks++
         totalCompletedLinks++
@@ -342,7 +339,7 @@ module.exports = (bot, callback) => {
             uniqueSettings = rssList[modRssName].advanced
           }
         }
-        processor.send({link: link, rssList: rssList, uniqueSettings: uniqueSettings})
+        processor.send({ link: link, rssList: rssList, uniqueSettings: uniqueSettings, shardId: bot.shard ? bot.shard.id : null })
       })
     }
 
@@ -351,19 +348,9 @@ module.exports = (bot, callback) => {
   }
 
   function finishInit () {
-    log.init.info(`${SHARD_ID}INIT Info: Finished initialization cycle ${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
-    const linksToRemove = []
-    for (var oldLink in oldLinkCounts) {
-      if (!linkCounts[oldLink]) linksToRemove.push(oldLink)
-    }
-    dbOps.linkList.drop(err => {
-      if (err && err.code !== 26) throw err
-      dbOps.linkList.write(linkCounts, err => {
-        if (err) throw err
-        callback(guildsInfo)
-      })
-    })
-    if (bot.shard) bot.shard.send({ type: 'updateFailedLinks', failedLinks: failedLinks })
-    else try { fs.writeFileSync('./settings/failedLinks.json', JSON.stringify(failedLinks, null, 2)) } catch (err) { log.general.warning(`Unable to update failedLinks.json on end of initialization`, err) }
+    log.init.info(`${SHARD_ID}Finished initialization cycle ${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
+    if (bot.shard) bot.shard.send({ type: 'shardLinks', linkDocs: linkCounts.toDocs() })
+    else dbOps.linkList.write(linkCounts)
+    callback(guildsInfo)
   }
 }

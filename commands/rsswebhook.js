@@ -71,6 +71,7 @@ module.exports = async (bot, message, command) => {
 
           if (customNameSrch) source.webhook.name = customNameSrch
           if (customAvatarSrch) source.webhook.avatar = customAvatarSrch
+          log.command.info(`Webhook ID ${webhook.id} (${webhook.name}) connected to feed ${source.link}`, message.guild, message.channel)
           await webhook.send(`I am now connected to ${bot.user}, and will send feed articles for <${source.link}>!`, { username: customNameSrch, avatarURL: customAvatarSrch })
         }
         dbOps.guildRss.update(guildRss)

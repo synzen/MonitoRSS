@@ -5,11 +5,12 @@ const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
 const connectDb = require('./db/connect.js')
 const logLinkErr = require('../util/logLinkErrs.js')
-const processAllSources = require('./logic/cycle_optimal.js')
+const processAllSources = require('./logic/cycle.js')
 const log = require('../util/logger.js')
 let connected = false
 
-function getFeed (link, rssList, uniqueSettings, debugFeeds) {
+function getFeed (data) {
+  const { link, rssList, uniqueSettings } = data
   const feedparser = new FeedParser()
   const articleList = []
 
@@ -20,7 +21,7 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
     if (!requested) {
       try {
         process.send({ status: 'failed', link: link, rssList: rssList })
-        log.rss.error(`Unable to complete request for link ${link} during cycle, forcing status update to parent process`)
+        log.cycle.error(`Unable to complete request for link ${link} during cycle, forcing status update to parent process`)
       } catch (e) {}
     }
   }, 90000)
@@ -49,19 +50,20 @@ function getFeed (link, rssList, uniqueSettings, debugFeeds) {
   feedparser.on('end', () => {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
 
-    processAllSources(rssList, articleList, debugFeeds, link, (err, results) => {
-      if (err) log.rss.error(`Cycle logic`, err)
+    processAllSources({ articleList: articleList, ...data }, (err, results) => {
+      if (err) log.cycle.error(`Cycle logic`, err)
       if (results) process.send(results)
     })
   })
 }
 
 process.on('message', m => {
+  const data = { link: m.link, rssList: m.rssList, uniqueSettings: m.uniqueSettings, debugFeeds: m.debugFeeds, shardId: m.shardId }
   if (!connected) {
     connected = true
     connectDb(err => {
       if (err) throw new Error(`Could not connect to database for cycle.\n`, err)
-      getFeed(m.link, m.rssList, m.uniqueSettings, m.debugFeeds)
+      getFeed(data)
     })
-  } else getFeed(m.link, m.rssList, m.uniqueSettings, m.debugFeeds)
+  } else getFeed(data)
 })

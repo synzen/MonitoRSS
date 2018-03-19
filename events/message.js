@@ -6,8 +6,6 @@ const commandList = require('../util/commandList.json')
 const channelTracker = require('../util/channelTracker.js')
 const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
-const blacklistGuilds = storage.blacklistGuilds
-const blacklistUsers = storage.blacklistUsers
 
 function isBotController (author) {
   const controllerList = config.bot.controllerIds
@@ -15,7 +13,7 @@ function isBotController (author) {
 }
 
 module.exports = (bot, message) => {
-  if (!message.member || message.author.bot || !message.content.startsWith(config.bot.prefix) || blacklistGuilds.includes(message.guild.id) || blacklistUsers.includes(message.author.id)) return
+  if (!message.member || message.author.bot || !message.content.startsWith(config.bot.prefix) || storage.blacklistGuilds.includes(message.guild.id) || storage.blacklistUsers.includes(message.author.id)) return
   let m = message.content.split(' ')
   let command = m[0].substr(config.bot.prefix.length)
   if (command === 'forceexit') return loadCommand(command)(bot, message) // To forcibly clear a channel of active menus

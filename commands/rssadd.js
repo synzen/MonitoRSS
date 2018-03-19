@@ -2,6 +2,7 @@ const channelTracker = require('../util/channelTracker.js')
 const initialize = require('../rss/initialize.js')
 const config = require('../config.json')
 const log = require('../util/logger.js')
+const dbOps = require('../util/dbOps.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 
@@ -20,8 +21,6 @@ function isBotController (id) {
 }
 
 module.exports = (bot, message) => {
-  const failedLinks = storage.failedLinks
-
   const guildRss = currentGuilds.has(message.guild.id) ? currentGuilds.get(message.guild.id) : {}
   const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
   let maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max))) ? 0 : config.feeds.max
@@ -137,9 +136,10 @@ module.exports = (bot, message) => {
           failedAddLinks[link] = channelErrMsg
         } else {
           log.command.info(`Added ${link}`, message.guild)
-          if (failedLinks[link]) {
-            delete storage.failedLinks[link]
-            if (bot.shard) bot.shard.send({ type: 'updateFailedLinks', failedLinks: failedLinks }).catch(err => log.general.warning('Failed to send updateFailedLinks to Sharding Manager', err))
+          if (storage.failedLinks[link]) {
+            dbOps.failedLinks.reset(link, err => {
+              if (err) log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err)
+            })
           }
           passedAddLinks[link] = cookies
         }

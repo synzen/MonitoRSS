@@ -5,6 +5,7 @@ const pageControls = require('../../util/pageControls.js')
 const storage = require('../../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const FAIL_LIMIT = config.feeds.failLimit
+const log = require('../../util/logger.js')
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove']
 
@@ -152,10 +153,7 @@ class FeedSelector extends Menu {
 
       collector.on('collect', m => {
         this._msgCleaner.add(m)
-        if (m.content.toLowerCase() === 'exit') {
-          collector.stop('Menu closed.')
-          return
-        }
+        if (m.content.toLowerCase() === 'exit') return collector.stop('Menu closed.')
 
         // Call the function defined in the constructor
         this.fn(m, data, (err, passover, endPrematurely) => {
@@ -171,11 +169,11 @@ class FeedSelector extends Menu {
         // Remove the channel tracker to allow commands in this channel again
         channelTracker.remove(this.channel.id)
         if (reason === 'user') return
-        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => console.log(`Commands Warning: Unable to send expired menu message:`, err.message || err))
+        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
         else this.channel.send(reason).then(m => m.delete(6000))
       })
     } catch (err) {
-      console.log(`Commands Warning: Failed to send Menu:`, err.message)
+      log.command.warning(`Failed to send Menu`, this.channel.guild, err)
       callback(err, { __end: true })
     }
   }

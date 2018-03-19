@@ -36,7 +36,7 @@ module.exports = (bot, role) => {
 
   if (!found) return
 
-  dbOps.guildRss.update(guildRss, null, err => {
+  dbOps.guildRss.update(guildRss, err => {
     if (err) log.guild.warning(`Role could not be removed from config by guild role deletion`, role.guild, role)
     else log.guild.info(`Role has been removed from config by guild role deletion`, role.guild, role)
   })

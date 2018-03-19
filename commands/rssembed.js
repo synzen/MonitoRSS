@@ -123,6 +123,7 @@ function setProperty (m, data, callback) {
   const { properties } = data
   const property = properties.shift()
   const setting = m.content.trim()
+  if (!property) console.log(setting)
   data.next = {
     text: `You are now customizing the **${properties[0] ? EMBED_PROPERTIES[properties[0]].name : ''}**. Type your input now. To reset the property, type \`reset\`.`
   }
@@ -226,7 +227,7 @@ function fieldRem (m, data, callback) {
   if (inputs.length === 0) return callback(new SyntaxError('No valid Fields chosen. Try again, or type `exit` to cancel.'))
 
   for (var x = inputs.length; x >= 0; --x) {
-    log.command.info(`Embed field removed. ${JSON.stringify(fields[inputs[x] - 1])}`, m.guild)
+    log.command.info(`Embed field removed`, m.guild)
     fields.splice(inputs[x] - 1, 1)
   }
   if (fields.length === 0) delete source.embedMessage.properties.fields

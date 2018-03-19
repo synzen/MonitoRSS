@@ -1,4 +1,5 @@
 const config = require('../../config.json')
+const log = require('../../util/logger.js')
 
 function getGame (message) {
   const content = message.content.split(' ')
@@ -8,14 +9,14 @@ function getGame (message) {
   if (game === 'null') game = null
 }
 
-exports.normal = function (bot, message) {
+exports.normal = (bot, message) => {
   const game = getGame(message)
   // bot.user.setGame(game)
   bot.user.setPresence({ game: { name: game, type: 0 } })
   config.bot.game = game // Make sure the change is saved even after a login retry
 }
 
-exports.sharded = function (bot, message) {
+exports.sharded = (bot, message) => {
   bot.shard.broadcastEval(`
     const path = require('path');
     const appDir = path.dirname(require.main.filename);
@@ -30,5 +31,5 @@ exports.sharded = function (bot, message) {
       this.user.setPresence({ game: { name: game, type: 0 } });
       config.bot.game = game;
     }
-  `).catch(err => console.log(`Bot Controller: Unable to send setgame eval. `, err.message || err))
+  `).catch(err => log.controller.warning(`Unable to send setgame eval`, message.author, err))
 }

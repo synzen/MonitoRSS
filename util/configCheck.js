@@ -4,15 +4,15 @@ const log = require('./logger.js')
 
 exports.checkExists = (rssName, feed, logging, initializing) => {
   if (feed.enabled === false) {
-    if (logging) log.rss.info(`${rssName} is disabled in channel ${feed.channel}, skipping...`)
+    if (logging) log.cycle.info(`${rssName} is disabled in channel ${feed.channel}, skipping...`)
     return false
   }
   if (!feed.link || !feed.link.startsWith('http')) {
-    if (logging) log.rss.warning(`${rssName} has no valid link defined, skipping...`)
+    if (logging) log.cycle.warning(`${rssName} has no valid link defined, skipping...`)
     return false
   }
   if (!feed.channel) {
-    if (logging) log.rss.warning(`${rssName} has no channel defined, skipping...`)
+    if (logging) log.cycle.warning(`${rssName} has no channel defined, skipping...`)
     return false
   }
   return true
@@ -23,7 +23,7 @@ exports.validChannel = (bot, guildId, feed) => {
   const guild = bot.guilds.get(guildId)
 
   if (!channel) {
-    log.rss.warning(`Channel ${feed.channel} for feed ${feed.link} was not found, skipping feed`, guild)
+    log.cycle.warning(`Channel ${feed.channel} for feed ${feed.link} was not found, skipping feed`, guild)
     return false
   } else return true
 }

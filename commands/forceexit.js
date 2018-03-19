@@ -1,11 +1,12 @@
 const channelTracker = require('../util/channelTracker.js')
+const log = require('../util/logger.js')
 
 module.exports = (bot, message) => {
   if (channelTracker.hasActiveMenus(message.channel.id)) {
     channelTracker.remove(message.channel.id)
     message.react('☑').catch(err => {
-      console.log(`Promise Warning: forceexit 1: Unable to react checkmark for successful forceexit (${err})`)
-      message.channel.send(`Successfully cleared this channel from active status.`)
+      log.command.warning(`Unable to react checkmark for successful forceexit`, message.guild, err)
+      message.channel.send(`Successfully cleared this channel from active status.`).catch(err => log.comamnd.warning('forceexit', message.guild, err))
     })
-  } else message.react('❌').catch(err => console.log(`Promise Warning: forceexit 2: Unable to react xmark for failed forceexit (${err})`))
+  } else message.react('❌').catch(err => log.command.warning(`Unable to react xmark for failed forceexit`, message.guild, err))
 }

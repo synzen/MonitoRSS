@@ -111,7 +111,7 @@ module.exports = (bot, message, command, role) => {
                 channelErrMsg = 'No reason available'
             }
             log.command.warning(`Unable to send filtered test article '${err.feed.link}':`, message.guild, err)
-            return message.channel.send(`Unable to grab feed article for feed <${err.feed.link}> (${channelErrMsg}).`).catch(err => console.log(`Commands Warning: Unable to grab feed article for ${err.feed.link} for rssfilters:`, err.message || err))
+            return message.channel.send(`Unable to grab feed article for feed <${err.feed.link}> (${channelErrMsg}).`).catch(err => log.command.warning(`Unable to grab feed article for ${err.feed.link} for rssfilters`, message.guild, err))
           }
           log.command.info(`Sending filtered article for ${source.link}`, message.guild)
           article.rssName = rssName
@@ -125,7 +125,7 @@ module.exports = (bot, message, command, role) => {
         })
       }
     } catch (err) {
-      log.command.warning(`rssfilters:`, message.guild, err)
+      log.command.warning(`rssfilters`, message.guild, err)
     }
   })
 }
