@@ -8,6 +8,7 @@ const FAIL_LIMIT = config.feeds.failLimit
 const log = require('../../util/logger.js')
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove']
+const GLOBAL_SELECT = ['rssmove']
 
 function selectFeed (m, data, callback) {
   const command = this.command
@@ -71,11 +72,12 @@ class FeedSelector extends Menu {
 
     const rssList = this.guildRss.sources
     const maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] === 0 ? 'Unlimited' : storage.limitOverrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max, 10))) ? 'Unlimited' : config.feeds.max
-
+    const globalSelect = GLOBAL_SELECT.includes(command)
     this._currentRSSList = []
 
     for (var rssName in rssList) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
       const source = rssList[rssName]
+      if (message.channel.id !== source.channel && !globalSelect) continue
       let o = { link: source.link, rssName: rssName, title: source.title }
       if (commandList[command].action === 'Refresh Feed') {
         const failCount = storage.failedLinks[source.link]
@@ -92,7 +94,8 @@ class FeedSelector extends Menu {
 
         o[miscOption] = decision
       }
-      if (message.channel.id === source.channel) this._currentRSSList.push(o)
+      if (globalSelect) o.channel = source.channel
+      this._currentRSSList.push(o)
     }
 
     if (this._currentRSSList.length === 0) {
@@ -100,16 +103,18 @@ class FeedSelector extends Menu {
       return
     }
     let desc = maxFeedsAllowed === 'Unlimited' ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
-    desc += `**Channel:** #${message.channel.name}\n**Action**: ${command === 'rssoptions' ? commandList[command].options[miscOption] : commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
+    desc += (globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? commandList[command].options[miscOption] : commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
     this.setAuthor('Feed Selection Menu')
     this.setDescription(desc)
 
     this._currentRSSList.forEach(item => {
+      let channel = item.channel ? message.client.channels.has(item.channel) ? `Channel: #${message.client.channels.get(item.channel).name}\n` : undefined : undefined
       const link = item.link
       const title = item.title
       const status = item.status || ''
+      
       const miscOption = item.checkTitles || item.imagePreviews || item.imageLinksExistence || item.checkDates || ''
-      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${miscOption}${status}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
+      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel ? channel : ''}${miscOption}${status}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
     })
 
     this.fn = selectFeed.bind(this)
