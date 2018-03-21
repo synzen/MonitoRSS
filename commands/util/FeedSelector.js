@@ -112,9 +112,9 @@ class FeedSelector extends Menu {
       const link = item.link
       const title = item.title
       const status = item.status || ''
-      
+
       const miscOption = item.checkTitles || item.imagePreviews || item.imageLinksExistence || item.checkDates || ''
-      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel ? channel : ''}${miscOption}${status}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
+      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel || ''}${miscOption}${status}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
     })
 
     this.fn = selectFeed.bind(this)

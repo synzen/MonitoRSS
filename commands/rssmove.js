@@ -12,7 +12,7 @@ function inputChannel (m, data, callback) {
   const hasEmbed = source.embedMessage && source.embedMessage.properties
   const sourceChannel = m.guild.channels.get(source.channel)
   const selected = m.mentions.channels.first()
-  if (selected.id === sourceChannel.id) return callback(new SyntaxError('The feed is already in that channel. Try again, or type `exit` cancel.')) 
+  if (selected.id === sourceChannel.id) return callback(new SyntaxError('The feed is already in that channel. Try again, or type `exit` cancel.'))
   if (!selected) return callback(new SyntaxError('That is not a valid channel. Try again, or type `exit` to cancel.'))
   const me = m.guild.me
   let errors = ''

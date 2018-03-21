@@ -61,13 +61,12 @@ exports.guildRss = {
     if (!guildRss || exports.guildRss.empty(guildRss, true)) return callback ? callback() : null
     models.GuildRssBackup().update({ id: guildId }, guildRss, UPDATE_SETTINGS, (err, res) => callback ? callback(err) : err ? log.general.warning(`Unable to guildRss.backup guild ${guildId}`, err) : null)
   },
-  restore: (guildId, callback) => {
+  restore: (guildId, callback, skipProcessSend) => {
     models.GuildRssBackup().find({ id: guildId }, (err, docs) => {
       if (err) return callback ? callback(err) : null
-      if (docs.length === 0) return
+      if (docs.length === 0 || exports.guildRss.empty(docs[0], true)) return callback ? callback(null, false) : null
       exports.guildRss.update(docs[0], err => {
-        if (callback) callback(err)
-        if (err) return
+        if (err) return callback ? callback(err) : null
         const rssList = docs[0].sources
         if (rssList) {
           for (var rssName in rssList) {
@@ -76,7 +75,7 @@ exports.guildRss = {
               exports.guildRss.removeFeed(docs[0], rssName, err => {
                 if (err) return log.general.warning(`Could not remove feed ${source.link} due to missing channel ${source.channel}`, storage.bot.guilds.get(docs[0].id), err)
                 log.general.info(`Removed feed ${source.link} due to missing channel ${source.channel}`, storage.bot.guilds.get(docs[0].id))
-              })
+              }, skipProcessSend)
             } else {
               exports.linkList.increment(source.link, err => {
                 if (err) log.general.warning(`Unable to increment linkList for ${source.link}`, err)
@@ -87,7 +86,8 @@ exports.guildRss = {
         models.GuildRssBackup().find({ id: guildId }).remove((err, res) => {
           if (err) log.general.warning(`(G: ${guildId}) Unable to remove backup for guild after restore`, err)
         })
-      })
+        if (callback) callback(null, docs[0])
+      }, skipProcessSend)
     })
   },
   empty: (guildRss, skipRemoval) => { // Used on the beginning of each cycle to check for empty sources per guild

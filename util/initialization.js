@@ -86,14 +86,10 @@ module.exports = (bot, callback) => {
   // For patron tracking on the public bot
   try { require('../settings/vips.js')(bot) } catch (e) { if (config._server) log.general.error(`Failed to load VIP module`, e) }
 
-  // dbOps.linkList.get((err, linkList) => {
-    // if (err) throw err
-    // oldLinkList = linkList
   dbOps.failedLinks.initalize(err => {
     if (err) throw err
     readGuilds()
   })
-  // })
 
   // Cache guilds and start initialization
   function readGuilds () {
@@ -102,7 +98,6 @@ module.exports = (bot, callback) => {
       for (var r = 0; r < results.length; ++r) {
         const guildRss = results[r]
         const guildId = guildRss.id
-        const rssList = guildRss.sources
         if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
           if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
           else {
@@ -119,27 +114,23 @@ module.exports = (bot, callback) => {
           checkGuild.names(bot, guildId)
         }
         guildsInfo[guildId] = guildRss
-        // addToSourceLists(rssList, guildId)
         addToSourceLists(guildRss)
       }
 
-      const linkCountArr = linkCounts.toArray()
-
-      for (var t in linkCountArr) {
-        const link = linkCountArr[t]
-        const Feed = storage.models.Feed(link, linkCounts.shardId)
-        if (config.database.clean !== true) {
-          Feed.collection.dropIndexes(err => {
-            if (err && err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${link}:`, err)
-          })
+      let c = 0
+      const total = bot.guilds.size
+      bot.guilds.forEach((guild, guildId) => {
+        if (guildsInfo[guildId]) {
+          if (++c === total) prepConnect()
+          return
         }
-      }
-
-      if (sourceList.size + modSourceList.size === 0) {
-        log.init.info(`${SHARD_ID}There are no active feeds to initialize`)
-        return finishInit()
-      }
-      return connect()
+        const id = guildId
+        dbOps.guildRss.restore(guildId, (err, restored) => {
+          if (err) log.init.info(`Unable to restore ${id}`, err)
+          else if (restored) log.init.info(`Restored profile for ${restored.id}`)
+          if (++c === total) prepConnect()
+        }, true)
+      })
     })
   }
 
@@ -180,6 +171,25 @@ module.exports = (bot, callback) => {
         }
       }
     }
+  }
+
+  function prepConnect () {
+    const linkCountArr = linkCounts.toArray()
+    for (var t in linkCountArr) {
+      const link = linkCountArr[t]
+      const Feed = storage.models.Feed(link, linkCounts.shardId)
+      if (config.database.clean !== true) {
+        Feed.collection.dropIndexes(err => {
+          if (err && err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${link}:`, err)
+        })
+      }
+    }
+
+    if (sourceList.size + modSourceList.size === 0) {
+      log.init.info(`${SHARD_ID}There are no active feeds to initialize`)
+      return finishInit()
+    }
+    return connect()
   }
 
   function genBatchLists () {
