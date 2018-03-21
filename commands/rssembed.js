@@ -17,7 +17,7 @@ const EMBED_PROPERTIES = {
   footerIconURL: { name: 'Footer Icon URL', description: 'Icon to the left of Footer Text\nMUST be a link to an image. If Footer Text is unspecified, the Footer Icon will be hidden\nAccepts placeholders' }
 }
 
-let EMBED_PROPERTIES_LIST = '```Markdown\n'
+let EMBED_PROPERTIES_LIST = '```Markdown\n# Available Properties #\n\n'
 for (var pn in EMBED_PROPERTIES) {
   const cur = EMBED_PROPERTIES[pn]
   EMBED_PROPERTIES_LIST += `[${cur.name}]: ${cur.description}\n\n${pn === 'footerIconURL' ? '```' : ''}`
@@ -68,21 +68,28 @@ function feedSelectorFn (m, data, callback) {
   const { guildRss, rssName } = data
   const source = guildRss.sources[rssName]
 
-  let currentEmbedProps = '```Markdown\n'
+  let currentEmbedProps = '```Markdown\n# Current Properties #\n\n'
+  let changed = false
   if (source.embedMessage && source.embedMessage.properties) {
     const propertyList = source.embedMessage.properties
     for (var property in propertyList) {
       for (var p in EMBED_PROPERTIES) {
-        if (p === property && propertyList[property]) currentEmbedProps += `[${EMBED_PROPERTIES[p].name}]: ${propertyList[property]}\n`
+        if (p === property && propertyList[property]) {
+          currentEmbedProps += `[${EMBED_PROPERTIES[p].name}]: ${propertyList[property]}\n\n`
+          changed = true
+        }
       }
     }
   }
 
-  if (currentEmbedProps === '```Markdown\n') currentEmbedProps = '```\nNo properties set.\n'
-
+  if (!changed) currentEmbedProps = '```\nNo properties set.\n'
+  const m1 = `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\n`
+  const m2 = `The list of embed properties that can be set are:\n${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset, or multiple properties by separation with commas.** Type \`reset\` to remove all properties, or type \`exit\` to cancel.`
+  let mFull
+  mFull = (m1 + m2).length < 1995 ? `${m1}\n${m2}` : [m1, m2]
   callback(null, { ...data,
     next: {
-      text: `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\nThe available properties are: ${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset, or multiple properties by separation with commas.** Type \`reset\` to remove all properties, or type \`exit\` to cancel.`,
+      text: mFull,
       embed: null }
   })
 }
@@ -285,7 +292,6 @@ module.exports = (bot, message, command) => {
 
       let status = ''
       let reset = ''
-      const updating = await message.channel.send('Updating settings...')
       for (var prop in settings) {
         const propName = EMBED_PROPERTIES[prop].name
         const setting = settings[prop]
@@ -311,7 +317,7 @@ module.exports = (bot, message, command) => {
       }
 
       dbOps.guildRss.update(guildRss)
-      await updating.edit(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format.`)
+      message.channel.send(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format.`, { split: true })
     } catch (err) {
       log.command.warning(`rssembed`, message.guild, err)
     }

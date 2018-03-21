@@ -164,8 +164,16 @@ class Menu {
     if (this.pages.length > 1) this.pages[0].setFooter(`Page 1/${this.pages.length}`)
 
     try {
-      const m = await this.channel.send(this.text, { embed: this.pages[0] })
-      this._msgCleaner.add(m)
+      let m
+      if (Array.isArray(this.text)) {
+        for (var ind = 0; ind < this.text.length; ++ind) {
+          m = await this.channel.send(this.text[ind], ind === this.text.length - 1 ? { embed: this.pages[0] } : undefined)
+          this._msgCleaner.add(m)
+        }
+      } else {
+        m = await this.channel.send(this.text, { embed: this.pages[0] })
+        this._msgCleaner.add(m)
+      }
       if (this.pages.length > 1) {
         await m.react('◀')
         await m.react('▶')

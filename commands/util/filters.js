@@ -177,12 +177,12 @@ function filterRemoveTerm (m, data, callback) {
 
 exports.remove = (message, guildRss, rssName, role) => {
   const source = guildRss.sources[rssName]
-  const filterList = (role) ? source.filters.roleSubscriptions[role.id].filters : source.filters // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
+  const filterList = !role ? source.filters : source.filters.roleSubscriptions[role.id] ? source.filters.roleSubscriptions[role.id].filters : undefined  // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
   const selectCategory = new MenuUtils.Menu(message, filterRemoveCategory, { numbered: false })
   const removeFilter = new MenuUtils.Menu(message, filterRemoveTerm)
 
   if (!filterList || typeof filterList !== 'object') {
-    return message.channel.send(`There are no filters to remove for ${source.link}.`).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
+    return message.channel.send(`There are no filters to remove for ${source.link}${role ? ` for the role \`${role.name}\`` : ''}.`).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
   }
 
   let isEmptyFilter = true
