@@ -35,6 +35,7 @@ class _Logger {
     let det = ''
     for (var q = 0; q < details.length; ++q) {
       const item = details[q]
+      if (!item) continue
       const i = CONSTRUCTORS.indexOf(item.constructor)
       if (i === -1) {
         if (item instanceof Error) error = item

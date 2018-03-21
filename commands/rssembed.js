@@ -23,8 +23,6 @@ for (var pn in EMBED_PROPERTIES) {
   EMBED_PROPERTIES_LIST += `[${cur.name}]: ${cur.description}\n\n${pn === 'footerIconURL' ? '```' : ''}`
 }
 
-console.log(EMBED_PROPERTIES_LIST)
-
 function validURL (input) { // A simple check is enough
   return input.startsWith('http://') || input.startsWith('https://') || input === '{link}'
 }

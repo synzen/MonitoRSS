@@ -1,6 +1,9 @@
 // Check for invalid configs on startup and at the beginning of each feed retrieval cycle
 const moment = require('moment-timezone')
 const log = require('./logger.js')
+const dbOps = require('./dbOps.js')
+const storage = require('./storage.js')
+const missingChannelCount = {}
 
 exports.checkExists = (rssName, feed, logging, initializing) => {
   if (feed.enabled === false) {
@@ -18,14 +21,27 @@ exports.checkExists = (rssName, feed, logging, initializing) => {
   return true
 }
 
-exports.validChannel = (bot, guildId, feed) => {
-  const channel = bot.channels.get(feed.channel)
+exports.validChannel = (bot, guildRss, rssName) => {
+  const guildId = guildRss.id
+  const source = guildRss.sources[rssName]
+  const channel = bot.channels.get(source.channel)
   const guild = bot.guilds.get(guildId)
 
   if (!channel) {
-    log.cycle.warning(`Channel ${feed.channel} for feed ${feed.link} was not found, skipping feed`, guild)
+    log.cycle.warning(`Channel ${source.channel} for feed ${source.link} was not found, skipping source`, guild)
+    missingChannelCount[rssName] = missingChannelCount[rssName] ? missingChannelCount[rssName] + 1 : 1
+    if (missingChannelCount[rssName] >= 10 && storage.initialized) {
+      dbOps.guildRss.removeFeed(guildRss, rssName, err => {
+        if (err) return log.general.warning(`Unable to remove feed ${source.link} from guild ${guildId} due to excessive missing channels warning`, err)
+        log.general.info(`Removing feed ${source.link} from guild ${guildId} due to excessive missing channels warnings`)
+        delete missingChannelCount[rssName]
+      }, true)
+    }
     return false
-  } else return true
+  } else {
+    if (missingChannelCount[rssName]) delete missingChannelCount[rssName]
+    return true
+  }
 }
 
 exports.defaultConfigs = {

@@ -119,7 +119,8 @@ module.exports = (bot, callback) => {
           checkGuild.names(bot, guildId)
         }
         guildsInfo[guildId] = guildRss
-        addToSourceLists(rssList, guildId)
+        // addToSourceLists(rssList, guildId)
+        addToSourceLists(guildRss)
       }
 
       const linkCountArr = linkCounts.toArray()
@@ -142,11 +143,13 @@ module.exports = (bot, callback) => {
     })
   }
 
-  function addToSourceLists (rssList, guildId) { // rssList is an object per guildRss
+  function addToSourceLists (guildRss) { // rssList is an object per guildRss
+    const guildId = guildRss.id
+    const rssList = guildRss.sources
     for (var rssName in rssList) {
       const source = rssList[rssName]
       linkCounts.increment(source.link)
-      if (configChecks.checkExists(rssName, source, true, true) && configChecks.validChannel(bot, guildId, source) && !reachedFailCount(source.link)) {
+      if (configChecks.checkExists(rssName, source, true, true) && configChecks.validChannel(bot, guildRss, rssName) && !reachedFailCount(source.link)) {
         checkGuild.roles(bot, guildId, rssName) // Check for any role name changes
 
         if (source.advanced && Object.keys(source.advanced).length > 0) { // Special source list for feeds with unique settings defined, each linkList only has 1 item
