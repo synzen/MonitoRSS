@@ -84,6 +84,7 @@ module.exports = (bot, message, command) => {
   }
 
   ask.send({ eligibleRoles: eligibleRoles }, async (err, data) => {
+    if (!data.role) return
     removeRole(err, { ...data, message: message })
   })
 }

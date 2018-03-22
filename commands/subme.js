@@ -76,6 +76,7 @@ module.exports = (bot, message, command) => {
   }
 
   ask.send({ options: options }, (err, data) => {
+    if (!data.role) return
     addRole(err, { ...data, message: message })
   })
 }
