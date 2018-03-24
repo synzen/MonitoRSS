@@ -113,10 +113,9 @@ class FeedSchedule {
       for (var b = 0; b < disabled.length; ++b) m += `Feed <${disabled[b]}> has been disabled.\n`
       const channel = this.bot.channels.get(channelId)
       if (channel) {
-        channel.send(message)
+        channel.send(m)
         .then(m => log.general.info(`Sent feed enable/disable notice to server`, channel.guild, channel))
-        .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel))
-        
+        .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel, err))
       }
     }
   }

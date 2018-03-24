@@ -2,6 +2,7 @@ const getSubList = require('./util/getSubList.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const MenuUtils = require('./util/MenuUtils.js')
 const log = require('../util/logger.js')
+const config = require('../config.json')
 
 function verifyRole (m, data, callback) {
   const { options } = data
@@ -37,50 +38,55 @@ async function addRole (err, data, direct) {
     log.command.info(`Role successfully added to member`, message.guild, role)
     await message.channel.send(`You now have the role \`${role.name}\`, subscribed to **<${source.link}>**.`)
   } catch (err) {
-    log.command.warning(`subme 2`, message.guild, err)
+    log.command.warning(`subme 3`, message.guild, err)
   }
 }
 
-module.exports = (bot, message, command) => {
-  const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('There are no active feeds to subscribe to.').catch(err => log.command.warning(`subAdd`, message.guild, err))
+module.exports = async (bot, message, command) => {
+  try {
+    const guildRss = currentGuilds.get(message.guild.id)
+    if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('There are no active feeds to subscribe to.')
 
-  const rssList = guildRss.sources
-  const options = getSubList(bot, message.guild, rssList)
-  if (!options) return message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.').catch(err => log.command.warning(`subAdd 2`, message.guild, err))
-  const msgArr = message.content.split(' ')
-  const mention = message.mentions.roles.first()
-  if (msgArr.length > 1) {
-    msgArr.shift()
-    const predeclared = msgArr.join(' ')
-    const role = message.guild.roles.find('name', predeclared)
-    for (var option in options) {
-      if (role && options[option].roleList.includes(role.id)) return addRole(null, { role: role, message: message, source: options[option].source }, true)
-      else if (mention && options[option].roleList.includes(mention.id)) return addRole(null, { role: mention, message: message, source: options[option].source }, true)
+    const rssList = guildRss.sources
+    const options = getSubList(bot, message.guild, rssList)
+    if (!options) return await message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.')
+    const msgArr = message.content.split(' ')
+    const mention = message.mentions.roles.first()
+    if (msgArr.length > 1) {
+      msgArr.shift()
+      const predeclared = msgArr.join(' ').trim()
+      const role = message.guild.roles.find('name', predeclared)
+      for (var option in options) {
+        if (role && options[option].roleList.includes(role.id)) return addRole(null, { role: role, message: message, source: options[option].source }, true)
+        else if (mention && options[option].roleList.includes(mention.id)) return addRole(null, { role: mention, message: message, source: options[option].source }, true)
+      }
+      return await message.channel.send(`That is not a valid role to add. To see the the full list of roles that can be added, ype \`${config.bot.prefix}subme\`.`)
     }
+
+    const ask = new MenuUtils.Menu(message, verifyRole, { numbered: false })
+      .setTitle('Self-Subscription Addition')
+      .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name you want to be added to, or type **exit** to cancel.\u200b\n\u200b\n')
+
+    for (let option in options) {
+      let roleList = '**Roles:**\n'
+      for (var roleID in options[option].roleList) {
+        let roleName = message.guild.roles.get(options[option].roleList[roleID]).name
+        roleList += `${roleName}\n`
+      }
+      const channelID = options[option].source.channel
+      const channelName = message.guild.channels.get(channelID).name
+      ask.addOption(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n${roleList}`, true)
+    }
+
+    ask.send({ options: options }, async (err, data) => {
+      try {
+        if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
+        addRole(null, { ...data, message: message })
+      } catch (err) {
+        log.command.warning(`subme 2`, message.guild, err)
+      }
+    })
+  } catch (err) {
+    log.command.warning(`subme`, message.guild, err)
   }
-
-  const ask = new MenuUtils.Menu(message, verifyRole, { numbered: false })
-    .setTitle('Self-Subscription Addition')
-    .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name you want to be added to, or type **exit** to cancel.\u200b\n\u200b\n')
-
-  for (let option in options) {
-    let roleList = '**Roles:**\n'
-    for (var roleID in options[option].roleList) {
-      let roleName = message.guild.roles.get(options[option].roleList[roleID]).name
-      roleList += `${roleName}\n`
-    }
-    const channelID = options[option].source.channel
-    const channelName = message.guild.channels.get(channelID).name
-    ask.addOption(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n${roleList}`, true)
-  }
-
-  ask.send({ options: options }, async (err, data) => {
-    try {
-      if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      addRole(null, { ...data, message: message })
-    } catch (err) {
-      log.command.warning(`subme`, message.guild, err)
-    }
-  })
 }

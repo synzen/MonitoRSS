@@ -60,7 +60,7 @@ function finishInit (guildsInfo) {
   if (bot.shard) process.send({ type: 'initComplete', guilds: guildsInfo })
   else {
     storage.initialized = 2
-    setInterval(dbOps.refresh, 3600000)
+    setInterval(dbOps.vips.refresh, 3600000)
   }
   scheduleManager = new ScheduleManager(bot)
   listeners.createManagers(bot)
