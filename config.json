@@ -9,7 +9,9 @@
     "token": "",
     "enableCommands": true,
     "prefix": "~",
-    "game": "",
+    "status": "online",
+    "activityType": "",
+    "activityName": "",
     "controllerIds": [],
     "menuColor": 5285609,
     "deleteMenus": false

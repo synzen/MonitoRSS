@@ -27,23 +27,17 @@ const maxAttempts = 5
 bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
 const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
 
-function login (firstStartup) {
+async function login (firstStartup) {
   if (!firstStartup) bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
   storage.bot = bot
-
-  bot.login(config.bot.token)
-  .catch(err => {
-    if (loginAttempts++ >= maxAttempts) {
-      log.general.error(`${SHARD_ID}Discord.RSS failed to login after ${maxAttempts} attempts. Terminating.`)
-      if (bot.shard) bot.shard.send('kill')
-    }
-    log.general.error(`${SHARD_ID}Discord.RSS failed to login (${err}) on attempt #${loginAttempts}, retrying in ${restartTimeDisp} minutes...`)
-    setTimeout(login, restartTime)
-  })
-
-  bot.once('ready', function () {
+  try {
+    await bot.login(config.bot.token)
     loginAttempts = 0
-    bot.user.setPresence({ game: { name: (config.bot.game && typeof config.bot.game === 'string') ? config.bot.game : null, type: 0 } })
+    // bot.user.setPresence({ game: { name: (config.bot.game && typeof config.bot.game === 'string') ? config.bot.game : null, type: 0 } })
+    if (!config.bot.activityType) bot.user.setGame(null)
+    else bot.user.setPresence({ game: { name: config.bot.activityName , type: config.bot.activityType } })
+    bot.user.setStatus(config.bot.status)
+    
     log.general.info(`${SHARD_ID}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
     if (firstStartup) {
       if (config.bot.enableCommands !== false) listeners.enableCommands(bot)
@@ -52,7 +46,14 @@ function login (firstStartup) {
         initialize(bot, finishInit)
       })
     } else scheduleManager = new ScheduleManager(bot)
-  })
+  } catch (err) {
+    if (loginAttempts++ >= maxAttempts) {
+      log.general.error(`${SHARD_ID}Discord.RSS failed to login after ${maxAttempts} attempts. Terminating.`)
+      if (bot.shard) bot.shard.send('kill')
+    }
+    log.general.error(`${SHARD_ID}Discord.RSS failed to login (${err}) on attempt #${loginAttempts}, retrying in ${restartTimeDisp} minutes...`)
+    setTimeout(login, restartTime)
+  }
 }
 
 function finishInit (guildsInfo) {

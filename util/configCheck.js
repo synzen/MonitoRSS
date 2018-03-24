@@ -4,6 +4,8 @@ const log = require('./logger.js')
 const dbOps = require('./dbOps.js')
 const storage = require('./storage.js')
 const missingChannelCount = {}
+const ACTIVITY_TYPES = ['', 'PLAYING', 'STREAMING', 'LISTENING', 'WATCHING']
+const STATUS_TYPES = ['online', 'idle', 'dnd', 'invisible']
 
 exports.checkExists = (rssName, feed, logging, initializing) => {
   if (feed.disabled === true) {
@@ -55,7 +57,9 @@ exports.defaultConfigs = {
     token: {type: 'string', default: undefined},
     enableCommands: {type: 'boolean', default: true},
     prefix: {type: 'string', default: undefined},
-    game: {type: 'string', default: null},
+    status: {type: 'string', default: 'online'},
+    activityType: {type: 'string', default: ''},
+    activityName: {type: 'string', default: ''},
     controllerIds: {type: 'object', default: []},
     menuColor: {type: 'number', default: 7833753},
     deleteMenus: {type: 'boolean', default: false}
@@ -103,7 +107,7 @@ exports.check = userConfig => {
       fatalInvalidConfigs[configCategory + '.' + configName] = errMsg
     } else {
       userConfig[configCategory][configName] = config.default
-      invalidConfigs[configCategory + '.' + configName] = `${errMsg}. Defaulting to ${Array.isArray(config.default) ? `[${config.default}]` : config.default}`
+      invalidConfigs[configCategory + '.' + configName] = `${errMsg}. Defaulting to ${Array.isArray(config.default) ? `[${config.default}]` : config.default === '' ? 'an empty string' : config.default}`
     }
   }
 
@@ -120,6 +124,8 @@ exports.check = userConfig => {
         else if (configName === 'menuColor' && userVal > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
         else if (configName === 'sqlType' && (userVal !== 'sqlite3' && userVal !== 'mysql')) checkIfRequired(configCategory, configName, 'Must be either "mysql" or "sqlite3"')
         else if (configName === 'processorMethod' && userVal !== 'single' && userVal !== 'isolated' && userVal !== 'parallel') checkIfRequired(configCategory, configName, 'Must be either "single", "isolated", or "parallel"')
+        else if (configName === 'activityType' && !ACTIVITY_TYPES.includes(userVal.toUpperCase())) checkIfRequired(configCategory, configName, `Must be one of the following: "${ACTIVITY_TYPES.join('","')}"`)
+        else if (configName === 'status' && !STATUS_TYPES.includes(userVal.toLowerCase())) checkIfRequired(configCategory, configName, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
         else if (configName === 'controllerIds') {
           for (var i in userVal) {
             if (typeof userVal[i] !== 'string') {
