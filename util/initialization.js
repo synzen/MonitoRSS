@@ -32,7 +32,6 @@ function discordMsgResult (err, article, bot) {
 module.exports = (bot, callback) => {
   const GuildRss = storage.models.GuildRss()
   const linkCounts = new dbOps.LinkList()
-  // let oldLinkList
   const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
   const modSourceList = new Map()
   const sourceList = new Map()
@@ -83,13 +82,21 @@ module.exports = (bot, callback) => {
     }
   })
 
-  // For patron tracking on the public bot
-  try { require('../settings/vips.js')(bot) } catch (e) { if (config._server) log.general.error(`Failed to load VIP module`, e) }
-
-  dbOps.failedLinks.initalize(err => {
-    if (err) throw err
-    readGuilds()
-  })
+  try {
+    // For patron tracking on the public bot
+    require('../settings/vips.js')(bot, () => {
+      dbOps.failedLinks.initalize(err => {
+        if (err) throw err
+        readGuilds()
+      })
+    })
+  } catch (e) {
+    if (config._server) log.general.error(`Failed to load VIP module`, e)
+    dbOps.failedLinks.initalize(err => {
+      if (err) throw err
+      readGuilds()
+    })
+  }
 
   // Cache guilds and start initialization
   function readGuilds () {

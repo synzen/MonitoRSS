@@ -7,6 +7,7 @@ const articlesExpire = dbSettings.clean === true && dbSettings.articlesExpire > 
 const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 ? dbSettings.articlesExpire : -1
 const mongoose = require('mongoose')
 const currentGuilds = new Map()
+const vipServers = {}
 const linkTracker = {}
 const collectionIds = {}
 const allScheduleWords = []
@@ -34,6 +35,7 @@ function hash (str) {
 }
 
 exports.bot = bot
+exports.vipServers = vipServers
 exports.initialized = initialized
 exports.currentGuilds = currentGuilds // To hold all guild profiles
 exports.deletedFeeds = deletedFeeds // Any deleted rssNames to check during sendToDiscord if it was deleted during a cycle
@@ -106,7 +108,11 @@ exports.schemas = {
     servers: [String],
     maxFeeds: Number,
     allowWebhooks: Boolean,
-    allowCookies: Boolean
+    allowCookies: Boolean,
+    expireAt: {
+      type: Date,
+      index: { expires: 0 }
+    }
   }),
   blacklist: mongoose.Schema({
     isGuild: Boolean,

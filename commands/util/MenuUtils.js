@@ -26,6 +26,7 @@ class Menu {
     this.fn = fn
     this.pages = []
     this._pageNum = 0
+    this._series = false
     this._numbered = settings && settings.numbered != null ? settings.numbered : true
     this._msgCleaner = new MessageCleaner(message)
     if (!settings) return
@@ -191,7 +192,7 @@ class Menu {
         if (m.content.toLowerCase() === 'exit') {
           collector.stop('Menu closed.')
           // __end will cause the MenuSeries, if it exists, to skip its callback function
-          return callback(null, { __end: true }, this._msgCleaner)
+          return this._series ? callback(null, { __end: true }, this._msgCleaner) : null
         }
 
         // Call the function defined in the constructor
@@ -234,7 +235,10 @@ class MenuSeries {
     this._data = data
     this._mergedData = {}
     this._msgCleaner = new MessageCleaner(message)
-    menus.forEach(item => this._menus.push(item))
+    menus.forEach(item => {
+      item._series = true
+      this._menus.push(item)
+    })
   }
 
   /**

@@ -1,4 +1,3 @@
-const config = require('../config.json')
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 

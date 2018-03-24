@@ -37,7 +37,7 @@ async function addRole (err, data, direct) {
     log.command.info(`Role successfully added to member`, message.guild, role)
     await message.channel.send(`You now have the role \`${role.name}\`, subscribed to **<${source.link}>**.`)
   } catch (err) {
-    log.command.warning(`subme`, message.guild, err)
+    log.command.warning(`subme 2`, message.guild, err)
   }
 }
 
@@ -75,8 +75,12 @@ module.exports = (bot, message, command) => {
     ask.addOption(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n${roleList}`, true)
   }
 
-  ask.send({ options: options }, (err, data) => {
-    if (!data.role) return
-    addRole(err, { ...data, message: message })
+  ask.send({ options: options }, async (err, data) => {
+    try {
+      if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
+      addRole(null, { ...data, message: message })
+    } catch (err) {
+      log.command.warning(`subme`, message.guild, err)
+    }
   })
 }

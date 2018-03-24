@@ -1,6 +1,6 @@
 process.on('uncaughtException', function (err) {
-  console.err(err)
-  process.send({status: 'fatal', err: err})
+  console.log(err)
+  process.send({ status: 'fatal', err: err })
   process.exit()
 })
 

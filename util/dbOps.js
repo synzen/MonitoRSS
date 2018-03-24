@@ -41,6 +41,26 @@ exports.guildRss = {
       else log.general.info(`Removed GuildRss document ${guildId}`)
     })
   },
+  disableFeed: (guildRss, rssName, callback, skipProcessSend) => {
+    const link = guildRss.sources[rssName].link
+    if (storage.bot && storage.bot.shard && !skipProcessSend) {
+      process.send({ type: 'guildRss.disableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
+      return callback ? callback(null, link) : log.general.warning(`Feed named ${rssName} has been disabled in guild ${guildRss.id}`)
+    }
+    if (guildRss.sources[rssName].disabled === true) return callback ? callback(null, link) : log.general.warning(`Feed named ${rssName} has been disabled in guild ${guildRss.id}`)
+    guildRss.sources[rssName].disabled = true
+    exports.guildRss.update(guildRss)
+  },
+  enableFeed: (guildRss, rssName, callback, skipProcessSend) => {
+    const link = guildRss.sources[rssName].link
+    if (storage.bot && storage.bot.shard && !skipProcessSend) {
+      process.send({ type: 'guildRss.enableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
+      return callback ? callback(null, link) : log.general.info(`Feed named ${rssName} has been enabled in guild ${guildRss.id}`)
+    }
+    if (guildRss.sources[rssName].disabled == null) return callback ? callback(null, link) : log.general.info(`Feed named ${rssName} has been enabled in guild ${guildRss.id}`)
+    delete guildRss.sources[rssName].disabled
+    exports.guildRss.update(guildRss)
+  },
   removeFeed: (guildRss, rssName, callback, skipProcessSend) => {
     const link = guildRss.sources[rssName].link
     if (storage.bot && storage.bot.shard && !skipProcessSend) {
@@ -233,22 +253,20 @@ exports.failedLinks = {
     if (callback) callback()
   },
   _sendAlert: (link, message, skipProcessSend) => {
-    if (storage.bot.shard && !skipProcessSend) process.send({ type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
-    else {
-      currentGuilds.forEach(guildRss => {
-        const rssList = guildRss.sources
-        if (!rssList) return
-        for (var i in rssList) {
-          const source = rssList[i]
-          const channel = storage.bot.channels.get(source.channel)
-          if (source.link === link && channel && config._skipMessages !== true) {
-            const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
-            const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
-            channel.send(m, attach && currentGuilds.has(channel.guild.id) ? new Discord.Attachment(Buffer.from(JSON.stringify(currentGuilds.get(channel.guild.id), null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
-          }
+    if (storage.bot.shard && !skipProcessSend) return process.send({ type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
+    currentGuilds.forEach(guildRss => {
+      const rssList = guildRss.sources
+      if (!rssList) return
+      for (var i in rssList) {
+        const source = rssList[i]
+        const channel = storage.bot.channels.get(source.channel)
+        if (source.link === link && channel && config._skipMessages !== true) {
+          const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
+          const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
+          if (config._skipMessages !== true) channel.send(m, attach && currentGuilds.has(channel.guild.id) ? new Discord.Attachment(Buffer.from(JSON.stringify(currentGuilds.get(channel.guild.id), null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
         }
-      })
-    }
+      }
+    })
   },
   initalize: callback => {
     storage.models.FailedLink().find({}, (err, docs) => {
@@ -334,71 +352,80 @@ exports.blacklists = {
 }
 
 exports.vips = {
-  uniformize: (limitOverrides, cookieServers, webhookServers, callback, skipProcessSend) => {
-    if (storage.bot.shard && !skipProcessSend) process.send({ type: 'vips.uniformize', limitOverrides: storage.limitOverrides, cookieServers: storage.cookieServers, webhookServers: storage.webhookServers, _loopback: true })
+  uniformize: (limitOverrides, cookieServers, webhookServers, vipServers, callback, skipProcessSend) => {
+    if (storage.bot.shard && !skipProcessSend) process.send({ type: 'vips.uniformize', limitOverrides: limitOverrides, cookieServers: cookieServers, webhookServers: webhookServers, vipServers: vipServers, _loopback: true })
     else if (skipProcessSend) {
       storage.limitOverrides = limitOverrides
       storage.cookieServers = cookieServers
       storage.webhookServers = webhookServers
+      storage.vipServers = vipServers
     }
     if (callback) callback()
   },
   get: callback => models.VIP().find(callback),
   update: (settings, callback) => {
+    const DEF_MAX = config.feeds.max
+    const servers = settings.servers
+    if (servers) {
+      for (var x = 0; x < servers.length; ++x) {
+        const serverID = servers[x]
+        if (settings.maxFeeds > DEF_MAX) storage.limitOverrides[serverID] = settings.maxFeeds
+        else delete storage.limitOverrides[serverID]
+        if (settings.allowWebhooks) storage.webhookServers.push(serverID)
+        else storage.webhookServers.splice(storage.webhookServers.indexOf(serverID))
+        if (settings.allowCookies) storage.cookieServers.push(serverID)
+        else storage.cookieServers.splice(storage.cookieServers.indexOf(serverID))
+      }
+    }
     models.VIP().update({ id: settings.id }, settings, { upsert: true, strict: true }, err => {
       if (err) return callback ? callback(err) : log.general.error(`Unable to add VIP for id ${settings.id}`, err)
-      const DEF_MAX = config.feeds.maxFeeds
-      const servers = settings.servers
-      if (servers) {
-        for (var x = 0; x < servers.length; ++x) {
-          const serverID = servers[x]
-          if (settings.maxFeeds > DEF_MAX) storage.limitOverrides[serverID] = settings.maxFeeds
-          else delete storage.limitOverrides[serverID]
-          if (settings.allowWebhooks) storage.webhookServers.push(serverID)
-          else storage.webhookServers.splice(storage.webhookServers.indexOf(serverID))
-          if (settings.allowCookies) storage.cookieServers.push(serverID)
-          else storage.cookieServers.splice(storage.cookieServers.indexOf(serverID))
-        }
-      }
-
-      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, callback)
+      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, storage.vipServers, callback)
     })
   },
   remove: (id, callback) => {
     models.VIP().find({ id: id }).remove((err, doc) => {
-      if (err) return callback ? callback(err) : log.general.error(`Unable to add VIP for id ${id}`, err)
+      if (err) return callback ? callback(err) : log.general.error(`Unable to remove VIP for id ${id}`, err)
       const servers = doc.servers
       if (servers) {
         for (var x = 0; x < servers.length; ++x) {
           const serverID = servers[x]
           delete storage.limitOverrides[serverID]
+          delete storage.vipServers[serverID]
           storage.webhookServers.splice(storage.webhookServers.indexOf(serverID))
           storage.cookieServers.splice(storage.cookieServers.indexOf(serverID))
         }
       }
-      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, callback)
+      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, storage.vipServers, callback)
     })
   },
   refresh: callback => {
     models.VIP().find((err, docs) => {
       if (err) return callback ? callback(err) : log.general.error(`Unable to query VIPs for refresh`, err)
+      if (docs.length === 0) return callback ? callback() : null
       Object.keys(storage.limitOverrides).forEach(id => delete storage.limitOverrides[id])
+      Object.keys(storage.vipServers).forEach(id => delete storage.vipServers[id])
       storage.webhookServers.length = 0
       storage.cookieServers.length = 0
       const DEF_MAX = config.feeds.max
-      const len = docs.length
-      for (var x = 0; x < len; ++x) {
+      for (var x = 0; x < docs.length; ++x) {
         const doc = docs[x]
+        if (doc.expireAt && (new Date(doc.expireAt) < new Date())) {
+          log.general.info('Removing expired VIP...')
+          console.info(doc)
+          exports.vips.remove(doc.id)
+          continue
+        }
         const servers = doc.servers
         const sLen = servers.length
         for (var y = 0; y < sLen; ++y) {
           const serverID = servers[y]
+          storage.vipServers[serverID] = doc.expireAt ? { expireAt: new Date(doc.expireAt) } : {}
           if (doc.maxFeeds > DEF_MAX) storage.limitOverrides[serverID] = doc.maxFeeds
           if (doc.allowWebhooks) storage.webhookServers.push(serverID)
           if (doc.allowCookies) storage.cookieServers.push(serverID)
         }
       }
-      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, callback)
+      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, storage.vipServers, callback)
     })
   }
 }

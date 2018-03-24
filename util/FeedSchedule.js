@@ -30,7 +30,6 @@ class FeedSchedule {
 
     if (!this.bot.shard || (this.bot.shard && this.bot.shard.count === 1)) {
       this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
-      this.run.bind(this)
       log.cycle.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
     }
   }
@@ -60,9 +59,25 @@ class FeedSchedule {
 
   _addToSourceLists (guildRss) { // rssList is an object per guildRss
     const rssList = guildRss.sources
-
+    let c = 0
+    const max = storage.limitOverrides[guildRss.id] || (config.feeds.max || 0)
+    const status = {}
     for (var rssName in rssList) {
       const source = rssList[rssName]
+
+      // Determine whether any feeds should be disabled
+      if (++c <= max && source.disabled === true) {
+        log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id}...`)
+        dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
+        if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
+        status[source.channel].enabled.push(source.link)
+      } else if (c > max && source.disabled !== true) {
+        log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id}...`)
+        dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
+        if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
+        status[source.channel].disabled.push(source.link)
+      }
+
       if (configChecks.checkExists(rssName, source, false) && configChecks.validChannel(this.bot, guildRss, rssName) && typeof storage.failedLinks[source.link] !== 'string') {
         if (storage.linkTracker[rssName] === this.schedule.name) { // If assigned to a this.schedule
           this._delegateFeed(guildRss, rssName)
@@ -84,6 +99,24 @@ class FeedSchedule {
             this._delegateFeed(guildRss, rssName)
           }
         }
+      }
+    }
+
+    // Send notices about any feeds that were enabled/disabled
+    if (config._skipMessages === true) return
+    for (var channelId in status) {
+      let m = '**ATTENTION** - The following changes have been made due to a feed limit change for this server:\n\n'
+      const enabled = status[channelId].enabled
+      const disabled = status[channelId].disabled
+      if (enabled.length === 0 && disabled.length === 0) continue
+      for (var a = 0; a < enabled.length; ++a) m += `Feed <${enabled[a]}> has been enabled.\n`
+      for (var b = 0; b < disabled.length; ++b) m += `Feed <${disabled[b]}> has been disabled.\n`
+      const channel = this.bot.channels.get(channelId)
+      if (channel) {
+        channel.send(message)
+        .then(m => log.general.info(`Sent feed enable/disable notice to server`, channel.guild, channel))
+        .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel))
+        
       }
     }
   }

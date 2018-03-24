@@ -51,6 +51,9 @@ function createIntervals () {
       Manager.broadcast({type: 'runSchedule', shardId: activeShardIds[p], refreshTime: refreshTime})
     }, refreshTime * 60000))
   })
+  setInterval(() => {
+    Manager.broadcast({ type: 'cycleVIPs', shardId: activeShardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err))
+  }, 3600000)
 }
 
 Manager.on('message', async (shard, message) => {

@@ -24,7 +24,7 @@ async function removeRole (err, data, direct) {
     log.command.info(`Removed role from member`, message.guild, role, message.author)
     await message.channel.send(`You no longer have the role \`${role.name}\`.`)
   } catch (err) {
-    log.command.warning(`unsubme`, message.guild, err)
+    log.command.warning(`unsubme 2`, message.guild, err)
   }
 }
 
@@ -84,7 +84,11 @@ module.exports = (bot, message, command) => {
   }
 
   ask.send({ eligibleRoles: eligibleRoles }, async (err, data) => {
-    if (!data.role) return
-    removeRole(err, { ...data, message: message })
+    try {
+      if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
+      removeRole(err, { ...data, message: message })
+    } catch (err) {
+      log.command.warning(`unsubme`, message.guild, err)
+    }
   })
 }

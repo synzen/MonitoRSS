@@ -10,7 +10,6 @@ module.exports = (bot, message, command) => {
   new FeedSelector(message, null, { command: command }).send(null, async (err, data, msgHandler) => {
     try {
       if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      // else if (!rssName) return
       const { rssName } = data
 
       const guildRss = currentGuilds.get(message.guild.id)

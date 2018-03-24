@@ -20,7 +20,6 @@ module.exports = (bot, message, command) => {
     try {
       if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
       const { guildRss, rssName } = data
-      if (!rssName) return
       const source = guildRss.sources[rssName]
 
       if (!failedLinks[source.link] || failedLinks[source.link] < FAIL_LIMIT) {

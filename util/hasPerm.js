@@ -1,4 +1,7 @@
 const log = require('./logger.js')
+const config = require('../config.json')
+const CONTROLLER_IDS = config.bot.controllerIds
+
 const PERMISSIONS = [
   'CREATE_INSTANT_INVITE',
   'KICK_MEMBERS',
@@ -48,7 +51,7 @@ exports.bot = (bot, message, permission) => {
 }
 
 exports.user = (message, permission) => {
-  if (!permission || !PERMISSIONS.includes(permission)) return true
+  if (!permission || !PERMISSIONS.includes(permission) || CONTROLLER_IDS.includes(message.author.id)) return true
 
   const serverPerm = message.member.hasPermission(permission)
   const channelPerm = message.member.permissionsIn(message.channel).has(permission)

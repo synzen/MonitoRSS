@@ -6,8 +6,8 @@ const storage = require('./storage.js')
 const missingChannelCount = {}
 
 exports.checkExists = (rssName, feed, logging, initializing) => {
-  if (feed.enabled === false) {
-    if (logging) log.cycle.info(`${rssName} is disabled in channel ${feed.channel}, skipping...`)
+  if (feed.disabled === true) {
+    if (logging) log.cycle.warning(`${rssName} is disabled in channel ${feed.channel}, skipping...`)
     return false
   }
   if (!feed.link || !feed.link.startsWith('http')) {

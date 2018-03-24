@@ -1,4 +1,3 @@
-const config = require('../config.json')
 const dbOps = require('../util/dbOps.js')
 const channelTracker = require('../util/channelTracker.js')
 const currentGuilds = require('../util/storage.js').currentGuilds

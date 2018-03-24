@@ -58,7 +58,10 @@ function login (firstStartup) {
 function finishInit (guildsInfo) {
   storage.initialized = 1
   if (bot.shard) process.send({ type: 'initComplete', guilds: guildsInfo })
-  else storage.initialized = 2
+  else {
+    storage.initialized = 2
+    setInterval(dbOps.refresh, 3600000)
+  }
   scheduleManager = new ScheduleManager(bot)
   listeners.createManagers(bot)
 }
@@ -75,6 +78,9 @@ else {
         dbOps.vips.refresh()
         dbOps.blacklists.refresh()
         break
+      case 'cycleVIPs':
+        if (bot.shard.id === message.shardId) dbOps.vips.refresh()
+        break
       case 'runSchedule':
         if (bot.shard.id === message.shardId) scheduleManager.run(message.refreshTime)
         break
@@ -83,6 +89,12 @@ else {
         break
       case 'guildRss.remove':
         if (bot.guilds.has(message.guildId)) dbOps.guildRss.remove(message.guildId, null, true)
+        break
+      case 'guildRss.disableFeed':
+        if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.disableFeed(message.guildRss, message.rssName, null, true)
+        break
+      case 'guildRss.enableFeed':
+        if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.enableFeed(message.guildRss, message.rssName, null, true)
         break
       case 'guildRss.removeFeed':
         if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.removeFeed(message.guildRss, message.rssName, null, true)
@@ -97,7 +109,7 @@ else {
         if (storage.initialized) dbOps.blacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, null, true)
         break
       case 'vips.uniformize':
-        if (storage.initialized) dbOps.vips.uniformize(message.limitOverrides, message.cookieServers, message.webhookServers, null, true)
+        if (storage.initialized) dbOps.vips.uniformize(message.limitOverrides, message.cookieServers, message.webhookServers, message.vipServers, null, true)
         break
       case 'dbRestoreSend':
         const channel = bot.channels.get(message.channelID)

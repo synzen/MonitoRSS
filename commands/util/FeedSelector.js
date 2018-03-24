@@ -179,7 +179,7 @@ class FeedSelector extends Menu {
       })
     } catch (err) {
       log.command.warning(`Failed to send Menu`, this.channel.guild, err)
-      callback(err, { __end: true })
+      return this._series ? callback(err, { __end: true }) : null
     }
   }
 }

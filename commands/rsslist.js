@@ -2,8 +2,8 @@ const config = require('../config.json')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const currentGuilds = storage.currentGuilds
-const overrides = storage.limitOverrides
 const MenuUtils = require('./util/MenuUtils.js')
+const moment = require('moment')
 const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = (bot, message, command) => {
@@ -14,8 +14,7 @@ module.exports = (bot, message, command) => {
   const rssList = guildRss.sources
   let failedFeedCount = 0
 
-  const maxFeedsAllowed = overrides[message.guild.id] != null ? overrides[message.guild.id] === 0 ? 'Unlimited' : overrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max))) ? 'Unlimited' : config.feeds.max
-
+  const maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] === 0 ? 'Unlimited' : storage.limitOverrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max))) ? 'Unlimited' : config.feeds.max
   // Generate the info for each feed as an array, and push into another array
   const currentRSSList = []
   for (var rssName in rssList) {
@@ -32,10 +31,22 @@ module.exports = (bot, message, command) => {
       o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : 'Status: FAILED\n'
       if (o.status.startsWith('STATUS: FAILED')) ++failedFeedCount
     }
+    if (rssList[rssName].disabled === true) o.status = `Status: DISABLED\n`
     currentRSSList.push(o)
   }
 
-  let desc = maxFeedsAllowed === 'Unlimited' ? '\n\u200b\n' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n\u200b\n`
+  let vipDetails = ''
+  if (storage.vipServers[message.guild.id]) {
+    vipDetails += '**Patron Until:** '
+    const vipLen = storage.vipServers[message.guild.id]
+    if (vipLen.expireAt) {
+      const expireAt = moment(vipLen.expireAt)
+      const daysLeft = Math.round(moment.duration(expireAt.diff(moment())).asDays())
+      vipDetails += `${expireAt.format('D MMMM YYYY')} (${daysLeft} days)\n`
+    } else vipDetails += 'Ongoing\n'
+  } else vipDetails = '\n'
+
+  let desc = maxFeedsAllowed === 'Unlimited' ? `${vipDetails}\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n\u200b\n`
   desc += failedFeedCount > 0 ? `**Attention!** Feeds that have reached ${FAIL_LIMIT} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.bot.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n` : ''
 
   const list = new MenuUtils.Menu(message)
