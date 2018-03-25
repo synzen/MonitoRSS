@@ -33,11 +33,12 @@ async function login (firstStartup) {
   try {
     await bot.login(config.bot.token)
     loginAttempts = 0
-    // bot.user.setPresence({ game: { name: (config.bot.game && typeof config.bot.game === 'string') ? config.bot.game : null, type: 0 } })
+    // bot.user.setActivity(null)
+    // bot.user.setGame(null)
     if (!config.bot.activityType) bot.user.setGame(null)
-    else bot.user.setPresence({ game: { name: config.bot.activityName , type: config.bot.activityType } })
+    else bot.user.setPresence({ game: { name: config.bot.activityName, type: config.bot.activityType } })
     bot.user.setStatus(config.bot.status)
-    
+
     log.general.info(`${SHARD_ID}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
     if (firstStartup) {
       if (config.bot.enableCommands !== false) listeners.enableCommands(bot)
@@ -89,7 +90,7 @@ else {
         if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.update(message.guildRss, null, true)
         break
       case 'guildRss.remove':
-        if (bot.guilds.has(message.guildId)) dbOps.guildRss.remove(message.guildId, null, true)
+        if (bot.guilds.has(message.guildId)) dbOps.guildRss.remove(message.guildRss, null, true)
         break
       case 'guildRss.disableFeed':
         if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.disableFeed(message.guildRss, message.rssName, null, true)

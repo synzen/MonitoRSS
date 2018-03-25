@@ -108,10 +108,10 @@ module.exports = (bot, callback) => {
         if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
           if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
           else {
-            dbOps.guildRss.remove(guildId, err => {
+            dbOps.guildRss.remove(guildRss, err => {
               if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
-              log.init.info(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
-            })
+              log.init.info(`(G: ${guildId}) Guild is missing, backing up`)
+            }, true)
           }
           continue
         }

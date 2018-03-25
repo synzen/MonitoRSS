@@ -10,20 +10,24 @@ const FAIL_LIMIT = config.feeds.failLimit
 
 exports.guildRss = {
   update: (guildRss, callback, skipProcessSend) => {
+    if (storage.bot.shard && !skipProcessSend) return process.send({ type: 'guildRss.update', guildRss: guildRss, _loopback: true })
     models.GuildRss().update({ id: guildRss.id }, guildRss, UPDATE_SETTINGS, (err, res) => {
       if (err) return callback ? callback(err) : log.general.error(`(G: ${guildRss.id}) Unable to update profile`, err)
-      if (storage.bot.shard && !skipProcessSend) process.send({ type: 'guildRss.update', guildRss: guildRss, _loopback: true })
-      else currentGuilds.set(guildRss.id, guildRss)
+      currentGuilds.set(guildRss.id, guildRss)
       if (callback) callback()
     })
   },
-  remove: (guildId, callback, skipProcessSend) => {
-    const guildRss = currentGuilds.get(guildId)
+  remove: (guildInfo, callback, skipProcessSend) => {
+    if (storage.bot && storage.bot.shard && !skipProcessSend) return process.send({ type: 'guildRss.remove', guildId: guildId, _loopback: true })
+    let guildRss
+    let guildId
+    if (typeof guildId === 'object') {
+      guildRss = guildInfo
+      guildId = guildRss.id
+    } else guildRss = currentGuilds.get(guildId)
+    if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss)
     models.GuildRss().find({ id: guildId }).remove((err, res) => {
-      if (err && err.code !== 26) {
-        if (callback) callback(err)
-        else log.general.warning(`Unable to remove GuildRss document ${guildId}`, err)
-      }
+      if (err && err.code !== 26) return callback ? callback(err) : log.general.warning(`Unable to remove GuildRss document ${guildId}`, err)
       const rssList = guildRss ? guildRss.sources : undefined
       if (rssList) {
         for (let rssName in rssList) {
@@ -32,13 +36,8 @@ exports.guildRss = {
           })
         }
       }
-      if (storage.bot && storage.bot.shard && !skipProcessSend) process.send({ type: 'guildRss.remove', guildId: guildId, _loopback: true })
-      else {
-        if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildId)
-        currentGuilds.delete(guildId)
-      }
-      if (callback) callback()
-      else log.general.info(`Removed GuildRss document ${guildId}`)
+      currentGuilds.delete(guildId)
+      return callback ? callback() : log.general.info(`Removed GuildRss document ${guildId}`)
     })
   },
   disableFeed: (guildRss, rssName, callback, skipProcessSend) => {
@@ -76,10 +75,11 @@ exports.guildRss = {
       return callback ? callback(null, link) : !skipProcessSend ? log.general.info(`Feed ${link} has been removed from guild ${guildRss.id} (${guildRss.name})`) : null
     })
   },
-  backup: (guildId, callback) => {
-    const guildRss = currentGuilds.get(guildId)
+  backup: (guildRss, callback) => {
     if (!guildRss || exports.guildRss.empty(guildRss, true)) return callback ? callback() : null
-    models.GuildRssBackup().update({ id: guildId }, guildRss, UPDATE_SETTINGS, (err, res) => callback ? callback(err) : err ? log.general.warning(`Unable to guildRss.backup guild ${guildId}`, err) : null)
+    models.GuildRssBackup().update({ id: guildRss.id }, guildRss, UPDATE_SETTINGS, (err, res) => {
+      return callback ? callback(err) : err ? log.general.warning(`Unable to guildRss.backup guild ${guildRss.id}`, err) : log.general.info(`Backed up guild ${guildRss.id}`)
+    })
   },
   restore: (guildId, callback, skipProcessSend) => {
     models.GuildRssBackup().find({ id: guildId }, (err, docs) => {

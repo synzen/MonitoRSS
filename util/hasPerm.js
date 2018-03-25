@@ -39,11 +39,13 @@ exports.bot = (bot, message, permission) => {
   const hasPerm = guildBot.permissionsIn(channel).has(permission)
 
   if (permission === 'MANAGE_ROLES_OR_PERMISSIONS' && !hasPerm) {
-    log.command.warning(`Self subscription disabled due to missing permission`, message.guild)
+    log.command.warning(`Self subscription disabled due to missing "Manage Roles" permission`, message.guild)
     message.channel.send('Function disabled due to missing `Manage Roles` permission.').then(m => m.delete(3000)).catch(err => log.command.warning(`hasperm 1`, message.guild, err))
   } else if (permission === 'EMBED_LINKS' && !hasPerm) {
-    log.command.warning(`Menu commands disabled due to missing permission`, message.guild)
+    log.command.warning(`Menu commands disabled due to missing "Embed Links" permission`, message.guild)
     message.channel.send('Menu commands disabled due to missing `Embed Links` permission.').then(m => m.delete(3000)).catch(err => log.command.warning(`hasperm 2`, message.guild, err))
+  } else if (!hasPerm) {
+    log.command.warning(`Missing permissions for user, blocked ${message.content}`, message.guild, message.author)
   }
 
   return hasPerm
@@ -56,5 +58,8 @@ exports.user = (message, permission) => {
   const channelPerm = message.member.permissionsIn(message.channel).has(permission)
 
   if (serverPerm || channelPerm) return true
-  else return false
+  else {
+    log.command.warning(`Missing permissions for user, blocked ${message.content}`, message.guild, message.author)
+    return false
+  }
 }

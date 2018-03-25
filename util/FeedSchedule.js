@@ -6,6 +6,7 @@ const debugFeeds = require('./debugFeeds.js').list
 const events = require('events')
 const childProcess = require('child_process')
 const storage = require('./storage.js') // All properties of storage must be accessed directly due to constant changes
+const statistics = storage.statistics
 const logLinkErr = require('./logLinkErrs.js')
 const log = require('./logger.js')
 const allScheduleWords = storage.allScheduleWords
@@ -59,19 +60,20 @@ class FeedSchedule {
 
   _addToSourceLists (guildRss) { // rssList is an object per guildRss
     const rssList = guildRss.sources
-    let c = 0
+    let c = 0 // To count and determine what feeds should be disabled if they violate their limits
     const max = storage.limitOverrides[guildRss.id] || (config.feeds.max || 0)
     const status = {}
+    let feedCount = 0 // For statistics in storage
     for (var rssName in rssList) {
       const source = rssList[rssName]
-
+      ++feedCount
       // Determine whether any feeds should be disabled
-      if (++c <= max && source.disabled === true) {
+      if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === true) {
         log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id}...`)
         dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].enabled.push(source.link)
-      } else if (c > max && source.disabled !== true) {
+      } else if (max !== 0 && c > max && source.disabled !== true) {
         log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id}...`)
         dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
@@ -103,7 +105,7 @@ class FeedSchedule {
     }
 
     // Send notices about any feeds that were enabled/disabled
-    if (config._skipMessages === true) return
+    if (config._skipMessages === true) return feedCount
     for (var channelId in status) {
       let m = '**ATTENTION** - The following changes have been made due to a feed limit change for this server:\n\n'
       const enabled = status[channelId].enabled
@@ -118,6 +120,7 @@ class FeedSchedule {
         .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel, err))
       }
     }
+    return feedCount
   }
 
   _genBatchLists () { // Each batch is a bunch of links. Too many links at once will cause request failures.
@@ -171,7 +174,11 @@ class FeedSchedule {
 
     this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     this._sourceList.clear()
-    currentGuilds.forEach(item => this._addToSourceLists(item))
+    let feedCount = 0 // For statistics in storage
+    currentGuilds.forEach(guildRss => {
+      feedCount += this._addToSourceLists(guildRss) // Returns the feed count for this guildRss
+    })
+    storage.statistics.feeds = feedCount
     this._genBatchLists()
 
     if (this._sourceList.size + this._modSourceList.size === 0) {
@@ -313,11 +320,66 @@ class FeedSchedule {
 
   _finishCycle (noFeeds) {
     if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({ type: 'scheduleComplete', refreshTime: this.refreshTime })
-    if (noFeeds) return log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
+    const diff = (new Date() - this._startTime) / 1000
+    const timeTaken = diff.toFixed(2)
 
+    // Update statistics
+    if (this.schedule.name === 'default') {
+      // statistics.feeds is handled earlier in run()
+      statistics.guilds = this.bot.guilds.size
+      statistics.cycleTime = !statistics.cycleTime ? diff : (diff + statistics.cycleTime) / 2
+      statistics.cycleFails = !statistics.cycleFails ? this._cycleFailCount : (statistics.cycleFails + this._cycleFailCount) / 2
+      statistics.cycleLinks = !statistics.cycleLinks ? this._cycleTotalCount : (statistics.cycleLinks + this._cycleTotalCount) / 2
+      statistics.fullyUpdated = true
+      statistics.lastUpdated = new Date()
+    }
+
+    if (this.schedule.name === 'default' && this.bot.shard) {
+      this.bot.shard.broadcastEval(`
+        const storage = require(require('path').dirname(require.main.filename) + '/util/storage.js')
+        const obj = {}
+        obj.cycleLinks = storage.statistics.cycleLinks
+        obj.cycleTime = storage.statistics.cycleTime
+        obj.cycleFails = storage.statistics.cycleFails
+        obj.feeds = storage.statistics.feeds
+        obj.guilds = this.guilds.size
+        obj
+      `).then(results => {
+        let globalCycleLinks = 0
+        let globalCycleTime = 0
+        let globalCycleFails = 0
+        let globalFeeds = 0
+        let globalGuilds = 0
+        for (var i = 0; i < results.length; ++i) {
+          const result = results[i]
+          if (result.cycleLinks != null) globalCycleLinks += result.cycleLinks
+          if (result.cycleTime != null) globalCycleTime += result.cycleTime
+          if (result.cycleFails != null) globalCycleFails += result.cycleFails
+          globalFeeds += result.feeds
+          globalGuilds += result.guilds
+        }
+        this.bot.shard.broadcastEval(`
+          const storage = require(require('path').dirname(require.main.filename) + '/util/storage.js')
+          const shardCount = this.shard.count
+          storage.statisticsGlobal.guilds = { global: ${globalGuilds}, shard: ${globalGuilds} / shardCount }
+          storage.statisticsGlobal.feeds = { global: ${globalFeeds}, shard: ${globalFeeds} / shardCount }
+          if (${globalCycleTime}) {
+            storage.statisticsGlobal.lastUpdated = new Date()
+            if (storage.statisticsGlobal.fullyUpdated !== true) {
+              ++storage.statisticsGlobal.fullyUpdated
+              if (storage.statisticsGlobal.fullyUpdated >= shardCount) storage.statisticsGlobal.fullyUpdated = true
+            }
+            storage.statisticsGlobal.cycleLinks = { global: ${globalCycleLinks}, shard: ${globalCycleLinks} / shardCount }
+            storage.statisticsGlobal.cycleTime = { global: ${globalCycleTime}, shard: ${globalCycleTime} / shardCount }
+            storage.statisticsGlobal.cycleFails = { global: ${globalCycleFails}, shard: ${globalCycleFails} / shardCount }
+          }
+        `).catch(err => log.general.warning('Failed to update global statistics', err))
+      }).catch(err => log.general.warning('Unable to get individual statistics for update', err))
+    }
+
+    if (noFeeds) return log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
     if (this._processorList.length === 0) this.inProgress = false
 
-    const timeTaken = ((new Date() - this._startTime) / 1000).toFixed(2)
     log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
     if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({type: 'scheduleComplete', refreshTime: this.refreshTime})
   }

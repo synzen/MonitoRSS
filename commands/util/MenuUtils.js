@@ -93,8 +93,8 @@ class Menu {
    * Set the author for all the embeds
    *
    * @param {String} text Author text
-   * @param {String} url Author URL
-   * @param {icon} icon Author icon URL
+   * @param {String} [url] Author URL
+   * @param {String} [icon] Author icon URL
    * @returns {this}
    * @memberof Menu
    */
@@ -114,6 +114,20 @@ class Menu {
   setTitle (text) {
     this._embedExists()
     this.pages.forEach(embed => embed.setTitle(text))
+    return this
+  }
+
+  /**
+   * Set the footer for all the embeds
+   *
+   * @param {String} text Footer text
+   * @param {String} [icon] Footer icon URL
+   * @returns {this}
+   * @memberof Menu
+   */
+  setFooter (text, icon) {
+    this._embedExists()
+    this.pages.forEach(embed => embed.setFooter(text, icon))
     return this
   }
 
@@ -140,7 +154,13 @@ class Menu {
   addOption (title, desc, inline) {
     this._embedExists()
     if (this._curPage && this._curPage.fields.length >= this.maxPerPage) this.addPage()
-    this._curPage.addField(`${this._numbered ? (this.pages.length - 1) * this.maxPerPage + (this._curPage.fields.length + 1) + ') ' : ''}${title}`, desc.length > 1024 ? desc.slice(0, 1000) + '...' : desc, inline)
+    if (!title && !desc) this._curPage.addBlankField(inline)
+    else {
+      // title = title.toString()
+      // desc = desc.toString()
+      this._curPage.addField(`${this._numbered ? (this.pages.length - 1) * this.maxPerPage + (this._curPage.fields.length + 1) + ') ' : ''}${title}`, desc.length > 1024 ? desc.slice(0, 1000) + '...' : desc, inline)
+    }
+
     return this
   }
 

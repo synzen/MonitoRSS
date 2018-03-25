@@ -4,29 +4,16 @@ const MenuUtils = require('./util/MenuUtils.js')
 const log = require('../util/logger.js')
 const config = require('../config.json')
 
-function selectRole (m, data, callback) {
-  const { eligibleRoles } = data
-  const input = m.content
-  const chosenRole = m.guild.roles.find('name', input)
-
-  if (!chosenRole || !eligibleRoles.includes(input)) return callback(new SyntaxError('That is not a valid role to remove. Try again, or type `exit` to cancel.'))
-  callback(null, { ...data, role: chosenRole })
-}
-
-async function removeRole (err, data, direct) {
-  const { role, message } = data
-  try {
-    if (err && direct) return await message.channel.send('That is not a valid role to remove.')
-    else if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-    message.member.removeRole(role).catch(err => {
-      message.channel.send(`Error: Unable to remove role.` + err.message ? ` (${err.message})` : '')
-      log.command.warning(`Unable to remove role`, message.guild, role, message.author, err)
-    })
+async function removeRole (message, role) {
+  message.member.removeRole(role)
+  .then(mem => {
     log.command.info(`Removed role from member`, message.guild, role, message.author)
-    await message.channel.send(`You no longer have the role \`${role.name}\`.`)
-  } catch (err) {
-    log.command.warning(`unsubme 3`, message.guild, err)
-  }
+    message.channel.send(`You no longer have the role \`${role.name}\`.`).catch(err => log.command.warning('unsubme 3a', message.guild, err))
+  })
+  .catch(err => {
+    message.channel.send(`Error: Unable to remove role.` + err.message ? ` (${err.message})` : '')
+    log.command.warning(`Unable to remove role`, message.guild, role, message.author, err).catch(err => log.command.warning('unsubme 3a', message.guild, err))
+  })
 }
 
 module.exports = async (bot, message, command) => {
@@ -50,15 +37,14 @@ module.exports = async (bot, message, command) => {
     const predeclared = msgArr.join(' ').trim()
     if (predeclared) {
       const role = message.guild.roles.find('name', predeclared)
-      if (role && eligibleRoles.includes(predeclared)) return removeRole(null, { role: role, message: message }, true)
-      else if (mention && eligibleRoles.includes(mention.name)) return removeRole(null, { role: mention, message: message }, true)
-      const m = await message.channel.send(`That is not a valid role to add. Note that roles are case-sensitive. To see the the full list of roles that can be added, type \`${config.bot.prefix}subme\`.`)
-      return await m.delete(5000)
+      if (role && eligibleRoles.includes(predeclared)) return removeRole(message, role)
+      else if (mention && eligibleRoles.includes(mention.name)) return removeRole(message, mention)
+      return await message.channel.send(`That is not a valid role to add. Note that roles are case-sensitive. To see the the full list of roles that can be removed, type \`${config.bot.prefix}unsubme\`.`)
     }
 
-    const ask = new MenuUtils.Menu(message, selectRole, { numbered: false })
+    const ask = new MenuUtils.Menu(message, null, { numbered: false })
       .setTitle('Self-Subscription Removal')
-      .setDescription('Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name you want removed, or type **exit** to cancel.\u200b\n\u200b\n')
+      .setDescription(`Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type **${config.bot.prefix}unsubme role** to remove a role from yourself.\u200b\n\u200b\n`)
 
     // Generate a list of feeds and eligible roles to be removed
     const options = getSubList(bot, message.guild, rssList)
@@ -81,16 +67,15 @@ module.exports = async (bot, message, command) => {
     // Some roles may not have a feed assigned since it prints all roles below the bot's role.
     if (filteredMemberRoles.length > 0) {
       let leftoverRoles = ''
-      for (var leftoverRole in filteredMemberRoles) {
-        leftoverRoles += filteredMemberRoles[leftoverRole].name + '\n'
-      }
+      const temp = []
+      for (var leftoverRole in filteredMemberRoles) temp.push(filteredMemberRoles[leftoverRole].name)
+      leftoverRoles += temp.sort().join('\n')
       ask.addOption(`No Feed Assigned`, leftoverRoles, true)
     }
 
-    ask.send({ eligibleRoles: eligibleRoles }, async (err, data) => {
+    ask.send(null, async (err, data) => {
       try {
         if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-        removeRole(err, { ...data, message: message })
       } catch (err) {
         log.command.warning(`unsubme 2`, message.guild, err)
       }

@@ -20,17 +20,18 @@ function hash (str) {
   return hash
 }
 
-function expireDate(type) {
+function expireDate (type) {
   return () => {
     const date = new Date()
     date.setDate(date.getDate() + (type === 'guildBackup' ? guildBackupsExpire : type === 'article' ? articlesExpire : 0)) // Add days
     return date
   }
 }
-
 // exports.bot = bot
 // exports.scheduleManager = scheduleManager
 exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
+exports.statistics = { fullyUpdated: false } // For individual shards/non sharded
+exports.statisticsGlobal = { fullyUpdated: 0 } // For aggregated statistics across all shards, updated on an interval by eval
 exports.vipServers = {}
 exports.currentGuilds = new Map() // To hold all guild profiles
 exports.deletedFeeds = [] // Any deleted rssNames to check during sendToDiscord if it was deleted during a cycle
@@ -68,13 +69,13 @@ exports.schemas = {
     timezone: String,
     date: {
       type: Date,
-      default: Date.now,
+      default: Date.now
     },
-    ... guildBackupsExpire > 0 ? {expiresAt: {
+    ...guildBackupsExpire > 0 ? {expiresAt: {
       type: Date,
       default: expireDate('guildBackup'),
       index: { expires: 0 }
-    }}:{}
+    }} : {}
   }),
   failedLink: mongoose.Schema({
     link: String,
@@ -92,11 +93,12 @@ exports.schemas = {
     date: {
       type: Date,
       default: Date.now
-    }, ... articlesExpire > 0 ? {expiresAt: {
+    },
+    ...articlesExpire > 0 ? {expiresAt: {
       type: Date,
       default: expireDate('article'),
       index: { expires: 0 }
-    }}:{}
+    }} : {}
   }),
   vip: mongoose.Schema({
     id: {

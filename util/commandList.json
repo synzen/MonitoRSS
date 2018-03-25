@@ -115,6 +115,11 @@
 		"description": "Open a menu to move a feed into another channel.",
 		"action": "Feed Channel Transfer"
 	},
+	"rssstats": {
+		"initLevel": 2,
+		"userPerm": "MANAGE_CHANNELS",
+		"description": "Show statistics on bot performance and size."
+	},
 	"rsswebhook": {
 		"initLevel": 1,
 		"userPerm": "MANAGE_CHANNELS",
