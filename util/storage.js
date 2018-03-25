@@ -6,21 +6,7 @@ const dbSettings = require('../config.json').database
 const articlesExpire = dbSettings.clean === true && dbSettings.articlesExpire > 0 ? dbSettings.articlesExpire : -1
 const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 ? dbSettings.articlesExpire : -1
 const mongoose = require('mongoose')
-const currentGuilds = new Map()
-const vipServers = {}
-const linkTracker = {}
 const collectionIds = {}
-const allScheduleWords = []
-let bot
-let limitOverrides = {}
-let webhookServers = []
-let cookieServers = []
-let blacklistUsers = []
-let blacklistGuilds = []
-let initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
-let deletedFeeds = []
-let failedLinks = {}
-let scheduleManager
 
 function hash (str) {
   // https://stackoverflow.com/questions/6122571/simple-non-secure-hash-function-for-javascript
@@ -34,20 +20,28 @@ function hash (str) {
   return hash
 }
 
-exports.bot = bot
-exports.vipServers = vipServers
-exports.initialized = initialized
-exports.currentGuilds = currentGuilds // To hold all guild profiles
-exports.deletedFeeds = deletedFeeds // Any deleted rssNames to check during sendToDiscord if it was deleted during a cycle
-exports.linkTracker = linkTracker // To track schedule assignment to links
-exports.allScheduleWords = allScheduleWords // Holds all words across all schedules
-exports.failedLinks = failedLinks
-exports.scheduleManager = scheduleManager
-exports.limitOverrides = limitOverrides
-exports.webhookServers = webhookServers
-exports.cookieServers = cookieServers
-exports.blacklistUsers = blacklistUsers
-exports.blacklistGuilds = blacklistGuilds
+function expireDate(type) {
+  return () => {
+    const date = new Date()
+    date.setDate(date.getDate() + (type === 'guildBackup' ? guildBackupsExpire : type === 'article' ? articlesExpire : 0)) // Add days
+    return date
+  }
+}
+
+// exports.bot = bot
+// exports.scheduleManager = scheduleManager
+exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
+exports.vipServers = {}
+exports.currentGuilds = new Map() // To hold all guild profiles
+exports.deletedFeeds = [] // Any deleted rssNames to check during sendToDiscord if it was deleted during a cycle
+exports.linkTracker = {} // To track schedule assignment to links
+exports.allScheduleWords = [] // Holds all words across all schedules
+exports.failedLinks = {}
+exports.limitOverrides = {}
+exports.webhookServers = []
+exports.cookieServers = []
+exports.blacklistUsers = []
+exports.blacklistGuilds = []
 exports.schemas = {
   guildRss: mongoose.Schema({
     id: String,
@@ -75,8 +69,12 @@ exports.schemas = {
     date: {
       type: Date,
       default: Date.now,
-      index: guildBackupsExpire > 0 ? { expires: 60 * 60 * 24 * guildBackupsExpire } : null
-    }
+    },
+    ... guildBackupsExpire > 0 ? {expiresAt: {
+      type: Date,
+      default: expireDate('guildBackup'),
+      index: { expires: 0 }
+    }}:{}
   }),
   failedLink: mongoose.Schema({
     link: String,
@@ -93,9 +91,12 @@ exports.schemas = {
     title: String,
     date: {
       type: Date,
-      default: Date.now,
-      index: articlesExpire > 0 ? { expires: 60 * 60 * 24 * articlesExpire } : null
-    }
+      default: Date.now
+    }, ... articlesExpire > 0 ? {expiresAt: {
+      type: Date,
+      default: expireDate('article'),
+      index: { expires: 0 }
+    }}:{}
   }),
   vip: mongoose.Schema({
     id: {

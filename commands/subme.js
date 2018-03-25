@@ -60,7 +60,8 @@ module.exports = async (bot, message, command) => {
         if (role && options[option].roleList.includes(role.id)) return addRole(null, { role: role, message: message, source: options[option].source }, true)
         else if (mention && options[option].roleList.includes(mention.id)) return addRole(null, { role: mention, message: message, source: options[option].source }, true)
       }
-      return await message.channel.send(`That is not a valid role to add. To see the the full list of roles that can be added, ype \`${config.bot.prefix}subme\`.`)
+      const m = await message.channel.send(`That is not a valid role to add. Note that roles are case-sensitive. To see the the full list of roles that can be added, type \`${config.bot.prefix}subme\`.`)
+      return await m.delete(5000)
     }
 
     const ask = new MenuUtils.Menu(message, verifyRole, { numbered: false })
