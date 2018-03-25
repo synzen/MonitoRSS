@@ -43,7 +43,6 @@ module.exports = (bot, message) => {
   let diff = moment.duration(moment().diff(moment(reference.lastUpdated)))
   diff = diff.asMinutes() < 1 ? `Updated ${diff.asSeconds().toFixed(2)} seconds ago` : `Updated ${diff.asMinutes().toFixed(2)} minutes ago`
 
-
   visual
     .addOption('Unique Feeds', cycleLinks, true)
     .addOption('Total Feeds', feeds, true)

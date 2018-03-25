@@ -49,28 +49,49 @@ module.exports = async (bot, message, command) => {
     // Generate a list of feeds and eligible roles to be removed
     const options = getSubList(bot, message.guild, rssList)
     for (var option in options) {
-      let roleList = ''
+      const title = options[option].source.title
+      const temp = []
       for (var memberRole in filteredMemberRoles) {
-        if (options[option].roleList.includes(filteredMemberRoles[memberRole].id)) {
-          roleList += filteredMemberRoles[memberRole].name + '\n'
-          filteredMemberRoles.splice(memberRole, 1)
-        }
+        if (!options[option].roleList.includes(filteredMemberRoles[memberRole].id)) continue
+        temp.push(filteredMemberRoles[memberRole].name)
+        filteredMemberRoles.splice(memberRole, 1)
       }
-      if (roleList) {
-        let channelID = options[option].source.channel
-        let channelName = message.guild.channels.get(channelID).name
-        // list.addField(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:**: #${channelName}\n${roleList}`, true)
-        ask.addOption(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:**: #${channelName}\n${roleList}`, true)
+      temp.sort()
+      if (temp.length > 0) {
+        let channelName = message.guild.channels.get(options[option].source.channel).name
+        let desc = `**Link**: ${options[option].source.link}\n**Channel**: #${channelName}\n**Roles**:`
+        for (var x = 0; x < temp.length; ++x) {
+          const cur = temp[x]
+          const next = temp[x + 1]
+          desc += `${cur}\n`
+          // If there are too many roles, add it into another field
+          if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
+            ask.addOption(title, desc, true)
+            desc = `**Link**: ${options[option].source.link}\n**Channel**: #${channelName}\n**Roles**:`
+          }
+        }
+        ask.addOption(title, desc, true)
       }
     }
 
     // Some roles may not have a feed assigned since it prints all roles below the bot's role.
     if (filteredMemberRoles.length > 0) {
-      let leftoverRoles = ''
       const temp = []
+      const title = 'Other Roles'
       for (var leftoverRole in filteredMemberRoles) temp.push(filteredMemberRoles[leftoverRole].name)
-      leftoverRoles += temp.sort().join('\n')
-      ask.addOption(`No Feed Assigned`, leftoverRoles, true)
+      temp.sort()
+      let desc = ''
+      for (var y = 0; y < temp.length; ++y) {
+        const cur = temp[y]
+        const next = temp[y + 1]
+        desc += `${cur}\n`
+        // If there are too many roles, add it into another field
+        if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
+          ask.addOption(title, desc, true)
+          desc = ''
+        }
+      }
+      ask.addOption(`Other Roles`, desc, true)
     }
 
     ask.send(null, async (err, data) => {

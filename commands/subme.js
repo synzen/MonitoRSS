@@ -42,13 +42,23 @@ module.exports = async (bot, message, command) => {
       .setDescription(`Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type **${config.bot.prefix}subme role** to add the role to yourself.\u200b\n\u200b\n`)
 
     for (let option in options) {
-      let roleList = '**Roles:**\n'
       const temp = []
       for (var roleID in options[option].roleList) temp.push(message.guild.roles.get(options[option].roleList[roleID]).name)
-      roleList += temp.sort().join('\n')
-      const channelID = options[option].source.channel
-      const channelName = message.guild.channels.get(channelID).name
-      ask.addOption(options[option].source.title, `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n${roleList}`, true)
+      temp.sort()
+      const channelName = message.guild.channels.get(options[option].source.channel).name
+      const title = options[option].source.title
+      let desc = `**Link**: ${options[option].source.link}\n**Channel**: #${channelName}\n**Roles**:`
+      for (var x = 0; x < temp.length; ++x) {
+        const cur = temp[x]
+        const next = temp[x + 1]
+        desc += `${cur}\n`
+        // If there are too many roles, add it into another field
+        if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
+          ask.addOption(title, desc, true)
+          desc = `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n`
+        }
+      }
+      ask.addOption(title, desc, true)
     }
 
     ask.send(null, async (err, data) => {
@@ -59,7 +69,6 @@ module.exports = async (bot, message, command) => {
       }
     })
   } catch (err) {
-    console.log(err)
     log.command.warning(`subme`, message.guild, err)
   }
 }
