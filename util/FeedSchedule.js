@@ -80,7 +80,7 @@ class FeedSchedule {
         status[source.channel].disabled.push(source.link)
       }
 
-      if (configChecks.checkExists(rssName, source, false) && configChecks.validChannel(this.bot, guildRss, rssName) && typeof storage.failedLinks[source.link] !== 'string') {
+      if (configChecks.checkExists(rssName, guildRss, false) && configChecks.validChannel(this.bot, guildRss, rssName) && typeof storage.failedLinks[source.link] !== 'string') {
         if (storage.linkTracker[rssName] === this.schedule.name) { // If assigned to a this.schedule
           this._delegateFeed(guildRss, rssName)
         } else if (this.schedule.name !== 'default' && !storage.linkTracker[rssName]) { // If current feed this.schedule is a custom one and is not assigned

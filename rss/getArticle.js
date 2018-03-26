@@ -35,10 +35,10 @@ module.exports = (guildRss, rssName, passFiltersOnly, callback) => {
 
   feedparser.on('readable', function () {
     let item
-
-    while (item = this.read()) {
-      currentFeed.push(item)
-    }
+    do {
+      item = this.read()
+      if (item) currentFeed.push(item)
+    } while (item)
   })
 
   feedparser.on('end', () => {

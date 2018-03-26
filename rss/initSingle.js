@@ -20,8 +20,10 @@ module.exports = (data, callback) => {
 
   feedparser.on('readable', function () {
     let item
-
-    while (item = this.read()) articleList.push(item)
+    do {
+      item = this.read()
+      if (item) articleList.push(item)
+    } while (item)
   })
 
   feedparser.on('end', () => {

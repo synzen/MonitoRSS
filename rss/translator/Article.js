@@ -50,9 +50,10 @@ function regexReplace (string, searchOptions, replacement) {
     const regExp = new RegExp(searchOptions.regex, flags)
     const matches = []
     let match
-    while (match = regExp.exec(string)) { // Find everything that matches the search regex query and push it to matches.
-      matches.push(match)
-    }
+    do { // Find everything that matches the search regex query and push it to matches.
+      match = regExp.exec(string)
+      if (match) matches.push(match)
+    } while (match)
     match = matches[matchIndex || 0][groupNum || 0]
 
     if (replacement !== undefined) {

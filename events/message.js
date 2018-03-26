@@ -13,7 +13,7 @@ function isBotController (author) {
 }
 
 module.exports = (bot, message) => {
-  if (!message.member || message.author.bot || !message.content.startsWith(config.bot.prefix) || storage.blacklistGuilds.includes(message.guild.id) || storage.blacklistUsers.includes(message.author.id)) return
+  if (message.author.bot || !message.guild || !message.content.startsWith(config.bot.prefix) || storage.blacklistGuilds.includes(message.guild.id) || storage.blacklistUsers.includes(message.author.id)) return
   let m = message.content.split(' ')
   let command = m[0].substr(config.bot.prefix.length)
   if (command === 'forceexit') return loadCommand(command)(bot, message) // To forcibly clear a channel of active menus
@@ -23,10 +23,14 @@ module.exports = (bot, message) => {
   // Regular commands
   for (var cmd in commandList) {
     const cmdData = commandList[cmd]
-    if (cmd === command && hasPerm.bot(bot, message, cmdData.botPerm) && hasPerm.user(message, cmdData.userPerm)) {
-      if (cmdData.initLevel != null && cmdData.initLevel > storage.initialized) return message.channel.send(`This function is disabled while booting up, please wait.`).then(m => m.delete(4000))
-      log.command.info(`Used ${message.content}`, message.guild)
-      return loadCommand(command)(bot, message, command)
+    if (cmd === command && hasPerm.bot(bot, message, cmdData.botPerm)) {
+      return hasPerm.user(message, cmdData.userPerm, (err, allowed) => {
+        if (err) return log.command.warning('Unable to fetch member', message.guild, message.author, err)
+        if (!allowed) return
+        if (cmdData.initLevel != null && cmdData.initLevel > storage.initialized) return message.channel.send(`This function is disabled while booting up, please wait.`).then(m => m.delete(4000))
+        log.command.info(`Used ${message.content}`, message.guild)
+        loadCommand(command)(bot, message, command)
+      })
     }
   }
 

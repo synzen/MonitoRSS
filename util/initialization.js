@@ -39,6 +39,7 @@ module.exports = (bot, callback) => {
   const modBatchList = []
   const batchSize = 400
   const guildsInfo = {}
+  const missingGuilds = {}
 
   let cycleFailCount = 0
   let cycleTotalCount = 0
@@ -106,7 +107,7 @@ module.exports = (bot, callback) => {
         const guildRss = results[r]
         const guildId = guildRss.id
         if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
-          if (bot.shard) bot.shard.send({ type: 'missingGuild', guildId: guildId, guildRss: guildRss })
+          if (bot.shard) missingGuilds[guildId] = guildRss
           else {
             dbOps.guildRss.remove(guildRss, err => {
               if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
@@ -148,7 +149,7 @@ module.exports = (bot, callback) => {
     for (var rssName in rssList) {
       const source = rssList[rssName]
       linkCounts.increment(source.link)
-      if (configChecks.checkExists(rssName, source, true, true) && configChecks.validChannel(bot, guildRss, rssName) && !reachedFailCount(source.link)) {
+      if (configChecks.checkExists(rssName, guildRss, true, true) && configChecks.validChannel(bot, guildRss, rssName) && !reachedFailCount(source.link)) {
         checkGuild.roles(bot, guildId, rssName) // Check for any role name changes
 
         if (source.advanced && Object.keys(source.advanced).length > 0) { // Special source list for feeds with unique settings defined, each linkList only has 1 item
@@ -370,8 +371,7 @@ module.exports = (bot, callback) => {
 
   function finishInit () {
     log.init.info(`${SHARD_ID}Finished initialization cycle ${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
-    if (bot.shard) bot.shard.send({ type: 'shardLinks', linkDocs: linkCounts.toDocs() })
-    else dbOps.linkList.write(linkCounts)
-    callback(guildsInfo)
+    if (!bot.shard) dbOps.linkList.write(linkCounts)
+    callback(guildsInfo, missingGuilds, linkCounts.toDocs())
   }
 }

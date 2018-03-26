@@ -33,10 +33,8 @@ async function login (firstStartup) {
   try {
     await bot.login(config.bot.token)
     loginAttempts = 0
-    // bot.user.setActivity(null)
-    // bot.user.setGame(null)
-    if (!config.bot.activityType) bot.user.setGame(null)
-    else bot.user.setPresence({ game: { name: config.bot.activityName, type: config.bot.activityType } })
+    if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType })
+    else bot.user.setActivity(null)
     bot.user.setStatus(config.bot.status)
 
     log.general.info(`${SHARD_ID}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
@@ -57,9 +55,9 @@ async function login (firstStartup) {
   }
 }
 
-function finishInit (guildsInfo) {
+function finishInit (guildsInfo, missingGuilds, linkDocs) {
   storage.initialized = 1
-  if (bot.shard) process.send({ type: 'initComplete', guilds: guildsInfo })
+  if (bot.shard) process.send({ type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs })
   else {
     storage.initialized = 2
     setInterval(dbOps.vips.refresh, 3600000)

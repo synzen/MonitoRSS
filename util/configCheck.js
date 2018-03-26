@@ -7,17 +7,18 @@ const missingChannelCount = {}
 const ACTIVITY_TYPES = ['', 'PLAYING', 'STREAMING', 'LISTENING', 'WATCHING']
 const STATUS_TYPES = ['online', 'idle', 'dnd', 'invisible']
 
-exports.checkExists = (rssName, feed, logging, initializing) => {
-  if (feed.disabled === true) {
-    if (logging) log.cycle.warning(`${rssName} is disabled in channel ${feed.channel}, skipping...`)
+exports.checkExists = (rssName, guildRss, logging, initializing) => {
+  const source = guildRss.sources[rssName]
+  if (source.disabled === true) {
+    if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
     return false
   }
-  if (!feed.link || !feed.link.startsWith('http')) {
-    if (logging) log.cycle.warning(`${rssName} has no valid link defined, skipping...`)
+  if (!source.link || !source.link.startsWith('http')) {
+    if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} has no valid link defined, skipping...`)
     return false
   }
-  if (!feed.channel) {
-    if (logging) log.cycle.warning(`${rssName} has no channel defined, skipping...`)
+  if (!source.channel) {
+    if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} has no channel defined, skipping...`)
     return false
   }
   return true

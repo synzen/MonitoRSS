@@ -51,15 +51,18 @@ exports.bot = (bot, message, permission) => {
   return hasPerm
 }
 
-exports.user = (message, permission) => {
-  if (!permission || !PERMISSIONS.includes(permission) || config.bot.controllerIds.includes(message.author.id)) return true
+exports.user = (message, permission, callback) => {
+  if (!permission || !PERMISSIONS.includes(permission) || config.bot.controllerIds.includes(message.author.id)) return callback(null, true)
 
-  const serverPerm = message.member.hasPermission(permission)
-  const channelPerm = message.member.permissionsIn(message.channel).has(permission)
+  message.guild.fetchMember(message.author).then(member => {
+    if (!message.member) message.member = member
+    const serverPerm = member.hasPermission(permission)
+    const channelPerm = member.permissionsIn(message.channel).has(permission)
 
-  if (serverPerm || channelPerm) return true
-  else {
-    log.command.warning(`Missing permissions for user, blocked ${message.content}`, message.guild, message.author)
-    return false
-  }
+    if (serverPerm || channelPerm) return callback(null, true)
+    else {
+      log.command.warning(`Missing permissions for user, blocked ${message.content}`, message.guild, message.author)
+      return callback()
+    }
+  }).catch(callback)
 }

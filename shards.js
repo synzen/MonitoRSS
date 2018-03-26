@@ -62,21 +62,21 @@ Manager.on('message', async (shard, message) => {
   try {
     if (message._loopback) return await Manager.broadcast(message)
     switch (message.type) {
-      case 'shardLinks':
+      case 'initComplete':
+        // Account for missing guilds
+        const missing = message.missingGuilds
+        for (var guildId in missing) {
+          if (!missingGuildsCounter[guildId]) missingGuildsCounter[guildId] = 1
+          else missingGuildsCounter[guildId]++
+          if (missingGuildsCounter[guildId] === Manager.totalShards) missingGuildRss.set(guildId, missing[guildId])
+        }
+        // Count all the links
         const docs = message.linkDocs
         for (var x = 0; x < docs.length; ++x) {
           const doc = docs[x]
           linkList.set(doc.link, doc.count, doc.shard)
         }
-        break
 
-      case 'missingGuild':
-        if (!missingGuildsCounter[message.guildId]) missingGuildsCounter[message.guildId] = 1
-        else missingGuildsCounter[message.guildId]++
-        if (missingGuildsCounter[message.guildId] === Manager.totalShards) missingGuildRss.set(message.guildId, message.guildRss)
-        break
-
-      case 'initComplete':
         initShardIndex++
         if (initShardIndex === Manager.totalShards) {
           dbOps.linkList.write(linkList, err => {
