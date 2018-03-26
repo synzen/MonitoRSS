@@ -2,9 +2,10 @@
 *   Used to store data for various aperations across multiple files
 */
 const URL = require('url').URL
+const defaultConfigs = require('./configCheck.js').defaultConfigs.database
 const dbSettings = require('../config.json').database
-const articlesExpire = dbSettings.clean === true && dbSettings.articlesExpire > 0 ? dbSettings.articlesExpire : -1
-const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 ? dbSettings.articlesExpire : -1
+const articlesExpire = dbSettings.clean === true && dbSettings.articlesExpire > 0 ? dbSettings.articlesExpire : defaultConfigs.articlesExpire.default
+const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 ? dbSettings.guildBackupsExpire : defaultConfigs.guildBackupsExpire.default
 const mongoose = require('mongoose')
 const collectionIds = {}
 
@@ -27,8 +28,7 @@ function expireDate (type) {
     return date
   }
 }
-// exports.bot = bot
-// exports.scheduleManager = scheduleManager
+
 exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
 exports.statistics = { fullyUpdated: false } // For individual shards/non sharded
 exports.statisticsGlobal = { fullyUpdated: 0 } // For aggregated statistics across all shards, updated on an interval by eval
