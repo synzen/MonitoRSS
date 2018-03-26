@@ -30,7 +30,7 @@ exports.validChannel = (bot, guildRss, rssName) => {
   const guild = bot.guilds.get(guildId)
 
   if (!channel) {
-    log.cycle.warning(`Channel ${source.channel} for feed ${source.link} was not found, skipping source`, guild)
+    log.cycle.warning(`Channel ${source.channel} in guild ${guildId} for feed ${source.link} was not found, skipping source`, guild)
     missingChannelCount[rssName] = missingChannelCount[rssName] ? missingChannelCount[rssName] + 1 : 1
     if (missingChannelCount[rssName] >= 10 && storage.initialized) {
       dbOps.guildRss.removeFeed(guildRss, rssName, err => {

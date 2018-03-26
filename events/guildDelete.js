@@ -12,8 +12,8 @@ module.exports = async (bot, guild) => {
 
   const guildRss = currentGuilds.get(guild.id)
   if (!guildRss) return
-
-  dbOps.guildRss.remove(guild.id, err => {
+  
+  dbOps.guildRss.remove(guildRss, err => {
     if (err) log.guild.warning(`Unable to delete guild from database`, guild, err)
-  })
+  }, true)
 }

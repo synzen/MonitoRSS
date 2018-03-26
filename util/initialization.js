@@ -106,11 +106,11 @@ module.exports = (bot, callback) => {
         const guildRss = results[r]
         const guildId = guildRss.id
         if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
-          if (bot.shard) bot.shard.send({type: 'missingGuild', content: guildId})
+          if (bot.shard) bot.shard.send({ type: 'missingGuild', guildId: guildId, guildRss: guildRss })
           else {
             dbOps.guildRss.remove(guildRss, err => {
               if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
-              log.init.info(`(G: ${guildId}) Guild is missing, backing up`)
+              log.init.info(`(G: ${guildId}) Removing missing guild`)
             }, true)
           }
           continue
@@ -126,6 +126,7 @@ module.exports = (bot, callback) => {
 
       let c = 0
       const total = bot.guilds.size
+      if (total === 0) prepConnect()
       bot.guilds.forEach((guild, guildId) => {
         if (guildsInfo[guildId]) {
           if (++c === total) prepConnect()

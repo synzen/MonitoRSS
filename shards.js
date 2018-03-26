@@ -9,7 +9,8 @@ const dbRestore = require('./commands/controller/dbrestore.js')
 const currentGuilds = storage.currentGuilds
 
 const Manager = new Discord.ShardingManager('./server.js', { respawn: false })
-const missingGuilds = {}
+const missingGuildRss = new Map()
+const missingGuildsCounter = {}
 
 if (!config.advanced || typeof config.advanced.shards !== 'number' || config.advanced.shards < 1) {
   if (!config.advanced) config.advanced = {}
@@ -70,8 +71,9 @@ Manager.on('message', async (shard, message) => {
         break
 
       case 'missingGuild':
-        if (!missingGuilds[message.content]) missingGuilds[message.content] = 1
-        else missingGuilds[message.content]++
+        if (!missingGuildsCounter[message.guildId]) missingGuildsCounter[message.guildId] = 1
+        else missingGuildsCounter[message.guildId]++
+        if (missingGuildsCounter[message.guildId] === Manager.totalShards) missingGuildRss.set(message.guildId, message.guildRss)
         break
 
       case 'initComplete':
@@ -84,14 +86,12 @@ Manager.on('message', async (shard, message) => {
             for (var gId in message.guilds) { // All guild profiles, with guild id as keys and guildRss as value
               currentGuilds.set(gId, message.guilds[gId])
             }
-            for (var guildId in missingGuilds) {
-              if (missingGuilds[guildId] === Manager.totalShards) {
-                dbOps.guildRss.remove(guildId, err => {
-                  if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild`, err)
-                  log.init.warning(`(G: ${guildId}) Guild is missing and has been removed and backed up`)
-                })
-              }
-            }
+            missingGuildRss.forEach((guildRss, guildId) => {
+              dbOps.guildRss.remove(guildRss, err => {
+                if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err)
+                log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`)
+              })
+            })
             createIntervals()
           })
         } else if (initShardIndex < Manager.totalShards) await Manager.broadcast({type: 'startInit', shardId: activeShardIds[initShardIndex]}) // Send signal for next shard to init
