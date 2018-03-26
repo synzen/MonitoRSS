@@ -114,6 +114,7 @@ Manager.on('message', async (shard, message) => {
         .catch(err => { throw err })
     }
   } catch (err) {
-    log.general.error(`Sharding Manager broadcast message handling error ${JSON.stringify(message)}`, err)
+    log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err)
+    console.log(err)
   }
 })

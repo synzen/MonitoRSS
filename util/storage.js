@@ -2,10 +2,11 @@
 *   Used to store data for various aperations across multiple files
 */
 const URL = require('url').URL
-const defaultConfigs = require('./configCheck.js').defaultConfigs.database
 const dbSettings = require('../config.json').database
-const articlesExpire = dbSettings.clean === true && dbSettings.articlesExpire > 0 ? dbSettings.articlesExpire : defaultConfigs.articlesExpire.default
-const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 ? dbSettings.guildBackupsExpire : defaultConfigs.guildBackupsExpire.default
+const articlesExpire = dbSettings.clean === true && (dbSettings.articlesExpire > 0 || dbSettings.articlesExpire === -1) ? dbSettings.articlesExpire : 14
+const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 || dbSettings.guildBackupsExpire === -1 ? dbSettings.guildBackupsExpire : 7
+console.log(articlesExpire)
+console.log(guildBackupsExpire)
 const mongoose = require('mongoose')
 const collectionIds = {}
 
