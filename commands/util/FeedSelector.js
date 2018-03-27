@@ -1,5 +1,5 @@
 const config = require('../../config.json')
-const commandList = require('../../util/commandList.json')
+const commands = require('../../util/commands.json')
 const channelTracker = require('../../util/channelTracker.js')
 const pageControls = require('../../util/pageControls.js')
 const storage = require('../../util/storage.js')
@@ -79,7 +79,7 @@ class FeedSelector extends Menu {
       const source = rssList[rssName]
       if (message.channel.id !== source.channel && !globalSelect) continue
       let o = { link: source.link, rssName: rssName, title: source.title }
-      if (commandList[command].action === 'Refresh Feed') {
+      if (commands[command].action === 'Refresh Feed') {
         const failCount = storage.failedLinks[source.link]
         o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
       }
@@ -103,7 +103,7 @@ class FeedSelector extends Menu {
       return
     }
     let desc = maxFeedsAllowed === 'Unlimited' ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
-    desc += (globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? commandList[command].options[miscOption] : commandList[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
+    desc += (globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? commands[command].options[miscOption] : commands[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
     this.setAuthor('Feed Selection Menu')
     this.setDescription(desc)
 

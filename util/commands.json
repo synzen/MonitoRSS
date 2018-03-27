@@ -6,7 +6,10 @@
 	"rssadd": {
 		"initLevel": 2,
 		"userPerm": "MANAGE_CHANNELS",
-		"description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with `>`."
+		"description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with `>`.",
+		"args": {
+			"<link>": "Feed URL."
+		}
 	},
 	"rssremove": {
 		"initLevel": 2,

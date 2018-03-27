@@ -52,10 +52,9 @@ exports.bot = (bot, message, permission) => {
 }
 
 exports.user = (message, permission, callback) => {
-  if (!permission || !PERMISSIONS.includes(permission) || config.bot.controllerIds.includes(message.author.id)) return callback(null, true)
-
   message.guild.fetchMember(message.author).then(member => {
     if (!message.member) message.member = member
+    if (!permission || !PERMISSIONS.includes(permission) || config.bot.controllerIds.includes(message.author.id)) return callback(null, true)
     const serverPerm = member.hasPermission(permission)
     const channelPerm = member.permissionsIn(message.channel).has(permission)
 

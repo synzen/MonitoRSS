@@ -2,7 +2,7 @@ const config = require('../config.json')
 const loadCommand = file => require(`../commands/${file}.js`)
 const loadCCommand = file => require(`../commands/controller/${file}.js`)
 const hasPerm = require('../util/hasPerm.js')
-const commandList = require('../util/commandList.json')
+const commands = require('../util/commands.json')
 const channelTracker = require('../util/channelTracker.js')
 const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
@@ -21,8 +21,8 @@ module.exports = (bot, message) => {
   if (channelTracker.hasActiveMenus(message.channel.id)) return
 
   // Regular commands
-  for (var cmd in commandList) {
-    const cmdData = commandList[cmd]
+  for (var cmd in commands) {
+    const cmdData = commands[cmd]
     if (cmd === command && hasPerm.bot(bot, message, cmdData.botPerm)) {
       return hasPerm.user(message, cmdData.userPerm, (err, allowed) => {
         if (err) return log.command.warning('Unable to fetch member', message.guild, message.author, err)

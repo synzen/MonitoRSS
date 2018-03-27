@@ -46,8 +46,8 @@ module.exports = async (bot, message, command) => {
       for (var roleID in options[option].roleList) temp.push(message.guild.roles.get(options[option].roleList[roleID]).name)
       temp.sort()
       const channelName = message.guild.channels.get(options[option].source.channel).name
-      const title = options[option].source.title
-      let desc = `**Link**: ${options[option].source.link}\n**Channel**: #${channelName}\n**Roles**:`
+      const title = options[option].source.title + (temp.length > 0 ? ` (${temp.length})` : '')
+      let desc = `**Link**: ${options[option].source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
       for (var x = 0; x < temp.length; ++x) {
         const cur = temp[x]
         const next = temp[x + 1]
@@ -55,7 +55,7 @@ module.exports = async (bot, message, command) => {
         // If there are too many roles, add it into another field
         if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
           ask.addOption(title, desc, true)
-          desc = `**Link**: ${options[option].source.link}\n**Channel:** #${channelName}\n`
+          desc = ``
         }
       }
       ask.addOption(title, desc, true)

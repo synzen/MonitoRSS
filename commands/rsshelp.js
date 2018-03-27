@@ -1,5 +1,5 @@
 const config = require('../config.json')
-const commands = require('../util/commandList.json')
+const commands = require('../util/commands.json')
 const log = require('../util/logger.js')
 
 module.exports = (bot, message, command) => {
