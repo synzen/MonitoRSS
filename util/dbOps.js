@@ -17,13 +17,14 @@ exports.guildRss = {
     models.GuildRss().update({ id: guildRss.id }, guildRss, UPDATE_SETTINGS, (err, res) => {
       if (err) return callback ? callback(err) : log.general.error(`(G: ${guildRss.id}) Unable to update profile`, err)
       currentGuilds.set(guildRss.id, guildRss)
+      exports.guildRss.empty(guildRss, false, skipProcessSend)
       if (callback) callback()
     })
   },
   remove: (guildRss, callback, skipProcessSend) => {
     const guildId = guildRss.id
     if (storage.bot && storage.bot.shard && !skipProcessSend) {
-      process.send({ type: 'guildRss.remove', guildId: guildId, _loopback: true })
+      process.send({ type: 'guildRss.remove', guildRss: guildRss, _loopback: true })
       return callback ? callback() : null
     }
     if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss)
@@ -71,7 +72,6 @@ exports.guildRss = {
     exports.guildRss.update(guildRss)
     storage.deletedFeeds.push(rssName)
     exports.linkList.decrement(link, err => {
-      exports.guildRss.empty(guildRss)
       if (err) log.general.warning('Unable to decrement link for guildRss.removeFeed dbOps', err)
       return callback ? callback(null, link) : !skipProcessSend ? log.general.info(`Feed ${link} has been removed from guild ${guildRss.id} (${guildRss.name})`) : null
     })
@@ -111,14 +111,14 @@ exports.guildRss = {
       }, skipProcessSend)
     })
   },
-  empty: (guildRss, skipRemoval) => { // Used on the beginning of each cycle to check for empty sources per guild
+  empty: (guildRss, skipRemoval, skipProcessSend) => { // Used on the beginning of each cycle to check for empty sources per guild
     if (guildRss.sources && Object.keys(guildRss.sources).length > 0) return false
     if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage) { // Delete only if server-specific special settings are not found
       if (!skipRemoval) {
-        exports.guildRss.remove(guildRss.id, err => {
+        exports.guildRss.remove(guildRss, err => {
           if (err) return log.general.error(`(G: ${guildRss.id}) Could not delete guild due to 0 sources`, err)
           log.general.info(`(G: ${guildRss.id}) 0 sources found with no custom settings deleted`)
-        })
+        }, skipProcessSend)
       }
     } else log.general.info(`(G: ${guildRss.id}) 0 sources found, skipping`)
     return true

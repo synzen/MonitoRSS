@@ -88,7 +88,7 @@ else {
         if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.update(message.guildRss, null, true)
         break
       case 'guildRss.remove':
-        if (bot.guilds.has(message.guildId)) dbOps.guildRss.remove(message.guildRss, null, true)
+        if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.remove(message.guildRss, null, true)
         break
       case 'guildRss.disableFeed':
         if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.disableFeed(message.guildRss, message.rssName, null, true)
