@@ -228,7 +228,7 @@ exports.linkList = {
     exports.linkList.get((err, linkList) => {
       if (err) return callback(err)
       if (!linkList.get(link)) return callback()
-
+      
       if (!linkList.decrement(link)) {
         models.Feed(link, linkList.shardId).collection.drop(err => {
           if (err && err.code !== 26) log.general.warning(`Could not drop collection ${storage.collectionId(link, linkList.shardId)} after decrementing linkTracker`, err)

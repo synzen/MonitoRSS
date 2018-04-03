@@ -11,10 +11,10 @@ module.exports = (bot, article, callback, isTestMessage) => {
   let channel = bot.channels.get(article.discordChannelId)
   const rssName = article.rssName
   const guildRss = currentGuilds.get(channel.guild.id)
+  if (!guildRss) return log.general.error(`Unable to send an article due to missing guild profile`, channel.guild)
   const rssList = guildRss.sources
   const source = rssList[rssName]
   let channelType = 'textChannel'
-
   if (!source) return log.general.error(`Unable to send an article due to missing source ${rssName}`, channel.guild, channel)
 
   if (typeof source.webhook === 'object' && storage.webhookServers.includes(channel.guild.id)) {
