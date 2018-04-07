@@ -8,11 +8,11 @@ async function removeRole (message, role) {
   message.member.removeRole(role)
   .then(mem => {
     log.command.info(`Removed role from member`, message.guild, role, message.author)
-    message.channel.send(`You no longer have the role \`${role.name}\`.`).catch(err => log.command.warning('unsubme 3a', message.guild, err))
+    message.channel.send(`You no longer have the role \`${role.name}\`.`)
   })
   .catch(err => {
     message.channel.send(`Error: Unable to remove role.` + err.message ? ` (${err.message})` : '')
-    log.command.warning(`Unable to remove role`, message.guild, role, message.author, err).catch(err => log.command.warning('unsubme 3a', message.guild, err))
+    log.command.warning(`Unable to remove role`, message.guild, role, message.author, err)
   })
 }
 
