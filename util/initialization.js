@@ -259,8 +259,8 @@ module.exports = (bot, callback) => {
       initAll({ link: link, rssList: rssList, uniqueSettings: uniqueSettings }, (err, linkCompletion) => {
         if (err) log.init.error(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
-        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
-        else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link)
+        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
+        else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
 
         completedLinks++
         log.init.info(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
@@ -300,8 +300,8 @@ module.exports = (bot, callback) => {
       if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
       if (linkCompletion.status === 'failed') {
         cycleFailCount++
-        dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
-      } else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link)
+        dbOps.failedLinks.increment(linkCompletion.link, null, true)
+      } else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
       if (linkCompletion.link) batchTracker[linkCompletion.link] = true
 
       completedLinks++
@@ -341,8 +341,8 @@ module.exports = (bot, callback) => {
           throw linkCompletion.err // Full error is printed from the processor
         }
         if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
-        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
-        else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link)
+        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
+        else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
 
         completedLinks++
         totalCompletedLinks++

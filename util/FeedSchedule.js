@@ -220,7 +220,7 @@ class FeedSchedule {
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
+          dbOps.failedLinks.increment(linkCompletion.link)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         ++this._cycleTotalCount
@@ -258,7 +258,7 @@ class FeedSchedule {
       if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
       if (linkCompletion.status === 'failed') {
         ++this._cycleFailCount
-        dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
+        dbOps.failedLinks.increment(linkCompletion.link)
       } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
       this._cycleTotalCount++
@@ -289,7 +289,7 @@ class FeedSchedule {
         if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          dbOps.failedLinks.increment(linkCompletion.link, linkCompletion.rssList)
+          dbOps.failedLinks.increment(linkCompletion.link)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         ++this._cycleTotalCount

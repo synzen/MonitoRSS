@@ -269,16 +269,16 @@ exports.failedLinks = {
       }
     })
   },
-  initalize: callback => {
+  initalize: (callback, skipProcessSend) => {
     storage.models.FailedLink().find({}, (err, docs) => {
       if (err) return callback ? callback(err) : log.general.error('Unable to get failedLinks', err)
       const temp = {}
       for (var i = 0; i < docs.length; ++i) temp[docs[i].link] = docs[i].failed || docs[i].count
       storage.failedLinks = temp
-      exports.failedLinks.uniformize(storage.failedLinks, callback)
+      exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
     })
   },
-  increment: link => {
+  increment: (link, skipProcessSend) => {
     if (FAIL_LIMIT === 0) return
     if (typeof storage.failedLinks[link] === 'string') return storage.initialized ? log.general.warning(`Cannot increment failed link ${link} since it has already failed.`) : null
     storage.failedLinks[link] = storage.failedLinks[link] == null ? 1 : storage.failedLinks[link] + 1
@@ -293,22 +293,22 @@ exports.failedLinks = {
         if (err) log.general.error('Unable to increment failed feed document in collection', err)
       })
     }
-    exports.failedLinks.uniformize(storage.failedLinks)
+    exports.failedLinks.uniformize(storage.failedLinks, skipProcessSend)
   },
-  fail: (link, callback) => {
+  fail: (link, callback, skipProcessSend) => {
     const now = new Date().toString()
     storage.failedLinks[link] = now
     storage.models.FailedLink().update({ link: link }, { link: link, failed: now }, UPDATE_SETTINGS, (err, res) => {
       if (err) return callback ? callback(err) : log.general.error(`Unable to update document to mark failed for link ${link}`, err)
-      exports.failedLinks.uniformize(storage.failedLinks, callback)
+      exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
     })
   },
-  reset: (link, callback) => {
+  reset: (link, callback, skipProcessSend) => {
     if (storage.failedLinks[link] == null) return callback ? callback() : null
     delete storage.failedLinks[link]
     storage.models.FailedLink().find({ link: link }).remove(err => {
       if (err && err.code !== 26) return callback ? callback(err) : log.general.error(`Unable to remove document to reset status for failed link ${link}`, err)
-      exports.failedLinks.uniformize(storage.failedLinks)
+      exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
     })
   }
 }

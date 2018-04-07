@@ -170,6 +170,9 @@ module.exports = class Article {
     this.title = this.title.length > 150 ? this.title.slice(0, 150) + ' [...]' : this.title
     this.titleImgs = rawTitleImgs
 
+    // guid - Raw exposure, no cleanup. Not meant for use by most feeds.
+    this.guid = rawArticle.guid ? rawArticle.guid : ''
+
     // Date
     if ((rawArticle.pubdate && rawArticle.pubdate.toString() !== 'Invalid Date') || config.feeds.dateFallback === true) {
       const guildTimezone = guildRss.timezone
@@ -334,6 +337,7 @@ module.exports = class Article {
             .replace(/{link}/g, this.link)
             .replace(/{description}/g, this.description)
             .replace(/{tags}/g, this.tags)
+            .replace(/{guid}/g, this.guid)
 
     for (var placeholder in regexPlaceholders) {
       for (var customName in regexPlaceholders[placeholder]) {

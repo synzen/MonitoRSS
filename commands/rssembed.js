@@ -86,7 +86,7 @@ function feedSelectorFn (m, data, callback) {
   const m1 = `The current embed properties for ${source.link} are: \n${currentEmbedProps + '```'}\n`
   const m2 = `The list of embed properties that can be set are:\n${EMBED_PROPERTIES_LIST}\n**Type the embed property (shown in brackets [property]) you want to set/reset, or multiple properties by separation with commas.** Type \`reset\` to remove all properties, or type \`exit\` to cancel.`
   let mFull
-  mFull = (m1 + m2).length < 1995 ? `${m1}\n${m2}` : [m1, m2]
+  mFull = (m1 + m2).length < 1995 ? `${m1}\n${m2}` : [m1, m2] // Separate into two messages if it exceeds Discord's max length of 2000
   callback(null, { ...data,
     next: {
       text: mFull,
@@ -122,16 +122,17 @@ function selectProperty (m, data, callback) {
     menu: setMenus
   }
   callback(null, { ...data,
+    originalMessage: input,
     properties: choices,
     settings: {}
   })
 }
 
 function setProperty (m, data, callback) {
-  const { properties } = data
+  const { properties, originalMessage } = data
   const property = properties.shift()
   const setting = m.content.trim()
-  if (!property) console.log(setting)
+  if (!property) console.log(originalMessage)
   data.next = {
     text: `You are now customizing the **${properties[0] ? EMBED_PROPERTIES[properties[0]].name : ''}**. Type your input now. To reset the property, type \`reset\`.`
   }
