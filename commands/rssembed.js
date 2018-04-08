@@ -130,20 +130,21 @@ function selectProperty (m, data, callback) {
 
 function setProperty (m, data, callback) {
   const { properties, originalMessage } = data
-  const property = properties.shift()
+  const property = properties[0]
   const setting = m.content.trim()
-  if (!property) console.log(originalMessage)
   data.next = {
     text: `You are now customizing the **${properties[0] ? EMBED_PROPERTIES[properties[0]].name : ''}**. Type your input now. To reset the property, type \`reset\`.`
   }
 
   if (setting.toLowerCase() === 'reset') {
     data.settings[property] = 'reset'
+    properties.shift()
     return callback(null, data)
   }
   const valid = validate(property, setting)
   if (valid === true) data.settings[property] = setting
   else return callback(new SyntaxError(valid))
+  properties.shift()
   callback(null, data)
 }
 
