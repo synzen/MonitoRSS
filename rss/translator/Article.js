@@ -195,7 +195,7 @@ module.exports = class Article {
         format: {
           anchor: (node, fn, options) => {
             const child = node.children[0]
-            if (child && child.data === '[link]') this.reddit_direct = this.reddit_direct === this.link ? '' : node.attribs.href
+            if (child && child.data === '[link]') this.reddit_direct = node.attribs.href === this.link ? '' : node.attribs.href
             if (child && child.data && child.data.startsWith(' /u/')) this.reddit_author = node.attribs.href
             // No need to return anything since the output of htmlConvert.fromString isn't needed
           }
