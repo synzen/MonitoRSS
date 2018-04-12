@@ -3,6 +3,7 @@ const config = require('../config.json')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
 const log = require('../util/logger.js')
+const URLS = ['{link}', '{guid}', '{reddit_direct}', '{reddit_author}']
 const EMBED_PROPERTIES = {
   color: { name: 'Color', description: 'Sidebar color\nMUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html' },
   authorTitle: { name: 'Author Title', description: 'Title at the top\nAccepts placeholders' },
@@ -24,7 +25,7 @@ for (var pn in EMBED_PROPERTIES) {
 }
 
 function validURL (input) { // A simple check is enough
-  return input.startsWith('http://') || input.startsWith('https://') || input === '{link}' || input === '{guid}' || validImg(input)
+  return input.startsWith('http://') || input.startsWith('https://') || URLS.includes(input) || validImg(input)
 }
 
 function validate (prop, setting) {
@@ -122,14 +123,13 @@ function selectProperty (m, data, callback) {
     menu: setMenus
   }
   callback(null, { ...data,
-    originalMessage: input,
     properties: choices,
     settings: {}
   })
 }
 
 function setProperty (m, data, callback) {
-  const { properties, originalMessage } = data
+  const { properties } = data
   const property = properties[0]
   const setting = m.content.trim()
   data.next = {

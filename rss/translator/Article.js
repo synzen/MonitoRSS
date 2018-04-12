@@ -191,18 +191,18 @@ module.exports = class Article {
 
     if (this.reddit) {
       // Get the specific reddit placeholders {reddit_direct} and {reddit_author}
-      let t = htmlConvert.fromString(raw.description, {
+      htmlConvert.fromString(raw.description, {
         format: {
           anchor: (node, fn, options) => {
             const child = node.children[0]
-            if (child && child.data === '[link]') this.reddit_direct = node.attribs.href
+            if (child && child.data === '[link]') this.reddit_direct = this.reddit_direct === this.link ? '' : node.attribs.href
             if (child && child.data && child.data.startsWith(' /u/')) this.reddit_author = node.attribs.href
             // No need to return anything since the output of htmlConvert.fromString isn't needed
           }
         }
       })
       description = description.replace('\n[link] [comments]', '') // Truncate the useless end of reddit description after anchors are removed
-    }
+    } else this.reddit_direct = this.reddit_author = ''
 
     this.description = description
     this.descriptionImgs = descriptionImages

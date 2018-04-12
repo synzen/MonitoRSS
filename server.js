@@ -61,8 +61,7 @@ function finishInit (guildsInfo, missingGuilds, linkDocs) {
     dbOps.failedLinks.uniformize(storage.failedLinks, () => {
       process.send({ type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs })
     })
-  }
-  else {
+  } else {
     storage.initialized = 2
     setInterval(dbOps.vips.refresh, 3600000)
   }
