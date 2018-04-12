@@ -24,7 +24,7 @@ for (var pn in EMBED_PROPERTIES) {
 }
 
 function validURL (input) { // A simple check is enough
-  return input.startsWith('http://') || input.startsWith('https://') || input === '{link}'
+  return input.startsWith('http://') || input.startsWith('https://') || input === '{link}' || input === '{guid}' || validImg(input)
 }
 
 function validate (prop, setting) {

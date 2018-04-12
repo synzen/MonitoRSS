@@ -106,7 +106,7 @@ function evalRegexConfig (source, text, placeholder) {
 }
 
 function cleanup (source, text, imgSrcs) {
-  if (!text) return text
+  if (!text) return ''
 
   text = text.replace(/\*/gi, '')
           .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
@@ -118,7 +118,7 @@ function cleanup (source, text, imgSrcs) {
     ignoreHref: true,
     noLinkBrackets: true,
     format: {
-      image: (node, options) => {
+      image: node => {
         const isStr = typeof node.attribs.src === 'string'
         let link = isStr ? node.attribs.src.trim() : node.attribs.src
         if (isStr && link.startsWith('//')) link = 'http:' + link
@@ -140,10 +140,6 @@ function cleanup (source, text, imgSrcs) {
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
 
         return image
-      },
-      heading: (node, fn, options) => {
-        let h = fn(node.children, options)
-        return h
       }
     }
   })
@@ -153,76 +149,83 @@ function cleanup (source, text, imgSrcs) {
 }
 
 module.exports = class Article {
-  constructor (rawArticle, guildRss, rssName) {
+  constructor (raw, guildRss, rssName) {
     const source = guildRss.sources[rssName]
-
-    this.rawDescrip = rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#'] ? cleanup(source, rawArticle['media:group']['media:description']['#']) : cleanup(source, rawArticle.description) // Account for youtube's description
-    this.rawSummary = cleanup(source, rawArticle.summary)
-    this.meta = rawArticle.meta
-    this.guid = rawArticle.guid
-    this.author = (rawArticle.author) ? cleanup(source, rawArticle.author) : ''
-    this.link = (rawArticle.link) ? rawArticle.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
-    if (this.meta.link && this.meta.link.includes('www.reddit.com') && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
+    this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
+    this.youtube = raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#']
+    this.meta = raw.meta
+    this.guid = raw.guid
+    this.author = raw.author ? cleanup(source, raw.author) : ''
+    this.link = raw.link ? raw.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
+    if (this.reddit && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
 
     // Title
-    const rawTitleImgs = []
-    this.title = (!rawArticle.title) ? '' : cleanup(source, rawArticle.title, rawTitleImgs)
-    this.title = this.title.length > 150 ? this.title.slice(0, 150) + ' [...]' : this.title
-    this.titleImgs = rawTitleImgs
+    const titleImgs = []
+    this.fullTitle = cleanup(source, raw.title, titleImgs)
+    this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
+    this.titleImgs = titleImgs
 
     // guid - Raw exposure, no cleanup. Not meant for use by most feeds.
-    this.guid = rawArticle.guid ? rawArticle.guid : ''
+    this.guid = raw.guid ? raw.guid : ''
 
     // Date
-    if ((rawArticle.pubdate && rawArticle.pubdate.toString() !== 'Invalid Date') || config.feeds.dateFallback === true) {
+    if ((raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') || config.feeds.dateFallback === true) {
       const guildTimezone = guildRss.timezone
       const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feeds.timezone
       const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feeds.dateFormat
 
-      const useDateFallback = config.feeds.dateFallback === true && (!rawArticle.pubdate || rawArticle.pubdate.toString() === 'Invalid Date')
-      const useTimeFallback = config.feeds.timeFallback === true && rawArticle.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(rawArticle.pubdate)
-      const date = useDateFallback ? new Date() : rawArticle.pubdate
+      const useDateFallback = config.feeds.dateFallback === true && (!raw.pubdate || raw.pubdate.toString() === 'Invalid Date')
+      const useTimeFallback = config.feeds.timeFallback === true && raw.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(raw.pubdate)
+      const date = useDateFallback ? new Date() : raw.pubdate
       const localMoment = moment(date)
       if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)
       const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
     }
 
-    // Description
-    let rawArticleDescrip = ''
-    const rawDescripImgs = []
-    // YouTube doesn't use the regular description field, thus manually setting it as the description
-    if (rawArticle.guid && rawArticle.guid.startsWith('yt:video') && rawArticle['media:group'] && rawArticle['media:group']['media:description'] && rawArticle['media:group']['media:description']['#']) rawArticleDescrip = rawArticle['media:group']['media:description']['#']
-    else if (rawArticle.description) rawArticleDescrip = cleanup(source, rawArticle.description, rawDescripImgs)
-    rawArticleDescrip = (rawArticleDescrip.length > 800) ? `${rawArticleDescrip.slice(0, 790)} [...]` : rawArticleDescrip
+    // Description and reddit-specific placeholders
+    const descriptionImages = []
+    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, descriptionImages) // Account for youtube's description
+    let description = this.fullDescription
+    description = description.length > 800 ? `${description.slice(0, 790)}...` : description
 
-    if (this.meta.link && this.meta.link.includes('reddit')) {
-      rawArticleDescrip = rawArticleDescrip.replace('\n[link] [comments]', '') // truncate the useless end of reddit description
+    if (this.reddit) {
+      // Get the specific reddit placeholders {reddit_direct} and {reddit_author}
+      let t = htmlConvert.fromString(raw.description, {
+        format: {
+          anchor: (node, fn, options) => {
+            const child = node.children[0]
+            if (child && child.data === '[link]') this.reddit_direct = node.attribs.href
+            if (child && child.data && child.data.startsWith(' /u/')) this.reddit_author = node.attribs.href
+            // No need to return anything since the output of htmlConvert.fromString isn't needed
+          }
+        }
+      })
+      description = description.replace('\n[link] [comments]', '') // Truncate the useless end of reddit description after anchors are removed
     }
 
-    this.description = rawArticleDescrip
-    this.descriptionImgs = rawDescripImgs
+    this.description = description
+    this.descriptionImgs = descriptionImages
 
     // Summary
-    let rawArticleSummary = ''
-    const rawSummaryImgs = []
-    if (rawArticle.summary) rawArticleSummary = cleanup(source, rawArticle.summary, rawSummaryImgs)
-    rawArticleSummary = (rawArticleSummary.length > 800) ? `${rawArticleSummary.slice(0, 790)} [...]` : rawArticleSummary
-    this.summary = rawArticleSummary
-    this.summaryImgs = rawSummaryImgs
+    const summaryImages = []
+    this.fullSummary = cleanup(source, raw.summary, summaryImages)
+    this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
+    this.summaryImgs = summaryImages
 
     // Image links
     const imageLinks = []
-    findImages(rawArticle, imageLinks)
+    findImages(raw, imageLinks)
     this.images = (imageLinks.length === 0) ? undefined : imageLinks
 
     // Categories/Tags
-    if (rawArticle.categories) {
+    if (raw.categories) {
       let categoryList = ''
-      for (var category in rawArticle.categories) {
-        if (typeof rawArticle.categories[category] !== 'string') continue
-        categoryList += rawArticle.categories[category].trim()
-        if (parseInt(category, 10) !== rawArticle.categories.length - 1) categoryList += '\n'
+      const cats = raw.categories
+      for (var category in cats) {
+        if (typeof cats[category] !== 'string') continue
+        categoryList += cats[category].trim()
+        if (parseInt(category, 10) !== cats.length - 1) categoryList += '\n'
       }
       this.tags = categoryList
     }
@@ -338,6 +341,8 @@ module.exports = class Article {
             .replace(/{description}/g, this.description)
             .replace(/{tags}/g, this.tags)
             .replace(/{guid}/g, this.guid)
+
+    if (this.reddit) content = content.replace(/{reddit_author}/g, this.reddit_author).replace(/{reddit_direct}/g, this.reddit_direct)
 
     for (var placeholder in regexPlaceholders) {
       for (var customName in regexPlaceholders[placeholder]) {

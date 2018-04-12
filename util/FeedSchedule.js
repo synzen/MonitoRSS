@@ -220,7 +220,7 @@ class FeedSchedule {
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          dbOps.failedLinks.increment(linkCompletion.link)
+          dbOps.failedLinks.increment(linkCompletion.link, null, true)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         ++this._cycleTotalCount
@@ -258,7 +258,7 @@ class FeedSchedule {
       if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
       if (linkCompletion.status === 'failed') {
         ++this._cycleFailCount
-        dbOps.failedLinks.increment(linkCompletion.link)
+        dbOps.failedLinks.increment(linkCompletion.link, null, true)
       } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
       this._cycleTotalCount++
@@ -289,7 +289,7 @@ class FeedSchedule {
         if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          dbOps.failedLinks.increment(linkCompletion.link)
+          dbOps.failedLinks.increment(linkCompletion.link, null, true)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         ++this._cycleTotalCount
@@ -319,7 +319,10 @@ class FeedSchedule {
   }
 
   _finishCycle (noFeeds) {
-    if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({ type: 'scheduleComplete', refreshTime: this.refreshTime })
+    if (this.bot.shard && this.bot.shard.count > 1) {
+      dbOps.failedLinks.uniformize(storage.failedLinks) // Update failedLinks across all shards
+      this.bot.shard.send({ type: 'scheduleComplete', refreshTime: this.refreshTime })
+    }
     const diff = (new Date() - this._startTime) / 1000
     const timeTaken = diff.toFixed(2)
 

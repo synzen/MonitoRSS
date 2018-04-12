@@ -78,7 +78,9 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, returnObject) =>
 
     if (article.date) testDetails += `\n\n[Published Date]: {date}\n${article.date}`
     if (article.author) testDetails += `\n\n[Author]: {author}\n${article.author}`
+    if (article.reddit_author) testDetails += `\n\n[Author Link]: {reddit_author}\n${article.reddit_author}`
     if (article.link) testDetails += `\n\n[Link]: {link}\n${article.link}`
+    if (article.reddit_direct) testDetails += `\n\n[Submission Link]: {reddit_direct}\n${article.reddit_direct}`
     if (article.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${article.subscriptions.split(' ').length - 1} subscriber(s)`
     if (article.images) testDetails += `\n\n${article.listImages()}`
     let placeholderImgs = article.listPlaceholderImages()

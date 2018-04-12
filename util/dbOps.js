@@ -278,7 +278,7 @@ exports.failedLinks = {
       exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
     })
   },
-  increment: (link, skipProcessSend) => {
+  increment: (link, callback, skipProcessSend) => {
     if (FAIL_LIMIT === 0) return
     if (typeof storage.failedLinks[link] === 'string') return storage.initialized ? log.general.warning(`Cannot increment failed link ${link} since it has already failed.`) : null
     storage.failedLinks[link] = storage.failedLinks[link] == null ? 1 : storage.failedLinks[link] + 1
@@ -293,7 +293,7 @@ exports.failedLinks = {
         if (err) log.general.error('Unable to increment failed feed document in collection', err)
       })
     }
-    exports.failedLinks.uniformize(storage.failedLinks, skipProcessSend)
+    exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
   },
   fail: (link, callback, skipProcessSend) => {
     const now = new Date().toString()

@@ -117,11 +117,11 @@ module.exports = (source, article, isTestMessage) => {
     },
     'Description': {
       user: source.filters.Description,
-      ref: article.rawDescrip
+      ref: article.fullDescription
     },
     'Summary': {
       user: source.filters.Summary,
-      ref: article.rawSummary
+      ref: article.fullSummary
     },
     'Author': {
       user: source.filters.Author,
