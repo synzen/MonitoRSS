@@ -15,7 +15,7 @@ module.exports = (source, article) => {
   if (source.filters && source.filters.roleSubscriptions) {
     const subscribedRoles = source.filters.roleSubscriptions
     for (let role in subscribedRoles) {
-      if (filterFeed(subscribedRoles[role], article)) mentions += `<@&${role}> `
+      if (subscribedRoles[role].filters && filterFeed(subscribedRoles[role], article)) mentions += `<@&${role}> `
     }
   }
 

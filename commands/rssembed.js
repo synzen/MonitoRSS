@@ -176,6 +176,8 @@ function fieldAction (m, data, callback) {
 
     if (input === 3 || input === 4) { // Non-inline blank field
       if (!source.embedMessage) source.embedMessage = { properties: { fields: [] } }
+      if (!source.embedMessage.properties) source.embedMessage.properties = { fields: [] }
+      if (!source.embedMessage.properties.fields) source.embedMessage.properties.fields = []
       source.embedMessage.properties.fields.push({ title: '' })
       return callback(null, { ...data, successText: `An blank Field has been added to the embed for the feed <${source.link}>.` })
     } else if (input === 4) { // Inline blank field
