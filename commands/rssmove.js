@@ -13,12 +13,12 @@ function inputChannel (m, data, callback) {
   const sourceChannel = m.guild.channels.get(source.channel)
   const selected = m.mentions.channels.first()
   if (!selected) return callback(new SyntaxError('That is not a valid channel. Try again, or type `exit` to cancel.'))
-  if (selected.id === sourceChannel.id) return callback(new SyntaxError('The feed is already in that channel. Try again, or type `exit` cancel.'))
+  if (sourceChannel && selected.id === sourceChannel.id) return callback(new SyntaxError('The feed is already in that channel. Try again, or type `exit` cancel.'))
   const me = m.guild.me
   let errors = ''
   if (!me.permissionsIn(selected).has(MIN_PERMISSION)) errors += `\nI am missing **Read Messages** or **Send Messages** permission in <#${selected.id}>.`
   if (hasEmbed && !me.permissionsIn(selected).has('EMBED_LINKS')) errors += `\nI am missing **Embed Links** permission in the <#${selected.id}>. To bypass this permission, you can reset this feed's embed via the rssembed command.`
-  if (!m.member.permissionsIn(sourceChannel).has(MIN_PERMISSION_USER)) errors += `\nYou are missing **Read Messages**, **Send Messages**, or **Manage Channel** permission in <#${sourceChannel.id}>.`
+  if (sourceChannel && !m.member.permissionsIn(sourceChannel).has(MIN_PERMISSION_USER)) errors += `\nYou are missing **Read Messages**, **Send Messages**, or **Manage Channel** permission in <#${sourceChannel.id}>.`
   if (!m.member.permissionsIn(selected).has(MIN_PERMISSION_USER)) errors += `\nYou are missing **Read Messages**, **Send Messages**, or **Manage Channel** permission in <#${selected.id}>.`
   for (var n in rssList) {
     const cur = rssList[n]
