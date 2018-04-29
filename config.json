@@ -8,7 +8,7 @@
   "botSettings": {
     "token": "Mzk2ODAwNjk1OTg4Mzg3ODQx.DWCryQ.azK5-K9HqQB4fWswO1QrthRM3qk",
     "enableCommands": true,
-    "prefix": "~",
+    "prefix": "!",
     "defaultGame": "",
     "controllerIds": [],
     "menuColor": 7833753,
