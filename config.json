@@ -6,9 +6,9 @@
     "showUnfiltered": true
   },
   "botSettings": {
-    "token": "",
+    "token": "Mzk2ODAwNjk1OTg4Mzg3ODQx.DWCryQ.azK5-K9HqQB4fWswO1QrthRM3qk",
     "enableCommands": true,
-    "prefix": "~",
+    "prefix": "!",
     "defaultGame": "",
     "controllerIds": [],
     "menuColor": 7833753,
@@ -31,7 +31,7 @@
     "dateLanguageList": ["en"],
     "dateFallback": false,
     "timeFallback": false,
-    "maxFeeds": 5,
+    "maxFeeds": 100,
     "failLimit": 0,
     "notifyFail": true,
     "sendOldMessages": false,
