@@ -1,0 +1,11 @@
+{
+  "name": "Wonderland",
+  "id": "421796001830010890",
+  "sources": {
+    "82071605646_https://wikimudletorg/w/Special:RecentChanges": {
+      "title": "Mudlet  - Recent changes [en]",
+      "link": "https://wiki.mudlet.org/api.php?hidebots=1&days=7&limit=50&action=feedrecentchanges&feedformat=atom",
+      "channel": "430160614753697796"
+    }
+  }
+}
