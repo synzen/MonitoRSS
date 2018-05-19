@@ -46,7 +46,7 @@ module.exports = (bot, message, command) => {
     } else vipDetails += 'Ongoing\n'
   } else vipDetails = '\n'
 
-  let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n\u200b\n`
+  let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\u200b\n`
   desc += failedFeedCount > 0 ? `**Attention!** Feeds that have reached ${FAIL_LIMIT} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.bot.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n` : ''
 
   const list = new MenuUtils.Menu(message)

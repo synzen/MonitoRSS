@@ -49,52 +49,53 @@ exports.validChannel = (bot, guildRss, rssName) => {
 
 exports.defaultConfigs = {
   log: {
-    dates: {type: 'boolean', default: false},
-    linkErrs: {type: 'boolean', default: true},
-    unfiltered: {type: 'boolean', default: true},
-    failedFeeds: {type: 'boolean', default: true}
+    dates: {type: Boolean, default: false},
+    linkErrs: {type: Boolean, default: true},
+    unfiltered: {type: Boolean, default: true},
+    failedFeeds: {type: Boolean, default: true}
   },
   bot: {
-    token: {type: 'string', default: undefined},
-    enableCommands: {type: 'boolean', default: true},
-    prefix: {type: 'string', default: undefined},
-    status: {type: 'string', default: 'online'},
-    activityType: {type: 'string', default: ''},
-    activityName: {type: 'string', default: ''},
-    controllerIds: {type: 'object', default: []},
-    menuColor: {type: 'number', default: 7833753},
-    deleteMenus: {type: 'boolean', default: false}
+    token: {type: String, default: undefined},
+    enableCommands: {type: Boolean, default: true},
+    prefix: {type: String, default: undefined},
+    status: {type: String, default: 'online'},
+    activityType: {type: String, default: ''},
+    activityName: {type: String, default: ''},
+    controllerIds: {type: Array, default: []},
+    menuColor: {type: Number, default: 7833753},
+    deleteMenus: {type: Boolean, default: false}
   },
   database: {
-    uri: {type: 'string', default: 'mongodb://localhost/rss'},
-    clean: {type: 'boolean', default: false},
-    articlesExpire: {type: 'number', default: 14},
-    guildBackupsExpire: {type: 'number', default: 7}
+    uri: {type: String, default: 'mongodb://localhost/rss'},
+    clean: {type: Boolean, default: false},
+    articlesExpire: {type: Number, default: 14},
+    guildBackupsExpire: {type: Number, default: 7}
   },
   feeds: {
-    refreshTimeMinutes: {type: 'number', default: 10},
-    checkTitles: {type: 'boolean', default: false},
-    timezone: {type: 'string', default: 'America/New_York'},
-    dateFormat: {type: 'string', default: 'ddd, D MMMM YYYY, h:mm A z'},
-    dateLanguage: {type: 'string', default: moment.locales()[0]},
-    dateLanguageList: {type: 'object', default: ['en']},
-    dateFallback: {type: 'boolean', default: false},
-    timeFallback: {type: 'boolean', default: false},
-    failLimit: {type: 'number', default: 0},
-    notifyFail: {type: 'boolean', default: true},
-    sendOldMessages: {type: 'boolean', default: false},
-    defaultMaxAge: {type: 'number', default: 1},
-    cycleMaxAge: {type: 'number', default: 1},
-    defaultMessage: {type: 'string', default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
-    showRegexErrs: {type: 'boolean', default: true},
-    imgPreviews: {type: 'boolean', default: true},
-    imgLinksExistence: {type: 'boolean', default: true},
-    checkDates: {type: 'boolean', default: true}
+    refreshTimeMinutes: {type: Number, default: 10},
+    checkTitles: {type: Boolean, default: false},
+    timezone: {type: String, default: 'America/New_York'},
+    dateFormat: {type: String, default: 'ddd, D MMMM YYYY, h:mm A z'},
+    dateLanguage: {type: String, default: moment.locales()[0]},
+    dateLanguageList: {type: Array, default: ['en']},
+    dateFallback: {type: Boolean, default: false},
+    timeFallback: {type: Boolean, default: false},
+    failLimit: {type: Number, default: 0},
+    notifyFail: {type: Boolean, default: true},
+    sendOldMessages: {type: Boolean, default: false},
+    defaultMaxAge: {type: Number, default: 1},
+    cycleMaxAge: {type: Number, default: 1},
+    defaultMessage: {type: String, default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
+    showRegexErrs: {type: Boolean, default: true},
+    imgPreviews: {type: Boolean, default: true},
+    imgLinksExistence: {type: Boolean, default: true},
+    checkDates: {type: Boolean, default: true}
   },
   advanced: {
-    shards: {type: 'number', default: 1},
-    batchSize: {type: 'number', default: 400},
-    processorMethod: {type: 'string', default: 'single'}
+    shards: {type: Number, default: 1},
+    batchSize: {type: Number, default: 400},
+    processorMethod: {type: String, default: 'single'},
+    parallel: {type: Number, default: 2}
   }
 }
 
@@ -117,10 +118,10 @@ exports.check = userConfig => {
       const configVal = exports.defaultConfigs[configCategory][configName]
       const userVal = userConfig[configCategory][configName]
 
-      if (configVal.type !== typeof userVal) {
-        checkIfRequired(configCategory, configName, `Expected ${configVal.type}, found ${typeof userVal}`)
+      if (userVal.constructor !== configVal.type) {
+        checkIfRequired(configCategory, configName, `Expected ${configVal.type.name}, found ${userVal.constructor.name}`)
       } else {
-        if (typeof userVal === 'number' && userVal < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
+        if ((userVal).constructor === Number && userVal < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
         else if (configName === 'timezone' && !moment.tz.zone(userVal)) checkIfRequired(configCategory, configName, 'Invalid timezone')
         else if (configName === 'menuColor' && userVal > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
         else if (configName === 'sqlType' && (userVal !== 'sqlite3' && userVal !== 'mysql')) checkIfRequired(configCategory, configName, 'Must be either "mysql" or "sqlite3"')
@@ -128,8 +129,9 @@ exports.check = userConfig => {
         else if (configName === 'activityType' && !ACTIVITY_TYPES.includes(userVal.toUpperCase())) checkIfRequired(configCategory, configName, `Must be one of the following: "${ACTIVITY_TYPES.join('","')}"`)
         else if (configName === 'status' && !STATUS_TYPES.includes(userVal.toLowerCase())) checkIfRequired(configCategory, configName, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
         else if (configName === 'controllerIds') {
-          for (var i in userVal) {
-            if (typeof userVal[i] !== 'string') {
+          for (var i = 0; i < userVal.length; ++i) {
+            if (userVal[i] === "") continue
+            if (!userVal[i] || userVal[i].constructor !== String) {
               checkIfRequired(configCategory, configName, `Detected non-string value (${userVal[i]})`)
               break
             }

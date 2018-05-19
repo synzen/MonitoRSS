@@ -70,12 +70,12 @@ class FeedSchedule {
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === true) {
         log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id}...`)
-        // dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
+        dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].enabled.push(source.link)
       } else if (max !== 0 && c > max && source.disabled !== true) {
         log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id}...`)
-        // dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
+        dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].disabled.push(source.link)
       }

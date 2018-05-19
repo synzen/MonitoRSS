@@ -508,7 +508,7 @@ exports.vips = {
     log.general.success(`VIP servers have been successfully removed: ${successIds}.${failed.length > 0 ? ` The following were not removed due to incorrect backing: ${failed}` : ``}`)
   },
   refresh: callback => {
-    if (!fs.existsSync('./settings/vips.js')) return callback(new Error('Missing VIP module'))
+    if (!fs.existsSync('./settings/vips.js')) return callback ? callback(new Error('Missing VIP module')) : null
     require('../settings/vips.js')(storage.bot, callback)
   }
 }
