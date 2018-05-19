@@ -1,3 +1,4 @@
+const fs = require('fs')
 const Discord = require('discord.js')
 const storage = require('./storage.js')
 const config = require('../config.json')
@@ -249,7 +250,7 @@ exports.linkList = {
 
 exports.failedLinks = {
   uniformize: (failedLinks, callback, skipProcessSend) => {
-    if (storage.bot.shard && !skipProcessSend) process.send({ type: 'failedLinks.uniformize', failedLinks: failedLinks, _loopback: true })
+    if (!skipProcessSend && storage.bot.shard) process.send({ type: 'failedLinks.uniformize', failedLinks: failedLinks, _loopback: true })
     else if (skipProcessSend) storage.failedLinks = failedLinks // skipProcessSend indicates that this method was called on another shard, otherwise it was already updated in the methods below
     if (callback) callback()
   },
@@ -315,7 +316,7 @@ exports.failedLinks = {
 
 exports.blacklists = {
   uniformize: (blacklistGuilds, blacklistUsers, callback, skipProcessSend) => {
-    if (storage.bot.shard && !skipProcessSend) process.send({ type: 'blacklists.uniformize', blacklistGuilds: blacklistGuilds, blacklistUsers: blacklistUsers, _loopback: true })
+    if (!skipProcessSend && storage.bot.shard) process.send({ type: 'blacklists.uniformize', blacklistGuilds: blacklistGuilds, blacklistUsers: blacklistUsers, _loopback: true })
     else if (skipProcessSend) {
       storage.blacklistGuilds = blacklistGuilds
       storage.blacklistUsers = blacklistUsers
@@ -353,80 +354,161 @@ exports.blacklists = {
 }
 
 exports.vips = {
-  uniformize: (limitOverrides, cookieServers, webhookServers, vipServers, callback, skipProcessSend) => {
-    if (storage.bot.shard && !skipProcessSend) process.send({ type: 'vips.uniformize', limitOverrides: limitOverrides, cookieServers: cookieServers, webhookServers: webhookServers, vipServers: vipServers, _loopback: true })
+  uniformize: (vipUsers, vipServers, callback, skipProcessSend) => {
+    if (!skipProcessSend && storage.bot.shard) process.send({ type: 'vips.uniformize', vipUsers: vipUsers, vipServers: vipServers, _loopback: true })
     else if (skipProcessSend) {
-      storage.limitOverrides = limitOverrides
-      storage.cookieServers = cookieServers
-      storage.webhookServers = webhookServers
+      storage.vipUsers = vipUsers
       storage.vipServers = vipServers
     }
     if (callback) callback()
   },
   get: callback => models.VIP().find(callback),
-  update: (settings, callback) => {
-    const DEF_MAX = config.feeds.max
+  update: (settings, callback, skipAddServers) => {
     const servers = settings.servers
-    if (servers) {
-      for (var x = 0; x < servers.length; ++x) {
-        const serverID = servers[x]
-        if (settings.maxFeeds > DEF_MAX) storage.limitOverrides[serverID] = settings.maxFeeds
-        else delete storage.limitOverrides[serverID]
-        if (settings.allowWebhooks) storage.webhookServers.push(serverID)
-        else storage.webhookServers.splice(storage.webhookServers.indexOf(serverID))
-        if (settings.allowCookies) storage.cookieServers.push(serverID)
-        else storage.cookieServers.splice(storage.cookieServers.indexOf(serverID))
-      }
+    if (!storage.vipUsers[settings.id]) storage.vipUsers[settings.id] = settings
+    if (servers && !skipAddServers) exports.vips.addServers({ ...settings, serversToAdd: servers }, null, true)
+    exports.vips.uniformize(storage.vipUsers, storage.vipServers, callback)
+    if (!settings.name) {
+      const dUser = storage.bot.users.get(settings.id)
+      settings.name = dUser ? dUser.username : null
     }
+    delete settings.__v // Deleting this automatically solves an annoying error "Updating the path '__v' would create a conflict at '__v'"
     models.VIP().update({ id: settings.id }, settings, { upsert: true, strict: true }, err => {
       if (err) return callback ? callback(err) : log.general.error(`Unable to add VIP for id ${settings.id}`, err)
-      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, storage.vipServers, callback)
+      if (callback) callback()
+      log.general.success(`Updated VIP ${settings.id} (${settings.name})`)
     })
   },
-  remove: (id, callback) => {
+  updateBulk: (settingsMultiple, callback) => {
+    let complete = 0
+    const total = Object.keys(settingsMultiple).length
+    let errored = false
+    for (var e in settingsMultiple) {
+      const settings = settingsMultiple[e]
+      if (!settings.name) {
+        const dUser = storage.bot.users.get(settings.id)
+        settings.name = dUser ? dUser.username : null
+      }
+      if (!storage.vipUsers[settings.id]) storage.vipUsers[settings.id] = settings
+    }
+    exports.vips.uniformize(storage.vipUsers, storage.vipServers)
+
+    for (var q in settingsMultiple) {
+      const settings = settingsMultiple[q]
+      const servers = settings.servers
+      if (servers) exports.vips.addServers({ ...settings, serversToAdd: servers }, null, true)
+      delete settings.__v
+      models.VIP().update({ id: settings.id }, settings, { upsert: true, strict: true }, err => {
+        if (err) {
+          log.general.error(`Unable to add VIP for id ${settings.id}`, err)
+          errored = true
+        } else log.general.success(`Bulk updated VIP ${settings.id} (${settings.name})`)
+        if (++complete === total && callback) callback(errored ? new Error('Errors encountered with vips.updateBulk logged') : null)
+      })
+    }
+  },
+  remove: (id, callback, skipProcessSend) => {
     models.VIP().find({ id: id }).remove((err, doc) => {
       if (err) return callback ? callback(err) : log.general.error(`Unable to remove VIP for id ${id}`, err)
+      const settings = { ...storage.vipUsers[id] }
+      delete storage.vipUsers[id]
       const servers = doc.servers
-      if (servers) {
-        for (var x = 0; x < servers.length; ++x) {
-          const serverID = servers[x]
-          delete storage.limitOverrides[serverID]
-          delete storage.vipServers[serverID]
-          storage.webhookServers.splice(storage.webhookServers.indexOf(serverID))
-          storage.cookieServers.splice(storage.cookieServers.indexOf(serverID))
-        }
-      }
-      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, storage.vipServers, callback)
+      if (servers) exports.vips.removeServers({ ...settings, serversToRemove: servers }, null, true)
     })
   },
-  refresh: callback => {
-    models.VIP().find((err, docs) => {
-      if (err) return callback ? callback(err) : log.general.error(`Unable to query VIPs for refresh`, err)
-      if (docs.length === 0) return callback ? callback() : null
-      Object.keys(storage.limitOverrides).forEach(id => delete storage.limitOverrides[id])
-      Object.keys(storage.vipServers).forEach(id => delete storage.vipServers[id])
-      storage.webhookServers.length = 0
-      storage.cookieServers.length = 0
-      const DEF_MAX = config.feeds.max
-      for (var x = 0; x < docs.length; ++x) {
-        const doc = docs[x]
-        if (doc.expireAt && (new Date(doc.expireAt) < new Date())) {
-          log.general.info('Removing expired VIP...')
-          console.info(doc)
-          exports.vips.remove(doc.id)
-          continue
+  addServers: (settings, callback, skipUpdateVIP) => {
+    const servers = settings.serversToAdd
+    if (storage.bot.shard) {
+      storage.bot.shard.broadcastEval(`
+        const ids = ${JSON.stringify(servers)};
+        const info = {}
+        for (var x = 0; x < ids.length; ++x) {
+          const guild = this.guilds.get(ids[x]);
+          if (guild) info[guild.id] = guild.name
         }
-        const servers = doc.servers
-        const sLen = servers.length
-        for (var y = 0; y < sLen; ++y) {
-          const serverID = servers[y]
-          storage.vipServers[serverID] = doc.expireAt ? { expireAt: new Date(doc.expireAt) } : {}
-          if (doc.maxFeeds > DEF_MAX) storage.limitOverrides[serverID] = doc.maxFeeds
-          if (doc.allowWebhooks) storage.webhookServers.push(serverID)
-          if (doc.allowCookies) storage.cookieServers.push(serverID)
+        if (Object.keys(info).length > 0) info
+      `).then(results => {
+        let validServers = {}
+        const invalidServers = []
+        for (var x = 0; x < results.length; ++x) {
+          if (results[x]) validServers = { ...validServers, ...results[x] }
         }
+        for (var y = 0; y < servers.length; ++y) {
+          const id = servers[y]
+          if (!validServers[id]) {
+            invalidServers.push(id)
+            log.general.warning(`Failed to add VIP backing to server ${id} due to missing guild`)
+          }
+        }
+        delete settings.serversToAdd
+        write(validServers, invalidServers)
+      }).catch(err => {
+        if (callback) callback(err)
+        log.general.error('Failed to broadcast eval for addServer', err)
+      })
+    } else {
+      const validServers = {}
+      const invalidServers = []
+      for (var x = 0; x < servers.length; ++x) {
+        const id = servers[x]
+        const guild = storage.bot.guilds.get(id)
+        if (guild) validServers[id] = { id: id, name: guild.name }
+        else invalidServers.push(id)
       }
-      exports.vips.uniformize(storage.limitOverrides, storage.cookieServers, storage.webhookServers, storage.vipServers, callback)
-    })
+      delete settings.serversToAdd
+      write(validServers, invalidServers)
+    }
+    function write (validServers, invalidServers) {
+      for (var id in validServers) {
+        const guildName = validServers[id]
+        storage.vipServers[id] = {
+          name: guildName,
+          benefactor: settings
+        }
+        if (settings.expireAt) storage.vipServers[id].expireAt = new Date(settings.expireAt)
+        if (!storage.vipUsers[settings.id].servers.includes(id)) storage.vipUsers[settings.id].servers.push(id)
+        log.general.success(`Added VIP backing to server ${id} (${guildName}). Benefactor ID ${settings.id} (${settings.name}).`)
+      }
+      if (skipUpdateVIP) {
+        exports.vips.uniformize(storage.vipUsers, storage.vipServers)
+      } else exports.vips.update(storage.vipUsers[settings.id], null, true) // Uniformize is called by vips.update so no need to explicitly call it here
+      if (callback) callback(null, validServers, invalidServers)
+    }
+  },
+  removeServers: (settings, callback, skipUpdateVIP) => {
+    const servers = settings.serversToRemove
+    const success = {}
+    const successIds = []
+    const failed = []
+    for (var x = 0; x < servers.length; ++x) {
+      const id = servers[x]
+      if (!storage.vipServers[id]) {
+        failed.push(id)
+        continue
+      }
+      const benefactor = storage.vipServers[id] ? storage.vipServers[id].benefactor : null
+      if (!benefactor || !storage.vipUsers[benefactor.id] || !storage.vipUsers[benefactor.id].servers) {
+        failed.push(id)
+        continue
+      }
+      const index = storage.vipUsers[benefactor.id].servers.indexOf(id)
+      if (index === -1) {
+        failed.push(id)
+        continue
+      }
+      success[id] = storage.vipServers[id].name
+      successIds.push(id)
+      delete storage.vipServers[id]
+      storage.vipUsers[benefactor.id].servers.splice(index, 1)
+      if (skipUpdateVIP) exports.vips.uniformize(storage.vipUsers, storage.vipServers)
+      else exports.vips.update(storage.vipUsers[benefactor.id], null, true)
+      // No need to call uniformize since exports.vips.update does this
+    }
+    if (callback) callback(null, success, failed)
+    log.general.success(`VIP servers have been successfully removed: ${successIds}.${failed.length > 0 ? ` The following were not removed due to incorrect backing: ${failed}` : ``}`)
+  },
+  refresh: callback => {
+    if (!fs.existsSync('./settings/vips.js')) return callback(new Error('Missing VIP module'))
+    require('../settings/vips.js')(storage.bot, callback)
   }
 }

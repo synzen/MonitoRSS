@@ -17,7 +17,7 @@ function selectFeed (m, data, callback) {
 
   // Return an array of selected indices for feed removal
   if (MULTI_SELECT.includes(command)) {
-    let chosenOptionList = chosenOption.split(',').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item))  // Trim items, remove duplicates and empty items
+    let chosenOptionList = chosenOption.split(',').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Trim items, remove duplicates and empty items
     let valid = []
     let invalid = []
 
@@ -71,7 +71,7 @@ class FeedSelector extends Menu {
     this.miscOption = miscOption
 
     const rssList = this.guildRss.sources
-    const maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] === 0 ? 'Unlimited' : storage.limitOverrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max, 10))) ? 'Unlimited' : config.feeds.max
+    const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
     const globalSelect = GLOBAL_SELECT.includes(command)
     this._currentRSSList = []
 
@@ -102,7 +102,7 @@ class FeedSelector extends Menu {
       this.text = 'No feeds assigned to this channel.'
       return
     }
-    let desc = maxFeedsAllowed === 'Unlimited' ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
+    let desc = maxFeedsAllowed === 0 ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
     desc += (globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? commands[command].options[miscOption] : commands[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
     this.setAuthor('Feed Selection Menu')
     this.setDescription(desc)

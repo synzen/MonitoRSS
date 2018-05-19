@@ -39,7 +39,7 @@ async function login (firstStartup) {
 
     log.general.info(`${SHARD_ID}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
     if (firstStartup) {
-      if (config.bot.enableCommands !== false) listeners.enableCommands(bot)
+      listeners.enableCommands(bot)
       connectDb((err) => {
         if (err) throw err
         initialize(bot, finishInit)
@@ -63,7 +63,7 @@ function finishInit (guildsInfo, missingGuilds, linkDocs) {
     })
   } else {
     storage.initialized = 2
-    setInterval(dbOps.vips.refresh, 3600000)
+    setInterval(dbOps.vips.refresh, 600000)
   }
   scheduleManager = new ScheduleManager(bot)
   listeners.createManagers(bot)
@@ -78,7 +78,6 @@ else {
         break
       case 'finishedInit':
         storage.initialized = 2
-        dbOps.vips.refresh()
         dbOps.blacklists.refresh()
         break
       case 'cycleVIPs':
@@ -103,16 +102,16 @@ else {
         if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.removeFeed(message.guildRss, message.rssName, null, true)
         break
       case 'failedLinks.uniformize':
-        if (storage.initialized) dbOps.failedLinks.uniformize(message.failedLinks, null, true)
+        dbOps.failedLinks.uniformize(message.failedLinks, null, true)
         break
       case 'failedLinks._sendAlert':
         dbOps.failedLinks._sendAlert(message.link, message.message, true)
         break
       case 'blacklists.uniformize':
-        if (storage.initialized) dbOps.blacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, null, true)
+        dbOps.blacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, null, true)
         break
       case 'vips.uniformize':
-        if (storage.initialized) dbOps.vips.uniformize(message.limitOverrides, message.cookieServers, message.webhookServers, message.vipServers, null, true)
+        dbOps.vips.uniformize(message.vipUsers, message.vipServers, null, true)
         break
       case 'dbRestoreSend':
         const channel = bot.channels.get(message.channelID)

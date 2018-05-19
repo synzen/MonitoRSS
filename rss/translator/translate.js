@@ -62,7 +62,7 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, returnObject) =>
       testDetails += `\n\n[Title]: {title}\n${article.title}`
     }
 
-    if (article.summary && article.summary !== article.description) {  // Do not add summary if summary === description
+    if (article.summary && article.summary !== article.description) { // Do not add summary if summary === description
       let testSummary
       if (article.description && article.description.length > 500) testSummary = (article.summary.length > 500) ? `${article.summary.slice(0, 490)} [...]\n\n**(Truncated summary for shorter rsstest)**` : article.summary // If description is long, truncate summary.
       else testSummary = article.summary

@@ -12,7 +12,7 @@
     "status": "online",
     "activityType": "",
     "activityName": "",
-    "controllerIds": [],
+    "controllerIds": [""],
     "menuColor": 5285609,
     "deleteMenus": false
   },
@@ -45,7 +45,8 @@
   },
   "advanced": {
     "shards": 2,
-    "batchSize": 300,
-    "processorMethod": "single"
+    "batchSize": 400,
+    "processorMethod": "single",
+    "parallel": 2
   }
 }

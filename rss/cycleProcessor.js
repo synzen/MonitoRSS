@@ -7,7 +7,6 @@ const connectDb = require('./db/connect.js')
 const logLinkErr = require('../util/logLinkErrs.js')
 const processAllSources = require('./logic/cycle.js')
 const log = require('../util/logger.js')
-let connected = false
 
 function getFeed (data) {
   const { link, rssList, uniqueSettings } = data
@@ -58,12 +57,20 @@ function getFeed (data) {
 }
 
 process.on('message', m => {
-  const data = { link: m.link, rssList: m.rssList, uniqueSettings: m.uniqueSettings, debugFeeds: m.debugFeeds, shardId: m.shardId }
-  if (!connected) {
-    connected = true
-    connectDb(err => {
-      if (err) throw new Error(`Could not connect to database for cycle.\n`, err)
-      getFeed(data)
-    })
-  } else getFeed(data)
+  const currentBatch = m.currentBatch
+  const shardId = m.shardId
+  const debugFeeds = m.debugFeeds
+  connectDb(err => {
+    if (err) throw new Error(`Could not connect to database for cycle.\n`, err)
+    for (var link in currentBatch) {
+      const rssList = currentBatch[link]
+      let uniqueSettings
+      for (var modRssName in rssList) {
+        if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
+          uniqueSettings = rssList[modRssName].advanced
+        }
+      }
+      getFeed({ link, rssList, uniqueSettings, debugFeeds, shardId })
+    }
+  })
 })

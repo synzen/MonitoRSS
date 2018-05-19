@@ -96,10 +96,10 @@ function deleteSubscription (message, guildRss, roleID) {
   return message.channel.send(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`.`).catch(err => log.command.warning(`rssRoles/delSub 2`, message.guild, err))
 }
 
-  // Add global subscriptions, called from openSubMenu
+// Add global subscriptions, called from openSubMenu
 function addGlobalSub (message, guildRss, rssName, role) {
   const source = guildRss.sources[rssName]
-    // remove any filtered subscriptions when adding global subscription, and delete parents if empty
+  // remove any filtered subscriptions when adding global subscription, and delete parents if empty
   if (source.filters && source.filters.roleSubscriptions && source.filters.roleSubscriptions[role.id]) delete source.filters.roleSubscriptions[role.id]
   if (source.filters && source.filters.roleSubscriptions && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
   if (source.filters && Object.keys(source.filters).length === 0) delete source.filters
@@ -116,7 +116,7 @@ function addGlobalSub (message, guildRss, rssName, role) {
   log.command.info(`Global subscription added to feed ${source.link}`, message.guild, message.guild.roles.get(role.id))
 }
 
-  // Remove global subscriptions, called from openSubMenu
+// Remove global subscriptions, called from openSubMenu
 function removeGlobalSub (message, guildRss, rssName, role) {
   const source = guildRss.sources[rssName]
   let found = false

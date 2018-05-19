@@ -6,14 +6,14 @@ const config = require('../config.json')
 
 async function removeRole (message, role) {
   message.member.removeRole(role)
-  .then(mem => {
-    log.command.info(`Removed role from member`, message.guild, role, message.author)
-    message.channel.send(`You no longer have the role \`${role.name}\`.`)
-  })
-  .catch(err => {
-    message.channel.send(`Error: Unable to remove role.` + err.message ? ` (${err.message})` : '')
-    log.command.warning(`Unable to remove role`, message.guild, role, message.author, err)
-  })
+    .then(mem => {
+      log.command.info(`Removed role from member`, message.guild, role, message.author)
+      message.channel.send(`You no longer have the role \`${role.name}\`.`)
+    })
+    .catch(err => {
+      message.channel.send(`Error: Unable to remove role.` + err.message ? ` (${err.message})` : '')
+      log.command.warning(`Unable to remove role`, message.guild, role, message.author, err)
+    })
 }
 
 module.exports = async (bot, message, command) => {

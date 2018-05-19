@@ -93,7 +93,7 @@ exports.defaultConfigs = {
   },
   advanced: {
     shards: {type: 'number', default: 1},
-    batchSize: {type: 'number', default: '400'},
+    batchSize: {type: 'number', default: 400},
     processorMethod: {type: 'string', default: 'single'}
   }
 }
@@ -142,7 +142,7 @@ exports.check = userConfig => {
   const defLang = userConfig.feeds.dateLanguage
   const langList = userConfig.feeds.dateLanguageList
   if (!langList.includes(defLang)) langList.unshift(defLang)
-  for (var u = langList.length - 1; u >= 0; --u) moment.locale(langList[u])  // Set the global moment locale/language to the 0 index item
+  for (var u = langList.length - 1; u >= 0; --u) moment.locale(langList[u]) // Set the global moment locale/language to the 0 index item
 
   let errMsg
   for (var e in fatalInvalidConfigs) errMsg += `\n${e}: ${fatalInvalidConfigs[e]}`

@@ -1,6 +1,5 @@
 const config = require('../config.json')
 const storage = require('../util/storage.js')
-const cookieServers = storage.cookieServers
 const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
@@ -38,7 +37,7 @@ function setNewCookies (m, data, callback) {
 }
 
 module.exports = (bot, message, command) => {
-  if (config.advanced && config.advanced._restrictCookies === true && !cookieServers.includes(message.guild.id)) return message.channel.send('Only patrons have access to cookie control.').then(m => m.delete(3500)).catch(err => log.command.warning(`Unable to send restricted access to rsscookies command:`, message.guild, err))
+  if (config.advanced && config.advanced._restrictCookies === true && storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].allowCookies) return message.channel.send('Only patrons have access to cookie control.').then(m => m.delete(3500)).catch(err => log.command.warning(`Unable to send restricted access to rsscookies command:`, message.guild, err))
   const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
   const cookiePrompt = new MenuUtils.Menu(message, setNewCookies)
 

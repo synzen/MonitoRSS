@@ -16,8 +16,8 @@ function backup (m, message, arg) {
 function attachFile (m, message, arg) {
   m.delete()
   message.reply(`Successfully archived.`, { file: `./${arg}.archive` })
-      .then(() => deleteTemp(m, message, arg))
-      .catch(err => log.controller.warning(`Failed to send success message with archive attachment for dbbackup`, message.author, err))
+    .then(() => deleteTemp(m, message, arg))
+    .catch(err => log.controller.warning(`Failed to send success message with archive attachment for dbbackup`, message.author, err))
 }
 
 function deleteTemp (m, message, arg) {

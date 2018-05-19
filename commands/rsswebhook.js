@@ -5,7 +5,7 @@ const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
 const log = require('../util/logger.js')
 
-async function feedSelectorFn (m, data, callback) {
+function feedSelectorFn (m, data, callback) {
   const { guildRss, rssName } = data
   const existingWebhook = guildRss.sources[rssName].webhook
 
@@ -41,7 +41,7 @@ function collectWebhook (m, data, callback) {
 
 module.exports = async (bot, message, command) => {
   try {
-    if (config.advanced._restrictWebhooks === true && !storage.webhookServers.includes(message.guild.id)) {
+    if (config.advanced._restrictWebhooks === true && (!storage.vipServers[message.guild.id] || !storage.vipServers[message.guild.id].benefactor.allowWebhooks)) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
       return await message.channel.send(`Only patrons have access to webhook use.`)
     }

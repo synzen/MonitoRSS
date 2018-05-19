@@ -62,7 +62,7 @@ function regexReplace (string, searchOptions, replacement) {
           const exp = new RegExp(escapeRegExp(matches[x][0]), flags)
           string = string.replace(exp, replacement)
         }
-      } else if (matchIndex && groupNum === undefined) {  // If no group number is defined, use the full match of this particular match number in the original string
+      } else if (matchIndex && groupNum === undefined) { // If no group number is defined, use the full match of this particular match number in the original string
         const exp = new RegExp(escapeRegExp(matches[matchIndex][0]), flags)
         string = string.replace(exp, replacement)
       } else {
@@ -109,9 +109,9 @@ function cleanup (source, text, imgSrcs) {
   if (!text) return ''
 
   text = text.replace(/\*/gi, '')
-          .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
-          .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
-          .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
+    .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
+    .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
+    .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
 
   text = htmlConvert.fromString(text, {
     wordwrap: null,
@@ -145,7 +145,9 @@ function cleanup (source, text, imgSrcs) {
   })
 
   text = text.replace(/\n\s*\n\s*\n/g, '\n\n') // Replace triple line breaks with double
-  return text
+  const arr = text.split('\n')
+  for (var q = 0; q < arr.length; ++q) arr[q] = arr[q].replace(/\s+$/, '') // Remove trailing spaces
+  return arr.join('\n')
 }
 
 module.exports = class Article {
@@ -326,6 +328,7 @@ module.exports = class Article {
         content = this.resolvePlaceholderImg(phImageLocs[h]) ? content.replace(phImageLocs[h], this.resolvePlaceholderImg(phImageLocs[h])) : content.replace(phImageLocs[h], '')
       }
     }
+    if (this.reddit) content = content.replace(/{reddit_direct}/g, this.reddit_direct)
     return content
   }
 
@@ -333,14 +336,14 @@ module.exports = class Article {
   convertKeywords (word) {
     const regexPlaceholders = this.regexPlaceholders
     let content = word.replace(/{date}/g, this.date)
-            .replace(/{title}/g, this.title)
-            .replace(/{author}/g, this.author)
-            .replace(/{summary}/g, this.summary)
-            .replace(/{subscriptions}/g, this.subscriptions)
-            .replace(/{link}/g, this.link)
-            .replace(/{description}/g, this.description)
-            .replace(/{tags}/g, this.tags)
-            .replace(/{guid}/g, this.guid)
+      .replace(/{title}/g, this.title)
+      .replace(/{author}/g, this.author)
+      .replace(/{summary}/g, this.summary)
+      .replace(/{subscriptions}/g, this.subscriptions)
+      .replace(/{link}/g, this.link)
+      .replace(/{description}/g, this.description)
+      .replace(/{tags}/g, this.tags)
+      .replace(/{guid}/g, this.guid)
 
     if (this.reddit) content = content.replace(/{reddit_author}/g, this.reddit_author).replace(/{reddit_direct}/g, this.reddit_direct)
 

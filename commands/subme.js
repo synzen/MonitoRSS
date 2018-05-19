@@ -6,14 +6,14 @@ const config = require('../config.json')
 
 async function addRole (message, role, link) {
   message.member.addRole(role)
-  .then(mem => {
-    log.command.info(`Role successfully added to member`, message.guild, role, message.author)
-    message.channel.send(`You now have the role \`${role.name}\`, subscribed to **<${link}>**.`)
-  })
-  .catch(err => {
-    message.channel.send(`Error: Unable to add role.` + err.message ? ` (${err.message})` : '')
-    log.command.warning(`Unable to add role to user`, message.guild, role, message.author, err)
-  })
+    .then(mem => {
+      log.command.info(`Role successfully added to member`, message.guild, role, message.author)
+      message.channel.send(`You now have the role \`${role.name}\`, subscribed to **<${link}>**.`)
+    })
+    .catch(err => {
+      message.channel.send(`Error: Unable to add role.` + err.message ? ` (${err.message})` : '')
+      log.command.warning(`Unable to add role to user`, message.guild, role, message.author, err)
+    })
 }
 
 module.exports = async (bot, message, command) => {

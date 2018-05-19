@@ -14,7 +14,7 @@ module.exports = (bot, message, command) => {
   const rssList = guildRss.sources
   let failedFeedCount = 0
 
-  const maxFeedsAllowed = storage.limitOverrides[message.guild.id] != null ? storage.limitOverrides[message.guild.id] === 0 ? 'Unlimited' : storage.limitOverrides[message.guild.id] : (!config.feeds.max || isNaN(parseInt(config.feeds.max))) ? 'Unlimited' : config.feeds.max
+  const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
   // Generate the info for each feed as an array, and push into another array
   const currentRSSList = []
   for (var rssName in rssList) {
@@ -29,7 +29,7 @@ module.exports = (bot, message, command) => {
     if (FAIL_LIMIT !== 0) {
       const failCount = failedLinks[feed.link]
       o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : 'Status: FAILED\n'
-      if (o.status.startsWith('STATUS: FAILED')) ++failedFeedCount
+      if (o.status.startsWith('Status: FAILED')) ++failedFeedCount
     }
     if (rssList[rssName].disabled === true) o.status = `Status: DISABLED\n`
     currentRSSList.push(o)
@@ -46,12 +46,17 @@ module.exports = (bot, message, command) => {
     } else vipDetails += 'Ongoing\n'
   } else vipDetails = '\n'
 
-  let desc = maxFeedsAllowed === 'Unlimited' ? `${vipDetails}\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n\u200b\n`
+  let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n\u200b\n`
   desc += failedFeedCount > 0 ? `**Attention!** Feeds that have reached ${FAIL_LIMIT} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.bot.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n` : ''
 
   const list = new MenuUtils.Menu(message)
     .setAuthor('Current Active Feeds')
     .setDescription(desc)
+
+  if (storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor) {
+    const benefactor = storage.vipServers[message.guild.id].benefactor
+    list.setFooter(`Patronage backed by ${benefactor.name} (${benefactor.id})`)
+  }
 
   currentRSSList.forEach(item => {
     const link = item.link

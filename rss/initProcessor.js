@@ -9,7 +9,6 @@ const FeedParser = require('feedparser')
 const connectDb = require('./db/connect.js')
 const initAllSources = require('./logic/initialization.js')
 const log = require('../util/logger.js')
-let connected = false
 
 function init (data) {
   const { link, rssList, uniqueSettings } = data
@@ -31,14 +30,14 @@ function init (data) {
   requestStream(link, cookies, feedparser, err => {
     requested = true
     if (err) {
-      log.init.error(`Skipping ${link}`, err)
+      log.init.warning(`Skipping ${link}`, err)
       return process.send({status: 'failed', link: link, rssList: rssList})
     }
   })
 
   feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
-    log.init.error(`Skipping ${link}`, err)
+    log.init.warning(`Skipping ${link}`, err)
     return process.send({ status: 'failed', link: link, rssList: rssList })
   })
 
@@ -61,12 +60,19 @@ function init (data) {
 }
 
 process.on('message', m => {
-  const data = { link: m.link, rssList: m.rssList, uniqueSettings: m.uniqueSettings, shardId: m.shardId }
-  if (!connected) {
-    connected = true
-    connectDb(err => {
-      if (err) throw new Error(`Could not connect to database for initialization\n`, err)
-      init(data)
-    })
-  } else init(data)
+  const currentBatch = m.currentBatch
+  const shardId = m.shardId
+  connectDb(err => {
+    if (err) throw new Error(`Could not connect to database for initialization\n`, err)
+    for (var link in currentBatch) {
+      const rssList = currentBatch[link]
+      var uniqueSettings
+      for (var modRssName in rssList) {
+        if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
+          uniqueSettings = rssList[modRssName].advanced
+        }
+      }
+      init({ link, rssList, uniqueSettings, shardId })
+    }
+  })
 })

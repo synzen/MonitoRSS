@@ -17,7 +17,7 @@ module.exports = (bot, article, callback, isTestMessage) => {
   let channelType = 'textChannel'
   if (!source) return log.general.error(`Unable to send an article due to missing source ${rssName}`, channel.guild, channel)
 
-  if (typeof source.webhook === 'object' && storage.webhookServers.includes(channel.guild.id)) {
+  if (typeof source.webhook === 'object' && storage.vipServers[channel.guild.id] && storage.vipServers[channel.guild.id].benefactor.allowWebhooks) {
     if (!channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) return body()
     channel.fetchWebhooks().then(hooks => {
       const hook = hooks.get(source.webhook.id)
@@ -54,46 +54,43 @@ module.exports = (bot, article, callback, isTestMessage) => {
 
     function sendTestDetails () {
       channel.send(message.testDetails, channelType === 'textChannel' ? {split: {prepend: '```md\n', append: '```'}} : {split: {prepend: '```md\n', append: '```'}, username: channel.name, avatarURL: channel.avatar})
-      .then(m => sendMain())
-      .catch(err => {
-        if (attempts === 4) return callback(err)
-        attempts++
-        setTimeout(sendTestDetails, 500)
-      })
+        .then(m => sendMain())
+        .catch(err => {
+          if (attempts++ === 4) return callback(err)
+          setTimeout(sendTestDetails, 500)
+        })
     }
 
     function sendCombinedMsg () {
       channel.send(message.textMsg, channelType === 'textChannel' ? message.embedMsg : {username: channel.name, avatarURL: channel.avatar, embeds: [message.embedMsg]})
-      .then(m => {
+        .then(m => {
         // console.log(successLog)
-        if (debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Message combo has been translated and has been sent (TITLE: ${article.title})`)
-        return callback()
-      })
-      .catch(err => {
-        if (attempts === 4) {
-          if (debugFeeds.includes(rssName)) log.debug.error(`${rssName}: Message combo has been translated but could not be sent (TITLE: ${article.title})`, err)
-          return callback(err)
-        }
-        attempts++
-        setTimeout(sendCombinedMsg, 500)
-      })
+          if (debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Message combo has been translated and has been sent (TITLE: ${article.title})`)
+          return callback()
+        })
+        .catch(err => {
+          if (attempts++ === 4) {
+            if (debugFeeds.includes(rssName)) log.debug.error(`${rssName}: Message combo has been translated but could not be sent (TITLE: ${article.title})`, err)
+            return callback(err)
+          }
+          setTimeout(sendCombinedMsg, 500)
+        })
     }
 
     function sendTxtMsg () {
       channel.send(message.textMsg, {username: channel.name, avatarURL: channel.avatar})
-      .then(m => {
+        .then(m => {
         // console.log(successLog)
-        if (debugFeeds.includes(rssName)) log.debug.info(`DEBUG ${rssName}: Message has been translated and has been sent (TITLE: ${article.title}).`)
-        return callback()
-      })
-      .catch(err => {
-        if (attempts === 4) {
-          if (debugFeeds.includes(rssName)) log.debug.error(`DEBUG ${rssName}: Message has been translated but could not be sent (TITLE: ${article.title})`, err)
-          return callback(err)
-        }
-        attempts++
-        setTimeout(sendTxtMsg, 500)
-      })
+          if (debugFeeds.includes(rssName)) log.debug.info(`DEBUG ${rssName}: Message has been translated and has been sent (TITLE: ${article.title}).`)
+          return callback()
+        })
+        .catch(err => {
+          if (attempts++ === 4) {
+            if (debugFeeds.includes(rssName)) log.debug.error(`DEBUG ${rssName}: Message has been translated but could not be sent (TITLE: ${article.title})`, err)
+            return callback(err)
+          }
+          setTimeout(sendTxtMsg, 500)
+        })
     }
 
     function sendMain () { // Main Message: If it contains both an embed and text, or only an embed.

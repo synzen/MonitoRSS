@@ -24,7 +24,7 @@ module.exports = (bot, message) => {
   let feeds
 
   if (bot.shard) {
-    guilds = `Per Shard: ${reference.guilds.shard}\nGlobal: ${reference.guilds.global}`
+    guilds = `Per Shard: ${reference.guilds.shard.toFixed(2)}\nGlobal: ${reference.guilds.global}`
     feeds = `Per Shard: ${reference.feeds.shard.toFixed(2)}\nGlobal: ${reference.feeds.global}`
     cycleLinks = reference.cycleTime ? `Per Shard: ${reference.cycleLinks.shard.toFixed(2)}\nGlobal: ${reference.cycleLinks.global.toFixed(2)}` : 'No data available yet.'
     cycleFails = reference.cycleTime ? `Per Shard: ${reference.cycleFails.shard.toFixed(2)}\nGlobal: ${reference.cycleFails.global.toFixed(2)}` : 'No data available yet.'

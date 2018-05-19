@@ -32,14 +32,15 @@ exports.initialized = 0 // Different levels dictate what commands may be used wh
 exports.statistics = { fullyUpdated: false } // For individual shards/non sharded
 exports.statisticsGlobal = { fullyUpdated: 0 } // For aggregated statistics across all shards, updated on an interval by eval
 exports.vipServers = {}
+exports.vipUsers = {}
 exports.currentGuilds = new Map() // To hold all guild profiles
 exports.deletedFeeds = [] // Any deleted rssNames to check during sendToDiscord if it was deleted during a cycle
 exports.linkTracker = {} // To track schedule assignment to links
 exports.allScheduleWords = [] // Holds all words across all schedules
 exports.failedLinks = {}
-exports.limitOverrides = {}
-exports.webhookServers = []
-exports.cookieServers = []
+// exports.limitOverrides = {}
+// exports.webhookServers = []
+// exports.cookieServers = []
 exports.blacklistUsers = []
 exports.blacklistGuilds = []
 exports.schemas = {
@@ -53,7 +54,8 @@ exports.schemas = {
     checkDates: Boolean,
     dateFormat: String,
     dateLanguage: String,
-    timezone: String
+    timezone: String,
+    vip: Object
   }),
   guildRssBackup: mongoose.Schema({
     id: String,
@@ -106,15 +108,23 @@ exports.schemas = {
         unique: true
       }
     },
+    disabled: Boolean,
     name: String,
-    servers: [String],
+    servers: {
+      type: [String],
+      default: []
+    },
+    permanent: Boolean,
+    pledged: Number,
     maxFeeds: Number,
+    maxServers: Number,
     allowWebhooks: Boolean,
     allowCookies: Boolean,
     expireAt: {
       type: Date,
       index: { expires: 0 }
-    }
+    },
+    override: Boolean
   }),
   blacklist: mongoose.Schema({
     isGuild: Boolean,

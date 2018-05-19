@@ -1,6 +1,7 @@
 const Discord = require('discord.js')
 const COLORS = {
   Error: '\x1b[31m',
+  Success: '\x1b[32m',
   Warning: '\x1b[33m',
   Debug: '\x1b[33m',
   reset: '\x1b[0m'
@@ -9,7 +10,7 @@ const CONSTRUCTORS = [Discord.Guild, Discord.TextChannel, Discord.Role, Discord.
 const LOG_DATES = require('../config.json').log.dates === true
 const PREFIXES = ['G', 'C', 'R', 'U']
 const TYPES = ['Command', 'Guild', 'Cycle', 'INIT', 'General', 'Debug', 'Controller']
-const LEVELS = ['Error', 'Warning', 'Info']
+const LEVELS = ['Error', 'Success', 'Warning', 'Info']
 const MAXLEN = TYPES.reduce((a, b) => a.length > b.length ? a : b).length + LEVELS.reduce((a, b) => a.length > b.length ? a : b).length + 1 // Calculate uniform spacing
 
 function formatConsoleDate (date) {
@@ -44,7 +45,7 @@ class _Logger {
       const pre = PREFIXES[i]
       det += item.id && (item.name || item.username) ? `(${pre}: ${item.id}, ${item.name || item.username}) ` : item.id ? `(${pre} ${item.id}) ` : item.name ? `(${pre} ${item.name}) ` : ''
     }
-    return { identifier: det, err: error }
+    return { identifier: det, err: error, printStack: error && details[details.length - 1] === true }
   }
 
   _log (level) {
@@ -55,6 +56,7 @@ class _Logger {
     return (contents, ...details) => {
       const extra = this._parseDetails(details)
       console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
+      if (extra.err && extra.printStack) console.log(extra.err.stack) // Print stack trace
     }
   }
 }

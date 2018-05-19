@@ -17,6 +17,7 @@ function getID (message) {
         delete file._id
         delete file.__v
         if (!file.id) return reject(new Error('No ID found in file'))
+        if (file.id !== id) return reject(new Error('File ID does not match input ID'))
         resolve(file)
       } catch (err) { reject(err) }
     }).catch(reject)

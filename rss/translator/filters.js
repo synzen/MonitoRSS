@@ -133,7 +133,7 @@ module.exports = (source, article, isTestMessage) => {
     }
   }
 
-  const passed = {   // Inverted and regular filters are ultimately calculated together with AND
+  const passed = { // Inverted and regular filters are ultimately calculated together with AND
     invertedFilters: true,
     regularFilters: false
   }

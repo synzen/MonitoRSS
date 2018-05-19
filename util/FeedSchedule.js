@@ -61,7 +61,7 @@ class FeedSchedule {
   _addToSourceLists (guildRss) { // rssList is an object per guildRss
     const rssList = guildRss.sources
     let c = 0 // To count and determine what feeds should be disabled if they violate their limits
-    const max = storage.limitOverrides[guildRss.id] || (config.feeds.max || 0)
+    const max = !storage.vipServers[guildRss.id] ? config.feeds.max : storage.vipServers[guildRss.id] && storage.vipServers[guildRss.id].benefactor.maxFeeds ? storage.vipServers[guildRss.id].benefactor.maxFeeds : 0
     const status = {}
     let feedCount = 0 // For statistics in storage
     for (var rssName in rssList) {
@@ -70,12 +70,12 @@ class FeedSchedule {
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === true) {
         log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id}...`)
-        dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
+        // dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].enabled.push(source.link)
       } else if (max !== 0 && c > max && source.disabled !== true) {
         log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id}...`)
-        dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
+        // dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].disabled.push(source.link)
       }
@@ -116,37 +116,37 @@ class FeedSchedule {
       const channel = this.bot.channels.get(channelId)
       if (channel) {
         channel.send(m)
-        .then(m => log.general.info(`Sent feed enable/disable notice to server`, channel.guild, channel))
-        .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel, err))
+          .then(m => log.general.info(`Sent feed enable/disable notice to server`, channel.guild, channel))
+          .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel, err))
       }
     }
     return feedCount
   }
 
   _genBatchLists () { // Each batch is a bunch of links. Too many links at once will cause request failures.
-    let batch = new Map()
+    let batch = {}
 
     this._sourceList.forEach((rssList, link) => { // rssList per link
-      if (batch.size >= BATCH_SIZE) {
+      if (Object.keys(batch).length >= BATCH_SIZE) {
         this._regBatchList.push(batch)
-        batch = new Map()
+        batch = {}
       }
-      batch.set(link, rssList)
+      batch[link] = rssList
     })
 
-    if (batch.size > 0) this._regBatchList.push(batch)
+    if (Object.keys(batch).length > 0) this._regBatchList.push(batch)
 
-    batch = new Map()
+    batch = {}
 
     this._modSourceList.forEach((source, link) => { // One RSS source per link instead of an rssList
-      if (batch.size >= BATCH_SIZE) {
+      if (Object.keys(batch).length >= BATCH_SIZE) {
         this._modBatchList.push(batch)
-        batch = new Map()
+        batch = {}
       }
-      batch.set(link, source)
+      batch[link] = source
     })
 
-    if (batch.size > 0) this._modBatchList.push(batch)
+    if (Object.keys(batch).length > 0) this._modBatchList.push(batch)
   }
 
   run () {
@@ -202,10 +202,12 @@ class FeedSchedule {
     const failedLinks = storage.failedLinks
     if (batchList.length === 0) return this._getBatch(0, this._modBatchList, 'modded')
     const currentBatch = batchList[batchNumber]
+    const currentBatchLen = Object.keys(batchList[batchNumber]).length
     let completedLinks = 0
 
-    currentBatch.forEach((rssList, link) => {
-      var uniqueSettings
+    for (var link in currentBatch) {
+      const rssList = currentBatch[link]
+      let uniqueSettings
       for (var modRssName in rssList) {
         if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
           uniqueSettings = rssList[modRssName].advanced
@@ -224,35 +226,26 @@ class FeedSchedule {
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
         ++this._cycleTotalCount
-        if (++completedLinks === currentBatch.size) {
+        if (++completedLinks === currentBatchLen) {
           if (batchNumber !== batchList.length - 1) setTimeout(this._getBatch.bind(this), 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && this._modBatchList.length > 0) setTimeout(this._getBatch.bind(this), 200, 0, this._modBatchList, 'modded')
           else return this._finishCycle()
         }
       })
-    })
+    }
   }
 
   _getBatchIsolated (batchNumber, batchList, type) {
     const failedLinks = storage.failedLinks
     if (batchList.length === 0) return this._getBatchIsolated(0, this._modBatchList, 'modded')
     const currentBatch = batchList[batchNumber]
+    const currentBatchLen = Object.keys(currentBatch).length
     let completedLinks = 0
 
     this._processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
 
     const processorIndex = this._processorList.length - 1
     const processor = this._processorList[processorIndex]
-
-    currentBatch.forEach((rssList, link) => {
-      let uniqueSettings
-      for (var modRssName in rssList) {
-        if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
-          uniqueSettings = rssList[modRssName].advanced
-        }
-      }
-      processor.send({type: 'initial', link: link, rssList: rssList, uniqueSettings: uniqueSettings, debugFeeds: debugFeeds, shardId: this.bot.shard ? this.bot.shard.id : null})
-    })
 
     processor.on('message', linkCompletion => {
       if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
@@ -262,7 +255,7 @@ class FeedSchedule {
       } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
 
       this._cycleTotalCount++
-      if (++completedLinks === currentBatch.size) {
+      if (++completedLinks === currentBatchLen) {
         processor.kill()
         this._processorList.splice(processorIndex, 1)
         if (batchNumber !== batchList.length - 1) setTimeout(this._getBatchIsolated.bind(this), 200, batchNumber + 1, batchList, type)
@@ -270,6 +263,8 @@ class FeedSchedule {
         else this._finishCycle()
       }
     })
+
+    processor.send({ currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard ? this.bot.shard.id : null })
   }
 
   _getBatchParallel () {
@@ -277,9 +272,15 @@ class FeedSchedule {
     const totalBatchLengths = this._regBatchList.length + this._modBatchList.length
     let completedBatches = 0
 
-    function deployProcessor (batchList, index) {
+    let willCompleteBatch = 0
+    let regIndices = []
+    let modIndices = []
+
+    function deployProcessor (batchList, index, callback) {
+      if (!batchList) return
       let completedLinks = 0
       const currentBatch = batchList[index]
+      const currentBatchLen = Object.keys(currentBatch).length
       this._processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
 
       const processorIndex = this._processorList.length - 1
@@ -291,31 +292,39 @@ class FeedSchedule {
           ++this._cycleFailCount
           dbOps.failedLinks.increment(linkCompletion.link, null, true)
         } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
-
         ++this._cycleTotalCount
-        if (++completedLinks === currentBatch.size) {
+
+        if (++completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
+          if (callback) callback()
           if (completedBatches === totalBatchLengths) {
-            this._processorList = []
+            this._processorList.length = 0
             this._finishCycle()
           }
         }
       })
 
-      currentBatch.forEach((rssList, link) => {
-        var uniqueSettings
-        for (var modRssName in rssList) {
-          if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
-            uniqueSettings = rssList[modRssName].advanced
-          }
-        }
-        processor.send({type: 'initial', link: link, rssList: rssList, uniqueSettings: uniqueSettings, debugFeeds: debugFeeds, shardId: this.bot.shard ? this.bot.shard.id : null})
-      })
+      processor.send({ currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard ? this.bot.shard.id : null })
     }
 
-    for (var i = 0; i < this._regBatchList.length; ++i) { deployProcessor.bind(this)(this._regBatchList, i) }
-    for (var y = 0; y < this._modBatchList.length; ++y) { deployProcessor.bind(this)(this._modBatchList, y) }
+    function spawn (count) {
+      for (var q = 0; q < count; ++q) {
+        willCompleteBatch++
+        deployProcessor.bind(this)(regIndices.length > 0 ? this._regBatchList : modIndices.length > 0 ? this._modBatchList : undefined, regIndices.length > 0 ? regIndices.shift() : modIndices.length > 0 ? modIndices.shift() : undefined, () => {
+          if (willCompleteBatch < totalBatchLengths) spawn.bind(this)(1)
+        })
+      }
+    }
+
+    if (config.advanced.parallel && config.advanced.parallel > 1) {
+      for (var g = 0; g < this._regBatchList.length; ++g) regIndices.push(g)
+      for (var h = 0; h < this._modBatchList.length; ++h) modIndices.push(h)
+      spawn.bind(this)(config.advanced.parallel)
+    } else {
+      for (var i = 0; i < this._regBatchList.length; ++i) { deployProcessor.bind(this)(this._regBatchList, i) }
+      for (var y = 0; y < this._modBatchList.length; ++y) { deployProcessor.bind(this)(this._modBatchList, y) }
+    }
   }
 
   _finishCycle (noFeeds) {
@@ -325,6 +334,12 @@ class FeedSchedule {
     }
     const diff = (new Date() - this._startTime) / 1000
     const timeTaken = diff.toFixed(2)
+
+    if (noFeeds) log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
+    else {
+      if (this._processorList.length === 0) this.inProgress = false
+      log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
+    }
 
     // Update statistics
     if (this.schedule.name === 'default') {
@@ -379,12 +394,6 @@ class FeedSchedule {
         `).catch(err => log.general.warning('Failed to update global statistics', err))
       }).catch(err => log.general.warning('Unable to get individual statistics for update', err))
     }
-
-    if (noFeeds) return log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
-    if (this._processorList.length === 0) this.inProgress = false
-
-    log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
-    if (this.bot.shard && this.bot.shard.count > 1) this.bot.shard.send({type: 'scheduleComplete', refreshTime: this.refreshTime})
   }
 
   stop () {

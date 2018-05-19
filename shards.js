@@ -46,13 +46,16 @@ connectDb(err => {
 
 function createIntervals () {
   refreshTimes.forEach((refreshTime, i) => {
-    scheduleIntervals.push(setInterval(() => { // The "master interval" for a particular refresh time to determine when shards should start running their schedules
-      scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the activeShardIds index
-      let p = scheduleTracker[refreshTime]
+    // The "master interval" for a particular refresh time to determine when shards should start running their schedules
+    scheduleIntervals.push(setInterval(() => {
+      scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the activeShardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
+      const p = scheduleTracker[refreshTime]
       Manager.broadcast({type: 'runSchedule', shardId: activeShardIds[p], refreshTime: refreshTime})
     }, refreshTime * 60000))
   })
+  // Refresh VIPs on a schedule
   setInterval(() => {
+    // Only needs to be run on a single shard since dbOps uniformizes it across all shards
     Manager.broadcast({ type: 'cycleVIPs', shardId: activeShardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err))
   }, 3600000)
 }
@@ -103,15 +106,16 @@ Manager.on('message', async (shard, message) => {
           await Manager.broadcast({
             shardId: activeShardIds[scheduleTracker[message.refreshTime]],
             type: 'runSchedule',
-            refreshTime: message.refreshTime})
+            refreshTime: message.refreshTime
+          })
         } // Send signal for next shard to start cycle
         break
 
       case 'dbRestore':
         scheduleIntervals.forEach(it => clearInterval(it))
         dbRestore.restoreUtil(undefined, message.fileName, message.url, message.databaseName)
-        .then(() => Manager.broadcast({type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID}))
-        .catch(err => { throw err })
+          .then(() => Manager.broadcast({type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID}))
+          .catch(err => { throw err })
     }
   } catch (err) {
     log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err)

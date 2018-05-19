@@ -22,10 +22,10 @@ exports.normal = async (bot, message) => {
     const m = await message.channel.send('Restoring...')
     scheduleManager.stopSchedules()
     exports.restoreUtil(m, fileName, archive.url)
-    .then(() => process.exit())
-    .catch(err => {
-      throw err
-    })
+      .then(() => process.exit())
+      .catch(err => {
+        throw err
+      })
   } catch (err) {
     log.controller.warning('dbrestore', err)
   }
@@ -93,8 +93,8 @@ exports.restoreUtil = (m, fileName, url, databaseName = DATABASE_NAME) => {
         console.log('Bot Controller: Database restore is complete. The database has been wiped clean with the backup guilds collection restored. The process will stop for a manual reboot.')
         if (!m) return resolve()
         m.edit('Database restore complete! Stopping bot process for manual reboot.')
-        .then(() => resolve())
-        .catch(err => console.log(`Bot Controller: Unable to edit restoring message to success for dbrestore:`, err.message || err))
+          .then(() => resolve())
+          .catch(err => console.log(`Bot Controller: Unable to edit restoring message to success for dbrestore:`, err.message || err))
       })
     }
   })

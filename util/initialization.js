@@ -37,7 +37,7 @@ module.exports = (bot, callback) => {
   const sourceList = new Map()
   const regBatchList = []
   const modBatchList = []
-  const batchSize = 400
+  const BATCH_SIZE = 400
   const guildsInfo = {}
   const missingGuilds = {}
 
@@ -83,21 +83,10 @@ module.exports = (bot, callback) => {
     }
   })
 
-  try {
-    // For patron tracking on the public bot
-    require('../settings/vips.js')(bot, () => {
-      dbOps.failedLinks.initalize(err => {
-        if (err) throw err
-        readGuilds()
-      })
-    })
-  } catch (e) {
-    if (config._server) log.general.error(`Failed to load VIP module`, e)
-    dbOps.failedLinks.initalize(err => {
-      if (err) throw err
-      readGuilds()
-    })
-  }
+  dbOps.failedLinks.initalize(err => {
+    if (err) throw err
+    readGuilds()
+  })
 
   // Cache guilds and start initialization
   function readGuilds () {
@@ -127,17 +116,17 @@ module.exports = (bot, callback) => {
 
       let c = 0
       const total = bot.guilds.size
-      if (total === 0) prepConnect()
+      if (total === 0) checkVIPs()
       bot.guilds.forEach((guild, guildId) => {
         if (guildsInfo[guildId]) {
-          if (++c === total) prepConnect()
+          if (++c === total) checkVIPs()
           return
         }
         const id = guildId
         dbOps.guildRss.restore(guildId, (err, restored) => {
           if (err) log.init.info(`Unable to restore ${id}`, err)
           else if (restored) log.init.info(`Restored profile for ${restored.id}`)
-          if (++c === total) prepConnect()
+          if (++c === total) checkVIPs()
         }, true)
       })
     })
@@ -182,6 +171,21 @@ module.exports = (bot, callback) => {
     }
   }
 
+  function checkVIPs () {
+    try {
+      // For patron tracking on the public bot
+      if (config._vip && (!bot.shard || (bot.shard && bot.shard.id === bot.shard.count - 1))) {
+        require('../settings/vips.js')(bot, err => {
+          if (err) throw err
+          prepConnect()
+        })
+      } else prepConnect()
+    } catch (e) {
+      if (config._vip) log.general.error(`Failed to load VIP module`, e)
+      prepConnect()
+    }
+  }
+
   function prepConnect () {
     const linkCountArr = linkCounts.toArray()
     for (var t in linkCountArr) {
@@ -202,29 +206,29 @@ module.exports = (bot, callback) => {
   }
 
   function genBatchLists () {
-    let batch = new Map()
+    let batch = {}
 
     sourceList.forEach((rssList, link) => { // rssList per link
-      if (batch.size >= batchSize) {
+      if (Object.keys(batch).length >= BATCH_SIZE) {
         regBatchList.push(batch)
-        batch = new Map()
+        batch = {}
       }
-      batch.set(link, rssList)
+      batch[link] = rssList
     })
 
-    if (batch.size > 0) regBatchList.push(batch)
+    if (Object.keys(batch).length > 0) regBatchList.push(batch)
 
-    batch = new Map()
+    batch = {}
 
     modSourceList.forEach((source, link) => { // One RSS source per link instead of an rssList
-      if (batch.size >= batchSize) {
+      if (Object.keys(batch).length >= BATCH_SIZE) {
         modBatchList.push(batch)
-        batch = new Map()
+        batch = {}
       }
-      batch.set(link, source)
+      batch[link] = source
     })
 
-    if (batch.size > 0) modBatchList.push(batch)
+    if (Object.keys(batch).length > 0) modBatchList.push(batch)
   }
 
   function connect () {
@@ -245,11 +249,13 @@ module.exports = (bot, callback) => {
 
   function getBatch (batchNumber, batchList, type) {
     if (batchList.length === 0) return getBatch(0, modBatchList, 'modded')
-    let currentBatch = batchList[batchNumber]
+    const currentBatch = batchList[batchNumber]
+    const currentBatchLen = Object.keys(currentBatch).length
     let completedLinks = 0
 
-    currentBatch.forEach((rssList, link) => { // rssList is an rssList of a specific link
-      var uniqueSettings
+    for (var link in currentBatch) {
+      const rssList = currentBatch[link] // rssList is an rssList of a specific link
+      let uniqueSettings
       for (var modRssName in rssList) {
         if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
           uniqueSettings = rssList[modRssName].advanced
@@ -257,20 +263,20 @@ module.exports = (bot, callback) => {
       }
 
       initAll({ link: link, rssList: rssList, uniqueSettings: uniqueSettings }, (err, linkCompletion) => {
-        if (err) log.init.error(`Skipping ${linkCompletion.link}`, err)
+        if (err) log.init.warning(`Skipping ${linkCompletion.link}`, err, true)
         if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
         if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
         else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
 
         completedLinks++
-        log.init.info(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
-        if (completedLinks === currentBatch.size) {
+        log.init.info(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatchLen}`)
+        if (completedLinks === currentBatchLen) {
           if (batchNumber !== batchList.length - 1) setTimeout(getBatch, 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatch, 200, 0, modBatchList, 'modded')
           else return finishInit()
         }
       })
-    })
+    }
   }
 
   let batchTracker = {}
@@ -278,19 +284,10 @@ module.exports = (bot, callback) => {
   function getBatchIsolated (batchNumber, batchList, type) {
     if (batchList.length === 0) return getBatchIsolated(0, modBatchList, 'modded')
     let completedLinks = 0
-    let currentBatch = batchList[batchNumber]
+    const currentBatch = batchList[batchNumber]
+    const currentBatchLen = Object.keys(currentBatch).length
 
     const processor = process.fork('./rss/initProcessor.js')
-
-    currentBatch.forEach((rssList, link) => {
-      var uniqueSettings
-      for (var modRssName in rssList) {
-        if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
-          uniqueSettings = rssList[modRssName].advanced
-        }
-      }
-      processor.send({ link: link, rssList: rssList, uniqueSettings: uniqueSettings, shardId: bot.shard ? bot.shard.id : null })
-    })
 
     processor.on('message', linkCompletion => {
       if (linkCompletion.status === 'fatal') {
@@ -306,34 +303,38 @@ module.exports = (bot, callback) => {
 
       completedLinks++
       cycleTotalCount++
-      log.init.info(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatch.size}`)
+      log.init.info(`${SHARD_ID}Batch ${batchNumber + 1} (${type}) Progress: ${completedLinks}/${currentBatchLen}`)
 
-      if (completedLinks === currentBatch.size) {
+      if (completedLinks === currentBatchLen) {
         if (batchNumber !== batchList.length - 1) setTimeout(getBatchIsolated, 200, batchNumber + 1, batchList, type)
         else if (type === 'regular' && modBatchList.length > 0) setTimeout(getBatchIsolated, 200, 0, modBatchList, 'modded')
         else finishInit()
         processor.kill()
       }
     })
+
+    processor.send({ currentBatch: currentBatch, shardId: bot.shard ? bot.shard.id : null })
   }
 
   function getBatchParallel () {
     let totalBatchLengths = regBatchList.length + modBatchList.length
     let totalLinks = 0
-    for (var x in regBatchList) {
-      totalLinks += regBatchList[x].size
-    }
-    for (var y in modBatchList) {
-      totalLinks += modBatchList[y].size
-    }
+    for (var x in regBatchList) totalLinks += Object.keys(regBatchList[x]).length
+    for (var y in modBatchList) totalLinks += Object.keys(modBatchList[y]).length
     let completedBatches = 0
     let totalCompletedLinks = 0
 
-    function deployProcessors (batchList, index) {
+    let willCompleteBatch = 0
+    let regIndices = []
+    let modIndices = []
+
+    function deployProcessor (batchList, index, callback) {
+      if (!batchList) return
       let completedLinks = 0
 
       const processor = process.fork('./rss/initProcessor.js')
-      let currentBatch = batchList[index]
+      const currentBatch = batchList[index]
+      const currentBatchLen = Object.keys(currentBatch).length
 
       processor.on('message', linkCompletion => {
         if (linkCompletion.status === 'kill') {
@@ -347,26 +348,34 @@ module.exports = (bot, callback) => {
         completedLinks++
         totalCompletedLinks++
         log.init.info(`${SHARD_ID}Parallel Progress: ${totalCompletedLinks}/${totalLinks}`)
-        if (completedLinks === currentBatch.size) {
+        if (completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
+          if (callback) callback()
           if (completedBatches === totalBatchLengths) finishInit()
         }
       })
 
-      currentBatch.forEach((rssList, link) => {
-        var uniqueSettings
-        for (var modRssName in rssList) {
-          if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
-            uniqueSettings = rssList[modRssName].advanced
-          }
-        }
-        processor.send({ link: link, rssList: rssList, uniqueSettings: uniqueSettings, shardId: bot.shard ? bot.shard.id : null })
-      })
+      processor.send({ currentBatch: currentBatch, shardId: bot.shard ? bot.shard.id : null })
     }
 
-    for (var i in regBatchList) { deployProcessors(regBatchList, i) }
-    for (var j in modBatchList) { deployProcessors(modBatchList, j) }
+    function spawn (count) {
+      for (var q = 0; q < count; ++q) {
+        willCompleteBatch++
+        deployProcessor(regIndices.length > 0 ? regBatchList : modIndices.length > 0 ? modBatchList : undefined, regIndices.length > 0 ? regIndices.shift() : modIndices.length > 0 ? modIndices.shift() : undefined, () => {
+          if (willCompleteBatch < totalBatchLengths) spawn(1)
+        })
+      }
+    }
+
+    if (config.advanced.parallel && config.advanced.parallel > 1) {
+      for (var g = 0; g < regBatchList.length; ++g) regIndices.push(g)
+      for (var h = 0; h < modBatchList.length; ++h) modIndices.push(h)
+      spawn(config.advanced.parallel)
+    } else {
+      for (var i in regBatchList) { deployProcessor(regBatchList, i) }
+      for (var j in modBatchList) { deployProcessor(modBatchList, j) }
+    }
   }
 
   function finishInit () {

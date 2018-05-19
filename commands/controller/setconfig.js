@@ -98,9 +98,9 @@ const validConfig = {
 
 function printConfigHelp () {
   const message = new Discord.RichEmbed()
-  .setTitle('List of Confirgurable Configs')
-  .setColor(config.bot.menuColor)
-  .setDescription(`The syntax to change certain configs through is \`${config.bot.prefix}setconfig <config> <argument(s)>\`\n\u200b`)
+    .setTitle('List of Confirgurable Configs')
+    .setColor(config.bot.menuColor)
+    .setDescription(`The syntax to change certain configs through is \`${config.bot.prefix}setconfig <config> <argument(s)>\`\n\u200b`)
 
   for (var category in validConfig) {
     let description = ''

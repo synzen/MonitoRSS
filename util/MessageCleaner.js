@@ -5,7 +5,7 @@ const log = require('./logger.js')
  * Handles message tracking and bulk deletion
  */
 class MessageCleaner {
-    /**
+  /**
      * Creates an instance of MessageCleaner.
      * @param {Message} message A Discord.js Message
      * @memberof MessageCleaner
@@ -22,7 +22,7 @@ class MessageCleaner {
     } else this._allowed = !guildBot.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true
   }
 
-    /**
+  /**
      * Add a Message to its messageList.
      *
      * @param {Message} message A Discord.js Message
@@ -32,7 +32,7 @@ class MessageCleaner {
     if (this._allowed) this._messageList.push(message)
   }
 
-    /**
+  /**
      * Delete all Messages in its messageList.
      *
      * @memberof MessageCleaner
@@ -55,7 +55,7 @@ class MessageCleaner {
     }
   }
 
-    /**
+  /**
      * Merge another MessageCleaner by copying its Messages to this one.
      *
      * @param {MessageCleaner} msgCleaner MessageCleaner to merge

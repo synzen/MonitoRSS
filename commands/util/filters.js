@@ -146,38 +146,38 @@ function filterRemoveTerm (m, data, callback) {
 
   callback()
   m.channel.send(`Removing filter ${m.content} from category ${chosenFilterType}...`)
-  .then(function (editing) {
-    let deletedList = '' // Valid items that were removed
-    for (var i = validFilter.length - 1; i >= 0; i--) { // Delete the filters stored from before from highest index to lowest since it is an array
-      deletedList += `\n${validFilter[i].filter}`
-      filterList[chosenFilterType].splice(validFilter[i].index, 1)
-      if (filterList[chosenFilterType].length === 0) delete filterList[chosenFilterType]
-    }
+    .then(function (editing) {
+      let deletedList = '' // Valid items that were removed
+      for (var i = validFilter.length - 1; i >= 0; i--) { // Delete the filters stored from before from highest index to lowest since it is an array
+        deletedList += `\n${validFilter[i].filter}`
+        filterList[chosenFilterType].splice(validFilter[i].index, 1)
+        if (filterList[chosenFilterType].length === 0) delete filterList[chosenFilterType]
+      }
 
-    // Check after removal if there are any empty objects
-    if (role && Object.keys(filterList).length === 0) delete source.filters.roleSubscriptions[role.id]
-    if (role && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
-    if (Object.keys(source.filters).length === 0) delete source.filters
+      // Check after removal if there are any empty objects
+      if (role && Object.keys(filterList).length === 0) delete source.filters.roleSubscriptions[role.id]
+      if (role && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
+      if (Object.keys(source.filters).length === 0) delete source.filters
 
-    dbOps.guildRss.update(guildRss)
+      dbOps.guildRss.update(guildRss)
 
-    if (!role) {
-      log.command.info(`Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild)
-      let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
-      if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-      editing.edit(msg).catch(err => log.command.warning(`filterRemove 8a`, m.guild, err))
-    } else {
-      log.command.info(`Role Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild, role)
-      let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
-      if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-      editing.edit(msg).catch(err => log.command.warning(`filterRemove 8b`, m.guild, err))
-    }
-  }).catch(err => log.command.warning(`filterRemove 8`, m.guild, err))
+      if (!role) {
+        log.command.info(`Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild)
+        let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
+        if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
+        editing.edit(msg).catch(err => log.command.warning(`filterRemove 8a`, m.guild, err))
+      } else {
+        log.command.info(`Role Filter(s) [${deletedList.trim().split('\n')}] removed from '${chosenFilterType}' for ${source.link}`, m.guild, role)
+        let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
+        if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
+        editing.edit(msg).catch(err => log.command.warning(`filterRemove 8b`, m.guild, err))
+      }
+    }).catch(err => log.command.warning(`filterRemove 8`, m.guild, err))
 }
 
 exports.remove = (message, guildRss, rssName, role) => {
   const source = guildRss.sources[rssName]
-  const filterList = !role ? source.filters : source.filters.roleSubscriptions[role.id] ? source.filters.roleSubscriptions[role.id].filters : undefined  // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
+  const filterList = !role ? source.filters : source.filters.roleSubscriptions[role.id] ? source.filters.roleSubscriptions[role.id].filters : undefined // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
   const selectCategory = new MenuUtils.Menu(message, filterRemoveCategory, { numbered: false })
   const removeFilter = new MenuUtils.Menu(message, filterRemoveTerm)
 
