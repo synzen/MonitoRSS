@@ -118,8 +118,8 @@ exports.check = userConfig => {
       const configVal = exports.defaultConfigs[configCategory][configName]
       const userVal = userConfig[configCategory][configName]
 
-      if (userVal.constructor !== configVal.type) {
-        checkIfRequired(configCategory, configName, `Expected ${configVal.type.name}, found ${userVal.constructor.name}`)
+      if (!userVal || userVal.constructor !== configVal.type) {
+        checkIfRequired(configCategory, configName, `Expected ${configVal.type.name}, found ${!userVal ? undefined : userVal.constructor.name}`)
       } else {
         if ((userVal).constructor === Number && userVal < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
         else if (configName === 'timezone' && !moment.tz.zone(userVal)) checkIfRequired(configCategory, configName, 'Invalid timezone')
@@ -130,7 +130,7 @@ exports.check = userConfig => {
         else if (configName === 'status' && !STATUS_TYPES.includes(userVal.toLowerCase())) checkIfRequired(configCategory, configName, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
         else if (configName === 'controllerIds') {
           for (var i = 0; i < userVal.length; ++i) {
-            if (userVal[i] === "") continue
+            if (userVal[i] === '') continue
             if (!userVal[i] || userVal[i].constructor !== String) {
               checkIfRequired(configCategory, configName, `Detected non-string value (${userVal[i]})`)
               break
