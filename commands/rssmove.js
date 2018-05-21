@@ -29,7 +29,7 @@ function inputChannel (m, data, callback) {
   source.channel = selected.id
   dbOps.guildRss.update(guildRss)
   log.command.info(`Channel for feed ${source.link} has been moved to channel ${selected.id} (${selected.name})`, m.guild, m.channel)
-  m.channel.send(`The channel for the feed <${source.link}> has been moved from <#${m.channel.id}> to <#${selected.id}>`)
+  m.channel.send(`The channel for the feed <${source.link}> has been moved from ${sourceChannel ? `<#${sourceChannel.id}>` : 'an undefined channel'} to <#${selected.id}>`)
   callback(null, data)
 }
 

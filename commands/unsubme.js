@@ -39,7 +39,7 @@ module.exports = async (bot, message, command) => {
       const role = message.guild.roles.find('name', predeclared)
       if (role && eligibleRoles.includes(predeclared)) return removeRole(message, role)
       else if (mention && eligibleRoles.includes(mention.name)) return removeRole(message, mention)
-      return await message.channel.send(`That is not a valid role to add. Note that roles are case-sensitive. To see the the full list of roles that can be removed, type \`${config.bot.prefix}unsubme\`.`)
+      return await message.channel.send(`That is not a valid role to remove. Note that roles are case-sensitive. To see the the full list of roles that can be removed, type \`${config.bot.prefix}unsubme\`.`)
     }
 
     const ask = new MenuUtils.Menu(message, null, { numbered: false })

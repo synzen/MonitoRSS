@@ -10,8 +10,9 @@ function getID (message) {
     const attachment = message.attachments.first()
     const url = attachment ? attachment.url : undefined
     if (!url) return reject(new Error('No attachment found'))
-    needle('get', url).then(res => {
+    needle.get(url, (err, res) => {
       if (res.statusCode !== 200) return reject(new Error(`Non-200 status code: `, res))
+      if (err) return reject(err)
       try {
         const file = JSON.parse(JSON.stringify(res.body))
         delete file._id
@@ -20,7 +21,7 @@ function getID (message) {
         if (file.id !== id) return reject(new Error('File ID does not match input ID'))
         resolve(file)
       } catch (err) { reject(err) }
-    }).catch(reject)
+    })
   })
 }
 

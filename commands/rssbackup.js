@@ -7,7 +7,10 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
   try {
     if (!guildRss && !automatic) message.channel.send('This server does not have a profile.')
     if (!guildRss) return
-    if (message.guild.me.permissionsIn(message.channel).has('ATTACH_FILES')) await message.channel.send(new Attachment(Buffer.from(JSON.stringify(guildRss, null, 2)), message.guild.id + 'json'))
+    const backup = JSON.parse(JSON.stringify(guildRss, null, 2))
+    delete backup._id
+    delete backup.__v
+    if (message.guild.me.permissionsIn(message.channel).has('ATTACH_FILES')) await message.channel.send(new Attachment(Buffer.from(JSON.stringify(backup)), message.guild.id + '.json'))
     else await message.channel.send('Unable to send backup due to missing `Attach Files` permission.')
   } catch (err) {
     log.command.warning('rssbackup', err)
