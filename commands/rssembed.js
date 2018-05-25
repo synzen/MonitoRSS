@@ -15,13 +15,16 @@ const EMBED_PROPERTIES = {
   imageURL: { name: 'Image URL', description: 'Image on the bottom\nMUST be a link to an image, OR an {imageX} placeholder' },
   message: { name: 'Message', description: 'Main message\nAccepts placeholders' },
   footerText: { name: 'Footer Text', description: 'Bottom-most text\nAccepts placeholders' },
-  footerIconURL: { name: 'Footer Icon URL', description: 'Icon to the left of Footer Text\nMUST be a link to an image. If Footer Text is unspecified, the Footer Icon will be hidden\nAccepts placeholders' }
+  footerIconURL: { name: 'Footer Icon URL', description: 'Icon to the left of Footer Text\nMUST be a link to an image. If Footer Text is unspecified, the Footer Icon will be hidden\nAccepts placeholders' },
+  timestamp: { name: 'Timestamp', description: 'Date that is visually localized to every user\nIf an invalid timestamp date is detected, timestamp will not be shown' }
 }
+const EMBED_PROPERTIES_KEYS = Object.keys(EMBED_PROPERTIES)
+const EMBED_PROPERTIES_KEYS_LEN = EMBED_PROPERTIES_KEYS.length
 
 let EMBED_PROPERTIES_LIST = '```Markdown\n# Available Properties #\n\n'
 for (var pn in EMBED_PROPERTIES) {
   const cur = EMBED_PROPERTIES[pn]
-  EMBED_PROPERTIES_LIST += `[${cur.name}]: ${cur.description}\n\n${pn === 'footerIconURL' ? '```' : ''}`
+  EMBED_PROPERTIES_LIST += `[${cur.name}]: ${cur.description}\n\n${pn === EMBED_PROPERTIES_KEYS[EMBED_PROPERTIES_KEYS_LEN - 1] ? '```' : ''}`
 }
 
 function validURL (input) { // A simple check is enough
@@ -119,7 +122,7 @@ function selectProperty (m, data, callback) {
   for (var x = 0; x < choices.length; ++x) setMenus.push(new MenuUtils.Menu(m, setProperty))
 
   data.next = {
-    text: `You are now customizing the **${EMBED_PROPERTIES[choices[0]].name}**. Type your input now\n\nTo reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.bot.prefix}rsstest\`.`,
+    text: `You are now customizing the **${EMBED_PROPERTIES[choices[0]].name}**. Type your input now.\n\n${choices[0] !== 'timestamp' ? '' : `To set the timestamp to the time the article is sent to Discord, type \`now\`.\nTo set the timestamp to the time the article was published (if available in the feed), type \`article\`. \nFor a custom timestamp, type the text representation of a custom date (see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\n`}To reset the property, type \`reset\`.\n\nRemember that you can use placeholders \`{title}\`, \`{description}\`, \`{link}\`, and etc. in the correct fields. Regular formatting such as **bold** and etc. is also available. To find other placeholders, you may first type \`exit\` then use \`${config.bot.prefix}rsstest\`.`,
     menu: setMenus
   }
   callback(null, { ...data,
@@ -131,18 +134,28 @@ function selectProperty (m, data, callback) {
 function setProperty (m, data, callback) {
   const { properties } = data
   const property = properties[0]
-  const setting = m.content.trim()
-  data.next = {
-    text: `You are now customizing the **${properties[0] ? EMBED_PROPERTIES[properties[0]].name : ''}**. Type your input now. To reset the property, type \`reset\`.`
+  const userSetting = m.content.trim()
+  if (properties[1]) {
+    data.next = {
+      text: properties[1] !== 'timestamp' ? `You are now customizing the **${EMBED_PROPERTIES[properties[1]].name}**. Type your input now. To reset the property, type \`reset\`.` : `You are now customizing the **${EMBED_PROPERTIES[properties[1]].name}**.\n\nTo set the timestamp to the time the article is sent to Discord, type \`now\`.\nTo set the timestamp to the time the article was published (if available in the feed), type \`article\`.\nFor a custom timestamp, type the text representation of a custom date (see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nTo reset the property, type \`reset\`.`
+    }
   }
 
-  if (setting.toLowerCase() === 'reset') {
+  if (userSetting.toLowerCase() === 'reset') {
     data.settings[property] = 'reset'
     properties.shift()
     return callback(null, data)
   }
-  const valid = validate(property, setting)
-  if (valid === true) data.settings[property] = setting
+
+  if (property === 'timestamp') {
+    if (userSetting !== 'now' && userSetting !== 'article' && new Date(userSetting).toString() === 'Invalid Date') return callback(new SyntaxError('That is not a valid setting. It must be either `now`, `article`, or a valid text representation of a date. Try again.'))
+    data.settings[property] = userSetting
+    properties.shift()
+    return callback(null, data)
+  }
+
+  const valid = validate(property, userSetting)
+  if (valid === true) data.settings[property] = userSetting
   else return callback(new SyntaxError(valid))
   properties.shift()
   callback(null, data)
@@ -298,8 +311,8 @@ module.exports = (bot, message, command) => {
       let reset = ''
       for (var prop in settings) {
         const propName = EMBED_PROPERTIES[prop].name
-        const setting = settings[prop]
-        if (setting === 'reset') {
+        const userSetting = settings[prop]
+        if (userSetting === 'reset') {
           if (!source.embedMessage || !source.embedMessage.properties || !source.embedMessage.properties[prop]) {
             reset += `🇽 **${propName}** has nothing to reset\n`
             continue
@@ -315,9 +328,9 @@ module.exports = (bot, message, command) => {
           continue
         }
         if (typeof source.embedMessage !== 'object' || typeof source.embedMessage.properties !== 'object') source.embedMessage = { properties: {} }
-        source.embedMessage.properties[prop] = setting
-        log.command.info(`Embed updated for ${source.link}. Property '${prop}' set to '${setting}'`, message.guild)
-        status += `☑ **${propName}** updated to \n\`\`\`\n${setting}\n\`\`\`\n`
+        source.embedMessage.properties[prop] = userSetting
+        log.command.info(`Embed updated for ${source.link}. Property '${prop}' set to '${userSetting}'`, message.guild)
+        status += `☑ **${propName}** updated to \n\`\`\`\n${userSetting}\n\`\`\`\n`
       }
 
       dbOps.guildRss.update(guildRss)

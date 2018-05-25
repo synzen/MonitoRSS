@@ -183,6 +183,7 @@ module.exports = class Article {
       if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)
       const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
+      this.rawDate = this.date
     }
 
     // Description and reddit-specific placeholders

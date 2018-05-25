@@ -23,6 +23,10 @@ module.exports = (rssList, rssName, article) => {
     const t = article.convertKeywords(embedSpecs.title)
     embed.setTitle(t.length > 256 ? t.slice(0, 250) + '...' : t)
   }
+  if (isStr(embedSpecs.timestamp)) {
+    const setting = embedSpecs.timestamp
+    embed.setTimestamp(setting === 'article' ? new Date(article.rawDate) : setting === 'now' ? new Date() : new Date(setting)) // No need to check for invalid date since discord.js does it
+  }
 
   const fields = embedSpecs.fields
   if (Array.isArray(fields)) {
