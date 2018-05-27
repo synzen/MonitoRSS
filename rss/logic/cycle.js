@@ -67,7 +67,7 @@ module.exports = function (data, callback) {
     const localTitleCheck = source.checkTitles
     const checkTitle = typeof globalTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
 
-    for (var a = 0; a < articleList.length; ++a) {
+    for (var a = articleList.length - 1; a >= 0; --a) { // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
       const article = articleList[a]
       if (dbIds.length === 0 && articleList.length !== 1) { // Only skip if the articleList length is !== 1, otherwise a feed with only 1 article to send since it may have been the first item added
         if (debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection.`)
@@ -82,7 +82,7 @@ module.exports = function (data, callback) {
         if (debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), due to date check.`)
         seenArticle(true)
       } else {
-        if (debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) to sendToDiscord.`)
+        if (debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) to queue for send`)
         seenArticle(false, article)
       }
     }

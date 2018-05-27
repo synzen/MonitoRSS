@@ -8,7 +8,7 @@ const logLinkErr = require('../util/logLinkErrs.js')
 const processAllSources = require('./logic/cycle.js')
 const log = require('../util/logger.js')
 
-function getFeed (data) {
+function getFeed (data, callback) {
   const { link, rssList, uniqueSettings } = data
   const feedparser = new FeedParser()
   const articleList = []
@@ -27,6 +27,7 @@ function getFeed (data) {
 
   requestStream(link, cookies, feedparser, err => {
     requested = true
+    callback()
     if (!err) return
     logLinkErr({link: link, content: err})
     process.send({ status: 'failed', link: link, rssList: rssList })
@@ -48,7 +49,6 @@ function getFeed (data) {
 
   feedparser.on('end', () => {
     if (articleList.length === 0) return process.send({status: 'success', link: link})
-
     processAllSources({ articleList: articleList, ...data }, (err, results) => {
       if (err) log.cycle.error(`Cycle logic`, err)
       if (results) process.send(results)
@@ -62,6 +62,8 @@ process.on('message', m => {
   const debugFeeds = m.debugFeeds
   connectDb(err => {
     if (err) throw new Error(`Could not connect to database for cycle.\n`, err)
+    const len = Object.keys(currentBatch).length
+    let c = 0
     for (var link in currentBatch) {
       const rssList = currentBatch[link]
       let uniqueSettings
@@ -70,7 +72,9 @@ process.on('message', m => {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
-      getFeed({ link, rssList, uniqueSettings, debugFeeds, shardId })
+      getFeed({ link, rssList, uniqueSettings, debugFeeds, shardId }, () => {
+        if (++c === len) process.send({status: 'batch_connected'})
+      })
     }
   })
 })

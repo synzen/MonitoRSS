@@ -11,7 +11,7 @@ const FAIL_LIMIT = config.feeds.failLimit
 
 exports.guildRss = {
   update: (guildRss, callback, skipProcessSend) => {
-    if (storage.bot.shard && !skipProcessSend) {
+    if (storage.bot.shard && (!skipProcessSend || !storage.bot.guilds.has(guildRss.id))) {
       process.send({ type: 'guildRss.update', guildRss: guildRss, _loopback: true })
       return callback ? callback() : null
     }

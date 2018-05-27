@@ -10,7 +10,7 @@ const connectDb = require('./db/connect.js')
 const initAllSources = require('./logic/initialization.js')
 const log = require('../util/logger.js')
 
-function init (data) {
+function init (data, callback) {
   const { link, rssList, uniqueSettings } = data
   const feedparser = new FeedParser()
   const articleList = []
@@ -22,6 +22,7 @@ function init (data) {
     if (!requested) {
       try {
         process.send({ status: 'failed', link: link, rssList: rssList })
+        callback()
         log.cycle.error(`Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
       } catch (e) {}
     }
@@ -29,6 +30,7 @@ function init (data) {
 
   requestStream(link, cookies, feedparser, err => {
     requested = true
+    callback()
     if (err) {
       log.init.warning(`Skipping ${link}`, err)
       return process.send({status: 'failed', link: link, rssList: rssList})
@@ -64,6 +66,8 @@ process.on('message', m => {
   const shardId = m.shardId
   connectDb(err => {
     if (err) throw new Error(`Could not connect to database for initialization\n`, err)
+    let c = 0
+    const len = Object.keys(currentBatch).length
     for (var link in currentBatch) {
       const rssList = currentBatch[link]
       var uniqueSettings
@@ -72,7 +76,9 @@ process.on('message', m => {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
-      init({ link, rssList, uniqueSettings, shardId })
+      init({ link, rssList, uniqueSettings, shardId }, () => {
+        if (++c === len) process.send({status: 'batch_connected'})
+      })
     }
   })
 })

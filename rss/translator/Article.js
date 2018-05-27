@@ -192,8 +192,8 @@ module.exports = class Article {
     let description = this.fullDescription
     description = description.length > 800 ? `${description.slice(0, 790)}...` : description
 
+    // Get the specific reddit placeholders {reddit_direct} and {reddit_author}
     if (this.reddit) {
-      // Get the specific reddit placeholders {reddit_direct} and {reddit_author}
       htmlConvert.fromString(raw.description, {
         format: {
           anchor: (node, fn, options) => {
@@ -204,6 +204,7 @@ module.exports = class Article {
           }
         }
       })
+      this.fullDescription = this.fullDescription.replace('\n[link] [comments]', '')
       description = description.replace('\n[link] [comments]', '') // Truncate the useless end of reddit description after anchors are removed
     } else this.reddit_direct = this.reddit_author = ''
 
@@ -334,15 +335,15 @@ module.exports = class Article {
   }
 
   // replace simple keywords
-  convertKeywords (word) {
+  convertKeywords (word, ignoreCharLimits) {
     const regexPlaceholders = this.regexPlaceholders
     let content = word.replace(/{date}/g, this.date)
-      .replace(/{title}/g, this.title)
+      .replace(/{title}/g, ignoreCharLimits ? this.fullTitle : this.title)
       .replace(/{author}/g, this.author)
-      .replace(/{summary}/g, this.summary)
+      .replace(/{summary}/g, ignoreCharLimits ? this.fullSummary : this.summary)
       .replace(/{subscriptions}/g, this.subscriptions)
       .replace(/{link}/g, this.link)
-      .replace(/{description}/g, this.description)
+      .replace(/{description}/g, ignoreCharLimits ? this.fullDescription : this.description)
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
 

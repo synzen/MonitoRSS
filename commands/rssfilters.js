@@ -3,11 +3,11 @@ const filters = require('./util/filters.js')
 const config = require('../config.json')
 const dbOps = require('../util/dbOps.js')
 const getArticle = require('../rss/getArticle.js')
-const sendToDiscord = require('../util/sendToDiscord.js')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
 const log = require('../util/logger.js')
 const VALID_OPTIONS = ['1', '2', '3', '4', '5']
+const ArticleMessage = require('../util/ArticleMessage.js')
 
 function feedSelectorFn (m, data, callback) {
   const { guildRss, rssName } = data
@@ -116,11 +116,10 @@ module.exports = (bot, message, command, role) => {
           log.command.info(`Sending filtered article for ${source.link}`, message.guild)
           article.rssName = rssName
           article.discordChannelId = message.channel.id
-          sendToDiscord(bot, article, err => {
-            if (err) {
-              log.command.error(`Article ${article.link} failed to send`, message.guild, err)
-              if (err.code === 50035) message.channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
-            }
+          new ArticleMessage(article, true, true).send(err => {
+            if (!err) return
+            if (err.code === 50035) message.channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
+            else message.channel.send(`Failed to send formatted article <${article.link}> \`\`\`${err.message}\`\`\``)
           })
         })
       }

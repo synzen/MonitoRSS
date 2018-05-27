@@ -156,8 +156,8 @@ class Menu {
     if (this._curPage && this._curPage.fields.length >= this.maxPerPage) this.addPage()
     if (!title && !desc) this._curPage.addBlankField(inline)
     else {
-      // title = title.toString()
-      // desc = desc.toString()
+      if (title === undefined) throw new Error('Menu Title must be defined')
+      if (desc === undefined) throw new Error('Menu Description must be defined')
       this._curPage.addField(`${this._numbered ? (this.pages.length - 1) * this.maxPerPage + (this._curPage.fields.length + 1) + ') ' : ''}${title}`, desc.length > 1024 ? desc.slice(0, 1000) + '...' : desc, inline)
     }
 
@@ -218,7 +218,7 @@ class Menu {
         // Call the function defined in the constructor
         this.fn(m, data, (err, passover, endPrematurely) => {
           // SyntaxError allows input retries for this collector due to incorrect input
-          if (err instanceof SyntaxError) return m.channel.send(err.message).then(m => this._msgCleaner.add(m))
+          if (err instanceof SyntaxError) return m.channel.send(err.message ? err.message : 'That is not a valid choice. Try again, or type `exit` to cancel.').then(m => this._msgCleaner.add(m))
           collector.stop()
           // Callback and pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
           callback(err, passover, this._msgCleaner, endPrematurely)

@@ -7,7 +7,7 @@ const linkTracker = storage.linkTracker // Directory of all feeds, used to track
 const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
 const failedLinks = storage.failedLinks
 const checkGuild = require('./checkGuild.js')
-const sendToDiscord = require('./sendToDiscord.js')
+const queueArticle = require('./queueArticle.js')
 const process = require('child_process')
 const configChecks = require('./configCheck.js')
 const dbOps = require('./dbOps.js')
@@ -21,8 +21,8 @@ function reachedFailCount (link) {
 }
 
 // Callback for messages sent to Discord
-function discordMsgResult (err, article, bot) {
-  const channel = bot.channels.get(article.discordChannelId)
+function discordMsgResult (err, article) {
+  const channel = storage.bot.channels.get(article.discordChannelId)
   if (err) {
     log.init.warning(`Failed to deliver article ${article.link}`, channel.guild, channel, err)
     if (err.code === 50035 && config._skipMessages !== true) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
@@ -264,7 +264,7 @@ module.exports = (bot, callback) => {
 
       initAll({ link: link, rssList: rssList, uniqueSettings: uniqueSettings }, (err, linkCompletion) => {
         if (err) log.init.warning(`Skipping ${linkCompletion.link}`, err, true)
-        if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
+        if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
         if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
         else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
 
@@ -294,7 +294,8 @@ module.exports = (bot, callback) => {
         if (bot.shard) bot.shard.broadcastEval('process.exit()')
         throw linkCompletion.err // Full error is printed from the processor
       }
-      if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
+      if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
+      if (linkCompletion.status === 'batch_connected') return // Only used for parallel
       if (linkCompletion.status === 'failed') {
         cycleFailCount++
         dbOps.failedLinks.increment(linkCompletion.link, null, true)
@@ -341,7 +342,8 @@ module.exports = (bot, callback) => {
           if (bot.shard) bot.shard.broadcastEval('process.exit()')
           throw linkCompletion.err // Full error is printed from the processor
         }
-        if (linkCompletion.status === 'article') return sendToDiscord(bot, linkCompletion.article, err => discordMsgResult(err, linkCompletion.article, bot)) // This can result in great spam once the loads up after a period of downtime
+        if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
+        if (linkCompletion.status === 'batch_connected') return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
         else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
 
@@ -351,7 +353,7 @@ module.exports = (bot, callback) => {
         if (completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
-          if (callback) callback()
+          // if (callback) callback()
           if (completedBatches === totalBatchLengths) finishInit()
         }
       })

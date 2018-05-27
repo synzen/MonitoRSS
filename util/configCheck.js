@@ -118,8 +118,8 @@ exports.check = userConfig => {
       const configVal = exports.defaultConfigs[configCategory][configName]
       const userVal = userConfig[configCategory][configName]
 
-      if (!userVal || userVal.constructor !== configVal.type) {
-        checkIfRequired(configCategory, configName, `Expected ${configVal.type.name}, found ${!userVal ? undefined : userVal.constructor.name}`)
+      if (userVal === undefined || userVal.constructor !== configVal.type) {
+        checkIfRequired(configCategory, configName, `Expected ${configVal.type.name}, found ${userVal === undefined ? userVal : userVal.constructor.name}`)
       } else {
         if ((userVal).constructor === Number && userVal < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
         else if (configName === 'timezone' && !moment.tz.zone(userVal)) checkIfRequired(configCategory, configName, 'Invalid timezone')

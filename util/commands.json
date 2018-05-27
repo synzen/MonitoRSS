@@ -100,6 +100,13 @@
 		"action": "Refresh Feed",
 		"description": "Open a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit."
 	},
+	"rsssplit": {
+		"initLevel": 1,
+		"botPerm": "EMBED_LINKS",
+		"userPerm": "MANAGE_CHANNELS",
+		"action": "Message Splitting Customization",
+		"description": "Open a menu to customize message splitting settings."
+	},
 	"rssoptions": {
 		"initLevel": 1,
 		"botPerm": "EMBED_LINKS",

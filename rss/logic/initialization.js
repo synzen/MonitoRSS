@@ -64,7 +64,7 @@ module.exports = function (data, callback) {
     const localTitleCheck = source.checkTitles
     const checkTitle = typeof localTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
 
-    for (var a = 0; a < articleList.length; ++a) {
+    for (var a = articleList.length - 1; a >= 0; --a) { // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
       const article = articleList[a]
       if (dbIds.length === 0 && dbIds.length !== 1) seenArticle(true) // If the collection was uninitialized, initialize all articles without sending. If it only has 1 article, it's likely that it's the first new article
       else if (dbIds.includes(article._id)) seenArticle(true)

@@ -1,7 +1,7 @@
 const config = require('../config.json')
 const FeedSchedule = require('./FeedSchedule.js')
-const sendToDiscord = require('./sendToDiscord.js')
 const debugFeeds = require('./debugFeeds.js').list
+const queueArticle = require('./queueArticle.js')
 const fs = require('fs')
 const storage = require('./storage.js')
 const log = require('./logger.js')
@@ -37,8 +37,8 @@ class ScheduleManager {
 
   _listenToArticles (articleTracker) {
     articleTracker.on('article', article => { // New articles are sent as the raw object directly from feedparser
-      if (debugFeeds.includes(article.rssName)) log.debug.info(`${article.rssName} Invoking sendToDiscord function`)
-      sendToDiscord(this.bot, article, err => {
+      if (debugFeeds.includes(article.rssName)) log.debug.info(`${article.rssName} ScheduleManager queueing article ${article.link} to send`)
+      queueArticle(article, err => {
         if (err && config.log.linkErrs === true) {
           const channel = this.bot.channels.get(article.discordChannelId)
           log.general.warning(`Failed to send article ${article.link}`, channel.guild, channel, err)

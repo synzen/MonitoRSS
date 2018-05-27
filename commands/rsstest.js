@@ -1,8 +1,8 @@
 const getRandomArticle = require('../rss/getArticle.js')
-const sendToDiscord = require('../util/sendToDiscord.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const FeedSelector = require('./util/FeedSelector.js')
 const log = require('../util/logger.js')
+const ArticleMessage = require('../util/ArticleMessage.js')
 
 module.exports = (bot, message, command) => {
   let simple = !!(message.content.split(' ').length > 1 && message.content.split(' ')[1] === 'simple')
@@ -47,14 +47,13 @@ module.exports = (bot, message, command) => {
         article.rssName = rssName
         article.discordChannelId = message.channel.id
         msgHandler.add(grabMsg)
-
-        sendToDiscord(bot, article, (err) => {
+        new ArticleMessage(article, !simple, true).send(err => {
           if (err) {
-            log.command.warning(`Failed to deliver article ${article.link}`, message.guild, err)
+            log.command.warning(`Failed to deliver test article ${article.link}`, message.guild, err)
             message.channel.send(`Failed to send test article. \`\`\`${err.message}\`\`\``).catch(err => log.command.warning(`rsstest 2`, message.guild, err))
           }
           msgHandler.deleteAll(message.channel)
-        }, simple ? null : grabMsg) // Last parameter indicating a test message
+        })
       })
     } catch (err) {
       log.command.warning(`Could initiate random feed grab for test:`, message.guild)

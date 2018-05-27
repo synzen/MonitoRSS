@@ -70,12 +70,12 @@ class FeedSchedule {
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === true) {
         log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id}...`)
-        dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
+        // dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].enabled.push(source.link)
       } else if (max !== 0 && c > max && source.disabled !== true) {
         log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id}...`)
-        dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
+        // dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].disabled.push(source.link)
       }
@@ -106,20 +106,20 @@ class FeedSchedule {
 
     // Send notices about any feeds that were enabled/disabled
     if (config._skipMessages === true) return feedCount
-    for (var channelId in status) {
-      let m = '**ATTENTION** - The following changes have been made due to a feed limit change for this server:\n\n'
-      const enabled = status[channelId].enabled
-      const disabled = status[channelId].disabled
-      if (enabled.length === 0 && disabled.length === 0) continue
-      for (var a = 0; a < enabled.length; ++a) m += `Feed <${enabled[a]}> has been enabled.\n`
-      for (var b = 0; b < disabled.length; ++b) m += `Feed <${disabled[b]}> has been disabled.\n`
-      const channel = this.bot.channels.get(channelId)
-      if (channel) {
-        channel.send(m)
-          .then(m => log.general.info(`Sent feed enable/disable notice to server`, channel.guild, channel))
-          .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel, err))
-      }
-    }
+    // for (var channelId in status) {
+    //   let m = '**ATTENTION** - The following changes have been made due to a feed limit change for this server:\n\n'
+    //   const enabled = status[channelId].enabled
+    //   const disabled = status[channelId].disabled
+    //   if (enabled.length === 0 && disabled.length === 0) continue
+    //   for (var a = 0; a < enabled.length; ++a) m += `Feed <${enabled[a]}> has been enabled.\n`
+    //   for (var b = 0; b < disabled.length; ++b) m += `Feed <${disabled[b]}> has been disabled.\n`
+    //   const channel = this.bot.channels.get(channelId)
+    //   if (channel) {
+    //     channel.send(m)
+    //       .then(m => log.general.info(`Sent feed enable/disable notice to server`, channel.guild, channel))
+    //       .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel, err))
+    //   }
+    // }
     return feedCount
   }
 
@@ -249,6 +249,7 @@ class FeedSchedule {
 
     processor.on('message', linkCompletion => {
       if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
+      if (linkCompletion.status === 'batch_connected') return // Only used for parallel
       if (linkCompletion.status === 'failed') {
         ++this._cycleFailCount
         dbOps.failedLinks.increment(linkCompletion.link, null, true)
@@ -288,6 +289,7 @@ class FeedSchedule {
 
       processor.on('message', linkCompletion => {
         if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
+        if (linkCompletion.status === 'batch_connected') return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
           dbOps.failedLinks.increment(linkCompletion.link, null, true)
@@ -297,7 +299,7 @@ class FeedSchedule {
         if (++completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
-          if (callback) callback()
+          // if (callback) callback()
           if (completedBatches === totalBatchLengths) {
             this._processorList.length = 0
             this._finishCycle()

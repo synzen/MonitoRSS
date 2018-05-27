@@ -4,14 +4,12 @@ const generateEmbed = require('./embed.js')
 const Article = require('./Article.js')
 const getSubs = require('./subscriptions.js')
 
-module.exports = (guildRss, rssName, rawArticle, isTestMessage, returnObject) => {
+module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) => {
   const rssList = guildRss.sources
   const source = rssList[rssName]
-
   const article = new Article(rawArticle, guildRss, rssName)
   article.subscriptions = getSubs(source, article)
-
-  // if (returnObject) return article
+  const IGNORE_TEXT_LIMITS = ignoreLimits !== undefined ? !!source.splitMessage : ignoreLimits
 
   // Filter message
   let filterExists = false
@@ -20,36 +18,28 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, returnObject) =>
       if (prop !== 'roleSubscriptions') filterExists = true // Check if any filter categories exists, excluding roleSubs as they are not filters
     }
   }
+  const filterResults = filterExists ? filterFeed(source, article, isTestMessage) : true
 
-  const filterResults = filterExists ? filterFeed(source, article, isTestMessage) : isTestMessage ? {passedFilters: true} : false
-
-  if (returnObject) {
-    article.filterResults = filterResults
-    return article
-  }
-
-  if (!isTestMessage && filterExists && !filterResults) return null // Feed article delivery only passes through if the filter found the specified content
-
-  const finalMessageCombo = {}
+  // Create the message/embed
+  const finalMessageCombo = { passedFilters: filterExists ? filterExists && filterResults : true }
   if (typeof source.embedMessage === 'object' && typeof source.embedMessage.properties === 'object' && Object.keys(source.embedMessage.properties).length > 0) { // Check if embed is enabled
-    finalMessageCombo.embedMsg = generateEmbed(rssList, rssName, article)
+    finalMessageCombo.embed = generateEmbed(rssList, rssName, article)
 
     let txtMsg = ''
     if (typeof source.message !== 'string') {
       if (config.feeds.defaultMessage.trim() === '{empty}') txtMsg = ''
-      else txtMsg = article.convertKeywords(config.feeds.defaultMessage)
+      else txtMsg = article.convertKeywords(config.feeds.defaultMessage, IGNORE_TEXT_LIMITS)
     } else if (source.message.trim() === '{empty}') txtMsg = ''
-    else txtMsg = article.convertKeywords(source.message)
+    else txtMsg = article.convertKeywords(source.message, IGNORE_TEXT_LIMITS)
 
-    finalMessageCombo.textMsg = txtMsg
+    finalMessageCombo.text = txtMsg
   } else {
     let txtMsg = ''
     if (typeof source.message !== 'string' || source.message.trim() === '{empty}') {
       if (config.feeds.defaultMessage.trim() === '{empty}') txtMsg = ''
-      else txtMsg = article.convertKeywords(config.feeds.defaultMessage)
-    } else txtMsg = article.convertKeywords(source.message)
-
-    finalMessageCombo.textMsg = txtMsg
+      else txtMsg = article.convertKeywords(config.feeds.defaultMessage, IGNORE_TEXT_LIMITS)
+    } else txtMsg = article.convertKeywords(source.message, ignoreLimits === undefined ? !!source.splitMessage : ignoreLimits)
+    finalMessageCombo.text = txtMsg
   }
 
   // Generate test details
