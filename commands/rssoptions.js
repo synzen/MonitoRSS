@@ -21,8 +21,8 @@ module.exports = (bot, message, command) => {
     .setAuthor('Miscellaneous Feed Options')
     .setDescription('\u200b\nPlease select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
     .addOption('Toggle Title Checks for a feed', `**Only enable this if necessary!** Default is ${config.feeds.checkTitles === true ? 'enabled.' : 'disabled.'} Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.`)
-    .addOption('Toggle Image Link Previews for a feed', `Default is ${config.feeds.imgPreviews === false ? 'disabled' : 'enabled'}. Toggle automatic Discord image link embedded previews for image links found inside placeholders such as {description}.`)
-    .addOption('Toggle Image Links Existence for a feed', `Default is ${config.feeds.imgLinksExistence === false ? 'disabled' : 'enabled'}. Remove image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`)
+    .addOption(`Toggle Image Link Previews for a feed's placeholders`, `Default is ${config.feeds.imgPreviews === false ? 'disabled' : 'enabled'}. Toggle automatic Discord image link embedded previews for image links found inside placeholders such as {description}.`)
+    .addOption(`Toggle Image Links Existence for a feed's placeholders`, `Default is ${config.feeds.imgLinksExistence === false ? 'disabled' : 'enabled'}. Remove image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`)
     .addOption('Toggle Date Checks for a feed', `Default is ${config.feeds.checkDates === false ? 'disabled' : 'enabled'}. Date checking ensures that articles that are ${config.feeds.cycleMaxAge} day(s) old or has invalid/no pubdates are't sent.`)
     .addOption('Toggle Table Formatting for a feed', `Default is ${config.feeds.formatTable === false ? 'disabled' : 'enabled'}. If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing.`)
 

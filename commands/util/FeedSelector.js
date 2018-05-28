@@ -9,25 +9,47 @@ const log = require('../../util/logger.js')
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove']
 const GLOBAL_SELECT = ['rssmove']
+const SINGLE_NUMBER_REGEX = /^\d+$/
+
+function parseNumbers (str) {
+  if (SINGLE_NUMBER_REGEX.test(str)) return [parseInt(str, 10)]
+  const multi = /^(\d+)-(\d+)$/.exec(str)
+  if (!multi) return
+  const min = parseInt(multi[1], 10)
+  const max = parseInt(multi[2], 10)
+  if (min > max) return
+  const arr = []
+  for (var i = min; i <= max; ++i) arr.push(i)
+  return arr
+}
 
 function selectFeed (m, data, callback) {
-  const command = this.command
   const currentRSSList = this._currentRSSList
   const chosenOption = m.content
 
   // Return an array of selected indices for feed removal
-  if (MULTI_SELECT.includes(command)) {
+  if (this.multiSelect) {
     let chosenOptionList = chosenOption.split(',').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Trim items, remove duplicates and empty items
     let valid = []
     let invalid = []
 
-    chosenOptionList.forEach(item => {
-      const index = parseInt(item, 10) - 1
-      if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) invalid.push(item)
-      else valid.push(index)
-    })
+    // Validate user choices
+    for (var i = 0; i < chosenOptionList.length; ++i) {
+      const input = chosenOptionList[i]
+      const numbers = parseNumbers(input)
+      if (!numbers) invalid.push(input)
+      else {
+        for (var j = 0; j < numbers.length; ++j) {
+          const num = numbers[j]
+          if (num < 1) invalid.push(num) // Do not push in any numbers greater than the currentRSSList length
+          else if (num <= currentRSSList.length && !valid.includes(num - 1)) valid.push(num - 1) // Push the index to be used
+        }
+      }
+    }
 
+    // Replace the indices in valid with their respective rssNames in currentRSSList
     if (invalid.length > 0) return callback(new SyntaxError(`The number(s) \`${invalid}\` are invalid. Try again, or type \`exit\` to cancel.`))
+    else if (valid.length === 0) return callback(new SyntaxError(`You did not choose any valid numbers. Try again, or type \`exit\` to cancel.`))
     else {
       for (var q = 0; q < valid.length; ++q) valid[q] = currentRSSList[valid[q]].rssName
       return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssNameList: valid }, callback)
@@ -55,6 +77,9 @@ class FeedSelector extends Menu {
    * @param {Object} [cmdInfo] Command information
    * @param {String} [cmdInfo.command] Command name
    * @param {String} [cmdInfo.miscOption] Description of the miscoption by rssoptions
+   * @param {Boolean} [cmdInfo.multiSelect] Whether to allow multiple feeds to be selected
+   * @param {Boolean} [cmdInfo.globalSelect] Whether to allow feeds from other channels to be selected
+   * @param {String} [cmdInfo.prependDescription] Additional information in the description, before the FeedSelector's default instructions
    * @memberof FeedSelector
    */
   constructor (message, passoverFn, cmdInfo) {
@@ -66,18 +91,19 @@ class FeedSelector extends Menu {
       this.text = 'There are no existing feeds.'
       return
     }
-    const { command, miscOption } = cmdInfo
+    const { command, miscOption, multiSelect, prependDescription, globalSelect } = cmdInfo
     this.command = command
     this.miscOption = miscOption
+    this.multiSelect = MULTI_SELECT.includes(command) || multiSelect
+    this.globalSelect = GLOBAL_SELECT.includes(command) || globalSelect
 
     const rssList = this.guildRss.sources
     const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
-    const globalSelect = GLOBAL_SELECT.includes(command)
     this._currentRSSList = []
 
     for (var rssName in rssList) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
       const source = rssList[rssName]
-      if (message.channel.id !== source.channel && !globalSelect) continue
+      if (message.channel.id !== source.channel && !this.globalSelect) continue
       let o = { link: source.link, rssName: rssName, title: source.title }
       if (commands[command].action === 'Refresh Feed') {
         const failCount = storage.failedLinks[source.link]
@@ -95,7 +121,7 @@ class FeedSelector extends Menu {
 
         o.miscOption = decision
       }
-      if (globalSelect) o.channel = source.channel
+      if (this.globalSelect) o.channel = source.channel
       this._currentRSSList.push(o)
     }
 
@@ -104,7 +130,7 @@ class FeedSelector extends Menu {
       return
     }
     let desc = maxFeedsAllowed === 0 ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
-    desc += (globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? commands[command].options[miscOption] : commands[command].action}\n\nChoose a feed to from this channel by typing the number to execute your requested action on. ${MULTI_SELECT.includes(command) ? 'You may select multiple feeds by separation with commas. ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
+    desc += (this.globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? commands[command].options[miscOption] : commands[command].action}\n\n${prependDescription ? `${prependDescription}\n\n` : ''}Choose a feed to from this channel by typing the number to execute your requested action on. ${this.multiSelect ? 'You may select multiple feeds by separation with commas, and/or with hyphens (for example `1,3,4-6,8`). ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
     this.setAuthor('Feed Selection Menu')
     this.setDescription(desc)
 

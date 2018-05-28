@@ -25,8 +25,8 @@ function feedSelectorFn (m, data, callback) {
   else {
     nextMenu
         .addOption(`Set split character`, `Specify the character that the message should split according to.${currentSplitChar ? ` Currently set to \`${escapeBackticks(currentSplitChar)}\`.` : ''} Default is \`\\n\` (new lines).`)
-        .addOption('Set prepend character', `Specify the character that every piece of message should be prepended (added before) with.${currentSplitPrepend ? ` Currently set to \`${escapeBackticks(currentSplitPrepend)}\`.` : ''} Default is nothing. `)
-        .addOption('Set append character', `Specify the character that every piece of message should be appended (added after) with.${currentSplitAppend ? ` Currently set to \`${escapeBackticks(currentSplitAppend)}\`.` : ''} Default is nothing.`)
+        .addOption('Set prepend character', `Specify the character that every message except the first should be prepended (added before) with.${currentSplitPrepend ? ` Currently set to \`${escapeBackticks(currentSplitPrepend)}\`.` : ''} Default is nothing. `)
+        .addOption('Set append character', `Specify the character that every message except the last should be appended (added after) with.${currentSplitAppend ? ` Currently set to \`${escapeBackticks(currentSplitAppend)}\`.` : ''} Default is nothing.`)
         .addOption('Set max length', `Specify the maximum length a single message should have.${currentSplitLength ? ` Currently set to \`${currentSplitLength}\`.` : ''} Default is \`1950\`.`)
         .addOption('Disable Message Splitting', 'Default is disabled.')
   }
@@ -53,8 +53,8 @@ function enable (m, data, callback) {
         .setAuthor('Message Splitting Options')
         .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\n**Message Splitting is now enabled for this feed.**\n\nYou may customize message splitting further by selecting one of the options below by typing its number, or type **exit** to leave as is. It is recommended to leave at the default settings.\u200b\n\u200b\n`)
         .addOption(`Set split character`, `Specify the character that the message should split on. Default is \`\\n\` (new lines).`)
-        .addOption('Set prepend character', 'Specify the character that every piece of message should be prepended (added before) with. Default is nothing. ')
-        .addOption('Set append character', 'Specify the character that every piece of message should be appended (added after) with. Default is nothing.')
+        .addOption('Set prepend character', 'Specify the character that every message except the first should be prepended (added before) with. Default is nothing. ')
+        .addOption('Set append character', 'Specify the character that every message except the last should be appended (added after) with. Default is nothing.')
         .addOption('Set max length', 'Specify the maximum length a single message should have. Default is `1950`.')
         .addOption('Disable Message Splitting', 'Default is disabled.')
 

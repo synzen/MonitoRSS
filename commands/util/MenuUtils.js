@@ -17,6 +17,7 @@ class Menu {
    * @param {Object} [settings.embed] Object of the embed, defined by the Discord.js embed object
    * @param {number} [settings.maxPerPage] Max number of options per page before the next page is sutomatically created
    * @param {Boolean} [settings.numbered] Whether to number the options or not
+   * @param {Object} [settings.splitOptions] Settings to split the message into multiple ones if it is too long
    * @memberof Menu
    */
   constructor (message, fn, settings) {
@@ -30,6 +31,7 @@ class Menu {
     this._numbered = settings && settings.numbered != null ? settings.numbered : true
     this._msgCleaner = new MessageCleaner(message)
     if (!settings) return
+    if (settings.splitOptions) this.splitOptions = settings.splitOptions
     if (settings.text) this.text = settings.text
     if (!settings.embed) return
     const { embed } = settings
@@ -189,12 +191,12 @@ class Menu {
       let m
       if (Array.isArray(this.text)) {
         for (var ind = 0; ind < this.text.length; ++ind) {
-          // Only send the embed on the final message if there are multiple messages
+          // Only send the embed on the final message if there are multiple messages. This emulates regular message splitting with multiple texts.
           m = await this.channel.send(this.text[ind], ind === this.text.length - 1 ? { embed: this.pages[0] } : undefined)
           this._msgCleaner.add(m)
         }
       } else {
-        m = await this.channel.send(this.text, { embed: this.pages[0] })
+        m = await this.channel.send(this.text, { embed: this.pages[0], split: this.splitOptions ? this.splitOptions : undefined })
         this._msgCleaner.add(m)
       }
       if (this.pages.length > 1) {
@@ -385,3 +387,4 @@ class MenuSeries {
 
 exports.Menu = Menu
 exports.MenuSeries = MenuSeries
+exports.trimArray = arr => arr.map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item))
