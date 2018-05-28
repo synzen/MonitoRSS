@@ -243,8 +243,6 @@ module.exports = class Article {
       const regexResults = evalRegexConfig(source, this[type], type)
       this.regexPlaceholders[type] = regexResults
     }
-
-    console.log(this.fullDescription)
   }
 
   // List all {imageX} to string
