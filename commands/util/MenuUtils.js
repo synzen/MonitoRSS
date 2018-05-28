@@ -182,12 +182,14 @@ class Menu {
    * @memberof Menu
    */
   async send (data, callback) {
+    const WRONG_INPUT = 'That is not a valid choice. Try again, or type `exit` to cancel.'
     if (this.pages.length > 1) this.pages[0].setFooter(`Page 1/${this.pages.length}`)
 
     try {
       let m
       if (Array.isArray(this.text)) {
         for (var ind = 0; ind < this.text.length; ++ind) {
+          // Only send the embed on the final message if there are multiple messages
           m = await this.channel.send(this.text[ind], ind === this.text.length - 1 ? { embed: this.pages[0] } : undefined)
           this._msgCleaner.add(m)
         }
@@ -201,6 +203,7 @@ class Menu {
         pageControls.add(m.id, this.pages)
       }
 
+      // If there is no function, then it's a visual, non-function Menu
       if (!this.fn) return callback()
 
       const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, { time: 90000 })
@@ -211,14 +214,14 @@ class Menu {
         this._msgCleaner.add(m)
         if (m.content.toLowerCase() === 'exit') {
           collector.stop('Menu closed.')
-          // __end will cause the MenuSeries, if it exists, to skip its callback function
+          // __end will cause the MenuSeries, if it exists, to skip its callback function and all further menus
           return this._series ? callback(null, { __end: true }, this._msgCleaner) : null
         }
 
         // Call the function defined in the constructor
         this.fn(m, data, (err, passover, endPrematurely) => {
           // SyntaxError allows input retries for this collector due to incorrect input
-          if (err instanceof SyntaxError) return m.channel.send(err.message ? err.message : 'That is not a valid choice. Try again, or type `exit` to cancel.').then(m => this._msgCleaner.add(m))
+          if (err instanceof SyntaxError) return m.channel.send(err.message ? err.message : WRONG_INPUT).then(m => this._msgCleaner.add(m))
           collector.stop()
           // Callback and pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
           callback(err, passover, this._msgCleaner, endPrematurely)
@@ -356,9 +359,9 @@ class MenuSeries {
       this._msgCleaner.merge(msgCleaner)
 
       // Check for any indicators to stop the MenuSeries
-      if (passover.__end) return this._msgCleaner.deleteAll() // Do not execute the ending callback function
-      else if (endPrematurely === true) return this._end(null, passover, callback)
-      else if (err) return this._end(err, null, callback)
+      if (passover.__end) return this._msgCleaner.deleteAll() // Do not execute the ending callback function and skip any further menus
+      else if (endPrematurely === true) return this._end(null, passover, callback) // Execute the ending callback function and skip any further menus
+      else if (err) return this._end(err, null, callback) // Execute the ending callback function with the err parameter and skip any further menus
 
       // Add any Menus requested to be added by the Menu that just finished
       if (next && next.menu) {

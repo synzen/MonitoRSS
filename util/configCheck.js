@@ -89,7 +89,8 @@ exports.defaultConfigs = {
     showRegexErrs: {type: Boolean, default: true},
     imgPreviews: {type: Boolean, default: true},
     imgLinksExistence: {type: Boolean, default: true},
-    checkDates: {type: Boolean, default: true}
+    checkDates: {type: Boolean, default: true},
+    formatTables: {type: Boolean, default: false}
   },
   advanced: {
     shards: {type: Number, default: 1},

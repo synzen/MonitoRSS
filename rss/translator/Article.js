@@ -43,7 +43,7 @@ function escapeRegExp (str) {
 }
 
 function regexReplace (string, searchOptions, replacement) {
-  const flags = searchOptions.flags
+  const flags = !searchOptions.flags ? 'g' : searchOptions.flags.includes('g') ? searchOptions.flags : searchOptions.flags + 'g' // Global flag must be included to prevent infinite loop during .exec
   try {
     const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined
     const groupNum = searchOptions.group !== undefined ? parseInt(searchOptions.group, 10) : undefined
@@ -114,6 +114,7 @@ function cleanup (source, text, imgSrcs) {
     .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
 
   text = htmlConvert.fromString(text, {
+    tables: (source.formatTables !== undefined && typeof source.formatTables === 'boolean' ? source.formatTables : config.feeds.formatTables) === true ? true : [],
     wordwrap: null,
     ignoreHref: true,
     noLinkBrackets: true,
@@ -242,6 +243,8 @@ module.exports = class Article {
       const regexResults = evalRegexConfig(source, this[type], type)
       this.regexPlaceholders[type] = regexResults
     }
+
+    console.log(this.fullDescription)
   }
 
   // List all {imageX} to string
@@ -336,6 +339,7 @@ module.exports = class Article {
 
   // replace simple keywords
   convertKeywords (word, ignoreCharLimits) {
+    if (word.length === 0) return word
     const regexPlaceholders = this.regexPlaceholders
     let content = word.replace(/{date}/g, this.date)
       .replace(/{title}/g, ignoreCharLimits ? this.fullTitle : this.title)

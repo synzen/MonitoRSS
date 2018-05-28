@@ -116,7 +116,8 @@
 			"checkTitles": "Toggle Title Checks",
 			"imgPreviews": "Toggle Image Link Previews",
 			"imgLinksExistence": "Toggle Image Links Existence",
-			"checkDates": "Toggle Date Checks"
+			"checkDates": "Toggle Date Checks",
+			"formatTables": "Toggle Table Formatting"
 		}
 	},
 	"rssmove": {

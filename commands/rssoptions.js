@@ -6,8 +6,8 @@ const FeedSelector = require('./util/FeedSelector.js')
 
 function selectOption (m, data, callback) {
   const input = m.content
-  if (input !== '1' && input !== '2' && input !== '3' && input !== '4') return callback(new SyntaxError(`That is not a valid option. Try again, or type \`exit\` to cancel.`))
-  const chosenProp = m.content === '1' ? 'checkTitles' : m.content === '2' ? 'imgPreviews' : m.content === '3' ? 'imgLinksExistence' : 'checkDates'
+  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5') return callback(new SyntaxError())
+  const chosenProp = m.content === '1' ? 'checkTitles' : m.content === '2' ? 'imgPreviews' : m.content === '3' ? 'imgLinksExistence' : m.content === '4' ? 'checkDates' : 'formatTables'
 
   callback(null, { ...data,
     chosenProp: chosenProp,
@@ -24,6 +24,7 @@ module.exports = (bot, message, command) => {
     .addOption('Toggle Image Link Previews for a feed', `Default is ${config.feeds.imgPreviews === false ? 'disabled' : 'enabled'}. Toggle automatic Discord image link embedded previews for image links found inside placeholders such as {description}.`)
     .addOption('Toggle Image Links Existence for a feed', `Default is ${config.feeds.imgLinksExistence === false ? 'disabled' : 'enabled'}. Remove image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`)
     .addOption('Toggle Date Checks for a feed', `Default is ${config.feeds.checkDates === false ? 'disabled' : 'enabled'}. Date checking ensures that articles that are ${config.feeds.cycleMaxAge} day(s) old or has invalid/no pubdates are't sent.`)
+    .addOption('Toggle Table Formatting for a feed', `Default is ${config.feeds.formatTable === false ? 'disabled' : 'enabled'}. If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing.`)
 
   new MenuUtils.MenuSeries(message, [select], { command: command }).start(async (err, data) => {
     try {
@@ -44,7 +45,7 @@ module.exports = (bot, message, command) => {
         followGlobal = true
       }
 
-      const prettyPropName = chosenProp === 'checkTitles' ? 'Title Checks' : chosenProp === 'imgPreviews' ? 'Image Previews' : chosenProp === 'imgLinksExistence' ? 'Image Links Existence' : 'Date Checks'
+      const prettyPropName = chosenProp === 'checkTitles' ? 'Title Checks' : chosenProp === 'imgPreviews' ? 'Image Previews' : chosenProp === 'imgLinksExistence' ? 'Image Links Existence' : chosenProp === 'checkDates' ? 'Date Checks' : 'Table Formatting'
 
       dbOps.guildRss.update(guildRss)
       log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)

@@ -41,7 +41,8 @@
     "showRegexErrs": true,
     "imgPreviews": true,
     "imgLinksExistence": true,
-    "checkDates": true
+    "checkDates": true,
+    "formatTables": false
   },
   "advanced": {
     "shards": 2,

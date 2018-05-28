@@ -37,8 +37,8 @@ module.exports = (rssList, rssName, article) => {
       let title = article.convertKeywords(field.title)
       title = title.length > 256 ? title.slice(0, 250) + '...' : title
 
-      let value = article.convertKeywords(field.value ? field.value : '\u200b')
-      value = value.length > 1024 ? value.slice(0, 1020) + '...' : value
+      let value = article.convertKeywords(field.value ? field.value : '')
+      value = value.length > 1024 ? value.slice(0, 1020) + '...' : value.length > 0 ? value : '\u200b'
 
       if (typeof title === 'string' && !title) embed.addBlankField(inline)
       else if (embed.fields.length < 10) embed.addField(title, value, inline)

@@ -83,8 +83,9 @@ class FeedSelector extends Menu {
         const failCount = storage.failedLinks[source.link]
         o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
       }
-      if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates') {
-        const statusText = miscOption === 'imagePreviews' ? 'Image Link Previews: ' : miscOption === 'imageLinksExistence' ? 'Image Links Existence: ' : miscOption === 'checkTitles' ? 'Title Checks: ' : 'Date Checks: '
+
+      if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates' || miscOption === 'formatTables') {
+        const statusText = miscOption === 'imagePreviews' ? 'Image Link Previews: ' : miscOption === 'imageLinksExistence' ? 'Image Links Existence: ' : miscOption === 'checkTitles' ? 'Title Checks: ' : miscOption === 'checkDates' ? 'Date Checks: ' : 'Table Formatting: '
         let decision = ''
 
         const globalSetting = config.feeds[miscOption]
@@ -92,7 +93,7 @@ class FeedSelector extends Menu {
         const specificSetting = source[miscOption]
         decision = typeof specificSetting !== 'boolean' ? decision : specificSetting === true ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
 
-        o[miscOption] = decision
+        o.miscOption = decision
       }
       if (globalSelect) o.channel = source.channel
       this._currentRSSList.push(o)
@@ -108,12 +109,13 @@ class FeedSelector extends Menu {
     this.setDescription(desc)
 
     this._currentRSSList.forEach(item => {
-      let channel = item.channel ? message.client.channels.has(item.channel) ? `Channel: #${message.client.channels.get(item.channel).name}\n` : undefined : undefined
+      const channel = item.channel ? message.client.channels.has(item.channel) ? `Channel: #${message.client.channels.get(item.channel).name}\n` : undefined : undefined
       const link = item.link
       const title = item.title
       const status = item.status || ''
 
-      const miscOption = item.checkTitles || item.imagePreviews || item.imageLinksExistence || item.checkDates || ''
+      // const miscOption = item.checkTitles || item.imagePreviews || item.imageLinksExistence || item.checkDates || item.formatTables || ''
+      const miscOption = item.miscOption || ''
       this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel || ''}${miscOption}${status}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
     })
 
