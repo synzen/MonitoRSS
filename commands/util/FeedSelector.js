@@ -7,7 +7,7 @@ const currentGuilds = storage.currentGuilds
 const FAIL_LIMIT = config.feeds.failLimit
 const log = require('../../util/logger.js')
 const Menu = require('./MenuUtils.js').Menu
-const MULTI_SELECT = ['rssremove']
+const MULTI_SELECT = ['rssremove', 'rssmove']
 const GLOBAL_SELECT = ['rssmove']
 const SINGLE_NUMBER_REGEX = /^\d+$/
 

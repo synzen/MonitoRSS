@@ -14,7 +14,7 @@ class ArticleMessage {
     this.skipFilters = skipFilters || isTestMessage
     this.channel = storage.bot.channels.get(article.discordChannelId)
     this.guildRss = currentGuilds.get(this.channel.guild.id)
-    this.webhook = false
+    this.webhook = undefined
     this.sendFailed = 1
     this.rssName = article.rssName
     this.valid = true
@@ -38,11 +38,10 @@ class ArticleMessage {
         if (!hook) return this._translate(undefined, callback)
         const guildId = this.channel.guild.id
         const guildName = this.channel.guild.name
-        this.channel = hook
-        this.channel.guild = { id: guildId, name: guildName }
-        this.channel.name = this.source.webhook.name ? this.source.webhook.name : undefined
-        this.channel.avatar = this.source.webhook.avatar ? this.source.webhook.avatar : undefined
-        this.webhook = true
+        this.webhook = hook
+        this.webhook.guild = { id: guildId, name: guildName }
+        this.webhook.name = this.source.webhook.name ? this.source.webhook.name : undefined
+        this.webhook.avatar = this.source.webhook.avatar ? this.source.webhook.avatar : undefined
         this._translate(undefined, callback)
       }).catch(err => {
         log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, this.channel, err)
@@ -73,8 +72,8 @@ class ArticleMessage {
       const textContent = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embed ? `Unable to send empty message for feed article <${this.article.link}>.` : this.text
       const options = this.isTestMessage ? TEST_OPTIONS : {}
       if (this.webhook) {
-        options.username = this.channel.name
-        options.avatarURL = this.channel.avatar
+        options.username = this.webhook.name
+        options.avatarURL = this.webhook.avatar
       }
       if (!this.isTestMessage && this.embed) {
         if (this.webhook) options.embeds = [this.embed]
@@ -83,7 +82,8 @@ class ArticleMessage {
       if (!this.isTestMessage) options.split = this.split
 
       // Send the message, and repeat attempt if failed
-      this.channel.send(textContent, options)
+      const medium = this.webhook ? this.webhook : this.channel
+      medium.send(textContent, options)
       .then(m => {
         if (this.isTestMessage) {
           this.isTestMessage = false

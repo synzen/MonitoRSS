@@ -223,7 +223,7 @@ class Menu {
         // Call the function defined in the constructor
         this.fn(m, data, (err, passover, endPrematurely) => {
           // SyntaxError allows input retries for this collector due to incorrect input
-          if (err instanceof SyntaxError) return m.channel.send(err.message ? err.message : WRONG_INPUT).then(m => this._msgCleaner.add(m))
+          if (err instanceof SyntaxError) return m.channel.send(err.message ? err.message : WRONG_INPUT, { split: true }).then(m => this._msgCleaner.add(m))
           collector.stop()
           // Callback and pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
           callback(err, passover, this._msgCleaner, endPrematurely)
