@@ -1,4 +1,5 @@
 const fs = require('fs')
+const mongoose = require('mongoose')
 const Discord = require('discord.js')
 const storage = require('./storage.js')
 const config = require('../config.json')
@@ -34,7 +35,7 @@ exports.guildRss = {
       const rssList = guildRss ? guildRss.sources : undefined
       if (rssList) {
         for (let rssName in rssList) {
-          exports.linkList.decrement(rssList[rssName].link, err => {
+          exports.linkTracker.decrement(rssList[rssName].link, err => {
             if (err) log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err)
           })
         }
@@ -72,7 +73,7 @@ exports.guildRss = {
     delete guildRss.sources[rssName]
     exports.guildRss.update(guildRss)
     storage.deletedFeeds.push(rssName)
-    exports.linkList.decrement(link, err => {
+    exports.linkTracker.decrement(link, err => {
       if (err) log.general.warning('Unable to decrement link for guildRss.removeFeed dbOps', err)
       return callback ? callback(null, link) : !skipProcessSend ? log.general.info(`Feed ${link} has been removed from guild ${guildRss.id} (${guildRss.name})`) : null
     })
@@ -99,8 +100,8 @@ exports.guildRss = {
                 log.general.info(`Removed feed ${source.link} due to missing channel ${source.channel}`, storage.bot.guilds.get(docs[0].id))
               }, skipProcessSend)
             } else {
-              exports.linkList.increment(source.link, err => {
-                if (err) log.general.warning(`Unable to increment linkList for ${source.link}`, err)
+              exports.linkTracker.increment(source.link, err => {
+                if (err) log.general.warning(`Unable to increment linkTracker for ${source.link}`, err)
               })
             }
           }
@@ -126,7 +127,7 @@ exports.guildRss = {
   }
 }
 
-class LinkList {
+class LinkTracker {
   constructor (docs) {
     this.list = {}
     this.shardId = storage.bot && storage.bot.shard ? storage.bot.shard.id : undefined
@@ -134,7 +135,7 @@ class LinkList {
   }
 
   get (link) {
-    return !this.shardId ? this.list[link] : this.list[this.shardId] ? this.list[this.shardId][link] : null
+    return this.shardId === undefined ? this.list[link] : this.list[this.shardId] ? this.list[this.shardId][link] : null
   }
 
   set (link, count, shardId) {
@@ -145,7 +146,7 @@ class LinkList {
   }
 
   increment (link) {
-    if (this.shardId) {
+    if (this.shardId !== undefined) {
       if (!this.list[this.shardId]) this.list[this.shardId] = {}
       this.list[this.shardId][link] = this.list[this.shardId][link] ? this.list[this.shardId][link] + 1 : 1
       return this.list[this.shardId][link]
@@ -156,7 +157,7 @@ class LinkList {
   }
 
   decrement (link) {
-    if (this.shardId) {
+    if (this.shardId !== undefined) {
       if (this.list[this.shardId] == null || this.list[this.shardId][link] == null) return
       this.list[this.shardId][link] = this.list[this.shardId][link] - 1 < 0 ? 0 : this.list[this.shardId][link] - 1
       if (!this.list[this.shardId][link]) delete this.list[this.shardId][link]
@@ -169,11 +170,12 @@ class LinkList {
     }
   }
 
+  // Only links in the array
   toArray () {
     const arr = []
     for (var s in this.list) {
       const shardLinks = this.list[s]
-      if (typeof shardLinks === 'number') {
+      if (typeof shardLinks === 'number') {  // If not a shard, then it directly holds the count (AKA number)
         if (!arr.includes(s)) arr.push(s)
         continue
       }
@@ -198,13 +200,13 @@ class LinkList {
   }
 }
 
-exports.LinkList = LinkList
-exports.linkList = {
-  write: (linkList, callback) => {
-    if (!(linkList instanceof LinkList)) return callback ? callback(new Error('Argument is not instance of LinkList')) : log.general.warning('Unable to linkList.write due to linkList argument not being an instance of LinkList')
+exports.LinkTracker = LinkTracker
+exports.linkTracker = {
+  write: (linkTracker, callback) => {
+    if (!(linkTracker instanceof LinkTracker)) return callback ? callback(new Error('linkTracker argument is not instance of LinkTracker')) : log.general.warning('Unable to linkTracker.write due to linkTracker argument not being an instance of LinkTracker')
     models.LinkTracker().collection.drop(err => {
       if (err && err.code !== 26) return callback(err)
-      const docs = linkList.toDocs()
+      const docs = linkTracker.toDocs()
       if (docs.length === 0) return callback ? callback() : undefined
       models.LinkTracker().collection.insert(docs, callback)
     })
@@ -212,11 +214,11 @@ exports.linkList = {
   get: callback => {
     models.LinkTracker().find({}, (err, docs) => {
       if (err) return callback(err)
-      callback(null, new LinkList(docs))
+      callback(null, new LinkTracker(docs))
     })
   },
   update: (link, count, callback) => {
-    const shardId = storage.bot.shard ? storage.bot.shard.id : undefined
+    const shardId = storage.bot && storage.bot.shard ? storage.bot.shard.id : undefined
     if (count > 0) models.LinkTracker().update({ link: link, shard: shardId }, { link: link, count: count, shard: shardId }, UPDATE_SETTINGS, callback)
     else {
       models.LinkTracker().find({ link, shard: shardId }).remove(err => {
@@ -226,24 +228,24 @@ exports.linkList = {
     }
   },
   decrement: (link, callback) => {
-    exports.linkList.get((err, linkList) => {
+    exports.linkTracker.get((err, linkTracker) => {
       if (err) return callback(err)
-      if (!linkList.get(link)) return callback()
+      if (!linkTracker.get(link)) return callback()
 
-      if (!linkList.decrement(link)) {
-        models.Feed(link, linkList.shardId).collection.drop(err => {
-          if (err && err.code !== 26) log.general.warning(`Could not drop collection ${storage.collectionId(link, linkList.shardId)} after decrementing linkTracker`, err)
+      if (!linkTracker.decrement(link)) {
+        models.Feed(link, linkTracker.shardId).collection.drop(err => {
+          if (err && err.code !== 26) log.general.warning(`Could not drop collection ${storage.collectionId(link, linkTracker.shardId)} after decrementing linkTracker`, err)
         })
         exports.failedLinks.reset(link)
       }
-      exports.linkList.update(link, linkList.get(link), callback)
+      exports.linkTracker.update(link, linkTracker.get(link), callback)
     })
   },
   increment: (link, callback) => {
-    exports.linkList.get((err, linkList) => {
+    exports.linkTracker.get((err, linkTracker) => {
       if (err) return callback(err)
-      linkList.increment(link)
-      exports.linkList.update(link, linkList.get(link), callback)
+      linkTracker.increment(link)
+      exports.linkTracker.update(link, linkTracker.get(link), callback)
     })
   }
 }
@@ -255,7 +257,7 @@ exports.failedLinks = {
     if (callback) callback()
   },
   _sendAlert: (link, message, skipProcessSend) => {
-    if (storage.bot.shard && !skipProcessSend) return process.send({ type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
+    if (storage.bot && storage.bot.shard && !skipProcessSend) return process.send({ type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
     currentGuilds.forEach(guildRss => {
       const rssList = guildRss.sources
       if (!rssList) return
@@ -510,5 +512,29 @@ exports.vips = {
   refresh: callback => {
     if (!fs.existsSync('./settings/vips.js')) return callback ? callback(new Error('Missing VIP module')) : null
     require('../settings/vips.js')(storage.bot, callback)
+  }
+}
+
+exports.general = {
+  cleanDatabase: (currentCollections, callback) => { // Remove unused feed collections
+    if (!Array.isArray(currentCollections)) return callback(new Error('currentCollections is not an Array'))
+    mongoose.connection.db.listCollections().toArray((err, names) => {
+      if (err) return callback(err)
+      let c = 0
+      let d = 0
+      names.forEach(elem => {
+        const name = elem.name
+        if (!/\d/.exec(name) || currentCollections.includes(name)) return // Not eligible to be dropped - feed collections all have digits in them
+        ++c
+        if (config.database.clean !== true) return
+        mongoose.connection.db.dropCollection(name, err => {
+          if (err) return log.general.error(`Unable to drop unused collection ${name}`, err)
+          log.general.info(`Dropped unused feed collection ${name}`)
+          if (++d === c) log.general.info('All unused feed collections successfully dropped')
+        })
+      })
+      if (c > 0) log.general.info(config.database.clean === true ? `Number of collections expected to be removed for database cleaning: ${c}` : `Number of unused collections skipping removal due to config.database.clean disabled: ${c}`)
+      callback()
+    })
   }
 }

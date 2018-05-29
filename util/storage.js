@@ -35,7 +35,7 @@ exports.vipServers = {}
 exports.vipUsers = {}
 exports.currentGuilds = new Map() // To hold all guild profiles
 exports.deletedFeeds = [] // Any deleted rssNames to check during article sending to see if it was deleted during a cycle
-exports.linkTracker = {} // To track schedule assignment to links
+exports.scheduleAssigned = {} // To track schedule assignment to links
 exports.allScheduleWords = [] // Holds all words across all schedules
 exports.failedLinks = {}
 exports.blacklistUsers = []
@@ -126,19 +126,24 @@ exports.schemas = {
   })
 }
 exports.collectionId = (link, shardId) => {
-  if (collectionIds[link]) return collectionIds[link]
+  if (shardId != null) {
+    if (collectionIds[shardId] && collectionIds[shardId][link]) return collectionIds[shardId][link]
+  } else if (collectionIds[link]) return collectionIds[link]
   let res = (shardId != null ? `${shardId}_` : '') + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
   const len = res.length + mongoose.connection.name.length + 1
   if (len > 115) res = res.slice(0, 115)
-  collectionIds[link] = res
+  if (shardId != null) {
+    if (!collectionIds[shardId]) collectionIds[shardId] = {}
+    collectionIds[shardId][link] = res
+  } else collectionIds[link] = res
   return res
 }
 exports.models = {
-  GuildRss: () => mongoose.model('Guild', exports.schemas.guildRss),
-  GuildRssBackup: () => mongoose.model('Guild_Backup', exports.schemas.guildRssBackup),
-  FailedLink: () => mongoose.model('Failed_Link', exports.schemas.failedLink),
-  LinkTracker: () => mongoose.model('Link_Tracker', exports.schemas.linkTracker),
-  Feed: (link, shardId) => mongoose.model(exports.collectionId(link, shardId), exports.schemas.feed),
-  VIP: () => mongoose.model('VIP', exports.schemas.vip),
-  Blacklist: () => mongoose.model('Blacklist', exports.schemas.blacklist)
+  GuildRss: () => mongoose.model('guilds', exports.schemas.guildRss),
+  GuildRssBackup: () => mongoose.model('guild_backups', exports.schemas.guildRssBackup),
+  FailedLink: () => mongoose.model('failed_links', exports.schemas.failedLink),
+  LinkTracker: () => mongoose.model('link_trackers', exports.schemas.linkTracker),
+  Feed: (link, shardId) => mongoose.model(exports.collectionId(link, shardId), exports.schemas.feed, exports.collectionId(link, shardId)), // Third parameter is not let mongoose auto-pluralize the collection name
+  VIP: () => mongoose.model('vips', exports.schemas.vip),
+  Blacklist: () => mongoose.model('blacklists', exports.schemas.blacklist)
 }

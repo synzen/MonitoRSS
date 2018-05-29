@@ -81,23 +81,23 @@ class FeedSchedule {
       }
 
       if (configChecks.checkExists(rssName, guildRss, false) && configChecks.validChannel(this.bot, guildRss, rssName) && typeof storage.failedLinks[source.link] !== 'string') {
-        if (storage.linkTracker[rssName] === this.schedule.name) { // If assigned to a this.schedule
+        if (storage.scheduleAssigned[rssName] === this.schedule.name) { // If assigned to a this.schedule
           this._delegateFeed(guildRss, rssName)
-        } else if (this.schedule.name !== 'default' && !storage.linkTracker[rssName]) { // If current feed this.schedule is a custom one and is not assigned
+        } else if (this.schedule.name !== 'default' && !storage.scheduleAssigned[rssName]) { // If current feed this.schedule is a custom one and is not assigned
           this.schedule.keywords.forEach(word => {
             if (source.link.includes(word)) {
-              storage.linkTracker[rssName] = this.schedule.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
+              storage.scheduleAssigned[rssName] = this.schedule.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
               this._delegateFeed(guildRss, rssName)
               log.cycle.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.schedule.name}`)
             }
           })
-        } else if (!storage.linkTracker[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
+        } else if (!storage.scheduleAssigned[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
           let reserved = false
           allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
             if (source.link.includes(item)) reserved = true
           })
           if (!reserved) {
-            storage.linkTracker[rssName] = 'default'
+            storage.scheduleAssigned[rssName] = 'default'
             this._delegateFeed(guildRss, rssName)
           }
         }

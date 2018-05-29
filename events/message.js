@@ -24,9 +24,9 @@ module.exports = (bot, message) => {
   for (var cmd in commands) {
     const cmdData = commands[cmd]
     if (cmd === command && hasPerm.bot(bot, message, cmdData.botPerm)) {
-      return hasPerm.user(message, cmdData.userPerm, (err, allowed) => {
+      return hasPerm.user(message, cmdData.userPerm, (err, allowed, permission) => {
         if (err) return log.command.warning('Unable to fetch member', message.guild, message.author, err, true)
-        if (!allowed) return
+        if (!allowed) return message.reply(`You do not have the required permission ${permission} to use this command.`)
         if (cmdData.initLevel != null && cmdData.initLevel > storage.initialized) return message.channel.send(`This function is disabled while booting up, please wait.`).then(m => m.delete(4000))
         log.command.info(`Used ${message.content}`, message.guild)
         loadCommand(command)(bot, message, command)

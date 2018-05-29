@@ -19,7 +19,7 @@
   "database": {
     "uri": "mongodb://localhost/rss",
     "connection": {},
-    "clean": true,
+    "clean": false,
     "articlesExpire": 14,
     "guildBackupsExpire": 7
   },

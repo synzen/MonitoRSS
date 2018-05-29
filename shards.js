@@ -7,7 +7,7 @@ const dbOps = require('./util/dbOps.js')
 const log = require('./util/logger.js')
 const dbRestore = require('./commands/controller/dbrestore.js')
 const currentGuilds = storage.currentGuilds
-
+const currentCollections = []
 const Manager = new Discord.ShardingManager('./server.js', { respawn: false })
 const missingGuildRss = new Map()
 const missingGuildsCounter = {}
@@ -22,7 +22,7 @@ const activeShardIds = []
 const refreshTimes = [config.feeds.refreshTimeMinutes ? config.feeds.refreshTimeMinutes : 15] // Store the refresh times for the setIntervals of the cycles for each shard
 const scheduleIntervals = [] // Array of intervals for each different refresh time
 const scheduleTracker = {} // Key is refresh time, value is index for activeShardIds
-const linkList = new dbOps.LinkList()
+const linkTracker = new dbOps.LinkTracker()
 let initShardIndex = 0
 
 connectDb(err => {
@@ -73,16 +73,24 @@ Manager.on('message', async (shard, message) => {
           else missingGuildsCounter[guildId]++
           if (missingGuildsCounter[guildId] === Manager.totalShards) missingGuildRss.set(guildId, missing[guildId])
         }
+
         // Count all the links
-        const docs = message.linkDocs
-        for (var x = 0; x < docs.length; ++x) {
-          const doc = docs[x]
-          linkList.set(doc.link, doc.count, doc.shard)
+        const linkDocs = message.linkDocs
+        for (var x = 0; x < linkDocs.length; ++x) {
+          const doc = linkDocs[x]
+          linkTracker.set(doc.link, doc.count, doc.shard)
+          const id = storage.collectionId(doc.link, doc.shard)
+          if (!currentCollections.includes(id)) currentCollections.push(id) // To find out any unused collections eligible for removal
         }
 
         initShardIndex++
         if (initShardIndex === Manager.totalShards) {
-          dbOps.linkList.write(linkList, err => {
+          // Drop the ones not in the current collections
+          dbOps.general.cleanDatabase(currentCollections, err => {
+            if (err) throw err
+          })
+
+          dbOps.linkTracker.write(linkTracker, err => {
             if (err) throw err
             Manager.broadcast({ type: 'finishedInit' })
             log.general.info(`All shards have initialized by the Sharding Manager.`)
@@ -118,7 +126,6 @@ Manager.on('message', async (shard, message) => {
           .catch(err => { throw err })
     }
   } catch (err) {
-    log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err)
-    console.log(err)
+    log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
   }
 })

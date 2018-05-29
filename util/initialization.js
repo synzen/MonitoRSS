@@ -3,7 +3,7 @@ const config = require('../config.json')
 const initAll = require('../rss/initSingle.js')
 const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
-const linkTracker = storage.linkTracker // Directory of all feeds, used to track between multiple feed schedules
+const scheduleAssigned = storage.scheduleAssigned // Directory of all feeds, used to track between multiple feed schedules
 const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
 const failedLinks = storage.failedLinks
 const checkGuild = require('./checkGuild.js')
@@ -31,7 +31,8 @@ function discordMsgResult (err, article) {
 
 module.exports = (bot, callback) => {
   const GuildRss = storage.models.GuildRss()
-  const linkCounts = new dbOps.LinkList()
+  const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
+  const linkTracker = new dbOps.LinkTracker()
   const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
   const modSourceList = new Map()
   const sourceList = new Map()
@@ -137,7 +138,11 @@ module.exports = (bot, callback) => {
     const rssList = guildRss.sources
     for (var rssName in rssList) {
       const source = rssList[rssName]
-      linkCounts.increment(source.link)
+      if (!bot.shard) {
+        const collectionId = storage.collectionId(source.link)
+        if (!currentCollections.includes(collectionId)) currentCollections.push(collectionId)
+      }
+      linkTracker.increment(source.link)
       if (configChecks.checkExists(rssName, guildRss, true, true) && configChecks.validChannel(bot, guildRss, rssName) && !reachedFailCount(source.link)) {
         checkGuild.roles(bot, guildId, rssName) // Check for any role name changes
 
@@ -154,18 +159,18 @@ module.exports = (bot, callback) => {
           sourceList.set(source.link, linkList)
         }
 
-        // Assign feeds to specific schedules in linkTracker for use by feedSchedules
+        // Assign feeds to specific schedules in scheduleAssigned for use by feedSchedules
         if (scheduleWordDir && Object.keys(scheduleWordDir).length > 0) {
           for (var scheduleName in scheduleWordDir) {
             let wordList = scheduleWordDir[scheduleName]
             wordList.forEach(item => {
-              if (source.link.includes(item) && !linkTracker[rssName]) {
+              if (source.link.includes(item) && !scheduleAssigned[rssName]) {
                 log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName}`)
-                linkTracker[rssName] = scheduleName // Assign a schedule to a feed if it doesn't already exist in the linkTracker to another schedule
+                scheduleAssigned[rssName] = scheduleName // Assign a schedule to a feed if it doesn't already exist in the scheduleAssigned to another schedule
               }
             })
           }
-          if (!linkTracker[rssName]) linkTracker[rssName] = 'default' // Assign to default schedule if it wasn't assigned to a custom schedule
+          if (!scheduleAssigned[rssName]) scheduleAssigned[rssName] = 'default' // Assign to default schedule if it wasn't assigned to a custom schedule
         }
       }
     }
@@ -187,10 +192,10 @@ module.exports = (bot, callback) => {
   }
 
   function prepConnect () {
-    const linkCountArr = linkCounts.toArray()
+    const linkCountArr = linkTracker.toArray()
     for (var t in linkCountArr) {
       const link = linkCountArr[t]
-      const Feed = storage.models.Feed(link, linkCounts.shardId)
+      const Feed = storage.models.Feed(link, linkTracker.shardId)
       if (config.database.clean !== true) {
         Feed.collection.dropIndexes(err => {
           if (err && err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${link}:`, err)
@@ -198,6 +203,7 @@ module.exports = (bot, callback) => {
       }
     }
 
+    // Finally connect and run through the batches
     if (sourceList.size + modSourceList.size === 0) {
       log.init.info(`${SHARD_ID}There are no active feeds to initialize`)
       return finishInit()
@@ -215,7 +221,6 @@ module.exports = (bot, callback) => {
       }
       batch[link] = rssList
     })
-
     if (Object.keys(batch).length > 0) regBatchList.push(batch)
 
     batch = {}
@@ -227,12 +232,12 @@ module.exports = (bot, callback) => {
       }
       batch[link] = source
     })
-
     if (Object.keys(batch).length > 0) modBatchList.push(batch)
   }
 
   function connect () {
     log.init.info(`${SHARD_ID}Starting initialization cycle`)
+    // return finishInit()
     genBatchLists()
 
     switch (config.advanced.processorMethod) {
@@ -296,10 +301,11 @@ module.exports = (bot, callback) => {
       }
       if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
       if (linkCompletion.status === 'batch_connected') return // Only used for parallel
-      if (linkCompletion.status === 'failed') {
+      if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
+      else if (linkCompletion.status === 'failed') {
         cycleFailCount++
-        dbOps.failedLinks.increment(linkCompletion.link, null, true)
-      } else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
+        if (!bot.shard) dbOps.failedLinks.increment(linkCompletion.link, null, true) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
+      }
       if (linkCompletion.link) batchTracker[linkCompletion.link] = true
 
       completedLinks++
@@ -344,16 +350,19 @@ module.exports = (bot, callback) => {
         }
         if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
         if (linkCompletion.status === 'batch_connected') return callback() // Spawn processor for next batch
-        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
-        else if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
+        if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
+        else if (linkCompletion.status === 'failed') {
+          cycleFailCount++
+          if (!bot.shard) dbOps.failedLinks.increment(linkCompletion.link, null, true) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
+        }
 
         completedLinks++
         totalCompletedLinks++
+        cycleTotalCount++
         log.init.info(`${SHARD_ID}Parallel Progress: ${totalCompletedLinks}/${totalLinks}`)
         if (completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
-          // if (callback) callback()
           if (completedBatches === totalBatchLengths) finishInit()
         }
       })
@@ -382,7 +391,12 @@ module.exports = (bot, callback) => {
 
   function finishInit () {
     log.init.info(`${SHARD_ID}Finished initialization cycle ${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
-    if (!bot.shard) dbOps.linkList.write(linkCounts)
-    callback(guildsInfo, missingGuilds, linkCounts.toDocs())
+    if (!bot.shard) {
+      dbOps.linkTracker.write(linkTracker) // If this is a shard, then it's handled by the sharding manager
+      dbOps.general.cleanDatabase(currentCollections, err => {
+        if (err) throw err
+        callback(guildsInfo, missingGuilds, linkTracker.toDocs())
+      })
+    } else callback(guildsInfo, missingGuilds, linkTracker.toDocs())
   }
 }

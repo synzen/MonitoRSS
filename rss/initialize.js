@@ -8,7 +8,7 @@ const FeedModel = storage.models.Feed
 const log = require('../util/logger.js')
 
 function resolveLink (link, callback) {
-  dbOps.linkList.get((err, linkList) => {
+  dbOps.linkTracker.get((err, linkList) => {
     if (err) {
       log.general.warning(`Unable to get linkList for link resolution for ${link}`, err)
       return callback(err)
@@ -124,7 +124,7 @@ exports.addNewFeed = (settings, callback, customTitle) => {
     exports.addToDb(articleList, link, addToConfig)
 
     function addToConfig () {
-      const rssName = `${storage.collectionId(link, storage.bot.shard ? storage.bot.shard.id : null)}_${Math.floor((Math.random() * 99999) + 1)}`
+      const rssName = `${storage.collectionId(link, storage.bot.shard ? storage.bot.shard.id : null)}>${Math.floor((Math.random() * 99999) + 1)}`
       let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
 
       if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
@@ -162,7 +162,7 @@ exports.addNewFeed = (settings, callback, customTitle) => {
       }
 
       dbOps.guildRss.update(guildRss)
-      dbOps.linkList.increment(link, err => {
+      dbOps.linkTracker.increment(link, err => {
         if (err) log.general.warning(`Unable to increment linkTracker for ${link} after feed addition`, err)
       })
       callback(null, link, metaTitle, rssName)

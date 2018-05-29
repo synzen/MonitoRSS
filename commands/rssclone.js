@@ -21,14 +21,13 @@ function destSelectorFn (m, data, callback) {
     ...data,
     clonedProps: cloned,
     next: {
-      text: `The following settings for the feed <${sourceFeedLink}>\n\n\`${cloned.join('`, `')}\`\n\nare about to be cloned into the following feeds:\n\`\`\`${destFeedLinks.join('\n')}\`\`\`\nNote that if a property does not exist in the source feed, the same property in the destination feed(s) will be **deleted**. To confirm this, type \`yes\`. Otherwise, type \`exit\` to cancel.`
+      text: `The following settings for the feed <${sourceFeedLink}>\n\n\`${cloned.join('`, `')}\`\n\nare about to be cloned into the following feeds:\n\`\`\`${destFeedLinks.join('\n')}\`\`\`\nNote that if a property does not exist in the source feed, the same property in the destination feed(s) will be **deleted**.To confirm this, type \`yes\`. Otherwise, type \`exit\` to cancel.`
     }
   })
 }
 
 function askConfirm (m, data, callback) {
   if (m.content !== 'yes') return callback(new SyntaxError('You must confirm by typing `yes`, or cancel by typing `exit`. Try again.'))
-  debugger
   callback(null, { ...data, confirmed: true })
 }
 
@@ -41,7 +40,7 @@ module.exports = (bot, message, command) => {
   args.shift()
   args = MenuUtils.trimArray(args)
 
-    if (args.length === 0) return message.channel.send(`You must add at least one property to clone as an argument. The properties available for cloning are \`message\`, \`embed\`, \`filters\`, \`misc-options\`, \`global-roles\` and \`filtered-roles\`. To clone all these properties, you can just use \`all\`.\n\nFor example, to clone a feed's message and embed, type \`${config.bot.prefix}rssclone message embed\`.`)
+  if (args.length === 0) return message.channel.send(`You must add at least one property to clone as an argument. The properties available for cloning are \`message\`, \`embed\`, \`filters\`, \`misc-options\`, \`global-roles\` and \`filtered-roles\`. To clone all these properties, you can just use \`all\`.\n\nFor example, to clone a feed's message and embed, type \`${config.bot.prefix}rssclone message embed\`.`)
 
   const cloneAll = args.includes('all')
   const cloneMessage = cloneAll || args.includes('message')
@@ -79,7 +78,7 @@ module.exports = (bot, message, command) => {
 
         // Filters
         if (emptyFilters) {
-          const origFilteredRoleSubs = destFeed.filters.roleSubscriptions ? JSON.parse(JSON.stringify(destFeed.filters.roleSubscriptions)) : undefined
+          const origFilteredRoleSubs = destFeed.filters && destFeed.filters.roleSubscriptions ? JSON.parse(JSON.stringify(destFeed.filters.roleSubscriptions)) : undefined
           if (origFilteredRoleSubs) destFeed.filters = { roleSubscriptions: origFilteredRoleSubs }
           else delete destFeed.filters
         } else if (cloneFilters) {
@@ -116,7 +115,7 @@ module.exports = (bot, message, command) => {
 
       dbOps.guildRss.update(data.guildRss)
 
-      await m.edit(`The following settings\n\n\`${data.clonedProps.join('\`, \`')}\`\n\nfor the feed <${sourceFeed.link}> have successfully been cloned into ${destLinksCount} feed(s).`)
+      await m.edit(`The following settings\n\n\`${data.clonedProps.join('`, `')}\`\n\nfor the feed <${sourceFeed.link}> have been successfully cloned into ${destLinksCount} feed(s).`)
     } catch (err) {
       log.command.warning(`rssclone`, message.guild, err, true)
     }

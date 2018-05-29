@@ -57,11 +57,8 @@ async function login (firstStartup) {
 
 function finishInit (guildsInfo, missingGuilds, linkDocs) {
   storage.initialized = 1
-  if (bot.shard) {
-    dbOps.failedLinks.uniformize(storage.failedLinks, () => {
-      process.send({ type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs })
-    })
-  } else {
+  if (bot.shard) dbOps.failedLinks.uniformize(storage.failedLinks, () => process.send({ type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: bot.shard.id }))
+  else {
     storage.initialized = 2
     setInterval(dbOps.vips.refresh, 600000)
   }

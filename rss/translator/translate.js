@@ -9,7 +9,7 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
   const source = rssList[rssName]
   const article = new Article(rawArticle, guildRss, rssName)
   article.subscriptions = getSubs(source, article)
-  const IGNORE_TEXT_LIMITS = ignoreLimits !== undefined ? !!source.splitMessage : ignoreLimits
+  const IGNORE_TEXT_LIMITS = ignoreLimits != null ? !!source.splitMessage : ignoreLimits
 
   // Filter message
   let filterExists = false
