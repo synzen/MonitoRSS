@@ -12,7 +12,8 @@
     "defaultGame": "",
     "controllerIds": [],
     "menuColor": 7833753,
-    "deleteMenus": false
+    "deleteMenus": false,
+    "persistGuildProfiles": true
   },
   "feedManagement": {
     "sqlType": "sqlite3",

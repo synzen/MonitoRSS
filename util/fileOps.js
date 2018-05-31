@@ -29,8 +29,10 @@ exports.updateFile = function (guildId, inFile, shardingManager) { // "inFile" i
 
 exports.deleteGuild = function (guildId, shardingManager, callback) {
   try {
-    fs.unlinkSync(`./sources/${guildId}.json`)
-    fs.unlinkSync(`./sources/backup/${guildId}.json`)
+    if (config.botSettings.persistGuildProfiles !== true) {
+      fs.unlinkSync(`./sources/${guildId}.json`)
+      fs.unlinkSync(`./sources/backup/${guildId}.json`)
+    }
     if (typeof callback === 'function') callback()
   } catch (e) {}
   currentGuilds.delete(guildId)

@@ -44,7 +44,8 @@ exports.defaultConfigs = {
     defaultGame: {type: 'string', default: null},
     controllerIds: {type: 'object', default: []},
     menuColor: {type: 'number', default: 7833753},
-    deleteMenus: {type: 'boolean', default: false}
+    deleteMenus: {type: 'boolean', default: false},
+    persistGuildProfiles: {type: 'boolean', default: true}
   },
   feedManagement: {
     sqlType: {type: 'string', default: 'sqlite3'},
