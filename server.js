@@ -34,7 +34,7 @@ async function login (firstStartup) {
   try {
     await bot.login(config.bot.token)
     loginAttempts = 0
-    if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType })
+    if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL })
     else bot.user.setActivity(null)
     bot.user.setStatus(config.bot.status)
 
