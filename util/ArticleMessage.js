@@ -31,7 +31,7 @@ class ArticleMessage {
   }
 
   _resolveChannel (callback) {
-    if ((config.advanced._restrictWebhooks === true && this.source && typeof this.source.webhook === 'object' && storage.vipServers[this.channel.guild.id] && storage.vipServers[this.channel.guild.id].benefactor.allowWebhooks) || !config.advanced._restrictWebhooks) {
+    if (((config.advanced._restrictWebhooks === true && storage.vipServers[this.channel.guild.id] && storage.vipServers[this.channel.guild.id].benefactor.allowWebhooks) || !config.advanced._restrictWebhooks) && this.source && typeof this.source.webhook === 'object') {
       if (!this.channel.guild.me.permissionsIn(this.channel).has('MANAGE_WEBHOOKS')) return this._translate(undefined, callback)
       this.channel.fetchWebhooks().then(hooks => {
         const hook = hooks.get(this.source.webhook.id)
@@ -44,7 +44,7 @@ class ArticleMessage {
         this.webhook.avatar = this.source.webhook.avatar ? this.source.webhook.avatar : undefined
         this._translate(undefined, callback)
       }).catch(err => {
-        log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, this.channel, err)
+        log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, this.channel, err, true)
         this._translate(undefined, callback)
       })
     } else this._translate(undefined, callback)

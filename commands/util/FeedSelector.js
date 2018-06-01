@@ -167,8 +167,6 @@ class FeedSelector extends Menu {
    * @memberof FeedSelector
    */
   async send (data, callback) {
-    if (this.pages.length > 1) this.pages[0].setFooter(`Page 1/${this.pages.length}`)
-
     try {
       const m = await this.channel.send(this.text, { embed: this.pages[0] })
       this._msgCleaner.add(m)

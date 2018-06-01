@@ -1,10 +1,11 @@
-const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
+const FeedParser = require('feedparser')
+const initAllSources = require('./logic/shared.js')
 const debugFeeds = require('../util/debugFeeds').list
-const processAllSources = require('./logic/cycle.js')
 const log = require('../util/logger.js')
 
 module.exports = (data, callback) => {
+  if (process.env.initializing !== 'true' && process.env.initializing !== 'false') throw new Error(`Expected environment variable for singleMethod process.env.initializing to be "true" or "false", found ${process.env.initializing} instead`)
   const { link, rssList, uniqueSettings } = data
   const feedparser = new FeedParser()
   const articleList = []
@@ -30,9 +31,12 @@ module.exports = (data, callback) => {
 
   feedparser.on('end', () => {
     if (articleList.length === 0) return callback(null, { status: 'success', link: link })
-
-    processAllSources({ articleList: articleList, debugFeeds: debugFeeds, ...data }, (err, results) => {
-      if (err) log.cycle.error(`Cycle logic`, err)
+    const debugInfo = process.env.initializing === 'true' ? undefined : debugFeeds
+    initAllSources({ articleList: articleList, debugFeeds: debugInfo, ...data }, (err, results) => {
+      if (err) {
+        if (process.env.initializing === 'true') throw err
+        else if (process.env.initializing === 'false') log.cycle.error(`Cycle logic`, err)
+      }
       if (results) callback(null, results)
     })
   })

@@ -1,6 +1,6 @@
 const fs = require('fs')
 const config = require('../config.json')
-const initAll = require('../rss/initSingle.js')
+const initAll = require('../rss/singleMethod.js')
 const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const scheduleAssigned = storage.scheduleAssigned // Directory of all feeds, used to track between multiple feed schedules
@@ -8,7 +8,7 @@ const allScheduleWords = storage.allScheduleWords // Directory of all words defi
 const failedLinks = storage.failedLinks
 const checkGuild = require('./checkGuild.js')
 const queueArticle = require('./queueArticle.js')
-const process = require('child_process')
+const childProcess = require('child_process')
 const configChecks = require('./configCheck.js')
 const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
@@ -292,7 +292,7 @@ module.exports = (bot, callback) => {
     const currentBatch = batchList[batchNumber]
     const currentBatchLen = Object.keys(currentBatch).length
 
-    const processor = process.fork('./rss/initProcessor.js')
+    const processor = childProcess.fork('./rss/isolatedMethod.js', { env: { initializing: 'true' } })
 
     processor.on('message', linkCompletion => {
       if (linkCompletion.status === 'fatal') {
@@ -339,7 +339,7 @@ module.exports = (bot, callback) => {
       if (!batchList) return
       let completedLinks = 0
 
-      const processor = process.fork('./rss/initProcessor.js')
+      const processor = childProcess.fork('./rss/isolatedMethod.js', { env: { initializing: 'true' } })
       const currentBatch = batchList[index]
       const currentBatchLen = Object.keys(currentBatch).length
 

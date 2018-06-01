@@ -9,6 +9,7 @@ const dbOps = require('./util/dbOps.js')
 const configRes = require('./util/configCheck.js').check(config)
 const connectDb = require('./rss/db/connect.js')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
+process.env.initializing = 'true' // Environemnt variables must be strings
 
 if (configRes && configRes.fatal) throw new Error(configRes.message)
 else if (configRes) log.general.info(configRes.message)
@@ -57,6 +58,8 @@ async function login (firstStartup) {
 
 function finishInit (guildsInfo, missingGuilds, linkDocs) {
   storage.initialized = 1
+  process.env.initializing = 'false'
+
   if (bot.shard) dbOps.failedLinks.uniformize(storage.failedLinks, () => process.send({ type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: bot.shard.id }))
   else {
     storage.initialized = 2

@@ -84,6 +84,7 @@ exports.schemas = {
       type: Date,
       default: Date.now
     },
+    customComparisons: Object,
     ...articlesExpire > 0 ? {expiresAt: {
       type: Date,
       default: expireDate('article'),

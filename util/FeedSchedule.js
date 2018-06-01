@@ -1,4 +1,4 @@
-const getArticles = require('../rss/cycleSingle.js')
+const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.json')
 const configChecks = require('./configCheck.js')
 const dbOps = require('./dbOps.js')
@@ -7,7 +7,6 @@ const events = require('events')
 const childProcess = require('child_process')
 const storage = require('./storage.js') // All properties of storage must be accessed directly due to constant changes
 const statistics = storage.statistics
-const logLinkErr = require('./logLinkErrs.js')
 const log = require('./logger.js')
 const allScheduleWords = storage.allScheduleWords
 const BATCH_SIZE = config.advanced.batchSize
@@ -215,7 +214,7 @@ class FeedSchedule {
       }
 
       getArticles({ link: link, rssList: rssList, uniqueSettings: uniqueSettings }, (err, linkCompletion) => {
-        if (err) logLinkErr({ link: linkCompletion.link, content: err })
+        if (err) log.cycle.warning(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
           return this.cycle.emit('article', linkCompletion.article)
@@ -242,7 +241,7 @@ class FeedSchedule {
     const currentBatchLen = Object.keys(currentBatch).length
     let completedLinks = 0
 
-    this._processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
+    this._processorList.push(childProcess.fork('./rss/isolatedMethod.js', { env: { initializing: 'false' } }))
 
     const processorIndex = this._processorList.length - 1
     const processor = this._processorList[processorIndex]
@@ -282,7 +281,7 @@ class FeedSchedule {
       let completedLinks = 0
       const currentBatch = batchList[index]
       const currentBatchLen = Object.keys(currentBatch).length
-      this._processorList.push(childProcess.fork('./rss/cycleProcessor.js'))
+      this._processorList.push(childProcess.fork('./rss/isolatedMethod.js', { env: { initializing: 'false' } }))
 
       const processorIndex = this._processorList.length - 1
       const processor = this._processorList[processorIndex]

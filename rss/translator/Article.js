@@ -43,6 +43,7 @@ function escapeRegExp (str) {
 }
 
 function regexReplace (string, searchOptions, replacement) {
+  if (typeof searchOptions !== 'object') throw new TypeError(`Expected RegexOp search key to have an object value, found ${typeof searchOptions} instead`)
   const flags = !searchOptions.flags ? 'g' : searchOptions.flags.includes('g') ? searchOptions.flags : searchOptions.flags + 'g' // Global flag must be included to prevent infinite loop during .exec
   try {
     const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined

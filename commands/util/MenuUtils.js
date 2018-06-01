@@ -4,6 +4,8 @@ const channelTracker = require('../../util/channelTracker.js')
 const MessageCleaner = require('../../util/MessageCleaner.js')
 const pageControls = require('../../util/pageControls.js')
 const log = require('../../util/logger.js')
+const WRONG_INPUT = 'That is not a valid choice. Try again, or type `exit` to cancel.'
+
 /**
  * A model that automatically handles pagination via reactions for multiple embeds and able to be used in series with data passed in a sequence.
  */
@@ -24,6 +26,7 @@ class Menu {
     this.maxPerPage = settings && typeof settings.maxPerPage === 'number' && settings.maxPerPage > 0 && settings.maxPerPage <= 10 ? settings.maxPerPage : 7
     this.message = message
     this.channel = message.channel
+    this.hasAddReactionPermission = this.message.guild.me.permissionsIn(this.message.channel).has('ADD_REACTIONS')
     this.fn = fn
     this.pages = []
     this._pageNum = 0
@@ -59,9 +62,15 @@ class Menu {
    * @memberof Menu
    */
   addPage () {
-    const newPage = new RichEmbed(this.pages[0]).setFooter(`Page ${++this._pageNum + 1}/${this.pages.length + 1}`)
+    ++this._pageNum
+    const newPage = new RichEmbed(this.pages[0])
     newPage.fields = []
+    const missingPermText = !this.hasAddReactionPermission ? ` (WARNING: Missing "Add Reactions" permission in this channel. Because this menu has more than ${this.maxPerPage} options, it will not function properly without this permission. ` : ''
     this.pages[this._pageNum] = newPage
+    for (var x = 0; x < this.pages.length; ++x) {
+      const p = this.pages[x]
+      p.setFooter((`Page ${x + 1}/${this.pages.length}`) + missingPermText)
+    }
     this._curPage = this.pages[this._pageNum]
     return this
   }
@@ -184,9 +193,6 @@ class Menu {
    * @memberof Menu
    */
   async send (data, callback) {
-    const WRONG_INPUT = 'That is not a valid choice. Try again, or type `exit` to cancel.'
-    if (this.pages.length > 1) this.pages[0].setFooter(`Page 1/${this.pages.length}`)
-
     try {
       let m
       if (Array.isArray(this.text)) {
