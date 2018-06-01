@@ -115,6 +115,7 @@ module.exports = (bot, message, command) => {
 
       dbOps.guildRss.update(data.guildRss)
 
+      log.command.info(`Properties ${data.clonedProps.join(',')} for the feed ${sourceFeed.link} have been cloned to ${destLinksCount} feeds`)
       await m.edit(`The following settings\n\n\`${data.clonedProps.join('`, `')}\`\n\nfor the feed <${sourceFeed.link}> have been successfully cloned into ${destLinksCount} feed(s).`)
     } catch (err) {
       log.command.warning(`rssclone`, message.guild, err, true)

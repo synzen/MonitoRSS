@@ -20,7 +20,7 @@ function getFeed (data, callback) {
         process.send({ status: 'failed', link: link, rssList: rssList })
         callback()
         if (process.env.initializing === 'false') log.cycle.error(`Unable to complete request for link ${link} during cycle, forcing status update to parent process`)
-        else log.init.error(`Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
+        else if (process.env.initializing === 'true') log.init.error(`Unable to complete request for link ${link} during initialization, forcing status update to parent process`)
       } catch (e) {}
     }
   }, 90000)
@@ -30,14 +30,14 @@ function getFeed (data, callback) {
     callback()
     if (!err) return
     if (process.env.initializing === 'false' && logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
-    else log.init.warning(`Skipping ${link}`, err)
+    else if (process.env.initializing === 'true') log.init.warning(`Skipping ${link}`, err)
     process.send({ status: 'failed', link: link, rssList: rssList })
   })
 
   feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
     if (process.env.initializing === 'false' && logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
-    else log.init.warning(`Skipping ${link}`, err)
+    else if (process.env.initializing === 'true') log.init.warning(`Skipping ${link}`, err)
     process.send({ status: 'failed', link: link, rssList: rssList })
   })
 

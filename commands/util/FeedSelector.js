@@ -10,6 +10,13 @@ const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove', 'rssmove']
 const GLOBAL_SELECT = ['rssmove']
 const SINGLE_NUMBER_REGEX = /^\d+$/
+const STATUS_TEXTS = {
+  imgPreviews: 'Image Link Previews: ',
+  imgLinksExistence: 'Image Links Existence: ',
+  checkTitles: 'Title Checks: ',
+  checkDates: 'Date Checks: ',
+  formatTables: 'Table Formatting: '
+}
 
 function parseNumbers (str) {
   if (SINGLE_NUMBER_REGEX.test(str)) return [parseInt(str, 10)]
@@ -110,8 +117,9 @@ class FeedSelector extends Menu {
         o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
       }
 
-      if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates' || miscOption === 'formatTables') {
-        const statusText = miscOption === 'imagePreviews' ? 'Image Link Previews: ' : miscOption === 'imageLinksExistence' ? 'Image Links Existence: ' : miscOption === 'checkTitles' ? 'Title Checks: ' : miscOption === 'checkDates' ? 'Date Checks: ' : 'Table Formatting: '
+      // if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates' || miscOption === 'formatTables') {
+      if (STATUS_TEXTS[miscOption]) {
+        const statusText = STATUS_TEXTS[miscOption]
         let decision = ''
 
         const globalSetting = config.feeds[miscOption]

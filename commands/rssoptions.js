@@ -3,6 +3,13 @@ const config = require('../config.json')
 const log = require('../util/logger.js')
 const MenuUtils = require('./util/MenuUtils.js')
 const FeedSelector = require('./util/FeedSelector.js')
+const PRETTY_PROP_NAMES = {
+  checkTitles: 'Title Checks',
+  imgPreviews: 'Image Previews',
+  imgLinksExistence: 'Image Links Existence',
+  checkDates: 'Date Checks',
+  formatTables: 'Table Formatting'
+}
 
 function selectOption (m, data, callback) {
   const input = m.content
@@ -45,7 +52,7 @@ module.exports = (bot, message, command) => {
         followGlobal = true
       }
 
-      const prettyPropName = chosenProp === 'checkTitles' ? 'Title Checks' : chosenProp === 'imgPreviews' ? 'Image Previews' : chosenProp === 'imgLinksExistence' ? 'Image Links Existence' : chosenProp === 'checkDates' ? 'Date Checks' : 'Table Formatting'
+      const prettyPropName = PRETTY_PROP_NAMES[chosenProp]
 
       dbOps.guildRss.update(guildRss)
       log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)

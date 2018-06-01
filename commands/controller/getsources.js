@@ -12,7 +12,8 @@ exports.normal = async (bot, message) => {
     if (msg.length < 2000) await message.channel.send(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``)
     else if (msg.length >= 2000) {
       await message.channel.send('Unable to send due to character length exceeding 2000. Logging to console instead.')
-      log.controller.info(`Sources of guild ID ${content[1]}:\n${sources}`, message.author)
+      log.controller.info(`Sources of guild ID ${content[1]}:`, message.author)
+      console.log(sources)
     } else await message.channel.send('No sources available.')
   } catch (err) {
     log.controller.warning('getsources', err)
@@ -40,7 +41,8 @@ exports.sharded = async (bot, message, Manager) => {
       if (msg.length < 2000) await message.channel.send(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``)
       else if (msg.length >= 2000) {
         await message.channel.send('Unable to send due to character length exceeding 2000. Logging to console instead.')
-        log.controller.info(`Sources of guild ID ${content[1]}:\n${sources}`, message.author)
+        log.controller.info(`Sources of guild ID ${content[1]}:`, message.author)
+        console.log(sources)
       } else await message.channel.send('No sources available.')
     }
   } catch (err) {

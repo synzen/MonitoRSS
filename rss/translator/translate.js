@@ -7,6 +7,7 @@ const getSubs = require('./subscriptions.js')
 module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) => {
   const rssList = guildRss.sources
   const source = rssList[rssName]
+  if (!source) return // Might have been removed mid-cycle
   const article = new Article(rawArticle, guildRss, rssName)
   article.subscriptions = getSubs(source, article)
   const IGNORE_TEXT_LIMITS = ignoreLimits != null ? !!source.splitMessage : ignoreLimits

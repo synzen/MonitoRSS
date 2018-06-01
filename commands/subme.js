@@ -24,30 +24,32 @@ module.exports = async (bot, message, command) => {
     const rssList = guildRss.sources
     const options = getSubList(bot, message.guild, rssList)
     if (!options) return await message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.')
-    const msgArr = message.content.split(' ')
     const mention = message.mentions.roles.first()
-    if (msgArr.length > 1) {
-      msgArr.shift()
-      const predeclared = msgArr.join(' ').trim()
-      const role = message.guild.roles.find('name', predeclared)
+    const msgArr = message.content.split(' ')
+    msgArr.shift()
+    const predeclared = msgArr.join(' ').trim()
+    if (predeclared) {
+      const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase())
       for (var option in options) {
-        if (role && options[option].roleList.includes(role.id)) return addRole(message, role, options[option].source.link)
-        else if (mention && options[option].roleList.includes(mention.id)) return addRole(message, mention, options[option].source.link)
+        const roleData = options[option]
+        if (role && roleData.roleList.includes(role.id)) return addRole(message, role, roleData.source.link)
+        else if (mention && roleData.roleList.includes(mention.id)) return addRole(message, mention, roleData.source.link)
       }
-      return await message.channel.send(`That is not a valid role to add. Note that roles are case-sensitive. To see the the full list of roles that can be added, type \`${config.bot.prefix}subme\`.`)
+      return await message.channel.send(`That is not a valid role to add. To see the the full list of roles that can be added, type \`${config.bot.prefix}subme\`.`)
     }
 
     const ask = new MenuUtils.Menu(message, null, { numbered: false })
       .setTitle('Self-Subscription Addition')
-      .setDescription(`Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type **${config.bot.prefix}subme role** to add the role to yourself.\u200b\n\u200b\n`)
+      .setDescription(`Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name after **${config.bot.prefix}subme** to add the role to yourself.\u200b\n\u200b\n`)
 
     for (let option in options) {
+      const roleData = options[option]
       const temp = []
-      for (var roleID in options[option].roleList) temp.push(message.guild.roles.get(options[option].roleList[roleID]).name)
+      for (var roleID in roleData.roleList) temp.push(message.guild.roles.get(roleData.roleList[roleID]).name)
       temp.sort()
-      const channelName = message.guild.channels.get(options[option].source.channel).name
-      const title = options[option].source.title + (temp.length > 0 ? ` (${temp.length})` : '')
-      let desc = `**Link**: ${options[option].source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
+      const channelName = message.guild.channels.get(roleData.source.channel).name
+      const title = roleData.source.title + (temp.length > 0 ? ` (${temp.length})` : '')
+      let desc = `**Link**: ${roleData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
       for (var x = 0; x < temp.length; ++x) {
         const cur = temp[x]
         const next = temp[x + 1]

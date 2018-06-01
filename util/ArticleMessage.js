@@ -1,5 +1,6 @@
 const config = require('../config.json')
 const storage = require('./storage.js')
+const Article = require('../rss/translator/Article.js')
 const currentGuilds = storage.currentGuilds
 const TEST_OPTIONS = {split: {prepend: '```md\n', append: '```'}}
 const log = require('./logger.js')
@@ -27,6 +28,7 @@ class ArticleMessage {
       this.valid = false
       return log.general.error(`${this.rssName} Unable to initialize an ArticleMessage due to missing source`, this.channel.guild, this.channel)
     }
+    this.parsedArticle = new Article(article, this.guildRss, this.rssName)
     this.split = this.source.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
   }
 
@@ -40,8 +42,11 @@ class ArticleMessage {
         const guildName = this.channel.guild.name
         this.webhook = hook
         this.webhook.guild = { id: guildId, name: guildName }
-        this.webhook.name = this.source.webhook.name ? this.source.webhook.name : undefined
-        this.webhook.avatar = this.source.webhook.avatar ? this.source.webhook.avatar : undefined
+        let name = this.source.webhook.name ? this.parsedArticle.convertKeywords(this.source.webhook.name) : undefined
+        if (name && name.length > 32) name = name.slice(0, 29) + '...'
+        if (name && name.length < 2) name = undefined
+        this.webhook.name = name
+        this.webhook.avatar = this.source.webhook.avatar ? this.parsedArticle.convertImgs(this.source.webhook.avatar) : undefined
         this._translate(undefined, callback)
       }).catch(err => {
         log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, this.channel, err, true)
@@ -60,6 +65,7 @@ class ArticleMessage {
   }
 
   send (callback) {
+    if (!this.source) return callback(new Error('Missing ArticleMessage initialization data due to deleted source'))
     this._resolveChannel(() => {
       if (!this.valid) return callback(new Error(`Missing ArticleMessage initialization data`))
       if (!this.skipFilters && !this.passedFilters) {

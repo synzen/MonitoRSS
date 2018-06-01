@@ -50,7 +50,7 @@ exports.addToDb = (articleList, link, callback, customTitle) => {
 
   dbCmds.findAll(Feed, (err, docs) => {
     if (err) {
-      log.general.warn(`Unable to findAll to initialize ${link}`, err)
+      log.general.warning(`Unable to findAll to initialize ${link}`, err)
       return callback()
     }
     if (docs.length > 0) return callback() // The collection already exists from a previous addition, no need to initialize
@@ -59,7 +59,7 @@ exports.addToDb = (articleList, link, callback, customTitle) => {
     })
     dbCmds.bulkInsert(Feed, articleList, err => {
       if (err) {
-        log.general.warn(`Unable to bulk insert to initialize ${link}`, err)
+        log.general.warning(`Unable to bulk insert to initialize ${link}`, err)
         return callback()
       }
       callback()

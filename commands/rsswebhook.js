@@ -34,7 +34,10 @@ function collectWebhook (m, data, callback) {
   let customNameSrch = m.content.match(nameRegex)
   let customAvatarSrch = m.content.match(avatarRegex)
 
-  if (customNameSrch) customNameSrch = customNameSrch[1]
+  if (customNameSrch) {
+    customNameSrch = customNameSrch[1]
+    if (customNameSrch.length > 32 || customNameSrch.length < 2) return callback(new SyntaxError('Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.'))
+  }
   if (customAvatarSrch) customAvatarSrch = customAvatarSrch[1]
   callback(null, { ...data, webhook: hook, customAvatarSrch: customAvatarSrch, customNameSrch: customNameSrch })
 }
@@ -72,7 +75,11 @@ module.exports = async (bot, message, command) => {
           if (customNameSrch) source.webhook.name = customNameSrch
           if (customAvatarSrch) source.webhook.avatar = customAvatarSrch
           log.command.info(`Webhook ID ${webhook.id} (${webhook.name}) connected to feed ${source.link}`, message.guild, message.channel)
-          await webhook.send(`I am now connected to ${bot.user}, and will send feed articles for <${source.link}>!`, { username: customNameSrch, avatarURL: customAvatarSrch })
+          const connected = `I am now connected to ${bot.user}, and will send feed articles for <${source.link}>!`
+          webhook.send(connected, { username: customNameSrch, avatarURL: customAvatarSrch })
+          .catch(err => {
+            if (err.message.includes('avatar_url')) return webhook.send(connected, { username: customNameSrch }).catch(err => log.comamnd.warning(`rsswebhook 2`, message.guild, err)) // This may be a placeholder
+          })
         }
         dbOps.guildRss.update(guildRss)
       } catch (err) {

@@ -27,7 +27,7 @@ module.exports = async (bot, message, command) => {
     const filteredMemberRoles = memberRoles.filterArray(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
 
     const eligibleRoles = []
-    for (var a in filteredMemberRoles) eligibleRoles.push(filteredMemberRoles[a].name)
+    for (var a in filteredMemberRoles) eligibleRoles.push(filteredMemberRoles[a].name.toLowerCase())
 
     if (filteredMemberRoles.length === 0) return await message.channel.send('There are no eligible roles to be removed from you.')
 
@@ -36,10 +36,10 @@ module.exports = async (bot, message, command) => {
     const mention = message.mentions.roles.first()
     const predeclared = msgArr.join(' ').trim()
     if (predeclared) {
-      const role = message.guild.roles.find('name', predeclared)
-      if (role && eligibleRoles.includes(predeclared)) return removeRole(message, role)
-      else if (mention && eligibleRoles.includes(mention.name)) return removeRole(message, mention)
-      return await message.channel.send(`That is not a valid role to remove. Note that roles are case-sensitive. To see the the full list of roles that can be removed, type \`${config.bot.prefix}unsubme\`.`)
+      const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase())
+      if (role && eligibleRoles.includes(predeclared.toLowerCase())) return removeRole(message, role)
+      else if (mention && eligibleRoles.includes(mention.name.toLowerCase())) return removeRole(message, mention)
+      return await message.channel.send(`That is not a valid role to remove. To see the the full list of roles that can be removed, type \`${config.bot.prefix}unsubme\`.`)
     }
 
     const ask = new MenuUtils.Menu(message, null, { numbered: false })
@@ -49,17 +49,18 @@ module.exports = async (bot, message, command) => {
     // Generate a list of feeds and eligible roles to be removed
     const options = getSubList(bot, message.guild, rssList)
     for (var option in options) {
+      const roleData = options[option]
       const temp = []
       for (var memberRole in filteredMemberRoles) {
-        if (!options[option].roleList.includes(filteredMemberRoles[memberRole].id)) continue
+        if (!roleData.roleList.includes(filteredMemberRoles[memberRole].id)) continue
         temp.push(filteredMemberRoles[memberRole].name)
         filteredMemberRoles.splice(memberRole, 1)
       }
       temp.sort()
       if (temp.length > 0) {
-        const title = options[option].source.title + ` (${temp.length})`
-        let channelName = message.guild.channels.get(options[option].source.channel).name
-        let desc = `**Link**: ${options[option].source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
+        const title = roleData.source.title + ` (${temp.length})`
+        let channelName = message.guild.channels.get(roleData.source.channel).name
+        let desc = `**Link**: ${roleData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
         for (var x = 0; x < temp.length; ++x) {
           const cur = temp[x]
           const next = temp[x + 1]
