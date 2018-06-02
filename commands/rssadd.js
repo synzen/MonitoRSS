@@ -41,7 +41,7 @@ module.exports = (bot, message) => {
   function finishLinkList (verifyMsg) {
     let msg = ''
     if (Object.keys(passedAddLinks).length > 0) {
-      let successBox = 'The following feed(s) have been successfully added to this channel:\n```\n'
+      let successBox = 'The following feed(s) have been successfully added to **this channel**:\n```\n'
       for (var passedLink in passedAddLinks) {
         successBox += `\n${passedLink}`
         if (passedAddLinks[passedLink]) { // passedAddLinks[passedLink] is the cookie object

@@ -1,4 +1,6 @@
 version: "3"
+volumes:
+  mongo:
 services:
   mongo:
     container_name: discord-rss-mongo
@@ -9,7 +11,7 @@ services:
     #  driver: none
     image: mongo
     volumes:
-      - ./data:/data/db
+      - 'mongo:/data/db'
     ports:
       - "27018:27018"
   discord-rss:

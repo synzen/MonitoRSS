@@ -1,6 +1,7 @@
 const fs = require('fs')
 const dbSettings = require('../../config.json').database
 const mongoose = require('mongoose')
+const log = require('../../util/logger.js')
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
 const CON_SETTINGS = typeof dbSettings.connection === 'object' ? dbSettings.connection : {}
 
@@ -12,7 +13,15 @@ module.exports = callback => {
       if (CON_SETTINGS[name]) buffers[name] = fs.readFileSync(CON_SETTINGS[name])
     }
   }
-  mongoose.connect(dbSettings.uri, { keepAlive: 120, ...CON_SETTINGS, ...buffers })
-  mongoose.connection.on('error', callback)
+
+  (function connect () {
+    // Do not callback on .then here since the promise never gets resolved for some reason
+    mongoose.connect(dbSettings.uri, { keepAlive: 120, ...CON_SETTINGS, ...buffers })
+    .catch(err => {
+      log.general.error('Failed to connect to database, retrying in 30 seconds...', err)
+      setTimeout(connect, 30000)
+    })
+  })()
+
   mongoose.connection.once('open', callback)
 }

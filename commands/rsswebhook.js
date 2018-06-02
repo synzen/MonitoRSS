@@ -11,7 +11,7 @@ function feedSelectorFn (m, data, callback) {
 
   const text = `${typeof existingWebhook === 'object' ? 'An existing webhook was found (' + existingWebhook.name + '). You may type `{remove}` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n' : ''}
 Type the name of the webhook in this channel you wish to use (case sensitive), or type \`exit\` to cancel.\n
-To use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters \`--name="my new name here"\` or \`--avatar="http://website.com/image.jpg"\``
+To use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters \`--name="my new name here"\` or \`--avatar="http://website.com/image.jpg"\`. Placeholders are supported.`
 
   callback(null, { ...data,
     existingWebhook: existingWebhook,
