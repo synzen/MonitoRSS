@@ -33,7 +33,7 @@ module.exports = (bot, callback) => {
   const GuildRss = storage.models.GuildRss()
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new dbOps.LinkTracker()
-  const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
+  const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
   const modSourceList = new Map()
   const sourceList = new Map()
   const regBatchList = []
@@ -97,7 +97,7 @@ module.exports = (bot, callback) => {
         const guildRss = results[r]
         const guildId = guildRss.id
         if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
-          if (bot.shard) missingGuilds[guildId] = guildRss
+          if (bot.shard && bot.shard.count > 0) missingGuilds[guildId] = guildRss
           else {
             dbOps.guildRss.remove(guildRss, err => {
               if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
@@ -138,7 +138,7 @@ module.exports = (bot, callback) => {
     const rssList = guildRss.sources
     for (var rssName in rssList) {
       const source = rssList[rssName]
-      if (!bot.shard) {
+      if (!bot.shard || bot.shard.count === 0) {
         const collectionId = storage.collectionId(source.link)
         if (!currentCollections.includes(collectionId)) currentCollections.push(collectionId)
       }
@@ -179,7 +179,7 @@ module.exports = (bot, callback) => {
   function checkVIPs () {
     try {
       // For patron tracking on the public bot
-      if (config._vip && (!bot.shard || (bot.shard && bot.shard.id === bot.shard.count - 1))) {
+      if (config._vip && ((!bot.shard || bot.shard.count === 0) || (bot.shard && bot.shard.id === bot.shard.count - 1))) {
         require('../settings/vips.js')(bot, err => {
           if (err) throw err
           prepConnect()
@@ -296,7 +296,7 @@ module.exports = (bot, callback) => {
 
     processor.on('message', linkCompletion => {
       if (linkCompletion.status === 'fatal') {
-        if (bot.shard) bot.shard.broadcastEval('process.exit()')
+        if (bot.shard && bot.shard.count > 0) bot.shard.broadcastEval('process.exit()')
         throw linkCompletion.err // Full error is printed from the processor
       }
       if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
@@ -304,7 +304,7 @@ module.exports = (bot, callback) => {
       if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
       else if (linkCompletion.status === 'failed') {
         cycleFailCount++
-        if (!bot.shard) dbOps.failedLinks.increment(linkCompletion.link, null, true) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
+        if (!bot.shard || bot.shard.count === 0) dbOps.failedLinks.increment(linkCompletion.link, null, true) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
       }
       if (linkCompletion.link) batchTracker[linkCompletion.link] = true
 
@@ -320,7 +320,7 @@ module.exports = (bot, callback) => {
       }
     })
 
-    processor.send({ currentBatch: currentBatch, shardId: bot.shard ? bot.shard.id : null })
+    processor.send({ currentBatch: currentBatch, shardId: bot.shard && bot.shard.count > 0 ? bot.shard.id : null })
   }
 
   function getBatchParallel () {
@@ -345,7 +345,7 @@ module.exports = (bot, callback) => {
 
       processor.on('message', linkCompletion => {
         if (linkCompletion.status === 'kill') {
-          if (bot.shard) bot.shard.broadcastEval('process.exit()')
+          if (bot.shard && bot.shard.count > 0) bot.shard.broadcastEval('process.exit()')
           throw linkCompletion.err // Full error is printed from the processor
         }
         if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
@@ -353,7 +353,7 @@ module.exports = (bot, callback) => {
         if (linkCompletion.status === 'success') dbOps.failedLinks.reset(linkCompletion.link, null, true)
         else if (linkCompletion.status === 'failed') {
           cycleFailCount++
-          if (!bot.shard) dbOps.failedLinks.increment(linkCompletion.link, null, true) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
+          if (!bot.shard || bot.shard.count === 0) dbOps.failedLinks.increment(linkCompletion.link, null, true) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
         }
 
         completedLinks++
@@ -367,7 +367,7 @@ module.exports = (bot, callback) => {
         }
       })
 
-      processor.send({ currentBatch: currentBatch, shardId: bot.shard ? bot.shard.id : null })
+      processor.send({ currentBatch: currentBatch, shardId: bot.shard && bot.shard.count > 0 ? bot.shard.id : null })
     }
 
     function spawn (count) {
@@ -391,7 +391,7 @@ module.exports = (bot, callback) => {
 
   function finishInit () {
     log.init.info(`${SHARD_ID}Finished initialization cycle ${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
-    if (!bot.shard) {
+    if (!bot.shard || bot.shard.count === 0) {
       dbOps.linkTracker.write(linkTracker) // If this is a shard, then it's handled by the sharding manager
       dbOps.general.cleanDatabase(currentCollections, err => {
         if (err) throw err

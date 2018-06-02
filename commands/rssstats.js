@@ -4,12 +4,12 @@ const storage = require('../util/storage.js')
 const moment = require('moment')
 
 module.exports = (bot, message) => {
-  const reference = bot.shard ? storage.statisticsGlobal : storage.statistics
+  const reference = bot.shard && bot.shard.count > 0 ? storage.statisticsGlobal : storage.statistics
   if (reference.fullyUpdated !== true) return message.channel.send('More time is needed to gather enough information. Try again later.')
 
   const visual = new MenuUtils.Menu(message, null, { numbered: false, maxPerPage: 9 })
     .setAuthor('Statistics and Performance')
-    .setDescription(`${bot.shard ? 'Note that Per Shard values are averaged\n' : ''} 
+    .setDescription(`${bot.shard && bot.shard.count > 0 ? 'Note that Per Shard values are averaged\n' : ''} 
 **Unique Feeds** - Number of unique feed links (duplicate links are not counted).
 **Total Feeds** - Number of total feeds.
 **Cycle Duration** - The time it takes to process all the unique feed links.
@@ -23,7 +23,7 @@ module.exports = (bot, message) => {
   let guilds
   let feeds
 
-  if (bot.shard) {
+  if (bot.shard && bot.shard.count > 0) {
     guilds = `Per Shard: ${reference.guilds.shard.toFixed(2)}\nGlobal: ${reference.guilds.global}`
     feeds = `Per Shard: ${reference.feeds.shard.toFixed(2)}\nGlobal: ${reference.feeds.global}`
     cycleLinks = reference.cycleTime ? `Per Shard: ${reference.cycleLinks.shard.toFixed(2)}\nGlobal: ${reference.cycleLinks.global.toFixed(2)}` : 'No data available yet.'
@@ -39,7 +39,7 @@ module.exports = (bot, message) => {
     successRate = reference.cycleTime ? `${((1 - reference.cycleFails / reference.cycleLinks) * 100).toFixed(2)}%` : 'No data available yet.'
   }
   visual.addOption('Servers', guilds, true)
-  if (bot.shard) visual.addOption('Shard Count', bot.shard.count, true).addOption(null, null, true)
+  if (bot.shard && bot.shard.count > 0) visual.addOption('Shard Count', bot.shard.count, true).addOption(null, null, true)
   let diff = moment.duration(moment().diff(moment(reference.lastUpdated)))
   diff = diff.asMinutes() < 1 ? `Updated ${diff.asSeconds().toFixed(2)} seconds ago` : `Updated ${diff.asMinutes().toFixed(2)} minutes ago`
 
@@ -51,7 +51,7 @@ module.exports = (bot, message) => {
     .addOption('Success Rate', successRate, true)
     .setFooter(diff)
 
-  if (bot.shard) visual.addOption(null, null, true)
+  if (bot.shard && bot.shard.count > 0) visual.addOption(null, null, true)
 
   visual.send(null, err => {
     if (err && err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning(`statistics`, message.guild, err))

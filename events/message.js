@@ -38,7 +38,7 @@ module.exports = (bot, message) => {
   if (isBotController(message.author.id)) {
     if (storage.initialized < 2) return message.channel.send(`This function is disabled while booting up, please wait.`).then(m => m.delete(4000))
     try {
-      loadCCommand(command)[bot.shard ? 'sharded' : 'normal'](bot, message)
+      loadCCommand(command)[bot.shard && bot.shard.count > 0 ? 'sharded' : 'normal'](bot, message)
     } catch (e) {}
   }
 }

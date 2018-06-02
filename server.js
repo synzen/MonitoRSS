@@ -26,7 +26,7 @@ let loginAttempts = 0
 const maxAttempts = 5
 
 bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
-const SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
+const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
 
 async function login (firstStartup) {
   if (!firstStartup) bot = new Discord.Client({disabledEvents: DISABLED_EVENTS})
@@ -49,7 +49,7 @@ async function login (firstStartup) {
   } catch (err) {
     if (loginAttempts++ >= maxAttempts) {
       log.general.error(`${SHARD_ID}Discord.RSS failed to login after ${maxAttempts} attempts. Terminating.`)
-      if (bot.shard) bot.shard.send('kill')
+      if (bot.shard && bot.shard.count > 0) bot.shard.send('kill')
     }
     log.general.error(`${SHARD_ID}Discord.RSS failed to login (${err}) on attempt #${loginAttempts}, retrying in ${restartTimeDisp} minutes...`)
     setTimeout(login, restartTime)
@@ -60,7 +60,7 @@ function finishInit (guildsInfo, missingGuilds, linkDocs) {
   storage.initialized = 1
   process.env.initializing = 'false'
 
-  if (bot.shard) dbOps.failedLinks.uniformize(storage.failedLinks, () => process.send({ type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: bot.shard.id }))
+  if (bot.shard && bot.shard.count > 0) dbOps.failedLinks.uniformize(storage.failedLinks, () => process.send({ type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: bot.shard.id }))
   else {
     storage.initialized = 2
     setInterval(dbOps.vips.refresh, 600000)
@@ -69,7 +69,7 @@ function finishInit (guildsInfo, missingGuilds, linkDocs) {
   listeners.createManagers(bot)
 }
 
-if (!bot.shard || (bot.shard && bot.shard.count === 1)) login(true)
+if (!bot.shard || bot.shard.count === 0) login(true)
 else {
   process.on('message', message => {
     switch (message.type) {
@@ -126,7 +126,7 @@ else {
 
 process.on('uncaughtException', err => {
   console.log(`${SHARD_ID}Fatal Error\n`, err)
-  if (bot.shard) {
+  if (bot.shard && bot.shard.count > 0) {
     bot.shard.broadcastEval('process.exit()')
     bot.shard.send('kill')
   }

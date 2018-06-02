@@ -62,5 +62,5 @@ exports.enableCommands = bot => {
     try { if (cmdsExtension) cmdsExtension(bot, message) } catch (e) {}
   })
 
-  if (config.bot.enableCommands !== false) log.general.info(`${bot.shard ? 'SH ' + bot.shard.id + ' ' : ''}Commands have been enabled`)
+  if (config.bot.enableCommands !== false) log.general.info(`${bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''}Commands have been enabled`)
 }

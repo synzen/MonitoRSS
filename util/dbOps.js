@@ -12,7 +12,7 @@ const FAIL_LIMIT = config.feeds.failLimit
 
 exports.guildRss = {
   update: (guildRss, callback, skipProcessSend) => {
-    if (storage.bot.shard && (!skipProcessSend || !storage.bot.guilds.has(guildRss.id))) {
+    if (storage.bot.shard && storage.bot.shard.count > 0 && (!skipProcessSend || !storage.bot.guilds.has(guildRss.id))) {
       process.send({ type: 'guildRss.update', guildRss: guildRss, _loopback: true })
       return callback ? callback() : null
     }
@@ -25,7 +25,7 @@ exports.guildRss = {
   },
   remove: (guildRss, callback, skipProcessSend) => {
     const guildId = guildRss.id
-    if (storage.bot && storage.bot.shard && !skipProcessSend) {
+    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
       process.send({ type: 'guildRss.remove', guildRss: guildRss, _loopback: true })
       return callback ? callback() : null
     }
@@ -46,7 +46,7 @@ exports.guildRss = {
   },
   disableFeed: (guildRss, rssName, callback, skipProcessSend) => {
     const link = guildRss.sources[rssName].link
-    if (storage.bot && storage.bot.shard && !skipProcessSend) {
+    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
       process.send({ type: 'guildRss.disableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
       return callback ? callback(null, link) : log.general.warning(`Feed named ${rssName} has been disabled in guild ${guildRss.id}`)
     }
@@ -56,7 +56,7 @@ exports.guildRss = {
   },
   enableFeed: (guildRss, rssName, callback, skipProcessSend) => {
     const link = guildRss.sources[rssName].link
-    if (storage.bot && storage.bot.shard && !skipProcessSend) {
+    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
       process.send({ type: 'guildRss.enableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
       return callback ? callback(null, link) : log.general.info(`Feed named ${rssName} has been enabled in guild ${guildRss.id}`)
     }
@@ -66,7 +66,7 @@ exports.guildRss = {
   },
   removeFeed: (guildRss, rssName, callback, skipProcessSend) => {
     const link = guildRss.sources[rssName].link
-    if (storage.bot && storage.bot.shard && !skipProcessSend) {
+    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
       process.send({ type: 'guildRss.removeFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
       return callback ? callback(null, link) : null
     }
@@ -130,7 +130,7 @@ exports.guildRss = {
 class LinkTracker {
   constructor (docs) {
     this.list = {}
-    this.shardId = storage.bot && storage.bot.shard ? storage.bot.shard.id : undefined
+    this.shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
     if (docs) for (var i in docs) this.set(docs[i].link, docs[i].count, docs[i].shard)
   }
 
@@ -218,7 +218,7 @@ exports.linkTracker = {
     })
   },
   update: (link, count, callback) => {
-    const shardId = storage.bot && storage.bot.shard ? storage.bot.shard.id : undefined
+    const shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
     if (count > 0) models.LinkTracker().update({ link: link, shard: shardId }, { link: link, count: count, shard: shardId }, UPDATE_SETTINGS, callback)
     else {
       models.LinkTracker().find({ link, shard: shardId }).remove(err => {
@@ -252,12 +252,12 @@ exports.linkTracker = {
 
 exports.failedLinks = {
   uniformize: (failedLinks, callback, skipProcessSend) => {
-    if (!skipProcessSend && storage.bot.shard) process.send({ type: 'failedLinks.uniformize', failedLinks: failedLinks, _loopback: true })
+    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ type: 'failedLinks.uniformize', failedLinks: failedLinks, _loopback: true })
     else if (skipProcessSend) storage.failedLinks = failedLinks // skipProcessSend indicates that this method was called on another shard, otherwise it was already updated in the methods below
     if (callback) callback()
   },
   _sendAlert: (link, message, skipProcessSend) => {
-    if (storage.bot && storage.bot.shard && !skipProcessSend) return process.send({ type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
+    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) return process.send({ type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
     currentGuilds.forEach(guildRss => {
       const rssList = guildRss.sources
       if (!rssList) return
@@ -318,7 +318,7 @@ exports.failedLinks = {
 
 exports.blacklists = {
   uniformize: (blacklistGuilds, blacklistUsers, callback, skipProcessSend) => {
-    if (!skipProcessSend && storage.bot.shard) process.send({ type: 'blacklists.uniformize', blacklistGuilds: blacklistGuilds, blacklistUsers: blacklistUsers, _loopback: true })
+    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ type: 'blacklists.uniformize', blacklistGuilds: blacklistGuilds, blacklistUsers: blacklistUsers, _loopback: true })
     else if (skipProcessSend) {
       storage.blacklistGuilds = blacklistGuilds
       storage.blacklistUsers = blacklistUsers
@@ -357,7 +357,7 @@ exports.blacklists = {
 
 exports.vips = {
   uniformize: (vipUsers, vipServers, callback, skipProcessSend) => {
-    if (!skipProcessSend && storage.bot.shard) process.send({ type: 'vips.uniformize', vipUsers: vipUsers, vipServers: vipServers, _loopback: true })
+    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ type: 'vips.uniformize', vipUsers: vipUsers, vipServers: vipServers, _loopback: true })
     else if (skipProcessSend) {
       storage.vipUsers = vipUsers
       storage.vipServers = vipServers
@@ -420,7 +420,7 @@ exports.vips = {
   },
   addServers: (settings, callback, skipUpdateVIP) => {
     const servers = settings.serversToAdd
-    if (storage.bot.shard) {
+    if (storage.bot.shard && storage.bot.shard.count > 0) {
       storage.bot.shard.broadcastEval(`
         const ids = ${JSON.stringify(servers)};
         const info = {}

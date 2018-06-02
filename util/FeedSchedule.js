@@ -13,7 +13,7 @@ const BATCH_SIZE = config.advanced.batchSize
 
 class FeedSchedule {
   constructor (bot, schedule) {
-    this.SHARD_ID = bot.shard ? 'SH ' + bot.shard.id + ' ' : ''
+    this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
     this.bot = bot
     this.schedule = schedule
     this.refreshTime = this.schedule.refreshTimeMinutes ? this.schedule.refreshTimeMinutes : config.feeds.refreshTimeMinutes
@@ -26,9 +26,8 @@ class FeedSchedule {
     this._cycleTotalCount = 0
     this._sourceList = new Map()
     this._modSourceList = new Map()
-    // this._leftoverBatch = new Map() // Batch of failed links to merge into the batchLists after each cycle for second retry
 
-    if (!this.bot.shard || (this.bot.shard && this.bot.shard.count === 1)) {
+    if (!this.bot.shard || this.bot.shard.count === 0) {
       this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
       log.cycle.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
     }
@@ -264,7 +263,7 @@ class FeedSchedule {
       }
     })
 
-    processor.send({ currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard ? this.bot.shard.id : null })
+    processor.send({ currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null })
   }
 
   _getBatchParallel () {
@@ -306,7 +305,7 @@ class FeedSchedule {
         }
       })
 
-      processor.send({ currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard ? this.bot.shard.id : null })
+      processor.send({ currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null })
     }
 
     function spawn (count) {
@@ -329,7 +328,7 @@ class FeedSchedule {
   }
 
   _finishCycle (noFeeds) {
-    if (this.bot.shard && this.bot.shard.count > 1) {
+    if (this.bot.shard && this.bot.shard.count > 0) {
       dbOps.failedLinks.uniformize(storage.failedLinks) // Update failedLinks across all shards
       this.bot.shard.send({ type: 'scheduleComplete', refreshTime: this.refreshTime })
     }
@@ -353,7 +352,7 @@ class FeedSchedule {
       statistics.lastUpdated = new Date()
     }
 
-    if (this.schedule.name === 'default' && this.bot.shard) {
+    if (this.schedule.name === 'default' && this.bot.shard && this.bot.shard.count > 0) {
       this.bot.shard.broadcastEval(`
         const storage = require(require('path').dirname(require.main.filename) + '/util/storage.js')
         const obj = {}
@@ -403,7 +402,7 @@ class FeedSchedule {
   }
 
   start () {
-    if (!this.bot.shard || (this.bot.shard && this.bot.shard.count === 1)) this._timer = setInterval(this.run, this.refreshTime * 60000)
+    if (!this.bot.shard || this.bot.shard.count === 0) this._timer = setInterval(this.run, this.refreshTime * 60000)
   }
 }
 

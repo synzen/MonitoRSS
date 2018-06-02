@@ -46,7 +46,7 @@ exports.addToDb = (articleList, link, callback, customTitle) => {
     if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
     return article.guid
   }
-  const Feed = FeedModel(link, storage.bot.shard ? storage.bot.shard.id : null)
+  const Feed = FeedModel(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)
 
   dbCmds.findAll(Feed, (err, docs) => {
     if (err) {
@@ -124,7 +124,7 @@ exports.addNewFeed = (settings, callback, customTitle) => {
     exports.addToDb(articleList, link, addToConfig)
 
     function addToConfig () {
-      const rssName = `${storage.collectionId(link, storage.bot.shard ? storage.bot.shard.id : null)}>${Math.floor((Math.random() * 99999) + 1)}`
+      const rssName = `${storage.collectionId(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)}>${Math.floor((Math.random() * 99999) + 1)}`
       let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
 
       if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
