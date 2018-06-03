@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const Discord = require('discord.js')
 const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
 const config = require('../config.json')
@@ -9,6 +10,9 @@ const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
 const configCheck = require('../util/configCheck.js')
 const connectDb = require('../rss/db/connect.js')
+const ClientSharded = require('./ClientSharded.js')
+const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
+const SHARDED_OPTIONS = { respawn: false }
 const STATES = {
   STOPPED: 'STOPPED',
   STARTING: 'STARTING',
@@ -60,7 +64,7 @@ function readSchedulesFromFile () {
 }
 
 class Client {
-  constructor (bot, configOverrides, customSchedules) {
+  constructor (configOverrides, customSchedules) {
     overrideConfigs(configOverrides)
     const configRes = configCheck.check(config)
     if (configRes && configRes.fatal) throw new Error(configRes.message)
@@ -71,15 +75,18 @@ class Client {
     if (!customSchedules && configOverrides && configOverrides.readFileSchedules === true) {
       customSchedules = readSchedulesFromFile()
       if (!customSchedules) log.general.info('No custom schedules found in settings/schedules folder')
-      else if (bot.shard && bot.shard.count > 0 && bot.shard.id === 0) process.send({ _drss: true, type: 'customSchedules', customSchedules: customSchedules })
     }
+    this.configOverrides = configOverrides
     this.customSchedules = customSchedules
     this.STATES = STATES
-    this.SHARD_PREFIX = bot.shard && bot.shard.count > 0 ? `SH ${bot.shard.id} ` : ''
     this.state = STATES.STOPPED
-    this.configOverrides = configOverrides
-    storage.bot = bot
+  }
 
+  _defineBot (bot) {
+    this.bot = bot
+    this.SHARD_PREFIX = bot.shard && bot.shard.count > 0 ? `SH ${bot.shard.id} ` : ''
+    if (this.customSchedules && bot && bot.shard && bot.shard.count > 0 && bot.shard.id === 0) process.send({ _drss: true, type: 'customSchedules', customSchedules: this.customSchedules })
+    storage.bot = bot
     if (bot.shard && bot.shard.count > 0) this.listenToShardedEvents(bot)
     if (!bot.readyAt) bot.once('ready', this._initialize.bind(this))
     else this._initialize()
@@ -92,19 +99,16 @@ class Client {
       else bot.user.setActivity(null)
       bot.user.setStatus(config.bot.status)
     }
-
     bot.on('error', err => {
-      log.general.error('Websocket connection error', err)
+      log.general.error(`${this.SHARD_PREFIX}Websocket connection error`, err)
       this.stop()
     })
-
     bot.on('resume', () => {
-      log.general.success('Websocket resumed')
+      log.general.success(`${this.SHARD_PREFIX}Websocket resumed`)
       this.start()
     })
-
     bot.on('disconnect', () => {
-      log.general.success('Websocket disconnected, attempting to completely stop')
+      log.general.success(`${this.SHARD_PREFIX}Websocket disconnected, attempting to completely stop`)
       this.stop()
     })
     log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
@@ -165,6 +169,20 @@ class Client {
           break
       }
     })
+  }
+
+  login (token) {
+    if (typeof token !== 'string') return this._defineBot(token) // May also be the client
+    const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
+    ;(function login (attempt) {
+      if (attempt >= 10) throw new Error('Failed to login after 10+ attempts')
+      client.login(token)
+        .then(tok => this._defineBot(client))
+        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS)) : setTimeout(() => {
+          log.general.error(`Failed to login on attempt ${attempt}`, err)
+          login(++attempt).bind(this)
+        }, 30000))
+    }).bind(this)(1)
   }
 
   stop () {
