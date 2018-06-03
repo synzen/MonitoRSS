@@ -5,16 +5,16 @@ exports.normal = async (bot, message) => {
   const currentGuilds = storage.currentGuilds
   const content = message.content.split(' ')
   if (content.length !== 2) return
-  const sources = (currentGuilds.get(content[1]) && currentGuilds.get(content[1]).sources) ? currentGuilds.get(content[1]).sources : undefined
+  const guildData = currentGuilds.get(content[1])
 
-  const msg = sources ? `\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\`` : ''
+  const msg = guildData ? `\`\`\`js\n${JSON.stringify(guildData, null, 2)}\n\`\`\`` : ''
   try {
-    if (msg.length < 2000) await message.channel.send(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``)
+    if (msg.length < 2000) await message.channel.send(`\`\`\`js\n${JSON.stringify(guildData, null, 2)}\n\`\`\``)
     else if (msg.length >= 2000) {
       await message.channel.send('Unable to send due to character length exceeding 2000. Logging to console instead.')
-      log.controller.info(`Sources of guild ID ${content[1]}:`, message.author)
-      console.log(sources)
-    } else await message.channel.send('No sources available.')
+      log.controller.info(`Guild ID ${content[1]} data:`, message.author)
+      console.log(guildData)
+    } else await message.channel.send('No data available.')
   } catch (err) {
     log.controller.warning('getsources', err)
   }
@@ -30,19 +30,19 @@ exports.sharded = async (bot, message, Manager) => {
       const appDir = path.dirname(require.main.filename);
       const storage = require(appDir + '/util/storage.js');
       const currentGuilds = storage.currentGuilds;
-      (currentGuilds.get("${guildID}") && currentGuilds.get("${guildID}").sources) ? currentGuilds.get("${guildID}").sources : undefined;
+      (currentGuilds.get("${guildID}") && currentGuilds.get("${guildID}").sources) ? currentGuilds.get("${guildID}") : undefined;
     `)
     for (var x in results) {
       if (!results[x]) continue
 
-      const sources = results[x]
-      const msg = `\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``
+      const guildData = results[x]
+      const msg = `\`\`\`js\n${JSON.stringify(guildData, null, 2)}\n\`\`\``
 
-      if (msg.length < 2000) await message.channel.send(`\`\`\`js\n${JSON.stringify(sources, null, 2)}\n\`\`\``)
+      if (msg.length < 2000) await message.channel.send(`\`\`\`js\n${JSON.stringify(guildData, null, 2)}\n\`\`\``)
       else if (msg.length >= 2000) {
         await message.channel.send('Unable to send due to character length exceeding 2000. Logging to console instead.')
-        log.controller.info(`Sources of guild ID ${content[1]}:`, message.author)
-        console.log(sources)
+        log.controller.info(`Guild ID ${content[1]} data:`, message.author)
+        console.log(guildData)
       } else await message.channel.send('No sources available.')
     }
   } catch (err) {

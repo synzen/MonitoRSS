@@ -3,7 +3,7 @@ const moment = require('moment-timezone')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const dbOps = require('../util/dbOps.js')
-const MenuUtils = require('./util/MenuUtils.js')
+const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 
 // To avoid stack call exceeded

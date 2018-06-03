@@ -1,10 +1,10 @@
 const config = require('../config.json')
-const storage = require('./storage.js')
-const Article = require('../rss/translator/Article.js')
+const storage = require('../util/storage.js')
+const Article = require('./Article.js')
 const currentGuilds = storage.currentGuilds
 const TEST_OPTIONS = {split: {prepend: '```md\n', append: '```'}}
-const log = require('./logger.js')
-const debugFeeds = require('./debugFeeds').list
+const log = require('../util/logger.js')
+const debugFeeds = require('../util/debugFeeds.js').list
 const translate = require('../rss/translator/translate.js')
 const deletedFeeds = storage.deletedFeeds
 

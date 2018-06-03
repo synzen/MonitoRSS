@@ -1,8 +1,7 @@
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
-const MenuUtils = require('./util/MenuUtils.js')
-const FeedSelector = require('./util/FeedSelector.js')
-
+const MenuUtils = require('../structs/MenuUtils.js')
+const FeedSelector = require('../structs/FeedSelector.js')
 function escapeBackticks (str) {
   return str.replace('`', '​`')  // Replace backticks with zero-width space and backtick to escape
 }

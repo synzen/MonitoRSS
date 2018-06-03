@@ -1,12 +1,23 @@
 const fs = require('fs')
 const eventHandler = evnt => require(`../events/${evnt}.js`)
 const log = require('./logger.js')
-const config = JSON.parse(fs.readFileSync('./config.json'))
+const config = require('../config.json')
+const storage = require('./storage.js')
 const pageControls = require('./pageControls.js')
+const EVENT_HANDLERS = {
+  guildCreate: guildCreateHandler,
+  guildDelete: guildDeleteHandler,
+  channelDelete: channelDeleteHandler,
+  roleUpdate: roleUpdateHandler,
+  roleDelete: roleDeleteHandler,
+  guildUpdate: guildUpdateHandler,
+  messageReactionAdd: messageReactionAddHandler,
+  messageReactionRemove: messageReactionRemoveHandler,
+  message: messageHandler
+}
 let cmdsExtension
-if (fs.existsSync('./settings/commands.js')) try { cmdsExtension = require('../settings/commands.js') } catch (e) { console.log(`Error: Unable to load commands extension file. Reason:\n`, e) }
-
 if (fs.existsSync('./settings/commands.js')) {
+  try { cmdsExtension = require('../settings/commands.js') } catch (e) { console.log(`Error: Unable to load commands extension file. Reason:\n`, e) }
   fs.watchFile('./settings/commands.js', (cur, prev) => {
     delete require.cache[require.resolve('../settings/commands.js')]
     try {
@@ -18,49 +29,58 @@ if (fs.existsSync('./settings/commands.js')) {
   })
 }
 
-exports.createManagers = bot => {
-  bot.on('guildCreate', guild => {
-    eventHandler('guildCreate')(bot, guild)
-  })
-
-  bot.on('guildDelete', guild => {
-    eventHandler('guildDelete')(bot, guild)
-  })
-
-  bot.on('channelDelete', channel => {
-    eventHandler('channelDelete')(channel)
-  })
-
-  bot.on('roleUpdate', (oldRole, newRole) => {
-    if (oldRole.name === newRole.name) return
-    eventHandler('roleUpdate')(bot, oldRole, newRole)
-  })
-
-  bot.on('roleDelete', role => {
-    eventHandler('roleDelete')(bot, role)
-  })
-
-  bot.on('guildUpdate', (oldGuild, newGuild) => {
-    if (newGuild.name === oldGuild.name) return
-    eventHandler('guildUpdate')(bot, oldGuild, newGuild)
-  })
-
-  bot.on('messageReactionAdd', (msgReaction, user) => {
-    if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || user.bot || !pageControls.has(msgReaction.message.id)) return
-    eventHandler('messageReactionAdd')(bot, msgReaction, user)
-  })
-
-  bot.on('messageReactionRemove', (msgReaction, user) => {
-    if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || user.bot || !pageControls.has(msgReaction.message.id)) return
-    eventHandler('messageReactionRemove')(bot, msgReaction, user)
-  })
+function guildCreateHandler (guild) {
+  eventHandler('guildCreate')(storage.bot, guild)
 }
 
-exports.enableCommands = bot => {
-  bot.on('message', (message) => {
-    if (config.bot.enableCommands !== false) eventHandler('message')(bot, message)
-    try { if (cmdsExtension) cmdsExtension(bot, message) } catch (e) {}
-  })
+function guildDeleteHandler (guild) {
+  eventHandler('guildDelete')(storage.bot, guild)
+}
 
-  if (config.bot.enableCommands !== false) log.general.info(`${bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''}Commands have been enabled`)
+function channelDeleteHandler (channel) {
+  eventHandler('channelDelete')(channel)
+}
+
+function roleUpdateHandler (oldRole, newRole) {
+  if (oldRole.name === newRole.name) return
+  eventHandler('roleUpdate')(storage.bot, oldRole, newRole)
+}
+
+function roleDeleteHandler (role) {
+  eventHandler('roleDelete')(storage.bot, role)
+}
+
+function guildUpdateHandler (oldGuild, newGuild) {
+  if (newGuild.name === oldGuild.name) return
+  eventHandler('guildUpdate')(storage.bot, oldGuild, newGuild)
+}
+
+function messageReactionAddHandler (msgReaction, user) {
+  if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || user.bot || !pageControls.has(msgReaction.message.id)) return
+  eventHandler('messageReactionAdd')(storage.bot, msgReaction, user)
+}
+
+function messageReactionRemoveHandler (msgReaction, user) {
+  if ((msgReaction.emoji.name !== '▶' && msgReaction.emoji.name !== '◀') || user.bot || !pageControls.has(msgReaction.message.id)) return
+  eventHandler('messageReactionRemove')(storage.bot, msgReaction, user)
+}
+
+function messageHandler (message) {
+  if (config.bot.enableCommands !== false) eventHandler('message')(storage.bot, message)
+  try { if (cmdsExtension) cmdsExtension(storage.bot, message) } catch (e) {}
+}
+
+exports.createManagers = () => {
+  for (var eventName in EVENT_HANDLERS) {
+    if (eventName !== 'message') storage.bot.on(eventName, EVENT_HANDLERS[eventName])
+  }
+}
+
+exports.enableCommands = () => {
+  storage.bot.on('message', messageHandler)
+  if (config.bot.enableCommands !== false) log.general.info(`${storage.bot.shard && storage.bot.shard.count > 0 ? 'SH ' + storage.bot.shard.id + ' ' : ''}Commands have been enabled`)
+}
+
+exports.disableAll = () => {
+  for (var eventName in EVENT_HANDLERS) storage.bot.removeListener(eventName, EVENT_HANDLERS[eventName])
 }

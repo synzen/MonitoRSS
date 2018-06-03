@@ -1,4 +1,4 @@
-const MenuUtils = require('../commands/util/MenuUtils.js')
+const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
 const moment = require('moment')

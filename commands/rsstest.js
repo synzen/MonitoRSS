@@ -1,8 +1,8 @@
 const getRandomArticle = require('../rss/getArticle.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
-const FeedSelector = require('./util/FeedSelector.js')
+const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
-const ArticleMessage = require('../util/ArticleMessage.js')
+const ArticleMessage = require('../structs/ArticleMessage.js')
 
 module.exports = (bot, message, command) => {
   let simple = !!(message.content.split(' ').length > 1 && message.content.split(' ')[1] === 'simple')

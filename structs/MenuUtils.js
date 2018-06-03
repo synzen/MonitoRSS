@@ -1,9 +1,9 @@
 const RichEmbed = require('discord.js').RichEmbed
-const config = require('../../config.json')
-const channelTracker = require('../../util/channelTracker.js')
-const MessageCleaner = require('../../util/MessageCleaner.js')
-const pageControls = require('../../util/pageControls.js')
-const log = require('../../util/logger.js')
+const config = require('../config.json')
+const channelTracker = require('../util/channelTracker.js')
+const MessageCleaner = require('./MessageCleaner.js')
+const pageControls = require('../util/pageControls.js')
+const log = require('../util/logger.js')
 const WRONG_INPUT = 'That is not a valid choice. Try again, or type `exit` to cancel.'
 
 /**

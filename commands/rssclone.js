@@ -1,9 +1,8 @@
 const config = require('../config.json')
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
-const MenuUtils = require('./util/MenuUtils.js')
-const FeedSelector = require('./util/FeedSelector.js')
-
+const MenuUtils = require('../structs/MenuUtils.js')
+const FeedSelector = require('../structs/FeedSelector.js')
 function destSelectorFn (m, data, callback) {
   const { guildRss, rssName, rssNameList } = data
   const sourceFeedLink = guildRss.sources[rssName].link

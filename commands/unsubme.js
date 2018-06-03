@@ -1,6 +1,6 @@
 const getSubList = require('./util/getSubList.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
-const MenuUtils = require('./util/MenuUtils.js')
+const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const config = require('../config.json')
 

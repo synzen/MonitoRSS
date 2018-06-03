@@ -1,11 +1,11 @@
-const config = require('../../config.json')
-const commands = require('../../util/commands.json')
-const channelTracker = require('../../util/channelTracker.js')
-const pageControls = require('../../util/pageControls.js')
-const storage = require('../../util/storage.js')
+const config = require('../config.json')
+const commands = require('../util/commands.json')
+const channelTracker = require('../util/channelTracker.js')
+const pageControls = require('../util/pageControls.js')
+const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const FAIL_LIMIT = config.feeds.failLimit
-const log = require('../../util/logger.js')
+const log = require('../util/logger.js')
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove', 'rssmove']
 const GLOBAL_SELECT = ['rssmove']

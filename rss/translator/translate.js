@@ -1,7 +1,7 @@
 const config = require('../../config.json')
 const filterFeed = require('./filters.js')
 const generateEmbed = require('./embed.js')
-const Article = require('./Article.js')
+const Article = require('../../structs/Article.js')
 const getSubs = require('./subscriptions.js')
 
 module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) => {

@@ -1,3 +1,5 @@
+const log = require('./logger.js')
+
 class PageContainer {
   constructor () {
     this.messageList = {}
@@ -12,7 +14,7 @@ class PageContainer {
       const m = await message.channel.fetchMessage(message.id)
       await m.edit({embed: pageMsg.pages[pageMsg.currentPage]})
     } catch (err) {
-      console.log(`Page Controls Warning: nextPage:`, err.message || err)
+      log.command.warning('pageControls nextPage', err, message.channel)
     }
   }
 
@@ -25,7 +27,7 @@ class PageContainer {
       const m = await message.channel.fetchMessage(message.id)
       await m.edit({embed: pageMsg.pages[pageMsg.currentPage]})
     } catch (err) {
-      console.log(`Page Controls Warning: prevPage:`, err.message || err)
+      log.command.warning('pageControls prevpage', err, message.channel)
     }
   }
 }

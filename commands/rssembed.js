@@ -1,7 +1,7 @@
 const dbOps = require('../util/dbOps.js')
 const config = require('../config.json')
-const MenuUtils = require('./util/MenuUtils.js')
-const FeedSelector = require('./util/FeedSelector.js')
+const MenuUtils = require('../structs/MenuUtils.js')
+const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
 const URLS = ['{link}', '{guid}', '{reddit_direct}', '{reddit_author}']
 const EMBED_PROPERTIES = {

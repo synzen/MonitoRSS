@@ -1,7 +1,7 @@
 const dbOps = require('../../util/dbOps.js')
 const config = require('../../config.json')
 const filterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
-const MenuUtils = require('./MenuUtils.js')
+const MenuUtils = require('../../structs/MenuUtils.js')
 const log = require('../../util/logger.js')
 
 function filterAddCategory (m, data, callback) {

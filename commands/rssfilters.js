@@ -3,11 +3,11 @@ const filters = require('./util/filters.js')
 const config = require('../config.json')
 const dbOps = require('../util/dbOps.js')
 const getArticle = require('../rss/getArticle.js')
-const MenuUtils = require('./util/MenuUtils.js')
-const FeedSelector = require('./util/FeedSelector.js')
+const MenuUtils = require('../structs/MenuUtils.js')
+const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
 const VALID_OPTIONS = ['1', '2', '3', '4', '5']
-const ArticleMessage = require('../util/ArticleMessage.js')
+const ArticleMessage = require('../structs/ArticleMessage.js')
 
 function feedSelectorFn (m, data, callback) {
   const { guildRss, rssName } = data

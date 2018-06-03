@@ -1,4 +1,3 @@
-const fs = require('fs')
 const config = require('../config.json')
 const initAll = require('../rss/singleMethod.js')
 const storage = require('./storage.js')
@@ -29,7 +28,7 @@ function discordMsgResult (err, article) {
   }
 }
 
-module.exports = (bot, callback) => {
+module.exports = (bot, customSchedules, callback) => {
   const GuildRss = storage.models.GuildRss()
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new dbOps.LinkTracker()
@@ -41,30 +40,24 @@ module.exports = (bot, callback) => {
   const BATCH_SIZE = 400
   const guildsInfo = {}
   const missingGuilds = {}
+  const scheduleWordDir = {}
 
   let cycleFailCount = 0
   let cycleTotalCount = 0
 
-  try {
-    var scheduleWordDir = {}
-    const schedules = fs.readdirSync('./settings/schedules') // Record all words in schedules for later use by FeedSchedules
-    if (schedules.length === 1 && schedules[0] === 'exampleSchedule.json') log.init.info(`${SHARD_ID}No custom schedules detected`)
-    for (var i in schedules) {
-      if (schedules[i] !== 'exampleSchedule.json') {
-        const schedule = JSON.parse(fs.readFileSync(`./settings/schedules/${schedules[i]}`))
-        if (!schedule.refreshTimeMinutes || typeof schedule.keywords !== 'object' || !schedule.keywords.length || schedule.keywords.length === 0) throw new Error(`Schedule named '${schedules[i]}' is improperly configured.`)
-
-        const scheduleName = schedules[i].replace(/\.json/gi, '')
-
-        scheduleWordDir[scheduleName] = []
-        schedule.keywords.forEach(item => {
-          allScheduleWords.push(item)
-          scheduleWordDir[scheduleName].push(item)
-        })
+  // Set up custom schedules
+  if (customSchedules) {
+    for (var w = 0; w < customSchedules.length; ++w) {
+      const schedule = customSchedules[w]
+      const scheduleName = schedule.name
+      const keywords = schedule.keywords
+      scheduleWordDir[scheduleName] = []
+      for (var e = 0; e < keywords.length; ++e) {
+        const word = keywords[e]
+        allScheduleWords.push(word)
+        scheduleWordDir[scheduleName].push(word)
       }
     }
-  } catch (e) {
-    log.init.info(`${SHARD_ID}No schedules found due to no schedules folder`)
   }
 
   // Remove expires index, but ignores the log if it's "ns not found" error (meaning the collection doesn't exist)
@@ -267,7 +260,7 @@ module.exports = (bot, callback) => {
         }
       }
 
-      initAll({ link: link, rssList: rssList, uniqueSettings: uniqueSettings }, (err, linkCompletion) => {
+      initAll({ link: link, rssList: rssList, uniqueSettings: uniqueSettings, logicType: 'init' }, (err, linkCompletion) => {
         if (err) log.init.warning(`Skipping ${linkCompletion.link}`, err, true)
         if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
         if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
@@ -292,7 +285,7 @@ module.exports = (bot, callback) => {
     const currentBatch = batchList[batchNumber]
     const currentBatchLen = Object.keys(currentBatch).length
 
-    const processor = childProcess.fork('./rss/isolatedMethod.js', { env: { initializing: 'true' } })
+    const processor = childProcess.fork('./rss/isolatedMethod.js')
 
     processor.on('message', linkCompletion => {
       if (linkCompletion.status === 'fatal') {
@@ -320,7 +313,7 @@ module.exports = (bot, callback) => {
       }
     })
 
-    processor.send({ currentBatch: currentBatch, shardId: bot.shard && bot.shard.count > 0 ? bot.shard.id : null })
+    processor.send({ currentBatch: currentBatch, shardId: bot.shard && bot.shard.count > 0 ? bot.shard.id : null, logicType: 'init' })
   }
 
   function getBatchParallel () {
@@ -339,7 +332,7 @@ module.exports = (bot, callback) => {
       if (!batchList) return
       let completedLinks = 0
 
-      const processor = childProcess.fork('./rss/isolatedMethod.js', { env: { initializing: 'true' } })
+      const processor = childProcess.fork('./rss/isolatedMethod.js')
       const currentBatch = batchList[index]
       const currentBatchLen = Object.keys(currentBatch).length
 
@@ -367,7 +360,7 @@ module.exports = (bot, callback) => {
         }
       })
 
-      processor.send({ currentBatch: currentBatch, shardId: bot.shard && bot.shard.count > 0 ? bot.shard.id : null })
+      processor.send({ currentBatch: currentBatch, shardId: bot.shard && bot.shard.count > 0 ? bot.shard.id : null, logicType: 'init' })
     }
 
     function spawn (count) {

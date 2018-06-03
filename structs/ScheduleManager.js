@@ -1,38 +1,20 @@
 const config = require('../config.json')
 const FeedSchedule = require('./FeedSchedule.js')
-const debugFeeds = require('./debugFeeds.js').list
-const queueArticle = require('./queueArticle.js')
-const fs = require('fs')
-const storage = require('./storage.js')
-const log = require('./logger.js')
+const debugFeeds = require('../util/debugFeeds.js').list
+const queueArticle = require('../util/queueArticle.js')
+const storage = require('../util/storage.js')
+const log = require('../util/logger.js')
 
 class ScheduleManager {
-  constructor (bot) {
+  constructor (bot, customSchedules) {
     this.bot = bot
     this.scheduleList = []
     storage.scheduleManager = this
-
+    // Set up the default schedule
     this.scheduleList.push(new FeedSchedule(this.bot, { name: 'default' }))
-    fs.readdir('./settings/schedules', (err, schedules) => {
-      if (err || schedules.length === 0 || (schedules.length === 1 && schedules[0] === 'exampleSchedule.json')) return
-      schedules.forEach(schedule => {
-        if (schedule !== 'exampleSchedule.json') {
-          let scheduleData
-          try {
-            scheduleData = JSON.parse(fs.readFileSync(`./settings/schedules/${schedule}`))
-          } catch (e) {
-            log.general.error(`Schedule named '${schedule}' is improperly configured\n`)
-            throw e
-          }
-          if (!scheduleData || !scheduleData.refreshTimeMinutes || typeof scheduleData.keywords !== 'object' || !scheduleData.keywords.length || scheduleData.keywords.length === 0) throw new Error(`Schedule named '${schedule}' is improperly configured. keywords/refreshTimeMinutes are missing.`)
-
-          scheduleData.name = schedule.replace(/\.json/gi, '')
-          this.scheduleList.push(new FeedSchedule(this.bot, scheduleData))
-        }
-      })
-    })
-
-    this.scheduleList.forEach(schedule => this._listenToArticles(schedule.cycle))
+    // Set up custom schedules
+    if (customSchedules) for (var i = 0; i < customSchedules.length; ++i) this.scheduleList.push(new FeedSchedule(this.bot, customSchedules[i]))
+    for (var j = 0; j < this.scheduleList.length; ++j) this._listenToArticles(this.scheduleList[j].cycle)
   }
 
   _listenToArticles (articleTracker) {

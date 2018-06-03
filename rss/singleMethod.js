@@ -1,12 +1,13 @@
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
-const initAllSources = require('./logic/shared.js')
+const processSources = require('./logic/shared.js')
 const debugFeeds = require('../util/debugFeeds').list
 const log = require('../util/logger.js')
+const storage = require('../util/storage.js')
 
 module.exports = (data, callback) => {
-  if (process.env.initializing !== 'true' && process.env.initializing !== 'false') throw new Error(`Expected environment variable for singleMethod process.env.initializing to be "true" or "false", found ${process.env.initializing} instead`)
-  const { link, rssList, uniqueSettings } = data
+  const { link, rssList, uniqueSettings, logicType } = data
+  if (logicType !== 'init' && logicType !== 'cycle') throw new Error(`Expected logicType parameter must be "cycle" or "init", found ${logicType} instead`)
   const feedparser = new FeedParser()
   const articleList = []
 
@@ -31,11 +32,11 @@ module.exports = (data, callback) => {
 
   feedparser.on('end', () => {
     if (articleList.length === 0) return callback(null, { status: 'success', link: link })
-    const debugInfo = process.env.initializing === 'true' ? undefined : debugFeeds
-    initAllSources({ articleList: articleList, debugFeeds: debugInfo, ...data }, (err, results) => {
+    const debugInfo = logicType === 'init' ? undefined : debugFeeds
+    processSources({ articleList: articleList, debugFeeds: debugInfo, shardId: storage.bot.shard ? storage.bot.shard.id : undefined, ...data }, (err, results) => {
       if (err) {
-        if (process.env.initializing === 'true') throw err
-        else if (process.env.initializing === 'false') log.cycle.error(`Cycle logic`, err)
+        if (logicType === 'init') throw err
+        else if (logicType === 'cycle') log.cycle.error(`Cycle logic`, err)
       }
       if (results) callback(null, results)
     })

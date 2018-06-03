@@ -1,0 +1,141 @@
+const config = require('../config.json')
+const storage = require('../util/storage.js')
+const connectDb = require('../rss/db/connect.js')
+const dbOps = require('../util/dbOps.js')
+const log = require('../util/logger.js')
+const dbRestore = require('../commands/controller/dbrestore.js')
+const handleError = (err, message) => log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
+
+function overrideConfigs (configOverrides) {
+  // Config overrides must be manually done for it to be changed in the original object (config)
+  if (configOverrides) {
+    for (var category in config) {
+      const configCategory = config[category]
+      if (!configOverrides[category]) continue
+      for (var configName in configCategory) {
+        if (configOverrides[category][configName]) category[configName] = configOverrides[category][configName]
+      }
+    }
+  }
+}
+
+class ClientSharded {
+  constructor (shardingManager, configOverrides) {
+    if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be disabled`)
+    overrideConfigs(configOverrides)
+    this.missingGuildRss = new Map()
+    this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
+    this.refreshTimes = [config.feeds.refreshTimeMinutes]
+    this.activeshardIds = []
+    this.scheduleIntervals = [] // Array of intervals for each different refresh time
+    this.scheduleTracker = {} // Key is refresh time, value is index for this.activeshardIds
+    this.currentCollections = [] // Array of collection names currently in use by feeds
+    this.linkTracker = new dbOps.LinkTracker()
+    this.shardsReady = 0 // Shards that have reported that they're ready
+    this.shardsDone = 0 // Shards that have reported that they're done initializing
+    this.shardingManager = shardingManager
+    this.shardingManager.on('message', this.messageHandler.bind(this))
+    connectDb(err => {
+      if (err) throw err
+      shardingManager.spawn(config.advanced.shards, 0)
+      shardingManager.shards.forEach((val, key) => this.activeshardIds.push(key))
+    })
+  }
+
+  messageHandler (shard, message) {
+    if (message === 'kill') process.exit()
+    if (!message._drss) return
+    if (message._loopback) return this.shardingManager.broadcast(message).catch(err => handleError(err, message))
+    switch (message.type) {
+      case 'customSchedules': this._customSchedulesEvent(message); break
+      case 'shardReady': this._shardReadyEvent(message); break
+      case 'initComplete': this._initCompleteEvent(message); break
+      case 'scheduleComplete': this._scheduleCompleteEvent(message); break
+      case 'dbRestore': this._dbRestoreEvent(message)
+    }
+  }
+
+  _customSchedulesEvent (message) {
+    message.customSchedules.forEach(schedule => this.refreshTimes.push(schedule.refreshTimeMinutes))
+  }
+
+  _shardReadyEvent (message) {
+    if (++this.shardsReady === this.shardingManager.totalShards) this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[0] }) // Send the signal for first shard to initialize
+  }
+  _initCompleteEvent (message) {
+    // Account for missing guilds
+    const missing = message.missingGuilds
+    for (var guildId in missing) {
+      if (!this.missingGuildsCounter[guildId]) this.missingGuildsCounter[guildId] = 1
+      else this.missingGuildsCounter[guildId]++
+      if (this.missingGuildsCounter[guildId] === this.shardingManager.totalShards) this.missingGuildRss.set(guildId, missing[guildId])
+    }
+
+    // Count all the links
+    const linkDocs = message.linkDocs
+    for (var x = 0; x < linkDocs.length; ++x) {
+      const doc = linkDocs[x]
+      this.linkTracker.set(doc.link, doc.count, doc.shard)
+      const id = storage.collectionId(doc.link, doc.shard)
+      if (!this.currentCollections.includes(id)) this.currentCollections.push(id) // To find out any unused collections eligible for removal
+    }
+
+    if (++this.shardsDone === this.shardingManager.totalShards) {
+      // Drop the ones not in the current collections
+      dbOps.general.cleanDatabase(this.currentCollections, err => {
+        if (err) throw err
+      })
+
+      dbOps.linkTracker.write(this.linkTracker, err => {
+        if (err) throw err
+        this.shardingManager.broadcast({ _drss: true, type: 'finishedInit' })
+        log.general.info(`All shards have initialized by the Sharding Manager.`)
+        this.missingGuildRss.forEach((guildRss, guildId) => {
+          dbOps.guildRss.remove(guildRss, err => {
+            if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err)
+            log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`)
+          })
+        })
+        this.createIntervals()
+      })
+    } else if (this.shardsDone < this.shardingManager.totalShards) this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
+  }
+
+  _scheduleCompleteEvent (message) {
+    this.scheduleTracker[message.refreshTime]++ // Index for this.activeshardIds
+    if (this.scheduleTracker[message.refreshTime] !== this.shardingManager.totalShards) {
+      // Send signal for next shard to start cycle
+      this.shardingManager.broadcast({
+        _drss: true,
+        shardId: this.activeshardIds[this.scheduleTracker[message.refreshTime]],
+        type: 'runSchedule',
+        refreshTime: message.refreshTime
+      }).catch(err => handleError(err, message))
+    }
+  }
+
+  _dbRestoreEvent (message) {
+    this.scheduleIntervals.forEach(it => clearInterval(it))
+    dbRestore.restoreUtil(undefined, message.fileName, message.url, message.databaseName)
+      .then(() => this.shardingManager.broadcast({ _drss: true, type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID }))
+      .catch(err => { throw err })
+  }
+
+  createIntervals () {
+    this.refreshTimes.forEach((refreshTime, i) => {
+      // The "master interval" for a particular refresh time to determine when shards should start running their schedules
+      this.scheduleIntervals.push(setInterval(() => {
+        this.scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
+        const p = this.scheduleTracker[refreshTime]
+        this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
+      }, refreshTime * 60000))
+    })
+    // Refresh VIPs on a schedule
+    setInterval(() => {
+      // Only needs to be run on a single shard since dbOps uniformizes it across all shards
+      this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err))
+    }, 3600000)
+  }
+}
+
+module.exports = ClientSharded

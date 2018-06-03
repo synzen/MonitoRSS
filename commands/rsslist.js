@@ -2,7 +2,7 @@ const config = require('../config.json')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const currentGuilds = storage.currentGuilds
-const MenuUtils = require('./util/MenuUtils.js')
+const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
 const FAIL_LIMIT = config.feeds.failLimit
 

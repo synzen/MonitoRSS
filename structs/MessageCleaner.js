@@ -1,5 +1,5 @@
 const config = require('../config.json')
-const log = require('./logger.js')
+const log = require('../util/logger.js')
 
 /**
  * Handles message tracking and bulk deletion

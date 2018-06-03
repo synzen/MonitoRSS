@@ -1,5 +1,5 @@
 const dbOps = require('../util/dbOps.js')
-const FeedSelector = require('./util/FeedSelector.js')
+const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
 
 module.exports = (bot, message, command) => {

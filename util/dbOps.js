@@ -13,7 +13,7 @@ const FAIL_LIMIT = config.feeds.failLimit
 exports.guildRss = {
   update: (guildRss, callback, skipProcessSend) => {
     if (storage.bot.shard && storage.bot.shard.count > 0 && (!skipProcessSend || !storage.bot.guilds.has(guildRss.id))) {
-      process.send({ type: 'guildRss.update', guildRss: guildRss, _loopback: true })
+      process.send({ _drss: true, type: 'guildRss.update', guildRss: guildRss, _loopback: true })
       return callback ? callback() : null
     }
     models.GuildRss().update({ id: guildRss.id }, guildRss, UPDATE_SETTINGS, (err, res) => {
@@ -26,7 +26,7 @@ exports.guildRss = {
   remove: (guildRss, callback, skipProcessSend) => {
     const guildId = guildRss.id
     if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ type: 'guildRss.remove', guildRss: guildRss, _loopback: true })
+      process.send({ _drss: true, type: 'guildRss.remove', guildRss: guildRss, _loopback: true })
       return callback ? callback() : null
     }
     if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss)
@@ -47,7 +47,7 @@ exports.guildRss = {
   disableFeed: (guildRss, rssName, callback, skipProcessSend) => {
     const link = guildRss.sources[rssName].link
     if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ type: 'guildRss.disableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
+      process.send({ _drss: true, type: 'guildRss.disableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
       return callback ? callback(null, link) : log.general.warning(`Feed named ${rssName} has been disabled in guild ${guildRss.id}`)
     }
     if (guildRss.sources[rssName].disabled === true) return callback ? callback(null, link) : log.general.warning(`Feed named ${rssName} has been disabled in guild ${guildRss.id}`)
@@ -57,7 +57,7 @@ exports.guildRss = {
   enableFeed: (guildRss, rssName, callback, skipProcessSend) => {
     const link = guildRss.sources[rssName].link
     if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ type: 'guildRss.enableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
+      process.send({ _drss: true, type: 'guildRss.enableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
       return callback ? callback(null, link) : log.general.info(`Feed named ${rssName} has been enabled in guild ${guildRss.id}`)
     }
     if (guildRss.sources[rssName].disabled == null) return callback ? callback(null, link) : log.general.info(`Feed named ${rssName} has been enabled in guild ${guildRss.id}`)
@@ -67,7 +67,7 @@ exports.guildRss = {
   removeFeed: (guildRss, rssName, callback, skipProcessSend) => {
     const link = guildRss.sources[rssName].link
     if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ type: 'guildRss.removeFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
+      process.send({ _drss: true, type: 'guildRss.removeFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
       return callback ? callback(null, link) : null
     }
     delete guildRss.sources[rssName]
@@ -252,12 +252,12 @@ exports.linkTracker = {
 
 exports.failedLinks = {
   uniformize: (failedLinks, callback, skipProcessSend) => {
-    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ type: 'failedLinks.uniformize', failedLinks: failedLinks, _loopback: true })
+    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'failedLinks.uniformize', failedLinks: failedLinks, _loopback: true })
     else if (skipProcessSend) storage.failedLinks = failedLinks // skipProcessSend indicates that this method was called on another shard, otherwise it was already updated in the methods below
     if (callback) callback()
   },
   _sendAlert: (link, message, skipProcessSend) => {
-    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) return process.send({ type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
+    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) return process.send({ _drss: true, type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
     currentGuilds.forEach(guildRss => {
       const rssList = guildRss.sources
       if (!rssList) return
@@ -318,7 +318,7 @@ exports.failedLinks = {
 
 exports.blacklists = {
   uniformize: (blacklistGuilds, blacklistUsers, callback, skipProcessSend) => {
-    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ type: 'blacklists.uniformize', blacklistGuilds: blacklistGuilds, blacklistUsers: blacklistUsers, _loopback: true })
+    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'blacklists.uniformize', blacklistGuilds: blacklistGuilds, blacklistUsers: blacklistUsers, _loopback: true })
     else if (skipProcessSend) {
       storage.blacklistGuilds = blacklistGuilds
       storage.blacklistUsers = blacklistUsers
@@ -357,7 +357,7 @@ exports.blacklists = {
 
 exports.vips = {
   uniformize: (vipUsers, vipServers, callback, skipProcessSend) => {
-    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ type: 'vips.uniformize', vipUsers: vipUsers, vipServers: vipServers, _loopback: true })
+    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'vips.uniformize', vipUsers: vipUsers, vipServers: vipServers, _loopback: true })
     else if (skipProcessSend) {
       storage.vipUsers = vipUsers
       storage.vipServers = vipServers

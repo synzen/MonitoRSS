@@ -1,8 +1,8 @@
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 const dbOps = require('../util/dbOps.js')
-const MenuUtils = require('./util/MenuUtils.js')
-const FeedSelector = require('./util/FeedSelector.js')
+const MenuUtils = require('../structs/MenuUtils.js')
+const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
 
 function feedSelectorFn (m, data, callback) {

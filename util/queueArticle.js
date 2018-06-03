@@ -1,5 +1,5 @@
 const queues = {} // Object of objects (mapped by channel ID) with keys length and queue
-const ArticleMessage = require('./ArticleMessage.js')
+const ArticleMessage = require('../structs/ArticleMessage.js')
 const config = require('../config.json')
 
 function sendNext (channelId, callback) {

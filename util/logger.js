@@ -12,6 +12,7 @@ const PREFIXES = ['G', 'C', 'R', 'U']
 const TYPES = ['Command', 'Guild', 'Cycle', 'INIT', 'General', 'Debug', 'Controller']
 const LEVELS = ['Error', 'Success', 'Warning', 'Info']
 const MAXLEN = TYPES.reduce((a, b) => a.length > b.length ? a : b).length + LEVELS.reduce((a, b) => a.length > b.length ? a : b).length + 1 // Calculate uniform spacing
+let suppressedLevels = []
 
 function formatConsoleDate (date) {
   // http://stackoverflow.com/questions/18814221/adding-timestamps-to-all-console-messages
@@ -54,6 +55,7 @@ class _Logger {
     const color = COLORS[level] ? COLORS[level] : ''
     const reset = COLORS.reset ? COLORS.reset : ''
     return (contents, ...details) => {
+      if (suppressedLevels.includes(level.toLowerCase())) return
       const extra = this._parseDetails(details)
       console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
       if (extra.err && extra.printStack) console.log(extra.err.stack) // Print stack trace
@@ -64,3 +66,8 @@ class _Logger {
 TYPES.forEach(type => {
   exports[type.toLowerCase()] = new _Logger(type)
 })
+
+exports.suppressLevel = level => {
+  if (Array.isArray(level)) suppressedLevels = suppressedLevels.concat(level)
+  else suppressedLevels.push(level)
+}

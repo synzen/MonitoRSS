@@ -1,6 +1,6 @@
 const log = require('../util/logger.js')
-const MenuUtils = require('./util/MenuUtils.js')
-const FeedSelector = require('./util/FeedSelector.js')
+const MenuUtils = require('../structs/MenuUtils.js')
+const FeedSelector = require('../structs/FeedSelector.js')
 const MIN_PERMISSION_BOT = ['VIEW_CHANNEL', 'SEND_MESSAGES']
 const MIN_PERMISSION_USER = ['VIEW_CHANNEL', 'SEND_MESSAGES', 'MANAGE_CHANNELS']
 const dbOps = require('../util/dbOps.js')

@@ -19,8 +19,8 @@ function getArticleId (articleList, article) {
 }
 
 module.exports = function (data, callback) {
-  const { rssList, articleList, debugFeeds, link, shardId } = data
-  if (process.env.initializing !== 'true' && process.env.initializing !== 'false') throw new Error(`Expected shared logic handler environment variable process.env.initializing to be "true" or "false", found ${process.env.initializing} instead`)
+  const { rssList, articleList, debugFeeds, link, shardId, logicType } = data
+  if (logicType !== 'init' && logicType !== 'cycle') throw new Error(`Expected logicType parameter must be "cycle" or "init", found ${logicType} instead`)
   const RSSLIST_LENGTH = Object.keys(rssList).length
   let sourcesCompleted = 0
   const totalArticles = articleList.length
@@ -36,7 +36,7 @@ module.exports = function (data, callback) {
 
   dbCmds.findAll(Feed, (err, docs) => {
     if (err) {
-      if (process.env.initializing === 'false') return callback(new Error(`Unable to findAll articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
+      if (logicType === 'cycle') return callback(new Error(`Unable to findAll articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
       else throw err
     }
     for (var d = 0; d < docs.length; ++d) {
@@ -80,7 +80,7 @@ module.exports = function (data, callback) {
 
     dbCmds.bulkInsert(Feed, toInsert, (err, res) => {
       if (err) {
-        if (process.env.initializing === 'false') return callback(new Error(`Database Error: Unable to bulk insert articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
+        if (logicType === 'cycle') return callback(new Error(`Database Error: Unable to bulk insert articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
         else throw err
       }
       if (dbIds.length > 0) for (var rssName in rssList) processSource(rssName, docs)
@@ -107,7 +107,7 @@ module.exports = function (data, callback) {
     let processedArticles = 0
     if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Processing collection. Total article list length: ${articleList.length}`)
 
-    const maxAge = process.env.initializing === 'false' ? config.feeds.cycleMaxAge : config.feeds.defaultMaxAge
+    const maxAge = logicType === 'cycle' ? config.feeds.cycleMaxAge : config.feeds.defaultMaxAge
     const cutoffDay = moment().subtract(maxAge, 'days')
 
     const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : defaultConfigs.feeds.checkDates.default
@@ -139,7 +139,7 @@ module.exports = function (data, callback) {
     }
 
     function seenArticle (seen, article) {
-      if (process.env.initializing === 'true' && config.feeds.sendOldMessages !== true) return ++processedArticles === totalArticles ? finishSource() : null // Stops here if it already exists in table, AKA "seen"
+      if (logicType === 'init' && config.feeds.sendOldMessages !== true) return ++processedArticles === totalArticles ? finishSource() : null // Stops here if it already exists in table, AKA "seen"
 
       // Check for extra user-specified comparisons
       if (seen) {
@@ -201,7 +201,7 @@ module.exports = function (data, callback) {
       const article = toUpdate[id]
       dbCmds.update(Feed, article, (err, res) => {
         if (err) {
-          if (process.env.initializing === 'false') log.cycle.error(`Failed to update an article entry`, err)
+          if (logicType === 'cycle') log.cycle.error(`Failed to update an article entry`, err)
           else log.init.error(`Failed to update an article entry`, err)
         }
         if (++c === toUpdateLength) callback(null, { status: 'success', link: link })

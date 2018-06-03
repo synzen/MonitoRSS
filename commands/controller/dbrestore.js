@@ -45,7 +45,7 @@ exports.sharded = async (bot, message) => {
     if (!fileName.endsWith('.archive')) return await message.channel.send('That is not a valid archive to restore.')
     console.log(`Bot Controller: Database restore has been started by ${message.author.username}`)
     const m = await message.channel.send('Restoring...')
-    process.send({type: 'dbRestore', fileName: fileName, url: archive.url, channelID: message.channel.id, messageID: m.id, databaseName: DATABASE_NAME})
+    process.send({ _drss: true, type: 'dbRestore', fileName: fileName, url: archive.url, channelID: message.channel.id, messageID: m.id, databaseName: DATABASE_NAME })
   } catch (err) {
     log.controller.warning('dbrestore', err)
   }
