@@ -1,22 +1,22 @@
 version: "3"
-volumes:
-  mongo:
 services:
   mongo:
-    container_name: discord-rss-mongo
-    # Use port 27018 instead of the default 27017 to prevent conflicts
-    command: mongod --port 27018
+    container_name: discord-rss-mongodb
+    restart: on-failure:5
+    command: mongod --port 27017
     # Uncomment below to hide mongo logs
     #logging:
     #  driver: none
-    image: mongo
+    image: mongo:latest
     volumes:
       - 'mongo:/data/db'
-    ports:
-      - "27018:27018"
-  discord-rss:
+    expose: 27017
+  discordrss:
     container_name: discord-rss
-    restart: always
+    restart: on-failure:10
     build: .
     links:
       - mongo
+
+volumes:
+  mongo:
