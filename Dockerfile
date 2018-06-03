@@ -1,4 +1,4 @@
-FROM node:latest
+FROM node:alpine
 WORKDIR /usr/src/discord-rss
 COPY package*.json ./
 RUN npm install
