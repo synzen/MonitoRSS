@@ -10,7 +10,8 @@ services:
     image: mongo:latest
     volumes:
       - 'mongo:/data/db'
-    expose: 27017
+    expose:
+      - 27017
   discordrss:
     container_name: discord-rss
     restart: on-failure:10
