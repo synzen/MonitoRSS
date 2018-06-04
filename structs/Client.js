@@ -177,9 +177,9 @@ class Client {
     else if (token instanceof Discord.ShardingManager) return new ClientSharded(token, SHARDED_OPTIONS)
     else if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
-      client.login(token)
+      client.login(process.env.DRSS_BOT_TOKEN === 'drss_docker_token' ? token : process.env.DRSS_BOT_TOKEN) // Environment variable in Docker container if available
         .then(tok => this._defineBot(client))
-        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS)) : log.general.error(err))
+        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS)) : process.env.DRSS_BOT_TOKEN === 'drss_docker_token' && err.message.includes('Incorrect login') ? log.general.error(`Error: ${err.message} Be sure to correctly change the Docker environment variable DRSS_BOT_TOKEN to login.`) : log.general.error(err))
     } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 

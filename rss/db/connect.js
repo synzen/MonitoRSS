@@ -16,7 +16,7 @@ module.exports = callback => {
 
   (function connect () {
     // Do not callback on .then here since the promise never gets resolved for some reason
-    mongoose.connect(dbSettings.uri, { keepAlive: 120, ...CON_SETTINGS, ...buffers })
+    mongoose.connect(process.env.DRSS_MONGODB_URI || dbSettings.uri, { keepAlive: 120, ...CON_SETTINGS, ...buffers }) // Environment variable in Docker container if available
     .catch(err => {
       log.general.error('Failed to connect to database, retrying in 30 seconds...', err)
       setTimeout(connect, 30000)
