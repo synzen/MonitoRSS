@@ -21,7 +21,7 @@ function overrideConfigs (configOverrides) {
 
 class ClientSharded {
   constructor (shardingManager, configOverrides) {
-    if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be disabled`)
+    if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
     overrideConfigs(configOverrides)
     this.missingGuildRss = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value

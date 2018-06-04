@@ -172,17 +172,15 @@ class Client {
   }
 
   login (token) {
-    if (typeof token !== 'string') return this._defineBot(token) // May also be the client
-    const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
-    ;(function login (attempt) {
-      if (attempt >= 10) throw new Error('Failed to login after 10+ attempts')
+    if (this.bot) return log.general.error('Cannot login when already logged in')
+    if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
+    else if (token instanceof Discord.ShardingManager) return new ClientSharded(token, SHARDED_OPTIONS)
+    else if (typeof token === 'string') {
+      const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
       client.login(token)
         .then(tok => this._defineBot(client))
-        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS)) : setTimeout(() => {
-          log.general.error(`Failed to login on attempt ${attempt}`, err)
-          login(++attempt).bind(this)
-        }, 30000))
-    }).bind(this)(1)
+        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS)) : log.general.error(err))
+    } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 
   stop () {
