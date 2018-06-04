@@ -116,9 +116,11 @@ class ClientSharded {
 
   _dbRestoreEvent (message) {
     this.scheduleIntervals.forEach(it => clearInterval(it))
-    dbRestore.restoreUtil(undefined, message.fileName, message.url, message.databaseName)
-      .then(() => this.shardingManager.broadcast({ _drss: true, type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID }))
-      .catch(err => { throw err })
+    this.shardingManager.broadcast({ _drss: true, type: 'stop' })
+    dbRestore.restoreUtil(null, err => {
+      if (err) throw err
+      this.shardingManager.broadcast({ _drss: true, type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID })
+    })
   }
 
   createIntervals () {

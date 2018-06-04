@@ -14,10 +14,10 @@ module.exports = (bot, message, command) => {
         dbOps.guildRss.removeFeed(guildRss, rssNameList[index], (err, link) => {
           if (err) log.guild.error(`Unable to remove feed ${link}`, message.guild, err)
           removed += `\n${link}`
+          log.guild.info(`Removed feed ${link}`, message.guild)
           if (index + 1 < rssNameList.length) remove(index + 1)
           else {
             msgHandler.deleteAll(message.channel)
-            log.guild.info(`Removed feed ${link}`, message.guild)
             removing.edit(removed + '```').catch(err => log.command.warning(`rssRemove 1`, message.guild, err))
           }
         })

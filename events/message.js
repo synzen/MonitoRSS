@@ -12,25 +12,27 @@ function isBotController (author) {
   return controllerList.length === 0 ? false : controllerList.includes(author)
 }
 
-module.exports = (bot, message) => {
+module.exports = (bot, message, limited) => {
   if (message.author.bot || !message.guild || !message.content.startsWith(config.bot.prefix) || storage.blacklistGuilds.includes(message.guild.id) || storage.blacklistUsers.includes(message.author.id)) return
   let m = message.content.split(' ')
   let command = m[0].substr(config.bot.prefix.length)
-  if (command === 'forceexit') return loadCommand(command)(bot, message) // To forcibly clear a channel of active menus
+  if (!limited && command === 'forceexit') return loadCommand(command)(bot, message) // To forcibly clear a channel of active menus
 
   if (channelTracker.hasActiveMenus(message.channel.id)) return
 
   // Regular commands
-  for (var cmd in commands) {
-    const cmdData = commands[cmd]
-    if (cmd === command && hasPerm.bot(bot, message, cmdData.botPerm)) {
-      return hasPerm.user(message, cmdData.userPerm, (err, allowed, permission) => {
-        if (err) return log.command.warning('Unable to fetch member', message.guild, message.author, err, true)
-        if (!allowed) return message.reply(`You do not have the required permission ${permission} to use this command.`)
-        if (cmdData.initLevel != null && cmdData.initLevel > storage.initialized) return message.channel.send(`This function is disabled while booting up, please wait.`).then(m => m.delete(4000))
-        log.command.info(`Used ${message.content}`, message.guild)
-        loadCommand(command)(bot, message, command)
-      })
+  if (!limited) {
+    for (var cmd in commands) {
+      const cmdData = commands[cmd]
+      if (cmd === command && hasPerm.bot(bot, message, cmdData.botPerm)) {
+        return hasPerm.user(message, cmdData.userPerm, (err, allowed, permission) => {
+          if (err) return log.command.warning('Unable to fetch member', message.guild, message.author, err, true)
+          if (!allowed) return message.reply(`You do not have the required permission ${permission} to use this command.`)
+          if (cmdData.initLevel != null && cmdData.initLevel > storage.initialized) return message.channel.send(`This function is disabled while booting up, please wait.`).then(m => m.delete(4000))
+          log.command.info(`Used ${message.content}`, message.guild)
+          loadCommand(command)(bot, message, command)
+        })
+      }
     }
   }
 
