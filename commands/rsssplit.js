@@ -1,3 +1,4 @@
+const config = require('../config.json')
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
@@ -143,7 +144,7 @@ function setSetting (m, data, callback) {
   }
 
   dbOps.guildRss.update(guildRss)
-  m.channel.send(successText).catch(err => log.command.warning(`rsssplit 2`, m.channel.guild, err))
+  m.channel.send(`${successText} After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`rsssplit 2`, m.channel.guild, err))
   return callback(null, data)
 }
 

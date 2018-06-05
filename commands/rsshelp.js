@@ -1,5 +1,5 @@
 const config = require('../config.json')
-const commands = require('../util/commands.json')
+const commands = require('../util/commands.js').list
 const log = require('../util/logger.js')
 
 module.exports = (bot, message, command) => {
@@ -11,9 +11,7 @@ module.exports = (bot, message, command) => {
     const args = command.args
     if (args) {
       msg += `\n    **Arguments:**\n`
-      for (var arg in args) {
-        msg += `      \`${arg}\` - ${args[arg]}`
-      }
+      for (var arg in args) msg += `      \`${arg}\` - ${args[arg]}`
     }
     msg += '\n\n'
   }

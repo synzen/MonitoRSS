@@ -93,7 +93,7 @@ function deleteSubscription (message, guildRss, roleID) {
   if (!found) return message.channel.send('This role has no subscriptions to remove.').catch(err => log.command.warning(`rssRoles/delSub 1`, message.guild, err))
   dbOps.guildRss.update(guildRss)
   log.command.info(`All subscriptions deleted`, message.guild, message.guild.roles.get(roleID))
-  return message.channel.send(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`.`).catch(err => log.command.warning(`rssRoles/delSub 2`, message.guild, err))
+  return message.channel.send(`All subscriptions successfully deleted for role \`${message.guild.roles.get(roleID).name}\`. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`rssRoles/delSub 2`, message.guild, err))
 }
 
 // Add global subscriptions, called from openSubMenu
@@ -112,7 +112,7 @@ function addGlobalSub (message, guildRss, rssName, role) {
     roleName: role.name
   })
   dbOps.guildRss.update(guildRss)
-  message.channel.send(`Global subscription successfully added for \`${message.guild.roles.get(role.id).name}\` to feed <${source.link}>.`).catch(err => log.command.warning(`rssRoles/addGlobalSub 1`, message.guild, err))
+  message.channel.send(`Global subscription successfully added for \`${message.guild.roles.get(role.id).name}\` to feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`rssRoles/addGlobalSub 1`, message.guild, err))
   log.command.info(`Global subscription added to feed ${source.link}`, message.guild, message.guild.roles.get(role.id))
 }
 
@@ -132,7 +132,7 @@ function removeGlobalSub (message, guildRss, rssName, role) {
   if (source.roleSubscriptions.length === 0) delete source.roleSubscriptions
   if (!found) return message.channel.send(`The role \`${role.name} does not have a global subscription to this feed.`).catch(err => log.command.warning(`rssRoles/remGlobalSub 2`, message.guild, err))
 
-  message.channel.send(`Successfully removed the global subscription of the role \`${role.name}\` from the feed <${source.link}>`).catch(err => log.command.warning(`rssRoles/remGlobalSub 3`, message.guild, err))
+  message.channel.send(`Successfully removed the global subscription of the role \`${role.name}\` from the feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`rssRoles/remGlobalSub 3`, message.guild, err))
   log.command.info(`Removed global subscription for feed ${source.link}`, message.guild, role)
   return dbOps.guildRss.update(guildRss)
 }

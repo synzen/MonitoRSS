@@ -8,7 +8,6 @@ const models = storage.models
 const log = require('./logger.js')
 const UPDATE_SETTINGS = { overwrite: true, upsert: true, strict: true }
 const FAIL_LIMIT = config.feeds.failLimit
-// const WARN_LIMIT = Math.floor(FAIL_LIMIT * 0.75) < FAIL_LIMIT ? Math.floor(FAIL_LIMIT * 0.75) : Math.floor(FAIL_LIMIT * 0.5) < FAIL_LIMIT ? Math.floor(FAIL_LIMIT * 0.5) : 0
 
 exports.guildRss = {
   update: (guildRss, callback, skipProcessSend) => {

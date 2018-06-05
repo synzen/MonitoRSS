@@ -334,7 +334,7 @@ module.exports = (bot, message, command) => {
       }
 
       dbOps.guildRss.update(guildRss)
-      message.channel.send(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format.`, { split: true })
+      message.channel.send(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`, { split: true })
     } catch (err) {
       log.command.warning(`rssembed`, message.guild, err)
     }

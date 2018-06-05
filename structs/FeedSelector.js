@@ -1,5 +1,5 @@
 const config = require('../config.json')
-const commands = require('../util/commands.json')
+const commands = require('../util/commands.js').list
 const channelTracker = require('../util/channelTracker.js')
 const pageControls = require('../util/pageControls.js')
 const storage = require('../util/storage.js')
@@ -10,12 +10,27 @@ const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove', 'rssmove']
 const GLOBAL_SELECT = ['rssmove']
 const SINGLE_NUMBER_REGEX = /^\d+$/
-const STATUS_TEXTS = {
-  imgPreviews: 'Image Link Previews: ',
-  imgLinksExistence: 'Image Links Existence: ',
-  checkTitles: 'Title Checks: ',
-  checkDates: 'Date Checks: ',
-  formatTables: 'Table Formatting: '
+const OPTIONS_TEXTS = {
+  imgPreviews: {
+    status: 'Image Link Previews: ',
+    toggle: 'Toggle Image Link Previews'
+  },
+  imgLinksExistence: {
+    status: 'Image Links Existence: ',
+    toggle: 'Toggle Image Links Existence'
+  },
+  checkTitles: {
+    status: 'Title Checks: ',
+    toggle: 'Toggle Title Checks'
+  },
+  checkDates: {
+    status: 'Date Checks: ',
+    toggle: 'Toggle Date Checks'
+  },
+  formatTables: {
+    status: 'Table Formatting: ',
+    toggle: 'Toggle Table Formatting'
+  }
 }
 
 function parseNumbers (str) {
@@ -112,14 +127,14 @@ class FeedSelector extends Menu {
       const source = rssList[rssName]
       if (message.channel.id !== source.channel && !this.globalSelect) continue
       let o = { link: source.link, rssName: rssName, title: source.title }
-      if (commands[command].action === 'Refresh Feed') {
+      if (command === 'rssrefresh') {
         const failCount = storage.failedLinks[source.link]
         o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
       }
 
       // if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates' || miscOption === 'formatTables') {
-      if (STATUS_TEXTS[miscOption]) {
-        const statusText = STATUS_TEXTS[miscOption]
+      if (OPTIONS_TEXTS[miscOption]) {
+        const statusText = OPTIONS_TEXTS[miscOption].status
         let decision = ''
 
         const globalSetting = config.feeds[miscOption]
@@ -138,7 +153,7 @@ class FeedSelector extends Menu {
       return
     }
     let desc = maxFeedsAllowed === 0 ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
-    desc += (this.globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? commands[command].options[miscOption] : commands[command].action}\n\n${prependDescription ? `${prependDescription}\n\n` : ''}Choose a feed to from this channel by typing the number to execute your requested action on. ${this.multiSelect ? 'You may select multiple feeds by separation with commas, and/or with hyphens (for example `1,3,4-6,8`). ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
+    desc += (this.globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? OPTIONS_TEXTS[miscOption].toggle : commands[command].action}\n\n${prependDescription ? `${prependDescription}\n\n` : ''}Choose a feed to from this channel by typing the number to execute your requested action on. ${this.multiSelect ? 'You may select multiple feeds by separation with commas, and/or with hyphens (for example `1,3,4-6,8`). ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
     this.setAuthor('Feed Selection Menu')
     this.setDescription(desc)
 

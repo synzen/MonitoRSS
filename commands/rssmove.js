@@ -1,3 +1,4 @@
+const config = require('../config.json')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -52,7 +53,7 @@ function inputChannel (m, data, callback) {
   }
   dbOps.guildRss.update(guildRss)
   log.command.info(`Channel for feeds ${summary.join(',')} have been moved to ${selected.id} (${selected.name})`, m.guild, m.channel)
-  m.channel.send(`The channel for the following feed(s):\n\n${summary.join('\n')}\n\nhave been successfully moved to <#${selected.id}>`)
+  m.channel.send(`The channel for the following feed(s):\n\n${summary.join('\n')}\n\nhave been successfully moved to <#${selected.id}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning('rssmove 1', err))
   callback(null, data)
 }
 

@@ -1,3 +1,4 @@
+const config = require('../config.json')
 const dbOps = require('../util/dbOps.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
@@ -18,7 +19,7 @@ module.exports = (bot, message, command) => {
           if (index + 1 < rssNameList.length) remove(index + 1)
           else {
             msgHandler.deleteAll(message.channel)
-            removing.edit(removed + '```').catch(err => log.command.warning(`rssRemove 1`, message.guild, err))
+            removing.edit(`${removed}\`\`\`\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`rssremove 1`, message.guild, err))
           }
         })
       })(0)

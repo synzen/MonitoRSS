@@ -59,7 +59,7 @@ module.exports = (bot, message) => {
       }
       msg += failBox + '\n```\n'
     } else if (limitExceeded) msg += `Some feed(s) could not be added due to to the feed limit (${maxFeedsAllowed}).`
-    if (Object.keys(passedAddLinks).length > 0) msg += `Articles will be automatically delivered once new articles are found.`
+    if (Object.keys(passedAddLinks).length > 0) msg += `Articles will be automatically delivered once new articles are found. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`
 
     channelTracker.remove(message.channel.id)
     verifyMsg.edit(msg).catch(err => log.command.warning(`rssAdd 1:`, err))
