@@ -13,7 +13,7 @@ function overrideConfigs (configOverrides) {
       const configCategory = config[category]
       if (!configOverrides[category]) continue
       for (var configName in configCategory) {
-        if (configOverrides[category][configName]) category[configName] = configOverrides[category][configName]
+        if (configOverrides[category][configName]) configCategory[configName] = configOverrides[category][configName]
       }
     }
   }
@@ -37,7 +37,7 @@ class ClientSharded {
     this.shardingManager.on('message', this.messageHandler.bind(this))
     connectDb(err => {
       if (err) throw err
-      shardingManager.spawn(config.advanced.shards, 0)
+      if (shardingManager.shards.size === 0) shardingManager.spawn(config.advanced.shards, 0) // They may have already been spawned with a predefined ShardingManager
       shardingManager.shards.forEach((val, key) => this.activeshardIds.push(key))
     })
   }

@@ -24,7 +24,7 @@ exports.normal = async (bot, message) => {
 
 exports.sharded = async (bot, message) => {
   try {
-    if (!fs.existsSync(RESTORE_FROM_PATH)) return await message.channel.send(`No dbbackup folder found (\`${RESTORE_FROM_PATH}\`). Use ${config.bot.prefix}dbbackup first.`)
+    if (!fs.existsSync(RESTORE_FROM_PATH)) return await message.channel.send(`No dbbackup folder dump found (\`${RESTORE_FROM_PATH}\`).`)
     const m = await message.channel.send('Restoring...')
     process.send({ _drss: true, type: 'dbRestore', channelID: message.channel.id, messageID: m.id })
   } catch (err) {

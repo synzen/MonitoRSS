@@ -8,7 +8,7 @@ function dump (m, collections, complete = 0) {
   const collection = collections.shift()
   if (!collection) {
     log.controller.info('Database backup complete', m.author)
-    return m.edit(`Dumped ${complete}/4 total collections.${complete > 0 ? `See \`${BACKUP_PATH}\` for the dump folder` : ''}.`).catch(err => log.controller.warning('dbbackup', m.author, err))
+    return m.edit(`Dumped ${complete}/4 total collections.${complete > 0 ? `. See \`${BACKUP_PATH}\` for the dump folder.` : ''}`).catch(err => log.controller.warning('dbbackup', m.author, err))
   }
   log.controller.info(`Attempting to dump collection ${mongoose.connection.name}.${collection}`)
   const child = spawn('mongodump', ['--db', mongoose.connection.name, '--collection', collection, '--out', BACKUP_PATH])

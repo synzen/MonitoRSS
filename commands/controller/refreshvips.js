@@ -8,7 +8,7 @@ exports.normal = (bot, message) => {
         log.controller.error('Failed to refresh VIPs', message.author, err)
         return await message.channel.send(`Failed to refresh VIPs:`, err.message)
       }
-      log.controller.info(`Refreshed VIPs`, message.author)
+      log.controller.success(`Refreshed VIPs`, message.author)
       await message.channel.send(`Refreshed VIPs.`)
     } catch (err) {
       log.controller.warning('refreshvips', err)

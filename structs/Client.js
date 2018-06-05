@@ -27,7 +27,9 @@ function overrideConfigs (configOverrides) {
       const configCategory = config[category]
       if (!configOverrides[category]) continue
       for (var configName in configCategory) {
-        if (configOverrides[category][configName]) category[configName] = configOverrides[category][configName]
+        if (configOverrides[category][configName]) {
+          configCategory[configName] = configOverrides[category][configName]
+        }
       }
     }
   }
@@ -85,12 +87,12 @@ class Client {
   login (token) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
     if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
-    else if (token instanceof Discord.ShardingManager) return new ClientSharded(token, SHARDED_OPTIONS)
+    else if (token instanceof Discord.ShardingManager) return new ClientSharded(token)
     else if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
       client.login(!process.env.DRSS_BOT_TOKEN || process.env.DRSS_BOT_TOKEN === 'drss_docker_token' ? (token || 's') : process.env.DRSS_BOT_TOKEN) // Environment variable in Docker container if available
         .then(tok => this._defineBot(client))
-        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS)) : process.env.DRSS_BOT_TOKEN === 'drss_docker_token' && err.message.includes('Incorrect login') ? log.general.error(`Error: ${err.message} Be sure to correctly change the Docker environment variable DRSS_BOT_TOKEN to login.`) : log.general.error(err))
+        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides) : process.env.DRSS_BOT_TOKEN === 'drss_docker_token' && err.message.includes('Incorrect login') ? log.general.error(`Error: ${err.message} Be sure to correctly change the Docker environment variable DRSS_BOT_TOKEN to login.`) : log.general.error(err))
     } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 
@@ -135,7 +137,7 @@ class Client {
         case 'startInit':
           if (bot.shard.id === message.shardId) this.start()
           break
-        case 'stop': 
+        case 'stop':
           this.stop()
           break
         case 'finishedInit':

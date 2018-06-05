@@ -29,9 +29,11 @@ exports.normal = async (bot, message) => {
   try {
     const file = await getID(message)
     const id = file.id
-    if (!bot.guilds.has(id)) return await message.chanel.send(`Unable to restore server, ID ${id} was not found in bot's cache.`)
+    const guild = bot.guilds.get(id)
+    if (!guild) return await message.chanel.send(`Unable to restore server, ID ${id} was not found in cache.`)
     dbOps.guildRss.update(file)
-    await message.channel.send(`Server (ID: ${id}, Name: ${bot.guilds.get(id).name}) has been restored.`)
+    log.controller.success(`Server (ID: ${id}, Name: ${guild.name}) has been restored`, message.author)
+    await message.channel.send(`Server (ID: ${id}, Name: ${guild.name}) has been restored.`)
   } catch (err) {
     message.channel.send(err.message).catch(err => log.contorller.warning('restore', err))
     log.controller.warning(`Unable to restore server`, message.author, err)
@@ -42,11 +44,15 @@ exports.sharded = async (bot, message) => {
   try {
     const file = await getID(message)
     const id = file.id
-    const res = await bot.shard.broadcastEval(`this.guilds.has('${id}')`)
+    const res = await bot.shard.broadcastEval(`
+      const guild = this.guilds.get('${id}');
+      guild ? guild.name : null
+    `)
     for (var i = 0; i < res.length; ++i) {
       if (!res[i]) continue
       dbOps.guildRss.update(file)
-      await message.channel.send(`Server (ID: ${id}, Name: ${bot.guilds.get(id).name}) has been restored.`)
+      log.controller.success(`Server (ID: ${id}, Name: ${res[i]}) has been restored`, message.author)
+      await message.channel.send(`Server (ID: ${id}, Name: ${res[i]}) has been restored.`)
     }
   } catch (err) {
     message.channel.send(err.message).catch(err => log.contorller.warning('restore', err))
