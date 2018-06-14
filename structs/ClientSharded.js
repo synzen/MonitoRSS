@@ -1,6 +1,7 @@
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 const connectDb = require('../rss/db/connect.js')
+const LinkTracker = require('./LinkTracker.js')
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
@@ -30,7 +31,7 @@ class ClientSharded {
     this.scheduleIntervals = [] // Array of intervals for each different refresh time
     this.scheduleTracker = {} // Key is refresh time, value is index for this.activeshardIds
     this.currentCollections = [] // Array of collection names currently in use by feeds
-    this.linkTracker = new dbOps.LinkTracker()
+    this.linkTracker = new LinkTracker()
     this.shardsReady = 0 // Shards that have reported that they're ready
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardingManager = shardingManager

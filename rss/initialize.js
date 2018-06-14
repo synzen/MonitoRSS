@@ -1,6 +1,7 @@
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const dbOps = require('../util/dbOps.js')
+const config = require('../config.json')
 const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
@@ -46,8 +47,10 @@ exports.addToDb = (articleList, link, callback, customTitle) => {
     if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
     return article.guid
   }
-  const Feed = FeedModel(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)
 
+  // Initialize the feed collection if necessary, but only if a database is used. This file has no access to the feed collections if config.database.uri is "memory"
+  if (!config.database.uri.startsWith('mongo')) return callback()
+  const Feed = FeedModel(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)
   dbCmds.findAll(Feed, (err, docs) => {
     if (err) {
       log.general.warning(`Unable to findAll to initialize ${link}`, err)

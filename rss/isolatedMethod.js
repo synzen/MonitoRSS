@@ -50,10 +50,10 @@ function getFeed (data, callback) {
   })
 
   feedparser.on('end', () => {
-    if (articleList.length === 0) return process.send({status: 'success', link: link})
+    if (articleList.length === 0) return process.send({ status: 'success', link: link })
     processSources({ articleList: articleList, ...data }, (err, results) => {
       if (err) {
-        if (logicType === 'cycle') log.cycle.error(`Cycle logic`, err)
+        if (logicType === 'cycle') log.cycle.error(`Cycle logic`, err, true)
         else throw err
       }
       if (results) process.send(results)
@@ -63,9 +63,11 @@ function getFeed (data, callback) {
 
 process.on('message', m => {
   const currentBatch = m.currentBatch
+  const config = m.config
   const shardId = m.shardId
   const debugFeeds = m.debugFeeds
   const logicType = m.logicType
+  const feedData = m.feedData // Only defined if config.database.uri is set to "memory"
   connectDb(err => {
     if (err) throw new Error(`Could not connect to database for cycle\n`, err)
     const len = Object.keys(currentBatch).length
@@ -78,7 +80,7 @@ process.on('message', m => {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
-      getFeed({ link, rssList, uniqueSettings, shardId, debugFeeds, logicType }, () => {
+      getFeed({ link, rssList, uniqueSettings, shardId, debugFeeds, logicType, config, feedData }, () => {
         if (++c === len) process.send({ status: 'batch_connected' })
       })
     }

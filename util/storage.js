@@ -131,7 +131,7 @@ exports.collectionId = (link, shardId) => {
     if (collectionIds[shardId] && collectionIds[shardId][link]) return collectionIds[shardId][link]
   } else if (collectionIds[link]) return collectionIds[link]
   let res = (shardId != null ? `${shardId}_` : '') + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
-  const len = res.length + mongoose.connection.name.length + 1
+  const len = mongoose.connection.name ? (res.length + mongoose.connection.name.length + 1) : res.length + 1 // mongoose.connection.name is undefined if config.database.uri is "memory"
   if (len > 115) res = res.slice(0, 115)
   if (shardId != null) {
     if (!collectionIds[shardId]) collectionIds[shardId] = {}

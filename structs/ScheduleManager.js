@@ -6,12 +6,12 @@ const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 
 class ScheduleManager {
-  constructor (bot, customSchedules) {
+  constructor (bot, customSchedules, feedData) { // Third parameter is only used when config.database.uri is "memory"
     this.bot = bot
     this.scheduleList = []
     storage.scheduleManager = this
     // Set up the default schedule
-    this.scheduleList.push(new FeedSchedule(this.bot, { name: 'default' }))
+    this.scheduleList.push(new FeedSchedule(this.bot, { name: 'default' }, feedData))
     // Set up custom schedules
     if (customSchedules) for (var i = 0; i < customSchedules.length; ++i) this.scheduleList.push(new FeedSchedule(this.bot, customSchedules[i]))
     for (var j = 0; j < this.scheduleList.length; ++j) this._listenToArticles(this.scheduleList[j].cycle)

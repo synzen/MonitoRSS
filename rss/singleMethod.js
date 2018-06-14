@@ -36,7 +36,7 @@ module.exports = (data, callback) => {
     processSources({ articleList: articleList, debugFeeds: debugInfo, shardId: storage.bot.shard ? storage.bot.shard.id : undefined, ...data }, (err, results) => {
       if (err) {
         if (logicType === 'init') throw err
-        else if (logicType === 'cycle') log.cycle.error(`Cycle logic`, err)
+        else if (logicType === 'cycle') log.cycle.error(`Cycle logic`, err, true)
       }
       if (results) callback(null, results)
     })

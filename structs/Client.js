@@ -21,15 +21,13 @@ const STATES = {
 let scheduleManager
 
 function overrideConfigs (configOverrides) {
-    // Config overrides must be manually done for it to be changed in the original object (config)
-  if (configOverrides) {
-    for (var category in config) {
-      const configCategory = config[category]
-      if (!configOverrides[category]) continue
-      for (var configName in configCategory) {
-        if (configOverrides[category][configName]) {
-          configCategory[configName] = configOverrides[category][configName]
-        }
+  // Config overrides must be manually done for it to be changed in the original object (config)
+  for (var category in config) {
+    const configCategory = config[category]
+    if (!configOverrides[category]) continue
+    for (var configName in configCategory) {
+      if (configOverrides[category][configName]) {
+        configCategory[configName] = configOverrides[category][configName]
       }
     }
   }
@@ -67,7 +65,14 @@ function readSchedulesFromFile () {
 
 class Client {
   constructor (configOverrides, customSchedules) {
-    overrideConfigs(configOverrides)
+    // Override from file first
+    try {
+      const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
+      log.general.info(`Overriding default configs from configOverrides.json`)
+      overrideConfigs(fileConfigOverride)
+    } catch (err) {}
+    // Then override from constructor
+    if (configOverrides) overrideConfigs(configOverrides)
     const configRes = configCheck.check(config)
     if (configRes && configRes.fatal) throw new Error(configRes.message)
     else if (configRes) log.general.warning(configRes.message)
@@ -92,7 +97,7 @@ class Client {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
       client.login(!process.env.DRSS_BOT_TOKEN || process.env.DRSS_BOT_TOKEN === 'drss_docker_token' ? (token || 's') : process.env.DRSS_BOT_TOKEN) // Environment variable in Docker container if available
         .then(tok => this._defineBot(client))
-        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides) : process.env.DRSS_BOT_TOKEN === 'drss_docker_token' && err.message.includes('Incorrect login') ? log.general.error(`Error: ${err.message} Be sure to correctly change the Docker environment variable DRSS_BOT_TOKEN to login.`) : log.general.error(err))
+        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides) : process.env.DRSS_BOT_TOKEN === 'drss_docker_token' && err.message.includes('Incorrect login') ? log.general.error(`${err.message} - Be sure to correctly change the Docker environment variable DRSS_BOT_TOKEN to login.`) : log.general.error(err))
     } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 
@@ -202,10 +207,13 @@ class Client {
     if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because it is in ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
+    const uri = process.env.DRSS_DATABASE_URI || config.database.uri
+    log.general.info(`Database uri ${uri} is set to be used. Detected as a ${uri.startsWith('mongo') ? 'mongoDB uri' : 'file-based uri'}`)
     connectDb(err => {
       if (err) throw err
-      initialize(storage.bot, this.customSchedules, (guildsInfo, missingGuilds, linkDocs) => {
-        this._finishInit(guildsInfo, missingGuilds, linkDocs, callback)
+      initialize(storage.bot, this.customSchedules, (guildsInfo, missingGuilds, linkDocs, feedData) => {
+        // feedData is only defined if config.database.uri is "memory"
+        this._finishInit(guildsInfo, missingGuilds, linkDocs, feedData, callback)
       })
     })
   }
@@ -216,12 +224,12 @@ class Client {
     this.start(callback)
   }
 
-  _finishInit (guildsInfo, missingGuilds, linkDocs, callback) {
+  _finishInit (guildsInfo, missingGuilds, linkDocs, feedData, callback) {
     storage.initialized = 2
     this.state = STATES.READY
     if (storage.bot.shard && storage.bot.shard.count > 0) dbOps.failedLinks.uniformize(storage.failedLinks, () => process.send({ _drss: true, type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id }))
-    else this._vipInterval = setInterval(dbOps.vips.refresh, 600000)
-    scheduleManager = new ScheduleManager(storage.bot, this.customSchedules)
+    else if (config._vip) this._vipInterval = setInterval(dbOps.vips.refresh, 600000)
+    scheduleManager = new ScheduleManager(storage.bot, this.customSchedules, feedData)
     listeners.createManagers(storage.bot)
     if (callback) callback()
   }

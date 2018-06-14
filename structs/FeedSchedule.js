@@ -12,7 +12,7 @@ const allScheduleWords = storage.allScheduleWords
 const BATCH_SIZE = config.advanced.batchSize
 
 class FeedSchedule {
-  constructor (bot, schedule) {
+  constructor (bot, schedule, feedData) {
     this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
     this.bot = bot
     this.schedule = schedule
@@ -26,6 +26,7 @@ class FeedSchedule {
     this._cycleTotalCount = 0
     this._sourceList = new Map()
     this._modSourceList = new Map()
+    this.feedData = feedData // Object of collection ids as keys, and arrays of objects as values
 
     if (!this.bot.shard || this.bot.shard.count === 0) {
       this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
@@ -212,7 +213,7 @@ class FeedSchedule {
         }
       }
 
-      getArticles({ link: link, rssList: rssList, uniqueSettings: uniqueSettings, logicType: 'cycle' }, (err, linkCompletion) => {
+      getArticles({ feedData: this.feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, logicType: 'cycle' }, (err, linkCompletion) => {
         if (err) log.cycle.warning(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
@@ -221,7 +222,10 @@ class FeedSchedule {
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
           dbOps.failedLinks.increment(linkCompletion.link, null, true)
-        } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        } else if (linkCompletion.status === 'success') {
+          if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+          if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is "memory"
+        }
 
         ++this._cycleTotalCount
         if (++completedLinks === currentBatchLen) {
@@ -251,7 +255,10 @@ class FeedSchedule {
       if (linkCompletion.status === 'failed') {
         ++this._cycleFailCount
         dbOps.failedLinks.increment(linkCompletion.link, null, true)
-      } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+      } else if (linkCompletion.status === 'success') {
+        if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is "memory"
+      }
 
       this._cycleTotalCount++
       if (++completedLinks === currentBatchLen) {
@@ -263,7 +270,7 @@ class FeedSchedule {
       }
     })
 
-    processor.send({ currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
+    processor.send({ feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
   }
 
   _getBatchParallel () {
@@ -291,9 +298,12 @@ class FeedSchedule {
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
           dbOps.failedLinks.increment(linkCompletion.link, null, true)
-        } else if (linkCompletion.status === 'success' && failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
-        ++this._cycleTotalCount
+        } else if (linkCompletion.status === 'success') {
+          if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+          if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is "memory"
+        }
 
+        ++this._cycleTotalCount
         if (++completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
@@ -305,7 +315,7 @@ class FeedSchedule {
         }
       })
 
-      processor.send({ currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
+      processor.send({ feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
     }
 
     function spawn (count) {

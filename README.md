@@ -10,7 +10,7 @@ See https://github.com/synzen/Discord.RSS/wiki/Setup
 
 ### Setting Up with Existing Client
 
-Using Discord.RSS with an existing [discord.js](https://github.com/discordjs/discord.js) client:
+The fastest way to using Discord.RSS with an existing [discord.js](https://github.com/discordjs/discord.js) client:
 
 
 ```
@@ -22,13 +22,13 @@ const Discord = require('discord.js')
 const DiscordRSS = require('discord.rss')
 
 const client = new Discord.Client()
-const drss = new DiscordRSS.Client()
+const drss = new DiscordRSS.Client({ database: { uri: './sources' } }) // File-based sources instead of Mongo
 
 client.login('token')
 drss.login(client) // Can be done before or after the client is 'ready'
 ```
 
-There are multiple ways of integrating Discord.RSS programmatically - see [here](https://github.com/synzen/Discord.RSS/wiki/Use-with-Existing-Bot) for more information.
+There are multiple ways of integrating Discord.RSS programmatically - see [here](https://github.com/synzen/Discord.RSS/wiki/Use-with-Existing-Bot) for more information. For full features, use a mongodb database.uri instead of a directory.
 
 
 ## Built With		
