@@ -11,7 +11,7 @@ const FAIL_LIMIT = config.feeds.failLimit
 
 exports.guildRss = {
   update: (guildRss, callback, skipProcessSend) => {
-    if (storage.bot.shard && storage.bot.shard.count > 0 && (!skipProcessSend || !storage.bot.guilds.has(guildRss.id))) {
+    if (storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
       process.send({ _drss: true, type: 'guildRss.update', guildRss: guildRss, _loopback: true })
       return callback ? callback() : null
     }
@@ -366,7 +366,7 @@ exports.vips = {
   get: callback => models.VIP().find(callback),
   update: (settings, callback, skipAddServers) => {
     const servers = settings.servers
-    if (!storage.vipUsers[settings.id]) storage.vipUsers[settings.id] = settings
+    storage.vipUsers[settings.id] = settings
     if (servers && !skipAddServers) exports.vips.addServers({ ...settings, serversToAdd: servers }, null, true)
     exports.vips.uniformize(storage.vipUsers, storage.vipServers, callback)
     if (!settings.name) {
@@ -390,7 +390,7 @@ exports.vips = {
         const dUser = storage.bot.users.get(settings.id)
         settings.name = dUser ? dUser.username : null
       }
-      if (!storage.vipUsers[settings.id]) storage.vipUsers[settings.id] = settings
+      storage.vipUsers[settings.id] = settings
     }
     exports.vips.uniformize(storage.vipUsers, storage.vipServers)
 

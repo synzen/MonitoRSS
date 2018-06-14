@@ -14,14 +14,17 @@ module.exports = (bot, message, command) => {
       (function remove (index) {
         dbOps.guildRss.removeFeed(guildRss, rssNameList[index], (err, link) => {
           if (err) log.guild.error(`Unable to remove feed ${link}`, message.guild, err)
-          removed += `\n${link}`
-          log.guild.info(`Removed feed ${link}`, message.guild)
+          else {
+            removed += `\n${link}`
+            log.guild.info(`Removed feed ${link}`, message.guild)
+          }
+
           if (index + 1 < rssNameList.length) remove(index + 1)
           else {
             msgHandler.deleteAll(message.channel)
             removing.edit(`${removed}\`\`\`\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`rssremove 1`, message.guild, err))
           }
-        })
+        }, true)
       })(0)
     } catch (err) {
       log.command.warning(`rssremove`, message.guild, err)
