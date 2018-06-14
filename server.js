@@ -6,7 +6,7 @@ let token = config.bot.token
 
 try {
   const override = require('./settings/configOverride.json')
-  token = override ? override.bot.token : token
+  token = override.bot && override.bot.token ? override.bot.token : token
 } catch (err) {}
 
 drss.login(token)
