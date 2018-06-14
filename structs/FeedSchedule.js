@@ -213,7 +213,7 @@ class FeedSchedule {
         }
       }
 
-      getArticles({ feedData: this.feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, logicType: 'cycle' }, (err, linkCompletion) => {
+      getArticles({ config: config, feedData: this.feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, logicType: 'cycle' }, (err, linkCompletion) => {
         if (err) log.cycle.warning(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
@@ -270,7 +270,7 @@ class FeedSchedule {
       }
     })
 
-    processor.send({ feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
+    processor.send({ config: config, feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
   }
 
   _getBatchParallel () {
@@ -315,7 +315,7 @@ class FeedSchedule {
         }
       })
 
-      processor.send({ feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
+      processor.send({ config: config, feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
     }
 
     function spawn (count) {
