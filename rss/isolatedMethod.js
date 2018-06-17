@@ -67,7 +67,7 @@ process.on('message', m => {
   const shardId = m.shardId
   const debugFeeds = m.debugFeeds
   const logicType = m.logicType
-  const feedData = m.feedData // Only defined if config.database.uri is set to "memory"
+  const feedData = m.feedData // Only defined if config.database.uri is set to a databaseless folder path
   connectDb(err => {
     if (err) throw new Error(`Could not connect to database for cycle\n`, err)
     const len = Object.keys(currentBatch).length

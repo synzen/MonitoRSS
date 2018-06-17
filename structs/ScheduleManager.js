@@ -6,12 +6,12 @@ const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 
 class ScheduleManager {
-  constructor (bot, customSchedules, feedData) { // Third parameter is only used when config.database.uri is "memory"
+  constructor (bot, customSchedules, feedData) { // Third parameter is only used when config.database.uri is a databaseless folder path
     this.bot = bot
     this.scheduleList = []
     storage.scheduleManager = this
     // Set up the default schedule
-    this.scheduleList.push(new FeedSchedule(this.bot, { name: 'default' }, feedData))
+    this.scheduleList.push(new FeedSchedule(this.bot, { name: 'default', refreshTimeMinutes: config.feeds.refreshTimeMinutes }, feedData))
     // Set up custom schedules
     if (customSchedules) for (var i = 0; i < customSchedules.length; ++i) this.scheduleList.push(new FeedSchedule(this.bot, customSchedules[i]))
     for (var j = 0; j < this.scheduleList.length; ++j) this._listenToArticles(this.scheduleList[j].cycle)
@@ -30,10 +30,22 @@ class ScheduleManager {
     })
   }
 
+  addSchedule (schedule) {
+    if (!schedule) throw new TypeError('schedule is not defined for addSchedule')
+    if (!schedule.refreshTimeMinutes || !schedule.keywords) throw new TypeError('refreshTimeMinutes or keywords is missing in schedule to addSchedule')
+    const feedSchedule = new FeedSchedule(storage.bot, schedule)
+    this.scheduleList.push(feedSchedule)
+    this._listenToArticles(feedSchedule.cycle)
+    if (storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'addCustomSchedule', schedule: schedule })
+  }
+
   run (refreshTime) { // Run schedules with respect to their refresh times
-    this.scheduleList.forEach(schedule => {
-      if (schedule.refreshTime === refreshTime) schedule.run()
-    })
+    for (var x = 0; x < this.scheduleList.length; ++x) {
+      const schedule = this.scheduleList[x]
+      if (schedule.refreshTime === refreshTime) return schedule.run()
+    }
+    // If there is no schedule with that refresh time
+    if (storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'scheduleComplete', refreshTime: refreshTime })
   }
 
   stopSchedules () {

@@ -48,7 +48,7 @@ exports.addToDb = (articleList, link, callback, customTitle) => {
     return article.guid
   }
 
-  // Initialize the feed collection if necessary, but only if a database is used. This file has no access to the feed collections if config.database.uri is "memory"
+  // Initialize the feed collection if necessary, but only if a database is used. This file has no access to the feed collections if config.database.uri is a databaseless folder path
   if (!config.database.uri.startsWith('mongo')) return callback()
   const Feed = FeedModel(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)
   dbCmds.findAll(Feed, (err, docs) => {
@@ -135,7 +135,7 @@ exports.addNewFeed = (settings, callback, customTitle) => {
 
       if (metaTitle.length > 200) metaTitle = metaTitle.slice(0, 200) + '...'
 
-      var guildRss
+      let guildRss
       if (currentGuilds.has(channel.guild.id)) {
         guildRss = currentGuilds.get(channel.guild.id)
         if (!guildRss.sources) guildRss.sources = {}
@@ -144,7 +144,8 @@ exports.addNewFeed = (settings, callback, customTitle) => {
         rssList[rssName] = {
           title: metaTitle,
           link: link,
-          channel: channel.id
+          channel: channel.id,
+          addedOn: new Date()
         }
 
         if (cookies) rssList[rssName].advanced = { cookies: cookies }
@@ -157,11 +158,28 @@ exports.addNewFeed = (settings, callback, customTitle) => {
         guildRss.sources[rssName] = {
           title: metaTitle,
           link: link,
-          channel: channel.id
+          channel: channel.id,
+          addedOn: new Date()
         }
         if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
 
         currentGuilds.set(channel.guild.id, guildRss)
+      }
+
+      if (storage.vipServers[channel.guild.id] && !link.includes('feed43.com')) {
+        storage.allScheduleWords.push(link)
+        const feedSchedules = storage.scheduleManager.scheduleList
+        let hasVipSchedule = false
+        for (var x = 0; x < feedSchedules.length; ++x) {
+          const schedule = feedSchedules[x].schedule
+          if (schedule.name !== 'vip') continue
+          schedule.keywords.push(link)
+          hasVipSchedule = true
+        }
+        if (!hasVipSchedule) {
+          const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: [link] }
+          storage.scheduleManager.addSchedule(newSched)
+        }
       }
 
       dbOps.guildRss.update(guildRss)

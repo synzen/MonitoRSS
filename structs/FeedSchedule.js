@@ -8,15 +8,16 @@ const childProcess = require('child_process')
 const storage = require('../util/storage.js') // All properties of storage must be accessed directly due to constant changes
 const statistics = storage.statistics
 const log = require('../util/logger.js')
-const allScheduleWords = storage.allScheduleWords
 const BATCH_SIZE = config.advanced.batchSize
 
 class FeedSchedule {
   constructor (bot, schedule, feedData) {
+    if (!schedule.refreshTimeMinutes) throw new Error('No refreshTimeMinutes has been declared for a schedule')
+    if (schedule.name !== 'default' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0)) throw new Error(`Invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
     this.bot = bot
     this.schedule = schedule
-    this.refreshTime = this.schedule.refreshTimeMinutes ? this.schedule.refreshTimeMinutes : config.feeds.refreshTimeMinutes
+    this.refreshTime = this.schedule.refreshTimeMinutes
     this.cycle = new events.EventEmitter()
     this._cookieServers = storage.cookieServers
     this._processorList = []
@@ -92,7 +93,7 @@ class FeedSchedule {
           })
         } else if (!storage.scheduleAssigned[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
           let reserved = false
-          allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
+          storage.allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
             if (source.link.includes(item)) reserved = true
           })
           if (!reserved) {
@@ -224,7 +225,7 @@ class FeedSchedule {
           dbOps.failedLinks.increment(linkCompletion.link, null, true)
         } else if (linkCompletion.status === 'success') {
           if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
-          if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is "memory"
+          if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
         }
 
         ++this._cycleTotalCount
@@ -257,7 +258,7 @@ class FeedSchedule {
         dbOps.failedLinks.increment(linkCompletion.link, null, true)
       } else if (linkCompletion.status === 'success') {
         if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
-        if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is "memory"
+        if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
       }
 
       this._cycleTotalCount++
@@ -300,7 +301,7 @@ class FeedSchedule {
           dbOps.failedLinks.increment(linkCompletion.link, null, true)
         } else if (linkCompletion.status === 'success') {
           if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
-          if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is "memory"
+          if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
         }
 
         ++this._cycleTotalCount

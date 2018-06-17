@@ -52,6 +52,7 @@ class ClientSharded {
       case 'shardReady': this._shardReadyEvent(message); break
       case 'initComplete': this._initCompleteEvent(message); break
       case 'scheduleComplete': this._scheduleCompleteEvent(message); break
+      case 'addCustomSchedule': this._addCustomSchedule(message); break
       case 'dbRestore': this._dbRestoreEvent(message)
     }
   }
@@ -99,7 +100,9 @@ class ClientSharded {
         })
         this.createIntervals()
       })
-    } else if (this.shardsDone < this.shardingManager.totalShards) this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
+    } else if (this.shardsDone < this.shardingManager.totalShards) {
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
+    }
   }
 
   _scheduleCompleteEvent (message) {
@@ -113,6 +116,17 @@ class ClientSharded {
         refreshTime: message.refreshTime
       }).catch(err => handleError(err, message))
     }
+  }
+
+  _addCustomSchedule (message) {
+    const refreshTime = message.schedule.refreshTimeMinutes
+    if (this.refreshTimes.includes(refreshTime)) return
+    this.refreshTimes.push(refreshTime)
+    this.scheduleIntervals.push(setInterval(() => {
+      this.scheduleTracker[refreshTime] = 0
+      const p = this.scheduleTracker[refreshTime]
+      this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
+    }, refreshTime * 60000)) // Convert minutes to ms
   }
 
   _dbRestoreEvent (message) {
@@ -131,13 +145,13 @@ class ClientSharded {
         this.scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
         const p = this.scheduleTracker[refreshTime]
         this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
-      }, refreshTime * 60000))
+      }, refreshTime * 60000)) // Convert minutes to ms
     })
     // Refresh VIPs on a schedule
     setInterval(() => {
       // Only needs to be run on a single shard since dbOps uniformizes it across all shards
       this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err))
-    }, 3600000)
+    }, 900000)
   }
 }
 

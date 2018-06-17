@@ -19,6 +19,12 @@ function getID (message) {
         delete file.__v
         if (!file.id) return reject(new Error('No ID found in file'))
         if (file.id !== id) return reject(new Error('File ID does not match input ID'))
+        const sources = file.sources
+        if (sources && Object.keys(sources).length > 0) {
+          for (var n in sources) {
+            if (!sources[n].addedOn) sources[n].addedOn = new Date()
+          }
+        }
         resolve(file)
       } catch (err) { reject(err) }
     })

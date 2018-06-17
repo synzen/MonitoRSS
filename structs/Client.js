@@ -18,7 +18,6 @@ const STATES = {
   STARTING: 'STARTING',
   READY: 'READY'
 }
-let scheduleManager
 
 function overrideConfigs (configOverrides) {
   // Config overrides must be manually done for it to be changed in the original object (config)
@@ -78,11 +77,12 @@ class Client {
     else if (configRes) log.general.warning(configRes.message)
     if (configOverrides && Array.isArray(configOverrides.suppressLogLevels)) log.suppressLevel(configOverrides.suppressLogLevels)
     if (customSchedules && !Array.isArray(customSchedules)) throw new Error('customSchedules parameter must be an array of objects')
-    if (customSchedules && configOverrides && configOverrides.readFileSchedules === true) throw new Error('readFileSchedules config must be undefined if customSchedules (third) parameter is defined')
+    if (customSchedules && configOverrides && configOverrides.readFileSchedules === true) throw new Error('readFileSchedules config must be undefined if customSchedules (second) parameter is defined')
     if (!customSchedules && configOverrides && configOverrides.readFileSchedules === true) {
       customSchedules = readSchedulesFromFile()
       if (!customSchedules) log.general.info('No custom schedules found in settings/schedules folder')
     }
+    this.scheduleManager = undefined
     this.configOverrides = configOverrides
     this.customSchedules = customSchedules
     this.STATES = STATES
@@ -97,7 +97,14 @@ class Client {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
       client.login(!process.env.DRSS_BOT_TOKEN || process.env.DRSS_BOT_TOKEN === 'drss_docker_token' ? (token || 's') : process.env.DRSS_BOT_TOKEN) // Environment variable in Docker container if available
         .then(tok => this._defineBot(client))
-        .catch(err => err.message.includes('too many guilds') ? new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides) : process.env.DRSS_BOT_TOKEN === 'drss_docker_token' && err.message.includes('Incorrect login') ? log.general.error(`${err.message} - Be sure to correctly change the Docker environment variable DRSS_BOT_TOKEN to login.`) : log.general.error(err))
+        .catch(err => {
+          if (err.message.includes('too many guilds')) return new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
+          else if (process.env.DRSS_BOT_TOKEN === 'drss_docker_token' && err.message.includes('Incorrect login')) log.general.error(`${err.message} - Be sure to correctly change the Docker environment variable DRSS_BOT_TOKEN to login.`)
+          else {
+            log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
+            setTimeout(() => this.login.bind(this)(token), 600000)
+          }
+        })
     } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 
@@ -148,12 +155,13 @@ class Client {
         case 'finishedInit':
           storage.initialized = 2
           dbOps.blacklists.refresh()
+          this._addVipSchedule()
           break
         case 'cycleVIPs':
           if (bot.shard.id === message.shardId) dbOps.vips.refresh()
           break
         case 'runSchedule':
-          if (bot.shard.id === message.shardId) scheduleManager.run(message.refreshTime)
+          if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshTime)
           break
         case 'guildRss.update':
           if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.update(message.guildRss, null, true)
@@ -196,7 +204,7 @@ class Client {
   stop () {
     if (this.state === STATES.STARTING || this.state === STATES.STOPPED) return log.general.warning(`${this.SHARD_PREFIX}Ignoring stop command because it is in ${this.state} state`)
     storage.initialized = 0
-    scheduleManager.stopSchedules()
+    this.scheduleManager.stopSchedules()
     clearInterval(this._vipInterval)
     listeners.disableAll()
     this.state = STATES.STOPPED
@@ -208,11 +216,11 @@ class Client {
     this.state = STATES.STARTING
     listeners.enableCommands()
     const uri = process.env.DRSS_DATABASE_URI || config.database.uri
-    log.general.info(`Database uri ${uri} is set to be used. Detected as a ${uri.startsWith('mongo') ? 'mongoDB uri' : 'file-based uri'}`)
+    log.general.info(`Database URI is set to ${uri}. Detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     connectDb(err => {
       if (err) throw err
       initialize(storage.bot, this.customSchedules, (guildsInfo, missingGuilds, linkDocs, feedData) => {
-        // feedData is only defined if config.database.uri is "memory"
+        // feedData is only defined if config.database.uri is a databaseless folder path
         this._finishInit(guildsInfo, missingGuilds, linkDocs, feedData, callback)
       })
     })
@@ -227,11 +235,37 @@ class Client {
   _finishInit (guildsInfo, missingGuilds, linkDocs, feedData, callback) {
     storage.initialized = 2
     this.state = STATES.READY
+    this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules, feedData)
+    storage.scheduleManager = this.scheduleManager
     if (storage.bot.shard && storage.bot.shard.count > 0) dbOps.failedLinks.uniformize(storage.failedLinks, () => process.send({ _drss: true, type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id }))
-    else if (config._vip) this._vipInterval = setInterval(dbOps.vips.refresh, 600000)
-    scheduleManager = new ScheduleManager(storage.bot, this.customSchedules, feedData)
+    else if (config._vip) {
+      this._vipInterval = setInterval(dbOps.vips.refresh, 600000)
+      this._addVipSchedule()
+    }
     listeners.createManagers(storage.bot)
     if (callback) callback()
+  }
+
+  _addVipSchedule () {
+    if (config._vip !== true) return
+    const vipLinks = []
+    for (var vipId in storage.vipServers) {
+      const guildRss = storage.currentGuilds.get(vipId)
+      if (!guildRss) continue
+      const rssList = guildRss.sources
+      if (!rssList) continue
+      for (var rssName in rssList) {
+        const link = rssList[rssName].link
+        if (link.includes('feed43.com')) continue
+        vipLinks.push(link)
+        storage.allScheduleWords.push(link)
+        delete storage.scheduleAssigned[rssName]
+      }
+    }
+    if (vipLinks.length > 0) {
+      const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: vipLinks }
+      this.scheduleManager.addSchedule(newSched)
+    }
   }
 
   disableCommands () {

@@ -19,7 +19,7 @@ function getArticleId (articleList, article) {
 }
 
 module.exports = (data, callback) => {
-  const { rssList, articleList, debugFeeds, link, shardId, logicType, config, feedData } = data // feedData is only defined when config.database.uri is set to "memory"
+  const { rssList, articleList, debugFeeds, link, shardId, logicType, config, feedData } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
   if (logicType !== 'init' && logicType !== 'cycle') throw new Error(`Expected logicType parameter must be "cycle" or "init", found ${logicType} instead`)
   const RSSLIST_LENGTH = Object.keys(rssList).length
   let sourcesCompleted = 0
