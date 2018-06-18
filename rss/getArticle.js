@@ -1,7 +1,7 @@
 const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
 const storage = require('../util/storage.js')
-const filterFeed = require('./translator/filters.js')
+const testFilters = require('./translator/filters.js')
 
 module.exports = (guildRss, rssName, passFiltersOnly, callback) => {
   const failedLinks = storage.failedLinks
@@ -53,7 +53,7 @@ module.exports = (guildRss, rssName, passFiltersOnly, callback) => {
       const filteredCurrentFeed = []
 
       currentFeed.forEach(article => {
-        if (filterFeed(guildRss.sources[rssName], article)) filteredCurrentFeed.push(article) // returns null if no article is sent from passesFilters
+        if (testFilters(guildRss.sources[rssName], article).passed) filteredCurrentFeed.push(article) // returns null if no article is sent from passesFilters
       })
 
       if (filteredCurrentFeed.length === 0) {

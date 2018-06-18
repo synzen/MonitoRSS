@@ -1,4 +1,4 @@
-const filterFeed = require('./filters.js')
+const testFilters = require('./filters.js')
 
 module.exports = (source, article) => {
   let mentions = ''
@@ -15,7 +15,7 @@ module.exports = (source, article) => {
   if (source.filters && source.filters.roleSubscriptions) {
     const subscribedRoles = source.filters.roleSubscriptions
     for (let role in subscribedRoles) {
-      if (subscribedRoles[role].filters && filterFeed(subscribedRoles[role], article)) mentions += `<@&${role}> `
+      if (subscribedRoles[role].filters && testFilters(subscribedRoles[role], article).passed) mentions += `<@&${role}> `
     }
   }
 

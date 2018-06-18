@@ -1,5 +1,5 @@
 const config = require('../../config.json')
-const filterFeed = require('./filters.js')
+const testFilters = require('./filters.js')
 const generateEmbed = require('./embed.js')
 const Article = require('../../structs/Article.js')
 const getSubs = require('./subscriptions.js')
@@ -10,7 +10,7 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
   if (!source) return // Might have been removed mid-cycle
   const article = new Article(rawArticle, guildRss, rssName)
   article.subscriptions = getSubs(source, article)
-  const IGNORE_TEXT_LIMITS = ignoreLimits != null ? !!source.splitMessage : ignoreLimits
+  const IGNORE_TEXT_LIMITS = ignoreLimits === undefined ? !!source.splitMessage : ignoreLimits // If ignoreLimits was passed in, use this value - otherwise follow the source
 
   // Filter message
   let filterExists = false
@@ -19,29 +19,45 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
       if (prop !== 'roleSubscriptions') filterExists = true // Check if any filter categories exists, excluding roleSubs as they are not filters
     }
   }
-  const filterResults = filterExists ? filterFeed(source, article, isTestMessage) : true
+  const filterResults = filterExists ? testFilters(source, article) : true
 
-  // Create the message/embed
-  const finalMessageCombo = { passedFilters: filterExists ? filterExists && filterResults : true }
-  if (typeof source.embedMessage === 'object' && typeof source.embedMessage.properties === 'object' && Object.keys(source.embedMessage.properties).length > 0) { // Check if embed is enabled
-    finalMessageCombo.embed = generateEmbed(rssList, rssName, article)
+  let textFormat = source.message === undefined ? source.message : source.message.trim()
+  let embedFormat = source.embedMessage
 
-    let txtMsg = ''
-    if (typeof source.message !== 'string') {
-      if (config.feeds.defaultMessage.trim() === '{empty}') txtMsg = ''
-      else txtMsg = article.convertKeywords(config.feeds.defaultMessage, IGNORE_TEXT_LIMITS)
-    } else if (source.message.trim() === '{empty}') txtMsg = ''
-    else txtMsg = article.convertKeywords(source.message, IGNORE_TEXT_LIMITS)
-
-    finalMessageCombo.text = txtMsg
-  } else {
-    let txtMsg = ''
-    if (typeof source.message !== 'string' || source.message.trim() === '{empty}') {
-      if (config.feeds.defaultMessage.trim() === '{empty}') txtMsg = ''
-      else txtMsg = article.convertKeywords(config.feeds.defaultMessage, IGNORE_TEXT_LIMITS)
-    } else txtMsg = article.convertKeywords(source.message, ignoreLimits === undefined ? !!source.splitMessage : ignoreLimits)
-    finalMessageCombo.text = txtMsg
+  // See if there are any filter-specific messages
+  if (Array.isArray(source.filteredFormats)) {
+    let matched = { }
+    let highestPriority = -1
+    let selectedFormat
+    const filteredFormats = source.filteredFormats
+    for (var a = 0; a < filteredFormats.length; ++a) {
+      const filteredFormat = filteredFormats[a]
+      const thisPriority = filteredFormat.priority === undefined || filteredFormat.priority < 0 ? 0 : filteredFormat.priority
+      const res = testFilters(filteredFormat, article) // messageFiltered.filters must exist as an object
+      if (!res.passed) continue
+      matched[thisPriority] = matched[thisPriority] === undefined ? 1 : matched[thisPriority] + 1
+      if (thisPriority >= highestPriority) {
+        highestPriority = thisPriority
+        selectedFormat = filteredFormat
+      }
+    }
+    // Only formats with 1 match will get the filtered format
+    if (highestPriority > -1 && matched[highestPriority] === 1) {
+      textFormat = selectedFormat.message === true ? textFormat : selectedFormat.message // If it's true, then it will use the feed's (or the config default, if applicable) message
+      embedFormat = selectedFormat.embedMessage === true ? embedFormat : selectedFormat.embedMessage
+    }
   }
+
+  if (!textFormat) textFormat = config.feeds.defaultMessage.trim()
+
+  // Create the message/embed package that will be returned
+  const finalMessageCombo = { passedFilters: filterExists ? filterExists && filterResults.passed : true }
+
+  // Determine what the text is, based on whether an embed exists
+  if (typeof embedFormat === 'object' && typeof source.embedMessage.properties === 'object' && Object.keys(embedFormat.properties).length > 0) {
+    finalMessageCombo.embed = generateEmbed(embedFormat, article)
+    finalMessageCombo.text = textFormat === '{empty}' ? '' : article.convertKeywords(textFormat, IGNORE_TEXT_LIMITS)
+  } else finalMessageCombo.text = article.convertKeywords(textFormat === '{empty}' ? config.feeds.defaultMessage : textFormat, IGNORE_TEXT_LIMITS)
 
   // Generate test details
   if (isTestMessage) {
@@ -77,7 +93,7 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
     let placeholderImgs = article.listPlaceholderImages()
     if (placeholderImgs) testDetails += `\n\n${placeholderImgs}`
     if (article.tags) testDetails += `\n\n[Tags]: {tags}\n${article.tags}`
-    if (filterExists) testDetails += `\n\n[Passed Filters?]: ${filterResults.passedFilters ? 'Yes' : 'No'}${filterResults.passedFilters ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
+    if (filterExists) testDetails += `\n\n[Passed Filters?]: ${filterResults.passed ? 'Yes' : 'No'}${filterResults.passed ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
     testDetails += '```' + footer
 
     finalMessageCombo.testDetails = testDetails
