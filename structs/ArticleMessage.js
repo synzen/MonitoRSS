@@ -98,7 +98,6 @@ class ArticleMessage {
       .then(m => {
         if (this.isTestMessage) {
           this.isTestMessage = false
-          console.log('calling back')
           this.send(callback)
         } else callback()
       })

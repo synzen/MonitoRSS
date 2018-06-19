@@ -4,6 +4,7 @@ const htmlConvert = require('html-to-text')
 const defaultConfigs = require('../util/configCheck.js').defaultConfigs
 const log = require('../util/logger.js')
 const VALID_PH_IMGS = ['title', 'description', 'summary']
+const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date']
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
   const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
@@ -78,17 +79,17 @@ function regexReplace (string, searchOptions, replacement) {
   }
 }
 
-function evalRegexConfig (source, text, placeholder) {
+function evalRegexConfig (source, text, placeholderName) {
   const customPlaceholders = {}
 
-  if (typeof source.regexOps === 'object' && source.regexOps.disabled !== true && Array.isArray(source.regexOps[placeholder])) { // Eval regex if specified
+  if (Array.isArray(source.regexOps[placeholderName])) { // Eval regex if specified
     if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
       for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
-        if (source.regexOps.disabled[y] === placeholder) return null // text
+        if (source.regexOps.disabled[y] === placeholderName) return null // text
       }
     }
 
-    const phRegexOps = source.regexOps[placeholder]
+    const phRegexOps = source.regexOps[placeholderName]
     for (var regexOpIndex in phRegexOps) { // Looping through each regexOp for a placeholder
       const regexOp = phRegexOps[regexOpIndex]
       if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
@@ -157,6 +158,8 @@ module.exports = class Article {
     const source = guildRss.sources[rssName]
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
     this.youtube = raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#']
+    this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
+    this.placeholdersForRegex = BASE_REGEX_PHS.slice()
     this.meta = raw.meta
     this.guid = raw.guid
     this.author = raw.author ? cleanup(source, raw.author) : ''
@@ -168,6 +171,11 @@ module.exports = class Article {
     this.fullTitle = cleanup(source, raw.title, titleImgs)
     this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
     this.titleImgs = titleImgs
+    for (var titleImgNum in titleImgs) {
+      const term = `description:image${parseInt(titleImgNum, 10) + 1}`
+      this[term] = titleImgs[titleImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
 
     // guid - Raw exposure, no cleanup. Not meant for use by most feeds.
     this.guid = raw.guid ? raw.guid : ''
@@ -193,6 +201,11 @@ module.exports = class Article {
     this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, descriptionImages) // Account for youtube's description
     let description = this.fullDescription
     description = description.length > 800 ? `${description.slice(0, 790)}...` : description
+    for (var desImgNum in descriptionImages) {
+      const term = `description:image${parseInt(desImgNum, 10) + 1}`
+      this[term] = descriptionImages[desImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
 
     // Get the specific reddit placeholders {reddit_direct} and {reddit_author}
     if (this.reddit) {
@@ -200,8 +213,10 @@ module.exports = class Article {
         format: {
           anchor: (node, fn, options) => {
             const child = node.children[0]
-            if (child && child.data === '[link]') this.reddit_direct = node.attribs.href === this.link ? '' : node.attribs.href
-            if (child && child.data && child.data.startsWith(' /u/')) this.reddit_author = node.attribs.href
+            if (child && child.data === '[link]') this.reddit_direct = node.attribs.href === this.link ? '' : (node.attribs.href || '')
+            if (this.enabledRegex) this.placeholdersForRegex.push('reddit_direct')
+            if (child && child.data && child.data.startsWith(' /u/')) this.reddit_author = node.attribs.href || ''
+            if (this.enabledRegex) this.placeholdersForRegex.push('reddit_author')
             // No need to return anything since the output of htmlConvert.fromString isn't needed
           }
         }
@@ -218,11 +233,21 @@ module.exports = class Article {
     this.fullSummary = cleanup(source, raw.summary, summaryImages)
     this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
     this.summaryImgs = summaryImages
+    for (var sumImgNum in summaryImages) {
+      const term = `summary:image${parseInt(sumImgNum, 10) + 1}`
+      this[term] = summaryImages[sumImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
 
     // Image links
     const imageLinks = []
     findImages(raw, imageLinks)
     this.images = (imageLinks.length === 0) ? undefined : imageLinks
+    for (var imageNum in imageLinks) {
+      const term = `image:${parseInt(imageNum, 10) + 1}`
+      this[term] = imageLinks[imageNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
 
     // Categories/Tags
     if (raw.categories) {
@@ -237,12 +262,13 @@ module.exports = class Article {
     }
 
     // Regex-defined custom placeholders
-    const validRegexPlaceholder = ['title', 'description', 'summary', 'author']
-    this.regexPlaceholders = {} // Each key is a validRegexPlaceholder, and their values are an object of named placeholders with the modified content
-    for (var b in validRegexPlaceholder) {
-      const type = validRegexPlaceholder[b]
-      const regexResults = evalRegexConfig(source, this[type], type)
-      this.regexPlaceholders[type] = regexResults
+    if (this.enabledRegex) {
+      this.regexPlaceholders = {} // Each key is a validRegexPlaceholder, and their values are an object of named placeholders with the modified content
+      for (var b in this.placeholdersForRegex) {
+        const placeholderName = this.placeholdersForRegex[b]
+        const regexResults = evalRegexConfig(source, this[placeholderName], placeholderName)
+        this.regexPlaceholders[placeholderName] = regexResults
+      }
     }
   }
 
