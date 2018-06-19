@@ -9,7 +9,9 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
   const source = rssList[rssName]
   if (!source) return // Might have been removed mid-cycle
   const article = new Article(rawArticle, guildRss, rssName)
-  article.subscriptions = getSubs(source, article)
+  const subscriptionData = getSubs(source, article)
+  article.subscriptions = subscriptionData.mentions
+  article.subscriptionIds = subscriptionData.ids
   const IGNORE_TEXT_LIMITS = ignoreLimits === undefined ? !!source.splitMessage : ignoreLimits // If ignoreLimits was passed in, use this value - otherwise follow the source
 
   // Filter message
@@ -51,7 +53,7 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
   if (!textFormat) textFormat = config.feeds.defaultMessage.trim()
 
   // Create the message/embed package that will be returned
-  const finalMessageCombo = { passedFilters: filterExists ? filterExists && filterResults.passed : true }
+  const finalMessageCombo = { parsedArticle: article, passedFilters: filterExists ? filterExists && filterResults.passed : true }
 
   // Determine what the text is, based on whether an embed exists
   if (typeof embedFormat === 'object' && typeof source.embedMessage.properties === 'object' && Object.keys(embedFormat.properties).length > 0) {

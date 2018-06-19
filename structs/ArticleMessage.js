@@ -1,6 +1,5 @@
 const config = require('../config.json')
 const storage = require('../util/storage.js')
-const Article = require('./Article.js')
 const currentGuilds = storage.currentGuilds
 const TEST_OPTIONS = {split: {prepend: '```md\n', append: '```'}}
 const log = require('../util/logger.js')
@@ -13,7 +12,9 @@ class ArticleMessage {
     this.article = article
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
+    this.channelId = article.discordChannelId
     this.channel = storage.bot.channels.get(article.discordChannelId)
+    if (!this.channel) return
     this.guildRss = currentGuilds.get(this.channel.guild.id)
     this.webhook = undefined
     this.sendFailed = 1
@@ -28,16 +29,17 @@ class ArticleMessage {
       this.valid = false
       return log.general.error(`${this.rssName} Unable to initialize an ArticleMessage due to missing source`, this.channel.guild, this.channel)
     }
-    this.parsedArticle = new Article(article, this.guildRss, this.rssName)
+    this.toggleRoleMentions = this.source.toggleRoleMentions === true
     this.split = this.source.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
+    this._translate()
   }
 
   _resolveChannel (callback) {
     if (((config.advanced._restrictWebhooks === true && storage.vipServers[this.channel.guild.id] && storage.vipServers[this.channel.guild.id].benefactor.allowWebhooks) || !config.advanced._restrictWebhooks) && this.source && typeof this.source.webhook === 'object') {
-      if (!this.channel.guild.me.permissionsIn(this.channel).has('MANAGE_WEBHOOKS')) return this._translate(undefined, callback)
+      if (!this.channel.guild.me.permissionsIn(this.channel).has('MANAGE_WEBHOOKS')) return callback()
       this.channel.fetchWebhooks().then(hooks => {
         const hook = hooks.get(this.source.webhook.id)
-        if (!hook) return this._translate(undefined, callback)
+        if (!hook) return callback()
         const guildId = this.channel.guild.id
         const guildName = this.channel.guild.name
         this.webhook = hook
@@ -47,16 +49,18 @@ class ArticleMessage {
         if (name && name.length < 2) name = undefined
         this.webhook.name = name
         this.webhook.avatar = this.source.webhook.avatar ? this.parsedArticle.convertImgs(this.source.webhook.avatar) : undefined
-        this._translate(undefined, callback)
+        callback()
       }).catch(err => {
         log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, this.channel, err, true)
-        this._translate(undefined, callback)
+        callback()
       })
-    } else this._translate(undefined, callback)
+    } else callback()
   }
 
   _translate (ignoreLimits, callback) {
     const results = translate(this.guildRss, this.rssName, this.article, this.isTestMessage, ignoreLimits)
+    this.parsedArticle = results.parsedArticle
+    this.subscriptionIds = this.parsedArticle.subscriptionIds
     this.passedFilters = results.passedFilters
     this.testDetails = results.testDetails
     this.embed = results.embed
@@ -65,7 +69,8 @@ class ArticleMessage {
   }
 
   send (callback) {
-    if (!this.source) return callback(new Error('Missing ArticleMessage initialization data due to deleted source'))
+    if (!this.source) return callback(new Error('Missing feed source'))
+    if (!this.channel) return callback(new Error('Missing channel'))
     this._resolveChannel(() => {
       if (!this.valid) return callback(new Error(`Missing ArticleMessage initialization data`))
       if (!this.skipFilters && !this.passedFilters) {
@@ -93,10 +98,16 @@ class ArticleMessage {
       .then(m => {
         if (this.isTestMessage) {
           this.isTestMessage = false
+          console.log('calling back')
           this.send(callback)
         } else callback()
       })
       .catch(err => {
+        if (this.split && err.message.includes('2000 or fewer in length')) {
+          delete this.split
+          this._translate(false)
+          return this.send(callback)
+        }
         if (this.split && err.message.includes('no split characters')) {
           this._translate(false) // Retranslate with the character limits for individual placeholders again
           return this.send(callback)

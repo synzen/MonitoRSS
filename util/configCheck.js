@@ -90,7 +90,8 @@ exports.defaultConfigs = {
     imgPreviews: {type: Boolean, default: true},
     imgLinksExistence: {type: Boolean, default: true},
     checkDates: {type: Boolean, default: true},
-    formatTables: {type: Boolean, default: false}
+    formatTables: {type: Boolean, default: false},
+    toggleRoleMentions: {type: Boolean, default: false}
   },
   advanced: {
     shards: {type: Number, default: 1},

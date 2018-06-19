@@ -308,7 +308,6 @@ class FeedSchedule {
         if (++completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
-          // if (callback) callback()
           if (completedBatches === totalBatchLengths) {
             this._processorList.length = 0
             this._finishCycle()
@@ -349,6 +348,7 @@ class FeedSchedule {
     if (noFeeds) log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
     else {
       if (this._processorList.length === 0) this.inProgress = false
+      this.cycle.emit('finish')
       log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
     }
 

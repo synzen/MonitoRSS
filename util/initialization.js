@@ -6,7 +6,7 @@ const scheduleAssigned = storage.scheduleAssigned // Directory of all feeds, use
 const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
 const failedLinks = storage.failedLinks
 const checkGuild = require('./checkGuild.js')
-const queueArticle = require('./queueArticle.js')
+const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const childProcess = require('child_process')
 const configChecks = require('./configCheck.js')
 const LinkTracker = require('../structs/LinkTracker.js')
@@ -20,16 +20,8 @@ function reachedFailCount (link) {
   return failed
 }
 
-// Callback for messages sent to Discord
-function discordMsgResult (err, article) {
-  const channel = storage.bot.channels.get(article.discordChannelId)
-  if (err) {
-    log.init.warning(`Failed to deliver article ${article.link}`, channel.guild, channel, err)
-    if (err.code === 50035 && config._skipMessages !== true) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
-  }
-}
-
 module.exports = (bot, customSchedules, callback) => {
+  const articleMessageQueue = new ArticleMessageQueue()
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new LinkTracker([], bot)
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
@@ -262,7 +254,7 @@ module.exports = (bot, customSchedules, callback) => {
 
       initAll({ config: config, feedData: feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, logicType: 'init' }, (err, linkCompletion) => {
         if (err) log.init.warning(`Skipping ${linkCompletion.link}`, err, true)
-        if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
+        if (linkCompletion.status === 'article') return articleMessageQueue.push(linkCompletion.article)
         if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
         else if (linkCompletion.status === 'success') {
           dbOps.failedLinks.reset(linkCompletion.link, null, true)
@@ -295,7 +287,7 @@ module.exports = (bot, customSchedules, callback) => {
         if (bot.shard && bot.shard.count > 0) bot.shard.broadcastEval('process.exit()')
         throw linkCompletion.err // Full error is printed from the processor
       }
-      if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
+      if (linkCompletion.status === 'article') return articleMessageQueue.push(linkCompletion.article)
       if (linkCompletion.status === 'batch_connected') return // Only used for parallel
       if (linkCompletion.status === 'success') {
         dbOps.failedLinks.reset(linkCompletion.link, null, true)
@@ -346,7 +338,7 @@ module.exports = (bot, customSchedules, callback) => {
           if (bot.shard && bot.shard.count > 0) bot.shard.broadcastEval('process.exit()')
           throw linkCompletion.err // Full error is printed from the processor
         }
-        if (linkCompletion.status === 'article') return queueArticle(linkCompletion.article, err => discordMsgResult(err, linkCompletion.article)) // This can result in great spam once the loads up after a period of downtime
+        if (linkCompletion.status === 'article') return articleMessageQueue.push(linkCompletion.article)
         if (linkCompletion.status === 'batch_connected') return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'success') {
           dbOps.failedLinks.reset(linkCompletion.link, null, true)

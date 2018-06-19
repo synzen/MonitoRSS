@@ -250,6 +250,8 @@ class Client {
     if (config._vip !== true) return
     const vipLinks = []
     for (var vipId in storage.vipServers) {
+      const benefactor = storage.vipServers[vipId].benefactor
+      if (benefactor.pledgedAmount < 500) continue
       const guildRss = storage.currentGuilds.get(vipId)
       if (!guildRss) continue
       const rssList = guildRss.sources

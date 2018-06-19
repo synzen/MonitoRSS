@@ -30,6 +30,10 @@ const OPTIONS_TEXTS = {
   formatTables: {
     status: 'Table Formatting: ',
     toggle: 'Toggle Table Formatting'
+  },
+  toggleRoleMentions: {
+    status: 'Role Mention Toggling: ',
+    toggle: 'Toggle Role Mentionability'
   }
 }
 
