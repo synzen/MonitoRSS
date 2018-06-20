@@ -30,7 +30,7 @@ const PROPERTIES = {
   },
   formatTables: {
     title: 'Toggle Table Formatting for a feed',
-    description: `Default is ${config.feeds.formatTable === false ? 'disabled' : 'enabled'}. If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing.`,
+    description: `Default is ${config.feeds.formatTables === false ? 'disabled' : 'enabled'}. If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing.`,
     display: 'Table Formatting',
     num: 5
   },

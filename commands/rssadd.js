@@ -25,7 +25,7 @@ module.exports = (bot, message) => {
   const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
   const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
 
-  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`).then(m => m.delete(3000)).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
 
   let linkList = message.content.split(' ')
   linkList.shift()
