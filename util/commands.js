@@ -184,11 +184,20 @@ const list = {
     userPerm: 'MANAGE_CHANNELS'
   }
 }
+// Check for aliases
+if (typeof config.bot.commandAliases === 'object') {
+  const aliases = config.bot.commandAliases
+  for (var alias in aliases) {
+    const cmd = aliases[alias]
+    if (cmd && list[cmd] && !list[alias]) list[alias] = { ...list[cmd], aliasFor: cmd }
+  }
+}
 
 exports.list = list
 exports.has = name => list.hasOwnProperty(name)
 exports.run = async (bot, message, name) => {
   const cmdInfo = list[name]
+  if (cmdInfo.aliasFor) name = cmdInfo.aliasFor
   if (!cmdInfo) return log.command.warning(`Could not run command "${name}" because command data does not exist`)
   const botPerm = cmdInfo.botPerm
   const userPerm = cmdInfo.userPerm

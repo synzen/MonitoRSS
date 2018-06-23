@@ -15,7 +15,8 @@
     "streamActivityURL": "",
     "controllerIds": [""],
     "menuColor": 5285609,
-    "deleteMenus": false
+    "deleteMenus": false,
+    "commandAliases": {}
   },
   "database": {
     "uri": "mongodb://localhost/rss",
