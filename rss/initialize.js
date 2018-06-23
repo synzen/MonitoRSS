@@ -166,19 +166,22 @@ exports.addNewFeed = (settings, callback, customTitle) => {
         currentGuilds.set(channel.guild.id, guildRss)
       }
 
-      if (storage.vipServers[channel.guild.id] && !link.includes('feed43.com')) {
+      if (storage.vipServers[channel.guild.id] && storage.vipServers[channel.guild.id].benefactor.pledgedAmount < 500 && !link.includes('feed43.com')) {
         storage.allScheduleWords.push(link)
         const feedSchedules = storage.scheduleManager.scheduleList
         let hasVipSchedule = false
         for (var x = 0; x < feedSchedules.length; ++x) {
           const schedule = feedSchedules[x].schedule
           if (schedule.name !== 'vip') continue
-          schedule.keywords.push(link)
           hasVipSchedule = true
+          schedule.keywords.push(link)
+          storage.allScheduleWords.push(link)
+          delete storage.scheduleAssigned[rssName]
         }
         if (!hasVipSchedule) {
           const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: [link] }
           storage.scheduleManager.addSchedule(newSched)
+          delete storage.scheduleAssigned[rssName]
         }
       }
 

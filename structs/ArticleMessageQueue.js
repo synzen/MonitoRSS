@@ -62,7 +62,6 @@ class ArticleMessageQueue {
       if (channelQueue.length === 0) continue
       const cId = channelId
       let roleIds = []
-
       for (var x = 0; x < channelQueue.length; ++x) roleIds = roleIds.concat(channelQueue[x].subscriptionIds)
       toggleRoleMentionable(true, cId, roleIds, () => {
         this._sendDelayedQueue(cId, channelQueue, roleIds)

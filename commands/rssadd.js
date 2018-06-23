@@ -147,7 +147,7 @@ module.exports = (bot, message) => {
         })
       })(0)
     }).catch(err => {
-      log.command.warning(`Could not begin feed addition validation.`, message.guild, err)
+      log.command.warning(`Could not begin feed addition validation`, message.guild, err)
       channelTracker.remove(message.channel.id)
     })
 }

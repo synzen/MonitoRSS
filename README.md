@@ -14,7 +14,7 @@ The fastest way to using Discord.RSS with an existing [discord.js](https://githu
 
 
 ```
-npm install discord.rss
+npm install synzen/Discord.RSS#dev
 ```
 
 ```js
