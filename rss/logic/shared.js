@@ -150,8 +150,8 @@ module.exports = (data, callback) => {
           const dbCustomComparisonValues = dbCustomComparisons[comparisonName]
           const articleCustomComparisonValue = article[comparisonName]
           if (!dbCustomComparisonValues || dbCustomComparisonValues.includes(articleCustomComparisonValue)) {
-            log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
-            log.debug.info(`${rssName}: (ID: ${article._id}, TITLE: ${article.title}) ${comparisonName} dbCustomComparisonValues: ${dbCustomComparisonValues ? JSON.stringify(dbCustomComparisonValues) : undefined} `)
+            if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
+            if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: (ID: ${article._id}, TITLE: ${article.title}) ${comparisonName} dbCustomComparisonValues: ${dbCustomComparisonValues ? JSON.stringify(dbCustomComparisonValues) : undefined} `)
             continue // The comparison must either be uninitialized or invalid (no such comparison exists in any articles from the request), handled by a previous function. OR it exists in the db
           }
 
@@ -161,7 +161,7 @@ module.exports = (data, callback) => {
             article.customComparisons[comparisonName] = articleCustomComparisonValue
             toUpdate[article._id] = article
           }
-          log.debug.info(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
+          if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
 
           return seenArticle(false, article)
         }

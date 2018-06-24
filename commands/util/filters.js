@@ -21,7 +21,7 @@ function filterAddCategory (m, data, callback) {
 \`~\` - Broad filter modifier to trigger even if the term is found embedded inside words/phrases.
 \`!\` - NOT filter modifier to do the opposite of a normal search term. Can be added in front of any term, including one with broad filter mod.
 \`\\\` - Escape symbol added before modifiers to interpret them as regular characters and not modifiers.\n\n
-Filters will be applied as **case insensitive** to feeds.`
+Filters will be applied as **case insensitive** to feeds. Because of this, all input will be converted to be lowercase.`
     }})
 }
 
@@ -36,11 +36,11 @@ async function filterAddTerm (m, data, callback) {
     const editing = await m.channel.send(`Updating filters...`)
 
     // Assume the chosen filters are an array
-    const addList = input.trim().split('\n') // Valid items to be added
+    const addList = input.trim().split('\n').map(item => item.trim().toLowerCase()).filter((item, index, self) => item && index === self.indexOf(item)) // Valid items to be added, trimmed and lowercased
     let addedList = '' // Valid items that were added
     let invalidItems = '' // Invalid items that were not added
     addList.forEach(item => {
-      if (!filterList[chosenFilterType].includes(item.trim()) && item.trim()) { // Account for invalid items, AKA duplicate filters.
+      if (!filterList[chosenFilterType].includes(item.trim())) { // Account for invalid items, AKA duplicate filters.
         filterList[chosenFilterType].push(item.trim())
         addedList += `\n${item.trim()}`
       } else invalidItems += `\n${item}`
@@ -94,6 +94,7 @@ exports.add = (message, guildRss, rssName, role) => {
     filterList: filterList,
     next:
     { embed: {
+      title: 'Feed Filters Customization',
       description: `**Chosen Feed:** ${source.link}${(role) ? '\n**Chosen Role:** ' + role.name : ''}\n\nBelow is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel.\u200b\n\u200b\n`,
       options: options
     }
@@ -126,7 +127,7 @@ function filterRemoveTerm (m, data, callback) {
   const { guildRss, rssName, role, chosenFilterType, filterList } = data
   const source = guildRss.sources[rssName]
   // Select the word/phrase filter here from that filter category
-  const removeList = m.content.trim().split('\n') // Items to be removed
+  const removeList = m.content.trim().split('\n').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Items to be removed
   let validFilter = false
   let invalidItems = '' // Invalid items that could not be removed
 
@@ -137,9 +138,9 @@ function filterRemoveTerm (m, data, callback) {
       if (filter !== item) return
       valid = true
       if (typeof validFilter !== 'object') validFilter = [] // Initialize as empty array if valid item found
-      validFilter.push({filter: item, index: i}) // Store the valid filter's information for removal
+      validFilter.push({ filter: item, index: i }) // Store the valid filter's information for removal
     })
-    if (!valid && item) invalidItems += `\n${item}` // Invalid items are ones that do not exist
+    if (!valid) invalidItems += `\n${item}` // Invalid items are ones that do not exist
   })
 
   if (!validFilter) return callback(new SyntaxError(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again, or type \`exit\` to cancel.`))

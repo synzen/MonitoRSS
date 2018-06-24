@@ -167,7 +167,6 @@ exports.addNewFeed = (settings, callback, customTitle) => {
       }
 
       if (storage.vipServers[channel.guild.id] && storage.vipServers[channel.guild.id].benefactor.pledgedAmount < 500 && !link.includes('feed43.com')) {
-        storage.allScheduleWords.push(link)
         const feedSchedules = storage.scheduleManager.scheduleList
         let hasVipSchedule = false
         for (var x = 0; x < feedSchedules.length; ++x) {
