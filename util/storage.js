@@ -115,6 +115,10 @@ exports.schemas = {
       type: Date,
       index: { expires: 0 }
     },
+    gracedUntil: {
+      type: Date,
+      index: { expires: 0 }
+    },
     override: Boolean
   }),
   blacklist: mongoose.Schema({

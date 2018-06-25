@@ -18,7 +18,7 @@ function toggleRoleMentionable (mentionable, channelId, roleIds, callback) {
     role.setMentionable(mentionable).then(r => {
       if (++done >= roleIds.length && callback) callback()
     }).catch(err => {
-      log.general.error(`Unable to toggle role ${role.id} (${role.name}) mentionable to ${mentionable} for article delivery`, err)
+      log.general.error(`Unable to toggle role ${role.id} (${role.name}) mentionable to ${mentionable} for article delivery`, guild, err)
       if (++done >= roleIds.length && callback) callback()
     })
   }
