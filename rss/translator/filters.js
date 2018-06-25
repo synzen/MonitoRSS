@@ -30,13 +30,15 @@ class _FilterResults {
   }
 }
 
-function findFilterWords (filterType, content, isTestMessage) {
+function findFilterWords (filterType, content) {
   // filterType is array of title, description, summary, or author
-  if (isTestMessage) {
-    var matches = []
-    var invertedMatches = []
-  }
-  const results = []
+
+  // Vars for test message
+  let matches = []
+  let invertedMatches = []
+
+  // Var for any message
+  let results = []
 
   if (Array.isArray(filterType) && filterType.length > 0) {
     if (typeof content === 'string') { // For title, descriptions, summary, and author
@@ -52,64 +54,40 @@ function findFilterWords (filterType, content, isTestMessage) {
         if (searchTerm.startsWith('~')) { // Broad filters, for phrases/words found anywhere
           searchTerm = searchTerm.slice(1, searchTerm.length)
           if (content.includes(searchTerm)) {
-            if (isTestMessage && !invertedFilter) matches.push(filterType[word])
-            else if (isTestMessage && invertedFilter) invertedMatches.push(filterType[word])
+            if (!invertedFilter) matches.push(filterType[word])
+            else if (invertedFilter) invertedMatches.push(filterType[word])
             results.push({passed: true, inverted: invertedFilter})
           } else results.push({passed: false, inverted: invertedFilter})
         } else { // Specific filters, for phrases/words with spaces around them
-          searchTerm = (searchTerm.startsWith('\\~')) ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
+          searchTerm = searchTerm.startsWith('\\~') ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('\\!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
           let expression = new RegExp(`(\\s|^)${escapeRegExp(searchTerm)}(\\s|$)`, 'gi')
           if (content.search(expression) !== -1) {
-            if (isTestMessage && !invertedFilter) matches.push(filterType[word])
-            else if (isTestMessage && invertedFilter) invertedMatches.push(filterType[word])
+            if (!invertedFilter) matches.push(filterType[word])
+            else if (invertedFilter) invertedMatches.push(filterType[word])
             results.push({passed: true, inverted: invertedFilter})
-          } else {
-            results.push({passed: false, inverted: invertedFilter})
-          }
+          } else results.push({passed: false, inverted: invertedFilter})
         }
       }
     } else if (typeof content === 'object') { // For tags
       for (var item in content) {
-        for (var w in filterType) {
-          let invertedFilter = false // Inverted results = NOT filters found
-          let searchTerm = filterType[w]
-
-          if (searchTerm.startsWith('!')) {
-            invertedFilter = true
-            searchTerm = searchTerm.slice(1, searchTerm.length)
-          }
-
-          if (searchTerm.startsWith('~')) { // Broad filters, for phrases/words found anywhere
-            searchTerm = searchTerm.slice(1, searchTerm.length)
-            if (content[item].includes(searchTerm)) {
-              if (isTestMessage && !invertedFilter) matches.push(filterType[w])
-              else if (isTestMessage && invertedFilter) invertedMatches.push(filterType[word])
-              results.push({passed: true, inverted: invertedFilter})
-            } else results.push({passed: false, inverted: invertedFilter})
-          } else { // Specific filters, for phrases/words with spaces around them
-            searchTerm = (searchTerm.startsWith('\\~')) ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
-            let expression = new RegExp(`(\\s|^)${escapeRegExp(searchTerm)}(\\s|$)`, 'gi')
-            if (content[item].search(expression) !== -1) {
-              if (isTestMessage && !invertedFilter) matches.push(filterType[w])
-              else if (isTestMessage && invertedFilter) invertedMatches.push(filterType[word])
-              results.push({passed: true, inverted: invertedFilter})
-            } else results.push({passed: false, inverted: invertedFilter})
-          }
-        }
+        const res = findFilterWords(filterType, content[item])
+        results = results.concat(res.resultsList)
+        if (res.matches) matches = matches.concat(res.matches)
+        if (res.invertedMatches) invertedMatches = invertedMatches.concat(res.invertedMatches)
       }
     }
   }
 
-  if (isTestMessage) {
-    return {
-      resultsList: results,
-      matches: matches.length > 0 ? matches : null,
-      invertedMatches: invertedMatches.length > 0 ? invertedMatches : null
-    }
-  } else return {resultsList: results}
+  // if (isTestMessage) {
+  return {
+    resultsList: results,
+    matches: matches.length > 0 ? matches : null,
+    invertedMatches: invertedMatches.length > 0 ? invertedMatches : null
+  }
+  // } else return {resultsList: results}
 }
 
-module.exports = (source, article, isTestMessage) => {
+module.exports = (source, article) => {
   const filterTypes = {
     'Title': {
       user: source.filters.Title,
@@ -145,10 +123,10 @@ module.exports = (source, article, isTestMessage) => {
   for (var type in filterTypes) {
     const item = filterTypes[type]
     if (item.user && item.user.length > 0) userDefinedFiltersExists = true
-    const allResults = findFilterWords(item.user, item.ref, isTestMessage)
+    const allResults = findFilterWords(item.user, item.ref)
     // Get match words for test messages
-    if (isTestMessage && allResults.matches) filterResults.add(type, allResults.matches, false)
-    if (isTestMessage && allResults.invertedMatches) filterResults.add(type, allResults.invertedMatches, true)
+    if (allResults.matches) filterResults.add(type, allResults.matches, false)
+    if (allResults.invertedMatches) filterResults.add(type, allResults.invertedMatches, true)
 
     // Decide whether it passes for each filter, iterating through each search word's results
     for (var i in allResults.resultsList) {
@@ -173,7 +151,7 @@ module.exports = (source, article, isTestMessage) => {
     else if (!regularFiltersExists && invertedFiltersExists) passed.regularFilters = true
   }
 
-  filterResults.passedFilters = passed.invertedFilters && passed.regularFilters
-  if (isTestMessage) return filterResults
-  else return passed.invertedFilters && passed.regularFilters
+  filterResults.passed = passed.invertedFilters && passed.regularFilters
+  return filterResults
+  // else return passed.invertedFilters && passed.regularFilters
 }

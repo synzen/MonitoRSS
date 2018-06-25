@@ -6,7 +6,7 @@ exports.normal = function (bot, message) {
     .setTitle('Sending')
     .setDescription('pong!')
 
-  message.channel.send({embed: pong}).catch(err => log.controller.info(`Could not send the pong embed`, err))
+  message.channel.send({embed: pong}).catch(err => log.controller.warning(`Could not send the pong embed`, err))
 }
 
 exports.sharded = exports.normal

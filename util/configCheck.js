@@ -33,7 +33,7 @@ exports.validChannel = (bot, guildRss, rssName) => {
   if (!channel) {
     log.cycle.warning(`Channel ${source.channel} in guild ${guildId} for feed ${source.link} was not found, skipping source`, guild)
     missingChannelCount[rssName] = missingChannelCount[rssName] ? missingChannelCount[rssName] + 1 : 1
-    if (missingChannelCount[rssName] >= 10 && storage.initialized) {
+    if (missingChannelCount[rssName] >= 3 && storage.initialized) {
       dbOps.guildRss.removeFeed(guildRss, rssName, err => {
         if (err) return log.general.warning(`Unable to remove feed ${source.link} from guild ${guildId} due to excessive missing channels warning`, err)
         log.general.info(`Removing feed ${source.link} from guild ${guildId} due to excessive missing channels warnings`)
@@ -90,7 +90,8 @@ exports.defaultConfigs = {
     imgPreviews: {type: Boolean, default: true},
     imgLinksExistence: {type: Boolean, default: true},
     checkDates: {type: Boolean, default: true},
-    formatTables: {type: Boolean, default: false}
+    formatTables: {type: Boolean, default: false},
+    toggleRoleMentions: {type: Boolean, default: false}
   },
   advanced: {
     shards: {type: Number, default: 1},

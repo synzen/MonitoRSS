@@ -18,11 +18,11 @@ exports.normal = (bot, message) => {
       if (rssName === name) {
         found = true
         debugFeeds.push(rssName)
-        log.controller.info(`Added ${rssName} to debugging list.`)
+        log.controller.success(`Added ${rssName} to debugging list.`)
       }
     }
   })
-  if (!found) log.controller.info(`Unable to add ${rssName} to debugging list, not found in any guild sources.`)
+  if (!found) log.controller.warning(`Unable to add ${rssName} to debugging list, not found in any guild sources.`)
 }
 
 exports.sharded = (bot, message, Manager) => {
@@ -47,10 +47,10 @@ exports.sharded = (bot, message, Manager) => {
         if ('${rssName}' === name) {
           found = true;
           debugFeeds.push('${rssName}');
-          log.controller.info('Added ${rssName} to debugging list.');
+          log.controller.success('Added ${rssName} to debugging list.');
           'Done';
         }
       }
     });
-  `).catch(err => log.controller.info(`Unable to broadcast eval debug. `, err.message || err))
+  `).catch(err => log.controller.warning(`Unable to broadcast eval debug. `, err.message || err))
 }

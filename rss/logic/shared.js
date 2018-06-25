@@ -1,8 +1,8 @@
-const config = require('../../config.json')
 const dbCmds = require('../db/commands.js')
 const moment = require('moment-timezone')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 const log = require('../../util/logger.js')
+const storage = require('../../util/storage.js')
 const FeedModel = require('../../util/storage.js').models.Feed
 
 function getArticleId (articleList, article) {
@@ -18,8 +18,8 @@ function getArticleId (articleList, article) {
   return article.guid
 }
 
-module.exports = function (data, callback) {
-  const { rssList, articleList, debugFeeds, link, shardId, logicType } = data
+module.exports = (data, callback) => {
+  const { rssList, articleList, debugFeeds, link, shardId, logicType, config, feedData } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
   if (logicType !== 'init' && logicType !== 'cycle') throw new Error(`Expected logicType parameter must be "cycle" or "init", found ${logicType} instead`)
   const RSSLIST_LENGTH = Object.keys(rssList).length
   let sourcesCompleted = 0
@@ -33,10 +33,12 @@ module.exports = function (data, callback) {
   const toInsert = []
   const toUpdate = {} // Article's resolved IDs (getArticleId) as key and the article as value
   const Feed = FeedModel(link, shardId)
+  const feedCollectionId = feedData ? storage.collectionId(link, shardId) : undefined
+  const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
 
-  dbCmds.findAll(Feed, (err, docs) => {
+  dbCmds.findAll(feedCollection || Feed, (err, docs) => {
     if (err) {
-      if (logicType === 'cycle') return callback(new Error(`Unable to findAll articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
+      if (logicType === 'cycle') return callback(err, { status: 'failed', link: link, rssList: rssList })
       else throw err
     }
     for (var d = 0; d < docs.length; ++d) {
@@ -77,14 +79,13 @@ module.exports = function (data, callback) {
         }
       }
     }
-
-    dbCmds.bulkInsert(Feed, toInsert, (err, res) => {
+    dbCmds.bulkInsert(feedCollection || Feed, toInsert, err => {
       if (err) {
         if (logicType === 'cycle') return callback(new Error(`Database Error: Unable to bulk insert articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
         else throw err
       }
       if (dbIds.length > 0) for (var rssName in rssList) processSource(rssName, docs)
-      else callback(null, { status: 'success', link: link })
+      else callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
     })
   })
 
@@ -148,7 +149,11 @@ module.exports = function (data, callback) {
           const comparisonName = customComparisons[z]
           const dbCustomComparisonValues = dbCustomComparisons[comparisonName]
           const articleCustomComparisonValue = article[comparisonName]
-          if (!dbCustomComparisonValues || dbCustomComparisonValues.includes(articleCustomComparisonValue)) continue // The comparison must either be uninitialized or invalid (no such comparison exists in any articles from the request), handled by a previous function. OR it exists in the db
+          if (!dbCustomComparisonValues || dbCustomComparisonValues.includes(articleCustomComparisonValue)) {
+            if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
+            if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: (ID: ${article._id}, TITLE: ${article.title}) ${comparisonName} dbCustomComparisonValues: ${dbCustomComparisonValues ? JSON.stringify(dbCustomComparisonValues) : undefined} `)
+            continue // The comparison must either be uninitialized or invalid (no such comparison exists in any articles from the request), handled by a previous function. OR it exists in the db
+          }
 
           // Prepare it for update in the database
           if (!toUpdate[article._id]) {
@@ -156,6 +161,8 @@ module.exports = function (data, callback) {
             article.customComparisons[comparisonName] = articleCustomComparisonValue
             toUpdate[article._id] = article
           }
+          if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
+
           return seenArticle(false, article)
         }
         return ++processedArticles === totalArticles ? finishSource() : null
@@ -193,18 +200,16 @@ module.exports = function (data, callback) {
 
     // Update anything if necessary
     const toUpdateLength = Object.keys(toUpdate).length
-    if (toUpdateLength === 0) {
-      return callback(null, { status: 'success', link: link })
-    }
+    if (toUpdateLength === 0) return callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
     let c = 0
     for (var id in toUpdate) {
       const article = toUpdate[id]
-      dbCmds.update(Feed, article, (err, res) => {
+      dbCmds.update(feedCollection || Feed, article, err => {
         if (err) {
           if (logicType === 'cycle') log.cycle.error(`Failed to update an article entry`, err)
           else log.init.error(`Failed to update an article entry`, err)
         }
-        if (++c === toUpdateLength) callback(null, { status: 'success', link: link })
+        if (++c === toUpdateLength) callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
       })
     }
   }

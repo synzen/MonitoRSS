@@ -1,36 +1,28 @@
-const fs = require('fs')
-const exec = require('child_process').exec
+const path = require('path')
+const spawn = require('child_process').spawn
+const mongoose = require('mongoose')
 const log = require('../../util/logger.js')
-const DATABASE_NAME = require('mongoose').connection.name
+const BACKUP_PATH = path.join(__dirname, '..', '..', 'settings', 'dbbackup')
 
-function backup (m, message, arg) {
-  exec(`mongodump --db ${DATABASE_NAME} --collection ${arg} --archive=${arg}.archive --gzip`, (err, stdout, stderr) => {
-    if (err) {
-      log.controller.warning(`Database ${arg} backup failed:`, message.author, err)
-      return m.edit(`Unable to backup, an error has occured. See console for details.`).catch(err => log.controller.warning(`Bot Controller: Unable to edit creating archive message to error for dbbackup:`, message.author, err))
-    }
-    attachFile(m, message, arg)
-  })
-}
-
-function attachFile (m, message, arg) {
-  m.delete()
-  message.reply(`Successfully archived.`, { file: `./${arg}.archive` })
-    .then(() => deleteTemp(m, message, arg))
-    .catch(err => log.controller.warning(`Failed to send success message with archive attachment for dbbackup`, message.author, err))
-}
-
-function deleteTemp (m, message, arg) {
-  fs.unlink(`./${arg}.archive`, err => {
-    if (err) log.controller.warning(`Unable to delete temp file ./${arg}.archive after successfully backing up for dbbackup:`, message.author, err)
-    else log.controller.info(`Archived backup successfully created and sent to Discord`, message.author)
+function dump (m, collections, complete = 0) {
+  const collection = collections.shift()
+  if (!collection) {
+    log.controller.info('Database backup complete', m.author)
+    return m.edit(`Dumped ${complete}/4 total collections.${complete > 0 ? `. See \`${BACKUP_PATH}\` for the dump folder.` : ''}`).catch(err => log.controller.warning('dbbackup', m.author, err))
+  }
+  log.controller.info(`Attempting to dump collection ${mongoose.connection.name}.${collection}`)
+  const child = spawn('mongodump', ['--db', mongoose.connection.name, '--collection', collection, '--out', BACKUP_PATH])
+  child.stdout.on('data', data => console.log('stdout: ', data.toString().trim()))
+  child.stderr.on('data', data => console.log('stderr: ', data.toString().trim()))
+  child.on('close', code => {
+    log.controller.info(code === 0 ? `Successfully dumped collection ${mongoose.connection.name}.${collection} ${BACKUP_PATH}\n` : `Failed to dump collection ${mongoose.connection.name}.${collection} (code ${code.toString().trim()})\n`)
+    dump(m, collections, code === 0 ? ++complete : complete) // 0 is successful, 1 is failed
   })
 }
 
 exports.normal = (bot, message) => {
-  const arg = message.content.split(' ')[1] ? message.content.split(' ')[1] : 'guilds'
-  console.log(`Bot Controller: Database ${arg} backup has been started by ${message.author.username}`)
-  message.channel.send('Creating archive...').then(m => backup(m, message, arg)).catch(err => log.controller.warning(`Failed to send creating archive message for dbbackup:`, message.author, err))
+  log.controller.info(`Databases backup has been started\n`, message.author)
+  message.channel.send('Backing up...').then(m => dump(m, ['guilds', 'vips', 'failed_links', 'guild_backups'])).catch(err => log.controller.warning(`Failed to send creating archive message for dbbackup:`, message.author, err))
 }
 
 exports.sharded = exports.normal

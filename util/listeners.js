@@ -66,7 +66,7 @@ function messageReactionRemoveHandler (msgReaction, user) {
 }
 
 function messageHandler (message) {
-  if (config.bot.enableCommands !== false) eventHandler('message')(storage.bot, message)
+  eventHandler('message')(storage.bot, message, config.bot.enableCommands === true ? null : true)
   try { if (cmdsExtension) cmdsExtension(storage.bot, message) } catch (e) {}
 }
 

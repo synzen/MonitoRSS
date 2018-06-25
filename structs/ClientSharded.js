@@ -1,6 +1,7 @@
 const config = require('../config.json')
 const storage = require('../util/storage.js')
 const connectDb = require('../rss/db/connect.js')
+const LinkTracker = require('./LinkTracker.js')
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
@@ -13,7 +14,7 @@ function overrideConfigs (configOverrides) {
       const configCategory = config[category]
       if (!configOverrides[category]) continue
       for (var configName in configCategory) {
-        if (configOverrides[category][configName]) category[configName] = configOverrides[category][configName]
+        if (configOverrides[category][configName]) configCategory[configName] = configOverrides[category][configName]
       }
     }
   }
@@ -21,7 +22,7 @@ function overrideConfigs (configOverrides) {
 
 class ClientSharded {
   constructor (shardingManager, configOverrides) {
-    if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be disabled`)
+    if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
     overrideConfigs(configOverrides)
     this.missingGuildRss = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
@@ -30,14 +31,14 @@ class ClientSharded {
     this.scheduleIntervals = [] // Array of intervals for each different refresh time
     this.scheduleTracker = {} // Key is refresh time, value is index for this.activeshardIds
     this.currentCollections = [] // Array of collection names currently in use by feeds
-    this.linkTracker = new dbOps.LinkTracker()
+    this.linkTracker = new LinkTracker()
     this.shardsReady = 0 // Shards that have reported that they're ready
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardingManager = shardingManager
     this.shardingManager.on('message', this.messageHandler.bind(this))
     connectDb(err => {
       if (err) throw err
-      shardingManager.spawn(config.advanced.shards, 0)
+      if (shardingManager.shards.size === 0) shardingManager.spawn(config.advanced.shards, 0) // They may have already been spawned with a predefined ShardingManager
       shardingManager.shards.forEach((val, key) => this.activeshardIds.push(key))
     })
   }
@@ -51,6 +52,7 @@ class ClientSharded {
       case 'shardReady': this._shardReadyEvent(message); break
       case 'initComplete': this._initCompleteEvent(message); break
       case 'scheduleComplete': this._scheduleCompleteEvent(message); break
+      case 'addCustomSchedule': this._addCustomSchedule(message); break
       case 'dbRestore': this._dbRestoreEvent(message)
     }
   }
@@ -98,7 +100,9 @@ class ClientSharded {
         })
         this.createIntervals()
       })
-    } else if (this.shardsDone < this.shardingManager.totalShards) this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
+    } else if (this.shardsDone < this.shardingManager.totalShards) {
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
+    }
   }
 
   _scheduleCompleteEvent (message) {
@@ -114,11 +118,24 @@ class ClientSharded {
     }
   }
 
+  _addCustomSchedule (message) {
+    const refreshTime = message.schedule.refreshTimeMinutes
+    if (this.refreshTimes.includes(refreshTime)) return
+    this.refreshTimes.push(refreshTime)
+    this.scheduleIntervals.push(setInterval(() => {
+      this.scheduleTracker[refreshTime] = 0
+      const p = this.scheduleTracker[refreshTime]
+      this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
+    }, refreshTime * 60000)) // Convert minutes to ms
+  }
+
   _dbRestoreEvent (message) {
     this.scheduleIntervals.forEach(it => clearInterval(it))
-    dbRestore.restoreUtil(undefined, message.fileName, message.url, message.databaseName)
-      .then(() => this.shardingManager.broadcast({ _drss: true, type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID }))
-      .catch(err => { throw err })
+    this.shardingManager.broadcast({ _drss: true, type: 'stop' })
+    dbRestore.restoreUtil(null, err => {
+      if (err) throw err
+      this.shardingManager.broadcast({ _drss: true, type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID })
+    })
   }
 
   createIntervals () {
@@ -128,13 +145,13 @@ class ClientSharded {
         this.scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
         const p = this.scheduleTracker[refreshTime]
         this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
-      }, refreshTime * 60000))
+      }, refreshTime * 60000)) // Convert minutes to ms
     })
     // Refresh VIPs on a schedule
     setInterval(() => {
       // Only needs to be run on a single shard since dbOps uniformizes it across all shards
       this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err))
-    }, 3600000)
+    }, 900000)
   }
 }
 

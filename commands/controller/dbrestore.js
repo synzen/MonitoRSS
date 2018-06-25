@@ -1,31 +1,22 @@
 const fs = require('fs')
-const needle = require('needle')
+const config = require('../../config.json')
+const path = require('path')
 const mongoose = require('mongoose')
-const exec = require('child_process').exec
-const DATABASE_NAME = require('mongoose').connection.name
-const scheduleManager = require('../../util/storage.js').scheduleManager
+const storage = require('../../util/storage.js')
+const spawn = require('child_process').spawn
 const log = require('../../util/logger.js')
-
-function restore (fileName, databaseName, callback) {
-  exec(`mongorestore --gzip --archive=${fileName} --nsInclude ${databaseName}.guilds`, callback)
-}
+const BACKUP_TO_PATH = path.join(__dirname, '..', '..', 'settings', 'dbrestore_backup')
+const RESTORE_FROM_PATH = path.join(__dirname, '..', '..', 'settings', 'dbbackup')
 
 exports.normal = async (bot, message) => {
   try {
-    if (scheduleManager.cyclesInProgress()) return await message.channel.send(`Unable to start restore while a retrieval cycle is in progress. Try again later.`)
-    const archive = message.attachments.first()
-    if (!archive) return await message.channel.send('No archive found as an attachment.')
-
-    const fileName = archive.filename
-    if (!fileName.endsWith('.archive')) return message.channel.send('That is not a valid archive to restore.').catch(err => console.log(`Bot Controller: Unable to send invalid archive message for dbrestore:`, err.message || err))
-    console.log(`Bot Controller: Database restore has been started by ${message.author.username}`)
+    if (!fs.existsSync(RESTORE_FROM_PATH)) return await message.channel.send(`No dbbackup folder found (\`${RESTORE_FROM_PATH}). Use ${config.bot.prefix}dbbackup first.`)
     const m = await message.channel.send('Restoring...')
-    scheduleManager.stopSchedules()
-    exports.restoreUtil(m, fileName, archive.url)
-      .then(() => process.exit())
-      .catch(err => {
-        throw err
-      })
+    storage.rssBot.stop()
+    exports.restoreUtil(m, err => {
+      if (err) throw err
+      process.exit()
+    })
   } catch (err) {
     log.controller.warning('dbrestore', err)
   }
@@ -33,69 +24,58 @@ exports.normal = async (bot, message) => {
 
 exports.sharded = async (bot, message) => {
   try {
-    const results = await bot.shard.broadcastEval(`require(require('path').dirname(require.main.filename) + '/util/storage.js').scheduleManager.cyclesInProgress() ? true : false`)
-    for (var i = 0; i < results.length; ++i) {
-      if (results[i]) return await message.channel.send(`Unable to start restore while a retrieval cycle is in progress. Try again later.`)
-    }
-
-    const archive = message.attachments.first()
-    if (!archive) return await message.channel.send('No archive found as an attachment.')
-
-    const fileName = archive.filename
-    if (!fileName.endsWith('.archive')) return await message.channel.send('That is not a valid archive to restore.')
-    console.log(`Bot Controller: Database restore has been started by ${message.author.username}`)
+    if (!fs.existsSync(RESTORE_FROM_PATH)) return await message.channel.send(`No dbbackup folder dump found (\`${RESTORE_FROM_PATH}\`).`)
     const m = await message.channel.send('Restoring...')
-    process.send({ _drss: true, type: 'dbRestore', fileName: fileName, url: archive.url, channelID: message.channel.id, messageID: m.id, databaseName: DATABASE_NAME })
+    process.send({ _drss: true, type: 'dbRestore', channelID: message.channel.id, messageID: m.id })
   } catch (err) {
     log.controller.warning('dbrestore', err)
   }
 }
 
-exports.restoreUtil = (m, fileName, url, databaseName = DATABASE_NAME) => {
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(fileName)
-    needle.get(url).pipe(file).on('finish', () => restoreTest(m))
+exports.restoreUtil = (m, callback) => {
+  backupCurrent()
 
-    function restoreTest (m) {
-      restore(fileName, databaseName, (err, stdout, stderr) => {
-        if (err) {
-          reject(new Error(`Bot Controller: Database restore failed:`, err.message))
-          if (m) m.edit(`Unable to restore, an error has occured. See console for details.`).catch(err => console.log(`Bot Controller: Unable to edit restoring message to error for dbrestore:`, err.message || err))
-          return
-        }
-        dropDatabase(m)
-      })
-    }
+  function backupCurrent () {
+    log.controller.info(`Backing up current database ${mongoose.connection.name} with mongodump to ${BACKUP_TO_PATH}\n`, m ? m.author : null)
+    const child = spawn('mongodump', ['--db', mongoose.connection.name, '--out', BACKUP_TO_PATH])
+    child.stdout.on('data', data => console.log('stdout: ', data.toString().trim()))
+    child.stderr.on('data', data => console.log('stderr: ', data.toString().trim()))
+    child.on('close', code => {
+      const stringCode = code.toString().trim()
+      log.controller.info(`Finished backing up current database, spawn process exited with code ${stringCode}\n`, m ? m.author : null)
+      if (code === 0) dumpCurrent()
+      else callback(new Error(`Process to back up database exited with non-zero code (${stringCode}), see console`))
+    })
+  }
 
-    function dropDatabase (m) {
-      mongoose.connection.db.dropDatabase(err => {
-        if (err) return reject(new Error(`Bot Controller: Unable to drop database ${databaseName} for dbrestore:`, err.message))
-        restoreFinal(m)
-      })
-    }
+  function dumpCurrent () {
+    log.controller.info(`Dropping current database ${mongoose.connection.name} through mongoose`, m ? m.author : null)
+    mongoose.connection.db.dropDatabase(err => {
+      if (err) return callback(err)
+      log.controller.info(`Dropped current database successfully\n`)
+      restore()
+    })
+  }
 
-    function restoreFinal (m) {
-      restore(fileName, databaseName, (err, stdout, stderr) => {
-        if (err) {
-          reject(new Error(`Bot Controller: Database restore failed:`, err.message))
-          if (m) m.edit(`Unable to restore, an error has occured. See console for details.`).catch(err => console.log(`Bot Controller: Unable to edit restoring message to error for dbrestore:`, err.message || err))
-          return
-        }
-        if (stderr) console.info(stderr)
-        else if (stdout) console.info(stdout)
-        deleteTemp(m)
-      })
-    }
-
-    function deleteTemp (m) {
-      fs.unlink(fileName, err => {
-        if (err) console.log(`Bot Controller: Unable to remove temp file ./${fileName} after restore for dbrestore:`, err.message || err)
-        console.log('Bot Controller: Database restore is complete. The database has been wiped clean with the backup guilds collection restored. The process will stop for a manual reboot.')
-        if (!m) return resolve()
-        m.edit('Database restore complete! Stopping bot process for manual reboot.')
-          .then(() => resolve())
-          .catch(err => console.log(`Bot Controller: Unable to edit restoring message to success for dbrestore:`, err.message || err))
-      })
-    }
-  })
+  function restore () {
+    log.controller.info(`Restoring database ${mongoose.connection.name} with mongorestore from ${RESTORE_FROM_PATH}`, m ? m.author : null)
+    const child = spawn('mongorestore', ['--nsInclude', `${mongoose.connection.name}.*`, RESTORE_FROM_PATH])
+    child.stdout.on('data', data => console.log('stdout: ', data.toString().trim()))
+    child.stderr.on('data', data => console.log('stderr: ', data.toString().trim()))
+    child.on('close', code => {
+      const stringCode = code.toString().trim()
+      log.controller.info(`Backed up current database, spawn process exited with code ${stringCode}\n`)
+      if (code !== 0) {
+        if (m) m.edit(`A possible error has occured. See console for details.`).catch(err => log.controller.warning(`Unable to edit restoring message to error for dbrestore:`, m.author, err))
+        return callback(new Error(`Process to back up database exited with non-zero code (${stringCode}), see console`))
+      }
+      if (!m) return callback()
+      m.edit('Database restore complete! Stopping bot process for manual reboot.')
+        .then(() => callback())
+        .catch(err => {
+          log.controller.warning(`Unable to edit restoring message to success for dbrestore:`, m.author, err)
+          callback()
+        })
+    })
+  }
 }

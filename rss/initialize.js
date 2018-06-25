@@ -1,6 +1,7 @@
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const dbOps = require('../util/dbOps.js')
+const config = require('../config.json')
 const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
@@ -46,8 +47,10 @@ exports.addToDb = (articleList, link, callback, customTitle) => {
     if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
     return article.guid
   }
-  const Feed = FeedModel(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)
 
+  // Initialize the feed collection if necessary, but only if a database is used. This file has no access to the feed collections if config.database.uri is a databaseless folder path
+  if (!config.database.uri.startsWith('mongo')) return callback()
+  const Feed = FeedModel(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)
   dbCmds.findAll(Feed, (err, docs) => {
     if (err) {
       log.general.warning(`Unable to findAll to initialize ${link}`, err)
@@ -132,7 +135,7 @@ exports.addNewFeed = (settings, callback, customTitle) => {
 
       if (metaTitle.length > 200) metaTitle = metaTitle.slice(0, 200) + '...'
 
-      var guildRss
+      let guildRss
       if (currentGuilds.has(channel.guild.id)) {
         guildRss = currentGuilds.get(channel.guild.id)
         if (!guildRss.sources) guildRss.sources = {}
@@ -141,7 +144,8 @@ exports.addNewFeed = (settings, callback, customTitle) => {
         rssList[rssName] = {
           title: metaTitle,
           link: link,
-          channel: channel.id
+          channel: channel.id,
+          addedOn: new Date()
         }
 
         if (cookies) rssList[rssName].advanced = { cookies: cookies }
@@ -154,11 +158,30 @@ exports.addNewFeed = (settings, callback, customTitle) => {
         guildRss.sources[rssName] = {
           title: metaTitle,
           link: link,
-          channel: channel.id
+          channel: channel.id,
+          addedOn: new Date()
         }
         if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
 
         currentGuilds.set(channel.guild.id, guildRss)
+      }
+
+      if (storage.vipServers[channel.guild.id] && storage.vipServers[channel.guild.id].benefactor.pledgedAmount < 500 && !link.includes('feed43.com')) {
+        const feedSchedules = storage.scheduleManager.scheduleList
+        let hasVipSchedule = false
+        for (var x = 0; x < feedSchedules.length; ++x) {
+          const schedule = feedSchedules[x].schedule
+          if (schedule.name !== 'vip') continue
+          hasVipSchedule = true
+          schedule.keywords.push(link)
+          storage.allScheduleWords.push(link)
+          delete storage.scheduleAssigned[rssName]
+        }
+        if (!hasVipSchedule) {
+          const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: [link] }
+          storage.scheduleManager.addSchedule(newSched)
+          delete storage.scheduleAssigned[rssName]
+        }
       }
 
       dbOps.guildRss.update(guildRss)

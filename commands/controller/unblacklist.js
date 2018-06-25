@@ -14,6 +14,7 @@ exports.normal = (bot, message) => {
       log.controller.error('Unable to remove blacklist', message.author, err)
       return message.channel.send(`Unblacklist failed. ${err.message}`)
     }
+    log.controller.success(`Removed ${id} from blacklist`)
     message.channel.send(`Removed ${id} from blacklist.`)
   })
 }

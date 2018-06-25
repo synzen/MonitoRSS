@@ -1,12 +1,39 @@
-
 # Discord.RSS
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
 
-For steps on how to host the bot on your own, and on using the bot itself, see https://github.com/synzen/Discord.RSS/wiki.
+All documentation can be found at https://github.com/synzen/Discord.RSS/wiki.
+
+
+### Setting Up via Cloning Repository
+
+See https://github.com/synzen/Discord.RSS/wiki/Setup
+
+### Setting Up with Existing Client
+
+The fastest way to using Discord.RSS with an existing [discord.js](https://github.com/discordjs/discord.js) client:
+
+
+```
+npm install synzen/Discord.RSS#dev
+```
+
+```js
+const Discord = require('discord.js')
+const DiscordRSS = require('discord.rss')
+
+const client = new Discord.Client()
+const drss = new DiscordRSS.Client({ database: { uri: './sources' } }) // File-based sources instead of Mongo
+
+client.login('token')
+drss.login(client) // Can be done before or after the client is 'ready'
+```
+
+There are multiple ways of integrating Discord.RSS programmatically - see [here](https://github.com/synzen/Discord.RSS/wiki/Use-with-Existing-Bot) for more information. For full features, use a mongodb database.uri instead of a directory.
+
 
 ## Built With		
 * [Node.js](https://nodejs.org/en/)		
-* [Discord.js](https://www.npmjs.com/package/discord.js)
+* [discord.js](https://www.npmjs.com/package/discord.js)
 
 #### Core Functions
  * [Feedparser](https://www.npmjs.com/package/feedparser)		

@@ -25,7 +25,7 @@ module.exports = (bot, message) => {
   const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
   const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
 
-  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`).then(m => m.delete(3000)).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
+  if (message.content.split(' ').length === 1) return message.channel.send(`The correct syntax is \`${config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`).catch(err => log.command.warning(`rssAdd 0:`, err)) // If there is no link after rssadd, return.
 
   let linkList = message.content.split(' ')
   linkList.shift()
@@ -59,7 +59,7 @@ module.exports = (bot, message) => {
       }
       msg += failBox + '\n```\n'
     } else if (limitExceeded) msg += `Some feed(s) could not be added due to to the feed limit (${maxFeedsAllowed}).`
-    if (Object.keys(passedAddLinks).length > 0) msg += `Articles will be automatically delivered once new articles are found.`
+    if (Object.keys(passedAddLinks).length > 0) msg += `Articles will be automatically delivered once new articles are found. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`
 
     channelTracker.remove(message.channel.id)
     verifyMsg.edit(msg).catch(err => log.command.warning(`rssAdd 1:`, err))
@@ -147,7 +147,7 @@ module.exports = (bot, message) => {
         })
       })(0)
     }).catch(err => {
-      log.command.warning(`Could not begin feed addition validation.`, message.guild, err)
+      log.command.warning(`Could not begin feed addition validation`, message.guild, err)
       channelTracker.remove(message.channel.id)
     })
 }

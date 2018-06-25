@@ -4,14 +4,14 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const config = require('../config.json')
 
-async function addRole (message, role, link) {
+async function addRole (message, role, links) {
   message.member.addRole(role)
     .then(mem => {
       log.command.info(`Role successfully added to member`, message.guild, role, message.author)
-      message.channel.send(`You now have the role \`${role.name}\`, subscribed to **<${link}>**.`)
+      message.channel.send(`You now have the role \`${role.name}\`, subscribed to:\n\n**<${links.join('>\n a<')}>**`, { split: true }).catch(err => log.command.warning('subme addrole 1', err))
     })
     .catch(err => {
-      message.channel.send(`Error: Unable to add role.` + err.message ? ` (${err.message})` : '')
+      message.channel.send(`Error: Unable to add role.` + err.message ? ` (${err.message})` : '', { split: true }).catch(err => log.comamnd.warning('subme addrole 2', err))
       log.command.warning(`Unable to add role to user`, message.guild, role, message.author, err)
     })
 }
@@ -30,11 +30,14 @@ module.exports = async (bot, message, command) => {
     const predeclared = msgArr.join(' ').trim()
     if (predeclared) {
       const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase())
-      for (var option in options) {
-        const roleData = options[option]
-        if (role && roleData.roleList.includes(role.id)) return addRole(message, role, roleData.source.link)
-        else if (mention && roleData.roleList.includes(mention.id)) return addRole(message, mention, roleData.source.link)
+      const links = []
+      if (role || mention) {
+        for (var option in options) {
+          const roleData = options[option]
+          if (roleData.roleList.includes(role.id)) links.push(roleData.source.link)
+        }
       }
+      if (links.length > 0 && (role || mention)) return addRole(message, role || mention, links)
       return await message.channel.send(`That is not a valid role to add. To see the the full list of roles that can be added, type \`${config.bot.prefix}subme\`.`)
     }
 

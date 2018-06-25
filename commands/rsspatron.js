@@ -34,7 +34,7 @@ async function switchServerArg (bot, message, args) {
         })
         break
       case 'remove':
-        if (!storage.vipServers[server]) return await message.channel.send('That server does not have a patron backing.')
+        if (!storage.vipServers[server] && !storage.vipUsers[message.author.id].servers.includes(server)) return await message.channel.send('That server does not have a patron backing.')
         const m2 = await message.channel.send(`Removing server ${server}...`)
         dbOps.vips.removeServers({ ...storage.vipUsers[message.author.id], serversToRemove: [server] }, (err, added, failed) => {
           let content = ''
@@ -46,7 +46,7 @@ async function switchServerArg (bot, message, args) {
               content += '\n\n'
             }
             if (failed.length > 0) {
-              content += 'The following server(s) could not be added because they are not backed by your patron status:\n'
+              content += 'The following server(s) could not be removed because they are not backed by your patron status:\n'
               for (var r in failed) content += `\n${failed[r]}`
             }
           }
@@ -66,7 +66,7 @@ async function switchServerArg (bot, message, args) {
         for (var l = 0; l < myServers.length; ++l) {
           const id = myServers[l]
           const myServer = storage.vipServers[id]
-          content += `${id}${myServer.name ? ` (${myServer.name})` : ``}\n`
+          content += `${id}${myServer && myServer.name ? ` (${myServer.name})` : ``}\n`
         }
         await message.channel.send(content)
         break
