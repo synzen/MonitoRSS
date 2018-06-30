@@ -87,13 +87,13 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
 
     if (article.date) testDetails += `\n\n[Published Date]: {date}\n${article.date}`
     if (article.author) testDetails += `\n\n[Author]: {author}\n${article.author}`
-    if (article.reddit_author) testDetails += `\n\n[Author Link]: {reddit_author}\n${article.reddit_author}`
     if (article.link) testDetails += `\n\n[Link]: {link}\n${article.link}`
-    if (article.reddit_direct) testDetails += `\n\n[Submission Link]: {reddit_direct}\n${article.reddit_direct}`
     if (article.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${article.subscriptions.split(' ').length - 1} subscriber(s)`
     if (article.images) testDetails += `\n\n${article.listImages()}`
-    let placeholderImgs = article.listPlaceholderImages()
+    const placeholderImgs = article.listPlaceholderImages()
     if (placeholderImgs) testDetails += `\n\n${placeholderImgs}`
+    const placeholderAnchors = article.listPlaceholderAnchors()
+    if (placeholderAnchors) testDetails += `\n\n${placeholderAnchors}`
     if (article.tags) testDetails += `\n\n[Tags]: {tags}\n${article.tags}`
     if (filterExists) testDetails += `\n\n[Passed Filters?]: ${filterResults.passed ? 'Yes' : 'No'}${filterResults.passed ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
     testDetails += '```' + footer

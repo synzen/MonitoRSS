@@ -20,7 +20,6 @@ class ScheduleManager {
       const cycle = this.scheduleList[j].cycle
       cycle.on('article', this._queueArticle.bind(this))
       cycle.on('finish', this._finishSchedule.bind(this))
-      // this._listenToArticles(this.scheduleList[j].cycle)
     }
   }
 

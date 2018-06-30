@@ -4,6 +4,7 @@ const htmlConvert = require('html-to-text')
 const defaultConfigs = require('../util/configCheck.js').defaultConfigs
 const log = require('../util/logger.js')
 const VALID_PH_IMGS = ['title', 'description', 'summary']
+const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date']
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
@@ -107,7 +108,7 @@ function evalRegexConfig (source, text, placeholderName) {
   return customPlaceholders
 }
 
-function cleanup (source, text, imgSrcs) {
+function cleanup (source, text, imgSrcs, anchorLinks) {
   if (!text) return ''
 
   text = text.replace(/\*/gi, '')
@@ -127,7 +128,7 @@ function cleanup (source, text, imgSrcs) {
         if (isStr && link.startsWith('//')) link = 'http:' + link
         else if (isStr && !link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
 
-        if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && isStr && link) imgSrcs.push(link)
+        if (Array.isArray(imgSrcs) && imgSrcs.length < 9 && isStr && link) imgSrcs.push(link)
 
         let exist = true
         const globalExistOption = config.feeds.imgLinksExistence != null ? config.feeds.imgLinksExistence : defaultConfigs.feeds.imgLinksExistence.default // Always a boolean via startup checks
@@ -143,6 +144,13 @@ function cleanup (source, text, imgSrcs) {
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
 
         return image
+      },
+      anchor: (node, fn, options) => {
+        const orig = fn(node.children, options)
+        if (!Array.isArray(anchorLinks)) return orig
+        const href = node.attribs.href ? node.attribs.href.trim() : ''
+        if (anchorLinks.length < 5 && href) anchorLinks.push(href)
+        return orig
       }
     }
   })
@@ -167,13 +175,18 @@ module.exports = class Article {
     if (this.reddit && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
 
     // Title
-    const titleImgs = []
-    this.fullTitle = cleanup(source, raw.title, titleImgs)
+    this.titleImages = []
+    this.titleAnchors = []
+    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors)
     this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
-    this.titleImgs = titleImgs
-    for (var titleImgNum in titleImgs) {
-      const term = `description:image${parseInt(titleImgNum, 10) + 1}`
-      this[term] = titleImgs[titleImgNum]
+    for (var titleImgNum in this.titleImages) {
+      const term = `title:image${parseInt(titleImgNum, 10) + 1}`
+      this[term] = this.titleImages[titleImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
+    for (var titleAnchorNum in this.titleAnchors) {
+      const term = `title:anchor${parseInt(titleAnchorNum, 10) + 1}`
+      this[term] = this.titleAnchors[titleAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
@@ -197,17 +210,23 @@ module.exports = class Article {
     }
 
     // Description and reddit-specific placeholders
-    const descriptionImages = []
-    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, descriptionImages) // Account for youtube's description
-    let description = this.fullDescription
-    description = description.length > 800 ? `${description.slice(0, 790)}...` : description
-    for (var desImgNum in descriptionImages) {
+    this.descriptionImages = []
+    this.descriptionAnchors = []
+    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors) // Account for youtube's description
+    this.description = this.fullDescription
+    this.description = this.description.length > 800 ? `${this.description.slice(0, 790)}...` : this.description
+    for (var desImgNum in this.descriptionImages) {
       const term = `description:image${parseInt(desImgNum, 10) + 1}`
-      this[term] = descriptionImages[desImgNum]
+      this[term] = this.descriptionImages[desImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
+    for (var desAnchorNum in this.descriptionAnchors) {
+      const term = `description:anchor${parseInt(desAnchorNum, 10) + 1}`
+      this[term] = this.descriptionImages[desAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
-    // Get the specific reddit placeholders {reddit_direct} and {reddit_author}
+    // Get the specific reddit placeholders {reddit_direct} and {reddit_author}. Still do this for backwards compatibility.
     if (this.reddit) {
       htmlConvert.fromString(raw.description, {
         format: {
@@ -222,20 +241,22 @@ module.exports = class Article {
         }
       })
       this.fullDescription = this.fullDescription.replace('\n[link] [comments]', '')
-      description = description.replace('\n[link] [comments]', '') // Truncate the useless end of reddit description after anchors are removed
+      this.description = this.description.replace('\n[link] [comments]', '') // Truncate the useless end of reddit description after anchors are removed
     } else this.reddit_direct = this.reddit_author = ''
 
-    this.description = description
-    this.descriptionImgs = descriptionImages
-
     // Summary
-    const summaryImages = []
-    this.fullSummary = cleanup(source, raw.summary, summaryImages)
+    this.summaryImages = []
+    this.summaryAnchors = []
+    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors)
     this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
-    this.summaryImgs = summaryImages
-    for (var sumImgNum in summaryImages) {
+    for (var sumImgNum in this.summaryImages) {
       const term = `summary:image${parseInt(sumImgNum, 10) + 1}`
-      this[term] = summaryImages[sumImgNum]
+      this[term] = this.summaryImages[sumImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
+    for (var sumAnchorNum in this.summaryAnchors) {
+      const term = `summary:anchor${parseInt(sumAnchorNum, 10) + 1}`
+      this[term] = this.summaryAnchors[sumAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
@@ -288,13 +309,31 @@ module.exports = class Article {
     const listedImages = []
     let list = ''
     for (var k in VALID_PH_IMGS) {
-      const placeholderImgs = this[VALID_PH_IMGS[k] + 'Imgs']
+      const placeholderImgs = this[VALID_PH_IMGS[k] + 'Images']
       for (var l in placeholderImgs) {
         if (listedImages.includes(placeholderImgs[l])) continue
         listedImages.push(placeholderImgs[l])
         const placeholder = VALID_PH_IMGS[k].slice(0, 1).toUpperCase() + VALID_PH_IMGS[k].substr(1, VALID_PH_IMGS[k].length)
         const imgNum = parseInt(l, 10) + 1
         list += `\n[${placeholder} Image${imgNum}]: {${VALID_PH_IMGS[k]}:image${imgNum}}\n${placeholderImgs[l]}`
+      }
+    }
+
+    return list.trim()
+  }
+
+    // List all {placeholder:imageX} to string
+  listPlaceholderAnchors () {
+    const listedAnchors = []
+    let list = ''
+    for (var k in VALID_PH_ANCHORS) {
+      const placeholderAnchors = this[VALID_PH_ANCHORS[k] + 'Anchors']
+      for (var l in placeholderAnchors) {
+        if (listedAnchors.includes(placeholderAnchors[l])) continue
+        listedAnchors.push(placeholderAnchors[l])
+        const placeholder = VALID_PH_ANCHORS[k].slice(0, 1).toUpperCase() + VALID_PH_ANCHORS[k].substr(1, VALID_PH_ANCHORS[k].length)
+        const anchorNum = parseInt(l, 10) + 1
+        list += `\n[${placeholder} Anchor${anchorNum}]: {${VALID_PH_ANCHORS[k]}:anchor${anchorNum}}\n${placeholderAnchors[l]}`
       }
     }
 
@@ -315,10 +354,9 @@ module.exports = class Article {
         img = this.convertImgs(term)
         continue
       } else if (arr.length === 1 || arr[1].search(/image[1-9]/) === -1) continue
-      const validPlaceholders = ['title', 'description', 'summary']
       const placeholder = arr[0].replace(/{|}/, '')
-      const placeholderImgs = this[placeholder + 'Imgs']
-      if (!validPlaceholders.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
+      const placeholderImgs = this[placeholder + 'Images']
+      if (!VALID_PH_IMGS.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
 
       const imgNum = parseInt(arr[1].substr(arr[1].search(/[1-9]/), 1), 10) - 1
       if (isNaN(imgNum) || imgNum > 4 || imgNum < 0) continue
@@ -331,7 +369,7 @@ module.exports = class Article {
   convertImgs (content) {
     const imgDictionary = {}
     const imgLocs = content.match(/{image[1-9](\|\|(.+))*}/g)
-    const phImageLocs = content.match(/({(description|image|title):image[1-5](\|\|(.+))*})/gi)
+    const phImageLocs = content.match(/({(description|title|summary):image[1-9](\|\|(.+))*})/gi)
     if (imgLocs) {
       for (var loc in imgLocs) {
         const term = imgLocs[loc]
@@ -362,6 +400,26 @@ module.exports = class Article {
     return content
   }
 
+  resolvePlaceholderAnchor (input) {
+    const arr = input.split(':')
+    if (arr.length === 1 || arr[1].search(/anchor[1-5]/) === -1) return ''
+    const placeholder = arr[0].replace(/{|}/, '')
+    const placeholderAnchors = this[placeholder + 'Anchors']
+    if (!VALID_PH_ANCHORS.includes(placeholder) || !placeholderAnchors || placeholderAnchors.length < 1) return ''
+    const num = parseInt(arr[1].substr(arr[1].search(/[1-5]/), 1), 10) - 1
+    if (isNaN(num) || num > 4 || num < 0) return ''
+    return placeholderAnchors[num]
+  }
+
+  convertAnchors (content) {
+    const phAnchorLocs = content.match(/({(description|title|summary):anchor[1-5](\|\|(.+))*})/gi)
+    if (!phAnchorLocs) return content
+    for (var h in phAnchorLocs) {
+      content = this.resolvePlaceholderAnchor(phAnchorLocs[h]) ? content.replace(phAnchorLocs[h], this.resolvePlaceholderAnchor(phAnchorLocs[h])) : content.replace(phAnchorLocs[h], '')
+    }
+    return content
+  }
+
   // replace simple keywords
   convertKeywords (word, ignoreCharLimits) {
     if (word.length === 0) return word
@@ -385,6 +443,6 @@ module.exports = class Article {
         content = content.replace(replacementQuery, replacementContent)
       }
     }
-    return this.convertImgs(content)
+    return this.convertAnchors(this.convertImgs(content))
   }
 }
