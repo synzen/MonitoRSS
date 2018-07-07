@@ -91,7 +91,7 @@ class Client {
 
   login (token) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
-    if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
+    if (token instanceof Discord.Client) return this._defineBot(token, true) // May also be the client
     else if (token instanceof Discord.ShardingManager) return new ClientSharded(token)
     else if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
@@ -108,7 +108,8 @@ class Client {
     } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 
-  _defineBot (bot) {
+  _defineBot (bot, predefinedClient) {
+    if (!predefinedClient) this.configOverrides.setPresence = true
     this.bot = bot
     this.SHARD_PREFIX = bot.shard && bot.shard.count > 0 ? `SH ${bot.shard.id} ` : ''
     if (this.customSchedules && bot && bot.shard && bot.shard.count > 0 && bot.shard.id === 0) process.send({ _drss: true, type: 'customSchedules', customSchedules: this.customSchedules })
