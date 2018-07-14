@@ -19,7 +19,7 @@
     "commandAliases": {}
   },
   "database": {
-    "uri": "mongodb://localhost/rss",
+    "uri": "mongodb://localhost:27017/rss",
     "connection": {},
     "clean": false,
     "articlesExpire": 14,
