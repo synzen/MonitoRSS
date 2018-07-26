@@ -4,7 +4,7 @@ const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 function escapeBackticks (str) {
-  return str.replace('`', '​`')  // Replace backticks with zero-width space and backtick to escape
+  return str.replace('`', '​`') // Replace backticks with zero-width space and backtick to escape
 }
 
 function feedSelectorFn (m, data, callback) {
@@ -13,8 +13,8 @@ function feedSelectorFn (m, data, callback) {
   const splitOptions = source.splitMessage // Show toggle if it is disabled
 
   const nextMenu = new MenuUtils.Menu(m, splitOptions ? selectSetting : enable)
-        .setAuthor('Message Splitting Options')
-        .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nMessage splitting for this feed is currently ${splitOptions ? 'enabled' : 'disabled'}. Select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n`)
+    .setAuthor('Message Splitting Options')
+    .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nMessage splitting for this feed is currently ${splitOptions ? 'enabled' : 'disabled'}. Select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n`)
 
   const currentSplitChar = splitOptions ? splitOptions.char : undefined
   const currentSplitPrepend = splitOptions ? splitOptions.prepend : undefined
@@ -24,11 +24,11 @@ function feedSelectorFn (m, data, callback) {
   if (!splitOptions) nextMenu.addOption('Enable Message Splitting', 'Message splitting splits a message that exceeds the Discord character limit into multiple messages instead.')
   else {
     nextMenu
-        .addOption(`Set split character`, `Specify the character that the message should split according to.${currentSplitChar ? ` Currently set to \`${escapeBackticks(currentSplitChar)}\`.` : ''} Default is \`\\n\` (new lines).`)
-        .addOption('Set prepend character', `Specify the character that every message except the first should be prepended (added before) with.${currentSplitPrepend ? ` Currently set to \`${escapeBackticks(currentSplitPrepend)}\`.` : ''} Default is nothing. `)
-        .addOption('Set append character', `Specify the character that every message except the last should be appended (added after) with.${currentSplitAppend ? ` Currently set to \`${escapeBackticks(currentSplitAppend)}\`.` : ''} Default is nothing.`)
-        .addOption('Set max length', `Specify the maximum length a single message should have.${currentSplitLength ? ` Currently set to \`${currentSplitLength}\`.` : ''} Default is \`1950\`.`)
-        .addOption('Disable Message Splitting', 'Default is disabled.')
+      .addOption(`Set split character`, `Specify the character that the message should split according to.${currentSplitChar ? ` Currently set to \`${escapeBackticks(currentSplitChar)}\`.` : ''} Default is \`\\n\` (new lines).`)
+      .addOption('Set prepend character', `Specify the character that every message except the first should be prepended (added before) with.${currentSplitPrepend ? ` Currently set to \`${escapeBackticks(currentSplitPrepend)}\`.` : ''} Default is nothing. `)
+      .addOption('Set append character', `Specify the character that every message except the last should be appended (added after) with.${currentSplitAppend ? ` Currently set to \`${escapeBackticks(currentSplitAppend)}\`.` : ''} Default is nothing.`)
+      .addOption('Set max length', `Specify the maximum length a single message should have.${currentSplitLength ? ` Currently set to \`${currentSplitLength}\`.` : ''} Default is \`1950\`.`)
+      .addOption('Disable Message Splitting', 'Default is disabled.')
   }
 
   callback(null, { ...data,
@@ -39,7 +39,7 @@ function feedSelectorFn (m, data, callback) {
 }
 
 function enable (m, data, callback) {
-    // This function only triggers if it is initially disabled
+  // This function only triggers if it is initially disabled
   const { guildRss, rssName } = data
   const source = guildRss.sources[rssName]
 
@@ -50,13 +50,13 @@ function enable (m, data, callback) {
 
   log.command.info(`Message splitting has been enabled for ${source.link}`, m.channel.guild)
   const nextMenu = new MenuUtils.Menu(m, selectSetting)
-        .setAuthor('Message Splitting Options')
-        .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\n**Message Splitting is now enabled for this feed.**\n\nYou may customize message splitting further by selecting one of the options below by typing its number, or type **exit** to leave as is. It is recommended to leave at the default settings.\u200b\n\u200b\n`)
-        .addOption(`Set split character`, `Specify the character that the message should split on. Default is \`\\n\` (new lines).`)
-        .addOption('Set prepend character', 'Specify the character that every message except the first should be prepended (added before) with. Default is nothing. ')
-        .addOption('Set append character', 'Specify the character that every message except the last should be appended (added after) with. Default is nothing.')
-        .addOption('Set max length', 'Specify the maximum length a single message should have. Default is `1950`.')
-        .addOption('Disable Message Splitting', 'Default is disabled.')
+    .setAuthor('Message Splitting Options')
+    .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\n**Message Splitting is now enabled for this feed.**\n\nYou may customize message splitting further by selecting one of the options below by typing its number, or type **exit** to leave as is. It is recommended to leave at the default settings.\u200b\n\u200b\n`)
+    .addOption(`Set split character`, `Specify the character that the message should split on. Default is \`\\n\` (new lines).`)
+    .addOption('Set prepend character', 'Specify the character that every message except the first should be prepended (added before) with. Default is nothing. ')
+    .addOption('Set append character', 'Specify the character that every message except the last should be appended (added after) with. Default is nothing.')
+    .addOption('Set max length', 'Specify the maximum length a single message should have. Default is `1950`.')
+    .addOption('Disable Message Splitting', 'Default is disabled.')
 
   callback(null, { ...data,
     next: {

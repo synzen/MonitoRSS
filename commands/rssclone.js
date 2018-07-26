@@ -67,7 +67,7 @@ module.exports = (bot, message, command) => {
       let destLinksCount = 0
 
       destFeeds.forEach(destFeed => {
-          // Message
+        // Message
         if (emptyMessage) delete destFeed.message
         else if (cloneMessage) destFeed.message = sourceFeed.message
 

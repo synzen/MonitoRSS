@@ -6,7 +6,7 @@ module.exports = (embedMessage, article) => {
   const embedSpecs = embedMessage.properties
 
   if (isStr(embedSpecs.message)) embed.setDescription(article.convertKeywords(embedSpecs.message))
-  if (isStr(embedSpecs.footerText)) embed.setFooter(article.convertKeywords(embedSpecs.footerText), isStr(embedSpecs.footerIconURL) ? embedSpecs.footerIconURL : undefined)
+  if (isStr(embedSpecs.footerText)) embed.setFooter(article.convertKeywords(embedSpecs.footerText), isStr(embedSpecs.footerIconURL) ? article.convertKeywords(embedSpecs.footerIconURL) : undefined)
   if (embedSpecs.color && !isNaN(embedSpecs.color) && embedSpecs.color <= 16777215 && embedSpecs.color > 0) embed.setColor(parseInt(embedSpecs.color, 10))
   else if (isStr(embedSpecs.color) && embedSpecs.color.startsWith('#') && embedSpecs.color.length === 7) embed.setColor(embedSpecs.color)
   if (isStr(embedSpecs.authorTitle)) embed.setAuthor(article.convertKeywords(embedSpecs.authorTitle), isStr(embedSpecs.authorAvatarURL) ? article.convertKeywords(embedSpecs.authorAvatarURL) : undefined, isStr(embedSpecs.authorURL) ? article.convertKeywords(embedSpecs.authorURL) : undefined)

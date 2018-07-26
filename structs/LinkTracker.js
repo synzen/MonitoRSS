@@ -41,12 +41,12 @@ class LinkTracker {
     }
   }
 
-    // Only links in the array
+  // Only links in the array
   toArray () {
     const arr = []
     for (var s in this.list) {
       const shardLinks = this.list[s]
-      if (typeof shardLinks === 'number') {  // If not a shard, then it directly holds the count (AKA number)
+      if (typeof shardLinks === 'number') { // If not a shard, then it directly holds the count (AKA number)
         if (!arr.includes(s)) arr.push(s)
         continue
       }
@@ -69,6 +69,6 @@ class LinkTracker {
     }
     return arr
   }
-  }
+}
 
 module.exports = LinkTracker

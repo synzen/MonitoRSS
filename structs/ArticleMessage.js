@@ -95,28 +95,28 @@ class ArticleMessage {
       // Send the message, and repeat attempt if failed
       const medium = this.webhook ? this.webhook : this.channel
       medium.send(textContent, options)
-      .then(m => {
-        if (this.isTestMessage) {
-          this.isTestMessage = false
-          this.send(callback)
-        } else callback()
-      })
-      .catch(err => {
-        if (this.split && err.message.includes('2000 or fewer in length')) {
-          delete this.split
-          this._translate(false)
-          return this.send(callback)
-        }
-        if (this.split && err.message.includes('no split characters')) {
-          this._translate(false) // Retranslate with the character limits for individual placeholders again
-          return this.send(callback)
-        }
-        if (err.code === 50013 || this.sendFailed++ === 4) { // 50013 = Missing Permissions
-          if (debugFeeds.includes(this.rssName)) log.debug.error(`${this.rssName}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
-          return callback(err)
-        }
-        setTimeout(() => this.send.bind(this)(callback), 500)
-      })
+        .then(m => {
+          if (this.isTestMessage) {
+            this.isTestMessage = false
+            this.send(callback)
+          } else callback()
+        })
+        .catch(err => {
+          if (this.split && err.message.includes('2000 or fewer in length')) {
+            delete this.split
+            this._translate(false)
+            return this.send(callback)
+          }
+          if (this.split && err.message.includes('no split characters')) {
+            this._translate(false) // Retranslate with the character limits for individual placeholders again
+            return this.send(callback)
+          }
+          if (err.code === 50013 || this.sendFailed++ === 4) { // 50013 = Missing Permissions
+            if (debugFeeds.includes(this.rssName)) log.debug.error(`${this.rssName}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
+            return callback(err)
+          }
+          setTimeout(() => this.send.bind(this)(callback), 500)
+        })
     })
   }
 }

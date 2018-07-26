@@ -522,9 +522,9 @@ exports.vips = {
         if (!storage.vipUsers[settings.id].servers.includes(id)) storage.vipUsers[settings.id].servers.push(id)
         log.general.success(`Added VIP backing to server ${id} (${guildName}). Benefactor ID ${settings.id} (${settings.name}).`)
       }
-      if (skipUpdateVIP) {
-        exports.vips.uniformize(storage.vipUsers, storage.vipServers)
-      } else exports.vips.update(storage.vipUsers[settings.id], null, true) // Uniformize is called by vips.update so no need to explicitly call it here
+      if (Object.keys(validServers).length > 0 && storage.scheduleManager) exports.vips.refreshVipSchedule()
+      if (skipUpdateVIP) exports.vips.uniformize(storage.vipUsers, storage.vipServers)
+      else exports.vips.update(storage.vipUsers[settings.id], null, true) // Uniformize is called by vips.update so no need to explicitly call it here
       if (callback) callback(null, validServers, invalidServers)
     }
   },
@@ -549,6 +549,19 @@ exports.vips = {
       successIds.push(id)
       delete storage.vipServers[id]
       storage.vipUsers[settings.id].servers.splice(index, 1)
+      const guildRss = currentGuilds.get(id)
+      if (guildRss && guildRss.sources) {
+        const rssList = guildRss.sources
+        let vipScheduleKeywords
+        for (var a = 0; a < storage.scheduleManager.scheduleList.length; ++a) {
+          if (storage.scheduleManager.scheduleList[a].schedule.name === 'vip') vipScheduleKeywords = storage.scheduleManager.scheduleList[a].schedule.keywords
+        }
+        for (var rssName in rssList) {
+          vipScheduleKeywords.splice(rssList[rssName].link, 1)
+          storage.allScheduleWords.splice(rssList[rssName].link, 1)
+          delete storage.scheduleAssigned[rssName]
+        }
+      }
       if (skipUpdateVIP) exports.vips.uniformize(storage.vipUsers, storage.vipServers)
       else exports.vips.update(storage.vipUsers[settings.id], null, true)
       // No need to call uniformize since exports.vips.update does this
@@ -560,6 +573,35 @@ exports.vips = {
     if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')) : null
     if (!fs.existsSync(path.join(__dirname, '..', 'settings', 'vips.js'))) return callback ? callback(new Error('Missing VIP module')) : null
     require('../settings/vips.js')(storage.bot, callback)
+  },
+  refreshVipSchedule: () => {
+    if (config._vip !== true) return
+    const vipLinks = []
+    for (var vipId in storage.vipServers) {
+      const benefactor = storage.vipServers[vipId].benefactor
+      if (benefactor.pledgedAmount < 500 && !benefactor.override) continue
+      const guildRss = storage.currentGuilds.get(vipId)
+      if (!guildRss) continue
+      const rssList = guildRss.sources
+      if (!rssList) continue
+      for (var rssName in rssList) {
+        const link = rssList[rssName].link
+        if (link.includes('feed43.com') || storage.scheduleAssigned[rssName] === 'vip') continue
+        vipLinks.push(link)
+        storage.allScheduleWords.push(link)
+        delete storage.scheduleAssigned[rssName]
+      }
+    }
+    if (vipLinks.length > 0) {
+      let vipSchedule
+      for (var x = 0; x < storage.scheduleManager.scheduleList.length; ++x) {
+        if (storage.scheduleManager.scheduleList[x].schedule.name === 'vip') vipSchedule = storage.scheduleManager.scheduleList[x].schedule
+      }
+      if (!vipSchedule) {
+        const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: vipLinks }
+        storage.scheduleManager.addSchedule(newSched)
+      } else for (var y = 0; y < vipLinks.length; ++y) vipSchedule.keywords.push(vipLinks[y])
+    }
   }
 }
 

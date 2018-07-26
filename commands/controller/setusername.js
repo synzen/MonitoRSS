@@ -7,14 +7,14 @@ exports.normal = (bot, message) => {
   let username = content.join(' ')
   const original = bot.user.username
   bot.user.setUsername(username)
-  .then(c => {
-    log.controller.success(`Bot usename changed from ${original} to ${c.user.username}`)
-    message.channel.send(`Bot username has been changed from ${original} to ${c.user.username}.`)
-  })
-  .catch(err => {
-    log.controller.warning(`Unable to change username from ${original} to ${username}`, message.author, err)
-    message.channel.send(`Unable to change username from ${original} to ${username} (${err.message})`)
-  })
+    .then(c => {
+      log.controller.success(`Bot usename changed from ${original} to ${c.user.username}`)
+      message.channel.send(`Bot username has been changed from ${original} to ${c.user.username}.`)
+    })
+    .catch(err => {
+      log.controller.warning(`Unable to change username from ${original} to ${username}`, message.author, err)
+      message.channel.send(`Unable to change username from ${original} to ${username} (${err.message})`)
+    })
 }
 
 exports.sharded = exports.normal

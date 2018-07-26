@@ -322,7 +322,7 @@ module.exports = class Article {
     return list.trim()
   }
 
-    // List all {placeholder:imageX} to string
+  // List all {placeholder:imageX} to string
   listPlaceholderAnchors () {
     const listedAnchors = []
     let list = ''

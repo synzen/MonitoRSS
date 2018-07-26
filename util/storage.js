@@ -28,6 +28,7 @@ function expireDate (type) {
   }
 }
 
+exports.bot = undefined
 exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
 exports.statistics = { fullyUpdated: false } // For individual shards/non sharded
 exports.statisticsGlobal = { fullyUpdated: 0 } // For aggregated statistics across all shards, updated on an interval by eval

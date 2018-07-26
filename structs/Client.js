@@ -91,7 +91,7 @@ class Client {
 
   login (token) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
-    if (token instanceof Discord.Client) return this._defineBot(token, true) // May also be the client
+    if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
     else if (token instanceof Discord.ShardingManager) return new ClientSharded(token)
     else if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
@@ -108,8 +108,7 @@ class Client {
     } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 
-  _defineBot (bot, predefinedClient) {
-    if (!predefinedClient) this.configOverrides.setPresence = true
+  _defineBot (bot) {
     this.bot = bot
     this.SHARD_PREFIX = bot.shard && bot.shard.count > 0 ? `SH ${bot.shard.id} ` : ''
     if (this.customSchedules && bot && bot.shard && bot.shard.count > 0 && bot.shard.id === 0) process.send({ _drss: true, type: 'customSchedules', customSchedules: this.customSchedules })
@@ -122,7 +121,7 @@ class Client {
   _initialize () {
     const bot = storage.bot
     if (this.configOverrides && this.configOverrides.setPresence === true) {
-      if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL || undefined})
+      if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL || undefined })
       else bot.user.setActivity(null)
       bot.user.setStatus(config.bot.status)
     }
@@ -156,7 +155,7 @@ class Client {
         case 'finishedInit':
           storage.initialized = 2
           dbOps.blacklists.refresh()
-          this._addVipSchedule()
+          dbOps.vips.refreshVipSchedule()
           break
         case 'cycleVIPs':
           if (bot.shard.id === message.shardId) dbOps.vips.refresh()
@@ -241,34 +240,10 @@ class Client {
     if (storage.bot.shard && storage.bot.shard.count > 0) dbOps.failedLinks.uniformize(storage.failedLinks, () => process.send({ _drss: true, type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id }))
     else if (config._vip) {
       this._vipInterval = setInterval(dbOps.vips.refresh, 600000)
-      this._addVipSchedule()
+      dbOps.vips.refreshVipSchedule()
     }
     listeners.createManagers(storage.bot)
     if (callback) callback()
-  }
-
-  _addVipSchedule () {
-    if (config._vip !== true) return
-    const vipLinks = []
-    for (var vipId in storage.vipServers) {
-      const benefactor = storage.vipServers[vipId].benefactor
-      if (benefactor.pledgedAmount < 500) continue
-      const guildRss = storage.currentGuilds.get(vipId)
-      if (!guildRss) continue
-      const rssList = guildRss.sources
-      if (!rssList) continue
-      for (var rssName in rssList) {
-        const link = rssList[rssName].link
-        if (link.includes('feed43.com')) continue
-        vipLinks.push(link)
-        storage.allScheduleWords.push(link)
-        delete storage.scheduleAssigned[rssName]
-      }
-    }
-    if (vipLinks.length > 0) {
-      const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: vipLinks }
-      this.scheduleManager.addSchedule(newSched)
-    }
   }
 
   disableCommands () {

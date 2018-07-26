@@ -77,9 +77,9 @@ module.exports = async (bot, message, command) => {
           log.command.info(`Webhook ID ${webhook.id} (${webhook.name}) connected to feed ${source.link}`, message.guild, message.channel)
           const connected = `I am now connected to ${bot.user}, and will send feed articles for <${source.link}>!`
           webhook.send(connected, { username: customNameSrch, avatarURL: customAvatarSrch })
-          .catch(err => {
-            if (err.message.includes('avatar_url')) return webhook.send(connected, { username: customNameSrch }).catch(err => log.comamnd.warning(`rsswebhook 2`, message.guild, err)) // This may be a placeholder
-          })
+            .catch(err => {
+              if (err.message.includes('avatar_url')) return webhook.send(connected, { username: customNameSrch }).catch(err => log.comamnd.warning(`rsswebhook 2`, message.guild, err)) // This may be a placeholder
+            })
         }
         dbOps.guildRss.update(guildRss)
       } catch (err) {
