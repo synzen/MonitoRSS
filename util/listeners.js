@@ -17,14 +17,14 @@ const EVENT_HANDLERS = {
 }
 let cmdsExtension
 if (fs.existsSync('./settings/commands.js')) {
-  try { cmdsExtension = require('../settings/commands.js') } catch (e) { console.log(`Error: Unable to load commands extension file. Reason:\n`, e) }
+  try { cmdsExtension = require('../settings/commands.js') } catch (e) { log.general.error(`Unable to load commands extension file`, e) }
   fs.watchFile('./settings/commands.js', (cur, prev) => {
     delete require.cache[require.resolve('../settings/commands.js')]
     try {
       cmdsExtension = require('../settings/commands.js')
-      console.log(`Commands extension file has been updated`)
+      log.general.success(`Commands extension file has been updated`)
     } catch (e) {
-      console.log(`Commands extension file was changed, but could not be updated. Reason:\n`, e)
+      log.general.error(`Commands extension file was changed, but could not be updated`, e)
     }
   })
 }
