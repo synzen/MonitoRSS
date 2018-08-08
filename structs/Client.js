@@ -202,7 +202,7 @@ class Client {
   }
 
   stop () {
-    if (this.state === STATES.STARTING || this.state === STATES.STOPPED) return log.general.warning(`${this.SHARD_PREFIX}Ignoring stop command because it is in ${this.state} state`)
+    if (this.state === STATES.STARTING || this.state === STATES.STOPPED) return log.general.warning(`${this.SHARD_PREFIX}Ignoring stop command because of ${this.state} state`)
     storage.initialized = 0
     this.scheduleManager.stopSchedules()
     clearInterval(this._vipInterval)
@@ -212,7 +212,7 @@ class Client {
   }
 
   start (callback) {
-    if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because it is in ${this.state} state`)
+    if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
     const uri = process.env.DRSS_DATABASE_URI || config.database.uri
@@ -227,7 +227,7 @@ class Client {
   }
 
   restart (callback) {
-    if (this.state === STATES.STARTING) return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because it is in ${this.state} state`)
+    if (this.state === STATES.STARTING) return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because of ${this.state} state`)
     if (this.state === STATES.READY) this.stop()
     this.start(callback)
   }
