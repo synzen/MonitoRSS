@@ -6,24 +6,24 @@ const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 
-// To avoid stack call exceeded
-function checkObjType (item, results) {
-  if (Object.prototype.toString.call(item) === '[object Object]') {
-    return function () {
-      return findDatePlaceholders(item, results)
-    }
-  } else if (typeof item === 'string' && item.search(/{date}/) !== -1) results.push(true)
-}
+// // To avoid stack call exceeded
+// function checkObjType (item, results) {
+//   if (Object.prototype.toString.call(item) === '[object Object]') {
+//     return function () {
+//       return findDatePlaceholders(item, results)
+//     }
+//   } else if (typeof item === 'string' && item.search(/{date}/) !== -1) results.push(true)
+// }
 
-// Used to find {date} in any object values
-function findDatePlaceholders (obj, results) {
-  for (var key in obj) {
-    let value = checkObjType(obj[key], results)
-    while (typeof value === 'function') {
-      value = value()
-    }
-  }
-}
+// // Used to find {date} in any object values
+// function findDatePlaceholders (obj, results) {
+//   for (var key in obj) {
+//     let value = checkObjType(obj[key], results)
+//     while (typeof value === 'function') {
+//       value = value()
+//     }
+//   }
+// }
 
 function selectOption (m, data, callback) {
   const input = m.content
@@ -76,11 +76,11 @@ function setOption (m, data, callback) {
 
 module.exports = (bot, message) => {
   const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
+  // if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
 
-  let results = []
-  findDatePlaceholders(guildRss.sources, results)
-  if (results.length === 0) return message.channel.send('You cannot customize the date placeholder if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => log.command.warning(`rssdate 2`, message.guild, err))
+  // let results = []
+  // findDatePlaceholders(guildRss.sources, results)
+  // if (results.length === 0) return message.channel.send('You cannot customize the date placeholder if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => log.command.warning(`rssdate 2`, message.guild, err))
 
   const select = new MenuUtils.Menu(message, selectOption).setAuthor('Date Customizations')
     .setDescription('\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')

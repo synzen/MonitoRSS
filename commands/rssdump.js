@@ -39,7 +39,6 @@ module.exports = (bot, message, command) => {
           msgHandler.deleteAll(message.channel)
           return wait.edit(`Unable to generate dump for <${err.feed.link}>. (${channelErrMsg})`).catch(err => log.command.warning(`rssdump 1`, message.guild, err))
         }
-        msgHandler.add(wait)
         let textOutput = ''
         let objOutput = []
         const raw = message.content.split(' ')[1] === 'original'
@@ -47,11 +46,12 @@ module.exports = (bot, message, command) => {
           const articleObject = articleList[link]
           if (raw) objOutput.push(articleObject)
           else {
-            const textified = new TextifiedJSON(articleObject)
+            const textified = new TextifiedJSON(articleObject, data.guildRss.sources[data.rssName])
             textOutput += textified.text + '\r\n\r\n'
           }
         }
         textOutput = textOutput.trim()
+        msgHandler.deleteAll()
         wait.edit('Dump has been generated. See below.').catch(err => log.comamnd.warning('rssdump 2', message.guild, err))
         message.channel.send('', new Discord.Attachment(Buffer.from(raw ? JSON.stringify(objOutput, null, 2) : textOutput), raw ? `${link}.json` : `${link}.txt`)).catch(err => {
           log.comamnd.warning('rssdump 3', message.guild, err)

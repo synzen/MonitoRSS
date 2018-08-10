@@ -1,6 +1,4 @@
-const Discord = require('discord.js')
 const filters = require('./util/filters.js')
-const config = require('../config.json')
 const dbOps = require('../util/dbOps.js')
 const getArticle = require('../rss/getArticle.js')
 const MenuUtils = require('../structs/MenuUtils.js')
@@ -69,9 +67,8 @@ module.exports = (bot, message, command, role) => {
         dbOps.guildRss.update(guildRss)
         return await message.channel.send(`All feed filters have been successfully removed from <${source.link}>.`)
       } else if (selectedOption === '4') { // 4 = List all existing filters
-        const msg = new Discord.RichEmbed()
-          .setColor(config.bot.menuColor)
-          .setAuthor('List of Assigned Filters')
+        const list = new MenuUtils.Menu(message, undefined, { numbered: false })
+        list.setAuthor('List of Assigned Filters')
           .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n`)
 
         // Generate the list of filters assigned to a feed and add to embed to be sent
@@ -80,10 +77,12 @@ module.exports = (bot, message, command, role) => {
           if (filterCat !== 'roleSubscriptions') {
             for (var filter in filterList[filterCat]) { value += `${filterList[filterCat][filter]}\n` }
           }
-          msg.addField(filterCat, value, true)
+          list.addOption(filterCat, value, true)
         }
 
-        return await message.channel.send({embed: msg})
+        return list.send(undefined, err => {
+          if (err) return err.code === 50013 ? null : message.channel.send(err.message).catch(err => log.general.warning('rssfilters 1', message.guild, err))
+        })
       } else if (selectedOption === '5') { // 5 = Send passing article
         getArticle(guildRss, rssName, true, (err, article) => {
           if (err) {

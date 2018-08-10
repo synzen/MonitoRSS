@@ -1,11 +1,13 @@
 const config = require('../config.json')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
+const TextifiedJSON = require('./TextifiedJSON.js')
 const defaultConfigs = require('../util/configCheck.js').defaultConfigs
 const log = require('../util/logger.js')
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date']
+const RAW_REGEX_FINDER = new RegExp('{raw:([^{}]+)}', 'g')
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
   const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
@@ -164,6 +166,9 @@ function cleanup (source, text, imgSrcs, anchorLinks) {
 module.exports = class Article {
   constructor (raw, guildRss, rssName) {
     const source = guildRss.sources[rssName]
+    this.source = source
+    this.guildRss = guildRss
+    this.raw = raw
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
     this.youtube = raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#']
     this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
@@ -420,6 +425,41 @@ module.exports = class Article {
     return content
   }
 
+  convertRawPlaceholders (content) {
+    let result
+    const matches = {}
+    do {
+      result = RAW_REGEX_FINDER.exec(content)
+      if (!result) continue
+      if (!this.textifiedJSON) this.textifiedJSON = new TextifiedJSON(this.raw, this.source)
+      const fullMatch = result[0]
+      const matchName = result[1]
+      matches[fullMatch] = this.textifiedJSON.results[matchName] || ''
+
+      // Format the date if it is one
+      if (Object.prototype.toString.call(matches[fullMatch]) === '[object Date]') {
+        const guildTimezone = this.guildRss.timezone
+        const timezone = guildTimezone && moment.tz.zone(guildTimezone) ? guildTimezone : config.feeds.timezone
+        const dateFormat = this.guildRss.dateFormat ? this.guildRss.dateFormat : config.feeds.dateFormat
+        const localMoment = moment(matches[fullMatch])
+        if (this.guildRss.dateLanguage) localMoment.locale(this.guildRss.dateLanguage)
+        const useTimeFallback = config.feeds.timeFallback === true && matches[fullMatch].toString() !== 'Invalid Date' && dateHasNoTime(matches[fullMatch])
+        matches[fullMatch] = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
+      }
+    } while (result !== null)
+    for (var phName in matches) content = content.replace(phName, matches[phName])
+    return content
+  }
+
+  getRawPlaceholderContent (phName) {
+    if (!phName.startsWith('raw:')) return ''
+    if (this.textifiedJSON) return this.textifiedJSON.results[phName.replace(/raw:/, '')] || ''
+    else {
+      this.textifiedJSON = new TextifiedJSON(this.raw, this.source)
+      return this.textifiedJSON.results[phName.replace(/raw:/, '')] || ''
+    }
+  }
+
   // replace simple keywords
   convertKeywords (word, ignoreCharLimits) {
     if (word.length === 0) return word
@@ -443,6 +483,6 @@ module.exports = class Article {
         content = content.replace(replacementQuery, replacementContent)
       }
     }
-    return this.convertAnchors(this.convertImgs(content))
+    return this.convertRawPlaceholders(this.convertAnchors(this.convertImgs(content)))
   }
 }

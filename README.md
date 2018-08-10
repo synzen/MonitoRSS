@@ -4,13 +4,13 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 All documentation can be found at https://github.com/synzen/Discord.RSS/wiki.
 
 
-### Setting Up via Cloning Repository
+### Setting Up via Cloning Repository (for most people)
 
 See https://github.com/synzen/Discord.RSS/wiki/Setup
 
 ### Setting Up with Existing Client
 
-The fastest way to using Discord.RSS with an existing [discord.js](https://github.com/discordjs/discord.js) client:
+The fastest way to using Discord.RSS with an existing [discord.js](https://github.com/discordjs/discord.js) client with [npm](https://www.npmjs.com/package/discord.rss):
 
 
 ```
@@ -27,7 +27,13 @@ const drss = new DiscordRSS.Client({ database: { uri: './sources' } }) // File-b
 client.login('token')
 drss.login(client) // Can be done before or after the client is 'ready'
 ```
+or create a new client:
+```js
+const DiscordRSS = require('discord.rss')
 
+const drss = new DiscordRSS.Client({ database: { uri: './sources' } }) // Optional config overrides
+drss.login('token')
+```
 There are multiple ways of integrating Discord.RSS programmatically - see [here](https://github.com/synzen/Discord.RSS/wiki/Use-with-Existing-Bot) for more information. For full features, use a mongodb database.uri instead of a directory.
 
 

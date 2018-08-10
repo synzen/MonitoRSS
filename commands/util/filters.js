@@ -1,16 +1,27 @@
 const dbOps = require('../../util/dbOps.js')
 const config = require('../../config.json')
-const filterTypes = ['Title', 'Description', 'Summary', 'Author', 'Tag']
+const filterTypes = [
+  { show: 'Title', use: 'title' },
+  { show: 'Description', use: 'description' },
+  { show: 'Summary', use: 'summary' },
+  { show: 'Author', use: 'author' },
+  { show: 'Tag', use: 'tag' }
+]
 const MenuUtils = require('../../structs/MenuUtils.js')
 const log = require('../../util/logger.js')
+
+// BEGIN ADD FUNCTIONS
 
 function filterAddCategory (m, data, callback) {
   let chosenFilterType = ''
   const input = m.content
   // Validate the chosen filter category
-  filterTypes.forEach(item => {
-    if (input.toLowerCase() === item.toLowerCase()) chosenFilterType = item
-  })
+  if (input.startsWith('raw:')) chosenFilterType = input
+  else {
+    for (var x = 0; x < filterTypes.length; ++x) {
+      if (input.toLowerCase() === filterTypes[x].use) chosenFilterType = filterTypes[x].use
+    }
+  }
 
   if (!chosenFilterType) return callback(new SyntaxError('That is not a valid filter category. Try again, or type `exit` to cancel.'))
 
@@ -86,7 +97,9 @@ exports.add = (message, guildRss, rssName, role) => {
   // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
   const filterList = (role) ? source.filters.roleSubscriptions[role.id].filters : source.filters
   const options = []
-  filterTypes.forEach(item => options.push({ title: item, description: '\u200b' }))
+  for (var x = 0; x < filterTypes.length; ++x) {
+    options.push({ title: filterTypes[x].show, description: '\u200b' })
+  }
 
   const data = { guildRss: guildRss,
     rssName: rssName,
@@ -95,7 +108,7 @@ exports.add = (message, guildRss, rssName, role) => {
     next:
     { embed: {
       title: 'Feed Filters Customization',
-      description: `**Chosen Feed:** ${source.link}${(role) ? '\n**Chosen Role:** ' + role.name : ''}\n\nBelow is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel.\u200b\n\u200b\n`,
+      description: `**Chosen Feed:** ${source.link}${(role) ? '\n**Chosen Role:** ' + role.name : ''}\n\nBelow is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with \`raw:\`.\u200b\n\u200b\n`,
       options: options
     }
     }
@@ -104,15 +117,21 @@ exports.add = (message, guildRss, rssName, role) => {
   return new MenuUtils.MenuSeries(message, [selectCategory, inputFilter], data)
 }
 
+// END ADD FUNCTIONS
+
+// BEGIN REMOVE FUNCTIONS
+
 function filterRemoveCategory (m, data, callback) {
   // Select filter category here
   const input = m.content
   var chosenFilterType = ''
 
-  // Cross reference with valid filter types and see if valid
-  filterTypes.forEach(item => {
-    if (input.toLowerCase() === item.toLowerCase()) chosenFilterType = item
-  })
+  if (input.startsWith('raw:')) chosenFilterType = input
+  else {
+    for (var x = 0; x < filterTypes.length; ++x) {
+      if (input.toLowerCase() === filterTypes[x].use) chosenFilterType = filterTypes[x].use
+    }
+  }
 
   if (!chosenFilterType) return callback(new SyntaxError('That is not a valid filter category. Try again, or type `exit` to cancel.'))
   callback(null, { ...data,
@@ -219,3 +238,5 @@ exports.remove = (message, guildRss, rssName, role) => {
 
   return new MenuUtils.MenuSeries(message, [selectCategory, removeFilter], data)
 }
+
+// END REMOVE FUNCTIONS

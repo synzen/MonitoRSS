@@ -45,13 +45,13 @@ function printSubscriptions (message, rssList) {
     for (var feed in subList) {
       let list = ''
 
-      var globalSubList = '**Global Subscriptions:**\n'
+      let globalSubList = '**Global Subscriptions:**\n'
       for (let globalSubber in subList[feed].globalSubs) {
         globalSubList += `${subList[feed].globalSubs[globalSubber]}\n`
       }
       if (globalSubList !== '**Global Subscriptions:**\n') list += globalSubList
 
-      var filteredSubList = '\n**Filtered Subscriptions:**\n'
+      let filteredSubList = '\n**Filtered Subscriptions:**\n'
       for (let filteredSubber in subList[feed].filteredSubs) {
         filteredSubList += `${subList[feed].filteredSubs[filteredSubber]}\n`
       }
