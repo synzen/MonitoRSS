@@ -1,6 +1,6 @@
 {
   "name": "discord.rss",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Discord RSS bot with customizable feeds",
   "main": "index.js",
   "author": "synzen",
@@ -11,15 +11,12 @@
   "dependencies": {
     "cloudscraper": "^1.4.1",
     "discord.js": "^11.4.0",
-    "erlpack": "github:discordapp/erlpack",
     "feedparser": "^2.1.0",
     "html-to-text": "^3.3.0",
     "moment": "^2.17.1",
     "moment-timezone": "^0.5.11",
     "mongoose": "^5.2.4",
-    "needle": "^1.6.0",
-    "uws": "^10.148.0",
-    "zlib-sync": "^0.1.4"
+    "needle": "^1.6.0"
   },
   "repository": {
     "type": "git",
