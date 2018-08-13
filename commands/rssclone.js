@@ -60,7 +60,7 @@ module.exports = (bot, message, command) => {
       for (var i = 0; i < data.rssNameList.length; ++i) destFeeds.push(data.guildRss.sources[data.rssNameList[i]])
       // If any of these props are empty in the source feed, then it will simply be deleted
       const emptyMessage = !sourceFeed.message
-      const emptyEmbed = !sourceFeed.embedMessage || Object.keys(sourceFeed.embedMessage).length === 0
+      const emptyEmbed = !sourceFeed.embeds || sourceFeed.embeds.length === 0
       const emptyFilters = !sourceFeed.filters || Object.keys(sourceFeed.filters).length === 0
       const emptyGlobalRoles = !sourceFeed.roleSubscriptions || sourceFeed.roleSubscriptions.length === 0
       const emptyFilteredRoles = emptyFilters || !sourceFeed.filters.roleSubscriptions || Object.keys(sourceFeed.filters.roleSubscriptions).length === 0
@@ -72,8 +72,8 @@ module.exports = (bot, message, command) => {
         else if (cloneMessage) destFeed.message = sourceFeed.message
 
         // Embed
-        if (emptyEmbed) delete destFeed.embedMessage
-        else if (cloneEmbed) destFeed.embedMessage = JSON.parse(JSON.stringify(sourceFeed.embedMessage))
+        if (emptyEmbed) delete destFeed.embeds
+        else if (cloneEmbed) destFeed.embeds = JSON.parse(JSON.stringify(sourceFeed.embeds))
 
         // Filters
         if (emptyFilters) {
@@ -104,8 +104,8 @@ module.exports = (bot, message, command) => {
 
         // Filtered Roles
         if (emptyFilteredRoles && destFeed.filters) delete destFeed.filters.roleSubscriptions
-        else if (cloneFilteredRoles) {
-          if (!destFeed.filters && sourceFeed.filters) destFeed.filters = {}
+        else if (cloneFilteredRoles && !emptyFilteredRoles) {
+          if (!destFeed.filters) destFeed.filters = {}
           destFeed.filters.roleSubscriptions = JSON.parse(JSON.stringify(sourceFeed.filters.roleSubscriptions))
         }
 

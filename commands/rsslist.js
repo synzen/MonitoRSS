@@ -28,7 +28,7 @@ module.exports = (bot, message, command) => {
     }
     if (FAIL_LIMIT !== 0) {
       const failCount = failedLinks[feed.link]
-      o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : 'Status: FAILED\n'
+      o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(failed ' + failCount + '/' + FAIL_LIMIT + ' times)' : ''}\n` : 'Status: FAILED\n'
       if (o.status.startsWith('Status: FAILED')) ++failedFeedCount
     }
     if (rssList[rssName].disabled === true) o.status = `Status: DISABLED\n`

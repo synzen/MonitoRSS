@@ -63,7 +63,7 @@ class ArticleMessage {
     this.subscriptionIds = this.parsedArticle.subscriptionIds
     this.passedFilters = results.passedFilters
     this.testDetails = results.testDetails
-    this.embed = results.embed
+    this.embeds = results.embeds
     this.text = results.text
     if (callback) callback()
   }
@@ -80,15 +80,15 @@ class ArticleMessage {
       if (deletedFeeds.includes(this.rssName)) return callback(new Error(`${this.rssName} for channel ${this.channel.id} was deleted during cycle`))
 
       // Set up the send options
-      const textContent = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embed ? `Unable to send empty message for feed article <${this.article.link}>.` : this.text
+      const textContent = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embeds ? `Unable to send empty message for feed article <${this.article.link}>.` : this.text
       const options = this.isTestMessage ? TEST_OPTIONS : {}
       if (this.webhook) {
         options.username = this.webhook.name
         options.avatarURL = this.webhook.avatar
       }
-      if (!this.isTestMessage && this.embed) {
-        if (this.webhook) options.embeds = [this.embed]
-        else options.embed = this.embed
+      if (!this.isTestMessage && this.embeds) {
+        if (this.webhook) options.embeds = this.embeds
+        else options.embed = this.embeds[0]
       }
       if (!this.isTestMessage) options.split = this.split
 

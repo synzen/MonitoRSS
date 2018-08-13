@@ -1,7 +1,7 @@
 const config = require('../config.json')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
-const TextifiedJSON = require('./TextifiedJSON.js')
+const FlattenedJSON = require('./FlattenedJSON.js')
 const defaultConfigs = require('../util/configCheck.js').defaultConfigs
 const log = require('../util/logger.js')
 const VALID_PH_IMGS = ['title', 'description', 'summary']
@@ -431,10 +431,10 @@ module.exports = class Article {
     do {
       result = RAW_REGEX_FINDER.exec(content)
       if (!result) continue
-      if (!this.textifiedJSON) this.textifiedJSON = new TextifiedJSON(this.raw, this.source)
+      if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
       const fullMatch = result[0]
       const matchName = result[1]
-      matches[fullMatch] = this.textifiedJSON.results[matchName] || ''
+      matches[fullMatch] = this.flattenedJSON.results[matchName] || ''
 
       // Format the date if it is one
       if (Object.prototype.toString.call(matches[fullMatch]) === '[object Date]') {
@@ -453,10 +453,10 @@ module.exports = class Article {
 
   getRawPlaceholderContent (phName) {
     if (!phName.startsWith('raw:')) return ''
-    if (this.textifiedJSON) return this.textifiedJSON.results[phName.replace(/raw:/, '')] || ''
+    if (this.flattenedJSON) return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
     else {
-      this.textifiedJSON = new TextifiedJSON(this.raw, this.source)
-      return this.textifiedJSON.results[phName.replace(/raw:/, '')] || ''
+      this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
+      return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
     }
   }
 

@@ -1,6 +1,6 @@
 const config = require('../../config.json')
 const testFilters = require('./filters.js')
-const generateEmbed = require('./embed.js')
+const generateEmbeds = require('./embed.js')
 const Article = require('../../structs/Article.js')
 const getSubs = require('./subscriptions.js')
 
@@ -24,7 +24,7 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
   const filterResults = filterExists ? testFilters(source, article) : true
 
   let textFormat = source.message === undefined ? source.message : source.message.trim()
-  let embedFormat = source.embedMessage
+  let embedFormat = source.embeds
 
   // See if there are any filter-specific messages
   if (Array.isArray(source.filteredFormats)) {
@@ -46,7 +46,7 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
     // Only formats with 1 match will get the filtered format
     if (highestPriority > -1 && matched[highestPriority] === 1) {
       textFormat = selectedFormat.message === true ? textFormat : selectedFormat.message // If it's true, then it will use the feed's (or the config default, if applicable) message
-      embedFormat = selectedFormat.embedMessage === true ? embedFormat : selectedFormat.embedMessage
+      embedFormat = selectedFormat.embeds === true ? embedFormat : selectedFormat.embeds
     }
   }
 
@@ -56,8 +56,8 @@ module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) =>
   const finalMessageCombo = { parsedArticle: article, passedFilters: filterExists ? filterExists && filterResults.passed : true }
 
   // Determine what the text is, based on whether an embed exists
-  if (typeof embedFormat === 'object' && typeof source.embedMessage.properties === 'object' && Object.keys(embedFormat.properties).length > 0) {
-    finalMessageCombo.embed = generateEmbed(embedFormat, article)
+  if (Array.isArray(embedFormat) && embedFormat.length > 0) {
+    finalMessageCombo.embeds = generateEmbeds(embedFormat, article)
     finalMessageCombo.text = textFormat === '{empty}' ? '' : article.convertKeywords(textFormat, IGNORE_TEXT_LIMITS)
   } else finalMessageCombo.text = article.convertKeywords(textFormat === '{empty}' ? config.feeds.defaultMessage : textFormat, IGNORE_TEXT_LIMITS)
 

@@ -1,7 +1,7 @@
 const log = require('../util/logger.js')
 const Discord = require('discord.js')
 const FeedSelector = require('../structs/FeedSelector.js')
-const TextifiedJSON = require('../structs/TextifiedJSON.js')
+const FlattenedJSON = require('../structs/FlattenedJSON.js')
 const getArticle = require('../rss/getArticle.js')
 
 module.exports = (bot, message, command) => {
@@ -46,7 +46,7 @@ module.exports = (bot, message, command) => {
           const articleObject = articleList[link]
           if (raw) objOutput.push(articleObject)
           else {
-            const textified = new TextifiedJSON(articleObject, data.guildRss.sources[data.rssName])
+            const textified = new FlattenedJSON(articleObject, data.guildRss.sources[data.rssName])
             textOutput += textified.text + '\r\n\r\n'
           }
         }

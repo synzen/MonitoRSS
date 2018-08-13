@@ -29,7 +29,7 @@ function collectWebhook (m, data, callback) {
   const nameRegex = /--name="(((?!(--name|--avatar)).)*)"/
   const avatarRegex = /--avatar="(((?!(--name|--avatar)).)*)"/
   const hookName = m.content.replace(nameRegex, '').replace(avatarRegex, '').trim()
-  const hook = hooks.find('name', hookName)
+  const hook = hooks.find(h => h.name === hookName)
   if (!hook) return callback(new SyntaxError(`No such webhook named "${hookName}" found for this channel. Try again, or type \`exit\` to cancel.`))
   let customNameSrch = m.content.match(nameRegex)
   let customAvatarSrch = m.content.match(avatarRegex)

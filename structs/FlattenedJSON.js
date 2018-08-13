@@ -47,7 +47,7 @@ function cleanup (source, text) {
   return arr.join('\n')
 }
 
-class TextifiedJSON {
+class FlattenedJSON {
   constructor (data, source) {
     this.source = source
     this.data = data
@@ -123,4 +123,4 @@ class TextifiedJSON {
   }
 }
 
-module.exports = TextifiedJSON
+module.exports = FlattenedJSON

@@ -173,9 +173,9 @@ function checkRole (m, data, callback) {
   const input = m.content
   const mention = m.mentions.roles.first()
   if (mention) return callback(null, { ...data, role: mention })
-  const role = m.guild.roles.find('name', input)
+  const role = m.guild.roles.find(r => r.name === input)
   if (!role || input === '@everyone') return callback(new SyntaxError('That is not a valid role. Try again, or type `exit` to cancel.'))
-  else if (m.guild.roles.findAll('name', input).length > 1) return callback(new SyntaxError('There are multiple roles with that name. Mention the role, type another role, or type `exit` to cancel.'))
+  else if (m.guild.roles.filter(r => r.name === input).length > 1) return callback(new SyntaxError('There are multiple roles with that name. Mention the role, type another role, or type `exit` to cancel.'))
   callback(null, { ...data, role: role })
 }
 
