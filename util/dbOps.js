@@ -40,7 +40,7 @@ exports.guildRss = {
       })
     }
     // Database version
-    models.GuildRss().find(callback)
+    models.GuildRss().find().lean().exec(callback)
   },
   update: (guildRss, callback, skipProcessSend) => {
     if (storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
@@ -174,7 +174,7 @@ exports.guildRss = {
       }
     }
     // Database version
-    models.GuildRssBackup().find({ id: guildId }, (err, docs) => {
+    models.GuildRssBackup().find({ id: guildId }).lean().exec((err, docs) => {
       if (err) return callback ? callback(err) : null
       if (docs.length === 0 || exports.guildRss.empty(docs[0], true)) return callback ? callback() : null
       update(docs[0])
@@ -241,7 +241,7 @@ exports.linkTracker = {
   },
   get: callback => {
     if (!config.database.uri.startsWith('mongo')) return callback ? callback(null, new LinkTracker()) : null
-    models.LinkTracker().find({}, (err, docs) => {
+    models.LinkTracker().find({}).lean().exec((err, docs) => {
       if (err) return callback(err)
       callback(null, new LinkTracker(docs, storage.bot))
     })
@@ -307,7 +307,7 @@ exports.failedLinks = {
   },
   initalize: (callback, skipProcessSend) => {
     if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    models.FailedLink().find({}, (err, docs) => {
+    models.FailedLink().find({}).lean().exec((err, docs) => {
       if (err) return callback ? callback(err) : log.general.error('Unable to get failedLinks', err)
       const temp = {}
       for (var i = 0; i < docs.length; ++i) temp[docs[i].link] = docs[i].failed || docs[i].count
@@ -364,7 +364,7 @@ exports.blacklists = {
   },
   get: callback => {
     if (!config.database.uri.startsWith('mongo')) return callback(null, [])
-    models.Blacklist().find(callback)
+    models.Blacklist().find().lean().exec(callback)
   },
   add: (settings, callback) => {
     if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.blacklists.add is not supported when config.database.uri is set to a databaseless folder path')) : null
@@ -410,7 +410,7 @@ exports.vips = {
   },
   get: callback => {
     if (!config.database.uri.startsWith('mongo')) return callback ? callback(null, []) : null
-    models.VIP().find(callback)
+    models.VIP().find({}).lean().exec(callback)
   },
   update: (settings, callback, skipAddServers) => {
     if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.update is not supported when config.database.uri is set to a databaseless folder path')) : null
@@ -448,8 +448,7 @@ exports.vips = {
       const settings = settingsMultiple[q]
       const servers = settings.servers
       if (servers) exports.vips.addServers({ ...settings, serversToAdd: servers }, null, true)
-      delete settings.__v
-      models.VIP().update({ id: settings.id }, settings, { upsert: true, strict: true }, err => {
+      models.VIP().update({ id: settings.id }, JSON.parse(JSON.stringify(settings)), { upsert: true, strict: true }, err => { // stringify and parse to prevent mongoose from modifying my object
         if (err) {
           log.general.error(`Unable to add VIP for id ${settings.id}`, err)
           errored = true
