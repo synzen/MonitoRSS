@@ -14,13 +14,13 @@ module.exports = (embeds, article) => {
     }
     if (isStr(objectEmbed.description)) richEmbed.setDescription(article.convertKeywords(objectEmbed.description))
     if (isStr(objectEmbed.url)) richEmbed.setURL(article.convertKeywords(objectEmbed.url))
+    else richEmbed.setURL(article.link)
     if (objectEmbed.color && !isNaN(objectEmbed.color) && objectEmbed.color <= 16777215 && objectEmbed.color > 0) richEmbed.setColor(parseInt(objectEmbed.color, 10))
     else if (isStr(objectEmbed.color) && objectEmbed.color.startsWith('#') && objectEmbed.color.length === 7) richEmbed.setColor(objectEmbed.color)
     if (isStr(objectEmbed['footer_text'])) richEmbed.setFooter(article.convertKeywords(objectEmbed['footer_text']), isStr(objectEmbed['footer_icon_url']) ? article.convertKeywords(objectEmbed['footer_icon_url']) : undefined)
     if (isStr(objectEmbed['author_name'])) richEmbed.setAuthor(article.convertKeywords(objectEmbed['author_name']), isStr(objectEmbed['author_icon_url']) ? article.convertKeywords(objectEmbed['author_icon_url']) : undefined, isStr(objectEmbed['author_url']) ? article.convertKeywords(objectEmbed['author_url']) : undefined)
     if (isStr(objectEmbed['thumbnail_url'])) richEmbed.setThumbnail(article.convertImgs(objectEmbed['thumbnail_url']))
     if (isStr(objectEmbed['image_url'])) richEmbed.setImage(article.convertImgs(objectEmbed['image_url']))
-    else richEmbed.setURL(article.link)
     if (isStr(objectEmbed.timestamp)) {
       const setting = objectEmbed.timestamp
       richEmbed.setTimestamp(setting === 'article' ? new Date(article.rawDate) : setting === 'now' ? new Date() : new Date(setting)) // No need to check for invalid date since discord.js does it
