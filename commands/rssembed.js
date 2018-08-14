@@ -387,7 +387,10 @@ module.exports = (bot, message, command) => {
           continue
         }
         if (!Array.isArray(source.embeds)) source.embeds = []
-        if (!source.embeds[selectedEmbedIndex]) source.embeds.push({})
+        if (!source.embeds[selectedEmbedIndex]) {
+          source.embeds.push({})
+          log.command.info(`New embed added for ${source.link}`, message.guild)
+        }
         source.embeds[selectedEmbedIndex][prop] = userSetting
         log.command.info(`Embed updated for ${source.link}. Property '${prop}' set to '${userSetting}'`, message.guild)
         status += `☑ **${propName}** updated to \n\`\`\`\n${userSetting}\n\`\`\`\n`

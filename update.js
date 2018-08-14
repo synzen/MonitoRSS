@@ -65,17 +65,6 @@ db.once('open', () => {
           }
         }
 
-        // const newEmbedMessage = rssList[rssName].embeds
-        // if (newEmbedMessage) for (var qq = 0; qq < newEmbedMessage.length; ++qq) {
-        //   const thisEmbed = newEmbedMessage[qq]
-        //   for (var qqn in thisEmbed) {
-        //     if (!invalidEmbedProperties[qqn]) continue
-        //     Object.defineProperty(thisEmbed, invalidEmbedProperties[qqn], Object.getOwnPropertyDescriptor(thisEmbed, qqn))
-        //     delete thisEmbed[qqn]
-        //     changed = true
-        //   }
-        // }
-
         // Filtered message formats
         const filteredFormats = rssList[rssName].filteredFormats
         if (filteredFormats) {
@@ -141,11 +130,11 @@ db.once('open', () => {
         storage.models.GuildRss().update({ _id: guildRss._id }, guildRss, { overwrite: true, upsert: true, strict: true }, (err, res) => {
           if (err) throw err
           console.log(`Completed ${guildRss.id} (${++c}/${docs.length}) [UPDATED]`)
-          // console.log(res)
-          // if (c === docs.length) db.close()
+          if (c === docs.length) db.close()
         })
       } else {
         console.log(`Completed ${guildRss.id} (${++c}/${docs.length})`)
+        if (c === docs.length) db.close()
       }
     })
   })
