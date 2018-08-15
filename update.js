@@ -32,7 +32,9 @@ if (Object.keys(CON_SETTINGS).length > 0) {
   }
 }
 
-mongoose.connect(config.database.uri, { keepAlive: 120, useNewUrlParser: true, ...CON_SETTINGS, ...buffers })
+const uri = process.env.DRSS_DATABASE_URI || config.database.uri
+
+mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, ...CON_SETTINGS, ...buffers })
 const db = mongoose.connection
 
 db.on('error', console.log)
