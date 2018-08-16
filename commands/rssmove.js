@@ -6,18 +6,15 @@ const MIN_PERMISSION_BOT = ['VIEW_CHANNEL', 'SEND_MESSAGES']
 const MIN_PERMISSION_USER = ['VIEW_CHANNEL', 'SEND_MESSAGES', 'MANAGE_CHANNELS']
 const dbOps = require('../util/dbOps.js')
 
-function inputChannel (m, data, callback) {
+async function selectChannelFn (m, data) {
   const { guildRss, rssNameList } = data
   const rssList = guildRss.sources
-  // const source = rssList[rssName]
-  // const hasEmbed = source.embedMessage && source.embedMessage.properties
-  const selected = m.mentions.channels.first()
-  if (!selected) return callback(new SyntaxError('That is not a valid channel. Try again, or type `exit` to cancel.'))
+  const selected = m.content === 'this' ? m.channel : m.mentions.channels.first()
+  if (!selected) throw new SyntaxError('That is not a valid channel. Try again, or type `exit` to cancel.')
   const me = m.guild.me
   let errors = ''
   if (!me.permissionsIn(selected).has(MIN_PERMISSION_BOT)) errors += `\nI am missing **Read Messages** or **Send Messages** permission in <#${selected.id}>.`
   if (!m.member.permissionsIn(selected).has(MIN_PERMISSION_USER)) errors += `\nYou are missing **Read Messages**, **Send Messages**, or **Manage Channel** permission in <#${selected.id}>.`
-  // if (errors) errors += '\n'
 
   let feedSpecificErrors = ''
   for (var x = 0; x < rssNameList.length; ++x) {
@@ -44,28 +41,26 @@ function inputChannel (m, data, callback) {
   if (feedSpecificErrors && errors) errors += '\n' + feedSpecificErrors
   else if (feedSpecificErrors) errors += feedSpecificErrors
 
-  if (errors) return callback(new SyntaxError('Unable to move channel for the following reasons:\n' + errors + '\n\nTry again, or type `exit` to cancel.'))
+  if (errors) throw new SyntaxError('Unable to move channel for the following reasons:\n' + errors + '\n\nTry again, or type `exit` to cancel.')
   const summary = []
   for (var y = 0; y < rssNameList.length; ++y) {
     const source = rssList[rssNameList[y]]
     source.channel = selected.id
     summary.push(`<${source.link}>`)
   }
-  dbOps.guildRss.update(guildRss)
-  log.command.info(`Channel for feeds ${summary.join(',')} have been moved to ${selected.id} (${selected.name})`, m.guild, m.channel)
+  log.command.info(`Channel for feeds ${summary.join(',')} moving to to ${selected.id} (${selected.name})`, m.guild, m.channel)
+  await dbOps.guildRss.update(guildRss)
   m.channel.send(`The channel for the following feed(s):\n\n${summary.join('\n')}\n\nhave been successfully moved to <#${selected.id}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning('rssmove 1', err))
-  callback(null, data)
+  return data
 }
 
-module.exports = (bot, message, command) => {
+module.exports = async (bot, message, command) => {
   const feedSelector = new FeedSelector(message, null, { command: command })
-  const selectChannel = new MenuUtils.Menu(message, inputChannel, { text: 'Mention the channel to move the feed(s) to.' })
-
-  new MenuUtils.MenuSeries(message, [feedSelector, selectChannel]).start(async (err, data) => {
-    try {
-      if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-    } catch (err) {
-      log.command.warning(`rssmove`, message.guild, err)
-    }
-  })
+  const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: 'Mention the channel to move the feed(s) to, or type `this` for this channel.' })
+  try {
+    await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel]).start()
+  } catch (err) {
+    log.command.warning(`rssmove`, message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssmove 1', message.guild, err))
+  }
 }

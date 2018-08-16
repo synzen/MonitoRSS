@@ -11,25 +11,16 @@ exports.normal = async (bot, message) => {
   const link = content[1]
 
   try {
-    if (config.feeds.failLimit === 0) return message.channel.send(`No fail limit has been set.`)
-    if (typeof failedLinks[link] !== 'string') return message.channel.send('That is not a failed link.')
+    if (config.feeds.failLimit === 0) return await message.channel.send(`No fail limit has been set.`)
+    if (typeof failedLinks[link] !== 'string') return await message.channel.send('That is not a failed link.')
 
-    requestStream(link, null, null, async (err) => {
-      try {
-        if (err) {
-          log.controller.warning(`Unable to refresh feed link ${link}`, message.author, err)
-          return await message.channel.send(`Unable to refresh feed. Reason:\n\`\`\`${err}\n\`\`\``)
-        }
-        dbOps.failedLinks.reset(link)
-        await message.channel.send(`Successfully refreshed <${link}>.`)
-
-        log.controller.info(`Link ${link} has been refreshed and will be back on cycle.`, message.author)
-      } catch (err) {
-        log.controller.warning('refresh 2', err)
-      }
-    })
+    await requestStream(link)
+    await dbOps.failedLinks.reset(link)
+    log.controller.info(`Link ${link} has been refreshed and will be back on cycle.`, message.author)
+    await message.channel.send(`Successfully refreshed <${link}>.`)
   } catch (err) {
     log.controller.warning('refresh', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('refresh 1a', message.guild, err))
   }
 }
 
@@ -40,25 +31,16 @@ exports.sharded = async (bot, message, Manager) => {
   if (content.length !== 2) return
   const link = content[1]
   try {
-    if (config.feeds.failLimit === 0) return message.channel.send(`No fail limit has been set.`)
-    if (typeof failedLinks[link] !== 'string') return message.channel.send('That is not a failed link.')
+    if (config.feeds.failLimit === 0) return await message.channel.send(`No fail limit has been set.`)
+    if (typeof failedLinks[link] !== 'string') return await message.channel.send('That is not a failed link.')
 
-    requestStream(link, null, null, async (err) => {
-      try {
-        if (err) {
-          log.controller.warning(`Unable to refresh feed link ${link}`, message.author, err)
-          return await message.channel.send(`Unable to refresh feed. Reason:\n\`\`\`${err}\n\`\`\``)
-        }
-        await bot.shard.broadcastEval(`
-          delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${link}'];
-        `)
-        dbOps.failedLinks.reset(link)
-        await message.channel.send(`Successfully refreshed <${link}>.`)
-      } catch (err) {
-        log.controller.warning('refresh 2', err)
-      }
-    })
+    await requestStream(link)
+    await bot.shard.broadcastEval(`delete require(require('path').dirname(require.main.filename) + '/util/storage.js').failedLinks['${link}'];`)
+    await dbOps.failedLinks.reset(link)
+    log.controller.info(`Link ${link} has been refreshed and will be back on cycle.`, message.author)
+    await message.channel.send(`Successfully refreshed <${link}>.`)
   } catch (err) {
     log.controller.warning('refresh', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('refresh 1b', message.guild, err))
   }
 }

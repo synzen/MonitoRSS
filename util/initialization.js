@@ -14,6 +14,7 @@ const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
+
 function reachedFailCount (link) {
   const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
   if (failed && config.log.failedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
@@ -21,6 +22,8 @@ function reachedFailCount (link) {
 }
 
 module.exports = (bot, customSchedules, callback) => {
+
+
   const articleMessageQueue = new ArticleMessageQueue()
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new LinkTracker([], bot)
@@ -56,40 +59,49 @@ module.exports = (bot, customSchedules, callback) => {
 
   // Remove expires index, but ignores the log if it's "ns not found" error (meaning the collection doesn't exist)
   if (config.database.guildBackupsExpire <= 0) {
-    dbOps.guildRssBackup.dropIndexes(err => {
-      if (err && err.code !== 26) log.init.warning(`Unable to drop indexes for Guild_Backup collection for`, err)
+    dbOps.guildRssBackup.dropIndexes().catch(err => {
+      if (err.code !== 26) log.init.warning(`Unable to drop indexes for Guild_Backup collection for`, err)
     })
   }
 
   // Cache blacklisted users and guilds
-  dbOps.blacklists.get((err, docs) => {
-    if (err) throw err
+  dbOps.blacklists.get()
+  .then(docs => {
     for (var d = 0; d < docs.length; ++d) {
       const blisted = docs[d]
       if (blisted.isGuild) storage.blacklistGuilds.push(blisted.id)
       else storage.blacklistUsers.push(blisted.id)
     }
   })
+  .catch(err => {
+    console.log(err)
+    process.exit(1)
+  })
 
-  dbOps.failedLinks.initalize(err => {
-    if (err) throw err
-    readGuilds()
+  dbOps.failedLinks.initialize()
+  .then(() => readGuilds())
+  .catch(err => {
+    console.log(err)
+    process.exit(1)
   })
 
   // Cache guilds and start initialization
-  function readGuilds () {
-    dbOps.guildRss.getAll((err, results) => {
-      if (err) throw err
+  async function readGuilds () {
+    try {
+      const results = await dbOps.guildRss.getAll()
       for (var r = 0; r < results.length; ++r) {
         const guildRss = results[r]
         const guildId = guildRss.id
         if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
           if (bot.shard && bot.shard.count > 0) missingGuilds[guildId] = guildRss
           else {
-            dbOps.guildRss.remove(guildRss, err => {
+            dbOps.guildRss.remove(guildRss, true)
+            .then(() => {
+              log.init.info(`(G: ${guildId}) Removed missing guild`)
+            })
+            .catch(err => {
               if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
-              log.init.info(`(G: ${guildId}) Removing missing guild`)
-            }, true)
+            })
           }
           continue
         }
@@ -111,13 +123,18 @@ module.exports = (bot, customSchedules, callback) => {
           return
         }
         const id = guildId
-        dbOps.guildRss.restore(guildId, (err, restored) => {
-          if (err) log.init.info(`Unable to restore ${id}`, err)
-          else if (restored) log.init.info(`Restored profile for ${restored.id}`)
+        dbOps.guildRss.restore(guildId, true).then(guildRss => {
+          if (guildRss) log.init.info(`Restored profile for ${guildRss.id}`)
           if (++c === total) checkVIPs()
-        }, true)
+        }).catch(err => {
+          log.init.info(`Unable to restore ${id}`, err)
+          if (++c === total) checkVIPs()
+        })
       })
-    })
+    } catch (err) {
+      console.log(err)
+      process.exit(1)
+    }
   }
 
   function addToSourceLists (guildRss) { // rssList is an object per guildRss
@@ -163,14 +180,12 @@ module.exports = (bot, customSchedules, callback) => {
     }
   }
 
-  function checkVIPs () {
+  async function checkVIPs () {
     try {
       // For patron tracking on the public bot
       if (config.database.uri.startsWith('mongo') && config._vip && ((!bot.shard || bot.shard.count === 0) || (bot.shard && bot.shard.id === bot.shard.count - 1))) {
-        require('../settings/vips.js')(bot, err => {
-          if (err) throw err
-          prepConnect()
-        })
+        await require('../settings/vips.js')(bot)
+        prepConnect()
       } else prepConnect()
     } catch (e) {
       if (config._vip) log.general.error(`Failed to load VIP module`, e)
@@ -183,8 +198,8 @@ module.exports = (bot, customSchedules, callback) => {
     for (var t in linkTrackerArr) {
       const link = linkTrackerArr[t]
       if (config.database.clean !== true) {
-        dbOps.feeds.dropIndexes(link, linkTracker.shardId, err => {
-          if (err && err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${link}:`, err)
+        dbOps.feeds.dropIndexes(link, linkTracker.shardId).catch(err => {
+          if (err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${link}:`, err)
         })
       }
     }
@@ -224,15 +239,14 @@ module.exports = (bot, customSchedules, callback) => {
   function connect () {
     log.init.info(`${SHARD_ID}Starting initialization cycle`)
     genBatchLists()
-
     switch (config.advanced.processorMethod) {
-      case 'single':
+      case 'concurrent':
         getBatch(0, regBatchList, 'regular')
         break
-      case 'isolated':
+      case 'concurrent-isolated':
         getBatchIsolated(0, regBatchList, 'regular')
         break
-      case 'parallel':
+      case 'parallel-isolated':
         getBatchParallel()
     }
   }
@@ -254,10 +268,10 @@ module.exports = (bot, customSchedules, callback) => {
 
       initAll({ config: config, feedData: feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, logicType: 'init' }, (err, linkCompletion) => {
         if (err) log.init.warning(`Skipping ${linkCompletion.link}`, err, true)
-        if (linkCompletion.status === 'article') return articleMessageQueue.push(linkCompletion.article)
-        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, null, true)
+        if (linkCompletion.status === 'article') return articleMessageQueue.send(linkCompletion.article).catch(err => log.general.warning('articleMessageQueue initialization', err))
+        if (linkCompletion.status === 'failed') dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.general.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
         else if (linkCompletion.status === 'success') {
-          dbOps.failedLinks.reset(linkCompletion.link, null, true)
+          dbOps.failedLinks.reset(linkCompletion.link, true).catch(err => log.general.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
           if (linkCompletion.feedCollectionId) feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection
         }
 
@@ -283,18 +297,14 @@ module.exports = (bot, customSchedules, callback) => {
     const processor = childProcess.fork('./rss/isolatedMethod.js')
 
     processor.on('message', linkCompletion => {
-      if (linkCompletion.status === 'fatal') {
-        if (bot.shard && bot.shard.count > 0) bot.shard.broadcastEval('process.exit()')
-        throw linkCompletion.err // Full error is printed from the processor
-      }
-      if (linkCompletion.status === 'article') return articleMessageQueue.push(linkCompletion.article)
+      if (linkCompletion.status === 'article') return articleMessageQueue.send(linkCompletion.article).catch(err => log.general.warning('articleMessageQueue initialization', err))
       if (linkCompletion.status === 'batch_connected') return // Only used for parallel
       if (linkCompletion.status === 'success') {
-        dbOps.failedLinks.reset(linkCompletion.link, null, true)
+        dbOps.failedLinks.reset(linkCompletion.link, true).catch(err => log.general.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
         if (linkCompletion.feedCollectionId) feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection
       } else if (linkCompletion.status === 'failed') {
         cycleFailCount++
-        if (!bot.shard || bot.shard.count === 0) dbOps.failedLinks.increment(linkCompletion.link, null, true) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
+        if (!bot.shard || bot.shard.count === 0) dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.general.warning(`Unable to increment failed link ${linkCompletion.link}`, err)) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
       }
       if (linkCompletion.link) batchTracker[linkCompletion.link] = true
 
@@ -334,18 +344,14 @@ module.exports = (bot, customSchedules, callback) => {
       const currentBatchLen = Object.keys(currentBatch).length
 
       processor.on('message', linkCompletion => {
-        if (linkCompletion.status === 'kill') {
-          if (bot.shard && bot.shard.count > 0) bot.shard.broadcastEval('process.exit()')
-          throw linkCompletion.err // Full error is printed from the processor
-        }
-        if (linkCompletion.status === 'article') return articleMessageQueue.push(linkCompletion.article)
+        if (linkCompletion.status === 'article') return articleMessageQueue.send(linkCompletion.article).catch(err => log.general.warning('articleMessageQueue initialization', err))
         if (linkCompletion.status === 'batch_connected') return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'success') {
-          dbOps.failedLinks.reset(linkCompletion.link, null, true)
+          dbOps.failedLinks.reset(linkCompletion.link, true).catch(err => log.general.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
           if (linkCompletion.feedCollectionId) feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection
         } else if (linkCompletion.status === 'failed') {
           cycleFailCount++
-          if (!bot.shard || bot.shard.count === 0) dbOps.failedLinks.increment(linkCompletion.link, null, true) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
+          if (!bot.shard || bot.shard.count === 0) dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.general.warning(`Unable to increment failed link ${linkCompletion.link}`, err)) // Only increment failedLinks if not sharded since failure alerts cannot be sent out when other shards haven't been initialized
         }
 
         completedLinks++
@@ -384,9 +390,11 @@ module.exports = (bot, customSchedules, callback) => {
   function finishInit () {
     log.init.info(`${SHARD_ID}Finished initialization cycle ${cycleFailCount > 0 ? ' (' + cycleFailCount + '/' + cycleTotalCount + ' failed)' : ''}`)
     if (!bot.shard || bot.shard.count === 0) {
-      dbOps.linkTracker.write(linkTracker) // If this is a shard, then it's handled by the sharding manager
-      dbOps.general.cleanDatabase(currentCollections, err => {
-        if (err) throw err
+      dbOps.linkTracker.write(linkTracker).catch(err => log.general.warning('Unable to write link tracker links to collection after initialization', err)) // If this is a shard, then it's handled by the sharding manager
+      dbOps.general.cleanDatabase(currentCollections)
+      .then(() => callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData))
+      .catch(err => {
+        log.general.error(`Unable to clean database`, err)
         callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData)
       })
     } else callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData)

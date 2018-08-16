@@ -5,7 +5,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
 
-function feedSelectorFn (m, data, callback) {
+async function feedSelectorFn (m, data) {
   const { guildRss, rssName } = data
   const existingWebhook = guildRss.sources[rssName].webhook
 
@@ -13,33 +13,33 @@ function feedSelectorFn (m, data, callback) {
 Type the name of the webhook in this channel you wish to use (case sensitive), or type \`exit\` to cancel.\n
 To use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters \`--name="my new name here"\` or \`--avatar="http://website.com/image.jpg"\`. Placeholders are supported.`
 
-  callback(null, { ...data,
+  return { ...data,
     existingWebhook: existingWebhook,
     next: {
       text: text,
       embed: null
-    }})
+    }}
 }
 
-function collectWebhook (m, data, callback) {
+async function collectWebhook (m, data) {
   const { hooks } = data
   const webhookName = m.content
-  if (webhookName === '{remove}') return callback(null, { ...data, webhookName: webhookName })
+  if (webhookName === '{remove}') return { ...data, webhookName: webhookName }
 
   const nameRegex = /--name="(((?!(--name|--avatar)).)*)"/
   const avatarRegex = /--avatar="(((?!(--name|--avatar)).)*)"/
   const hookName = m.content.replace(nameRegex, '').replace(avatarRegex, '').trim()
   const hook = hooks.find(h => h.name === hookName)
-  if (!hook) return callback(new SyntaxError(`No such webhook named "${hookName}" found for this channel. Try again, or type \`exit\` to cancel.`))
+  if (!hook) throw new SyntaxError(`No such webhook named "${hookName}" found for this channel. Try again, or type \`exit\` to cancel.`)
   let customNameSrch = m.content.match(nameRegex)
   let customAvatarSrch = m.content.match(avatarRegex)
 
   if (customNameSrch) {
     customNameSrch = customNameSrch[1]
-    if (customNameSrch.length > 32 || customNameSrch.length < 2) return callback(new SyntaxError('Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.'))
+    if (customNameSrch.length > 32 || customNameSrch.length < 2) throw new SyntaxError('Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.')
   }
   if (customAvatarSrch) customAvatarSrch = customAvatarSrch[1]
-  callback(null, { ...data, webhook: hook, customAvatarSrch: customAvatarSrch, customNameSrch: customNameSrch })
+  return { ...data, webhook: hook, customAvatarSrch: customAvatarSrch, customNameSrch: customNameSrch }
 }
 
 module.exports = async (bot, message, command) => {
@@ -54,40 +54,34 @@ module.exports = async (bot, message, command) => {
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
     const webhookSelector = new MenuUtils.Menu(message, collectWebhook)
 
-    new MenuUtils.MenuSeries(message, [feedSelector, webhookSelector], { hooks: hooks }).start(async (err, data) => {
-      try {
-        if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-        const { guildRss, rssName, existingWebhook, webhookName, webhook, customAvatarSrch, customNameSrch } = data
-        const source = guildRss.sources[rssName]
-        if (webhookName === '{remove}') {
-          if (typeof existingWebhook !== 'object') await message.channel.send(`There is no webhook assigned to this feed.`)
-          else {
-            const name = source.webhook.name
-            delete source.webhook
-            await message.channel.send(`Successfully removed webhook ${name} from the feed <${source.link}>.`)
-          }
-        } else {
-          source.webhook = {
-            id: webhook.id,
-            name: webhook.name
-          }
-
-          if (customNameSrch) source.webhook.name = customNameSrch
-          if (customAvatarSrch) source.webhook.avatar = customAvatarSrch
-          log.command.info(`Webhook ID ${webhook.id} (${webhook.name}) connected to feed ${source.link}`, message.guild, message.channel)
-          const connected = `I am now connected to ${bot.user}, and will send feed articles for <${source.link}>!`
-          webhook.send(connected, { username: customNameSrch, avatarURL: customAvatarSrch })
-            .catch(err => {
-              if (err.message.includes('avatar_url')) return webhook.send(connected, { username: customNameSrch }).catch(err => log.comamnd.warning(`rsswebhook 2`, message.guild, err)) // This may be a placeholder
-            })
-        }
-        dbOps.guildRss.update(guildRss)
-      } catch (err) {
-        log.command.warning(`rsswebhook2`, message.guild, err)
-        if (err.code !== 50013) message.channel.send('Unable to fetch webhooks for this channel. ', err.message).catch(err => log.command.warning(`rsswebhook`, message.guild, err))
+    const data = await new MenuUtils.MenuSeries(message, [feedSelector, webhookSelector], { hooks: hooks }).start()
+    const { guildRss, rssName, existingWebhook, webhookName, webhook, customAvatarSrch, customNameSrch } = data
+    const source = guildRss.sources[rssName]
+    if (webhookName === '{remove}') {
+      if (typeof existingWebhook !== 'object') await message.channel.send(`There is no webhook assigned to this feed.`)
+      else {
+        const name = source.webhook.name
+        delete source.webhook
+        await message.channel.send(`Successfully removed webhook ${name} from the feed <${source.link}>.`)
       }
-    })
+    } else {
+      source.webhook = {
+        id: webhook.id,
+        name: webhook.name
+      }
+
+      if (customNameSrch) source.webhook.name = customNameSrch
+      if (customAvatarSrch) source.webhook.avatar = customAvatarSrch
+      log.command.info(`Webhook ID ${webhook.id} (${webhook.name}) connecting to feed ${source.link}`, message.guild, message.channel)
+      const connected = `I am now connected to ${bot.user}, and will send feed articles for <${source.link}>!`
+      webhook.send(connected, { username: customNameSrch, avatarURL: customAvatarSrch })
+        .catch(err => {
+          if (err.message.includes('avatar_url')) return webhook.send(connected, { username: customNameSrch }).catch(err => log.comamnd.warning(`rsswebhook 2`, message.guild, err)) // This may be a placeholder
+        })
+    }
+    await dbOps.guildRss.update(guildRss)
   } catch (err) {
     log.command.warning(`rsswebhook`, message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsswebhook 1', message.guild, err))
   }
 }

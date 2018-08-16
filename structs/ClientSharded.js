@@ -36,18 +36,17 @@ class ClientSharded {
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardingManager = shardingManager
     this.shardingManager.on('message', this.messageHandler.bind(this))
-    connectDb(err => {
-      if (err) throw err
+    connectDb().then(() => {
       if (shardingManager.shards.size === 0) shardingManager.spawn(config.advanced.shards, 0) // They may have already been spawned with a predefined ShardingManager
       shardingManager.shards.forEach((val, key) => this.activeshardIds.push(key))
-    })
+    }).catch(err => log.general.error(`ClientSharded db connection`, err))
   }
 
   messageHandler (shard, message) {
-    if (message === 'kill') process.exit()
     if (!message._drss) return
     if (message._loopback) return this.shardingManager.broadcast(message).catch(err => handleError(err, message))
     switch (message.type) {
+      case 'kill': process.exit(0)
       case 'customSchedules': this._customSchedulesEvent(message); break
       case 'shardReady': this._shardReadyEvent(message); break
       case 'initComplete': this._initCompleteEvent(message); break
@@ -84,22 +83,23 @@ class ClientSharded {
 
     if (++this.shardsDone === this.shardingManager.totalShards) {
       // Drop the ones not in the current collections
-      dbOps.general.cleanDatabase(this.currentCollections, err => {
-        if (err) throw err
-      })
+      dbOps.general.cleanDatabase(this.currentCollections).catch(err => log.general.error(`Unable to clean database`, err))
 
-      dbOps.linkTracker.write(this.linkTracker, err => {
-        if (err) throw err
-        this.shardingManager.broadcast({ _drss: true, type: 'finishedInit' })
-        log.general.info(`All shards have initialized by the Sharding Manager.`)
-        this.missingGuildRss.forEach((guildRss, guildId) => {
-          dbOps.guildRss.remove(guildRss, err => {
-            if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err)
-            log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`)
+      dbOps.linkTracker.write(this.linkTracker)
+        .then(() => {
+          this.shardingManager.broadcast({ _drss: true, type: 'finishedInit' })
+          log.general.info(`All shards have initialized by the Sharding Manager.`)
+          this.missingGuildRss.forEach((guildRss, guildId) => {
+            dbOps.guildRss.remove(guildRss)
+              .then(() => log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`))
+              .catch(err => log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err))
           })
+          this.createIntervals()
         })
-        this.createIntervals()
-      })
+        .catch(err => {
+          console.log(err)
+          process.exit(1)
+        })
     } else if (this.shardsDone < this.shardingManager.totalShards) {
       this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
     }

@@ -1,35 +1,34 @@
 const UPDATE_SETTINGS = { overwrite: true, upsert: true, strict: true }
 const mongoose = require('mongoose')
 
-exports.findAll = (Model, callback) => {
+exports.findAll = async Model => {
   // Database
-  if (mongoose.connection.name) return Model.find({}, callback)
+  if (mongoose.connection.name) return Model.find({}).lean().exec()
 
   // Memory
-  callback(null, Model)
+  return Model
 }
 
-exports.update = (Model, article, callback) => {
+exports.update = async (Model, article) => {
   const toUpdate = { id: article._id, title: article.title }
   if (article.customComparisons) toUpdate.customComparisons = article.customComparisons
   // Database
-  if (mongoose.connection.name) return Model.update({ id: toUpdate.id }, toUpdate, UPDATE_SETTINGS, callback)
+  if (mongoose.connection.name) return Model.update({ id: toUpdate.id }, toUpdate, UPDATE_SETTINGS).exec()
 
   // Memory
   for (var x = 0; x < Model.length; ++x) {
     const doc = Model[x]
     if (doc.id === article._id && article.customComparisons) doc.customComparisons = article.customComparisons
   }
-  callback()
 }
 
-exports.bulkInsert = (Model, articles, callback) => {
-  if (articles.length === 0) return callback()
+exports.bulkInsert = async (Model, articles) => {
+  if (articles.length === 0) return
   const insert = []
   // Database
   if (mongoose.connection.name) {
     articles.forEach(article => insert.push(new Model({ id: article._id, title: article.title })))
-    return Model.collection.insert(insert, callback)
+    return Model.collection.insert(insert)
   }
 
   // Memory
@@ -39,5 +38,4 @@ exports.bulkInsert = (Model, articles, callback) => {
     delete obj._id
     Model.push(obj)
   }
-  callback()
 }

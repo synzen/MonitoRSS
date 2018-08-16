@@ -16,7 +16,8 @@ exports.normal = async (bot, message) => {
       console.log(guildData)
     } else await message.channel.send('No data available.')
   } catch (err) {
-    log.controller.warning('getsources', err)
+    log.controller.warning('getguild', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('getguild 1a', message.guild, err))
   }
 }
 
@@ -46,6 +47,7 @@ exports.sharded = async (bot, message, Manager) => {
       } else await message.channel.send('No sources available.')
     }
   } catch (err) {
-    log.controller.warning('getsources', err)
+    log.controller.warning('getguild', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('getguild 1b', message.guild, err))
   }
 }

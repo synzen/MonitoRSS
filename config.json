@@ -50,7 +50,7 @@
   "advanced": {
     "shards": 2,
     "batchSize": 400,
-    "processorMethod": "single",
+    "processorMethod": "concurrent",
     "parallel": 2
   }
 }

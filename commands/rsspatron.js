@@ -2,7 +2,7 @@ const storage = require('../util/storage.js')
 const config = require('../config.json')
 const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
-const timeLimited = {}
+// const timeLimited = {}
 
 async function switchServerArg (bot, message, args) {
   try {
@@ -16,46 +16,34 @@ async function switchServerArg (bot, message, args) {
         const vipUser = storage.vipUsers[message.author.id]
         if ((vipUser.maxServers && vipUser.servers.length >= vipUser.maxServers) || (!vipUser.maxServers && vipUser.servers.length === 1)) return await message.channel.send(`You cannot add any more servers for your patron status. Your maximum is ${vipUser.maxServers ? vipUser.maxServers : 1}.`)
         const m = await message.channel.send(`Adding server ${server}...`)
-        dbOps.vips.addServers({ ...storage.vipUsers[message.author.id], serversToAdd: [server] }, (err, added, failed) => {
-          let content = ''
-          if (err) content = `Failed to process due to internal error.`
-          else {
-            if (Object.keys(added).length > 0) {
-              content += `The following server(s) have been successfully added:\n`
-              for (var aId in added) content += `\n${aId}${added[aId] ? ` (${added[aId]})` : ``}`
-              content += '\n\n'
-            }
-            if (failed.length > 0) {
-              content += 'The following server(s) could not be added because they do not exist for this bot:\n'
-              for (var a in failed) content += `\n${failed[a]}`
-            }
-          }
-          m.edit(content).catch(err => log.command.warning(`rsspatron servers 1`, err))
-        })
+        const [ added, failedAdds ] = await dbOps.vips.addServers({ ...storage.vipUsers[message.author.id], serversToAdd: [server] })
+        let addedContent = ''
+        if (Object.keys(added).length > 0) {
+          addedContent += `The following server(s) have been successfully added:\n`
+          for (var aId in added) addedContent += `\n${aId}${added[aId] ? ` (${added[aId]})` : ``}`
+          addedContent += '\n\n'
+        }
+        if (failedAdds.length > 0) {
+          addedContent += 'The following server(s) could not be added because they do not exist for this bot:\n'
+          for (var a in failedAdds) addedContent += `\n${failedAdds[a]}`
+        }
+        await m.edit(addedContent)
         break
       case 'remove':
         if (!storage.vipServers[server] && !storage.vipUsers[message.author.id].servers.includes(server)) return await message.channel.send('That server does not have a patron backing.')
         const m2 = await message.channel.send(`Removing server ${server}...`)
-        dbOps.vips.removeServers({ ...storage.vipUsers[message.author.id], serversToRemove: [server] }, (err, added, failed) => {
-          let content = ''
-          if (err) content = `Failed to process due to internal error.`
-          else {
-            if (Object.keys(added).length > 0) {
-              content += `The following server(s) have been successfully removed:\n`
-              for (var rId in added) content += `\n${rId}${added[rId] ? ` (${added[rId]})` : ``}`
-              content += '\n\n'
-            }
-            if (failed.length > 0) {
-              content += 'The following server(s) could not be removed because they are not backed by your patron status:\n'
-              for (var r in failed) content += `\n${failed[r]}`
-            }
-          }
-          if (err) {
-            log.general.warning(`Unable to remove patron backing from server ${server}`, err)
-            return m.edit(`Unable to remove your patron backing from ${server}. Reason: ${err.message}`)
-          }
-          m2.edit(content).catch(err => log.command.warning(`rsspatron servers 2`, err))
-        })
+        const [ removed, failedRemoves ] = await dbOps.vips.removeServers({ ...storage.vipUsers[message.author.id], serversToRemove: [server] })
+        let removedContent = ''
+        if (Object.keys(removed).length > 0) {
+          removedContent += `The following server(s) have been successfully removed:\n`
+          for (var rId in removed) removedContent += `\n${rId}${removed[rId] ? ` (${removed[rId]})` : ``}`
+          removedContent += '\n\n'
+        }
+        if (failedRemoves.length > 0) {
+          removedContent += 'The following server(s) could not be removed because they are not backed by your patron status:\n'
+          for (var r in failedRemoves) removedContent += `\n${failedRemoves[r]}`
+        }
+        await m2.edit(removedContent)
         break
 
       case 'list':
@@ -72,7 +60,7 @@ async function switchServerArg (bot, message, args) {
         break
 
       default:
-        await message.channel.send('Invalid command usage.')
+        await message.channel.send(`Invalid command usage.`)
     }
   } catch (err) {
     log.command.warning('rsspatron servers', err)
@@ -97,31 +85,32 @@ module.exports = async (bot, message) => {
       case 'servers':
         switchServerArg(bot, message, args)
         break
-      case 'refresh':
-        if (timeLimited[message.author.id]) {
-          log.command.warning('Blocked refresh due to time limit', message.author)
-          return await message.channel.send(`${message.author.toString()} Please wait 5 minutes after the last use of this command before using it again.`)
-        }
-        timeLimited[message.author.id] = true
-        setTimeout(() => delete timeLimited[message.author.id], 300000) // 5 minutes
-        const m = await message.channel.send('Refreshing...')
-        dbOps.vips.refresh(async err => {
-          try {
-            if (err) {
-              log.command.error('Failed to update VIPs', message.author, err)
-              return await m.edit(`Failed to refresh patrons: ` + err.message)
-            }
-            log.command.success(`Refreshed VIPs`, message.author)
-            await m.edit(`Successfully updated patrons.`)
-          } catch (err) {
-            log.command.warning('rsspatron 2', err, message.author)
-          }
-        })
-        break
+      // case 'refresh':
+      //   if (timeLimited[message.author.id]) {
+      //     log.command.warning('Blocked refresh due to time limit', message.author)
+      //     return await message.channel.send(`${message.author.toString()} Please wait 5 minutes after the last use of this command before using it again.`)
+      //   }
+      //   timeLimited[message.author.id] = true
+      //   setTimeout(() => delete timeLimited[message.author.id], 300000) // 5 minutes
+      //   const m = await message.channel.send('Refreshing...')
+      //   dbOps.vips.refresh(async err => {
+      //     try {
+      //       if (err) {
+      //         log.command.error('Failed to update VIPs', message.author, err)
+      //         return await m.edit(`Failed to refresh patrons: ` + err.message)
+      //       }
+      //       log.command.success(`Refreshed VIPs`, message.author)
+      //       await m.edit(`Successfully updated patrons.`)
+      //     } catch (err) {
+      //       log.command.warning('rsspatron 2', err, message.author)
+      //     }
+      //   })
+      //   break
       default:
         await message.channel.send('Invalid command usage')
     }
   } catch (err) {
     log.command.warning('rsspatron', err, message.author)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsspatron 1', message.guild, err))
   }
 }

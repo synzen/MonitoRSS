@@ -36,58 +36,61 @@ module.exports = (data, callback) => {
   const feedCollectionId = feedData ? storage.collectionId(link, shardId) : undefined
   const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
 
-  dbCmds.findAll(feedCollection || Feed, (err, docs) => {
-    if (err) {
-      if (logicType === 'cycle') return callback(err, { status: 'failed', link: link, rssList: rssList })
-      else throw err
-    }
-    for (var d = 0; d < docs.length; ++d) {
-      const doc = docs[d]
-      // Push the main data for built in comparisons
-      dbIds.push(doc.id)
-      dbTitles.push(doc.title)
+  dbCmds.findAll(feedCollection || Feed)
+    .then(docs => {
+      for (var d = 0; d < docs.length; ++d) {
+        const doc = docs[d]
+        // Push the main data for built in comparisons
+        dbIds.push(doc.id)
+        dbTitles.push(doc.title)
 
-      // Now deal with custom comparisons
-      const docCustomComparisons = doc.customComparisons
-      if (docCustomComparisons !== undefined && Object.keys(docCustomComparisons).length > 0) {
-        for (var n in docCustomComparisons) { // n = customComparison's name (such as description, author, etc.)
-          if (!dbCustomComparisons[n]) dbCustomComparisons[n] = []
-          dbCustomComparisons[n].push(docCustomComparisons[n])
+        // Now deal with custom comparisons
+        const docCustomComparisons = doc.customComparisons
+        if (docCustomComparisons !== undefined && Object.keys(docCustomComparisons).length > 0) {
+          for (var n in docCustomComparisons) { // n = customComparison's name (such as description, author, etc.)
+            if (!dbCustomComparisons[n]) dbCustomComparisons[n] = []
+            dbCustomComparisons[n].push(docCustomComparisons[n])
+          }
         }
       }
-    }
 
-    const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
-    for (var a = 0; a < articleList.length; ++a) {
-      const article = articleList[a]
-      article._id = getArticleId(articleList, article)
-      if (checkCustomComparisons) {
+      const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
+      for (var a = 0; a < articleList.length; ++a) {
+        const article = articleList[a]
+        article._id = getArticleId(articleList, article)
+        if (checkCustomComparisons) {
         // Iterate over the values stored in the db, and see if the custom comparison names in the db exist in any of the articles. If they do, then it is marked valid
-        for (var compName in dbCustomComparisons) {
-          if (article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null)) dbCustomComparisonsValid[compName] = true
+          for (var compName in dbCustomComparisons) {
+            if (article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null)) dbCustomComparisonsValid[compName] = true
+          }
         }
+        if (!dbIds.includes(article._id)) toInsert.push(article)
       }
-      if (!dbIds.includes(article._id)) toInsert.push(article)
-    }
 
-    // If any invalid custom comparisons are found, delete them
-    if (checkCustomComparisons) {
-      for (var q in dbCustomComparisons) {
-        if (!dbCustomComparisonsValid[q]) {
-          dbCustomComparisonsToDelete.push(q)
-          delete dbCustomComparisons[q]
+      // If any invalid custom comparisons are found, delete them
+      if (checkCustomComparisons) {
+        for (var q in dbCustomComparisons) {
+          if (!dbCustomComparisonsValid[q]) {
+            dbCustomComparisonsToDelete.push(q)
+            delete dbCustomComparisons[q]
+          }
         }
       }
-    }
-    dbCmds.bulkInsert(feedCollection || Feed, toInsert, err => {
-      if (err) {
-        if (logicType === 'cycle') return callback(new Error(`Database Error: Unable to bulk insert articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
-        else throw err
-      }
-      if (dbIds.length > 0) for (var rssName in rssList) processSource(rssName, docs)
-      else callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
+      dbCmds.bulkInsert(feedCollection || Feed, toInsert).then(() => {
+        if (dbIds.length > 0) for (var rssName in rssList) processSource(rssName, docs)
+        else callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
+      })
+        .catch(err => {
+          if (err) {
+            if (logicType === 'cycle') return callback(new Error(`Database Error: Unable to bulk insert articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
+            else process.exit(1)
+          }
+        })
     })
-  })
+    .catch(err => {
+      if (logicType === 'cycle') return callback(err, { status: 'failed', link: link, rssList: rssList })
+      else process.exit(1)
+    })
 
   function processSource (rssName, docs) {
     const source = rssList[rssName]

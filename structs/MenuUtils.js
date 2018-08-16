@@ -192,48 +192,57 @@ class Menu {
    * @param {sendCallback} callback
    * @memberof Menu
    */
-  async send (data, callback) {
-    try {
-      let m
-      if (Array.isArray(this.text)) {
-        for (var ind = 0; ind < this.text.length; ++ind) {
-          // Only send the embed on the final message if there are multiple messages. This emulates regular message splitting with multiple texts.
-          m = await this.channel.send(this.text[ind], ind === this.text.length - 1 ? { embed: this.pages[0] } : undefined)
-          this._msgCleaner.add(m)
-        }
-      } else {
-        m = await this.channel.send(this.text, { embed: this.pages[0], split: this.splitOptions ? this.splitOptions : undefined })
+  async send (data) {
+    let m
+    // try {
+    if (Array.isArray(this.text)) {
+      for (var ind = 0; ind < this.text.length; ++ind) {
+        // Only send the embed on the final message if there are multiple messages. This emulates regular message splitting with multiple texts.
+        m = await this.channel.send(this.text[ind], ind === this.text.length - 1 ? { embed: this.pages[0] } : undefined)
         this._msgCleaner.add(m)
       }
-      if (this.pages.length > 1) {
-        await m.react('◀')
-        await m.react('▶')
-        pageControls.add(m.id, this.pages)
-      }
+    } else {
+      m = await this.channel.send(this.text, { embed: this.pages[0], split: this.splitOptions ? this.splitOptions : undefined })
+      this._msgCleaner.add(m)
+    }
+    // } catch (err) {
+    //   log.command.warning(`Failed to send Menu`, this.channel.guild, err)
+    //   throw err
+    //   // callback(err, { __end: true })
+    // }
+    if (this.pages.length > 1) {
+      await m.react('◀')
+      await m.react('▶')
+      pageControls.add(m.id, this.pages)
+    }
 
-      // If there is no function, then it's a visual, non-function Menu
-      if (!this.fn) return callback()
+    // If there is no function, then it's a visual, non-function Menu
+    if (!this.fn) return
 
-      const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, { time: 90000 })
-      // Add a channel tracker to prohibit any other commands while the Menu is in use
-      channelTracker.add(this.channel.id)
+    const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, { time: 90000 })
+    // Add a channel tracker to prohibit any other commands while the Menu is in use
+    channelTracker.add(this.channel.id)
 
-      collector.on('collect', m => {
+    return new Promise((resolve, reject) => {
+      collector.on('collect', async m => {
         this._msgCleaner.add(m)
         if (m.content.toLowerCase() === 'exit') {
           collector.stop('Menu closed.')
           // __end will cause the MenuSeries, if it exists, to skip its callback function and all further menus
-          return this._series ? callback(null, { __end: true }, this._msgCleaner) : null
+          return this._series ? resolve([{ __end: true }, this._msgCleaner]) : null
         }
 
         // Call the function defined in the constructor
-        this.fn(m, data, (err, passover, endPrematurely) => {
-          // SyntaxError allows input retries for this collector due to incorrect input
-          if (err instanceof SyntaxError) return m.channel.send(err.message ? err.message : WRONG_INPUT, { split: true }).then(m => this._msgCleaner.add(m))
+        try {
+          const passover = await this.fn(m, data)
           collector.stop()
           // Callback and pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
-          callback(err, passover, this._msgCleaner, endPrematurely)
-        })
+          resolve([ passover, this._msgCleaner ])
+        } catch (err) {
+          // SyntaxError allows input retries for this collector due to incorrect input
+          if (err instanceof SyntaxError) m.channel.send(err.message ? err.message : WRONG_INPUT, { split: true }).then(m => this._msgCleaner.add(m)).catch(reject)
+          else reject(err)
+        }
       })
 
       collector.on('end', (collected, reason) => { // Reason is the parameter inside collector.stop(reason)
@@ -243,10 +252,7 @@ class Menu {
         if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
         else this.channel.send(reason).then(m => m.delete(6000))
       })
-    } catch (err) {
-      log.command.warning(`Failed to send Menu`, this.channel.guild, err)
-      callback(err, { __end: true })
-    }
+    })
   }
 }
 
@@ -314,32 +320,26 @@ class MenuSeries {
    * @param {Function} callback Function to call when the MenuSeries has gone through all its Menus
    * @memberof MenuSeries
    */
-  start (callback) {
-    this._send(0, this._data, callback)
+  async start () {
+    return this._send(0, this._data)
   }
 
-  _end (err, data, callback) {
+  async _end (err, data) {
     this._msgCleaner.deleteAll()
-    callback(err, data)
+    if (err) {
+      err.message = `[MenuSeries Error] ` + err.message
+      throw err
+    } else return data
   }
-
-  /**
-   * Callback function for finishing a MenuSeries
-   *
-   * @callback finishCallback
-   * @param {Error} err Any errors encountered during any Menus
-   * @param {Object} data Data to pass over to the ending function of this Series
-   */
 
   /**
    * Explicitly send a Menu
    *
    * @param {number} [index=0] Index of the Menu in this._menus
    * @param {Object} [data={}] Data to passover to the next Menu, or to callback
-   * @param {finishCallback} callback Callback to the ending function of this Series
    * @memberof MenuSeries
    */
-  _send (index = 0, data = {}, callback) {
+  async _send (index = 0, data = {}) {
     // Add any merged data from additionally added Menu's or merged Series
     const mergedData = this._mergedData[index]
     if (mergedData) {
@@ -349,7 +349,7 @@ class MenuSeries {
     }
 
     const curMenu = this._menus[index]
-    const next = data.next
+    let next = data.next
 
     // Set the next Menu's visuals based on the previous Menu's requests in data.next
     if (next && next.text) curMenu.setText(next.text)
@@ -362,35 +362,42 @@ class MenuSeries {
       if (Array.isArray(options)) options.forEach(item => curMenu.addOption(item.title, item.description, item.inline))
     }
 
-    curMenu.send(data, (err, passover = {}, msgCleaner, endPrematurely) => {
-      const next = passover.next
-      this._msgCleaner.merge(msgCleaner)
+    try {
+      var [ passover, msgCleaner ] = await curMenu.send(data)
+      if (!passover) return this._end() // No data
+    } catch (err) {
+      return this._end(err)
+    }
+    next = passover.next
+    this._msgCleaner.merge(msgCleaner)
 
-      // Check for any indicators to stop the MenuSeries
-      if (passover.__end) return this._msgCleaner.deleteAll() // Do not execute the ending callback function and skip any further menus
-      else if (endPrematurely === true) return this._end(null, passover, callback) // Execute the ending callback function and skip any further menus
-      else if (err) return this._end(err, null, callback) // Execute the ending callback function with the err parameter and skip any further menus
+    // Check for any indicators to stop the MenuSeries
+    if (passover.__end) return this._msgCleaner.deleteAll() // Skip any further menus
 
-      // Add any Menus requested to be added by the Menu that just finished
-      if (next && next.menu) {
-        if (next.menu instanceof Menu) this.add(next.menu)
-        else if (Array.isArray(next.menu)) next.menu.forEach(item => this.add(item))
-        delete next.menu
-      }
+    // Add any Menus requested to be added by the Menu that just finished
+    if (next && next.menu) {
+      if (next.menu instanceof Menu) this.add(next.menu)
+      else if (Array.isArray(next.menu)) next.menu.forEach(item => this.add(item))
+      delete next.menu
+    }
 
-      // Merge any MenuSeries requested to be added by the Menu that just finished
-      if (next && next.series) {
-        if (next.series instanceof MenuSeries) this.merge(next.series)
-        else if (Array.isArray(next.series)) next.series.forEach(item => this.merge(item))
-        delete next.series
-      }
+    // Merge any MenuSeries requested to be added by the Menu that just finished
+    if (next && next.series) {
+      if (next.series instanceof MenuSeries) this.merge(next.series)
+      else if (Array.isArray(next.series)) next.series.forEach(item => this.merge(item))
+      delete next.series
+    }
 
-      if (!this._menus[++index]) return this._end(null, passover, callback)
-      this._send(index, passover, callback)
-    })
+    if (!this._menus[++index]) return this._end(null, passover)
+    return this._send(index, passover)
   }
 }
 
 exports.Menu = Menu
 exports.MenuSeries = MenuSeries
+exports.extractArgsAfterCommand = string => {
+  const args = string.split(' ')
+  args.shift()
+  return exports.trimArray(args)
+}
 exports.trimArray = arr => arr.map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item))

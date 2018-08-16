@@ -25,14 +25,18 @@ function getFeed (data, callback) {
     }
   }, 90000)
 
-  requestStream(link, cookies, feedparser, err => {
-    requested = true
-    callback()
-    if (!err) return
-    if (logicType === 'cycle' && logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
-    else if (logicType === 'init') log.init.warning(`Skipping ${link}`, err)
-    process.send({ status: 'failed', link: link, rssList: rssList })
-  })
+  requestStream(link, cookies, feedparser)
+    .then(stream => {
+      stream.pipe(feedparser)
+      requested = true
+      callback()
+    })
+    .catch(err => {
+      if (logicType === 'cycle' && logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
+      else if (logicType === 'init') log.init.warning(`Skipping ${link}`, err)
+      process.send({ status: 'failed', link: link, rssList: rssList })
+      callback()
+    })
 
   feedparser.on('error', err => {
     feedparser.removeAllListeners('end')
@@ -68,8 +72,7 @@ process.on('message', m => {
   const debugFeeds = m.debugFeeds
   const logicType = m.logicType
   const feedData = m.feedData // Only defined if config.database.uri is set to a databaseless folder path
-  connectDb(err => {
-    if (err) throw new Error(`Could not connect to database for cycle\n`, err)
+  connectDb().then(() => {
     const len = Object.keys(currentBatch).length
     let c = 0
     for (var link in currentBatch) {
@@ -84,5 +87,5 @@ process.on('message', m => {
         if (++c === len) process.send({ status: 'batch_connected' })
       })
     }
-  })
+  }).catch(err => log.general.error(`isolatedMethod db connection`, err))
 })

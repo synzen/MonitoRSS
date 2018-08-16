@@ -6,6 +6,8 @@ const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
 
 module.exports = (data, callback) => {
+
+
   const { link, rssList, uniqueSettings, logicType } = data
   if (logicType !== 'init' && logicType !== 'cycle') throw new Error(`Expected logicType parameter must be "cycle" or "init", found ${logicType} instead`)
   const feedparser = new FeedParser()
@@ -13,9 +15,9 @@ module.exports = (data, callback) => {
 
   const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
 
-  requestStream(link, cookies, feedparser, err => {
-    if (err) callback(err, { status: 'failed', link: link, rssList: rssList })
-  })
+  requestStream(link, cookies, feedparser)
+  .then(stream => stream.pipe(feedparser))
+  .catch(err => callback(err, { status: 'failed', link: link, rssList: rssList }))
 
   feedparser.on('error', err => {
     feedparser.removeAllListeners('end')

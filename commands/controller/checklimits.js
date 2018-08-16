@@ -17,6 +17,7 @@ exports.normal = async (bot, message) => {
     else await message.channel.send(`Illegal sources found for the following guilds: \n\`\`\`${illegals}\`\`\``)
   } catch (err) {
     log.controller.warning('checklimits', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('checklimits 1a', message.guild, err))
   }
 }
 
@@ -40,10 +41,10 @@ exports.sharded = async (bot, message) => {
     `)
     let illegals = []
     for (var x in results) if (results[x]) illegals = illegals.concat(results[x])
-
     if (illegals.length === 0) await message.channel.send(`Everything looks good!`)
     else await message.channel.send(`Illegal sources found for the following guilds: \n\`\`\`${illegals}\`\`\``)
   } catch (err) {
     log.controller.warning('checklimits', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('checklimits 1b', message.guild, err))
   }
 }

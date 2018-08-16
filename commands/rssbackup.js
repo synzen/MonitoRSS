@@ -14,5 +14,6 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
     else await message.channel.send('Unable to send backup due to missing `Attach Files` permission.')
   } catch (err) {
     log.command.warning('rssbackup', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssbackup 1', message.guild, err))
   }
 }

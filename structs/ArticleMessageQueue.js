@@ -30,30 +30,27 @@ class ArticleMessageQueue {
     this.queuesWithSubs = {}
   }
 
-  push (article, callback) {
+  async send (article) {
     if (config._skipMessages === true) return
     const articleMessage = new ArticleMessage(article)
-    this._pushNext(articleMessage, callback)
+    await this._pushNext(articleMessage)
   }
 
-  _pushNext (articleMessage, callback) {
+  async _pushNext (articleMessage) {
     const delayArticleMessage = articleMessage.toggleRoleMentions && articleMessage.subscriptionIds.length > 0
     const channelId = articleMessage.channelId
     const queues = delayArticleMessage ? this.queuesWithSubs : this.queues
     if (!queues[channelId]) queues[channelId] = [articleMessage]
     else queues[channelId].push(articleMessage)
-    if (!delayArticleMessage) this._sendNext(articleMessage.channelId, callback)
-    else if (callback) callback()
+    if (!delayArticleMessage) await this._sendNext(articleMessage.channelId)
   }
 
-  _sendNext (channelId, callback) {
+  async _sendNext (channelId) {
     const channelQueue = this.queues[channelId]
     if (channelQueue.length === 0) return
     const articleMessage = channelQueue.shift()
-    articleMessage.send(err => {
-      if (callback) callback(err)
-      this._sendNext(channelId, callback)
-    })
+    await articleMessage.send()
+    await this._sendNext(channelId)
   }
 
   sendDelayed () {
@@ -69,13 +66,15 @@ class ArticleMessageQueue {
     }
   }
 
-  _sendDelayedQueue (channelId, channelQueue, roleIds) {
+  async _sendDelayedQueue (channelId, channelQueue, roleIds) {
     const articleMessage = channelQueue.shift()
-    articleMessage.send(err => {
-      if (err) log.general.error('Failed to send a delayed articleMessage', err)
+    try {
+      await articleMessage.send()
       if (channelQueue.length === 0) toggleRoleMentionable(false, channelId, roleIds)
       else this._sendDelayedQueue(channelId, channelQueue, roleIds)
-    })
+    } catch (err) {
+      log.general.error('Failed to send a delayed articleMessage', err)
+    }
   }
 }
 

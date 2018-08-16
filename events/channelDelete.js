@@ -13,11 +13,9 @@ module.exports = channel => {
   let removed = false
   for (var rssName in rssList) {
     if (rssList[rssName].channel !== channel.id) continue
+    const link = rssList[rssName].link
     removed = true
-    dbOps.guildRss.removeFeed(guildRss, rssName, (err, link) => {
-      if (err) return log.guild.warning(`Unable to remove feed ${link} triggered by channel deletion`, channel.guild, err)
-      log.guild.info(`Removed feed ${link}`, channel.guild)
-    })
+    dbOps.guildRss.removeFeed(guildRss, rssName).then(() => log.guild.info(`Removed feed ${link}`, channel.guild)).catch(err => log.guild.warning(`Unable to remove feed ${link} triggered by channel deletion`, channel.guild, err))
   }
 
   if (removed) log.guild.info(`Channel deleted`, channel.guild, channel)

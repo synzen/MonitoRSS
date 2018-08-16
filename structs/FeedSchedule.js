@@ -70,12 +70,12 @@ class FeedSchedule {
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === true) {
         log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id}...`)
-        // dbOps.guildRss.enableFeed(guildRss, rssName, null, true)
+        // dbOps.guildRss.enableFeed(guildRss, rssName, true).catch(err => log.general.warning(`Failed to enable feed named ${rssName}`, err))
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].enabled.push(source.link)
       } else if (max !== 0 && c > max && source.disabled !== true) {
         log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id}...`)
-        // dbOps.guildRss.disableFeed(guildRss, rssName, null, true)
+        // dbOps.guildRss.disableFeed(guildRss, rssName, true).catch(err => log.general.warning(`Failed to disable feed named ${rssName}`, err))
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].disabled.push(source.link)
       }
@@ -187,13 +187,13 @@ class FeedSchedule {
     }
 
     switch (config.advanced.processorMethod) {
-      case 'single':
+      case 'concurrent':
         this._getBatch(0, this._regBatchList, 'regular')
         break
-      case 'isolated':
+      case 'concurrent-isolated':
         this._getBatchIsolated(0, this._regBatchList, 'regular')
         break
-      case 'parallel':
+      case 'parallel-isolated':
         this._getBatchParallel()
     }
   }
@@ -222,7 +222,7 @@ class FeedSchedule {
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          dbOps.failedLinks.increment(linkCompletion.link, null, true)
+          dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
           if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
           if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
@@ -255,7 +255,7 @@ class FeedSchedule {
       if (linkCompletion.status === 'batch_connected') return // Only used for parallel
       if (linkCompletion.status === 'failed') {
         ++this._cycleFailCount
-        dbOps.failedLinks.increment(linkCompletion.link, null, true)
+        dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
       } else if (linkCompletion.status === 'success') {
         if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
         if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
@@ -298,7 +298,7 @@ class FeedSchedule {
         if (linkCompletion.status === 'batch_connected') return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          dbOps.failedLinks.increment(linkCompletion.link, null, true)
+          dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
           if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
           if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
@@ -339,7 +339,7 @@ class FeedSchedule {
 
   _finishCycle (noFeeds) {
     if (this.bot.shard && this.bot.shard.count > 0) {
-      dbOps.failedLinks.uniformize(storage.failedLinks) // Update failedLinks across all shards
+      dbOps.failedLinks.uniformize(storage.failedLinks).catch(err => log.cycle.error('Unable to uniformize failed links at end of cycle', err)) // Update failedLinks across all shards
       process.send({ _drss: true, type: 'scheduleComplete', refreshTime: this.refreshTime })
     }
     const diff = (new Date() - this._startTime) / 1000
