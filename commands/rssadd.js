@@ -55,13 +55,13 @@ module.exports = async (bot, message) => {
         // Only show link-specific error if it's one link since they user may be trying to add a huge number of links that exceeds the message size limit
         if (totalLinks.length === 1) failedAddLinks[link] = `Maximum feed limit of ${maxFeedsAllowed} has been reached.`
         else limitExceeded = true
-        return
+        continue
       }
 
       for (var x in rssList) {
         if (rssList[x].link === link && message.channel.id === rssList[x].channel) {
           failedAddLinks[link] = 'Already exists for this channel.'
-          return
+          continue
         }
       }
       linkItem.shift()
