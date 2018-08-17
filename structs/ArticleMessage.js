@@ -94,8 +94,8 @@ class ArticleMessage {
     // Send the message, and repeat attempt if failed
     const medium = this.webhook ? this.webhook : this.channel
     try {
-      if (!this.isTestMessage) return await medium.send(textContent, options)
-      else {
+      await medium.send(textContent, options)
+      if (this.isTestMessage) {
         this.isTestMessage = false
         return await this.send()
       }
