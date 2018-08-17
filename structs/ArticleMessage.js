@@ -68,7 +68,6 @@ class ArticleMessage {
   }
 
   async send () {
-    if (!config._skipMessages === true) return
     if (!this.source) throw new Error('Missing feed source')
     if (!this.channel) throw new Error('Missing feed channel')
     await this._resolveChannel()
@@ -95,11 +94,11 @@ class ArticleMessage {
     // Send the message, and repeat attempt if failed
     const medium = this.webhook ? this.webhook : this.channel
     try {
-      await medium.send(textContent, options)
-      if (this.isTestMessage) {
+      if (!this.isTestMessage) return await medium.send(textContent, options)
+      else {
         this.isTestMessage = false
-        return this.send()
-      } else return
+        return await this.send()
+      }
     } catch (err) {
       if (this.split && err.message.includes('2000 or fewer in length')) {
         delete this.split
@@ -114,7 +113,7 @@ class ArticleMessage {
         if (debugFeeds.includes(this.rssName)) log.debug.error(`${this.rssName}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
         throw err
       }
-      setTimeout(() => this.send.bind(this)(), 500)
+      return this.send()
     }
   }
 }

@@ -110,7 +110,7 @@ module.exports = async (bot, message, command) => {
       destLinksCount++
     })
 
-    log.command.info(`Properties ${data.clonedProps.join(',')} for the feed ${sourceFeed.link} cloning to to ${destLinksCount} feeds`)
+    log.command.info(`Properties ${data.clonedProps.join(',')} for the feed ${sourceFeed.link} cloning to to ${destLinksCount} feeds`, message.guild)
     await dbOps.guildRss.update(data.guildRss)
     await m.edit(`The following settings\n\n\`${data.clonedProps.join('`, `')}\`\n\nfor the feed <${sourceFeed.link}> have been successfully cloned into ${destLinksCount} feed(s). After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } catch (err) {

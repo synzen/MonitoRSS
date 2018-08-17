@@ -19,7 +19,6 @@ const STATES = {
   READY: 'READY'
 }
 
-
 function overrideConfigs (configOverrides) {
   // Config overrides must be manually done for it to be changed in the original object (config)
   for (var category in config) {

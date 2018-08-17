@@ -36,7 +36,7 @@ module.exports = async (bot, message, command) => {
     }
     await processing.edit(`Successfully refreshed <${source.link}>. It will now be retrieved on subsequent cycles.`)
   } catch (err) {
-    log.command.warning(`rssrefresh`, message.guild, err)
+    log.command.warning(`rssrefresh`, message.guild, err, true)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssrefresh 1', message.guild, err))
   }
 }

@@ -73,7 +73,7 @@ class ArticleMessageQueue {
       if (channelQueue.length === 0) toggleRoleMentionable(false, channelId, roleIds)
       else this._sendDelayedQueue(channelId, channelQueue, roleIds)
     } catch (err) {
-      log.general.error('Failed to send a delayed articleMessage', err)
+      log.general.error('Failed to send a delayed articleMessage', err, true)
     }
   }
 }

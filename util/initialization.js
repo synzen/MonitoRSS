@@ -14,7 +14,6 @@ const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
-
 function reachedFailCount (link) {
   const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
   if (failed && config.log.failedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
@@ -22,8 +21,6 @@ function reachedFailCount (link) {
 }
 
 module.exports = (bot, customSchedules, callback) => {
-
-
   const articleMessageQueue = new ArticleMessageQueue()
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new LinkTracker([], bot)
@@ -66,24 +63,24 @@ module.exports = (bot, customSchedules, callback) => {
 
   // Cache blacklisted users and guilds
   dbOps.blacklists.get()
-  .then(docs => {
-    for (var d = 0; d < docs.length; ++d) {
-      const blisted = docs[d]
-      if (blisted.isGuild) storage.blacklistGuilds.push(blisted.id)
-      else storage.blacklistUsers.push(blisted.id)
-    }
-  })
-  .catch(err => {
-    console.log(err)
-    process.exit(1)
-  })
+    .then(docs => {
+      for (var d = 0; d < docs.length; ++d) {
+        const blisted = docs[d]
+        if (blisted.isGuild) storage.blacklistGuilds.push(blisted.id)
+        else storage.blacklistUsers.push(blisted.id)
+      }
+    })
+    .catch(err => {
+      console.log(err)
+      process.exit(1)
+    })
 
   dbOps.failedLinks.initialize()
-  .then(() => readGuilds())
-  .catch(err => {
-    console.log(err)
-    process.exit(1)
-  })
+    .then(() => readGuilds())
+    .catch(err => {
+      console.log(err)
+      process.exit(1)
+    })
 
   // Cache guilds and start initialization
   async function readGuilds () {
@@ -96,12 +93,12 @@ module.exports = (bot, customSchedules, callback) => {
           if (bot.shard && bot.shard.count > 0) missingGuilds[guildId] = guildRss
           else {
             dbOps.guildRss.remove(guildRss, true)
-            .then(() => {
-              log.init.info(`(G: ${guildId}) Removed missing guild`)
-            })
-            .catch(err => {
-              if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
-            })
+              .then(() => {
+                log.init.info(`(G: ${guildId}) Removed missing guild`)
+              })
+              .catch(err => {
+                if (err) return log.init.warning(`(G: ${guildId}) Guild deletion from database error based on missing guild`, err)
+              })
           }
           continue
         }
@@ -392,11 +389,11 @@ module.exports = (bot, customSchedules, callback) => {
     if (!bot.shard || bot.shard.count === 0) {
       dbOps.linkTracker.write(linkTracker).catch(err => log.general.warning('Unable to write link tracker links to collection after initialization', err)) // If this is a shard, then it's handled by the sharding manager
       dbOps.general.cleanDatabase(currentCollections)
-      .then(() => callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData))
-      .catch(err => {
-        log.general.error(`Unable to clean database`, err)
-        callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData)
-      })
+        .then(() => callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData))
+        .catch(err => {
+          log.general.error(`Unable to clean database`, err)
+          callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData)
+        })
     } else callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData)
   }
 }

@@ -176,20 +176,9 @@ class Menu {
   }
 
   /**
-   * Callback function for sending a Menu
-   *
-   * @callback sendCallback
-   * @param {Error} err SyntaxError if incorrect input for retry, or other Error to stop the collector.
-   * @param {Object} data Data at the end of a Menu passed over
-   * @param {MessageCleaner} msgCleaner MessageCleaner containing the messages collected thus far
-   * @param {Boolean} endPrematurely Prematurely end a MenuSeries if it exists, calling its callback
-   */
-
-  /**
    * Send the text and/or embed with pagination if needed
    *
    * @param {Object} data
-   * @param {sendCallback} callback
    * @memberof Menu
    */
   async send (data) {
@@ -205,11 +194,7 @@ class Menu {
       m = await this.channel.send(this.text, { embed: this.pages[0], split: this.splitOptions ? this.splitOptions : undefined })
       this._msgCleaner.add(m)
     }
-    // } catch (err) {
-    //   log.command.warning(`Failed to send Menu`, this.channel.guild, err)
-    //   throw err
-    //   // callback(err, { __end: true })
-    // }
+
     if (this.pages.length > 1) {
       await m.react('◀')
       await m.react('▶')
@@ -228,7 +213,7 @@ class Menu {
         this._msgCleaner.add(m)
         if (m.content.toLowerCase() === 'exit') {
           collector.stop('Menu closed.')
-          // __end will cause the MenuSeries, if it exists, to skip its callback function and all further menus
+          // __end will cause the MenuSeries, if it exists, to skip all further menus
           return this._series ? resolve([{ __end: true }, this._msgCleaner]) : null
         }
 
@@ -236,7 +221,7 @@ class Menu {
         try {
           const passover = await this.fn(m, data)
           collector.stop()
-          // Callback and pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
+          // Pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
           resolve([ passover, this._msgCleaner ])
         } catch (err) {
           // SyntaxError allows input retries for this collector due to incorrect input
@@ -317,7 +302,6 @@ class MenuSeries {
   /**
    * Start the MenuSeries with the first Menu
    *
-   * @param {Function} callback Function to call when the MenuSeries has gone through all its Menus
    * @memberof MenuSeries
    */
   async start () {
@@ -336,7 +320,7 @@ class MenuSeries {
    * Explicitly send a Menu
    *
    * @param {number} [index=0] Index of the Menu in this._menus
-   * @param {Object} [data={}] Data to passover to the next Menu, or to callback
+   * @param {Object} [data={}] Data to passover to the next Menu, or to the resolved promise value
    * @memberof MenuSeries
    */
   async _send (index = 0, data = {}) {

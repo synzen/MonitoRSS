@@ -93,7 +93,7 @@ module.exports = async (bot, message, command) => {
     await dbOps.guildRss.update(guildRss)
     await message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${source.link}>${followGlobal ? ', and is now following the global setting.' : '.'} After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } catch (err) {
-    log.comamnd.warning(`rssoptions`, message.guild, err)
+    log.command.warning(`rssoptions`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssoptions 1', message.guild, err))
   }
 }
