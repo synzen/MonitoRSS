@@ -5,7 +5,7 @@ const log = require('../util/logger.js')
 module.exports = async (bot, message, automatic) => { // automatic indicates invokation by the bot
   const guildRss = currentGuilds.get(message.guild.id)
   try {
-    if (!guildRss && !automatic) message.channel.send('This server does not have a profile.')
+    if (!guildRss && !automatic) await message.channel.send('This server does not have a profile.')
     if (!guildRss) return
     const backup = JSON.parse(JSON.stringify(guildRss, null, 2))
     delete backup._id

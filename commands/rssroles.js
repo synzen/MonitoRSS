@@ -239,6 +239,7 @@ module.exports = async (bot, message, command) => {
       .addOption(`List Roles with Subscriptions`, `List all roles with all types of subscriptions.`)
 
     const data = await new MenuUtils.MenuSeries(message, [selectOption], { command: command }).start()
+    if (!data) return
     const { optionSelected, role } = data
     if (optionSelected === '4') return await printSubscriptions(message, rssList)
     if (optionSelected === '3') return await deleteSubscription(message, guildRss, role.id)

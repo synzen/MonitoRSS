@@ -94,11 +94,11 @@ class ArticleMessage {
     // Send the message, and repeat attempt if failed
     const medium = this.webhook ? this.webhook : this.channel
     try {
-      await medium.send(textContent, options)
+      const m = await medium.send(textContent, options)
       if (this.isTestMessage) {
         this.isTestMessage = false
         return await this.send()
-      }
+      } else return m
     } catch (err) {
       if (this.split && err.message.includes('2000 or fewer in length')) {
         delete this.split

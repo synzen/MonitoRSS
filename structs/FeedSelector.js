@@ -49,7 +49,7 @@ function parseNumbers (str) {
   return arr
 }
 
-async function selectFeed (m, data, callback) {
+async function selectFeedFn (m, data) {
   const currentRSSList = this._currentRSSList
   const chosenOption = m.content
 
@@ -172,75 +172,55 @@ class FeedSelector extends Menu {
       this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel || ''}${miscOption}${status}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
     })
 
-    this.fn = selectFeed.bind(this)
+    this.fn = selectFeedFn.bind(this)
   }
-
-  /**
-   * Callback function for sending a Menu
-   *
-   * @callback sendCallback
-   * @param {Error} err SyntaxError if incorrect input for retry, or other Error to stop the collector.
-   * @param {Object} data Data at the end of a Menu passed over
-   * @param {MessageCleaner} msgCleaner MessageCleaner containing the messages collected thus far
-   * @param {Boolean} endPrematurely Prematurely end a MenuSeries if it exists, calling its callback
-   */
 
   /**
    * Send the text and/or embed with pagination if needed
    *
    * @param {Object} data
-   * @param {sendCallback} callback
    * @override
    * @memberof FeedSelector
    */
   async send (data) {
-    try {
-      const m = await this.channel.send(this.text, { embed: this.pages[0] })
-      this._msgCleaner.add(m)
-      if (this.pages.length > 1) {
-        await m.react('◀')
-        await m.react('▶')
-        pageControls.add(m.id, this.pages)
-      }
-
-      if (!this.fn) return
-
-      return new Promise((resolve, reject) => {
-        const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, { time: 60000 })
-        // Add a channel tracker to prohibit any other commands while the Menu is in use
-        channelTracker.add(this.channel.id)
-
-        collector.on('collect', async m => {
-          this._msgCleaner.add(m)
-          if (m.content.toLowerCase() === 'exit') return collector.stop('Menu closed.')
-
-          // Call the function defined in the constructor
-          try {
-            const passover = await this.fn(m, data)
-            collector.stop()
-            // Callback and pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
-            resolve([ passover, this._msgCleaner ])
-            // callback(err, passover, this._msgCleaner, endPrematurely)
-          } catch (err) {
-            // SyntaxError allows input retries for this collector due to incorrect input
-            if (err instanceof SyntaxError) m.channel.send(err.message).then(m => this._msgCleaner.add(m)).catch(reject)
-            else reject(err)
-          }
-        })
-
-        collector.on('end', (collected, reason) => { // Reason is the parameter inside collector.stop(reason)
-          // Remove the channel tracker to allow commands in this channel again
-          channelTracker.remove(this.channel.id)
-          if (reason === 'user') return
-          if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
-          else this.channel.send(reason).then(m => m.delete(6000))
-        })
-      })
-    } catch (err) {
-      log.command.warning(`Failed to send Menu`, this.channel.guild, err)
-      throw err
-      // return this._series ? callback(err, { __end: true }) : null
+    const m = await this.channel.send(this.text, { embed: this.pages[0] })
+    this._msgCleaner.add(m)
+    if (this.pages.length > 1) {
+      await m.react('◀')
+      await m.react('▶')
+      pageControls.add(m.id, this.pages)
     }
+
+    if (!this.fn) return [] // This function is called *after* the feed is selected with the pre-made function selectFeedFn
+
+    return new Promise((resolve, reject) => {
+      const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, { time: 60000 })
+      channelTracker.add(this.channel.id)
+
+      collector.on('collect', async m => {
+        this._msgCleaner.add(m)
+        if (m.content.toLowerCase() === 'exit') {
+          collector.stop('Menu closed.')
+          return resolve(this._series ? [{ __end: true }, this._msgCleaner] : [])
+        }
+
+        try {
+          const passover = await this.fn(m, data)
+          collector.stop()
+          resolve([ passover, this._msgCleaner ])
+        } catch (err) {
+          if (err instanceof SyntaxError) m.channel.send(err.message).then(m => this._msgCleaner.add(m)).catch(reject)
+          else reject(err)
+        }
+      })
+
+      collector.on('end', (collected, reason) => {
+        channelTracker.remove(this.channel.id)
+        if (reason === 'user') return
+        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
+        else this.channel.send(reason).then(m => m.delete(6000))
+      })
+    })
   }
 }
 

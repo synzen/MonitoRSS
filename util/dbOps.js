@@ -95,6 +95,7 @@ exports.guildRss = {
     const rssList = guildRss ? guildRss.sources : undefined
     if (rssList) {
       for (let rssName in rssList) {
+        storage.deletedFeeds.push(rssName)
         exports.linkTracker.decrement(rssList[rssName].link).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err))
       }
     }

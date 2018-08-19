@@ -202,7 +202,7 @@ class Menu {
     }
 
     // If there is no function, then it's a visual, non-function Menu
-    if (!this.fn) return
+    if (!this.fn) return []
 
     const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, { time: 90000 })
     // Add a channel tracker to prohibit any other commands while the Menu is in use
@@ -214,7 +214,7 @@ class Menu {
         if (m.content.toLowerCase() === 'exit') {
           collector.stop('Menu closed.')
           // __end will cause the MenuSeries, if it exists, to skip all further menus
-          return this._series ? resolve([{ __end: true }, this._msgCleaner]) : null
+          return resolve(this._series ? [{ __end: true }, this._msgCleaner] : [])
         }
 
         // Call the function defined in the constructor
