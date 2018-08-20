@@ -23,7 +23,7 @@ async function messagePromptFn (m, data) {
   const input = m.content
 
   if (input.toLowerCase() === 'reset') return { setting: null, guildRss: guildRss, rssName: rssName }
-  else if (input === '{empty}' && (typeof source.embedMessage !== 'object' || typeof source.embedMessage.properties !== 'object' || Array.isArray(source.embedMessage.properties) || Object.keys(source.embedMessage.properties).length === 0)) {
+  else if (input === '{empty}' && (!Array.isArray(source.embeds) || source.embeds.length === 0)) {
     throw new SyntaxError('You cannot have an empty message if there is no embed used for this feed. Try again.') // Allow empty messages only if embed is enabled
   } else return { setting: input, guildRss: guildRss, rssName: rssName }
 }
