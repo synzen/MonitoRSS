@@ -44,12 +44,13 @@ module.exports = async (bot, message) => {
 
     // Start loop over links
     for (var i = 0; i < linkList.length; ++i) {
+      debugger
       const curLink = linkList[i]
       const linkItem = curLink.split(' ')
       let link = linkItem[0].trim() // One link may consist of the actual link, and its cookies
       if (!link.startsWith('http')) {
         failedAddLinks[link] = 'Invalid/improperly-formatted link.'
-        return
+        continue
       } else if (maxFeedsAllowed !== 0 && Object.keys(rssList).length + checkedSoFar >= maxFeedsAllowed) {
         log.command.info(`Unable to add feed ${link} due to limit of ${maxFeedsAllowed} feeds`, message.guild)
         // Only show link-specific error if it's one link since they user may be trying to add a huge number of links that exceeds the message size limit
