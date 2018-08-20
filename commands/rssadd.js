@@ -44,7 +44,6 @@ module.exports = async (bot, message) => {
 
     // Start loop over links
     for (var i = 0; i < linkList.length; ++i) {
-      debugger
       const curLink = linkList[i]
       const linkItem = curLink.split(' ')
       let link = linkItem[0].trim() // One link may consist of the actual link, and its cookies
