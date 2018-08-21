@@ -16,6 +16,7 @@
     "controllerIds": [""],
     "menuColor": 5285609,
     "deleteMenus": false,
+    "exitOnSocketIssues": false,
     "commandAliases": {}
   },
   "database": {

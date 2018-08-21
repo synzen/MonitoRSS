@@ -49,7 +49,7 @@ function parseNumbers (str) {
   return arr
 }
 
-async function selectFeedFn (m, data) {
+async function selectFeedFn (m, data, callback) {
   const currentRSSList = this._currentRSSList
   const chosenOption = m.content
 
@@ -176,9 +176,20 @@ class FeedSelector extends Menu {
   }
 
   /**
+   * Callback function for sending a Menu
+   *
+   * @callback sendCallback
+   * @param {Error} err SyntaxError if incorrect input for retry, or other Error to stop the collector.
+   * @param {Object} data Data at the end of a Menu passed over
+   * @param {MessageCleaner} msgCleaner MessageCleaner containing the messages collected thus far
+   * @param {Boolean} endPrematurely Prematurely end a MenuSeries if it exists, calling its callback
+   */
+
+  /**
    * Send the text and/or embed with pagination if needed
    *
    * @param {Object} data
+   * @param {sendCallback} callback
    * @override
    * @memberof FeedSelector
    */

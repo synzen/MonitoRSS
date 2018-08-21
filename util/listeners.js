@@ -78,7 +78,7 @@ exports.createManagers = () => {
 
 exports.enableCommands = () => {
   storage.bot.on('message', messageHandler)
-  if (config.bot.enableCommands !== false) log.general.info(`${storage.bot.shard && storage.bot.shard.count > 0 ? 'SH ' + storage.bot.shard.id + ' ' : ''}Commands have been enabled`)
+  log.general.info(`${storage.bot.shard && storage.bot.shard.count > 0 ? 'SH ' + storage.bot.shard.id + ' ' : ''}Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
 }
 
 exports.disableAll = () => {

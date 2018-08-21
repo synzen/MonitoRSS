@@ -199,7 +199,7 @@ module.exports = class Article {
     this.guid = raw.guid ? raw.guid : ''
 
     // Date
-    if ((raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') || config.feeds.dateFallback === true) {
+    if (raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') {
       const guildTimezone = guildRss.timezone
       const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feeds.timezone
       const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feeds.dateFormat

@@ -127,7 +127,11 @@ class Client {
     }
     bot.on('error', err => {
       log.general.error(`${this.SHARD_PREFIX}Websocket error`, err)
-      this.stop()
+      if (config.bot.exitOnSocketIssues === true) {
+        log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
+        if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
+        else process.exit(0)
+      } else this.stop()
     })
     bot.on('resume', () => {
       log.general.success(`${this.SHARD_PREFIX}Websocket resumed`)
@@ -135,7 +139,11 @@ class Client {
     })
     bot.on('disconnect', () => {
       log.general.error(`${this.SHARD_PREFIX}Websocket disconnected`)
-      this.stop()
+      if (config.bot.exitOnSocketIssues === true) {
+        log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
+        if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
+        else process.exit(0)
+      } else this.stop()
     })
     log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
     if (!bot.shard || bot.shard.count === 0) this.start()
