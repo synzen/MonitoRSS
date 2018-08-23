@@ -133,7 +133,7 @@ module.exports = (data, callback) => {
       } else if (checkTitle && dbTitles.includes(article.title)) {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID.`)
         seenArticle(true, article)
-      } else if (checkDate && (!article.pubdate || article.pubdate.toString() === 'Invalid Date' || article.pubdate < cutoffDay)) {
+      } else if (checkDate && ((!article.pubdate || article.pubdate.toString() === 'Invalid Date') || (article.pubdate && article.pubdate.toString() !== 'Invalid Date' && article.pubdate < cutoffDay))) {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), due to date check.`)
         seenArticle(true, article)
       } else {

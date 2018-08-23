@@ -355,6 +355,7 @@ exports.vips = {
     else if (skipProcessSend) {
       storage.vipUsers = vipUsers
       storage.vipServers = vipServers
+      if (storage.scheduleManager) exports.vips.refreshVipSchedule(true)
     }
   },
   get: async () => {
@@ -460,7 +461,6 @@ exports.vips = {
       if (!storage.vipUsers[settings.id].servers.includes(id)) storage.vipUsers[settings.id].servers.push(id)
       log.general.success(`Added VIP backing to server ${id} (${guildName}). Benefactor ID ${settings.id} (${settings.name}).`)
     }
-    if (Object.keys(validServers).length > 0 && storage.scheduleManager) exports.vips.refreshVipSchedule()
     if (skipUpdateVIP) await exports.vips.uniformize(storage.vipUsers, storage.vipServers)
     else await exports.vips.update(storage.vipUsers[settings.id], true) // Uniformize is called by vips.update so no need to explicitly call it here
     return [ validServers, invalidServers ]
@@ -512,7 +512,8 @@ exports.vips = {
     if (!fs.existsSync(path.join(__dirname, '..', 'settings', 'vips.js'))) throw new Error('Missing VIP module')
     require('../settings/vips.js')(storage.bot)
   },
-  refreshVipSchedule: () => {
+  refreshVipSchedule: skipProcessSend => {
+    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) return process.send({ _drss: true, type: 'vips.refreshVipSchedule', _loopback: true })
     if (config._vip !== true) return
     const vipLinks = []
     for (var vipId in storage.vipServers) {

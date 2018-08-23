@@ -155,7 +155,7 @@ class FeedSchedule {
         log.cycle.warning(`Previous ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
         this.inProgress = false
       } else {
-        log.cycle.warning(`${this.SHARD_ID}Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
+        log.cycle.warning(`${this.SHARD_ID}Schedule ${this.schedule.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
         for (var x in this._processorList) {
           this._processorList[x].kill()
         }

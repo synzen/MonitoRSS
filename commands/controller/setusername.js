@@ -7,9 +7,9 @@ exports.normal = async (bot, message) => {
   let username = content.join(' ')
   const original = bot.user.username
   try {
-    const c = await bot.user.setUsername(username)
-    log.controller.success(`Bot usename changed from ${original} to ${c.user.username}`)
-    message.channel.send(`Bot username has been changed from ${original} to ${c.user.username}.`)
+    const u = await bot.user.setUsername(username)
+    log.controller.success(`Bot usename changed from ${original} to ${u.username}`)
+    message.channel.send(`Bot username has been changed from ${original} to ${u.username}.`)
   } catch (err) {
     log.controller.warning('setusername', err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('setusername 1a', message.guild, err))

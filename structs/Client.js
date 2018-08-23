@@ -201,6 +201,9 @@ class Client {
           case 'vips.uniformize':
             await dbOps.vips.uniformize(message.vipUsers, message.vipServers, true)
             break
+          case 'vips.refreshVipSchedule':
+            dbOps.vips.refreshVipSchedule(true)
+            break
           case 'dbRestoreSend':
             const channel = bot.channels.get(message.channelID)
             if (!channel) return
@@ -210,7 +213,7 @@ class Client {
             break
         }
       } catch (err) {
-        log.general.warning('client', err)
+        log.general.warning('client', err, true)
       }
     })
   }
@@ -256,7 +259,6 @@ class Client {
       this._vipInterval = setInterval(() => {
         dbOps.vips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err))
       }, 600000)
-      dbOps.vips.refreshVipSchedule()
     }
     listeners.createManagers(storage.bot)
     if (callback) callback()
