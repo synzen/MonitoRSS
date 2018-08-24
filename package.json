@@ -16,7 +16,7 @@
     "moment": "^2.17.1",
     "moment-timezone": "^0.5.21",
     "mongoose": "^5.2.8",
-    "needle": "^2.1.2"
+    "node-fetch": "^2.2.0"
   },
   "repository": {
     "type": "git",
