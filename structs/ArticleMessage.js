@@ -29,7 +29,7 @@ class ArticleMessage {
       this.valid = false
       return log.general.error(`${this.rssName} Unable to initialize an ArticleMessage due to missing source`, this.channel.guild, this.channel)
     }
-    this.toggleRoleMentions = this.source.toggleRoleMentions === true
+    this.toggleRoleMentions = typeof this.source.toggleRoleMentions === 'boolean' ? this.source.toggleRoleMentions : config.feeds.toggleRoleMentions
     this.split = this.source.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
     this._translate()
   }
