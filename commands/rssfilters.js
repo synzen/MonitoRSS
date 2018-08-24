@@ -91,7 +91,7 @@ module.exports = async (bot, message, command, role) => {
       await new ArticleMessage(article, true, true).send()
     }
   } catch (err) {
-    log.command.warning(`rssfilters`, message.guild, err, true)
+    log.command.warning(`rssfilters`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssfilters 1', message.guild, err))
   }
 }
