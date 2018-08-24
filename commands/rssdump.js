@@ -18,7 +18,6 @@ module.exports = async (bot, message, command) => {
     const raw = message.content.split(' ')[1] === 'original'
     for (var link in articleList) {
       const articleObject = articleList[link]
-      console.log(articleObject)
       if (raw) objOutput.push(articleObject)
       else textOutput += new FlattenedJSON(articleObject, data.guildRss.sources[data.rssName]).text + '\r\n\r\n'
     }
