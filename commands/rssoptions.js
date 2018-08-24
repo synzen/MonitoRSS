@@ -36,7 +36,7 @@ const PROPERTIES = {
   },
   toggleRoleMentions: {
     title: 'Toggle Role Mentioning for Subscriptions',
-    description: `Default is ${config.feeds.toggleRoleMentions === false ? 'disabled' : 'enabled'}. Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent. Only applies if roles are below the bot's highest role.`,
+    description: `Default is ${config.feeds.toggleRoleMentions === false ? 'disabled' : 'enabled'}. Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent. Only applies if roles are below the bot's highest role, and the bot has **Manage Roles** permission.`,
     display: 'Role Mentioning Toggle',
     num: 6
   }
