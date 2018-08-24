@@ -4,7 +4,6 @@ const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const scheduleAssigned = storage.scheduleAssigned // Directory of all feeds, used to track between multiple feed schedules
 const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
-const failedLinks = storage.failedLinks
 const checkGuild = require('./checkGuild.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const childProcess = require('child_process')
@@ -15,7 +14,7 @@ const log = require('./logger.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 function reachedFailCount (link) {
-  const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
+  const failed = typeof storage.failedLinks[link] === 'string' || (typeof storage.failedLinks[link] === 'number' && storage.failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
   if (failed && config.log.failedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
   return failed
 }

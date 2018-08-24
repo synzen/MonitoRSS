@@ -199,7 +199,6 @@ class FeedSchedule {
   }
 
   _getBatch (batchNumber, batchList, type) {
-    const failedLinks = storage.failedLinks
     if (batchList.length === 0) return this._getBatch(0, this._modBatchList, 'modded')
     const currentBatch = batchList[batchNumber]
     const currentBatchLen = Object.keys(batchList[batchNumber]).length
@@ -224,7 +223,7 @@ class FeedSchedule {
           ++this._cycleFailCount
           dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
-          if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+          if (storage.failedLinks[linkCompletion.link]) delete storage.failedLinks[linkCompletion.link]
           if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
         }
 
@@ -239,7 +238,6 @@ class FeedSchedule {
   }
 
   _getBatchIsolated (batchNumber, batchList, type) {
-    const failedLinks = storage.failedLinks
     if (batchList.length === 0) return this._getBatchIsolated(0, this._modBatchList, 'modded')
     const currentBatch = batchList[batchNumber]
     const currentBatchLen = Object.keys(currentBatch).length
@@ -257,7 +255,7 @@ class FeedSchedule {
         ++this._cycleFailCount
         dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
       } else if (linkCompletion.status === 'success') {
-        if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+        if (storage.failedLinks[linkCompletion.link]) delete storage.failedLinks[linkCompletion.link]
         if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
       }
 
@@ -275,7 +273,6 @@ class FeedSchedule {
   }
 
   _getBatchParallel () {
-    const failedLinks = storage.failedLinks
     const totalBatchLengths = this._regBatchList.length + this._modBatchList.length
     let completedBatches = 0
 
@@ -300,7 +297,7 @@ class FeedSchedule {
           ++this._cycleFailCount
           dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
-          if (failedLinks[linkCompletion.link]) delete failedLinks[linkCompletion.link]
+          if (storage.failedLinks[linkCompletion.link]) delete storage.failedLinks[linkCompletion.link]
           if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
         }
 

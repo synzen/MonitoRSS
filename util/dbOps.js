@@ -36,7 +36,6 @@ exports.guildRss = {
         if (name === 'backup') continue
         readFilePromise(path.join(config.database.uri, name))
           .then(data => {
-            console.log(done)
             try {
               read.push(JSON.parse(data))
             } catch (err) {
@@ -287,7 +286,6 @@ exports.failedLinks = {
     if (storage.failedLinks[link] >= FAIL_LIMIT) {
       await exports.failedLinks.fail(link)
       log.cycle.error(`${link} has passed the fail limit (${FAIL_LIMIT}). Will no longer retrieve.`)
-      if (config.feeds.notifyFail === true) exports.failedLinks._sendAlert(link, `**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until it is manually refreshed by this server, or another server using this feed. See \`${config.bot.prefix}rsslist\` for more information.`)
     } else {
       await storage.models.FailedLink().update({ link: link }, { link: link, count: storage.failedLinks[link] }, UPDATE_SETTINGS).exec()
     }
@@ -295,8 +293,10 @@ exports.failedLinks = {
   },
   fail: async (link, skipProcessSend) => {
     if (!config.database.uri.startsWith('mongo')) return
+    if (config.feeds.failLimit === 0) throw new Error('Unable to fail a link when config.feeds.failLimit is 0')
     const now = new Date().toString()
     storage.failedLinks[link] = now
+    if (config.feeds.notifyFail === true) exports.failedLinks._sendAlert(link, `**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until it is manually refreshed by this server, or another server using this feed. See \`${config.bot.prefix}rsslist\` for more information.`, skipProcessSend)
     await storage.models.FailedLink().update({ link: link }, { link: link, failed: now }, UPDATE_SETTINGS).exec()
     await exports.failedLinks.uniformize(storage.failedLinks, skipProcessSend)
   },
@@ -515,7 +515,7 @@ exports.vips = {
   refreshVipSchedule: skipProcessSend => {
     if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) return process.send({ _drss: true, type: 'vips.refreshVipSchedule', _loopback: true })
     if (config._vip !== true) return
-    const vipLinks = []
+    const toProcess = {} // rssName as key, link as value
     for (var vipId in storage.vipServers) {
       const benefactor = storage.vipServers[vipId].benefactor
       if (benefactor.pledgedAmount < 500 && !benefactor.override) continue
@@ -526,20 +526,33 @@ exports.vips = {
       for (var rssName in rssList) {
         const link = rssList[rssName].link
         if (link.includes('feed43.com') || storage.scheduleAssigned[rssName] === 'vip') continue
-        vipLinks.push(link)
-        storage.allScheduleWords.push(link)
-        delete storage.scheduleAssigned[rssName]
+        toProcess[rssName] = link
       }
     }
-    if (vipLinks.length > 0) {
+    if (Object.keys(toProcess).length > 0) {
       let vipSchedule
       for (var x = 0; x < storage.scheduleManager.scheduleList.length; ++x) {
         if (storage.scheduleManager.scheduleList[x].schedule.name === 'vip') vipSchedule = storage.scheduleManager.scheduleList[x].schedule
       }
       if (!vipSchedule) {
+        const vipLinks = []
+        for (var k in toProcess) {
+          const link = toProcess[k]
+          storage.allScheduleWords.push(link)
+          delete storage.scheduleAssigned[k]
+          vipLinks.push(toProcess[k])
+        }
         const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: vipLinks }
         storage.scheduleManager.addSchedule(newSched)
-      } else for (var y = 0; y < vipLinks.length; ++y) vipSchedule.keywords.push(vipLinks[y])
+      } else {
+        for (var r in toProcess) {
+          const link = toProcess[r]
+          if (vipSchedule.keywords.includes(link)) continue
+          vipSchedule.keywords.push(link)
+          storage.allScheduleWords.push(link)
+          delete storage.scheduleAssigned[r]
+        }
+      }
     }
   }
 }

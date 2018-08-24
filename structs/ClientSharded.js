@@ -109,12 +109,13 @@ class ClientSharded {
     this.scheduleTracker[message.refreshTime]++ // Index for this.activeshardIds
     if (this.scheduleTracker[message.refreshTime] !== this.shardingManager.totalShards) {
       // Send signal for next shard to start cycle
-      this.shardingManager.broadcast({
+      const broadcast = {
         _drss: true,
         shardId: this.activeshardIds[this.scheduleTracker[message.refreshTime]],
         type: 'runSchedule',
         refreshTime: message.refreshTime
-      }).catch(err => handleError(err, message))
+      }
+      this.shardingManager.broadcast(broadcast).catch(err => handleError(err, message))
     }
   }
 
@@ -122,10 +123,12 @@ class ClientSharded {
     const refreshTime = message.schedule.refreshTimeMinutes
     if (this.refreshTimes.includes(refreshTime)) return
     this.refreshTimes.push(refreshTime)
+    if (this.shardsDone < this.shardingManager.totalShards) return // In this case, the method createIntervals that will create the interval, so avoid creating it here
     this.scheduleIntervals.push(setInterval(() => {
       this.scheduleTracker[refreshTime] = 0
       const p = this.scheduleTracker[refreshTime]
-      this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
+      const broadcast = { _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime }
+      this.shardingManager.broadcast(broadcast)
     }, refreshTime * 60000)) // Convert minutes to ms
   }
 
@@ -144,7 +147,8 @@ class ClientSharded {
       this.scheduleIntervals.push(setInterval(() => {
         this.scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
         const p = this.scheduleTracker[refreshTime]
-        this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
+        const broadcast = { _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime }
+        this.shardingManager.broadcast(broadcast)
       }, refreshTime * 60000)) // Convert minutes to ms
     })
     // Refresh VIPs on a schedule

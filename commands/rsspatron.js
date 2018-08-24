@@ -63,7 +63,8 @@ async function switchServerArg (bot, message, args) {
         await message.channel.send(`Invalid command usage.`)
     }
   } catch (err) {
-    log.command.warning('rsspatron servers', err)
+    log.command.warning('rsspatron servers', message.guild, err, true)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsspatron servers', message.guild, err))
   }
 }
 

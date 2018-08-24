@@ -102,7 +102,7 @@ exports.addNewFeed = async (settings, customTitle) => {
       feedparser.removeAllListeners('end')
       if (err && errored === false) {
         errored = true
-        err.type = 'feedparser'
+        if (err.message === 'Not a feed') err.message = 'That is a not a valid feed. Note that you cannot add just any link. You may check if it is a valid feed by using online RSS feed validators'
         return reject(err)
       }
     })
