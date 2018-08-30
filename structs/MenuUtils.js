@@ -26,7 +26,7 @@ class Menu {
     this.maxPerPage = settings && typeof settings.maxPerPage === 'number' && settings.maxPerPage > 0 && settings.maxPerPage <= 10 ? settings.maxPerPage : 7
     this.message = message
     this.channel = message.channel
-    this.hasAddReactionPermission = this.message.guild.me.permissionsIn(this.message.channel).has('ADD_REACTIONS')
+    this.hasReactionPermissions = this.message.guild.me.permissionsIn(this.message.channel).has(['ADD_REACTIONS', 'READ_MESSAGE_HISTORY'])
     this.fn = fn
     this.pages = []
     this._pageNum = 0
@@ -65,7 +65,7 @@ class Menu {
     ++this._pageNum
     const newPage = new RichEmbed(this.pages[0])
     newPage.fields = []
-    const missingPermText = !this.hasAddReactionPermission ? ` (WARNING: Missing "Add Reactions" permission in this channel. Because this menu has more than ${this.maxPerPage} options, it will not function properly without this permission. ` : ''
+    const missingPermText = !this.hasReactionPermissions ? ` (WARNING: Missing "Add Reactions" or "Read Message History" permissions in this channel. Because this menu has more than ${this.maxPerPage} options, it will not function properly without the right permissions)` : ''
     this.pages[this._pageNum] = newPage
     for (var x = 0; x < this.pages.length; ++x) {
       const p = this.pages[x]
@@ -195,7 +195,7 @@ class Menu {
       this._msgCleaner.add(m)
     }
 
-    if (this.pages.length > 1) {
+    if (this.pages.length > 1 && this.hasReactionPermissions) {
       await m.react('◀')
       await m.react('▶')
       pageControls.add(m.id, this.pages)
