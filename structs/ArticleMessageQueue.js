@@ -30,9 +30,9 @@ class ArticleMessageQueue {
     this.queuesWithSubs = {}
   }
 
-  async send (article) {
+  async send (article, isTestMessage, skipFilters) {
     if (config._skipMessages === true) return
-    const articleMessage = new ArticleMessage(article)
+    const articleMessage = new ArticleMessage(article, isTestMessage, skipFilters)
     await this._pushNext(articleMessage)
   }
 

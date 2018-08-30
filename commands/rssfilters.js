@@ -5,7 +5,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
 const VALID_OPTIONS = ['1', '2', '3', '4', '5']
-const ArticleMessage = require('../structs/ArticleMessage.js')
+const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 
 async function feedSelectorFn (m, data) {
   const { guildRss, rssName } = data
@@ -68,6 +68,7 @@ module.exports = async (bot, message, command, role) => {
       await dbOps.guildRss.update(guildRss)
       return await message.channel.send(`All feed filters have been successfully removed from <${source.link}>.`)
     } else if (selectedOption === '4') { // 4 = List all existing filters
+      if (!filterList || (filterList && Object.keys(filterList).length === 1 && filterList.roleSubscriptions !== undefined)) return await message.channel.send(`There are no filters assigned to ${source.link}`)
       const list = new MenuUtils.Menu(message, undefined, { numbered: false })
       list.setAuthor('List of Assigned Filters')
         .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n`)
@@ -88,10 +89,12 @@ module.exports = async (bot, message, command, role) => {
       log.command.info(`Sending filtered article for ${source.link}`, message.guild)
       article.rssName = rssName
       article.discordChannelId = message.channel.id
-      await new ArticleMessage(article, true, true).send()
+      const queue = new ArticleMessageQueue()
+      await queue.send(article, true, true)
+      queue.sendDelayed()
     }
   } catch (err) {
-    log.command.warning(`rssfilters`, message.guild, err)
+    log.command.warning(`rssfilters`, message.guild, err, true)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssfilters 1', message.guild, err))
   }
 }

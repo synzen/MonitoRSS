@@ -3,7 +3,7 @@ const currentGuilds = require('../util/storage.js').currentGuilds
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
-const ArticleMessage = require('../structs/ArticleMessage.js')
+const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
@@ -18,7 +18,9 @@ module.exports = async (bot, message, command) => {
     const [ article ] = await getRandomArticle(guildRss, rssName, false)
     article.rssName = rssName
     article.discordChannelId = message.channel.id
-    await new ArticleMessage(article, !simple, true).send()
+    const queue = new ArticleMessageQueue()
+    await queue.send(article, !simple, true)
+    queue.sendDelayed()
     await grabMsg.delete()
   } catch (err) {
     log.command.warning(`rsstest`, message.guild, err)
