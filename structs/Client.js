@@ -129,6 +129,7 @@ class Client {
       log.general.error(`${this.SHARD_PREFIX}Websocket error`, err)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
+        for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
         if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
         else process.exit(0)
       } else this.stop()
@@ -141,6 +142,7 @@ class Client {
       log.general.error(`${this.SHARD_PREFIX}Websocket disconnected`)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
+        for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
         if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
         else process.exit(0)
       } else this.stop()

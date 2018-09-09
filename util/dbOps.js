@@ -492,13 +492,13 @@ exports.vips = {
       const guildRss = currentGuilds.get(id)
       if (guildRss && guildRss.sources) {
         const rssList = guildRss.sources
-        let vipScheduleKeywords
-        for (var a = 0; a < storage.scheduleManager.scheduleList.length; ++a) {
-          if (storage.scheduleManager.scheduleList[a].schedule.name === 'vip') vipScheduleKeywords = storage.scheduleManager.scheduleList[a].schedule.keywords
+        let vipScheduleRssNames
+        for (var feedSchedule of storage.scheduleManager.scheduleList) {
+          if (feedSchedule.name === 'vip') vipScheduleRssNames = feedSchedule.rssNames
         }
         for (var rssName in rssList) {
-          vipScheduleKeywords.splice(rssList[rssName].link, 1)
-          storage.allScheduleWords.splice(rssList[rssName].link, 1)
+          vipScheduleRssNames.splice(rssName, 1)
+          storage.allScheduleRssNames.splice(rssName, 1)
           delete storage.scheduleAssigned[rssName]
         }
       }
@@ -528,43 +528,36 @@ exports.vips = {
       if (!rssList) continue
       for (var rssName in rssList) {
         const link = rssList[rssName].link
-        if (link.includes('feed43.com') || (storage.scheduleAssigned[rssName] === 'vip' && storage.allScheduleWords.includes(link))) continue
+        if (link.includes('feed43.com') || (storage.scheduleAssigned[rssName] === 'vip' && storage.allScheduleRssNames.includes(link))) continue
         toProcess[rssName] = link
       }
     }
 
-    if (Object.keys(toProcess).length > 0) {
-      let vipSchedule
-      if (onlyAssignSchedule) {
-        for (var a in toProcess) storage.scheduleAssigned[a] = 'vip'
-        return
-      }
+    if (Object.keys(toProcess).length === 0) return
+    let vipSchedule
+    if (onlyAssignSchedule) {
+      for (var a in toProcess) storage.scheduleAssigned[a] = 'vip'
+      return
+    }
 
-      for (var x = 0; x < storage.scheduleManager.scheduleList.length; ++x) {
-        if (storage.scheduleManager.scheduleList[x].schedule.name === 'vip') vipSchedule = storage.scheduleManager.scheduleList[x].schedule
+    for (var feedSchedule of storage.scheduleManager.scheduleList) {
+      if (feedSchedule.name === 'vip') vipSchedule = feedSchedule
+    }
+    if (!vipSchedule) {
+      const vipRssNames = []
+      for (var k in toProcess) {
+        storage.allScheduleRssNames.push(k)
+        if (storage.scheduleAssigned[k] !== 'vip') delete storage.scheduleAssigned[k]
+        vipRssNames.push(k)
       }
-      if (!vipSchedule) {
-        const vipLinks = []
-        for (var k in toProcess) {
-          const link = toProcess[k]
-          storage.allScheduleWords.push(link)
-          if (storage.scheduleAssigned[k] !== 'vip') {
-            delete storage.scheduleAssigned[k]
-          }
-          vipLinks.push(toProcess[k])
-        }
-        const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: vipLinks }
-        storage.scheduleManager.addSchedule(newSched)
-      } else {
-        for (var r in toProcess) {
-          const link = toProcess[r]
-          if (vipSchedule.keywords.includes(link)) continue
-          vipSchedule.keywords.push(link)
-          storage.allScheduleWords.push(link)
-          if (storage.scheduleAssigned[r] !== 'vip') {
-            delete storage.scheduleAssigned[r]
-          }
-        }
+      const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, rssNames: vipRssNames }
+      storage.scheduleManager.addSchedule(newSched)
+    } else {
+      for (var r in toProcess) {
+        if (vipSchedule.rssNames.includes(r)) continue
+        vipSchedule.rssNames.push(r)
+        storage.allScheduleRssNames.push(r)
+        if (storage.scheduleAssigned[r] !== 'vip') delete storage.scheduleAssigned[r]
       }
     }
   }

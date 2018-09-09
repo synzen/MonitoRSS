@@ -37,6 +37,7 @@ exports.currentGuilds = new Map() // To hold all guild profiles
 exports.deletedFeeds = [] // Any deleted rssNames to check during article sending to see if it was deleted during a cycle
 exports.scheduleAssigned = {} // To track schedule assignment to links
 exports.allScheduleWords = [] // Holds all words across all schedules
+exports.allScheduleRssNames = []
 exports.scheduleManager = undefined
 exports.failedLinks = {}
 exports.blacklistUsers = []
@@ -139,10 +140,10 @@ exports.schemas = {
     }
   })
 }
-exports.collectionId = (link, shardId, prefix) => {
-  let res = (shardId != null ? `${shardId}_` : '') + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
+exports.collectionId = (link, shardId, prefix = '') => {
+  if (prefix === 'default') prefix = ''
+  let res = (shardId != null ? `${shardId}_` : '') + prefix.slice(0, 10) + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
   const len = mongoose.connection.name ? (res.length + mongoose.connection.name.length + 1) : res.length + 1 // mongoose.connection.name is undefined if config.database.uri is a databaseless folder path
-  if (prefix && prefix !== 'default') res = prefix.slice(0, 10) + res
   if (len > 115) res = res.slice(0, 115)
   return res
 }

@@ -3,23 +3,25 @@ const config = require('../config.json')
 const configChecks = require('../util/configCheck.js')
 const dbOps = require('../util/dbOps.js')
 const debugFeeds = require('../util/debugFeeds.js').list
-const events = require('events')
+const EventEmitter = require('events')
 const childProcess = require('child_process')
 const storage = require('../util/storage.js') // All properties of storage must be accessed directly due to constant changes
 const statistics = storage.statistics
 const log = require('../util/logger.js')
 const BATCH_SIZE = config.advanced.batchSize
 
-class FeedSchedule {
+class FeedSchedule extends EventEmitter {
   constructor (bot, schedule, feedData) {
     if (!schedule.refreshTimeMinutes) throw new Error('No refreshTimeMinutes has been declared for a schedule')
-    if (schedule.name !== 'default' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0)) throw new Error(`Invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
+    if (schedule.name !== 'default' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0) && (!Array.isArray(schedule.rssNames) || schedule.rssNames.length === 0)) throw new Error(`Invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
+    super()
     this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
     this.shardId = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
     this.bot = bot
-    this.schedule = schedule
-    this.refreshTime = this.schedule.refreshTimeMinutes
-    this.cycle = new events.EventEmitter()
+    this.name = schedule.name
+    this.keywords = schedule.keywords
+    this.rssNames = schedule.rssNames
+    this.refreshTime = schedule.refreshTimeMinutes
     this._cookieServers = storage.cookieServers
     this._processorList = []
     this._regBatchList = []
@@ -32,7 +34,7 @@ class FeedSchedule {
     this.ran = 0
 
     if (!this.bot.shard || this.bot.shard.count === 0) this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
-    log.cycle.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
+    log.cycle.info(`${this.SHARD_ID}Schedule '${this.name}' has begun`)
   }
 
   _verifyCookieUse (id, advanced) {
@@ -81,29 +83,34 @@ class FeedSchedule {
         status[source.channel].disabled.push(source.link)
       }
 
-      if (configChecks.checkExists(rssName, guildRss, false) && configChecks.validChannel(this.bot, guildRss, rssName) && typeof storage.failedLinks[source.link] !== 'string') {
-        if (storage.scheduleAssigned[rssName] === this.schedule.name) { // If assigned to a this.schedule
+      if (!configChecks.checkExists(rssName, guildRss, false) || !configChecks.validChannel(this.bot, guildRss, rssName) || typeof storage.failedLinks[source.link] === 'string') continue
+      if (storage.scheduleAssigned[rssName] === this.name) this._delegateFeed(guildRss, rssName) // If assigned to a this.schedule
+      else if (this.name !== 'default' && !storage.scheduleAssigned[rssName]) { // If current feed this.schedule is a custom one and is not assigned
+        const sRssNames = this.rssNames // Potential array
+        if (sRssNames && sRssNames.includes(rssName)) {
+          storage.scheduleAssigned[rssName] = this.name
           this._delegateFeed(guildRss, rssName)
-        } else if (config._vip && this.schedule.name === 'vip' && !storage.vipServers[guildRss.id] && !storage.scheduleAssigned[rssName]) {
-          if (!source.link.includes('feed43')) storage.scheduleAssigned[rssName] = 'default' // Prevent non-VIP feeds from getting assigned the VIP schedule
-        } else if (this.schedule.name !== 'default' && !storage.scheduleAssigned[rssName]) { // If current feed this.schedule is a custom one and is not assigned
-          this.schedule.keywords.forEach(word => {
-            if (source.link.includes(word)) {
-              storage.scheduleAssigned[rssName] = this.schedule.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
+          log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.name} by rssName`)
+          continue
+        }
+        if (!this.keywords) continue
+        this.keywords.forEach(word => {
+          if (source.link.includes(word)) {
+            storage.scheduleAssigned[rssName] = this.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
 
-              this._delegateFeed(guildRss, rssName)
-              log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.schedule.name}`)
-            }
-          })
-        } else if (!storage.scheduleAssigned[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
-          let reserved = false
-          storage.allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
-            if (source.link.includes(item)) reserved = true //  && ((config._vip === true && this.schedule.name !== 'vip') || !config._vip)) reserved = true
-          })
-          if (!reserved) {
-            storage.scheduleAssigned[rssName] = 'default'
             this._delegateFeed(guildRss, rssName)
+            log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.name} by keywords`)
           }
+        })
+      } else if (!storage.scheduleAssigned[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
+        let reserved = false
+        if (storage.allScheduleRssNames.includes(rssName)) reserved = true
+        storage.allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
+          if (source.link.includes(item)) reserved = true
+        })
+        if (!reserved) {
+          storage.scheduleAssigned[rssName] = 'default'
+          this._delegateFeed(guildRss, rssName)
         }
       }
     }
@@ -156,10 +163,10 @@ class FeedSchedule {
   run () {
     if (this.inProgress) {
       if (!config.advanced.processorMethod || config.advanced.processorMethod === 'single') {
-        log.cycle.warning(`Previous ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
+        log.cycle.warning(`Previous ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
         this.inProgress = false
       } else {
-        log.cycle.warning(`${this.SHARD_ID}Schedule ${this.schedule.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
+        log.cycle.warning(`${this.SHARD_ID}Schedule ${this.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
         for (var x in this._processorList) {
           this._processorList[x].kill()
         }
@@ -215,11 +222,11 @@ class FeedSchedule {
         }
       }
 
-      getArticles({ config: config, feedData: this.feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, runNum: this.ran, scheduleName: this.schedule.name }, (err, linkCompletion) => {
+      getArticles({ config: config, feedData: this.feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, runNum: this.ran, scheduleName: this.name }, (err, linkCompletion) => {
         if (err) log.cycle.warning(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
-          return this.cycle.emit('article', linkCompletion.article)
+          return this.emit('article', linkCompletion.article)
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
@@ -259,7 +266,7 @@ class FeedSchedule {
       const processor = this._processorList[processorIndex]
 
       processor.on('message', linkCompletion => {
-        if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
+        if (linkCompletion.status === 'article') return this.emit('article', linkCompletion.article)
         if (linkCompletion.status === 'batch_connected' && callback) return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
@@ -281,7 +288,7 @@ class FeedSchedule {
         }
       })
 
-      processor.send({ config: config, feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, runNum: this.ran, scheduleName: this.schedule.name })
+      processor.send({ config: config, feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, runNum: this.ran, scheduleName: this.name })
     }
 
     function spawn (count) {
@@ -305,6 +312,11 @@ class FeedSchedule {
     }
   }
 
+  killChildren () {
+    for (var x of this._processorList) x.kill()
+    this._processorList = []
+  }
+
   _finishCycle (noFeeds) {
     if (this.bot.shard && this.bot.shard.count > 0) {
       dbOps.failedLinks.uniformize(storage.failedLinks).catch(err => log.cycle.error('Unable to uniformize failed links at end of cycle', err)) // Update failedLinks across all shards
@@ -313,17 +325,17 @@ class FeedSchedule {
     const diff = (new Date() - this._startTime) / 1000
     const timeTaken = diff.toFixed(2)
 
-    if (noFeeds) log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}. No feeds to retrieve`)
+    if (noFeeds) log.cycle.info(`${this.SHARD_ID}Finished ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ')' : ''}. No feeds to retrieve`)
     else {
       if (this._processorList.length === 0) this.inProgress = false
-      this.cycle.emit('finish')
-      log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
+      this.emit('finish')
+      log.cycle.info(`${this.SHARD_ID}Finished ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
     }
 
     ++this.ran
 
     // Update statistics
-    if (this.schedule.name === 'default') {
+    if (this.name === 'default') {
       // statistics.feeds is handled earlier in run()
       statistics.guilds = this.bot.guilds.size
       statistics.cycleTime = !statistics.cycleTime ? diff : (diff + statistics.cycleTime) / 2
@@ -333,7 +345,7 @@ class FeedSchedule {
       statistics.lastUpdated = new Date()
     }
 
-    if (this.schedule.name === 'default' && this.bot.shard && this.bot.shard.count > 0) {
+    if (this.name === 'default' && this.bot.shard && this.bot.shard.count > 0) {
       this.bot.shard.broadcastEval(`
         const storage = require(require('path').dirname(require.main.filename) + '/util/storage.js')
         const obj = {}
@@ -379,7 +391,7 @@ class FeedSchedule {
 
   stop () {
     clearInterval(this._timer)
-    if (this._timer) log.cycle.info(`Schedule '${this.schedule.name}' has stopped`)
+    if (this._timer) log.cycle.info(`Schedule '${this.name}' has stopped`)
   }
 
   start () {

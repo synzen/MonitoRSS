@@ -1,7 +1,6 @@
 const config = require('../config.json')
 const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
-const allScheduleWords = storage.allScheduleWords // Directory of all words defined across all schedules
 const checkGuild = require('./checkGuild.js')
 const configChecks = require('./configCheck.js')
 const LinkTracker = require('../structs/LinkTracker.js')
@@ -21,6 +20,7 @@ module.exports = async (bot, customSchedules, callback) => {
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
   const guildsInfo = {}
   const missingGuilds = {}
+  const scheduleRssNameDir = {}
   const scheduleWordDir = {}
   const activeSourcesForTracker = []
   let feedData
@@ -32,11 +32,18 @@ module.exports = async (bot, customSchedules, callback) => {
       const schedule = customSchedules[w]
       const scheduleName = schedule.name
       const keywords = schedule.keywords
+      const rssNames = schedule.rssNames
       scheduleWordDir[scheduleName] = []
-      for (var e = 0; e < keywords.length; ++e) {
-        const word = keywords[e]
-        allScheduleWords.push(word)
-        scheduleWordDir[scheduleName].push(word)
+      for (var schedKeyword of keywords) {
+        storage.allScheduleWords.push(schedKeyword)
+        scheduleWordDir[scheduleName].push(schedKeyword)
+      }
+      if (rssNames) {
+        scheduleRssNameDir[scheduleName] = []
+        for (var schedRssName of rssNames) {
+          storage.allScheduleRssNames.push(schedRssName)
+          scheduleRssNameDir[scheduleName].push(schedRssName)
+        }
       }
     }
   }
@@ -86,14 +93,26 @@ module.exports = async (bot, customSchedules, callback) => {
     for (var rssName in rssList) {
       const source = rssList[rssName]
 
-      // Assign feeds to specific schedules in scheduleAssigned for use by feedSchedules
-      if (scheduleWordDir && Object.keys(scheduleWordDir).length > 0) {
-        for (var scheduleName in scheduleWordDir) {
-          let wordList = scheduleWordDir[scheduleName]
+      // Assign feeds to specific schedules in scheduleAssigned for use by feedSchedules by rssNames first
+
+      if (Object.keys(scheduleRssNameDir).length > 0) {
+        for (var scheduleName1 in scheduleRssNameDir) {
+          const rssNameList = scheduleRssNameDir[scheduleName1]
+          if (rssNameList.includes(rssName) && !storage.scheduleAssigned[rssName]) {
+            log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName1} by rssName`)
+            storage.scheduleAssigned[rssName] = scheduleName1
+          }
+        }
+      }
+
+      // Then by keywords
+      if (Object.keys(scheduleWordDir).length > 0) {
+        for (var scheduleName2 in scheduleWordDir) {
+          const wordList = scheduleWordDir[scheduleName2]
           wordList.forEach(item => {
             if (source.link.includes(item) && !storage.scheduleAssigned[rssName]) {
-              log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName}`)
-              storage.scheduleAssigned[rssName] = scheduleName // Assign a schedule to a feed if it doesn't already exist in the scheduleAssigned to another schedule
+              log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName2} by keyword`)
+              storage.scheduleAssigned[rssName] = scheduleName2 // Assign a schedule to a feed if it doesn't already exist in the scheduleAssigned to another schedule
             }
           })
         }
