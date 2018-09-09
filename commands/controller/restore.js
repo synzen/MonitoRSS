@@ -1,4 +1,4 @@
-const needle = require('needle')
+const fetch = require('node-fetch')
 const dbOps = require('../../util/dbOps.js')
 const log = require('../../util/logger.js')
 
@@ -9,9 +9,9 @@ async function getID (message) {
   const attachment = message.attachments.first()
   const url = attachment ? attachment.url : undefined
   if (!url) throw new Error('No attachment found')
-  const res = await needle('get', url)
-  if (res.statusCode !== 200) throw new Error(`Non-200 status code: `, res)
-  const file = JSON.parse(JSON.stringify(res.body))
+  const res = await fetch(url)
+  if (res.status !== 200) throw new Error(`Non-200 status code: `, res.status)
+  const file = await res.json()
   delete file._id
   delete file.__v
   if (!file.id) throw new Error('No ID found in file')
