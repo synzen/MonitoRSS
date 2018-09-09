@@ -165,7 +165,7 @@ class Client {
             break
           case 'finishedInit':
             storage.initialized = 2
-            await dbOps.blacklists.refresh()
+            if (config.database.uri.startsWith('mongodb')) await dbOps.blacklists.refresh()
             dbOps.vips.refreshVipSchedule()
             break
           case 'cycleVIPs':
@@ -233,7 +233,7 @@ class Client {
     this.state = STATES.STARTING
     listeners.enableCommands()
     const uri = process.env.DRSS_DATABASE_URI || config.database.uri
-    log.general.info(`Database URI is set to ${uri}. Detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
+    log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     connectDb().then(() => {
       initialize(storage.bot, this.customSchedules, (guildsInfo, missingGuilds, linkDocs, feedData) => {
         // feedData is only defined if config.database.uri is a databaseless folder path

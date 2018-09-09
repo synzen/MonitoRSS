@@ -65,7 +65,7 @@ exports.defaultConfigs = {
     controllerIds: {type: Array, default: []},
     menuColor: {type: Number, default: 7833753},
     deleteMenus: {type: Boolean, default: false},
-    exitOnSocketIssues: {type: Boolean, default: false}
+    exitOnSocketIssues: {type: Boolean, default: true}
   },
   database: {
     uri: {type: String, default: 'mongodb://localhost/rss'},
@@ -84,11 +84,9 @@ exports.defaultConfigs = {
     timeFallback: {type: Boolean, default: false},
     failLimit: {type: Number, default: 0},
     notifyFail: {type: Boolean, default: true},
-    sendOldMessages: {type: Boolean, default: false},
-    defaultMaxAge: {type: Number, default: 1},
+    sendOldOnFirstCycle: {type: Boolean, default: true},
     cycleMaxAge: {type: Number, default: 1},
     defaultMessage: {type: String, default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
-    showRegexErrs: {type: Boolean, default: true},
     imgPreviews: {type: Boolean, default: true},
     imgLinksExistence: {type: Boolean, default: true},
     checkDates: {type: Boolean, default: true},
@@ -129,7 +127,7 @@ exports.check = userConfig => {
         else if (configName === 'timezone' && !moment.tz.zone(userVal)) checkIfRequired(configCategory, configName, 'Invalid timezone')
         else if (configName === 'menuColor' && userVal > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
         else if (configName === 'sqlType' && (userVal !== 'sqlite3' && userVal !== 'mysql')) checkIfRequired(configCategory, configName, 'Must be either "mysql" or "sqlite3"')
-        else if (configName === 'processorMethod' && userVal !== 'concurrent' && userVal !== 'concurrent-isolated' && userVal !== 'parallel-isolated') checkIfRequired(configCategory, configName, 'Must be either "concurrent", "concurrent-isolated", or "parallel-isolated"')
+        else if (configName === 'processorMethod' && userVal !== 'concurrent' && userVal !== 'parallel-isolated') checkIfRequired(configCategory, configName, 'Must be either "concurrent", or "parallel-isolated"')
         else if (configName === 'activityType' && !ACTIVITY_TYPES.includes(userVal)) checkIfRequired(configCategory, configName, `Must be one of the following: "${ACTIVITY_TYPES.join('","')}"`)
         else if (configName === 'status' && !STATUS_TYPES.includes(userVal)) checkIfRequired(configCategory, configName, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
         else if (configName === 'controllerIds') {

@@ -6,8 +6,7 @@ const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
 
 module.exports = (data, callback) => {
-  const { link, rssList, uniqueSettings, logicType } = data
-  if (logicType !== 'init' && logicType !== 'cycle') throw new Error(`Expected logicType parameter must be "cycle" or "init", found ${logicType} instead`)
+  const { link, rssList, uniqueSettings, scheduleName } = data
   const feedparser = new FeedParser()
   const articleList = []
 
@@ -32,12 +31,8 @@ module.exports = (data, callback) => {
 
   feedparser.on('end', () => {
     if (articleList.length === 0) return callback(null, { status: 'success', link: link })
-    const debugInfo = logicType === 'init' ? undefined : debugFeeds
-    processSources({ articleList: articleList, debugFeeds: debugInfo, shardId: storage.bot.shard ? storage.bot.shard.id : undefined, ...data }, (err, results) => {
-      if (err) {
-        if (logicType === 'init') throw err
-        else if (logicType === 'cycle') log.cycle.error(`Cycle logic`, err, true)
-      }
+    processSources({ articleList: articleList, debugFeeds: debugFeeds, shardId: storage.bot.shard ? storage.bot.shard.id : undefined, scheduleName, ...data }, (err, results) => {
+      if (err) log.cycle.error(`Cycle logic`, err, true)
       if (results) callback(null, results)
     })
   })

@@ -76,8 +76,8 @@ class ClientSharded {
     const linkDocs = message.linkDocs
     for (var x = 0; x < linkDocs.length; ++x) {
       const doc = linkDocs[x]
-      this.linkTracker.set(doc.link, doc.count, doc.shard)
-      const id = storage.collectionId(doc.link, doc.shard)
+      this.linkTracker.set(doc.link, doc.count, doc.shard, doc.scheduleName)
+      const id = storage.collectionId(doc.link, doc.shard, doc.scheduleName)
       if (!this.currentCollections.includes(id)) this.currentCollections.push(id) // To find out any unused collections eligible for removal
     }
 

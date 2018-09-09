@@ -3,7 +3,7 @@ const fetch = require('node-fetch')
 
 module.exports = async (link, cookies, feedparser) => {
   const options = {
-    timeout: 20000,
+    timeout: 15000,
     follow: 5,
     headers: {'user-agent': `Mozilla/5.0 ${link.includes('.tumblr.com') ? 'GoogleBot' : ''} (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36`}
   }

@@ -9,13 +9,13 @@
     "url": "https://github.com/synzen/Discord.RSS/issues"
   },
   "dependencies": {
-    "cloudscraper": "^1.4.1",
+    "cloudscraper": "^1.5.0",
     "discord.js": "^11.4.2",
-    "feedparser": "^2.1.0",
+    "feedparser": "^2.2.9",
     "html-to-text": "^4.0.0",
-    "moment": "^2.17.1",
+    "moment": "^2.22.2",
     "moment-timezone": "^0.5.21",
-    "mongoose": "^5.2.8",
+    "mongoose": "^5.2.13",
     "node-fetch": "^2.2.0"
   },
   "repository": {

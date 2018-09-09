@@ -11,8 +11,9 @@ module.exports = async (bot, message, command) => {
     if (!data) return
     const { guildRss, rssNameList } = data
     const removing = await message.channel.send(`Removing...`)
+    const errors = []
     let removed = 'Successfully removed the following link(s):\n```\n'
-    // (async function remove (index) {
+
     for (var i = 0; i < rssNameList.length; ++i) {
       const link = guildRss.sources[rssNameList[i]].link
       try {
@@ -21,10 +22,11 @@ module.exports = async (bot, message, command) => {
         log.guild.info(`Removed feed ${link}`, message.guild)
       } catch (err) {
         log.guild.error(`Failed to remove feed ${link}`, message.guild, err)
+        errors.push(err)
       }
     }
-    await removing.edit(`${removed}\`\`\`\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
-    // })(0)
+    if (errors.length > 0) await removing.edit('Unable to remove specified feeds due to internal error.')
+    else await removing.edit(`${removed}\`\`\`\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } catch (err) {
     log.command.warning(`rssremove`, message.guild, err, true)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssremove 1', message.guild, err))

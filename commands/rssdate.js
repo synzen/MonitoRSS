@@ -60,7 +60,7 @@ async function setOptionFn (m, data, callback) {
 
 module.exports = async (bot, message) => {
   const guildRss = currentGuilds.get(message.guild.id)
-  // if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
+  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
 
   // let results = []
   // findDatePlaceholders(guildRss.sources, results)

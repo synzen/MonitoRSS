@@ -3,7 +3,6 @@ const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const FlattenedJSON = require('./FlattenedJSON.js')
 const defaultConfigs = require('../util/configCheck.js').defaultConfigs
-const log = require('../util/logger.js')
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date']
@@ -49,37 +48,41 @@ function escapeRegExp (str) {
 function regexReplace (string, searchOptions, replacement) {
   if (typeof searchOptions !== 'object') throw new TypeError(`Expected RegexOp search key to have an object value, found ${typeof searchOptions} instead`)
   const flags = !searchOptions.flags ? 'g' : searchOptions.flags.includes('g') ? searchOptions.flags : searchOptions.flags + 'g' // Global flag must be included to prevent infinite loop during .exec
-  try {
-    const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined
-    const groupNum = searchOptions.group !== undefined ? parseInt(searchOptions.group, 10) : undefined
-    const regExp = new RegExp(searchOptions.regex, flags)
-    const matches = []
-    let match
-    do { // Find everything that matches the search regex query and push it to matches.
-      match = regExp.exec(string)
-      if (match) matches.push(match)
-    } while (match)
-    match = matches[matchIndex || 0][groupNum || 0]
+  const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined
+  const groupNum = searchOptions.group !== undefined ? parseInt(searchOptions.group, 10) : undefined
+  const regExp = new RegExp(searchOptions.regex, flags)
+  const matches = []
+  let match
+  do { // Find everything that matches the search regex query and push it to matches.
+    match = regExp.exec(string)
+    if (match) matches.push(match)
+  } while (match)
+  if (matches.length === 0) return string
+  else {
+    const mi = matches[matchIndex || 0]
+    if (!mi) return string
+    else match = mi[groupNum || 0]
+  }
 
-    if (replacement !== undefined) {
-      if (matchIndex === undefined && groupNum === undefined) { // If no match or group is defined, replace every full match of the search in the original string
-        for (var x in matches) {
-          const exp = new RegExp(escapeRegExp(matches[x][0]), flags)
-          string = string.replace(exp, replacement)
-        }
-      } else if (matchIndex && groupNum === undefined) { // If no group number is defined, use the full match of this particular match number in the original string
-        const exp = new RegExp(escapeRegExp(matches[matchIndex][0]), flags)
-        string = string.replace(exp, replacement)
-      } else {
-        const exp = new RegExp(escapeRegExp(matches[matchIndex][groupNum]), flags)
+  if (replacement !== undefined) {
+    if (matchIndex === undefined && groupNum === undefined) { // If no match or group is defined, replace every full match of the search in the original string
+      for (var x in matches) {
+        const exp = new RegExp(escapeRegExp(matches[x][0]), flags)
         string = string.replace(exp, replacement)
       }
-    } else string = match
+    } else if (matchIndex && groupNum === undefined) { // If no group number is defined, use the full match of this particular match number in the original string
+      const exp = new RegExp(escapeRegExp(matches[matchIndex][0]), flags)
+      string = string.replace(exp, replacement)
+    } else if (matchIndex === undefined && groupNum) {
+      const exp = new RegExp(escapeRegExp(matches[0][groupNum]), flags)
+      string = string.replace(exp, replacement)
+    } else {
+      const exp = new RegExp(escapeRegExp(matches[matchIndex][groupNum]), flags)
+      string = string.replace(exp, replacement)
+    }
+  } else string = match
 
-    return string
-  } catch (e) {
-    return e
-  }
+  return string
 }
 
 function evalRegexConfig (source, text, placeholderName) {
@@ -88,7 +91,7 @@ function evalRegexConfig (source, text, placeholderName) {
   if (Array.isArray(source.regexOps[placeholderName])) { // Eval regex if specified
     if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
       for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
-        if (source.regexOps.disabled[y] === placeholderName) return null // text
+        if (source.regexOps.disabled[y] === placeholderName) return null
       }
     }
 
@@ -96,15 +99,9 @@ function evalRegexConfig (source, text, placeholderName) {
     for (var regexOpIndex in phRegexOps) { // Looping through each regexOp for a placeholder
       const regexOp = phRegexOps[regexOpIndex]
       if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
-
       if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
-
       const clone = Object.assign({}, customPlaceholders)
-
-      const modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
-      if (typeof modified !== 'string') {
-        if (config.feeds.showRegexErrs !== false) log.general.error(`Evaluation of regex for article ${source.link}`, modified)
-      } else customPlaceholders[regexOp.name] = modified // newText = modified
+      customPlaceholders[regexOp.name] = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
     }
   } else return null
   return customPlaceholders
@@ -170,7 +167,7 @@ module.exports = class Article {
     this.guildRss = guildRss
     this.raw = raw
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
-    this.youtube = raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#']
+    this.youtube = !!(raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#'])
     this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
     this.placeholdersForRegex = BASE_REGEX_PHS.slice()
     this.meta = raw.meta
@@ -227,7 +224,7 @@ module.exports = class Article {
     }
     for (var desAnchorNum in this.descriptionAnchors) {
       const term = `description:anchor${parseInt(desAnchorNum, 10) + 1}`
-      this[term] = this.descriptionImages[desAnchorNum]
+      this[term] = this.descriptionAnchors[desAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 

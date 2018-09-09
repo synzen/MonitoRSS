@@ -1,6 +1,7 @@
 const fs = require('fs')
 const config = require('../../config.json')
 const mongoose = require('mongoose')
+mongoose.set('useCreateIndex', true)
 const log = require('../../util/logger.js')
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
 const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}

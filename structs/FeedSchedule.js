@@ -15,6 +15,7 @@ class FeedSchedule {
     if (!schedule.refreshTimeMinutes) throw new Error('No refreshTimeMinutes has been declared for a schedule')
     if (schedule.name !== 'default' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0)) throw new Error(`Invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
+    this.shardId = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
     this.bot = bot
     this.schedule = schedule
     this.refreshTime = this.schedule.refreshTimeMinutes
@@ -28,11 +29,10 @@ class FeedSchedule {
     this._sourceList = new Map()
     this._modSourceList = new Map()
     this.feedData = feedData // Object of collection ids as keys, and arrays of objects as values
+    this.ran = 0
 
-    if (!this.bot.shard || this.bot.shard.count === 0) {
-      this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
-      log.cycle.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
-    }
+    if (!this.bot.shard || this.bot.shard.count === 0) this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
+    log.cycle.info(`${this.SHARD_ID}Schedule '${this.schedule.name}' has begun`)
   }
 
   _verifyCookieUse (id, advanced) {
@@ -66,6 +66,7 @@ class FeedSchedule {
     let feedCount = 0 // For statistics in storage
     for (var rssName in rssList) {
       const source = rssList[rssName]
+
       ++feedCount
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === true) {
@@ -83,18 +84,21 @@ class FeedSchedule {
       if (configChecks.checkExists(rssName, guildRss, false) && configChecks.validChannel(this.bot, guildRss, rssName) && typeof storage.failedLinks[source.link] !== 'string') {
         if (storage.scheduleAssigned[rssName] === this.schedule.name) { // If assigned to a this.schedule
           this._delegateFeed(guildRss, rssName)
+        } else if (config._vip && this.schedule.name === 'vip' && !storage.vipServers[guildRss.id] && !storage.scheduleAssigned[rssName]) {
+          if (!source.link.includes('feed43')) storage.scheduleAssigned[rssName] = 'default' // Prevent non-VIP feeds from getting assigned the VIP schedule
         } else if (this.schedule.name !== 'default' && !storage.scheduleAssigned[rssName]) { // If current feed this.schedule is a custom one and is not assigned
           this.schedule.keywords.forEach(word => {
             if (source.link.includes(word)) {
               storage.scheduleAssigned[rssName] = this.schedule.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
+
               this._delegateFeed(guildRss, rssName)
-              log.cycle.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.schedule.name}`)
+              log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.schedule.name}`)
             }
           })
         } else if (!storage.scheduleAssigned[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
           let reserved = false
           storage.allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
-            if (source.link.includes(item)) reserved = true
+            if (source.link.includes(item)) reserved = true //  && ((config._vip === true && this.schedule.name !== 'vip') || !config._vip)) reserved = true
           })
           if (!reserved) {
             storage.scheduleAssigned[rssName] = 'default'
@@ -190,11 +194,9 @@ class FeedSchedule {
       case 'concurrent':
         this._getBatch(0, this._regBatchList, 'regular')
         break
-      case 'concurrent-isolated':
-        this._getBatchIsolated(0, this._regBatchList, 'regular')
-        break
       case 'parallel-isolated':
         this._getBatchParallel()
+        break
     }
   }
 
@@ -213,7 +215,7 @@ class FeedSchedule {
         }
       }
 
-      getArticles({ config: config, feedData: this.feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, logicType: 'cycle' }, (err, linkCompletion) => {
+      getArticles({ config: config, feedData: this.feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, runNum: this.ran, scheduleName: this.schedule.name }, (err, linkCompletion) => {
         if (err) log.cycle.warning(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
@@ -228,48 +230,14 @@ class FeedSchedule {
         }
 
         ++this._cycleTotalCount
-        if (++completedLinks === currentBatchLen) {
+        ++completedLinks
+        if (completedLinks === currentBatchLen) {
           if (batchNumber !== batchList.length - 1) setTimeout(this._getBatch.bind(this), 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && this._modBatchList.length > 0) setTimeout(this._getBatch.bind(this), 200, 0, this._modBatchList, 'modded')
           else return this._finishCycle()
         }
       })
     }
-  }
-
-  _getBatchIsolated (batchNumber, batchList, type) {
-    if (batchList.length === 0) return this._getBatchIsolated(0, this._modBatchList, 'modded')
-    const currentBatch = batchList[batchNumber]
-    const currentBatchLen = Object.keys(currentBatch).length
-    let completedLinks = 0
-
-    this._processorList.push(childProcess.fork('./rss/isolatedMethod.js'))
-
-    const processorIndex = this._processorList.length - 1
-    const processor = this._processorList[processorIndex]
-
-    processor.on('message', linkCompletion => {
-      if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
-      if (linkCompletion.status === 'batch_connected') return // Only used for parallel
-      if (linkCompletion.status === 'failed') {
-        ++this._cycleFailCount
-        dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
-      } else if (linkCompletion.status === 'success') {
-        if (storage.failedLinks[linkCompletion.link]) delete storage.failedLinks[linkCompletion.link]
-        if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
-      }
-
-      this._cycleTotalCount++
-      if (++completedLinks === currentBatchLen) {
-        processor.kill()
-        this._processorList.splice(processorIndex, 1)
-        if (batchNumber !== batchList.length - 1) setTimeout(this._getBatchIsolated.bind(this), 200, batchNumber + 1, batchList, type)
-        else if (type === 'regular' && this._modBatchList.length > 0) setTimeout(this._getBatchIsolated.bind(this), 200, 0, this._modBatchList, 'modded')
-        else this._finishCycle()
-      }
-    })
-
-    processor.send({ config: config, feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
   }
 
   _getBatchParallel () {
@@ -292,7 +260,7 @@ class FeedSchedule {
 
       processor.on('message', linkCompletion => {
         if (linkCompletion.status === 'article') return this.cycle.emit('article', linkCompletion.article)
-        if (linkCompletion.status === 'batch_connected') return callback() // Spawn processor for next batch
+        if (linkCompletion.status === 'batch_connected' && callback) return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
           dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
@@ -302,7 +270,8 @@ class FeedSchedule {
         }
 
         ++this._cycleTotalCount
-        if (++completedLinks === currentBatchLen) {
+        ++completedLinks
+        if (completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
           if (completedBatches === totalBatchLengths) {
@@ -312,19 +281,21 @@ class FeedSchedule {
         }
       })
 
-      processor.send({ config: config, feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, logicType: 'cycle' })
+      processor.send({ config: config, feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, runNum: this.ran, scheduleName: this.schedule.name })
     }
 
     function spawn (count) {
       for (var q = 0; q < count; ++q) {
         willCompleteBatch++
-        deployProcessor.bind(this)(regIndices.length > 0 ? this._regBatchList : modIndices.length > 0 ? this._modBatchList : undefined, regIndices.length > 0 ? regIndices.shift() : modIndices.length > 0 ? modIndices.shift() : undefined, () => {
+        const batchList = regIndices.length > 0 ? this._regBatchList : modIndices.length > 0 ? this._modBatchList : undefined
+        const index = regIndices.length > 0 ? regIndices.shift() : modIndices.length > 0 ? modIndices.shift() : undefined
+        deployProcessor.bind(this)(batchList, index, () => {
           if (willCompleteBatch < totalBatchLengths) spawn.bind(this)(1)
         })
       }
     }
 
-    if (config.advanced.parallel && config.advanced.parallel > 1) {
+    if (config.advanced.parallel > 0) {
       for (var g = 0; g < this._regBatchList.length; ++g) regIndices.push(g)
       for (var h = 0; h < this._modBatchList.length; ++h) modIndices.push(h)
       spawn.bind(this)(config.advanced.parallel)
@@ -348,6 +319,8 @@ class FeedSchedule {
       this.cycle.emit('finish')
       log.cycle.info(`${this.SHARD_ID}Finished ${this.schedule.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.schedule.name !== 'default' ? ' (' + this.schedule.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
     }
+
+    ++this.ran
 
     // Update statistics
     if (this.schedule.name === 'default') {

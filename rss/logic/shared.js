@@ -3,7 +3,6 @@ const moment = require('moment-timezone')
 const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
 const log = require('../../util/logger.js')
 const storage = require('../../util/storage.js')
-const FeedModel = require('../../util/storage.js').models.Feed
 
 function getArticleId (articleList, article) {
   let equalGuids = (articleList.length > 1) // default to true for most feeds
@@ -19,8 +18,8 @@ function getArticleId (articleList, article) {
 }
 
 module.exports = (data, callback) => {
-  const { rssList, articleList, debugFeeds, link, shardId, logicType, config, feedData } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
-  if (logicType !== 'init' && logicType !== 'cycle') throw new Error(`Expected logicType parameter must be "cycle" or "init", found ${logicType} instead`)
+  const { rssList, articleList, debugFeeds, link, shardId, config, feedData, scheduleName, runNum } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+  if (!scheduleName) throw new Error('Missing schedule name for shared logic')
   const RSSLIST_LENGTH = Object.keys(rssList).length
   let sourcesCompleted = 0
   const totalArticles = articleList.length
@@ -32,8 +31,9 @@ module.exports = (data, callback) => {
   const customComparisonsToUpdate = []
   const toInsert = []
   const toUpdate = {} // Article's resolved IDs (getArticleId) as key and the article as value
-  const Feed = FeedModel(link, shardId)
-  const feedCollectionId = feedData ? storage.collectionId(link, shardId) : undefined
+  const collectionId = storage.collectionId(link, shardId, scheduleName)
+  const Feed = storage.models.FeedByCollectionId(collectionId)
+  const feedCollectionId = feedData ? collectionId : undefined
   const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
 
   dbCmds.findAll(feedCollection || Feed)
@@ -81,15 +81,11 @@ module.exports = (data, callback) => {
         else callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
       })
         .catch(err => {
-          if (err) {
-            if (logicType === 'cycle') return callback(new Error(`Database Error: Unable to bulk insert articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
-            else process.exit(1)
-          }
+          if (err) return callback(new Error(`Database Error: Unable to bulk insert articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })
         })
     })
     .catch(err => {
-      if (logicType === 'cycle') return callback(err, { status: 'failed', link: link, rssList: rssList })
-      else process.exit(1)
+      return callback(err, { status: 'failed', link: link, rssList: rssList })
     })
 
   function processSource (rssName, docs) {
@@ -111,7 +107,7 @@ module.exports = (data, callback) => {
     let processedArticles = 0
     if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Processing collection. Total article list length: ${articleList.length}`)
 
-    const maxAge = logicType === 'cycle' ? config.feeds.cycleMaxAge : config.feeds.defaultMaxAge
+    const maxAge = config.feeds.cycleMaxAge
     const cutoffDay = moment().subtract(maxAge, 'days')
 
     const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : defaultConfigs.feeds.checkDates.default
@@ -143,7 +139,7 @@ module.exports = (data, callback) => {
     }
 
     function seenArticle (seen, article) {
-      if (logicType === 'init' && config.feeds.sendOldMessages !== true) return ++processedArticles === totalArticles ? finishSource() : null // Stops here if it already exists in table, AKA "seen"
+      if (runNum === 0 && config.feeds.sendOldOnFirstCycle === false) return ++processedArticles === totalArticles ? finishSource() : null // Stops here if it already exists in table, AKA "seen"
 
       // Check for extra user-specified comparisons
       if (seen) {
@@ -208,10 +204,7 @@ module.exports = (data, callback) => {
     for (var id in toUpdate) {
       const article = toUpdate[id]
       dbCmds.update(feedCollection || Feed, article, err => {
-        if (err) {
-          if (logicType === 'cycle') log.cycle.error(`Failed to update an article entry`, err)
-          else log.init.error(`Failed to update an article entry`, err)
-        }
+        if (err) log.cycle.error(`Failed to update an article entry`, err)
         if (++c === toUpdateLength) callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
       })
     }
