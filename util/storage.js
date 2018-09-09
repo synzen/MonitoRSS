@@ -142,8 +142,7 @@ exports.schemas = {
 exports.collectionId = (link, shardId, prefix) => {
   let res = (shardId != null ? `${shardId}_` : '') + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
   const len = mongoose.connection.name ? (res.length + mongoose.connection.name.length + 1) : res.length + 1 // mongoose.connection.name is undefined if config.database.uri is a databaseless folder path
-  if (prefix.length > 10) prefix = prefix.slice(0, 10)
-  if (prefix && prefix !== 'default') res = prefix + res
+  if (prefix && prefix !== 'default') res = prefix.slice(0, 10) + res
   if (len > 115) res = res.slice(0, 115)
   return res
 }
