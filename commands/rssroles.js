@@ -149,7 +149,7 @@ async function filteredSubMenuFn (m, data) {
         series: filters.add(m, guildRss, rssName, role)
       }}
   } else if (input === '2') {
-    if (!source.filters || !source.filters.roleSubscriptions) throw new Error(`There are no filtered subscriptions to remove from the feed <${source.link}>.`)
+    if (!source.filters || !source.filters.roleSubscriptions) return m.channel.send(`There are no filtered subscriptions to remove from the feed <${source.link}>.`)
     return { ...data,
       next: {
         series: filters.remove(m, guildRss, rssName, role)
@@ -165,7 +165,7 @@ async function globalSubMenuFn (m, data) {
     await addGlobalSub(m, guildRss, rssName, role)
     return data
   } else if (input === '2') {
-    if (!source.roleSubscriptions) throw new Error(`There are no global subscriptions to remove from the feed <${source.link}>.`)
+    if (!source.roleSubscriptions) return m.channel.send(`There are no global subscriptions to remove from the feed <${source.link}>.`)
     await removeGlobalSub(m, guildRss, rssName, role)
     return data
   } else throw new SyntaxError('That is not a valid option. Try again, or type `exit` to cancel.')
