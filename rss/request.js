@@ -1,7 +1,8 @@
 const fetch = require('node-fetch')
-// const cloudscraper = require('cloudscraper') // For cloudflare
+const cloudscraper = require('cloudscraper') // For cloudflare
+const config = require('../config.json')
 
-module.exports = async (link, cookies, feedparser) => {
+module.exports = async (link, cookies) => {
   const options = {
     timeout: 15000,
     follow: 5,
@@ -23,15 +24,18 @@ module.exports = async (link, cookies, feedparser) => {
 
   const serverHeaders = res.headers.get('server')
   if (!serverHeaders || !serverHeaders.includes('cloudflare')) throw new Error(`Bad status code (${endStatus})`)
-  else throw new Error(`Bad Cloudflare status code (${endStatus})`)
-  // cloudscraper.get(link, (err, res, body) => { // For cloudflare
-  //   if (err || res.statusCode !== 200) return reject(err || new Error(`Bad Cloudflare status code (${res.statusCode})` + `${cookies ? ' (cookies detected)' : ''}`))
-  //   if (!feedparser) return resolve()
-  //   let Readable = require('stream').Readable
-  //   let feedStream = new Readable()
-  //   feedStream.push(body)
-  //   feedStream.push(null)
-  //   resolve(feedStream)
-  //   // feedStream.pipe(feedparser)
-  // })
+
+  // Cloudflare is used here
+  if (config._vip) throw new Error(`Bad Cloudflare status code (${endStatus})`)
+
+  return new Promise((resolve, reject) => {
+    cloudscraper.get(link, (err, res, body) => { // For cloudflare
+      if (err || res.statusCode !== 200) return reject(err || new Error(`Bad Cloudflare status code (${res.statusCode})`))
+      let Readable = require('stream').Readable
+      let feedStream = new Readable()
+      feedStream.push(body)
+      feedStream.push(null)
+      resolve(feedStream)
+    })
+  })
 }

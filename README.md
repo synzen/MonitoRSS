@@ -43,7 +43,7 @@ There are multiple ways of integrating Discord.RSS programmatically - see [here]
 
 #### Core Functions
  * [Feedparser](https://www.npmjs.com/package/feedparser)		
- * [Needle](https://www.npmjs.com/package/needle)
+ * [node-fetch](https://www.npmjs.com/package/node-fetch)
  * [cloudscraper](https://www.npmjs.com/package/cloudscraper)
  * [Mongoose](https://www.npmjs.com/package/mongoose)
 
