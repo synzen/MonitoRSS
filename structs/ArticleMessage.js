@@ -35,7 +35,7 @@ class ArticleMessage {
   }
 
   async _resolveChannel () {
-    if (((config.advanced._restrictWebhooks === true && storage.vipServers[this.channel.guild.id] && storage.vipServers[this.channel.guild.id].benefactor.allowWebhooks) || !config.advanced._restrictWebhooks) && this.source && typeof this.source.webhook === 'object') {
+    if (((config._vip === true && storage.vipServers[this.channel.guild.id] && storage.vipServers[this.channel.guild.id].benefactor.allowWebhooks) || !config.advanced._restrictWebhooks) && this.source && typeof this.source.webhook === 'object') {
       if (!this.channel.guild.me.permissionsIn(this.channel).has('MANAGE_WEBHOOKS')) return
       try {
         const hooks = await this.channel.fetchWebhooks()
