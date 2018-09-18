@@ -13,6 +13,7 @@
     "discord.js": "^11.4.2",
     "feedparser": "^2.2.9",
     "html-to-text": "^4.0.0",
+    "iconv-lite": "^0.4.24",
     "moment": "^2.22.2",
     "moment-timezone": "^0.5.21",
     "mongoose": "^5.2.13",

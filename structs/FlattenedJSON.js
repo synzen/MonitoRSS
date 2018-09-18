@@ -1,12 +1,14 @@
 const htmlConvert = require('html-to-text')
+const iconv = require('iconv-lite')
 const defaultConfigs = require('../util/configCheck.js').defaultConfigs
 const config = require('../config.json')
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'link', 'pubDate', 'pubdate', 'date']
 
-function cleanup (source, text) {
+function cleanup (source, text, encoding) {
   if (!text) return ''
-  let newText = ''
-  newText = text.replace(/\*/gi, '')
+
+  let newText = encoding === 'utf-8' ? text : iconv.decode(text, encoding)
+  newText = newText.replace(/\*/gi, '')
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
     .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
     .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
@@ -48,7 +50,8 @@ function cleanup (source, text) {
 }
 
 class FlattenedJSON {
-  constructor (data, source) {
+  constructor (data, source, encoding = 'utf-8') {
+    this.encoding = encoding.toLowerCase()
     this.source = source
     this.data = data
     this.results = {}
@@ -100,12 +103,11 @@ class FlattenedJSON {
     this.text = header + '\r\n' + bar + '\r\n'
 
     // Add in the key/values
-    // Object.prototype.toString.call(item) === '[object Date]' ||
     for (let key in this.results) {
       let curStr = key
       while (curStr.length < longestNameLen) curStr += ' '
       const propNameLength = curStr.length
-      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ` [DATE OBJECT]`] : cleanup(this.source, this.results[key].toString()).split('\n')
+      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ` [DATE OBJECT]`] : cleanup(this.source, this.results[key].toString(), this.encoding).split('\n')
       for (let u = 0; u < valueLines.length; ++u) {
         curStr += u === 0 ? `|  ${valueLines[u]}\r\n` : `   ${valueLines[u]}\r\n`
         if (u < valueLines.length - 1) {

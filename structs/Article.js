@@ -1,4 +1,5 @@
 const config = require('../config.json')
+const iconv = require('iconv-lite')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const FlattenedJSON = require('./FlattenedJSON.js')
@@ -7,6 +8,7 @@ const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date']
 const RAW_REGEX_FINDER = new RegExp('{raw:([^{}]+)}', 'g')
+iconv.skipDecodeWarning = true
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
   const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
@@ -107,9 +109,10 @@ function evalRegexConfig (source, text, placeholderName) {
   return customPlaceholders
 }
 
-function cleanup (source, text, imgSrcs, anchorLinks) {
+function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
   if (!text) return ''
 
+  if (encoding !== 'utf-8') text = iconv.decode(text, encoding)
   text = text.replace(/\*/gi, '')
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
     .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
@@ -165,21 +168,24 @@ module.exports = class Article {
     const source = guildRss.sources[rssName]
     this.source = source
     this.guildRss = guildRss
+    console.log(raw)
     this.raw = raw
+    this.encoding = raw.meta['#xml'].encoding.toLowerCase()
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
     this.youtube = !!(raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#'])
     this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
     this.placeholdersForRegex = BASE_REGEX_PHS.slice()
     this.meta = raw.meta
     this.guid = raw.guid
-    this.author = raw.author ? cleanup(source, raw.author) : ''
+    this.author = raw.author ? cleanup(source, raw.author, undefined, undefined, this.encoding) : ''
     this.link = raw.link ? raw.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
     if (this.reddit && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
+    if (this.encoding !== 'utf-8') iconv.decode(this.link, this.encoding)
 
     // Title
     this.titleImages = []
     this.titleAnchors = []
-    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors)
+    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors, this.encoding)
     this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
     for (var titleImgNum in this.titleImages) {
       const term = `title:image${parseInt(titleImgNum, 10) + 1}`
@@ -214,7 +220,7 @@ module.exports = class Article {
     // Description and reddit-specific placeholders
     this.descriptionImages = []
     this.descriptionAnchors = []
-    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors) // Account for youtube's description
+    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors, this.encoding) // Account for youtube's description
     this.description = this.fullDescription
     this.description = this.description.length > 800 ? `${this.description.slice(0, 790)}...` : this.description
     for (var desImgNum in this.descriptionImages) {
@@ -249,7 +255,7 @@ module.exports = class Article {
     // Summary
     this.summaryImages = []
     this.summaryAnchors = []
-    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors)
+    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
     this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
     for (var sumImgNum in this.summaryImages) {
       const term = `summary:image${parseInt(sumImgNum, 10) + 1}`
@@ -281,7 +287,7 @@ module.exports = class Article {
         categoryList += cats[category].trim()
         if (parseInt(category, 10) !== cats.length - 1) categoryList += '\n'
       }
-      this.tags = categoryList
+      this.tags = cleanup(source, categoryList, undefined, undefined, this.encoding)
     }
 
     // Regex-defined custom placeholders
@@ -428,7 +434,7 @@ module.exports = class Article {
     do {
       result = RAW_REGEX_FINDER.exec(content)
       if (!result) continue
-      if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
+      if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source, this.encoding)
       const fullMatch = result[0]
       const matchName = result[1]
       matches[fullMatch] = this.flattenedJSON.results[matchName] || ''
@@ -452,7 +458,7 @@ module.exports = class Article {
     if (!phName.startsWith('raw:')) return ''
     if (this.flattenedJSON) return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
     else {
-      this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
+      this.flattenedJSON = new FlattenedJSON(this.raw, this.source, this.encoding)
       return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
     }
   }
@@ -480,6 +486,7 @@ module.exports = class Article {
         content = content.replace(replacementQuery, replacementContent)
       }
     }
+
     return this.convertRawPlaceholders(this.convertAnchors(this.convertImgs(content)))
   }
 }
