@@ -168,7 +168,6 @@ module.exports = class Article {
     const source = guildRss.sources[rssName]
     this.source = source
     this.guildRss = guildRss
-    console.log(raw)
     this.raw = raw
     this.encoding = raw.meta['#xml'].encoding.toLowerCase()
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
