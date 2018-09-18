@@ -46,7 +46,7 @@ class LinkTracker {
       if (!this.list[this.shardId][scheduleName][link]) delete this.list[this.shardId][scheduleName][link]
       return this.list[this.shardId][scheduleName][link]
     } else {
-      if (this.list[scheduleName][link] == null || this.list[scheduleName][link]) return
+      if (this.list[scheduleName] == null || this.list[scheduleName][link] == null || this.list[scheduleName][link]) return
       this.list[scheduleName][link] = this.list[scheduleName][link] - 1 < 0 ? 0 : this.list[scheduleName][link] - 1
       if (!this.list[scheduleName][link]) delete this.list[scheduleName][link]
       return this.list[scheduleName][link]

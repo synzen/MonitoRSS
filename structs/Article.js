@@ -169,7 +169,7 @@ module.exports = class Article {
     this.source = source
     this.guildRss = guildRss
     this.raw = raw
-    this.encoding = raw.meta['#xml'].encoding.toLowerCase()
+    this.encoding = raw.meta['#xml'].encoding ? raw.meta['#xml'].encoding.toLowerCase() : 'utf-8'
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
     this.youtube = !!(raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#'])
     this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
