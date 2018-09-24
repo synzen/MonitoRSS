@@ -68,7 +68,7 @@ function findFilterWords (filterType, content) {
           } else results.push({passed: false, inverted: invertedFilter})
         }
       }
-    } else if (typeof content === 'object') { // For tags
+    } else if (Array.isArray(content)) { // For tags
       for (var item in content) {
         const res = findFilterWords(filterType, content[item])
         results = results.concat(res.resultsList)
