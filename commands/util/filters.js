@@ -5,7 +5,7 @@ const filterTypes = [
   { show: 'Description', use: 'description' },
   { show: 'Summary', use: 'summary' },
   { show: 'Author', use: 'author' },
-  { show: 'Tag', use: 'tags' }
+  { show: 'Tags', use: 'tags' }
 ]
 const MenuUtils = require('../../structs/MenuUtils.js')
 const log = require('../../util/logger.js')
