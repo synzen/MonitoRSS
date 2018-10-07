@@ -6,7 +6,7 @@ const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
 const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
 
 module.exports = callback => {
-  const uri = process.env.DRSS_DATABASE_URI || config.database.uri
+  const uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI || config.database.uri
   if (!uri.startsWith('mongo')) return callback() // Means filebase sources will be used
 
   const buffers = {}
