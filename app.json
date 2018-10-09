@@ -6,7 +6,7 @@
     "mongolab"
   ],
   "env": {
-    "DISCORD_TOKEN": {
+    "DRSS_DISCORD_TOKEN": {
       "description": "Discord BOT token. Get it here: https://discordapp.com/developers/applications/"
     }
   },
