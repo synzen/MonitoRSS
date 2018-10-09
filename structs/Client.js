@@ -234,7 +234,7 @@ class Client {
     if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
-    const uri = process.env.DRSS_DATABASE_URI || config.database.uri
+    const uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI || config.database.uri // process.env.MONGODB_URI is intended for use by Heroku
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     connectDb().then(() => {
       initialize(storage.bot, this.customSchedules, (guildsInfo, missingGuilds, linkDocs, feedData) => {
