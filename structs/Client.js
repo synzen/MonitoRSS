@@ -121,21 +121,31 @@ class Client {
   _initialize () {
     const bot = storage.bot
     if (this.configOverrides && this.configOverrides.setPresence === true) {
-      if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL })
+      if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL || undefined })
       else bot.user.setActivity(null)
       bot.user.setStatus(config.bot.status)
     }
     bot.on('error', err => {
-      log.general.error(`${this.SHARD_PREFIX}Websocket connection error`, err)
-      this.stop()
+      log.general.error(`${this.SHARD_PREFIX}Websocket error`, err)
+      if (config.bot.exitOnSocketIssues === true) {
+        log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
+        for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
+        else process.exit(0)
+      } else this.stop()
     })
     bot.on('resume', () => {
       log.general.success(`${this.SHARD_PREFIX}Websocket resumed`)
       this.start()
     })
     bot.on('disconnect', () => {
-      log.general.success(`${this.SHARD_PREFIX}Websocket disconnected, attempting to completely stop`)
-      this.stop()
+      log.general.error(`${this.SHARD_PREFIX}Websocket disconnected`)
+      if (config.bot.exitOnSocketIssues === true) {
+        log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
+        for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
+        else process.exit(0)
+      } else this.stop()
     })
     log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
     if (!bot.shard || bot.shard.count === 0) this.start()
@@ -143,91 +153,99 @@ class Client {
   }
 
   listenToShardedEvents (bot) {
-    process.on('message', message => {
+    process.on('message', async message => {
       if (!message._drss) return
-      switch (message.type) {
-        case 'startInit':
-          if (bot.shard.id === message.shardId) this.start()
-          break
-        case 'stop':
-          this.stop()
-          break
-        case 'finishedInit':
-          storage.initialized = 2
-          dbOps.blacklists.refresh()
-          this._addVipSchedule()
-          break
-        case 'cycleVIPs':
-          if (bot.shard.id === message.shardId) dbOps.vips.refresh()
-          break
-        case 'runSchedule':
-          if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshTime)
-          break
-        case 'guildRss.update':
-          if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.update(message.guildRss, null, true)
-          break
-        case 'guildRss.remove':
-          if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.remove(message.guildRss, null, true)
-          break
-        case 'guildRss.disableFeed':
-          if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.disableFeed(message.guildRss, message.rssName, null, true)
-          break
-        case 'guildRss.enableFeed':
-          if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.enableFeed(message.guildRss, message.rssName, null, true)
-          break
-        case 'guildRss.removeFeed':
-          if (bot.guilds.has(message.guildRss.id)) dbOps.guildRss.removeFeed(message.guildRss, message.rssName, null, true)
-          break
-        case 'failedLinks.uniformize':
-          dbOps.failedLinks.uniformize(message.failedLinks, null, true)
-          break
-        case 'failedLinks._sendAlert':
-          dbOps.failedLinks._sendAlert(message.link, message.message, true)
-          break
-        case 'blacklists.uniformize':
-          dbOps.blacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, null, true)
-          break
-        case 'vips.uniformize':
-          dbOps.vips.uniformize(message.vipUsers, message.vipServers, null, true)
-          break
-        case 'dbRestoreSend':
-          const channel = bot.channels.get(message.channelID)
-          if (!channel) return
-          const channelMsg = channel.messages.get(message.messageID)
-          if (channelMsg) channelMsg.edit('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send('kill'))
-          else channel.send('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send('kill'))
-          break
+      try {
+        switch (message.type) {
+          case 'kill' :
+            process.exit(0)
+          case 'startInit':
+            if (bot.shard.id === message.shardId) this.start()
+            break
+          case 'stop':
+            this.stop()
+            break
+          case 'finishedInit':
+            storage.initialized = 2
+            if (config.database.uri.startsWith('mongodb')) await dbOps.blacklists.refresh()
+            dbOps.vips.refreshVipSchedule()
+            break
+          case 'cycleVIPs':
+            if (bot.shard.id === message.shardId) await dbOps.vips.refresh()
+            break
+          case 'runSchedule':
+            if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshTime)
+            break
+          case 'guildRss.update':
+            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.update(message.guildRss, true)
+            break
+          case 'guildRss.remove':
+            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.remove(message.guildRss, true)
+            break
+          case 'guildRss.disableFeed':
+            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.disableFeed(message.guildRss, message.rssName, true)
+            break
+          case 'guildRss.enableFeed':
+            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.enableFeed(message.guildRss, message.rssName, true)
+            break
+          case 'guildRss.removeFeed':
+            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.removeFeed(message.guildRss, message.rssName, true)
+            break
+          case 'failedLinks.uniformize':
+            await dbOps.failedLinks.uniformize(message.failedLinks, true)
+            break
+          case 'failedLinks._sendAlert':
+            dbOps.failedLinks._sendAlert(message.link, message.message, true)
+            break
+          case 'blacklists.uniformize':
+            await dbOps.blacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, true)
+            break
+          case 'vips.uniformize':
+            await dbOps.vips.uniformize(message.vipUsers, message.vipServers, true)
+            break
+          case 'vips.refreshVipSchedule':
+            dbOps.vips.refreshVipSchedule(true)
+            break
+          case 'dbRestoreSend':
+            const channel = bot.channels.get(message.channelID)
+            if (!channel) return
+            const channelMsg = channel.messages.get(message.messageID)
+            if (channelMsg) channelMsg.edit('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send({ _drss: true, type: 'kill' }))
+            else channel.send('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send({ _drss: true, type: 'kill' }))
+            break
+        }
+      } catch (err) {
+        log.general.warning('client', err, true)
       }
     })
   }
 
   stop () {
-    if (this.state === STATES.STARTING || this.state === STATES.STOPPED) return log.general.warning(`${this.SHARD_PREFIX}Ignoring stop command because it is in ${this.state} state`)
+    if (this.state === STATES.STARTING || this.state === STATES.STOPPED) return log.general.warning(`${this.SHARD_PREFIX}Ignoring stop command because of ${this.state} state`)
+    log.general.warning(`${this.SHARD_PREFIX}Discord.RSS has received stop command`)
     storage.initialized = 0
     this.scheduleManager.stopSchedules()
     clearInterval(this._vipInterval)
     listeners.disableAll()
     this.state = STATES.STOPPED
-    log.general.warning(`${this.SHARD_PREFIX}Discord.RSS has received stop command`)
   }
 
   start (callback) {
-    if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because it is in ${this.state} state`)
+    if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
-    const uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI || config.database.uri
-    log.general.info(`Database URI is set to ${uri}. Detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
-    connectDb(err => {
-      if (err) throw err
+    const uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI || config.database.uri // process.env.MONGODB_URI is intended for use by Heroku
+    log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
+    connectDb().then(() => {
       initialize(storage.bot, this.customSchedules, (guildsInfo, missingGuilds, linkDocs, feedData) => {
         // feedData is only defined if config.database.uri is a databaseless folder path
         this._finishInit(guildsInfo, missingGuilds, linkDocs, feedData, callback)
       })
-    })
+    }).catch(err => log.general.error(`Client db connection`, err))
   }
 
   restart (callback) {
-    if (this.state === STATES.STARTING) return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because it is in ${this.state} state`)
+    if (this.state === STATES.STARTING) return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because of ${this.state} state`)
     if (this.state === STATES.READY) this.stop()
     this.start(callback)
   }
@@ -237,37 +255,15 @@ class Client {
     this.state = STATES.READY
     this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules, feedData)
     storage.scheduleManager = this.scheduleManager
-    if (storage.bot.shard && storage.bot.shard.count > 0) dbOps.failedLinks.uniformize(storage.failedLinks, () => process.send({ _drss: true, type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id }))
-    else if (config._vip) {
-      this._vipInterval = setInterval(dbOps.vips.refresh, 600000)
-      this._addVipSchedule()
+    if (storage.bot.shard && storage.bot.shard.count > 0) {
+      dbOps.failedLinks.uniformize(storage.failedLinks).then(() => process.send({ _drss: true, type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id }))
+    } else if (config._vip) {
+      this._vipInterval = setInterval(() => {
+        dbOps.vips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err))
+      }, 600000)
     }
     listeners.createManagers(storage.bot)
     if (callback) callback()
-  }
-
-  _addVipSchedule () {
-    if (config._vip !== true) return
-    const vipLinks = []
-    for (var vipId in storage.vipServers) {
-      const benefactor = storage.vipServers[vipId].benefactor
-      if (benefactor.pledgedAmount < 500) continue
-      const guildRss = storage.currentGuilds.get(vipId)
-      if (!guildRss) continue
-      const rssList = guildRss.sources
-      if (!rssList) continue
-      for (var rssName in rssList) {
-        const link = rssList[rssName].link
-        if (link.includes('feed43.com')) continue
-        vipLinks.push(link)
-        storage.allScheduleWords.push(link)
-        delete storage.scheduleAssigned[rssName]
-      }
-    }
-    if (vipLinks.length > 0) {
-      const newSched = { name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, keywords: vipLinks }
-      this.scheduleManager.addSchedule(newSched)
-    }
   }
 
   disableCommands () {
