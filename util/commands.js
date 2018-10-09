@@ -168,10 +168,19 @@ const list = {
     userPerm: 'MANAGE_CHANNELS',
     description: 'Send server profile as a JSON attachment for personal backups.'
   },
+  rssdump: {
+    initLevel: 1,
+    botPerm: ['ATTACH_FILES', 'EMBED_LINKS'],
+    userPerm: 'MANAGE_CHANNELS',
+    action: 'Raw Placeholders Dump',
+    args: {
+      'original': 'Output the original, untrimmed JSON form instead'
+    }
+  },
   rssstats: {
     initLevel: 2,
     userPerm: 'MANAGE_CHANNELS',
-    description: 'Show statistics on bot performance and size.'
+    description: 'Show simple stats on bot performance and size.'
   },
   rsswebhook: {
     initLevel: 1,
@@ -211,8 +220,17 @@ exports.run = async (bot, message, name) => {
       await m.delete(4000)
     }
 
-    // Check bot's perm
-    if (botPerm && PERMISSIONS.includes(botPerm) && !guild.members.get(bot.user.id).permissionsIn(channel).has(botPerm)) {
+    // Check bot perm
+    let botPermitted
+    if (typeof botPerm === 'string') botPermitted = PERMISSIONS.includes(botPerm) && !guild.members.get(bot.user.id).permissionsIn(channel).has(botPerm)
+    else if (Array.isArray(botPerm)) {
+      for (var i = 0; i < botPerm.length; ++i) {
+        const thisPerm = PERMISSIONS.includes(botPerm) && !guild.members.get(bot.user.id).permissionsIn(channel).has(botPerm)
+        botPermitted = botPermitted === undefined ? thisPerm : botPermitted && thisPerm
+      }
+    }
+
+    if (botPermitted) {
       log.command.warning(`Missing bot permission ${botPerm} for bot, blocked ${message.content}`, guild)
       return await message.channel.send(`This command has been disabled due to missing bot permission \`${botPerm}\`.`)
     }

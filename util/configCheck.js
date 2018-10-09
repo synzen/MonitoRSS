@@ -34,11 +34,12 @@ exports.validChannel = (bot, guildRss, rssName) => {
     log.cycle.warning(`Channel ${source.channel} in guild ${guildId} for feed ${source.link} was not found, skipping source`, guild)
     missingChannelCount[rssName] = missingChannelCount[rssName] ? missingChannelCount[rssName] + 1 : 1
     if (missingChannelCount[rssName] >= 3 && storage.initialized) {
-      dbOps.guildRss.removeFeed(guildRss, rssName, err => {
-        if (err) return log.general.warning(`Unable to remove feed ${source.link} from guild ${guildId} due to excessive missing channels warning`, err)
-        log.general.info(`Removing feed ${source.link} from guild ${guildId} due to excessive missing channels warnings`)
-        delete missingChannelCount[rssName]
-      }, true)
+      dbOps.guildRss.removeFeed(guildRss, rssName, true)
+        .then(() => {
+          log.general.info(`Removed feed ${source.link} from guild ${guildId} due to excessive missing channels warnings`)
+          delete missingChannelCount[rssName]
+        })
+        .catch(err => log.general.warning(`Unable to remove feed ${source.link} from guild ${guildId} due to excessive missing channels warning`, err))
     }
     return false
   } else {
@@ -63,7 +64,8 @@ exports.defaultConfigs = {
     activityName: {type: String, default: ''},
     controllerIds: {type: Array, default: []},
     menuColor: {type: Number, default: 7833753},
-    deleteMenus: {type: Boolean, default: false}
+    deleteMenus: {type: Boolean, default: false},
+    exitOnSocketIssues: {type: Boolean, default: true}
   },
   database: {
     uri: {type: String, default: 'mongodb://localhost/rss'},
@@ -82,11 +84,9 @@ exports.defaultConfigs = {
     timeFallback: {type: Boolean, default: false},
     failLimit: {type: Number, default: 0},
     notifyFail: {type: Boolean, default: true},
-    sendOldMessages: {type: Boolean, default: false},
-    defaultMaxAge: {type: Number, default: 1},
+    sendOldOnFirstCycle: {type: Boolean, default: true},
     cycleMaxAge: {type: Number, default: 1},
     defaultMessage: {type: String, default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
-    showRegexErrs: {type: Boolean, default: true},
     imgPreviews: {type: Boolean, default: true},
     imgLinksExistence: {type: Boolean, default: true},
     checkDates: {type: Boolean, default: true},
@@ -96,7 +96,7 @@ exports.defaultConfigs = {
   advanced: {
     shards: {type: Number, default: 1},
     batchSize: {type: Number, default: 400},
-    processorMethod: {type: String, default: 'single'},
+    processorMethod: {type: String, default: 'concurrent'},
     parallel: {type: Number, default: 2}
   }
 }
@@ -127,9 +127,9 @@ exports.check = userConfig => {
         else if (configName === 'timezone' && !moment.tz.zone(userVal)) checkIfRequired(configCategory, configName, 'Invalid timezone')
         else if (configName === 'menuColor' && userVal > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
         else if (configName === 'sqlType' && (userVal !== 'sqlite3' && userVal !== 'mysql')) checkIfRequired(configCategory, configName, 'Must be either "mysql" or "sqlite3"')
-        else if (configName === 'processorMethod' && userVal !== 'single' && userVal !== 'isolated' && userVal !== 'parallel') checkIfRequired(configCategory, configName, 'Must be either "single", "isolated", or "parallel"')
-        else if (configName === 'activityType' && !ACTIVITY_TYPES.includes(userVal.toUpperCase())) checkIfRequired(configCategory, configName, `Must be one of the following: "${ACTIVITY_TYPES.join('","')}"`)
-        else if (configName === 'status' && !STATUS_TYPES.includes(userVal.toLowerCase())) checkIfRequired(configCategory, configName, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
+        else if (configName === 'processorMethod' && userVal !== 'concurrent' && userVal !== 'parallel-isolated') checkIfRequired(configCategory, configName, 'Must be either "concurrent", or "parallel-isolated"')
+        else if (configName === 'activityType' && !ACTIVITY_TYPES.includes(userVal)) checkIfRequired(configCategory, configName, `Must be one of the following: "${ACTIVITY_TYPES.join('","')}"`)
+        else if (configName === 'status' && !STATUS_TYPES.includes(userVal)) checkIfRequired(configCategory, configName, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
         else if (configName === 'controllerIds') {
           for (var i = 0; i < userVal.length; ++i) {
             if (userVal[i] === '') continue

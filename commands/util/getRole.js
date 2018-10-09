@@ -16,9 +16,11 @@ module.exports = (message, msgHandler, callback) => {
       collector.on('collect', m => {
         msgHandler.add(m)
         if (m.content.toLowerCase() === 'exit') return collector.stop('Role customization menu closed.')
-        if (!channel.guild.roles.find('name', m.content) || channel.guild.roles.findAll('name', m.content).length > 1 || m.content === '@everyone') return channel.send('That is not a valid role. Try again.').then(m => msgHandler.add(m)).catch(err => log.command.warning(`getRole 1`, channel.guild, err))
+        const findSingleRole = channel.guild.roles.find(r => r.name === m.content)
+        const findAllRoles = channel.guild.roles.filter(r => r.name === m.content)
+        if (!findSingleRole || findAllRoles.length > 1 || m.content === '@everyone') return channel.send('That is not a valid role. Try again.').then(m => msgHandler.add(m)).catch(err => log.command.warning(`getRole 1`, channel.guild, err))
         collector.stop()
-        callback(channel.guild.roles.find('name', m.content))
+        callback(findSingleRole)
       })
 
       collector.on('end', (collected, reason) => {

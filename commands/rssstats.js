@@ -53,7 +53,7 @@ module.exports = (bot, message) => {
 
   if (bot.shard && bot.shard.count > 0) visual.addOption(null, null, true)
 
-  visual.send(null, err => {
-    if (err && err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning(`statistics`, message.guild, err))
+  visual.send().catch(err => {
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning(`rssstats 1`, message.guild, err))
   })
 }

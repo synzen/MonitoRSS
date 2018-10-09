@@ -17,22 +17,23 @@ class ScheduleManager {
     // Set up custom schedules
     if (customSchedules) for (var i = 0; i < customSchedules.length; ++i) this.scheduleList.push(new FeedSchedule(this.bot, customSchedules[i]))
     for (var j = 0; j < this.scheduleList.length; ++j) {
-      const cycle = this.scheduleList[j].cycle
-      cycle.on('article', this._queueArticle.bind(this))
-      cycle.on('finish', this._finishSchedule.bind(this))
-      // this._listenToArticles(this.scheduleList[j].cycle)
+      const feedSchedule = this.scheduleList[j]
+      feedSchedule.on('article', this._queueArticle.bind(this))
+      feedSchedule.on('finish', this._finishSchedule.bind(this))
     }
   }
 
-  _queueArticle (article) {
+  async _queueArticle (article) {
     if (debugFeeds.includes(article.rssName)) log.debug.info(`${article.rssName} ScheduleManager queueing article ${article.link} to send`)
-    this.articleMessageQueue.push(article, err => {
-      if (err && config.log.linkErrs === true) {
+    try {
+      await this.articleMessageQueue.send(article)
+    } catch (err) {
+      if (config.log.linkErrs === true) {
         const channel = this.bot.channels.get(article.discordChannelId)
         log.general.warning(`Failed to send article ${article.link}`, channel.guild, channel, err)
         if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``).catch(err => log.general.warning(`Unable to send failed-to-send message for article`, err))
       }
-    })
+    }
   }
 
   _finishSchedule () {
@@ -41,18 +42,17 @@ class ScheduleManager {
 
   addSchedule (schedule) {
     if (!schedule) throw new TypeError('schedule is not defined for addSchedule')
-    if (!schedule.refreshTimeMinutes || !schedule.keywords) throw new TypeError('refreshTimeMinutes or keywords is missing in schedule to addSchedule')
+    if (!schedule.refreshTimeMinutes || (!schedule.keywords && !schedule.rssNames)) throw new TypeError('refreshTimeMinutes, keywords or rssNames is missing in schedule to addSchedule')
     const feedSchedule = new FeedSchedule(storage.bot, schedule)
     this.scheduleList.push(feedSchedule)
-    feedSchedule.cycle.on('article', this._queueArticle.bind(this))
-    feedSchedule.cycle.on('finish', this._finishSchedule.bind(this))
+    feedSchedule.on('article', this._queueArticle.bind(this))
+    feedSchedule.on('finish', this._finishSchedule.bind(this))
     if (storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'addCustomSchedule', schedule: schedule })
   }
 
   run (refreshTime) { // Run schedules with respect to their refresh times
-    for (var x = 0; x < this.scheduleList.length; ++x) {
-      const schedule = this.scheduleList[x]
-      if (schedule.refreshTime === refreshTime) return schedule.run()
+    for (var feedSchedule of this.scheduleList) {
+      if (feedSchedule.refreshTime === refreshTime) return feedSchedule.run()
     }
     // If there is no schedule with that refresh time
     if (storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'scheduleComplete', refreshTime: refreshTime })
@@ -64,9 +64,8 @@ class ScheduleManager {
   }
 
   cyclesInProgress (name) {
-    for (var cycle = 0; cycle < this.scheduleList.length; ++cycle) {
-      const feedSchedule = this.scheduleList[cycle]
-      if (name && feedSchedule.schedule.name === name && feedSchedule.inProgress) return true
+    for (var feedSchedule of this.scheduleList.length) {
+      if (name && feedSchedule.name === name && feedSchedule.inProgress) return true
       else if (feedSchedule.inProgress) return true
     }
     return false

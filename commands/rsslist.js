@@ -28,7 +28,7 @@ module.exports = (bot, message, command) => {
     }
     if (FAIL_LIMIT !== 0) {
       const failCount = failedLinks[feed.link]
-      o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : 'Status: FAILED\n'
+      o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(failed ' + failCount + '/' + FAIL_LIMIT + ' times)' : ''}\n` : 'Status: FAILED\n'
       if (o.status.startsWith('Status: FAILED')) ++failedFeedCount
     }
     if (rssList[rssName].disabled === true) o.status = `Status: DISABLED\n`
@@ -69,11 +69,8 @@ module.exports = (bot, message, command) => {
     list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}Channel: #${channelName}\n${webhook ? 'Webhook: ' + webhook + '\n' : ''}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
   })
 
-  list.send(null, async err => {
-    try {
-      if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-    } catch (err) {
-      log.command.warning(`rsslist`, message.guild, err)
-    }
+  list.send().catch(err => {
+    log.command.warning(`rsslist`, message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsslist 1', message.guild, err))
   })
 }

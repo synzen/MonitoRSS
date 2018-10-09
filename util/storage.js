@@ -6,7 +6,6 @@ const dbSettings = require('../config.json').database
 const articlesExpire = dbSettings.clean === true && (dbSettings.articlesExpire > 0 || dbSettings.articlesExpire === -1) ? dbSettings.articlesExpire : 14
 const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 || dbSettings.guildBackupsExpire === -1 ? dbSettings.guildBackupsExpire : 7
 const mongoose = require('mongoose')
-const collectionIds = {}
 
 function hash (str) {
   // https://stackoverflow.com/questions/6122571/simple-non-secure-hash-function-for-javascript
@@ -28,6 +27,7 @@ function expireDate (type) {
   }
 }
 
+exports.bot = undefined
 exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
 exports.statistics = { fullyUpdated: false } // For individual shards/non sharded
 exports.statisticsGlobal = { fullyUpdated: 0 } // For aggregated statistics across all shards, updated on an interval by eval
@@ -37,13 +37,17 @@ exports.currentGuilds = new Map() // To hold all guild profiles
 exports.deletedFeeds = [] // Any deleted rssNames to check during article sending to see if it was deleted during a cycle
 exports.scheduleAssigned = {} // To track schedule assignment to links
 exports.allScheduleWords = [] // Holds all words across all schedules
+exports.allScheduleRssNames = []
 exports.scheduleManager = undefined
 exports.failedLinks = {}
 exports.blacklistUsers = []
 exports.blacklistGuilds = []
 exports.schemas = {
   guildRss: mongoose.Schema({
-    id: String,
+    id: {
+      type: String,
+      unique: true
+    },
     name: String,
     sources: Object,
     dateFormat: String,
@@ -52,7 +56,10 @@ exports.schemas = {
     vip: Object
   }),
   guildRssBackup: mongoose.Schema({
-    id: String,
+    id: {
+      type: String,
+      unique: true
+    },
     name: String,
     sources: Object,
     dateFormat: String,
@@ -76,7 +83,8 @@ exports.schemas = {
   linkTracker: mongoose.Schema({
     link: String,
     count: Number,
-    shard: Number
+    shard: Number,
+    scheduleName: String
   }),
   feed: mongoose.Schema({
     id: String,
@@ -95,9 +103,7 @@ exports.schemas = {
   vip: mongoose.Schema({
     id: {
       type: String,
-      index: {
-        unique: true
-      }
+      unique: true
     },
     disabled: Boolean,
     name: String,
@@ -123,7 +129,10 @@ exports.schemas = {
   }),
   blacklist: mongoose.Schema({
     isGuild: Boolean,
-    id: String,
+    id: {
+      type: String,
+      unique: true
+    },
     name: String,
     date: {
       type: Date,
@@ -131,17 +140,11 @@ exports.schemas = {
     }
   })
 }
-exports.collectionId = (link, shardId) => {
-  if (shardId != null) {
-    if (collectionIds[shardId] && collectionIds[shardId][link]) return collectionIds[shardId][link]
-  } else if (collectionIds[link]) return collectionIds[link]
-  let res = (shardId != null ? `${shardId}_` : '') + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
+exports.collectionId = (link, shardId, prefix = '') => {
+  if (prefix === 'default') prefix = ''
+  let res = (shardId != null ? `${shardId}_` : '') + prefix.slice(0, 10) + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
   const len = mongoose.connection.name ? (res.length + mongoose.connection.name.length + 1) : res.length + 1 // mongoose.connection.name is undefined if config.database.uri is a databaseless folder path
   if (len > 115) res = res.slice(0, 115)
-  if (shardId != null) {
-    if (!collectionIds[shardId]) collectionIds[shardId] = {}
-    collectionIds[shardId][link] = res
-  } else collectionIds[link] = res
   return res
 }
 exports.models = {
@@ -149,7 +152,8 @@ exports.models = {
   GuildRssBackup: () => mongoose.model('guild_backups', exports.schemas.guildRssBackup),
   FailedLink: () => mongoose.model('failed_links', exports.schemas.failedLink),
   LinkTracker: () => mongoose.model('link_trackers', exports.schemas.linkTracker),
-  Feed: (link, shardId) => mongoose.model(exports.collectionId(link, shardId), exports.schemas.feed, exports.collectionId(link, shardId)), // Third parameter is not let mongoose auto-pluralize the collection name
+  Feed: (link, shardId, scheduleName) => mongoose.model(exports.collectionId(link, shardId, scheduleName), exports.schemas.feed, exports.collectionId(link, shardId, scheduleName)), // Third parameter is not let mongoose auto-pluralize the collection name
+  FeedByCollectionId: collectionId => mongoose.model(collectionId, exports.schemas.feed, collectionId), // Third parameter is not let mongoose auto-pluralize the collection name
   VIP: () => mongoose.model('vips', exports.schemas.vip),
   Blacklist: () => mongoose.model('blacklists', exports.schemas.blacklist)
 }

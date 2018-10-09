@@ -44,7 +44,7 @@ exports.roles = (bot, guildId, rssName) => {
     }
   }
 
-  if (changedInfo) return dbOps.guildRss.update(guildRss)
+  if (changedInfo) return dbOps.guildRss.update(guildRss).catch(err => log.general.warning('checkGuild.roles', guild, err))
 }
 
 exports.names = (bot, guildId) => {
@@ -53,6 +53,6 @@ exports.names = (bot, guildId) => {
 
   if (guildRss.name !== guild.name) {
     guildRss.name = guild.name
-    dbOps.guildRss.update(guildRss)
+    dbOps.guildRss.update(guildRss).catch(err => log.general.warning('checkGuild.names', guild, err))
   }
 }

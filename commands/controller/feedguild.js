@@ -22,6 +22,7 @@ exports.normal = async (bot, message) => {
     else await message.channel.send(`Found guild.`)
   } catch (err) {
     log.controller.warning('feedguild', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('checklimits 1a', message.guild, err))
   }
 }
 
@@ -51,5 +52,6 @@ exports.sharded = async (bot, message, Manager) => {
     await message.channel.send('Could not find any guilds with feeds identified by that rssName.')
   } catch (err) {
     log.controller.warning('feedguild', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('feedguild 1b', message.guild, err))
   }
 }

@@ -4,7 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const config = require('../config.json')
 
-async function removeRole (message, role) {
+function removeRole (message, role) {
   message.member.removeRole(role)
     .then(mem => {
       log.command.info(`Removed role from member`, message.guild, role, message.author)
@@ -96,14 +96,12 @@ module.exports = async (bot, message, command) => {
       ask.addOption(`Other Roles`, desc, true)
     }
 
-    ask.send(null, async (err, data) => {
-      try {
-        if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      } catch (err) {
-        log.command.warning(`unsubme 2`, message.guild, err)
-      }
+    ask.send().catch(err => {
+      log.command.warning(`unsubme 2`, message.guild, err)
+      if (err.code !== 50013) message.channel.send(err.message)
     })
   } catch (err) {
     log.command.warning('unsubme', message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('unsubme 1', message.guild, err))
   }
 }

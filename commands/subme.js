@@ -4,7 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const config = require('../config.json')
 
-async function addRole (message, role, links) {
+function addRole (message, role, links) {
   message.member.addRole(role)
     .then(mem => {
       log.command.info(`Role successfully added to member`, message.guild, role, message.author)
@@ -66,14 +66,12 @@ module.exports = async (bot, message, command) => {
       ask.addOption(title, desc, true)
     }
 
-    ask.send(null, async (err, data) => {
-      try {
-        if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      } catch (err) {
-        log.command.warning(`subme 2`, message.guild, err)
-      }
+    ask.send().catch(err => {
+      log.command.warning(`subme 2`, message.guild, err)
+      if (err.code !== 50013) message.channel.send(err.message)
     })
   } catch (err) {
     log.command.warning(`subme`, message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('subme 1', message.guild, err))
   }
 }
