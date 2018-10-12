@@ -56,20 +56,24 @@ async function inputFilterFn (m, data) {
     } else invalidItems += `\n${item}`
   })
 
+
   if (!role) {
-    log.command.info(`New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}`, m.guild)
+    log.command.info(`New filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}`, m.guild)
+    await dbOps.guildRss.update(guildRss, true)
     let msg = ''
     if (addedList) msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
     if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
     if (addedList) msg += `\nYou may test random articles with \`${config.bot.prefix}rsstest\` to see what articles pass your filters, or specifically send filtered articles with \`${config.bot.prefix}rssfilters\` option 5.`
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } else {
-    log.command.info(`New role filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}.`, m.guild, role)
+    log.command.info(`New role filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}.`, m.guild, role)
+    await dbOps.guildRss.update(guildRss, true)
     let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
     if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
     if (addedList) msg += `\nYou may test your filters on random articles via \`${config.bot.prefix}rsstest\` and see what articles will mention the role.`
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   }
+
   return { __end: true }
 }
 
