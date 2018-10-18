@@ -40,7 +40,6 @@
     "sendOldOnFirstCycle": true,
     "cycleMaxAge": 1,
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
-    "showRegexErrs": true,
     "imgPreviews": true,
     "imgLinksExistence": true,
     "checkDates": true,
