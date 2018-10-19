@@ -158,7 +158,8 @@ module.exports = async (bot, customSchedules, callback) => {
   function finish () {
     const linkTrackerArr = linkTracker.toDocs()
     for (var obj of linkTrackerArr) {
-      if (config.database.clean !== true) {
+      // if (config.database.clean !== true) {
+      if (config.database.articlesExpire === 0) {
         dbOps.feeds.dropIndexes(obj.link, linkTracker.shardId, obj.scheduleName).catch(err => {
           if (err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${obj.link}:`, err)
         })
