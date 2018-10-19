@@ -2,19 +2,23 @@ const log = require('./logger.js')
 const loadCommand = file => require(`../commands/${file}.js`)
 const config = require('../config.json')
 const storage = require('./storage.js')
+const MANAGE_CHANNELS_PERM = 'MANAGE_CHANNELS'
+const EMBED_LINKS_PERM = 'EMBED_LINKS'
+const MANAGE_ROLES_OR_PERMISSIONS_PERM = 'MANAGE_ROLES_OR_PERMISSIONS'
+
 const PERMISSIONS = [
   'CREATE_INSTANT_INVITE',
   'KICK_MEMBERS',
   'BAN_MEMBERS',
   'ADMINISTRATOR',
-  'MANAGE_CHANNELS',
+  MANAGE_CHANNELS_PERM,
   'MANAGE_GUILD',
   'ADD_REACTIONS', // add reactions to messages
   'READ_MESSAGES',
   'SEND_MESSAGES',
   'SEND_TTS_MESSAGES',
   'MANAGE_MESSAGES',
-  'EMBED_LINKS',
+  EMBED_LINKS_PERM,
   'ATTACH_FILES',
   'READ_MESSAGE_HISTORY',
   'MENTION_EVERYONE',
@@ -27,18 +31,18 @@ const PERMISSIONS = [
   'USE_VAD', // use voice activity detection
   'CHANGE_NICKNAME',
   'MANAGE_NICKNAMES', // change nicknames of others
-  'MANAGE_ROLES_OR_PERMISSIONS',
+  MANAGE_ROLES_OR_PERMISSIONS_PERM,
   'MANAGE_WEBHOOKS',
   'MANAGE_EMOJIS'
 ]
 const list = {
   rsshelp: {
     initLevel: 0,
-    userPerm: 'MANAGE_CHANNELS'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssadd: {
     initLevel: 2,
-    userPerm: 'MANAGE_CHANNELS',
+    userPerm: MANAGE_CHANNELS_PERM,
     description: 'Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with `>`.',
     args: {
       '<link>': 'Feed URL.'
@@ -46,28 +50,28 @@ const list = {
   },
   rssremove: {
     initLevel: 2,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Feed Removal',
     description: 'Open a menu to delete a feed from the channel.'
   },
   rsslist: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     description: 'List all active feeds in server.'
   },
   rssmessage: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Message Customization',
     description: "Open a menu to customize a feed's text message."
   },
   rssembed: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     args: {
       fields: 'Customize Fields for the embed.'
     },
@@ -76,28 +80,28 @@ const list = {
   },
   rssfilters: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Global Filter Addition/Removal',
     description: "Open a menu to add or remove global filters from a feed. Messages that do not have any of the words in any of your filters won't be sent to your Discord."
   },
   rssdate: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     description: 'Open a menu to customize how dates are displayed.'
   },
   rssroles: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Role Customization',
     description: 'Open a menu to add global/filtered subscriptions for roles to feeds.'
   },
   rsstest: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     args: {
       'simple': 'Omit the test results and only send the message.'
     },
@@ -106,7 +110,7 @@ const list = {
   },
   subme: {
     initLevel: 1,
-    botPerm: 'MANAGE_ROLES_OR_PERMISSIONS',
+    botPerm: MANAGE_ROLES_OR_PERMISSIONS_PERM,
     args: {
       '<role name/mention>': 'Directly input the role instead of going through the menu.'
     },
@@ -114,7 +118,7 @@ const list = {
   },
   unsubme: {
     initLevel: 1,
-    botPerm: 'MANAGE_ROLES_OR_PERMISSIONS',
+    botPerm: MANAGE_ROLES_OR_PERMISSIONS_PERM,
     args: {
       '<role name/mention>': 'Directly input the role instead of going through the menu.'
     },
@@ -122,41 +126,41 @@ const list = {
   },
   rsscookies: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Cookie Customization'
   },
   rssrefresh: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Refresh Feed',
     description: 'Open a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit.'
   },
   rssoptions: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     description: 'Open a menu for miscellaneous feed options.'
   },
   rsssplit: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Message Splitting Customization',
     description: 'Open a menu to customize message splitting settings.'
   },
   rssmove: {
     initLevel: 1,
-    userPerm: 'MANAGE_CHANNELS',
-    botPerm: 'EMBED_LINKS',
+    userPerm: MANAGE_CHANNELS_PERM,
+    botPerm: EMBED_LINKS_PERM,
     description: 'Open a menu to move a feed into another channel.',
     action: 'Feed Channel Transfer'
   },
   rssclone: {
     initLevel: 1,
-    botPerm: 'EMBED_LINKS',
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: EMBED_LINKS_PERM,
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Feed Settings Cloning',
     description: "Clone a feed's settings to other feed(s).",
     args: {
@@ -165,32 +169,42 @@ const list = {
   },
   rssbackup: {
     initLevel: 1,
-    userPerm: 'MANAGE_CHANNELS',
+    userPerm: MANAGE_CHANNELS_PERM,
     description: 'Send server profile as a JSON attachment for personal backups.'
   },
   rssdump: {
     initLevel: 1,
-    botPerm: ['ATTACH_FILES', 'EMBED_LINKS'],
-    userPerm: 'MANAGE_CHANNELS',
+    botPerm: ['ATTACH_FILES', EMBED_LINKS_PERM],
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Raw Placeholders Dump',
     args: {
-      'original': 'Output the original, untrimmed JSON form instead'
+      'original': 'Output the original, untrimmed JSON form instead.'
     }
   },
   rssstats: {
     initLevel: 2,
-    userPerm: 'MANAGE_CHANNELS',
+    userPerm: MANAGE_CHANNELS_PERM,
     description: 'Show simple stats on bot performance and size.'
   },
   rsswebhook: {
     initLevel: 1,
-    userPerm: 'MANAGE_CHANNELS',
+    userPerm: MANAGE_CHANNELS_PERM,
     action: 'Webhook Connection',
     description: 'Open a menu to connect a webhook to a feed to send messages instead.'
   },
+  rssprefix: {
+    initLevel: 1,
+    userPerm: MANAGE_CHANNELS_PERM,
+    action: 'Commands Prefix Change',
+    description: `Change the prefix used for commands from the default ${config.bot.prefix}.`,
+    args: {
+      '<prefix>': 'The prefix to use.',
+      'reset': `Reset prefix back to default (${config.bot.prefix}).`
+    }
+  },
   rsspatron: {
     initLevel: 2,
-    userPerm: 'MANAGE_CHANNELS'
+    userPerm: MANAGE_CHANNELS_PERM
   }
 }
 // Check for aliases
@@ -206,12 +220,14 @@ exports.list = list
 exports.has = name => list.hasOwnProperty(name)
 exports.run = async (bot, message, name) => {
   const cmdInfo = list[name]
-  if (cmdInfo.aliasFor) name = cmdInfo.aliasFor
-  if (!cmdInfo) return log.command.warning(`Could not run command "${name}" because command data does not exist`)
-  const botPerm = cmdInfo.botPerm
-  const userPerm = cmdInfo.userPerm
   const channel = message.channel
   const guild = bot.guilds.get(channel.guild.id)
+  if (cmdInfo.aliasFor) name = cmdInfo.aliasFor
+  if (!cmdInfo) return log.command.warning(`Could not run command "${name}" because command data does not exist`, guild)
+  const botPerm = cmdInfo.botPerm
+  const userPerm = cmdInfo.userPerm
+  const guildRss = storage.currentGuilds.get(channel.guild.id)
+  if (guildRss && guildRss.prefix && !message.content.startsWith(guildRss.prefix)) return log.command.warning(`Ignoring command ${name} due to incorrect prefix`, guild)
 
   log.command.info(`Used ${message.content}`, guild)
   try {
