@@ -32,7 +32,7 @@ module.exports = async (bot, message, command) => {
       await dbOps.failedLinks.reset(source.link)
       log.command.info(`Refreshed ${source.link} and is back on cycle`, message.guild)
     } catch (err) {
-      await message.channel.send(`Unable to refresh <${source.link}>.\n\n${err.message}`)
+      return await message.channel.send(`Unable to refresh <${source.link}>.\n\n${err.message}`)
     }
     await processing.edit(`Successfully refreshed <${source.link}>. It will now be retrieved on subsequent cycles.`)
   } catch (err) {
