@@ -177,7 +177,7 @@ exports.guildRss = {
   },
   empty: (guildRss, skipRemoval, skipProcessSend) => { // Used on the beginning of each cycle to check for empty sources per guild
     if (guildRss.sources && Object.keys(guildRss.sources).length > 0) return false
-    if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage) { // Delete only if server-specific special settings are not found
+    if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage && !guildRss.prefix) { // Delete only if server-specific special settings are not found
       if (!skipRemoval) {
         exports.guildRss.remove(guildRss, skipProcessSend)
           .then(() => log.general.info(`(G: ${guildRss.id}) 0 sources found with no custom settings deleted`))
