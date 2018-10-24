@@ -233,23 +233,11 @@ module.exports = class Article {
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
-    // Get the specific reddit placeholders {reddit_direct} and {reddit_author}. Still do this for backwards compatibility.
     if (this.reddit) {
-      htmlConvert.fromString(raw.description, {
-        format: {
-          anchor: (node, fn, options) => {
-            const child = node.children[0]
-            if (child && child.data === '[link]') this.reddit_direct = node.attribs.href === this.link ? '' : (node.attribs.href || '')
-            if (this.enabledRegex) this.placeholdersForRegex.push('reddit_direct')
-            if (child && child.data && child.data.startsWith(' /u/')) this.reddit_author = node.attribs.href || ''
-            if (this.enabledRegex) this.placeholdersForRegex.push('reddit_author')
-            // No need to return anything since the output of htmlConvert.fromString isn't needed
-          }
-        }
-      })
+      // Truncate the useless end of reddit description after anchors are removed
       this.fullDescription = this.fullDescription.replace('\n[link] [comments]', '')
-      this.description = this.description.replace('\n[link] [comments]', '') // Truncate the useless end of reddit description after anchors are removed
-    } else this.reddit_direct = this.reddit_author = ''
+      this.description = this.description.replace('\n[link] [comments]', '')
+    }
 
     // Summary
     this.summaryImages = []
@@ -403,7 +391,6 @@ module.exports = class Article {
         content = this.resolvePlaceholderImg(phImageLocs[h]) ? content.replace(phImageLocs[h], this.resolvePlaceholderImg(phImageLocs[h])) : content.replace(phImageLocs[h], '')
       }
     }
-    if (this.reddit) content = content.replace(/{reddit_direct}/g, this.reddit_direct)
     return content
   }
 
@@ -475,8 +462,6 @@ module.exports = class Article {
       .replace(/{description}/g, ignoreCharLimits ? this.fullDescription : this.description)
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
-
-    if (this.reddit) content = content.replace(/{reddit_author}/g, this.reddit_author).replace(/{reddit_direct}/g, this.reddit_direct)
 
     for (var placeholder in regexPlaceholders) {
       for (var customName in regexPlaceholders[placeholder]) {
