@@ -6,7 +6,7 @@ const FlattenedJSON = require('./FlattenedJSON.js')
 const defaultConfigs = require('../util/configCheck.js').defaultConfigs
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
-const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date']
+const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date', 'link']
 const RAW_REGEX_FINDER = new RegExp('{raw:([^{}]+)}', 'g')
 iconv.skipDecodeWarning = true
 
