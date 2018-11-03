@@ -2,6 +2,13 @@
   "name": "Discord.RSS",
   "description": "Discord RSS bot with customizable feeds",
   "website": "https://github.com/synzen/Discord.RSS",
+  "logo": "https://i.imgur.com/11zvdoc.png",
+  "keywords": [
+    "discord",
+    "bot",
+    "rss",
+    "feed"
+  ],
   "addons": [
     "mongolab"
   ],
@@ -15,7 +22,7 @@
       "quantity": 0,
       "size": "free"
     },
-    "worker": {
+    "bot": {
       "quantity": 1,
       "size": "free"
     }
