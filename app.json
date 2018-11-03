@@ -1,0 +1,31 @@
+{
+  "name": "Discord.RSS",
+  "description": "Discord RSS bot with customizable feeds",
+  "logo": "https://i.imgur.com/11zvdoc.png",
+  "website": "https://github.com/synzen/Discord.RSS",
+  "keywords": [
+    "discord",
+    "bot",
+    "rss",
+    "feed"
+  ],
+  "version": "3.0.0",
+  "addons": [
+    "mongolab"
+  ],
+  "env": {
+    "DISCORD_TOKEN": {
+      "description": "Discord bot token https://discordapp.com/developers/applications/"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 0,
+      "size": "free"
+    },
+    "bot": {
+      "quantity": 1,
+      "size": "free"
+    }
+  }
+}

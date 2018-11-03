@@ -4,6 +4,10 @@ Driven by the lack of comprehensive RSS bots available, I have decided to try my
 All documentation can be found at https://github.com/synzen/Discord.RSS/wiki.
 
 
+### Heroku Deployment
+
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+
 ### Setting Up via Cloning Repository
 
 See https://github.com/synzen/Discord.RSS/wiki/Setup

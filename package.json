@@ -8,6 +8,9 @@
   "bugs": {
     "url": "https://github.com/synzen/Discord.RSS/issues"
   },
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "cloudscraper": "^1.4.1",
     "discord.js": "^11.3.2",
@@ -18,8 +21,8 @@
     "mongoose": "^5.0.2",
     "needle": "^1.6.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/synzen/Discord.RSS.git"
+  "engines": {
+    "node": "10.x",
+    "npm": "6.x"
   }
 }
