@@ -37,8 +37,8 @@ class ClientSharded {
     this.shardingManager = shardingManager
     this.shardingManager.on('message', this.messageHandler.bind(this))
     connectDb().then(() => {
-      if (shardingManager.shards.size === 0) shardingManager.spawn(config.advanced.shards, 0) // They may have already been spawned with a predefined ShardingManager
-      shardingManager.shards.forEach((val, key) => this.activeshardIds.push(key))
+      if (shardingManager.shards.size === 0) shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
+      // shardingManager.shards.forEach((val, key) => this.activeshardIds.push(key))
     }).catch(err => log.general.error(`ClientSharded db connection`, err))
   }
 
@@ -47,7 +47,7 @@ class ClientSharded {
     if (message._loopback) return this.shardingManager.broadcast(message).catch(err => handleError(err, message))
     switch (message.type) {
       case 'kill': process.exit(0)
-      case 'customSchedules': this._customSchedulesEvent(message); break
+      case 'spawned': this._spawnedEvent(message); break
       case 'shardReady': this._shardReadyEvent(message); break
       case 'initComplete': this._initCompleteEvent(message); break
       case 'scheduleComplete': this._scheduleCompleteEvent(message); break
@@ -56,12 +56,15 @@ class ClientSharded {
     }
   }
 
-  _customSchedulesEvent (message) {
-    message.customSchedules.forEach(schedule => this.refreshTimes.push(schedule.refreshTimeMinutes))
+  _spawnedEvent (message) {
+    this.activeshardIds.push(message.shardId)
+    if (message.customSchedules) message.customSchedules.forEach(schedule => this.refreshTimes.push(schedule.refreshTimeMinutes))
   }
 
   _shardReadyEvent (message) {
-    if (++this.shardsReady === this.shardingManager.totalShards) this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[0] }) // Send the signal for first shard to initialize
+    if (++this.shardsReady === this.shardingManager.totalShards) {
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[0] }) // Send the signal for first shard to initialize
+    }
   }
   _initCompleteEvent (message) {
     // Account for missing guilds
@@ -101,6 +104,7 @@ class ClientSharded {
           process.exit(1)
         })
     } else if (this.shardsDone < this.shardingManager.totalShards) {
+      console.log('broadcasting next init for', this.activeshardIds[this.shardsDone])
       this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
     }
   }

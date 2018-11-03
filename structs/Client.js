@@ -111,7 +111,9 @@ class Client {
   _defineBot (bot) {
     this.bot = bot
     this.SHARD_PREFIX = bot.shard && bot.shard.count > 0 ? `SH ${bot.shard.id} ` : ''
-    if (this.customSchedules && bot && bot.shard && bot.shard.count > 0 && bot.shard.id === 0) process.send({ _drss: true, type: 'customSchedules', customSchedules: this.customSchedules })
+    if (bot && bot.shard && bot.shard.count > 0) {
+      process.send({ _drss: true, type: 'spawned', shardId: bot.shard.id, customSchedules: this.customSchedules && bot.shard.id === 0 ? this.customSchedules : undefined })
+    }
     storage.bot = bot
     if (bot.shard && bot.shard.count > 0) this.listenToShardedEvents(bot)
     if (!bot.readyAt) bot.once('ready', this._initialize.bind(this))
