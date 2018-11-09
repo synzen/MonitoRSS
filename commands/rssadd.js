@@ -1,6 +1,6 @@
 const channelTracker = require('../util/channelTracker.js')
 const initialize = require('../rss/initialize.js')
-const config = require('../config.json')
+const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
 const storage = require('../util/storage.js')

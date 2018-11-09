@@ -1,5 +1,5 @@
 const storage = require('../../util/storage.js')
-const config = require('../../config.json')
+const config = require('../../config.js')
 const log = require('../../util/logger.js')
 const currentGuilds = storage.currentGuilds
 

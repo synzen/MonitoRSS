@@ -3,7 +3,7 @@ const path = require('path')
 const Discord = require('discord.js')
 const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
-const config = require('../config.json')
+const config = require('../config.js')
 const ScheduleManager = require('./ScheduleManager.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
@@ -95,11 +95,10 @@ class Client {
     else if (token instanceof Discord.ShardingManager) return new ClientSharded(token)
     else if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
-      client.login(!process.env.DRSS_BOT_TOKEN || process.env.DRSS_BOT_TOKEN === 'drss_docker_token' ? (token || 's') : process.env.DRSS_BOT_TOKEN) // Environment variable in Docker container if available
+      client.login(token)
         .then(tok => this._defineBot(client))
         .catch(err => {
           if (err.message.includes('too many guilds')) return new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
-          else if (process.env.DRSS_BOT_TOKEN === 'drss_docker_token' && err.message.includes('Incorrect login')) log.general.error(`${err.message} - Be sure to correctly change the Docker environment variable DRSS_BOT_TOKEN to login.`)
           else {
             log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
             setTimeout(() => this.login.bind(this)(token), 600000)
@@ -236,7 +235,7 @@ class Client {
     if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
-    const uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI || config.database.uri // process.env.MONGODB_URI is intended for use by Heroku
+    const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     connectDb().then(() => {
       initialize(storage.bot, this.customSchedules, (guildsInfo, missingGuilds, linkDocs, feedData) => {
