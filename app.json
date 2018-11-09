@@ -15,6 +15,18 @@
   "env": {
     "DRSS_DISCORD_TOKEN": {
       "description": "Discord BOT token. Get it here: https://discordapp.com/developers/applications/"
+    },
+    "DRSS_BOT_PREFIX": {
+      "description": "The prefix of your RSS feed bot. E.g. summoning the bot is done via ~rsshelp",
+      "value": "~"
+    },
+    "DRSS_FEEDS_REFRESH_TIME_MINUTES": {
+      "description": "Refresh rate of your RSS feed bot.",
+      "value": "15"
+    },
+    "DRSS_FEEDS_DEFAULT_MESSAGE": {
+      "description": "Default message. You can do role pings with <@DISCORD_ROLE_ID>.",
+      "value": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
     }
   },
   "formation": {
