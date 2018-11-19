@@ -1,5 +1,5 @@
 const getArticles = require('../rss/singleMethod.js')
-const config = require('../config.json')
+const config = require('../config.js')
 const configChecks = require('../util/configCheck.js')
 const dbOps = require('../util/dbOps.js')
 const debugFeeds = require('../util/debugFeeds.js').list

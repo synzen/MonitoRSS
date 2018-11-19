@@ -1,4 +1,4 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const iconv = require('iconv-lite')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')

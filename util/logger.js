@@ -7,7 +7,7 @@ const COLORS = {
   reset: '\x1b[0m'
 }
 const CONSTRUCTORS = [Discord.Guild, Discord.TextChannel, Discord.Role, Discord.User]
-const LOG_DATES = require('../config.json').log.dates === true
+const LOG_DATES = require('../config.js').log.dates === true
 const PREFIXES = ['G', 'C', 'R', 'U']
 const TYPES = ['Command', 'Guild', 'Cycle', 'INIT', 'General', 'Debug', 'Controller']
 const LEVELS = ['Error', 'Success', 'Warning', 'Info']

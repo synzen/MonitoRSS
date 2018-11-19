@@ -1,4 +1,4 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
 const TEST_OPTIONS = {split: {prepend: '```md\n', append: '```'}}

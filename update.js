@@ -1,7 +1,7 @@
 // Use this to convert the deprecated old filter references to new ones on any versions past 3.0.0, including dev branch
 
 const fs = require('fs')
-const config = require('./config.json')
+const config = require('./config.js')
 const storage = require('./util/storage.js')
 const mongoose = require('mongoose')
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
