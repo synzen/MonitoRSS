@@ -1,4 +1,4 @@
-const config = require('../../config.json')
+const config = require('../../config.js')
 const testFilters = require('./filters.js')
 const generateEmbeds = require('./embed.js')
 const Article = require('../../structs/Article.js')

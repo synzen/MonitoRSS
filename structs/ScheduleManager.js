@@ -1,4 +1,4 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const FeedSchedule = require('./FeedSchedule.js')
 const debugFeeds = require('../util/debugFeeds.js').list
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')

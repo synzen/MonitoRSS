@@ -1,7 +1,7 @@
 const WIPE_DATABASE = true
 
 const fs = require('fs')
-const config = require('./config.json')
+const config = require('./config.js')
 const storage = require('./util/storage.js')
 const mongoose = require('mongoose')
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']

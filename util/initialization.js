@@ -1,4 +1,4 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const storage = require('./storage.js')
 const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const checkGuild = require('./checkGuild.js')

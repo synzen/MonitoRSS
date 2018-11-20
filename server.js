@@ -1,9 +1,8 @@
 const DiscordRSS = require('./index.js')
-const config = require('./config.json')
+const config = require('./config.js')
 
 const drss = new DiscordRSS.Client({ readFileSchedules: true, setPresence: true })
-let token = process.env.DRSS_DISCORD_TOKEN || config.bot.token
-//DRSS_DISCORD_TOKEN is intended for use by Heroku
+let token = config.bot.token
 
 try {
   const override = require('./settings/configOverride.json')

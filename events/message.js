@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const config = require('../config.json')
+const config = require('../config.js')
 const loadCCommand = name => require(`../commands/controller/${name}.js`)
 const commands = require('../util/commands.js')
 const channelTracker = require('../util/channelTracker.js')

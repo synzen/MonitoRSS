@@ -1,5 +1,5 @@
 const fs = require('fs')
-const config = require('../../config.json')
+const config = require('../../config.js')
 const mongoose = require('mongoose')
 mongoose.set('useCreateIndex', true)
 const log = require('../../util/logger.js')

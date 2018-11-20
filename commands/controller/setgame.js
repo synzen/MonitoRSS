@@ -1,4 +1,4 @@
-const config = require('../../config.json')
+const config = require('../../config.js')
 const log = require('../../util/logger.js')
 
 function getGame (message) {
@@ -31,7 +31,7 @@ exports.sharded = async (bot, message) => {
     bot.shard.broadcastEval(`
       const path = require('path');
       const appDir = path.dirname(require.main.filename);
-      const config = require(appDir + '/config.json');
+      const config = require(appDir + '/config.js');
       this.user.setPresence({ game: { name: ${game === null ? null : `${game}`}, type: 0 } });
       config.bot.game = game;
     `)

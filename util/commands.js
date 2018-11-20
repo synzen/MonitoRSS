@@ -1,6 +1,6 @@
 const log = require('./logger.js')
 const loadCommand = file => require(`../commands/${file}.js`)
-const config = require('../config.json')
+const config = require('../config.js')
 const storage = require('./storage.js')
 const MANAGE_CHANNELS_PERM = 'MANAGE_CHANNELS'
 const EMBED_LINKS_PERM = 'EMBED_LINKS'

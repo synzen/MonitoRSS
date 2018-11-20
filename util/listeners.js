@@ -1,7 +1,7 @@
 const fs = require('fs')
 const eventHandler = evnt => require(`../events/${evnt}.js`)
 const log = require('./logger.js')
-const config = require('../config.json')
+const config = require('../config.js')
 const storage = require('./storage.js')
 const pageControls = require('./pageControls.js')
 const EVENT_HANDLERS = {
