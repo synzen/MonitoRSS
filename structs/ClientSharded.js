@@ -1,4 +1,4 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const storage = require('../util/storage.js')
 const connectDb = require('../rss/db/connect.js')
 const LinkTracker = require('./LinkTracker.js')

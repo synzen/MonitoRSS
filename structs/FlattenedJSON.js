@@ -1,7 +1,7 @@
 const htmlConvert = require('html-to-text')
 const iconv = require('iconv-lite')
 const defaultConfigs = require('../util/configCheck.js').defaultConfigs
-const config = require('../config.json')
+const config = require('../config.js')
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'link', 'pubDate', 'pubdate', 'date']
 
 function cleanup (source, text, encoding) {

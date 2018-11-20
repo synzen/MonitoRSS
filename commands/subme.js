@@ -2,7 +2,7 @@ const getSubList = require('./util/getSubList.js')
 const currentGuilds = require('../util/storage.js').currentGuilds
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
-const config = require('../config.json')
+const config = require('../config.js')
 
 function addRole (message, role, links) {
   message.member.addRole(role)

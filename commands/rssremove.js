@@ -1,4 +1,4 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const dbOps = require('../util/dbOps.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')

@@ -1,5 +1,5 @@
 const RichEmbed = require('discord.js').RichEmbed
-const config = require('../config.json')
+const config = require('../config.js')
 const channelTracker = require('../util/channelTracker.js')
 const MessageCleaner = require('./MessageCleaner.js')
 const pageControls = require('../util/pageControls.js')

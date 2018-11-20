@@ -2,7 +2,7 @@
 *   Used to store data for various aperations across multiple files
 */
 const URL = require('url').URL
-const dbSettings = require('../config.json').database
+const dbSettings = require('../config.js').database
 const articlesExpire = dbSettings.clean === true && (dbSettings.articlesExpire > 0 || dbSettings.articlesExpire === -1) ? dbSettings.articlesExpire : 14
 const guildBackupsExpire = dbSettings.guildBackupsExpire > 0 || dbSettings.guildBackupsExpire === -1 ? dbSettings.guildBackupsExpire : 7
 const mongoose = require('mongoose')

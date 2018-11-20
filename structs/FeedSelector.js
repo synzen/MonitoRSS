@@ -1,4 +1,4 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const commands = require('../util/commands.js').list
 const channelTracker = require('../util/channelTracker.js')
 const pageControls = require('../util/pageControls.js')

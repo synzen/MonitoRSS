@@ -1,7 +1,7 @@
 const log = require('../util/logger.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
-const config = require('../config.json')
+const config = require('../config.js')
 const dbOps = require('../util/dbOps.js')
 
 module.exports = async (bot, message) => {
@@ -21,7 +21,7 @@ module.exports = async (bot, message) => {
 
     if (!guildRss) guildRss = { id: message.guild.id, name: message.guild.name, prefix: prefix }
     else guildRss.prefix = prefix
-    
+
     await dbOps.guildRss.update(guildRss, true)
     await message.channel.send(`Successfully changed commands prefix to "${prefix}".`)
   } catch (err) {

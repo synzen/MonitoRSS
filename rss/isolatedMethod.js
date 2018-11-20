@@ -1,4 +1,4 @@
-const logLinkErrs = require('../config.json').log.linkErrs
+const logLinkErrs = require('../config.js').log.linkErrs
 const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
 const connectDb = require('./db/connect.js')
