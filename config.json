@@ -8,7 +8,7 @@
   "bot": {
     "token": "",
     "enableCommands": true,
-    "prefix": ".",
+    "prefix": "~",
     "status": "online",
     "activityType": "",
     "activityName": "",
