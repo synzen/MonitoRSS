@@ -227,6 +227,7 @@ exports.run = async (bot, message, name) => {
   const botPerm = cmdInfo.botPerm
   const userPerm = cmdInfo.userPerm
   const guildRss = storage.currentGuilds.get(channel.guild.id)
+  console.log( 1)
   if (guildRss && guildRss.prefix && !message.content.startsWith(guildRss.prefix)) return log.command.warning(`Ignoring command ${name} due to incorrect prefix`, guild)
 
   log.command.info(`Used ${message.content}`, guild)
