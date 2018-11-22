@@ -53,7 +53,8 @@ exports.schemas = {
     dateFormat: String,
     dateLanguage: String,
     timezone: String,
-    vip: Object
+    vip: Object,
+    prefix: String
   }),
   guildRssBackup: mongoose.Schema({
     id: {

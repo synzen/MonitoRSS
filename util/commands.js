@@ -1,4 +1,7 @@
+const fs = require('fs')
+const path = require('path')
 const log = require('./logger.js')
+const loadCCommand = name => require(`../commands/controller/${name}.js`)
 const loadCommand = file => require(`../commands/${file}.js`)
 const config = require('../config.js')
 const storage = require('./storage.js')
@@ -217,8 +220,19 @@ if (typeof config.bot.commandAliases === 'object') {
 }
 
 exports.list = list
-exports.has = name => list.hasOwnProperty(name)
-exports.run = async (bot, message, name) => {
+exports.has = message => {
+  const first = message.content.split(' ')[0]
+  const guildRss = storage.currentGuilds.get(message.guild.id) || {}
+  const prefix =  guildRss.prefix || config.bot.prefix
+  return list.hasOwnProperty(first.substr(prefix.length))
+}
+exports.run = async (bot, message) => {
+  const first = message.content.split(' ')[0]
+  const guildRss = storage.currentGuilds.get(message.guild.id)
+  const prefix =  guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
+  const name = first.substr(prefix.length)
+  if (!list.hasOwnProperty(name)) return log.general.warning(`Failed to run ${name} - nonexistent command`, message.guild)
+  
   const cmdInfo = list[name]
   const channel = message.channel
   const guild = bot.guilds.get(channel.guild.id)
@@ -226,8 +240,7 @@ exports.run = async (bot, message, name) => {
   if (!cmdInfo) return log.command.warning(`Could not run command "${name}" because command data does not exist`, guild)
   const botPerm = cmdInfo.botPerm
   const userPerm = cmdInfo.userPerm
-  const guildRss = storage.currentGuilds.get(channel.guild.id)
-  if (guildRss && guildRss.prefix && !message.content.startsWith(guildRss.prefix)) return log.command.warning(`Ignoring command ${name} due to incorrect prefix`, guild)
+  if (guildRss && guildRss.prefix && !message.content.startsWith(guildRss.prefix)) return log.command.warning(`Ignoring command ${name} due to incorrect prefix (${prefix})`, guild)
 
   log.command.info(`Used ${message.content}`, guild)
   try {
@@ -265,4 +278,13 @@ exports.run = async (bot, message, name) => {
   } catch (err) {
     log.command.warning('command.run', guild, err)
   }
+}
+
+exports.runController = (bot, message) => {
+  const first = message.content.split(' ')[0]
+  const guildRss = storage.currentGuilds.get(message.guild.id)
+  const prefix =  guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
+  const command = first.substr(prefix.length)
+  if (fs.existsSync(path.join(__dirname, '..', 'commands', 'controller', `${command}.js`))) loadCCommand(command)[bot.shard && bot.shard.count > 0 ? 'sharded' : 'normal'](bot, message)
+
 }
