@@ -104,7 +104,6 @@ class ClientSharded {
           process.exit(1)
         })
     } else if (this.shardsDone < this.shardingManager.totalShards) {
-      console.log('broadcasting next init for', this.activeshardIds[this.shardsDone])
       this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
     }
   }

@@ -15,6 +15,7 @@ module.exports = (bot, message, command) => {
   let failedFeedCount = 0
 
   const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
+  const refreshRate = storage.vipServers[message.guild.id] && (storage.vipServers[message.guild.id].benefactor.pledgedAmount >= 500 || storage.vipServers[message.guild.id].benefactor.override === true) ? 2 : config.feeds.refreshTimeMinutes
   // Generate the info for each feed as an array, and push into another array
   const currentRSSList = []
   for (var rssName in rssList) {
@@ -46,7 +47,7 @@ module.exports = (bot, message, command) => {
     } else vipDetails += 'Ongoing\n'
   } else vipDetails = '\n'
 
-  let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\u200b\n`
+  let desc = maxFeedsAllowed === 0 ? `${vipDetails}**Refresh Rate:** ${refreshRate} minutes\n\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n**Refresh Rate:** ${refreshRate} minutes [－](https://www.patreon.com/discordrss)\n\u200b\n`
   desc += failedFeedCount > 0 ? `**Attention!** Feeds that have reached ${FAIL_LIMIT} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use *${config.bot.prefix}rssrefresh* to try to reset its status.\u200b\n\u200b\n` : ''
 
   const list = new MenuUtils.Menu(message)
