@@ -56,7 +56,6 @@ async function inputFilterFn (m, data) {
     } else invalidItems += `\n${item}`
   })
 
-
   if (!role) {
     log.command.info(`New filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}`, m.guild)
     await dbOps.guildRss.update(guildRss, true)

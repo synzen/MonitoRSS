@@ -223,16 +223,16 @@ exports.list = list
 exports.has = message => {
   const first = message.content.split(' ')[0]
   const guildRss = storage.currentGuilds.get(message.guild.id) || {}
-  const prefix =  guildRss.prefix || config.bot.prefix
+  const prefix = guildRss.prefix || config.bot.prefix
   return list.hasOwnProperty(first.substr(prefix.length))
 }
 exports.run = async (bot, message) => {
   const first = message.content.split(' ')[0]
   const guildRss = storage.currentGuilds.get(message.guild.id)
-  const prefix =  guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
+  const prefix = guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
   const name = first.substr(prefix.length)
   if (!list.hasOwnProperty(name)) return log.general.warning(`Failed to run ${name} - nonexistent command`, message.guild)
-  
+
   const cmdInfo = list[name]
   const channel = message.channel
   const guild = bot.guilds.get(channel.guild.id)
@@ -283,8 +283,7 @@ exports.run = async (bot, message) => {
 exports.runController = (bot, message) => {
   const first = message.content.split(' ')[0]
   const guildRss = storage.currentGuilds.get(message.guild.id)
-  const prefix =  guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
+  const prefix = guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
   const command = first.substr(prefix.length)
   if (fs.existsSync(path.join(__dirname, '..', 'commands', 'controller', `${command}.js`))) loadCCommand(command)[bot.shard && bot.shard.count > 0 ? 'sharded' : 'normal'](bot, message)
-
 }
