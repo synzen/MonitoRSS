@@ -62,7 +62,7 @@ async function enable (m, data) {
   return { ...data,
     next: {
       menu: nextMenu
-    }}
+    } }
 }
 
 async function selectSetting (m, data) {
@@ -90,7 +90,7 @@ async function selectSetting (m, data) {
     next: {
       text: nextText,
       menu: new MenuUtils.Menu(m, setSetting)
-    }}
+    } }
 }
 
 async function setSetting (m, data) {

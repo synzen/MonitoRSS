@@ -230,13 +230,13 @@ exports.run = async (bot, message) => {
   const first = message.content.split(' ')[0]
   const guildRss = storage.currentGuilds.get(message.guild.id)
   const prefix = guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
-  const name = first.substr(prefix.length)
+  let name = first.substr(prefix.length)
   if (!list.hasOwnProperty(name)) return log.general.warning(`Failed to run ${name} - nonexistent command`, message.guild)
 
   const cmdInfo = list[name]
   const channel = message.channel
   const guild = bot.guilds.get(channel.guild.id)
-  if (cmdInfo.aliasFor) name = cmdInfo.aliasFor
+  if (cmdInfo && cmdInfo.aliasFor) name = cmdInfo.aliasFor
   if (!cmdInfo) return log.command.warning(`Could not run command "${name}" because command data does not exist`, guild)
   const botPerm = cmdInfo.botPerm
   const userPerm = cmdInfo.userPerm

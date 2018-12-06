@@ -18,7 +18,7 @@ To use a different name or avatar url of the webhook when articles are sent for 
     next: {
       text: text,
       embed: null
-    }}
+    } }
 }
 
 async function collectWebhook (m, data) {

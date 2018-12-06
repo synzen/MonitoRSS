@@ -55,7 +55,7 @@ async function selectOption (m, data) {
     chosenProp: chosenProp,
     next: {
       menu: new FeedSelector(m, null, { command: data.command, miscOption: chosenProp })
-    }}
+    } }
 }
 
 module.exports = async (bot, message, command) => {

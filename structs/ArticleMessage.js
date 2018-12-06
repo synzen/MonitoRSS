@@ -1,7 +1,7 @@
 const config = require('../config.js')
 const storage = require('../util/storage.js')
 const currentGuilds = storage.currentGuilds
-const TEST_OPTIONS = {split: {prepend: '```md\n', append: '```'}}
+const TEST_OPTIONS = { split: { prepend: '```md\n', append: '```' } }
 const log = require('../util/logger.js')
 const debugFeeds = require('../util/debugFeeds.js').list
 const translate = require('../rss/translator/translate.js')

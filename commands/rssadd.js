@@ -80,7 +80,7 @@ module.exports = async (bot, message) => {
       if (config.advanced && config.advanced._restrictCookies === true && (!storage.vipServers[message.guild.id] || !storage.vipServers[message.guild.id].allowCookies) && !isBotController(message.author.id)) cookies = undefined
 
       try {
-        const [ addedLink ] = await initialize.addNewFeed({link: link, channel: message.channel, cookies: cookies})
+        const [ addedLink ] = await initialize.addNewFeed({ link: link, channel: message.channel, cookies: cookies })
         if (addedLink) link = addedLink
         channelTracker.remove(message.channel.id)
         log.command.info(`Added ${link}`, message.guild)

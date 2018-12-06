@@ -70,11 +70,11 @@ exports.schemas = {
       type: Date,
       default: Date.now
     },
-    ...guildBackupsExpire > 0 ? {expiresAt: {
+    ...guildBackupsExpire > 0 ? { expiresAt: {
       type: Date,
       default: expireDate('guildBackup'),
       index: { expires: 0 }
-    }} : {}
+    } } : {}
   }),
   failedLink: mongoose.Schema({
     link: String,
@@ -95,11 +95,11 @@ exports.schemas = {
       default: Date.now
     },
     customComparisons: Object,
-    ...articlesExpire > 0 ? {expiresAt: {
+    ...articlesExpire > 0 ? { expiresAt: {
       type: Date,
       default: expireDate('article'),
       index: { expires: 0 }
-    }} : {}
+    } } : {}
   }),
   vip: mongoose.Schema({
     id: {

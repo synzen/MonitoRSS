@@ -12,7 +12,7 @@ class PageContainer {
 
     try {
       const m = await message.channel.fetchMessage(message.id)
-      await m.edit({embed: pageMsg.pages[pageMsg.currentPage]})
+      await m.edit({ embed: pageMsg.pages[pageMsg.currentPage] })
     } catch (err) {
       log.command.warning('pageControls nextPage', err, message.channel)
     }
@@ -25,7 +25,7 @@ class PageContainer {
 
     try {
       const m = await message.channel.fetchMessage(message.id)
-      await m.edit({embed: pageMsg.pages[pageMsg.currentPage]})
+      await m.edit({ embed: pageMsg.pages[pageMsg.currentPage] })
     } catch (err) {
       log.command.warning('pageControls prevpage', err, message.channel)
     }

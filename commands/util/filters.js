@@ -33,7 +33,7 @@ async function selectCategoryFn (m, data) {
 \`!\` - NOT filter modifier to do the opposite of a normal search term. Can be added in front of any term, including one with broad filter mod.
 \`\\\` - Escape symbol added before modifiers to interpret them as regular characters and not modifiers.\n\n
 Filters will be applied as **case insensitive** to feeds. Because of this, all input will be converted to be lowercase.`
-    }}
+    } }
 }
 
 async function inputFilterFn (m, data) {
@@ -135,7 +135,7 @@ async function filterRemoveCategory (m, data, callback) {
     next: {
       text: `Confirm the filter word/phrase you would like to remove in the category \`${chosenFilterType}\` by typing one or multiple word/phrases separated by new lines (case sensitive).`,
       embed: null
-    }}
+    } }
 }
 
 async function removeFilterFn (m, data) {
@@ -213,7 +213,7 @@ exports.remove = (message, guildRss, rssName, role) => {
     if (filterCategory !== 'roleSubscriptions') {
       let value = ''
       for (var filter in filterList[filterCategory]) value += `${filterList[filterCategory][filter]}\n`
-      options.push({title: filterCategory, description: value, inline: true})
+      options.push({ title: filterCategory, description: value, inline: true })
     }
   }
 

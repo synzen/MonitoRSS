@@ -35,7 +35,7 @@ async function selectOptionFn (m, data) {
       text: desc,
       embed: null,
       menu: setOption
-    }}
+    } }
 }
 
 async function setOptionFn (m, data, callback) {

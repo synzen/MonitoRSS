@@ -50,54 +50,54 @@ exports.validChannel = (bot, guildRss, rssName) => {
 
 exports.defaultConfigs = {
   log: {
-    dates: {type: Boolean, default: false},
-    linkErrs: {type: Boolean, default: true},
-    unfiltered: {type: Boolean, default: true},
-    failedFeeds: {type: Boolean, default: true}
+    dates: { type: Boolean, default: false },
+    linkErrs: { type: Boolean, default: true },
+    unfiltered: { type: Boolean, default: true },
+    failedFeeds: { type: Boolean, default: true }
   },
   bot: {
-    token: {type: String, default: undefined},
-    enableCommands: {type: Boolean, default: true},
-    prefix: {type: String, default: undefined},
-    status: {type: String, default: 'online'},
-    activityType: {type: String, default: ''},
-    activityName: {type: String, default: ''},
-    controllerIds: {type: Array, default: []},
-    menuColor: {type: Number, default: 7833753},
-    deleteMenus: {type: Boolean, default: false},
-    exitOnSocketIssues: {type: Boolean, default: true}
+    token: { type: String, default: undefined },
+    enableCommands: { type: Boolean, default: true },
+    prefix: { type: String, default: undefined },
+    status: { type: String, default: 'online' },
+    activityType: { type: String, default: '' },
+    activityName: { type: String, default: '' },
+    controllerIds: { type: Array, default: [] },
+    menuColor: { type: Number, default: 7833753 },
+    deleteMenus: { type: Boolean, default: false },
+    exitOnSocketIssues: { type: Boolean, default: true }
   },
   database: {
-    uri: {type: String, default: 'mongodb://localhost/rss'},
-    clean: {type: Boolean, default: false},
-    articlesExpire: {type: Number, default: 14},
-    guildBackupsExpire: {type: Number, default: 7}
+    uri: { type: String, default: 'mongodb://localhost/rss' },
+    clean: { type: Boolean, default: false },
+    articlesExpire: { type: Number, default: 14 },
+    guildBackupsExpire: { type: Number, default: 7 }
   },
   feeds: {
-    refreshTimeMinutes: {type: Number, default: 10},
-    checkTitles: {type: Boolean, default: false},
-    timezone: {type: String, default: 'America/New_York'},
-    dateFormat: {type: String, default: 'ddd, D MMMM YYYY, h:mm A z'},
-    dateLanguage: {type: String, default: moment.locales()[0]},
-    dateLanguageList: {type: Array, default: ['en']},
-    dateFallback: {type: Boolean, default: false},
-    timeFallback: {type: Boolean, default: false},
-    failLimit: {type: Number, default: 0},
-    notifyFail: {type: Boolean, default: true},
-    sendOldOnFirstCycle: {type: Boolean, default: true},
-    cycleMaxAge: {type: Number, default: 1},
-    defaultMessage: {type: String, default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'},
-    imgPreviews: {type: Boolean, default: true},
-    imgLinksExistence: {type: Boolean, default: true},
-    checkDates: {type: Boolean, default: true},
-    formatTables: {type: Boolean, default: false},
-    toggleRoleMentions: {type: Boolean, default: false}
+    refreshTimeMinutes: { type: Number, default: 10 },
+    checkTitles: { type: Boolean, default: false },
+    timezone: { type: String, default: 'America/New_York' },
+    dateFormat: { type: String, default: 'ddd, D MMMM YYYY, h:mm A z' },
+    dateLanguage: { type: String, default: moment.locales()[0] },
+    dateLanguageList: { type: Array, default: ['en'] },
+    dateFallback: { type: Boolean, default: false },
+    timeFallback: { type: Boolean, default: false },
+    failLimit: { type: Number, default: 0 },
+    notifyFail: { type: Boolean, default: true },
+    sendOldOnFirstCycle: { type: Boolean, default: true },
+    cycleMaxAge: { type: Number, default: 1 },
+    defaultMessage: { type: String, default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}' },
+    imgPreviews: { type: Boolean, default: true },
+    imgLinksExistence: { type: Boolean, default: true },
+    checkDates: { type: Boolean, default: true },
+    formatTables: { type: Boolean, default: false },
+    toggleRoleMentions: { type: Boolean, default: false }
   },
   advanced: {
-    shards: {type: Number, default: 1},
-    batchSize: {type: Number, default: 400},
-    processorMethod: {type: String, default: 'concurrent'},
-    parallel: {type: Number, default: 2}
+    shards: { type: Number, default: 1 },
+    batchSize: { type: Number, default: 400 },
+    processorMethod: { type: String, default: 'concurrent' },
+    parallel: { type: Number, default: 2 }
   }
 }
 

@@ -58,7 +58,7 @@ async function printSubscriptions (message, rssList) {
       if (filteredSubList !== '\n**Filtered Subscriptions:**\n') list += filteredSubList
       msg.addField(feed, list, true)
     }
-    await message.channel.send({embed: msg})
+    await message.channel.send({ embed: msg })
   }
 }
 
@@ -147,13 +147,13 @@ async function filteredSubMenuFn (m, data) {
     return { ...data,
       next: {
         series: filters.add(m, guildRss, rssName, role)
-      }}
+      } }
   } else if (input === '2') {
     if (!source.filters || !source.filters.roleSubscriptions) return m.channel.send(`There are no filtered subscriptions to remove from the feed <${source.link}>.`)
     return { ...data,
       next: {
         series: filters.remove(m, guildRss, rssName, role)
-      }}
+      } }
   } else throw new SyntaxError('That is not a valid option. Try again, or type `exit` to cancel.')
 }
 

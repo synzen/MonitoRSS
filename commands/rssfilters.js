@@ -15,7 +15,7 @@ async function feedSelectorFn (m, data) {
     rssName: rssName,
     next: {
       embed: {
-        description: `**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n`}
+        description: `**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n` }
     }
   }
 }
@@ -73,7 +73,7 @@ module.exports = async (bot, message, command, role) => {
       list.setAuthor('List of Assigned Filters')
         .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n`)
 
-        // Generate the list of filters assigned to a feed and add to embed to be sent
+      // Generate the list of filters assigned to a feed and add to embed to be sent
       for (var filterCat in filterList) {
         let value = ''
         if (filterCat !== 'roleSubscriptions') {

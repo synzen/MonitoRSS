@@ -53,7 +53,7 @@ module.exports = async (bot, message, command) => {
       await dbOps.guildRss.update(guildRss)
       return await message.channel.send(`Successfully removed all cookies for feed ${source.link}`)
     }
-    if (!source.advanced) source.advanced = {cookies: {}}
+    if (!source.advanced) source.advanced = { cookies: {} }
     else source.advanced.cookies = {}
 
     let newCookies = ''
