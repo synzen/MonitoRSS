@@ -47,8 +47,9 @@ function escapeRegExp (str) {
   return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
 }
 
-function regexReplace (string, searchOptions, replacement) {
+function regexReplace (string, searchOptions, replacement, replacementDirect) {
   if (typeof searchOptions !== 'object') throw new TypeError(`Expected RegexOp search key to have an object value, found ${typeof searchOptions} instead`)
+  if (replacementDirect) return string.replace(new RegExp(searchOptions.regex, searchOptions.flags), replacementDirect) // Allow direct input into the search function, and ignore "match" and "group" in the regexOp.search
   const flags = !searchOptions.flags ? 'g' : searchOptions.flags.includes('g') ? searchOptions.flags : searchOptions.flags + 'g' // Global flag must be included to prevent infinite loop during .exec
   const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined
   const groupNum = searchOptions.group !== undefined ? parseInt(searchOptions.group, 10) : undefined
@@ -103,7 +104,7 @@ function evalRegexConfig (source, text, placeholderName) {
       if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
       if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
       const clone = Object.assign({}, customPlaceholders)
-      customPlaceholders[regexOp.name] = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
+      customPlaceholders[regexOp.name] = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement, regexOp.replacementDirect)
     }
   } else return null
   return customPlaceholders
