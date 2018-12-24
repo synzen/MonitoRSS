@@ -5,22 +5,16 @@ module.exports = (source, article) => {
   const ids = [] // Used for role mention toggling
 
   // Get global subscriptions
-  if (source.roleSubscriptions) {
-    const globalSubList = source.roleSubscriptions
-    for (const role in globalSubList) {
-      const id = globalSubList[role].roleID
-      mentions += `<@&${id}> `
-      ids.push(id)
+  const subTypes = ['roleSubscriptions', 'userSubscriptions']
+  subTypes.forEach((key, i) => {
+    const globalSubList = source[key]
+    if (!globalSubList) return
+    for (const item in globalSubList) {
+      const id = globalSubList[item].id
+      mentions += i === 0 ? `<@&${id}> ` : `<@${id}> `
+      if (i === 0) ids.push(id)
     }
-  }
-  if (source.userSubscriptions) {
-    const globalSubList = source.userSubscriptions
-    for (const user in globalSubList) {
-      const id = globalSubList[user].userID
-      mentions += `<@${id}> `
-      ids.push(id)
-    }
-  }
+  })
 
   // Get filtered subscriptions
   if (source.filters) {
