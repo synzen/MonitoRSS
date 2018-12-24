@@ -88,13 +88,13 @@ module.exports = async (bot, customSchedules, callback) => {
       currentGuilds.set(guildId, guildRss)
       checkGuild.names(bot, guildId)
     }
+
     guildsInfo[guildId] = guildRss
     const rssList = guildRss.sources
     for (var rssName in rssList) {
       const source = rssList[rssName]
-
+      checkGuild.roles(bot, guildId, rssName)
       // Assign feeds to specific schedules in scheduleAssigned for use by feedSchedules by rssNames first
-
       if (Object.keys(scheduleRssNameDir).length > 0) {
         for (var scheduleName1 in scheduleRssNameDir) {
           const rssNameList = scheduleRssNameDir[scheduleName1]

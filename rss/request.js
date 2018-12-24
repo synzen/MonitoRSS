@@ -26,7 +26,7 @@ module.exports = async (link, cookies) => {
   if (!serverHeaders || !serverHeaders.includes('cloudflare')) throw new Error(`Bad status code (${endStatus})`)
 
   // Cloudflare is used here
-  if (config._vip) throw new Error(`Bad Cloudflare status code (${endStatus})`)
+  if (config._vip) throw new Error(`Bad Cloudflare status code (${endStatus}). Unsupported on public bot`)
 
   return new Promise((resolve, reject) => {
     cloudscraper.get(link, (err, res, body) => { // For cloudflare

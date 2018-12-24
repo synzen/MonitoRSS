@@ -94,12 +94,12 @@ const list = {
     userPerm: MANAGE_CHANNELS_PERM,
     description: 'Open a menu to customize how dates are displayed.'
   },
-  rssroles: {
+  rssmention: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM,
     action: 'Role Customization',
-    description: 'Open a menu to add global/filtered subscriptions for roles to feeds.'
+    description: 'Open a menu to add global/filtered subscriptions for roles/users to feeds.'
   },
   rsstest: {
     initLevel: 1,

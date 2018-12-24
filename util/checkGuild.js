@@ -10,39 +10,46 @@ exports.roles = (bot, guildId, rssName) => {
   const guild = bot.guilds.get(guildId)
   let changedInfo = false
 
-  // global subs is an array of objects
-  if (rssList[rssName].roleSubscriptions && rssList[rssName].roleSubscriptions.length !== 0) {
-    const globalSubList = rssList[rssName].roleSubscriptions
-    for (var roleIndex in globalSubList) {
-      const role = globalSubList[roleIndex]
-      if (!guild.roles.get(role.roleID)) {
-        guildRss.sources[rssName].roleSubscriptions.splice(roleIndex, 1)
-        if (guildRss.sources[rssName].roleSubscriptions.length === 0) delete guildRss.sources[rssName].roleSubscriptions
-        log.guild.info(`(${role.roleID}, ${role.roleName}) Role has been removed due to guild deletion`, guild)
-        changedInfo = true
-      } else if (guild.roles.get(role.roleID).name !== role.roleName) {
-        role.roleName = guild.roles.get(role.roleID).name
-        changedInfo = true
-      }
-    }
-  }
+  const subscriptionTypeKeyNames = ['roleSubscriptions', 'userSubscriptions']
 
-  // filtered subs is an object
-  if (rssList[rssName].filters && rssList[rssName].filters.roleSubscriptions && Object.keys(rssList[rssName].filters.roleSubscriptions).length > 0) {
-    const filteredSubList = rssList[rssName].filters.roleSubscriptions
-    for (var roleID in filteredSubList) {
-      if (!guild.roles.get(roleID)) {
-        delete guildRss.sources[rssName].filters.roleSubscriptions[roleID]
-        if (Object.keys(guildRss.sources[rssName].filters.roleSubscriptions).length === 0) delete guildRss.sources[rssName].filters.roleSubscriptions
-        if (Object.keys(guildRss.sources[rssName].filters).length === 0) delete guildRss.sources[rssName].filters
-        log.guild.info(`(${roleID}, ${filteredSubList[roleID].roleName}) Role has been removed due to guild deletion`, guild)
-        changedInfo = true
-      } else if (guild.roles.get(roleID).name !== filteredSubList[roleID].roleName) {
-        filteredSubList[roleID].roleName = guild.roles.get(roleID).name
-        changedInfo = true
+  // global subs is an array of objects
+  subscriptionTypeKeyNames.forEach((key, index) => {
+    if (rssList[rssName][key] && rssList[rssName][key].length !== 0) {
+      const globalSubList = rssList[rssName][key]
+      for (const roleIndex in globalSubList) {
+        const roleOrUser = globalSubList[roleIndex]
+        const retrieved = index === 0 ? guild.roles.get(roleOrUser.id) : guild.members.get(roleOrUser.id).user
+        if (!retrieved) {
+          guildRss.sources[rssName][key].splice(roleIndex, 1)
+          if (guildRss.sources[rssName][key].length === 0) delete guildRss.sources[rssName][key]
+          log.guild.info(`(${roleOrUser.id}, ${roleOrUser.name}) ${index === 0 ? 'Role' : 'User'} has been removed due to guild deletion`, guild)
+          changedInfo = true
+        } else if ((index === 0 ? retrieved.name : retrieved.username) !== roleOrUser.name) {
+          roleOrUser.name = index === 0 ? retrieved.name : retrieved.username
+          changedInfo = true
+        }
       }
     }
-  }
+
+    // filtered subs is an object
+    if (rssList[rssName].filters && rssList[rssName].filters[key] && Object.keys(rssList[rssName].filters[key]).length > 0) {
+
+      const filteredSubList = rssList[rssName].filters[key]
+      for (const roleOrUserID in filteredSubList) {
+        const retrieved = index === 0 ? guild.roles.get(roleOrUserID) : guild.members.get(roleOrUserID).user
+        if (!retrieved) {
+          delete guildRss.sources[rssName].filters[key][roleOrUserID]
+          if (Object.keys(guildRss.sources[rssName].filters[key]).length === 0) delete guildRss.sources[rssName].filters[key]
+          if (Object.keys(guildRss.sources[rssName].filters).length === 0) delete guildRss.sources[rssName].filters
+          log.guild.info(`(${roleOrUserID}, ${filteredSubList[roleOrUserID].name}) ${index === 0 ? 'Role' : 'User'} has been removed due to guild deletion`, guild)
+          changedInfo = true
+        } else if ((index === 0 ? retrieved.name : retrieved.username) !== filteredSubList[roleOrUserID].name) {
+          filteredSubList[roleOrUserID].name = index === 0 ? retrieved.name : retrieved.username
+          changedInfo = true
+        }
+      }
+    }
+  })
 
   if (changedInfo) return dbOps.guildRss.update(guildRss).catch(err => log.general.warning('checkGuild.roles', guild, err))
 }

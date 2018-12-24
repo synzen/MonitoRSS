@@ -37,11 +37,13 @@ Filters will be applied as **case insensitive** to feeds. Because of this, all i
 }
 
 async function inputFilterFn (m, data) {
-  const { guildRss, rssName, role, filterList, chosenFilterType } = data
+  const { guildRss, rssName, role, user, filterList, chosenFilterType } = data
   const source = guildRss.sources[rssName]
   const input = m.content
   // Global subs are always deleted if filtered subs are added
-  if (!role) delete source.roleSubscriptions
+  if (role) delete source.roleSubscriptions
+  else if (user) delete source.userSubscriptions
+
   if (!filterList[chosenFilterType]) filterList[chosenFilterType] = []
   const editing = await m.channel.send(`Updating filters...`)
 
@@ -56,7 +58,7 @@ async function inputFilterFn (m, data) {
     } else invalidItems += `\n${item}`
   })
 
-  if (!role) {
+  if (!user && !role) {
     log.command.info(`New filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}`, m.guild)
     await dbOps.guildRss.update(guildRss, true)
     let msg = ''
@@ -65,33 +67,43 @@ async function inputFilterFn (m, data) {
     if (addedList) msg += `\nYou may test random articles with \`${config.bot.prefix}rsstest\` to see what articles pass your filters, or specifically send filtered articles with \`${config.bot.prefix}rssfilters\` option 5.`
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } else {
-    log.command.info(`New role filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}.`, m.guild, role)
+    log.command.info(`New ${user ? 'user' : 'role'} filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}.`, m.guild, user || role)
     await dbOps.guildRss.update(guildRss, true)
-    let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
+    let msg = `Subscription updated for ${user ? 'user' : 'role'} \`${user ? `${user.username}#${user.discriminator}` : role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
     if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-    if (addedList) msg += `\nYou may test your filters on random articles via \`${config.bot.prefix}rsstest\` and see what articles will mention the role.`
+    if (addedList) msg += `\nYou may test your filters on random articles via \`${config.bot.prefix}rsstest\` and see what articles will mention the ${user ? 'user' : 'role'}.`
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   }
 
   return { __end: true }
 }
 
-exports.add = (message, guildRss, rssName, role) => {
+exports.add = (message, guildRss, rssName, role, user) => {
   const selectCategory = new MenuUtils.Menu(message, selectCategoryFn, { numbered: false })
   const inputFilter = new MenuUtils.Menu(message, inputFilterFn)
   const source = guildRss.sources[rssName]
 
   if (!source.filters) source.filters = {}
-  if (role && !source.filters.roleSubscriptions) source.filters.roleSubscriptions = {}
-  if (role && !source.filters.roleSubscriptions[role.id]) {
-    source.filters.roleSubscriptions[role.id] = {
-      roleName: role.name,
-      filters: {}
+  if (user) {
+    if (!source.filters.userSubscriptions) source.filters.userSubscriptions = {}
+    if (!source.filters.userSubscriptions[user.id]) {
+      source.filters.userSubscriptions[user.id] = {
+        name: user.username,
+        filters: {}
+      }
+    }
+  } else if (role) {
+    if (!source.filters.roleSubscriptions) source.filters.roleSubscriptions = {}
+    if (!source.filters.roleSubscriptions[role.id]) {
+      source.filters.roleSubscriptions[role.id] = {
+        name: role.name,
+        filters: {}
+      }
     }
   }
 
   // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
-  const filterList = (role) ? source.filters.roleSubscriptions[role.id].filters : source.filters
+  const filterList = user ? source.filters.userSubscriptions[user.id].filters : role ? source.filters.roleSubscriptions[role.id].filters : source.filters
   const options = []
   for (var x = 0; x < filterTypes.length; ++x) {
     options.push({ title: filterTypes[x].show, description: '\u200b' })
@@ -100,6 +112,7 @@ exports.add = (message, guildRss, rssName, role) => {
   const data = { guildRss: guildRss,
     rssName: rssName,
     role: role,
+    user: user,
     filterList: filterList,
     next:
     { embed: {
@@ -139,7 +152,7 @@ async function filterRemoveCategory (m, data, callback) {
 }
 
 async function removeFilterFn (m, data) {
-  const { guildRss, rssName, role, chosenFilterType, filterList } = data
+  const { guildRss, rssName, role, user, chosenFilterType, filterList } = data
   const source = guildRss.sources[rssName]
   // Select the word/phrase filter here from that filter category
   const removeList = m.content.trim().split('\n').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Items to be removed
@@ -169,48 +182,55 @@ async function removeFilterFn (m, data) {
   }
 
   // Check after removal if there are any empty objects
-  if (role && Object.keys(filterList).length === 0) delete source.filters.roleSubscriptions[role.id]
-  if (role && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
+  if (user) {
+    if (Object.keys(filterList).length === 0) delete source.filters.userSubscriptions[user.id]
+    if (Object.keys(source.filters.userSubscriptions).length === 0) delete source.filters.userSubscriptions
+  } else if (role) {
+    if (Object.keys(filterList).length === 0) delete source.filters.roleSubscriptions[role.id]
+    if (Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
+  }
   if (Object.keys(source.filters).length === 0) delete source.filters
-
-  if (!role) {
+  if (!user && !role) {
     let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
     if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
     log.command.info(`Removing filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild)
     await dbOps.guildRss.update(guildRss)
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`filterRemove 8a`, m.guild, err))
   } else {
-    let msg = `Subscription updated for role \`${role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
+    let msg = `Subscription updated for ${user ? 'user' : 'role'} \`${user ? `${user.username}#${user.discriminator}` : role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
     if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-    log.command.info(`Removing role filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild, role)
+    log.command.info(`Removing ${user ? 'user' : 'role'} filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild, user || role)
     await dbOps.guildRss.update(guildRss)
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`filterRemove 8b`, m.guild, err))
   }
   return { __end: true }
 }
 
-exports.remove = (message, guildRss, rssName, role) => {
+exports.remove = (message, guildRss, rssName, role, user) => {
   const source = guildRss.sources[rssName]
-  const filterList = !role ? source.filters : source.filters.roleSubscriptions[role.id] ? source.filters.roleSubscriptions[role.id].filters : undefined // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
+  let filterList
+  if (!role && !user) filterList = source.filters
+  else if (user && source.filters.userSubscriptions && source.filters.userSubscriptions[user.id]) filterList = source.filters.userSubscriptions[user.id].filters
+  else if (role && source.filters.roleSubscriptions && source.filters.roleSubscriptions[role.id]) filterList = source.filters.roleSubscriptions[role.id].filters
   const selectCategory = new MenuUtils.Menu(message, filterRemoveCategory, { numbered: false })
   const removeFilter = new MenuUtils.Menu(message, removeFilterFn)
 
   if (!filterList || typeof filterList !== 'object') {
-    return message.channel.send(`There are no filters to remove for ${source.link}${role ? ` for the role \`${role.name}\`` : ''}.`).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
+    return message.channel.send(`There are no filters to remove for ${source.link}${user ? ` for the user \`${user.username}#${user.discriminator}\`` : role ? ` for the role \`${role.name}\`` : ''}.`).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
   }
 
   let isEmptyFilter = true
 
   // Find any existing filter category objects
   if (source.filters && typeof source.filters === 'object') {
-    for (var prop in source.filters) if (prop !== 'roleSubscriptions') isEmptyFilter = false
+    for (var prop in source.filters) if (prop !== 'roleSubscriptions' && prop !== 'userSubscriptions') isEmptyFilter = false
   }
 
-  if (!role && isEmptyFilter) return message.channel.send(`There are no filters to remove for ${source.link}.`).catch(err => log.command.warning(`filterRemove 2`, message.guild, err))
+  if (!role && !user && isEmptyFilter) return message.channel.send(`There are no filters to remove for ${source.link}.`).catch(err => log.command.warning(`filterRemove 2`, message.guild, err))
 
   const options = []
   for (var filterCategory in filterList) {
-    if (filterCategory !== 'roleSubscriptions') {
+    if (filterCategory !== 'roleSubscriptions' && filterCategory !== 'userSubscriptions') {
       let value = ''
       for (var filter in filterList[filterCategory]) value += `${filterList[filterCategory][filter]}\n`
       options.push({ title: filterCategory, description: value, inline: true })
@@ -220,6 +240,7 @@ exports.remove = (message, guildRss, rssName, role) => {
   const data = { guildRss: guildRss,
     rssName: rssName,
     role: role,
+    user: user,
     filterList: filterList,
     next:
     { embed: {
