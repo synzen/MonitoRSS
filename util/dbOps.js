@@ -264,11 +264,19 @@ exports.failedLinks = {
       if (!rssList) return
       for (var i in rssList) {
         const source = rssList[i]
-        const channel = storage.bot.channels.get(source.channel)
+        const channel = guildRss.sendAlertsTo || storage.bot.channels.get(source.channel)
         if (source.link === link && channel && config._skipMessages !== true) {
-          const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
-          const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
-          if (config._skipMessages !== true) channel.send(m, attach && currentGuilds.has(channel.guild.id) ? new Discord.Attachment(Buffer.from(JSON.stringify(currentGuilds.get(channel.guild.id), null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
+          if (Array.isArray(channel)) { // Each array item is a user id
+            channel.forEach(userId => {
+              const user = storage.bot.users.get(userId)
+              if (user && typeof message === 'string' && message.includes('connection failure limit')) user.send(`**ATTENTION** - Feed link <${link}> in channel <#${source.channel}> has reached the connection failure limit in server named \`${guildRss.name}\` with ID \`${guildRss.id}\`, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use \`${guildRss.prefix || config.bot.prefix}rsslist\` in your server for more information.`).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (a)`, user, err))
+              else if (user) user.send(message).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (b)`, user, err))
+            })
+          } else {
+            const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
+            const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
+            if (config._skipMessages !== true) channel.send(m, attach && currentGuilds.has(channel.guild.id) ? new Discord.Attachment(Buffer.from(JSON.stringify(currentGuilds.get(channel.guild.id), null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
+          }
         }
       }
     })

@@ -33,7 +33,6 @@ exports.roles = (bot, guildId, rssName) => {
 
     // filtered subs is an object
     if (rssList[rssName].filters && rssList[rssName].filters[key] && Object.keys(rssList[rssName].filters[key]).length > 0) {
-
       const filteredSubList = rssList[rssName].filters[key]
       for (const roleOrUserID in filteredSubList) {
         const retrieved = index === 0 ? guild.roles.get(roleOrUserID) : guild.members.get(roleOrUserID).user
