@@ -47,7 +47,6 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
       default:
         return await message.channel.send(explanation(guildRss))
     }
-    // if (contentArray[1] !== 'add' || contentArray[1] !== 'remove' || contentArray[1] !== 'list') return await message.channel.send(`This command adds users for direct messaging (instead of posting such alerts to the feed's channel by default) when there are any warnings or alerts concerning feeds, such as feed limit changes or feed failures. The correct syntaxes are:\n\n\`${guildRss.prefix || config.bot.prefix}rssalert add <user id>\` - Add a user to alerted.\n\`${guildRss.prefix || config.bot.prefix}rssalert remove <user id>\` - Remove a user currently receiving alerts\n\`${guildRss.prefix || config.bot.prefix}rssalert list\` - Show all users currently receiving alerts`)
   } catch (err) {
     log.command.warning('rssalert', err, true)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssalert 1', message.guild, err))
