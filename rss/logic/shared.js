@@ -92,6 +92,7 @@ module.exports = (data, callback) => {
     const source = rssList[rssName]
     const channelId = source.channel
     const customComparisons = rssList[rssName].customComparisons // Array of names
+    const sentTitles = []
 
     if (Array.isArray(customComparisons)) {
       for (var n = customComparisons.length - 1; n >= 0; --n) {
@@ -126,7 +127,7 @@ module.exports = (data, callback) => {
       } else if (dbIds.includes(article._id)) {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched.`)
         seenArticle(true, article)
-      } else if (checkTitle && dbTitles.includes(article.title)) {
+      } else if (checkTitle && (dbTitles.includes(article.title) || sentTitles.includes(article.title))) {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID.`)
         seenArticle(true, article)
       } else if (checkDate && ((!article.pubdate || article.pubdate.toString() === 'Invalid Date') || (article.pubdate && article.pubdate.toString() !== 'Invalid Date' && article.pubdate < cutoffDay))) {
@@ -134,12 +135,16 @@ module.exports = (data, callback) => {
         seenArticle(true, article)
       } else {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) to queue for send`)
+        if (checkTitle && article.title) sentTitles.push(article.title)
         seenArticle(false, article)
       }
     }
 
     function seenArticle (seen, article) {
-      if (runNum === 0 && config.feeds.sendOldOnFirstCycle === false) return ++processedArticles === totalArticles ? finishSource() : null // Stops here if it already exists in table, AKA "seen"
+      if (runNum === 0 && config.feeds.sendOldOnFirstCycle === false) {
+        if (debugFeeds && debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), config.feeds.sendOldOnFirstCycle is false`)
+        return ++processedArticles === totalArticles ? finishSource() : null // Stops here if it already exists in table, AKA "seen"
+      }
 
       // Check for extra user-specified comparisons
       if (seen) {
