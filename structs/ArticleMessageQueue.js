@@ -11,7 +11,8 @@ function toggleRoleMentionable (mentionable, channelId, roleIds, callback) {
   const guild = channel.guild
   for (var x = roleIds.length - 1; x >= 0; --x) {
     const role = guild.roles.get(roleIds[x])
-    if (!role || guild.me.highestRole.comparePositionTo(role) <= 0 || role.mentionable === mentionable) {
+    // Other checks may include guild.me.highestRole.comparePositionTo(role) <= 0, and whether the bot has manage roles permission, but don't check them and let the error show in the message
+    if (!role || role.mentionable === mentionable) { 
       if (++done >= roleIds.length) return callback ? callback() : null
       continue
     }
@@ -19,7 +20,7 @@ function toggleRoleMentionable (mentionable, channelId, roleIds, callback) {
       if (++done >= roleIds.length && callback) callback()
     }).catch(err => {
       log.general.error(`Unable to toggle role ${role.id} (${role.name}) mentionable to ${mentionable} for article delivery`, guild, err)
-      if (++done >= roleIds.length && callback) callback()
+      if (++done >= roleIds.length && callback) callback(err.code === 50013 ? new Error(err.message + ` (Name: ${role.name}, ID: ${role.id}`) : null)
     })
   }
 }
@@ -59,19 +60,25 @@ class ArticleMessageQueue {
       if (channelQueue.length === 0) continue
       const cId = channelId
       let roleIds = []
-      for (var x = 0; x < channelQueue.length; ++x) roleIds = roleIds.concat(channelQueue[x].subscriptionIds)
-      toggleRoleMentionable(true, cId, roleIds, () => {
-        this._sendDelayedQueue(cId, channelQueue, roleIds)
+      for (var x = 0; x < channelQueue.length; ++x) {
+        const messageSubscriptionIds = channelQueue[x].subscriptionIds
+        messageSubscriptionIds.forEach(id => {
+          if (!roleIds.includes(id)) roleIds.push(id)
+        })
+      }
+      toggleRoleMentionable(true, cId, roleIds, err => {
+        this._sendDelayedQueue(cId, channelQueue, roleIds, err)
       })
     }
   }
 
-  async _sendDelayedQueue (channelId, channelQueue, roleIds) {
+  async _sendDelayedQueue (channelId, channelQueue, roleIds, err) {
     const articleMessage = channelQueue.shift()
     try {
+      if (err) articleMessage.text += `\n\nFailed to toggle role mentions: ${err.message}`
       await articleMessage.send()
       if (channelQueue.length === 0) toggleRoleMentionable(false, channelId, roleIds)
-      else this._sendDelayedQueue(channelId, channelQueue, roleIds)
+      else this._sendDelayedQueue(channelId, channelQueue, roleIds, err)
     } catch (err) {
       log.general.error('Failed to send a delayed articleMessage', err, articleMessage.channel ? articleMessage.channel.guild : undefined, true)
     }
