@@ -7,7 +7,7 @@ const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
 const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
 
 module.exports = async () => {
-  const uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI || config.database.uri // process.env.MONGODB_URI is intended for use by Heroku
+  const uri = config.database.uri
   if (!uri.startsWith('mongo')) return // Means filebase sources will be used
   if (mongoose.connection.readyState === 1) return
 
