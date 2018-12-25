@@ -10,6 +10,7 @@
   },
   "scripts": {
     "start": "node server.js",
+    "dev": "node -r dotenv/config server.js",
     "eslint": "eslint --fix ."
   },
   "dependencies": {
@@ -32,6 +33,7 @@
     "npm": "6.x"
   },
   "devDependencies": {
+    "dotenv": "^6.2.0",
     "eslint": "^5.10.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.14.0",
