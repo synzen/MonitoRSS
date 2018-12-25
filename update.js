@@ -32,8 +32,7 @@ if (Object.keys(CON_SETTINGS).length > 0) {
   }
 }
 
-const uri = process.env.DRSS_DATABASE_URI || config.database.uri
-
+const uri = config.database.uri
 mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, ...CON_SETTINGS, ...buffers })
 const db = mongoose.connection
 
