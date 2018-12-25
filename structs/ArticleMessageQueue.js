@@ -19,8 +19,8 @@ function toggleRoleMentionable (mentionable, channelId, roleIds, callback) {
     role.setMentionable(mentionable).then(r => {
       if (++done >= roleIds.length && callback) callback()
     }).catch(err => {
-      log.general.error(`Unable to toggle role ${role.id} (${role.name}) mentionable to ${mentionable} for article delivery`, guild, err)
-      if (++done >= roleIds.length && callback) callback(err.code === 50013 ? new Error(err.message + ` (Name: ${role.name}, ID: ${role.id}`) : null)
+      // log.general.error(`Unable to toggle role ${role.id} (${role.name}) mentionable to ${mentionable} for article delivery`, guild, err
+      if (++done >= roleIds.length && callback) callback(err.code === 50013 ? new Error(err.message + ` (Name: ${role.name}, ID: ${role.id}). Either the role is above my role, or I don't have manage roles permission.`) : null)
     })
   }
 }
