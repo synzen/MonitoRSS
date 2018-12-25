@@ -205,6 +205,16 @@ const list = {
       'reset': `Reset prefix back to default (${config.bot.prefix}).`
     }
   },
+  rssalert: {
+    initLevel: 1,
+    userPerm: MANAGE_CHANNELS_PERM,
+    description: 'Set up user direct messaging for feed warnings/failures',
+    args: {
+      'add <user id>': 'Add a user to direct message.',
+      'remove <user id>': 'Remove a user from direct messaging.',
+      'list': 'List the current users enabled for direct messaging.'
+    }
+  },
   rsspatron: {
     initLevel: 2,
     userPerm: MANAGE_CHANNELS_PERM

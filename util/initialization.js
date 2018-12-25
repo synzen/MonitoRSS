@@ -10,7 +10,7 @@ const FAIL_LIMIT = config.feeds.failLimit
 
 function reachedFailCount (link) {
   const failed = typeof storage.failedLinks[link] === 'string' || (typeof storage.failedLinks[link] === 'number' && storage.failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
-  if (failed && config.log.failedFeeds !== false) log.init.warning('Feeds with link', link, 'will be skipped due to reaching fail limit (', FAIL_LIMIT, ')')
+  if (failed && config.log.failedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
   return failed
 }
 

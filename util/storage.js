@@ -49,6 +49,7 @@ exports.schemas = {
       unique: true
     },
     name: String,
+    sendAlertsTo: [String],
     sources: Object,
     dateFormat: String,
     dateLanguage: String,
@@ -62,6 +63,7 @@ exports.schemas = {
       unique: true
     },
     name: String,
+    sendAlertsTo: [String],
     sources: Object,
     dateFormat: String,
     dateLanguage: String,
