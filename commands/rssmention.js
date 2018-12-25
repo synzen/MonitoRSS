@@ -309,7 +309,7 @@ module.exports = async (bot, message, command) => {
 
     const rssList = guildRss.sources
     const selectOption = new MenuUtils.Menu(message, selectOptionFn)
-      .setDescription(`\n**Current Channel:** #${message.channel.name}\n\nSelect an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n`)
+      .setDescription(`\n**Current Channel:** #${message.channel.name}\n\nAdding a subscription for a user or role will automatically add their mentions in the \`{subscribers}\` placeholder. If the subscriber is a role, then the role will be added to the list of eligible roles for role mention toggling, and also for the commands ${guildRss.prefix || config.bot.prefix}subme/unsubme.\n\nSelect an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n`)
       .setAuthor('Subscription Options')
       .addOption(`Add/Remove Global Subscriptions for a Role or User`, `Enable mentions for a role/user for all delivered articles of this feed.\n*Using global subscriptions will remove filtered subscriptions if enabled for that role/user.*`)
       .addOption(`Add/Remove Filtered Subscriptions for a Role or User`, `Create role/user-specific filters where only selected articles will mention a role/user.\n*Using filtered subscriptions will remove global subscriptions if enabled for that role/user.*`)
