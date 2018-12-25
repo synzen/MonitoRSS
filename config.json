@@ -44,7 +44,8 @@
     "imgLinksExistence": true,
     "checkDates": true,
     "formatTables": false,
-    "toggleRoleMentions": false
+    "toggleRoleMentions": false,
+    "decode": {}
   },
   "advanced": {
     "shards": 2,

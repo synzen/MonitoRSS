@@ -1,5 +1,5 @@
 const logLinkErrs = require('../config.js').log.linkErrs
-const FeedParser = require('feedparser')
+const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const requestStream = require('./request.js')
 const connectDb = require('./db/connect.js')
 const processSources = require('./logic/shared.js')
@@ -7,7 +7,7 @@ const log = require('../util/logger.js')
 
 function getFeed (data, callback) {
   const { link, rssList, uniqueSettings } = data
-  const feedparser = new FeedParser()
+  const feedparser = new DecodedFeedParser(null, link)
   const articleList = []
 
   const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined

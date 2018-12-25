@@ -63,7 +63,7 @@ exports.addToDb = async (articleList, link, customTitle) => {
 
 exports.addNewFeed = async (settings, customTitle) => {
   let link = settings.link
-  const { channel, cookies } = settings
+  const { channel, cookies, encoding } = settings
   const feedparser = new FeedParser()
   const articleList = []
   let errored = false // Sometimes feedparser emits error twice
@@ -139,7 +139,7 @@ exports.addNewFeed = async (settings, customTitle) => {
             channel: channel.id,
             addedOn: new Date()
           }
-
+          if (encoding) rssList[rssName].encoding = encoding
           if (cookies) rssList[rssName].advanced = { cookies: cookies }
         } else {
           guildRss = {
@@ -153,6 +153,7 @@ exports.addNewFeed = async (settings, customTitle) => {
             channel: channel.id,
             addedOn: new Date()
           }
+          if (encoding) guildRss.sources[rssName].encoding = encoding
           if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
 
           currentGuilds.set(channel.guild.id, guildRss)

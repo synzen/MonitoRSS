@@ -1,6 +1,7 @@
 // Check for invalid configs on startup and at the beginning of each feed retrieval cycle
 const moment = require('moment-timezone')
 const log = require('./logger.js')
+const iconv = require('iconv-lite')
 const dbOps = require('./dbOps.js')
 const storage = require('./storage.js')
 const missingChannelCount = {}
@@ -115,8 +116,8 @@ exports.check = userConfig => {
     }
   }
 
-  for (var configCategory in exports.defaultConfigs) {
-    for (var configName in exports.defaultConfigs[configCategory]) {
+  for (const configCategory in exports.defaultConfigs) {
+    for (const configName in exports.defaultConfigs[configCategory]) {
       const configVal = exports.defaultConfigs[configCategory][configName]
       const userVal = userConfig[configCategory][configName]
 
@@ -142,13 +143,22 @@ exports.check = userConfig => {
     }
   }
 
+  // Miscellaneous checks (such as configs using objects)
+  const decodeSettings = userConfig.feeds.decode
+  if (typeof decodeSettings === 'object' && decodeSettings !== null) {
+    for (const url in decodeSettings) {
+      if (typeof decodeSettings[url] !== 'string') invalidConfigs['feeds.decode.' + url] = `Expected string, found ${typeof decodeSettings[url]}`
+      else if (!iconv.encodingExists(decodeSettings[url])) fatalInvalidConfigs['feeds.decode.' + url] = `Specified encoding "${decodeSettings[url]}" does not exist for iconv-lite`
+    }
+  }
+
   const defLang = userConfig.feeds.dateLanguage
   const langList = userConfig.feeds.dateLanguageList
   if (!langList.includes(defLang)) langList.unshift(defLang)
-  for (var u = langList.length - 1; u >= 0; --u) moment.locale(langList[u]) // Set the global moment locale/language to the 0 index item
+  for (let u = langList.length - 1; u >= 0; --u) moment.locale(langList[u]) // Set the global moment locale/language to the 0 index item
 
-  let errMsg
-  for (var e in fatalInvalidConfigs) errMsg += `\n${e}: ${fatalInvalidConfigs[e]}`
+  let errMsg = ''
+  for (const e in fatalInvalidConfigs) errMsg += `\n${e}: ${fatalInvalidConfigs[e]}`
   if (errMsg) {
     return {
       fatal: true,
@@ -157,7 +167,7 @@ exports.check = userConfig => {
   }
 
   errMsg = ''
-  for (var cName in invalidConfigs) errMsg += `\n${cName}: ${invalidConfigs[cName]}`
+  for (const cName in invalidConfigs) errMsg += `\n${cName}: ${invalidConfigs[cName]}`
   if (errMsg) {
     return {
       fatal: false,

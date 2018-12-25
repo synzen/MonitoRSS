@@ -1,7 +1,7 @@
-const FeedParser = require('feedparser')
 const requestStream = require('./request.js')
 const storage = require('../util/storage.js')
 const Article = require('../structs/Article.js')
+const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const testFilters = require('./translator/filters.js')
 
 module.exports = (guildRss, rssName, passFiltersOnly) => {
@@ -12,7 +12,7 @@ module.exports = (guildRss, rssName, passFiltersOnly) => {
 
     if (typeof failedLinks[source.link] === 'string') return reject(new Error('Reached connection failure limit'))
 
-    const feedparser = new FeedParser()
+    const feedparser = new DecodedFeedParser(null, source.link)
     const currentFeed = []
     const cookies = (source.advanced && source.advanced.cookies) ? source.advanced.cookies : undefined
 

@@ -1,5 +1,5 @@
 const requestStream = require('./request.js')
-const FeedParser = require('feedparser')
+const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const processSources = require('./logic/shared.js')
 const debugFeeds = require('../util/debugFeeds').list
 const log = require('../util/logger.js')
@@ -7,7 +7,7 @@ const storage = require('../util/storage.js')
 
 module.exports = (data, callback) => {
   const { link, rssList, uniqueSettings, scheduleName } = data
-  const feedparser = new FeedParser()
+  const feedparser = new DecodedFeedParser(null, link)
   const articleList = []
 
   const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined

@@ -4,15 +4,6 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
 const storage = require('../util/storage.js')
-const currentGuilds = storage.currentGuilds
-
-function sanitizeArray (array) {
-  for (var p = array.length - 1; p >= 0; p--) { // Sanitize by removing spaces and newlines
-    array[p] = array[p].trim()
-    if (!array[p]) array.splice(p, 1)
-  }
-  return array
-}
 
 function isBotController (id) {
   const controllerList = config.bot.controllerIds
@@ -21,7 +12,7 @@ function isBotController (id) {
 }
 
 module.exports = async (bot, message) => {
-  const guildRss = currentGuilds.has(message.guild.id) ? currentGuilds.get(message.guild.id) : {}
+  const guildRss = storage.currentGuilds.has(message.guild.id) ? storage.currentGuilds.get(message.guild.id) : {}
   const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
   const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
 
@@ -30,7 +21,7 @@ module.exports = async (bot, message) => {
 
     let linkList = message.content.split(' ')
     linkList.shift()
-    linkList = sanitizeArray(linkList.join(' ').split('>'))
+    linkList = linkList.map(item => item.trim()).filter(item => item).join(' ').split('>')
 
     const passedAddLinks = {}
     const failedAddLinks = {}
@@ -67,7 +58,7 @@ module.exports = async (bot, message) => {
       linkItem.shift()
 
       let cookieString = linkItem.join(' ')
-      var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? sanitizeArray(cookieString.slice(1, cookieString.length - 1).split(';')) : undefined
+      var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? cookieString.slice(1, cookieString.length - 1).split(';').map(item => item.trim()).filter(item => item) : undefined
       if (cookies) {
         let cookieObj = {} // Convert cookie array into cookie object with key as key, and value as value
         for (var c in cookies) {

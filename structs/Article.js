@@ -1,5 +1,5 @@
 const config = require('../config.js')
-const iconv = require('iconv-lite')
+// const iconv = require('iconv-lite')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const FlattenedJSON = require('./FlattenedJSON.js')
@@ -8,7 +8,7 @@ const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date', 'link']
 const RAW_REGEX_FINDER = new RegExp('{raw:([^{}]+)}', 'g')
-iconv.skipDecodeWarning = true
+// iconv.skipDecodeWarning = true
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
   const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
@@ -113,7 +113,7 @@ function evalRegexConfig (source, text, placeholderName) {
 function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
   if (!text) return ''
 
-  if (encoding !== 'utf-8') text = iconv.decode(text, encoding)
+  // if (encoding !== 'utf-8') text = iconv.decode(text, encoding)
   text = text.replace(/\*/gi, '')
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
     .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
@@ -180,7 +180,7 @@ module.exports = class Article {
     this.author = raw.author ? cleanup(source, raw.author, undefined, undefined, this.encoding) : ''
     this.link = raw.link ? raw.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
     if (this.reddit && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
-    if (this.encoding !== 'utf-8') iconv.decode(this.link, this.encoding)
+    // if (this.encoding !== 'utf-8') iconv.decode(this.link, this.encoding)
 
     // Title
     this.titleImages = []
