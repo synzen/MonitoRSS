@@ -208,12 +208,17 @@ const list = {
   rssalert: {
     initLevel: 1,
     userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Set up user direct messaging for feed warnings/failures',
+    description: 'Set up user direct messaging for feed warnings/failures.',
     args: {
       'add <user id/mention>': 'Add a user to direct message.',
       'remove <user id/mention>': 'Remove a user from direct messaging.',
       'list': 'List the current users enabled for direct messaging.'
     }
+  },
+  rssinvite: {
+    initLevel: 1,
+    userPerm: MANAGE_CHANNELS_PERM,
+    description: 'Send the invite links for this bot.'
   },
   rsspatron: {
     initLevel: 2,
