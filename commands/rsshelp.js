@@ -15,8 +15,10 @@ module.exports = (bot, message, command) => {
     }
     msg += '\n\n'
   }
-  message.channel.send(msg + '\nSupport can be found at https://discord.gg/WPWRyxK', { split: {
-    prepend: '\u200b\n'
-  } })
-    .catch(err => log.command.warning(`rsshelp`, message.guild, err))
+  const helpMessage = msg + '\nSupport can be found at https://discord.gg/pudv7Rx'
+  message.author.send(helpMessage, { split: { prepend: '\u200b\n' } })
+    .catch(err => {
+      log.command.warning(`Failed to direct message help text to user`, message.guild, message.author, err)
+      message.channel.send(helpMessage).catch(err => log.command.warning(`rsshelp`, message.guild, err))
+    })
 }
