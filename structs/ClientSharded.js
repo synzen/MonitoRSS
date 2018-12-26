@@ -46,7 +46,7 @@ class ClientSharded {
     if (!message._drss) return
     if (message._loopback) return this.shardingManager.broadcast(message).catch(err => handleError(err, message))
     switch (message.type) {
-      case 'kill': process.exit(0)
+      case 'kill': this.shardingManager.broadcast({ _drss: true, type: 'kill' }); process.exit(0)
       case 'spawned': this._spawnedEvent(message); break
       case 'shardReady': this._shardReadyEvent(message); break
       case 'initComplete': this._initCompleteEvent(message); break
