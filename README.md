@@ -58,3 +58,7 @@ You can deploy in a simple way to Heroku using the button below.
 [![Deploy to Heroku](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
 *If you want to deploy manually you should go to the settings of your applications and add a "Config Var" DRSS_DISCORD_TOKEN with the token of your discord bot.*
+
+### Contributing
+
+[Read the contribution guidelines](https://github.com/synzen/Discord.RSS/blob/dev/CONTRIBUTING.md)
