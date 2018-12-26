@@ -2,7 +2,7 @@ const currentGuilds = require('../util/storage.js').currentGuilds
 const log = require('../util/logger.js')
 const config = require('../config.js')
 const dbOps = require('../util/dbOps.js')
-const explanation = guildRss => `This command adds users for direct messaging (instead of posting such alerts to the feed's channel by default) when there are any warnings or alerts concerning feeds, such as feed limit changes or feed failures. **The user you're adding or removing will be notified.** The correct syntaxes are:\n\n\`${guildRss.prefix || config.bot.prefix}rssalert add <user id>\` - Add a user to alerted.\n\`${guildRss.prefix || config.bot.prefix}rssalert remove <user id>\` - Remove a user currently receiving alerts\n\`${guildRss.prefix || config.bot.prefix}rssalert list\` - Show all users currently receiving alerts`
+const explanation = guildRss => `This command adds users for direct messaging (instead of posting such alerts to the feed's channel by default) when there are any warnings or alerts concerning feeds, such as feed limit changes or feed failures. **The user you're adding or removing will be notified.** The correct syntaxes are:\n\n\`${guildRss.prefix || config.bot.prefix}rssalert add <user id/mention>\` - Add a user to alerted.\n\`${guildRss.prefix || config.bot.prefix}rssalert remove <user id/mention>\` - Remove a user currently receiving alerts\n\`${guildRss.prefix || config.bot.prefix}rssalert list\` - Show all users currently receiving alerts`
 
 module.exports = async (bot, message, automatic) => { // automatic indicates invokation by the bot
   const guildRss = currentGuilds.get(message.guild.id)

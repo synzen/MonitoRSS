@@ -210,8 +210,8 @@ const list = {
     userPerm: MANAGE_CHANNELS_PERM,
     description: 'Set up user direct messaging for feed warnings/failures',
     args: {
-      'add <user id>': 'Add a user to direct message.',
-      'remove <user id>': 'Remove a user from direct messaging.',
+      'add <user id/mention>': 'Add a user to direct message.',
+      'remove <user id/mention>': 'Remove a user from direct messaging.',
       'list': 'List the current users enabled for direct messaging.'
     }
   },
