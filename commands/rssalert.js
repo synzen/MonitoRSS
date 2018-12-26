@@ -14,14 +14,16 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
       case 'add':
       case 'remove':
         if (!contentArray[2]) return await message.channel.send(explanation(guildRss))
-        const member = await message.guild.members.get(contentArray[2] === 'me' ? message.author.id : contentArray[2])
-        if (!member) return await message.channel.send(`The user with ID \`${contentArray[2]}\` was not found in this server.`)
+        const userMention = message.mentions.users.first()
+        const member = userMention || await message.guild.members.get(contentArray[2] === 'me' ? message.author.id : contentArray[2])
+        if (!member) return await message.channel.send(`The user ${userMention || `with ID \`${contentArray[2]}\``} was not found in this server.`)
         if (contentArray[1] === 'add') {
           if (!Array.isArray(guildRss.sendAlertsTo)) guildRss.sendAlertsTo = [ member.id ]
           else {
             if (guildRss.sendAlertsTo.includes(member.id)) return await message.channel.send(`That user is already enabled for direct messaging feed warnings/failures in this server.`)
             guildRss.sendAlertsTo.push(member.id)
           }
+          log.command.info(`Added user to alerts`, member.user)
           await member.send(`At the request of ${member}, you will now be notified of any warnings/failures of feeds in the server \`${guildRss.name}\` (ID \`${guildRss.id}\`).`)
           await message.channel.send(`Successfully enabled user ${member} for direct messaging feed warnings/failures. The user has been notified of this change.`)
         } else {
@@ -30,6 +32,7 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
             if (removeIndex === -1) return await message.channel.send('You cannot remove a user that is not currently enabled for feed warning/failure direct messaging alerts.')
             guildRss.sendAlertsTo.splice(removeIndex, 1)
             if (guildRss.sendAlertsTo.length === 0) guildRss.sendAlertsTo = undefined
+            log.command.info(`Removed user from alerts`, member.user)
             await member.send(`At the request of ${member}, you will no longer be notified of any warnings or failures of feeds in the server \`${guildRss.name}\` (ID \`${guildRss.id}\`).`)
             await message.channel.send(`Successfully removed user ${member} from direct messaging feed warnings/failures. The user has been notified of this change.`)
           } else return await message.channel.send('You cannot remove a user that is not currently enabled for feed warning/failure direct messaging alerts.')
