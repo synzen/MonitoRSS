@@ -10,6 +10,6 @@ config.database.uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI |
 config.bot.prefix = process.env.DRSS_BOT_PREFIX || config.bot.prefix
 config.bot.controllerIds = process.env.DRSS_BOT_CONTROLLER_IDS ? process.env.DRSS_BOT_CONTROLLER_IDS.split(/\s*,\s*/) : config.bot.controllerIds
 config.feeds.refreshTimeMinutes = Number(process.env.DRSS_FEEDS_REFRESH_TIME_MINUTES) || config.feeds.refreshTimeMinutes
-config.feeds.defaultMessage = process.env.DRSS_FEEDS_DEFAULT_MESSAGE || config.feeds.defaultMessage
+config.feeds.defaultMessage = process.env.DRSS_FEEDS_DEFAULT_MESSAGE.replace(/\\n/g, '\n') || config.feeds.defaultMessage
 
 module.exports = config
