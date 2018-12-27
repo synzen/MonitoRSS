@@ -22,18 +22,23 @@ const invalidEmbedProperties = {
   authorAvatarURL: 'author_icon_url',
   message: 'description'
 }
+const invalidGlobalRoleSubscriptionProperties = {
+  roleName: 'name',
+  roleID: 'id'
+}
 const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
 
 const buffers = {}
 if (Object.keys(CON_SETTINGS).length > 0) {
-  for (var x = 0; x < BUFFER_CONFIGS.length; ++x) {
+  for (let x = 0; x < BUFFER_CONFIGS.length; ++x) {
     const name = BUFFER_CONFIGS[x]
     if (CON_SETTINGS[name]) buffers[name] = fs.readFileSync(CON_SETTINGS[name])
   }
 }
 
 const uri = config.database.uri
-mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, ...CON_SETTINGS, ...buffers })
+
+mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, useCreateIndex: true, ...CON_SETTINGS, ...buffers })
 const db = mongoose.connection
 
 db.on('error', console.log)
@@ -45,13 +50,26 @@ db.once('open', () => {
     docs.forEach(guildRss => {
       const rssList = guildRss.sources
       let changed = false
-      for (var rssName in rssList) {
+      for (const rssName in rssList) {
+        // Role Subscriptions
+        const roleSubscriptions = rssList[rssName].roleSubscriptions
+        if (roleSubscriptions) {
+          for (const entry of roleSubscriptions) {
+            for (const key in entry) {
+              if (!invalidGlobalRoleSubscriptionProperties[key]) continue
+              Object.defineProperty(entry, invalidGlobalRoleSubscriptionProperties[key], Object.getOwnPropertyDescriptor(entry, key))
+              delete entry[key]
+              changed = true
+            }
+          }
+        }
+
         // Embed
         const embedMessage = rssList[rssName].embedMessage
         if (embedMessage) {
           // Rename the individual properties first
           if (embedMessage.properties && Object.keys(embedMessage.properties).length > 0) {
-            for (var ep in embedMessage.properties) {
+            for (const ep in embedMessage.properties) {
               if (!invalidEmbedProperties[ep]) continue
               Object.defineProperty(embedMessage.properties, invalidEmbedProperties[ep], Object.getOwnPropertyDescriptor(embedMessage.properties, ep))
               delete embedMessage.properties[ep]
@@ -69,10 +87,10 @@ db.once('open', () => {
         // Filtered message formats
         const filteredFormats = rssList[rssName].filteredFormats
         if (filteredFormats) {
-          for (var fi = 0; fi < filteredFormats.length; ++fi) {
+          for (let fi = 0; fi < filteredFormats.length; ++fi) {
             const filteredFormat = filteredFormats[fi]
             const filteredFormatFilters = filteredFormat.filters
-            for (var fff in filteredFormatFilters) {
+            for (const fff in filteredFormatFilters) {
               // Filtered format filters
               if (!invalidFilterTypes[fff]) continue
               Object.defineProperty(filteredFormatFilters, invalidFilterTypes[fff], Object.getOwnPropertyDescriptor(filteredFormatFilters, fff))
@@ -83,7 +101,7 @@ db.once('open', () => {
               if (embedMessage) {
                 // Rename the individual properties first
                 if (embedMessage.properties && Object.keys(embedMessage.properties).length > 0) {
-                  for (var ffep in embedMessage.properties) {
+                  for (const ffep in embedMessage.properties) {
                     if (!invalidEmbedProperties[ffep]) continue
                     Object.defineProperty(embedMessage.properties, invalidEmbedProperties[ffep], Object.getOwnPropertyDescriptor(embedMessage.properties, ffep))
                     delete embedMessage.properties[ffep]
@@ -104,13 +122,13 @@ db.once('open', () => {
         // Filters
         const filters = rssList[rssName].filters
         if (!filters) continue
-        for (var filterType in filters) {
+        for (const filterType in filters) {
           // Role subscriptions
-          if (filterType === 'roleSubscriptions') {
+          if (filterType === 'roleSubscriptions' || filterType === 'userSubscriptions') {
             const filterContent = filters[filterType]
-            for (var roleId in filterContent) {
+            for (const roleId in filterContent) {
               const roleFilters = filterContent[roleId].filters
-              for (var roleFilterType in roleFilters) {
+              for (const roleFilterType in roleFilters) {
                 if (!invalidFilterTypes[roleFilterType]) continue
                 Object.defineProperty(roleFilters, invalidFilterTypes[roleFilterType], Object.getOwnPropertyDescriptor(roleFilters, roleFilterType))
                 delete roleFilters[roleFilterType]
@@ -128,7 +146,7 @@ db.once('open', () => {
       }
 
       if (changed) {
-        storage.models.GuildRss().update({ _id: guildRss._id }, guildRss, { overwrite: true, upsert: true, strict: true }, (err, res) => {
+        storage.models.GuildRss().updateOne({ _id: guildRss._id }, { $set: guildRss }, { overwrite: true, upsert: true, strict: true }, (err, res) => {
           if (err) throw err
           console.log(`Completed ${guildRss.id} (${++c}/${docs.length}) [UPDATED]`)
           if (c === docs.length) db.close()
