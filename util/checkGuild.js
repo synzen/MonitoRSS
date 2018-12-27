@@ -20,9 +20,11 @@ exports.roles = (bot, guildId, rssName) => {
         const roleOrUser = globalSubList[roleIndex]
         const retrieved = index === 0 ? guild.roles.get(roleOrUser.id) : guild.members.get(roleOrUser.id).user
         if (!retrieved) {
+          const id = roleOrUser.id
+          const name = roleOrUser.name
           guildRss.sources[rssName][key].splice(roleIndex, 1)
           if (guildRss.sources[rssName][key].length === 0) delete guildRss.sources[rssName][key]
-          log.guild.info(`(${roleOrUser.id}, ${roleOrUser.name}) ${index === 0 ? 'Role' : 'User'} has been removed due to guild deletion`, guild)
+          log.guild.info(`(${id}, ${name}) ${index === 0 ? 'Role' : 'User'} has been removed due to guild deletion`, guild)
           changedInfo = true
         } else if ((index === 0 ? retrieved.name : retrieved.username) !== roleOrUser.name) {
           roleOrUser.name = index === 0 ? retrieved.name : retrieved.username
@@ -37,10 +39,11 @@ exports.roles = (bot, guildId, rssName) => {
       for (const roleOrUserID in filteredSubList) {
         const retrieved = index === 0 ? guild.roles.get(roleOrUserID) : guild.members.get(roleOrUserID).user
         if (!retrieved) {
+          const name = filteredSubList[roleOrUserID].name
           delete guildRss.sources[rssName].filters[key][roleOrUserID]
           if (Object.keys(guildRss.sources[rssName].filters[key]).length === 0) delete guildRss.sources[rssName].filters[key]
           if (Object.keys(guildRss.sources[rssName].filters).length === 0) delete guildRss.sources[rssName].filters
-          log.guild.info(`(${roleOrUserID}, ${filteredSubList[roleOrUserID].name}) ${index === 0 ? 'Role' : 'User'} has been removed due to guild deletion`, guild)
+          log.guild.info(`(${roleOrUserID}, ${name}) ${index === 0 ? 'Role' : 'User'} has been removed due to guild deletion`, guild)
           changedInfo = true
         } else if ((index === 0 ? retrieved.name : retrieved.username) !== filteredSubList[roleOrUserID].name) {
           filteredSubList[roleOrUserID].name = index === 0 ? retrieved.name : retrieved.username
