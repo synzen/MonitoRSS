@@ -55,6 +55,7 @@ module.exports = async (bot, message, command) => {
     const webhookSelector = new MenuUtils.Menu(message, collectWebhook)
 
     const data = await new MenuUtils.MenuSeries(message, [feedSelector, webhookSelector], { hooks: hooks }).start()
+    if (!data) return
     const { guildRss, rssName, existingWebhook, webhookName, webhook, customAvatarSrch, customNameSrch } = data
     const source = guildRss.sources[rssName]
     if (webhookName === '{remove}') {
@@ -81,7 +82,7 @@ module.exports = async (bot, message, command) => {
     }
     await dbOps.guildRss.update(guildRss)
   } catch (err) {
-    log.command.warning(`rsswebhook`, message.guild, err)
+    log.command.warning(`rsswebhook`, message.guild, err, true)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsswebhook 1', message.guild, err))
   }
 }
