@@ -260,7 +260,7 @@ exports.run = async (bot, message) => {
     if (guildRss && guildRss.prefix && !message.content.startsWith(guildRss.prefix)) {
       await message.channel.send(`Invalid command prefix. You are not using the prefix you set for your server (${guildRss.prefix}).`)
       return log.command.warning(`Ignoring command ${name} due to incorrect prefix (${prefix})`, guild)
-    }
+    } else if ((!guildRss || !guildRss.prefix) && !message.content.startsWith(config.bot.prefix)) return
     log.command.info(`Used ${message.content}`, guild)
     if (cmdInfo.initLevel !== undefined && cmdInfo.initLevel > storage.initialized) {
       const m = await message.channel.send(`This command is disabled while booting up, please wait.`)
