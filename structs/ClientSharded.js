@@ -6,6 +6,7 @@ const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
 const handleError = (err, message) => log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
+const EventEmitter = require('events');
 
 function overrideConfigs (configOverrides) {
   // Config overrides must be manually done for it to be changed in the original object (config)
@@ -20,11 +21,13 @@ function overrideConfigs (configOverrides) {
   }
 }
 
-class ClientSharded {
+class ClientSharded extends EventEmitter {
   constructor (shardingManager, configOverrides) {
+    super()
     if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
     overrideConfigs(configOverrides)
     this.missingGuildRss = new Map()
+    this.guildStore = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
     this.refreshTimes = [config.feeds.refreshTimeMinutes]
     this.activeshardIds = []
@@ -36,9 +39,11 @@ class ClientSharded {
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardingManager = shardingManager
     this.shardingManager.on('message', this.messageHandler.bind(this))
+  }
+
+  run () {
     connectDb().then(() => {
-      if (shardingManager.shards.size === 0) shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
-      // shardingManager.shards.forEach((val, key) => this.activeshardIds.push(key))
+      if (this.shardingManager.shards.size === 0) this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
     }).catch(err => log.general.error(`ClientSharded db connection`, err))
   }
 
@@ -51,7 +56,9 @@ class ClientSharded {
       case 'shardReady': this._shardReadyEvent(message); break
       case 'initComplete': this._initCompleteEvent(message); break
       case 'scheduleComplete': this._scheduleCompleteEvent(message); break
-      case 'addCustomSchedule': this._addCustomSchedule(message); break
+      case 'addCustomSchedule': this._addCustomScheduleEvent(message); break
+      case 'guildRss.update': this._updateGuildRssEvent(message); break
+      case 'guildRss.remove': this._removeGuildRssEvent(message); break
       case 'dbRestore': this._dbRestoreEvent(message)
     }
   }
@@ -67,6 +74,9 @@ class ClientSharded {
     }
   }
   _initCompleteEvent (message) {
+    // Set the active guilds
+    for (const guildId in message.guilds) this.guildStore.set(guildId, message.guilds[guildId])
+
     // Account for missing guilds
     const missing = message.missingGuilds
     for (var guildId in missing) {
@@ -98,6 +108,8 @@ class ClientSharded {
               .catch(err => log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err))
           })
           this.createIntervals()
+          this.emit('finishInit')
+          require('../../drss-web/index.js')(this.guildStore)
         })
         .catch(err => {
           console.log(err)
@@ -122,7 +134,7 @@ class ClientSharded {
     }
   }
 
-  _addCustomSchedule (message) {
+  _addCustomScheduleEvent (message) {
     const refreshTime = message.schedule.refreshTimeMinutes
     if (this.refreshTimes.includes(refreshTime)) return
     this.refreshTimes.push(refreshTime)
@@ -133,6 +145,14 @@ class ClientSharded {
       const broadcast = { _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime }
       this.shardingManager.broadcast(broadcast)
     }, refreshTime * 60000)) // Convert minutes to ms
+  }
+
+  _updateGuildRssEvent (message) {
+    this.guildStore.set(message.guildRss.id, message.guildRss)
+  }
+
+  _removeGuildRssEvent (message) {
+    this.guildStore.delete(message.guildRss.id)
   }
 
   _dbRestoreEvent (message) {

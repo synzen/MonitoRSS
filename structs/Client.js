@@ -11,6 +11,7 @@ const dbOps = require('../util/dbOps.js')
 const configCheck = require('../util/configCheck.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientSharded = require('./ClientSharded.js')
+const EventEmitter = require('events')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const SHARDED_OPTIONS = { respawn: false }
 const STATES = {
@@ -62,8 +63,9 @@ function readSchedulesFromFile () {
   }
 }
 
-class Client {
+class Client extends EventEmitter {
   constructor (configOverrides, customSchedules) {
+    super()
     // Override from file first
     try {
       const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
@@ -89,7 +91,7 @@ class Client {
     this.state = STATES.STOPPED
   }
 
-  login (token) {
+  login (token, noChildren) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
     if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
     else if (token instanceof Discord.ShardingManager) return new ClientSharded(token)
@@ -98,7 +100,7 @@ class Client {
       client.login(token)
         .then(tok => this._defineBot(client))
         .catch(err => {
-          if (err.message.includes('too many guilds')) return new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
+          if (!noChildren && err.message.includes('too many guilds')) new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides).run()
           else {
             log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
             setTimeout(() => this.login.bind(this)(token), 600000)
@@ -265,6 +267,7 @@ class Client {
     }
     listeners.createManagers(storage.bot)
     if (callback) callback()
+    this.emit('finishInit')
   }
 
   disableCommands () {
