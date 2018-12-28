@@ -11,6 +11,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node -r dotenv/config server.js",
+    "dev-sharded": "node -r dotenv/config server-manager.js",
+    "dev-client": "node -r dotenv/config server-client.js",
     "eslint": "eslint --fix ."
   },
   "dependencies": {
