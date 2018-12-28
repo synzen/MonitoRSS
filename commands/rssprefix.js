@@ -14,6 +14,7 @@ module.exports = async (bot, message) => {
     if (prefix === 'reset') {
       if (!guildRss || !guildRss.prefix) return await message.channel.send('You have no custom prefix to reset.')
       delete guildRss.prefix
+      await dbOps.guildRss.update(guildRss, true)
       return await message.channel.send(`Commands prefix has been reset back to the default (${config.bot.prefix}).`)
     }
     if (prefix.length > 4) return await message.channel.send('Commands prefix length must be less than 5 characters.')
