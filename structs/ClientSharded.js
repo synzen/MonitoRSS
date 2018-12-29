@@ -27,7 +27,6 @@ class ClientSharded extends EventEmitter {
     if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
     overrideConfigs(configOverrides)
     this.missingGuildRss = new Map()
-    this.guildStore = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
     this.refreshTimes = [config.feeds.refreshTimeMinutes]
     this.activeshardIds = []
@@ -57,8 +56,6 @@ class ClientSharded extends EventEmitter {
       case 'initComplete': this._initCompleteEvent(message); break
       case 'scheduleComplete': this._scheduleCompleteEvent(message); break
       case 'addCustomSchedule': this._addCustomScheduleEvent(message); break
-      case 'guildRss.update': this._updateGuildRssEvent(message); break
-      case 'guildRss.remove': this._removeGuildRssEvent(message); break
       case 'dbRestore': this._dbRestoreEvent(message)
     }
   }
@@ -74,9 +71,6 @@ class ClientSharded extends EventEmitter {
     }
   }
   _initCompleteEvent (message) {
-    // Set the active guilds
-    for (const guildId in message.guilds) this.guildStore.set(guildId, message.guilds[guildId])
-
     // Account for missing guilds
     const missing = message.missingGuilds
     for (var guildId in missing) {
@@ -108,12 +102,7 @@ class ClientSharded extends EventEmitter {
               .catch(err => log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err))
           })
           this.createIntervals()
-          return dbOps.guildRss.getAll()
-        })
-        .then(results => {
-          results.forEach(guildRss => this.guildStore.set(guildRss.id, guildRss))
           this.emit('finishInit')
-          // require('../../drss-web/index.js')(this.guildStore)
         })
         .catch(err => {
           console.log(err)
@@ -149,14 +138,6 @@ class ClientSharded extends EventEmitter {
       const broadcast = { _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime }
       this.shardingManager.broadcast(broadcast)
     }, refreshTime * 60000)) // Convert minutes to ms
-  }
-
-  _updateGuildRssEvent (message) {
-    this.guildStore.set(message.guildRss.id, message.guildRss)
-  }
-
-  _removeGuildRssEvent (message) {
-    this.guildStore.delete(message.guildRss.id)
   }
 
   _dbRestoreEvent (message) {
