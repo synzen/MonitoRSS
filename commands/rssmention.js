@@ -251,7 +251,7 @@ async function getUserOrRoleFn (m, data) {
   const mention = m.mentions.roles.first()
   if (mention) return { ...data, role: mention }
   const role = m.guild.roles.find(r => r.name === input)
-  const member = m.guild.members.get(input)
+  const member = m.guild.members.get(input) || m.mentions.members.first()
   if (input === '@everyone') throw new SyntaxError('That is not a valid role. Try again, or type `exit` to cancel.')
   else if (m.guild.roles.filter(r => r.name === input).length > 1) throw new SyntaxError('There are multiple roles with that name. Mention the role, type another role, or type `exit` to cancel.')
   else if (!role && !member) throw new SyntaxError('That is not a valid role or user. Try again, or type `exit` to cancel.')
@@ -275,7 +275,7 @@ async function selectOptionFn (m, data) {
 
   if (optionSelected === '4') return nextData
   else if (optionSelected === '3' || optionSelected === '2' || optionSelected === '1') { // Options 1, 2, and 3 requires a role or user to be acquired first
-    const getUserOrRole = new MenuUtils.Menu(m, getUserOrRoleFn, { text: 'Enter a valid case-sensitive role name, role mention, or user ID. The `@everyone` role cannot be used.' })
+    const getUserOrRole = new MenuUtils.Menu(m, getUserOrRoleFn, { text: 'Enter a valid case-sensitive role name, role/user mention or user ID. The `@everyone` role cannot be used.' })
     if (optionSelected === '3') {
       nextData.next = { menu: getUserOrRole }
       return nextData
