@@ -1,6 +1,5 @@
 const dbOps = require('../util/dbOps.js')
 const config = require('../config.js')
-const storage = require('../util/storage.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
@@ -44,19 +43,20 @@ async function collectWebhook (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    if (config._vip === true && (!storage.vipServers[message.guild.id] || !storage.vipServers[message.guild.id].benefactor.allowWebhooks)) {
+    const [ guildRss, vipUser ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), dbOps.vips.get(message.author.id) ])
+    if (config._vip === true && (!vipUser || vipUser.allowWebhooks !== true || vipUser.invalid === true)) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
       return await message.channel.send(`Only patrons have access to webhook use.`)
     }
     if (!message.guild.me.permissionsIn(message.channel).has('MANAGE_WEBHOOKS')) return await message.channel.send(`I must have Manage Webhooks permission in this channel in order to work.`)
 
     const hooks = await message.channel.fetchWebhooks()
-    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
+    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
     const webhookSelector = new MenuUtils.Menu(message, collectWebhook)
 
     const data = await new MenuUtils.MenuSeries(message, [feedSelector, webhookSelector], { hooks: hooks }).start()
     if (!data) return
-    const { guildRss, rssName, existingWebhook, webhookName, webhook, customAvatarSrch, customNameSrch } = data
+    const { rssName, existingWebhook, webhookName, webhook, customAvatarSrch, customNameSrch } = data
     const source = guildRss.sources[rssName]
     if (webhookName === '{remove}') {
       if (typeof existingWebhook !== 'object') await message.channel.send(`There is no webhook assigned to this feed.`)
@@ -82,7 +82,7 @@ module.exports = async (bot, message, command) => {
     }
     await dbOps.guildRss.update(guildRss)
   } catch (err) {
-    log.command.warning(`rsswebhook`, message.guild, err, true)
+    log.command.warning(`rsswebhook`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsswebhook 1', message.guild, err))
   }
 }

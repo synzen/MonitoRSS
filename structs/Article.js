@@ -1,14 +1,12 @@
 const config = require('../config.js')
-// const iconv = require('iconv-lite')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const FlattenedJSON = require('./FlattenedJSON.js')
-const defaultConfigs = require('../util/configCheck.js').defaultConfigs
+const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date', 'link']
 const RAW_REGEX_FINDER = new RegExp('{raw:([^{}]+)}', 'g')
-// iconv.skipDecodeWarning = true
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
   const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
@@ -113,7 +111,6 @@ function evalRegexConfig (source, text, placeholderName) {
 function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
   if (!text) return ''
 
-  // if (encoding !== 'utf-8') text = iconv.decode(text, encoding)
   text = text.replace(/\*/gi, '')
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
     .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
@@ -165,10 +162,9 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
 }
 
 module.exports = class Article {
-  constructor (raw, guildRss, rssName) {
-    const source = guildRss.sources[rssName]
+  constructor (raw, source, dateSettings) {
     this.source = source
-    this.guildRss = guildRss
+    this.dateSettings = dateSettings
     this.raw = raw
     this.encoding = raw.meta['#xml'].encoding ? raw.meta['#xml'].encoding.toLowerCase() : 'utf-8'
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
@@ -180,7 +176,6 @@ module.exports = class Article {
     this.author = raw.author ? cleanup(source, raw.author, undefined, undefined, this.encoding) : ''
     this.link = raw.link ? raw.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
     if (this.reddit && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
-    // if (this.encoding !== 'utf-8') iconv.decode(this.link, this.encoding)
 
     // Title
     this.titleImages = []
@@ -203,15 +198,15 @@ module.exports = class Article {
 
     // Date
     if (raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') {
-      const guildTimezone = guildRss.timezone
+      const guildTimezone = dateSettings.timezone
       const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feeds.timezone
-      const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feeds.dateFormat
+      const dateFormat = dateSettings.format ? dateSettings.format : config.feeds.dateFormat
 
       const useDateFallback = config.feeds.dateFallback === true && (!raw.pubdate || raw.pubdate.toString() === 'Invalid Date')
       const useTimeFallback = config.feeds.timeFallback === true && raw.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(raw.pubdate)
       const date = useDateFallback ? new Date() : raw.pubdate
       const localMoment = moment(date)
-      if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)
+      if (dateSettings.language) localMoment.locale(dateSettings.language)
       const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
       this.rawDate = raw.pubdate
@@ -428,11 +423,11 @@ module.exports = class Article {
 
       // Format the date if it is one
       if (Object.prototype.toString.call(matches[fullMatch]) === '[object Date]') {
-        const guildTimezone = this.guildRss.timezone
+        const guildTimezone = this.dateSettings.timezone
         const timezone = guildTimezone && moment.tz.zone(guildTimezone) ? guildTimezone : config.feeds.timezone
-        const dateFormat = this.guildRss.dateFormat ? this.guildRss.dateFormat : config.feeds.dateFormat
+        const dateFormat = this.dateSettings.format ? this.dateSettings.format : config.feeds.dateFormat
         const localMoment = moment(matches[fullMatch])
-        if (this.guildRss.dateLanguage) localMoment.locale(this.guildRss.dateLanguage)
+        if (this.dateSettings.language) localMoment.locale(this.dateSettings.language)
         const useTimeFallback = config.feeds.timeFallback === true && matches[fullMatch].toString() !== 'Invalid Date' && dateHasNoTime(matches[fullMatch])
         matches[fullMatch] = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       }

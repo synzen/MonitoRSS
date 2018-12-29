@@ -28,18 +28,13 @@ function expireDate (type) {
 }
 
 exports.bot = undefined
+exports.prefixes = {} // Guild prefixes
 exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
-exports.statistics = { fullyUpdated: false } // For individual shards/non sharded
-exports.statisticsGlobal = { fullyUpdated: 0 } // For aggregated statistics across all shards, updated on an interval by eval
-exports.vipServers = {}
-exports.vipUsers = {}
-exports.currentGuilds = new Map() // To hold all guild profiles
 exports.deletedFeeds = [] // Any deleted rssNames to check during article sending to see if it was deleted during a cycle
 exports.scheduleAssigned = {} // To track schedule assignment to links
 exports.allScheduleWords = [] // Holds all words across all schedules
 exports.allScheduleRssNames = []
 exports.scheduleManager = undefined
-exports.failedLinks = {}
 exports.blacklistUsers = []
 exports.blacklistGuilds = []
 exports.schemas = {
@@ -108,7 +103,7 @@ exports.schemas = {
       type: String,
       unique: true
     },
-    disabled: Boolean,
+    invalid: Boolean,
     name: String,
     servers: {
       type: [String],
@@ -141,6 +136,21 @@ exports.schemas = {
       type: Date,
       default: Date.now
     }
+  }),
+  statistics: mongoose.Schema({
+    guilds: Number,
+    feeds: Number,
+    cycleTime: Number,
+    cycleFails: Number,
+    cycleLinks: Number,
+    shard: {
+      type: Number,
+      unique: true
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
   })
 }
 exports.collectionId = (link, shardId, prefix = '') => {
@@ -158,5 +168,6 @@ exports.models = {
   Feed: (link, shardId, scheduleName) => mongoose.model(exports.collectionId(link, shardId, scheduleName), exports.schemas.feed, exports.collectionId(link, shardId, scheduleName)), // Third parameter is not let mongoose auto-pluralize the collection name
   FeedByCollectionId: collectionId => mongoose.model(collectionId, exports.schemas.feed, collectionId), // Third parameter is not let mongoose auto-pluralize the collection name
   VIP: () => mongoose.model('vips', exports.schemas.vip),
-  Blacklist: () => mongoose.model('blacklists', exports.schemas.blacklist)
+  Blacklist: () => mongoose.model('blacklists', exports.schemas.blacklist),
+  Statistics: () => mongoose.model('statistics', exports.schemas.statistics)
 }

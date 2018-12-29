@@ -54,7 +54,7 @@ async function selectOption (m, data) {
   return { ...data,
     chosenProp: chosenProp,
     next: {
-      menu: new FeedSelector(m, null, { command: data.command, miscOption: chosenProp })
+      menu: new FeedSelector(m, null, { command: data.command, miscOption: chosenProp }, data.guildRss)
     } }
 }
 
@@ -69,9 +69,10 @@ module.exports = async (bot, message, command) => {
   }
 
   try {
-    const data = await new MenuUtils.MenuSeries(message, [select], { command: command }).start()
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const data = await new MenuUtils.MenuSeries(message, [select], { command, guildRss }).start()
     if (!data) return
-    const { guildRss, rssName, chosenProp } = data
+    const { rssName, chosenProp } = data
     const source = guildRss.sources[rssName]
 
     const globalSetting = config.feeds[chosenProp]

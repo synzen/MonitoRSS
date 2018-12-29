@@ -1,5 +1,5 @@
 const getSubList = require('./util/getSubList.js')
-const currentGuilds = require('../util/storage.js').currentGuilds
+const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const config = require('../config.js')
@@ -17,12 +17,12 @@ function removeRole (message, role) {
 }
 
 module.exports = async (bot, message, command) => {
-  const guildRss = currentGuilds.get(message.guild.id)
-  const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
-  const botRole = message.guild.members.get(bot.user.id).highestRole
-  const memberRoles = message.member.roles
-
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
+    const botRole = message.guild.members.get(bot.user.id).highestRole
+    const memberRoles = message.member.roles
+
     // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
     const filteredMemberRoles = memberRoles.filterArray(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
 

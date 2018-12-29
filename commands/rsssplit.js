@@ -150,8 +150,9 @@ async function setSetting (m, data) {
 }
 
 module.exports = async (bot, message, command) => {
-  const feedSelector = new FeedSelector(message, feedSelectorFn, { command })
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const feedSelector = new FeedSelector(message, feedSelectorFn, { command }, guildRss)
     await new MenuUtils.MenuSeries(message, [feedSelector]).start()
   } catch (err) {
     log.command.warning(`rsssplit`, message.guild, err)

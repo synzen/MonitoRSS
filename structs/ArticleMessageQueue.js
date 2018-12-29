@@ -12,7 +12,7 @@ function toggleRoleMentionable (mentionable, channelId, roleIds, callback) {
   for (var x = roleIds.length - 1; x >= 0; --x) {
     const role = guild.roles.get(roleIds[x])
     // Other checks may include guild.me.highestRole.comparePositionTo(role) <= 0, and whether the bot has manage roles permission, but don't check them and let the error show in the message
-    if (!role || role.mentionable === mentionable) { 
+    if (!role || role.mentionable === mentionable) {
       if (++done >= roleIds.length) return callback ? callback() : null
       continue
     }

@@ -3,20 +3,13 @@ const initialize = require('../rss/initialize.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
-const storage = require('../util/storage.js')
-
-function isBotController (id) {
-  const controllerList = config.bot.controllerIds
-  if (typeof controllerList !== 'object') return false
-  return controllerList.includes(id)
-}
 
 module.exports = async (bot, message) => {
-  const guildRss = storage.currentGuilds.has(message.guild.id) ? storage.currentGuilds.get(message.guild.id) : {}
-  const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
-  const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
-
   try {
+    const [ guildRss, vipUser ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), dbOps.vips.get(message.author.id) ])
+    const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
+    const maxFeedsAllowed = vipUser && !vipUser.invalid && vipUser.maxFeeds ? vipUser.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
+
     if (message.content.split(' ').length === 1) return await message.channel.send(`The correct syntax is \`${guildRss.prefix || config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`) // If there is no link after rssadd, return.
 
     let linkList = message.content.split(' ')
@@ -68,14 +61,14 @@ module.exports = async (bot, message) => {
         cookies = cookieObj
       }
       const cookiesFound = !!cookies
-      if (config.advanced && config.advanced._restrictCookies === true && (!storage.vipServers[message.guild.id] || !storage.vipServers[message.guild.id].allowCookies) && !isBotController(message.author.id)) cookies = undefined
+      if (config._vip === true && (!vipUser || !vipUser.allowCookies)) cookies = undefined
 
       try {
-        const [ addedLink ] = await initialize.addNewFeed({ link: link, channel: message.channel, cookies: cookies })
+        const [ addedLink ] = await initialize.addNewFeed({ channel: message.channel, cookies, link, vipUser })
         if (addedLink) link = addedLink
         channelTracker.remove(message.channel.id)
         log.command.info(`Added ${link}`, message.guild)
-        if (storage.failedLinks[link]) dbOps.failedLinks.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
+        dbOps.failedLinks.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
         passedAddLinks[link] = cookies
         ++checkedSoFar
       } catch (err) {

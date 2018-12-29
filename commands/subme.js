@@ -1,5 +1,5 @@
 const getSubList = require('./util/getSubList.js')
-const currentGuilds = require('../util/storage.js').currentGuilds
+const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const config = require('../config.js')
@@ -18,7 +18,7 @@ function addRole (message, role, links) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = currentGuilds.get(message.guild.id)
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('There are no active feeds to subscribe to.')
 
     const rssList = guildRss.sources

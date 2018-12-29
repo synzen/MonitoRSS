@@ -1,13 +1,12 @@
 const htmlConvert = require('html-to-text')
 // const iconv = require('iconv-lite')
-const defaultConfigs = require('../util/configCheck.js').defaultConfigs
+const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
 const config = require('../config.js')
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'link', 'pubDate', 'pubdate', 'date']
 
 function cleanup (source, text, encoding) {
   if (!text) return ''
 
-  // let newText = encoding === 'utf-8' ? text : iconv.decode(text, encoding)
   let newText = text
   newText = newText.replace(/\*/gi, '')
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown

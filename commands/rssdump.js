@@ -4,14 +4,16 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FlattenedJSON = require('../structs/FlattenedJSON.js')
 const getArticle = require('../rss/getArticle.js')
+const dbOps = require('../util/dbOps.js')
 
 module.exports = async (bot, message, command) => {
-  const feedSelector = new FeedSelector(message, undefined, { command: command })
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const feedSelector = new FeedSelector(message, undefined, { command: command }, guildRss)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
     if (!data) return
     const wait = await message.channel.send(`Generating dump...`)
-    const dataArr = await getArticle(data.guildRss, data.rssName, false)
+    const dataArr = await getArticle(guildRss, data.rssName, false)
     const articleList = dataArr[2]
     let textOutput = ''
     let objOutput = []
@@ -19,7 +21,7 @@ module.exports = async (bot, message, command) => {
     for (var link in articleList) {
       const articleObject = articleList[link]
       if (raw) objOutput.push(articleObject)
-      else textOutput += new FlattenedJSON(articleObject, data.guildRss.sources[data.rssName]).text + '\r\n\r\n'
+      else textOutput += new FlattenedJSON(articleObject, guildRss.sources[data.rssName]).text + '\r\n\r\n'
     }
     textOutput = textOutput.trim()
     await wait.edit('Dump has been generated. Attempting to attach file, see below.')

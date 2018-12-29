@@ -1,10 +1,10 @@
 const Attachment = require('discord.js').Attachment
-const currentGuilds = require('../util/storage.js').currentGuilds
 const log = require('../util/logger.js')
+const dbOps = require('../util/dbOps.js')
 
 module.exports = async (bot, message, automatic) => { // automatic indicates invokation by the bot
-  const guildRss = currentGuilds.get(message.guild.id)
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
     if (!guildRss && !automatic) await message.channel.send('This server does not have a profile.')
     if (!guildRss) return
     const backup = JSON.parse(JSON.stringify(guildRss, null, 2))

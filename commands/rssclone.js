@@ -32,13 +32,13 @@ async function confirmFn (m, data) {
 }
 
 module.exports = async (bot, message, command) => {
-  const sourceSelector = new FeedSelector(message, undefined, { command: command, prependDescription: 'Select the source to copy from.', globalSelect: true })
-  const destSelector = new FeedSelector(message, destSelectorFn, { command: command, prependDescription: 'Select the destination(s) to copy to.', multiSelect: true, globalSelect: true })
-  const confirm = new MenuUtils.Menu(message, confirmFn, { splitOptions: { prepend: '```', append: '```' } })
-
-  const args = MenuUtils.extractArgsAfterCommand(message.content)
-
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const sourceSelector = new FeedSelector(message, undefined, { command: command, prependDescription: 'Select the source to copy from.', globalSelect: true }, guildRss)
+    const destSelector = new FeedSelector(message, destSelectorFn, { command: command, prependDescription: 'Select the destination(s) to copy to.', multiSelect: true, globalSelect: true }, guildRss)
+    const confirm = new MenuUtils.Menu(message, confirmFn, { splitOptions: { prepend: '```', append: '```' } })
+
+    const args = MenuUtils.extractArgsAfterCommand(message.content)
     if (args.length === 0) return await message.channel.send(`You must add at least one property to clone as an argument. The properties available for cloning are \`message\`, \`embed\`, \`filters\`, \`misc-options\`, \`global-roles\` and \`filtered-roles\`. To clone all these properties, you can just use \`all\`.\n\nFor example, to clone a feed's message and embed, type \`${config.bot.prefix}rssclone message embed\`.`)
 
     const cloneAll = args.includes('all')
@@ -53,9 +53,9 @@ module.exports = async (bot, message, command) => {
     if (!data || !data.confirmed) return
     const m = await message.channel.send('Cloning...')
 
-    const sourceFeed = data.guildRss.sources[data.rssName]
+    const sourceFeed = guildRss.sources[data.rssName]
     const destFeeds = []
-    for (var i = 0; i < data.rssNameList.length; ++i) destFeeds.push(data.guildRss.sources[data.rssNameList[i]])
+    for (var i = 0; i < data.rssNameList.length; ++i) destFeeds.push(guildRss.sources[data.rssNameList[i]])
     // If any of these props are empty in the source feed, then it will simply be deleted
     const emptyMessage = !sourceFeed.message
     const emptyEmbed = !sourceFeed.embeds || sourceFeed.embeds.length === 0
@@ -111,10 +111,10 @@ module.exports = async (bot, message, command) => {
     })
 
     log.command.info(`Properties ${data.clonedProps.join(',')} for the feed ${sourceFeed.link} cloning to to ${destLinksCount} feeds`, message.guild)
-    await dbOps.guildRss.update(data.guildRss)
+    await dbOps.guildRss.update(guildRss)
     await m.edit(`The following settings\n\n\`${data.clonedProps.join('`, `')}\`\n\nfor the feed <${sourceFeed.link}> have been successfully cloned into ${destLinksCount} feed(s). After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } catch (err) {
-    log.command.warning(`rssclone`, message.guild, err, true)
+    log.command.warning(`rssclone`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssclone 1', message.guild, err))
   }
 }

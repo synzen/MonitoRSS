@@ -29,13 +29,14 @@ async function messagePromptFn (m, data) {
 }
 
 module.exports = async (bot, message, command) => {
-  const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
-  const messagePrompt = new MenuUtils.Menu(message, messagePromptFn)
-
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
+    const messagePrompt = new MenuUtils.Menu(message, messagePromptFn)
+
     const data = await new MenuUtils.MenuSeries(message, [feedSelector, messagePrompt]).start()
     if (!data) return
-    const { setting, guildRss, rssName } = data
+    const { setting, rssName } = data
     const source = guildRss.sources[rssName]
 
     if (setting === null) {
@@ -54,7 +55,7 @@ module.exports = async (bot, message, command) => {
       await m.edit(`Message recorded:\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\` \nfor feed <${source.link}>. You may use \`${config.bot.prefix}rsstest\` to see your new message format.${setting.search(/{subscriptions}/) === -1 ? ` Note that because there is no \`{subscriptions}\`, whatever role subscriptions you add through ${config.bot.prefix}rssroles will *not* appear in this feed's article messages. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.` : ` After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`}`) // Escape backticks in code blocks by inserting zero-width space before each backtick
     }
   } catch (err) {
-    log.command.warning(`rssmessage`, message.guild, err, true)
+    log.command.warning(`rssmessage`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssmessage 1', message.guild, err))
   }
 }

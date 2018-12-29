@@ -216,9 +216,14 @@ const list = {
     }
   },
   rssinvite: {
-    initLevel: 1,
+    initLevel: 0,
     userPerm: MANAGE_CHANNELS_PERM,
     description: 'Send the invite links for this bot.'
+  },
+  rssversion: {
+    initLevel: 0,
+    userPerm: MANAGE_CHANNELS_PERM,
+    description: 'Show version of the bot.'
   },
   rsspatron: {
     initLevel: 2,
@@ -237,14 +242,13 @@ if (typeof config.bot.commandAliases === 'object') {
 exports.list = list
 exports.has = message => {
   const first = message.content.split(' ')[0]
-  const guildRss = storage.currentGuilds.get(message.guild.id) || {}
-  const prefix = guildRss.prefix || config.bot.prefix
+  const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   return list.hasOwnProperty(first.substr(prefix.length))
 }
 exports.run = async (bot, message) => {
   const first = message.content.split(' ')[0]
-  const guildRss = storage.currentGuilds.get(message.guild.id)
-  const prefix = guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
+  const guildPrefix = storage.prefixes[message.guild.id]
+  const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   let name = first.substr(prefix.length)
   if (!list.hasOwnProperty(name)) return log.general.warning(`Failed to run ${name} - nonexistent command`, message.guild)
 
@@ -257,10 +261,10 @@ exports.run = async (bot, message) => {
   const userPerm = cmdInfo.userPerm
 
   try {
-    if (guildRss && guildRss.prefix && !message.content.startsWith(guildRss.prefix)) {
-      await message.channel.send(`Invalid command prefix. You are not using the prefix you set for your server (${guildRss.prefix}).`)
+    if (guildPrefix && !message.content.startsWith(guildPrefix)) {
+      await message.channel.send(`Invalid command prefix. You are not using the prefix you set for your server (${guildPrefix}).`)
       return log.command.warning(`Ignoring command ${name} due to incorrect prefix (${prefix})`, guild)
-    } else if ((!guildRss || !guildRss.prefix) && !message.content.startsWith(config.bot.prefix)) return
+    } else if (!guildPrefix && !message.content.startsWith(config.bot.prefix)) return
     log.command.info(`Used ${message.content}`, guild)
     if (cmdInfo.initLevel !== undefined && cmdInfo.initLevel > storage.initialized) {
       const m = await message.channel.send(`This command is disabled while booting up, please wait.`)
@@ -300,8 +304,7 @@ exports.run = async (bot, message) => {
 
 exports.runController = (bot, message) => {
   const first = message.content.split(' ')[0]
-  const guildRss = storage.currentGuilds.get(message.guild.id)
-  const prefix = guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix
+  const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   const command = first.substr(prefix.length)
   if (fs.existsSync(path.join(__dirname, '..', 'commands', 'controller', `${command}.js`))) loadCCommand(command)[bot.shard && bot.shard.count > 0 ? 'sharded' : 'normal'](bot, message)
 }

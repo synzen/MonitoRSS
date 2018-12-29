@@ -324,15 +324,16 @@ ${val && val.length > 1500 ? val.slice(0, 1500) + '...' : val || '\u200b'}
 }
 
 module.exports = async (bot, message, command) => {
-  const setFields = message.content.split(' ')[1] === 'fields'
-  const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
-
   // Fields
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const setFields = message.content.split(' ')[1] === 'fields'
+    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
+
     if (setFields) {
       const fieldsData = await new MenuUtils.MenuSeries(message, [feedSelector], { setFields }).start()
       if (!fieldsData) return
-      const { guildRss, rssName, successText, removeAllEmbeds } = fieldsData
+      const { rssName, successText, removeAllEmbeds } = fieldsData
 
       log.command.info(`Removing all embeds for ${guildRss.sources[rssName].link}`, message.guild)
       await dbOps.guildRss.update(guildRss)
@@ -343,7 +344,7 @@ module.exports = async (bot, message, command) => {
     // Regular properties
     const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
     if (!data) return
-    const { guildRss, rssName, property, settings, selectedEmbedIndex, removeAllEmbeds } = data
+    const { rssName, property, settings, selectedEmbedIndex, removeAllEmbeds } = data
 
     if (removeAllEmbeds) {
       log.command.info(`Removing all embeds for ${guildRss.sources[rssName].link}`, message.guild)

@@ -6,7 +6,7 @@ const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
 const handleError = (err, message) => log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
-const EventEmitter = require('events');
+const EventEmitter = require('events')
 
 function overrideConfigs (configOverrides) {
   // Config overrides must be manually done for it to be changed in the original object (config)
@@ -108,15 +108,19 @@ class ClientSharded extends EventEmitter {
               .catch(err => log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err))
           })
           this.createIntervals()
+          return dbOps.guildRss.getAll()
+        })
+        .then(results => {
+          results.forEach(guildRss => this.guildStore.set(guildRss.id, guildRss))
           this.emit('finishInit')
-          require('../../drss-web/index.js')(this.guildStore)
+          // require('../../drss-web/index.js')(this.guildStore)
         })
         .catch(err => {
           console.log(err)
           process.exit(1)
         })
     } else if (this.shardsDone < this.shardingManager.totalShards) {
-      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone], vipServers: message.vipServers }).catch(err => handleError(err, message)) // Send signal for next shard to init
     }
   }
 

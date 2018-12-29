@@ -1,6 +1,5 @@
 const config = require('../config.js')
 const storage = require('../util/storage.js')
-const currentGuilds = storage.currentGuilds
 const TEST_OPTIONS = { split: { prepend: '```md\n', append: '```' } }
 const log = require('../util/logger.js')
 const debugFeeds = require('../util/debugFeeds.js').list
@@ -9,56 +8,49 @@ const deletedFeeds = storage.deletedFeeds
 
 class ArticleMessage {
   constructor (article, isTestMessage, skipFilters) {
+    if (!article._delivery) throw new Error('article._delivery property missing')
+    if (!article._delivery.rssName) throw new Error('article._delivery.rssName property missing')
+    if (!article._delivery.source) throw new Error('article._delivery.source property missing')
+    if (!article._delivery.channelId) throw new Error('article._delivery.channelId property missing')
+    if (!article._delivery.dateSettings) throw new Error('article._delivery.dateSettings property missing')
     this.article = article
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
     this.channelId = article.discordChannelId
-    this.channel = storage.bot.channels.get(article.discordChannelId)
+    this.channel = storage.bot.channels.get(article._delivery.channelId)
     if (!this.channel) return
-    this.guildRss = currentGuilds.get(this.channel.guild.id)
     this.webhook = undefined
     this.sendFailed = 1
-    this.rssName = article.rssName
-    this.valid = true
-    if (!this.guildRss) {
-      this.valid = false
-      return log.general.error(`${this.rssName} Unable to initialize an ArticleMessage due to missing guild profile`, this.channel.guild)
-    }
-    this.source = this.guildRss ? this.guildRss.sources[this.rssName] : undefined
-    if (!this.source) {
-      this.valid = false
-      return log.general.error(`${this.rssName} Unable to initialize an ArticleMessage due to missing source`, this.channel.guild, this.channel)
-    }
+    this.rssName = article._delivery.rssName
+    this.source = article._delivery.source
     this.toggleRoleMentions = typeof this.source.toggleRoleMentions === 'boolean' ? this.source.toggleRoleMentions : config.feeds.toggleRoleMentions
     this.split = this.source.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
     this._translate()
   }
 
   async _resolveChannel () {
-    if (((config._vip === true && storage.vipServers[this.channel.guild.id] && storage.vipServers[this.channel.guild.id].benefactor.allowWebhooks) || !config.advanced._restrictWebhooks) && this.source && typeof this.source.webhook === 'object') {
-      if (!this.channel.guild.me.permissionsIn(this.channel).has('MANAGE_WEBHOOKS')) return
-      try {
-        const hooks = await this.channel.fetchWebhooks()
-        const hook = hooks.get(this.source.webhook.id)
-        if (!hook) return
-        const guildId = this.channel.guild.id
-        const guildName = this.channel.guild.name
-        this.webhook = hook
-        this.webhook.guild = { id: guildId, name: guildName }
-        let name = this.source.webhook.name ? this.parsedArticle.convertKeywords(this.source.webhook.name) : undefined
-        if (name && name.length > 32) name = name.slice(0, 29) + '...'
-        if (name && name.length < 2) name = undefined
-        this.webhook.name = name
-        this.webhook.avatar = this.source.webhook.avatar ? this.parsedArticle.convertImgs(this.source.webhook.avatar) : undefined
-        return
-      } catch (err) {
-        log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, this.channel, err, true)
-      }
+    if (typeof this.source.webhook !== 'object' || !this.channel.guild.me.permissionsIn(this.channel).has('MANAGE_WEBHOOKS')) return
+    try {
+      const hooks = await this.channel.fetchWebhooks()
+      const hook = hooks.get(this.source.webhook.id)
+      if (!hook) return
+      const guildId = this.channel.guild.id
+      const guildName = this.channel.guild.name
+      this.webhook = hook
+      this.webhook.guild = { id: guildId, name: guildName }
+      let name = this.source.webhook.name ? this.parsedArticle.convertKeywords(this.source.webhook.name) : undefined
+      if (name && name.length > 32) name = name.slice(0, 29) + '...'
+      if (name && name.length < 2) name = undefined
+      this.webhook.name = name
+      this.webhook.avatar = this.source.webhook.avatar ? this.parsedArticle.convertImgs(this.source.webhook.avatar) : undefined
+      return
+    } catch (err) {
+      log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, this.channel, err, true)
     }
   }
 
   _translate (ignoreLimits) {
-    const results = translate(this.guildRss, this.rssName, this.article, this.isTestMessage, ignoreLimits)
+    const results = translate(this.article._delivery.source, this.article, this.isTestMessage, ignoreLimits, this.article._delivery.dateSettings)
     this.parsedArticle = results.parsedArticle
     this.subscriptionIds = this.parsedArticle.subscriptionIds
     this.passedFilters = results.passedFilters
@@ -71,7 +63,6 @@ class ArticleMessage {
     if (!this.source) throw new Error('Missing feed source')
     if (!this.channel) throw new Error('Missing feed channel')
     await this._resolveChannel()
-    if (!this.valid) throw new Error(`Missing ArticleMessage initialization data`)
     if (!this.skipFilters && !this.passedFilters) {
       if (config.log.unfiltered === true) log.general.info(`'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`, this.channel)
       return

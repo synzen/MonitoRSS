@@ -1,5 +1,4 @@
 const config = require('../config.js')
-const storage = require('../util/storage.js')
 const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -38,13 +37,15 @@ async function cookiePromptFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    if (config.advanced && config.advanced._restrictCookies === true && storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].allowCookies) return await message.channel.send('Only patrons have access to cookie control.')
-    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
+    const [ vipUser, guildRss ] = await Promise.all([ dbOps.vips.get(message.author.id), dbOps.guildRss.get(message.guild.id) ])
+
+    if (config._vip === true && (!vipUser || vipUser.allowCookies !== true || vipUser.invalid === true)) return await message.channel.send('Only patrons have access to cookie control.')
+    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
     const cookiePrompt = new MenuUtils.Menu(message, cookiePromptFn)
 
     const data = await new MenuUtils.MenuSeries(message, [feedSelector, cookiePrompt]).start()
     if (!data) return
-    const { guildRss, rssName, setting } = data
+    const { rssName, setting } = data
     const source = guildRss.sources[rssName]
 
     if (setting === 'reset') {

@@ -6,10 +6,11 @@ const log = require('../util/logger.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const feedSelector = new FeedSelector(message, null, { command: command })
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
     if (!data) return
-    const { guildRss, rssNameList } = data
+    const { rssNameList } = data
     const removing = await message.channel.send(`Removing...`)
     const errors = []
     let removed = 'Successfully removed the following link(s):\n```\n'
@@ -17,7 +18,7 @@ module.exports = async (bot, message, command) => {
     for (var i = 0; i < rssNameList.length; ++i) {
       const link = guildRss.sources[rssNameList[i]].link
       try {
-        await dbOps.guildRss.removeFeed(guildRss, rssNameList[i], true)
+        await dbOps.guildRss.removeFeed(guildRss, rssNameList[i])
         removed += `\n${link}`
         log.guild.info(`Removed feed ${link}`, message.guild)
       } catch (err) {
@@ -28,7 +29,7 @@ module.exports = async (bot, message, command) => {
     if (errors.length > 0) await removing.edit('Unable to remove specified feeds due to internal error.')
     else await removing.edit(`${removed}\`\`\`\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } catch (err) {
-    log.command.warning(`rssremove`, message.guild, err, true)
+    log.command.warning(`rssremove`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssremove 1', message.guild, err))
   }
 }

@@ -1,12 +1,10 @@
 const checkGuild = require('../util/checkGuild.js')
-const currentGuilds = require('../util/storage.js').currentGuilds
+const dbOps = require('../util/dbOps.js')
+const log = require('../util/logger.js')
 
 module.exports = (bot, oldRole, newRole) => {
-  const guildRss = currentGuilds.get(oldRole.guild.id)
-  if (!guildRss) return
-  const rssList = guildRss.sources
-
-  for (var rssName in rssList) {
-    checkGuild.roles(bot, oldRole.guild.id, rssName)
-  }
+  dbOps.guildRss.get(oldRole.guild.id).then(guildRss => {
+    if (!guildRss) return
+    checkGuild.subscriptions(bot, guildRss)
+  }).catch(err => log.general.warning('Unable get guild profile after role update', oldRole.guild, err))
 }

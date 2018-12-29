@@ -1,15 +1,13 @@
 const config = require('../config.js')
 const storage = require('./storage.js')
-const currentGuilds = storage.currentGuilds // Directory of guild profiles (Map)
 const checkGuild = require('./checkGuild.js')
-const configChecks = require('./configCheck.js')
 const LinkTracker = require('../structs/LinkTracker.js')
 const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
-function reachedFailCount (link) {
-  const failed = typeof storage.failedLinks[link] === 'string' || (typeof storage.failedLinks[link] === 'number' && storage.failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
+function reachedFailCount (link, failedLinks) {
+  const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
   if (failed && config.log.failedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
   return failed
 }
@@ -56,19 +54,22 @@ module.exports = async (bot, customSchedules, callback) => {
   }
 
   // Cache blacklisted users and guilds
-  const docs = await dbOps.blacklists.get()
+  const docs = await dbOps.blacklists.getAll()
   for (var d = 0; d < docs.length; ++d) {
     const blisted = docs[d]
     if (blisted.isGuild) storage.blacklistGuilds.push(blisted.id)
     else storage.blacklistUsers.push(blisted.id)
   }
-
-  await dbOps.failedLinks.initialize()
+  const failedLinks = {}
+  const failedLinksArr = await dbOps.failedLinks.getAll()
+  failedLinksArr.forEach(item => {
+    failedLinks[item.link] = item.failed || item.count
+  })
 
   // Cache guilds
-  const results = await dbOps.guildRss.getAll()
-  for (var r = 0; r < results.length; ++r) {
-    const guildRss = results[r]
+  const guildRssList = await dbOps.guildRss.getAll()
+  for (var r = 0; r < guildRssList.length; ++r) {
+    const guildRss = guildRssList[r]
     const guildId = guildRss.id
     if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
       if (bot.shard && bot.shard.count > 0) missingGuilds[guildId] = guildRss
@@ -83,17 +84,14 @@ module.exports = async (bot, customSchedules, callback) => {
       }
       continue
     }
+    if (guildRss.prefix) storage.prefixes[guildId] = guildRss.prefix
     if (dbOps.guildRss.empty(guildRss)) continue
-    if (!currentGuilds.has(guildId) || JSON.stringify(currentGuilds.get(guildId)) !== JSON.stringify(guildRss)) {
-      currentGuilds.set(guildId, guildRss)
-      checkGuild.names(bot, guildId)
-    }
+    checkGuild.subscriptions(bot, guildRss)
 
     guildsInfo[guildId] = guildRss
     const rssList = guildRss.sources
     for (var rssName in rssList) {
       const source = rssList[rssName]
-      checkGuild.roles(bot, guildId, rssName)
       // Assign feeds to specific schedules in scheduleAssigned for use by feedSchedules by rssNames first
       if (Object.keys(scheduleRssNameDir).length > 0) {
         for (var scheduleName1 in scheduleRssNameDir) {
@@ -119,7 +117,7 @@ module.exports = async (bot, customSchedules, callback) => {
         if (!storage.scheduleAssigned[rssName]) storage.scheduleAssigned[rssName] = 'default' // Assign to default schedule if it wasn't assigned to a custom schedule
       }
 
-      if (configChecks.checkExists(rssName, guildRss, true, true) && configChecks.validChannel(bot, guildRss, rssName) && !reachedFailCount(source.link)) activeSourcesForTracker.push({ link: source.link, rssName: rssName })
+      if (checkGuild.config(bot, guildRss, rssName, true) && !reachedFailCount(source.link, failedLinks)) activeSourcesForTracker.push({ link: source.link, rssName: rssName, server: guildId })
     }
   }
 
@@ -145,9 +143,8 @@ module.exports = async (bot, customSchedules, callback) => {
     try {
       // For patron tracking on the public bot
       if (config.database.uri.startsWith('mongo') && config._vip) {
-        await require('../settings/vips.js')(bot)
-        dbOps.vips.refreshVipSchedule(true, true) // Only assign schedules and nothing more to let linkTracker generate collection ids for database cleaning
-        finish()
+        const vipServers = await require('../settings/vips.js')(bot)
+        finish(vipServers)
       } else finish()
     } catch (e) {
       if (config._vip) log.general.error(`Failed to load VIP module`, e, true)
@@ -155,10 +152,9 @@ module.exports = async (bot, customSchedules, callback) => {
     }
   }
 
-  function finish () {
+  function finish (vipServers = []) {
     const linkTrackerArr = linkTracker.toDocs()
     for (var obj of linkTrackerArr) {
-      // if (config.database.clean !== true) {
       if (config.database.articlesExpire === 0) {
         dbOps.feeds.dropIndexes(obj.link, linkTracker.shardId, obj.scheduleName).catch(err => {
           if (err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${obj.link}:`, err)
@@ -166,21 +162,23 @@ module.exports = async (bot, customSchedules, callback) => {
       }
     }
 
-    for (var item of activeSourcesForTracker) {
-      const collectionId = storage.collectionId(item.link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, storage.scheduleAssigned[item.rssName])
-      linkTracker.increment(item.link, storage.scheduleAssigned[item.rssName])
+    for (const item of activeSourcesForTracker) {
+      const itemSchedule = vipServers.includes(item.server) ? 'vip' : storage.scheduleAssigned[item.rssName]
+      const collectionId = storage.collectionId(item.link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, itemSchedule)
+      linkTracker.increment(item.link, itemSchedule)
       if ((!bot.shard || bot.shard.count === 0) && !currentCollections.includes(collectionId)) currentCollections.push(collectionId)
     }
 
     log.init.info(`${SHARD_ID}Finished initialization`)
     if (!bot.shard || bot.shard.count === 0) {
+      dbOps.statistics.clear().catch(err => err.code === 26 ? null : log.general.warning('Unable to drop statistics database', err)) // 26 is ns not found - it's fine if it didn't exist in the first place
       dbOps.linkTracker.write(linkTracker).catch(err => log.general.warning('Unable to write link tracker links to collection after initialization', err)) // If this is a shard, then it's handled by the sharding manager
       dbOps.general.cleanDatabase(currentCollections)
-        .then(() => callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData))
+        .then(() => callback(missingGuilds, linkTracker.toDocs(), feedData))
         .catch(err => {
           log.general.error(`Unable to clean database`, err)
-          callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData)
+          callback(missingGuilds, linkTracker.toDocs(), feedData)
         })
-    } else callback(guildsInfo, missingGuilds, linkTracker.toDocs(), feedData)
+    } else callback(missingGuilds, linkTracker.toDocs(), feedData)
   }
 }

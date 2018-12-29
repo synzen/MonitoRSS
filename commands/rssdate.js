@@ -1,7 +1,5 @@
 const config = require('../config.js')
 const moment = require('moment-timezone')
-const storage = require('../util/storage.js')
-const currentGuilds = storage.currentGuilds
 const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
@@ -59,21 +57,16 @@ async function setOptionFn (m, data, callback) {
 }
 
 module.exports = async (bot, message) => {
-  const guildRss = currentGuilds.get(message.guild.id)
-  if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
-
-  // let results = []
-  // findDatePlaceholders(guildRss.sources, results)
-  // if (results.length === 0) return message.channel.send('You cannot customize the date placeholder if you don\'t use the `{date}` placeholder in any of your feeds.').catch(err => log.command.warning(`rssdate 2`, message.guild, err))
-
-  const selectOption = new MenuUtils.Menu(message, selectOptionFn).setAuthor('Date Customizations')
-    .setDescription('\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
-    .addOption('Change Timezone', `Default is \`${config.feeds.timezone}\`.${guildRss.timezone ? ' Your current setting is `' + guildRss.timezone + '`.' : ''}`)
-    .addOption('Customize Format', `Default is \`${config.feeds.dateFormat}\`. Customize the formatting of the date.${guildRss.dateFormat ? ' Your current setting is `' + guildRss.dateFormat + '`.' : ''}`)
-    .addOption('Change Language', `Default is \`${config.feeds.dateLanguage}\`. Change the language of the date.${guildRss.dateLanguage ? ' Your current setting is `' + guildRss.dateLanguage + '`.' : ''}`)
-    .addOption('Reset', `Reset all of the above back to default.`)
-
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
+    const selectOption = new MenuUtils.Menu(message, selectOptionFn).setAuthor('Date Customizations')
+      .setDescription('\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
+      .addOption('Change Timezone', `Default is \`${config.feeds.timezone}\`.${guildRss.timezone ? ' Your current setting is `' + guildRss.timezone + '`.' : ''}`)
+      .addOption('Customize Format', `Default is \`${config.feeds.dateFormat}\`. Customize the formatting of the date.${guildRss.dateFormat ? ' Your current setting is `' + guildRss.dateFormat + '`.' : ''}`)
+      .addOption('Change Language', `Default is \`${config.feeds.dateLanguage}\`. Change the language of the date.${guildRss.dateLanguage ? ' Your current setting is `' + guildRss.dateLanguage + '`.' : ''}`)
+      .addOption('Reset', `Reset all of the above back to default.`)
+
     const data = await new MenuUtils.MenuSeries(message, [selectOption], { guildRss: guildRss }).start()
     if (!data) return
     const { num, settingName, setting } = data

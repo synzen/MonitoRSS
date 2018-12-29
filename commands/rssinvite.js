@@ -1,5 +1,3 @@
-const Attachment = require('discord.js').Attachment
-const currentGuilds = require('../util/storage.js').currentGuilds
 const log = require('../util/logger.js')
 const generateText = id => `Invite with Role - <https://discordapp.com/oauth2/authorize?client_id=${id}&scope=bot&permissions=19456>
 

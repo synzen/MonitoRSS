@@ -8,7 +8,7 @@ const ScheduleManager = require('./ScheduleManager.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
-const configCheck = require('../util/configCheck.js')
+const checkConfig = require('../util/checkConfig.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientSharded = require('./ClientSharded.js')
 const EventEmitter = require('events')
@@ -74,7 +74,7 @@ class Client extends EventEmitter {
     } catch (err) {}
     // Then override from constructor
     if (configOverrides) overrideConfigs(configOverrides)
-    const configRes = configCheck.check(config)
+    const configRes = checkConfig.check(config)
     if (configRes && configRes.fatal) throw new Error(configRes.message)
     else if (configRes) log.general.warning(configRes.message)
     if (configOverrides && Array.isArray(configOverrides.suppressLogLevels)) log.suppressLevel(configOverrides.suppressLogLevels)
@@ -171,7 +171,6 @@ class Client extends EventEmitter {
           case 'finishedInit':
             storage.initialized = 2
             if (config.database.uri.startsWith('mongodb')) await dbOps.blacklists.refresh()
-            dbOps.vips.refreshVipSchedule()
             break
           case 'cycleVIPs':
             if (bot.shard.id === message.shardId) await dbOps.vips.refresh()
@@ -179,35 +178,11 @@ class Client extends EventEmitter {
           case 'runSchedule':
             if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshTime)
             break
-          case 'guildRss.update':
-            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.update(message.guildRss, true)
-            break
-          case 'guildRss.remove':
-            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.remove(message.guildRss, true)
-            break
-          case 'guildRss.disableFeed':
-            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.disableFeed(message.guildRss, message.rssName, true)
-            break
-          case 'guildRss.enableFeed':
-            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.enableFeed(message.guildRss, message.rssName, true)
-            break
-          case 'guildRss.removeFeed':
-            if (bot.guilds.has(message.guildRss.id)) await dbOps.guildRss.removeFeed(message.guildRss, message.rssName, true)
-            break
-          case 'failedLinks.uniformize':
-            await dbOps.failedLinks.uniformize(message.failedLinks, true)
-            break
           case 'failedLinks._sendAlert':
             dbOps.failedLinks._sendAlert(message.link, message.message, true)
             break
           case 'blacklists.uniformize':
             await dbOps.blacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, true)
-            break
-          case 'vips.uniformize':
-            await dbOps.vips.uniformize(message.vipUsers, message.vipServers, true)
-            break
-          case 'vips.refreshVipSchedule':
-            dbOps.vips.refreshVipSchedule(true)
             break
           case 'dbRestoreSend':
             const channel = bot.channels.get(message.channelID)
@@ -240,9 +215,9 @@ class Client extends EventEmitter {
     const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     connectDb().then(() => {
-      initialize(storage.bot, this.customSchedules, (guildsInfo, missingGuilds, linkDocs, feedData) => {
+      initialize(storage.bot, this.customSchedules, (missingGuilds, linkDocs, feedData) => {
         // feedData is only defined if config.database.uri is a databaseless folder path
-        this._finishInit(guildsInfo, missingGuilds, linkDocs, feedData, callback)
+        this._finishInit(missingGuilds, linkDocs, feedData, callback)
       })
     }).catch(err => log.general.error(`Client db connection`, err))
   }
@@ -253,13 +228,13 @@ class Client extends EventEmitter {
     this.start(callback)
   }
 
-  _finishInit (guildsInfo, missingGuilds, linkDocs, feedData, callback) {
+  _finishInit (missingGuilds, linkDocs, feedData, callback) {
     storage.initialized = 2
     this.state = STATES.READY
     this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules, feedData)
     storage.scheduleManager = this.scheduleManager
     if (storage.bot.shard && storage.bot.shard.count > 0) {
-      dbOps.failedLinks.uniformize(storage.failedLinks).then(() => process.send({ _drss: true, type: 'initComplete', guilds: guildsInfo, missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id }))
+      process.send({ _drss: true, type: 'initComplete', missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id })
     } else if (config._vip) {
       this._vipInterval = setInterval(() => {
         dbOps.vips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err))

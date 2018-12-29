@@ -3,7 +3,6 @@ const dbOps = require('../util/dbOps.js')
 const filters = require('./util/filters.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const currentGuilds = require('../util/storage.js').currentGuilds
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const VALID_OPTIONS = ['1', '2', '3', '4']
@@ -303,8 +302,8 @@ async function selectOptionFn (m, data) {
 }
 
 module.exports = async (bot, message, command) => {
-  const guildRss = currentGuilds.get(message.guild.id)
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('Cannot add role customizations without any active feeds.')
 
     const rssList = guildRss.sources
@@ -323,7 +322,7 @@ module.exports = async (bot, message, command) => {
     if (optionSelected === '3') return await deleteSubscription(message, guildRss, role, user)
     // 2 and 1 are handled within the Menu functions due to their complexity
   } catch (err) {
-    log.command.warning(`rssroles`, message.guild, err, true)
+    log.command.warning(`rssroles`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssroles 1', message.guild, err))
   }
 }

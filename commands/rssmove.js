@@ -55,9 +55,10 @@ async function selectChannelFn (m, data) {
 }
 
 module.exports = async (bot, message, command) => {
-  const feedSelector = new FeedSelector(message, null, { command: command })
-  const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: 'Mention the channel to move the feed(s) to, or type `this` for this channel.' })
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
+    const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: 'Mention the channel to move the feed(s) to, or type `this` for this channel.' })
     await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel]).start()
   } catch (err) {
     log.command.warning(`rssmove`, message.guild, err)

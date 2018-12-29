@@ -4,7 +4,6 @@ const dbOps = require('../util/dbOps.js')
 const config = require('../config.js')
 const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
-const currentGuilds = storage.currentGuilds
 const log = require('../util/logger.js')
 
 async function resolveLink (link) {
@@ -29,7 +28,7 @@ async function resolveLink (link) {
   }
 }
 
-exports.addToDb = async (articleList, link, customTitle) => {
+exports.initializeFeed = async (articleList, link, rssName) => {
   if (articleList.length === 0) return
 
   function getArticleId (article) {
@@ -48,8 +47,10 @@ exports.addToDb = async (articleList, link, customTitle) => {
 
   // Initialize the feed collection if necessary, but only if a database is used. This file has no access to the feed collections if config.database.uri is a databaseless folder path
   if (!config.database.uri.startsWith('mongo')) return
-  const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)
   try {
+    // The schedule must be assigned to the feed first in order to get the correct feed collection ID for the feed model (through storage.schedulesAssigned, third argument of models.Feed)
+    await storage.scheduleManager.assignSchedules()
+    const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, storage.scheduleAssigned[rssName])
     const docs = await dbCmds.findAll(Feed)
     if (docs.length > 0) return // The collection already exists from a previous addition, no need to initialize
     articleList.forEach(article => {
@@ -62,17 +63,17 @@ exports.addToDb = async (articleList, link, customTitle) => {
 }
 
 exports.addNewFeed = async (settings, customTitle) => {
+  const { channel, cookies } = settings
   let link = settings.link
-  const { channel, cookies, encoding } = settings
   const feedparser = new FeedParser()
   const articleList = []
   let errored = false // Sometimes feedparser emits error twice
 
   const resolved = await resolveLink(link)
   link = resolved || link
-  const currentGuildRss = currentGuilds.get(channel.guild.id)
-  if (currentGuildRss) {
-    const currentRSSList = currentGuildRss.sources
+  let guildRss = await dbOps.guildRss.get(channel.guild.id)
+  if (guildRss) {
+    const currentRSSList = guildRss.sources
     if (currentRSSList) {
       for (var n in currentRSSList) {
         const source = currentRSSList[n]
@@ -117,8 +118,6 @@ exports.addNewFeed = async (settings, customTitle) => {
     feedparser.on('end', async () => {
       if (errored) return
       try {
-        await exports.addToDb(articleList, link)
-
         const rssName = `${storage.collectionId(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)}>${Math.floor((Math.random() * 99999) + 1)}`
         let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
 
@@ -127,9 +126,7 @@ exports.addNewFeed = async (settings, customTitle) => {
 
         if (metaTitle.length > 200) metaTitle = metaTitle.slice(0, 200) + '...'
 
-        let guildRss
-        if (currentGuilds.has(channel.guild.id)) {
-          guildRss = currentGuilds.get(channel.guild.id)
+        if (guildRss) {
           if (!guildRss.sources) guildRss.sources = {}
 
           var rssList = guildRss.sources
@@ -139,7 +136,6 @@ exports.addNewFeed = async (settings, customTitle) => {
             channel: channel.id,
             addedOn: new Date()
           }
-          if (encoding) rssList[rssName].encoding = encoding
           if (cookies) rssList[rssName].advanced = { cookies: cookies }
         } else {
           guildRss = {
@@ -153,15 +149,12 @@ exports.addNewFeed = async (settings, customTitle) => {
             channel: channel.id,
             addedOn: new Date()
           }
-          if (encoding) guildRss.sources[rssName].encoding = encoding
           if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
-
-          currentGuilds.set(channel.guild.id, guildRss)
         }
 
-        if (storage.vipServers[channel.guild.id]) dbOps.vips.refreshVipSchedule(true)
-
         await dbOps.guildRss.update(guildRss)
+        // The user doesn't need to wait for the initializeFeed
+        exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
         resolve([ link, metaTitle, rssName ])
       } catch (err) {
         reject(err)

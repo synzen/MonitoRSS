@@ -4,11 +4,8 @@ const generateEmbeds = require('./embed.js')
 const Article = require('../../structs/Article.js')
 const getSubs = require('./subscriptions.js')
 
-module.exports = (guildRss, rssName, rawArticle, isTestMessage, ignoreLimits) => {
-  const rssList = guildRss.sources
-  const source = rssList[rssName]
-  if (!source) return // Might have been removed mid-cycle
-  const article = new Article(rawArticle, guildRss, rssName)
+module.exports = (source, rawArticle, isTestMessage, ignoreLimits, dateSettings) => {
+  const article = new Article(rawArticle, source, dateSettings)
   const subscriptionData = getSubs(source, article)
   article.subscriptions = subscriptionData.mentions
   article.subscriptionIds = subscriptionData.ids

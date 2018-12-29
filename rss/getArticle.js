@@ -1,28 +1,27 @@
 const requestStream = require('./request.js')
-const storage = require('../util/storage.js')
 const Article = require('../structs/Article.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const testFilters = require('./translator/filters.js')
+const dbOps = require('../util/dbOps.js')
 
-module.exports = (guildRss, rssName, passFiltersOnly) => {
+module.exports = async (guildRss, rssName, passFiltersOnly) => {
+  const rssList = guildRss.sources
+  const source = rssList[rssName]
+  const failedLinkResult = await dbOps.failedLinks.get(source.link)
+  if (failedLinkResult && failedLinkResult.failed) throw new Error('Reached connection failure limit')
+  const feedparser = new DecodedFeedParser(null, source.link)
+  const currentFeed = []
+  const cookies = (source.advanced && source.advanced.cookies) ? source.advanced.cookies : undefined
+
+  try {
+    const stream = await requestStream(source.link, cookies, feedparser)
+    stream.pipe(feedparser)
+  } catch (err) {
+    err.message = '(Connection failed) ' + err.message
+    throw err
+  }
+
   return new Promise((resolve, reject) => {
-    const failedLinks = storage.failedLinks
-    const rssList = guildRss.sources
-    const source = rssList[rssName]
-
-    if (typeof failedLinks[source.link] === 'string') return reject(new Error('Reached connection failure limit'))
-
-    const feedparser = new DecodedFeedParser(null, source.link)
-    const currentFeed = []
-    const cookies = (source.advanced && source.advanced.cookies) ? source.advanced.cookies : undefined
-
-    requestStream(source.link, cookies, feedparser)
-      .then(stream => stream.pipe(feedparser))
-      .catch(err => {
-        err.message = '(Connection failed) ' + err.message
-        reject(err)
-      })
-
     feedparser.on('error', err => {
       feedparser.removeAllListeners('end')
       reject(err)
@@ -43,7 +42,8 @@ module.exports = (guildRss, rssName, passFiltersOnly) => {
         const filteredCurrentFeed = []
 
         currentFeed.forEach(article => {
-          if (testFilters(guildRss.sources[rssName], new Article(article, guildRss, rssName)).passed) filteredCurrentFeed.push(article) // returns null if no article is sent from passesFilters
+          const constructedArticle = new Article(article, source, { })
+          if (testFilters(guildRss.sources[rssName], constructedArticle).passed) filteredCurrentFeed.push(article) // returns null if no article is sent from passesFilters
         })
 
         if (filteredCurrentFeed.length === 0) reject(new Error('No articles that pass current filters'))

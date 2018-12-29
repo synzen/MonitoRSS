@@ -1,6 +1,6 @@
 const dbCmds = require('../db/commands.js')
 const moment = require('moment-timezone')
-const defaultConfigs = require('../../util/configCheck.js').defaultConfigs
+const defaultConfigs = require('../../util/checkConfig.js').defaultConfigs
 const log = require('../../util/logger.js')
 const storage = require('../../util/storage.js')
 
@@ -77,7 +77,7 @@ module.exports = (data, callback) => {
         }
       }
       dbCmds.bulkInsert(feedCollection || Feed, toInsert).then(() => {
-        if (dbIds.length > 0) for (var rssName in rssList) processSource(rssName, docs)
+        if (dbIds.length > 0) for (var rssName in rssList) processSource(rssName)
         else callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
       })
         .catch(err => {
@@ -88,7 +88,7 @@ module.exports = (data, callback) => {
       return callback(err, { status: 'failed', link: link, rssList: rssList })
     })
 
-  function processSource (rssName, docs) {
+  function processSource (rssName) {
     const source = rssList[rssName]
     const channelId = source.channel
     const customComparisons = rssList[rssName].customComparisons // Array of names
@@ -172,8 +172,15 @@ module.exports = (data, callback) => {
         return ++processedArticles === totalArticles ? finishSource() : null
       }
 
-      article.rssName = rssName
-      article.discordChannelId = channelId
+      // For ArticleMessage to access once ScheduleManager receives this article
+      article._delivery = {
+        guildId: source.guildId, // Originally set in source through FeedSchedule.js
+        dateSettings: source.dateSettings, // Not the actual date, but settings concerning date format/language/timezone. Originally set in source through FeedSchedule.js
+        rssName,
+        channelId,
+        source
+      }
+
       callback(null, { status: 'article', article: article })
       return ++processedArticles === totalArticles ? finishSource() : null
     }

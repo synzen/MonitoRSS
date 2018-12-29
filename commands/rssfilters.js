@@ -3,6 +3,7 @@ const dbOps = require('../util/dbOps.js')
 const getArticle = require('../rss/getArticle.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
+const config = require('../config.js')
 const log = require('../util/logger.js')
 const VALID_OPTIONS = ['1', '2', '3', '4', '5']
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
@@ -40,19 +41,20 @@ async function setMessage (m, data) {
 }
 
 module.exports = async (bot, message, command, role) => {
-  const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command })
-  const messagePrompt = new MenuUtils.Menu(message, setMessage)
-    .setAuthor('Feed Filters Customization')
-    .addOption(`Add feed filter(s)`, `Add new filter(s) to a specific category in a feed.`)
-    .addOption(`Remove feed filter(s)`, `Remove existing filter(s), if any.`)
-    .addOption(`Remove all feed filter(s)`, `Remove all filters, if any.`)
-    .addOption(`List existing filter(s)`, `List all filters in all categories, if any.`)
-    .addOption(`Send passing article`, `Send a randomly chosen article that passes currently specified filters.`)
-
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
+    const messagePrompt = new MenuUtils.Menu(message, setMessage)
+      .setAuthor('Feed Filters Customization')
+      .addOption(`Add feed filter(s)`, `Add new filter(s) to a specific category in a feed.`)
+      .addOption(`Remove feed filter(s)`, `Remove existing filter(s), if any.`)
+      .addOption(`Remove all feed filter(s)`, `Remove all filters, if any.`)
+      .addOption(`List existing filter(s)`, `List all filters in all categories, if any.`)
+      .addOption(`Send passing article`, `Send a randomly chosen article that passes currently specified filters.`)
+
     const data = await new MenuUtils.MenuSeries(message, [feedSelector, messagePrompt]).start()
     if (!data) return
-    const { selectedOption, guildRss, rssName } = data
+    const { selectedOption, rssName } = data
 
     if (!selectedOption) return // Option 1/2 was selected instead of 3/4/5
     const source = guildRss.sources[rssName]
@@ -87,14 +89,30 @@ module.exports = async (bot, message, command, role) => {
       if (data.noFilters) return await message.channel.send(`There are no filters assigned to ${source.link}`)
       const [ article ] = await getArticle(guildRss, rssName, true)
       log.command.info(`Sending filtered article for ${source.link}`, message.guild)
-      article.rssName = rssName
-      article.discordChannelId = message.channel.id
+      article._delivery = {
+        rssName,
+        channelId: message.channel.id,
+        dateSettings: {
+          timezone: guildRss.timezone,
+          format: guildRss.dateFormat,
+          language: guildRss.dateLanguage
+        }
+      }
+      if (source.webhook) {
+        const vipUser = await dbOps.vips.get(message.author.id)
+        if (config._vip === true && (!vipUser || vipUser.allowWebhooks !== true || vipUser.invalid === true)) {
+          log.general.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
+          delete guildRss.sources[rssName].webhook
+        }
+      }
+      article._delivery.source = guildRss.sources[rssName]
+
       const queue = new ArticleMessageQueue()
       await queue.send(article, true, true)
       queue.sendDelayed()
     }
   } catch (err) {
-    log.command.warning(`rssfilters`, message.guild, err, true)
+    log.command.warning(`rssfilters`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssfilters 1', message.guild, err))
   }
 }

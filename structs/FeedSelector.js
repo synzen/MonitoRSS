@@ -2,9 +2,6 @@ const config = require('../config.js')
 const commands = require('../util/commands.js').list
 const channelTracker = require('../util/channelTracker.js')
 const pageControls = require('../util/pageControls.js')
-const storage = require('../util/storage.js')
-const currentGuilds = storage.currentGuilds
-const FAIL_LIMIT = config.feeds.failLimit
 const log = require('../util/logger.js')
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove', 'rssmove']
@@ -108,11 +105,11 @@ class FeedSelector extends Menu {
    * @param {String} [cmdInfo.prependDescription] Additional information in the description, before the FeedSelector's default instructions
    * @memberof FeedSelector
    */
-  constructor (message, passoverFn, cmdInfo) {
+  constructor (message, passoverFn, cmdInfo, guildRss) {
     super(message)
     if (!passoverFn) passoverFn = async (m, data) => data
+    this.guildRss = guildRss
     this.passoverFn = passoverFn
-    this.guildRss = currentGuilds.get(message.guild.id)
     if (!this.guildRss || !this.guildRss.sources || Object.keys(this.guildRss.sources).length === 0) {
       this.text = 'There are no existing feeds.'
       return
@@ -124,19 +121,13 @@ class FeedSelector extends Menu {
     this.globalSelect = GLOBAL_SELECT.includes(command) || globalSelect
 
     const rssList = this.guildRss.sources
-    const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
     this._currentRSSList = []
 
     for (var rssName in rssList) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
       const source = rssList[rssName]
       if (message.channel.id !== source.channel && !this.globalSelect) continue
       let o = { link: source.link, rssName: rssName, title: source.title }
-      if (command === 'rssrefresh') {
-        const failCount = storage.failedLinks[source.link]
-        o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
-      }
 
-      // if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates' || miscOption === 'formatTables') {
       if (OPTIONS_TEXTS[miscOption]) {
         const statusText = OPTIONS_TEXTS[miscOption].status
         let decision = ''
@@ -156,7 +147,7 @@ class FeedSelector extends Menu {
       this.text = 'No feeds assigned to this channel.'
       return
     }
-    let desc = maxFeedsAllowed === 0 ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
+    let desc = ''
     desc += (this.globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? OPTIONS_TEXTS[miscOption].toggle : commands[command].action}\n\n${prependDescription ? `${prependDescription}\n\n` : ''}Choose a feed to from this channel by typing the number to execute your requested action on. ${this.multiSelect ? 'You may select multiple feeds by separation with commas, and/or with hyphens (for example `1,3,4-6,8`). ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
     this.setAuthor('Feed Selection Menu')
     this.setDescription(desc)
