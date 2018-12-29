@@ -280,8 +280,7 @@ async function selectOptionFn (m, data) {
       nextData.next = { menu: getUserOrRole }
       return nextData
     }
-
-    const feedSelector = new FeedSelector(m, feedSelectorFn, { command: data.command })
+    const feedSelector = new FeedSelector(m, feedSelectorFn, { command: data.command }, data.guildRss)
 
     if (optionSelected === '2') { // Filtered Sub Menu
       const filteredSubMenu = new MenuUtils.Menu(m, filteredSubMenuFn)
@@ -315,7 +314,7 @@ module.exports = async (bot, message, command) => {
       .addOption(`Remove All Subscriptions for a Role or User`, `Remove all subscriptions for a role/user.`)
       .addOption(`List Roles with Subscriptions`, `List all roles with all types of subscriptions.`)
 
-    const data = await new MenuUtils.MenuSeries(message, [selectOption], { command: command }).start()
+    const data = await new MenuUtils.MenuSeries(message, [selectOption], { command: command, guildRss }).start()
     if (!data) return
     const { optionSelected, role, user } = data
     if (optionSelected === '4') return await printSubscriptions(message, rssList)
