@@ -16,7 +16,7 @@ class ArticleMessage {
     this.article = article
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
-    this.channelId = article.discordChannelId
+    this.channelId = article._delivery.channelId
     this.channel = storage.bot.channels.get(article._delivery.channelId)
     if (!this.channel) return
     this.webhook = undefined
