@@ -3,19 +3,21 @@ const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
 const dbOps = require('../util/dbOps.js')
+const serverLimit = require('../util/serverLimit.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {
   try {
-    const [ guildRss, vipUser ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), dbOps.vips.get(message.author.id) ])
+    const [ guildRss, serverLimitData ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), serverLimit(message.guild.id) ])
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('There are no existing feeds.')
 
     const failedLinks = {}
     const rssList = guildRss.sources
     let failedFeedCount = 0
 
-    const vipServer = vipUser ? vipUser.servers.includes(message.guild.id) : false
-    const maxFeedsAllowed = vipUser && vipUser.maxFeeds ? vipUser.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
+    const vipUser = serverLimitData.vipUser
+    const maxFeedsAllowed = serverLimitData.max
+
     const refreshRate = (vipUser && !vipUser.invalid && vipUser.servers.includes(message.guild.id)) && (vipUser.pledged >= 500 || vipUser.override === true) ? config._vipRefreshTimeMinutes : config.feeds.refreshTimeMinutes
     // Generate the info for each feed as an array, and push into another array
     const currentRSSList = []
@@ -45,7 +47,7 @@ module.exports = async (bot, message, command) => {
     }
 
     let vipDetails = ''
-    if (vipServer) {
+    if (vipUser) {
       vipDetails += '**Patron Until:** '
       if (vipUser.expireAt) {
         const expireAt = moment(vipUser.expireAt)
@@ -61,7 +63,7 @@ module.exports = async (bot, message, command) => {
       .setAuthor('Current Active Feeds')
       .setDescription(desc)
 
-    if (vipServer) list.setFooter(`Patronage backed by ${vipUser.name} (${vipUser.id})`)
+    if (vipUser) list.setFooter(`Patronage backed by ${vipUser.name} (${vipUser.id})`)
 
     currentRSSList.forEach(item => {
       const link = item.link

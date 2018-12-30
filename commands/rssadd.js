@@ -3,12 +3,14 @@ const initialize = require('../rss/initialize.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
+const serverLimit = require('../util/serverLimit.js')
 
 module.exports = async (bot, message) => {
   try {
-    const [ guildRss, vipUser ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), dbOps.vips.get(message.author.id) ])
+    const [ guildRss, serverLimitData ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), serverLimit(message.guild.id) ])
     const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
-    const maxFeedsAllowed = vipUser && !vipUser.invalid && vipUser.maxFeeds ? vipUser.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
+    const vipUser = serverLimitData.vipUser
+    const maxFeedsAllowed = serverLimitData.max
 
     if (message.content.split(' ').length === 1) return await message.channel.send(`The correct syntax is \`${guildRss.prefix || config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`) // If there is no link after rssadd, return.
 

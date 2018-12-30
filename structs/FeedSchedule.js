@@ -38,7 +38,7 @@ class FeedSchedule extends EventEmitter {
 
     // For vip tracking
     this.vipServers = []
-    this.feedLimits = {}
+    this.vipServerLimits = {}
     this.denyWebhooks = {}
 
     if (!this.bot.shard || this.bot.shard.count === 0) this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
@@ -85,12 +85,12 @@ class FeedSchedule extends EventEmitter {
   _addToSourceLists (guildRss, scheduleAssignmentOnly) { // rssList is an object per guildRss
     const rssList = guildRss.sources
     let c = 0 // To count and determine what feeds should be disabled if they violate their limits
-    const max = this.feedLimits[guildRss.id] || config.feeds.max
+    const max = this.vipServerLimits[guildRss.id] || config.feeds.max || 0
     const status = {}
     let feedCount = 0 // For statistics in storage
+
     for (var rssName in rssList) {
       const source = rssList[rssName]
-
       ++feedCount
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === true) {
@@ -221,7 +221,7 @@ class FeedSchedule extends EventEmitter {
       }
     }
     this.vipServers = []
-    this.feedLimits = {}
+    this.vipServerLimits = {}
     this.denyWebhooks = {}
 
     if (config._vip === true) {
@@ -231,7 +231,7 @@ class FeedSchedule extends EventEmitter {
           if (vipUser.allowWebhooks !== true || vipUser.invalid === true) this.denyWebhooks[serverId] = true
           if (vipUser.invalid === true) continue
           this.vipServers.push(serverId)
-          if (vipUser.maxFeeds && vipUser.maxFeeds > config.feeds.max) this.feedLimits[serverId] = vipUser.maxFeeds
+          if (vipUser.maxFeeds) this.vipServerLimits[serverId] = vipUser.maxFeeds
         }
       }
     }

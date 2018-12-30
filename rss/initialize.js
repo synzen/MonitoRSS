@@ -118,7 +118,8 @@ exports.addNewFeed = async (settings, customTitle) => {
     feedparser.on('end', async () => {
       if (errored) return
       try {
-        const rssName = `${storage.collectionId(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null)}>${Math.floor((Math.random() * 99999) + 1)}`
+        const shardId = !storage.bot && process.env.EXPERIMENTAL_FEATURES ? null : storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
+        const rssName = `${storage.collectionId(link, shardId)}>${Math.floor((Math.random() * 99999) + 1)}`
         let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
 
         if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
@@ -154,7 +155,7 @@ exports.addNewFeed = async (settings, customTitle) => {
 
         await dbOps.guildRss.update(guildRss)
         // The user doesn't need to wait for the initializeFeed
-        exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
+        if (!storage.bot && process.env.EXPERIMENTAL_FEATURES) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
         resolve([ link, metaTitle, rssName ])
       } catch (err) {
         reject(err)

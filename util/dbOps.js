@@ -22,8 +22,11 @@ exports.guildRss = {
     if (config.database.uri.startsWith('mongo')) return models.GuildRss().findOne({ id }, FIND_PROJECTION).lean().exec()
     return JSON.parse(await readFilePromise(path.join(config.database.uri, `${id}.json`)))
   },
-  getMany: ids => {
-    models.GuildRss().find({ id: { $in: ids } }, FIND_PROJECTION).lean().exec()
+  getMany: async ids => {
+    if (config.database.uri.startsWith('mongo')) return models.GuildRss().find({ id: { $in: ids } }, FIND_PROJECTION).lean().exec()
+    const promises = []
+    for (const id of ids) promises.push(exports.guildRss.get(id))
+    return Promise.all(promises)
   },
   getAll: async () => {
     // Database version
@@ -56,7 +59,7 @@ exports.guildRss = {
       }
     })
   },
-  update: async guildRss => {
+  update: async (guildRss, skipEmptyCheck) => {
     // Memory version
     if (!config.database.uri.startsWith('mongo')) {
       try {
@@ -65,13 +68,14 @@ exports.guildRss = {
       } catch (err) {
         throw err
       }
-      exports.guildRss.empty(guildRss, false)
+      if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
       return
     }
 
     // Database version
-    await models.GuildRss().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
-    exports.guildRss.empty(guildRss, false)
+    const res = await models.GuildRss().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
+    if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
+    return res
   },
   remove: async guildRss => {
     const guildId = guildRss.id
@@ -88,7 +92,6 @@ exports.guildRss = {
       return log.general.info(`Deleted guild ${guildId}.json`)
     }
     // Database version
-    await models.GuildRss().deleteOne({ id: guildId })
     const rssList = guildRss ? guildRss.sources : undefined
     if (rssList) {
       for (let rssName in rssList) {
@@ -96,7 +99,9 @@ exports.guildRss = {
         exports.linkTracker.decrement(rssList[rssName].link, storage.scheduleAssigned[rssName]).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
       }
     }
-    return log.general.info(`Removed Guild document ${guildId}`)
+    const res = await models.GuildRss().deleteOne({ id: guildId })
+    log.general.info(`Removed Guild document ${guildId}`)
+    return res
   },
   disableFeed: async (guildRss, rssName) => {
     if (guildRss.sources[rssName].disabled === true) return log.general.warning(`Feed named ${rssName} is already disabled in guild ${guildRss.id}`)
@@ -114,8 +119,9 @@ exports.guildRss = {
     const link = guildRss.sources[rssName].link
     delete guildRss.sources[rssName]
     storage.deletedFeeds.push(rssName)
-    await exports.guildRss.update(guildRss)
+    const res = await exports.guildRss.update(guildRss)
     await exports.linkTracker.decrement(link, storage.scheduleAssigned[rssName])
+    return res
   },
   backup: async guildRss => {
     if (!guildRss || exports.guildRss.empty(guildRss, true)) return
