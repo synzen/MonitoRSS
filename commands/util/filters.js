@@ -41,8 +41,14 @@ async function inputFilterFn (m, data) {
   const source = guildRss.sources[rssName]
   const input = m.content
   // Global subs are always deleted if filtered subs are added
-  if (role) delete source.roleSubscriptions
-  else if (user) delete source.userSubscriptions
+  const targetId = role ? role.id : user ? user.id : undefined
+  const { globalSubscriptions } = source
+  if (globalSubscriptions && targetId) {
+    for (let i = globalSubscriptions.length - 1; i >= 0; --i) {
+      if (globalSubscriptions[i].id === targetId) globalSubscriptions.splice(i, 1)
+    }
+    if (globalSubscriptions.length === 0) delete source.globalSubscriptions
+  }
 
   if (!filterList[chosenFilterType]) filterList[chosenFilterType] = []
   const editing = await m.channel.send(`Updating filters...`)
@@ -83,27 +89,25 @@ exports.add = (message, guildRss, rssName, role, user) => {
   const inputFilter = new MenuUtils.Menu(message, inputFilterFn)
   const source = guildRss.sources[rssName]
 
-  if (!source.filters) source.filters = {}
-  if (user) {
-    if (!source.filters.userSubscriptions) source.filters.userSubscriptions = {}
-    if (!source.filters.userSubscriptions[user.id]) {
-      source.filters.userSubscriptions[user.id] = {
-        name: user.username,
-        filters: {}
-      }
-    }
-  } else if (role) {
-    if (!source.filters.roleSubscriptions) source.filters.roleSubscriptions = {}
-    if (!source.filters.roleSubscriptions[role.id]) {
-      source.filters.roleSubscriptions[role.id] = {
-        name: role.name,
-        filters: {}
-      }
-    }
+  const targetId = role ? role.id : user ? user.id : undefined
+  const targetName = role ? role.name : user ? user.username : undefined
+  const targetType = role ? 'Role' : user ? 'User' : undefined
+  let targetFilterList
+  if (targetId) {
+    if (!source.filteredSubscriptions) source.filteredSubscriptions = []
+    source.filteredSubscriptions.push({
+      type: targetType.toLowerCase(),
+      id: targetId,
+      name: targetName,
+      filters: {}
+    })
+    targetFilterList = source.filteredSubscriptions[source.filteredSubscriptions.length - 1].filters
+  } else {
+    if (!source.filters) source.filters = {}
+    targetFilterList = source.filters
   }
 
   // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
-  const filterList = user ? source.filters.userSubscriptions[user.id].filters : role ? source.filters.roleSubscriptions[role.id].filters : source.filters
   const options = []
   for (var x = 0; x < filterTypes.length; ++x) {
     options.push({ title: filterTypes[x].show, description: '\u200b' })
@@ -113,11 +117,11 @@ exports.add = (message, guildRss, rssName, role, user) => {
     rssName: rssName,
     role: role,
     user: user,
-    filterList: filterList,
+    filterList: targetFilterList,
     next:
     { embed: {
       title: 'Feed Filters Customization',
-      description: `**Chosen Feed:** ${source.link}${(role) ? '\n**Chosen Role:** ' + role.name : ''}\n\nBelow is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with \`raw:\`.\u200b\n\u200b\n`,
+      description: `**Chosen Feed:** ${source.link}${targetId ? `\n**Chosen ${targetType}:** ${targetName}` : ''}\n\nBelow is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with \`raw:\`.\u200b\n\u200b\n`,
       options: options
     }
     }
@@ -173,7 +177,7 @@ async function removeFilterFn (m, data) {
 
   if (!validFilter) throw new SyntaxError(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again, or type \`exit\` to cancel.`)
 
-  const editing = await m.channel.send(`Removing filter ${m.content} from category ${chosenFilterType}...`)
+  const editing = await m.channel.send(`Removing filter \`${m.content}\` from category \`${chosenFilterType}\`...`)
   let deletedList = '' // Valid items that were removed
   for (var i = validFilter.length - 1; i >= 0; i--) { // Delete the filters stored from before from highest index to lowest since it is an array
     deletedList += `\n${validFilter[i].filter}`
@@ -182,14 +186,10 @@ async function removeFilterFn (m, data) {
   }
 
   // Check after removal if there are any empty objects
-  if (user) {
-    if (Object.keys(filterList).length === 0) delete source.filters.userSubscriptions[user.id]
-    if (Object.keys(source.filters.userSubscriptions).length === 0) delete source.filters.userSubscriptions
-  } else if (role) {
-    if (Object.keys(filterList).length === 0) delete source.filters.roleSubscriptions[role.id]
-    if (Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
-  }
+  const { filteredSubscriptions } = source
+  if (filteredSubscriptions && filteredSubscriptions.length === 0) delete source.filteredSubscriptions
   if (Object.keys(source.filters).length === 0) delete source.filters
+
   if (!user && !role) {
     let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
     if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
@@ -208,40 +208,35 @@ async function removeFilterFn (m, data) {
 
 exports.remove = (message, guildRss, rssName, role, user) => {
   const source = guildRss.sources[rssName]
-  let filterList
-  if (!role && !user) filterList = source.filters
-  else if (user && source.filters.userSubscriptions && source.filters.userSubscriptions[user.id]) filterList = source.filters.userSubscriptions[user.id].filters
-  else if (role && source.filters.roleSubscriptions && source.filters.roleSubscriptions[role.id]) filterList = source.filters.roleSubscriptions[role.id].filters
+  let targetFilterList
+  const targetId = role ? role.id : user ? user.id : undefined
+
+  if (targetId) {
+    const { filteredSubscriptions } = source
+    if (filteredSubscriptions) {
+      for (const subscriber of filteredSubscriptions) {
+        if (subscriber.id === targetId) targetFilterList = subscriber.filters
+      }
+    }
+  } else targetFilterList = source.filters
+
   const selectCategory = new MenuUtils.Menu(message, filterRemoveCategory, { numbered: false })
   const removeFilter = new MenuUtils.Menu(message, removeFilterFn)
 
-  if (!filterList || typeof filterList !== 'object') {
-    return message.channel.send(`There are no filters to remove for ${source.link}${user ? ` for the user \`${user.username}#${user.discriminator}\`` : role ? ` for the role \`${role.name}\`` : ''}.`).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
-  }
-
-  let isEmptyFilter = true
-
-  // Find any existing filter category objects
-  if (source.filters && typeof source.filters === 'object') {
-    for (var prop in source.filters) if (prop !== 'roleSubscriptions' && prop !== 'userSubscriptions') isEmptyFilter = false
-  }
-
-  if (!role && !user && isEmptyFilter) return message.channel.send(`There are no filters to remove for ${source.link}.`).catch(err => log.command.warning(`filterRemove 2`, message.guild, err))
+  if (!targetFilterList) return message.channel.send(`There are no filters to remove for ${source.link}${user ? ` for the user \`${user.username}#${user.discriminator}\`` : role ? ` for the role \`${role.name}\`` : ''}.`).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
 
   const options = []
-  for (var filterCategory in filterList) {
-    if (filterCategory !== 'roleSubscriptions' && filterCategory !== 'userSubscriptions') {
-      let value = ''
-      for (var filter in filterList[filterCategory]) value += `${filterList[filterCategory][filter]}\n`
-      options.push({ title: filterCategory, description: value, inline: true })
-    }
+  for (const filterCategory in targetFilterList) {
+    let value = ''
+    for (const filter in targetFilterList[filterCategory]) value += `${targetFilterList[filterCategory][filter]}\n`
+    options.push({ title: filterCategory, description: value, inline: true })
   }
 
   const data = { guildRss: guildRss,
     rssName: rssName,
     role: role,
     user: user,
-    filterList: filterList,
+    filterList: targetFilterList,
     next:
     { embed: {
       author: { text: `List of Assigned Filters` },

@@ -22,7 +22,7 @@ const invalidEmbedProperties = {
   authorAvatarURL: 'author_icon_url',
   message: 'description'
 }
-const invalidGlobalRoleSubscriptionProperties = {
+const invalidSubscriptionProperties = {
   roleName: 'name',
   roleID: 'id'
 }
@@ -38,7 +38,8 @@ if (Object.keys(CON_SETTINGS).length > 0) {
 
 const uri = config.database.uri
 
-mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, useCreateIndex: true, ...CON_SETTINGS, ...buffers })
+mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, ...CON_SETTINGS, ...buffers })
+mongoose.set('useCreateIndex', true)
 const db = mongoose.connection
 
 db.on('error', console.log)
@@ -51,19 +52,7 @@ db.once('open', () => {
       const rssList = guildRss.sources
       let changed = false
       for (const rssName in rssList) {
-        // Role Subscriptions
-        const roleSubscriptions = rssList[rssName].roleSubscriptions
-        if (roleSubscriptions) {
-          for (const entry of roleSubscriptions) {
-            for (const key in entry) {
-              if (!invalidGlobalRoleSubscriptionProperties[key]) continue
-              Object.defineProperty(entry, invalidGlobalRoleSubscriptionProperties[key], Object.getOwnPropertyDescriptor(entry, key))
-              delete entry[key]
-              changed = true
-            }
-          }
-        }
-
+        const source = rssList[rssName]
         // Embed
         const embedMessage = rssList[rssName].embedMessage
         if (embedMessage) {
@@ -143,10 +132,58 @@ db.once('open', () => {
           delete filters[filterType]
           changed = true
         }
+
+        // Just initialize these first, and check if they're empty at the end
+        if (!source.globalSubscriptions) source.globalSubscriptions = []
+        if (!source.filteredSubscriptions) source.filteredSubscriptions = []
+
+        // Deprecated Subscriptions
+        const deprecatedGlobalSubscriptionNames = ['roleSubscriptions', 'userSubscriptions']
+        for (let i = 0; i < deprecatedGlobalSubscriptionNames.length; ++i) {
+          const subscriberType = i === 0 ? 'role' : 'user'
+          const typeName = deprecatedGlobalSubscriptionNames[i]
+
+          const globalReference = source[typeName]
+          const filteredReference = source.filters ? source.filters[typeName] : undefined
+
+          // Do for both global and filtered
+          if (globalReference) {
+            for (let i = globalReference.length - 1; i >= 0; --i) {
+              const subscriber = globalReference[i]
+              for (const key in subscriber) {
+                if (!invalidSubscriptionProperties[key]) continue
+                Object.defineProperty(subscriber, invalidSubscriptionProperties[key], Object.getOwnPropertyDescriptor(subscriber, key))
+                delete subscriber[key]
+              }
+              changed = true
+              source.globalSubscriptions.push({ type: subscriberType, id: subscriber.id, name: subscriber.name })
+              globalReference.splice(i, 1)
+            }
+          }
+
+          if (filteredReference) {
+            for (const id in filteredReference) {
+              const subscriber = filteredReference[id]
+              for (const key in subscriber) {
+                if (!invalidSubscriptionProperties[key]) continue
+                Object.defineProperty(subscriber, invalidSubscriptionProperties[key], Object.getOwnPropertyDescriptor(subscriber, key))
+                delete subscriber[key]
+              }
+              changed = true
+              source.filteredSubscriptions.push({ type: subscriberType, id: id, name: subscriber.name, filters: subscriber.filters })
+              delete filteredReference[id]
+            }
+          }
+        }
+
+        if (source.globalSubscriptions.length === 0) delete source.globalSubscriptions
+        if (source.filteredSubscriptions.length === 0) delete source.filteredSubscriptions
+        if (source.filters && source.filters.roleSubscriptions && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
+        if (source.roleSubscriptions && source.roleSubscriptions.length === 0) delete source.roleSubscriptions
       }
 
       if (changed) {
-        storage.models.GuildRss().updateOne({ _id: guildRss._id }, { $set: guildRss }, { overwrite: true, upsert: true, strict: true }, (err, res) => {
+        storage.models.GuildRss().replaceOne({ _id: guildRss._id }, guildRss, { overwrite: true, upsert: true, strict: true }, (err, res) => {
           if (err) throw err
           console.log(`Completed ${guildRss.id} (${++c}/${docs.length}) [UPDATED]`)
           if (c === docs.length) db.close()

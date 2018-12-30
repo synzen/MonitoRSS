@@ -17,51 +17,33 @@ async function printSubscriptions (message, rssList) {
 
   for (const rssName in rssList) {
     const source = rssList[rssName]
-    // global sub list is an array of objects
-    if (source.roleSubscriptions) {
-      for (const globalSubber in source.roleSubscriptions) {
+    const subscriptionTypes = [ source.globalSubscriptions, source.filteredSubscriptions ]
+    for (let i = 0; i < subscriptionTypes.length; ++i) {
+      const reference = subscriptionTypes[i] // Both references are arrays of objects
+      if (!reference) continue
+      for (const subscriber of reference) {
+        const id = subscriber.id
+        const type = subscriber.type
         if (!subList[source.title]) subList[source.title] = {}
-        if (!subList[source.title].globalSubs) subList[source.title].globalSubs = []
-
-        const globalSubbedRole = guild.roles.get(source.roleSubscriptions[globalSubber].id).name
-        subList[source.title].globalSubs.push(globalSubbedRole)
-      }
-    }
-    if (source.userSubscriptions) {
-      for (const globalSubber in source.userSubscriptions) {
-        if (!subList[source.title]) subList[source.title] = {}
-        if (!subList[source.title].globalSubs) subList[source.title].globalSubs = []
-
-        const globalSubbedUser = guild.members.get(source.userSubscriptions[globalSubber].id).user
-        subList[source.title].globalSubs.push(`${globalSubbedUser.username}#${globalSubbedUser.discriminator}`)
-      }
-    }
-    // filtered sub list is an object
-    if (source.filters) {
-      if (source.filters.roleSubscriptions) {
-        for (const filteredSubber in source.filters.roleSubscriptions) {
-          if (!subList[source.title]) subList[source.title] = {}
-          if (!subList[source.title].filteredSubs) subList[source.title].filteredSubs = []
-
-          const filteredSubbedRole = guild.roles.get(filteredSubber).name
-          subList[source.title].filteredSubs.push(filteredSubbedRole)
-        }
-      }
-      if (source.filters.userSubscriptions) {
-        for (const filteredSubber in source.filters.userSubscriptions) {
-          if (!subList[source.title]) subList[source.title] = {}
-          if (!subList[source.title].filteredSubs) subList[source.title].filteredSubs = []
-
-          const filteredSubbedRole = guild.members.get(filteredSubber).user
-          subList[source.title].filteredSubs.push(`${filteredSubbedRole}#${filteredSubbedRole.discriminator}`)
+        const embedReferenceTitle = i === 0 ? 'globalSubs' : 'filteredSubs'
+        if (!subList[source.title][embedReferenceTitle]) subList[source.title][embedReferenceTitle] = []
+        if (type === 'user') {
+          console.log('here')
+          const resolvedUser = guild.members.get(id)
+          if (resolvedUser) subList[source.title][embedReferenceTitle].push(`${resolvedUser.user.username}#${resolvedUser.user.discriminator}`)
+        } else if (type === 'role') {
+          const resolvedRole = guild.roles.get(id)
+          if (resolvedRole) subList[source.title][embedReferenceTitle].push(`${resolvedRole.name}`)
         }
       }
     }
   }
 
+  console.log('final', subList)
+
   if (Object.keys(subList).length === 0) await message.channel.send(`There are no subscriptions for any feeds.`)
   else {
-    for (var feed in subList) {
+    for (const feed in subList) {
       let list = ''
 
       let globalSubList = '**Global Subscriptions:**\n'
@@ -75,7 +57,7 @@ async function printSubscriptions (message, rssList) {
         filteredSubList += `${subList[feed].filteredSubs[filteredSubber]}\n`
       }
       if (filteredSubList !== '\n**Filtered Subscriptions:**\n') list += filteredSubList
-      msg.addField(feed, list, true)
+      if (list) msg.addField(feed, list, true)
     }
     await message.channel.send({ embed: msg })
   }
@@ -87,49 +69,25 @@ async function deleteSubscription (message, guildRss, role, user) {
   const userID = user ? user.id : undefined
   const rssList = guildRss.sources
   let found = false
-  for (const index in rssList) {
-    const source = rssList[index]
-    // global sub list is an array
-    if (roleID && source.roleSubscriptions) {
-      for (const globalSubber in source.roleSubscriptions) {
-        if (source.roleSubscriptions[globalSubber].id === roleID) {
-          source.roleSubscriptions.splice(globalSubber, 1)
-          if (source.roleSubscriptions.length === 0) delete source.roleSubscriptions
+
+  for (const rssName in rssList) {
+    const source = rssList[rssName]
+    const subscriptionTypes = [ source.globalSubscriptions, source.filteredSubscriptions ]
+    for (let i = 0; i < subscriptionTypes.length; ++i) {
+      const reference = subscriptionTypes[i] // Both references are arrays of objects
+      if (!reference) continue
+      for (let i = reference.length - 1; i >= 0; --i) {
+        const subscriber = reference[i]
+        const id = subscriber.id
+        if (id === roleID || id === userID) {
+          reference.splice(i, 1)
           found = true
         }
       }
-    } else if (userID && source.userSubscriptions) {
-      for (const globalSubber in source.userSubscriptions) {
-        if (source.userSubscriptions[globalSubber].id === userID) {
-          source.userSubscriptions.splice(globalSubber, 1)
-          if (source.userSubscriptions.length === 0) delete source.userSubscriptions
-          found = true
-        }
-      }
-    }
-    // filtered sub list is an object
-    if (source.filters) {
-      if (roleID && source.filters.roleSubscriptions) {
-        for (const filteredSubber in source.filters.roleSubscriptions) {
-          if (filteredSubber === roleID) {
-            delete source.filters.roleSubscriptions[filteredSubber]
-            if (Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
-            if (Object.keys(source.filters).length === 0) delete source.filters
-            found = true
-          }
-        }
-      } else if (userID && source.filters.userSubscriptions) {
-        for (const filteredSubber in source.filters.userSubscriptions) {
-          if (filteredSubber === userID) {
-            delete source.filters.userSubscriptions[filteredSubber]
-            if (Object.keys(source.filters.userSubscriptions).length === 0) delete source.filters.userSubscriptions
-            if (Object.keys(source.filters).length === 0) delete source.filters
-            found = true
-          }
-        }
-      }
+      if (Object.keys(reference).length === 0) delete (i === 0 ? source.globalSubscriptions : source.filteredSubscriptions) // Deleting reference does not affect the original object
     }
   }
+
   if (!found) await message.channel.send(`This ${role ? 'role' : 'user'} has no subscriptions to remove.`)
   else {
     log.command.info(`Deleting all subscriptions`, message.guild, user || role)
@@ -142,74 +100,51 @@ async function deleteSubscription (message, guildRss, role, user) {
 async function addGlobalSub (message, guildRss, rssName, role, user) {
   const source = guildRss.sources[rssName]
   // remove any filtered subscriptions when adding global subscription, and delete parents if empty
-  if (source.filters) {
-    if (role) {
-      if (source.filters.roleSubscriptions && source.filters.roleSubscriptions[role.id]) delete source.filters.roleSubscriptions[role.id]
-      if (source.filters.roleSubscriptions && Object.keys(source.filters.roleSubscriptions).length === 0) delete source.filters.roleSubscriptions
-    } else if (user) {
-      if (source.filters.userSubscriptions && source.filters.userSubscriptions[user.id]) delete source.filters.userSubscriptions[user.id]
-      if (source.filters.userSubscriptions && Object.keys(source.filters.userSubscriptions).length === 0) delete source.filters.userSubscriptions
+  const { filteredSubscriptions } = source
+  if (filteredSubscriptions) {
+    for (let i = filteredSubscriptions.length - 1; i >= 0; --i) {
+      if (filteredSubscriptions[i].id === (role ? role.id : user.id)) filteredSubscriptions.splice(i, 1)
     }
-    if (Object.keys(source.filters).length === 0) delete source.filters
+    if (filteredSubscriptions.length === 0) delete source.filteredSubscriptions
   }
 
-  if (role) {
-    if (!source.roleSubscriptions) source.roleSubscriptions = []
-    for (const globalSubber in source.roleSubscriptions) {
-      if (source.roleSubscriptions[globalSubber].id === role.id) return message.channel.send(`Unable to add global subscription. Role \`${role.name}\` is already subscribed to this feed.`)
-    }
-    source.roleSubscriptions.push({
-      id: role.id,
-      name: role.name
-    })
-    log.command.info(`Adding global subscription to feed ${source.link}`, message.guild, message.guild.roles.get(role.id))
-  } else if (user) {
-    if (!source.userSubscriptions) source.userSubscriptions = []
-    for (const globalSubber in source.userSubscriptions) {
-      if (source.userSubscriptions[globalSubber].id === user.id) return message.channel.send(`Unable to add global subscription. User \`${user.username}\` is already subscribed to this feed.`)
-    }
-    source.userSubscriptions.push({
-      id: user.id,
-      name: user.username
-    })
-    log.command.info(`Adding global subscription to feed ${source.link}`, message.guild, user)
+  if (!source.globalSubscriptions) source.globalSubscriptions = []
+  const { globalSubscriptions } = source
+  const id = role ? role.id : user.id
+  const name = role ? role.name : user.username
+  const type = role ? 'Role' : 'User'
+  for (const subscriber of globalSubscriptions) {
+    if (id === subscriber.id) return message.channel.send(`Unable to add global subscription. ${type} \`${name}\` is already subscribed to this feed.`)
   }
+  source.globalSubscriptions.push({
+    id,
+    name,
+    type: type.toLowerCase()
+  })
+
   await dbOps.guildRss.update(guildRss)
-  await message.channel.send(`Global subscription successfully added for \`${role ? role.name : user.username}\` to feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+  log.command.info(`Added global subscription to feed ${source.link}`, message.guild, role || user)
+  await message.channel.send(`Global subscription successfully added for \`${name}\` to feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
 }
 
 // Remove global subscriptions, called from openSubMenu
 async function removeGlobalSub (message, guildRss, rssName, role, user) {
   const source = guildRss.sources[rssName]
+  const wantedId = role ? role.id : user.id
   let found = false
-  if (role) {
-    if (source.roleSubscriptions.length === 0) delete source.roleSubscriptions
-    if (!source.roleSubscriptions) return message.channel.send(`This role is not globally subscribed to the feed <${source.link}>.`)
-
-    for (const globalSubber in source.roleSubscriptions) {
-      if (source.roleSubscriptions[globalSubber].id === role.id) {
-        source.roleSubscriptions.splice(globalSubber, 1)
-        found = true
-      }
-    }
-    if (source.roleSubscriptions.length === 0) delete source.roleSubscriptions
-    if (!found) return message.channel.send(`The role \`${role.name} does not have a global subscription to this feed.`)
-  } else {
-    if (source.userSubscriptions.length === 0) delete source.userSubscriptions
-    if (!source.userSubscriptions) return message.channel.send(`This user is not globally subscribed to the feed <${source.link}>.`)
-
-    for (const globalSubber in source.userSubscriptions) {
-      if (source.userSubscriptions[globalSubber].id === user.id) {
-        source.userSubscriptions.splice(globalSubber, 1)
-        found = true
-      }
-    }
-    if (source.userSubscriptions.length === 0) delete source.userSubscriptions
-    if (!found) return message.channel.send(`The user \`${user.username} does not have a global subscription to this feed.`)
+  if (!source.globalSubscriptions) return message.channel.send(`This role is not globally subscribed to the feed <${source.link}>.`)
+  const { globalSubscriptions } = source
+  for (let i = globalSubscriptions.length - 1; i >= 0; --i) {
+    const subscriber = globalSubscriptions[i]
+    if (subscriber.id !== wantedId) continue
+    globalSubscriptions.splice(i, 1)
+    found = true
   }
+  if (!found) return message.channel.send(`The user \`${user.username} does not have a global subscription to this feed.`)
+  if (globalSubscriptions.length === 0) delete source.globalSubscriptions
 
-  log.command.info(`Removing global subscription for feed ${source.link}`, message.guild, role)
   await dbOps.guildRss.update(guildRss)
+  log.command.info(`Removed global subscription for feed ${source.link}`, message.guild, role || user)
   await message.channel.send(`Successfully removed the global subscription of the ${role ? `role \`${role.name}\`` : `user \`${user.username}#${user.discriminator}\``} from the feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
 }
 
@@ -223,7 +158,7 @@ async function filteredSubMenuFn (m, data) {
         series: filters.add(m, guildRss, rssName, role, user)
       } }
   } else if (input === '2') {
-    if (!source.filters || ((role && !source.filters.roleSubscriptions) || (user && !source.filters.userSubscriptions))) return m.channel.send(`There are no ${role ? 'role' : 'user'} filtered subscriptions to remove from the feed <${source.link}>.`)
+    if (!source.filteredSubscriptions || source.filteredSubscriptions.length === 0) return m.channel.send(`There are no ${role ? 'role' : 'user'} filtered subscriptions to remove from the feed <${source.link}>.`)
     return { ...data,
       next: {
         series: filters.remove(m, guildRss, rssName, role, user)
@@ -239,8 +174,7 @@ async function globalSubMenuFn (m, data) {
     await addGlobalSub(m, guildRss, rssName, role, user)
     return data
   } else if (input === '2') {
-    if (role && !source.roleSubscriptions) return m.channel.send(`There are no global role subscriptions to remove from the feed <${source.link}>.`)
-    else if (user && !source.userSubscriptions) return m.channel.send(`There are no global user subscriptions to remove from the feed <${source.link}>.`)
+    if (!source.globalSubscriptions || source.globalSubscriptions.length === 0) return m.channel.send(`There are no global user subscriptions to remove from the feed <${source.link}>.`)
     await removeGlobalSub(m, guildRss, rssName, role, user)
     return data
   } else throw new SyntaxError('That is not a valid option. Try again, or type `exit` to cancel.')

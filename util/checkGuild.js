@@ -7,60 +7,78 @@ const storage = require('./storage.js')
 
 exports.subscriptions = (bot, guildRss) => {
   const guild = bot.guilds.get(guildRss.id)
+  const subscriptionTypeKeyNames = ['globalSubscriptions', 'filteredSubscriptions']
+  const idsToRemove = []
 
   if (guildRss.name !== guild.name) {
     guildRss.name = guild.name
-    dbOps.guildRss.update(guildRss).catch(err => log.general.warning('checkGuild.names', guild, err))
+    dbOps.guildRss.update(guildRss).catch(err => log.general.warning('checkGuild', guild, err))
   }
+
   const rssList = guildRss.sources
   if (!rssList) return
-  for (const rssName in rssList) {
-    let changedInfo = false
+  let subscriptionsTotal = 0
+  let subscriptionsChecked = 0
 
-    const subscriptionTypeKeyNames = ['roleSubscriptions', 'userSubscriptions']
-
-    // global subs is an array of objects
-    subscriptionTypeKeyNames.forEach((key, index) => {
-      if (rssList[rssName][key] && rssList[rssName][key].length !== 0) {
-        const globalSubList = rssList[rssName][key]
-        for (const roleIndex in globalSubList) {
-          const roleOrUser = globalSubList[roleIndex]
-          const retrieved = index === 0 ? guild.roles.get(roleOrUser.id) : guild.members.get(roleOrUser.id).user
-          if (!retrieved) {
-            const id = roleOrUser.id
-            const name = roleOrUser.name
-            guildRss.sources[rssName][key].splice(roleIndex, 1)
-            if (guildRss.sources[rssName][key].length === 0) delete guildRss.sources[rssName][key]
-            log.guild.info(`(${id}, ${name}) ${index === 0 ? 'Role' : 'User'} preparing for removal due to guild deletion`, guild)
-            changedInfo = true
-          } else if ((index === 0 ? retrieved.name : retrieved.username) !== roleOrUser.name) {
-            roleOrUser.name = index === 0 ? retrieved.name : retrieved.username
-            changedInfo = true
-          }
+  function updateGuildRss () {
+    if (idsToRemove.length === 0) return
+    for (const rssName in rssList) {
+      for (const subscriptionType of subscriptionTypeKeyNames) {
+        const reference = rssList[rssName][subscriptionType]
+        if (!reference) continue
+        for (let i = reference.length - 1; i >= 0; --i) {
+          const subscriber = reference[i]
+          if (idsToRemove.includes(subscriber.id)) reference.splice(i, 1)
         }
+        if (reference.length === 0) delete rssList[rssName][subscriptionType]
       }
+    }
+    dbOps.guildRss.update(guildRss).then(() => log.guild.info(`Updated after checkGuild`, guild)).catch(err => log.general.warning('checkGuild', guild, err))
+  }
 
-      // filtered subs is an object
-      if (rssList[rssName].filters && rssList[rssName].filters[key] && Object.keys(rssList[rssName].filters[key]).length > 0) {
-        const filteredSubList = rssList[rssName].filters[key]
-        for (const roleOrUserID in filteredSubList) {
-          const retrieved = index === 0 ? guild.roles.get(roleOrUserID) : guild.members.get(roleOrUserID).user
-          if (!retrieved) {
-            const name = filteredSubList[roleOrUserID].name
-            delete guildRss.sources[rssName].filters[key][roleOrUserID]
-            if (Object.keys(guildRss.sources[rssName].filters[key]).length === 0) delete guildRss.sources[rssName].filters[key]
-            if (Object.keys(guildRss.sources[rssName].filters).length === 0) delete guildRss.sources[rssName].filters
-            log.guild.info(`(${roleOrUserID}, ${name}) ${index === 0 ? 'Role' : 'User'} preparing for removal due to guild deletion`, guild)
-            changedInfo = true
-          } else if ((index === 0 ? retrieved.name : retrieved.username) !== filteredSubList[roleOrUserID].name) {
-            filteredSubList[roleOrUserID].name = index === 0 ? retrieved.name : retrieved.username
-            changedInfo = true
+  function finishSubscriptionCheck () {
+    if (++subscriptionsChecked === subscriptionsTotal) updateGuildRss()
+  }
+
+  for (const rssName in rssList) {
+    subscriptionTypeKeyNames.forEach(subscriptionType => {
+      if (rssList[rssName][subscriptionType]) subscriptionsTotal += rssList[rssName][subscriptionType].length
+    })
+  }
+
+  for (const rssName in rssList) {
+    const source = rssList[rssName]
+    subscriptionTypeKeyNames.forEach(subscriptionType => {
+      const reference = source[subscriptionType]
+      if (!reference) return
+      for (let i = reference.length - 1; i >= 0; --i) {
+        const subscriber = reference[i]
+        const id = subscriber.id
+        const type = subscriber.type
+        if (type === 'user') {
+          bot.fetchUser(id)
+            .then(user => finishSubscriptionCheck())
+            .catch(err => {
+              log.guild.info(`(${id}, ${subscriber.name}) Unable to fetch during checkGuild. Preparing for removal.`, guild, err)
+              idsToRemove.push(id)
+              finishSubscriptionCheck()
+            })
+        } else if (type === 'role') {
+          const retrieved = guild.roles.get(id)
+          if (retrieved) finishSubscriptionCheck()
+          else {
+            log.guild.info(`(${id}, ${subscriber.name}) Nonexistent subscriber ${id} (${type}). Preparing for removal`, guild)
+            idsToRemove.push(id)
+            finishSubscriptionCheck()
           }
+        } else {
+          idsToRemove.push(id)
+          log.guild.info(`Invalid subscriber type for member shown below. Preparing for removal.`, guild)
+          console.log(subscriber)
+          finishSubscriptionCheck()
         }
       }
     })
-
-    if (changedInfo) dbOps.guildRss.update(guildRss).then(() => log.guild.info(`Updated`, guild)).catch(err => log.general.warning('checkGuild.roles', guild, err))
   }
 }
 

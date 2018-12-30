@@ -13,11 +13,7 @@ module.exports = (source, rawArticle, isTestMessage, ignoreLimits, dateSettings)
 
   // Filter message
   let filterExists = false
-  if (source.filters && typeof source.filters === 'object') {
-    for (var prop in source.filters) {
-      if (prop !== 'roleSubscriptions') filterExists = true // Check if any filter categories exists, excluding roleSubs as they are not filters
-    }
-  }
+  if (source.filters && typeof source.filters === 'object' && source.filters !== null && Object.keys(source.filters).length > 0) filterExists = true
   const filterResults = filterExists ? testFilters(source, article) : true
 
   let textFormat = source.message === undefined ? source.message : source.message.trim()
