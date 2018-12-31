@@ -171,7 +171,7 @@ module.exports = async (bot, customSchedules, callback) => {
 
     log.init.info(`${SHARD_ID}Finished initialization`)
     if (!bot.shard || bot.shard.count === 0) {
-      dbOps.statistics.clear().catch(err => err.code === 26 ? null : log.general.warning('Unable to drop statistics database', err)) // 26 is ns not found - it's fine if it didn't exist in the first place
+      if (config.database.uri.startsWith('mongo')) dbOps.statistics.clear().catch(err => err.code === 26 ? null : log.general.warning('Unable to drop statistics database', err)) // 26 is ns not found - it's fine if it didn't exist in the first place
       dbOps.linkTracker.write(linkTracker).catch(err => log.general.warning('Unable to write link tracker links to collection after initialization', err)) // If this is a shard, then it's handled by the sharding manager
       dbOps.general.cleanDatabase(currentCollections)
         .then(() => callback(missingGuilds, linkTracker.toDocs(), feedData))

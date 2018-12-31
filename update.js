@@ -1,7 +1,6 @@
 // Use this to convert the deprecated old filter references to new ones on any versions past 3.0.0, including dev branch
 
 const fs = require('fs')
-const util = require('util')
 const config = require('./config.js')
 const storage = require('./util/storage.js')
 const mongoose = require('mongoose')
@@ -82,7 +81,7 @@ if (config.database.uri.startsWith('mongo')) {
           if (err) throw err
           // Now overwrite the old with the new if necessary
           const changed = updateGuildRss(guildRss)
-          if (!changed) console.log(`Completed ${guildRss.id} (${++c}/${fileNames.length})`)  
+          if (!changed) console.log(`Completed ${guildRss.id} (${++c}/${fileNames.length})`)
           else {
             fs.writeFile(`${folderPath}/${fileName}`, JSON.stringify(guildRss, null, 2), err => {
               if (err) throw err
@@ -91,7 +90,7 @@ if (config.database.uri.startsWith('mongo')) {
           }
         })
       })
-    }    
+    }
   })
 }
 

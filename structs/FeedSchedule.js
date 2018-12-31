@@ -405,6 +405,7 @@ class FeedSchedule extends EventEmitter {
 
     ++this.ran
 
+    if (!config.database.uri.startsWith('mongo')) return
     // Update statistics
     dbOps.statistics.update({
       shard: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : 0,
