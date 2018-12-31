@@ -79,6 +79,7 @@ exports.addNewFeed = async (settings, customTitle) => {
         const source = currentRSSList[n]
         if (source.link === link && source.channel === channel.id) {
           const err = new Error('Already exists for this channel.')
+          err.code = 40002
           err.type = 'resolved'
           throw err
         }
@@ -93,6 +94,7 @@ exports.addNewFeed = async (settings, customTitle) => {
     if (errored === false) {
       errored = true
       err.message = '(Connection failed) ' + err.message
+      err.code = 50042
       throw err
     }
   }
@@ -102,7 +104,10 @@ exports.addNewFeed = async (settings, customTitle) => {
       feedparser.removeAllListeners('end')
       if (err && errored === false) {
         errored = true
-        if (err.message === 'Not a feed') err.message = 'That is a not a valid feed. Note that you cannot add just any link. You may check if it is a valid feed by using online RSS feed validators'
+        if (err.message === 'Not a feed') {
+          err.code = 40002
+          err.message = 'That is a not a valid feed. Note that you cannot add just any link. You may check if it is a valid feed by using online RSS feed validators'
+        }
         return reject(err)
       }
     })
@@ -153,10 +158,10 @@ exports.addNewFeed = async (settings, customTitle) => {
           if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
         }
 
-        await dbOps.guildRss.update(guildRss)
+        const result = await dbOps.guildRss.update(guildRss)
         // The user doesn't need to wait for the initializeFeed
         if (!storage.bot && process.env.EXPERIMENTAL_FEATURES) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
-        resolve([ link, metaTitle, rssName ])
+        resolve([ link, metaTitle, rssName, result ])
       } catch (err) {
         reject(err)
       }

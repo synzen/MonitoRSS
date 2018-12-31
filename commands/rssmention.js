@@ -28,7 +28,6 @@ async function printSubscriptions (message, rssList) {
         const embedReferenceTitle = i === 0 ? 'globalSubs' : 'filteredSubs'
         if (!subList[source.title][embedReferenceTitle]) subList[source.title][embedReferenceTitle] = []
         if (type === 'user') {
-          console.log('here')
           const resolvedUser = guild.members.get(id)
           if (resolvedUser) subList[source.title][embedReferenceTitle].push(`${resolvedUser.user.username}#${resolvedUser.user.discriminator}`)
         } else if (type === 'role') {
@@ -38,8 +37,6 @@ async function printSubscriptions (message, rssList) {
       }
     }
   }
-
-  console.log('final', subList)
 
   if (Object.keys(subList).length === 0) await message.channel.send(`There are no subscriptions for any feeds.`)
   else {
