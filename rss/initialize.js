@@ -79,7 +79,7 @@ exports.addNewFeed = async (settings, customTitle) => {
         const source = currentRSSList[n]
         if (source.link === link && source.channel === channel.id) {
           const err = new Error('Already exists for this channel.')
-          err.code = 40002
+          err.code = 40003
           err.type = 'resolved'
           throw err
         }
