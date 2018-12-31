@@ -16,10 +16,11 @@
     "controllerIds": [""],
     "menuColor": 5285609,
     "deleteMenus": false,
+    "exitOnSocketIssues": false,
     "commandAliases": {}
   },
   "database": {
-    "uri": "mongodb://localhost/rss",
+    "uri": "mongodb://localhost:27017/rss",
     "connection": {},
     "clean": false,
     "articlesExpire": 14,
@@ -36,21 +37,20 @@
     "timeFallback": false,
     "failLimit": 0,
     "notifyFail": true,
-    "sendOldMessages": false,
-    "defaultMaxAge": 1,
+    "sendOldOnFirstCycle": true,
     "cycleMaxAge": 1,
     "defaultMessage": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
-    "showRegexErrs": true,
     "imgPreviews": true,
     "imgLinksExistence": true,
     "checkDates": true,
     "formatTables": false,
-    "toggleRoleMentions": false
+    "toggleRoleMentions": false,
+    "decode": {}
   },
   "advanced": {
     "shards": 2,
     "batchSize": 400,
-    "processorMethod": "single",
+    "processorMethod": "concurrent",
     "parallel": 2
   }
 }

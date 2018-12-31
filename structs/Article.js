@@ -1,10 +1,12 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
-const defaultConfigs = require('../util/configCheck.js').defaultConfigs
-const log = require('../util/logger.js')
+const FlattenedJSON = require('./FlattenedJSON.js')
+const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
 const VALID_PH_IMGS = ['title', 'description', 'summary']
-const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date']
+const VALID_PH_ANCHORS = ['title', 'description', 'summary']
+const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date', 'link']
+const RAW_REGEX_FINDER = new RegExp('{raw:([^{}]+)}', 'g')
 
 function dateHasNoTime (date) { // Determine if the time is T00:00:00.000Z
   const timeParts = [date.getUTCHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()]
@@ -43,40 +45,45 @@ function escapeRegExp (str) {
   return str.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
 }
 
-function regexReplace (string, searchOptions, replacement) {
+function regexReplace (string, searchOptions, replacement, replacementDirect) {
   if (typeof searchOptions !== 'object') throw new TypeError(`Expected RegexOp search key to have an object value, found ${typeof searchOptions} instead`)
+  if (replacementDirect) return string.replace(new RegExp(searchOptions.regex, searchOptions.flags), replacementDirect) // Allow direct input into the search function, and ignore "match" and "group" in the regexOp.search
   const flags = !searchOptions.flags ? 'g' : searchOptions.flags.includes('g') ? searchOptions.flags : searchOptions.flags + 'g' // Global flag must be included to prevent infinite loop during .exec
-  try {
-    const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined
-    const groupNum = searchOptions.group !== undefined ? parseInt(searchOptions.group, 10) : undefined
-    const regExp = new RegExp(searchOptions.regex, flags)
-    const matches = []
-    let match
-    do { // Find everything that matches the search regex query and push it to matches.
-      match = regExp.exec(string)
-      if (match) matches.push(match)
-    } while (match)
-    match = matches[matchIndex || 0][groupNum || 0]
+  const matchIndex = searchOptions.match !== undefined ? parseInt(searchOptions.match, 10) : undefined
+  const groupNum = searchOptions.group !== undefined ? parseInt(searchOptions.group, 10) : undefined
+  const regExp = new RegExp(searchOptions.regex, flags)
+  const matches = []
+  let match
+  do { // Find everything that matches the search regex query and push it to matches.
+    match = regExp.exec(string)
+    if (match) matches.push(match)
+  } while (match)
+  if (matches.length === 0) return string
+  else {
+    const mi = matches[matchIndex || 0]
+    if (!mi) return string
+    else match = mi[groupNum || 0]
+  }
 
-    if (replacement !== undefined) {
-      if (matchIndex === undefined && groupNum === undefined) { // If no match or group is defined, replace every full match of the search in the original string
-        for (var x in matches) {
-          const exp = new RegExp(escapeRegExp(matches[x][0]), flags)
-          string = string.replace(exp, replacement)
-        }
-      } else if (matchIndex && groupNum === undefined) { // If no group number is defined, use the full match of this particular match number in the original string
-        const exp = new RegExp(escapeRegExp(matches[matchIndex][0]), flags)
-        string = string.replace(exp, replacement)
-      } else {
-        const exp = new RegExp(escapeRegExp(matches[matchIndex][groupNum]), flags)
+  if (replacement !== undefined) {
+    if (matchIndex === undefined && groupNum === undefined) { // If no match or group is defined, replace every full match of the search in the original string
+      for (var x in matches) {
+        const exp = new RegExp(escapeRegExp(matches[x][0]), flags)
         string = string.replace(exp, replacement)
       }
-    } else string = match
+    } else if (matchIndex && groupNum === undefined) { // If no group number is defined, use the full match of this particular match number in the original string
+      const exp = new RegExp(escapeRegExp(matches[matchIndex][0]), flags)
+      string = string.replace(exp, replacement)
+    } else if (matchIndex === undefined && groupNum) {
+      const exp = new RegExp(escapeRegExp(matches[0][groupNum]), flags)
+      string = string.replace(exp, replacement)
+    } else {
+      const exp = new RegExp(escapeRegExp(matches[matchIndex][groupNum]), flags)
+      string = string.replace(exp, replacement)
+    }
+  } else string = match
 
-    return string
-  } catch (e) {
-    return e
-  }
+  return string
 }
 
 function evalRegexConfig (source, text, placeholderName) {
@@ -85,7 +92,7 @@ function evalRegexConfig (source, text, placeholderName) {
   if (Array.isArray(source.regexOps[placeholderName])) { // Eval regex if specified
     if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
       for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
-        if (source.regexOps.disabled[y] === placeholderName) return null // text
+        if (source.regexOps.disabled[y] === placeholderName) return null
       }
     }
 
@@ -93,21 +100,15 @@ function evalRegexConfig (source, text, placeholderName) {
     for (var regexOpIndex in phRegexOps) { // Looping through each regexOp for a placeholder
       const regexOp = phRegexOps[regexOpIndex]
       if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
-
       if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
-
       const clone = Object.assign({}, customPlaceholders)
-
-      const modified = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement)
-      if (typeof modified !== 'string') {
-        if (config.feeds.showRegexErrs !== false) log.general.error(`Evaluation of regex for article ${source.link}`, modified)
-      } else customPlaceholders[regexOp.name] = modified // newText = modified
+      customPlaceholders[regexOp.name] = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement, regexOp.replacementDirect)
     }
   } else return null
   return customPlaceholders
 }
 
-function cleanup (source, text, imgSrcs) {
+function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
   if (!text) return ''
 
   text = text.replace(/\*/gi, '')
@@ -127,7 +128,7 @@ function cleanup (source, text, imgSrcs) {
         if (isStr && link.startsWith('//')) link = 'http:' + link
         else if (isStr && !link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
 
-        if (Array.isArray(imgSrcs) && imgSrcs.length < 5 && isStr && link) imgSrcs.push(link)
+        if (Array.isArray(imgSrcs) && imgSrcs.length < 9 && isStr && link) imgSrcs.push(link)
 
         let exist = true
         const globalExistOption = config.feeds.imgLinksExistence != null ? config.feeds.imgLinksExistence : defaultConfigs.feeds.imgLinksExistence.default // Always a boolean via startup checks
@@ -143,6 +144,13 @@ function cleanup (source, text, imgSrcs) {
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
 
         return image
+      },
+      anchor: (node, fn, options) => {
+        const orig = fn(node.children, options)
+        if (!Array.isArray(anchorLinks)) return orig
+        const href = node.attribs.href ? node.attribs.href.trim() : ''
+        if (anchorLinks.length < 5 && href) anchorLinks.push(href)
+        return orig
       }
     }
   })
@@ -154,26 +162,34 @@ function cleanup (source, text, imgSrcs) {
 }
 
 module.exports = class Article {
-  constructor (raw, guildRss, rssName) {
-    const source = guildRss.sources[rssName]
+  constructor (raw, source, dateSettings) {
+    this.source = source
+    this.dateSettings = dateSettings
+    this.raw = raw
+    this.encoding = raw.meta['#xml'].encoding ? raw.meta['#xml'].encoding.toLowerCase() : 'utf-8'
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
-    this.youtube = raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#']
+    this.youtube = !!(raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#'])
     this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
     this.placeholdersForRegex = BASE_REGEX_PHS.slice()
     this.meta = raw.meta
     this.guid = raw.guid
-    this.author = raw.author ? cleanup(source, raw.author) : ''
+    this.author = raw.author ? cleanup(source, raw.author, undefined, undefined, this.encoding) : ''
     this.link = raw.link ? raw.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
     if (this.reddit && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
 
     // Title
-    const titleImgs = []
-    this.fullTitle = cleanup(source, raw.title, titleImgs)
+    this.titleImages = []
+    this.titleAnchors = []
+    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors, this.encoding)
     this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
-    this.titleImgs = titleImgs
-    for (var titleImgNum in titleImgs) {
-      const term = `description:image${parseInt(titleImgNum, 10) + 1}`
-      this[term] = titleImgs[titleImgNum]
+    for (var titleImgNum in this.titleImages) {
+      const term = `title:image${parseInt(titleImgNum, 10) + 1}`
+      this[term] = this.titleImages[titleImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
+    for (var titleAnchorNum in this.titleAnchors) {
+      const term = `title:anchor${parseInt(titleAnchorNum, 10) + 1}`
+      this[term] = this.titleAnchors[titleAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
@@ -181,61 +197,57 @@ module.exports = class Article {
     this.guid = raw.guid ? raw.guid : ''
 
     // Date
-    if ((raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') || config.feeds.dateFallback === true) {
-      const guildTimezone = guildRss.timezone
+    if (raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') {
+      const guildTimezone = dateSettings.timezone
       const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feeds.timezone
-      const dateFormat = guildRss.dateFormat ? guildRss.dateFormat : config.feeds.dateFormat
+      const dateFormat = dateSettings.format ? dateSettings.format : config.feeds.dateFormat
 
       const useDateFallback = config.feeds.dateFallback === true && (!raw.pubdate || raw.pubdate.toString() === 'Invalid Date')
       const useTimeFallback = config.feeds.timeFallback === true && raw.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(raw.pubdate)
       const date = useDateFallback ? new Date() : raw.pubdate
       const localMoment = moment(date)
-      if (guildRss.dateLanguage) localMoment.locale(guildRss.dateLanguage)
+      if (dateSettings.language) localMoment.locale(dateSettings.language)
       const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
-      this.rawDate = this.date
+      this.rawDate = raw.pubdate
     }
 
     // Description and reddit-specific placeholders
-    const descriptionImages = []
-    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, descriptionImages) // Account for youtube's description
-    let description = this.fullDescription
-    description = description.length > 800 ? `${description.slice(0, 790)}...` : description
-    for (var desImgNum in descriptionImages) {
+    this.descriptionImages = []
+    this.descriptionAnchors = []
+    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors, this.encoding) // Account for youtube's description
+    this.description = this.fullDescription
+    this.description = this.description.length > 800 ? `${this.description.slice(0, 790)}...` : this.description
+    for (var desImgNum in this.descriptionImages) {
       const term = `description:image${parseInt(desImgNum, 10) + 1}`
-      this[term] = descriptionImages[desImgNum]
+      this[term] = this.descriptionImages[desImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
+    for (var desAnchorNum in this.descriptionAnchors) {
+      const term = `description:anchor${parseInt(desAnchorNum, 10) + 1}`
+      this[term] = this.descriptionAnchors[desAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
-    // Get the specific reddit placeholders {reddit_direct} and {reddit_author}
     if (this.reddit) {
-      htmlConvert.fromString(raw.description, {
-        format: {
-          anchor: (node, fn, options) => {
-            const child = node.children[0]
-            if (child && child.data === '[link]') this.reddit_direct = node.attribs.href === this.link ? '' : (node.attribs.href || '')
-            if (this.enabledRegex) this.placeholdersForRegex.push('reddit_direct')
-            if (child && child.data && child.data.startsWith(' /u/')) this.reddit_author = node.attribs.href || ''
-            if (this.enabledRegex) this.placeholdersForRegex.push('reddit_author')
-            // No need to return anything since the output of htmlConvert.fromString isn't needed
-          }
-        }
-      })
+      // Truncate the useless end of reddit description after anchors are removed
       this.fullDescription = this.fullDescription.replace('\n[link] [comments]', '')
-      description = description.replace('\n[link] [comments]', '') // Truncate the useless end of reddit description after anchors are removed
-    } else this.reddit_direct = this.reddit_author = ''
-
-    this.description = description
-    this.descriptionImgs = descriptionImages
+      this.description = this.description.replace('\n[link] [comments]', '')
+    }
 
     // Summary
-    const summaryImages = []
-    this.fullSummary = cleanup(source, raw.summary, summaryImages)
+    this.summaryImages = []
+    this.summaryAnchors = []
+    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
     this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
-    this.summaryImgs = summaryImages
-    for (var sumImgNum in summaryImages) {
+    for (var sumImgNum in this.summaryImages) {
       const term = `summary:image${parseInt(sumImgNum, 10) + 1}`
-      this[term] = summaryImages[sumImgNum]
+      this[term] = this.summaryImages[sumImgNum]
+      if (this.enabledRegex) this.placeholdersForRegex.push(term)
+    }
+    for (var sumAnchorNum in this.summaryAnchors) {
+      const term = `summary:anchor${parseInt(sumAnchorNum, 10) + 1}`
+      this[term] = this.summaryAnchors[sumAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
@@ -258,7 +270,7 @@ module.exports = class Article {
         categoryList += cats[category].trim()
         if (parseInt(category, 10) !== cats.length - 1) categoryList += '\n'
       }
-      this.tags = categoryList
+      this.tags = cleanup(source, categoryList, undefined, undefined, this.encoding)
     }
 
     // Regex-defined custom placeholders
@@ -288,13 +300,31 @@ module.exports = class Article {
     const listedImages = []
     let list = ''
     for (var k in VALID_PH_IMGS) {
-      const placeholderImgs = this[VALID_PH_IMGS[k] + 'Imgs']
+      const placeholderImgs = this[VALID_PH_IMGS[k] + 'Images']
       for (var l in placeholderImgs) {
         if (listedImages.includes(placeholderImgs[l])) continue
         listedImages.push(placeholderImgs[l])
         const placeholder = VALID_PH_IMGS[k].slice(0, 1).toUpperCase() + VALID_PH_IMGS[k].substr(1, VALID_PH_IMGS[k].length)
         const imgNum = parseInt(l, 10) + 1
         list += `\n[${placeholder} Image${imgNum}]: {${VALID_PH_IMGS[k]}:image${imgNum}}\n${placeholderImgs[l]}`
+      }
+    }
+
+    return list.trim()
+  }
+
+  // List all {placeholder:imageX} to string
+  listPlaceholderAnchors () {
+    const listedAnchors = []
+    let list = ''
+    for (var k in VALID_PH_ANCHORS) {
+      const placeholderAnchors = this[VALID_PH_ANCHORS[k] + 'Anchors']
+      for (var l in placeholderAnchors) {
+        if (listedAnchors.includes(placeholderAnchors[l])) continue
+        listedAnchors.push(placeholderAnchors[l])
+        const placeholder = VALID_PH_ANCHORS[k].slice(0, 1).toUpperCase() + VALID_PH_ANCHORS[k].substr(1, VALID_PH_ANCHORS[k].length)
+        const anchorNum = parseInt(l, 10) + 1
+        list += `\n[${placeholder} Anchor${anchorNum}]: {${VALID_PH_ANCHORS[k]}:anchor${anchorNum}}\n${placeholderAnchors[l]}`
       }
     }
 
@@ -315,10 +345,9 @@ module.exports = class Article {
         img = this.convertImgs(term)
         continue
       } else if (arr.length === 1 || arr[1].search(/image[1-9]/) === -1) continue
-      const validPlaceholders = ['title', 'description', 'summary']
       const placeholder = arr[0].replace(/{|}/, '')
-      const placeholderImgs = this[placeholder + 'Imgs']
-      if (!validPlaceholders.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
+      const placeholderImgs = this[placeholder + 'Images']
+      if (!VALID_PH_IMGS.includes(placeholder) || !placeholderImgs || placeholderImgs.length < 1) continue
 
       const imgNum = parseInt(arr[1].substr(arr[1].search(/[1-9]/), 1), 10) - 1
       if (isNaN(imgNum) || imgNum > 4 || imgNum < 0) continue
@@ -331,7 +360,7 @@ module.exports = class Article {
   convertImgs (content) {
     const imgDictionary = {}
     const imgLocs = content.match(/{image[1-9](\|\|(.+))*}/g)
-    const phImageLocs = content.match(/({(description|image|title):image[1-5](\|\|(.+))*})/gi)
+    const phImageLocs = content.match(/({(description|title|summary):image[1-9](\|\|(.+))*})/gi)
     if (imgLocs) {
       for (var loc in imgLocs) {
         const term = imgLocs[loc]
@@ -358,8 +387,62 @@ module.exports = class Article {
         content = this.resolvePlaceholderImg(phImageLocs[h]) ? content.replace(phImageLocs[h], this.resolvePlaceholderImg(phImageLocs[h])) : content.replace(phImageLocs[h], '')
       }
     }
-    if (this.reddit) content = content.replace(/{reddit_direct}/g, this.reddit_direct)
     return content
+  }
+
+  resolvePlaceholderAnchor (input) {
+    const arr = input.split(':')
+    if (arr.length === 1 || arr[1].search(/anchor[1-5]/) === -1) return ''
+    const placeholder = arr[0].replace(/{|}/, '')
+    const placeholderAnchors = this[placeholder + 'Anchors']
+    if (!VALID_PH_ANCHORS.includes(placeholder) || !placeholderAnchors || placeholderAnchors.length < 1) return ''
+    const num = parseInt(arr[1].substr(arr[1].search(/[1-5]/), 1), 10) - 1
+    if (isNaN(num) || num > 4 || num < 0) return ''
+    return placeholderAnchors[num]
+  }
+
+  convertAnchors (content) {
+    const phAnchorLocs = content.match(/({(description|title|summary):anchor[1-5](\|\|(.+))*})/gi)
+    if (!phAnchorLocs) return content
+    for (var h in phAnchorLocs) {
+      content = this.resolvePlaceholderAnchor(phAnchorLocs[h]) ? content.replace(phAnchorLocs[h], this.resolvePlaceholderAnchor(phAnchorLocs[h])) : content.replace(phAnchorLocs[h], '')
+    }
+    return content
+  }
+
+  convertRawPlaceholders (content) {
+    let result
+    const matches = {}
+    do {
+      result = RAW_REGEX_FINDER.exec(content)
+      if (!result) continue
+      if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source, this.encoding)
+      const fullMatch = result[0]
+      const matchName = result[1]
+      matches[fullMatch] = this.flattenedJSON.results[matchName] || ''
+
+      // Format the date if it is one
+      if (Object.prototype.toString.call(matches[fullMatch]) === '[object Date]') {
+        const guildTimezone = this.dateSettings.timezone
+        const timezone = guildTimezone && moment.tz.zone(guildTimezone) ? guildTimezone : config.feeds.timezone
+        const dateFormat = this.dateSettings.format ? this.dateSettings.format : config.feeds.dateFormat
+        const localMoment = moment(matches[fullMatch])
+        if (this.dateSettings.language) localMoment.locale(this.dateSettings.language)
+        const useTimeFallback = config.feeds.timeFallback === true && matches[fullMatch].toString() !== 'Invalid Date' && dateHasNoTime(matches[fullMatch])
+        matches[fullMatch] = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
+      }
+    } while (result !== null)
+    for (var phName in matches) content = content.replace(phName, matches[phName])
+    return content
+  }
+
+  getRawPlaceholderContent (phName) {
+    if (!phName.startsWith('raw:')) return ''
+    if (this.flattenedJSON) return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
+    else {
+      this.flattenedJSON = new FlattenedJSON(this.raw, this.source, this.encoding)
+      return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
+    }
   }
 
   // replace simple keywords
@@ -376,8 +459,6 @@ module.exports = class Article {
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
 
-    if (this.reddit) content = content.replace(/{reddit_author}/g, this.reddit_author).replace(/{reddit_direct}/g, this.reddit_direct)
-
     for (var placeholder in regexPlaceholders) {
       for (var customName in regexPlaceholders[placeholder]) {
         const replacementQuery = new RegExp(`{${placeholder}:${escapeRegExp(customName)}}`, 'g')
@@ -385,6 +466,7 @@ module.exports = class Article {
         content = content.replace(replacementQuery, replacementContent)
       }
     }
-    return this.convertImgs(content)
+
+    return this.convertRawPlaceholders(this.convertAnchors(this.convertImgs(content)))
   }
 }

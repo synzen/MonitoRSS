@@ -1,4 +1,4 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const storage = require('../util/storage.js')
 const connectDb = require('../rss/db/connect.js')
 const LinkTracker = require('./LinkTracker.js')
@@ -6,6 +6,7 @@ const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
 const handleError = (err, message) => log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
+const EventEmitter = require('events')
 
 function overrideConfigs (configOverrides) {
   // Config overrides must be manually done for it to be changed in the original object (config)
@@ -20,8 +21,9 @@ function overrideConfigs (configOverrides) {
   }
 }
 
-class ClientSharded {
+class ClientSharded extends EventEmitter {
   constructor (shardingManager, configOverrides) {
+    super()
     if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
     overrideConfigs(configOverrides)
     this.missingGuildRss = new Map()
@@ -36,33 +38,37 @@ class ClientSharded {
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardingManager = shardingManager
     this.shardingManager.on('message', this.messageHandler.bind(this))
-    connectDb(err => {
-      if (err) throw err
-      if (shardingManager.shards.size === 0) shardingManager.spawn(config.advanced.shards, 0) // They may have already been spawned with a predefined ShardingManager
-      shardingManager.shards.forEach((val, key) => this.activeshardIds.push(key))
-    })
+  }
+
+  run () {
+    connectDb().then(() => {
+      if (this.shardingManager.shards.size === 0) this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
+    }).catch(err => log.general.error(`ClientSharded db connection`, err))
   }
 
   messageHandler (shard, message) {
-    if (message === 'kill') process.exit()
     if (!message._drss) return
     if (message._loopback) return this.shardingManager.broadcast(message).catch(err => handleError(err, message))
     switch (message.type) {
-      case 'customSchedules': this._customSchedulesEvent(message); break
+      case 'kill': this.shardingManager.broadcast({ _drss: true, type: 'kill' }); process.exit(0)
+      case 'spawned': this._spawnedEvent(message); break
       case 'shardReady': this._shardReadyEvent(message); break
       case 'initComplete': this._initCompleteEvent(message); break
       case 'scheduleComplete': this._scheduleCompleteEvent(message); break
-      case 'addCustomSchedule': this._addCustomSchedule(message); break
+      case 'addCustomSchedule': this._addCustomScheduleEvent(message); break
       case 'dbRestore': this._dbRestoreEvent(message)
     }
   }
 
-  _customSchedulesEvent (message) {
-    message.customSchedules.forEach(schedule => this.refreshTimes.push(schedule.refreshTimeMinutes))
+  _spawnedEvent (message) {
+    this.activeshardIds.push(message.shardId)
+    if (message.customSchedules) message.customSchedules.forEach(schedule => this.refreshTimes.push(schedule.refreshTimeMinutes))
   }
 
   _shardReadyEvent (message) {
-    if (++this.shardsReady === this.shardingManager.totalShards) this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[0] }) // Send the signal for first shard to initialize
+    if (++this.shardsReady === this.shardingManager.totalShards) {
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[0] }) // Send the signal for first shard to initialize
+    }
   }
   _initCompleteEvent (message) {
     // Account for missing guilds
@@ -77,31 +83,33 @@ class ClientSharded {
     const linkDocs = message.linkDocs
     for (var x = 0; x < linkDocs.length; ++x) {
       const doc = linkDocs[x]
-      this.linkTracker.set(doc.link, doc.count, doc.shard)
-      const id = storage.collectionId(doc.link, doc.shard)
+      this.linkTracker.set(doc.link, doc.count, doc.shard, doc.scheduleName)
+      const id = storage.collectionId(doc.link, doc.shard, doc.scheduleName)
       if (!this.currentCollections.includes(id)) this.currentCollections.push(id) // To find out any unused collections eligible for removal
     }
 
     if (++this.shardsDone === this.shardingManager.totalShards) {
       // Drop the ones not in the current collections
-      dbOps.general.cleanDatabase(this.currentCollections, err => {
-        if (err) throw err
-      })
+      dbOps.general.cleanDatabase(this.currentCollections).catch(err => log.general.error(`Unable to clean database`, err))
 
-      dbOps.linkTracker.write(this.linkTracker, err => {
-        if (err) throw err
-        this.shardingManager.broadcast({ _drss: true, type: 'finishedInit' })
-        log.general.info(`All shards have initialized by the Sharding Manager.`)
-        this.missingGuildRss.forEach((guildRss, guildId) => {
-          dbOps.guildRss.remove(guildRss, err => {
-            if (err) return log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err)
-            log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`)
+      dbOps.linkTracker.write(this.linkTracker)
+        .then(() => {
+          this.shardingManager.broadcast({ _drss: true, type: 'finishedInit' })
+          log.general.info(`All shards have initialized by the Sharding Manager.`)
+          this.missingGuildRss.forEach((guildRss, guildId) => {
+            dbOps.guildRss.remove(guildRss)
+              .then(() => log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`))
+              .catch(err => log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err))
           })
+          this.createIntervals()
+          this.emit('finishInit')
         })
-        this.createIntervals()
-      })
+        .catch(err => {
+          console.log(err)
+          process.exit(1)
+        })
     } else if (this.shardsDone < this.shardingManager.totalShards) {
-      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone] }).catch(err => handleError(err, message)) // Send signal for next shard to init
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone], vipServers: message.vipServers }).catch(err => handleError(err, message)) // Send signal for next shard to init
     }
   }
 
@@ -109,23 +117,26 @@ class ClientSharded {
     this.scheduleTracker[message.refreshTime]++ // Index for this.activeshardIds
     if (this.scheduleTracker[message.refreshTime] !== this.shardingManager.totalShards) {
       // Send signal for next shard to start cycle
-      this.shardingManager.broadcast({
+      const broadcast = {
         _drss: true,
         shardId: this.activeshardIds[this.scheduleTracker[message.refreshTime]],
         type: 'runSchedule',
         refreshTime: message.refreshTime
-      }).catch(err => handleError(err, message))
+      }
+      this.shardingManager.broadcast(broadcast).catch(err => handleError(err, message))
     }
   }
 
-  _addCustomSchedule (message) {
+  _addCustomScheduleEvent (message) {
     const refreshTime = message.schedule.refreshTimeMinutes
     if (this.refreshTimes.includes(refreshTime)) return
     this.refreshTimes.push(refreshTime)
+    if (this.shardsDone < this.shardingManager.totalShards) return // In this case, the method createIntervals that will create the interval, so avoid creating it here
     this.scheduleIntervals.push(setInterval(() => {
       this.scheduleTracker[refreshTime] = 0
       const p = this.scheduleTracker[refreshTime]
-      this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
+      const broadcast = { _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime }
+      this.shardingManager.broadcast(broadcast)
     }, refreshTime * 60000)) // Convert minutes to ms
   }
 
@@ -144,7 +155,8 @@ class ClientSharded {
       this.scheduleIntervals.push(setInterval(() => {
         this.scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
         const p = this.scheduleTracker[refreshTime]
-        this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
+        const broadcast = { _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime }
+        this.shardingManager.broadcast(broadcast)
       }, refreshTime * 60000)) // Convert minutes to ms
     })
     // Refresh VIPs on a schedule

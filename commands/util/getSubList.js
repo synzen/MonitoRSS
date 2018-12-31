@@ -27,7 +27,7 @@ module.exports = (bot, guild, rssList) => {
       }
     }
 
-    if (roles.length !== 0) finalList.push({source: rssList[rssName], roleList: roles})
+    if (roles.length !== 0) finalList.push({ source: rssList[rssName], roleList: roles })
   }
 
   if (finalList.length === 0) return null

@@ -1,5 +1,5 @@
 const dbOps = require('../util/dbOps.js')
-const config = require('../config.json')
+const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -36,29 +36,29 @@ const PROPERTIES = {
   },
   toggleRoleMentions: {
     title: 'Toggle Role Mentioning for Subscriptions',
-    description: `Default is ${config.feeds.toggleRoleMentions === false ? 'disabled' : 'enabled'}. Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent. Only applies if roles are below the bot's highest role.`,
+    description: `Default is ${config.feeds.toggleRoleMentions === false ? 'disabled' : 'enabled'}. Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent.\n\n**WARNING**: Only applies if roles are below the bot's highest role, and the bot has **Manage Roles** permission. Otherwise, __THIS WILL NOT WORK__.`,
     display: 'Role Mentioning Toggle',
     num: 6
   }
 }
 
-function selectOption (m, data, callback) {
+async function selectOption (m, data) {
   const input = m.content
-  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5' && input !== '6') return callback(new SyntaxError())
+  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5' && input !== '6') throw new SyntaxError()
   const num = parseInt(input, 10)
   let chosenProp
   for (var propRef in PROPERTIES) {
     if (PROPERTIES[propRef].num === num) chosenProp = propRef
   }
 
-  callback(null, { ...data,
+  return { ...data,
     chosenProp: chosenProp,
     next: {
-      menu: new FeedSelector(m, null, { command: data.command, miscOption: chosenProp })
-    }})
+      menu: new FeedSelector(m, null, { command: data.command, miscOption: chosenProp }, data.guildRss)
+    } }
 }
 
-module.exports = (bot, message, command) => {
+module.exports = async (bot, message, command) => {
   const select = new MenuUtils.Menu(message, selectOption)
     .setAuthor('Miscellaneous Feed Options')
     .setDescription('\u200b\nPlease select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
@@ -68,32 +68,33 @@ module.exports = (bot, message, command) => {
     select.addOption(data.title, data.description)
   }
 
-  new MenuUtils.MenuSeries(message, [select], { command: command }).start(async (err, data) => {
-    try {
-      if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      const { guildRss, rssName, chosenProp } = data
-      const source = guildRss.sources[rssName]
+  try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const data = await new MenuUtils.MenuSeries(message, [select], { command, guildRss }).start()
+    if (!data) return
+    const { rssName, chosenProp } = data
+    const source = guildRss.sources[rssName]
 
-      const globalSetting = config.feeds[chosenProp]
-      const specificSetting = source[chosenProp]
+    const globalSetting = config.feeds[chosenProp]
+    const specificSetting = source[chosenProp]
 
-      let followGlobal = false
-      source[chosenProp] = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
+    let followGlobal = false
+    source[chosenProp] = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
 
-      const finalSetting = source[chosenProp]
+    const finalSetting = source[chosenProp]
 
-      if (source[chosenProp] === globalSetting) {
-        delete source[chosenProp]
-        followGlobal = true
-      }
-
-      const prettyPropName = PROPERTIES[chosenProp].display
-
-      dbOps.guildRss.update(guildRss)
-      log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)
-      await message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${source.link}>${followGlobal ? ', and is now following the global setting.' : '.'} After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
-    } catch (err) {
-      log.comamnd.warning(`rssoptions`, message.guild, err)
+    if (source[chosenProp] === globalSetting) {
+      delete source[chosenProp]
+      followGlobal = true
     }
-  })
+
+    const prettyPropName = PROPERTIES[chosenProp].display
+
+    log.command.info(`${prettyPropName} ${finalSetting ? 'enabling' : 'disabling'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)
+    await dbOps.guildRss.update(guildRss)
+    await message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${source.link}>${followGlobal ? ', and is now following the global setting.' : '.'} After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+  } catch (err) {
+    log.command.warning(`rssoptions`, message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssoptions 1', message.guild, err))
+  }
 }

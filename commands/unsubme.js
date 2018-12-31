@@ -1,10 +1,10 @@
 const getSubList = require('./util/getSubList.js')
-const currentGuilds = require('../util/storage.js').currentGuilds
+const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
-const config = require('../config.json')
+const config = require('../config.js')
 
-async function removeRole (message, role) {
+function removeRole (message, role) {
   message.member.removeRole(role)
     .then(mem => {
       log.command.info(`Removed role from member`, message.guild, role, message.author)
@@ -17,12 +17,12 @@ async function removeRole (message, role) {
 }
 
 module.exports = async (bot, message, command) => {
-  const guildRss = currentGuilds.get(message.guild.id)
-  const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
-  const botRole = message.guild.members.get(bot.user.id).highestRole
-  const memberRoles = message.member.roles
-
   try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
+    const botRole = message.guild.members.get(bot.user.id).highestRole
+    const memberRoles = message.member.roles
+
     // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
     const filteredMemberRoles = memberRoles.filterArray(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
 
@@ -96,14 +96,12 @@ module.exports = async (bot, message, command) => {
       ask.addOption(`Other Roles`, desc, true)
     }
 
-    ask.send(null, async (err, data) => {
-      try {
-        if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      } catch (err) {
-        log.command.warning(`unsubme 2`, message.guild, err)
-      }
+    ask.send().catch(err => {
+      log.command.warning(`unsubme 2`, message.guild, err)
+      if (err.code !== 50013) message.channel.send(err.message)
     })
   } catch (err) {
     log.command.warning('unsubme', message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('unsubme 1', message.guild, err))
   }
 }

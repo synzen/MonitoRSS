@@ -1,10 +1,7 @@
-const config = require('../config.json')
+const config = require('../config.js')
 const commands = require('../util/commands.js').list
 const channelTracker = require('../util/channelTracker.js')
 const pageControls = require('../util/pageControls.js')
-const storage = require('../util/storage.js')
-const currentGuilds = storage.currentGuilds
-const FAIL_LIMIT = config.feeds.failLimit
 const log = require('../util/logger.js')
 const Menu = require('./MenuUtils.js').Menu
 const MULTI_SELECT = ['rssremove', 'rssmove']
@@ -49,7 +46,7 @@ function parseNumbers (str) {
   return arr
 }
 
-function selectFeed (m, data, callback) {
+async function selectFeedFn (m, data, callback) {
   const currentRSSList = this._currentRSSList
   const chosenOption = m.content
 
@@ -74,20 +71,20 @@ function selectFeed (m, data, callback) {
     }
 
     // Replace the indices in valid with their respective rssNames in currentRSSList
-    if (invalid.length > 0) return callback(new SyntaxError(`The number(s) \`${invalid}\` are invalid. Try again, or type \`exit\` to cancel.`))
-    else if (valid.length === 0) return callback(new SyntaxError(`You did not choose any valid numbers. Try again, or type \`exit\` to cancel.`))
+    if (invalid.length > 0) throw new SyntaxError(`The number(s) \`${invalid}\` are invalid. Try again, or type \`exit\` to cancel.`)
+    else if (valid.length === 0) throw new SyntaxError(`You did not choose any valid numbers. Try again, or type \`exit\` to cancel.`)
     else {
       for (var q = 0; q < valid.length; ++q) valid[q] = currentRSSList[valid[q]].rssName
-      return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssNameList: valid }, callback)
+      return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssNameList: valid })
     }
   }
 
   // Return a single index for non feed removal actions
   const index = parseInt(chosenOption, 10) - 1
-  if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) return callback(new SyntaxError('That is not a valid number. Try again, or type `exit` to cancel.'))
+  if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) throw new SyntaxError('That is not a valid number. Try again, or type `exit` to cancel.')
 
   // Data is pre-passed into a FeedSelector's fn, merged with the previous Menu's data
-  this.passoverFn(m, { ...data, guildRss: this.guildRss, rssName: currentRSSList[index].rssName }, callback)
+  return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssName: currentRSSList[index].rssName })
 }
 
 /**
@@ -108,11 +105,11 @@ class FeedSelector extends Menu {
    * @param {String} [cmdInfo.prependDescription] Additional information in the description, before the FeedSelector's default instructions
    * @memberof FeedSelector
    */
-  constructor (message, passoverFn, cmdInfo) {
+  constructor (message, passoverFn, cmdInfo, guildRss) {
     super(message)
-    if (!passoverFn) passoverFn = (m, data, callback) => callback(null, data)
+    if (!passoverFn) passoverFn = async (m, data) => data
+    this.guildRss = guildRss
     this.passoverFn = passoverFn
-    this.guildRss = currentGuilds.get(message.guild.id)
     if (!this.guildRss || !this.guildRss.sources || Object.keys(this.guildRss.sources).length === 0) {
       this.text = 'There are no existing feeds.'
       return
@@ -124,19 +121,13 @@ class FeedSelector extends Menu {
     this.globalSelect = GLOBAL_SELECT.includes(command) || globalSelect
 
     const rssList = this.guildRss.sources
-    const maxFeedsAllowed = storage.vipServers[message.guild.id] && storage.vipServers[message.guild.id].benefactor.maxFeeds ? storage.vipServers[message.guild.id].benefactor.maxFeeds : !config.feeds.max || isNaN(parseInt(config.feeds.max)) ? 0 : config.feeds.max
     this._currentRSSList = []
 
     for (var rssName in rssList) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
       const source = rssList[rssName]
       if (message.channel.id !== source.channel && !this.globalSelect) continue
       let o = { link: source.link, rssName: rssName, title: source.title }
-      if (command === 'rssrefresh') {
-        const failCount = storage.failedLinks[source.link]
-        o.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 10) ? '(' + failCount + '/' + FAIL_LIMIT + ')' : ''}\n` : `Status: FAILED\n`
-      }
 
-      // if (miscOption === 'imagePreviews' || miscOption === 'imageLinksExistence' || miscOption === 'checkTitles' || miscOption === 'checkDates' || miscOption === 'formatTables') {
       if (OPTIONS_TEXTS[miscOption]) {
         const statusText = OPTIONS_TEXTS[miscOption].status
         let decision = ''
@@ -156,7 +147,7 @@ class FeedSelector extends Menu {
       this.text = 'No feeds assigned to this channel.'
       return
     }
-    let desc = maxFeedsAllowed === 0 ? '' : `**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed}\n`
+    let desc = ''
     desc += (this.globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? OPTIONS_TEXTS[miscOption].toggle : commands[command].action}\n\n${prependDescription ? `${prependDescription}\n\n` : ''}Choose a feed to from this channel by typing the number to execute your requested action on. ${this.multiSelect ? 'You may select multiple feeds by separation with commas, and/or with hyphens (for example `1,3,4-6,8`). ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
     this.setAuthor('Feed Selection Menu')
     this.setDescription(desc)
@@ -172,7 +163,7 @@ class FeedSelector extends Menu {
       this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel || ''}${miscOption}${status}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
     })
 
-    this.fn = selectFeed.bind(this)
+    this.fn = selectFeedFn.bind(this)
   }
 
   /**
@@ -193,47 +184,45 @@ class FeedSelector extends Menu {
    * @override
    * @memberof FeedSelector
    */
-  async send (data, callback) {
-    try {
-      const m = await this.channel.send(this.text, { embed: this.pages[0] })
-      this._msgCleaner.add(m)
-      if (this.pages.length > 1) {
-        await m.react('◀')
-        await m.react('▶')
-        pageControls.add(m.id, this.pages)
-      }
+  async send (data) {
+    const m = await this.channel.send(this.text, { embed: this.pages[0] })
+    this._msgCleaner.add(m)
+    if (this.pages.length > 1) {
+      await m.react('◀')
+      await m.react('▶')
+      pageControls.add(m.id, this.pages)
+    }
 
-      if (!this.fn) return
+    if (!this.fn) return [] // This function is called *after* the feed is selected with the pre-made function selectFeedFn
 
-      const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, {time: 60000})
-      // Add a channel tracker to prohibit any other commands while the Menu is in use
+    return new Promise((resolve, reject) => {
+      const collector = this.channel.createMessageCollector(m => m.author.id === this.message.author.id, { time: 60000 })
       channelTracker.add(this.channel.id)
 
-      collector.on('collect', m => {
+      collector.on('collect', async m => {
         this._msgCleaner.add(m)
-        if (m.content.toLowerCase() === 'exit') return collector.stop('Menu closed.')
+        if (m.content.toLowerCase() === 'exit') {
+          collector.stop('Menu closed.')
+          return resolve(this._series ? [{ __end: true }, this._msgCleaner] : [])
+        }
 
-        // Call the function defined in the constructor
-        this.fn(m, data, (err, passover, endPrematurely) => {
-          // SyntaxError allows input retries for this collector due to incorrect input
-          if (err instanceof SyntaxError) return m.channel.send(err.message).then(m => this._msgCleaner.add(m))
+        try {
+          const passover = await this.fn(m, data)
           collector.stop()
-          // Callback and pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
-          callback(err, passover, this._msgCleaner, endPrematurely)
-        })
+          resolve([ passover, this._msgCleaner ])
+        } catch (err) {
+          if (err instanceof SyntaxError) m.channel.send(err.message).then(m => this._msgCleaner.add(m)).catch(reject)
+          else reject(err)
+        }
       })
 
-      collector.on('end', (collected, reason) => { // Reason is the parameter inside collector.stop(reason)
-        // Remove the channel tracker to allow commands in this channel again
+      collector.on('end', (collected, reason) => {
         channelTracker.remove(this.channel.id)
         if (reason === 'user') return
         if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
         else this.channel.send(reason).then(m => m.delete(6000))
       })
-    } catch (err) {
-      log.command.warning(`Failed to send Menu`, this.channel.guild, err)
-      return this._series ? callback(err, { __end: true }) : null
-    }
+    })
   }
 }
 
