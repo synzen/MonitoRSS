@@ -1,62 +1,46 @@
 const getRandomArticle = require('../rss/getArticle.js')
-const currentGuilds = require('../util/storage.js').currentGuilds
+const dbOps = require('../util/dbOps.js')
 const FeedSelector = require('../structs/FeedSelector.js')
+const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
-const ArticleMessage = require('../structs/ArticleMessage.js')
+const config = require('../config.js')
+const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 
-module.exports = (bot, message, command) => {
-  let simple = !!(message.content.split(' ').length > 1 && message.content.split(' ')[1] === 'simple')
-
-  new FeedSelector(message, null, { command: command }).send(null, async (err, data, msgHandler) => {
-    try {
-      if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      const { rssName } = data
-
-      const guildRss = currentGuilds.get(message.guild.id)
-
-      const grabMsg = await message.channel.send(`Grabbing a random feed article...`)
-      getRandomArticle(guildRss, rssName, false, (err, article) => {
-        if (err) {
-          let channelErrMsg = ''
-          switch (err.type) {
-            case 'failedLink':
-              channelErrMsg = 'Reached fail limit. Use `rssrefresh` to try to validate and refresh feed'
-              break
-            case 'request':
-              channelErrMsg = 'Unable to connect to feed link'
-              break
-            case 'feedparser':
-              channelErrMsg = 'Invalid feed'
-              break
-            case 'database':
-              channelErrMsg = 'Internal database error. Try again'
-              break
-            case 'deleted':
-              channelErrMsg = 'Feed missing from database'
-              break
-            case 'empty':
-              channelErrMsg = 'No existing articles'
-              break
-            default:
-              channelErrMsg = 'No reason available'
-          }
-          log.command.warning(`Unable to send test article for feed ${err.feed.link}`, message.guild, err)
-          msgHandler.deleteAll(message.channel)
-          return grabMsg.edit(`Unable to grab random feed article for <${err.feed.link}>. (${channelErrMsg})`).catch(err => log.command.warning(`rsstest 1: `, message.guild, err))
-        }
-        article.rssName = rssName
-        article.discordChannelId = message.channel.id
-        msgHandler.add(grabMsg)
-        new ArticleMessage(article, !simple, true).send(err => {
-          if (err) {
-            log.command.warning(`Failed to deliver test article ${article.link}`, message.guild, err)
-            message.channel.send(`Failed to send test article. \`\`\`${err.message}\`\`\``).catch(err => log.command.warning(`rsstest 2`, message.guild, err))
-          }
-          msgHandler.deleteAll(message.channel)
-        })
-      })
-    } catch (err) {
-      log.command.warning(`Could initiate random feed grab for test:`, message.guild)
+module.exports = async (bot, message, command) => {
+  const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
+  try {
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
+    const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
+    if (!data) return
+    const { rssName } = data
+    const source = guildRss.sources[rssName]
+    const grabMsg = await message.channel.send(`Grabbing a random feed article...`)
+    const [ article ] = await getRandomArticle(guildRss, rssName, false)
+    article._delivery = {
+      rssName,
+      channelId: message.channel.id,
+      dateSettings: {
+        timezone: guildRss.timezone,
+        format: guildRss.dateFormat,
+        language: guildRss.dateLanguage
+      }
     }
-  })
+    if (source.webhook) {
+      const vipUser = await dbOps.vips.get(message.author.id)
+      if (config._vip === true && (!vipUser || vipUser.allowWebhooks !== true || vipUser.invalid === true)) {
+        log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
+        delete guildRss.sources[rssName].webhook
+      }
+    }
+    article._delivery.source = guildRss.sources[rssName]
+
+    const queue = new ArticleMessageQueue()
+    await queue.send(article, !simple, true)
+    queue.sendDelayed()
+    await grabMsg.delete()
+  } catch (err) {
+    log.command.warning(`rsstest`, message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsstest 1', message.guild, err))
+  }
 }

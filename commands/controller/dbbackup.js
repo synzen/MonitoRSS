@@ -22,7 +22,9 @@ function dump (m, collections, complete = 0) {
 
 exports.normal = (bot, message) => {
   log.controller.info(`Databases backup has been started\n`, message.author)
-  message.channel.send('Backing up...').then(m => dump(m, ['guilds', 'vips', 'failed_links', 'guild_backups'])).catch(err => log.controller.warning(`Failed to send creating archive message for dbbackup:`, message.author, err))
+  message.channel.send('Backing up...')
+    .then(m => dump(m, ['guilds', 'vips', 'failed_links', 'guild_backups']))
+    .catch(err => log.controller.warning(`Failed to send creating archive message for dbbackup:`, message.author, err))
 }
 
 exports.sharded = exports.normal

@@ -1,10 +1,10 @@
 const getSubList = require('./util/getSubList.js')
-const currentGuilds = require('../util/storage.js').currentGuilds
+const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
-const config = require('../config.json')
+const config = require('../config.js')
 
-async function addRole (message, role, links) {
+function addRole (message, role, links) {
   message.member.addRole(role)
     .then(mem => {
       log.command.info(`Role successfully added to member`, message.guild, role, message.author)
@@ -18,7 +18,7 @@ async function addRole (message, role, links) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = currentGuilds.get(message.guild.id)
+    const guildRss = await dbOps.guildRss.get(message.guild.id)
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('There are no active feeds to subscribe to.')
 
     const rssList = guildRss.sources
@@ -66,14 +66,12 @@ module.exports = async (bot, message, command) => {
       ask.addOption(title, desc, true)
     }
 
-    ask.send(null, async (err, data) => {
-      try {
-        if (err) return err.code === 50013 ? null : await message.channel.send(err.message)
-      } catch (err) {
-        log.command.warning(`subme 2`, message.guild, err)
-      }
+    ask.send().catch(err => {
+      log.command.warning(`subme 2`, message.guild, err)
+      if (err.code !== 50013) message.channel.send(err.message)
     })
   } catch (err) {
     log.command.warning(`subme`, message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('subme 1', message.guild, err))
   }
 }

@@ -1,219 +1,184 @@
 const fs = require('fs')
+const util = require('util')
 const path = require('path')
 const mongoose = require('mongoose')
 const Discord = require('discord.js')
 const storage = require('./storage.js')
-const config = require('../config.json')
+const config = require('../config.js')
 const LinkTracker = require('../structs/LinkTracker.js')
-const currentGuilds = storage.currentGuilds
 const models = storage.models
 const log = require('./logger.js')
-const UPDATE_SETTINGS = { overwrite: true, upsert: true, strict: true }
+const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FAIL_LIMIT = config.feeds.failLimit
+const FIND_PROJECTION = '-_id -__v'
+const readdirPromise = util.promisify(fs.readdir)
+const readFilePromise = util.promisify(fs.readFile)
+const writeFilePromise = util.promisify(fs.writeFile)
+const mkdirPromise = util.promisify(fs.mkdir)
+const unlinkPromise = util.promisify(fs.unlink)
+const MONGO_DATABASE = config.database.uri.startsWith('mongo')
 
 exports.guildRss = {
-  getAll: callback => {
+  get: async id => {
+    if (MONGO_DATABASE) return models.GuildRss().findOne({ id }, FIND_PROJECTION).lean().exec()
+    return JSON.parse(await readFilePromise(path.join(config.database.uri, `${id}.json`)))
+  },
+  getMany: async ids => {
+    if (MONGO_DATABASE) return models.GuildRss().find({ id: { $in: ids } }, FIND_PROJECTION).lean().exec()
+    const promises = []
+    for (const id of ids) promises.push(exports.guildRss.get(id))
+    return Promise.all(promises)
+  },
+  getAll: async () => {
+    // Database version
+    if (MONGO_DATABASE) return models.GuildRss().find({}, FIND_PROJECTION).lean().exec()
+
     // Memory Version
-    if (!config.database.uri.startsWith('mongo')) {
-      if (!fs.existsSync(path.join(config.database.uri))) return callback(null, [])
-      return fs.readdir(path.join(config.database.uri), (err, fileNames) => {
-        if (err) return callback(err)
-        let done = 0
-        let read = []
-        const total = fileNames.length
-        for (var x = 0; x < total; ++x) {
-          const name = fileNames[x]
-          if (name === 'backup') continue
-          fs.readFile(path.join(config.database.uri, name), (err, data) => {
-            if (err) {
-              log.general.warning(`Could not read from source file ${name}`, err)
-              return ++done === total ? callback(null, read) : null
-            }
+    if (!fs.existsSync(path.join(config.database.uri))) return []
+    const fileNames = (await readdirPromise(path.join(config.database.uri))).filter(fileName => /^\d+$/.test(fileName.replace(/\.json/i, '')))
+    return new Promise((resolve, reject) => { // Avoid await for the below to allow async reads
+      let done = 0
+      let read = []
+      const total = fileNames.length
+      if (total === 0) return resolve([])
+      for (var x = 0; x < total; ++x) {
+        const name = fileNames[x]
+        if (name === 'backup') continue
+        readFilePromise(path.join(config.database.uri, name))
+          .then(data => {
             try {
               read.push(JSON.parse(data))
             } catch (err) {
               log.general.warning(`Could not parse JSON from source file ${name}`, err)
             }
-            return ++done === total ? callback(null, read) : null
+            if (++done === total) resolve(read)
+            console.log(done, total)
           })
-        }
-      })
-    }
-    // Database version
-    models.GuildRss().find(callback)
-  },
-  update: (guildRss, callback, skipProcessSend) => {
-    if (storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ _drss: true, type: 'guildRss.update', guildRss: guildRss, _loopback: true })
-      return callback ? callback() : null
-    }
-    // Memory version
-    if (!config.database.uri.startsWith('mongo')) {
-      try {
-        if (!fs.existsSync(path.join(config.database.uri))) fs.mkdirSync(path.join(config.database.uri))
-        fs.writeFileSync(path.join(config.database.uri, `${guildRss.id}.json`), JSON.stringify(guildRss, null, 2))
-      } catch (err) {
-        return callback ? callback(err) : log.general.error(`(G: ${guildRss.id}) Unable to update profile`, err)
-      }
-      currentGuilds.set(guildRss.id, guildRss)
-      exports.guildRss.empty(guildRss, false, skipProcessSend)
-      return callback ? callback() : null
-    }
-    // Database version
-    models.GuildRss().update({ id: guildRss.id }, guildRss, UPDATE_SETTINGS, (err, res) => {
-      if (err) return callback ? callback(err) : log.general.error(`(G: ${guildRss.id}) Unable to update profile`, err)
-      currentGuilds.set(guildRss.id, guildRss)
-      exports.guildRss.empty(guildRss, false, skipProcessSend)
-      if (callback) callback()
-    })
-  },
-  remove: (guildRss, callback, skipProcessSend) => {
-    const guildId = guildRss.id
-    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ _drss: true, type: 'guildRss.remove', guildRss: guildRss, _loopback: true })
-      return callback ? callback() : null
-    }
-    if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss)
-    // Memory version
-    if (!config.database.uri.startsWith('mongo')) {
-      try {
-        fs.unlinkSync(path.join(config.database.uri, `${guildId}.json`))
-      } catch (err) {
-        return callback ? callback(err) : log.general.warning(`Unable to remove GuildRss ${guildId}`, err)
-      }
-      const rssList = guildRss ? guildRss.sources : undefined
-      if (rssList) {
-        for (let rssName in rssList) {
-          exports.linkTracker.decrement(rssList[rssName].link, err => {
-            if (err) log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err)
+          .catch(err => {
+            log.general.warning(`Could not read source file ${name}`, err)
+            if (++done === total) resolve(read)
+            console.log(done, total)
           })
-        }
       }
-      currentGuilds.delete(guildId)
-      return callback ? callback() : log.general.info(`Removed GuildRss ${guildId}`)
-    }
-    // Database version
-    models.GuildRss().find({ id: guildId }).remove((err, res) => {
-      if (err && err.code !== 26) return callback ? callback(err) : log.general.warning(`Unable to remove GuildRss document ${guildId}`, err)
-      const rssList = guildRss ? guildRss.sources : undefined
-      if (rssList) {
-        for (let rssName in rssList) {
-          exports.linkTracker.decrement(rssList[rssName].link, err => {
-            if (err) log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err)
-          })
-        }
-      }
-      currentGuilds.delete(guildId)
-      return callback ? callback() : log.general.info(`Removed GuildRss document ${guildId}`)
     })
   },
-  disableFeed: (guildRss, rssName, callback, skipProcessSend) => {
-    const link = guildRss.sources[rssName].link
-    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ _drss: true, type: 'guildRss.disableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
-      return callback ? callback(null, link) : log.general.warning(`Feed named ${rssName} has been disabled in guild ${guildRss.id}`)
-    }
-    if (guildRss.sources[rssName].disabled === true) return callback ? callback(null, link) : log.general.warning(`Feed named ${rssName} has been disabled in guild ${guildRss.id}`)
-    guildRss.sources[rssName].disabled = true
-    exports.guildRss.update(guildRss)
-  },
-  enableFeed: (guildRss, rssName, callback, skipProcessSend) => {
-    const link = guildRss.sources[rssName].link
-    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ _drss: true, type: 'guildRss.enableFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
-      return callback ? callback(null, link) : log.general.info(`Feed named ${rssName} has been enabled in guild ${guildRss.id}`)
-    }
-    if (guildRss.sources[rssName].disabled == null) return callback ? callback(null, link) : log.general.info(`Feed named ${rssName} has been enabled in guild ${guildRss.id}`)
-    delete guildRss.sources[rssName].disabled
-    exports.guildRss.update(guildRss)
-  },
-  removeFeed: (guildRss, rssName, callback, skipProcessSend) => {
-    const link = guildRss.sources[rssName].link
-    if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) {
-      process.send({ _drss: true, type: 'guildRss.removeFeed', guildRss: guildRss, rssName: rssName, _loopback: true })
-      return callback ? callback(null, link) : null
-    }
-    delete guildRss.sources[rssName]
-    exports.guildRss.update(guildRss)
-    storage.deletedFeeds.push(rssName)
-    exports.linkTracker.decrement(link, err => {
-      if (err) log.general.warning('Unable to decrement link for guildRss.removeFeed dbOps', err)
-      return callback ? callback(null, link) : !skipProcessSend ? log.general.info(`Feed ${link} has been removed from guild ${guildRss.id} (${guildRss.name})`) : null
-    })
-  },
-  backup: (guildRss, callback) => {
-    if (!guildRss || exports.guildRss.empty(guildRss, true)) return callback ? callback() : null
+  update: async (guildRss, skipEmptyCheck) => {
     // Memory version
-    if (!config.database.uri.startsWith('mongo')) {
-      if (!fs.existsSync(path.join(config.database.uri, 'backup'))) {
-        try {
-          fs.mkdirSync(path.join(config.database.uri, 'backup'))
-        } catch (err) {
-          return callback ? callback(err) : log.general.warning(`Unable to guildRss.backup guild ${guildRss.id}`, err)
-        }
-      }
-      fs.writeFile(path.join(config.database.uri, 'backup', `${guildRss.id}.json`), JSON.stringify(guildRss, null, 2), err => {
-        return callback ? callback(err) : err ? log.general.warning(`Unable to guildRss.backup guild ${guildRss.id}`, err) : log.general.info(`Backed up guild ${guildRss.id}`)
-      })
-    }
-    // Database version
-    models.GuildRssBackup().update({ id: guildRss.id }, guildRss, UPDATE_SETTINGS, (err, res) => {
-      return callback ? callback(err) : err ? log.general.warning(`Unable to guildRss.backup guild ${guildRss.id}`, err) : log.general.info(`Backed up guild ${guildRss.id}`)
-    })
-  },
-  restore: (guildId, callback, skipProcessSend) => {
-    // Memory version
-    if (!config.database.uri.startsWith('mongo')) {
-      if (!fs.existsSync(path.join(config.database.uri, 'backup', `${guildId}.json`))) return callback ? callback() : null
+    if (!MONGO_DATABASE) {
       try {
-        const json = JSON.parse(fs.readFile(path.join(config.database.uri, 'backup', `${guildId}.json`)))
-        if (exports.guildRss.empty(json, true)) return callback ? callback() : null
-        update(json)
+        if (!fs.existsSync(path.join(config.database.uri))) await mkdirPromise(path.join(config.database.uri))
+        await writeFilePromise(path.join(config.database.uri, `${guildRss.id}.json`), JSON.stringify(guildRss, null, 2))
       } catch (err) {
-        return callback ? callback(err) : log.general.warning(`Could not read ${guildId}.json from backups folder for restore operation`, err)
+        throw err
       }
+      if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
+      return
     }
-    // Database version
-    models.GuildRssBackup().find({ id: guildId }, (err, docs) => {
-      if (err) return callback ? callback(err) : null
-      if (docs.length === 0 || exports.guildRss.empty(docs[0], true)) return callback ? callback() : null
-      update(docs[0])
-    })
 
-    function update (guildRss) {
-      exports.guildRss.update(guildRss, err => {
-        if (err) return callback ? callback(err) : null
-        const rssList = guildRss.sources
-        if (rssList) {
-          for (var rssName in rssList) {
-            const source = rssList[rssName]
-            if (!storage.bot.channels.get(source.channel)) {
-              exports.guildRss.removeFeed(guildRss, rssName, err => {
-                if (err) return log.general.warning(`Could not remove feed ${source.link} due to missing channel ${source.channel}`, storage.bot.guilds.get(guildRss.id), err)
-                log.general.info(`Removed feed ${source.link} due to missing channel ${source.channel}`, storage.bot.guilds.get(guildRss.id))
-              }, skipProcessSend)
-            } else {
-              exports.linkTracker.increment(source.link, err => {
-                if (err) log.general.warning(`Unable to increment linkTracker for ${source.link}`, err)
-              })
-            }
-          }
-        }
-        models.GuildRssBackup().find({ id: guildId }).remove((err, res) => {
-          if (err) log.general.warning(`(G: ${guildId}) Unable to remove backup for guild after restore`, err)
-        })
-        if (callback) callback(null, guildRss)
-      }, skipProcessSend)
-    }
+    // Database version
+    const res = await models.GuildRss().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
+    if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
+    return res
   },
-  empty: (guildRss, skipRemoval, skipProcessSend) => { // Used on the beginning of each cycle to check for empty sources per guild
+  remove: async guildRss => {
+    const guildId = guildRss.id
+    if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss).catch(err => log.general.warning('Unable to backup guild after remvoing', err, true))
+    // Memory version
+    if (!MONGO_DATABASE) {
+      await unlinkPromise(path.join(config.database.uri, `${guildId}.json`))
+      const rssList = guildRss ? guildRss.sources : undefined
+      if (rssList) {
+        for (let rssName in rssList) {
+          exports.linkTracker.decrement(rssList[rssName].link, storage.scheduleAssigned[rssName]).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
+        }
+      }
+      return log.general.info(`Deleted guild ${guildId}.json`)
+    }
+    // Database version
+    const rssList = guildRss ? guildRss.sources : undefined
+    if (rssList) {
+      for (let rssName in rssList) {
+        storage.deletedFeeds.push(rssName)
+        exports.linkTracker.decrement(rssList[rssName].link, storage.scheduleAssigned[rssName]).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
+      }
+    }
+    const res = await models.GuildRss().deleteOne({ id: guildId })
+    log.general.info(`Removed Guild document ${guildId}`)
+    return res
+  },
+  disableFeed: async (guildRss, rssName) => {
+    if (guildRss.sources[rssName].disabled === true) return log.general.warning(`Feed named ${rssName} is already disabled in guild ${guildRss.id}`)
+    guildRss.sources[rssName].disabled = true
+    await exports.guildRss.update(guildRss)
+    log.general.warning(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been disabled in guild ${guildRss.id}`)
+  },
+  enableFeed: async (guildRss, rssName) => {
+    if (guildRss.sources[rssName].disabled == null) return log.general.info(`Feed named ${rssName} is already enabled in guild ${guildRss.id}`)
+    delete guildRss.sources[rssName].disabled
+    await exports.guildRss.update(guildRss)
+    log.general.info(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been enabled in guild ${guildRss.id}`)
+  },
+  removeFeed: async (guildRss, rssName) => {
+    const link = guildRss.sources[rssName].link
+    delete guildRss.sources[rssName]
+    storage.deletedFeeds.push(rssName)
+    const res = await exports.guildRss.update(guildRss)
+    await exports.linkTracker.decrement(link, storage.scheduleAssigned[rssName])
+    return res
+  },
+  backup: async guildRss => {
+    if (!guildRss || exports.guildRss.empty(guildRss, true)) return
+    // Memory version
+    if (!MONGO_DATABASE) {
+      if (!fs.existsSync(path.join(config.database.uri, 'backup'))) {
+        await mkdirPromise(path.join(config.database.uri, 'backup'))
+      }
+      await writeFilePromise(path.join(config.database.uri, 'backup', `${guildRss.id}.json`), JSON.stringify(guildRss, null, 2))
+    }
+    // Database version
+    await models.GuildRssBackup().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
+  },
+  restore: async guildId => {
+    // Memory version
+    let guildRss
+    if (!MONGO_DATABASE) {
+      if (!fs.existsSync(path.join(config.database.uri, 'backup', `${guildId}.json`))) return
+      try {
+        const json = await readFilePromise(path.join(config.database.uri, 'backup', `${guildId}.json`))
+        const parsed = JSON.parse(json)
+        if (exports.guildRss.empty(parsed, true)) guildRss = parsed
+      } catch (err) {
+        throw err
+      }
+    } else {
+      // Database version
+      guildRss = await models.GuildRssBackup().findOne({ id: guildId }, FIND_PROJECTION).lean().exec()
+      if (!guildRss || exports.guildRss.empty(guildRss, true)) return
+    }
+
+    await exports.guildRss.update(guildRss)
+    const rssList = guildRss.sources
+    if (rssList) {
+      for (var rssName in rssList) {
+        const source = rssList[rssName]
+        if (!storage.bot.channels.get(source.channel)) {
+          await exports.guildRss.removeFeed(guildRss, rssName)
+          log.general.info(`Removed feed ${source.link} due to missing channel ${source.channel}`, storage.bot.guilds.get(guildRss.id))
+        } else {
+          await exports.linkTracker.increment(source.link)
+        }
+      }
+    }
+    await models.GuildRssBackup().deleteOne({ id: guildId })
+    return guildRss
+  },
+  empty: (guildRss, skipRemoval) => { // Used on the beginning of each cycle to check for empty sources per guild
     if (guildRss.sources && Object.keys(guildRss.sources).length > 0) return false
-    if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage) { // Delete only if server-specific special settings are not found
+    if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage && !guildRss.prefix && !guildRss.sendAlertsTo) { // Delete only if server-specific special settings are not found
       if (!skipRemoval) {
-        exports.guildRss.remove(guildRss, err => {
-          if (err) return log.general.error(`(G: ${guildRss.id}) Could not delete guild due to 0 sources`, err)
-          log.general.info(`(G: ${guildRss.id}) 0 sources found with no custom settings deleted`)
-        }, skipProcessSend)
+        exports.guildRss.remove(guildRss)
+          .then(() => log.general.info(`(G: ${guildRss.id}) 0 sources found with no custom settings deleted`))
+          .catch(err => log.general.error(`(G: ${guildRss.id}) Could not delete guild due to 0 sources`, err))
       }
     } else log.general.info(`(G: ${guildRss.id}) 0 sources found, skipping`)
     return true
@@ -221,369 +186,311 @@ exports.guildRss = {
 }
 
 exports.guildRssBackup = {
-  dropIndexes: callback => models.GuildRssBackup().collection.dropIndexes(callback)
+  dropIndexes: async () => models.GuildRssBackup().collection.dropIndexes()
 }
 
 exports.feeds = {
-  dropIndexes: (link, shardId, callback) => models.Feed(link, shardId).collection.dropIndexes(callback)
+  dropIndexes: async (link, shardId, scheduleName) => models.Feed(link, shardId, scheduleName).collection.dropIndexes()
 }
 
+// linkTracker for determine when to drop collections during bot's lifetime, and for URL resolution
 exports.linkTracker = {
-  write: (linkTracker, callback) => {
-    if (!(linkTracker instanceof LinkTracker)) return callback ? callback(new TypeError('linkTracker argument is not instance of LinkTracker')) : log.general.warning('Unable to linkTracker.write due to linkTracker argument not being an instance of LinkTracker')
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    models.LinkTracker().collection.drop(err => {
-      if (err && err.code !== 26) return callback(err)
-      const docs = linkTracker.toDocs()
-      if (docs.length === 0) return callback ? callback() : undefined
-      models.LinkTracker().collection.insert(docs, callback)
-    })
-  },
-  get: callback => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(null, new LinkTracker()) : null
-    models.LinkTracker().find({}, (err, docs) => {
-      if (err) return callback(err)
-      callback(null, new LinkTracker(docs, storage.bot))
-    })
-  },
-  update: (link, count, callback) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    const shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
-    if (count > 0) models.LinkTracker().update({ link: link, shard: shardId }, { link: link, count: count, shard: shardId }, UPDATE_SETTINGS, callback)
-    else {
-      models.LinkTracker().find({ link, shard: shardId }).remove(err => {
-        if (err && err.code !== 26) return callback(err)
-        callback()
+  write: async linkTracker => {
+    if (!(linkTracker instanceof LinkTracker)) throw new TypeError('linkTracker argument is not instance of LinkTracker')
+    if (!MONGO_DATABASE) return
+    try {
+      await models.LinkTracker().collection.drop().catch(err => {
+        if (err.code !== 26) log.general.warning('Unable to drop link tracker collection before insertion', err, true)
       })
+      const docs = linkTracker.toDocs()
+      if (docs.length > 0) return await models.LinkTracker().collection.insertMany(docs)
+    } catch (err) {
+      throw err
     }
   },
-  decrement: (link, callback) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    exports.linkTracker.get((err, linkTracker) => {
-      if (err) return callback(err)
-      if (!linkTracker.get(link)) return callback()
-
-      if (!linkTracker.decrement(link)) {
-        models.Feed(link, linkTracker.shardId).collection.drop(err => {
-          if (err && err.code !== 26) log.general.warning(`Could not drop collection ${storage.collectionId(link, linkTracker.shardId)} after decrementing linkTracker`, err)
-        })
-        exports.failedLinks.reset(link)
-      }
-      exports.linkTracker.update(link, linkTracker.get(link), callback)
-    })
+  get: async () => {
+    if (!MONGO_DATABASE) return new LinkTracker()
+    const docs = await models.LinkTracker().find({}).lean().exec()
+    return new LinkTracker(docs, storage.bot)
   },
-  increment: (link, callback) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    exports.linkTracker.get((err, linkTracker) => {
-      if (err) return callback(err)
-      linkTracker.increment(link)
-      exports.linkTracker.update(link, linkTracker.get(link), callback)
-    })
+  update: async (link, count, scheduleName) => {
+    if (!MONGO_DATABASE) return
+    const shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
+    if (count > 0) {
+      await models.LinkTracker().updateOne({ link: link, shard: shardId, scheduleName: scheduleName }, { $set: { link: link, count: count, shard: shardId, scheduleName: scheduleName } }, UPDATE_SETTINGS).exec()
+    } else {
+      try {
+        await models.LinkTracker().deleteOne({ link, shard: shardId, scheduleName: scheduleName })
+      } catch (err) {
+        if (err.code !== 25) throw err // 25 = ns not found - doesn't exist
+      }
+    }
+  },
+  decrement: async (link, scheduleName) => {
+    if (!MONGO_DATABASE) return
+    const linkTracker = await exports.linkTracker.get()
+    if (!linkTracker.get(link, scheduleName)) return
+    const count = linkTracker.decrement(link, scheduleName)
+    if (!count) {
+      await exports.failedLinks.reset(link)
+      try {
+        await models.Feed(link, linkTracker.shardId, scheduleName).collection.drop()
+      } catch (err) {
+        if (err.code !== 26) throw err
+      }
+    }
+    await exports.linkTracker.update(link, count, scheduleName)
+  },
+  increment: async (link, scheduleName) => {
+    if (!MONGO_DATABASE) return
+    const shard = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
+    await models.LinkTracker().updateOne({ link, shard, scheduleName }, { $inc: { count: 1 } }, UPDATE_SETTINGS).exec()
   }
 }
 
 exports.failedLinks = {
-  uniformize: (failedLinks, callback, skipProcessSend) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'failedLinks.uniformize', failedLinks: failedLinks, _loopback: true })
-    else if (skipProcessSend) storage.failedLinks = failedLinks // skipProcessSend indicates that this method was called on another shard, otherwise it was already updated in the methods below
-    if (callback) callback()
-  },
   _sendAlert: (link, message, skipProcessSend) => {
     if (storage.bot && storage.bot.shard && storage.bot.shard.count > 0 && !skipProcessSend) return process.send({ _drss: true, type: 'failedLinks._sendAlert', link: link, message: message, _loopback: true })
-    currentGuilds.forEach(guildRss => {
-      const rssList = guildRss.sources
-      if (!rssList) return
-      for (var i in rssList) {
-        const source = rssList[i]
-        const channel = storage.bot.channels.get(source.channel)
-        if (source.link === link && channel && config._skipMessages !== true) {
-          const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
-          const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
-          if (config._skipMessages !== true) channel.send(m, attach && currentGuilds.has(channel.guild.id) ? new Discord.Attachment(Buffer.from(JSON.stringify(currentGuilds.get(channel.guild.id), null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
-        }
-      }
-    })
-  },
-  initalize: (callback, skipProcessSend) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    models.FailedLink().find({}, (err, docs) => {
-      if (err) return callback ? callback(err) : log.general.error('Unable to get failedLinks', err)
-      const temp = {}
-      for (var i = 0; i < docs.length; ++i) temp[docs[i].link] = docs[i].failed || docs[i].count
-      storage.failedLinks = temp
-      exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
-    })
-  },
-  increment: (link, callback, skipProcessSend) => {
-    if (FAIL_LIMIT === 0 || !config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    if (typeof storage.failedLinks[link] === 'string') return storage.initialized ? log.general.warning(`Cannot increment failed link ${link} since it has already failed.`) : null
-    storage.failedLinks[link] = storage.failedLinks[link] == null ? 1 : storage.failedLinks[link] + 1
-    if (storage.failedLinks[link] >= FAIL_LIMIT) {
-      exports.failedLinks.fail(link, err => {
-        if (err) return log.general.warning(`Unable to mark failed link ${link}`, err)
-        log.cycle.error(`${link} has passed the fail limit (${FAIL_LIMIT}). Will no longer retrieve.`)
-        if (config.feeds.notifyFail === true) exports.failedLinks._sendAlert(link, `**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until it is manually refreshed by this server, or another server using this feed. See \`${config.bot.prefix}rsslist\` for more information.`)
+    exports.guildRss.getAll()
+      .then(results => {
+        results.forEach(guildRss => {
+          const rssList = guildRss.sources
+          if (!rssList) return
+          for (var i in rssList) {
+            const source = rssList[i]
+            const channel = guildRss.sendAlertsTo || storage.bot.channels.get(source.channel)
+            if (source.link === link && channel && config._skipMessages !== true) {
+              let sent = false
+              if (Array.isArray(channel)) { // Each array item is a user id
+                channel.forEach(userId => {
+                  const user = storage.bot.users.get(userId)
+                  if (user && typeof message === 'string' && message.includes('connection failure limit')) {
+                    sent = true
+                    user.send(`**ATTENTION** - Feed link <${link}> in channel <#${source.channel}> has reached the connection failure limit in server named \`${guildRss.name}\` with ID \`${guildRss.id}\`, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use \`${guildRss.prefix || config.bot.prefix}rsslist\` in your server for more information.`).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (a)`, user, err))
+                  } else if (user) {
+                    sent = true
+                    user.send(message).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (b)`, user, err))
+                  }
+                })
+              }
+              if (sent === false) {
+                const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
+                const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
+                if (config._skipMessages !== true) channel.send(m, attach ? new Discord.Attachment(Buffer.from(JSON.stringify(guildRss, null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
+              }
+            }
+          }
+        })
       })
-    } else {
-      storage.models.FailedLink().update({ link: link }, { link: link, count: storage.failedLinks[link] }, UPDATE_SETTINGS, (err, res) => {
-        if (err) log.general.error('Unable to increment failed feed document in collection', err)
-      })
-    }
-    exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
+      .catch(err => log.general.warning(`Failed to query all profiles for _sendAlert for failed link ${link}`, err))
   },
-  fail: (link, callback, skipProcessSend) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
+  get: async link => {
+    if (!MONGO_DATABASE) return
+    return models.FailedLink().findOne({ link }, FIND_PROJECTION).lean().exec()
+  },
+  getMultiple: async links => {
+    if (!MONGO_DATABASE) return []
+    return models.FailedLink().find({ link: { $in: links } }, FIND_PROJECTION).lean().exec()
+  },
+  getAll: async () => {
+    if (!MONGO_DATABASE) return []
+    return models.FailedLink().find({}, FIND_PROJECTION).lean().exec()
+  },
+  increment: async link => {
+    if (FAIL_LIMIT === 0 || !MONGO_DATABASE) return
+    await storage.models.FailedLink().updateOne({ link: link }, { $inc: { count: 1 } }, UPDATE_SETTINGS).exec()
+  },
+  fail: async link => {
+    if (!MONGO_DATABASE) return
+    if (config.feeds.failLimit === 0) throw new Error('Unable to fail a link when config.feeds.failLimit is 0')
     const now = new Date().toString()
-    storage.failedLinks[link] = now
-    storage.models.FailedLink().update({ link: link }, { link: link, failed: now }, UPDATE_SETTINGS, (err, res) => {
-      if (err) return callback ? callback(err) : log.general.error(`Unable to update document to mark failed for link ${link}`, err)
-      exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
-    })
+    if (config.feeds.notifyFail === true) exports.failedLinks._sendAlert(link, `**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until it is manually refreshed by this server, or another server using this feed. See \`${config.bot.prefix}rsslist\` for more information.`)
+    await storage.models.FailedLink().updateOne({ link: link }, { $set: { link: link, failed: now } }, UPDATE_SETTINGS).exec()
+    log.cycle.error(`${link} has been failed and will no longer be retrieved on subsequent retrieval cycles`)
   },
-  reset: (link, callback, skipProcessSend) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    if (storage.failedLinks[link] == null) return callback ? callback() : null
-    delete storage.failedLinks[link]
-    storage.models.FailedLink().find({ link: link }).remove(err => {
-      if (err && err.code !== 26) return callback ? callback(err) : log.general.error(`Unable to remove document to reset status for failed link ${link}`, err)
-      exports.failedLinks.uniformize(storage.failedLinks, callback, skipProcessSend)
-    })
+  reset: async link => {
+    if (!MONGO_DATABASE) return
+    await storage.models.FailedLink().deleteOne({ link: link })
   }
 }
 
 exports.blacklists = {
-  uniformize: (blacklistGuilds, blacklistUsers, callback, skipProcessSend) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.blacklists.uniformize not supported when config.database.uri is set to a databaseless folder path')) : null
+  uniformize: async (blacklistGuilds, blacklistUsers, skipProcessSend) => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.blacklists.uniformize not supported when config.database.uri is set to a databaseless folder path')
     if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'blacklists.uniformize', blacklistGuilds: blacklistGuilds, blacklistUsers: blacklistUsers, _loopback: true })
     else if (skipProcessSend) {
       storage.blacklistGuilds = blacklistGuilds
       storage.blacklistUsers = blacklistUsers
     }
-    if (callback) callback()
   },
-  get: callback => {
-    if (!config.database.uri.startsWith('mongo')) return callback(null, [])
-    models.Blacklist().find(callback)
+  getAll: async () => {
+    if (!MONGO_DATABASE) return []
+    return models.Blacklist().find().lean().exec()
   },
-  add: (settings, callback) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.blacklists.add is not supported when config.database.uri is set to a databaseless folder path')) : null
-    models.Blacklist().update({ id: settings.id }, settings, UPDATE_SETTINGS, err => {
-      if (err) return callback ? callback(err) : log.general.error(`Unable to add blacklist for id ${settings.id}`, err)
-      if (settings.isGuild) storage.blacklistGuilds.push(settings.id)
-      else storage.blacklistUsers.push(settings.id)
-      exports.blacklists.uniformize(storage.blacklistGuilds, storage.blacklistUsers, callback)
-    })
+  add: async settings => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.blacklists.add is not supported when config.database.uri is set to a databaseless folder path')
+    await models.Blacklist().updateOne({ id: settings.id }, { $set: settings }, UPDATE_SETTINGS).exec()
+    if (settings.isGuild) storage.blacklistGuilds.push(settings.id)
+    else storage.blacklistUsers.push(settings.id)
+    await exports.blacklists.uniformize(storage.blacklistGuilds, storage.blacklistUsers)
   },
-  remove: (id, callback) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.blacklists.remove is not supported when config.database.uri is set to a databaseless folder path')) : null
-    models.Blacklist().find({ id: id }).remove((err, doc) => {
-      if (err) return callback ? callback(err) : log.general.error(`Unable to remove blacklist for id ${id}`, err)
-      if (storage.blacklistGuilds.includes(id)) storage.blacklistGuilds.splice(storage.blacklistGuilds.indexOf(doc.id), 1)
-      else storage.blacklistUsers.splice(storage.blacklistUsers.indexOf(doc.id), 1)
-      exports.blacklists.uniformize(storage.blacklistGuilds, storage.blacklistUsers, callback)
-    })
+  remove: async id => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.blacklists.remove is not supported when config.database.uri is set to a databaseless folder path')
+    const doc = await models.Blacklist().deleteOne({ id: id })
+    if (storage.blacklistGuilds.includes(id)) storage.blacklistGuilds.splice(storage.blacklistGuilds.indexOf(doc.id), 1)
+    else storage.blacklistUsers.splice(storage.blacklistUsers.indexOf(doc.id), 1)
+    await exports.blacklists.uniformize(storage.blacklistGuilds, storage.blacklistUsers)
   },
-  refresh: callback => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.blacklists.refresh is not supported when config.database.uri is set to a databaseless folder path')) : null
-    exports.blacklists.get((err, docs) => {
-      if (err) return callback ? callback(err) : log.general.error('Unable to refresh blacklists', err)
-      for (var x = 0; x < docs.length; ++x) {
-        const doc = docs[x]
-        if (doc.isGuild) storage.blacklistGuilds.push(doc.id)
-        else storage.blacklistUsers.push(doc.id)
-      }
-      exports.blacklists.uniformize(storage.blacklistGuilds, storage.blacklistUsers, callback)
-    })
+  refresh: async () => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.blacklists.refresh is not supported when config.database.uri is set to a databaseless folder path')
+    const docs = await exports.blacklists.getAll()
+    for (var x = 0; x < docs.length; ++x) {
+      const doc = docs[x]
+      if (doc.isGuild) storage.blacklistGuilds.push(doc.id)
+      else storage.blacklistUsers.push(doc.id)
+    }
+    await exports.blacklists.uniformize(storage.blacklistGuilds, storage.blacklistUsers)
+  }
+}
+
+exports.statistics = {
+  clear: async () => {
+    if (!MONGO_DATABASE) return
+    return models.Statistics().collection.drop()
+  },
+  get: async (shard = 0) => {
+    if (!MONGO_DATABASE) return
+    return models.Statistics().findOne({ shard }, FIND_PROJECTION).lean().exec()
+  },
+  getAll: async () => {
+    if (!MONGO_DATABASE) return []
+    return models.Statistics().find({}, FIND_PROJECTION).lean().exec()
+  },
+  update: async data => {
+    if (!MONGO_DATABASE) return
+    const shard = data.shard || 0
+    const shardStats = await exports.statistics.get(shard)
+    if (!shardStats) return models.Statistics().updateOne({ shard }, { $set: data }, UPDATE_SETTINGS).exec()
+    data.cycleTime = (shardStats.cycleTime + data.cycleTime) / 2
+    data.cycleFails = (shardStats.cycleFails + data.cycleFails) / 2
+    data.cycleLinks = (shardStats.cycleLinks + data.cycleLinks) / 2
+    data.feeds = (shardStats.feeds + data.feeds) / 2
+    return models.Statistics().updateOne({ shard }, { $set: data }, UPDATE_SETTINGS).exec()
   }
 }
 
 exports.vips = {
-  uniformize: (vipUsers, vipServers, callback, skipProcessSend) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.uniformize is not supported when config.database.uri is set to a databaseless folder path')) : null
-    if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'vips.uniformize', vipUsers: vipUsers, vipServers: vipServers, _loopback: true })
-    else if (skipProcessSend) {
-      storage.vipUsers = vipUsers
-      storage.vipServers = vipServers
-    }
-    if (callback) callback()
+  get: id => models.VIP().findOne({ id }, FIND_PROJECTION).lean().exec(),
+  getAll: async () => {
+    if (!MONGO_DATABASE) return []
+    return models.VIP().find({}, FIND_PROJECTION).lean().exec()
   },
-  get: callback => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(null, []) : null
-    models.VIP().find(callback)
-  },
-  update: (settings, callback, skipAddServers) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.update is not supported when config.database.uri is set to a databaseless folder path')) : null
-    const servers = settings.servers
-    storage.vipUsers[settings.id] = settings
-    if (servers && !skipAddServers) exports.vips.addServers({ ...settings, serversToAdd: servers }, null, true)
-    exports.vips.uniformize(storage.vipUsers, storage.vipServers, callback)
+  update: async settings => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.vips.update is not supported when config.database.uri is set to a databaseless folder path')
     if (!settings.name) {
       const dUser = storage.bot.users.get(settings.id)
       settings.name = dUser ? dUser.username : null
     }
-    delete settings.__v // Deleting this automatically solves an annoying error "Updating the path '__v' would create a conflict at '__v'"
-    models.VIP().update({ id: settings.id }, settings, { upsert: true, strict: true }, err => {
-      if (err) return callback ? callback(err) : log.general.error(`Unable to add VIP for id ${settings.id}`, err)
-      if (callback) callback()
-      log.general.success(`Updated VIP ${settings.id} (${settings.name})`)
-    })
+    await models.VIP().updateOne({ id: settings.id }, { $set: settings }, UPDATE_SETTINGS).exec()
+    log.general.success(`Updated VIP ${settings.id} (${settings.name})`)
   },
-  updateBulk: (settingsMultiple, callback) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.updateBulk is not supported when config.database.uri is set to a databaseless folder path')) : null
+  updateBulk: async vipUsers => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.vips.updateBulk is not supported when config.database.uri is set to a databaseless folder path')
     let complete = 0
-    const total = Object.keys(settingsMultiple).length
+    const total = Object.keys(vipUsers).length
     let errored = false
-    for (var e in settingsMultiple) {
-      const settings = settingsMultiple[e]
-      if (!settings.name) {
-        const dUser = storage.bot.users.get(settings.id)
-        settings.name = dUser ? dUser.username : null
+    for (var e in vipUsers) {
+      const vipUser = vipUsers[e]
+      if (!vipUser.name) {
+        const dUser = storage.bot.users.get(vipUser.id)
+        vipUser.name = dUser ? dUser.username : null
       }
-      storage.vipUsers[settings.id] = settings
     }
-    exports.vips.uniformize(storage.vipUsers, storage.vipServers)
 
-    for (var q in settingsMultiple) {
-      const settings = settingsMultiple[q]
-      const servers = settings.servers
-      if (servers) exports.vips.addServers({ ...settings, serversToAdd: servers }, null, true)
-      delete settings.__v
-      models.VIP().update({ id: settings.id }, settings, { upsert: true, strict: true }, err => {
-        if (err) {
-          log.general.error(`Unable to add VIP for id ${settings.id}`, err)
-          errored = true
-        } else log.general.success(`Bulk updated VIP ${settings.id} (${settings.name})`)
-        if (++complete === total && callback) callback(errored ? new Error('Errors encountered with vips.updateBulk logged') : null)
-      })
-    }
-  },
-  remove: (id, callback, skipProcessSend) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.remove is not supported when config.database.uri is set to a databaseless folder path')) : null
-    models.VIP().find({ id: id }).remove((err, doc) => {
-      if (err) return callback ? callback(err) : log.general.error(`Unable to remove VIP for id ${id}`, err)
-      const settings = { ...storage.vipUsers[id] }
-      delete storage.vipUsers[id]
-      const servers = doc.servers
-      if (servers) exports.vips.removeServers({ ...settings, serversToRemove: servers }, null, true)
+    if (Object.keys(vipUsers).length === 0) return
+    return new Promise((resolve, reject) => {
+      for (var q in vipUsers) {
+        const vipUser = vipUsers[q]
+        models.VIP().updateOne({ id: vipUser.id }, { $set: JSON.parse(JSON.stringify(vipUser)) }, UPDATE_SETTINGS).exec()
+          .then(() => {
+            log.general.success(`Bulk updated VIP ${vipUser.id} (${vipUser.name})`)
+            if (++complete === total) return errored ? reject(new Error('Errors encountered with vips.updateBulk logged')) : resolve()
+          })
+          .catch(err => { // stringify and parse to prevent mongoose from modifying my object
+            log.general.error(`Unable to add VIP for id ${vipUser.id}`, err, true)
+            errored = true
+            if (++complete === total) return errored ? reject(new Error('Errors encountered with vips.updateBulk logged')) : resolve()
+          })
+      }
     })
   },
-  addServers: (settings, callback, skipUpdateVIP) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.addServers is not supported when config.database.uri is set to a databaseless folder path')) : null
-    const servers = settings.serversToAdd
-    if (storage.bot.shard && storage.bot.shard.count > 0) {
-      storage.bot.shard.broadcastEval(`
-        const ids = ${JSON.stringify(servers)};
-        const info = {}
-        for (var x = 0; x < ids.length; ++x) {
-          const guild = this.guilds.get(ids[x]);
-          if (guild) info[guild.id] = guild.name
-        }
-        if (Object.keys(info).length > 0) info
-      `).then(results => {
-        let validServers = {}
-        const invalidServers = []
-        for (var x = 0; x < results.length; ++x) {
-          if (results[x]) validServers = { ...validServers, ...results[x] }
-        }
-        for (var y = 0; y < servers.length; ++y) {
-          const id = servers[y]
-          if (!validServers[id]) {
-            invalidServers.push(id)
-            log.general.warning(`Failed to add VIP backing to server ${id} due to missing guild`)
-          }
-        }
-        delete settings.serversToAdd
-        write(validServers, invalidServers)
-      }).catch(err => {
-        if (callback) callback(err)
-        log.general.error('Failed to broadcast eval for addServer', err)
-      })
-    } else {
-      const validServers = {}
-      const invalidServers = []
-      for (var x = 0; x < servers.length; ++x) {
-        const id = servers[x]
-        const guild = storage.bot.guilds.get(id)
-        if (guild) validServers[id] = guild.name
-        else invalidServers.push(id)
-      }
-      delete settings.serversToAdd
-      write(validServers, invalidServers)
-    }
-    function write (validServers, invalidServers) {
-      for (var id in validServers) {
-        const guildName = validServers[id]
-        storage.vipServers[id] = {
-          name: guildName,
-          benefactor: settings
-        }
-        if (settings.expireAt) storage.vipServers[id].expireAt = new Date(settings.expireAt)
-        if (!storage.vipUsers[settings.id].servers.includes(id)) storage.vipUsers[settings.id].servers.push(id)
-        log.general.success(`Added VIP backing to server ${id} (${guildName}). Benefactor ID ${settings.id} (${settings.name}).`)
-      }
-      if (skipUpdateVIP) {
-        exports.vips.uniformize(storage.vipUsers, storage.vipServers)
-      } else exports.vips.update(storage.vipUsers[settings.id], null, true) // Uniformize is called by vips.update so no need to explicitly call it here
-      if (callback) callback(null, validServers, invalidServers)
-    }
+  remove: async id => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.vips.remove is not supported when config.database.uri is set to a databaseless folder path')
+    await models.VIP().deleteOne({ id: id }).exec()
   },
-  removeServers: (settings, callback, skipUpdateVIP) => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.removeServers is not supported when config.database.uri is set to a databaseless folder path')) : null
-    const servers = settings.serversToRemove
-    const success = {}
-    const successIds = []
-    const failed = []
-    for (var x = 0; x < servers.length; ++x) {
-      const id = servers[x]
-      if (!storage.vipServers[id] && !storage.vipUsers[settings.id].servers.includes(id)) {
-        failed.push(id)
-        continue
-      }
-      const index = storage.vipUsers[settings.id].servers.indexOf(id)
-      if (index === -1) {
-        failed.push(id)
-        continue
-      }
-      success[id] = storage.vipServers[id] ? storage.vipServers[id].name : 'missing name'
-      successIds.push(id)
-      delete storage.vipServers[id]
-      storage.vipUsers[settings.id].servers.splice(index, 1)
-      if (skipUpdateVIP) exports.vips.uniformize(storage.vipUsers, storage.vipServers)
-      else exports.vips.update(storage.vipUsers[settings.id], null, true)
-      // No need to call uniformize since exports.vips.update does this
+  addServers: async settings => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.vips.addServers is not supported when config.database.uri is set to a databaseless folder path')
+    const { serversToAdd, vipUser } = settings
+    if (serversToAdd.length === 0) return
+    for (const id of serversToAdd) {
+      if (vipUser.servers.includes(id)) throw new Error(`Server ${id} already exists`)
+      vipUser.servers.push(id)
+      log.general.success(`VIP servers added for VIP ${vipUser.id} (${vipUser.name}): ${serversToAdd.join(',')}`)
     }
-    if (callback) callback(null, success, failed)
-    log.general.success(`VIP servers have been successfully removed: ${successIds}.${failed.length > 0 ? ` The following were not removed due to incorrect backing: ${failed}` : ``}`)
+    await models.VIP().updateOne({ id: vipUser.id }, { $addToSet: { servers: { $each: serversToAdd } } }, UPDATE_SETTINGS).exec()
   },
-  refresh: callback => {
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback(new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')) : null
-    if (!fs.existsSync(path.join(__dirname, '..', 'settings', 'vips.js'))) return callback ? callback(new Error('Missing VIP module')) : null
-    require('../settings/vips.js')(storage.bot, callback)
+  removeServers: async settings => {
+    if (!MONGO_DATABASE) throw new Error('dbOps.vips.removeServers is not supported when config.database.uri is set to a databaseless folder path')
+    const { serversToRemove, vipUser } = settings
+    for (const id of serversToRemove) {
+      const index = vipUser.servers.indexOf(id)
+      if (index === -1) throw new Error(`Server ID ${id} not found`)
+      vipUser.servers.splice(index, 1)
+      const guildRss = await exports.guildRss.get(id)
+      if (guildRss && guildRss.sources) {
+        const rssList = guildRss.sources
+        let vipScheduleRssNames
+        for (var feedSchedule of storage.scheduleManager.scheduleList) {
+          if (feedSchedule.name === 'vip') vipScheduleRssNames = feedSchedule.rssNames
+        }
+        for (var rssName in rssList) {
+          vipScheduleRssNames.splice(rssName, 1)
+          storage.allScheduleRssNames.splice(rssName, 1)
+          delete storage.scheduleAssigned[rssName]
+        }
+      }
+      await models.VIP().updateOne({ id: vipUser.id }, { $pull: { servers: { $in: serversToRemove } } }, UPDATE_SETTINGS).exec()
+    }
+    log.general.success(`VIP servers removed from VIP ${vipUser.id} (${vipUser.name}): ${serversToRemove.join(',')}`)
+  },
+  refresh: async () => {
+    if (!config._vip) return
+    if (!MONGO_DATABASE) throw new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')
+    if (!fs.existsSync(path.join(__dirname, '..', 'settings', 'vips.js'))) throw new Error('Missing VIP module')
+    return require('../settings/vips.js')(storage.bot)
   }
 }
 
 exports.general = {
-  cleanDatabase: (currentCollections, callback) => { // Remove unused feed collections
-    if (!config.database.uri.startsWith('mongo')) return callback ? callback() : null
-    if (!Array.isArray(currentCollections)) return callback(new Error('currentCollections is not an Array'))
-    mongoose.connection.db.listCollections().toArray((err, names) => {
-      if (err) return callback(err)
-      let c = 0
-      let d = 0
-      names.forEach(elem => {
-        const name = elem.name
-        if (!/\d/.exec(name) || currentCollections.includes(name)) return // Not eligible to be dropped - feed collections all have digits in them
-        ++c
-        if (config.database.clean !== true) return
-        mongoose.connection.db.dropCollection(name, err => {
-          if (err) return log.general.error(`Unable to drop unused collection ${name}`, err)
-          log.general.info(`Dropped unused feed collection ${name}`)
-          if (++d === c) log.general.info('All unused feed collections successfully dropped')
-        })
+  cleanDatabase: async currentCollections => { // Remove unused feed collections
+    if (!MONGO_DATABASE) return
+    if (!Array.isArray(currentCollections)) throw new Error('currentCollections is not an Array')
+    const names = await mongoose.connection.db.listCollections().toArray()
+    let c = 0
+    let d = 0
+    names.forEach(elem => {
+      const name = elem.name
+      if (!/\d/.exec(name) || currentCollections.includes(name)) return // Not eligible to be dropped - feed collections all have digits in them
+      ++c
+      if (config.database.clean !== true) return
+      mongoose.connection.db.dropCollection(name).then(() => {
+        log.general.info(`Dropped unused feed collection ${name}`)
+        if (++d === c) log.general.info('All unused feed collections successfully dropped')
+      }).catch(err => {
+        log.general.error(`Unable to drop unused collection ${name}`, err)
+        if (++d === c) log.general.info('All unused feed collections successfully dropped')
       })
-      if (c > 0) log.general.info(config.database.clean === true ? `Number of collections expected to be removed for database cleaning: ${c}` : `Number of unused collections skipping removal due to config.database.clean disabled: ${c}`)
-      callback()
     })
+    if (c > 0) log.general.info(config.database.clean === true ? `Number of collections expected to be removed for database cleaning: ${c}` : `Number of unused collections skipping removal due to config.database.clean disabled: ${c}`)
   }
 }

@@ -1,5 +1,7 @@
+// This logic that stems from this file will automatically create a sharding manager and shards if necessary, if the original client cannot handle the number of guilds
+
 const DiscordRSS = require('./index.js')
-const config = require('./config.json')
+const config = require('./config.js')
 
 const drss = new DiscordRSS.Client({ readFileSchedules: true, setPresence: true })
 let token = config.bot.token

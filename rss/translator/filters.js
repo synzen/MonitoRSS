@@ -56,19 +56,19 @@ function findFilterWords (filterType, content) {
           if (content.includes(searchTerm)) {
             if (!invertedFilter) matches.push(filterType[word])
             else if (invertedFilter) invertedMatches.push(filterType[word])
-            results.push({passed: true, inverted: invertedFilter})
-          } else results.push({passed: false, inverted: invertedFilter})
+            results.push({ passed: true, inverted: invertedFilter })
+          } else results.push({ passed: false, inverted: invertedFilter })
         } else { // Specific filters, for phrases/words with spaces around them
           searchTerm = searchTerm.startsWith('\\~') ? searchTerm.slice(1, searchTerm.length) : searchTerm.startsWith('\\!') ? searchTerm.slice(1, searchTerm.length) : searchTerm // A \~ or \! will just read as a ~ or !
           let expression = new RegExp(`(\\s|^)${escapeRegExp(searchTerm)}(\\s|$)`, 'gi')
           if (content.search(expression) !== -1) {
             if (!invertedFilter) matches.push(filterType[word])
             else if (invertedFilter) invertedMatches.push(filterType[word])
-            results.push({passed: true, inverted: invertedFilter})
-          } else results.push({passed: false, inverted: invertedFilter})
+            results.push({ passed: true, inverted: invertedFilter })
+          } else results.push({ passed: false, inverted: invertedFilter })
         }
       }
-    } else if (typeof content === 'object') { // For tags
+    } else if (Array.isArray(content)) { // For tags
       for (var item in content) {
         const res = findFilterWords(filterType, content[item])
         results = results.concat(res.resultsList)
@@ -78,37 +78,18 @@ function findFilterWords (filterType, content) {
     }
   }
 
-  // if (isTestMessage) {
   return {
     resultsList: results,
     matches: matches.length > 0 ? matches : null,
     invertedMatches: invertedMatches.length > 0 ? invertedMatches : null
   }
-  // } else return {resultsList: results}
 }
 
 module.exports = (source, article) => {
-  const filterTypes = {
-    'Title': {
-      user: source.filters.Title,
-      ref: article.title
-    },
-    'Description': {
-      user: source.filters.Description,
-      ref: article.fullDescription
-    },
-    'Summary': {
-      user: source.filters.Summary,
-      ref: article.fullSummary
-    },
-    'Author': {
-      user: source.filters.Author,
-      ref: article.author
-    },
-    'Tags': {
-      user: source.filters.Tag,
-      ref: article.tags ? article.tags.split('\n') : []
-    }
+  const referenceOverrides = {
+    description: article.fullDescription,
+    summary: article.fullSummary,
+    tags: article.tags ? article.tags.split('\n') : []
   }
 
   const passed = { // Inverted and regular filters are ultimately calculated together with AND
@@ -120,13 +101,13 @@ module.exports = (source, article) => {
   let userDefinedFiltersExists = false
 
   const filterResults = new _FilterResults()
-  for (var type in filterTypes) {
-    const item = filterTypes[type]
-    if (item.user && item.user.length > 0) userDefinedFiltersExists = true
-    const allResults = findFilterWords(item.user, item.ref)
+  for (var filterTypeName in source.filters) {
+    const userFilters = source.filters[filterTypeName]
+    if (userFilters && userFilters.length > 0) userDefinedFiltersExists = true
+    const allResults = findFilterWords(userFilters, filterTypeName.startsWith('raw:') ? article.getRawPlaceholderContent(filterTypeName) : (referenceOverrides[filterTypeName] || article[filterTypeName]))
     // Get match words for test messages
-    if (allResults.matches) filterResults.add(type, allResults.matches, false)
-    if (allResults.invertedMatches) filterResults.add(type, allResults.invertedMatches, true)
+    if (allResults.matches) filterResults.add(filterTypeName, allResults.matches, false)
+    if (allResults.invertedMatches) filterResults.add(filterTypeName, allResults.invertedMatches, true)
 
     // Decide whether it passes for each filter, iterating through each search word's results
     for (var i in allResults.resultsList) {
@@ -153,5 +134,4 @@ module.exports = (source, article) => {
 
   filterResults.passed = passed.invertedFilters && passed.regularFilters
   return filterResults
-  // else return passed.invertedFilters && passed.regularFilters
 }
