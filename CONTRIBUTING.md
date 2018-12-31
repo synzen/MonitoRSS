@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Contributing
 
 **The issue tracker is only for technical support, bug reports and enhancement suggestions.
@@ -25,6 +24,8 @@ More info [here](https://github.com/npm/npm/issues/20434) and [here](https://git
 
 [How do I know which version of **npm** comes with which version of **Node.js** ?](https://nodejs.org/en/download/releases/)
 =======
+=======
+>>>>>>> dev
 # Contributing
 
 **The issue tracker is only for technical support, bug reports and enhancement suggestions.
@@ -50,4 +51,3 @@ If you use an outdated version of **npm**, then you may run into a [lock file co
 More info [here](https://github.com/npm/npm/issues/20434) and [here](https://github.com/npm/npm/issues/20891).
 
 [How do I know which version of **npm** comes with which version of **Node.js** ?](https://nodejs.org/en/download/releases/)
->>>>>>> origin/dev
