@@ -35,7 +35,7 @@ async function checkUserGuildPermission (req, res, next) {
       for (const roleObject of rolesArray) {
         const roleId = roleObject.id
         if (!memberJson.roles.includes(roleId)) continue
-        memberHasPerm = memberHasPerm || ((roleObject.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION) || ((roleObject.permissions & ADMINISTRATOR_PERMISSION) === MANAGE_CHANNEL_PERMISSION)
+        memberHasPerm = memberHasPerm || ((roleObject.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION) || ((roleObject.permissions & ADMINISTRATOR_PERMISSION) === ADMINISTRATOR_PERMISSION)
       }
     }
     if (!memberHasPerm) return res.status(401).json({ code: 401, message: statusCodes['401'].message })
