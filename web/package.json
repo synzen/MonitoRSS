@@ -1,0 +1,33 @@
+{
+  "name": "discord.rss-webs",
+  "version": "0.0.1",
+  "description": "Website and API for Discord.RSS",
+  "main": "index.js",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "connect-mongo": "^2.0.3",
+    "express": "^4.16.4",
+    "express-rate-limit": "^3.3.2",
+    "express-session": "^1.15.6",
+    "express-ws": "^4.0.0",
+    "morgan": "^1.9.1",
+    "scheduler": "^0.12.0",
+    "simple-oauth2": "^2.2.1"
+  },
+  "devDependencies": {
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^8.0.0",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0",
+    "nodemon": "^1.18.9",
+    "pathfinder-ui": "^1.0.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js",
+    "eslint": "eslint --fix ."
+  },
+  "author": "synzen",
+  "license": "MIT"
+}

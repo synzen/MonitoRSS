@@ -1,0 +1,12 @@
+{
+    "watch": [
+        ".",
+        ".env"
+    ],
+    "ignore": [
+        "client"
+    ],
+    "execMap": {
+        "js": "node -r dotenv/config"
+    }
+}
