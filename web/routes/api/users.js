@@ -15,13 +15,11 @@ router.get('/@me', (req, res, next) => {
 
 router.get('/@me/guilds', async (req, res, next) => {
   try {
-    const [ apiGuildsRes, guildProfiles ] = await Promise.all([ axios.get(`${discordAPIConstants.apiHost}/users/@me/guilds`, bearerHeaders(req.session.auth.access_token)), dbOps.guildRss.getAll() ])
+    const [ apiGuildsRes, guildProfiles ] = await Promise.all([ axios.get(`${discordAPIConstants.apiHost}/users/@me/guilds`, discordAPIHeaders.user(req.session.auth.access_token)), dbOps.guildRss.getAll() ])
     const apiGuilds = apiGuildsRes.data
     const guildProfilesRef = {}
     for (const guildRss of guildProfiles) guildProfilesRef[guildRss.id] = guildRss
-    const resJson = []
-    apiGuilds.forEach(guild => guildProfilesRef[guild.id] ? resJson.push(guildProfilesRef[guild.id]) : null)
-    res.json(resJson)
+    res.json(apiGuilds.filter(guild => guildProfilesRef[guild.id]))
   } catch (err) {
     next(err)
   }

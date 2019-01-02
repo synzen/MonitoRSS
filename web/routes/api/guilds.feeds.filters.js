@@ -2,6 +2,7 @@ const express = require('express')
 const feedFilters = express.Router({ mergeParams: true })
 const dbOps = require('../../../util/dbOps.js')
 const statusCodes = require('../../constants/codes.js')
+const isObject = obj => typeof obj === 'object' && obj !== null && !Array.isArray(obj)
 
 feedFilters.delete('/', async (req, res, next) => {
   try {
@@ -17,9 +18,10 @@ feedFilters.delete('/', async (req, res, next) => {
 
 feedFilters.patch('/', async (req, res, next) => {
   try {
-    if (!req.body.filters) return res.status(400).json({ code: 400, message: { filters: 'This is a required field' } })
-    if (typeof req.body.filters !== 'object' || req.body.filters === null || Array.isArray(req.body.filters)) return res.status(400).json({ code: 400, message: { filters: ['Must be a JSON object'] } })
-    req.source.filters = req.body.filters
+    const filters = req.body.filters
+    if (!filters) return res.status(400).json({ code: 400, message: { filters: 'This is a required field' } })
+    if (!isObject(filters) || Object.keys(filters).length === 0) return res.status(400).json({ code: 400, message: { filters: 'Must be a populated object' } })
+    req.source.filters = filters
     const result = await dbOps.guildRss.update(req.guildRss)
     req.patchResult = result
     next()

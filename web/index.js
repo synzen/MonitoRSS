@@ -1,4 +1,5 @@
 // const path = require('path')
+const TEST_ENV = process.env.NODE_ENV === 'test'
 const axios = require('axios')
 const morgan = require('morgan')
 const express = require('express')
@@ -11,18 +12,10 @@ const apiRoutes = require('./routes/api/index.js')
 const mongoose = require('mongoose')
 const app = express()
 require('express-ws')(app) // Websockets
-const PORT = process.env.DRSS_PORT
+const PORT = TEST_ENV ? 8081 : process.env.DRSS_PORT
 const REDIRECT_URI = process.env.DRSS_REDIRECT_URI
 const SCOPES = 'identify guilds'
 const tokenConfig = code => { return { code, redirect_uri: REDIRECT_URI, scope: SCOPES } }
-const apiLimiter = rateLimit({
-  windowMs: 5 * 1000, // 5 seconds
-  max: 15, // 15 requests per 5 seconds
-  message: {
-    status: '429',
-    message: 'Too many requests'
-  }
-})
 
 const credentials = {
   client: {
@@ -32,20 +25,26 @@ const credentials = {
   auth: discordAPIConstants.auth
 }
 const oauth2 = require('simple-oauth2').create(credentials)
-
-if (!process.env.DRSS_CLIENT_ID || !process.env.DRSS_CLIENT_SECRET || !process.env.DRSS_PORT) throw new Error('Missing Cient ID, Secret and/or Port in environment')
+if (!TEST_ENV && (!process.env.DRSS_CLIENT_ID || !process.env.DRSS_CLIENT_SECRET || !process.env.DRSS_PORT)) throw new Error('Missing Cient ID, Secret and/or Port in environment')
 
 module.exports = () => {
-  if (mongoose.connection.readyState === 1) start(mongoose.connection)
+  if (TEST_ENV) {
+    mongoose.connect('mongodb://localhost:27017/rss_test', { useNewUrlParser: true })
+    mongoose.set('useCreateIndex', true)
+    return start(mongoose.connection)
+  } else if (mongoose.connection.readyState === 1) start(mongoose.connection)
   else require('../rss/db/connect.js')().then(() => start(mongoose.connection)).catch(console.log)
 }
 
 function start (mongooseConnection) {
   // Middleware
-  app.use(morgan('dev')) // Logging requests
+  if (!TEST_ENV) app.use(morgan('dev')) // Logging requests
   app.use(function mongoAndCORS (req, res, next) {
     // Make sure the database connection works on every API request
-    if (mongoose.connection.readyState !== 1) return res.status(500).json({ status: 500, message: 'Internal server error' })
+    if (!TEST_ENV && mongoose.connection.readyState !== 1) {
+      console.log('Ingoring request due to mongoose readyState !== 1')
+      return res.status(500).json({ status: 500, message: 'Internal Server Error' })
+    }
     // Allow CORS?
     res.header('Access-Control-Allow-Origin', '*')
     res.header('Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept')
@@ -72,10 +71,20 @@ function start (mongooseConnection) {
 
   // Routes
   // app.use(express.static(path.join(__dirname, 'client/build')))
-  app.use('/api', apiLimiter, apiRoutes)
+  if (!TEST_ENV) {
+    app.use('/api', rateLimit({
+      windowMs: 5 * 1000, // 5 seconds
+      max: 15, // 15 requests per 5 seconds
+      message: {
+        status: '429',
+        message: 'Too many requests'
+      }
+    }))
+  }
+  app.use('/api', apiRoutes)
 
   app.get('/test', (req, res) => {
-    res.send('ok')
+    return res.end()
   })
 
   app.get('/login', (req, res) => {
@@ -107,10 +116,18 @@ function start (mongooseConnection) {
       .catch(next)
   })
 
+  if (TEST_ENV) {
+    app.post('/session', (req, res, next) => {
+      req.session.auth = req.body.auth
+      req.session.identity = req.body.identity
+      res.end('ok')
+    })
+  }
+
   // Websockets
   app.ws('/ping', (ws, req) => {
     ws.on('message', msg => {
-      console.log(`Websocket message:`,msg)
+      console.log(`Websocket message:`, msg)
       ws.send(`I, the server, have seen your message (${msg}): ` + new Date())
     })
   })
@@ -120,5 +137,6 @@ function start (mongooseConnection) {
   //   res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
   // })
 
-  app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`))
+  if (!TEST_ENV) app.listen(PORT, () => console.log(`Example app listening on port ${PORT}!`))
+  return app
 }

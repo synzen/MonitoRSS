@@ -25,26 +25,27 @@ api.use((req, res, next) => {
 api.use('/users', users)
 api.use('/guilds', guilds)
 guilds.use('/:guildId/feeds', feeds)
-feeds.use('/:feedId/roles', feedSubscriptions)
+feeds.use('/:feedId/subscriptions', feedSubscriptions)
 feeds.use('/:feedId/filters', filters)
 
 // Handle PATCH, POST and DELETE mongoose results
 api.use((req, res, next) => {
-  if (req.method === 'PATCH' || req.method === 'POST') {
-    const result = req.patchResult || req.postResult
+  if (req.method === 'PATCH' || req.method === 'POST' || req.method === 'PUT') {
+    const result = req.patchResult || req.postResult || req.putResult
     if (!result) return next()
     if (result.ok !== 1) return res.status(500).json({ code: 500, message: statusCodes['500'].message })
     if (result.n === 0) return res.status(404).json({ code: 404, message: statusCodes['404'].message })
-    if (result.nModified !== 1) return res.status(304).json({ code: 304, message: statusCodes['304'].message })
-    return res.json(req.guildRss) // Return the modified document
+    if (result.upserted) return res.status(201).json(req.guildRss)
+    else if (result.nModified !== 1) return res.status(304).json({ code: 304, message: statusCodes['304'].message })
+    return res.json(req.guildRss)
   } else if (req.method === 'DELETE') {
     const { deleteResult } = req
     if (!deleteResult) return next()
     if (deleteResult.ok !== 1) return res.status(500).json({ code: 500, message: statusCodes['500'].message })
-    if (deleteResult.n === 0) return res.status(304).json({ code: 304, message: statusCodes['304'].message })
+    if (deleteResult.n === 0) return res.status(404).json({ code: 404, message: statusCodes['404'].message })
     // nModified may also be available since the mongoose operation is sometimes "updateOne"
     if (deleteResult.nModified !== undefined && deleteResult.nModified !== 1) return res.status(304).json({ code: 304, message: statusCodes['304'].message })
-    return res.status(204)
+    return res.status(204).end()
   } else return next()
 })
 

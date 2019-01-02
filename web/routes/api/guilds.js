@@ -20,10 +20,11 @@ async function checkUserGuildPermission (req, res, next) {
     const guildId = req.params.guildId
     const user = req.session.identity.id
     // Check if the user is the owner of the guild or if the user has a role with the correct permission to view the guild profile
-    const [ guildJsonRes, rolesArrayRes, memberJsonRes ] = await Promise.all([
+    const [ guildJsonRes, rolesArrayRes, memberJsonRes, guildRss ] = await Promise.all([
       axios.get(`${discordAPIConstants.apiHost}/guilds/${guildId}`, BOT_HEADERS),
       axios.get(`${discordAPIConstants.apiHost}/guilds/${guildId}/roles`, BOT_HEADERS),
-      axios.get(`${discordAPIConstants.apiHost}/guilds/${guildId}/members/${user}`, BOT_HEADERS)
+      axios.get(`${discordAPIConstants.apiHost}/guilds/${guildId}/members/${user}`, BOT_HEADERS),
+      dbOps.guildRss.get(guildId)
     ])
     const guildJson = guildJsonRes.data
     const rolesArray = rolesArrayRes.data
@@ -42,24 +43,7 @@ async function checkUserGuildPermission (req, res, next) {
     req.guild = guildJson
     req.guildRoles = rolesArray
     req.guildName = guildJson.name
-    next()
-  } catch (err) {
-    next(err)
-  }
-}
-
-async function createUserGuiildProfile (req, res, next) {
-  try {
-    const guildId = req.params.guildId
-    const guildRss = await dbOps.guildRss.get(guildId)
-    if (guildRss) {
-      req.guildRss = guildRss
-      return next()
-    }
-    const result = await dbOps.guildRss.update({ id: guildId, name: req.guild.name }, true) // req.guild.name is provided through the middleware function checkUserGuildPermission
-    if (result.ok !== 1) return res.status(500).json({ code: 500, message: statusCodes['500'].message })
-    if (result.n === 0) return res.status(404).json({ code: 404, message: statusCodes['404'].message })
-    if (result.nModified !== 1) return res.status(304).json({ code: 304, message: statusCodes['304'].message })
+    req.guildRss = guildRss
     next()
   } catch (err) {
     next(err)
@@ -70,9 +54,8 @@ guilds.use('/:guildId', checkUserGuildPermission)
 
 guilds.get('/:guildId', async (req, res, next) => {
   try {
-    const guildRss = await dbOps.guildRss.get(req.params.guildId)
-    if (!guildRss) return res.status(404).json({ code: 404, message: statusCodes['404'].message })
-    res.json(guildRss)
+    if (!req.guildRss) return res.status(404).json({ code: 404, message: statusCodes['404'].message })
+    res.json(req.guildRss)
   } catch (err) {
     console.log(err)
     next(err)
@@ -80,38 +63,32 @@ guilds.get('/:guildId', async (req, res, next) => {
 })
 
 // Modify a guild profile, and create it if it doesn't exist before the PATCH
-guilds.patch(`/:guildId`, (req, res, next) => {
+guilds.patch(`/:guildId`, async (req, res, next) => {
   const errors = {}
   const body = req.body
   for (const key in body) {
+    const bodyValue = body[key]
     const wantedType = VALID_GUILD_PATCH_TYPES[key]
-    if (!wantedType) continue
-    if (body[key].constructor !== wantedType || (Array.isArray(wantedType) && body[key].constructor !== wantedType[0])) {
-      errors[key] = `Must be a ${Array.isArray(wantedType) ? wantedType[0].name : wantedType.name}`
-    }
+    if (!wantedType) errors[key] = 'Invalid setting'
+    if (Array.isArray(wantedType)) {
+      const arrayOfCorrectTypes = !Array.isArray(bodyValue) || bodyValue.reduce((total, cur) => total || cur.constructor === wantedType[0], false)
+      if (!arrayOfCorrectTypes) errors[key] = `Each element of array must be a ${wantedType[0].name}`
+    } else if (bodyValue.constructor !== wantedType) errors[key] = `Must be a ${wantedType.name}`
   }
-  if (Object.keys(errors).length > 0) return res.status(403).json({ code: 403, message: errors })
-  next()
-}, createUserGuiildProfile, async (req, res, next) => {
+  if (Object.keys(errors).length > 0) return res.status(400).json({ code: 400, message: errors })
   try {
-    const result = await dbOps.guildRss.update({ ...req.body, id: req.params.guildId }, true)
-    if (result.ok !== 1) return res.status(500).json({ code: 500, message: statusCodes['500'].message })
-    if (result.n === 0) return res.status(404).json({ code: 404, message: statusCodes['404'].message })
-    if (result.nModified !== 1) return res.status(304).json({ code: 304, message: statusCodes['304'].message })
-    return res.json({ code: 200, message: 'ok' })
+    req.patchResult = await dbOps.guildRss.update({ ...req.body, id: req.params.guildId }, true)
+    req.guildRss = await dbOps.guildRss.get(req.params.guildId)
+    next()
   } catch (err) {
     next(err)
   }
-
-  res.json(req.body)
 })
 
 guilds.delete('/:guildId', async (req, res, next) => {
   try {
-    const result = await dbOps.guildRss.remove({ id: req.params.guildId })
-    if (result.ok !== 1) return res.status(500).json({ code: 500, message: statusCodes['500'].message })
-    if (result.n === 0) return res.status(304).json({ code: 304, message: statusCodes['304'].message })
-    return res.json({ code: 200, message: 'ok' })
+    req.deleteResult = await dbOps.guildRss.remove({ id: req.params.guildId }, true)
+    next()
   } catch (err) {
     next(err)
   }
