@@ -10,6 +10,7 @@ const isObject = obj => typeof obj === 'object' && obj !== null && !Array.isArra
 
 async function checkGlobalSubscriptionExist (req, res, next) {
   try {
+    const id = req.params.subscriberId
     const source = req.source
     const keys = [GLOBAL_SUBSCRIPTION_KEY, FILTERED_SUBSCRIPTION_KEY]
     for (const key of keys) {
