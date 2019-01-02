@@ -46,10 +46,10 @@ if (config.database.uri.startsWith('mongo')) {
   db.on('error', console.log)
   db.once('open', () => {
     // Otherwise drop the "guilds" collection from database for do-over if WIPE_DATABASE is true
+    let c = 0
     storage.models.GuildRss().find({}).lean().exec((err, docs) => {
       if (err) throw err
       docs.forEach(guildRss => {
-        let c = 0
         let changed = updateGuildRss(guildRss)
         if (changed) {
           storage.models.GuildRss().replaceOne({ _id: guildRss._id }, guildRss, { overwrite: true, upsert: true, strict: true }, (err, res) => {
