@@ -48,21 +48,33 @@ describe('/api', function () {
       })
     })
     describe('GET /@me/guilds', function () {
-      const dbGuilds = ['abc', 'def', 'ghi']
-      const discordAPIGuilds = [{ id: 'def' }, { id: 'ghi' }, { id: 'jkl' }]
-      const expectedResponse = [{ id: 'def' }, { id: 'ghi' }]
+      const dbGuilds = [{ id: 'abc', name: 'holy' }, { id: 'def', name: 'moly' }, { id: 'ghi', name: 'georgie' }] // The keys matter here since they must conform to mongoose's models.GuildRss()
+      const discordAPIGuilds = [{ id: 'def', discordValue: 'jacka' }, { id: 'ghi', discordValue: 'holaa' }, { id: 'jkl', discordValue: 'dollaa' }]
+      const expectedResponse = [ { profile: dbGuilds[1], discord: discordAPIGuilds[0] }, { profile: dbGuilds[2], discord: discordAPIGuilds[1] } ]
       const guildRss = id => { return { id } }
       beforeAll(async function () {
         nock(discordAPIConstants.apiHost)
           .get(`/users/@me/guilds`)
           .reply(200, discordAPIGuilds)
 
-        return Promise.all(dbGuilds.map(id => models.GuildRss().updateOne({ id }, { $set: { id } }, { upsert: true })))
+        return Promise.all(dbGuilds.map(dbGuild => models.GuildRss().updateOne({ id: dbGuild.id }, { $set: dbGuild }, { upsert: true })))
       })
-      it(`should return the user's guilds`, async function (done) {
+      it(`returns a obect with user's guilds' profiles, and the associated discord guild`, async function (done) {
         agent
           .get('/api/users/@me/guilds')
           .expect(200, expectedResponse, done)
+      })
+
+      it(`returns discord's status code and message when there is no guild found`, function (done) {
+        const discordCode = 322
+        const discordMessage = 'asgfdknbm kedibh'
+        nock(discordAPIConstants.apiHost)
+          .get(`/users/@me/guilds`)
+          .reply(discordCode, { message: discordMessage })
+
+        agent
+          .get('/api/users/@me/guilds')
+          .expect(discordCode, { code: discordCode, message: discordMessage, discord: true }, done)
       })
       afterAll(function () {
         return Promise.all(dbGuilds.map(id => models.GuildRss().deleteOne(guildRss(id))))

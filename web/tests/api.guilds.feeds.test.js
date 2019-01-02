@@ -38,12 +38,12 @@ describe('/guilds/:guildId/feeds', function () {
       discordAPIRoutes.forEach(route => nock(discordAPIConstants.apiHost).get(route.route).reply(200, route.response))
       return models.GuildRss().deleteOne({ id: guildId })
     })
-    it('returns the added feed link and title after success', function (done) {
+    it('returns the added rssName, feed link and title after success', function (done) {
       const channelId = '32465768'
       nock(feedHost)
         .get(feedRoute)
         .reply(200, feedXML)
-      nock(`${discordAPIConstants.apiHost}`)
+      nock(discordAPIConstants.apiHost)
         .get(`/channels/${channelId}`)
         .reply(200, { guild_id: guildId })
 
@@ -66,7 +66,7 @@ describe('/guilds/:guildId/feeds', function () {
         })
     })
 
-    it('returns the added feed link and title after success with feed limit of 0 (unlimited)', function (done) {
+    it('returns the added rssName, feed link and title after success with feed limit of 0 (unlimited)', function (done) {
       const originalMax = config.feeds.max
       config.feeds.max = 0
       const channelId = '32423597'
@@ -98,6 +98,7 @@ describe('/guilds/:guildId/feeds', function () {
     })
 
     it('returns a 400 code if feed already exists in the channel', async function (done) {
+      const expectedResponse = { code: 400, message: 'Feed already exists for this channel' }
       const channelId = '3920481934890814'
       await models.GuildRss().updateOne({ id: guildId }, { $set: {
         sources: {
@@ -111,10 +112,11 @@ describe('/guilds/:guildId/feeds', function () {
       agent
         .post(`/api/guilds/${guildId}/feeds`)
         .send({ channel: channelId, feed: feedURL })
-        .expect(400, done)
+        .expect(expectedResponse.code, expectedResponse, done)
     })
 
     it(`returns a 403 code if channel guild is not part of guild parameter`, function (done) {
+      const expectedResponse = { code: 403, message: { channel: 'Not part of guild' } }
       const channelId = '32423597534'
       nock(feedHost)
         .get(feedRoute)
@@ -126,8 +128,7 @@ describe('/guilds/:guildId/feeds', function () {
       agent
         .post(`/api/guilds/${guildId}/feeds`)
         .send({ channel: channelId, feed: feedURL })
-        .expect(403)
-        .end(done)
+        .expect(expectedResponse.code, expectedResponse, done)
     })
 
     it(`returns the same code and message from Discord if channel is not seen by bot`, function (done) {
@@ -144,19 +145,14 @@ describe('/guilds/:guildId/feeds', function () {
       agent
         .post(`/api/guilds/${guildId}/feeds`)
         .send({ channel: channelId, feed: feedURL })
-        .expect(discordStatus)
-        .end(function (err, res) {
-          if (err) return done(err)
-          expect(res.body).toHaveProperty('discord', true)
-          expect(res.body).toHaveProperty('message', discordMessage)
-          done()
-        })
+        .expect(discordStatus, { code: discordStatus, message: discordMessage, discord: true }, done)
     })
 
     it('returns a 403 code if user will exceed feed limit', async function (done) {
       const channelId = '240134923'
       const originalMax = config.feeds.max
       config.feeds.max = -1
+      const expectedResponse = { code: 403, message: `Guild feed limit reached (${config.feeds.max})` }
       await models.GuildRss().updateOne({ id: guildId }, { $set: {
         sources: {
           foobar: {
@@ -169,7 +165,8 @@ describe('/guilds/:guildId/feeds', function () {
       agent
         .post(`/api/guilds/${guildId}/feeds`)
         .send({ channel: channelId, feed: feedURL })
-        .expect(403, function (err) {
+        .expect(expectedResponse.code, function (err, res) {
+          expect(res.body).toEqual(expectedResponse)
           config.feeds.max = originalMax
           done(err)
         })
@@ -260,11 +257,12 @@ describe('/guilds/:guildId/feeds', function () {
         .expect(400)
         .end(function (err, res) {
           if (err) return done(err)
-          for (const keyName in modifyWith) expect(res.body).toHaveProperty(keyName)
+          for (const keyName in modifyWith) expect(res.body.message).toHaveProperty(keyName)
           done()
         })
     })
     it('returns a 400 code on setting a channel not part of guild', async function (done) {
+      const expectedResponse = { code: 400, message: { channel: 'Not part of guild' } }
       nock(discordAPIConstants.apiHost)
         .get(`/channels/${modifyWith.channel}`)
         .reply(200, { guild_id: guildId + 1 })
@@ -274,12 +272,7 @@ describe('/guilds/:guildId/feeds', function () {
       agent
         .patch(`/api/guilds/${guildId}/feeds/${feedId}`)
         .send(modifyWith)
-        .expect(400)
-        .end(function (err, res) {
-          if (err) return done(err)
-          expect(res.body).toHaveProperty('channel', 'Not part of guild')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
     it('modifies and returns the guild profile after valid channel edit', async function (done) {
       nock(discordAPIConstants.apiHost)
@@ -303,7 +296,6 @@ describe('/guilds/:guildId/feeds', function () {
           } catch (err) {
             done(err)
           }
-          done()
         })
     })
     afterAll(function () {
@@ -341,7 +333,6 @@ describe('/guilds/:guildId/feeds', function () {
           } catch (err) {
             done(err)
           }
-          done()
         })
     })
     it('removes the feed and guild if its the only feed remaining', async function (done) {
@@ -359,7 +350,6 @@ describe('/guilds/:guildId/feeds', function () {
           } catch (err) {
             done(err)
           }
-          done()
         })
     })
     it(`returns a 404 when the guild doesn't exist`, async function (done) {
@@ -373,24 +363,18 @@ describe('/guilds/:guildId/feeds', function () {
         })
     })
     it(`returns a 404 when guild sources is undefined`, async function (done) {
+      const expectedResponse = { code: 404, message: 'Unknown Feed' }
       await models.GuildRss().updateOne({ id: guildId }, { $set: { id: guildId } }, { upsert: true })
       agent
         .delete(`/api/guilds/${guildId}/feeds/123`)
-        .expect(404, function (err, res) {
-          if (err) return done(err)
-          expect(res.body).toHaveProperty('message', 'Unknown Feed')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
     it(`returns a 404 when guild sources is an empty object`, async function (done) {
+      const expectedResponse = { code: 404, message: 'Unknown Feed' }
       await models.GuildRss().updateOne({ id: guildId }, { $set: { sources: {} } }, { upsert: true })
       agent
         .delete(`/api/guilds/${guildId}/feeds/123`)
-        .expect(404, function (err, res) {
-          if (err) return done(err)
-          expect(res.body).toHaveProperty('message', 'Unknown Feed')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
     afterAll(function () {
       return models.GuildRss().deleteOne({ id: guildId })

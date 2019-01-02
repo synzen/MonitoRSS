@@ -5,6 +5,7 @@ const api = express.Router()
 const feeds = require('./guilds.feeds.js')
 const filters = require('./guilds.feeds.filters.js')
 const feedSubscriptions = require('./guilds.feeds.subscriptions.js')
+const channels = require('./guilds.channels.js')
 const statusCodes = require('../../constants/codes.js')
 
 // All API routes tries to mirror Discord's own API routes
@@ -25,6 +26,7 @@ api.use((req, res, next) => {
 api.use('/users', users)
 api.use('/guilds', guilds)
 guilds.use('/:guildId/feeds', feeds)
+guilds.use('/:guildId/channels', channels)
 feeds.use('/:feedId/subscriptions', feedSubscriptions)
 feeds.use('/:feedId/filters', filters)
 

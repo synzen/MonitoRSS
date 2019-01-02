@@ -77,7 +77,7 @@ feeds.use('/:feedId', checkGuildFeedExists)
 
 feeds.delete('/:feedId', async (req, res, next) => {
   try {
-    const result = await dbOps.guildRss.removeFeed(req.guildRss, req.params.feedId, true)
+    const result = await dbOps.guildRss.removeFeed(req.guildRss, req.params.feedId)
     req.deleteResult = result
     next()
   } catch (err) {
@@ -103,7 +103,7 @@ feeds.patch('/:feedId', async (req, res, next) => {
         } else source[key] = newSource[key]
       }
     }
-    if (Object.keys(errors).length > 0) return res.status(400).json(errors)
+    if (Object.keys(errors).length > 0) return res.status(400).json({ code: 400, message: errors })
     const result = await dbOps.guildRss.update(guildRss, true)
     req.patchResult = result
     next()

@@ -14,7 +14,7 @@ describe('/test', function () {
   })
   it('should return 200', function (done) {
     request(expressApp)
-      .get('/test')
+      .put('/test')
       .expect(200)
       .end(done)
   })

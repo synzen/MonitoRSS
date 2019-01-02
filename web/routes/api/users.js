@@ -18,8 +18,12 @@ router.get('/@me/guilds', async (req, res, next) => {
     const [ apiGuildsRes, guildProfiles ] = await Promise.all([ axios.get(`${discordAPIConstants.apiHost}/users/@me/guilds`, discordAPIHeaders.user(req.session.auth.access_token)), dbOps.guildRss.getAll() ])
     const apiGuilds = apiGuildsRes.data
     const guildProfilesRef = {}
+    const toReturn = []
     for (const guildRss of guildProfiles) guildProfilesRef[guildRss.id] = guildRss
-    res.json(apiGuilds.filter(guild => guildProfilesRef[guild.id]))
+    for (const discordGuild of apiGuilds) {
+      if (guildProfilesRef[discordGuild.id]) toReturn.push({ profile: guildProfilesRef[discordGuild.id], discord: discordGuild })
+    }
+    res.json(toReturn)
   } catch (err) {
     next(err)
   }

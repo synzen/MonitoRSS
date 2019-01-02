@@ -83,7 +83,7 @@ function start (mongooseConnection) {
   }
   app.use('/api', apiRoutes)
 
-  app.get('/test', (req, res) => {
+  app.put('/test', (req, res) => {
     return res.end()
   })
 
