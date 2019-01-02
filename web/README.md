@@ -21,9 +21,7 @@ A web server for https://github.com/synzen/Discord.RSS to manage your feeds. The
 2. `npm run start` in ./client
 
 
-
-
-## API Requests on Frontend
+### API Requests (on Frontend)
 
 Working on the front end is easy, but since the backend API authentication is done through Discord's OAuth2, you must do the following steps below to test the already-built backend API to first authorize yourself.
 
@@ -33,3 +31,7 @@ Working on the front end is easy, but since the backend API authentication is do
 4. Make sure the proxy's URL port for create-react-app in ./client/package.json is set to `process.env.DRSS_PORT`
 
 You're now able to make API requests on the frontend to the backend. (webpack's (create-react-app) dev server, proxied through to the backend). By authenticating yourself through Discord, the server has now stored your session and recognizes you.
+
+## Tests
+
+Run `npm test`
