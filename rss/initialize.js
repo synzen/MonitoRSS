@@ -160,7 +160,7 @@ exports.addNewFeed = async (settings, customTitle) => {
 
         const result = await dbOps.guildRss.update(guildRss)
         // The user doesn't need to wait for the initializeFeed
-        if (storage.bot && !process.env.EXPERIMENTAL_FEATURES) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
+        if (storage.bot || !process.env.EXPERIMENTAL_FEATURES) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
         resolve([ link, metaTitle, rssName, result ])
       } catch (err) {
         reject(err)
