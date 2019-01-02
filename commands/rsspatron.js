@@ -12,8 +12,7 @@ async function verifyServer (bot, serverId) {
   if (bot.shard && bot.shard.count > 0) {
     const results = (await bot.shard.broadcastEval(`
       const guild = this.guilds.get('${serverId}')
-      if (guild) { name: guild.name, id: guild.id }
-      else null
+      guild ? { name: guild.name, id: guild.id } : null
     `)).filter(item => item)
 
     if (results.length > 0) return results[0]

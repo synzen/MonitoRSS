@@ -80,7 +80,7 @@ exports.guildRss = {
     if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
     return res
   },
-  remove: async guildRss => {
+  remove: async (guildRss, suppressLog) => {
     const guildId = guildRss.id
     if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss).catch(err => log.general.warning('Unable to backup guild after remvoing', err, true))
     // Memory version
@@ -92,7 +92,7 @@ exports.guildRss = {
           exports.linkTracker.decrement(rssList[rssName].link, storage.scheduleAssigned[rssName]).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
         }
       }
-      return log.general.info(`Deleted guild ${guildId}.json`)
+      if (!suppressLog) log.general.info(`Deleted guild ${guildId}.json`)
     }
     // Database version
     const rssList = guildRss ? guildRss.sources : undefined
@@ -103,7 +103,7 @@ exports.guildRss = {
       }
     }
     const res = await models.GuildRss().deleteOne({ id: guildId })
-    log.general.info(`Removed Guild document ${guildId}`)
+    if (!suppressLog) log.general.info(`Removed Guild document ${guildId}`)
     return res
   },
   disableFeed: async (guildRss, rssName) => {
@@ -174,7 +174,7 @@ exports.guildRss = {
   },
   empty: (guildRss, skipRemoval) => { // Used on the beginning of each cycle to check for empty sources per guild
     if (guildRss.sources && Object.keys(guildRss.sources).length > 0) return false
-    if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage && !guildRss.prefix && !guildRss.sendAlertsTo) { // Delete only if server-specific special settings are not found
+    if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage && !guildRss.prefix && (!guildRss.sendAlertsTo || guildRss.sendAlertsTo.length === 0)) { // Delete only if server-specific special settings are not found
       if (!skipRemoval) {
         exports.guildRss.remove(guildRss)
           .then(() => log.general.info(`(G: ${guildRss.id}) 0 sources found with no custom settings deleted`))
@@ -453,10 +453,12 @@ exports.vips = {
         for (var feedSchedule of storage.scheduleManager.scheduleList) {
           if (feedSchedule.name === 'vip') vipScheduleRssNames = feedSchedule.rssNames
         }
-        for (var rssName in rssList) {
-          vipScheduleRssNames.splice(rssName, 1)
-          storage.allScheduleRssNames.splice(rssName, 1)
-          delete storage.scheduleAssigned[rssName]
+        if (vipScheduleRssNames) {
+          for (var rssName in rssList) {
+            vipScheduleRssNames.splice(rssName, 1)
+            storage.allScheduleRssNames.splice(rssName, 1)
+            delete storage.scheduleAssigned[rssName]
+          }
         }
       }
       await models.VIP().updateOne({ id: vipUser.id }, { $pull: { servers: { $in: serversToRemove } } }, UPDATE_SETTINGS).exec()
