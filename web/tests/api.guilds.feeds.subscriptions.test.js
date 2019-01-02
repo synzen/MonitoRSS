@@ -103,12 +103,12 @@ describe('/guilds/:guildId/feeds/:feedId/subscriptions', function () {
     })
 
     it('returns with discord status and message for invalid user subscription', async function (done) {
-      const userId = 'kaplooey'
-      const discordMessage = 'discord message'
-      const feedId = 'HWATBOBBYAGAIN'
+      const userId = 'kaplooeyoooooo'
+      const feedId = 'HWATBOBBYAGAINDANGIT'
+      const discordMessage = { code: 400, message: 'A different discord message' }
       nock(discordAPIConstants.apiHost)
         .get(`/users/${userId}`)
-        .reply(422, { message: discordMessage })
+        .reply(discordMessage.code, { message: discordMessage.message })
       await models.GuildRss().updateOne({ id: guildId }, { $set: { sources: {
         [feedId]: {
           title: 'foobar'
@@ -118,18 +118,13 @@ describe('/guilds/:guildId/feeds/:feedId/subscriptions', function () {
       agent
         .post(`/api/guilds/${guildId}/feeds/${feedId}/subscriptions`)
         .send({ type: 'user', id: userId })
-        .expect(422)
-        .end(async function (err, res) {
-          if (err) return done(err)
-          expect(res.body.message).toBe(discordMessage)
-          expect(res.body.discord).toBe(true)
-          done()
-        })
+        .expect(discordMessage.code, { ...discordMessage, discord: true }, done)
     })
 
     it('returns a 403 code for invalid role subscription', async function (done) {
       const feedId = 'GETTIN ME RILED UP BOBBY'
       const chosenRole = roles[0]
+      const expectedResponse = { code: 403, message: { id: 'Role is not in guild' } }
       await models.GuildRss().updateOne({ id: guildId }, { $set: { sources: {
         [feedId]: {
           title: 'foobar'
@@ -139,16 +134,12 @@ describe('/guilds/:guildId/feeds/:feedId/subscriptions', function () {
       agent
         .post(`/api/guilds/${guildId}/feeds/${feedId}/subscriptions`)
         .send({ type: 'role', id: chosenRole.id + 'garbage' })
-        .expect(403)
-        .end(async function (err, res) {
-          if (err) return done(err)
-          expect(res.body.message.id).toEqual('Role is not in guild')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
 
     it('returns a 400 code for missing id', async function (done) {
       const feedId = 'GETTIN ME RILED UP BOBBY AGAIN'
+      const expectedResponse = { code: 400, message: { id: 'This field is required' } }
       await models.GuildRss().updateOne({ id: guildId }, { $set: { sources: {
         [feedId]: {
           title: 'foobar'
@@ -158,16 +149,12 @@ describe('/guilds/:guildId/feeds/:feedId/subscriptions', function () {
       agent
         .post(`/api/guilds/${guildId}/feeds/${feedId}/subscriptions`)
         .send({ type: 'role' })
-        .expect(400)
-        .end(async function (err, res) {
-          if (err) return done(err)
-          expect(res.body.message.id).toEqual('This field is required')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
 
     it('returns a 400 code for missing/invalid type', async function (done) {
       const feedId = 'GETTIN ME RILED UP BOBBY AGAIN X2'
+      const expectedResponse = { code: 400, message: { type: 'Must be "role" or "user"' } }
       await models.GuildRss().updateOne({ id: guildId }, { $set: { sources: {
         [feedId]: {
           title: 'foobar'
@@ -177,12 +164,7 @@ describe('/guilds/:guildId/feeds/:feedId/subscriptions', function () {
       agent
         .post(`/api/guilds/${guildId}/feeds/${feedId}/subscriptions`)
         .send({ id: 'asd' })
-        .expect(400)
-        .end(async function (err, res) {
-          if (err) return done(err)
-          expect(res.body.message.type).toEqual('Must be "role" or "user"')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
   })
 
@@ -374,6 +356,7 @@ describe('/guilds/:guildId/feeds/:feedId/subscriptions', function () {
 
     it('return a 400 code when subscriber does not exist', async function (done) {
       const feedId = 'this is getting really long'
+      const expectedResponse = { code: 404, message: 'Unknown Subscriber' }
       await models.GuildRss().updateOne({ id: guildId }, { $set: { sources: {
         [feedId]: {
           title: 'foobar',
@@ -383,12 +366,7 @@ describe('/guilds/:guildId/feeds/:feedId/subscriptions', function () {
 
       agent
         .delete(`/api/guilds/${guildId}/feeds/${feedId}/subscriptions/${subscriberId}`)
-        .expect(404)
-        .end(async function (err, res) {
-          if (err) return done(err)
-          expect(res.body.message).toBe('Unknown Subscriber')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
   })
   afterAll(function () {

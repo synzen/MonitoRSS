@@ -10,8 +10,6 @@ const isObject = obj => typeof obj === 'object' && obj !== null && !Array.isArra
 
 async function checkGlobalSubscriptionExist (req, res, next) {
   try {
-    const id = req.params.subscriberId
-    if (!id) return res.status(400).json({ code: 400, message: 'This field is required' })
     const source = req.source
     const keys = [GLOBAL_SUBSCRIPTION_KEY, FILTERED_SUBSCRIPTION_KEY]
     for (const key of keys) {
@@ -41,7 +39,10 @@ feedSubscriptions.post('/', async (req, res, next) => {
     if (!id) errors.id = 'This field is required'
     if (type !== 'role' && type !== 'user') errors.type = 'Must be "role" or "user"'
     else if (id) {
-      if (type === 'user') toPush.name = (await axios.get(`${discordAPIConstants.apiHost}/users/${id}`, BOT_HEADERS)).data.username
+      if (type === 'user') {
+        const response = (await axios.get(`${discordAPIConstants.apiHost}/users/${id}`, BOT_HEADERS))
+        toPush.name = response.data.username
+      }
       else {
         const filtered = req.guildRoles.filter(role => role.id === id) // Provided earlier in the middleware for /guilds/:guildId
         if (filtered.length === 0) return res.status(403).json({ code: 403, message: { id: `Role is not in guild` } })

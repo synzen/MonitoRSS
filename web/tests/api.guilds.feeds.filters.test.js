@@ -95,6 +95,7 @@ describe('/guilds/:guildId/feeds/:feedId/filters', function () {
     })
 
     it('returns a 400 code for missing filters object', async function (done) {
+      const expectedResponse = { code: 400, message: { filters: 'This is a required field' } }
       await models.GuildRss().updateOne({ id: guildId }, { $set: {
         sources: {
           [feedId]: {
@@ -107,15 +108,11 @@ describe('/guilds/:guildId/feeds/:feedId/filters', function () {
 
       agent
         .patch(`/api/guilds/${guildId}/feeds/${feedId}/filters`)
-        .expect(400)
-        .end(function (err, res) {
-          if (err) return done(err)
-          expect(res.body.message.filters).toBe('This is a required field')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
 
     it('returns a 400 code for unpopulated filters object', async function (done) {
+      const expectedResponse = { code: 400, message: { filters: 'Must be a populated object' } }
       await models.GuildRss().updateOne({ id: guildId }, { $set: {
         sources: {
           [feedId]: {
@@ -129,12 +126,7 @@ describe('/guilds/:guildId/feeds/:feedId/filters', function () {
       agent
         .patch(`/api/guilds/${guildId}/feeds/${feedId}/filters`)
         .send({ filters: {} })
-        .expect(400)
-        .end(function (err, res) {
-          if (err) return done(err)
-          expect(res.body.message.filters).toBe('Must be a populated object')
-          done()
-        })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
   })
 
