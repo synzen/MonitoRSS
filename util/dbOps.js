@@ -176,8 +176,7 @@ exports.guildRss = {
     if (guildRss.sources && Object.keys(guildRss.sources).length > 0) return false
     if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage && !guildRss.prefix && (!guildRss.sendAlertsTo || guildRss.sendAlertsTo.length === 0)) { // Delete only if server-specific special settings are not found
       if (!skipRemoval) {
-        exports.guildRss.remove(guildRss)
-          .then(() => log.general.info(`(G: ${guildRss.id}) 0 sources found with no custom settings deleted`))
+        exports.guildRss.remove(guildRss, true)
           .catch(err => log.general.error(`(G: ${guildRss.id}) Could not delete guild due to 0 sources`, err))
       }
     } else log.general.info(`(G: ${guildRss.id}) 0 sources found, skipping`)
