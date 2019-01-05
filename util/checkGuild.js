@@ -115,6 +115,10 @@ exports.config = (bot, guildRss, rssName, logging) => {
     }
     return false
   } else {
+    if (!source.channelName) {
+      source.channelName = channel.name
+      dbOps.guildRss.update(guildRss).catch(err => log.general.info(`(G: ${guildRss.id}, ${guildRss.name}) Unable to update channel name for source`, err))
+    }
     if (missingChannelCount[rssName]) delete missingChannelCount[rssName]
     return true
   }
