@@ -43,8 +43,7 @@ feedSubscriptions.post('/', async (req, res, next) => {
       if (type === 'user') {
         const response = (await axios.get(`${discordAPIConstants.apiHost}/users/${id}`, BOT_HEADERS))
         toPush.name = response.data.username
-      }
-      else {
+      } else {
         const filtered = req.guildRoles.filter(role => role.id === id) // Provided earlier in the middleware for /guilds/:guildId
         if (filtered.length === 0) return res.status(403).json({ code: 403, message: { id: `Role is not in guild` } })
         toPush.name = filtered[0].name

@@ -94,6 +94,7 @@ feeds.patch('/:feedId', async (req, res, next) => {
 
     for (const key in newSource) {
       if (!VALID_SOURCE_KEYS.includes(key)) errors[key] = `Only [${VALID_SOURCE_KEYS.join(',')}] fields are allowed` // return res.status(400).json({ code: 400, message: { [key]: `Only [${VALID_SOURCE_KEYS.join(',')}] fields are supported` } })
+      else if (!newSource[key]) errors[key] = 'Must not be empty'
       else if (Object.keys(errors).length === 0) {
         if (key === 'channel') {
           const newChannel = newSource[key]

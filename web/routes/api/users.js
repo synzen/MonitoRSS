@@ -9,7 +9,10 @@ const dbOps = require('../../../util/dbOps.js')
 
 router.get('/@me', (req, res, next) => {
   axios.get(`${discordAPIConstants.apiHost}/users/@me`, discordAPIHeaders.user(req.session.auth.access_token))
-    .then(json => res.json(json.data))
+    .then(json => {
+      req.session.identity = json.data
+      res.json(json.data)
+    })
     .catch(next)
 })
 

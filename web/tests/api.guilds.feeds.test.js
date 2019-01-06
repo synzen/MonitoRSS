@@ -1,6 +1,6 @@
 /* eslint-env node, jest */
 process.env.NODE_ENV = 'test'
-process.env.EXPERIMENTAL_FEATURES = 'true'
+process.env.DRSS_EXPERIMENTAL_FEATURES = 'true'
 
 const fs = require('fs')
 const request = require('supertest')
@@ -297,6 +297,16 @@ describe('/guilds/:guildId/feeds', function () {
             done(err)
           }
         })
+    })
+    it('returns a 400 code on empty title and/or channel', async function (done) {
+      const expectedResponse = { code: 400, message: { title: 'Must not be empty', channel: 'Must not be empty' } }
+      await models.GuildRss().updateOne({ id: guildId }, { $set: { sources: {
+        [feedId]: originalSource
+      } } }, { upsert: true })
+      agent
+        .patch(`/api/guilds/${guildId}/feeds/${feedId}`)
+        .send({ title: '', channel: '' })
+        .expect(expectedResponse.code, expectedResponse, done)
     })
     afterAll(function () {
       return models.GuildRss().deleteOne({ id: guildId })

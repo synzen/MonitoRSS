@@ -16,4 +16,13 @@ router.get('/:channelId', async (req, res, next) => {
   }
 })
 
+router.get('/', async (req, res, next) => {
+  try {
+    const response = await axios.get(`${discordAPIConstants.apiHost}/guilds/${req.params.guildId}/channels`, BOT_HEADERS)
+    res.json(response.data)
+  } catch (err) {
+    next(err)
+  }
+})
+
 module.exports = router

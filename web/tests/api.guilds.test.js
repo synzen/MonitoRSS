@@ -1,6 +1,6 @@
 /* eslint-env node, jest */
 process.env.NODE_ENV = 'test'
-process.env.EXPERIMENTAL_FEATURES = 'true'
+process.env.DRSS_EXPERIMENTAL_FEATURES = 'true'
 
 const request = require('supertest')
 const app = require('../index.js')

@@ -123,7 +123,7 @@ exports.addNewFeed = async (settings, customTitle) => {
     feedparser.on('end', async () => {
       if (errored) return
       try {
-        const shardId = !storage.bot && process.env.EXPERIMENTAL_FEATURES ? null : storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
+        const shardId = !storage.bot && process.env.DRSS_EXPERIMENTAL_FEATURES ? null : storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
         const rssName = `${storage.collectionId(link, shardId)}>${Math.floor((Math.random() * 99999) + 1)}`
         let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
 
@@ -160,7 +160,7 @@ exports.addNewFeed = async (settings, customTitle) => {
 
         const result = await dbOps.guildRss.update(guildRss)
         // The user doesn't need to wait for the initializeFeed
-        if (storage.bot || !process.env.EXPERIMENTAL_FEATURES) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
+        if (storage.bot || !process.env.DRSS_EXPERIMENTAL_FEATURES) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
         resolve([ link, metaTitle, rssName, result ])
       } catch (err) {
         reject(err)

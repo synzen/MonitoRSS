@@ -57,10 +57,19 @@ guilds.get('/:guildId', async (req, res, next) => {
     if (!req.guildRss) return res.status(404).json({ code: 404, message: statusCodes['404'].message })
     res.json(req.guildRss)
   } catch (err) {
-    console.log(err)
     next(err)
   }
 })
+
+// UNTESTED
+// guilds.get('/:guildId/channels', checkUserGuildPermission, async (req, res, next) => {
+//   try {
+//     const response = await axios.get(`${discordAPIConstants.apiHost}/guilds/${req.params.guildId}/channels`, BOT_HEADERS)
+//     res.json(response.data)
+//   } catch (err) {
+//     next(err)
+//   }
+// })
 
 // Modify a guild profile, and create it if it doesn't exist before the PATCH
 guilds.patch(`/:guildId`, async (req, res, next) => {
