@@ -47,20 +47,19 @@ module.exports = async (bot, message, command) => {
       .setDescription(`Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name after **${config.bot.prefix}unsubme** to remove a role from yourself.\u200b\n\u200b\n`)
 
     // Generate a list of feeds and eligible roles to be removed
-    const options = getSubList(bot, message.guild, rssList)
-    for (var option in options) {
-      const roleData = options[option]
+    const options = getSubList(message.guild, rssList)
+    for (const subscriptionData of options) {
       const temp = []
       for (var memberRole in filteredMemberRoles) {
-        if (!roleData.roleList.includes(filteredMemberRoles[memberRole].id)) continue
+        if (!subscriptionData.roleList.includes(filteredMemberRoles[memberRole].id)) continue
         temp.push(filteredMemberRoles[memberRole].name)
         filteredMemberRoles.splice(memberRole, 1)
       }
       temp.sort()
       if (temp.length > 0) {
-        const title = roleData.source.title + ` (${temp.length})`
-        let channelName = message.guild.channels.get(roleData.source.channel).name
-        let desc = `**Link**: ${roleData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
+        const title = subscriptionData.source.title + ` (${temp.length})`
+        let channelName = message.guild.channels.get(subscriptionData.source.channel).name
+        let desc = `**Link**: ${subscriptionData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
         for (var x = 0; x < temp.length; ++x) {
           const cur = temp[x]
           const next = temp[x + 1]
