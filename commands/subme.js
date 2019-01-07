@@ -22,7 +22,7 @@ module.exports = async (bot, message, command) => {
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('There are no active feeds to subscribe to.')
 
     const rssList = guildRss.sources
-    const options = getSubList(bot, message.guild, rssList)
+    const options = getSubList(message.guild, rssList)
     if (!options) return await message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.')
     const mention = message.mentions.roles.first()
     const msgArr = message.content.split(' ')
@@ -32,9 +32,9 @@ module.exports = async (bot, message, command) => {
       const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase())
       const links = []
       if (role || mention) {
-        for (var option in options) {
-          const roleData = options[option]
-          if (roleData.roleList.includes(role.id)) links.push(roleData.source.link)
+        for (const subscriptionData of options) {
+          const roleIds = subscriptionData.roleList
+          if (roleIds.includes(role.id)) links.push(subscriptionData.source.link)
         }
       }
       if (links.length > 0 && (role || mention)) return addRole(message, role || mention, links)
@@ -45,14 +45,14 @@ module.exports = async (bot, message, command) => {
       .setTitle('Self-Subscription Addition')
       .setDescription(`Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name after **${config.bot.prefix}subme** to add the role to yourself.\u200b\n\u200b\n`)
 
-    for (let option in options) {
-      const roleData = options[option]
+    for (const subscriptionData of options) {
+      // const roleData = options[option]
       const temp = []
-      for (var roleID in roleData.roleList) temp.push(message.guild.roles.get(roleData.roleList[roleID]).name)
+      for (const roleID of subscriptionData.roleList) temp.push(message.guild.roles.get(roleID).name)
       temp.sort()
-      const channelName = message.guild.channels.get(roleData.source.channel).name
-      const title = roleData.source.title + (temp.length > 0 ? ` (${temp.length})` : '')
-      let desc = `**Link**: ${roleData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
+      const channelName = message.guild.channels.get(subscriptionData.source.channel).name
+      const title = subscriptionData.source.title + (temp.length > 0 ? ` (${temp.length})` : '')
+      let desc = `**Link**: ${subscriptionData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
       for (var x = 0; x < temp.length; ++x) {
         const cur = temp[x]
         const next = temp[x + 1]
@@ -71,7 +71,7 @@ module.exports = async (bot, message, command) => {
       if (err.code !== 50013) message.channel.send(err.message)
     })
   } catch (err) {
-    log.command.warning(`subme`, message.guild, err)
+    log.command.warning(`subme`, message.guild, err, true)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('subme 1', message.guild, err))
   }
 }

@@ -3,31 +3,27 @@
 * Returns the feed source and the role list
 */
 
-module.exports = (bot, guild, rssList) => {
+module.exports = (guild, rssList) => {
   let finalList = []
-  const botRole = guild.members.get(bot.user.id).highestRole
+  const botRole = guild.members.get(guild.client.user.id).highestRole
+  console.log(botRole == undefined)
   for (var rssName in rssList) {
-    const globalSubList = rssList[rssName].roleSubscriptions
-    const filterList = rssList[rssName].filters
-
-    let roles = []
-    // globalSubList is an array
-    if (typeof globalSubList === 'object' && globalSubList.length > 0) {
-      for (var globalSubber in globalSubList) {
-        let subbedRole = guild.roles.get(globalSubList[globalSubber].roleID)
-        if (subbedRole.comparePositionTo(botRole) < 0) roles.push(subbedRole.id)
+    let subscribersFound = []
+    const keys = ['globalSubscriptions', 'filteredSubscriptions']
+    const source = rssList[rssName]
+    for (const key of keys) {
+      const subscriptions = source[key]
+      if (!Array.isArray(subscriptions) || subscriptions.length === 0) continue
+      for (const subscriber of subscriptions) {
+        if (subscriber.type === 'role') {
+          const role = guild.roles.get(subscriber.id)
+          console.log(role == undefined)
+          if (role.comparePositionTo(botRole) < 0) subscribersFound.push(role.id)
+        } 
       }
     }
 
-    // filteredSubList is an object with role IDs as key
-    if (typeof filterList === 'object' && typeof filterList.roleSubscriptions === 'object') {
-      for (var filteredSubber in filterList.roleSubscriptions) {
-        let subbedRole = guild.roles.get(filteredSubber)
-        if (subbedRole.comparePositionTo(botRole) < 0) roles.push(filteredSubber)
-      }
-    }
-
-    if (roles.length !== 0) finalList.push({ source: rssList[rssName], roleList: roles })
+    if (subscribersFound.length !== 0) finalList.push({ source: rssList[rssName], roleList: subscribersFound })
   }
 
   if (finalList.length === 0) return null
