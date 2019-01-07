@@ -71,7 +71,7 @@ module.exports = async (bot, message, command) => {
       if (err.code !== 50013) message.channel.send(err.message)
     })
   } catch (err) {
-    log.command.warning(`subme`, message.guild, err, true)
+    log.command.warning(`subme`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('subme 1', message.guild, err))
   }
 }
