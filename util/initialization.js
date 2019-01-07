@@ -5,6 +5,7 @@ const LinkTracker = require('../structs/LinkTracker.js')
 const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
 const FAIL_LIMIT = config.feeds.failLimit
+const MANAGE_CHANNELS_PERM = 'MANAGE_CHANNELS'
 
 function reachedFailCount (link, failedLinks) {
   const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
@@ -167,6 +168,29 @@ module.exports = async (bot, customSchedules, callback) => {
       const collectionId = storage.collectionId(item.link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, itemSchedule)
       linkTracker.increment(item.link, itemSchedule)
       if ((!bot.shard || bot.shard.count === 0) && !currentCollections.includes(collectionId)) currentCollections.push(collectionId)
+    }
+
+    if (storage.redisClient) {
+      bot.guilds.forEach((guild, guildId) => {
+        storage.redisClient.sadd(storage.redisKeys.guilds(), guildId, err => {
+          if (err) throw err
+        })
+        guild.channels.forEach((channel, channelId) => {
+          storage.redisClient.sadd(storage.redisKeys.guildChannels(guildId), channelId, err => {
+            if (err) throw err
+          })
+        })
+        guild.members.forEach((member, userId) => {
+          storage.redisClient.sadd(storage.redisKeys.guildMembers(guildId), userId, err => {
+            if (err) throw err
+          })
+          if (member.hasPermission(MANAGE_CHANNELS_PERM)) {
+            storage.redisClient.sadd(storage.redisKeys.guildManagers(guildId), userId, err => {
+              if (err) throw err
+            })
+          }
+        })
+      })
     }
 
     log.init.info(`${SHARD_ID}Finished initialization`)

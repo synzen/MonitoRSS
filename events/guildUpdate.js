@@ -1,7 +1,7 @@
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 
-module.exports = async (bot, oldGuild, newGuild) => {
+module.exports = async (oldGuild, newGuild) => {
   try {
     const guildRss = await dbOps.guildRss.get(oldGuild.id)
     if (!guildRss || guildRss.name === newGuild.name) return

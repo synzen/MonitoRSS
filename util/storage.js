@@ -28,6 +28,7 @@ function expireDate (type) {
 }
 
 exports.bot = undefined
+exports.redisClient = undefined
 exports.prefixes = {} // Guild prefixes
 exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
 exports.deletedFeeds = [] // Any deleted rssNames to check during article sending to see if it was deleted during a cycle
@@ -37,6 +38,21 @@ exports.allScheduleRssNames = []
 exports.scheduleManager = undefined
 exports.blacklistUsers = []
 exports.blacklistGuilds = []
+exports.redisKeys = {
+  guilds: () => 'drss_cached_guilds', // Guilds that have checked and cached
+  guildMembers: guildId => { // Members that have been cheched and cached for validity. May contain invalid members.
+    if (!guildId) throw new Error('Guild ID must be provided')
+    return `drss_guild_${guildId}_members`
+  },
+  guildManagers: guildId => { // Members that have been checked and cached and have permissions
+    if (!guildId) throw new Error(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_managers`
+  },
+  guildChannels: guildId => { // Channels that have been checked and cached
+    if (!guildId) throw new Error(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_channels`
+  }
+}
 exports.schemas = {
   guildRss: mongoose.Schema({
     id: {

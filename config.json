@@ -21,6 +21,7 @@
   },
   "database": {
     "uri": "mongodb://localhost:27017/rss",
+    "redis": "",
     "connection": {},
     "clean": false,
     "articlesExpire": 14,

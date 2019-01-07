@@ -5,6 +5,7 @@ config.bot.token = !process.env.DRSS_BOT_TOKEN || process.env.DRSS_BOT_TOKEN ===
 
 // process.env.MONGODB_URI is intended for use by Heroku
 config.database.uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI || config.database.uri
+config.database.redis = process.env.DRSS_REDIS_URI || config.database.redis
 
 // Heroku deployment configuration
 config.bot.prefix = process.env.DRSS_BOT_PREFIX || config.bot.prefix

@@ -245,7 +245,8 @@ exports.has = message => {
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   return list.hasOwnProperty(first.substr(prefix.length))
 }
-exports.run = async (bot, message) => {
+exports.run = async message => {
+  const bot = message.client
   const first = message.content.split(' ')[0]
   const guildPrefix = storage.prefixes[message.guild.id]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
@@ -302,7 +303,8 @@ exports.run = async (bot, message) => {
   }
 }
 
-exports.runController = (bot, message) => {
+exports.runController = message => {
+  const bot = message.client
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   const command = first.substr(prefix.length)
