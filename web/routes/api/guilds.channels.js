@@ -18,6 +18,7 @@ router.get('/:channelId', async (req, res, next) => {
 
 router.get('/', async (req, res, next) => {
   try {
+    console.log('guildid', req.params.guildId)
     const response = await axios.get(`${discordAPIConstants.apiHost}/guilds/${req.params.guildId}/channels`, BOT_HEADERS)
     res.json(response.data)
   } catch (err) {

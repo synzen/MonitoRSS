@@ -1,0 +1,13 @@
+.ui.input > input:hover {
+  border-color: #040405;
+}
+
+.ui.input > input:focus {
+  border-color: #7289DA !important;
+}
+
+.ui.input > input {
+  border-style: solid !important;
+  border-width: 1px !important;
+  border: rgba(0, 0, 0, 0.3);
+}

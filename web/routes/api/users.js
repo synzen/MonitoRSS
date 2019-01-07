@@ -4,6 +4,8 @@ const axios = require('axios')
 const discordAPIConstants = require('../../constants/discordAPI.js')
 const discordAPIHeaders = require('../../constants/discordAPIHeaders.js')
 const dbOps = require('../../../util/dbOps.js')
+const MANAGE_CHANNEL_PERMISSION = 16
+const ADMINISTRATOR_PERMISSION = 8
 
 // All API routes tries to mirror Discord's own API routes
 
@@ -24,7 +26,11 @@ router.get('/@me/guilds', async (req, res, next) => {
     const toReturn = []
     for (const guildRss of guildProfiles) guildProfilesRef[guildRss.id] = guildRss
     for (const discordGuild of apiGuilds) {
-      if (guildProfilesRef[discordGuild.id]) toReturn.push({ profile: guildProfilesRef[discordGuild.id], discord: discordGuild })
+      if (guildProfilesRef[discordGuild.id]) {
+        toReturn.push({ profile: guildProfilesRef[discordGuild.id], discord: discordGuild })
+      } else if (discordGuild.owner || ((discordGuild.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION) || ((discordGuild.permissions & ADMINISTRATOR_PERMISSION) === ADMINISTRATOR_PERMISSION)) {
+        toReturn.push({ profile: {}, discord: discordGuild })
+      }
     }
     res.json(toReturn)
   } catch (err) {

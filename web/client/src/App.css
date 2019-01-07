@@ -1,3 +1,9 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:300,400');
+
+body {
+  font-family: 'Open Sans', sans-serif;
+}
+
 .App {
   text-align: center;
 }
@@ -18,8 +24,13 @@
   color: white;
 }
 
+
 .App-link {
   color: #61dafb;
+}
+
+.myCustomClass {
+  color: white;
 }
 
 @keyframes App-logo-spin {
@@ -30,3 +41,7 @@
     transform: rotate(360deg);
   }
 }
+
+/* .bp3-dark {
+  background: white;
+} */

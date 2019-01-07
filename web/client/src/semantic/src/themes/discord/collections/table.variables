@@ -1,0 +1,10 @@
+@blurple: #7289DA;
+@greyple: #99AAB5;
+@darkButNotBlack: #2C2F33;
+@notQuiteblack: #23272A;
+
+@background: lighten(@darkButNotBlack, 10%);
+@headerColor: white;
+@headerBackground: lighten(@darkButNotBlack, 5%);
+@color: darken(#f6f6f7, 20%);
+@selectableTextColor: #f6f6f7;
