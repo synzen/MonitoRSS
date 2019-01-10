@@ -16,22 +16,21 @@ const readFilePromise = util.promisify(fs.readFile)
 const writeFilePromise = util.promisify(fs.writeFile)
 const mkdirPromise = util.promisify(fs.mkdir)
 const unlinkPromise = util.promisify(fs.unlink)
-const MONGO_DATABASE = config.database.uri.startsWith('mongo')
 
 exports.guildRss = {
   get: async id => {
-    if (MONGO_DATABASE) return models.GuildRss().findOne({ id }, FIND_PROJECTION).lean().exec()
+    if (config.database.uri.startsWith('mongo')) return models.GuildRss().findOne({ id }, FIND_PROJECTION).lean().exec()
     return JSON.parse(await readFilePromise(path.join(config.database.uri, `${id}.json`)))
   },
   getMany: async ids => {
-    if (MONGO_DATABASE) return models.GuildRss().find({ id: { $in: ids } }, FIND_PROJECTION).lean().exec()
+    if (config.database.uri.startsWith('mongo')) return models.GuildRss().find({ id: { $in: ids } }, FIND_PROJECTION).lean().exec()
     const promises = []
     for (const id of ids) promises.push(exports.guildRss.get(id))
     return Promise.all(promises)
   },
   getAll: async () => {
     // Database version
-    if (MONGO_DATABASE) return models.GuildRss().find({}, FIND_PROJECTION).lean().exec()
+    if (config.database.uri.startsWith('mongo')) return models.GuildRss().find({}, FIND_PROJECTION).lean().exec()
 
     // Memory Version
     if (!fs.existsSync(path.join(config.database.uri))) return []
@@ -64,7 +63,7 @@ exports.guildRss = {
   },
   update: async (guildRss, skipEmptyCheck) => {
     // Memory version
-    if (!MONGO_DATABASE) {
+    if (!config.database.uri.startsWith('mongo')) {
       try {
         if (!fs.existsSync(path.join(config.database.uri))) await mkdirPromise(path.join(config.database.uri))
         await writeFilePromise(path.join(config.database.uri, `${guildRss.id}.json`), JSON.stringify(guildRss, null, 2))
@@ -84,7 +83,7 @@ exports.guildRss = {
     const guildId = guildRss.id
     if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss).catch(err => log.general.warning('Unable to backup guild after remvoing', err, true))
     // Memory version
-    if (!MONGO_DATABASE) {
+    if (!config.database.uri.startsWith('mongo')) {
       await unlinkPromise(path.join(config.database.uri, `${guildId}.json`))
       const rssList = guildRss ? guildRss.sources : undefined
       if (rssList) {
@@ -129,7 +128,7 @@ exports.guildRss = {
   backup: async guildRss => {
     if (!guildRss || exports.guildRss.empty(guildRss, true)) return
     // Memory version
-    if (!MONGO_DATABASE) {
+    if (!config.database.uri.startsWith('mongo')) {
       if (!fs.existsSync(path.join(config.database.uri, 'backup'))) {
         await mkdirPromise(path.join(config.database.uri, 'backup'))
       }
@@ -141,7 +140,7 @@ exports.guildRss = {
   restore: async guildId => {
     // Memory version
     let guildRss
-    if (!MONGO_DATABASE) {
+    if (!config.database.uri.startsWith('mongo')) {
       if (!fs.existsSync(path.join(config.database.uri, 'backup', `${guildId}.json`))) return
       try {
         const json = await readFilePromise(path.join(config.database.uri, 'backup', `${guildId}.json`))
@@ -197,7 +196,7 @@ exports.feeds = {
 exports.linkTracker = {
   write: async linkTracker => {
     if (!(linkTracker instanceof LinkTracker)) throw new TypeError('linkTracker argument is not instance of LinkTracker')
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     try {
       await models.LinkTracker().collection.drop().catch(err => {
         if (err.code !== 26) log.general.warning('Unable to drop link tracker collection before insertion', err, true)
@@ -209,12 +208,12 @@ exports.linkTracker = {
     }
   },
   get: async () => {
-    if (!MONGO_DATABASE) return new LinkTracker()
+    if (!config.database.uri.startsWith('mongo')) return new LinkTracker()
     const docs = await models.LinkTracker().find({}).lean().exec()
     return new LinkTracker(docs, storage.bot)
   },
   update: async (link, count, scheduleName) => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     const shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
     if (count > 0) {
       await models.LinkTracker().updateOne({ link: link, shard: shardId, scheduleName: scheduleName }, { $set: { link: link, count: count, shard: shardId, scheduleName: scheduleName } }, UPDATE_SETTINGS).exec()
@@ -227,7 +226,7 @@ exports.linkTracker = {
     }
   },
   decrement: async (link, scheduleName) => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     const linkTracker = await exports.linkTracker.get()
     if (!linkTracker.get(link, scheduleName)) return
     const count = linkTracker.decrement(link, scheduleName)
@@ -242,7 +241,7 @@ exports.linkTracker = {
     await exports.linkTracker.update(link, count, scheduleName)
   },
   increment: async (link, scheduleName) => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     const shard = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
     await models.LinkTracker().updateOne({ link, shard, scheduleName }, { $inc: { count: 1 } }, UPDATE_SETTINGS).exec()
   }
@@ -285,23 +284,23 @@ exports.failedLinks = {
       .catch(err => log.general.warning(`Failed to query all profiles for _sendAlert for failed link ${link}`, err))
   },
   get: async link => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     return models.FailedLink().findOne({ link }, FIND_PROJECTION).lean().exec()
   },
   getMultiple: async links => {
-    if (!MONGO_DATABASE) return []
+    if (!config.database.uri.startsWith('mongo')) return []
     return models.FailedLink().find({ link: { $in: links } }, FIND_PROJECTION).lean().exec()
   },
   getAll: async () => {
-    if (!MONGO_DATABASE) return []
+    if (!config.database.uri.startsWith('mongo')) return []
     return models.FailedLink().find({}, FIND_PROJECTION).lean().exec()
   },
   increment: async link => {
-    if (FAIL_LIMIT === 0 || !MONGO_DATABASE) return
+    if (FAIL_LIMIT === 0 || !config.database.uri.startsWith('mongo')) return
     await storage.models.FailedLink().updateOne({ link: link }, { $inc: { count: 1 } }, UPDATE_SETTINGS).exec()
   },
   fail: async link => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     if (config.feeds.failLimit === 0) throw new Error('Unable to fail a link when config.feeds.failLimit is 0')
     const now = new Date().toString()
     if (config.feeds.notifyFail === true) exports.failedLinks._sendAlert(link, `**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until it is manually refreshed by this server, or another server using this feed. See \`${config.bot.prefix}rsslist\` for more information.`)
@@ -309,14 +308,14 @@ exports.failedLinks = {
     log.cycle.error(`${link} has been failed and will no longer be retrieved on subsequent retrieval cycles`)
   },
   reset: async link => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     await storage.models.FailedLink().deleteOne({ link: link })
   }
 }
 
 exports.blacklists = {
   uniformize: async (blacklistGuilds, blacklistUsers, skipProcessSend) => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.blacklists.uniformize not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.blacklists.uniformize not supported when config.database.uri is set to a databaseless folder path')
     if (!skipProcessSend && storage.bot.shard && storage.bot.shard.count > 0) process.send({ _drss: true, type: 'blacklists.uniformize', blacklistGuilds: blacklistGuilds, blacklistUsers: blacklistUsers, _loopback: true })
     else if (skipProcessSend) {
       storage.blacklistGuilds = blacklistGuilds
@@ -324,25 +323,25 @@ exports.blacklists = {
     }
   },
   getAll: async () => {
-    if (!MONGO_DATABASE) return []
+    if (!config.database.uri.startsWith('mongo')) return []
     return models.Blacklist().find().lean().exec()
   },
   add: async settings => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.blacklists.add is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.blacklists.add is not supported when config.database.uri is set to a databaseless folder path')
     await models.Blacklist().updateOne({ id: settings.id }, { $set: settings }, UPDATE_SETTINGS).exec()
     if (settings.isGuild) storage.blacklistGuilds.push(settings.id)
     else storage.blacklistUsers.push(settings.id)
     await exports.blacklists.uniformize(storage.blacklistGuilds, storage.blacklistUsers)
   },
   remove: async id => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.blacklists.remove is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.blacklists.remove is not supported when config.database.uri is set to a databaseless folder path')
     const doc = await models.Blacklist().deleteOne({ id: id })
     if (storage.blacklistGuilds.includes(id)) storage.blacklistGuilds.splice(storage.blacklistGuilds.indexOf(doc.id), 1)
     else storage.blacklistUsers.splice(storage.blacklistUsers.indexOf(doc.id), 1)
     await exports.blacklists.uniformize(storage.blacklistGuilds, storage.blacklistUsers)
   },
   refresh: async () => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.blacklists.refresh is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.blacklists.refresh is not supported when config.database.uri is set to a databaseless folder path')
     const docs = await exports.blacklists.getAll()
     for (var x = 0; x < docs.length; ++x) {
       const doc = docs[x]
@@ -355,19 +354,19 @@ exports.blacklists = {
 
 exports.statistics = {
   clear: async () => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     return models.Statistics().collection.drop()
   },
   get: async (shard = 0) => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     return models.Statistics().findOne({ shard }, FIND_PROJECTION).lean().exec()
   },
   getAll: async () => {
-    if (!MONGO_DATABASE) return []
+    if (!config.database.uri.startsWith('mongo')) return []
     return models.Statistics().find({}, FIND_PROJECTION).lean().exec()
   },
   update: async data => {
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     const shard = data.shard || 0
     const shardStats = await exports.statistics.get(shard)
     if (!shardStats) return models.Statistics().updateOne({ shard }, { $set: data }, UPDATE_SETTINGS).exec()
@@ -382,11 +381,11 @@ exports.statistics = {
 exports.vips = {
   get: id => models.VIP().findOne({ id }, FIND_PROJECTION).lean().exec(),
   getAll: async () => {
-    if (!MONGO_DATABASE) return []
+    if (!config.database.uri.startsWith('mongo')) return []
     return models.VIP().find({}, FIND_PROJECTION).lean().exec()
   },
   update: async settings => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.vips.update is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.update is not supported when config.database.uri is set to a databaseless folder path')
     if (!settings.name) {
       const dUser = storage.bot.users.get(settings.id)
       settings.name = dUser ? dUser.username : null
@@ -395,7 +394,7 @@ exports.vips = {
     log.general.success(`Updated VIP ${settings.id} (${settings.name})`)
   },
   updateBulk: async vipUsers => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.vips.updateBulk is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.updateBulk is not supported when config.database.uri is set to a databaseless folder path')
     let complete = 0
     const total = Object.keys(vipUsers).length
     let errored = false
@@ -425,11 +424,11 @@ exports.vips = {
     })
   },
   remove: async id => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.vips.remove is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.remove is not supported when config.database.uri is set to a databaseless folder path')
     await models.VIP().deleteOne({ id: id }).exec()
   },
   addServers: async settings => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.vips.addServers is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.addServers is not supported when config.database.uri is set to a databaseless folder path')
     const { serversToAdd, vipUser } = settings
     if (serversToAdd.length === 0) return
     for (const id of serversToAdd) {
@@ -440,7 +439,7 @@ exports.vips = {
     await models.VIP().updateOne({ id: vipUser.id }, { $addToSet: { servers: { $each: serversToAdd } } }, UPDATE_SETTINGS).exec()
   },
   removeServers: async settings => {
-    if (!MONGO_DATABASE) throw new Error('dbOps.vips.removeServers is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.removeServers is not supported when config.database.uri is set to a databaseless folder path')
     const { serversToRemove, vipUser } = settings
     for (const id of serversToRemove) {
       const index = vipUser.servers.indexOf(id)
@@ -465,7 +464,7 @@ exports.vips = {
   },
   refresh: async () => {
     if (!config._vip) return
-    if (!MONGO_DATABASE) throw new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')
+    if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')
     if (!fs.existsSync(path.join(__dirname, '..', 'settings', 'vips.js'))) throw new Error('Missing VIP module')
     return require('../settings/vips.js')(storage.bot)
   }
@@ -473,7 +472,7 @@ exports.vips = {
 
 exports.general = {
   cleanDatabase: async currentCollections => { // Remove unused feed collections
-    if (!MONGO_DATABASE) return
+    if (!config.database.uri.startsWith('mongo')) return
     if (!Array.isArray(currentCollections)) throw new Error('currentCollections is not an Array')
     const names = await mongoose.connection.db.listCollections().toArray()
     let c = 0
