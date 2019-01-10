@@ -21,7 +21,9 @@ const unlinkPromise = util.promisify(fs.unlink)
 exports.guildRss = {
   get: async id => {
     if (config.database.uri.startsWith('mongo')) return models.GuildRss().findOne({ id }, FIND_PROJECTION).lean().exec()
-    return JSON.parse(await readFilePromise(path.join(config.database.uri, `${id}.json`)))
+    const filePath = path.join(config.database.uri, `${id}.json`)
+    if (!fs.existsSync(filePath)) return null
+    return JSON.parse(await readFilePromise(filePath))
   },
   getMany: async ids => {
     if (config.database.uri.startsWith('mongo')) return models.GuildRss().find({ id: { $in: ids } }, FIND_PROJECTION).lean().exec()
@@ -86,14 +88,9 @@ exports.guildRss = {
     if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss).catch(err => log.general.warning('Unable to backup guild after remvoing', err, true))
     // Memory version
     if (!config.database.uri.startsWith('mongo')) {
-      await unlinkPromise(path.join(config.database.uri, `${guildId}.json`))
-      const rssList = guildRss ? guildRss.sources : undefined
-      if (rssList) {
-        for (let rssName in rssList) {
-          exports.linkTracker.decrement(rssList[rssName].link, storage.scheduleAssigned[rssName]).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
-        }
-      }
-      if (!suppressLog) log.general.info(`Deleted guild ${guildId}.json`)
+      const filePath = path.join(config.database.uri, `${guildId}.json`)
+      if (fs.existsSync(filePath)) await unlinkPromise(filePath)
+      return log.general.info(`Deleted guild ${guildId}.json`)
     }
     // Database version
     const rssList = guildRss ? guildRss.sources : undefined
@@ -143,9 +140,10 @@ exports.guildRss = {
     // Memory version
     let guildRss
     if (!config.database.uri.startsWith('mongo')) {
-      if (!fs.existsSync(path.join(config.database.uri, 'backup', `${guildId}.json`))) return
+      const backupPath = path.join(config.database.uri, 'backup', `${guildId}.json`)
+      if (!fs.existsSync(backupPath)) return
       try {
-        const json = await readFilePromise(path.join(config.database.uri, 'backup', `${guildId}.json`))
+        const json = await readFilePromise(backupPath)
         const parsed = JSON.parse(json)
         if (exports.guildRss.empty(parsed, true)) guildRss = parsed
       } catch (err) {
