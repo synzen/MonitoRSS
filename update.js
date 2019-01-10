@@ -58,7 +58,7 @@ if (config.database.uri.startsWith('mongo')) {
             if (c === docs.length) db.close()
           })
         } else {
-          console.log(`Completed ${guildRss.id} (${++c}/${docs.length})`)
+          console.log(`Completed ${guildRss.id} (${++c}/${docs.length}) [No Change]`)
           if (c === docs.length) db.close()
         }
       })
@@ -81,7 +81,7 @@ if (config.database.uri.startsWith('mongo')) {
           if (err) throw err
           // Now overwrite the old with the new if necessary
           const changed = updateGuildRss(guildRss)
-          if (!changed) console.log(`Completed ${guildRss.id} (${++c}/${fileNames.length})`)
+          if (!changed) console.log(`Completed ${guildRss.id} (${++c}/${fileNames.length}) [No Change]`)
           else {
             fs.writeFile(`${folderPath}/${fileName}`, JSON.stringify(guildRss, null, 2), err => {
               if (err) throw err
