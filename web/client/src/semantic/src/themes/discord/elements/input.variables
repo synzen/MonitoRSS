@@ -1,4 +1,0 @@
-@background: rgba(0, 0, 0, .1);
-@inputColor: white;
-@focusColor: white;
-@focusBorderColor: #7289DA;
