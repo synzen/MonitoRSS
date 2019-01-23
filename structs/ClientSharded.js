@@ -3,6 +3,7 @@ const storage = require('../util/storage.js')
 const connectDb = require('../rss/db/connect.js')
 const LinkTracker = require('./LinkTracker.js')
 const dbOps = require('../util/dbOps.js')
+const redisOps = require('../util/redisOps.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
 const handleError = (err, message) => log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
@@ -40,10 +41,14 @@ class ClientSharded extends EventEmitter {
     this.shardingManager.on('message', this.messageHandler.bind(this))
   }
 
-  run () {
-    connectDb().then(() => {
+  async run () {
+    try {
+      await connectDb()
+      await redisOps.flushDatabase()
       if (this.shardingManager.shards.size === 0) this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
-    }).catch(err => log.general.error(`ClientSharded db connection`, err))
+    } catch (err) {
+      log.general.error(`ClientSharded db connection`, err)
+    }
   }
 
   messageHandler (shard, message) {

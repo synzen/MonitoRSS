@@ -13,7 +13,7 @@
     "activityType": "",
     "activityName": "",
     "streamActivityURL": "",
-    "controllerIds": [""],
+    "controllerIds": ["156576312985780224"],
     "menuColor": 5285609,
     "deleteMenus": false,
     "exitOnSocketIssues": false,
@@ -23,12 +23,12 @@
     "uri": "mongodb://localhost:27017/rss",
     "redis": "",
     "connection": {},
-    "clean": false,
+    "clean": true,
     "articlesExpire": 14,
     "guildBackupsExpire": 7
   },
   "feeds": {
-    "refreshTimeMinutes": 15,
+    "refreshTimeMinutes": 0.5,
     "checkTitles": false,
     "timezone": "America/New_York",
     "dateFormat": "ddd, D MMMM YYYY, h:mm A z",

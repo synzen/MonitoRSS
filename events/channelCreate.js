@@ -1,7 +1,7 @@
-const storage = require('../util/storage.js')
+const Discord = require('discord.js')
+const redisOps = require('../util/redisOps.js')
+const log = require('../util/logger.js')
 
 module.exports = channel => {
-  if (storage.redisClient) {
-    storage.redisClient.sadd(storage.redisKeys.guildChannels(channel.guild.id), channel.id, err => err ? console.log(err) : null)
-  }
+  if (channel instanceof Discord.GuildChannel) redisOps.channels.recognize(channel).catch(err => log.general.error(`Redis failed to recognize after channelCreate event`, channel, err))
 }

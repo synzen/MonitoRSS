@@ -1,11 +1,6 @@
-const storage = require('../util/storage.js')
-const MANAGE_CHANNELS_PERM = 'MANAGE_CHANNELS'
+const log = require('../util/logger.js')
+const redisOps = require('../util/redisOps.js')
 
 module.exports = member => {
-  if (storage.redisClient) {
-    storage.redisClient.sadd(storage.redisKeys.guildMembers(member.guild.id), member.id, err => err ? console.log(err) : null)
-    if (member.hasPermission(MANAGE_CHANNELS_PERM)) {
-      storage.redisClient.sadd(storage.redisKeys.guildManagers(member.guild.id), member.id, err => err ? console.log(err) : null)
-    }
-  }
+  redisOps.members.recognize(member).catch(err => log.general.error(`Redis failed to recognize after guildMemberAvailable event`, member.guild, member, err))
 }

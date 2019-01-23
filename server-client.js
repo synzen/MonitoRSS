@@ -7,4 +7,7 @@ drss.login(require('./config.js').bot.token, true)
 
 drss.on('finishInit', () => {
   // Do whatever once the bot has finished initialization
+  try {
+    require('./web/index.js')()
+  } catch (err) {}
 })

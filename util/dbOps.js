@@ -5,6 +5,7 @@ const mongoose = require('mongoose')
 const Discord = require('discord.js')
 const storage = require('./storage.js')
 const config = require('../config.js')
+const redisOps = require('./redisOps.js')
 const LinkTracker = require('../structs/LinkTracker.js')
 const models = storage.models
 const log = require('./logger.js')
@@ -72,12 +73,13 @@ exports.guildRss = {
         throw err
       }
       if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
-      return
+      return redisOps.events.emitUpdatedProfile(guildRss.id)
     }
 
     // Database version
     const res = await models.GuildRss().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
     if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
+    redisOps.events.emitUpdatedProfile(guildRss.id)
     return res
   },
   remove: async (guildRss, suppressLog) => {

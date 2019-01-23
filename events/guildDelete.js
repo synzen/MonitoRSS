@@ -1,14 +1,11 @@
 const dbOps = require('../util/dbOps.js')
 const channelTracker = require('../util/channelTracker.js')
 const log = require('../util/logger.js')
-const storage = require('../util/storage.js')
+const redisOps = require('../util/redisOps.js')
 
 module.exports = async guild => {
   log.guild.info(`Guild (Users: ${guild.members.size}) has been removed`, guild)
-  if (storage.redisClient) {
-    storage.redisClient.srem(storage.redisKeys.guilds(), guild.id, err => err ? console.log(err) : null)
-    storage.redisClient.del(storage.redisKeys.guildManagers(guild.id), err => err ? console.log(err) : null)
-  }
+  redisOps.guilds.forget(guild).catch(err => log.general.error(`Redis failed to forget after guildDelete event`, guild, err))
 
   guild.channels.forEach((channel, channelId) => {
     if (channelTracker.hasActiveMenus(channelId)) channelTracker.remove(channelId)

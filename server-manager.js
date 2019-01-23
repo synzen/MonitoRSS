@@ -9,4 +9,7 @@ shardedDiscordRSSClient.run()
 
 shardedDiscordRSSClient.on('finishInit', () => {
   // Do whatever once the sharding manager has finished spawning and waiting for all shards to finish initialization
+  try {
+    require('./web/index.js')()
+  } catch (err) {}
 })

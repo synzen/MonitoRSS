@@ -12,7 +12,7 @@ module.exports = async (bot, message) => {
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
 
-    if (message.content.split(' ').length === 1) return await message.channel.send(`The correct syntax is \`${guildRss.prefix || config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`) // If there is no link after rssadd, return.
+    if (message.content.split(' ').length === 1) return await message.channel.send(`The correct syntax is \`${guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`) // If there is no link after rssadd, return.
 
     let linkList = message.content.split(' ')
     linkList.shift()

@@ -54,10 +54,10 @@ module.exports = async (guildRss, rssName, passFiltersOnly) => {
       } else {
         const randFeedIndex = Math.round(Math.random() * (currentFeed.length - 1)) // Grab a random feed from array
         const feedLinkList = []
-        const rawArticleList = {}
+        const rawArticleList = []
         currentFeed.forEach(article => {
           if (!feedLinkList.includes(article.link)) feedLinkList.push(article.link)
-          if (!rawArticleList[article.link]) rawArticleList[article.link] = article
+          rawArticleList.push(article)
         })
         resolve([ currentFeed[randFeedIndex], feedLinkList, rawArticleList ])
       }

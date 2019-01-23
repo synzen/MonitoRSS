@@ -17,7 +17,7 @@ module.exports = (guild, rssList) => {
         if (subscriber.type === 'role') {
           const role = guild.roles.get(subscriber.id)
           if (role.comparePositionTo(botRole) < 0) subscribersFound.push(role.id)
-        } 
+        }
       }
     }
 

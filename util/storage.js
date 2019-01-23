@@ -39,18 +39,43 @@ exports.scheduleManager = undefined
 exports.blacklistUsers = []
 exports.blacklistGuilds = []
 exports.redisKeys = {
-  guilds: () => 'drss_cached_guilds', // Guilds that have checked and cached
-  guildMembers: guildId => { // Members that have been cheched and cached for validity. May contain invalid members.
-    if (!guildId) throw new Error('Guild ID must be provided')
+  guilds: guildId => { // This is a HASH. Guilds with their data that have been cached.
+    if (!guildId) throw new TypeError(`Guild data and ID must be provided`)
+    return `drss_guild_${guildId}`
+  },
+  user: userId => { // This is a HASH. Users with their data that have been cached.
+    if (!userId) throw new TypeError(`User ID must be provided`)
+    return `drss_user_${userId}`
+  },
+  guildMembersOf: guildId => { // This is a SET. Members that have been cheched and cached for validity. May contain invalid members.
+    if (!guildId) throw new TypeError('Guild ID must be provided')
     return `drss_guild_${guildId}_members`
   },
-  guildManagers: guildId => { // Members that have been checked and cached and have permissions
-    if (!guildId) throw new Error(`Guild ID must be provided`)
+  guildManagersOf: guildId => { // This is a SET. Members that have been checked and cached and have permissions
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
     return `drss_guild_${guildId}_managers`
   },
-  guildChannels: guildId => { // Channels that have been checked and cached
-    if (!guildId) throw new Error(`Guild ID must be provided`)
+  notGuildManagersOf: guildId => { // This is a SET. Members that have been checked through Discord's HTTP API, cached and do NOT have permissions
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_nonmanagers`
+  },
+  guildChannelsOf: guildId => { // This is a SET. Channels of a guild that have been checked and cached
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
     return `drss_guild_${guildId}_channels`
+  },
+  guildRolesOf: guildId => {
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_roles`
+  },
+  guildRolesManagersOf: guildId => {
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_roles_managers`
+  },
+  channelNames: () => { // This is a HASH. Keys are channel IDs, values are channel names.
+    return `drss_channels_name`
+  },
+  roleNames: () => {
+    return `drss_roles_name`
   }
 }
 exports.schemas = {

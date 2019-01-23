@@ -1,11 +1,9 @@
-const storage = require('../util/storage.js')
+const redisOps = require('../util/redisOps.js')
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
 
 module.exports = async channel => {
-  if (storage.redisClient) {
-    storage.redisClient.srem(storage.redisKeys.guildChannels(channel.guild.id), channel.id, err => err ? console.log(err) : null)
-  }
+  redisOps.channels.forget(channel).catch(err => log.general.error(`Redis failed to forget after channelDelete event`, channel, err))
   const guildId = channel.guild.id
   try {
     const guildRss = await dbOps.guildRss.get(guildId)

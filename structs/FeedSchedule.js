@@ -52,10 +52,9 @@ class FeedSchedule extends EventEmitter {
   }
 
   _delegateFeed (guildRss, rssName) {
-    const source = guildRss.sources[rssName]
+    const source = { ...guildRss.sources[rssName] }
 
-    // Normally we don't mutate the object, but the source of truth is the database so these don't matter
-    // The guild id is needed after it is sent to the child process, and sent back for any ArticleMessages to access
+    // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
     source.guildId = guildRss.id
     source.dateSettings = {
       timezone: guildRss.timezone,

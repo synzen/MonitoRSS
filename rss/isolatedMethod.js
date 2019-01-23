@@ -66,7 +66,7 @@ process.on('message', m => {
   const feedData = m.feedData // Only defined if config.database.uri is set to a databaseless folder path
   const scheduleName = m.scheduleName
   const runNum = m.runNum
-  connectDb().then(() => {
+  connectDb(true).then(() => {
     const len = Object.keys(currentBatch).length
     let c = 0
     for (var link in currentBatch) {

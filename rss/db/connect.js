@@ -7,7 +7,7 @@ const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
 const storage = require('../../util/storage.js')
 const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
 
-module.exports = async () => {
+module.exports = async skipRedis => {
   const uri = config.database.uri
   if (!uri.startsWith('mongo')) return // Means filebase sources will be used
 
@@ -31,14 +31,11 @@ module.exports = async () => {
       mongoose.connection.once('open', resolve)
     }
 
-    if (process.env.DRSS_EXPERIMENTAL_FEATURES && !storage.redisClient) {
+    if (process.env.DRSS_EXPERIMENTAL_FEATURES && !skipRedis && !storage.redisClient) {
       storage.redisClient = require('redis').createClient(config.database.redis)
       storage.redisClient.once('ready', () => {
         log.general.success(`Redis connection ready`)
-        storage.redisClient.flushdb((err, res) => {
-          if (err) throw err
-          return mongoose.connection.readyState === 1 ? resolve() : connect()
-        })
+        return mongoose.connection.readyState === 1 ? resolve() : connect()
       })
 
       storage.redisClient.on('error', err => {

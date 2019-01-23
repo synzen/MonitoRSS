@@ -1,13 +1,12 @@
 const dbOps = require('../util/dbOps.js')
 const log = require('../util/logger.js')
-const storage = require('../util/storage.js')
+const redisOps = require('../util/redisOps.js')
 const MANAGE_CHANNELS_PERM = 'MANAGE_CHANNELS'
 
 module.exports = async role => {
-  if (storage.redisClient && role.hasPermission(MANAGE_CHANNELS_PERM)) {
-    role.members.forEach((member, userId) => {
-      storage.redisClient.srem(storage.redisKeys.guildManagers(role.guild.id), userId, err => err ? console.log(err) : null)
-    })
+  if (redisOps.client.exists()) {
+    redisOps.roles.forget(role).catch(err => log.general.error(`Redis failed to forget after roleDelete event`, role.guild, role, err))
+    if (role.hasPermission(MANAGE_CHANNELS_PERM)) role.members.forEach(member => redisOps.members.removeManager(member).catch(err => log.general.error(`Redis failed to removeManager after roleDelete event`, member.guild, member, err)))
   }
 
   try {

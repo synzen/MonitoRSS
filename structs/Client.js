@@ -8,6 +8,7 @@ const ScheduleManager = require('./ScheduleManager.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
+const redisOps = require('../util/redisOps.js')
 const checkConfig = require('../util/checkConfig.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientSharded = require('./ClientSharded.js')
@@ -214,12 +215,15 @@ class Client extends EventEmitter {
     listeners.enableCommands()
     const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
-    connectDb().then(() => {
-      initialize(storage.bot, this.customSchedules, (missingGuilds, linkDocs, feedData) => {
-        // feedData is only defined if config.database.uri is a databaseless folder path
-        this._finishInit(missingGuilds, linkDocs, feedData, callback)
+    connectDb()
+      .then(() => !this.bot.shard || this.bot.shard.count === 0 ? redisOps.flushDatabase() : null)
+      .then(() => {
+        initialize(storage.bot, this.customSchedules, (missingGuilds, linkDocs, feedData) => {
+          // feedData is only defined if config.database.uri is a databaseless folder path
+          this._finishInit(missingGuilds, linkDocs, feedData, callback)
+        })
       })
-    }).catch(err => log.general.error(`Client db connection`, err))
+      .catch(err => log.general.error(`Client db connection`, err))
   }
 
   restart (callback) {
