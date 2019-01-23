@@ -29,10 +29,12 @@ async function printSubscriptions (message, rssList) {
         if (!subList[source.title][embedReferenceTitle]) subList[source.title][embedReferenceTitle] = []
         if (type === 'user') {
           const resolvedUser = guild.members.get(id)
-          if (resolvedUser) subList[source.title][embedReferenceTitle].push(`${resolvedUser.user.username}#${resolvedUser.user.discriminator}`)
+          const toInsert = resolvedUser ? `${resolvedUser.user.username}#${resolvedUser.user.discriminator}` : ''
+          if (resolvedUser && !subList[source.title][embedReferenceTitle].includes(toInsert)) subList[source.title][embedReferenceTitle].push(toInsert)
         } else if (type === 'role') {
           const resolvedRole = guild.roles.get(id)
-          if (resolvedRole) subList[source.title][embedReferenceTitle].push(`${resolvedRole.name}`)
+          const toInsert = resolvedRole ? resolvedRole.name : ''
+          if (resolvedRole && !subList[source.title][embedReferenceTitle].includes(toInsert)) subList[source.title][embedReferenceTitle].push(toInsert)
         }
       }
     }
