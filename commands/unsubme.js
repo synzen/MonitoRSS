@@ -24,7 +24,7 @@ module.exports = async (bot, message, command) => {
     const memberRoles = message.member.roles
 
     // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
-    const filteredMemberRoles = memberRoles.filterArray(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
+    const filteredMemberRoles = memberRoles.filter(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
 
     const eligibleRoles = []
     for (var a in filteredMemberRoles) eligibleRoles.push(filteredMemberRoles[a].name.toLowerCase())
@@ -48,6 +48,7 @@ module.exports = async (bot, message, command) => {
 
     // Generate a list of feeds and eligible roles to be removed
     const options = getSubList(message.guild, rssList)
+    if (!options) return await message.channel.send('There are no eligible roles to be removed from you.')
     for (const subscriptionData of options) {
       const temp = []
       for (var memberRole in filteredMemberRoles) {
