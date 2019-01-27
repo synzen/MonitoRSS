@@ -95,13 +95,23 @@ exports.add = (message, guildRss, rssName, role, user) => {
   let targetFilterList
   if (targetId) {
     if (!source.filteredSubscriptions) source.filteredSubscriptions = []
-    source.filteredSubscriptions.push({
-      type: targetType.toLowerCase(),
-      id: targetId,
-      name: targetName,
-      filters: {}
-    })
-    targetFilterList = source.filteredSubscriptions[source.filteredSubscriptions.length - 1].filters
+    let exists = false
+    for (const subscriber of source.filteredSubscriptions) {
+      if (subscriber.id === targetId) {
+        if (!subscriber.filters) subscriber.filters = {}
+        targetFilterList = subscriber.filters
+        exists = true
+      }
+    }
+    if (!exists) {
+      source.filteredSubscriptions.push({
+        type: targetType.toLowerCase(),
+        id: targetId,
+        name: targetName,
+        filters: {}
+      })
+      targetFilterList = source.filteredSubscriptions[source.filteredSubscriptions.length - 1].filters
+    }
   } else {
     if (!source.filters) source.filters = {}
     targetFilterList = source.filters
