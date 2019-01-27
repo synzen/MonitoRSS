@@ -31,7 +31,7 @@ exports.guilds = {
     else {
       const toStore = {}
       exports.guilds.STORED_KEYS.forEach(key => {
-        if (newGuild[key] !== oldGuild[key]) toStore[key] = newGuild[key]
+        if (newGuild[key] !== oldGuild[key]) toStore[key] = newGuild[key] || ''
       })
       if (Object.keys(toStore).length > 0) return promisify(storage.redisClient.hmset).bind(storage.redisClient)(storage.redisKeys.guilds(newGuild.id), toStore)
       else return 0
@@ -276,7 +276,7 @@ exports.users = {
     if (!(user instanceof Discord.User)) throw new TypeError('User is not instance of Discord.User')
     const toStore = {}
     exports.users.STORED_KEYS.forEach(key => {
-      toStore[key] = user[key] // MUST be a flat structure
+      toStore[key] = user[key] || '' // MUST be a flat structure
     })
     return promisify(storage.redisClient.hmset).bind(storage.redisClient)(storage.redisKeys.user(user.id), toStore)
   },

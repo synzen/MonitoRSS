@@ -1,4 +1,3 @@
-const config = require('../config.js')
 const dbOps = require('../util/dbOps.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -37,9 +36,8 @@ async function cookiePromptFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const [ vipUser, guildRss ] = await Promise.all([ dbOps.vips.get(message.author.id), dbOps.guildRss.get(message.guild.id) ])
-
-    if (config._vip === true && (!vipUser || vipUser.allowCookies !== true || vipUser.invalid === true)) return await message.channel.send('Only patrons have access to cookie control.')
+    const [ isVipServer, guildRss ] = await Promise.all([ dbOps.vips.isVipServer(message.guild.id), dbOps.guildRss.get(message.guild.id) ])
+    if (!isVipServer) return await message.channel.send('Only servers backed by patrons have access to cookies.')
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
     const cookiePrompt = new MenuUtils.Menu(message, cookiePromptFn)
 

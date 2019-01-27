@@ -18,7 +18,7 @@ module.exports = async (bot, message, command) => {
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
 
-    const refreshRate = (vipUser && !vipUser.invalid && vipUser.servers.includes(message.guild.id)) && (vipUser.pledged >= 500 || vipUser.override === true) ? config._vipRefreshTimeMinutes : config.feeds.refreshTimeMinutes
+    const refreshRate = vipUser && !vipUser.invalid && (vipUser.pledged >= 500 || vipUser.override === true) ? config._vipRefreshTimeMinutes : config.feeds.refreshTimeMinutes
     // Generate the info for each feed as an array, and push into another array
     const currentRSSList = []
     const failedLinksToCheck = []

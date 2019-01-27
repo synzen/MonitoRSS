@@ -39,7 +39,7 @@ class FeedSchedule extends EventEmitter {
     // For vip tracking
     this.vipServers = []
     this.vipServerLimits = {}
-    this.denyWebhooks = {}
+    this.allowWebhooks = {}
 
     if (!this.bot.shard || this.bot.shard.count === 0) this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
     log.cycle.info(`${this.SHARD_ID}Schedule '${this.name}' has begun`)
@@ -62,7 +62,7 @@ class FeedSchedule extends EventEmitter {
       language: guildRss.dateLanguage
     }
 
-    if (this.denyWebhooks[guildRss.id] && source.webhook) {
+    if (!this.allowWebhooks[guildRss.id] && source.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
       delete source.webhook
     }
@@ -221,13 +221,13 @@ class FeedSchedule extends EventEmitter {
     }
     this.vipServers = []
     this.vipServerLimits = {}
-    this.denyWebhooks = {}
+    this.allowWebhooks = {}
 
     if (config._vip === true) {
       const vipUsers = await dbOps.vips.getAll()
       for (const vipUser of vipUsers) {
         for (const serverId of vipUser.servers) {
-          if (vipUser.allowWebhooks !== true || vipUser.invalid === true) this.denyWebhooks[serverId] = true
+          if (vipUser.invalid !== true) this.allowWebhooks[serverId] = true
           if (vipUser.invalid === true) continue
           this.vipServers.push(serverId)
           if (vipUser.maxFeeds) this.vipServerLimits[serverId] = vipUser.maxFeeds

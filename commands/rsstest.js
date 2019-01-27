@@ -26,12 +26,9 @@ module.exports = async (bot, message, command) => {
         language: guildRss.dateLanguage
       }
     }
-    if (source.webhook) {
-      const vipUser = await dbOps.vips.get(message.author.id)
-      if (config._vip === true && (!vipUser || vipUser.allowWebhooks !== true || vipUser.invalid === true)) {
-        log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
-        delete guildRss.sources[rssName].webhook
-      }
+    if (config._vip && source.webhook && !(await dbOps.vips.isVipServer(message.guild.id))) {
+      log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
+      delete guildRss.sources[rssName].webhook
     }
     article._delivery.source = guildRss.sources[rssName]
 
