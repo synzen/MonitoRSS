@@ -24,7 +24,7 @@ module.exports = async (bot, message, command) => {
     const memberRoles = message.member.roles
 
     // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
-    const filteredMemberRoles = memberRoles.filter(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone')
+    const filteredMemberRoles = Array.from(memberRoles.filter(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone').values())
 
     const eligibleRoles = []
     for (var a in filteredMemberRoles) eligibleRoles.push(filteredMemberRoles[a].name.toLowerCase())
@@ -49,31 +49,35 @@ module.exports = async (bot, message, command) => {
     // Generate a list of feeds and eligible roles to be removed
     const options = getSubList(message.guild, rssList)
     if (!options) return await message.channel.send('There are no eligible roles to be removed from you.')
+    let userHasRoles = false
     for (const subscriptionData of options) {
       const temp = []
-      for (var memberRole in filteredMemberRoles) {
-        if (!subscriptionData.roleList.includes(filteredMemberRoles[memberRole].id)) continue
-        temp.push(filteredMemberRoles[memberRole].name)
-        filteredMemberRoles.splice(memberRole, 1)
+      for (let i = filteredMemberRoles.length - 1; i >= 0; --i) {
+        const memberRole = filteredMemberRoles[i]
+        if (!subscriptionData.roleList.includes(memberRole.id)) continue
+        temp.push(memberRole.name)
+        filteredMemberRoles.splice(i, 1)
       }
       temp.sort()
-      if (temp.length > 0) {
-        const title = subscriptionData.source.title + ` (${temp.length})`
-        let channelName = message.guild.channels.get(subscriptionData.source.channel).name
-        let desc = `**Link**: ${subscriptionData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
-        for (var x = 0; x < temp.length; ++x) {
-          const cur = temp[x]
-          const next = temp[x + 1]
-          desc += `${cur}\n`
-          // If there are too many roles, add it into another field
-          if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
-            ask.addOption(title, desc, true)
-            desc = ``
-          }
+      if (temp.length === 0) continue
+      const title = subscriptionData.source.title + ` (${temp.length})`
+      let channelName = message.guild.channels.get(subscriptionData.source.channel).name
+      let desc = `**Link**: ${subscriptionData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
+      for (var x = 0; x < temp.length; ++x) {
+        const cur = temp[x]
+        const next = temp[x + 1]
+        desc += `${cur}\n`
+        // If there are too many roles, add it into another field
+        if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
+          ask.addOption(title, desc, true)
+          desc = ``
         }
-        ask.addOption(title, desc, true)
       }
+      ask.addOption(title, desc, true)
+      userHasRoles = true
     }
+
+    if (!userHasRoles) return await message.channel.send('There are no eligible roles to be removed from you.')
 
     // Some roles may not have a feed assigned since it prints all roles below the bot's role.
     if (filteredMemberRoles.length > 0) {
