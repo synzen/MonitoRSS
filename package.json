@@ -13,6 +13,7 @@
     "dev": "node -r dotenv/config server.js",
     "dev-sharded": "node -r dotenv/config server-manager.js",
     "dev-client": "node -r dotenv/config server-client.js",
+    "update": "node -r dotenv/config updates/dev.js",
     "eslint": "eslint --fix ."
   },
   "dependencies": {
