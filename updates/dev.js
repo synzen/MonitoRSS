@@ -118,6 +118,19 @@ function updateGuildRss (guildRss) {
         }
       }
     }
+
+    if (source.dateSettings) {
+      changed = true
+      delete source.dateSettings
+    }
+    if (source.guildId) {
+      changed = true
+      delete source.guildId
+    }
+    // if (source.channelName) {
+    //   changed = true
+    //   delete source.channelName
+    // }
   }
 
   return changed
