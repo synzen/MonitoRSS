@@ -156,6 +156,8 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
   })
 
   text = text.replace(/\n\s*\n\s*\n/g, '\n\n') // Replace triple line breaks with double
+  text = text.replace(/`/g, '\`' + String.fromCharCode(8203))  // Sanitize mentions with zero-width character "\u200b"
+    .replace(/@/g, '@' + String.fromCharCode(8203)) // This does not affect subscribed roles or modify anything outside the scope of sanitizing Discord mentions in the raw RSS feed content
   const arr = text.split('\n')
   for (var q = 0; q < arr.length; ++q) arr[q] = arr[q].replace(/\s+$/, '') // Remove trailing spaces
   return arr.join('\n')
