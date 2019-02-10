@@ -251,17 +251,21 @@ module.exports = class Article {
     this.summaryAnchors = []
     this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
     this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
-    if (this.summary) this.placeholders.push('summary')
+    if (this.summary && raw.summary !== raw.description) this.placeholders.push('summary')
     for (var sumImgNum in this.summaryImages) {
-      const term = `summary:image${parseInt(sumImgNum, 10) + 1}`
-      this.placeholders.push(term)
-      this[term] = this.summaryImages[sumImgNum]
+      const term = `summary:image${+sumImgNum + 1}`
+      if (this.summaryImages[sumImgNum] !== this.descriptionImages[sumImgNum]) {
+        this.placeholders.push(term)
+        this[term] = this.summaryImages[sumImgNum]
+      }
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
     for (var sumAnchorNum in this.summaryAnchors) {
-      const term = `summary:anchor${parseInt(sumAnchorNum, 10) + 1}`
-      this.placeholders.push(term)
-      this[term] = this.summaryAnchors[sumAnchorNum]
+      const term = `summary:anchor${+sumAnchorNum + 1}`
+      if (this.summaryAnchors[sumImgNum] !== this.descriptionAnchors[sumImgNum]) {
+        this.placeholders.push(term)
+        this[term] = this.summaryAnchors[sumAnchorNum]
+      }
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
@@ -270,7 +274,7 @@ module.exports = class Article {
     findImages(raw, imageLinks)
     this.images = (imageLinks.length === 0) ? undefined : imageLinks
     for (var imageNum in imageLinks) {
-      const term = `image:${parseInt(imageNum, 10) + 1}`
+      const term = `image${parseInt(imageNum, 10) + 1}`
       this.placeholders.push(term)
       this[term] = imageLinks[imageNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
