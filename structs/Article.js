@@ -171,10 +171,12 @@ module.exports = class Article {
     this.youtube = !!(raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#'])
     this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
     this.placeholdersForRegex = BASE_REGEX_PHS.slice()
+    this.placeholders = []
     this.meta = raw.meta
     this.guid = raw.guid
     this.author = raw.author ? cleanup(source, raw.author, undefined, undefined, this.encoding) : ''
     this.link = raw.link ? raw.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
+    if (this.link) this.placeholders.push('link')
     if (this.reddit && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
 
     // Title
@@ -182,19 +184,23 @@ module.exports = class Article {
     this.titleAnchors = []
     this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors, this.encoding)
     this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
+    if (this.title) this.placeholders.push('title')
     for (var titleImgNum in this.titleImages) {
       const term = `title:image${parseInt(titleImgNum, 10) + 1}`
+      this.placeholders.push(term)
       this[term] = this.titleImages[titleImgNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
     for (var titleAnchorNum in this.titleAnchors) {
       const term = `title:anchor${parseInt(titleAnchorNum, 10) + 1}`
+      this.placeholders.push(term)
       this[term] = this.titleAnchors[titleAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
 
     // guid - Raw exposure, no cleanup. Not meant for use by most feeds.
     this.guid = raw.guid ? raw.guid : ''
+    if (this.guid) this.placeholders.push('guid')
 
     // Date
     if (raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') {
@@ -208,7 +214,8 @@ module.exports = class Article {
       const localMoment = moment(date)
       if (dateSettings.language) localMoment.locale(dateSettings.language)
       const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
-      this.date = (vanityDate !== 'Invalid Date') ? vanityDate : ''
+      this.date = vanityDate !== 'Invalid Date' ? vanityDate : ''
+      if (this.date) this.placeholders.push('date')
       this.rawDate = raw.pubdate
     }
 
@@ -218,13 +225,16 @@ module.exports = class Article {
     this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors, this.encoding) // Account for youtube's description
     this.description = this.fullDescription
     this.description = this.description.length > 800 ? `${this.description.slice(0, 790)}...` : this.description
+    if (this.description) this.placeholders.push('description')
     for (var desImgNum in this.descriptionImages) {
       const term = `description:image${parseInt(desImgNum, 10) + 1}`
+      this.placeholders.push(term)
       this[term] = this.descriptionImages[desImgNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
     for (var desAnchorNum in this.descriptionAnchors) {
       const term = `description:anchor${parseInt(desAnchorNum, 10) + 1}`
+      this.placeholders.push(term)
       this[term] = this.descriptionAnchors[desAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
@@ -240,13 +250,16 @@ module.exports = class Article {
     this.summaryAnchors = []
     this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
     this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
+    if (this.summary) this.placeholders.push('summary')
     for (var sumImgNum in this.summaryImages) {
       const term = `summary:image${parseInt(sumImgNum, 10) + 1}`
+      this.placeholders.push(term)
       this[term] = this.summaryImages[sumImgNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
     for (var sumAnchorNum in this.summaryAnchors) {
       const term = `summary:anchor${parseInt(sumAnchorNum, 10) + 1}`
+      this.placeholders.push(term)
       this[term] = this.summaryAnchors[sumAnchorNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
@@ -257,6 +270,7 @@ module.exports = class Article {
     this.images = (imageLinks.length === 0) ? undefined : imageLinks
     for (var imageNum in imageLinks) {
       const term = `image:${parseInt(imageNum, 10) + 1}`
+      this.placeholders.push(term)
       this[term] = imageLinks[imageNum]
       if (this.enabledRegex) this.placeholdersForRegex.push(term)
     }
@@ -271,6 +285,7 @@ module.exports = class Article {
         if (parseInt(category, 10) !== cats.length - 1) categoryList += '\n'
       }
       this.tags = cleanup(source, categoryList, undefined, undefined, this.encoding)
+      if (this.tags) this.placeholders.push('tags')
     }
 
     // Regex-defined custom placeholders
@@ -448,7 +463,6 @@ module.exports = class Article {
   // replace simple keywords
   convertKeywords (word, ignoreCharLimits) {
     if (word.length === 0) return word
-    const regexPlaceholders = this.regexPlaceholders
     let content = word.replace(/{date}/g, this.date)
       .replace(/{title}/g, ignoreCharLimits ? this.fullTitle : this.title)
       .replace(/{author}/g, this.author)
@@ -459,6 +473,7 @@ module.exports = class Article {
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
 
+    const regexPlaceholders = this.regexPlaceholders
     for (var placeholder in regexPlaceholders) {
       for (var customName in regexPlaceholders[placeholder]) {
         const replacementQuery = new RegExp(`{${placeholder}:${escapeRegExp(customName)}}`, 'g')
