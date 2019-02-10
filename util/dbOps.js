@@ -397,27 +397,20 @@ exports.vips = {
     let complete = 0
     const total = Object.keys(vipUsers).length
     let errored = false
-    for (var e in vipUsers) {
-      const vipUser = vipUsers[e]
-      if (!vipUser.name) {
-        const dUser = storage.bot.users.get(vipUser.id)
-        vipUser.name = dUser ? dUser.username : null
-      }
-    }
 
     if (Object.keys(vipUsers).length === 0) return
     return new Promise((resolve, reject) => {
       for (var q in vipUsers) {
         const vipUser = vipUsers[q]
-        models.VIP().updateOne({ id: vipUser.id }, { $set: JSON.parse(JSON.stringify(vipUser)) }, UPDATE_SETTINGS).exec()
+        models.VIP().updateOne({ id: vipUser.id }, { $set: vipUser }, UPDATE_SETTINGS).exec()
           .then(() => {
             log.general.success(`Bulk updated VIP ${vipUser.id} (${vipUser.name})`)
-            if (++complete === total) return errored ? reject(new Error('Errors encountered with vips.updateBulk logged')) : resolve()
+            if (++complete === total) return errored ? reject(new Error('Previous errors encountered with vips.updateBulk')) : resolve()
           })
           .catch(err => { // stringify and parse to prevent mongoose from modifying my object
             log.general.error(`Unable to add VIP for id ${vipUser.id}`, err, true)
             errored = true
-            if (++complete === total) return errored ? reject(new Error('Errors encountered with vips.updateBulk logged')) : resolve()
+            if (++complete === total) return errored ? reject(new Error('Previous errors encountered with vips.updateBulk')) : resolve()
           })
       }
     })
