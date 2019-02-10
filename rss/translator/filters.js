@@ -98,12 +98,15 @@ module.exports = (source, article) => {
   }
   let regularFiltersExists = false
   let invertedFiltersExists = false
-  let userDefinedFiltersExists = false
 
   const filterResults = new _FilterResults()
   for (var filterTypeName in source.filters) {
     const userFilters = source.filters[filterTypeName]
-    if (userFilters && userFilters.length > 0) userDefinedFiltersExists = true
+
+    if (!referenceOverrides[filterTypeName] && !article[filterTypeName]) {
+      regularFiltersExists = true
+      continue
+    }
     const allResults = findFilterWords(userFilters, filterTypeName.startsWith('raw:') ? article.getRawPlaceholderContent(filterTypeName) : (referenceOverrides[filterTypeName] || article[filterTypeName]))
     // Get match words for test messages
     if (allResults.matches) filterResults.add(filterTypeName, allResults.matches, false)
@@ -124,13 +127,11 @@ module.exports = (source, article) => {
     }
   }
 
-  if (!userDefinedFiltersExists || (!invertedFiltersExists && !regularFiltersExists)) {
+  if ((!invertedFiltersExists && !regularFiltersExists)) {
     passed.invertedFilters = true
     passed.regularFilters = true
-  } else if (userDefinedFiltersExists) {
-    if (!invertedFiltersExists && regularFiltersExists) passed.invertedFilters = true
-    else if (!regularFiltersExists && invertedFiltersExists) passed.regularFilters = true
-  }
+  } else if (!invertedFiltersExists && regularFiltersExists) passed.invertedFilters = true
+  else if (!regularFiltersExists && invertedFiltersExists) passed.regularFilters = true
 
   filterResults.passed = passed.invertedFilters && passed.regularFilters
   return filterResults
