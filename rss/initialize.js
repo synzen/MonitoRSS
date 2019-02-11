@@ -32,16 +32,15 @@ exports.initializeFeed = async (articleList, link, rssName) => {
   if (articleList.length === 0) return
 
   function getArticleId (article) {
-    let equalGuids = articleList.length > 1 // default to true for most feeds
+    let equalGuids = (articleList.length > 1) // default to true for most feeds
     if (equalGuids && articleList[0].guid) {
       articleList.forEach((article, index) => {
         if (index > 0 && article.guid !== articleList[index - 1].guid) equalGuids = false
       })
     }
 
-    // If all articles have the same guids, fall back to title, and if no title, fall back to pubdate
+    if ((!article.guid || equalGuids) && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
     if ((!article.guid || equalGuids) && article.title) return article.title
-    if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
     return article.guid
   }
 
