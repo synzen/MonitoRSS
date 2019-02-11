@@ -13,7 +13,7 @@ function reachedFailCount (link, failedLinks) {
   return failed
 }
 
-module.exports = async (bot, customSchedules, callback) => {
+module.exports = async (bot, customSchedules, callback, vipApiData) => {
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new LinkTracker([], bot)
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
@@ -157,7 +157,7 @@ module.exports = async (bot, customSchedules, callback) => {
     try {
       // For patron tracking on the public bot
       if (config.database.uri.startsWith('mongo') && config._vip) {
-        const vipServers = await require('../settings/vips.js')(bot)
+        const vipServers = await require('../settings/vips.js')(bot, vipApiData)
         finish(vipServers)
       } else finish()
     } catch (e) {

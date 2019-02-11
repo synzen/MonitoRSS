@@ -39,6 +39,7 @@ class ClientSharded extends EventEmitter {
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardingManager = shardingManager
     this.shardingManager.on('message', this.messageHandler.bind(this))
+    this.vipApiData = null
   }
 
   async run () {
@@ -70,11 +71,16 @@ class ClientSharded extends EventEmitter {
     if (message.customSchedules) message.customSchedules.forEach(schedule => this.refreshTimes.push(schedule.refreshTimeMinutes))
   }
 
-  _shardReadyEvent (message) {
-    if (++this.shardsReady === this.shardingManager.totalShards) {
-      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[0] }) // Send the signal for first shard to initialize
+  async _shardReadyEvent (message) {
+    if (++this.shardsReady !== this.shardingManager.totalShards) return
+    try {
+      if (config._vip && !this.vipApiData) this.vipApiData = await require('../settings/api.js')()
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[0], vipApiData: this.vipApiData }) // Send the signal for first shard to initialize
+    } catch (err) {
+      log.general.error('Failed to fetch VIP API Data', err)
     }
   }
+
   _initCompleteEvent (message) {
     // Account for missing guilds
     const missing = message.missingGuilds
@@ -114,7 +120,7 @@ class ClientSharded extends EventEmitter {
           process.exit(1)
         })
     } else if (this.shardsDone < this.shardingManager.totalShards) {
-      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone], vipServers: message.vipServers }).catch(err => handleError(err, message)) // Send signal for next shard to init
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone], vipServers: message.vipServers, vipApiData: this.vipApiData }).catch(err => handleError(err, message)) // Send signal for next shard to init
     }
   }
 

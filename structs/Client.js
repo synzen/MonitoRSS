@@ -164,7 +164,7 @@ class Client extends EventEmitter {
           case 'kill' :
             process.exit(0)
           case 'startInit':
-            if (bot.shard.id === message.shardId) this.start()
+            if (bot.shard.id === message.shardId) this.start(null, message.vipApiData)
             break
           case 'stop':
             this.stop()
@@ -209,7 +209,7 @@ class Client extends EventEmitter {
     this.state = STATES.STOPPED
   }
 
-  start (callback) {
+  start (callback, vipApiData) {
     if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
@@ -217,11 +217,12 @@ class Client extends EventEmitter {
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     connectDb()
       .then(() => !this.bot.shard || this.bot.shard.count === 0 ? redisOps.flushDatabase() : null)
-      .then(() => {
+      .then(() => config._vip && (!this.bot.shard || this.bot.shard.count === 0) ? require('../settings/api.js')() : null)
+      .then(clientVipApiData => {
         initialize(storage.bot, this.customSchedules, (missingGuilds, linkDocs, feedData) => {
           // feedData is only defined if config.database.uri is a databaseless folder path
           this._finishInit(missingGuilds, linkDocs, feedData, callback)
-        })
+        }, vipApiData || clientVipApiData)
       })
       .catch(err => log.general.error(`Client db connection`, err))
   }
