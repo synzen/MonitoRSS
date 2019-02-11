@@ -47,6 +47,10 @@ exports.redisKeys = {
     if (!userId) throw new TypeError(`User ID must be provided`)
     return `drss_user_${userId}`
   },
+  role: roleId => {
+    if (!roleId) throw new TypeError(`Role ID must be provided`)
+    return `drss_role_${roleId}`
+  },
   guildMembersOf: guildId => { // This is a SET. Members that have been cheched and cached for validity. May contain invalid members.
     if (!guildId) throw new TypeError('Guild ID must be provided')
     return `drss_guild_${guildId}_members`
@@ -73,9 +77,6 @@ exports.redisKeys = {
   },
   channelNames: () => { // This is a HASH. Keys are channel IDs, values are channel names.
     return `drss_channels_name`
-  },
-  roleNames: () => {
-    return `drss_roles_name`
   }
 }
 exports.schemas = {

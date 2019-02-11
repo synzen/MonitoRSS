@@ -460,7 +460,7 @@ exports.vips = {
     if (!config._vip) return
     if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')
     if (!fs.existsSync(path.join(__dirname, '..', 'settings', 'vips.js'))) throw new Error('Missing VIP module')
-    return require('../settings/vips.js')(storage.bot)
+    return require('../settings/vips.js')(storage.bot, await require('../settings/api.js')())
   },
   isVipServer: async serverId => {
     if (!config._vip) return true

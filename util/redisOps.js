@@ -192,31 +192,45 @@ exports.channels = {
 }
 
 exports.roles = {
+  STORED_KEYS: ['id', 'guildId', 'name', 'hexColor', 'position'],
   recognize: async role => {
     if (!storage.redisClient) return
     if (!(role instanceof Discord.Role)) throw new TypeError('Role is not instance of Discord.Role')
+    const toStore = {}
+    exports.roles.STORED_KEYS.forEach(key => {
+      toStore[key] = key === 'guildId' ? role.guild.id : role[key] === undefined ? '' : role[key] // Check of undefined explicitly since a falsy check will erroneously trigger for a value of 0 for role.position
+    })
     return new Promise((resolve, reject) => {
       storage.redisClient.multi()
         .sadd(storage.redisKeys.guildRolesOf(role.guild.id), role.id)
         .sadd(storage.redisKeys.guildRolesManagersOf(role.guild.id), role.id)
-        .hmset(storage.redisKeys.roleNames(), role.id, role.name)
+        .hmset(storage.redisKeys.role(role.id), toStore)
         .exec((err, res) => err ? reject(err) : resolve(res))
     })
   },
   recognizeTransaction: (multi, role) => {
     if (!storage.redisClient) return
     if (!(role instanceof Discord.Role)) throw new TypeError('Role is not instance of Discord.Role')
+    const toStore = {}
+    exports.roles.STORED_KEYS.forEach(key => {
+      toStore[key] = key === 'guildId' ? role.guild.id : role[key] === undefined ? '' : role[key]
+    })
     multi
       .sadd(storage.redisKeys.guildRolesOf(role.guild.id), role.id)
       .sadd(storage.redisKeys.guildRolesManagersOf(role.guild.id), role.id)
-      .hmset(storage.redisKeys.roleNames(), role.id, role.name)
+      .hmset(storage.redisKeys.role(role.id), toStore)
   },
-  updateName: async role => {
+  update: async (oldRole, newRole) => {
     if (!storage.redisClient) return
-    if (!(role instanceof Discord.Role)) throw new TypeError('Role is not instance of Discord.Role')
-    const exists = await exports.roles.isRoleOfGuild(role.id, role.guild.id)
-    if (!exists) return exports.roles.recognize(role)
-    else return promisify(storage.redisClient.hset).bind(storage.redisClient)(storage.redisKeys.roleNames(), role.id, role.name)
+    if (!(oldRole instanceof Discord.Role) || !(newRole instanceof Discord.Role)) throw new TypeError('Role is not instance of Discord.Role')
+    const exists = await promisify(storage.redisClient.exists).bind(storage.redisClient)(storage.redisKeys.role(newRole.id))
+    if (!exists) return exports.roles.recognize(newRole)
+    const toStore = {}
+    exports.roles.STORED_KEYS.forEach(key => {
+      if (newRole[key] !== oldRole[key]) toStore[key] = newRole[key] === undefined ? '' : newRole[key]
+    })
+    if (Object.keys(toStore).length > 0) return promisify(storage.redisClient.hmset).bind(storage.redisClient)(storage.redisKeys.role(newRole.id), toStore)
+    else return 0
   },
   forget: async role => {
     if (!storage.redisClient) return
@@ -225,7 +239,7 @@ exports.roles = {
       storage.redisClient.multi()
         .srem(storage.redisKeys.guildRolesOf(role.guild.id), role.id)
         .srem(storage.redisKeys.guildRolesManagersOf(role.guild.id), role.id)
-        .hdel(storage.redisKeys.roleNames(), role.id)
+        .del(storage.redisKeys.role(role.id))
         .exec((err, res) => err ? reject(err) : resolve(res))
     })
   },
@@ -245,22 +259,28 @@ exports.roles = {
     multi
       .srem(storage.redisKeys.guildRolesOf(role.guild.id), role.id)
       .srem(storage.redisKeys.guildRolesManagersOf(role.guild.id), role.id)
-      .hdel(storage.redisKeys.roleNames(role.guild.id), role.id)
+      .del(storage.redisKeys.role(role.id))
   },
   isRoleOfGuild: async (roleId, guildId) => {
     if (!storage.redisClient) return
     if (!roleId || !guildId) throw new TypeError('Role or guild ID is not defined')
-    return promisify(storage.redisClient.sismember).bind(storage.redisClient)(storage.redisKeys.guildRolesOf(guildId), roleId)
+    return promisify(storage.redisClient.hget).bind(storage.redisClient)(storage.redisKeys.guildRolesOf(guildId), roleId)
   },
   isManagerOfGuild: async (roleId, guildId) => {
     if (!storage.redisClient) return
     if (!roleId || !guildId) throw new TypeError('Role or guild ID is not defined')
     return promisify(storage.redisClient.sismember).bind(storage.redisClient)(storage.redisKeys.guildRolesManagersOf(guildId), roleId)
   },
-  getName: async roleId => {
+  get: async roleId => {
     if (!storage.redisClient) return
-    if (!roleId) throw new TypeError('Role ID is not defined')
-    return promisify(storage.redisClient.hget).bind(storage.redisClient)(storage.redisKeys.roleNames(), roleId)
+    if (!roleId || typeof roleId !== 'string') throw new TypeError('roleId not a valid string')
+    return promisify(storage.redisClient.hgetall).bind(storage.redisClient)(storage.redisKeys.role(roleId))
+  },
+  getValue: async (roleId, key) => {
+    if (!storage.redisClient) return
+    if (!exports.roles.STORED_KEYS.includes(key)) throw new Error('Unknown key for role:', key)
+    if (!roleId || !key) throw new TypeError('roleId or key is undefined')
+    return promisify(storage.redisClient.hget).bind(storage.redisClient)(storage.redisKeys.role(roleId), key)
   },
   getRolesOfGuild: async guildId => {
     if (!storage.redisClient) return
@@ -314,5 +334,7 @@ exports.events = {
 
 exports.flushDatabase = async () => {
   if (!storage.redisClient) return
+  // const keys = await promisify(storage.redisClient.keys).bind(storage.redisClient)('drss*')
+  // if (keys && keys.length > 0) return promisify(storage.redisClient.del).bind(storage.redisClient)(keys)
   return promisify(storage.redisClient.flushdb).bind(storage.redisClient)()
 }
