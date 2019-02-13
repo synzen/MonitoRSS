@@ -264,7 +264,7 @@ exports.roles = {
   isRoleOfGuild: async (roleId, guildId) => {
     if (!storage.redisClient) return
     if (!roleId || !guildId) throw new TypeError('Role or guild ID is not defined')
-    return promisify(storage.redisClient.hget).bind(storage.redisClient)(storage.redisKeys.guildRolesOf(guildId), roleId)
+    return promisify(storage.redisClient.sismember).bind(storage.redisClient)(storage.redisKeys.guildRolesOf(guildId), roleId)
   },
   isManagerOfGuild: async (roleId, guildId) => {
     if (!storage.redisClient) return

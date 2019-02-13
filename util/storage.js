@@ -67,7 +67,7 @@ exports.redisKeys = {
     if (!guildId) throw new TypeError(`Guild ID must be provided`)
     return `drss_guild_${guildId}_channels`
   },
-  guildRolesOf: guildId => {
+  guildRolesOf: guildId => { // This is a SET.
     if (!guildId) throw new TypeError(`Guild ID must be provided`)
     return `drss_guild_${guildId}_roles`
   },
