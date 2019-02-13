@@ -19,6 +19,6 @@ module.exports = (bot, message, command) => {
   message.author.send(helpMessage, { split: { prepend: '\u200b\n' } })
     .catch(err => {
       log.command.warning(`Failed to direct message help text to user`, message.guild, message.author, err)
-      message.channel.send(helpMessage).catch(err => log.command.warning(`rsshelp`, message.guild, err))
+      message.channel.send(helpMessage, { split: { prepend: '\u200b\n' } }).catch(err => log.command.warning(`rsshelp`, message.guild, err))
     })
 }
