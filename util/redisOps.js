@@ -318,6 +318,12 @@ exports.users = {
     if (!storage.redisClient) return
     if (!userId || typeof userId !== 'string') throw new TypeError('userId not a valid string')
     return promisify(storage.redisClient.hgetall).bind(storage.redisClient)(storage.redisKeys.user(userId))
+  },
+  getValue: async (userId, key) => {
+    if (!storage.redisClient) return
+    if (!exports.users.STORED_KEYS.includes(key)) throw new Error('Unknown key for role:', key)
+    if (!userId || !key) throw new TypeError('userId or key is undefined')
+    return promisify(storage.redisClient.hget).bind(storage.redisClient)(storage.redisKeys.user(userId), key)
   }
 }
 
