@@ -16,4 +16,6 @@ yarn-error.log*
 # dotenv environment variables file
 .env
 
+settings/configOverride.json
+
 web
