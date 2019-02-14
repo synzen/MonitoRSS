@@ -166,7 +166,7 @@ class ClientSharded extends EventEmitter {
 
     // The "master interval" for a particular refresh time to determine when shards should start running their schedules
     this.refreshTimes.forEach((refreshTime, i) => this.scheduleIntervals.push(setInterval(initiateCycles(refreshTime).bind(this), refreshTime * 60000))) // Convert minutes to ms
-    initiateCycles(config.feeds.refreshTimeMinutes) // Immediately start the default retrieval cycles
+    initiateCycles(config.feeds.refreshTimeMinutes)() // Immediately start the default retrieval cycles
 
     // Refresh VIPs on a schedule
     setInterval(() => {
