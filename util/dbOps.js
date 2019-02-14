@@ -54,12 +54,10 @@ exports.guildRss = {
               log.general.warning(`Could not parse JSON from source file ${name}`, err)
             }
             if (++done === total) resolve(read)
-            console.log(done, total)
           })
           .catch(err => {
             log.general.warning(`Could not read source file ${name}`, err)
             if (++done === total) resolve(read)
-            console.log(done, total)
           })
       }
     })
@@ -456,11 +454,11 @@ exports.vips = {
     }
     log.general.success(`VIP servers removed from VIP ${vipUser.id} (${vipUser.name}): ${serversToRemove.join(',')}`)
   },
-  refresh: async () => {
+  refresh: async (updateNamesFromRedis, vipApiData) => {
     if (!config._vip) return
     if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')
     if (!fs.existsSync(path.join(__dirname, '..', 'settings', 'vips.js'))) throw new Error('Missing VIP module')
-    return require('../settings/vips.js')(storage.bot, await require('../settings/api.js')())
+    return require('../settings/vips.js')(storage.bot, vipApiData || await require('../settings/api.js')(), updateNamesFromRedis)
   },
   isVipServer: async serverId => {
     if (!config._vip) return true
