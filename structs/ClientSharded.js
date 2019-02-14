@@ -44,6 +44,7 @@ class ClientSharded extends EventEmitter {
 
   async run () {
     try {
+      if (config._vip && !this.vipApiData) this.vipApiData = await require('../settings/api.js')()
       await connectDb()
       await redisOps.flushDatabase()
       if (this.shardingManager.shards.size === 0) this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
@@ -58,7 +59,7 @@ class ClientSharded extends EventEmitter {
     switch (message.type) {
       case 'kill': this.shardingManager.broadcast({ _drss: true, type: 'kill' }); process.exit(0)
       case 'spawned': this._spawnedEvent(message); break
-      case 'shardReady': this._shardReadyEvent(message); break
+      case 'shardReady': this._shardReadyEvent(shard, message); break
       case 'initComplete': this._initCompleteEvent(message); break
       case 'scheduleComplete': this._scheduleCompleteEvent(message); break
       case 'addCustomSchedule': this._addCustomScheduleEvent(message); break
@@ -71,14 +72,8 @@ class ClientSharded extends EventEmitter {
     if (message.customSchedules) message.customSchedules.forEach(schedule => this.refreshTimes.push(schedule.refreshTimeMinutes))
   }
 
-  async _shardReadyEvent (message) {
-    if (++this.shardsReady !== this.shardingManager.totalShards) return
-    try {
-      if (config._vip && !this.vipApiData) this.vipApiData = await require('../settings/api.js')()
-      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[0], vipApiData: this.vipApiData }) // Send the signal for first shard to initialize
-    } catch (err) {
-      log.general.error('Failed to fetch VIP API Data', err)
-    }
+  async _shardReadyEvent (shard, message) {
+    this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: shard.id, vipApiData: this.vipApiData }) // Send the signal for first shard to initialize
   }
 
   _initCompleteEvent (message) {
@@ -161,20 +156,25 @@ class ClientSharded extends EventEmitter {
   }
 
   createIntervals () {
-    this.refreshTimes.forEach((refreshTime, i) => {
-      // The "master interval" for a particular refresh time to determine when shards should start running their schedules
-      this.scheduleIntervals.push(setInterval(() => {
-        this.scheduleTracker[refreshTime] = 0 // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
-        const p = this.scheduleTracker[refreshTime]
-        const broadcast = { _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime }
-        this.shardingManager.broadcast(broadcast)
-      }, refreshTime * 60000)) // Convert minutes to ms
-    })
+    const initiateCycles = refreshTime => {
+      let p
+      for (p = 0; p < config.advanced.parallelShards && p < this.activeshardIds.length; ++p) {
+        this.scheduleTracker[refreshTime] = p // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
+        this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshTime: refreshTime })
+      }
+    }
+
+    // The "master interval" for a particular refresh time to determine when shards should start running their schedules
+    this.refreshTimes.forEach((refreshTime, i) => this.scheduleIntervals.push(setInterval(initiateCycles.bind(this)(refreshTime), refreshTime * 60000))) // Convert minutes to ms
+    initiateCycles(config.feeds.refreshTimeMinutes) // Immediately start the default retrieval cycles
+
     // Refresh VIPs on a schedule
     setInterval(() => {
       // Only needs to be run on a single shard since dbOps uniformizes it across all shards
       this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err))
     }, 900000)
+    this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0], vipApiData: this.vipApiData }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err)) // Manually run this to update the names
+    this.vipApiData = null
   }
 }
 

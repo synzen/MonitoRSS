@@ -208,7 +208,7 @@ class FeedSchedule extends EventEmitter {
 
   async run (scheduleAssignmentOnly) {
     if (this.inProgress) {
-      if (!config.advanced.processorMethod || config.advanced.processorMethod === 'single') {
+      if (!config.advanced.forkBatches) {
         log.cycle.warning(`Previous ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
         this.inProgress = false
       } else {
@@ -266,14 +266,8 @@ class FeedSchedule extends EventEmitter {
       return this._finishCycle(true)
     }
 
-    switch (config.advanced.processorMethod) {
-      case 'concurrent':
-        this._getBatch(0, this._regBatchList, 'regular')
-        break
-      case 'parallel-isolated':
-        this._getBatchParallel()
-        break
-    }
+    if (config.advanced.forkBatches) this._getBatchParallel()
+    else this._getBatch(0, this._regBatchList, 'regular')
   }
 
   _getBatch (batchNumber, batchList, type) {
@@ -373,10 +367,10 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
-    if (config.advanced.parallel > 0) {
+    if (config.advanced.parallelBatches > 0) {
       for (var g = 0; g < this._regBatchList.length; ++g) regIndices.push(g)
       for (var h = 0; h < this._modBatchList.length; ++h) modIndices.push(h)
-      spawn.bind(this)(config.advanced.parallel)
+      spawn.bind(this)(config.advanced.parallelBatches)
     } else {
       for (var i = 0; i < this._regBatchList.length; ++i) { deployProcessor.bind(this)(this._regBatchList, i) }
       for (var y = 0; y < this._modBatchList.length; ++y) { deployProcessor.bind(this)(this._modBatchList, y) }

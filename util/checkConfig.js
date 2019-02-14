@@ -6,7 +6,7 @@ const STATUS_TYPES = ['online', 'idle', 'dnd', 'invisible']
 
 exports.defaultConfigs = {
   log: {
-    dates: { type: Boolean, default: false },
+    dates: { type: Boolean, default: true },
     linkErrs: { type: Boolean, default: true },
     unfiltered: { type: Boolean, default: true },
     failedFeeds: { type: Boolean, default: true }
@@ -52,8 +52,9 @@ exports.defaultConfigs = {
   advanced: {
     shards: { type: Number, default: 1 },
     batchSize: { type: Number, default: 400 },
-    processorMethod: { type: String, default: 'concurrent' },
-    parallel: { type: Number, default: 2 }
+    forkBatches: { type: Boolean, default: false },
+    parallelBatches: { type: Number, default: 2 },
+    parallelShards: { type: Number, default: 1 }
   }
 }
 

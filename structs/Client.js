@@ -174,7 +174,7 @@ class Client extends EventEmitter {
             if (config.database.uri.startsWith('mongodb')) await dbOps.blacklists.refresh()
             break
           case 'cycleVIPs':
-            if (bot.shard.id === message.shardId) await dbOps.vips.refresh()
+            if (bot.shard.id === message.shardId) await dbOps.vips.refresh(true, message.vipApiData)
             break
           case 'runSchedule':
             if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshTime)

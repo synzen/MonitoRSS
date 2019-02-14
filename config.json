@@ -16,7 +16,7 @@
     "controllerIds": ["156576312985780224"],
     "menuColor": 5285609,
     "deleteMenus": false,
-    "exitOnSocketIssues": false,
+    "exitOnSocketIssues": true,
     "commandAliases": {}
   },
   "database": {
@@ -48,10 +48,12 @@
     "toggleRoleMentions": false,
     "decode": {}
   },
+  "_vip": true,
   "advanced": {
     "shards": 2,
     "batchSize": 400,
-    "processorMethod": "concurrent",
-    "parallel": 2
+    "forkBatches": false,
+    "parallelBatches": 1,
+    "parallelShards": 1
   }
 }
