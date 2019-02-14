@@ -48,7 +48,6 @@
     "toggleRoleMentions": false,
     "decode": {}
   },
-  "_vip": true,
   "advanced": {
     "shards": 2,
     "batchSize": 400,
