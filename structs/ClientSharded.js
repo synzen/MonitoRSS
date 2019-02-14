@@ -156,7 +156,7 @@ class ClientSharded extends EventEmitter {
   }
 
   createIntervals () {
-    const initiateCycles = refreshTime => {
+    const initiateCycles = refreshTime => () => {
       let p
       for (p = 0; p < config.advanced.parallelShards && p < this.activeshardIds.length; ++p) {
         this.scheduleTracker[refreshTime] = p // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
@@ -165,7 +165,7 @@ class ClientSharded extends EventEmitter {
     }
 
     // The "master interval" for a particular refresh time to determine when shards should start running their schedules
-    this.refreshTimes.forEach((refreshTime, i) => this.scheduleIntervals.push(setInterval(initiateCycles.bind(this)(refreshTime), refreshTime * 60000))) // Convert minutes to ms
+    this.refreshTimes.forEach((refreshTime, i) => this.scheduleIntervals.push(setInterval(initiateCycles(refreshTime).bind(this), refreshTime * 60000))) // Convert minutes to ms
     initiateCycles(config.feeds.refreshTimeMinutes) // Immediately start the default retrieval cycles
 
     // Refresh VIPs on a schedule
