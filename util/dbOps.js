@@ -19,6 +19,10 @@ const mkdirPromise = util.promisify(fs.mkdir)
 const unlinkPromise = util.promisify(fs.unlink)
 
 exports.guildRss = {
+  UPDATE_EVENTS: {
+    MESSAGE_TEXT: 0,
+    MESSAGE_EMBED: 1
+  },
   get: async id => {
     if (config.database.uri.startsWith('mongo')) return models.GuildRss().findOne({ id }, FIND_PROJECTION).lean().exec()
     const filePath = path.join(config.database.uri, `${id}.json`)
@@ -62,7 +66,7 @@ exports.guildRss = {
       }
     })
   },
-  update: async (guildRss, skipEmptyCheck) => {
+  update: async (guildRss, eventType) => {
     // Memory version
     if (!config.database.uri.startsWith('mongo')) {
       try {
@@ -71,13 +75,11 @@ exports.guildRss = {
       } catch (err) {
         throw err
       }
-      if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
       return redisOps.events.emitUpdatedProfile(guildRss.id)
     }
 
     // Database version
     const res = await models.GuildRss().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
-    if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
     redisOps.events.emitUpdatedProfile(guildRss.id)
     return res
   },
@@ -254,10 +256,10 @@ exports.failedLinks = {
           if (!rssList) return
           for (var i in rssList) {
             const source = rssList[i]
-            const channel = guildRss.sendAlertsTo || storage.bot.channels.get(source.channel)
-            if (source.link === link && channel && config._skipMessages !== true) {
+            if (source.link === link && config._skipMessages !== true) {
               let sent = false
-              if (Array.isArray(channel)) { // Each array item is a user id
+              if (Array.isArray(guildRss.sendAlertsTo)) { // Each array item is a user id
+                const channel = guildRss.sendAlertsTo
                 channel.forEach(userId => {
                   const user = storage.bot.users.get(userId)
                   if (user && typeof message === 'string' && message.includes('connection failure limit')) {
@@ -270,6 +272,7 @@ exports.failedLinks = {
                 })
               }
               if (sent === false) {
+                const channel = storage.bot.channels.get(source.channel)
                 const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
                 const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
                 if (config._skipMessages !== true) channel.send(m, attach ? new Discord.Attachment(Buffer.from(JSON.stringify(guildRss, null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
