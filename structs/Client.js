@@ -27,7 +27,8 @@ function overrideConfigs (configOverrides) {
     const configCategory = config[category]
     if (!configOverrides[category]) continue
     for (var configName in configCategory) {
-      if (configOverrides[category][configName]) {
+      if (configOverrides[category][configName] !== undefined && configOverrides[category][configName] !== config[category][configName]) {
+        log.general.info(`Overriding config.${category}.${configName} from ${JSON.stringify(config[category][configName])} to ${JSON.stringify(configOverrides[category][configName])} from configOverride.json`)
         configCategory[configName] = configOverrides[category][configName]
       }
     }
@@ -70,7 +71,6 @@ class Client extends EventEmitter {
     // Override from file first
     try {
       const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
-      log.general.info(`Overriding default configs from configOverrides.json`)
       overrideConfigs(fileConfigOverride)
     } catch (err) {}
     // Then override from constructor
@@ -133,7 +133,10 @@ class Client extends EventEmitter {
       log.general.error(`${this.SHARD_PREFIX}Websocket error`, err)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
-        for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        if (this.scheduleManager) {
+          // Check if it exists first since it may disconnect before it's even initialized
+          for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        }
         if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
         else process.exit(0)
       } else this.stop()
@@ -146,7 +149,10 @@ class Client extends EventEmitter {
       log.general.error(`${this.SHARD_PREFIX}Websocket disconnected`)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
-        for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        if (this.scheduleManager) {
+          // Check if it exists first since it may disconnect before it's even initialized
+          for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        }
         if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
         else process.exit(0)
       } else this.stop()
