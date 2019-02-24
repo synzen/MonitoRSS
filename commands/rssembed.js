@@ -394,7 +394,7 @@ module.exports = async (bot, message, command) => {
       status += `☑ **${propName}** updated to \n\`\`\`\n${userSetting}\n\`\`\`\n`
     }
 
-    await dbOps.guildRss.update(guildRss, dbOps.guildRss.UPDATE_EVENTS.MESSAGE_EMBED)
+    await dbOps.guildRss.update(guildRss)
     await message.channel.send(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`, { split: true })
   } catch (err) {
     log.command.warning(`rssembed`, message.guild, err)

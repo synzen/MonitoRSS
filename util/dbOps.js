@@ -19,10 +19,6 @@ const mkdirPromise = util.promisify(fs.mkdir)
 const unlinkPromise = util.promisify(fs.unlink)
 
 exports.guildRss = {
-  UPDATE_EVENTS: {
-    MESSAGE_TEXT: 0,
-    MESSAGE_EMBED: 1
-  },
   get: async id => {
     if (config.database.uri.startsWith('mongo')) return models.GuildRss().findOne({ id }, FIND_PROJECTION).lean().exec()
     const filePath = path.join(config.database.uri, `${id}.json`)
@@ -66,7 +62,7 @@ exports.guildRss = {
       }
     })
   },
-  update: async (guildRss, eventType) => {
+  update: async guildRss => {
     // Memory version
     if (!config.database.uri.startsWith('mongo')) {
       try {
