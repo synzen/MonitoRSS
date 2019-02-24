@@ -6,7 +6,6 @@ const dbOps = require('../util/dbOps.js')
 const redisOps = require('../util/redisOps.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
-const handleError = (err, message) => log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
 const EventEmitter = require('events')
 
 function overrideConfigs (configOverrides) {
@@ -55,9 +54,9 @@ class ClientSharded extends EventEmitter {
 
   messageHandler (shard, message) {
     if (!message._drss) return
-    if (message._loopback) return this.shardingManager.broadcast(message).catch(err => handleError(err, message))
+    if (message._loopback) return this.shardingManager.broadcast(message).catch(err => this._handleErr(err, message))
     switch (message.type) {
-      case 'kill': this.shardingManager.broadcast({ _drss: true, type: 'kill' }); process.exit(0)
+      case 'kill': this.kill(); break
       case 'spawned': this._spawnedEvent(message); break
       case 'shardReady': this._shardReadyEvent(shard, message); break
       case 'initComplete': this._initCompleteEvent(message); break
@@ -65,6 +64,16 @@ class ClientSharded extends EventEmitter {
       case 'addCustomSchedule': this._addCustomScheduleEvent(message); break
       case 'dbRestore': this._dbRestoreEvent(message)
     }
+  }
+
+  kill () {
+    this.shardingManager.broadcast({ _drss: true, type: 'kill' })
+    process.exit(0)
+  }
+
+  _handleErr (err, message) {
+    log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
+    this.kill()
   }
 
   _spawnedEvent (message) {
@@ -115,7 +124,7 @@ class ClientSharded extends EventEmitter {
           process.exit(1)
         })
     } else if (this.shardsDone < this.shardingManager.totalShards) {
-      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone], vipServers: message.vipServers, vipApiData: this.vipApiData }).catch(err => handleError(err, message)) // Send signal for next shard to init
+      this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone], vipServers: message.vipServers, vipApiData: this.vipApiData }).catch(err => this._handleErr(err, message)) // Send signal for next shard to init
     }
   }
 
@@ -129,7 +138,7 @@ class ClientSharded extends EventEmitter {
         type: 'runSchedule',
         refreshTime: message.refreshTime
       }
-      this.shardingManager.broadcast(broadcast).catch(err => handleError(err, message))
+      this.shardingManager.broadcast(broadcast).catch(err => this._handleErr(err, message))
     }
   }
 
