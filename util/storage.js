@@ -193,6 +193,15 @@ exports.schemas = {
       type: Date,
       default: Date.now
     }
+  }),
+  feedback: mongoose.Schema({
+    userId: String,
+    username: String,
+    content: String,
+    date: {
+      type: Date,
+      default: Date.now
+    }
   })
 }
 exports.collectionId = (link, shardId, prefix = '') => {
@@ -211,5 +220,6 @@ exports.models = {
   FeedByCollectionId: collectionId => mongoose.model(collectionId, exports.schemas.feed, collectionId), // Third parameter is not let mongoose auto-pluralize the collection name
   VIP: () => mongoose.model('vips', exports.schemas.vip),
   Blacklist: () => mongoose.model('blacklists', exports.schemas.blacklist),
-  Statistics: () => mongoose.model('statistics', exports.schemas.statistics)
+  Statistics: () => mongoose.model('statistics', exports.schemas.statistics),
+  Feedback: () => mongoose.model('feedbacks', exports.schemas.feedback)
 }
