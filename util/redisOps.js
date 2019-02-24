@@ -329,12 +329,12 @@ exports.users = {
 
 exports.events = {
   NAMES: {
-    DRSS_GUILD_UPDATE_EVENT: 'DRSS_PROFILE_UPDATE_EVENT'
+    DRSS_PROFILE_UPDATE: 'DRSS_PROFILE_UPDATE'
   },
   emitUpdatedProfile: guildId => {
     if (!storage.redisClient) return
     if (!guildId) throw new TypeError(`Guild ID is not defined`)
-    storage.redisClient.publish(exports.events.NAMES.DRSS_GUILD_UPDATE_EVENT, guildId)
+    storage.redisClient.publish(exports.events.NAMES.DRSS_PROFILE_UPDATE, guildId)
   }
 }
 
