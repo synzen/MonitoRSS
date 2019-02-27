@@ -137,6 +137,7 @@ exports.channels = {
   recognize: async channel => {
     if (!storage.redisClient) return
     if (!(channel instanceof Discord.GuildChannel)) throw new TypeError('Channel is not instance of Discord.GuildChannel')
+    if (channel.type !== 'text') return
     return new Promise((resolve, reject) => {
       storage.redisClient.multi()
         .sadd(storage.redisKeys.guildChannelsOf(channel.guild.id), channel.id)
@@ -147,6 +148,7 @@ exports.channels = {
   recognizeTransaction: (multi, channel) => {
     if (!storage.redisClient) return
     if (!(channel instanceof Discord.GuildChannel)) throw new TypeError('Channel is not instance of Discord.GuildChannel')
+    if (channel.type !== 'text') return
     multi
       .sadd(storage.redisKeys.guildChannelsOf(channel.guild.id), channel.id)
       .hmset(storage.redisKeys.channelNames(), channel.id, channel.name)
@@ -154,6 +156,7 @@ exports.channels = {
   updateName: async channel => {
     if (!storage.redisClient) return
     if (!(channel instanceof Discord.GuildChannel)) throw new TypeError('Channel is not instance of Discord.GuildChannel')
+    if (channel.type !== 'text') return
     const exists = await exports.channels.isChannelOfGuild(channel.id, channel.guild.id)
     if (!exists) return exports.guilds.recognize(channel.guild)
     else return promisify(storage.redisClient.hset).bind(storage.redisClient)(storage.redisKeys.channelNames(), channel.id, channel.name)

@@ -147,12 +147,14 @@ exports.schemas = {
     },
     invalid: Boolean,
     name: String,
+    fname: String,
     servers: {
       type: [String],
       default: []
     },
     permanent: Boolean,
     pledged: Number,
+    totalPledged: Number,
     maxFeeds: Number,
     maxServers: Number,
     allowWebhooks: Boolean,
