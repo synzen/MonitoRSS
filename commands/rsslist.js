@@ -32,14 +32,14 @@ module.exports = async (bot, message, command) => {
         titleChecks: feed.titleChecks === true ? 'Title Checks: Enabled\n' : null
       }
       failedLinksToCheck.push(feed.link)
-      if (rssList[rssName].disabled === true) o.status = `Status: DISABLED\n`
+      if (feed.disabled) o.status = `Status: DISABLED (${feed.disabled})\n`
       currentRSSList.push(o)
     }
     const results = await dbOps.failedLinks.getMultiple(failedLinksToCheck)
     for (const result of results) failedLinks[result.link] = result.failed || result.count
     if (FAIL_LIMIT !== 0) {
       for (const feed of currentRSSList) {
-        if (feed.status === `Status: DISABLED\n`) continue
+        if (feed.status && feed.status === `Status: DISABLED\n`) continue
         const failCount = failedLinks[feed.link]
         feed.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? `Status: OK ${failCount > Math.ceil(FAIL_LIMIT / 5) ? '(failed ' + failCount + '/' + FAIL_LIMIT + ' times)' : ''}\n` : 'Status: FAILED\n'
         if (feed.status.startsWith('Status: FAILED')) ++failedFeedCount

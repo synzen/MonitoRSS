@@ -52,7 +52,12 @@ class FeedSchedule extends EventEmitter {
   }
 
   _delegateFeed (guildRss, rssName) {
-    const source = { ...guildRss.sources[rssName] }
+    const originalSource = guildRss.sources[rssName]
+    if (!originalSource.lastRefreshRateMin || originalSource.lastRefreshRateMin !== this.refreshTime) {
+      originalSource.lastRefreshRateMin = this.refreshTime
+      dbOps.guildRss.update(guildRss).catch(err => log.general.warning(`Failed to update lastRefreshRateMin to ${this.refreshTime} for source ${rssName}, guild ${guildRss.id}`, err))
+    }
+    const source = { ...originalSource }
 
     // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
     source.guildId = guildRss.id
@@ -92,14 +97,14 @@ class FeedSchedule extends EventEmitter {
       const source = rssList[rssName]
       ++feedCount
       // Determine whether any feeds should be disabled
-      if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === true) {
-        log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id}...`)
-        // dbOps.guildRss.enableFeed(guildRss, rssName, true).catch(err => log.general.warning(`Failed to enable feed named ${rssName}`, err))
+      if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === 'Exceeded feed limit') {
+        log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
+        dbOps.guildRss.enableFeed(guildRss, rssName).catch(err => log.general.warning(`Failed to enable feed named ${rssName}`, err))
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].enabled.push(source.link)
-      } else if (max !== 0 && c > max && source.disabled !== true) {
-        log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id}...`)
-        // dbOps.guildRss.disableFeed(guildRss, rssName, true).catch(err => log.general.warning(`Failed to disable feed named ${rssName}`, err))
+      } else if (max !== 0 && c > max && !source.disabled) {
+        log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
+        dbOps.guildRss.disableFeed(guildRss, rssName, 'Exceeded feed limit').catch(err => log.general.warning(`Failed to disable feed named ${rssName}`, err))
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].disabled.push(source.link)
       }

@@ -85,7 +85,9 @@ exports.subscriptions = (bot, guildRss) => {
 exports.config = (bot, guildRss, rssName, logging) => {
   const guildId = guildRss.id
   const source = guildRss.sources[rssName]
-  if (source.disabled === true) {
+  const guild = bot.guilds.get(guildId)
+  const channel = bot.channels.get(source.channel)
+  if (source.disabled) {
     if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
     return false
   }
@@ -97,9 +99,6 @@ exports.config = (bot, guildRss, rssName, logging) => {
     if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} has no channel defined, skipping...`)
     return false
   }
-
-  const channel = bot.channels.get(source.channel)
-  const guild = bot.guilds.get(guildId)
   const shardPrefix = bot.shard && bot.shard.count > 0 ? `SH ${bot.shard.id} ` : ''
 
   if (!channel) {
@@ -115,11 +114,35 @@ exports.config = (bot, guildRss, rssName, logging) => {
     }
     return false
   } else {
-    if (!source.channelName) {
-      source.channelName = channel.name
-      dbOps.guildRss.update(guildRss).catch(err => log.general.info(`(G: ${guildRss.id}, ${guildRss.name}) Unable to update channel name for source`, err))
-    }
     if (missingChannelCount[rssName]) delete missingChannelCount[rssName]
+    let populatedEmbeds = false
+    if (source.embeds && source.embeds.length > 0) {
+      for (const embed of source.embeds) {
+        if (Object.keys(embed).length > 0) populatedEmbeds = true
+      }
+    }
+    const permissions = guild.me.permissionsIn(channel)
+    const allowView = permissions.has('VIEW_CHANNEL')
+    const allowSendMessages = permissions.has('SEND_MESSAGES')
+    const allowEmbedLinks = !populatedEmbeds ? true : permissions.has('EMBED_LINKS')
+    if (!allowSendMessages || !allowEmbedLinks || !allowView) {
+      if (!source.disabled) {
+        let reasons = []
+        if (!allowSendMessages) reasons.push('SEND_MESSAGES')
+        if (!allowEmbedLinks) reasons.push('EMBED_LINKS')
+        if (!allowView) reasons.push('VIEW_CHANNEL')
+        dbOps.guildRss.disableFeed(guildRss, rssName, `Missing permissions ${reasons.join(', ')}`)
+          .catch(err => log.general.warning(`Failed to disable feed ${rssName} due to missing permissions (SEND_MESSAGES: ${allowSendMessages}, EMBED_LINKS: ${allowEmbedLinks})`, guild, err))
+      }
+      return false
+    }
+
+    if (source.disabled) {
+      dbOps.guildRss.enableFeed(guildRss, rssName)
+        .then(() => log.genera.info(`Re-enabled feed ${rssName} due to found channel permissions`))
+        .catch(err => log.general.warning('Failed to enable feed after channel permissions found', err))
+    }
     return true
+
   }
 }

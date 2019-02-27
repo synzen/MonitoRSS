@@ -75,7 +75,13 @@ exports.guildRss = {
     }
 
     // Database version
-    const res = await models.GuildRss().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
+    // for (const key in guildRss) {
+    //   const val = guildRss[key]
+    //   if (!val) delete guildRss[key]
+    //   else if (Array.isArray(val) && val.length === 0) delete guildRss[key]
+    //   else if (typeof val === 'object' && val !== null && Object.keys(val).length === 0) delete guildRss[key]
+    // }
+    const res = await models.GuildRss().replaceOne({ id: guildRss.id }, guildRss, UPDATE_SETTINGS).exec()
     redisOps.events.emitUpdatedProfile(guildRss.id)
     return res
   },
@@ -100,14 +106,14 @@ exports.guildRss = {
     if (!suppressLog) log.general.info(`Removed Guild document ${guildId}`)
     return res
   },
-  disableFeed: async (guildRss, rssName) => {
-    if (guildRss.sources[rssName].disabled === true) return log.general.warning(`Feed named ${rssName} is already disabled in guild ${guildRss.id}`)
-    guildRss.sources[rssName].disabled = true
+  disableFeed: async (guildRss, rssName, reason) => {
+    if (guildRss.sources[rssName].disabled) return log.general.warning(`Feed named ${rssName} is already disabled in guild ${guildRss.id}`)
+    guildRss.sources[rssName].disabled = reason || 'No reason available'
     await exports.guildRss.update(guildRss)
-    log.general.warning(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been disabled in guild ${guildRss.id}`)
+    log.general.warning(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been disabled in guild ${guildRss.id} (Reason: ${reason})`)
   },
   enableFeed: async (guildRss, rssName) => {
-    if (guildRss.sources[rssName].disabled == null) return log.general.info(`Feed named ${rssName} is already enabled in guild ${guildRss.id}`)
+    if (!guildRss.sources[rssName].disabled) return log.general.info(`Feed named ${rssName} is already enabled in guild ${guildRss.id}`)
     delete guildRss.sources[rssName].disabled
     await exports.guildRss.update(guildRss)
     log.general.info(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been enabled in guild ${guildRss.id}`)
@@ -255,8 +261,8 @@ exports.failedLinks = {
             if (source.link === link && config._skipMessages !== true) {
               let sent = false
               if (Array.isArray(guildRss.sendAlertsTo)) { // Each array item is a user id
-                const channel = guildRss.sendAlertsTo
-                channel.forEach(userId => {
+                const userIds = guildRss.sendAlertsTo
+                userIds.forEach(userId => {
                   const user = storage.bot.users.get(userId)
                   if (user && typeof message === 'string' && message.includes('connection failure limit')) {
                     sent = true

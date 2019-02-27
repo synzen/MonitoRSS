@@ -157,7 +157,7 @@ class Client extends EventEmitter {
         else process.exit(0)
       } else this.stop()
     })
-    log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
+    log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
     if (!bot.shard || bot.shard.count === 0) this.start()
     else process.send({ _drss: true, type: 'shardReady', shardId: bot.shard.id })
   }
