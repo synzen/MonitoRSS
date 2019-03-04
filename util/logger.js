@@ -1,3 +1,4 @@
+const TEST_ENV = process.env.NODE_ENV === 'test'
 const Discord = require('discord.js')
 const COLORS = {
   Error: '\x1b[31m',
@@ -56,6 +57,7 @@ class _Logger {
     const color = COLORS[level] ? COLORS[level] : ''
     const reset = COLORS.reset ? COLORS.reset : ''
     return (contents, ...details) => {
+      if (TEST_ENV) return
       if (suppressedLevels.includes(level.toLowerCase())) return
       const extra = this._parseDetails(details)
       console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
