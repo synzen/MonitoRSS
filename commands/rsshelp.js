@@ -17,6 +17,7 @@ module.exports = (bot, message, command) => {
   }
   const helpMessage = msg + '\nSupport can be found at https://discord.gg/pudv7Rx'
   message.author.send(helpMessage, { split: { prepend: '\u200b\n' } })
+    .then(() => message.reply('Check your DM!').catch(err => log.command.warning('Failed to send DM notification in text channel', message.guild, err)))
     .catch(err => {
       log.command.warning(`Failed to direct message help text to user`, message.guild, message.author, err)
       message.channel.send(helpMessage, { split: { prepend: '\u200b\n' } }).catch(err => log.command.warning(`rsshelp`, message.guild, err))
