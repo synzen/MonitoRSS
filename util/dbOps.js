@@ -52,7 +52,7 @@ exports.guildRss = {
               read.push(JSON.parse(data))
             } catch (err) {
               log.general.warning(`Could not parse JSON from source file ${name}`, err)
-            }
+            } 
             if (++done === total) resolve(read)
           })
           .catch(err => {
@@ -112,11 +112,11 @@ exports.guildRss = {
     await exports.guildRss.update(guildRss)
     log.general.warning(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been disabled in guild ${guildRss.id} (Reason: ${reason})`)
   },
-  enableFeed: async (guildRss, rssName) => {
+  enableFeed: async (guildRss, rssName, reason) => {
     if (!guildRss.sources[rssName].disabled) return log.general.info(`Feed named ${rssName} is already enabled in guild ${guildRss.id}`)
     delete guildRss.sources[rssName].disabled
     await exports.guildRss.update(guildRss)
-    log.general.info(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been enabled in guild ${guildRss.id}`)
+    log.general.info(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been enabled in guild ${guildRss.id} (Reason: ${reason})`)
   },
   removeFeed: async (guildRss, rssName) => {
     const link = guildRss.sources[rssName].link
