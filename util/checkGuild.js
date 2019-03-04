@@ -87,10 +87,10 @@ exports.config = (bot, guildRss, rssName, logging) => {
   const source = guildRss.sources[rssName]
   const guild = bot.guilds.get(guildId)
   const channel = bot.channels.get(source.channel)
-  if (source.disabled) {
-    if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
-    return false
-  }
+  // if (source.disabled === true) {
+  //   if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
+  //   return false
+  // }
   if (!source.link || !source.link.startsWith('http')) {
     if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} has no valid link defined, skipping...`)
     return false
@@ -115,6 +115,8 @@ exports.config = (bot, guildRss, rssName, logging) => {
     return false
   } else {
     if (missingChannelCount[rssName]) delete missingChannelCount[rssName]
+
+    // Check channel permissions
     let populatedEmbeds = false
     if (source.embeds && source.embeds.length > 0) {
       for (const embed of source.embeds) {
@@ -125,24 +127,26 @@ exports.config = (bot, guildRss, rssName, logging) => {
     const allowView = permissions.has('VIEW_CHANNEL')
     const allowSendMessages = permissions.has('SEND_MESSAGES')
     const allowEmbedLinks = !populatedEmbeds ? true : permissions.has('EMBED_LINKS')
-    if (!allowSendMessages || !allowEmbedLinks || !allowView) {
-      if (!source.disabled) {
-        let reasons = []
-        if (!allowSendMessages) reasons.push('SEND_MESSAGES')
-        if (!allowEmbedLinks) reasons.push('EMBED_LINKS')
-        if (!allowView) reasons.push('VIEW_CHANNEL')
-        dbOps.guildRss.disableFeed(guildRss, rssName, `Missing permissions ${reasons.join(', ')}`)
-          .catch(err => log.general.warning(`Failed to disable feed ${rssName} due to missing permissions (SEND_MESSAGES: ${allowSendMessages}, EMBED_LINKS: ${allowEmbedLinks})`, guild, err))
+    if (!source.webhook && (!allowSendMessages || !allowEmbedLinks || !allowView)) {
+      let reasons = []
+      if (!allowSendMessages) reasons.push('SEND_MESSAGES')
+      if (!allowEmbedLinks) reasons.push('EMBED_LINKS')
+      if (!allowView) reasons.push('VIEW_CHANNEL')
+      const reason = `Missing permissions ${reasons.join(', ')}`
+      if (!source.disabled) dbOps.guildRss.disableFeed(guildRss, rssName, reason).catch(err => log.general.warning(`Failed to disable feed ${rssName} due to missing permissions (${reason})`, guild, err))
+      else if (source.disabled.startsWith('Missing permissions') && source.disabled !== reason) {
+        source.disabled = reason
+        dbOps.guildRss.update(guildRss).catch(err => log.general.warning(`Failed to update disabled reason for feed ${rssName}`, guild, err))
       }
       return false
-    }
-
-    if (source.disabled) {
-      dbOps.guildRss.enableFeed(guildRss, rssName)
-        .then(() => log.genera.info(`Re-enabled feed ${rssName} due to found channel permissions`))
+    } else if (source.disabled && source.disabled.startsWith('Missing permissions')) {
+      dbOps.guildRss.enableFeed(guildRss, rssName, `Found channel permissions`)
         .catch(err => log.general.warning('Failed to enable feed after channel permissions found', err))
+      return true
     }
-    return true
 
+    // For any other non-channel-permission related reason, just return !source.disabled
+    if (logging && source.disabled) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
+    return !source.disabled
   }
 }

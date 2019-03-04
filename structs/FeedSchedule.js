@@ -98,12 +98,12 @@ class FeedSchedule extends EventEmitter {
       ++feedCount
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === 'Exceeded feed limit') {
-        log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
-        dbOps.guildRss.enableFeed(guildRss, rssName).catch(err => log.general.warning(`Failed to enable feed named ${rssName}`, err))
+        // log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
+        dbOps.guildRss.enableFeed(guildRss, rssName, 'Feed limit change').catch(err => log.general.warning(`Failed to enable feed named ${rssName}`, err))
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].enabled.push(source.link)
       } else if (max !== 0 && c > max && !source.disabled) {
-        log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
+        // log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
         dbOps.guildRss.disableFeed(guildRss, rssName, 'Exceeded feed limit').catch(err => log.general.warning(`Failed to disable feed named ${rssName}`, err))
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].disabled.push(source.link)
