@@ -67,7 +67,7 @@ class FeedSchedule extends EventEmitter {
       language: guildRss.dateLanguage
     }
 
-    if (!this.allowWebhooks[guildRss.id] && source.webhook) {
+    if (config._vip === true && !this.allowWebhooks[guildRss.id] && source.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
       delete source.webhook
     }
