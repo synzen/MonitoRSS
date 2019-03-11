@@ -113,7 +113,7 @@ class FeedSchedule extends EventEmitter {
       if (!checkGuild.config(this.bot, guildRss, rssName) || typeof this.failedLinks[source.link] === 'string') continue
 
       // Take care of our VIPs
-      const sourceScheduleName = assignedSchedules.getScheduleName(rssName)
+      let sourceScheduleName = assignedSchedules.getScheduleName(rssName)
       if (config._vip === true && !source.link.includes('feed43')) {
         const validVip = this.vipServers.includes(guildRss.id)
         const vipSchedule = this.scheduleManager.getSchedule('vip')
@@ -135,6 +135,7 @@ class FeedSchedule extends EventEmitter {
         }
       }
 
+      sourceScheduleName = assignedSchedules.getScheduleName(rssName) // Get the new value since it may be different
       // Then the peasantry
       if (sourceScheduleName === this.name && !scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName) // If assigned to a this.schedule
       else if (this.name !== 'default' && !sourceScheduleName) { // If current feed this.schedule is a custom one and is not assigned
