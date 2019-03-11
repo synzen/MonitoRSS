@@ -9,5 +9,7 @@ drss.once('finishInit', () => {
   // Do whatever once the bot has finished initialization
   try {
     require('./web/index.js')()
-  } catch (err) {}
+  } catch (err) {
+    if (process.env.DRSS_EXPERIMENTAL_FEATURES) console.log(err)
+  }
 })
