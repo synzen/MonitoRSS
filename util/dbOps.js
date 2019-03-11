@@ -12,6 +12,7 @@ const log = require('./logger.js')
 const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FAIL_LIMIT = config.feeds.failLimit
 const FIND_PROJECTION = '-_id -__v'
+const assignedSchedules = require('./assignedSchedules.js')
 const readdirPromise = util.promisify(fs.readdir)
 const readFilePromise = util.promisify(fs.readFile)
 const writeFilePromise = util.promisify(fs.writeFile)
@@ -52,7 +53,7 @@ exports.guildRss = {
               read.push(JSON.parse(data))
             } catch (err) {
               log.general.warning(`Could not parse JSON from source file ${name}`, err)
-            } 
+            }
             if (++done === total) resolve(read)
           })
           .catch(err => {
@@ -99,7 +100,7 @@ exports.guildRss = {
     if (rssList) {
       for (let rssName in rssList) {
         storage.deletedFeeds.push(rssName)
-        exports.linkTracker.decrement(rssList[rssName].link, storage.scheduleAssigned[rssName]).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
+        exports.linkTracker.decrement(rssList[rssName].link, assignedSchedules.getScheduleName(rssName)).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
       }
     }
     const res = await models.GuildRss().deleteOne({ id: guildId })
@@ -123,7 +124,7 @@ exports.guildRss = {
     delete guildRss.sources[rssName]
     storage.deletedFeeds.push(rssName)
     const res = await exports.guildRss.update(guildRss)
-    await exports.linkTracker.decrement(link, storage.scheduleAssigned[rssName])
+    await exports.linkTracker.decrement(link, assignedSchedules.getScheduleName(rssName))
     return res
   },
   backup: async guildRss => {
@@ -451,7 +452,7 @@ exports.vips = {
           for (var rssName in rssList) {
             vipScheduleRssNames.splice(rssName, 1)
             storage.allScheduleRssNames.splice(rssName, 1)
-            delete storage.scheduleAssigned[rssName]
+            assignedSchedules.clearScheduleName(rssName)
           }
         }
       }
@@ -485,7 +486,6 @@ exports.general = {
     if (typeof user !== 'object') {
       log.general.warning(`Failed to log feedback "${content}" of type "${type}" due to invalid user (${user})`)
       throw new TypeError('User must be an object')
-
     }
     if (!user.id) {
       log.general.warning(`Failed to log feedback "${content}" of type "${type}" due to missing user ID (${user})`)

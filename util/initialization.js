@@ -5,6 +5,7 @@ const LinkTracker = require('../structs/LinkTracker.js')
 const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
 const redisOps = require('./redisOps.js')
+const assignedSchedules = require('./assignedSchedules.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 function reachedFailCount (link, failedLinks) {
@@ -93,13 +94,13 @@ module.exports = async (bot, customSchedules, callback, vipApiData) => {
     const rssList = guildRss.sources
     for (var rssName in rssList) {
       const source = rssList[rssName]
-      // Assign feeds to specific schedules in scheduleAssigned for use by feedSchedules by rssNames first
+      // Assign feeds to specific schedules in assignedSchedules for use by feedSchedules by rssNames first
       if (Object.keys(scheduleRssNameDir).length > 0) {
         for (var scheduleName1 in scheduleRssNameDir) {
           const rssNameList = scheduleRssNameDir[scheduleName1]
-          if (rssNameList.includes(rssName) && !storage.scheduleAssigned[rssName]) {
+          if (rssNameList.includes(rssName) && !assignedSchedules.getScheduleName(rssName)) {
             log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName1} by rssName`)
-            storage.scheduleAssigned[rssName] = scheduleName1
+            assignedSchedules.setScheduleName(rssName, scheduleName1, guildId)
           }
         }
       }
@@ -109,13 +110,13 @@ module.exports = async (bot, customSchedules, callback, vipApiData) => {
         for (var scheduleName2 in scheduleWordDir) {
           const wordList = scheduleWordDir[scheduleName2]
           wordList.forEach(item => {
-            if (source.link.includes(item) && !storage.scheduleAssigned[rssName]) {
+            if (source.link.includes(item) && !assignedSchedules.getScheduleName(rssName)) {
               log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName2} by keyword`)
-              storage.scheduleAssigned[rssName] = scheduleName2 // Assign a schedule to a feed if it doesn't already exist in the scheduleAssigned to another schedule
+              assignedSchedules.setScheduleName(rssName, scheduleName2, guildId) // Assign a schedule to a feed if it doesn't already exist in the assignedSchedules to another schedule
             }
           })
         }
-        if (!storage.scheduleAssigned[rssName]) storage.scheduleAssigned[rssName] = 'default' // Assign to default schedule if it wasn't assigned to a custom schedule
+        if (!assignedSchedules.getScheduleName(rssName)) assignedSchedules.setScheduleName(rssName, 'default', guildId) // Assign to default schedule if it wasn't assigned to a custom schedule
       }
 
       if (checkGuild.config(bot, guildRss, rssName, true) && !reachedFailCount(source.link, failedLinks)) activeSourcesForTracker.push({ link: source.link, rssName: rssName, server: guildId })
@@ -177,7 +178,7 @@ module.exports = async (bot, customSchedules, callback, vipApiData) => {
     }
 
     for (const item of activeSourcesForTracker) {
-      const itemSchedule = vipServers.includes(item.server) ? 'vip' : storage.scheduleAssigned[item.rssName]
+      const itemSchedule = vipServers.includes(item.server) ? 'vip' : assignedSchedules.getScheduleName(item.rssName)
       const collectionId = storage.collectionId(item.link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, itemSchedule)
       linkTracker.increment(item.link, itemSchedule)
       if ((!bot.shard || bot.shard.count === 0) && !currentCollections.includes(collectionId)) currentCollections.push(collectionId)

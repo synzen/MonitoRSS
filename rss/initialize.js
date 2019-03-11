@@ -5,6 +5,7 @@ const config = require('../config.js')
 const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
+const assignedSchedules = require('../util/assignedSchedules.js')
 
 async function resolveLink (link) {
   try {
@@ -48,8 +49,7 @@ exports.initializeFeed = async (articleList, link, rssName) => {
   if (!config.database.uri.startsWith('mongo')) return
   try {
     // The schedule must be assigned to the feed first in order to get the correct feed collection ID for the feed model (through storage.schedulesAssigned, third argument of models.Feed)
-    await storage.scheduleManager.assignSchedules()
-    const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, storage.scheduleAssigned[rssName])
+    const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, assignedSchedules.getScheduleName(rssName))
     const docs = await dbCmds.findAll(Feed)
     if (docs.length > 0) return // The collection already exists from a previous addition, no need to initialize
     articleList.forEach(article => {
@@ -156,12 +156,15 @@ exports.addNewFeed = async (settings, customTitle) => {
           }
           if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
         }
-
-        const result = await dbOps.guildRss.update(guildRss)
+        await dbOps.guildRss.update(guildRss) // Must be added to database first for the FeedSchedules to see the feed
+        await storage.scheduleManager.assignSchedules()
+        const scheduleName = assignedSchedules.getScheduleName(rssName)
+        if (scheduleName) guildRss.sources[rssName].lastRefreshRateMin = storage.scheduleManager.getSchedule(scheduleName).refreshTime
+        await dbOps.guildRss.update(guildRss)
         // The user doesn't need to wait for the initializeFeed
 
         if (storage.bot) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
-        resolve([ link, metaTitle, rssName, result ])
+        resolve([ link, metaTitle, rssName ])
       } catch (err) {
         reject(err)
       }

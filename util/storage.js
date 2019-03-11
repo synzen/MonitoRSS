@@ -32,7 +32,6 @@ exports.redisClient = undefined
 exports.prefixes = {} // Guild prefixes
 exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
 exports.deletedFeeds = [] // Any deleted rssNames to check during article sending to see if it was deleted during a cycle
-exports.scheduleAssigned = {} // To track schedule assignment to links
 exports.allScheduleWords = [] // Holds all words across all schedules
 exports.allScheduleRssNames = []
 exports.scheduleManager = undefined

@@ -72,7 +72,7 @@ class ScheduleManager {
 
   assignSchedules () {
     const promises = []
-    for (const schedule of this.scheduleList) promises.push(schedule.run())
+    for (const schedule of this.scheduleList) promises.push(schedule.run(true))
     return Promise.all(promises)
   }
 

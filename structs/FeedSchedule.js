@@ -7,6 +7,7 @@ const EventEmitter = require('events')
 const childProcess = require('child_process')
 const storage = require('../util/storage.js') // All properties of storage must be accessed directly due to constant changes
 const log = require('../util/logger.js')
+const assignedSchedules = require('../util/assignedSchedules.js')
 const BATCH_SIZE = config.advanced.batchSize
 const FAIL_LIMIT = config.feeds.failLimit
 
@@ -112,33 +113,34 @@ class FeedSchedule extends EventEmitter {
       if (!checkGuild.config(this.bot, guildRss, rssName) || typeof this.failedLinks[source.link] === 'string') continue
 
       // Take care of our VIPs
+      const sourceScheduleName = assignedSchedules.getScheduleName(rssName)
       if (config._vip === true && !source.link.includes('feed43')) {
         const validVip = this.vipServers.includes(guildRss.id)
         const vipSchedule = this.scheduleManager.getSchedule('vip')
         if (validVip) {
-          if (storage.scheduleAssigned[rssName] !== 'vip') {
-            if (storage.scheduleAssigned[rssName]) dbOps.linkTracker.decrement(source.link, storage.scheduleAssigned[rssName]).catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to decrement link tracker for link ${source.link} before vip switch`, err))
+          if (sourceScheduleName !== 'vip') {
+            if (sourceScheduleName) dbOps.linkTracker.decrement(source.link, sourceScheduleName).catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to decrement link tracker for link ${source.link} before vip switch`, err))
             // log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule vip by rssName`)
-            storage.scheduleAssigned[rssName] = 'vip'
+            assignedSchedules.setScheduleName(rssName, 'vip')
             // Only do the below if ran is 0, since on initialization it counted it first already for link tracking purposes
             if (this.ran > 1) dbOps.linkTracker.increment(source.link, 'vip').catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to increment vip link tracker for link ${source.link}`, err))
           }
           if (!vipSchedule) this.scheduleManager.addSchedule({ name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, rssNames: [ rssName ] }) // Make it
           else if (!vipSchedule.rssNames.includes(rssName)) vipSchedule.rssNames.push(rssName)
-        } else if (!validVip && storage.scheduleAssigned[rssName] === 'vip') {
+        } else if (!validVip && sourceScheduleName === 'vip') {
           if (vipSchedule) vipSchedule.rssNames.splice(vipSchedule.rssNames.indexOf(rssName), 1)
           dbOps.linkTracker.decrement(source.link, 'vip').catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to decrement link tracker for link ${source.link} after invalidated vip`, err))
-          delete storage.scheduleAssigned[rssName]
+          assignedSchedules.clearScheduleName(rssName)
           // This feed will be delegated to the default schedule, but no notification will be given since that is the default behavior
         }
       }
 
       // Then the peasantry
-      if (storage.scheduleAssigned[rssName] === this.name && !scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName) // If assigned to a this.schedule
-      else if (this.name !== 'default' && !storage.scheduleAssigned[rssName]) { // If current feed this.schedule is a custom one and is not assigned
+      if (sourceScheduleName === this.name && !scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName) // If assigned to a this.schedule
+      else if (this.name !== 'default' && !sourceScheduleName) { // If current feed this.schedule is a custom one and is not assigned
         const sRssNames = this.rssNames // Potential array
         if (sRssNames && sRssNames.includes(rssName)) {
-          storage.scheduleAssigned[rssName] = this.name
+          assignedSchedules.setScheduleName(rssName, this.name)
           dbOps.linkTracker.increment(source.link, this.name).catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to increment link tracker for link ${source.link} (a)`, err))
           if (!scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName)
           log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.name} by rssName`)
@@ -147,19 +149,19 @@ class FeedSchedule extends EventEmitter {
         if (!this.keywords) continue
         this.keywords.forEach(word => {
           if (!source.link.includes(word)) return
-          storage.scheduleAssigned[rssName] = this.name // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
+          assignedSchedules.setScheduleName(rssName, this.name) // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
           dbOps.linkTracker.increment(source.link, this.name).catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to increment link tracker for link ${source.link} (b)`, err))
           if (!scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName)
           log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.name} by keywords`)
         })
-      } else if (!storage.scheduleAssigned[rssName]) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
+      } else if (!sourceScheduleName) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
         let reserved = false
         if (storage.allScheduleRssNames.includes(rssName)) reserved = true
         storage.allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
           if (source.link.includes(item)) reserved = true
         })
         if (!reserved) {
-          storage.scheduleAssigned[rssName] = 'default'
+          assignedSchedules.setScheduleName(rssName, 'default')
           dbOps.linkTracker.increment(source.link, 'default').catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to increment link tracker for link ${source.link} (c)`, err))
           if (!scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName)
         }
