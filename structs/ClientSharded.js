@@ -31,7 +31,10 @@ class ClientSharded extends EventEmitter {
     try {
       const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
       overrideConfigs(fileConfigOverride)
-    } catch (err) {}
+      overrideConfigs(configOverrides)
+    } catch (err) {
+      overrideConfigs(configOverrides)
+    }
     this.missingGuildRss = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
     this.refreshTimes = [config.feeds.refreshTimeMinutes]
