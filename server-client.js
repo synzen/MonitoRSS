@@ -1,6 +1,7 @@
 // Create a single client
 
 const DiscordRSS = require('./index.js')
+const config = require('./config.js')
 const drss = new DiscordRSS.Client() // Override default config values here
 
 drss.login(require('./config.js').bot.token, true)
@@ -10,6 +11,6 @@ drss.once('finishInit', () => {
   try {
     require('./web/index.js')()
   } catch (err) {
-    if (process.env.DRSS_EXPERIMENTAL_FEATURES) console.log(err)
+    if (config.web.enabled === true) console.log(err)
   }
 })

@@ -31,7 +31,7 @@ module.exports = async skipRedis => {
       mongoose.connection.once('open', resolve)
     }
 
-    if (process.env.DRSS_EXPERIMENTAL_FEATURES && !skipRedis && !storage.redisClient) {
+    if (config.web.enabled === true && !skipRedis && !storage.redisClient) {
       storage.redisClient = require('redis').createClient(config.database.redis)
       storage.redisClient.once('ready', () => {
         log.general.success(`Redis connection ready`)

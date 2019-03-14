@@ -54,5 +54,12 @@
     "forkBatches": false,
     "parallelBatches": 1,
     "parallelShards": 1
+  },
+  "web": {
+    "enabled": false,
+    "port": 8080,
+    "redirectUri": "",
+    "clientId": "",
+    "clientSecret": ""
   }
 }
