@@ -475,26 +475,19 @@ exports.vips = {
 
 exports.general = {
   addFeedback: async (user, content, type = 'general') => {
-    if (!content) {
-      log.general.warning(`Failed to log feedback of type "${type}" from user "${JSON.stringify(user)}" due to missing user`)
-      throw new TypeError('Missing content')
-    }
-    if (!user) {
-      log.general.warning(`Failed to log feedback "${content}" of type "${type}" due to missing user`)
-      throw new TypeError('No user specified')
-    }
-    if (typeof user !== 'object') {
-      log.general.warning(`Failed to log feedback "${content}" of type "${type}" due to invalid user (${user})`)
-      throw new TypeError('User must be an object')
-    }
-    if (!user.id) {
-      log.general.warning(`Failed to log feedback "${content}" of type "${type}" due to missing user ID (${user})`)
-      throw new Error('Missing user ID')
-    }
     return models.Feedback().create({
+      type,
       userId: user.id,
       username: user.username,
       content: content
+    })
+  },
+  addRating: async (user, rating, type = 'general') => {
+    return models.Rating().create({
+      type,
+      userId: user.id,
+      username: user.username,
+      rating
     })
   },
   cleanDatabase: async currentCollections => { // Remove unused feed collections

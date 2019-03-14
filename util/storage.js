@@ -196,9 +196,20 @@ exports.schemas = {
     }
   }),
   feedback: mongoose.Schema({
+    type: String,
     userId: String,
     username: String,
     content: String,
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }),
+  rating: mongoose.Schema({
+    type: String,
+    userId: String,
+    username: String,
+    rating: Number,
     date: {
       type: Date,
       default: Date.now
@@ -222,5 +233,6 @@ exports.models = {
   VIP: () => mongoose.model('vips', exports.schemas.vip),
   Blacklist: () => mongoose.model('blacklists', exports.schemas.blacklist),
   Statistics: () => mongoose.model('statistics', exports.schemas.statistics),
-  Feedback: () => mongoose.model('feedbacks', exports.schemas.feedback)
+  Feedback: () => mongoose.model('feedbacks', exports.schemas.feedback),
+  Rating: () => mongoose.model('ratings', exports.schemas.rating)
 }
