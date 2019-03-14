@@ -1,3 +1,5 @@
+const fs = require('fs')
+const path = require('path')
 const config = require('../config.js')
 const storage = require('../util/storage.js')
 const connectDb = require('../rss/db/connect.js')
@@ -10,12 +12,13 @@ const EventEmitter = require('events')
 
 function overrideConfigs (configOverrides) {
   // Config overrides must be manually done for it to be changed in the original object (config)
-  if (configOverrides) {
-    for (var category in config) {
-      const configCategory = config[category]
-      if (!configOverrides[category]) continue
-      for (var configName in configCategory) {
-        if (configOverrides[category][configName]) configCategory[configName] = configOverrides[category][configName]
+  for (var category in config) {
+    const configCategory = config[category]
+    if (!configOverrides[category]) continue
+    for (var configName in configCategory) {
+      if (configOverrides[category][configName] !== undefined && configOverrides[category][configName] !== config[category][configName]) {
+        log.controller.info(`Overriding config.${category}.${configName} from ${JSON.stringify(config[category][configName])} to ${JSON.stringify(configOverrides[category][configName])} from configOverride.json`)
+        configCategory[configName] = configOverrides[category][configName]
       }
     }
   }
@@ -25,7 +28,10 @@ class ClientSharded extends EventEmitter {
   constructor (shardingManager, configOverrides) {
     super()
     if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
-    overrideConfigs(configOverrides)
+    try {
+      const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
+      overrideConfigs(fileConfigOverride)
+    } catch (err) {}
     this.missingGuildRss = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
     this.refreshTimes = [config.feeds.refreshTimeMinutes]
