@@ -46,7 +46,7 @@ async function switchServerArg (bot, message, args, vipUser, guildRss) {
       let content = `The maximum number of servers you may add your patron backing to is ${vipUser.maxServers ? vipUser.maxServers : 1}. The following guilds are backed by your patron status:\n\n`
       for (const id of myServers) {
         const gotServer = await verifyServer(bot, id)
-        content += gotServer ? `${gotServer.id} (${gotServer.name})\n` : `${gotServer.id} (Unknown)\n`
+        content += gotServer ? `${gotServer.id} (${gotServer.name})\n` : `${id} (Unknown)\n`
       }
 
       await message.channel.send(content)
