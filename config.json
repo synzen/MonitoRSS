@@ -56,7 +56,7 @@
     "parallelShards": 1
   },
   "web": {
-    "enabled": enable,
+    "enabled": true,
     "port": 8080,
     "redirectUri": "",
     "clientId": "",
