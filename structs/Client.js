@@ -224,10 +224,18 @@ class Client extends EventEmitter {
     connectDb()
       .then(() => !this.bot.shard || this.bot.shard.count === 0 ? redisOps.flushDatabase() : null)
       .then(() => config._vip && (!this.bot.shard || this.bot.shard.count === 0) ? require('../settings/api.js')() : null)
+      .then(async clientVipApiData => {
+        if (!this.scheduleManager) {
+          this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules)
+          storage.scheduleManager = this.scheduleManager
+        }
+        await this.scheduleManager.assignSchedules()
+        return clientVipApiData
+      })
       .then(clientVipApiData => {
-        initialize(storage.bot, this.customSchedules, (missingGuilds, linkDocs, feedData) => {
+        initialize(this.bot, (missingGuilds, linkDocs) => {
           // feedData is only defined if config.database.uri is a databaseless folder path
-          this._finishInit(missingGuilds, linkDocs, feedData, callback)
+          this._finishInit(missingGuilds, linkDocs, callback)
         }, vipApiData || clientVipApiData)
       })
       .catch(err => log.general.error(`Client db connection`, err))
@@ -239,11 +247,9 @@ class Client extends EventEmitter {
     this.start(callback)
   }
 
-  _finishInit (missingGuilds, linkDocs, feedData, callback) {
+  _finishInit (missingGuilds, linkDocs, callback) {
     storage.initialized = 2
     this.state = STATES.READY
-    this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules, feedData)
-    storage.scheduleManager = this.scheduleManager
     if (storage.bot.shard && storage.bot.shard.count > 0) {
       process.send({ _drss: true, type: 'initComplete', missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id })
     } else if (config._vip) {
@@ -252,6 +258,7 @@ class Client extends EventEmitter {
       }, 600000)
     }
     listeners.createManagers(storage.bot)
+    this.scheduleManager.startSchedules()
     if (callback) callback()
     this.emit('finishInit')
   }

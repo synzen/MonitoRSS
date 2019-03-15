@@ -2,6 +2,7 @@ const config = require('../config.js')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const FlattenedJSON = require('./FlattenedJSON.js')
+const testFilters = require('../rss/translator/filters.js')
 const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
@@ -302,6 +303,36 @@ module.exports = class Article {
         this.regexPlaceholders[placeholderName] = regexResults
       }
     }
+
+    // Finally subscriptions - this MUST be done last after all variables have been defined
+    this.subscriptions = ''
+    this.subscriptionIds = [] // Used for role mention toggling
+
+    // Get global subscriptions
+    const globalSubscriptions = source.globalSubscriptions
+    if (globalSubscriptions) {
+      for (const subscriber of globalSubscriptions) {
+        const type = subscriber.type
+        const id = subscriber.id
+        if (type === 'user') this.subscriptions += `<@${id}> `
+        else if (type === 'role') {
+          this.subscriptions += `<@&${id}> `
+          this.subscriptionIds.push(id) // For ArticleMessage mention toggling
+        }
+      }
+    }
+
+    // Get filtered subscriptions
+    const filteredSubscriptions = source.filteredSubscriptions
+    if (filteredSubscriptions) {
+      for (const subscriber of filteredSubscriptions) {
+        const type = subscriber.type
+        if (type !== 'role' && type !== 'user') continue
+        if (subscriber.filters && testFilters(subscriber, this).passed) this.subscriptions += type === 'role' ? `<@&${subscriber.id}> ` : `<@${subscriber.id}> `
+        if (type === 'role') this.subscriptionIds.push(subscriber.id) // For ArticleMessage mention toggling
+      }
+    }
+    if (this.subscriptions) this.placeholders.push('subscriptions')
   }
 
   // List all {imageX} to string

@@ -60,6 +60,13 @@
     "port": 8080,
     "redirectUri": "",
     "clientId": "",
-    "clientSecret": ""
+    "clientSecret": "",
+    "https": {
+      "enabled": false,
+      "privateKey": "",
+      "certificate": "",
+      "chain": "",
+      "port": 443
+    }
   }
 }

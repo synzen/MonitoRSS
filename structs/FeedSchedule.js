@@ -12,7 +12,7 @@ const BATCH_SIZE = config.advanced.batchSize
 const FAIL_LIMIT = config.feeds.failLimit
 
 class FeedSchedule extends EventEmitter {
-  constructor (bot, schedule, feedData, scheduleManager) {
+  constructor (bot, schedule, scheduleManager) {
     if (!schedule.refreshTimeMinutes) throw new Error('No refreshTimeMinutes has been declared for a schedule')
     if (schedule.name !== 'default' && schedule.name !== 'vip' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0) && (!Array.isArray(schedule.rssNames) || schedule.rssNames.length === 0)) throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     super()
@@ -32,7 +32,7 @@ class FeedSchedule extends EventEmitter {
     this._cycleTotalCount = 0
     this._sourceList = new Map()
     this._modSourceList = new Map()
-    this.feedData = feedData // Object of collection ids as keys, and arrays of objects as values
+    this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedCount = 0 // For statistics
     this.failedLinks = {}
     this.ran = 0 // # of times this schedule has ran
@@ -41,9 +41,6 @@ class FeedSchedule extends EventEmitter {
     this.vipServers = []
     this.vipServerLimits = {}
     this.allowWebhooks = {}
-
-    if (!this.bot.shard || this.bot.shard.count === 0) this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000) // Only create an interval for itself if there is no sharding
-    log.cycle.info(`${this.SHARD_ID}Schedule '${this.name}' has begun`)
   }
 
   _verifyCookieUse (id, advanced) {
@@ -87,7 +84,7 @@ class FeedSchedule extends EventEmitter {
     }
   }
 
-  _addToSourceLists (guildRss, scheduleAssignmentOnly) { // rssList is an object per guildRss
+  _addToSourceLists (guildRss) { // rssList is an object per guildRss
     const rssList = guildRss.sources
     let c = 0 // To count and determine what feeds should be disabled if they violate their limits
     const max = this.vipServerLimits[guildRss.id] || config.feeds.max || 0
@@ -112,61 +109,8 @@ class FeedSchedule extends EventEmitter {
 
       if (!checkGuild.config(this.bot, guildRss, rssName) || typeof this.failedLinks[source.link] === 'string') continue
 
-      // Take care of our VIPs
-      let sourceScheduleName = assignedSchedules.getScheduleName(rssName)
-      if (config._vip === true && !source.link.includes('feed43')) {
-        const validVip = this.vipServers.includes(guildRss.id)
-        const vipSchedule = this.scheduleManager.getSchedule('vip')
-        if (validVip) {
-          if (sourceScheduleName !== 'vip') {
-            if (sourceScheduleName) dbOps.linkTracker.decrement(source.link, sourceScheduleName).catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to decrement link tracker for link ${source.link} before vip switch`, err))
-            // log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule vip by rssName`)
-            assignedSchedules.setScheduleName(rssName, 'vip')
-            // Only do the below if ran is 0, since on initialization it counted it first already for link tracking purposes
-            if (this.ran > 1) dbOps.linkTracker.increment(source.link, 'vip').catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to increment vip link tracker for link ${source.link}`, err))
-          }
-          if (!vipSchedule) this.scheduleManager.addSchedule({ name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10, rssNames: [ rssName ] }) // Make it
-          else if (!vipSchedule.rssNames.includes(rssName)) vipSchedule.rssNames.push(rssName)
-        } else if (!validVip && sourceScheduleName === 'vip') {
-          if (vipSchedule) vipSchedule.rssNames.splice(vipSchedule.rssNames.indexOf(rssName), 1)
-          dbOps.linkTracker.decrement(source.link, 'vip').catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to decrement link tracker for link ${source.link} after invalidated vip`, err))
-          assignedSchedules.clearScheduleName(rssName)
-          // This feed will be delegated to the default schedule, but no notification will be given since that is the default behavior
-        }
-      }
-
-      sourceScheduleName = assignedSchedules.getScheduleName(rssName) // Get the new value since it may be different
-      // Then the peasantry
-      if (sourceScheduleName === this.name && !scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName) // If assigned to a this.schedule
-      else if (this.name !== 'default' && !sourceScheduleName) { // If current feed this.schedule is a custom one and is not assigned
-        const sRssNames = this.rssNames // Potential array
-        if (sRssNames && sRssNames.includes(rssName)) {
-          assignedSchedules.setScheduleName(rssName, this.name)
-          dbOps.linkTracker.increment(source.link, this.name).catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to increment link tracker for link ${source.link} (a)`, err))
-          if (!scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName)
-          log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.name} by rssName`)
-          continue
-        }
-        if (!this.keywords) continue
-        this.keywords.forEach(word => {
-          if (!source.link.includes(word)) return
-          assignedSchedules.setScheduleName(rssName, this.name) // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
-          dbOps.linkTracker.increment(source.link, this.name).catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to increment link tracker for link ${source.link} (b)`, err))
-          if (!scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName)
-          log.cycle.info(`${this.SHARD_ID}Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${this.name} by keywords`)
-        })
-      } else if (!sourceScheduleName) { // Has no this.schedule, was not previously assigned, so see if it can be assigned to default
-        let reserved = false
-        if (storage.allScheduleRssNames.includes(rssName)) reserved = true
-        storage.allScheduleWords.forEach(item => { // If it can't be assigned to default, it will eventually be assigned to other schedules when they occur
-          if (source.link.includes(item)) reserved = true
-        })
-        if (!reserved) {
-          assignedSchedules.setScheduleName(rssName, 'default')
-          dbOps.linkTracker.increment(source.link, 'default').catch(err => log.cycle.warning(`${this.SHARD_ID}Unable to increment link tracker for link ${source.link} (c)`, err))
-          if (!scheduleAssignmentOnly) this._delegateFeed(guildRss, rssName)
-        }
-      }
+      if (!assignedSchedules.getScheduleName(rssName)) this.scheduleManager.assignScheduleToSource(guildRss, rssName, this.vipServers)
+      if (assignedSchedules.getScheduleName(rssName) === this.name) this._delegateFeed(guildRss, rssName) // If assigned to a this.schedule
     }
 
     // Send notices about any feeds that were enabled/disabled
@@ -214,7 +158,7 @@ class FeedSchedule extends EventEmitter {
     if (Object.keys(batch).length > 0) this._modBatchList.push(batch)
   }
 
-  async run (scheduleAssignmentOnly) {
+  async run () {
     if (this.inProgress) {
       if (!config.advanced.forkBatches) {
         log.cycle.warning(`Previous ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
@@ -261,9 +205,8 @@ class FeedSchedule extends EventEmitter {
     let feedCount = 0 // For statistics in storage
     guildRssList.forEach(guildRss => {
       if (!this.bot.guilds.has(guildRss.id)) return
-      feedCount += this._addToSourceLists(guildRss, scheduleAssignmentOnly) // Returns the feed count for this guildRss
+      feedCount += this._addToSourceLists(guildRss) // Returns the feed count for this guildRss
     })
-    if (scheduleAssignmentOnly) return
 
     this.inProgress = true
     this.feedCount = feedCount
@@ -421,11 +364,17 @@ class FeedSchedule extends EventEmitter {
 
   stop () {
     clearInterval(this._timer)
-    if (this._timer) log.cycle.info(`Schedule '${this.name}' has stopped`)
+    if (this._timer) log.general.info(`${this.SHARD_ID}Schedule '${this.name}' has stopped`)
+    else log.general.warning(`${this.SHARD_ID}Schedule '${this.name}' ignoring stop command because schedule is already stopped`)
+    delete this._timer
   }
 
   start () {
-    if (!this.bot.shard || this.bot.shard.count === 0) this._timer = setInterval(this.run, this.refreshTime * 60000)
+    if (!this.bot.shard || this.bot.shard.count === 0) {
+      if (this._timer) return log.general.warning(`${this.SHARD_ID}Schedule '${this.name}' ignoring start command because schedule is already started`)
+      this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000)
+      log.cycle.info(`${this.SHARD_ID}Schedule '${this.name}' has begun`)
+    }
   }
 }
 

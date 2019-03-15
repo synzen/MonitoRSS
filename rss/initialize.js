@@ -157,10 +157,13 @@ exports.addNewFeed = async (settings, customTitle) => {
           if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
         }
         await dbOps.guildRss.update(guildRss) // Must be added to database first for the FeedSchedules to see the feed
-        await storage.scheduleManager.assignSchedules()
-        const scheduleName = assignedSchedules.getScheduleName(rssName)
-        if (scheduleName) guildRss.sources[rssName].lastRefreshRateMin = storage.scheduleManager.getSchedule(scheduleName).refreshTime
-        await dbOps.guildRss.update(guildRss)
+        if (storage.scheduleManager) {
+          await storage.scheduleManager.assignScheduleToSource(guildRss, rssName)
+          const scheduleName = assignedSchedules.getScheduleName(rssName)
+          await dbOps.linkTracker.increment(link, scheduleName)
+          guildRss.sources[rssName].lastRefreshRateMin = storage.scheduleManager.getSchedule(scheduleName).refreshTime
+          await dbOps.guildRss.update(guildRss)
+        }
         // The user doesn't need to wait for the initializeFeed
 
         if (storage.bot) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))

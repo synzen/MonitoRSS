@@ -259,23 +259,24 @@ exports.failedLinks = {
           if (!rssList) return
           for (var i in rssList) {
             const source = rssList[i]
-            if (source.link === link && config._skipMessages !== true) {
-              let sent = false
-              if (Array.isArray(guildRss.sendAlertsTo)) { // Each array item is a user id
-                const userIds = guildRss.sendAlertsTo
-                userIds.forEach(userId => {
-                  const user = storage.bot.users.get(userId)
-                  if (user && typeof message === 'string' && message.includes('connection failure limit')) {
-                    sent = true
-                    user.send(`**ATTENTION** - Feed link <${link}> in channel <#${source.channel}> has reached the connection failure limit in server named \`${guildRss.name}\` with ID \`${guildRss.id}\`, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use \`${guildRss.prefix || config.bot.prefix}rsslist\` in your server for more information.`).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (a)`, user, err))
-                  } else if (user) {
-                    sent = true
-                    user.send(message).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (b)`, user, err))
-                  }
-                })
-              }
-              if (sent === false) {
-                const channel = storage.bot.channels.get(source.channel)
+            if (source.link !== link || config._skipMessages === true) continue
+            let sent = false
+            if (Array.isArray(guildRss.sendAlertsTo)) { // Each array item is a user id
+              const userIds = guildRss.sendAlertsTo
+              userIds.forEach(userId => {
+                const user = storage.bot.users.get(userId)
+                if (user && typeof message === 'string' && message.includes('connection failure limit')) {
+                  sent = true
+                  user.send(`**ATTENTION** - Feed link <${link}> in channel <#${source.channel}> has reached the connection failure limit in server named \`${guildRss.name}\` with ID \`${guildRss.id}\`, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use \`${guildRss.prefix || config.bot.prefix}rsslist\` in your server for more information.`).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (a)`, user, err))
+                } else if (user) {
+                  sent = true
+                  user.send(message).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (b)`, user, err))
+                }
+              })
+            }
+            if (sent === false) {
+              const channel = storage.bot.channels.get(source.channel)
+              if (channel) { // The channel may not exist since this function is broadcasted to all shards
                 const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
                 const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
                 if (config._skipMessages !== true) channel.send(m, attach ? new Discord.Attachment(Buffer.from(JSON.stringify(guildRss, null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
@@ -430,6 +431,15 @@ exports.vips = {
     for (const id of serversToAdd) {
       if (vipUser.servers.includes(id)) throw new Error(`Server ${id} already exists`)
       vipUser.servers.push(id)
+      const guildRss = await exports.guildRss.get(id)
+      if (guildRss) {
+        const rssList = guildRss.sources
+        if (rssList) {
+          for (const rssName in rssList) {
+            assignedSchedules.clearScheduleName(rssName)
+          }
+        }
+      }
       log.general.success(`VIP servers added for VIP ${vipUser.id} (${vipUser.name}): ${serversToAdd.join(',')}`)
     }
     await models.VIP().updateOne({ id: vipUser.id }, { $addToSet: { servers: { $each: serversToAdd } } }, UPDATE_SETTINGS).exec()
@@ -444,16 +454,8 @@ exports.vips = {
       const guildRss = await exports.guildRss.get(id)
       if (guildRss && guildRss.sources) {
         const rssList = guildRss.sources
-        let vipScheduleRssNames
-        for (var feedSchedule of storage.scheduleManager.scheduleList) {
-          if (feedSchedule.name === 'vip') vipScheduleRssNames = feedSchedule.rssNames
-        }
-        if (vipScheduleRssNames) {
-          for (var rssName in rssList) {
-            vipScheduleRssNames.splice(rssName, 1)
-            storage.allScheduleRssNames.splice(rssName, 1)
-            assignedSchedules.clearScheduleName(rssName)
-          }
+        for (var rssName in rssList) {
+          assignedSchedules.clearScheduleName(rssName)
         }
       }
       await models.VIP().updateOne({ id: vipUser.id }, { $pull: { servers: { $in: serversToRemove } } }, UPDATE_SETTINGS).exec()

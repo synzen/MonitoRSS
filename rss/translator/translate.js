@@ -2,13 +2,9 @@ const config = require('../../config.js')
 const testFilters = require('./filters.js')
 const generateEmbeds = require('./embed.js')
 const Article = require('../../structs/Article.js')
-const getSubs = require('./subscriptions.js')
 
 module.exports = (source, rawArticle, isTestMessage, ignoreLimits, dateSettings) => {
   const article = new Article(rawArticle, source, dateSettings)
-  const subscriptionData = getSubs(source, article)
-  article.subscriptions = subscriptionData.mentions
-  article.subscriptionIds = subscriptionData.ids
   const IGNORE_TEXT_LIMITS = ignoreLimits === undefined ? !!source.splitMessage : ignoreLimits // If ignoreLimits was passed in, use this value - otherwise follow the source
 
   // Filter message

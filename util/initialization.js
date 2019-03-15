@@ -14,39 +14,13 @@ function reachedFailCount (link, failedLinks) {
   return failed
 }
 
-module.exports = async (bot, customSchedules, callback, vipApiData) => {
+module.exports = async (bot, callback, vipApiData) => {
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new LinkTracker([], bot)
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
   const guildsInfo = {}
   const missingGuilds = {}
-  const scheduleRssNameDir = {}
-  const scheduleWordDir = {}
   const activeSourcesForTracker = []
-  let feedData
-  if (!config.database.uri.startsWith('mongo')) feedData = {} // Object of collection ids as keys, and arrays of objects as values
-
-  // Set up custom schedules
-  if (customSchedules) {
-    for (var w = 0; w < customSchedules.length; ++w) {
-      const schedule = customSchedules[w]
-      const scheduleName = schedule.name
-      const keywords = schedule.keywords
-      const rssNames = schedule.rssNames
-      scheduleWordDir[scheduleName] = []
-      for (var schedKeyword of keywords) {
-        storage.allScheduleWords.push(schedKeyword)
-        scheduleWordDir[scheduleName].push(schedKeyword)
-      }
-      if (rssNames) {
-        scheduleRssNameDir[scheduleName] = []
-        for (var schedRssName of rssNames) {
-          storage.allScheduleRssNames.push(schedRssName)
-          scheduleRssNameDir[scheduleName].push(schedRssName)
-        }
-      }
-    }
-  }
 
   // Remove expires index, but ignores the log if it's "ns not found" error (meaning the collection doesn't exist)
   if (config.database.guildBackupsExpire <= 0) {
@@ -68,7 +42,7 @@ module.exports = async (bot, customSchedules, callback, vipApiData) => {
     failedLinks[item.link] = item.failed || item.count
   })
 
-  // Cache guilds
+  // Remove missing guilds and empty guildRsses, along with other checks
   const guildRssList = await dbOps.guildRss.getAll()
   for (var r = 0; r < guildRssList.length; ++r) {
     const guildRss = guildRssList[r]
@@ -95,36 +69,14 @@ module.exports = async (bot, customSchedules, callback, vipApiData) => {
     for (var rssName in rssList) {
       const source = rssList[rssName]
       // Assign feeds to specific schedules in assignedSchedules for use by feedSchedules by rssNames first
-      if (Object.keys(scheduleRssNameDir).length > 0) {
-        for (var scheduleName1 in scheduleRssNameDir) {
-          const rssNameList = scheduleRssNameDir[scheduleName1]
-          if (rssNameList.includes(rssName) && !assignedSchedules.getScheduleName(rssName)) {
-            log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName1} by rssName`)
-            assignedSchedules.setScheduleName(rssName, scheduleName1, guildId)
-          }
-        }
-      }
-
-      // Then by keywords
-      if (Object.keys(scheduleWordDir).length > 0) {
-        for (var scheduleName2 in scheduleWordDir) {
-          const wordList = scheduleWordDir[scheduleName2]
-          wordList.forEach(item => {
-            if (source.link.includes(item) && !assignedSchedules.getScheduleName(rssName)) {
-              log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName2} by keyword`)
-              assignedSchedules.setScheduleName(rssName, scheduleName2, guildId) // Assign a schedule to a feed if it doesn't already exist in the assignedSchedules to another schedule
-            }
-          })
-        }
-        if (!assignedSchedules.getScheduleName(rssName)) assignedSchedules.setScheduleName(rssName, 'default', guildId) // Assign to default schedule if it wasn't assigned to a custom schedule
-      }
-
       if (checkGuild.config(bot, guildRss, rssName, true) && !reachedFailCount(source.link, failedLinks)) activeSourcesForTracker.push({ link: source.link, rssName: rssName, server: guildId })
     }
   }
 
   let c = 0
   const total = bot.guilds.size
+
+  // Redis is only for UI use
   bot.guilds.forEach((guild, guildId) => {
     redisOps.guilds.recognize(guild).catch(err => {
       // This will recognize all guild info, members, channels and roles
@@ -177,6 +129,7 @@ module.exports = async (bot, customSchedules, callback, vipApiData) => {
       }
     }
 
+    // Decides what collections get removed from database later on
     for (const item of activeSourcesForTracker) {
       const itemSchedule = vipServers.includes(item.server) ? 'vip' : assignedSchedules.getScheduleName(item.rssName)
       const collectionId = storage.collectionId(item.link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, itemSchedule)
@@ -189,11 +142,11 @@ module.exports = async (bot, customSchedules, callback, vipApiData) => {
       if (config.database.uri.startsWith('mongo')) dbOps.statistics.clear().catch(err => err.code === 26 ? null : log.general.warning('Unable to drop statistics database', err)) // 26 is ns not found - it's fine if it didn't exist in the first place
       dbOps.linkTracker.write(linkTracker).catch(err => log.general.warning('Unable to write link tracker links to collection after initialization', err)) // If this is a shard, then it's handled by the sharding manager
       dbOps.general.cleanDatabase(currentCollections)
-        .then(() => callback(missingGuilds, linkTracker.toDocs(), feedData))
+        .then(() => callback(missingGuilds, linkTracker.toDocs()))
         .catch(err => {
           log.general.error(`Unable to clean database`, err)
-          callback(missingGuilds, linkTracker.toDocs(), feedData)
+          callback(missingGuilds, linkTracker.toDocs())
         })
-    } else callback(missingGuilds, linkTracker.toDocs(), feedData)
+    } else callback(missingGuilds, linkTracker.toDocs())
   }
 }
