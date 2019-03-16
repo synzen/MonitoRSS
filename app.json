@@ -9,7 +9,8 @@
 		"rss",
 		"feed"
 	],
-	"addons": [{
+	"addons": [
+		{
 			"plan": "mongolab:sandbox"
 		},
 		{
