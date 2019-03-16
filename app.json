@@ -13,6 +13,9 @@
 		{
 			"plan": "mongolab:sandbox"
 		},
+	        {
+                        "plan": "scheduler:standard"
+                },
 		{
 			"plan": "heroku-redis:hobby-dev"
 		}
@@ -55,7 +58,32 @@
 			"description": "WARNING! if you enable this, make sure that you fill in all of the DRSS_WEB_ and have read the WIKI troughly. Make sure to NOT use worker, but instead always use WEB in the sources tab. Finnally use something to keep your web dyno up like uptimerobot (free online software).",
 			"value": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
 			"required": "false"
-		}
+		},
+	        "GITHUB_REPO": {
+			"description": "Copy part of the link after `https://github.com/` (e.g `chaNcharge/Discord.RSS`) and paste it here, required for auto updates with Scheduler!",
+			"required": false,
+			"value": ""
+	        },
+	        "GITHUB_REPO_BRANCH": {
+			"description": "The branch of your fork to update, required for auto updates with Scheduler!",
+			"required": false,
+			"value": "master"
+	        },
+	        "GITHUB_SECRET_TOKEN": {
+			"description": "Copy GitHub personal access token here, required for auto updates with Scheduler! You can get a personal access token here: https://github.com/settings/tokens",
+			"required": false,
+			"value": ""
+	        },
+	        "UPSTREAM_REPO": {
+			"description": "The link to the upstream repo to update from, leave this as is for DiscordRSS",
+			"required": false,
+			"value": "synzen/Discord.RSS"
+	        },
+	        "UPSTREAM_BRANCH": {
+			"description": "The branch of the upstream repo, leave this as is for DiscordRSS",
+			"required": false,
+			"value": "master"
+	        }
 	},
 	"formation": {
 		"web": {
