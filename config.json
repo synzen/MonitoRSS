@@ -56,10 +56,10 @@
     "parallelShards": 1
   },
   "web": {
-    "enabled": true,
+    "enabled": false,
     "port": 8080,
     "redirectUri": "",
-    "clientId": "341194927935586305",
-    "clientSecret": "jzsZ8CBig0yAdfA-NuugNYB4y3mdxNjF"
+    "clientId": "",
+    "clientSecret": ""
   }
 }
