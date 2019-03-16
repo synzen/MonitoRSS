@@ -487,6 +487,11 @@ module.exports = class Article {
     return content
   }
 
+  getRawPlaceholders () {
+    if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source, this.encoding)
+    return this.flattenedJSON.results
+  }
+
   getRawPlaceholderContent (phName) {
     if (!phName.startsWith('raw:')) return ''
     if (this.flattenedJSON) return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''

@@ -102,12 +102,14 @@ module.exports = (source, article) => {
   const filterResults = new _FilterResults()
   for (var filterTypeName in source.filters) {
     const userFilters = source.filters[filterTypeName]
+    const reference = filterTypeName.startsWith('raw:') ? article.getRawPlaceholderContent(filterTypeName) : (referenceOverrides[filterTypeName] || article[filterTypeName])
 
-    if (!referenceOverrides[filterTypeName] && !article[filterTypeName]) {
+    if (!reference) {
       regularFiltersExists = true
       continue
     }
-    const allResults = findFilterWords(userFilters, filterTypeName.startsWith('raw:') ? article.getRawPlaceholderContent(filterTypeName) : (referenceOverrides[filterTypeName] || article[filterTypeName]))
+
+    const allResults = findFilterWords(userFilters, reference)
     // Get match words for test messages
     if (allResults.matches) filterResults.add(filterTypeName, allResults.matches, false)
     if (allResults.invertedMatches) filterResults.add(filterTypeName, allResults.invertedMatches, true)
