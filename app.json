@@ -48,13 +48,11 @@
 		},
 		"DRSS_WEB_CLIENT_SECRET": {
 			"description": "Default message. You can do role pings with <@DISCORD_ROLE_ID>.",
-			"value": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
 			"required": "false"
 		},
 		"DRSS_WEB_ENABLED": {
 			"description": "WARNING! if you enable this, make sure that you fill in all of the DRSS_WEB_ and have read the WIKI troughly. Make sure to NOT use worker, but instead always use WEB in the sources tab. Finnally use something to keep your web dyno up like uptimerobot (free online software).",
-			"value": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
-			"required": "false"
+			"value": "false"
 		}
 	},
 	"formation": {
