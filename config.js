@@ -14,7 +14,7 @@ config.feeds.defaultMessage = process.env.DRSS_FEEDS_DEFAULT_MESSAGE ? process.e
 
 // Web
 config.database.redis = process.env.DRSS_REDIS_URI || process.env.REDIS_URL || config.database.redis
-config.web.port = process.env.DRSS_PORT || process.env.PORT || config.web.PORT
+config.web.port = process.env.DRSS_PORT || process.env.PORT || config.web.port
 config.web.redirectUri = process.env.DRSS_REDIRECT_URI || config.web.redirectUri
 config.web.clientId = process.env.DRSS_CLIENT_ID || config.web.clientId
 config.web.clientSecret = process.env.DRSS_CLIENT_SECRET || config.web.clientSecret
