@@ -42,11 +42,11 @@
 			"required": "false"
 		},
 		"DRSS_WEB_CLIENT_ID": {
-			"description": "This is the ID that you can find on the general information page. This should only contain numbers.",
+			"description": "App ID that can be found on the general information page at https://discordapp.com/developers/applications/. This should only contain numbers.",
 			"required": "false"
 		},
 		"DRSS_WEB_CLIENT_SECRET": {
-			"description": "Default message. You can do role pings with <@DISCORD_ROLE_ID>.",
+			"description": "Found on your app page at Discord Developers at https://discordapp.com/developers/applications/",
 			"required": "false"
 		},
 		"DRSS_WEB_ENABLED": {
