@@ -19,15 +19,14 @@
 	],
 	"env": {
 		"DRSS_BOT_TOKEN": {
-			"description": "Discord BOT token. Get it here: https://discordapp.com/developers/applications/"
+			"description": "Discord BOT token. Get it here: https://discordapp.com/developers/applications/."
 		},
 		"DRSS_BOT_PREFIX": {
-			"description": "The prefix of your RSS feed bot. E.g. summoning the bot is done via ~rsshelp",
+			"description": "The prefix of your RSS feed bot. E.g. summoning the bot is done via ~rsshelp.",
 			"value": "~"
 		},
 		"DRSS_BOT_CONTROLLER_IDS": {
-			"description": "Owner ID(s), separate multiple with a comma",
-			"value": "",
+			"description": "Owner ID(s), separate multiple with a comma.",
 			"required": "false"
 		},
 		"DRSS_FEEDS_REFRESH_TIME_MINUTES": {
@@ -39,7 +38,7 @@
 			"value": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
 		},
 		"DRSS_WEB_REDIRECT_URI": {
-			"description": "Insert the domain name appending /authorize. Example on heroku: APPNAME.herokuapp.com/authorize",
+			"description": "Insert the domain name appending /authorize. Example on heroku: APPNAME.herokuapp.com/authorize.",
 			"required": "false"
 		},
 		"DRSS_WEB_CLIENT_ID": {
