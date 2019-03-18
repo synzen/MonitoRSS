@@ -23,7 +23,7 @@
     "DRSS_BOT_CONTROLLER_IDS": {
       "description": "Owner ID(s), separate multiple with a comma",
       "value": "",
-      "required": "false"
+      "required": false
     },
     "DRSS_FEEDS_REFRESH_TIME_MINUTES": {
       "description": "Refresh rate of your RSS feed bot.",
