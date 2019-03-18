@@ -13,8 +13,8 @@ config.feeds.refreshTimeMinutes = Number(process.env.DRSS_FEEDS_REFRESH_TIME_MIN
 config.feeds.defaultMessage = process.env.DRSS_FEEDS_DEFAULT_MESSAGE ? process.env.DRSS_FEEDS_DEFAULT_MESSAGE.replace(/\\n/g, '\n') : config.feeds.defaultMessage
 
 // Web
-config.database.redis = process.env.DRSS_REDIS_URI || config.database.redis
-config.web.port = process.env.DRSS_PORT || config.web.port
+config.database.redis = process.env.DRSS_REDIS_URI || process.env.REDIS_URL || config.database.redis
+config.web.port = process.env.DRSS_PORT || process.env.PORT || config.web.port
 config.web.redirectUri = process.env.DRSS_REDIRECT_URI || config.web.redirectUri
 config.web.clientId = process.env.DRSS_CLIENT_ID || config.web.clientId
 config.web.clientSecret = process.env.DRSS_CLIENT_SECRET || config.web.clientSecret
