@@ -27,7 +27,7 @@
 		},
 		"DRSS_BOT_CONTROLLER_IDS": {
 			"description": "Owner ID(s), separate multiple with a comma.",
-			"required": "false"
+			"required": false
 		},
 		"DRSS_FEEDS_REFRESH_TIME_MINUTES": {
 			"description": "Refresh rate of your RSS feed bot.",
@@ -39,19 +39,18 @@
 		},
 		"DRSS_WEB_REDIRECT_URI": {
 			"description": "Insert the domain name appending /authorize. Example on heroku: APPNAME.herokuapp.com/authorize.",
-			"required": "false"
+			"required": false
 		},
 		"DRSS_WEB_CLIENT_ID": {
 			"description": "App ID that can be found on the general information page at https://discordapp.com/developers/applications/. This should only contain numbers.",
-			"required": "false"
+			"required": false
 		},
 		"DRSS_WEB_CLIENT_SECRET": {
 			"description": "Found on your app page at Discord Developers at https://discordapp.com/developers/applications/",
-			"required": "false"
+			"required": false
 		},
 		"DRSS_WEB_ENABLED": {
-			"description": "WARNING! if you enable this, make sure that you fill in all of the DRSS_WEB_ and have read the WIKI troughly. Make sure to NOT use worker, but instead always use WEB in the sources tab. Finnally use something to keep your web dyno up like uptimerobot (free online software).",
-			"value": "false"
+			"description": "WARNING! if you enable this, make sure that you fill in all of the DRSS_WEB_ and have read the WIKI troughly. Make sure to NOT use worker, but instead always use WEB in the sources tab. Finnally use something to keep your web dyno up like uptimerobot (free online software)."
 		}
 	},
 	"formation": {
