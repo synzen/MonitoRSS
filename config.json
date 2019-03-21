@@ -57,6 +57,7 @@
   },
   "web": {
     "enabled": false,
+    "sessionSecret": "keyboard cat",
     "port": 8080,
     "redirectUri": "",
     "clientId": "",
