@@ -40,15 +40,6 @@ async function inputFilterFn (m, data) {
   const { guildRss, rssName, role, user, filterList, chosenFilterType } = data
   const source = guildRss.sources[rssName]
   const input = m.content
-  // Global subs are always deleted if filtered subs are added
-  const targetId = role ? role.id : user ? user.id : undefined
-  const { globalSubscriptions } = source
-  if (globalSubscriptions && targetId) {
-    for (let i = globalSubscriptions.length - 1; i >= 0; --i) {
-      if (globalSubscriptions[i].id === targetId) globalSubscriptions.splice(i, 1)
-    }
-    if (globalSubscriptions.length === 0) delete source.globalSubscriptions
-  }
 
   if (!filterList[chosenFilterType]) filterList[chosenFilterType] = []
   const editing = await m.channel.send(`Updating filters...`)
@@ -94,23 +85,21 @@ exports.add = (message, guildRss, rssName, role, user) => {
   const targetType = role ? 'Role' : user ? 'User' : undefined
   let targetFilterList
   if (targetId) {
-    if (!source.filteredSubscriptions) source.filteredSubscriptions = []
-    let exists = false
-    for (const subscriber of source.filteredSubscriptions) {
+    if (!source.subscribers) source.subscribers = []
+    for (const subscriber of source.subscribers) {
       if (subscriber.id === targetId) {
         if (!subscriber.filters) subscriber.filters = {}
         targetFilterList = subscriber.filters
-        exists = true
       }
     }
-    if (!exists) {
-      source.filteredSubscriptions.push({
+    if (!targetFilterList) {
+      source.subscribers.push({
         type: targetType.toLowerCase(),
         id: targetId,
         name: targetName,
         filters: {}
       })
-      targetFilterList = source.filteredSubscriptions[source.filteredSubscriptions.length - 1].filters
+      targetFilterList = source.subscribers[source.subscribers.length - 1].filters
     }
   } else {
     if (!source.filters) source.filters = {}
@@ -196,9 +185,18 @@ async function removeFilterFn (m, data) {
   }
 
   // Check after removal if there are any empty objects
-  const { filteredSubscriptions } = source
-  if (filteredSubscriptions && filteredSubscriptions.length === 0) delete source.filteredSubscriptions
-  if (Object.keys(source.filters).length === 0) delete source.filters
+  const targetId = role ? role.id : user ? user.id : null
+  if (targetId) {
+    const { subscribers } = source
+    if (subscribers && subscribers.length > 0) {
+      for (let i = 0; i < subscribers.length; ++i) {
+        const subscriber = subscribers[i]
+        if (subscriber.id !== targetId) continue
+        if (!subscriber.filters || Object.keys(subscriber.filters).length === 0) subscribers.splice(i, 1)
+      }
+    }
+    if (subscribers.length === 0) delete source.subscribers
+  }
 
   if (!user && !role) {
     let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
@@ -222,9 +220,9 @@ exports.remove = (message, guildRss, rssName, role, user) => {
   const targetId = role ? role.id : user ? user.id : undefined
 
   if (targetId) {
-    const { filteredSubscriptions } = source
-    if (filteredSubscriptions) {
-      for (const subscriber of filteredSubscriptions) {
+    const { subscribers } = source
+    if (subscribers) {
+      for (const subscriber of subscribers) {
         if (subscriber.id === targetId) targetFilterList = subscriber.filters
       }
     }

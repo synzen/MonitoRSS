@@ -304,31 +304,19 @@ module.exports = class Article {
       }
     }
 
-    // Finally subscriptions - this MUST be done last after all variables have been defined
+    // Finally subscriptions - this MUST be done last after all variables have been defined for filter testing
     this.subscriptions = ''
     this.subscriptionIds = [] // Used for role mention toggling
 
-    // Get global subscriptions
-    const globalSubscriptions = source.globalSubscriptions
-    if (globalSubscriptions) {
-      for (const subscriber of globalSubscriptions) {
-        const type = subscriber.type
-        const id = subscriber.id
-        if (type === 'user') this.subscriptions += `<@${id}> `
-        else if (type === 'role') {
-          this.subscriptions += `<@&${id}> `
-          this.subscriptionIds.push(id) // For ArticleMessage mention toggling
-        }
-      }
-    }
-
     // Get filtered subscriptions
-    const filteredSubscriptions = source.filteredSubscriptions
-    if (filteredSubscriptions) {
-      for (const subscriber of filteredSubscriptions) {
+    const subscribers = source.subscribers
+    if (subscribers) {
+      for (const subscriber of subscribers) {
         const type = subscriber.type
         if (type !== 'role' && type !== 'user') continue
-        if (subscriber.filters && testFilters(subscriber, this).passed) this.subscriptions += type === 'role' ? `<@&${subscriber.id}> ` : `<@${subscriber.id}> `
+        const mentionText = type === 'role' ? `<@&${subscriber.id}> ` : `<@${subscriber.id}> `
+        if (subscriber.filters && testFilters(subscriber, this).passed) this.subscriptions += mentionText
+        else if (!subscriber.filters || Object.keys(subscriber.filters).length === 0) this.subscriptions += mentionText
         if (type === 'role') this.subscriptionIds.push(subscriber.id) // For ArticleMessage mention toggling
       }
     }
