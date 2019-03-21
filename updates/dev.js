@@ -119,6 +119,24 @@ function updateGuildRss (guildRss) {
       }
     }
 
+    const subscribers = []
+    if (source.filteredSubscriptions && source.filteredSubscriptions.length > 0) {
+      for (const subscriber of source.filteredSubscriptions) {
+        subscribers.push(subscriber)
+      }
+      changed = true
+    }
+    if (source.globalSubscriptions && source.globalSubscriptions.length > 0) {
+      for (const subscriber of source.globalSubscriptions) {
+        subscribers.push(subscriber)
+      }
+      changed = true
+    }
+    delete source.filteredSubscriptions
+    delete source.globalSubscriptions
+
+    if (subscribers.length > 0) source.subscribers = subscribers
+
     if (source.dateSettings) {
       changed = true
       delete source.dateSettings
