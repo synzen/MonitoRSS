@@ -53,7 +53,7 @@ async function printSubscriptions (message, rssList) {
         filteredSubs.push(subList[feed].filteredSubs[filteredSubber])
       }
       filteredSubs.sort()
-      if (filteredSubs.length > 0) list += '**Filtered Subscribers:**\n' + filteredSubs.join('\n')
+      if (filteredSubs.length > 0) list += (globalSubs.length > 0 ? '\n' : '') + '**Filtered Subscribers:**\n' + filteredSubs.join('\n')
       if (!list) continue
       if (list.length <= 1024) msg.addField(feed, list)
       else {
