@@ -1,6 +1,12 @@
 A web server for https://github.com/synzen/Discord.RSS to manage your feeds. The backend is built with Express with server-side sessions, websockets, and a RESTful API. The front end is built with create-react-app (in ./client folder), with Redux and React Router. User authentication is done via Discord's OAuth2.
 
-## Steps for Development:
+# Preview
+
+Mobile responsive UI, built according to Discord's theme with Discord's blessing
+
+![UI Screenshot](https://i.imgur.com/lHnZOJi.png)
+
+# Development:
 
 ### Backend
 
