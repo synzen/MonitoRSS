@@ -15,7 +15,7 @@
     "streamActivityURL": "",
     "controllerIds": ["156576312985780224"],
     "menuColor": 5285609,
-    "deleteMenus": false,
+    "deleteMenus": true,
     "exitOnSocketIssues": true,
     "commandAliases": {}
   },

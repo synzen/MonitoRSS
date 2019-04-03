@@ -20,7 +20,7 @@ exports.defaultConfigs = {
     activityName: { type: String, default: '' },
     controllerIds: { type: Array, default: [] },
     menuColor: { type: Number, default: 7833753 },
-    deleteMenus: { type: Boolean, default: false },
+    deleteMenus: { type: Boolean, default: true },
     exitOnSocketIssues: { type: Boolean, default: true }
   },
   database: {
