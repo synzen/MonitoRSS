@@ -1,0 +1,15 @@
+.ui.table {
+  -webkit-box-shadow: 0 1px 3px #282b30;
+  box-shadow: 0 1px 3px #282b30;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  line-height: 22px;
+  word-break: break-all;
+  font-size: 14px;
+  font-weight: 300;
+}
+
+
+.ui.selectable.table tr.active {
+  -webkit-tap-highlight-color: transparent; 
+}

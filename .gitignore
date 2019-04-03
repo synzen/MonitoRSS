@@ -17,5 +17,3 @@ yarn-error.log*
 .env
 
 settings/configOverride.json
-
-web

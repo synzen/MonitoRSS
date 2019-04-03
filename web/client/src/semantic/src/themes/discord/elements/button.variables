@@ -1,0 +1,19 @@
+@blurple: #7289DA;
+@greyple: #99AAB5;
+@darkButNotBlack: #2C2F33;
+@notQuiteblack: #23272A;
+
+@blue: #7289DA;
+@green: #43b581;
+@red: #f04747;
+@redDown: #c03939;
+@redFocus: @red;
+
+@background: @blurple;
+@textColor: white;
+@hoverBackgroundColor: darken(@background, 2.5%);
+@hoverColor: white;
+@focusBackgroundColor: @blurple;
+@focusColor: white;
+@downBackgroundColor: darken(@background, 5%);
+@downColor: white;

@@ -1,0 +1,28 @@
+.ui.dropdown > .menu > .item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui.dropdown > .text {
+  max-width: 100%;
+}
+
+.ui.selection.dropdown {
+  user-select: none;
+  border-color: rgba(0, 0, 0, 0.3);
+  cursor: default;
+}
+
+.ui.search.dropdown > input.search {
+  color: #f6f6f7;
+  
+}
+
+.ui.search.dropdown > input.search::selection {
+  color: #f6f6f7;
+  background-color: #0078d7;
+}
+
+.ui.multiple.dropdown > .label {
+  background: #99AAB5;
+}
