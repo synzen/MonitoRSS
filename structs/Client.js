@@ -101,8 +101,12 @@ class Client extends EventEmitter {
       client.login(token)
         .then(tok => this._defineBot(client))
         .catch(err => {
-          if (!noChildren && err.message.includes('too many guilds')) new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides).run()
-          else {
+          if (!noChildren && err.message.includes('too many guilds')) {
+            const shardedClient = new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
+            shardedClient.once('finishInit', () => {
+              this.emit('finishInit')
+            })
+          } else {
             log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
             setTimeout(() => this.login.bind(this)(token), 600000)
           }

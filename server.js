@@ -11,4 +11,12 @@ try {
   token = override.bot && override.bot.token ? override.bot.token : token
 } catch (err) {}
 
+drss.once('finishInit', () => {
+  try {
+    if (config.web.enabled === true) require('./web/index.js')()
+  } catch (err) {
+    console.log(err)
+  }
+})
+
 drss.login(token)
