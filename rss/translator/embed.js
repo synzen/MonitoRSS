@@ -23,11 +23,11 @@ module.exports = (embeds, article) => {
     if (isStr(objectEmbed['author_name'])) richEmbed.setAuthor(article.convertKeywords(objectEmbed['author_name']), isStr(objectEmbed['author_icon_url']) ? article.convertKeywords(objectEmbed['author_icon_url']) : undefined, isStr(objectEmbed['author_url']) ? article.convertKeywords(objectEmbed['author_url']) : undefined)
     if (isStr(objectEmbed['authorName'])) richEmbed.setAuthor(article.convertKeywords(objectEmbed['authorName']), isStr(objectEmbed['authorIconUrl']) ? article.convertKeywords(objectEmbed['authorIconUrl']) : undefined, isStr(objectEmbed['authorUrl']) ? article.convertKeywords(objectEmbed['authorUrl']) : undefined)
 
-    if (isStr(objectEmbed['thumbnail_url'])) richEmbed.setThumbnail(article.convertImgs(objectEmbed['thumbnail_url']))
-    if (isStr(objectEmbed['thumbnailUrl'])) richEmbed.setThumbnail(article.convertImgs(objectEmbed['thumbnailUrl']))
+    if (isStr(objectEmbed['thumbnail_url'])) richEmbed.setThumbnail(article.convertKeywords(objectEmbed['thumbnail_url']))
+    if (isStr(objectEmbed['thumbnailUrl'])) richEmbed.setThumbnail(article.convertKeywords(objectEmbed['thumbnailUrl']))
 
-    if (isStr(objectEmbed['image_url'])) richEmbed.setImage(article.convertImgs(objectEmbed['image_url']))
-    if (isStr(objectEmbed['imageUrl'])) richEmbed.setImage(article.convertImgs(objectEmbed['imageUrl']))
+    if (isStr(objectEmbed['image_url'])) richEmbed.setImage(article.convertKeywords(objectEmbed['image_url']))
+    if (isStr(objectEmbed['imageUrl'])) richEmbed.setImage(article.convertKeywords(objectEmbed['imageUrl']))
 
     if (isStr(objectEmbed.timestamp)) {
       const setting = objectEmbed.timestamp
