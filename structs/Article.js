@@ -103,7 +103,8 @@ function evalRegexConfig (source, text, placeholderName) {
       if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
       if (!customPlaceholders[regexOp.name]) customPlaceholders[regexOp.name] = text // Initialize with a value if it doesn't exist
       const clone = Object.assign({}, customPlaceholders)
-      customPlaceholders[regexOp.name] = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement, regexOp.replacementDirect)
+      const replacement = regexReplace(clone[regexOp.name], regexOp.search, regexOp.replacement, regexOp.replacementDirect)
+      customPlaceholders[regexOp.name] = replacement === clone[regexOp.name] && regexOp.emptyOnNoMatch === true ? '\u200b' : replacement
     }
   } else return null
   return customPlaceholders
