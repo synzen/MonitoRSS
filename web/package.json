@@ -9,7 +9,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "compression": "^1.7.3",
-    "connect-mongo": "^2.0.3",
+    "connect-redis": "^3.4.1",
     "csurf": "^1.9.0",
     "express": "^4.16.4",
     "express-rate-limit": "^3.3.2",

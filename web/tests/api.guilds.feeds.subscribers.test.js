@@ -425,7 +425,7 @@ describe('/guilds/:guildId/feeds/:feedId/subscribers', function () {
       it('overwrites the subscriber filters with other filtered subscribers', async function (done) {
         const body = { filters: { chicken: 'dinner' } }
         const source = {
-          subscribers: [{ id: 'whatever', filters: { fo: 'ba' } }, { id: params.subscriberId, filters: { ho: 'du' } }],
+          subscribers: [{ id: 'whatever', filters: { fo: 'ba' } }, { id: params.subscriberId, filters: { ho: 'du' } }]
         }
         const expectedSource = {
           subscribers: [{ ...source.subscribers[0] }, { id: params.subscriberId, ...body }]
@@ -448,7 +448,7 @@ describe('/guilds/:guildId/feeds/:feedId/subscribers', function () {
       it('calls guildRss.update', async function (done) {
         const body = { filters: { chicken: 'dinner' } }
         const source = {
-          subscribers: [{ id: params.subscriberId, filters: { ho: 'du' } }],
+          subscribers: [{ id: params.subscriberId, filters: { ho: 'du' } }]
         }
         const subscriberIndex = 0
         const request = httpMocks.createRequest({ session, params, source, subscriberIndex, body, method: 'PATCH' })

@@ -6,7 +6,7 @@ const morgan = require('morgan')
 const express = require('express')
 const session = require('express-session')
 const compression = require('compression')
-const MongoStore = require('connect-mongo')(session)
+const RedisStore = require('connect-redis')(session)
 const discordAPIConstants = require('./constants/discordAPI.js')
 const apiRoutes = require('./routes/api/index.js')
 const storage = require('../util/storage.js')
@@ -52,8 +52,7 @@ module.exports = () => {
     mongoose.set('useCreateIndex', true)
     return start(mongoose.connection)
   }
-  if (mongoose.connection.readyState !== 1) throw new Error('mongoose connection ready state is not 1')
-  else if (!storage.redisClient) throw new Error('Redis is not connected')
+  if (!storage.redisClient) throw new Error('Redis is not connected for Web UI')
   start()
 }
 
@@ -81,8 +80,8 @@ function start (mongooseConnection = mongoose.connection) {
     saveUninitialized: false,
     cookie: { secure: false }, // Set secure to true for HTTPS - otherwise sessions will not be saved
     maxAge: 1 * 24 * 60 * 60, // 1 day
-    store: new MongoStore({
-      mongooseConnection // Recycle connection
+    store: new RedisStore({
+      client: storage.redisClient // Recycle connection
     })
   })
   app.use(session)
