@@ -24,6 +24,7 @@ const initialState = {
   modalOpen: false,
   csrfToken: '',
   refreshRates: {},
+  cpResponse: null,
   modal: {
     props: null,
     children: null

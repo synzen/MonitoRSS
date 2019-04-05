@@ -177,7 +177,11 @@ module.exports = class Article {
     this.placeholders = []
     this.meta = raw.meta
     this.guid = raw.guid
+    // Author
     this.author = raw.author ? cleanup(source, raw.author, undefined, undefined, this.encoding) : ''
+    if (this.author) this.placeholders.push('author')
+
+    // Link
     this.link = raw.link ? raw.link.split(' ')[0].trim() : '' // Sometimes HTML is appended at the end of links for some reason
     if (this.link) this.placeholders.push('link')
     if (this.reddit && this.link.startsWith('/r/')) this.link = 'https://www.reddit.com' + this.link
