@@ -13,7 +13,7 @@ config.feeds.refreshTimeMinutes = Number(process.env.DRSS_FEEDS_REFRESH_TIME_MIN
 config.feeds.defaultMessage = process.env.DRSS_FEEDS_DEFAULT_MESSAGE ? process.env.DRSS_FEEDS_DEFAULT_MESSAGE.replace(/\\n/g, '\n') : config.feeds.defaultMessage
 
 // Web
-config.web.enabled = process.env.DRSS_WEB_ENABLED === 'true'
+config.web.enabled = process.env.DRSS_WEB_ENABLED === 'true' || config.web.enabled
 
 // process.env.REDIS_URL is intended for use by Heroku
 config.database.redis = process.env.DRSS_REDIS_URI || process.env.REDIS_URL || config.database.redis
