@@ -255,7 +255,7 @@ class Message extends Component {
       for (const propertyName in embedProperties) {
         const propName = embedProperties[propertyName]
         if (properties[propName] === undefined) continue
-        parsedProperties[propName] = article ? this.convertKeywords(properties[propName]) : properties[propName]
+        parsedProperties[propName] = article && propName !== 'color' ? this.convertKeywords(properties[propName]) : properties[propName] // color is a number
         populatedEmbed = populatedEmbed || !!properties[propName]
       }
       const fields = properties.fields

@@ -288,7 +288,7 @@ class Feeds extends Component {
             <Divider />
             <SectionTitle heading='Current' subheading='View and your current feeds.' sideComponent={
               <FeedLimitContainer>
-                <Popup content={<span>Need more? <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} position='left center' hideOnScroll hoverable inverted trigger={<span>{tableItems.length}/{guildLimits[guildId]}</span>} />
+                <Popup content={<span>Need more? <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} position='left center' hideOnScroll hoverable inverted trigger={<span>{tableItems.length}/{guildLimits[guildId] === 0 ? '∞' : guildLimits[guildId]}</span>} />
                 <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'><Icon color='green' name='arrow circle up' /></a>
               </FeedLimitContainer>
             } />
@@ -323,7 +323,7 @@ class Feeds extends Component {
                 return false
               }} />
             <Divider />
-            <SectionTitle heading='Add' subheading={<span>{`Add a new feed. You may have a maximum of ${guildLimits[guildId]} feeds. Need more? `}<a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} />
+            <SectionTitle heading='Add' subheading={<span>{`Add a new feed. You may have a maximum of ${guildLimits[guildId] === 0 ? '∞' : guildLimits[guildId]} feeds. Need more? `}<a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} />
             <AddFeed channelDropdownOptions={channelDropdownOptions} />
             <Divider />
           </MainContent>

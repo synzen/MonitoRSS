@@ -169,11 +169,13 @@ class App extends React.PureComponent {
       feedId: '',
       guild: null,
       feed: null,
-      modalContent: null
+      modalContent: null,
+      cpResponse: null
     }
 
     axios.get('/api/cp').then(({ data }) => {
       const { defaultConfig, user, bot, guilds, linksStatus, csrfToken } = data
+      state.cpResponse = data
       state.linksStatus = linksStatus
       state.defaultConfig = defaultConfig
       state.user = user
