@@ -25,7 +25,7 @@ const mapStateToProps = state => {
     guildId: state.guildId,
     articlesFetching: state.articlesFetching,
     defaultConfig: state.defaultConfig,
-    linksStatus: state.linksStatus,
+    linkStatuses: state.linkStatuses,
     csrfToken: state.csrfToken
   }
 }
@@ -132,7 +132,7 @@ class SideBar extends Component {
   }
 
   render () {
-    const { guildId, guild, feeds, selectedFeedId, channelDropdownOptions, articlesFetching, linksStatus, defaultConfig } = this.props
+    const { guildId, guild, feeds, selectedFeedId, channelDropdownOptions, articlesFetching, linkStatuses, defaultConfig } = this.props
     const selectedFeed = feeds[guildId] && feeds[guildId][selectedFeedId] ? feeds[guildId][selectedFeedId] : null
     let differentFromDefault = false
     if (selectedFeed) {
@@ -143,7 +143,7 @@ class SideBar extends Component {
     const dateTimezone = guild.timezone || defaultConfig.timezone
     const dateFormat = guild.dateFormat || defaultConfig.dateFormat
     const dateLanguage = guild.dateLanguage || defaultConfig.dateLanguage
-    const failed = selectedFeed && typeof linksStatus[selectedFeed.link] === 'string'
+    const failed = selectedFeed && typeof linkStatuses[selectedFeed.link] === 'string'
     const disabled = selectedFeed && selectedFeed.disabled
     return (
       <Container populated={selectedFeed}>
@@ -160,8 +160,8 @@ class SideBar extends Component {
               : disabled
                 ? <span style={{ color: colors.discord.yellow }}>Disabled ({selectedFeed.disabled})</span>
                 : failed
-                  ? <span style={{ color: colors.discord.red }}>Failed ({moment(linksStatus[selectedFeed.link]).format('DD MMMM Y')})</span>
-                  : <div><span style={{ color: colors.discord.green }}>Normal</span>{defaultConfig.failLimit > 0 ? ` (${linksStatus[selectedFeed.link] === undefined ? '100' : ((defaultConfig.failLimit - linksStatus[selectedFeed.link]) / defaultConfig.failLimit * 100).toFixed(0)}% health)` : ''}</div>
+                  ? <span style={{ color: colors.discord.red }}>Failed ({moment(linkStatuses[selectedFeed.link]).format('DD MMMM Y')})</span>
+                  : <div><span style={{ color: colors.discord.green }}>Normal</span>{defaultConfig.failLimit > 0 ? ` (${linkStatuses[selectedFeed.link] === undefined ? '100' : ((defaultConfig.failLimit - linkStatuses[selectedFeed.link]) / defaultConfig.failLimit * 100).toFixed(0)}% health)` : ''}</div>
           }
           <EditField>
             <SectionSubtitle>Refresh Rate</SectionSubtitle>

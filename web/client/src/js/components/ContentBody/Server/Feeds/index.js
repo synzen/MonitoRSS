@@ -26,7 +26,7 @@ const mapStateToProps = state => {
     guildId: state.guildId,
     feedId: state.feedId,
     guildLimits: state.guildLimits,
-    linksStatus: state.linksStatus,
+    linkStatuses: state.linkStatuses,
     guild: state.guild,
     defaultConfig: state.defaultConfig,
     csrfToken: state.csrfToken
@@ -190,7 +190,7 @@ class Feeds extends Component {
   onClickFeedRow = feed => {
     if (this.state.ignoreModal) return this.state.selectedFeedId === feed.rssName ? this.setState({ selectedFeedId : '' }) : this.setState({ selectedFeedId: feed.rssName })
     this.setState({ selectedFeedId: feed.rssName })
-    const { defaultConfig, channels, guildId, guild, linksStatus } = this.props
+    const { defaultConfig, channels, guildId, guild, linkStatuses } = this.props
     const cancelCondition = (this.state.title === feed.title && !this.state.channel) || (this.state.channel === feed.channel && !this.state.title) || (this.state.title === feed.title && this.state.channel === feed.channel) || (!this.state.title && !this.state.channel)
     const dateTimezone = guild.timezone || defaultConfig.timezone
     const dateFormat = guild.dateFormat || defaultConfig.dateFormat
@@ -226,13 +226,13 @@ class Feeds extends Component {
               ? ''
               : feed.disabled
                 ? <span style={{ color: colors.discord.yellow }}>Disabled ({feed.disabled})</span>
-                :  typeof linksStatus[feed.link] === 'string'
-                  ? <span style={{ color: colors.discord.red }}>Failed ({moment(linksStatus[feed.link]).format('DD MMMM Y')})</span>
-                  : <div><span style={{ color: colors.discord.green }}>Normal</span>{defaultConfig.failLimit > 0 ? ` ${linksStatus[feed.link] === undefined ? '100' : ((defaultConfig.failLimit - linksStatus[feed.link]) / defaultConfig.failLimit * 100).toFixed(0)}% health` : ''}</div>
+                :  typeof linkStatuses[feed.link] === 'string'
+                  ? <span style={{ color: colors.discord.red }}>Failed ({moment(linkStatuses[feed.link]).format('DD MMMM Y')})</span>
+                  : <div><span style={{ color: colors.discord.green }}>Normal</span>{defaultConfig.failLimit > 0 ? ` ${linkStatuses[feed.link] === undefined ? '100' : ((defaultConfig.failLimit - linkStatuses[feed.link]) / defaultConfig.failLimit * 100).toFixed(0)}% health` : ''}</div>
           }
           <Divider />
           <SectionSubtitle>Refresh Rate</SectionSubtitle>
-          { !feed ? '\u200b' : feed.disabled || typeof linksStatus[feed.link] === 'string' ? 'None ' : !feed.lastRefreshRateMin ? 'To be determined ' : feed.lastRefreshRateMin < 1 ? `${feed.lastRefreshRateMin * 60} seconds      ` : `${feed.lastRefreshRateMin} minutes      `}<a rel='noopener noreferrer' href='https://www.patreon.com/discordrss' target='_blank'>－</a>
+          { !feed ? '\u200b' : feed.disabled || typeof linkStatuses[feed.link] === 'string' ? 'None ' : !feed.lastRefreshRateMin ? 'To be determined ' : feed.lastRefreshRateMin < 1 ? `${feed.lastRefreshRateMin * 60} seconds      ` : `${feed.lastRefreshRateMin} minutes      `}<a rel='noopener noreferrer' href='https://www.patreon.com/discordrss' target='_blank'>－</a>
           <Divider />
           <SectionSubtitle>Added On</SectionSubtitle>
           { !feed ? '\u200b' : !feed.addedOn ? 'Unknown' : moment(feed.addedOn).locale(dateLanguage).tz(dateTimezone).format(dateFormat)}
@@ -266,7 +266,7 @@ class Feeds extends Component {
   }
 
   render () {
-    const { feeds, channels, guildId, redirect, linksStatus, guildLimits } = this.props
+    const { feeds, channels, guildId, redirect, linkStatuses, guildLimits } = this.props
     const guildFeeds = feeds[guildId]
     const guildChannels = channels[guildId]
     const tableItems = []
@@ -305,7 +305,7 @@ class Feeds extends Component {
                     <PaginatedTable.Cell collapsing>
                       { feed.disabled
                         ? <Icon name='warning circle' size='large' color='yellow' />
-                        : typeof linksStatus[feed.link] === 'string'
+                        : typeof linkStatuses[feed.link] === 'string'
                           ? <Icon name='dont' size='large' color='red' />
                           : <Icon name='check circle' size='large' color='green' />
                       }
@@ -342,7 +342,7 @@ Feeds.propTypes = {
   feedId: PropTypes.string,
   channels: PropTypes.object,
   redirect: PropTypes.func,
-  linksStatus: PropTypes.object,
+  linkStatuses: PropTypes.object,
   feeds: PropTypes.object
 }
 
