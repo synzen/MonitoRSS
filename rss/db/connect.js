@@ -9,7 +9,11 @@ const CON_SETTINGS = typeof config.database.connection === 'object' ? config.dat
 
 module.exports = async skipRedis => {
   const uri = config.database.uri
-  if (!uri.startsWith('mongo')) return // Means filebase sources will be used
+  if (!uri.startsWith('mongo')) { // Databaseless configuration
+    if (config.web.enabled === true && !skipRedis && !storage.redisClient) {
+      return connectRedis().then(() => log.general.success(`Redis connection ready`))
+    } else return
+  }
 
   return new Promise((resolve, reject) => {
     const buffers = {}
@@ -32,17 +36,20 @@ module.exports = async skipRedis => {
     }
 
     if (config.web.enabled === true && !skipRedis && !storage.redisClient) {
-      storage.redisClient = require('redis').createClient(config.database.redis)
-      storage.redisClient.once('ready', () => {
-        log.general.success(`Redis connection ready`)
-        return mongoose.connection.readyState === 1 ? resolve() : connect()
-      })
-
-      storage.redisClient.on('error', err => {
-        log.general.error('Redis Client error encountered, stopping')
-        throw err
-      })
+      connectRedis()
+        .then(() => {
+          log.general.success(`Redis connection ready`)
+          return mongoose.connection.readyState === 1 ? resolve() : connect()
+        }).catch(reject)
     } else if (mongoose.connection.readyState === 1) return resolve()
     else connect()
+  })
+}
+
+function connectRedis () {
+  return new Promise((resolve, reject) => {
+    storage.redisClient = require('redis').createClient(config.database.redis)
+    storage.redisClient.once('ready', resolve)
+    storage.redisClient.on('error', reject)
   })
 }
