@@ -60,11 +60,6 @@ function start (mongooseConnection = mongoose.connection) {
   // Middleware
   app.use(compression())
   app.use(function mongoAndCORS (req, res, next) {
-    // Make sure the database connection works on every API request
-    if (!TEST_ENV && mongoose.connection.readyState !== 1) {
-      console.log('Ingoring request due to mongoose readyState !== 1')
-      return res.status(500).json({ status: 500, message: 'Internal Server Error' })
-    }
     // Disallow CORS
     // res.header('Access-Control-Allow-Origin', '*')
     // res.header('Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept')
