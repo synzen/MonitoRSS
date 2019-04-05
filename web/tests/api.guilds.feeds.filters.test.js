@@ -71,6 +71,23 @@ describe('/guilds/:guildId/feeds/:feedId/filters', function () {
         expect(data.message[key].includes('populated')).toEqual(true)
       }
     })
+    it('returns 400 if term or type exceeds 1000 characters', function () {
+      let str = ''
+      while (str.length <= 1000) {
+        str += 'a'
+      }
+      const body = { type: str, term: str }
+      const request = httpMocks.createRequest({ session, params, body })
+      const response = httpMocks.createResponse()
+      guildFeedFiltersRoute.middleware.validBody(request, response)
+      expect(response.statusCode).toEqual(400)
+      const data = JSON.parse(response._getData())
+      expect(data.code).toEqual(400)
+      for (const key in body) {
+        expect(data.message).toHaveProperty(key)
+        expect(data.message[key]).toEqual('Must be fewer than 1000 characters')
+      }
+    })
   })
   describe('DELETE /', function () {
     afterEach(function () {

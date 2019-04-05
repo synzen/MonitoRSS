@@ -10,6 +10,7 @@ function validBody (req, res, next) {
     else {
       if (typeof val !== 'string') errors[key] = 'Must be a string'
       else if (!val) errors[key] = 'Must be populated'
+      else if (val.length > 1000) errors[key] = 'Must be fewer than 1000 characters'
     }
   }
   if (Object.keys(errors).length > 0) return res.status(400).json({ code: 400, message: errors })
