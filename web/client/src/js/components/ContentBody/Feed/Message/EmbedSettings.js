@@ -402,7 +402,7 @@ class EmbedSettings extends React.Component {
       currentEmbed.fields.push({})
       embeds[this.state.index] = currentEmbed
     }
-    console.log(embeds)
+
     this.setState({ embeds })
     this.props.onUpdate(this.state.index, 'fields', currentEmbed.fields)
   }

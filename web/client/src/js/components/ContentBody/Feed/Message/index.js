@@ -180,7 +180,7 @@ class Message extends Component {
   }
 
   render () {
-    const { feedId, subscribers, guildId } = this.props
+    const { feedId, subscribers } = this.props
     if (!feedId) {
       this.props.toDashboard()
       return <Redirect to='/' />

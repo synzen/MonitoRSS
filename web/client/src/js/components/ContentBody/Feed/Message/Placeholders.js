@@ -1,5 +1,5 @@
 import React from 'react'
-import { Divider, Loader, Dropdown } from 'semantic-ui-react'
+import { Divider, Loader, Dropdown, ButtonGroup, Button, Input } from 'semantic-ui-react'
 import styled from 'styled-components'
 import colors from '../../../../constants/colors'
 import Wrapper from '../../../utils/Wrapper'
@@ -45,8 +45,12 @@ const mapStateToProps = state => {
 
 const ArticleBox = styled.div`
   margin-bottom: 1.5em;
-  .ui.dropdown:first-child {
+  > .ui.dropdown:first-child {
     margin-bottom: 1em;
+  }
+  > div > .ui.dropdown {
+    margin-bottom: 0;
+    margin-right: 1em;
   }
 `
 
@@ -58,6 +62,8 @@ const PlaceholdersContainerStyles = styled(Wrapper)`
       align-items: center;
       text-align: center;`
     : ''}
+  margin-top: 1em;
+
   scrollbar-width: thin;
   color: ${colors.discord.text};
   resize: vertical;
@@ -127,18 +133,33 @@ const RegexTag = styled.span`
   color: black;
 `
 
+const DropdownWithButtons = styled.div`
+  display: flex;
+`
+
 class Placeholders extends React.Component {
   constructor () {
     super()
     this.state = {
       articleId: 0,
-      showArticleBy: ''
+      showArticleBy: '',
+      searchPlaceholder: ''
     }
   }
 
   setArticleId = articleId => {
     this.setState({ articleId })
     this.props.updateArticleId(articleId)
+  }
+
+  onClickPreviousArticle = () => {
+    if (this.state.articleId === 0) return
+    this.setArticleId(this.state.articleId - 1)
+  }
+
+  onClickNextArticle = () => {
+    if (this.state.articleId === this.props.articleList.length - 1) return
+    this.setArticleId(this.state.articleId + 1)
   }
 
   render () {
@@ -173,6 +194,7 @@ class Placeholders extends React.Component {
         const content = article[placeholderName]
         if (!content || placeholderName === 'fullTitle' || placeholderName === 'fullDescription' || placeholderName === 'fullSummary' || placeholderName.startsWith('raw:')) continue
         const phname = placeholderName.replace('regex:', '') // The {regex: in the beginning is for internal reference only
+        if (this.state.searchPlaceholder && !phname.includes(this.state.searchPlaceholder)) continue
         placeholderElements.push(
           <PlaceholderImage key={`article.${placeholderName}`}>
             <div>
@@ -202,11 +224,17 @@ class Placeholders extends React.Component {
         <SectionSubtitle>Article</SectionSubtitle>
         <ArticleBox>
           <Dropdown selection fluid options={showArticleByOptions} value={showArticleBy} onChange={(e, data) => this.setState({ showArticleBy: data.value })} disabled={disabledDropdown} loading={articlesFetching} />
-          <Dropdown search selection fluid options={articleDropdownOptions} value={this.state.articleId} onChange={(e, data) => this.setArticleId(data.value)} disabled={disabledDropdown} loading={articlesFetching} />
+          <DropdownWithButtons>
+            <Dropdown search selection fluid options={articleDropdownOptions} value={this.state.articleId} onChange={(e, data) => this.setArticleId(data.value)} disabled={disabledDropdown} loading={articlesFetching} />
+            <ButtonGroup>
+              <Button icon='arrow up' onClick={this.onClickPreviousArticle} disabled={this.state.articleId === 0 || articleList.length === 0} />
+              <Button icon='arrow down' onClick={this.onClickNextArticle} disabled={this.state.articleId === articleList.length - 1 || articleList.length === 0} />
+            </ButtonGroup>
+          </DropdownWithButtons>
         </ArticleBox>
         <SectionSubtitle>Placeholders</SectionSubtitle>
         
-
+        <Input fluid icon='search' iconPosition='left' placeholder='Placeholder name' onChange={e => this.setState({ searchPlaceholder: e.target.value })} value={this.state.searchPlaceholder} />
         <PlaceholdersContainer pose={articlesFetching || articlesError ? 'small' : 'big'} small={articlesFetching || articlesError}>
         <Scrollbars>
           <PlaceholdersContainerInner>

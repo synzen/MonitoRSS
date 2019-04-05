@@ -4,7 +4,6 @@ import PropTypes from 'prop-types'
 import moment from 'moment-timezone'
 
 class ServerSettings extends React.PureComponent {
-
   render () {
     const { defaultConfig, timezone, dateFormat, invalidTimezone } = this.props
     const thisMoment = moment()

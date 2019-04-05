@@ -9,7 +9,6 @@ import DiscordAvatar from '../utils/DiscordAvatar'
 import MenuButton from './MenuButton'
 import { changePage, setActiveFeed, setActiveGuild } from '../../actions/index-actions'
 import PropTypes from 'prop-types'
-import DiscordModal from '../utils/DiscordModal'
 import { isMobile } from "react-device-detect"
 import { Scrollbars } from 'react-custom-scrollbars'
 import modal from '../utils/modal'

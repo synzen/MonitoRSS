@@ -267,8 +267,8 @@ class Message extends Component {
           if (!populatedEmbed) populatedEmbed = true
           fieldElements.push(
             <EmbedField key={`field${i}`} inline={field.inline}>
-              <EmbedFieldTitle>{field.title}</EmbedFieldTitle>
-              <EmbedFieldValue>{field.value}</EmbedFieldValue>
+              <EmbedFieldTitle>{parser.parseEmbedTitle(this.convertKeywords(field.title))}</EmbedFieldTitle>
+              <EmbedFieldValue>{parser.parseAllowLinks(this.convertKeywords(field.value))}</EmbedFieldValue>
             </EmbedField>
           )
         }

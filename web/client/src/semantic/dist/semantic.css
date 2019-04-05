@@ -14250,15 +14250,15 @@ img.ui.bordered.image {
 /* browsers require these rules separate */
 
 .ui.input > input::-webkit-input-placeholder {
-  color: #aaa;
+  color: #848484;
 }
 
 .ui.input > input::-moz-placeholder {
-  color: #aaa;
+  color: #848484;
 }
 
 .ui.input > input:-ms-input-placeholder {
-  color: #aaa;
+  color: #848484;
 }
 
 /*******************************
@@ -14343,17 +14343,17 @@ img.ui.bordered.image {
 
 .ui.input.focus > input::-webkit-input-placeholder,
 .ui.input > input:focus::-webkit-input-placeholder {
-  color: #848484;
+  color: #6a6a6a;
 }
 
 .ui.input.focus > input::-moz-placeholder,
 .ui.input > input:focus::-moz-placeholder {
-  color: #848484;
+  color: #6a6a6a;
 }
 
 .ui.input.focus > input:-ms-input-placeholder,
 .ui.input > input:focus:-ms-input-placeholder {
-  color: #848484;
+  color: #6a6a6a;
 }
 
 /*--------------------

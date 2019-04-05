@@ -2,8 +2,8 @@
 @inputColor: white;
 @focusColor: white;
 @focusBorderColor: #7289DA;
-@placeholderColor: #aaa;
-@placeholderFocusColor: darken(#aaa, 15%);
+@placeholderColor: darken(#aaa, 15%);
+@placeholderFocusColor: darken(#aaa, 25%);
 
 @errorBackground: #303339;
 @errorBorder: rgba(240,71,71,.3);

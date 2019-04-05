@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import colors from '../../../../constants/colors'
 import styled from 'styled-components'
 import { changePage, setActiveGuild } from '../../../../actions/index-actions'
-import { Divider, Button, Popup, Rating } from 'semantic-ui-react'
+import { Divider, Button, Popup } from 'semantic-ui-react'
 import DiscordAvatar from '../../../utils/DiscordAvatar'
 import { connect } from 'react-redux'
 import PropTypes from 'prop-types'
@@ -42,58 +42,6 @@ const Container = styled.div`
     padding: 55px;
   }
   width: 100%;
-`
-
-const ServerIconsWrapper = styled.span`
-  > div {
-    outline: none;
-    cursor: pointer;
-    margin-right: 1em;
-    margin-bottom: 1em;
-    transition: transform 0.25s, opacity 0.25s;
-    opacity: 0.5;
-    -webkit-tap-highlight-color: transparent;
-    &:hover {
-      transform: scale(1.1);
-      opacity: 1;
-    }
-    &:active {
-      transform: scale(1.2);
-    }
-    &:last-child {
-      margin-right: 0;
-    }
-  }
-`
-
-const SelectedGuildContainer = styled.div`
-  align-items: center;
-  color: ${colors.discord.text};
-  border-radius: 5px;
-  background-color: rgba(32, 34, 37, 0.4);
-  border-color: #202225;
-  border-style: solid;
-  border-width: 1px;
-  padding: 20px;
-  width: 100%;
-  margin-bottom: 1.5em;
-  h4 {
-    color: rgba(220,221,222,0.3);
-    font-size: 13px;
-    font-weight: bold;
-    margin-bottom: 0;
-  }
-  p {
-    word-break: break-all;
-  }
-`
-
-const ParagraphText = styled.p`
-  color: hsla(0,0%,100%,0.5);
-  font-size: 16px;
-  font-weight: 500;
-  line-height: 24px;
-  margin: 18px 0;
 `
 
 const ServerButtonInner = styled.div`

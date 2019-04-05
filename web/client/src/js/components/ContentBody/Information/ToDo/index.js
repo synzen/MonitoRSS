@@ -5,7 +5,7 @@ import { changePage } from '../../../../actions/index-actions'
 import PageHeader from '../../../utils/PageHeader'
 import SectionSubtitle from '../../../utils/SectionSubtitle'
 import pages from '../../../../constants/pages'
-import { Icon, Divider, Button } from 'semantic-ui-react'
+import { Icon, Divider } from 'semantic-ui-react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components'
 
