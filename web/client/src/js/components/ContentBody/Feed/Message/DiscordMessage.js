@@ -137,7 +137,7 @@ const Description = styled.div`
 const Image = styled.a`
   display: block;
   margin-top: 8px;
-  img { 
+  img {
     max-width: 400px;
   }
 `

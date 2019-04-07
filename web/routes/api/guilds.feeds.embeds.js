@@ -14,6 +14,8 @@ const VALID_EMBED_KEYS_LENGTHS = {
   author_icon_url: -1,
   authorName: 256,
   author_name: 256,
+  authorUrl: -1,
+  author_url: -1,
   thumbnailUrl: -1,
   thumbnail_url: -1,
   imageUrl: -1,

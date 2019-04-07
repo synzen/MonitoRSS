@@ -12,6 +12,8 @@ export default {
   authorIconUrl: 'author_icon_url',
   authorNameCamelCase: 'authorName',
   authorName: 'author_name',
+  authorUrlCamelCase: 'authorUrl',
+  authorUrl: 'author_url',
   thumbnailUrlCamelCase: 'thumbnailUrl',
   thumbnailUrl: 'thumbnail_url',
   imageUrlCamelCase: 'imageUrl',

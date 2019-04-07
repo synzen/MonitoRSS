@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import colors from '../../../../constants/colors'
 import styled from 'styled-components'
 import { changePage, setActiveGuild } from '../../../../actions/index-actions'
-import { Divider, Button, Popup } from 'semantic-ui-react'
+import { Divider, Button, Popup, Form } from 'semantic-ui-react'
 import DiscordAvatar from '../../../utils/DiscordAvatar'
 import { connect } from 'react-redux'
 import PropTypes from 'prop-types'
@@ -82,10 +82,12 @@ const ServerButton = styled(MenuButton)`
   : ''};
 `
 
-const FeedbackBottom = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1em;
+const FeedbackForm = styled(Form)`
+  > div:last-child {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1em;
+  }
 `
 
 const NoServers = styled.div`
@@ -220,10 +222,16 @@ class Home extends Component {
         <Rating size='massive' maxRating={5} />
         <Divider /> */}
         <SectionTitle heading='Feedback' subheading='Help make this a better experience for all and provide some feedback! ;) Any and all comments, suggestions, critiques and opinions are welcome. Bug reports are also welcome.' />
-        <TextArea onChange={e => this.setState({ feedbackContent: e.target.value })} value={this.state.feedbackContent} />
-        <FeedbackBottom>
-          <Button content='Submit' disabled={this.state.disabledFeedback || !this.state.feedbackContent.trim() || this.state.saving} loading={this.state.saving} onClick={this.submitFeedback} />
-        </FeedbackBottom>
+
+        <FeedbackForm>
+          <Form.Field>
+            <label>Feedback</label>
+            <textarea onChange={e => this.setState({ feedbackContent: e.target.value })} value={this.state.feedbackContent} />
+          </Form.Field>
+          <Form.Field>
+            <Button content='Submit' type='submit' disabled={this.state.disabledFeedback || !this.state.feedbackContent.trim() || this.state.saving} loading={this.state.saving} onClick={this.submitFeedback} />
+          </Form.Field>
+        </FeedbackForm>
         <Divider />
       </Container>
     )

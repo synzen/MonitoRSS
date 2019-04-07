@@ -6,7 +6,7 @@ import { Button, Divider, Sticky, ButtonGroup } from 'semantic-ui-react'
 import styled from 'styled-components'
 import pages from '../../../../constants/pages'
 import MessageSettings from './MessageSettings'
-import EmbedSettings from './EmbedSettings'
+import EmbedSettings from './EmbedSettings/index'
 import DiscordMessage from './DiscordMessage'
 import SectionTitle from '../../../utils/SectionTitle'
 import PageHeader from '../../../utils/PageHeader'
@@ -222,7 +222,7 @@ class Message extends Component {
                 ? null
                 : messageToDisplay === '' || messageToDisplay.includes('{subscriptions}') ? '' : <span style={{ color: colors.discord.yellow }}> Note that because the placeholder {`{subscriptions}`} is not in your message, feed subscribers will not be mentioned.</span> }
             </span>
-            
+
             } />
           <MessageSettings messageOriginal={this.state.messageOriginal} onUpdate={this.onMessageUpdate} />
           <Divider />
@@ -254,7 +254,7 @@ class Message extends Component {
             <DiscordMessage embeds={this.state.embeds} message={messageToDisplay} />
             <Divider />
           </div> */}
-          
+
 
         </SettingsArea>
 
