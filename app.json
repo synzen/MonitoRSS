@@ -9,8 +9,7 @@
 		"rss",
 		"feed"
 	],
-	"addons": [
-		{
+	"addons": [{
 			"plan": "mongolab:sandbox"
 		},
 		{
@@ -31,14 +30,14 @@
 		},
 		"DRSS_FEEDS_REFRESH_TIME_MINUTES": {
 			"description": "Refresh rate of your RSS feed bot.",
-			"value": "15"
+			"value": "0.5"
 		},
 		"DRSS_FEEDS_DEFAULT_MESSAGE": {
 			"description": "Default message. You can do role pings with <@DISCORD_ROLE_ID>.",
 			"value": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
 		},
 		"DRSS_WEB_REDIRECT_URI": {
-			"description": "Insert the domain name appending /authorize. Example on heroku: APPNAME.herokuapp.com/authorize.",
+			"description": "Insert the domain name appending /authorize. Example on heroku: https://APPNAME.herokuapp.com/authorize. Make sure the exact url is also set set under the application OAuth2 tab under redirects.",
 			"required": false
 		},
 		"DRSS_WEB_CLIENT_ID": {
@@ -50,7 +49,8 @@
 			"required": false
 		},
 		"DRSS_WEB_ENABLED": {
-			"description": "WARNING! if you enable this, make sure that you fill in all of the DRSS_WEB_ and have read the WIKI troughly. Make sure to NOT use worker, but instead always use WEB in the sources tab. Finnally use something to keep your web dyno up like uptimerobot (free online software)."
+			"description": "WARNING! If you enable this, make sure that this value is \"true\" and you fill in all of the DRSS_WEB_ and have read the WIKI thoroughly. Make sure to NOT use worker, but instead always use WEB in the sources tab. Finally use something to keep your web dyno up like uptimerobot (free online software).",
+			"value": "false"
 		}
 	},
 	"formation": {
