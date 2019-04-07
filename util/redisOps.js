@@ -343,7 +343,13 @@ exports.events = {
 
 exports.flushDatabase = async () => {
   if (!storage.redisClient) return
-  // const keys = await promisify(storage.redisClient.keys).bind(storage.redisClient)('drss*')
-  // if (keys && keys.length > 0) return promisify(storage.redisClient.del).bind(storage.redisClient)(keys)
-  return promisify(storage.redisClient.flushdb).bind(storage.redisClient)()
+  const keys = await promisify(storage.redisClient.keys).bind(storage.redisClient)('drss*')
+  const multi = storage.redisClient.multi()
+  if (keys && keys.length > 0) {
+    for (const key of keys) {
+      multi.del(key)
+    }
+    return new Promise((resolve, reject) => multi.exec((err, res) => err ? reject(err) : resolve(res)))
+  }
+  // return promisify(storage.redisClient.flushdb).bind(storage.redisClient)()
 }
