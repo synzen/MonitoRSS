@@ -8,15 +8,18 @@ module.exports = (embeds, article) => {
   for (var e = 0; e < embeds.length; ++e) {
     const richEmbed = new Discord.RichEmbed()
     const objectEmbed = embeds[e]
+
     if (isStr(objectEmbed.title)) {
       const t = article.convertKeywords(objectEmbed.title)
       richEmbed.setTitle(t.length > 256 ? t.slice(0, 250) + '...' : t)
     }
+
     if (isStr(objectEmbed.description)) richEmbed.setDescription(article.convertKeywords(objectEmbed.description))
     if (isStr(objectEmbed.url)) richEmbed.setURL(article.convertKeywords(objectEmbed.url))
-    else richEmbed.setURL(article.link)
+
     if (objectEmbed.color && !isNaN(objectEmbed.color) && objectEmbed.color <= 16777215 && objectEmbed.color > 0) richEmbed.setColor(parseInt(objectEmbed.color, 10))
     else if (isStr(objectEmbed.color) && objectEmbed.color.startsWith('#') && objectEmbed.color.length === 7) richEmbed.setColor(objectEmbed.color)
+
     if (isStr(objectEmbed['footer_text'])) richEmbed.setFooter(article.convertKeywords(objectEmbed['footer_text']), isStr(objectEmbed['footer_icon_url']) ? article.convertKeywords(objectEmbed['footer_icon_url']) : undefined)
     if (isStr(objectEmbed['footerText'])) richEmbed.setFooter(article.convertKeywords(objectEmbed['footerText']), isStr(objectEmbed['footerIconUrl']) ? article.convertKeywords(objectEmbed['footerIconUrl']) : undefined)
 
