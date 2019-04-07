@@ -57,6 +57,8 @@ module.exports = () => {
 }
 
 function start (mongooseConnection = mongoose.connection) {
+  app.set('trust proxy', config.web.trustProxy) // trust first proxy
+
   // Middleware
   app.use(compression())
   app.use(function mongoAndCORS (req, res, next) {
@@ -68,7 +70,6 @@ function start (mongooseConnection = mongoose.connection) {
   app.use(express.json())
 
   // Sessions
-  // app.set('trust proxy', 1) // trust first proxy
   const session = require('express-session')({
     secret: config.web.sessionSecret,
     resave: false,
