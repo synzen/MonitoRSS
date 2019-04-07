@@ -60,6 +60,12 @@ function start (mongooseConnection = mongoose.connection) {
   app.set('trust proxy', config.web.trustProxy) // trust first proxy
 
   // Middleware
+  if (config.web.https.enabled) {
+    app.use(function (req, res, next) {
+      if (!req.secure) res.redirect('https://' + req.headers.host + req.url)
+      else next()
+    })
+  }
   app.use(compression())
   app.use(function mongoAndCORS (req, res, next) {
     // Disallow CORS
