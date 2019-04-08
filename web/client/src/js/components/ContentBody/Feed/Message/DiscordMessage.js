@@ -304,7 +304,7 @@ class Message extends Component {
               </BodyWrapper>
               { properties[embedProperties.imageUrl] || properties[embedProperties.imageUrlCamelCase]
                 ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} target='_blank' >
-                  <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} alt='' />
+                  <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} alt='Embed Image' />
                 </Image>
                 : undefined }
 

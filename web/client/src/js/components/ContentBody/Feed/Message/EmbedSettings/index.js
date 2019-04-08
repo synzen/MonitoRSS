@@ -539,7 +539,7 @@ class EmbedSettings extends React.Component {
           name='Author'
           inputs={[
             { label: 'Text', variable: embedPropertiesNames.authorName, value: valuesToUse[embedPropertiesNames.authorName] },
-            { label: 'Icon URL', variable: embedPropertiesNames.authorIconUrl, value: valuesToUse[embedPropertiesNames.authorName], condition: !!valuesToUse[embedPropertiesNames.authorName] },
+            { label: 'Icon URL', variable: embedPropertiesNames.authorIconUrl, value: valuesToUse[embedPropertiesNames.authorIconUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] },
             { label: 'URL', variable: embedPropertiesNames.authorUrl, value: valuesToUse[embedPropertiesNames.authorUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] }
           ]}
           onUpdate={onUpdate}
