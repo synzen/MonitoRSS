@@ -176,7 +176,7 @@ describe('/guilds', function () {
         await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
         expect(response.statusCode).toEqual(200)
       })
-      describe('as non-owner, not cached as non-manager and is not cached as manager', async function () {
+      describe('as non-owner, not cached as non-manager and is not cached as manager', function () {
         beforeEach(function () {
           redisOps.guilds.getValue.mockResolvedValueOnce(null)
           redisOps.members.isManagerOfGuild.mockResolvedValueOnce(null)
