@@ -79,7 +79,7 @@ const list = {
       fields: 'Customize Fields for the embed.'
     },
     action: 'Embed Message Customization',
-    description: "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
+    description: "Open a menu to customize a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
   },
   rssfilters: {
     initLevel: 1,
