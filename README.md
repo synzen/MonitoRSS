@@ -61,4 +61,4 @@ You can deploy in a simple way to Heroku using the button below.
 
 ### Contributing
 
-[Read the contribution guidelines](https://github.com/synzen/Discord.RSS/blob/dev/CONTRIBUTING.md)
+[Read the contribution guidelines](https://github.com/synzen/Discord.RSS/blob/dev-web/CONTRIBUTING.md)
