@@ -48,7 +48,7 @@ class AddFilter extends Component {
     this.state = {
       addFilterType: 'title',
       addFilterTerm: '',
-      options: [{ text: 'Title', value: 'title' }, { text: 'Description', value: 'description' }, { text: 'Summary', value: 'summary' }, { text: 'Author', value: 'author' }, { text: 'Tag', value: 'tag' }]
+      options: [{ text: 'Title', value: 'title' }, { text: 'Description', value: 'description' }, { text: 'Summary', value: 'summary' }, { text: 'Author', value: 'author' }, { text: 'Tags', value: 'tags' }]
     }
   }
 
