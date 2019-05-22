@@ -8,7 +8,7 @@ function addRole (message, role, links) {
   message.member.addRole(role)
     .then(mem => {
       log.command.info(`Role successfully added to member`, message.guild, role, message.author)
-      message.channel.send(`You now have the role \`${role.name}\`, subscribed to:\n\n**<${links.join('>\n a<')}>**`, { split: true }).catch(err => log.command.warning('subme addrole 1', err))
+      message.channel.send(`You now have the role \`${role.name}\`, subscribed to:\n\n**<${links.join('>\n<')}>**`, { split: true }).catch(err => log.command.warning('subme addrole 1', err))
     })
     .catch(err => {
       message.channel.send(`Error: Unable to add role.` + err.message ? ` (${err.message})` : '', { split: true }).catch(err => log.comamnd.warning('subme addrole 2', err))
