@@ -97,7 +97,7 @@ class Client extends EventEmitter {
     if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
     else if (token instanceof Discord.ShardingManager) return new ClientSharded(token)
     else if (typeof token === 'string') {
-      const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
+      const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 })
       client.login(token)
         .then(tok => this._defineBot(client))
         .catch(err => {
