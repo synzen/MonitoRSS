@@ -3,9 +3,9 @@ const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
 const helpText = guildRss => `Proper usage:
 
-\`${guildRss.prefix || config.bot.prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
-\`${guildRss.prefix || config.bot.prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
-\`${guildRss.prefix || config.bot.prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
+\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
+\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
+\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
 `
 
 async function verifyServer (bot, serverId) {
