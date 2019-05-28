@@ -27,7 +27,8 @@
     "moment-timezone": "^0.5.25",
     "mongoose": "^5.5.11",
     "node-fetch": "^2.6.0",
-    "redis": "^2.8.0"
+    "redis": "^2.8.0",
+    "request": "^2.88.0"
   },
   "repository": {
     "type": "git",
