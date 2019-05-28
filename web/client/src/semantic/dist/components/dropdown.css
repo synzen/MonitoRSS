@@ -1471,6 +1471,10 @@ select.ui.dropdown {
 .ui.search.dropdown > input.search {
   color: #f6f6f7;
 }
+.ui.search.dropdown > input.search::-moz-selection {
+  color: #f6f6f7;
+  background-color: #0078d7;
+}
 .ui.search.dropdown > input.search::selection {
   color: #f6f6f7;
   background-color: #0078d7;

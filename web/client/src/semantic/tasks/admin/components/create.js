@@ -15,163 +15,138 @@
 */
 
 var
-  gulp = require('gulp')
+  gulp            = require('gulp'),
 
-// node dependencies
+  // node dependencies
+  console         = require('better-console'),
+  del             = require('del'),
+  fs              = require('fs'),
+  path            = require('path'),
+  runSequence     = require('run-sequence'),
 
-var console = require('better-console')
+  // admin dependencies
+  concatFileNames = require('gulp-concat-filenames'),
+  debug           = require('gulp-debug'),
+  flatten         = require('gulp-flatten'),
+  git             = require('gulp-git'),
+  jsonEditor      = require('gulp-json-editor'),
+  plumber         = require('gulp-plumber'),
+  rename          = require('gulp-rename'),
+  replace         = require('gulp-replace'),
+  tap             = require('gulp-tap'),
 
-var del = require('del')
+  // config
+  config          = require('../../config/user'),
+  release         = require('../../config/admin/release'),
+  project         = require('../../config/project/release'),
 
-var fs = require('fs')
+  // shorthand
+  version         = project.version,
+  output          = config.paths.output
 
-var path = require('path')
+;
 
-var runSequence = require('run-sequence')
 
-// admin dependencies
-
-var concatFileNames = require('gulp-concat-filenames')
-
-var debug = require('gulp-debug')
-
-var flatten = require('gulp-flatten')
-
-var git = require('gulp-git')
-
-var jsonEditor = require('gulp-json-editor')
-
-var plumber = require('gulp-plumber')
-
-var rename = require('gulp-rename')
-
-var replace = require('gulp-replace')
-
-var tap = require('gulp-tap')
-
-// config
-
-var config = require('../../config/user')
-
-var release = require('../../config/admin/release')
-
-var project = require('../../config/project/release')
-
-// shorthand
-
-var version = project.version
-
-var output = config.paths.output
-
-module.exports = function (callback) {
+module.exports = function(callback) {
   var
-    stream
+    stream,
+    index,
+    tasks = []
+  ;
 
-  var index
+  for(index in release.components) {
 
-  var tasks = []
-
-  for (index in release.components) {
     var
       component = release.components[index]
     ;
 
     // streams... designed to save time and make coding fun...
-    (function (component) {
+    (function(component) {
+
       var
-        outputDirectory = path.join(release.outputRoot, component)
-
-      var isJavascript = fs.existsSync(output.compressed + component + '.js')
-
-      var isCSS = fs.existsSync(output.compressed + component + '.css')
-
-      var capitalizedComponent = component.charAt(0).toUpperCase() + component.slice(1)
-
-      var packageName = release.packageRoot + component
-
-      var repoName = release.componentRepoRoot + capitalizedComponent
-
-      var gitURL = 'https://github.com/' + release.org + '/' + repoName + '.git'
-
-      var repoURL = 'https://github.com/' + release.org + '/' + repoName + '/'
-
-      var concatSettings = {
-        newline: '',
-        root: outputDirectory,
-        prepend: "    '",
-        append: "',"
-      }
-
-      var regExp = {
-        match: {
-          // templated values
-          name: '{component}',
-          titleName: '{Component}',
-          version: '{version}',
-          files: '{files}',
-          // release notes
-          spacedVersions: /(###.*\n)\n+(?=###)/gm,
-          spacedLists: /(^- .*\n)\n+(?=^-)/gm,
-          trim: /^\s+|\s+$/g,
-          unrelatedNotes: new RegExp('^((?!(^.*(' + component + ').*$|###.*)).)*$', 'gmi'),
-          whitespace: /\n\s*\n\s*\n/gm,
-          // npm
-          componentExport: /(.*)\$\.fn\.\w+\s*=\s*function\(([^\)]*)\)\s*{/g,
-          componentReference: '$.fn.' + component,
-          settingsExport: /\$\.fn\.\w+\.settings\s*=/g,
-          settingsReference: /\$\.fn\.\w+\.settings/g,
-          trailingComma: /,(?=[^,]*$)/,
-          jQuery: /jQuery/g
+        outputDirectory      = path.join(release.outputRoot, component),
+        isJavascript         = fs.existsSync(output.compressed + component + '.js'),
+        isCSS                = fs.existsSync(output.compressed + component + '.css'),
+        capitalizedComponent = component.charAt(0).toUpperCase() + component.slice(1),
+        packageName          = release.packageRoot + component,
+        repoName             = release.componentRepoRoot + capitalizedComponent,
+        gitURL               = 'https://github.com/' + release.org + '/' + repoName + '.git',
+        repoURL              = 'https://github.com/' + release.org + '/' + repoName + '/',
+        concatSettings = {
+          newline : '',
+          root    : outputDirectory,
+          prepend : "    '",
+          append  : "',"
         },
-        replace: {
-          // readme
-          name: component,
-          titleName: capitalizedComponent,
-          // release notes
-          spacedVersions: '',
-          spacedLists: '$1',
-          trim: '',
-          unrelatedNotes: '',
-          whitespace: '\n\n',
-          // npm
-          componentExport: 'var _module = module;\n$1module.exports = function($2) {',
-          componentReference: '_module.exports',
-          settingsExport: 'module.exports.settings =',
-          settingsReference: '_module.exports.settings',
-          jQuery: 'require("jquery")'
+        regExp               = {
+          match            : {
+            // templated values
+            name      : '{component}',
+            titleName : '{Component}',
+            version   : '{version}',
+            files     : '{files}',
+            // release notes
+            spacedVersions    : /(###.*\n)\n+(?=###)/gm,
+            spacedLists       : /(^- .*\n)\n+(?=^-)/gm,
+            trim              : /^\s+|\s+$/g,
+            unrelatedNotes    : new RegExp('^((?!(^.*(' + component + ').*$|###.*)).)*$', 'gmi'),
+            whitespace        : /\n\s*\n\s*\n/gm,
+            // npm
+            componentExport   : /(.*)\$\.fn\.\w+\s*=\s*function\(([^\)]*)\)\s*{/g,
+            componentReference: '$.fn.' + component,
+            settingsExport    : /\$\.fn\.\w+\.settings\s*=/g,
+            settingsReference : /\$\.fn\.\w+\.settings/g,
+            trailingComma     : /,(?=[^,]*$)/,
+            jQuery            : /jQuery/g,
+          },
+          replace : {
+            // readme
+            name              : component,
+            titleName         : capitalizedComponent,
+            // release notes
+            spacedVersions    : '',
+            spacedLists       : '$1',
+            trim              : '',
+            unrelatedNotes    : '',
+            whitespace        : '\n\n',
+            // npm
+            componentExport   :  'var _module = module;\n$1module.exports = function($2) {',
+            componentReference:  '_module.exports',
+            settingsExport    :  'module.exports.settings =',
+            settingsReference :  '_module.exports.settings',
+            jQuery            :  'require("jquery")'
+          }
+        },
+        task = {
+          all      : component + ' creating',
+          repo     : component + ' create repo',
+          bower    : component + ' create bower.json',
+          readme   : component + ' create README',
+          npm      : component + ' create NPM Module',
+          notes    : component + ' create release notes',
+          composer : component + ' create composer.json',
+          package  : component + ' create package.json',
+          meteor   : component + ' create meteor package.js',
+        },
+        // paths to includable assets
+        manifest = {
+          assets    : outputDirectory + '/assets/**/' + component + '?(s).*',
+          component : outputDirectory + '/' + component + '+(.js|.css)'
         }
-      }
-
-      var task = {
-        all: component + ' creating',
-        repo: component + ' create repo',
-        bower: component + ' create bower.json',
-        readme: component + ' create README',
-        npm: component + ' create NPM Module',
-        notes: component + ' create release notes',
-        composer: component + ' create composer.json',
-        package: component + ' create package.json',
-        meteor: component + ' create meteor package.js'
-      }
-
-      // paths to includable assets
-
-      var manifest = {
-        assets: outputDirectory + '/assets/**/' + component + '?(s).*',
-        component: outputDirectory + '/' + component + '+(.js|.css)'
-      }
+      ;
 
       // copy dist files into output folder adjusting asset paths
-      gulp.task(task.repo, false, function () {
+      gulp.task(task.repo, false, function() {
         return gulp.src(release.source + component + '.*')
           .pipe(plumber())
           .pipe(flatten())
           .pipe(replace(release.paths.source, release.paths.output))
           .pipe(gulp.dest(outputDirectory))
-      })
+        ;
+      });
 
       // create npm module
-      gulp.task(task.npm, false, function () {
+      gulp.task(task.npm, false, function() {
         return gulp.src(release.source + component + '!(*.min|*.map).js')
           .pipe(plumber())
           .pipe(flatten())
@@ -182,101 +157,108 @@ module.exports = function (callback) {
           .pipe(replace(regExp.match.jQuery, regExp.replace.jQuery))
           .pipe(rename('index.js'))
           .pipe(gulp.dest(outputDirectory))
-      })
+        ;
+      });
 
       // create readme
-      gulp.task(task.readme, false, function () {
+      gulp.task(task.readme, false, function() {
         return gulp.src(release.templates.readme)
           .pipe(plumber())
           .pipe(flatten())
           .pipe(replace(regExp.match.name, regExp.replace.name))
           .pipe(replace(regExp.match.titleName, regExp.replace.titleName))
           .pipe(gulp.dest(outputDirectory))
-      })
+        ;
+      });
 
       // extend bower.json
-      gulp.task(task.bower, false, function () {
+      gulp.task(task.bower, false, function() {
         return gulp.src(release.templates.bower)
           .pipe(plumber())
           .pipe(flatten())
-          .pipe(jsonEditor(function (bower) {
-            bower.name = packageName
-            bower.description = capitalizedComponent + ' - Semantic UI'
-            if (isJavascript) {
-              if (isCSS) {
+          .pipe(jsonEditor(function(bower) {
+            bower.name = packageName;
+            bower.description = capitalizedComponent + ' - Semantic UI';
+            if(isJavascript) {
+              if(isCSS) {
                 bower.main = [
                   component + '.js',
                   component + '.css'
-                ]
-              } else {
+                ];
+              }
+              else {
                 bower.main = [
                   component + '.js'
-                ]
+                ];
               }
               bower.dependencies = {
                 jquery: '>=1.8'
-              }
-            } else {
+              };
+            }
+            else {
               bower.main = [
                 component + '.css'
-              ]
+              ];
             }
-            return bower
+            return bower;
           }))
           .pipe(gulp.dest(outputDirectory))
-      })
+        ;
+      });
 
       // extend package.json
-      gulp.task(task.package, false, function () {
+      gulp.task(task.package, false, function() {
         return gulp.src(release.templates.package)
           .pipe(plumber())
           .pipe(flatten())
-          .pipe(jsonEditor(function (npm) {
-            if (isJavascript) {
+          .pipe(jsonEditor(function(npm) {
+            if(isJavascript) {
               npm.dependencies = {
                 jquery: 'x.x.x'
-              }
-              npm.main = 'index.js'
+              };
+              npm.main = 'index.js';
             }
-            npm.name = packageName
-            if (version) {
-              npm.version = version
+            npm.name = packageName;
+            if(version) {
+              npm.version = version;
             }
-            npm.title = 'Semantic UI - ' + capitalizedComponent
-            npm.description = 'Single component release of ' + component
-            npm.repository = {
-              type: 'git',
-              url: gitURL
-            }
-            return npm
+            npm.title       = 'Semantic UI - ' + capitalizedComponent;
+            npm.description = 'Single component release of ' + component;
+            npm.repository  = {
+              type : 'git',
+              url  : gitURL
+            };
+            return npm;
           }))
           .pipe(gulp.dest(outputDirectory))
-      })
+        ;
+      });
 
       // extend composer.json
-      gulp.task(task.composer, false, function () {
+      gulp.task(task.composer, false, function() {
         return gulp.src(release.templates.composer)
           .pipe(plumber())
           .pipe(flatten())
-          .pipe(jsonEditor(function (composer) {
-            if (isJavascript) {
+          .pipe(jsonEditor(function(composer) {
+            if(isJavascript) {
               composer.dependencies = {
                 jquery: 'x.x.x'
-              }
-              composer.main = component + '.js'
+              };
+              composer.main = component + '.js';
             }
-            composer.name = 'semantic/' + component
-            if (version) {
-              composer.version = version
+            composer.name = 'semantic/' + component;
+            if(version) {
+              composer.version = version;
             }
-            composer.description = 'Single component release of ' + component
-            return composer
+            composer.description = 'Single component release of ' + component;
+            return composer;
           }))
           .pipe(gulp.dest(outputDirectory))
-      })
+        ;
+      });
 
       // create release notes
-      gulp.task(task.notes, false, function () {
+      gulp.task(task.notes, false, function() {
         return gulp.src(release.templates.notes)
           .pipe(plumber())
           .pipe(flatten())
@@ -287,27 +269,28 @@ module.exports = function (callback) {
           .pipe(replace(regExp.match.spacedLists, regExp.replace.spacedLists))
           .pipe(replace(regExp.match.trim, regExp.replace.trim))
           .pipe(gulp.dest(outputDirectory))
-      })
+        ;
+      });
 
       // Creates meteor package.js
-      gulp.task(task.meteor, function () {
+      gulp.task(task.meteor, function() {
         var
           filenames = ''
-
+        ;
         return gulp.src(manifest.component)
           .pipe(concatFileNames('empty.txt', concatSettings))
-          .pipe(tap(function (file) {
-            filenames += file.contents
+          .pipe(tap(function(file) {
+            filenames += file.contents;
           }))
-          .on('end', function () {
+          .on('end', function() {
             gulp.src(manifest.assets)
               .pipe(concatFileNames('empty.txt', concatSettings))
-              .pipe(tap(function (file) {
-                filenames += file.contents
+              .pipe(tap(function(file) {
+                filenames += file.contents;
               }))
-              .on('end', function () {
+              .on('end', function() {
                 // remove trailing slash
-                filenames = filenames.replace(regExp.match.trailingComma, '').trim()
+                filenames = filenames.replace(regExp.match.trailingComma, '').trim();
                 gulp.src(release.templates.meteor.component)
                   .pipe(plumber())
                   .pipe(flatten())
@@ -317,12 +300,16 @@ module.exports = function (callback) {
                   .pipe(replace(regExp.match.files, filenames))
                   .pipe(rename(release.files.meteor))
                   .pipe(gulp.dest(outputDirectory))
+                ;
               })
+            ;
           })
-      })
+        ;
+      });
+
 
       // synchronous tasks in orchestrator? I think not
-      gulp.task(task.all, false, function (callback) {
+      gulp.task(task.all, false, function(callback) {
         runSequence([
           task.repo,
           task.npm,
@@ -332,12 +319,13 @@ module.exports = function (callback) {
           task.composer,
           task.notes,
           task.meteor
-        ], callback)
-      })
+        ], callback);
+      });
 
-      tasks.push(task.all)
-    })(component)
+      tasks.push(task.all);
+
+    })(component);
   }
 
-  runSequence(tasks, callback)
-}
+  runSequence(tasks, callback);
+};

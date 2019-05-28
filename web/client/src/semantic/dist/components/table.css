@@ -313,8 +313,8 @@
 }
 .ui.table tr.positive,
 .ui.table td.positive {
-  background: rgba(67, 181, 129, 0.1);
-  color: #c0c0c7;
+  background: rgba(67, 181, 129, 0.1) !important;
+  color: #c0c0c7 !important;
 }
 
 /*--------------
@@ -328,7 +328,7 @@
 }
 .ui.table tr.negative,
 .ui.table td.negative {
-  background: rgba(100, 31, 31, 0.15);
+  background: rgba(100, 31, 31, 0.15) !important;
   color: #c0c0c7 !important;
 }
 
@@ -502,12 +502,12 @@
 
 .ui.selectable.table tbody tr:hover,
 .ui.table tbody tr td.selectable:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.05) !important;
   color: #f6f6f7 !important;
 }
 .ui.selectable.inverted.table tbody tr:hover,
 .ui.inverted.table tbody tr td.selectable:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
 }
 
@@ -543,14 +543,14 @@
 .ui.selectable.table tr.positive:hover,
 .ui.table tr td.selectable.positive:hover,
 .ui.selectable.table tr:hover td.positive {
-  background: rgba(67, 181, 129, 0.2);
-  color: #b8b8c0;
+  background: rgba(67, 181, 129, 0.2) !important;
+  color: #b8b8c0 !important;
 }
 .ui.selectable.table tr.negative:hover,
 .ui.table tr td.selectable.negative:hover,
 .ui.selectable.table tr:hover td.negative {
-  background: rgba(200, 71, 71, 0.25);
-  color: #b8b8c0;
+  background: rgba(200, 71, 71, 0.25) !important;
+  color: #b8b8c0 !important;
 }
 
 /*-------------------

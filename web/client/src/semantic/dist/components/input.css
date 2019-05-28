@@ -516,6 +516,10 @@
   border-width: 1px !important;
   border: rgba(0, 0, 0, 0.3);
 }
+.ui.input > input::-moz-selection {
+  background-color: #0078d7;
+  color: white;
+}
 .ui.input > input::selection {
   background-color: #0078d7;
   color: white;

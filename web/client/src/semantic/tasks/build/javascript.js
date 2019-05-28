@@ -3,72 +3,55 @@
 *******************************/
 
 var
-  gulp = require('gulp')
+  gulp         = require('gulp'),
 
-// node dependencies
+  // node dependencies
+  console      = require('better-console'),
+  fs           = require('fs'),
 
-var console = require('better-console')
+  // gulp dependencies
+  chmod        = require('gulp-chmod'),
+  flatten      = require('gulp-flatten'),
+  gulpif       = require('gulp-if'),
+  plumber      = require('gulp-plumber'),
+  print        = require('gulp-print').default,
+  rename       = require('gulp-rename'),
+  replace      = require('gulp-replace'),
+  uglify       = require('gulp-uglify'),
 
-var fs = require('fs')
+  // config
+  config       = require('../config/user'),
+  tasks        = require('../config/tasks'),
+  install      = require('../config/project/install'),
 
-// gulp dependencies
+  // shorthand
+  globs        = config.globs,
+  assets       = config.paths.assets,
+  output       = config.paths.output,
+  source       = config.paths.source,
 
-var chmod = require('gulp-chmod')
-
-var flatten = require('gulp-flatten')
-
-var gulpif = require('gulp-if')
-
-var plumber = require('gulp-plumber')
-
-var print = require('gulp-print').default
-
-var rename = require('gulp-rename')
-
-var replace = require('gulp-replace')
-
-var uglify = require('gulp-uglify')
-
-// config
-
-var config = require('../config/user')
-
-var tasks = require('../config/tasks')
-
-var install = require('../config/project/install')
-
-// shorthand
-
-var globs = config.globs
-
-var assets = config.paths.assets
-
-var output = config.paths.output
-
-var source = config.paths.source
-
-var banner = tasks.banner
-
-var comments = tasks.regExp.comments
-
-var log = tasks.log
-
-var settings = tasks.settings
+  banner       = tasks.banner,
+  comments     = tasks.regExp.comments,
+  log          = tasks.log,
+  settings     = tasks.settings
+;
 
 // add internal tasks (concat release)
-require('../collections/internal')(gulp)
+require('../collections/internal')(gulp);
 
-module.exports = function (callback) {
+module.exports = function(callback) {
+
   var
     stream,
     compressedStream,
     uncompressedStream
+  ;
 
-  console.info('Building Javascript')
+  console.info('Building Javascript');
 
-  if (!install.isSetup()) {
-    console.error('Cannot build files. Run "gulp install" to set-up Semantic')
-    return
+  if( !install.isSetup() ) {
+    console.error('Cannot build files. Run "gulp install" to set-up Semantic');
+    return;
   }
 
   // copy source javascript
@@ -84,9 +67,11 @@ module.exports = function (callback) {
     .pipe(gulp.dest(output.compressed))
     .pipe(gulpif(config.hasPermission, chmod(config.permission)))
     .pipe(print(log.created))
-    .on('end', function () {
-      gulp.start('package compressed js')
-      gulp.start('package uncompressed js')
-      callback()
+    .on('end', function() {
+      gulp.start('package compressed js');
+      gulp.start('package uncompressed js');
+      callback();
     })
-}
+  ;
+
+};

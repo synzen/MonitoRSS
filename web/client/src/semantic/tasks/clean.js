@@ -3,13 +3,12 @@
 *******************************/
 
 var
-  del = require('del')
-
-var config = require('./config/user')
-
-var tasks = require('./config/tasks')
+  del    = require('del'),
+  config = require('./config/user'),
+  tasks  = require('./config/tasks')
+;
 
 // cleans distribution files
-module.exports = function (callback) {
-  return del([config.paths.clean], tasks.settings.del, callback)
-}
+module.exports = function(callback) {
+  return del([config.paths.clean], tasks.settings.del, callback);
+};

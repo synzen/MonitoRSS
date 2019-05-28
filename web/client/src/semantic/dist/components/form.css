@@ -1077,6 +1077,10 @@
   border-width: 1px !important;
   border: rgba(0, 0, 0, 0.3);
 }
+.ui.form .field input::-moz-selection {
+  background-color: #0078d7;
+  color: white;
+}
 .ui.form .field input::selection {
   background-color: #0078d7;
   color: white;
