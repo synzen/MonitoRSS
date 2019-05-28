@@ -122,6 +122,12 @@ const Author = styled.div`
     border-radius: 50%;
     margin-right: 8px;
   }
+  a {
+    color: white;
+    &:hover {
+      color: white;
+    }
+  }
 `
 
 const Title = styled.a`
@@ -284,7 +290,7 @@ class Message extends Component {
                   { properties[embedProperties.authorName] || properties[embedProperties.authorNameCamelCase]
                     ? <Author>
                       { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconUrlCamelCase] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconUrl] || parsedProperties[embedProperties.authorIconUrlCamelCase]} /> : null }
-                      {parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase]}
+                      { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase]}>{parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase]}</a> : parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase] }
                     </Author>
                     : undefined }
 
@@ -304,7 +310,7 @@ class Message extends Component {
               </BodyWrapper>
               { properties[embedProperties.imageUrl] || properties[embedProperties.imageUrlCamelCase]
                 ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} target='_blank' >
-                  <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} alt='Embed Image' />
+                  <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} alt='Embed MainImage' />
                 </Image>
                 : undefined }
 
