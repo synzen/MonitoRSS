@@ -18,15 +18,15 @@
     "eslint": "eslint --fix ."
   },
   "dependencies": {
-    "cloudscraper": "^3.6.0",
-    "discord.js": "^11.4.2",
+    "cloudscraper": "^4.1.2",
+    "discord.js": "^11.5.0",
     "feedparser": "^2.2.9",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.4.24",
     "moment": "^2.24.0",
-    "moment-timezone": "^0.5.21",
-    "mongoose": "^5.5.0",
-    "node-fetch": "^2.2.0",
+    "moment-timezone": "^0.5.25",
+    "mongoose": "^5.5.11",
+    "node-fetch": "^2.6.0",
     "redis": "^2.8.0"
   },
   "repository": {
@@ -38,11 +38,11 @@
     "npm": "6.x"
   },
   "devDependencies": {
-    "dotenv": "^7.0.0",
+    "dotenv": "^8.0.0",
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.16.0",
-    "eslint-plugin-node": "^8.0.1",
+    "eslint-plugin-import": "^2.17.3",
+    "eslint-plugin-node": "^9.1.0",
     "eslint-plugin-promise": "^4.1.1",
     "eslint-plugin-standard": "^4.0.0"
   }
