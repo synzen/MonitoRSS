@@ -127,12 +127,6 @@ const list = {
     },
     description: "Open a menu similar to `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
   },
-  rsscookies: {
-    initLevel: 1,
-    botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Cookie Customization'
-  },
   rssrefresh: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
