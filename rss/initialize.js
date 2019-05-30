@@ -62,7 +62,7 @@ exports.initializeFeed = async (articleList, link, rssName) => {
 }
 
 exports.addNewFeed = async (settings, customTitle) => {
-  const { channel, cookies } = settings
+  const { channel } = settings
   let link = settings.link
   const feedparser = new FeedParser()
   const articleList = []
@@ -87,7 +87,7 @@ exports.addNewFeed = async (settings, customTitle) => {
   }
 
   try {
-    const stream = await requestStream(link, cookies, feedparser)
+    const stream = await requestStream(link)
     stream.pipe(feedparser)
   } catch (err) {
     if (errored === false) {
@@ -141,7 +141,6 @@ exports.addNewFeed = async (settings, customTitle) => {
             channel: channel.id,
             addedOn: new Date()
           }
-          if (cookies) rssList[rssName].advanced = { cookies: cookies }
         } else {
           guildRss = {
             name: channel.guild.name,
@@ -154,7 +153,6 @@ exports.addNewFeed = async (settings, customTitle) => {
             channel: channel.id,
             addedOn: new Date()
           }
-          if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
         }
         await dbOps.guildRss.update(guildRss) // Must be added to database first for the FeedSchedules to see the feed
         if (storage.scheduleManager) {

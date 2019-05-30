@@ -18,7 +18,7 @@ module.exports = async (bot, message) => {
     linkList.shift()
     linkList = linkList.map(item => item.trim()).filter(item => item).join(' ').split('>')
 
-    const passedAddLinks = {}
+    const passedAddLinks = []
     const failedAddLinks = {}
     const totalLinks = linkList.length
     let limitExceeded = false
@@ -32,7 +32,7 @@ module.exports = async (bot, message) => {
     for (var i = 0; i < linkList.length; ++i) {
       const curLink = linkList[i]
       const linkItem = curLink.split(' ')
-      let link = linkItem[0].trim() // One link may consist of the actual link, and its cookies
+      let link = linkItem[0].trim()
       if (!link.startsWith('http')) {
         failedAddLinks[link] = 'Invalid/improperly-formatted link.'
         continue
@@ -52,57 +52,34 @@ module.exports = async (bot, message) => {
       }
       linkItem.shift()
 
-      let cookieString = linkItem.join(' ')
-      var cookies = (cookieString && cookieString.startsWith('[') && cookieString.endsWith(']')) ? cookieString.slice(1, cookieString.length - 1).split(';').map(item => item.trim()).filter(item => item) : undefined
-      if (cookies) {
-        let cookieObj = {} // Convert cookie array into cookie object with key as key, and value as value
-        for (var c in cookies) {
-          let cookie = cookies[c].split('=')
-          if (cookie.length === 2) cookieObj[cookie[0].trim()] = cookie[1].trim()
-        }
-        cookies = cookieObj
-      }
-      const cookiesFound = !!cookies
-      if (config._vip === true && (!vipUser || !vipUser.allowCookies)) cookies = undefined
-
       try {
-        const [ addedLink ] = await initialize.addNewFeed({ channel: message.channel, cookies, link, vipUser })
+        const [ addedLink ] = await initialize.addNewFeed({ channel: message.channel, link, vipUser })
         if (addedLink) link = addedLink
         channelTracker.remove(message.channel.id)
         log.command.info(`Added ${link}`, message.guild)
         dbOps.failedLinks.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
-        passedAddLinks[link] = cookies
+        passedAddLinks.push(link)
         ++checkedSoFar
       } catch (err) {
         let channelErrMsg = err.message
-        if (cookiesFound && !cookies) channelErrMsg += ' (Cookies were detected, but missing access for usage)'
-        log.command.warning(`Unable to add ${link}.${cookiesFound && !cookies ? ' (Cookies found, access denied)' : ''}`, message.guild, err)
+        log.command.warning(`Unable to add ${link}`, message.guild, err)
         failedAddLinks[link] = channelErrMsg
       }
     }
     // End loop over links
 
     let msg = ''
-    if (Object.keys(passedAddLinks).length > 0) {
+    if (passedAddLinks.length > 0) {
       let successBox = 'The following feed(s) have been successfully added to **this channel**:\n```\n'
-      for (var passedLink in passedAddLinks) {
-        successBox += `\n${passedLink}`
-        if (passedAddLinks[passedLink]) { // passedAddLinks[passedLink] is the cookie object
-          let cookieList = ''
-          for (var cookieKey in passedAddLinks[passedLink]) cookieList += `\n${cookieKey} = ${passedAddLinks[passedLink][cookieKey]}`
-          successBox += `\nCookies:${cookieList}`
-        }
-      }
+      for (const passedLink of passedAddLinks) successBox += `\n${passedLink}`
       msg += successBox + '\n```\n'
     }
     if (Object.keys(failedAddLinks).length > 0) {
       let failBox = `\n${limitExceeded ? `Feed(s) not listed here could not be added due to the feed limit (${maxFeedsAllowed}). ` : ''}The following feed(s) could not be added:\n\`\`\`\n`
-      for (var failedLink in failedAddLinks) {
-        failBox += `\n\n${failedLink}\nReason: ${failedAddLinks[failedLink]}`
-      }
+      for (const failedLink in failedAddLinks) failBox += `\n\n${failedLink}\nReason: ${failedAddLinks[failedLink]}`
       msg += failBox + '\n```\n'
     } else if (limitExceeded) msg += `Some feed(s) could not be added due to to the feed limit (${maxFeedsAllowed}).`
-    if (Object.keys(passedAddLinks).length > 0) msg += `Articles will be automatically delivered once new articles are found. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`
+    if (passedAddLinks.length > 0) msg += `Articles will be automatically delivered once new articles are found. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`
 
     channelTracker.remove(message.channel.id)
     await verifyMsg.edit(msg)

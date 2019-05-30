@@ -24,7 +24,6 @@ class FeedSchedule extends EventEmitter {
     this.keywords = schedule.keywords
     this.rssNames = schedule.rssNames
     this.refreshTime = schedule.refreshTimeMinutes
-    this._cookieServers = storage.cookieServers
     this._processorList = []
     this._regBatchList = []
     this._modBatchList = [] // Batch of sources with cookies
@@ -41,12 +40,6 @@ class FeedSchedule extends EventEmitter {
     this.vipServers = []
     this.vipServerLimits = {}
     this.allowWebhooks = {}
-  }
-
-  _verifyCookieUse (id, advanced) {
-    if (this._cookieServers.includes(id)) return true
-    delete advanced.cookies
-    return false
   }
 
   _delegateFeed (guildRss, rssName) {
@@ -70,7 +63,7 @@ class FeedSchedule extends EventEmitter {
       delete source.webhook
     }
 
-    if (source.advanced && Object.keys(source.advanced).length > 0 && this._verifyCookieUse(guildRss.id, source.advanced)) { // Special source list for feeds with unique settings defined
+    if (source.advanced && Object.keys(source.advanced).length > 0) { // Special source list for feeds with unique settings defined
       let linkList = {}
       linkList[rssName] = source
       this._modSourceList.set(source.link, linkList)
@@ -192,7 +185,6 @@ class FeedSchedule extends EventEmitter {
       this.failedLinks[item.link] = item.failed || item.count
     })
     const guildRssList = await dbOps.guildRss.getAll()
-    this._cookieServers = storage.cookieServers
     this._startTime = new Date()
     this._regBatchList = []
     this._modBatchList = []
