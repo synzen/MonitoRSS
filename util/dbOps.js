@@ -407,7 +407,15 @@ exports.vips = {
     return new Promise((resolve, reject) => {
       for (var q in vipUsers) {
         const vipUser = vipUsers[q]
-        models.VIP().updateOne({ id: vipUser.id }, { $set: vipUser }, UPDATE_SETTINGS).exec()
+        const unsets = { }
+        for (const field in vipUser) {
+          if (vipUser[field] === null || vipUser[field] === undefined) {
+            delete vipUser[field]
+            if (!unsets.$unset) unsets.$unset = {}
+            unsets.$unset[field] = 1
+          }
+        }
+        models.VIP().updateOne({ id: vipUser.id }, { $set: vipUser, ...unsets }, UPDATE_SETTINGS).exec()
           .then(() => {
             log.general.success(`Bulk updated VIP ${vipUser.id} (${vipUser.name})`)
             if (++complete === total) return errored ? reject(new Error('Previous errors encountered with vips.updateBulk')) : resolve()
