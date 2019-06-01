@@ -32,6 +32,9 @@ if (process.env.NODE_ENV !== 'test') {
   }))
 }
 
+// Any routes defined past these routes will require authorization
+api.use('/feeds', feedParser.router)
+
 // Make sure the access token isn't expired for every route here, otherwise refresh it
 api.use(async (req, res, next) => {
   if (process.env.VIP_ONLY === 'true' && req.session.identity && req.session.identity.id) {
@@ -63,7 +66,6 @@ api.use('/feedback', feedback)
 api.use('/rating', rating)
 // api.use('/config', config)
 api.use('/users', users.router)
-api.use('/feeds', feedParser.router)
 api.use('/guilds', guilds.router)
 guilds.router.use('/:guildId/feeds', feeds.router)
 guilds.router.use('/:guildId/roles', roles.router)
