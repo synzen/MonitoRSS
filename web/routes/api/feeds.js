@@ -27,7 +27,9 @@ async function getUrl (req, res, next) {
     try {
       [ , , rawArticleList ] = await getArticles(mockGuildRss, 'someName')
     } catch (err) {
-      return res.status(500).json({ code: 500, message: err.message })
+      if (err.message.includes('No articles in feed')) {
+        return res.json(rawArticleList)
+      } else return res.status(500).json({ code: 500, message: err.message })
     }
     const allPlaceholders = []
     for (const article of rawArticleList) {
