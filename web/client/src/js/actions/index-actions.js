@@ -1,7 +1,7 @@
 import React from 'react'
 import { TEST_ACTION, CHANGE_PAGE, SET_ACTIVE_GUILD, SET_ACTIVE_FEED, CHANGE_FILTERS, CLEAR_GUILD, UPDATE_GUILD_AFTER_WEBSOCKET, INIT_STATE, ARTICLES_FETCHING, ARTICLES_ERROR, ARTICLES_FETCHED, UPDATE_LINK_STATUS, UPDATE_GUILD_LIMITS, SHOW_MODAL, HIDE_MODAL, UPDATE_SOURCE_SCHEDULE } from '../constants/action-types.js'
 import axios from 'axios'
-import toast from '../components/utils/toast'
+import toast from '../components/ControlPanel/utils/toast'
 
 async function fetchArticles (guildId, feedId, dispatch) {
   dispatch(articlesFetching())

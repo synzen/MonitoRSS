@@ -3,8 +3,9 @@ import axios from 'axios'
 import { ToastContainer } from 'react-toastify'
 import './js/index'
 import styled from 'styled-components'
-import LeftMenu from './js/components/LeftMenu'
-import ContentBody from './js/components/ContentBody/index'
+import LeftMenu from './js/components/ControlPanel/LeftMenu/index'
+import { Switch, Route, Link, Redirect } from 'react-router-dom'
+import ContentBody from './js/components/ControlPanel/ContentBody/index'
 import { connect } from 'react-redux'
 import colors from './js/constants/colors'
 import 'react-toastify/dist/ReactToastify.min.css'
@@ -14,14 +15,22 @@ import { clearGuild, updateGuildAfterWebsocket, changePage, initState, updateLin
 import openSocket from 'socket.io-client'
 import socketStatus from './js/constants/socketStatus'
 import { Loader, Icon, Button } from 'semantic-ui-react'
-import TopBar from './js/components/TopBar/index'
+import pages from './js/constants/pages'
+import TopBar from './js/components/ControlPanel/TopBar/index'
 import './App.css'
-import DiscordModal from './js/components/utils/DiscordModal';
-import modal from './js/components/utils/modal'
+import DiscordModal from './js/components/ControlPanel/utils/DiscordModal';
+import modal from './js/components/ControlPanel/utils/modal'
+import FeedBrowser from './js/components/FeedBrowser/index'
 
 const socketUrl = `${window.location.protocol}//${window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}`
 console.log(socketUrl)
 const socket = openSocket(socketUrl, { forceNew: false })
+
+const CleanLink = styled(Link)`
+  &:hover {
+    text-decoration: none;
+  }
+`
 
 const MainContainer = styled.div`
   width: 100vw;
@@ -287,56 +296,73 @@ class App extends React.PureComponent {
   }
 
   render () {
-    if (this.state.loggedOut) return (
-      <EmptyBackground>
-        <LoginContainer>
-          <img src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='175em' height='175em' alt='Discord.RSS Logo' />
-          <h1>Discord.RSS</h1>
-          <Button fluid onClick={e => {
-            window.location.href = '/login'
-          }}>Login</Button>
-        </LoginContainer>
-      </EmptyBackground>
-    )
-    if (this.state.errorMessage) return (
-      <EmptyBackground>
-        <div>
-          <Icon name='x' size='massive' color='red' />
-          <h1>Oops!<br/>Something went wrong!</h1>
-          <h3>{this.state.errorMessage || ''}</h3>
-          <Button basic fluid onClick={e => { window.location.href = '/logout' }} color='red'>Logout</Button>
-          </div>
-      </EmptyBackground>
-    )
-    if (!this.state.loaded) return (
-      // <Dimmer.Dimmable blurring dimmed={!this.state.loaded}>
-      <EmptyBackground>
-        <Loader inverted active={!this.state.loaded} size='massive'>Loading</Loader>
-      </EmptyBackground>
-      // </Dimmer.Dimmable>
 
-    )
     return (
-      <div className='App'>
-        <EmptyBackgroundTransparent visible={this.state.socketStatus === socketStatus.DISCONNECTED}>
-          <Icon name='broken chain' size='massive' color='red' />
-          <h1>Disconnected from Server</h1>
-          <h3>My lifeline to the server has been severed! Access will be restored once my connection has been re-established.</h3>
-        </EmptyBackgroundTransparent>
-        <TopBar toggleLeftMenu={() => this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })} socketStatus={this.state.socketStatus} />
-        <MainContainer>
-          <LeftMenu disableMenuButtonToggle={this.state.leftMenu300Width} toggleLeftMenu={() => {
-            this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })
-          }} socketStatus={this.state.socketStatus} expanded={this.state.leftMenuExpanded} />
-          <ContentBody />
-        </MainContainer>
-        <DiscordModal className='helel' onClose={modal.hide} open={this.props.modalOpen} { ...this.props.modal.props }>
-          {this.props.modal.children}
-        </DiscordModal>
-        <ToastContainer
-          position='top-center'
-        />
-      </div>
+      <Switch>
+            
+      <Route path={pages.DASHBOARD} render={props => {
+        if (this.state.loggedOut) return <Redirect to='/' />
+        return (
+          <div className='App'>
+            <EmptyBackgroundTransparent visible={this.state.socketStatus === socketStatus.DISCONNECTED}>
+              <Icon name='broken chain' size='massive' color='red' />
+              <h1>Disconnected from Server</h1>
+              <h3>My lifeline to the server has been severed! Access will be restored once my connection has been re-established.</h3>
+            </EmptyBackgroundTransparent>
+            <TopBar toggleLeftMenu={() => this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })} socketStatus={this.state.socketStatus} />
+            <MainContainer>
+              <LeftMenu disableMenuButtonToggle={this.state.leftMenu300Width} toggleLeftMenu={() => {
+                this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })
+              }} socketStatus={this.state.socketStatus} expanded={this.state.leftMenuExpanded} />
+              <ContentBody />
+            </MainContainer>
+            <DiscordModal className='helel' onClose={modal.hide} open={this.props.modalOpen} { ...this.props.modal.props }>
+              {this.props.modal.children}
+            </DiscordModal>
+            <ToastContainer
+              position='top-center'
+            />
+          </div>
+        )
+      // <ControlPanel socketStatus={this.state.socketStatus} leftMenuExpanded={this.state.leftMenuExpanded} leftMenu300Width={this.state.leftMenu300Width} modalOpen={this.props.modalOpen} modalProps={this.props.modal.props} modal={this.props.modal} />
+      }}/>
+      <Route path={`${pages.FEED_BROWSER}/:url?`} component={FeedBrowser} />
+      <Route render={props => {
+        if (this.state.errorMessage) return (
+          <EmptyBackground>
+            <div>
+              <Icon name='x' size='massive' color='red' />
+              <h1>Oops!<br/>Something went wrong!</h1>
+              <h3>{this.state.errorMessage || ''}</h3>
+              <Button basic fluid onClick={e => { window.location.href = '/logout' }} color='red'>Logout</Button>
+              </div>
+          </EmptyBackground>
+        )
+        if (!this.state.loggedOut && !this.state.loaded) return (
+          // <Dimmer.Dimmable blurring dimmed={!this.state.loaded}>
+          <EmptyBackground>
+            <Loader inverted active={!this.state.loaded} size='massive'>Loading</Loader>
+          </EmptyBackground>
+          // </Dimmer.Dimmable>
+        )
+
+        return (
+          <EmptyBackground>
+            <LoginContainer>
+              <img src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='175em' height='175em' alt='Discord.RSS Logo' />
+              <h1>Discord.RSS</h1>
+              <p style={{ color: colors.discord.yellow }}>Under Construction</p>
+              {this.state.loggedOut
+              ? <Button fluid onClick={e => { window.location.href = '/login' }}>{'Login'}</Button>
+              : <CleanLink to={pages.DASHBOARD} onClick={e => this.props.changePage(pages.DASHBOARD)} ><Button fluid>Control Panel</Button></CleanLink>
+              }
+              <CleanLink to={pages.FEED_BROWSER} onClick={e => this.props.changePage(pages.FEED_BROWSER)}><Button style={{ marginTop: '0.5em' }} fluid>Feed Browser</Button></CleanLink>
+            </LoginContainer>
+          </EmptyBackground>
+        )
+        // <MainPage loggedOut={this.state.loggedOut} errorMessage={this.state.errorMessage} loading={!this.state.loaded}/>
+      }} />
+    </Switch>
     )
   }
 }

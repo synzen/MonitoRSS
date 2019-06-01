@@ -1,13 +1,13 @@
 export default {
-  DASHBOARD: '/',
-  MESSAGE: '/message',
-  FILTERS: '/filters',
-  SUBSCRIPTIONS: '/subscriptions',
-  MISC_OPTIONS: '/miscoptions',
+  DASHBOARD: '/cp',
+  MESSAGE: '/cp/message',
+  FILTERS: '/cp/filters',
+  SUBSCRIPTIONS: '/cp/subscriptions',
+  MISC_OPTIONS: '/cp/miscoptions',
+  FEEDS: '/cp/feeds',
+  SERVER_SETTINGS: '/cp/settings',
   FAQ: '/faq',
   TODO: '/todo',
   SUPPORT: '/support',
-  FEED_BROWSER: '/feed-browser',
-  FEEDS: '/feeds',
-  SERVER_SETTINGS: '/settings'
+  FEED_BROWSER: '/feed-browser'
 }

@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import colors from '../../constants/colors'
+import colors from 'js/constants/colors'
 
 const DiscordTextArea = styled.textarea`
   background-color: rgba(0,0,0,.1);
