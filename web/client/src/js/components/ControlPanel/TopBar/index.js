@@ -107,7 +107,7 @@ class App extends React.PureComponent {
         <div>
           <ExpandButton className='expand-left-menu-btn' icon='list' basic onClick={this.props.toggleLeftMenu} />
           {/* {this.props.hideExpandButton ? null : } */}
-          <RouterLink to='/' onClick={() => this.props.changePage(pages.DASHBOARD)}>
+          <RouterLink to='/'>
             <Logo src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' />
             <Title>Discord.RSS</Title>
           </RouterLink>
