@@ -3,7 +3,8 @@ const commands = require('../util/commands.js').list
 const log = require('../util/logger.js')
 
 module.exports = (bot, message, command) => {
-  let msg = `Arguments for commands are added after the command. For example: \`${config.bot.prefix}rsstest simple\`.\n\n`
+  const webInfo = config.web.enabled && config.web.redirectUri ? ` Be sure to check out your control panel at ${config.web.redirectUri.replace('/authorize', '')} for easy feed management!` : ''
+  let msg = `Arguments for commands are added after the command. For example: \`${config.bot.prefix}rsstest simple\`.${webInfo}\n\n`
   for (var name in commands) {
     const command = commands[name]
     if (!command.description) continue
