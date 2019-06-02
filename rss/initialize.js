@@ -2,6 +2,7 @@ const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const dbOps = require('../util/dbOps.js')
 const config = require('../config.js')
+const packageVersion = JSON.parse(require('fs').readFileSync('./package.json')).version
 const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
@@ -143,6 +144,7 @@ exports.addNewFeed = async (settings, customTitle) => {
           }
         } else {
           guildRss = {
+            version: packageVersion,
             name: channel.guild.name,
             id: channel.guild.id,
             sources: {}

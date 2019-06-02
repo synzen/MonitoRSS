@@ -2,12 +2,17 @@
 
 const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
+const fs = require('fs')
 const missingChannelCount = {}
 const storage = require('./storage.js')
+const files = fs.readdirSync('./updates')
+const semVerSort = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+const currentVersion = JSON.parse(fs.readFileSync('./package.json')).version
+const versions = files.filter(name => /\d{1}\.\d{1}\.\d{1}\.js/.test(name)).sort(semVerSort).map(file => file.replace('.js', '')) // Filter in and sort the versions
+// if (versions.concat(currentVersion).sort(semVerSort)[versions.length] !== currentVersion) throw new Error('Package version found to be lower than update files. Either updates or package.json is outdated')
 
 exports.subscriptions = (bot, guildRss) => {
   const guild = bot.guilds.get(guildRss.id)
-  const subscriptionTypeKeyNames = ['globalSubscriptions', 'filteredSubscriptions']
   const idsToRemove = []
 
   if (guildRss.name !== guild.name) {
@@ -23,15 +28,13 @@ exports.subscriptions = (bot, guildRss) => {
   function updateGuildRss () {
     if (idsToRemove.length === 0) return
     for (const rssName in rssList) {
-      for (const subscriptionType of subscriptionTypeKeyNames) {
-        const reference = rssList[rssName][subscriptionType]
-        if (!reference) continue
-        for (let i = reference.length - 1; i >= 0; --i) {
-          const subscriber = reference[i]
-          if (idsToRemove.includes(subscriber.id)) reference.splice(i, 1)
-        }
-        if (reference.length === 0) delete rssList[rssName][subscriptionType]
+      const subscribers = rssList[rssName].subscribers
+      if (!subscribers) continue
+      for (let i = subscribers.length - 1; i >= 0; --i) {
+        const subscriber = subscribers[i]
+        if (idsToRemove.includes(subscriber.id)) subscribers.splice(i, 1)
       }
+      if (subscribers.length === 0) delete rssList[rssName].subscribers
     }
     dbOps.guildRss.update(guildRss).then(() => log.guild.info(`Updated after checkGuild`, guild)).catch(err => log.general.warning('checkGuild', guild, err))
   }
@@ -41,44 +44,39 @@ exports.subscriptions = (bot, guildRss) => {
   }
 
   for (const rssName in rssList) {
-    subscriptionTypeKeyNames.forEach(subscriptionType => {
-      if (rssList[rssName][subscriptionType]) subscriptionsTotal += rssList[rssName][subscriptionType].length
-    })
+    if (rssList[rssName].subscribers) subscriptionsTotal += rssList[rssName].subscribers.length
   }
 
   for (const rssName in rssList) {
     const source = rssList[rssName]
-    subscriptionTypeKeyNames.forEach(subscriptionType => {
-      const reference = source[subscriptionType]
-      if (!reference) return
-      for (let i = reference.length - 1; i >= 0; --i) {
-        const subscriber = reference[i]
-        const id = subscriber.id
-        const type = subscriber.type
-        if (type === 'user') {
-          bot.fetchUser(id)
-            .then(user => finishSubscriptionCheck())
-            .catch(err => {
-              log.guild.info(`(${id}, ${subscriber.name}) Unable to fetch during checkGuild. Preparing for removal.`, guild, err)
-              idsToRemove.push(id)
-              finishSubscriptionCheck()
-            })
-        } else if (type === 'role') {
-          const retrieved = guild.roles.get(id)
-          if (retrieved) finishSubscriptionCheck()
-          else {
-            log.guild.info(`(${id}, ${subscriber.name}) Nonexistent subscriber ${id} (${type}). Preparing for removal`, guild)
+    const subscribers = source.subscribers
+    if (!subscribers) return
+    for (const subscriber of subscribers) {
+      const id = subscriber.id
+      const type = subscriber.type
+      if (type === 'user') {
+        bot.fetchUser(id)
+          .then(user => finishSubscriptionCheck())
+          .catch(err => {
+            log.guild.info(`(${id}, ${subscriber.name}) Unable to fetch during checkGuild. Preparing for removal.`, guild, err)
             idsToRemove.push(id)
             finishSubscriptionCheck()
-          }
-        } else {
+          })
+      } else if (type === 'role') {
+        const retrieved = guild.roles.get(id)
+        if (retrieved) finishSubscriptionCheck()
+        else {
+          log.guild.info(`(${id}, ${subscriber.name}) Nonexistent subscriber ${id} (${type}). Preparing for removal`, guild)
           idsToRemove.push(id)
-          log.guild.info(`Invalid subscriber type for member shown below. Preparing for removal.`, guild)
-          console.log(subscriber)
           finishSubscriptionCheck()
         }
+      } else {
+        idsToRemove.push(id)
+        log.guild.info(`Invalid subscriber type for member shown below. Preparing for removal.`, guild)
+        console.log(subscriber)
+        finishSubscriptionCheck()
       }
-    })
+    }
   }
 }
 
@@ -149,4 +147,34 @@ exports.config = (bot, guildRss, rssName, logging) => {
     if (logging && source.disabled) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
     return !source.disabled
   }
+}
+
+exports.version = guildRss => {
+  const guildVersion = guildRss.version
+  let changed = false
+  // Anything with no version attached must be below 5.0.0. Run all updates.
+  if (!guildVersion) {
+    for (const version of versions) {
+      const updated = require(`../updates/${version}.js`).updateGuildRss
+      if (updated(guildRss)) changed = true
+    }
+  } else {
+    const versionIndex = versions.indexOf(guildVersion)
+    if (versionIndex !== -1) {
+      // There is an update file found for this version, so run every version past it
+      for (let i = versionIndex + 1; i < versions.length; ++i) {
+        const updated = require(`../updates/${versions[i]}.js`).updateGuildRss
+        if (updated(guildRss)) changed = true
+      }
+    } else {
+      // No update file found for this version, so concat the guild's version with the existing versions, sort it, and run every update past it
+      const withGuildVersion = versions.concat(guildVersion).sort(semVerSort)
+      const indexOfGuildVersion = withGuildVersion.indexOf(guildVersion)
+      for (let i = indexOfGuildVersion + 1; i < withGuildVersion.length; ++i) {
+        const updated = require(`../updates/${withGuildVersion[i]}.js`).updateGuildRss
+        if (updated(guildRss)) changed = true
+      }
+    }
+  }
+  return changed ? dbOps.guildRss.update(guildRss) : null
 }

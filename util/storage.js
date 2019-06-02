@@ -91,7 +91,8 @@ exports.schemas = {
     dateLanguage: String,
     timezone: String,
     vip: Object,
-    prefix: String
+    prefix: String,
+    version: String
   }),
   guildRssBackup: mongoose.Schema({
     id: {
@@ -104,6 +105,7 @@ exports.schemas = {
     dateFormat: String,
     dateLanguage: String,
     timezone: String,
+    version: String,
     date: {
       type: Date,
       default: Date.now

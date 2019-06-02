@@ -44,6 +44,7 @@ module.exports = async (bot, callback, vipApiData) => {
 
   // Remove missing guilds and empty guildRsses, along with other checks
   const guildRssList = await dbOps.guildRss.getAll()
+  const versionCheckPromises = []
   for (var r = 0; r < guildRssList.length; ++r) {
     const guildRss = guildRssList[r]
     const guildId = guildRss.id
@@ -63,6 +64,7 @@ module.exports = async (bot, callback, vipApiData) => {
     if (guildRss.prefix) storage.prefixes[guildId] = guildRss.prefix
     if (dbOps.guildRss.empty(guildRss)) continue
     checkGuild.subscriptions(bot, guildRss)
+    versionCheckPromises.push(checkGuild.version(guildRss))
 
     guildsInfo[guildId] = guildRss
     const rssList = guildRss.sources
@@ -77,25 +79,29 @@ module.exports = async (bot, callback, vipApiData) => {
   const total = bot.guilds.size
 
   // Redis is only for UI use
-  bot.guilds.forEach((guild, guildId) => {
-    redisOps.guilds.recognize(guild).catch(err => {
-      // This will recognize all guild info, members, channels and roles
-      throw err
+  Promise.all(versionCheckPromises).then(() => {
+    bot.guilds.forEach((guild, guildId) => {
+      redisOps.guilds.recognize(guild).catch(err => {
+        // This will recognize all guild info, members, channels and roles
+        throw err
+      })
+      if (guildsInfo[guildId]) {
+        if (++c === total) checkVIPs()
+        return
+      }
+      const id = guildId
+      dbOps.guildRss.restore(guildId, true).then(guildRss => {
+        if (guildRss) log.init.info(`Restored profile for ${guildRss.id}`)
+        if (++c === total) checkVIPs()
+      }).catch(err => {
+        log.init.info(`Unable to restore ${id}`, err)
+        if (++c === total) checkVIPs()
+      })
     })
-
-    if (guildsInfo[guildId]) {
-      if (++c === total) checkVIPs()
-      return
-    }
-    const id = guildId
-    dbOps.guildRss.restore(guildId, true).then(guildRss => {
-      if (guildRss) log.init.info(`Restored profile for ${guildRss.id}`)
-      if (++c === total) checkVIPs()
-    }).catch(err => {
-      log.init.info(`Unable to restore ${id}`, err)
-      if (++c === total) checkVIPs()
-    })
+  }).catch(err => {
+    throw err
   })
+
   if (redisOps.client.exists()) {
     bot.users.forEach(user => {
       redisOps.users.recognize(user).catch(err => {

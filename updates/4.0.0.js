@@ -1,10 +1,10 @@
 // Use this to convert the deprecated old filter references to new ones on any versions past 3.0.0, including dev branch
 
-const fs = require('fs')
-const config = require('../config.js')
-const storage = require('../util/storage.js')
-const mongoose = require('mongoose')
-const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
+// const fs = require('fs')
+// const config = require('../config.js')
+// const storage = require('../util/storage.js')
+// const mongoose = require('mongoose')
+// const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
 const invalidFilterTypes = {
   Title: 'title',
   Description: 'description',
@@ -26,74 +26,74 @@ const invalidSubscriptionProperties = {
   roleName: 'name',
   roleID: 'id'
 }
-if (config.database.uri.startsWith('mongo')) {
-  const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
+// if (config.database.uri.startsWith('mongo')) {
+//   const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
 
-  const buffers = {}
-  if (Object.keys(CON_SETTINGS).length > 0) {
-    for (let x = 0; x < BUFFER_CONFIGS.length; ++x) {
-      const name = BUFFER_CONFIGS[x]
-      if (CON_SETTINGS[name]) buffers[name] = fs.readFileSync(CON_SETTINGS[name])
-    }
-  }
+//   const buffers = {}
+//   if (Object.keys(CON_SETTINGS).length > 0) {
+//     for (let x = 0; x < BUFFER_CONFIGS.length; ++x) {
+//       const name = BUFFER_CONFIGS[x]
+//       if (CON_SETTINGS[name]) buffers[name] = fs.readFileSync(CON_SETTINGS[name])
+//     }
+//   }
 
-  const uri = config.database.uri
+//   const uri = config.database.uri
 
-  console.log(`Connecting to MongoDB database URI ${uri}`)
-  mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, ...CON_SETTINGS, ...buffers })
-  mongoose.set('useCreateIndex', true)
-  const db = mongoose.connection
+//   console.log(`Connecting to MongoDB database URI ${uri}`)
+//   mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, ...CON_SETTINGS, ...buffers })
+//   mongoose.set('useCreateIndex', true)
+//   const db = mongoose.connection
 
-  db.on('error', console.log)
-  db.once('open', () => {
-    // Otherwise drop the "guilds" collection from database for do-over if WIPE_DATABASE is true
-    let c = 0
-    storage.models.GuildRss().find({}).lean().exec((err, docs) => {
-      if (err) throw err
-      docs.forEach(guildRss => {
-        let changed = updateGuildRss(guildRss)
-        if (changed) {
-          storage.models.GuildRss().replaceOne({ _id: guildRss._id }, guildRss, { overwrite: true, upsert: true, strict: true }, (err, res) => {
-            if (err) throw err
-            console.log(`Completed ${guildRss.id} (${++c}/${docs.length}) [UPDATED]`)
-            if (c === docs.length) db.close()
-          })
-        } else {
-          console.log(`Completed ${guildRss.id} (${++c}/${docs.length}) [No Change]`)
-          if (c === docs.length) db.close()
-        }
-      })
-    })
-  })
-} else {
-  const folderPath = config.database.uri
-  fs.readdir(folderPath, (err, files) => {
-    if (err) throw err
-    if (!fs.existsSync(`${folderPath}/backup`)) fs.mkdirSync(`${folderPath}/backup`)
-    let c = 0
-    const fileNames = files.filter(f => /^\d+$/.test(f.replace(/\.json/i, '')))
-    for (const fileName of fileNames) {
-      // Read the file first
-      fs.readFile(`${folderPath}/${fileName}`, { encoding: 'utf8' }, (err, data) => {
-        if (err) throw err
-        const guildRss = JSON.parse(data)
-        // Write it to backup
-        fs.writeFile(`${folderPath}/backup/${fileName}`, JSON.stringify(guildRss, null, 2), err => {
-          if (err) throw err
-          // Now overwrite the old with the new if necessary
-          const changed = updateGuildRss(guildRss)
-          if (!changed) console.log(`Completed ${guildRss.id} (${++c}/${fileNames.length}) [No Change]`)
-          else {
-            fs.writeFile(`${folderPath}/${fileName}`, JSON.stringify(guildRss, null, 2), err => {
-              if (err) throw err
-              console.log(`Completed ${guildRss.id} (${++c}/${fileNames.length}) [UPDATED]`)
-            })
-          }
-        })
-      })
-    }
-  })
-}
+//   db.on('error', console.log)
+//   db.once('open', () => {
+//     // Otherwise drop the "guilds" collection from database for do-over if WIPE_DATABASE is true
+//     let c = 0
+//     storage.models.GuildRss().find({}).lean().exec((err, docs) => {
+//       if (err) throw err
+//       docs.forEach(guildRss => {
+//         let changed = updateGuildRss(guildRss)
+//         if (changed) {
+//           storage.models.GuildRss().replaceOne({ _id: guildRss._id }, guildRss, { overwrite: true, upsert: true, strict: true }, (err, res) => {
+//             if (err) throw err
+//             console.log(`Completed ${guildRss.id} (${++c}/${docs.length}) [UPDATED]`)
+//             if (c === docs.length) db.close()
+//           })
+//         } else {
+//           console.log(`Completed ${guildRss.id} (${++c}/${docs.length}) [No Change]`)
+//           if (c === docs.length) db.close()
+//         }
+//       })
+//     })
+//   })
+// } else {
+//   const folderPath = config.database.uri
+//   fs.readdir(folderPath, (err, files) => {
+//     if (err) throw err
+//     if (!fs.existsSync(`${folderPath}/backup`)) fs.mkdirSync(`${folderPath}/backup`)
+//     let c = 0
+//     const fileNames = files.filter(f => /^\d+$/.test(f.replace(/\.json/i, '')))
+//     for (const fileName of fileNames) {
+//       // Read the file first
+//       fs.readFile(`${folderPath}/${fileName}`, { encoding: 'utf8' }, (err, data) => {
+//         if (err) throw err
+//         const guildRss = JSON.parse(data)
+//         // Write it to backup
+//         fs.writeFile(`${folderPath}/backup/${fileName}`, JSON.stringify(guildRss, null, 2), err => {
+//           if (err) throw err
+//           // Now overwrite the old with the new if necessary
+//           const changed = updateGuildRss(guildRss)
+//           if (!changed) console.log(`Completed ${guildRss.id} (${++c}/${fileNames.length}) [No Change]`)
+//           else {
+//             fs.writeFile(`${folderPath}/${fileName}`, JSON.stringify(guildRss, null, 2), err => {
+//               if (err) throw err
+//               console.log(`Completed ${guildRss.id} (${++c}/${fileNames.length}) [UPDATED]`)
+//             })
+//           }
+//         })
+//       })
+//     }
+//   })
+// }
 
 function updateGuildRss (guildRss) {
   const rssList = guildRss.sources
@@ -231,3 +231,5 @@ function updateGuildRss (guildRss) {
 
   return changed
 }
+
+exports.updateGuildRss = updateGuildRss
