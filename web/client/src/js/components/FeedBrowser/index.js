@@ -20,6 +20,7 @@ import moment from 'moment-timezone'
 import axios from 'axios'
 import querystring from 'query-string'
 import FeedInput from './FeedInput'
+import colors from 'js/constants/colors'
 
 const timezoneGuess = moment.tz(moment.tz.guess()).format('z')
 
@@ -150,6 +151,7 @@ class FeedBrowser extends Component {
     super()
     const parsedQuery = querystring.parse(props.location.search)
     this.state = {
+      error: '',
       inputFocused: false,
       url: props.match.params.url ? decodeURIComponent(props.match.params.url) : '',
       prevUrl: '',
@@ -213,15 +215,16 @@ class FeedBrowser extends Component {
   getArticles = (paramUrl) => {
     const url = paramUrl || this.state.url
     if (!url || this.state.loading) return
-    this.setState({ loading: true })
+    this.setState({ loading: true, error: '' })
     const encodedUrl = encodeURIComponent(url)
     axios.get(`/api/feeds/${encodedUrl}`).then(res => {
       this.fillSearchDropdown(res.data, url, encodedUrl)
       // this.setState({ loading: false, articleList: res.data, prevUrl: url })
     }).catch(err => {
-      this.setState({ loading: false })
       console.log(err.response || err.message)
       const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
+      console.log(errMessage)
+      this.setState({ loading: false, error: errMessage })
       toast.error(<p>Failed to fetch feed<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
     })
   }
@@ -366,7 +369,9 @@ class FeedBrowser extends Component {
               </SortByContainer>
             </ArticlesHeaderContainer>
             </OpacityTransition>
-          { this.state.loading || articleList.length === 0
+          { this.state.error
+            ? <StatusMessage><SectionSubtitleDescription style={{ color: colors.discord.red }} fontSize='20px'>{this.state.error}</SectionSubtitleDescription></StatusMessage>
+            : this.state.loading || articleList.length === 0
             ? this.state.loading
               ? <StatusMessage>
                   <Loader active inverted size='massive' content={<SectionSubtitleDescription fontSize='20px'>Fetching...</SectionSubtitleDescription>}/>
