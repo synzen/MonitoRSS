@@ -7,7 +7,6 @@ const missingChannelCount = {}
 const storage = require('./storage.js')
 const files = fs.readdirSync('./updates')
 const semVerSort = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
-const currentVersion = JSON.parse(fs.readFileSync('./package.json')).version
 const versions = files.filter(name => /\d{1}\.\d{1}\.\d{1}\.js/.test(name)).sort(semVerSort).map(file => file.replace('.js', '')) // Filter in and sort the versions
 // if (versions.concat(currentVersion).sort(semVerSort)[versions.length] !== currentVersion) throw new Error('Package version found to be lower than update files. Either updates or package.json is outdated')
 
