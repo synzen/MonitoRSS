@@ -24,7 +24,7 @@ function overrideConfigs (configOverrides) {
   }
 }
 
-class ClientSharded extends EventEmitter {
+class ClientManager extends EventEmitter {
   constructor (shardingManager, configOverrides) {
     super()
     if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
@@ -57,7 +57,7 @@ class ClientSharded extends EventEmitter {
       await redisOps.flushDatabase()
       if (this.shardingManager.shards.size === 0) this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
     } catch (err) {
-      log.general.error(`ClientSharded db connection`, err)
+      log.general.error(`ClientManager db connection`, err)
     }
   }
 
@@ -196,4 +196,4 @@ class ClientSharded extends EventEmitter {
   }
 }
 
-module.exports = ClientSharded
+module.exports = ClientManager

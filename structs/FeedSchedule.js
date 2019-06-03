@@ -24,6 +24,7 @@ class FeedSchedule extends EventEmitter {
     this.keywords = schedule.keywords
     this.rssNames = schedule.rssNames
     this.refreshTime = schedule.refreshTimeMinutes
+    this._linksResponded = {}
     this._processorList = []
     this._regBatchList = []
     this._modBatchList = [] // Batch of sources with cookies
@@ -134,6 +135,7 @@ class FeedSchedule extends EventEmitter {
         batch = {}
       }
       batch[link] = rssList
+      this._linksResponded[link] = 1
     })
 
     if (Object.keys(batch).length > 0) this._regBatchList.push(batch)
@@ -146,6 +148,8 @@ class FeedSchedule extends EventEmitter {
         batch = {}
       }
       batch[link] = source
+      if (!this._linksResponded[link]) this._linksResponded = 1
+      else ++this._linksResponded[link]
     })
 
     if (Object.keys(batch).length > 0) this._modBatchList.push(batch)
@@ -157,7 +161,17 @@ class FeedSchedule extends EventEmitter {
         log.cycle.warning(`Previous ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
         this.inProgress = false
       } else {
-        log.cycle.warning(`${this.SHARD_ID}Schedule ${this.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time.`)
+        let list = ''
+        let c = 0
+        for (const link in this._linksResponded) {
+          if (this._linksResponded[link] === 0) continue
+          if (this.failedLinks[link] >= FAIL_LIMIT) dbOps.failedLinks.fail(link).catch(err => log.cycle.warning(`Unable to fail failed link ${link}`, err))
+          else dbOps.failedLinks.increment(link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${link}`, err))
+          list += `${link}\n`
+          ++c
+        }
+        log.cycle.warning(`${this.SHARD_ID}Schedule ${this.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
+        console.log(list)
         for (var x in this._processorList) {
           this._processorList[x].kill()
         }
@@ -190,6 +204,7 @@ class FeedSchedule extends EventEmitter {
     this._modBatchList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
+    this._linksResponded = {}
     storage.deletedFeeds.length = 0
 
     this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
@@ -245,6 +260,7 @@ class FeedSchedule extends EventEmitter {
 
         ++this._cycleTotalCount
         ++completedLinks
+        --this._linksResponded[linkCompletion.link]
         if (completedLinks === currentBatchLen) {
           if (batchNumber !== batchList.length - 1) setTimeout(this._getBatch.bind(this), 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && this._modBatchList.length > 0) setTimeout(this._getBatch.bind(this), 200, 0, this._modBatchList, 'modded')
@@ -286,6 +302,7 @@ class FeedSchedule extends EventEmitter {
 
         ++this._cycleTotalCount
         ++completedLinks
+        --this._linksResponded[linkCompletion.link]
         if (completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()

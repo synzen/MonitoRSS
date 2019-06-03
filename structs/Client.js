@@ -11,7 +11,7 @@ const dbOps = require('../util/dbOps.js')
 const redisOps = require('../util/redisOps.js')
 const checkConfig = require('../util/checkConfig.js')
 const connectDb = require('../rss/db/connect.js')
-const ClientSharded = require('./ClientSharded.js')
+const ClientManager = require('./ClientManager.js')
 const EventEmitter = require('events')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const SHARDED_OPTIONS = { respawn: false }
@@ -95,14 +95,14 @@ class Client extends EventEmitter {
   login (token, noChildren) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
     if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
-    else if (token instanceof Discord.ShardingManager) return new ClientSharded(token)
+    else if (token instanceof Discord.ShardingManager) return new ClientManager(token)
     else if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 })
       client.login(token)
         .then(tok => this._defineBot(client))
         .catch(err => {
           if (!noChildren && err.message.includes('too many guilds')) {
-            const shardedClient = new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
+            const shardedClient = new ClientManager(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
             shardedClient.once('finishInit', () => {
               this.emit('finishInit')
             })
