@@ -85,7 +85,10 @@ exports.schemas = {
       unique: true
     },
     name: String,
-    sendAlertsTo: [String],
+    sendAlertsTo: {
+      type: [String],
+      default: undefined
+    },
     sources: Object,
     dateFormat: String,
     dateLanguage: String,
@@ -100,7 +103,10 @@ exports.schemas = {
       unique: true
     },
     name: String,
-    sendAlertsTo: [String],
+    sendAlertsTo: {
+      type: [String],
+      default: undefined
+    },
     sources: Object,
     dateFormat: String,
     dateLanguage: String,
