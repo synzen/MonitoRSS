@@ -9,7 +9,6 @@ import Filters from './Feed/Filters/index'
 import Subscriptions from './Feed/Subscriptions/index'
 // import FAQ from './Information/FAQ/index'
 import Support from './Information/Support/index'
-import ToDo from './Information/ToDo/index'
 import MiscOptions from './Feed/MiscOptions/index'
 import { Switch, Route } from 'react-router-dom'
 import { connect } from 'react-redux'
@@ -61,9 +60,7 @@ class ContentBody extends Component {
             <Route exact path={pages.FILTERS} component={Filters} />
             <Route exact path={pages.SUBSCRIPTIONS} component={Subscriptions} />
             <Route exact path={pages.MISC_OPTIONS} component={MiscOptions} />
-            {/* <Route exact path={pages.FAQ} component={FAQ} /> */}
             <Route exact path={pages.SUPPORT} component={Support} />
-            <Route exact path={pages.TODO} component={ToDo} />
             <Route component={Home} />
           </Switch>
         </Scrollbars>

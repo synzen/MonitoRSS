@@ -257,7 +257,7 @@ class LeftMenu extends Component {
           {/* </RouterLink> */}
           {/* <RouterLink to='/support' onClick={() => this.props.changePage(pages.SUPPORT)}> */}
           <MenuButton to='/' unsupported selected={this.props.page === pages.SUPPORT}>Support</MenuButton>
-          <MenuButton to={pages.TODO} onClick={() => this.menuButtonClick(pages.TODO)} selected={this.props.page === pages.TODO}>To Do List</MenuButton>
+          {/* <MenuButton to={pages.TODO} onClick={() => this.menuButtonClick(pages.TODO)} selected={this.props.page === pages.TODO}>To Do List</MenuButton> */}
           {/* </RouterLink> */}
 
 

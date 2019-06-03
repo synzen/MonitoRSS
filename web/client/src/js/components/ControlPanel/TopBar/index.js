@@ -1,6 +1,5 @@
 import React from 'react'
 import styled from 'styled-components'
-import pages from '../../../constants/pages'
 import { connect } from 'react-redux'
 import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'

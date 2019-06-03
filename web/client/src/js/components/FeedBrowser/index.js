@@ -15,7 +15,6 @@ import { Input, Divider, Popup, Image, Dropdown, Loader, Button } from 'semantic
 import SectionSubtitleDescription from '../utils/SectionSubtitleDescription';
 import articleId from '../ControlPanel/utils/articleId'
 import posed, { PoseGroup } from 'react-pose'
-import toast from '../ControlPanel/utils/toast'
 import moment from 'moment-timezone'
 import axios from 'axios'
 import querystring from 'query-string'
@@ -225,7 +224,7 @@ class FeedBrowser extends Component {
       const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
       console.log(errMessage)
       this.setState({ loading: false, error: errMessage })
-      toast.error(<p>Failed to fetch feed<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
+      // toast.error(<p>Failed to fetch feed<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
     })
   }
 
