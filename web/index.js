@@ -146,7 +146,7 @@ function start (mongooseConnection = mongoose.connection) {
       req.session.auth = accessTokenObject.token
       req.session.identity = await fetchUser.info(req.session.identity ? req.session.identity.id : null, req.session.auth.access_token)
       log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) Logged in`)
-      res.redirect('/')
+      res.redirect('/cp')
     } catch (err) {
       log.web.error(`Failed to authorize Discord`, err)
       res.redirect('/')

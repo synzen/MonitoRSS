@@ -32,6 +32,10 @@ if (process.env.NODE_ENV !== 'test') {
   }))
 }
 
+api.get('/authenticated', async (req, res, next) => {
+  res.json({ authenticated: req.session.identity && req.session.auth })
+})
+
 // Any routes defined past these routes will require authorization
 api.use('/feeds', feedParser.router)
 
