@@ -140,6 +140,7 @@ async function getFeedPlaceholders (req, res, next) {
     if (err.message.includes('No articles')) return res.json([])
     if (err.message.includes('Connection failed')) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
     if (err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
+    if (err.message.includes('connection failure limit')) return res.status(400).json({ code: statusCodes['40005_CONNECTION_FAILURE_LIMIT'], message: err.message })
     next(err)
   }
 }

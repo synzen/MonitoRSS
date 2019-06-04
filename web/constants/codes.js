@@ -34,5 +34,9 @@ module.exports = {
   '40004_NO_ARTICLES_IN_FEED': {
     code: 40004,
     message: 'No Articles In Feed'
+  },
+  '40005_CONNECTION_FAILURE_LIMIT': {
+    code: 40005,
+    message: 'Connection Failure Limit Reached'
   }
 }

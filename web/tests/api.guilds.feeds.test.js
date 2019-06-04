@@ -508,6 +508,15 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(response.statusCode).toEqual(400)
       expect(JSON.parse(response._getData()).message).toEqual(error.message)
     })
+    it('returns 400 if feed reached connection failure limit', async function () {
+      const error = new Error('Reached connection failure limit')
+      getArticles.mockRejectedValueOnce(error)
+      const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
+      const response = httpMocks.createResponse()
+      await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
+      expect(response.statusCode).toEqual(400)
+      expect(JSON.parse(response._getData()).message).toEqual(error.message)
+    })
   })
   describe('DELETE /:feedId', function () {
     afterEach(function () {
