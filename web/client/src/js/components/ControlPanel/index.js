@@ -110,7 +110,7 @@ class ControlPanel extends React.PureComponent {
   socketReconnect = attemptNum => {
     console.log('[WEBSOCKET] Reconnected')
     this.setState({ loaded: false })
-    // this.initialize()
+    this.initialize()
     // for (const guildId in guilds) socket.emit('identify', guildId)
   }
 
