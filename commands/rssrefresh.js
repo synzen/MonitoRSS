@@ -20,7 +20,7 @@ module.exports = async (bot, message, command) => {
       toRefresh.push(source.link)
     }
     if (toRefresh.length === 0) return await message.channel.send('There are no failed feeds to refresh.')
-    const processing = await message.channel.send(`Processing request for refresh...`)
+    const processing = await message.channel.send(`Processing requests for refresh...`)
     let failedReasons = {}
     for (const link of toRefresh) {
       log.command.info(`Attempting to refresh ${link}`, message.guild)
