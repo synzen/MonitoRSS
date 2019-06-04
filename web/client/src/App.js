@@ -8,6 +8,7 @@ import './semantic/dist/semantic.min.css'
 import { Icon, Button } from 'semantic-ui-react'
 import pages from './js/constants/pages'
 import './App.css'
+import 'highlight.js/styles/solarized-dark.css'
 import FeedBrowser from './js/components/FeedBrowser/index'
 import ControlPanel from './js/components/ControlPanel/index'
 

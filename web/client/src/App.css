@@ -182,11 +182,17 @@ pre {
 }
 
 pre code {
-  background: #2f3136;
+  background: #2f3136 !important;
   color: #839496;
   display: block;
   overflow-x: auto;
   padding: .5em;
+}
+
+code {
+  font-family: Menlo, Consolas, Monaco, monospace;
+  font-size: 14px;
+  line-height: 16px
 }
 
 a {
