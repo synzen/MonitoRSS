@@ -55,15 +55,7 @@ const ArticleBox = styled.div`
 `
 
 const PlaceholdersContainerStyles = styled(Wrapper)`
-  ${props => props.small
-    ? `display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;`
-    : ''}
   margin-top: 1em;
-
   scrollbar-width: thin;
   color: ${colors.discord.text};
   resize: vertical;
@@ -85,6 +77,14 @@ const PlaceholdersContainerInner = styled.div`
   padding-bottom: 1em;
   padding-left: 1em;
   padding-right: 1em;
+  height: 100%;
+  ${props => props.small
+    ? `display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;`
+    : ''}
 `
 
 const PlaceholdersContainer = posed(PlaceholdersContainerStyles)({
@@ -218,14 +218,14 @@ class Placeholders extends React.Component {
     }
 
     const disabledDropdown = !!(articlesFetching || !!articlesError)
-
+    const smallPlaceholderContainer = articlesFetching || articlesError || (!articlesFetching && placeholderElements.length === 0)
     return (
       <div>
-        <SectionSubtitle>Article</SectionSubtitle>
+        <SectionSubtitle>Article Selection</SectionSubtitle>
         <ArticleBox>
-          <Dropdown selection fluid options={showArticleByOptions} value={showArticleBy} onChange={(e, data) => this.setState({ showArticleBy: data.value })} disabled={disabledDropdown} loading={articlesFetching} />
+          <Dropdown selection fluid options={showArticleByOptions} value={showArticleBy} onChange={(e, data) => this.setState({ showArticleBy: data.value })} disabled={disabledDropdown} loading={articlesFetching} placeholder={articleDropdownOptions.length === 0 && !articlesFetching ? 'No articles in feed' : 'Show article by...'} />
           <DropdownWithButtons>
-            <Dropdown search selection fluid options={articleDropdownOptions} value={this.state.articleId} onChange={(e, data) => this.setArticleId(data.value)} disabled={disabledDropdown} loading={articlesFetching} />
+            <Dropdown search selection fluid options={articleDropdownOptions} value={this.state.articleId} onChange={(e, data) => this.setArticleId(data.value)} disabled={disabledDropdown} loading={articlesFetching} placeholder={articleDropdownOptions.length === 0 && !articlesFetching ? 'No articles in feed' : 'Select an article'} />
             <ButtonGroup>
               <Button icon='arrow up' onClick={this.onClickPreviousArticle} disabled={this.state.articleId === 0 || articleList.length === 0} />
               <Button icon='arrow down' onClick={this.onClickNextArticle} disabled={this.state.articleId === articleList.length - 1 || articleList.length === 0} />
@@ -235,17 +235,19 @@ class Placeholders extends React.Component {
         <SectionSubtitle>Placeholders</SectionSubtitle>
         
         <Input fluid icon='search' iconPosition='left' placeholder='Placeholder name' onChange={e => this.setState({ searchPlaceholder: e.target.value })} value={this.state.searchPlaceholder} />
-        <PlaceholdersContainer pose={articlesFetching || articlesError ? 'small' : 'big'} small={articlesFetching || articlesError}>
+        <PlaceholdersContainer pose={smallPlaceholderContainer ? 'small' : 'big'}>
         <Scrollbars>
-          <PlaceholdersContainerInner>
+          <PlaceholdersContainerInner small={smallPlaceholderContainer}>
           {articlesFetching
             ? <Loader inverted size='big' active />
             : articlesError
               ? <div>
                 <SectionSubtitleDescription style={{ color: colors.discord.red }}>Failed to Load Articles</SectionSubtitleDescription>
-                <SectionSubtitleDescription>{articlesError || 'Unknwon Error'}</SectionSubtitleDescription>
+                <SectionSubtitleDescription>{articlesError || 'Unknown Error'}</SectionSubtitleDescription>
               </div>
-              : placeholderElements}
+              : placeholderElements.length === 0
+                ? <SectionSubtitleDescription>No articles in feed</SectionSubtitleDescription>
+                : placeholderElements}
               </PlaceholdersContainerInner>
         </Scrollbars>
         </PlaceholdersContainer>

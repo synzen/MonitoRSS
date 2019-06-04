@@ -10,6 +10,7 @@ async function fetchArticles (guildId, feedId, dispatch) {
     const allArticlePlaceholders = res.data
     dispatch(articlesFetched(allArticlePlaceholders))
   } catch (err) {
+    console.log(err.data || err)
     const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
     toast.error(<p>Failed to fetch articles for feed<br /><br />{typeof errMessage === 'object' ? 'Unhandled Error' : errMessage || 'Unknown Error'}</p>)
     dispatch(articlesError(typeof errMessage === 'object' ? 'Unhandled Error' : errMessage || 'Unknown Error'))
