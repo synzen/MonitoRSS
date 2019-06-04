@@ -15,7 +15,7 @@ jest.mock('../util/fetchUser.js')
 jest.mock('../../rss/getArticle.js')
 jest.mock('../../structs/Article.js')
 
-describe('/feeds', function () {
+describe('/api/feeds', function () {
   const userId = '62368028891823362391'
   describe('GET /:url', function () {
     const session = {

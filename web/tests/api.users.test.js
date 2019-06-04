@@ -20,7 +20,7 @@ jest.mock('../util/fetchUser.js')
 jest.mock('../../util/dbOps.js')
 jest.mock('../../util/redisOps.js')
 
-describe('/users', function () {
+describe('/api/users', function () {
   const userId = '53377393422652091224'
   const accessToken = '95740162964886851841'
   // beforeAll(async function (done) {

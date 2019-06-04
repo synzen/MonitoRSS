@@ -8,7 +8,7 @@ const rolesRoute = require('../routes/api/guilds.roles.js')
 
 jest.mock('../../util/redisOps.js')
 
-describe('/guilds/:guildId/roles', function () {
+describe('/api/guilds/:guildId/roles', function () {
   const userId = 'georgie'
   const session = {
     identity: {

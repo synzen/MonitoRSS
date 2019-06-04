@@ -14,7 +14,7 @@ jest.mock('../../util/dbOps.js')
 jest.mock('../../util/redisOps.js')
 jest.mock('moment-timezone')
 
-describe('/guilds', function () {
+describe('/api/guilds', function () {
   const userId = '62368028891823362391'
 
   describe('GET /:guildId', function () {

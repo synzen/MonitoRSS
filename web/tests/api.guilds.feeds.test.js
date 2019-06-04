@@ -18,7 +18,7 @@ jest.mock('../../rss/initialize.js')
 jest.mock('../../rss/getArticle.js')
 jest.mock('../../structs/Article.js')
 
-describe('/guilds/:guildId/feeds', function () {
+describe('/api/guilds/:guildId/feeds', function () {
   const userId = 'georgie'
   const session = {
     identity: {

@@ -120,7 +120,7 @@ function start (mongooseConnection = mongoose.connection) {
 
   // Routes
   app.use(express.static(path.join(__dirname, 'client/build')))
-  app.use('/api', apiRoutes)
+  app.use('/api', apiRoutes.router)
 
   app.get('/login', (req, res) => {
     const authorizationUri = oauth2.authorizationCode.authorizeURL({

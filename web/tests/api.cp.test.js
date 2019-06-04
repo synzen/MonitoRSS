@@ -22,7 +22,7 @@ jest.mock('../../util/redisOps.js')
 jest.mock('../../util/serverLimit.js')
 jest.mock('../util/fetchUser.js')
 
-describe('/cp', function () {
+describe('/api/cp', function () {
   const userId = '62368028891823362391'
   describe('GET /', function () {
     const session = {

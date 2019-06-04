@@ -9,7 +9,7 @@ const channelsRoute = require('../routes/api/guilds.channels.js')
 
 jest.mock('../../util/redisOps.js')
 
-describe('/guilds/:guildId/channels', function () {
+describe('/api/guilds/:guildId/channels', function () {
   const userId = 'georgie'
   const session = {
     identity: {

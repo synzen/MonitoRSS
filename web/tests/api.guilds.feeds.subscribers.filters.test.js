@@ -5,7 +5,7 @@ process.env.DRSS_EXPERIMENTAL_FEATURES = 'true'
 const httpMocks = require('node-mocks-http')
 const subscriberFilters = require('../routes/api/guilds.feeds.subscribers.filters.js')
 
-describe('/guilds/:guildId/feeds', function () {
+describe('/api/guilds/:guildId/feeds', function () {
   const userId = 'georgie'
   const session = {
     identity: {

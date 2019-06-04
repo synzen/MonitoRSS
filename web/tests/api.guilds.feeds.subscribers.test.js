@@ -10,7 +10,7 @@ const dbOps = require('../../util/dbOps.js')
 jest.mock('../../util/redisOps.js')
 jest.mock('../../util/dbOps.js')
 
-describe('/guilds/:guildId/feeds/:feedId/subscribers', function () {
+describe('/api/guilds/:guildId/feeds/:feedId/subscribers', function () {
   const userId = 'georgie'
   const session = {
     identity: {
