@@ -89,7 +89,7 @@ async function postFeed (req, res, next) {
       // log.web.warning(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildId}, ${guildName}) Unable to add feed ${link}`, err)
       if (err.message.includes('exists for this channel')) return res.status(403).json({ code: statusCodes['40003_FEED_EXISTS_IN_CHANNEL'].code, message: err.message })
       if (err.message.includes('Connection failed')) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
-      else if (err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
+      if (err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
       else return next(err)
     }
   } catch (err) {
@@ -137,6 +137,9 @@ async function getFeedPlaceholders (req, res, next) {
     }
     res.json(allPlaceholders)
   } catch (err) {
+    if (err.message.includes('No articles')) return res.json([])
+    if (err.message.includes('Connection failed')) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
+    if (err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
     next(err)
   }
 }

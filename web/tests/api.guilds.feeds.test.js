@@ -466,7 +466,7 @@ describe('/guilds/:guildId/feeds', function () {
       const data = JSON.parse(response._getData())
       expect(data).toEqual(expectedResponse)
     })
-    it('calls next(err) if getArticles failed', async function (done) {
+    it('calls next(err) if getArticles failed with unrecognized error', async function (done) {
       const error = new Error('azsfrwn5fc9 w45t 9834 b')
       getArticles.mockRejectedValueOnce(error)
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
@@ -480,6 +480,33 @@ describe('/guilds/:guildId/feeds', function () {
         }
       })
       expect(response.statusCode).toEqual(200)
+    })
+    it('returns empty array if there are no articles', async function () {
+      const error = new Error('No articles in feed')
+      getArticles.mockRejectedValueOnce(error)
+      const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
+      const response = httpMocks.createResponse()
+      await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
+      expect(response.statusCode).toEqual(200)
+      expect(JSON.parse(response._getData())).toEqual([])
+    })
+    it('returns 500 if connection failed', async function () {
+      const error = new Error('Connection failed')
+      getArticles.mockRejectedValueOnce(error)
+      const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
+      const response = httpMocks.createResponse()
+      await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
+      expect(response.statusCode).toEqual(500)
+      expect(JSON.parse(response._getData()).message).toEqual(error.message)
+    })
+    it('returns 400 if invalid feed', async function () {
+      const error = new Error('Not a valid feed')
+      getArticles.mockRejectedValueOnce(error)
+      const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
+      const response = httpMocks.createResponse()
+      await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
+      expect(response.statusCode).toEqual(400)
+      expect(JSON.parse(response._getData()).message).toEqual(error.message)
     })
   })
   describe('DELETE /:feedId', function () {

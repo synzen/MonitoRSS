@@ -30,5 +30,9 @@ module.exports = {
   '40003_FEED_EXISTS_IN_CHANNEL': {
     code: 40003,
     message: 'Feed Exists In Channel'
+  },
+  '40004_NO_ARTICLES_IN_FEED': {
+    code: 40004,
+    message: 'No Articles In Feed'
   }
 }
