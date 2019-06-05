@@ -33,7 +33,8 @@ module.exports = async (bot, message, command) => {
       const links = []
       if (role || mention) {
         for (const subscriptionData of options) {
-          links.push(subscriptionData.source.link)
+          const roleIds = subscriptionData.roleList
+          if (roleIds.includes(role.id)) links.push(subscriptionData.source.link)
         }
       }
       if (links.length > 0 && (role || mention)) return addRole(message, role || mention, links)
