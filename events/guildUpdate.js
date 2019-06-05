@@ -1,7 +1,9 @@
 const dbOps = require('../util/dbOps.js')
+const redisOps = require('../util/redisOps.js')
 const log = require('../util/logger.js')
 
-module.exports = async (bot, oldGuild, newGuild) => {
+module.exports = async (oldGuild, newGuild) => {
+  redisOps.guilds.update(oldGuild, newGuild).catch(err => log.general.error(`Redis failed to update after guildUpdate event`, newGuild, err))
   try {
     const guildRss = await dbOps.guildRss.get(oldGuild.id)
     if (!guildRss || guildRss.name === newGuild.name) return

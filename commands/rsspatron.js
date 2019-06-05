@@ -3,17 +3,16 @@ const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
 const helpText = guildRss => `Proper usage:
 
-\`${guildRss.prefix || config.bot.prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
-\`${guildRss.prefix || config.bot.prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
-\`${guildRss.prefix || config.bot.prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
+\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
+\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
+\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
 `
 
 async function verifyServer (bot, serverId) {
   if (bot.shard && bot.shard.count > 0) {
     const results = (await bot.shard.broadcastEval(`
       const guild = this.guilds.get('${serverId}')
-      if (guild) { name: guild.name, id: guild.id }
-      else null
+      guild ? { name: guild.name, id: guild.id } : null
     `)).filter(item => item)
 
     if (results.length > 0) return results[0]
@@ -47,7 +46,7 @@ async function switchServerArg (bot, message, args, vipUser, guildRss) {
       let content = `The maximum number of servers you may add your patron backing to is ${vipUser.maxServers ? vipUser.maxServers : 1}. The following guilds are backed by your patron status:\n\n`
       for (const id of myServers) {
         const gotServer = await verifyServer(bot, id)
-        content += gotServer ? `${gotServer.id} (${gotServer.name})\n` : `${gotServer.id} (Unknown)\n`
+        content += gotServer ? `${gotServer.id} (${gotServer.name})\n` : `${id} (Unknown)\n`
       }
 
       await message.channel.send(content)

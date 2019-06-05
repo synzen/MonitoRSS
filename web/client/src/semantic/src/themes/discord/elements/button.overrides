@@ -1,0 +1,70 @@
+.ui.button {
+  margin: 0;
+}
+
+.ui.active.button {
+  cursor: default;
+}
+
+/* Basic */
+
+.ui.basic.buttons .button,
+.ui.basic.button {
+  transition: color .17s ease,background-color .17s ease,border-color .17s ease;
+  box-shadow: none !important;
+  border: 1px solid rgba(114,137,218,.3);
+  color: #7289da !important;
+}
+
+.ui.basic.buttons .button:hover,
+.ui.basic.button:hover {
+  background: none !important;
+  color: #7289da !important;
+  border-color: rgba(114,137,218,.6);
+  box-shadow: none !important;
+}
+
+.ui.basic.buttons .button:focus,
+.ui.basic.button:focus {
+  box-shadow: none !important;
+  background: none !important;
+  color: #7289da !important;
+}
+
+
+.ui.basic.buttons .button:active,
+.ui.basic.button:active {
+  background: rgba(114,137,218,.1) !important;
+  color: #7289da !important;
+  border-color: #7289da;
+  box-shadow: none !important;
+}
+
+/* Red */
+.ui.basic.red.button {
+  color: #f04747;
+  box-shadow: none !important;
+  border: 1px solid rgba(240,71,71,.3);
+  font-weight: 600 !important;
+}
+
+.ui.basic.red.button:hover {
+  box-shadow: none !important;
+  border: 1px solid rgba(240,71,71,.6) !important;
+  color: #f04747 !important;
+}
+
+.ui.basic.red.buttons .button:active,
+.ui.basic.red.button:active {
+  box-shadow: none !important;
+  background-color: rgba(240,71,71,.1) !important;
+  border: 1px solid rgba(240,71,71,.3);
+  color: #f04747 !important;
+}
+
+.ui.basic.red.buttons .button:focus,
+.ui.basic.red.button:focus {
+  box-shadow: none !important;
+  color: #f04747;
+  border: 1px solid rgba(240,71,71,.3);
+}

@@ -1,0 +1,25 @@
+.ui.input > input:hover {
+  border-color: #040405;
+}
+
+.ui.input > input:focus {
+  border-color: #7289DA !important;
+}
+
+.ui.input > input {
+  border-style: solid !important;
+  border-width: 1px !important;
+  border: rgba(0, 0, 0, 0.3);
+    &::selection {
+    background-color: #0078d7;
+    color: white;
+  }
+}
+
+.ui.input.error > input:focus {
+  border-color: rgba(240,71,71,.5) !important;
+}
+
+.ui.input.error > input:hover {
+  border-color: rgba(240,71,71,.4) !important;
+}

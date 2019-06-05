@@ -11,22 +11,10 @@ function getFeed (data, callback) {
   const articleList = []
 
   const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
-  let requested = false
-
-  setTimeout(() => {
-    if (!requested) {
-      try {
-        process.send({ status: 'failed', link: link, rssList: rssList })
-        callback()
-        log.cycle.error(`Unable to complete request for link ${link} during cycle, forcing status update to parent process`)
-      } catch (e) {}
-    }
-  }, 90000)
 
   requestStream(link, cookies, feedparser)
     .then(stream => {
       stream.pipe(feedparser)
-      requested = true
       callback()
     })
     .catch(err => {
@@ -66,7 +54,7 @@ process.on('message', m => {
   const feedData = m.feedData // Only defined if config.database.uri is set to a databaseless folder path
   const scheduleName = m.scheduleName
   const runNum = m.runNum
-  connectDb().then(() => {
+  connectDb(true).then(() => {
     const len = Object.keys(currentBatch).length
     let c = 0
     for (var link in currentBatch) {

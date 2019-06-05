@@ -2,9 +2,11 @@ const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
 const dbOps = require('../util/dbOps.js')
 const config = require('../config.js')
+const packageVersion = JSON.parse(require('fs').readFileSync('./package.json')).version
 const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
+const assignedSchedules = require('../util/assignedSchedules.js')
 
 async function resolveLink (link) {
   try {
@@ -32,16 +34,15 @@ exports.initializeFeed = async (articleList, link, rssName) => {
   if (articleList.length === 0) return
 
   function getArticleId (article) {
-    let equalGuids = articleList.length > 1 // default to true for most feeds
+    let equalGuids = (articleList.length > 1) // default to true for most feeds
     if (equalGuids && articleList[0].guid) {
       articleList.forEach((article, index) => {
         if (index > 0 && article.guid !== articleList[index - 1].guid) equalGuids = false
       })
     }
 
-    // If all articles have the same guids, fall back to title, and if no title, fall back to pubdate
+    if ((!article.guid || equalGuids) && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
     if ((!article.guid || equalGuids) && article.title) return article.title
-    if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
     return article.guid
   }
 
@@ -49,8 +50,7 @@ exports.initializeFeed = async (articleList, link, rssName) => {
   if (!config.database.uri.startsWith('mongo')) return
   try {
     // The schedule must be assigned to the feed first in order to get the correct feed collection ID for the feed model (through storage.schedulesAssigned, third argument of models.Feed)
-    await storage.scheduleManager.assignSchedules()
-    const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, storage.scheduleAssigned[rssName])
+    const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, assignedSchedules.getScheduleName(rssName))
     const docs = await dbCmds.findAll(Feed)
     if (docs.length > 0) return // The collection already exists from a previous addition, no need to initialize
     articleList.forEach(article => {
@@ -63,7 +63,7 @@ exports.initializeFeed = async (articleList, link, rssName) => {
 }
 
 exports.addNewFeed = async (settings, customTitle) => {
-  const { channel, cookies } = settings
+  const { channel } = settings
   let link = settings.link
   const feedparser = new FeedParser()
   const articleList = []
@@ -88,7 +88,7 @@ exports.addNewFeed = async (settings, customTitle) => {
   }
 
   try {
-    const stream = await requestStream(link, cookies, feedparser)
+    const stream = await requestStream(link)
     stream.pipe(feedparser)
   } catch (err) {
     if (errored === false) {
@@ -123,9 +123,9 @@ exports.addNewFeed = async (settings, customTitle) => {
     feedparser.on('end', async () => {
       if (errored) return
       try {
-        const shardId = !storage.bot && process.env.EXPERIMENTAL_FEATURES ? null : storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
+        const shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
         const rssName = `${storage.collectionId(link, shardId)}>${Math.floor((Math.random() * 99999) + 1)}`
-        let metaTitle = customTitle || (articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled'
+        let metaTitle = customTitle || ((articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled')
 
         if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
         else if (articleList[0] && articleList[0].meta.link && articleList[0].meta.link.includes('reddit')) metaTitle = `Reddit - ${articleList[0].meta.title}`
@@ -142,9 +142,9 @@ exports.addNewFeed = async (settings, customTitle) => {
             channel: channel.id,
             addedOn: new Date()
           }
-          if (cookies) rssList[rssName].advanced = { cookies: cookies }
         } else {
           guildRss = {
+            version: packageVersion,
             name: channel.guild.name,
             id: channel.guild.id,
             sources: {}
@@ -155,13 +155,19 @@ exports.addNewFeed = async (settings, customTitle) => {
             channel: channel.id,
             addedOn: new Date()
           }
-          if (cookies) guildRss.sources[rssName].advanced = { cookies: cookies }
         }
-
-        const result = await dbOps.guildRss.update(guildRss)
+        await dbOps.guildRss.update(guildRss) // Must be added to database first for the FeedSchedules to see the feed
+        if (storage.scheduleManager) {
+          await storage.scheduleManager.assignScheduleToSource(guildRss, rssName)
+          const scheduleName = assignedSchedules.getScheduleName(rssName)
+          await dbOps.linkTracker.increment(link, scheduleName)
+          guildRss.sources[rssName].lastRefreshRateMin = storage.scheduleManager.getSchedule(scheduleName).refreshTime
+          await dbOps.guildRss.update(guildRss)
+        }
         // The user doesn't need to wait for the initializeFeed
-        if (!storage.bot && process.env.EXPERIMENTAL_FEATURES) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
-        resolve([ link, metaTitle, rssName, result ])
+
+        if (storage.bot) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
+        resolve([ link, metaTitle, rssName ])
       } catch (err) {
         reject(err)
       }

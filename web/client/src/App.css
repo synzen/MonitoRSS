@@ -1,0 +1,205 @@
+@font-face {
+  font-family: Whitney;
+  font-style: light;
+  font-weight: 300;
+  src: url(https://discordapp.com/assets/6c6374bad0b0b6d204d8d6dc4a18d820.woff) format('woff');
+}
+
+@font-face {
+  font-family: Whitney;
+  font-style: normal;
+  font-weight: 500;
+  src: url(https://discordapp.com/assets/e8acd7d9bf6207f99350ca9f9e23b168.woff) format('woff');
+}
+
+@font-face {
+  font-family: Whitney;
+  font-style: medium;
+  font-weight: 600;
+  src: url(https://discordapp.com/assets/3bdef1251a424500c1b3a78dea9b7e57.woff) format('woff');
+}
+
+@font-face {
+  font-family: WhitneyMedium;
+  font-style: medium;
+  font-weight: 600;
+  src: url(https://discordapp.com/assets/be0060dafb7a0e31d2a1ca17c0708636.woff) format('woff');
+}
+
+@font-face {
+  font-family: Whitney;
+  font-style: bold;
+  font-weight: 700;
+  src: url(https://discordapp.com/assets/8e12fb4f14d9c4592eb8ec9f22337b04.woff) format('woff');
+}
+
+@keyframes bounceIn {
+  from,
+  50%,
+  to {
+    animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+
+  0% {
+    opacity: 0;
+    transform: scale3d(0.3, 0.3, 0.3);
+  }
+
+  50% {
+    transform: scale3d(1.1, 1.1, 1.1);
+  }
+
+  100% {
+    transform: scale3d(1, 1, 1);
+  }
+
+  to {
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes minimizeOut {
+  to {
+    opacity: 0;
+    transform: scale3d(0.75, 0.75, 0.75);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bounceIn {
+  animation-duration: 0.5s;
+  animation-name: bounceIn;
+}
+
+.minimizeOut {
+  animation-duration: 0.5s;
+  animation-name: minimizeOut;
+}
+
+.fadeIn {
+  animation-duration: 0.5s;
+  animation-name: fadeIn;
+}
+
+.fadeOut {
+  animation-duration: 0.5s;
+  animation-name: fadeIn;
+  animation-direction: reverse;
+}
+
+
+
+.discord-alert-success {
+  background-color: #7289DA !important;
+  border-radius: 5px !important;
+  z-index: 20000;
+}
+
+.discord-alert-error {
+  background-color: #f04747 !important;
+  border-radius: 5px !important;
+  z-index: 20000;
+}
+
+button, input, optgroup, select, textarea {
+  font-family: Whitney, sans-serif !important;
+  font-weight: 500 !important;
+}
+
+body {
+  font-family: Whitney, sans-serif !important;
+  color: #b9bbbe;
+  background-color: #282b30;
+}
+
+h1 {
+  font-family: Whitney, sans-serif !important;
+  color: white;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 34px;
+}
+
+h2 {
+  font-family: Whitney, sans-serif !important;
+  color: white;
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  line-height: 32px;
+}
+
+h4 {
+  font-family: Whitney, sans-serif !important;
+  font-size: 16px;
+  margin-top: 20px;
+  margin-bottom: 4px;
+  line-height: 24px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+/* p {
+  color: hsla(0,0%,100%,0.5);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  margin: 18px;
+} */
+
+/* For discord previews */
+
+.emoji {
+  -o-object-fit: contain;
+  object-fit: contain;
+  width: 22px;
+  height: 22px;
+  margin: 0 .05em 0 .1em!important;
+  vertical-align: -.4em
+}
+
+.emoji.jumboable {
+  width: 32px;
+  height: 32px
+}
+
+pre {
+  background: #2f3136;
+  border-color: rgba(32,34,37,.3);
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 5px;
+  margin-top: 6px;
+  white-space: pre-wrap;
+  font-family: Consolas,Liberation Mono,Menlo,Courier,monospace;
+  box-sizing: border-box;
+  font-size: 0.75rem;
+  max-width: 90%;
+}
+
+pre code {
+  background: #2f3136 !important;
+  color: #839496;
+  display: block;
+  overflow-x: auto;
+  padding: .5em;
+}
+
+code {
+  font-family: Menlo, Consolas, Monaco, monospace;
+  font-size: 14px;
+  line-height: 16px
+}
+
+a {
+  color: #0096cf;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #0096cf;
+}

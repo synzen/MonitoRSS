@@ -17,23 +17,22 @@ async function printSubscriptions (message, rssList) {
 
   for (const rssName in rssList) {
     const source = rssList[rssName]
-    const subscriptionTypes = [ source.globalSubscriptions, source.filteredSubscriptions ]
-    for (let i = 0; i < subscriptionTypes.length; ++i) {
-      const reference = subscriptionTypes[i] // Both references are arrays of objects
-      if (!reference) continue
-      for (const subscriber of reference) {
-        const id = subscriber.id
-        const type = subscriber.type
-        if (!subList[source.title]) subList[source.title] = {}
-        const embedReferenceTitle = i === 0 ? 'globalSubs' : 'filteredSubs'
-        if (!subList[source.title][embedReferenceTitle]) subList[source.title][embedReferenceTitle] = []
-        if (type === 'user') {
-          const resolvedUser = guild.members.get(id)
-          if (resolvedUser) subList[source.title][embedReferenceTitle].push(`${resolvedUser.user.username}#${resolvedUser.user.discriminator}`)
-        } else if (type === 'role') {
-          const resolvedRole = guild.roles.get(id)
-          if (resolvedRole) subList[source.title][embedReferenceTitle].push(`${resolvedRole.name}`)
-        }
+    const subscribers = source.subscribers
+    if (!subscribers) continue
+    for (const subscriber of subscribers) {
+      const id = subscriber.id
+      const type = subscriber.type
+      if (!subList[source.title]) subList[source.title] = {}
+      const embedReferenceTitle = !subscriber.filters || Object.keys(subscriber.filters).length === 0 ? 'globalSubs' : 'filteredSubs'
+      if (!subList[source.title][embedReferenceTitle]) subList[source.title][embedReferenceTitle] = []
+      if (type === 'user') {
+        const resolvedUser = guild.members.get(id)
+        const toInsert = resolvedUser ? `${resolvedUser.user.username}#${resolvedUser.user.discriminator}` : ''
+        if (resolvedUser && !subList[source.title][embedReferenceTitle].includes(toInsert)) subList[source.title][embedReferenceTitle].push(toInsert)
+      } else if (type === 'role') {
+        const resolvedRole = guild.roles.get(id)
+        const toInsert = resolvedRole ? resolvedRole.name : ''
+        if (resolvedRole && !subList[source.title][embedReferenceTitle].includes(toInsert)) subList[source.title][embedReferenceTitle].push(toInsert)
       }
     }
   }
@@ -42,19 +41,35 @@ async function printSubscriptions (message, rssList) {
   else {
     for (const feed in subList) {
       let list = ''
-
-      let globalSubList = '**Global Subscriptions:**\n'
+      let globalSubs = []
       for (let globalSubber in subList[feed].globalSubs) {
-        globalSubList += `${subList[feed].globalSubs[globalSubber]}\n`
+        globalSubs.push(subList[feed].globalSubs[globalSubber])
       }
-      if (globalSubList !== '**Global Subscriptions:**\n') list += globalSubList
+      globalSubs.sort()
+      if (globalSubs.length > 0) list += '**Global Subscribers:**\n' + globalSubs.join('\n')
 
-      let filteredSubList = '\n**Filtered Subscriptions:**\n'
+      const filteredSubs = []
       for (let filteredSubber in subList[feed].filteredSubs) {
-        filteredSubList += `${subList[feed].filteredSubs[filteredSubber]}\n`
+        filteredSubs.push(subList[feed].filteredSubs[filteredSubber])
       }
-      if (filteredSubList !== '\n**Filtered Subscriptions:**\n') list += filteredSubList
-      if (list) msg.addField(feed, list, true)
+      filteredSubs.sort()
+      if (filteredSubs.length > 0) list += (globalSubs.length > 0 ? '\n' : '') + '**Filtered Subscribers:**\n' + filteredSubs.join('\n')
+      if (!list) continue
+      if (list.length <= 1024) msg.addField(feed, list)
+      else {
+        const lines = list.split('\n')
+        let curStr = ''
+        for (let i = 0; i < lines.length; ++i) {
+          const line = lines[i]
+          if (curStr.length + line.length <= 1000) {
+            curStr += line + '\n'
+          } else {
+            msg.addField(feed, curStr)
+            curStr = line
+          }
+        }
+        if (curStr.length > 0) msg.addField(feed, curStr)
+      }
     }
     await message.channel.send({ embed: msg })
   }
@@ -69,59 +84,54 @@ async function deleteSubscription (message, guildRss, role, user) {
 
   for (const rssName in rssList) {
     const source = rssList[rssName]
-    const subscriptionTypes = [ source.globalSubscriptions, source.filteredSubscriptions ]
-    for (let i = 0; i < subscriptionTypes.length; ++i) {
-      const reference = subscriptionTypes[i] // Both references are arrays of objects
-      if (!reference) continue
-      for (let i = reference.length - 1; i >= 0; --i) {
-        const subscriber = reference[i]
-        const id = subscriber.id
-        if (id === roleID || id === userID) {
-          reference.splice(i, 1)
-          found = true
-        }
+    const subscribers = source.subscribers
+    if (!subscribers) continue
+    for (let i = subscribers.length - 1; i >= 0; --i) {
+      const subscriber = subscribers[i]
+      const id = subscriber.id
+      if (id === roleID || id === userID) {
+        subscribers.splice(i, 1)
+        found = true
       }
-      if (Object.keys(reference).length === 0) delete (i === 0 ? source.globalSubscriptions : source.filteredSubscriptions) // Deleting reference does not affect the original object
     }
+    if (subscribers && subscribers.length === 0) delete source.subscribers
   }
 
   if (!found) await message.channel.send(`This ${role ? 'role' : 'user'} has no subscriptions to remove.`)
   else {
     log.command.info(`Deleting all subscriptions`, message.guild, user || role)
     await dbOps.guildRss.update(guildRss)
-    await message.channel.send(`All subscriptions successfully deleted for ${role ? `role ${role.name}\`` : `user \`${user.username}\``}. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+    await message.channel.send(`All subscriptions successfully deleted for ${role ? `role \`${role.name}\`` : `user \`${user.username}\``}. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   }
 }
 
 // Add global subscriptions, called from openSubMenu
 async function addGlobalSub (message, guildRss, rssName, role, user) {
   const source = guildRss.sources[rssName]
-  // remove any filtered subscriptions when adding global subscription, and delete parents if empty
-  const { filteredSubscriptions } = source
-  if (filteredSubscriptions) {
-    for (let i = filteredSubscriptions.length - 1; i >= 0; --i) {
-      if (filteredSubscriptions[i].id === (role ? role.id : user.id)) filteredSubscriptions.splice(i, 1)
-    }
-    if (filteredSubscriptions.length === 0) delete source.filteredSubscriptions
-  }
-
-  if (!source.globalSubscriptions) source.globalSubscriptions = []
-  const { globalSubscriptions } = source
+  if (!source.subscribers) source.subscribers = []
+  const subscribers = source.subscribers
   const id = role ? role.id : user.id
   const name = role ? role.name : user.username
   const type = role ? 'Role' : 'User'
-  for (const subscriber of globalSubscriptions) {
-    if (id === subscriber.id) return message.channel.send(`Unable to add global subscription. ${type} \`${name}\` is already subscribed to this feed.`)
+  let found = false
+  for (const subscriber of subscribers) {
+    if (id === subscriber.id) {
+      found = true
+      if (!subscriber.filters) return message.channel.send(`Unable to add global subscriber. ${type} \`${name}\` is already subscribed to this feed.`)
+      else delete subscriber.filters
+    }
   }
-  source.globalSubscriptions.push({
-    id,
-    name,
-    type: type.toLowerCase()
-  })
+  if (!found) {
+    source.subscribers.push({
+      id,
+      name,
+      type: type.toLowerCase()
+    })
+  }
 
   await dbOps.guildRss.update(guildRss)
-  log.command.info(`Added global subscription to feed ${source.link}`, message.guild, role || user)
-  await message.channel.send(`Global subscription successfully added for \`${name}\` to feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+  log.command.info(`Added global subscriber to feed ${source.link}`, message.guild, role || user)
+  await message.channel.send(`Global subscriber \`${name}\` successfully added to feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
 }
 
 // Remove global subscriptions, called from openSubMenu
@@ -129,16 +139,16 @@ async function removeGlobalSub (message, guildRss, rssName, role, user) {
   const source = guildRss.sources[rssName]
   const wantedId = role ? role.id : user.id
   let found = false
-  if (!source.globalSubscriptions) return message.channel.send(`This role is not globally subscribed to the feed <${source.link}>.`)
-  const { globalSubscriptions } = source
-  for (let i = globalSubscriptions.length - 1; i >= 0; --i) {
-    const subscriber = globalSubscriptions[i]
-    if (subscriber.id !== wantedId) continue
-    globalSubscriptions.splice(i, 1)
+  if (!source.subscribers) return message.channel.send(`This role is not globally subscribed to the feed <${source.link}>.`)
+  const { subscribers } = source
+  for (let i = subscribers.length - 1; i >= 0; --i) {
+    const subscriber = subscribers[i]
+    if (subscriber.id !== wantedId || subscriber.filters) continue
+    subscribers.splice(i, 1)
     found = true
   }
-  if (!found) return message.channel.send(`The user \`${user.username} does not have a global subscription to this feed.`)
-  if (globalSubscriptions.length === 0) delete source.globalSubscriptions
+  if (!found) return message.channel.send(`The user \`${user.username}\` is not a global subscriber to this feed.`)
+  if (subscribers.length === 0) delete source.subscribers
 
   await dbOps.guildRss.update(guildRss)
   log.command.info(`Removed global subscription for feed ${source.link}`, message.guild, role || user)
@@ -155,7 +165,7 @@ async function filteredSubMenuFn (m, data) {
         series: filters.add(m, guildRss, rssName, role, user)
       } }
   } else if (input === '2') {
-    if (!source.filteredSubscriptions || source.filteredSubscriptions.length === 0) return m.channel.send(`There are no ${role ? 'role' : 'user'} filtered subscriptions to remove from the feed <${source.link}>.`)
+    if (!source.subscribers || source.subscribers.length === 0) return m.channel.send(`There are no ${role ? 'role' : 'user'} subscribers to remove from the feed <${source.link}>.`)
     return { ...data,
       next: {
         series: filters.remove(m, guildRss, rssName, role, user)
@@ -171,7 +181,7 @@ async function globalSubMenuFn (m, data) {
     await addGlobalSub(m, guildRss, rssName, role, user)
     return data
   } else if (input === '2') {
-    if (!source.globalSubscriptions || source.globalSubscriptions.length === 0) return m.channel.send(`There are no global user subscriptions to remove from the feed <${source.link}>.`)
+    if (!source.subscribers || source.subscribers.length === 0) return m.channel.send(`There are no global subscribers to remove from the feed <${source.link}>.`)
     await removeGlobalSub(m, guildRss, rssName, role, user)
     return data
   } else throw new SyntaxError('That is not a valid option. Try again, or type `exit` to cancel.')
@@ -216,7 +226,7 @@ async function selectOptionFn (m, data) {
     if (optionSelected === '2') { // Filtered Sub Menu
       const filteredSubMenu = new MenuUtils.Menu(m, filteredSubMenuFn)
         .setAuthor(`Subscription Customization - Add/Remove Filtered Subscription`)
-        .addOption(`Add filter to filtered subscription`, `Add a filtered subscription so that this role/user will get mentioned everytime an article from a feed passes its filter tests.`)
+        .addOption(`Add filter to filtered subscriber`, `Add a filtered subscription so that this role/user will get mentioned everytime an article from a feed passes its filter tests.`)
         .addOption(`Remove filter from filtered subscription`, `Remove a word/phrase from this role/user's subscription to a feed.`)
       nextData.next = { menu: [getUserOrRole, feedSelector, filteredSubMenu] }
     } else { // Global Sub Menu
@@ -240,10 +250,10 @@ module.exports = async (bot, message, command) => {
     const selectOption = new MenuUtils.Menu(message, selectOptionFn)
       .setDescription(`\n**Current Channel:** #${message.channel.name}\n\nAdding a subscription for a user or role will automatically add their mentions in the \`{subscribers}\` placeholder. If the subscriber is a role, then the role will be added to the list of eligible roles for role mention toggling, and also for the commands ${guildRss.prefix || config.bot.prefix}subme/unsubme.\n\nSelect an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n`)
       .setAuthor('Subscription Options')
-      .addOption(`Add/Remove Global Subscriptions for a Role or User`, `Enable mentions for a role/user for all delivered articles of this feed.\n*Using global subscriptions will remove filtered subscriptions if enabled for that role/user.*`)
-      .addOption(`Add/Remove Filtered Subscriptions for a Role or User`, `Create role/user-specific filters where only selected articles will mention a role/user.\n*Using filtered subscriptions will remove global subscriptions if enabled for that role/user.*`)
+      .addOption(`Add/Remove Role or User Subscriber to a Feed`, `Enable mentions for a role/user for all delivered articles of this feed.\n*Using global subscriptions will remove filtered subscriptions if enabled for that role/user.*`)
+      .addOption(`Add/Remove Role or User Filtered Subscriber to a Feed`, `Create role/user-specific filters where only selected articles will mention a role/user.\n*Using filtered subscriptions will remove global subscriptions if enabled for that role/user.*`)
       .addOption(`Remove All Subscriptions for a Role or User`, `Remove all subscriptions for a role/user.`)
-      .addOption(`List Roles with Subscriptions`, `List all roles with all types of subscriptions.`)
+      .addOption(`List All Subscribers`, `List all subscribers.`)
 
     const data = await new MenuUtils.MenuSeries(message, [selectOption], { command: command, guildRss }).start()
     if (!data) return

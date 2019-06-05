@@ -1,5 +1,5 @@
 const Client = require('./structs/Client.js')
-const ClientSharded = require('./structs/ClientSharded.js')
+const ClientManager = require('./structs/ClientManager.js')
 
 exports.Client = Client
-exports.ClientSharded = ClientSharded
+exports.ClientManager = ClientManager

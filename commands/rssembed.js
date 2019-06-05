@@ -85,7 +85,7 @@ async function feedSelectorFn (m, data) {
       selectEmbed.addOption(x === 0 ? 'Default Embed' : `Embed #${x + 1}`, `${val}\u200b`)
     }
   }
-  if (source.embeds && source.embeds.length < 10) selectEmbed.addOption('Add a new embed', `A maximum of 10 embeds may be added.\n\u200b`)
+  if (!source.embeds || source.embeds.length < 10) selectEmbed.addOption('Add a new embed', `A maximum of 10 embeds may be added.\n\u200b`)
   if (source.embeds && source.embeds.length > 0) selectEmbed.addOption('Remove all embeds', `\u200b`)
   return { ...data, next: { menu: selectEmbed } }
 }
@@ -109,8 +109,7 @@ async function selectEmbedFn (m, data) {
 
   // Add an embed
   if (data.setFields) return generateFieldsMenu(m, nextData)
-
-  generatePropertiesMessage(m, nextData)
+  return generatePropertiesMessage(m, nextData)
 }
 
 async function generateFieldsMenu (m, nextData) {
@@ -131,7 +130,6 @@ async function generatePropertiesMessage (m, nextData) {
   const source = nextData.guildRss.sources[nextData.rssName]
   let currentEmbedProps = '```Markdown\n# Current Properties #\n\n'
   let changed = false
-
   const selectProp = new MenuUtils.Menu(m, selectProperty)
   const propertyList = source.embeds[nextData.selectedEmbedIndex]
   for (var property in propertyList) {

@@ -4,6 +4,8 @@ const checkGuild = require('./checkGuild.js')
 const LinkTracker = require('../structs/LinkTracker.js')
 const dbOps = require('./dbOps.js')
 const log = require('./logger.js')
+const redisOps = require('./redisOps.js')
+const assignedSchedules = require('./assignedSchedules.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 function reachedFailCount (link, failedLinks) {
@@ -12,39 +14,13 @@ function reachedFailCount (link, failedLinks) {
   return failed
 }
 
-module.exports = async (bot, customSchedules, callback) => {
+module.exports = async (bot, callback, vipApiData) => {
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new LinkTracker([], bot)
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
   const guildsInfo = {}
   const missingGuilds = {}
-  const scheduleRssNameDir = {}
-  const scheduleWordDir = {}
   const activeSourcesForTracker = []
-  let feedData
-  if (!config.database.uri.startsWith('mongo')) feedData = {} // Object of collection ids as keys, and arrays of objects as values
-
-  // Set up custom schedules
-  if (customSchedules) {
-    for (var w = 0; w < customSchedules.length; ++w) {
-      const schedule = customSchedules[w]
-      const scheduleName = schedule.name
-      const keywords = schedule.keywords
-      const rssNames = schedule.rssNames
-      scheduleWordDir[scheduleName] = []
-      for (var schedKeyword of keywords) {
-        storage.allScheduleWords.push(schedKeyword)
-        scheduleWordDir[scheduleName].push(schedKeyword)
-      }
-      if (rssNames) {
-        scheduleRssNameDir[scheduleName] = []
-        for (var schedRssName of rssNames) {
-          storage.allScheduleRssNames.push(schedRssName)
-          scheduleRssNameDir[scheduleName].push(schedRssName)
-        }
-      }
-    }
-  }
 
   // Remove expires index, but ignores the log if it's "ns not found" error (meaning the collection doesn't exist)
   if (config.database.guildBackupsExpire <= 0) {
@@ -66,8 +42,9 @@ module.exports = async (bot, customSchedules, callback) => {
     failedLinks[item.link] = item.failed || item.count
   })
 
-  // Cache guilds
+  // Remove missing guilds and empty guildRsses, along with other checks
   const guildRssList = await dbOps.guildRss.getAll()
+  const versionCheckPromises = []
   for (var r = 0; r < guildRssList.length; ++r) {
     const guildRss = guildRssList[r]
     const guildId = guildRss.id
@@ -87,63 +64,59 @@ module.exports = async (bot, customSchedules, callback) => {
     if (guildRss.prefix) storage.prefixes[guildId] = guildRss.prefix
     if (dbOps.guildRss.empty(guildRss)) continue
     checkGuild.subscriptions(bot, guildRss)
+    versionCheckPromises.push(checkGuild.version(guildRss))
 
     guildsInfo[guildId] = guildRss
     const rssList = guildRss.sources
     for (var rssName in rssList) {
       const source = rssList[rssName]
-      // Assign feeds to specific schedules in scheduleAssigned for use by feedSchedules by rssNames first
-      if (Object.keys(scheduleRssNameDir).length > 0) {
-        for (var scheduleName1 in scheduleRssNameDir) {
-          const rssNameList = scheduleRssNameDir[scheduleName1]
-          if (rssNameList.includes(rssName) && !storage.scheduleAssigned[rssName]) {
-            log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName1} by rssName`)
-            storage.scheduleAssigned[rssName] = scheduleName1
-          }
-        }
-      }
-
-      // Then by keywords
-      if (Object.keys(scheduleWordDir).length > 0) {
-        for (var scheduleName2 in scheduleWordDir) {
-          const wordList = scheduleWordDir[scheduleName2]
-          wordList.forEach(item => {
-            if (source.link.includes(item) && !storage.scheduleAssigned[rssName]) {
-              log.init.info(`${SHARD_ID}Assigning feed ${rssName} to schedule ${scheduleName2} by keyword`)
-              storage.scheduleAssigned[rssName] = scheduleName2 // Assign a schedule to a feed if it doesn't already exist in the scheduleAssigned to another schedule
-            }
-          })
-        }
-        if (!storage.scheduleAssigned[rssName]) storage.scheduleAssigned[rssName] = 'default' // Assign to default schedule if it wasn't assigned to a custom schedule
-      }
-
+      // Assign feeds to specific schedules in assignedSchedules for use by feedSchedules by rssNames first
       if (checkGuild.config(bot, guildRss, rssName, true) && !reachedFailCount(source.link, failedLinks)) activeSourcesForTracker.push({ link: source.link, rssName: rssName, server: guildId })
     }
   }
 
   let c = 0
   const total = bot.guilds.size
-  if (total === 0) checkVIPs()
-  bot.guilds.forEach((guild, guildId) => {
-    if (guildsInfo[guildId]) {
-      if (++c === total) checkVIPs()
-      return
-    }
-    const id = guildId
-    dbOps.guildRss.restore(guildId, true).then(guildRss => {
-      if (guildRss) log.init.info(`Restored profile for ${guildRss.id}`)
-      if (++c === total) checkVIPs()
-    }).catch(err => {
-      log.init.info(`Unable to restore ${id}`, err)
-      if (++c === total) checkVIPs()
+
+  // Redis is only for UI use
+  Promise.all(versionCheckPromises).then(() => {
+    bot.guilds.forEach((guild, guildId) => {
+      redisOps.guilds.recognize(guild).catch(err => {
+        // This will recognize all guild info, members, channels and roles
+        throw err
+      })
+      if (guildsInfo[guildId]) {
+        if (++c === total) checkVIPs()
+        return
+      }
+      const id = guildId
+      dbOps.guildRss.restore(guildId, true).then(guildRss => {
+        if (guildRss) log.init.info(`Restored profile for ${guildRss.id}`)
+        if (++c === total) checkVIPs()
+      }).catch(err => {
+        log.init.info(`Unable to restore ${id}`, err)
+        if (++c === total) checkVIPs()
+      })
     })
+  }).catch(err => {
+    throw err
   })
+
+  if (redisOps.client.exists()) {
+    bot.users.forEach(user => {
+      redisOps.users.recognize(user).catch(err => {
+        if (err) throw err
+      })
+    })
+  }
+
+  if (total === 0) checkVIPs()
 
   async function checkVIPs () {
     try {
       // For patron tracking on the public bot
       if (config.database.uri.startsWith('mongo') && config._vip) {
-        const vipServers = await require('../settings/vips.js')(bot)
+        const vipServers = await require('../settings/vips.js')(bot, vipApiData)
         finish(vipServers)
       } else finish()
     } catch (e) {
@@ -162,8 +135,9 @@ module.exports = async (bot, customSchedules, callback) => {
       }
     }
 
+    // Decides what collections get removed from database later on
     for (const item of activeSourcesForTracker) {
-      const itemSchedule = vipServers.includes(item.server) ? 'vip' : storage.scheduleAssigned[item.rssName]
+      const itemSchedule = vipServers.includes(item.server) ? 'vip' : assignedSchedules.getScheduleName(item.rssName)
       const collectionId = storage.collectionId(item.link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, itemSchedule)
       linkTracker.increment(item.link, itemSchedule)
       if ((!bot.shard || bot.shard.count === 0) && !currentCollections.includes(collectionId)) currentCollections.push(collectionId)
@@ -174,11 +148,11 @@ module.exports = async (bot, customSchedules, callback) => {
       if (config.database.uri.startsWith('mongo')) dbOps.statistics.clear().catch(err => err.code === 26 ? null : log.general.warning('Unable to drop statistics database', err)) // 26 is ns not found - it's fine if it didn't exist in the first place
       dbOps.linkTracker.write(linkTracker).catch(err => log.general.warning('Unable to write link tracker links to collection after initialization', err)) // If this is a shard, then it's handled by the sharding manager
       dbOps.general.cleanDatabase(currentCollections)
-        .then(() => callback(missingGuilds, linkTracker.toDocs(), feedData))
+        .then(() => callback(missingGuilds, linkTracker.toDocs()))
         .catch(err => {
           log.general.error(`Unable to clean database`, err)
-          callback(missingGuilds, linkTracker.toDocs(), feedData)
+          callback(missingGuilds, linkTracker.toDocs())
         })
-    } else callback(missingGuilds, linkTracker.toDocs(), feedData)
+    } else callback(missingGuilds, linkTracker.toDocs())
   }
 }

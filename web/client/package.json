@@ -1,0 +1,71 @@
+{
+  "name": "drss-web",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "/",
+  "proxy": "http://localhost:8081",
+  "dependencies": {
+    "add": "^2.0.6",
+    "axios": "^0.18.0",
+    "feedparser": "^2.2.9",
+    "highlight.js": "^9.13.1",
+    "immutability-helper": "^2.9.0",
+    "js-file-download": "^0.4.4",
+    "moment": "^2.24.0",
+    "moment-timezone": "^0.5.23",
+    "node-sass": "^4.11.0",
+    "npm": "^6.9.0",
+    "polished": "^2.3.1",
+    "prop-types": "^15.6.2",
+    "query-string": "^6.3.0",
+    "react": "^16.7.0",
+    "react-color": "^2.17.0",
+    "react-custom-scrollbars": "^4.2.1",
+    "react-device-detect": "^1.6.2",
+    "react-dom": "^16.7.0",
+    "react-pose": "^4.0.6",
+    "react-redux": "^6.0.0",
+    "react-router-dom": "^4.3.1",
+    "react-scripts": "^3.0.1",
+    "react-toastify": "^4.5.2",
+    "react-twemoji": "^0.1.0",
+    "redux": "^4.0.1",
+    "redux-thunk": "^2.3.0",
+    "semantic-ui-react": "^0.84.0",
+    "simple-markdown": "^0.4.4",
+    "socket.io": "^2.2.0",
+    "socket.io-client": "^2.2.0",
+    "styled-components": "^4.1.3",
+    "twemoji": "^11.2.0"
+  },
+  "scripts": {
+    "build-semantic": "cd src/semantic && gulp build-css build-assets",
+    "watch-semantic": "cd src/semantic && npm run build-semantic && gulp watch",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "eslint": "eslint --fix ."
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
+  "devDependencies": {
+    "eslint-config-standard": "^12.0.0",
+    "eslint-config-standard-react": "^7.0.2",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-node": "^8.0.0",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-react": "^7.12.0",
+    "eslint-plugin-standard": "^4.0.0",
+    "gulp-help": "^1.6.1",
+    "node-sass-tilde-importer": "^1.0.2",
+    "semantic-ui": "^2.4.2"
+  }
+}

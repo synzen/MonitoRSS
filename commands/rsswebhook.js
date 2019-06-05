@@ -1,5 +1,4 @@
 const dbOps = require('../util/dbOps.js')
-const config = require('../config.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
@@ -43,10 +42,10 @@ async function collectWebhook (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const [ guildRss, vipUser ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), dbOps.vips.get(message.author.id) ])
-    if (config._vip === true && (!vipUser || vipUser.allowWebhooks !== true || vipUser.invalid === true)) {
+    const [ guildRss, isVipServer ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), dbOps.vips.isVipServer(message.guild.id) ])
+    if (!isVipServer) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
-      return await message.channel.send(`Only patrons have access to webhook use.`)
+      return await message.channel.send(`Only servers with patron backing have access to webhooks.`)
     }
     if (!message.guild.me.permissionsIn(message.channel).has('MANAGE_WEBHOOKS')) return await message.channel.send(`I must have Manage Webhooks permission in this channel in order to work.`)
 

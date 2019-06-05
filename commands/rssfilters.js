@@ -3,7 +3,6 @@ const dbOps = require('../util/dbOps.js')
 const getArticle = require('../rss/getArticle.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
-const config = require('../config.js')
 const log = require('../util/logger.js')
 const VALID_OPTIONS = ['1', '2', '3', '4', '5']
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
@@ -98,12 +97,9 @@ module.exports = async (bot, message, command, role) => {
           language: guildRss.dateLanguage
         }
       }
-      if (source.webhook) {
-        const vipUser = await dbOps.vips.get(message.author.id)
-        if (config._vip === true && (!vipUser || vipUser.allowWebhooks !== true || vipUser.invalid === true)) {
-          log.general.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
-          delete guildRss.sources[rssName].webhook
-        }
+      if (source.webhook && !(await dbOps.vips.isVipServer(message.guild.id))) {
+        log.general.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
+        delete guildRss.sources[rssName].webhook
       }
       article._delivery.source = guildRss.sources[rssName]
 

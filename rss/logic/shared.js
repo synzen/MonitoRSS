@@ -12,8 +12,8 @@ function getArticleId (articleList, article) {
     })
   }
 
+  if ((!article.guid || equalGuids) && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate.toString()
   if ((!article.guid || equalGuids) && article.title) return article.title
-  if ((!article.guid || equalGuids) && !article.title && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
   return article.guid
 }
 

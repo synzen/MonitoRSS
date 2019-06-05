@@ -5,12 +5,14 @@ const mongoose = require('mongoose')
 const Discord = require('discord.js')
 const storage = require('./storage.js')
 const config = require('../config.js')
+const redisOps = require('./redisOps.js')
 const LinkTracker = require('../structs/LinkTracker.js')
 const models = storage.models
 const log = require('./logger.js')
 const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FAIL_LIMIT = config.feeds.failLimit
 const FIND_PROJECTION = '-_id -__v'
+const assignedSchedules = require('./assignedSchedules.js')
 const readdirPromise = util.promisify(fs.readdir)
 const readFilePromise = util.promisify(fs.readFile)
 const writeFilePromise = util.promisify(fs.writeFile)
@@ -53,17 +55,15 @@ exports.guildRss = {
               log.general.warning(`Could not parse JSON from source file ${name}`, err)
             }
             if (++done === total) resolve(read)
-            console.log(done, total)
           })
           .catch(err => {
             log.general.warning(`Could not read source file ${name}`, err)
             if (++done === total) resolve(read)
-            console.log(done, total)
           })
       }
     })
   },
-  update: async (guildRss, skipEmptyCheck) => {
+  update: async guildRss => {
     // Memory version
     if (!config.database.uri.startsWith('mongo')) {
       try {
@@ -72,16 +72,21 @@ exports.guildRss = {
       } catch (err) {
         throw err
       }
-      if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
-      return
+      return redisOps.events.emitUpdatedProfile(guildRss.id)
     }
 
     // Database version
-    const res = await models.GuildRss().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
-    if (!skipEmptyCheck) exports.guildRss.empty(guildRss, false)
+    // for (const key in guildRss) {
+    //   const val = guildRss[key]
+    //   if (!val) delete guildRss[key]
+    //   else if (Array.isArray(val) && val.length === 0) delete guildRss[key]
+    //   else if (typeof val === 'object' && val !== null && Object.keys(val).length === 0) delete guildRss[key]
+    // }
+    const res = await models.GuildRss().replaceOne({ id: guildRss.id }, guildRss, UPDATE_SETTINGS).exec()
+    redisOps.events.emitUpdatedProfile(guildRss.id)
     return res
   },
-  remove: async guildRss => {
+  remove: async (guildRss, suppressLog) => {
     const guildId = guildRss.id
     if (guildRss && guildRss.sources && Object.keys(guildRss.sources).length > 0) exports.guildRss.backup(guildRss).catch(err => log.general.warning('Unable to backup guild after remvoing', err, true))
     // Memory version
@@ -95,31 +100,31 @@ exports.guildRss = {
     if (rssList) {
       for (let rssName in rssList) {
         storage.deletedFeeds.push(rssName)
-        exports.linkTracker.decrement(rssList[rssName].link, storage.scheduleAssigned[rssName]).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
+        exports.linkTracker.decrement(rssList[rssName].link, assignedSchedules.getScheduleName(rssName)).catch(err => log.general.warning(`Unable to decrement linkTracker for ${rssList[rssName].link}`, err, true))
       }
     }
     const res = await models.GuildRss().deleteOne({ id: guildId })
-    log.general.info(`Removed Guild document ${guildId}`)
+    if (!suppressLog) log.general.info(`Removed Guild document ${guildId}`)
     return res
   },
-  disableFeed: async (guildRss, rssName) => {
-    if (guildRss.sources[rssName].disabled === true) return log.general.warning(`Feed named ${rssName} is already disabled in guild ${guildRss.id}`)
-    guildRss.sources[rssName].disabled = true
+  disableFeed: async (guildRss, rssName, reason) => {
+    if (guildRss.sources[rssName].disabled) return log.general.warning(`Feed named ${rssName} is already disabled in guild ${guildRss.id}`)
+    guildRss.sources[rssName].disabled = reason || 'No reason available'
     await exports.guildRss.update(guildRss)
-    log.general.warning(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been disabled in guild ${guildRss.id}`)
+    log.general.warning(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been disabled in guild ${guildRss.id} (Reason: ${reason})`)
   },
-  enableFeed: async (guildRss, rssName) => {
-    if (guildRss.sources[rssName].disabled == null) return log.general.info(`Feed named ${rssName} is already enabled in guild ${guildRss.id}`)
+  enableFeed: async (guildRss, rssName, reason) => {
+    if (!guildRss.sources[rssName].disabled) return log.general.info(`Feed named ${rssName} is already enabled in guild ${guildRss.id}`)
     delete guildRss.sources[rssName].disabled
     await exports.guildRss.update(guildRss)
-    log.general.info(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been enabled in guild ${guildRss.id}`)
+    log.general.info(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been enabled in guild ${guildRss.id} (Reason: ${reason})`)
   },
   removeFeed: async (guildRss, rssName) => {
     const link = guildRss.sources[rssName].link
     delete guildRss.sources[rssName]
     storage.deletedFeeds.push(rssName)
     const res = await exports.guildRss.update(guildRss)
-    await exports.linkTracker.decrement(link, storage.scheduleAssigned[rssName])
+    await exports.linkTracker.decrement(link, assignedSchedules.getScheduleName(rssName))
     return res
   },
   backup: async guildRss => {
@@ -171,10 +176,9 @@ exports.guildRss = {
   },
   empty: (guildRss, skipRemoval) => { // Used on the beginning of each cycle to check for empty sources per guild
     if (guildRss.sources && Object.keys(guildRss.sources).length > 0) return false
-    if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage && !guildRss.prefix && !guildRss.sendAlertsTo) { // Delete only if server-specific special settings are not found
+    if (!guildRss.timezone && !guildRss.dateFormat && !guildRss.dateLanguage && !guildRss.prefix && (!guildRss.sendAlertsTo || guildRss.sendAlertsTo.length === 0)) { // Delete only if server-specific special settings are not found
       if (!skipRemoval) {
-        exports.guildRss.remove(guildRss)
-          .then(() => log.general.info(`(G: ${guildRss.id}) 0 sources found with no custom settings deleted`))
+        exports.guildRss.remove(guildRss, true)
           .catch(err => log.general.error(`(G: ${guildRss.id}) Could not delete guild due to 0 sources`, err))
       }
     } else log.general.info(`(G: ${guildRss.id}) 0 sources found, skipping`)
@@ -255,22 +259,24 @@ exports.failedLinks = {
           if (!rssList) return
           for (var i in rssList) {
             const source = rssList[i]
-            const channel = guildRss.sendAlertsTo || storage.bot.channels.get(source.channel)
-            if (source.link === link && channel && config._skipMessages !== true) {
-              let sent = false
-              if (Array.isArray(channel)) { // Each array item is a user id
-                channel.forEach(userId => {
-                  const user = storage.bot.users.get(userId)
-                  if (user && typeof message === 'string' && message.includes('connection failure limit')) {
-                    sent = true
-                    user.send(`**ATTENTION** - Feed link <${link}> in channel <#${source.channel}> has reached the connection failure limit in server named \`${guildRss.name}\` with ID \`${guildRss.id}\`, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use \`${guildRss.prefix || config.bot.prefix}rsslist\` in your server for more information.`).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (a)`, user, err))
-                  } else if (user) {
-                    sent = true
-                    user.send(message).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (b)`, user, err))
-                  }
-                })
-              }
-              if (sent === false) {
+            if (source.link !== link || config._skipMessages === true) continue
+            let sent = false
+            if (Array.isArray(guildRss.sendAlertsTo)) { // Each array item is a user id
+              const userIds = guildRss.sendAlertsTo
+              userIds.forEach(userId => {
+                const user = storage.bot.users.get(userId)
+                if (user && typeof message === 'string' && message.includes('connection failure limit')) {
+                  sent = true
+                  user.send(`**ATTENTION** - Feed link <${link}> in channel <#${source.channel}> has reached the connection failure limit in server named \`${guildRss.name}\` with ID \`${guildRss.id}\`, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use \`${guildRss.prefix || config.bot.prefix}rsslist\` in your server for more information.`).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (a)`, user, err))
+                } else if (user) {
+                  sent = true
+                  user.send(message).catch(err => log.general.warning(`Unable to send limit notice to user ${userId} for feed ${link} (b)`, user, err))
+                }
+              })
+            }
+            if (sent === false) {
+              const channel = storage.bot.channels.get(source.channel)
+              if (channel) { // The channel may not exist since this function is broadcasted to all shards
                 const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
                 const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
                 if (config._skipMessages !== true) channel.send(m, attach ? new Discord.Attachment(Buffer.from(JSON.stringify(guildRss, null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
@@ -396,27 +402,28 @@ exports.vips = {
     let complete = 0
     const total = Object.keys(vipUsers).length
     let errored = false
-    for (var e in vipUsers) {
-      const vipUser = vipUsers[e]
-      if (!vipUser.name) {
-        const dUser = storage.bot.users.get(vipUser.id)
-        vipUser.name = dUser ? dUser.username : null
-      }
-    }
 
     if (Object.keys(vipUsers).length === 0) return
     return new Promise((resolve, reject) => {
       for (var q in vipUsers) {
         const vipUser = vipUsers[q]
-        models.VIP().updateOne({ id: vipUser.id }, { $set: JSON.parse(JSON.stringify(vipUser)) }, UPDATE_SETTINGS).exec()
+        const unsets = { }
+        for (const field in vipUser) {
+          if (vipUser[field] === null || vipUser[field] === undefined) {
+            delete vipUser[field]
+            if (!unsets.$unset) unsets.$unset = {}
+            unsets.$unset[field] = 1
+          }
+        }
+        models.VIP().updateOne({ id: vipUser.id }, { $set: vipUser, ...unsets }, UPDATE_SETTINGS).exec()
           .then(() => {
             log.general.success(`Bulk updated VIP ${vipUser.id} (${vipUser.name})`)
-            if (++complete === total) return errored ? reject(new Error('Errors encountered with vips.updateBulk logged')) : resolve()
+            if (++complete === total) return errored ? reject(new Error('Previous errors encountered with vips.updateBulk')) : resolve()
           })
           .catch(err => { // stringify and parse to prevent mongoose from modifying my object
             log.general.error(`Unable to add VIP for id ${vipUser.id}`, err, true)
             errored = true
-            if (++complete === total) return errored ? reject(new Error('Errors encountered with vips.updateBulk logged')) : resolve()
+            if (++complete === total) return errored ? reject(new Error('Previous errors encountered with vips.updateBulk')) : resolve()
           })
       }
     })
@@ -432,6 +439,15 @@ exports.vips = {
     for (const id of serversToAdd) {
       if (vipUser.servers.includes(id)) throw new Error(`Server ${id} already exists`)
       vipUser.servers.push(id)
+      const guildRss = await exports.guildRss.get(id)
+      if (guildRss) {
+        const rssList = guildRss.sources
+        if (rssList) {
+          for (const rssName in rssList) {
+            assignedSchedules.clearScheduleName(rssName)
+          }
+        }
+      }
       log.general.success(`VIP servers added for VIP ${vipUser.id} (${vipUser.name}): ${serversToAdd.join(',')}`)
     }
     await models.VIP().updateOne({ id: vipUser.id }, { $addToSet: { servers: { $each: serversToAdd } } }, UPDATE_SETTINGS).exec()
@@ -446,29 +462,44 @@ exports.vips = {
       const guildRss = await exports.guildRss.get(id)
       if (guildRss && guildRss.sources) {
         const rssList = guildRss.sources
-        let vipScheduleRssNames
-        for (var feedSchedule of storage.scheduleManager.scheduleList) {
-          if (feedSchedule.name === 'vip') vipScheduleRssNames = feedSchedule.rssNames
-        }
         for (var rssName in rssList) {
-          vipScheduleRssNames.splice(rssName, 1)
-          storage.allScheduleRssNames.splice(rssName, 1)
-          delete storage.scheduleAssigned[rssName]
+          assignedSchedules.clearScheduleName(rssName)
         }
       }
       await models.VIP().updateOne({ id: vipUser.id }, { $pull: { servers: { $in: serversToRemove } } }, UPDATE_SETTINGS).exec()
     }
     log.general.success(`VIP servers removed from VIP ${vipUser.id} (${vipUser.name}): ${serversToRemove.join(',')}`)
   },
-  refresh: async () => {
+  refresh: async (updateNamesFromRedis, vipApiData) => {
     if (!config._vip) return
     if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')
     if (!fs.existsSync(path.join(__dirname, '..', 'settings', 'vips.js'))) throw new Error('Missing VIP module')
-    return require('../settings/vips.js')(storage.bot)
+    return require('../settings/vips.js')(storage.bot, vipApiData || await require('../settings/api.js')(), updateNamesFromRedis)
+  },
+  isVipServer: async serverId => {
+    if (!config._vip) return true
+    const vipUser = (await exports.vips.getAll()).filter(vipUser => vipUser.servers.includes(serverId) && vipUser.invalid !== true)[0]
+    return !!vipUser
   }
 }
 
 exports.general = {
+  addFeedback: async (user, content, type = 'general') => {
+    return models.Feedback().create({
+      type,
+      userId: user.id,
+      username: user.username,
+      content: content
+    })
+  },
+  addRating: async (user, rating, type = 'general') => {
+    return models.Rating().create({
+      type,
+      userId: user.id,
+      username: user.username,
+      rating
+    })
+  },
   cleanDatabase: async currentCollections => { // Remove unused feed collections
     if (!config.database.uri.startsWith('mongo')) return
     if (!Array.isArray(currentCollections)) throw new Error('currentCollections is not an Array')

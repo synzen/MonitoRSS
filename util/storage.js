@@ -28,15 +28,56 @@ function expireDate (type) {
 }
 
 exports.bot = undefined
+exports.redisClient = undefined
 exports.prefixes = {} // Guild prefixes
 exports.initialized = 0 // Different levels dictate what commands may be used while the bot is booting up. 0 = While all shards not initialized, 1 = While shard is initialized, 2 = While all shards initialized
 exports.deletedFeeds = [] // Any deleted rssNames to check during article sending to see if it was deleted during a cycle
-exports.scheduleAssigned = {} // To track schedule assignment to links
 exports.allScheduleWords = [] // Holds all words across all schedules
 exports.allScheduleRssNames = []
 exports.scheduleManager = undefined
 exports.blacklistUsers = []
 exports.blacklistGuilds = []
+exports.redisKeys = {
+  guilds: guildId => { // This is a HASH. Guilds with their data that have been cached.
+    if (!guildId) throw new TypeError(`Guild data and ID must be provided`)
+    return `drss_guild_${guildId}`
+  },
+  user: userId => { // This is a HASH. Users with their data that have been cached.
+    if (!userId) throw new TypeError(`User ID must be provided`)
+    return `drss_user_${userId}`
+  },
+  role: roleId => {
+    if (!roleId) throw new TypeError(`Role ID must be provided`)
+    return `drss_role_${roleId}`
+  },
+  guildMembersOf: guildId => { // This is a SET. Members that have been cheched and cached for validity. May contain invalid members.
+    if (!guildId) throw new TypeError('Guild ID must be provided')
+    return `drss_guild_${guildId}_members`
+  },
+  guildManagersOf: guildId => { // This is a SET. Members that have been checked and cached and have permissions
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_managers`
+  },
+  notGuildManagersOf: guildId => { // This is a SET. Members that have been checked through Discord's HTTP API, cached and do NOT have permissions
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_nonmanagers`
+  },
+  guildChannelsOf: guildId => { // This is a SET. Channels of a guild that have been checked and cached
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_channels`
+  },
+  guildRolesOf: guildId => { // This is a SET.
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_roles`
+  },
+  guildRolesManagersOf: guildId => {
+    if (!guildId) throw new TypeError(`Guild ID must be provided`)
+    return `drss_guild_${guildId}_roles_managers`
+  },
+  channelNames: () => { // This is a HASH. Keys are channel IDs, values are channel names.
+    return `drss_channels_name`
+  }
+}
 exports.schemas = {
   guildRss: mongoose.Schema({
     id: {
@@ -44,13 +85,17 @@ exports.schemas = {
       unique: true
     },
     name: String,
-    sendAlertsTo: [String],
+    sendAlertsTo: {
+      type: [String],
+      default: undefined
+    },
     sources: Object,
     dateFormat: String,
     dateLanguage: String,
     timezone: String,
     vip: Object,
-    prefix: String
+    prefix: String,
+    version: String
   }),
   guildRssBackup: mongoose.Schema({
     id: {
@@ -58,11 +103,15 @@ exports.schemas = {
       unique: true
     },
     name: String,
-    sendAlertsTo: [String],
+    sendAlertsTo: {
+      type: [String],
+      default: undefined
+    },
     sources: Object,
     dateFormat: String,
     dateLanguage: String,
     timezone: String,
+    version: String,
     date: {
       type: Date,
       default: Date.now
@@ -105,12 +154,14 @@ exports.schemas = {
     },
     invalid: Boolean,
     name: String,
+    fname: String,
     servers: {
       type: [String],
       default: []
     },
     permanent: Boolean,
     pledged: Number,
+    totalPledged: Number,
     maxFeeds: Number,
     maxServers: Number,
     allowWebhooks: Boolean,
@@ -151,6 +202,26 @@ exports.schemas = {
       type: Date,
       default: Date.now
     }
+  }),
+  feedback: mongoose.Schema({
+    type: String,
+    userId: String,
+    username: String,
+    content: String,
+    date: {
+      type: Date,
+      default: Date.now
+    }
+  }),
+  rating: mongoose.Schema({
+    type: String,
+    userId: String,
+    username: String,
+    rating: Number,
+    date: {
+      type: Date,
+      default: Date.now
+    }
   })
 }
 exports.collectionId = (link, shardId, prefix = '') => {
@@ -169,5 +240,7 @@ exports.models = {
   FeedByCollectionId: collectionId => mongoose.model(collectionId, exports.schemas.feed, collectionId), // Third parameter is not let mongoose auto-pluralize the collection name
   VIP: () => mongoose.model('vips', exports.schemas.vip),
   Blacklist: () => mongoose.model('blacklists', exports.schemas.blacklist),
-  Statistics: () => mongoose.model('statistics', exports.schemas.statistics)
+  Statistics: () => mongoose.model('statistics', exports.schemas.statistics),
+  Feedback: () => mongoose.model('feedbacks', exports.schemas.feedback),
+  Rating: () => mongoose.model('ratings', exports.schemas.rating)
 }

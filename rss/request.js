@@ -28,14 +28,12 @@ module.exports = async (link, cookies) => {
   // Cloudflare is used here
   if (config._vip) throw new Error(`Bad Cloudflare status code (${endStatus}). Unsupported on public bot`)
 
-  return new Promise((resolve, reject) => {
-    cloudscraper.get(link, (err, res, body) => { // For cloudflare
-      if (err || res.statusCode !== 200) return reject(err || new Error(`Bad Cloudflare status code (${res.statusCode})`))
-      let Readable = require('stream').Readable
-      let feedStream = new Readable()
-      feedStream.push(body)
-      feedStream.push(null)
-      resolve(feedStream)
-    })
+  return cloudscraper({ method: 'GET', uri: link, resolveWithFullResponse: true }).then(res => {
+    if (res.statusCode !== 200) throw new Error(`Bad Cloudflare status code (${res.statusCode})`)
+    const Readable = require('stream').Readable
+    const feedStream = new Readable()
+    feedStream.push(res.body)
+    feedStream.push(null)
+    return feedStream
   })
 }

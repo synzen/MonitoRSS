@@ -79,7 +79,7 @@ const list = {
       fields: 'Customize Fields for the embed.'
     },
     action: 'Embed Message Customization',
-    description: "Open a menu to customzie a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
+    description: "Open a menu to customize a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
   },
   rssfilters: {
     initLevel: 1,
@@ -126,12 +126,6 @@ const list = {
       '<role name/mention>': 'Directly input the role instead of going through the menu.'
     },
     description: "Open a menu similar to `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
-  },
-  rsscookies: {
-    initLevel: 1,
-    botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Cookie Customization'
   },
   rssrefresh: {
     initLevel: 1,
@@ -245,7 +239,8 @@ exports.has = message => {
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   return list.hasOwnProperty(first.substr(prefix.length))
 }
-exports.run = async (bot, message) => {
+exports.run = async message => {
+  const bot = message.client
   const first = message.content.split(' ')[0]
   const guildPrefix = storage.prefixes[message.guild.id]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
@@ -302,7 +297,8 @@ exports.run = async (bot, message) => {
   }
 }
 
-exports.runController = (bot, message) => {
+exports.runController = message => {
+  const bot = message.client
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   const command = first.substr(prefix.length)

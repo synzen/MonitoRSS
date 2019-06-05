@@ -8,9 +8,10 @@ const ScheduleManager = require('./ScheduleManager.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const dbOps = require('../util/dbOps.js')
+const redisOps = require('../util/redisOps.js')
 const checkConfig = require('../util/checkConfig.js')
 const connectDb = require('../rss/db/connect.js')
-const ClientSharded = require('./ClientSharded.js')
+const ClientManager = require('./ClientManager.js')
 const EventEmitter = require('events')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const SHARDED_OPTIONS = { respawn: false }
@@ -26,7 +27,8 @@ function overrideConfigs (configOverrides) {
     const configCategory = config[category]
     if (!configOverrides[category]) continue
     for (var configName in configCategory) {
-      if (configOverrides[category][configName]) {
+      if (configOverrides[category][configName] !== undefined && configOverrides[category][configName] !== config[category][configName]) {
+        log.general.info(`Overriding config.${category}.${configName} from ${JSON.stringify(config[category][configName])} to ${JSON.stringify(configOverrides[category][configName])} from configOverride.json`)
         configCategory[configName] = configOverrides[category][configName]
       }
     }
@@ -69,7 +71,6 @@ class Client extends EventEmitter {
     // Override from file first
     try {
       const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
-      log.general.info(`Overriding default configs from configOverrides.json`)
       overrideConfigs(fileConfigOverride)
     } catch (err) {}
     // Then override from constructor
@@ -94,14 +95,18 @@ class Client extends EventEmitter {
   login (token, noChildren) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
     if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
-    else if (token instanceof Discord.ShardingManager) return new ClientSharded(token)
+    else if (token instanceof Discord.ShardingManager) return new ClientManager(token)
     else if (typeof token === 'string') {
-      const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS })
+      const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 })
       client.login(token)
         .then(tok => this._defineBot(client))
         .catch(err => {
-          if (!noChildren && err.message.includes('too many guilds')) new ClientSharded(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides).run()
-          else {
+          if (!noChildren && err.message.includes('too many guilds')) {
+            const shardedClient = new ClientManager(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
+            shardedClient.once('finishInit', () => {
+              this.emit('finishInit')
+            })
+          } else {
             log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
             setTimeout(() => this.login.bind(this)(token), 600000)
           }
@@ -132,7 +137,10 @@ class Client extends EventEmitter {
       log.general.error(`${this.SHARD_PREFIX}Websocket error`, err)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
-        for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        if (this.scheduleManager) {
+          // Check if it exists first since it may disconnect before it's even initialized
+          for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        }
         if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
         else process.exit(0)
       } else this.stop()
@@ -145,12 +153,15 @@ class Client extends EventEmitter {
       log.general.error(`${this.SHARD_PREFIX}Websocket disconnected`)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
-        for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        if (this.scheduleManager) {
+          // Check if it exists first since it may disconnect before it's even initialized
+          for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+        }
         if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
         else process.exit(0)
       } else this.stop()
     })
-    log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id}), processing set to ${config.advanced.processorMethod}`)
+    log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
     if (!bot.shard || bot.shard.count === 0) this.start()
     else process.send({ _drss: true, type: 'shardReady', shardId: bot.shard.id })
   }
@@ -163,7 +174,7 @@ class Client extends EventEmitter {
           case 'kill' :
             process.exit(0)
           case 'startInit':
-            if (bot.shard.id === message.shardId) this.start()
+            if (bot.shard.id === message.shardId) this.start(null, message.vipApiData)
             break
           case 'stop':
             this.stop()
@@ -173,7 +184,7 @@ class Client extends EventEmitter {
             if (config.database.uri.startsWith('mongodb')) await dbOps.blacklists.refresh()
             break
           case 'cycleVIPs':
-            if (bot.shard.id === message.shardId) await dbOps.vips.refresh()
+            if (bot.shard.id === message.shardId) await dbOps.vips.refresh(true, message.vipApiData)
             break
           case 'runSchedule':
             if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshTime)
@@ -208,18 +219,30 @@ class Client extends EventEmitter {
     this.state = STATES.STOPPED
   }
 
-  start (callback) {
+  start (callback, vipApiData) {
     if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
     const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
-    connectDb().then(() => {
-      initialize(storage.bot, this.customSchedules, (missingGuilds, linkDocs, feedData) => {
-        // feedData is only defined if config.database.uri is a databaseless folder path
-        this._finishInit(missingGuilds, linkDocs, feedData, callback)
+    connectDb()
+      .then(() => !this.bot.shard || this.bot.shard.count === 0 ? redisOps.flushDatabase() : null)
+      .then(() => config._vip && (!this.bot.shard || this.bot.shard.count === 0) ? require('../settings/api.js')() : null)
+      .then(async clientVipApiData => {
+        if (!this.scheduleManager) {
+          this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules)
+          storage.scheduleManager = this.scheduleManager
+        }
+        await this.scheduleManager.assignSchedules()
+        return clientVipApiData
       })
-    }).catch(err => log.general.error(`Client db connection`, err))
+      .then(clientVipApiData => {
+        initialize(this.bot, (missingGuilds, linkDocs) => {
+          // feedData is only defined if config.database.uri is a databaseless folder path
+          this._finishInit(missingGuilds, linkDocs, callback)
+        }, vipApiData || clientVipApiData)
+      })
+      .catch(err => log.general.error(`Client db connection`, err))
   }
 
   restart (callback) {
@@ -228,11 +251,9 @@ class Client extends EventEmitter {
     this.start(callback)
   }
 
-  _finishInit (missingGuilds, linkDocs, feedData, callback) {
+  _finishInit (missingGuilds, linkDocs, callback) {
     storage.initialized = 2
     this.state = STATES.READY
-    this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules, feedData)
-    storage.scheduleManager = this.scheduleManager
     if (storage.bot.shard && storage.bot.shard.count > 0) {
       process.send({ _drss: true, type: 'initComplete', missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id })
     } else if (config._vip) {
@@ -241,6 +262,7 @@ class Client extends EventEmitter {
       }, 600000)
     }
     listeners.createManagers(storage.bot)
+    this.scheduleManager.startSchedules()
     if (callback) callback()
     this.emit('finishInit')
   }
