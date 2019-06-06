@@ -72,7 +72,7 @@ class FlattenedJSON {
   }
 
   _iterateOverObject (item, keyName, previousKeyNames) {
-    const keyNameWithPrevious = previousKeyNames ? `${previousKeyNames}_${keyName}` : keyName
+    const keyNameWithPrevious = (previousKeyNames ? `${previousKeyNames}_${keyName}` : keyName).replace(':', '-') // Replace colons to avoid emoji conflicts
     if (Array.isArray(item) || !item || EXCLUDED_KEYS.includes(keyName) || item === this.results[keyNameWithPrevious.toLowerCase()]) return
     if (Object.prototype.toString.call(item) === '[object Object]') return () => this._trampolineIteration(this._iterateOverObject, item, keyNameWithPrevious)
     else this.results[keyNameWithPrevious] = item
