@@ -11,6 +11,10 @@ config.bot.prefix = process.env.DRSS_BOT_PREFIX || config.bot.prefix
 config.bot.controllerIds = process.env.DRSS_BOT_CONTROLLER_IDS ? process.env.DRSS_BOT_CONTROLLER_IDS.split(/\s*,\s*/) : config.bot.controllerIds
 config.feeds.refreshTimeMinutes = Number(process.env.DRSS_FEEDS_REFRESH_TIME_MINUTES) || config.feeds.refreshTimeMinutes
 config.feeds.defaultMessage = process.env.DRSS_FEEDS_DEFAULT_MESSAGE ? process.env.DRSS_FEEDS_DEFAULT_MESSAGE.replace(/\\n/g, '\n') : config.feeds.defaultMessage
+config.bot.status = process.env.DRSS_BOT_STATUS || config.bot.status
+config.bot.activityType = process.env.DRSS_BOT_ACTIVITY_TYPE || config.bot.activityType
+config.bot.activityName = process.env.DRSS_BOT_ACTIVITY_NAME || config.bot.activityName
+config.bot.streamActivityURL = process.env.DRSS_BOT_STREAM_URL || config.bot.streamActivityURL
 
 // Web
 config.web.enabled = process.env.DRSS_WEB_ENABLED === 'true' || config.web.enabled
