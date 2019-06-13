@@ -174,7 +174,7 @@ function start (mongooseConnection = mongoose.connection) {
     const question = req.path.replace('/faq/', '')
     const item = faq.find(item => item.qe === question)
     if (item) return res.send(htmlFile.replace('__OG_TITLE__', item.q).replace('__OG_DESCRIPTION__', item.a))
-    res.send(htmlFile)
+    res.send(htmlFile.replace('Under Construction', item.q).replace('This site is currently under construction.', item.a))
   })
 
   if (!TEST_ENV) {
