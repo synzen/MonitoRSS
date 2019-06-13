@@ -69,6 +69,13 @@ const QAWrapperInner = styled.div`
 const SectionFAQStyles = styled.div`
   width: 100%;
   text-align: left;
+  > div:first-child {
+    > h2 {
+      margin-bottom: 0;
+    }
+    display: flex;
+    justify-content: space-between;
+  }
   a {
     cursor: pointer;
     display: block;
@@ -154,12 +161,16 @@ for (const tag of allTags) {
 }
 
 const allQuestions = faq.map(item => item.qe)
+const itemsPerPage = 10
+const pageByQuestions = {}
+faq.forEach((item, index) => {
+  pageByQuestions[item.q] = Math.floor(index / itemsPerPage)
+})
 
 function FAQ (props) {
   const [ searchTerm, setSearch ] = useState('')
-  const [ autoScrolled, setAutoScrolled ] = useState(false)
   const [ topOffsets, setTopOffsets ] = useState({})
-  const selectedQuestionRef = useRef()
+  const [ page, setPage ] = useState(0)
 
   const paramQuestion = props.match.params.question
   const [ selectedQuestion, setQuestion ] = useState(allQuestions.includes(paramQuestion) ? faq.find(item => item.qe === paramQuestion) : null)
@@ -201,7 +212,7 @@ function FAQ (props) {
   for (const docIndex in documentCounts) {
     if (documentCounts[docIndex] === searchTermSplitSize) intersectingDocumentIndexes.push([ docIndex, documentPoints[docIndex] ])
   }
-  const contentClone = searchTermSplitSize === 0 ? faq : intersectingDocumentIndexes.sort((a, b) => b[1] - a[1]).map(item => faq[item[0]]) // 0th index is the document index, 1st index is the number of points (weight)
+  const contentClone = searchTermSplitSize === 0 ? faq : intersectingDocumentIndexes.sort((a, b) => b[1] - a[1]).map((item, index) => faq[item[0]]) // 0th index is the document index, 1st index is the number of points (weight)
   // contentClone.sort((a, b) => b.p - a.p)
 
   let addedTopOffset = false
@@ -231,6 +242,8 @@ function FAQ (props) {
 
   if (addedTopOffset) setTopOffsets(topOffsets)
 
+  const displayPage = page + 1
+  const lastItem = displayPage * itemsPerPage
   return (
     <div>
       <Header>
@@ -239,6 +252,8 @@ function FAQ (props) {
         <Input icon='search' iconPosition='left' onKeyDown={e => {
           if (e.keyCode !== 13 || !searchTerm || contentClone.length === 0) return
           setQuestion(contentClone[0])
+          setPage(pageByQuestions[contentClone[0].q])
+          console.log('page is ', pageByQuestions)
           setSearch('')
           props.history.push(`${pages.FAQ}/${contentClone[0].qe}`)
         }} onChange={e => {
@@ -249,12 +264,20 @@ function FAQ (props) {
       </Header>
       <Section>
         <SectionFAQ pose='enter' key='faq'>
-          <h2>{ searchTerm ? 'Search Results' : 'Top Questions' }</h2>
+          <div>
+            <h2>{ searchTerm ? 'Search Results' : 'Top Questions' }</h2>
+            <Button.Group>
+              <Button size='large' icon='caret left' disabled={page === 0} onClick={e => page <= 0 ? null : setPage(page - 1)} />
+              <Button.Or text={displayPage} />
+              <Button size='large' icon='caret right' disabled={lastItem >= items.length} onClick={e => lastItem >= items.length ? null : setPage(displayPage)} />
+            </Button.Group>
+          </div>
           <br />
           <PoseGroup flipMove>
-            {items}
+            {items.slice(lastItem - itemsPerPage, lastItem)}
           </PoseGroup>
         </SectionFAQ>
+        <span>Page {displayPage}/{1 + Math.floor(items.length / itemsPerPage)}</span>
       </Section>
     </div>
   )
