@@ -1,4 +1,6 @@
 const path = require('path')
+const fs = require('fs')
+const esmRequire = require('esm')(module)
 const config = require('../config.js')
 const TEST_ENV = process.env.NODE_ENV === 'test'
 if (!TEST_ENV) process.env.NODE_ENV = 'production'
@@ -20,6 +22,9 @@ const REDIRECT_URI = config.web.redirectUri
 const sharedSession = require('express-socket.io-session')
 const SCOPES = 'identify guilds'
 const tokenConfig = code => { return { code, redirect_uri: REDIRECT_URI, scope: SCOPES } }
+const { faq } = esmRequire('./client/src/js/constants/faq.js')
+const htmlFile = fs.readFileSync(path.join(__dirname, 'client/build', 'index.html')).toString()
+
 let httpIo = require('socket.io').listen(http)
 let https
 let httpsIo
@@ -163,7 +168,13 @@ function start (mongooseConnection = mongoose.connection) {
 
   // Redirect all other routes not handled
   app.get('*', async (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'))
+    res.type('text/html')
+    if (!req.path.startsWith('/faq')) return res.send(htmlFile)
+
+    const question = req.path.replace('/faq/', '')
+    const item = faq.find(item => item.qe === question)
+    if (item) return res.send(htmlFile.replace('__OG_TITLE__', item.q).replace('__OG_DESCRIPTION__', item.a))
+    res.send(htmlFile)
   })
 
   if (!TEST_ENV) {

@@ -1,4 +1,3 @@
-import textParser from '../components/ControlPanel/utils/textParser'
 import keywordExtractor from 'keyword-extractor'
 import stemmer from 'stemmer'
 
@@ -46,7 +45,7 @@ const content = [
   {
     q: 'How do I restore an rssbackup file?',
     a: `If you're on the public bot, DM me your file. Otherwise, use the restore bot controller command.`,
-    t: ['rssbackup', 'restore']
+    t: ['rssbackup', 'restore', 'file', 'json']
   },
   {
     q: 'What permissions does someone need to use the bot?',
@@ -62,13 +61,25 @@ const content = [
   },
   {
     q: 'How do I give a custom name and avatar to the bot?',
-    a: `For a custom name, you can set its nickname by right click and change nickname. If you want a custom avatar, this can only be done via webhooks (https://github.com/synzen/Discord.RSS/wiki/Webhook-Integration). For use of webhooks on the public bot, you will need to be a patron (https://www.patreon.com/discordrss).`,
+    a: `For a custom name, you can set its nickname by right click and change nickname.
+    
+    If you want a custom avatar, this can only be done via webhooks (https://github.com/synzen/Discord.RSS/wiki/Webhook-Integration). For use of webhooks on the public bot, you will need to be a patron (https://www.patreon.com/discordrss).`,
     t: ['custom name', 'custom avatar', 'webhook']
   },
   {
     q: 'How do I get the content in a tag in the original XML feed source that is not available as a placeholder?',
     a: `Use rssdump to get a list of all possible "raw" placeholders, and refer to them as \`{raw:placeholder_name}\` in your message or filters. Replace \`placeholder_name\` with the name in the rssdump file.`,
     t: ['rssdump', 'raw placeholder', 'xml', 'source', 'tag']
+  },
+  {
+    q: 'How do I add anchors or masked links to my message?',
+    a: 'Masked links can only be added within embeds, wherever they are allowed. To create them within an embed, use the format: ```[Click Me!](https://www.google.com)``` where you put your text within the square brackets, and the link within the parentheses.',
+    t: ['masked link', 'href', 'anchor', 'link']
+  },
+  {
+    q: 'What is a valid feed?',
+    a: 'A valid feed is normally a page with XML code. See https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml for an example of how an RSS page looks like.',
+    t: ['valid feed', 'feed', 'xml', 'invalid']
   }
 ]
 
@@ -133,7 +144,6 @@ content.forEach((item, contentIndex) => {
   }
 
   item.qe = item.q.replace(/\s/g, '-').replace(/\?/g, '')
-  item.a = textParser.parseAllowLinks(item.a)
 })
 
 for (const word in invertedIndexes) {
@@ -141,5 +151,4 @@ for (const word in invertedIndexes) {
   invertedIndexes[word] = invertedIndex.filter(item => item)
 }
 
-console.log(invertedIndexes)
 export { content as faq, invertedIndexes }

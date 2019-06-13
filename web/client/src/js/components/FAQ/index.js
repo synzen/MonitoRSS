@@ -15,6 +15,7 @@ import Section from '../Home/Section'
 import posed, { PoseGroup } from 'react-pose'
 import PropTypes from 'prop-types'
 import stemmer from 'stemmer'
+import textParser from '../ControlPanel/utils/textParser'
 
 const Header = styled.div`
   position: relative;
@@ -105,6 +106,7 @@ const SectionQuestion = posed(SectionQuestionStyles)({
 
 const AnswerStyles = styled.div`
  > p {
+   padding-top: 5px;
    font-size: 18px;
    > a {
     display: inline;
@@ -165,15 +167,16 @@ const itemsPerPage = 10
 const pageByQuestions = {}
 faq.forEach((item, index) => {
   pageByQuestions[item.q] = Math.floor(index / itemsPerPage)
+  item.a = textParser.parseAllowLinks(item.a)
 })
 
 function FAQ (props) {
   const [ searchTerm, setSearch ] = useState('')
   const [ topOffsets, setTopOffsets ] = useState({})
-  const [ page, setPage ] = useState(0)
 
   const paramQuestion = props.match.params.question
   const [ selectedQuestion, setQuestion ] = useState(allQuestions.includes(paramQuestion) ? faq.find(item => item.qe === paramQuestion) : null)
+  const [ page, setPage ] = useState(selectedQuestion ? pageByQuestions[selectedQuestion.q] : 0)
 
   // Scroll to selected item when the ref and scrollbar are defined
   useEffect(() => {
@@ -216,29 +219,32 @@ function FAQ (props) {
   // contentClone.sort((a, b) => b.p - a.p)
 
   let addedTopOffset = false
-  const items = contentClone.map((item, index) => (
-    <QAWrapper key={item.q} ref={elem => {
-      if (!topOffsets[item.qe]) topOffsets[item.qe] = elem.offsetTop
-    }}>
-      <QAWrapperInner show={selectedQuestion && selectedQuestion.qe === item.qe}>
-        <div />
-        <div>
-          <Link to={pages.FAQ + `/${item.qe}`} onClick={e => setQuestion(selectedQuestion && selectedQuestion.qe === item.qe ? null : item)}>
-            <SectionItemTitle as='span' style={{ fontSize: '18px', lineHeight: '30px' }}>{item.q}</SectionItemTitle>
-          </Link>
-          <Answer pose={selectedQuestion && selectedQuestion.qe === item.qe ? 'expand' : 'minimize'} initialPose='minimize'>
-            <p>{item.a}</p>
-            <SectionSubtitle>Keywords</SectionSubtitle>
-            <TagContainer>
-              {selectedQuestion ? selectedQuestion.t.map((tag, i) => <Tag key={i}>{tag}</Tag>) : []}
-            </TagContainer>
-          </Answer>
-        </div>
+  const items = contentClone.map((item, index) => {
+    const selected = selectedQuestion && selectedQuestion.qe === item.qe
+    return (
+      <QAWrapper key={item.q} ref={elem => {
+        if (!topOffsets[item.qe]) topOffsets[item.qe] = elem.offsetTop
+      }}>
+        <QAWrapperInner show={selected}>
+          <div />
+          <div>
+            <Link to={pages.FAQ + `/${item.qe}`} onClick={e => setQuestion(selected ? null : item)}>
+              <SectionItemTitle as='span' style={{ fontSize: '18px', lineHeight: '30px', fontWeight: selected ? 600 : 'normal', color: selected ? lighten(0.125, colors.discord.blurple) : colors.discord.text }}>{item.q}</SectionItemTitle>
+            </Link>
+            <Answer pose={selected ? 'expand' : 'minimize'} initialPose='minimize'>
+              <p>{item.a}</p>
+              <SectionSubtitle>Keywords</SectionSubtitle>
+              <TagContainer>
+                {selectedQuestion ? selectedQuestion.t.map((tag, i) => <Tag key={i}>{tag}</Tag>) : []}
+              </TagContainer>
+            </Answer>
+          </div>
 
-      </QAWrapperInner>
-      <Divider />
-    </QAWrapper>
-  ))
+        </QAWrapperInner>
+        <Divider />
+      </QAWrapper>
+    )
+  })
 
   if (addedTopOffset) setTopOffsets(topOffsets)
 
@@ -257,6 +263,7 @@ function FAQ (props) {
           setSearch('')
           props.history.push(`${pages.FAQ}/${contentClone[0].qe}`)
         }} onChange={e => {
+          if (page !== 0) setPage(0)
           setSearch(e.target.value)
         }} value={searchTerm} />
         <FadeText pose={searchTerm && items.length > 0 ? 'enter' : 'exit'} style={{ paddingTop: '1em', color: colors.discord.green }}>Click Enter to see the first article</FadeText>

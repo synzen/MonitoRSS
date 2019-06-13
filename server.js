@@ -13,7 +13,7 @@ try {
 
 drss.once('finishInit', () => {
   try {
-    if (config.web.enabled === true) require('./web/index.js')()
+    if (config.web.enabled === true) require('./web/index')()
   } catch (err) {
     console.log(err)
   }

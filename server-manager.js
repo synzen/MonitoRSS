@@ -10,7 +10,7 @@ clientManager.run()
 clientManager.once('finishInit', () => {
   // Do whatever once the sharding manager has finished spawning and waiting for all shards to finish initialization
   try {
-    require('./web/index.js')()
+    require('./web/index')()
   } catch (err) {
     if (config.web.enabled === true) console.log(err)
   }

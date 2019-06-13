@@ -20,6 +20,7 @@ class FeedInput extends Component {
     return (
       <Input
         fluid
+        placeholder='Enter a feed URL!'
         disabled={this.props.loading}
         action={<Button disabled={!this.state.url} content='Get' onClick={this.getArticles} />}
         onKeyPress={e => e.key === 'Enter' ? this.getArticles() : null}

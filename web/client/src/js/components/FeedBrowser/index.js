@@ -468,7 +468,7 @@ class FeedBrowser extends Component {
                   </StatusMessage>
                 : this.state.prevUrl
                   ? <StatusMessage><SectionSubtitleDescription fontSize='20px'>No articles were found :(</SectionSubtitleDescription></StatusMessage>
-                  : <StatusMessage><SectionSubtitleDescription fontSize='20px'>Enter a feed URL!</SectionSubtitleDescription></StatusMessage>
+                  : null
               : null
             }
             <PoseGroup animateOnMount>
