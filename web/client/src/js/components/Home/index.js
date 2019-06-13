@@ -4,7 +4,6 @@ import styled from 'styled-components'
 import { Button, Icon } from 'semantic-ui-react'
 import Section from './Section'
 import colors from '../../constants/colors'
-import { darken } from 'polished'
 import modal from '../utils/modal'
 import pages from '../../constants/pages'
 
@@ -46,12 +45,6 @@ const Header = styled.div`
   }
 `
 
-const SampleContainer = styled.div`
-  background: black;
-  height: 300px;
-
-`
-
 const HeaderButtons = styled.div`
   display: flex;
   justify-content: center;
@@ -65,10 +58,6 @@ const HeaderButtons = styled.div`
 `
 
 const ImageContainer = styled.div`
-  /* position: absolute; */
-  /* bottom: -425px; */
-  /* background: #fff; */
-  /* border-radius: 2px; */
   margin-top: 50px;
   @media only screen and (min-width: 1270px) {
     margin-top: 0;
@@ -79,12 +68,6 @@ const ImageContainer = styled.div`
     height: 100%;
     box-shadow: 0 8px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
   }
-`
-
-const Steps = styled.ol`
-  max-width: 300px;
-  text-align: left;
-  margin: 0 auto;
 `
 
 const Cards = styled.div`
@@ -188,8 +171,8 @@ const ModalFooter = styled.div`
 
 const modalProps = {
   footer: <ModalFooter>
-    <a target='_blank' href='https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot&permissions=19456' onClick={e => modal.hide()}><Button fluid>With Role</Button></a>
-    <a target='_blank' href='https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot' onClick={e => modal.hide()}><Button fluid>Without Role</Button></a>
+    <a target='_blank' rel='noopener noreferrer' href='https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot&permissions=19456' onClick={e => modal.hide()}><Button fluid>With Role</Button></a>
+    <a target='_blank' rel='noopener noreferrer' href='https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot' onClick={e => modal.hide()}><Button fluid>Without Role</Button></a>
   </ModalFooter>
 }
 
@@ -234,7 +217,7 @@ function Home (props) {
             <Icon name='search' />
             <div>
               <h3>2. Find a valid feed</h3>
-              <p>An example of a valid feed would be <a href='https://www.reddit.com/r/all.rss' target='_blank'>https://www.reddit.com/r/all.rss</a></p>
+              <p>An example of a valid feed would be <a href='https://www.reddit.com/r/all.rss' target='_blank' rel='noopener noreferrer'>https://www.reddit.com/r/all.rss</a></p>
             </div>
           </Card>
           <Card>

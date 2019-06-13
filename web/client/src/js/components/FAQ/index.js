@@ -1,13 +1,11 @@
-import React, { Component, useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, withRouter } from 'react-router-dom'
-import SectionTitle from '../utils/SectionTitle'
 import PageHeader from '../utils/PageHeader'
 import styled from 'styled-components'
-import { Button, Input, Divider, Breadcrumb } from 'semantic-ui-react'
+import { Button, Input, Divider } from 'semantic-ui-react'
 import colors from '../../constants/colors'
 import pages from '../../constants/pages'
 import SectionItemTitle from '../utils/SectionItemTitle'
-import SectionSubtitleDescription from '../utils/SectionSubtitleDescription'
 import SectionSubtitle from '../utils/SectionSubtitle'
 import { lighten, transparentize } from 'polished'
 import { faq, invertedIndexes } from '../../constants/faq'
@@ -49,25 +47,27 @@ const QAWrapper = posed.div({
 })
 
 const QAWrapperInner = styled.div`
-  position: relative;
   display: flex;
-  > div:first-child {
-    display: ${props => props.show ? 'block' : 'none'};
-    position: absolute;
-    left: -15px;
-    top: 0;
-    width: 2px;
-    border-left-color: ${colors.discord.blurple};
-    border-left-width: 3px;
-    border-left-style: solid;
-    height: 100%;
-  }
   > div:last-child {
     width: 100%;
   }
 `
 
-const SectionFAQStyles = styled.div`
+const BlueSidebar = styled.div`
+  display: ${props => props.show ? 'block' : 'none'};
+  position: absolute;
+  left: 0px;
+  top: 0;
+  width: 2px;
+  margin-top: 7px;
+  border-left-color: ${colors.discord.blurple};
+  border-left-width: 3px;
+  border-left-style: solid;
+  height: 100%;
+  z-index: 1000;
+`
+
+const SectionFAQ = styled.div`
   width: 100%;
   text-align: left;
   > div:first-child {
@@ -86,27 +86,12 @@ const SectionFAQStyles = styled.div`
   }
 `
 
-const SectionQuestionStyles = styled.div`
-  width: 100%;
-  text-align: left;
-  > p {
-    font-size: 18px;
-  }
-`
-
-const SectionFAQ = posed(SectionFAQStyles)({
-  enter: { y: 0, opacity: 1, transition: { duration: 100 } },
-  exit: { y: 100, opacity: 0, transition: { duration: 100 } }
-})
-
-const SectionQuestion = posed(SectionQuestionStyles)({
-  enter: { y: 0, opacity: 1, transition: { type: 'tween', delay: 75 } },
-  exit: { y: -100, opacity: 0, transition: { type: 'tween' } }
-})
-
 const AnswerStyles = styled.div`
+  position: relative;
+  padding-left: 15px;
  > p {
    padding-top: 5px;
+   
    font-size: 18px;
    > a {
     display: inline;
@@ -116,8 +101,8 @@ const AnswerStyles = styled.div`
 `
 
 const Answer = posed(AnswerStyles)({
-  expand: { height: 'auto' },
-  minimize: { height: 0 }
+  expand: { height: 'auto', opacity: 1 },
+  minimize: { height: 0, opacity: 0 }
 })
 
 const TagContainer = styled.div`
@@ -142,10 +127,8 @@ const Tag = styled.span`
 
 const FadeTextStyles = styled.p`
   position: absolute;
-  bottom: 70px;
-  @media only screen and (max-width: 400px) {
-    bottom: 45px;
-  }
+  bottom: -30px;
+  color: ${colors.discord.green};
 `
 
 const FadeText = posed(FadeTextStyles)({
@@ -179,11 +162,12 @@ function FAQ (props) {
   const [ page, setPage ] = useState(selectedQuestion ? pageByQuestions[selectedQuestion.q] : 0)
 
   // Scroll to selected item when the ref and scrollbar are defined
+  const canScroll = !!(props.scrollbar && selectedQuestion && topOffsets[selectedQuestion.qe])
   useEffect(() => {
     if (props.scrollbar && selectedQuestion && topOffsets[selectedQuestion.qe]) {
       props.scrollbar.scrollTop(topOffsets[selectedQuestion.qe])
     }
-  }, [!!props.scrollbar && !!selectedQuestion && !!topOffsets[selectedQuestion.qe]])
+  }, [ canScroll ])
 
   // Scroll after searching an item
   useEffect(() => {
@@ -225,13 +209,14 @@ function FAQ (props) {
       <QAWrapper key={item.q} ref={elem => {
         if (!topOffsets[item.qe]) topOffsets[item.qe] = elem.offsetTop
       }}>
-        <QAWrapperInner show={selected}>
-          <div />
+        <QAWrapperInner>
+          {/* <BlueSidebar show={selected} /> */}
           <div>
             <Link to={selected ? pages.FAQ : `${pages.FAQ}/${item.qe}`} onClick={e => setQuestion(selected ? null : item)}>
               <SectionItemTitle as='span' style={{ fontSize: '18px', lineHeight: '30px', fontWeight: selected ? 600 : 'normal', color: selected ? lighten(0.125, colors.discord.blurple) : colors.discord.text }}>{item.q}</SectionItemTitle>
             </Link>
             <Answer pose={selected ? 'expand' : 'minimize'} initialPose='minimize'>
+              <BlueSidebar show={selected} />
               <p>{item.a}</p>
               <SectionSubtitle>Keywords</SectionSubtitle>
               <TagContainer>
@@ -255,17 +240,19 @@ function FAQ (props) {
       <Header>
         <PageHeader heading='Frequently Asked Questions' style={{ textAlign: 'center' }} />
         <p style={{ textAlign: 'center' }}>A labyrinth of information, at your disposal.<br /><span style={{ color: colors.discord.yellow }}>This is an incomplete section. More content will be added.</span></p>
-        <Input icon='search' iconPosition='left' onKeyDown={e => {
-          if (e.keyCode !== 13 || !searchTerm || contentClone.length === 0) return
-          setQuestion(contentClone[0])
-          setPage(pageByQuestions[contentClone[0].q])
-          setSearch('')
-          props.history.push(`${pages.FAQ}/${contentClone[0].qe}`)
-        }} onChange={e => {
-          if (page !== 0) setPage(0)
-          setSearch(e.target.value)
-        }} value={searchTerm} />
-        <FadeText pose={searchTerm && items.length > 0 ? 'enter' : 'exit'} style={{ paddingTop: '1em', color: colors.discord.green }}>Click Enter to see the first article</FadeText>
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', position: 'relative' }}>
+          <Input icon='search' iconPosition='left' onKeyDown={e => {
+            if (e.keyCode !== 13 || !searchTerm || contentClone.length === 0) return
+            setQuestion(contentClone[0])
+            setPage(pageByQuestions[contentClone[0].q])
+            setSearch('')
+            props.history.push(`${pages.FAQ}/${contentClone[0].qe}`)
+          }} onChange={e => {
+            if (page !== 0) setPage(0)
+            setSearch(e.target.value)
+          }} value={searchTerm} />
+          <FadeText pose={searchTerm && items.length > 0 ? 'enter' : 'exit'}>Click Enter to see the first article</FadeText>
+        </div>
         {/* <Dropdown multiple search selection options={allTagsOptions} /> */}
       </Header>
       <Section>
@@ -287,6 +274,10 @@ function FAQ (props) {
       </Section>
     </div>
   )
+}
+
+FAQ.propTypes = {
+  scrollbar: PropTypes.object
 }
 
 export default withRouter(FAQ)

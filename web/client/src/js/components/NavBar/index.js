@@ -95,7 +95,7 @@ const NavItem = styled.li`
   justify-content: center;
   height: 100%;
   width: 100%;
-
+  
   &:first-child > a {
     user-select: none;
     padding-left: 25px;
@@ -106,7 +106,24 @@ const NavItem = styled.li`
     padding-right: 25px;
     justify-content: flex-end;
   }
-  
+  > button {
+    color: ${colors.discord.text};
+    border: none;
+    background: none;
+    transition: color 0.25s;
+    width: 100%;
+    cursor: pointer;
+    &:focus {
+      outline: none;
+    }
+    &:hover {
+      color: white;
+      text-decoration: none;
+    }
+    > i {
+      margin-left: 5px;
+    }
+  }
   /* text-align: center; */
   > a {
     padding: 10px 20px;
@@ -134,19 +151,6 @@ const NavItem = styled.li`
 const Logo = styled.img`
   height:  2em;
   margin-right: 0.75em;
-`
-
-// const ExternalIcon = posed(React.forwardRef((props, ref) => (<span ref={ref}><Icon {...props} /></span>)))({
-//   enter: { width: 'auto', opacity: 1, transition: { duration: 100 } },
-//   exit: { width: 0, opacity: 0, transition: { duration: 100 } }
-// })
-
-const ExternalIcon = styled(Icon)`
-  width: ${props => props.pose === 'enter' ? 'auto' : 0} !important;
-  padding-left: ${props => props.pose === 'enter' ? '10px' : 0};
-  opacity: ${props => props.pose === 'enter' ? 1 : 0} !important;  
-  /* overflow: ${props => props.pose === 'enter' ? 'visible' : 'hidden'}; */
-  transition: all 0.25s;
 `
 
 const NavDropdown = styled.ul`
@@ -192,8 +196,6 @@ const DropdownNavItem = styled.li`
 `
 
 function NavBar (props) {
-  const [ hoveringPatreon, setHoverPatreon ] = useState(false)
-  const [ hoveringGithub, setHoverGithub ] = useState(false)
   const [ showNavDropdown, setShowNavDropdown ] = useState(false)
   const [ showMobileNav, setShowMobileNav ] = useState(false)
   const path = props.location.pathname
@@ -212,9 +214,9 @@ function NavBar (props) {
           <NavItem selected={path === pages.FEED_BROWSER}><Link to={pages.FEED_BROWSER}>Feed Browser</Link></NavItem>
           {/* <li onMouseEnter={e => setHoverPatreon(true)} onMouseLeave={e => setHoverPatreon(false)}>Patreon<ExternalIcon pose={hoveringPatreon ? 'enter' : 'exit'} name='external' /></li>
           <li onMouseEnter={e => setHoverGithub(true)} onMouseLeave={e => setHoverGithub(false)}>Github<ExternalIcon pose={hoveringGithub ? 'enter' : 'exit'} name='external' /></li> */}
-          <NavItem selected={path === pages.SUPPORT}><a href='https://discord.gg/pudv7Rx' target='_blank'>Support<Icon name='external' size='small' /></a></NavItem>
+          <NavItem selected={path === pages.SUPPORT}><a href='https://discord.gg/pudv7Rx' target='_blank' rel='noopener noreferrer'>Support<Icon name='external' size='small' /></a></NavItem>
           <NavItem onMouseEnter={e => setShowNavDropdown(true)} onMouseLeave={e => setShowNavDropdown(false)}>
-            <a href='#'>Links<Icon name='caret down' size='small' /></a>
+            <button>Links<Icon name='caret down' size='small' /></button>
             <NavDropdown show={showNavDropdown} >
               <DropdownNavItem><a href='https://github.com/synzen/Discord.RSS' target='_blank' rel='noopener noreferrer'><Icon name='github' /><span>Github</span></a></DropdownNavItem>
               <DropdownNavItem><a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'><Icon name='patreon' style={{ color: '#E85B46' }} /><span>Patreon</span></a></DropdownNavItem>
@@ -235,7 +237,7 @@ function NavBar (props) {
           <ul>
             <li><Link to={pages.FAQ} onClick={e => setShowMobileNav(false)}>FAQ</Link></li>
             <li><Link to={pages.FEED_BROWSER} onClick={e => setShowMobileNav(false)}>Feed Browser</Link></li>
-            <li><a href='https://discord.gg/pudv7Rx' target='_blank'>Discord Support<Icon style={{ marginLeft: '5px' }} name='external' size='small' /></a></li>
+            <li><a href='https://discord.gg/pudv7Rx' target='_blank' rel='noopener noreferrer'>Discord Support<Icon style={{ marginLeft: '5px' }} name='external' size='small' /></a></li>
             <li><a href='https://github.com/synzen/Discord.RSS' target='_blank' rel='noopener noreferrer'><Icon name='github' /><span>Github</span></a></li>
             <li><a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'><Icon name='patreon' style={{ color: '#E85B46' }} /><span>Patreon</span></a></li>
           </ul>

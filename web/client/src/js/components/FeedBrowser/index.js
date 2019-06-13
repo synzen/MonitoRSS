@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { withRouter, Link } from 'react-router-dom'
+import { withRouter } from 'react-router-dom'
 import { connect } from 'react-redux'
 import { changePage } from 'js/actions/index-actions'
 import pages from 'js/constants/pages'
@@ -36,12 +36,6 @@ const mapDispatchToProps = dispatch => {
     setToThisPage: () => dispatch(changePage(pages.FEED_BROWSER))
   }
 }
-
-const CleanLink = styled(Link)`
-  &:hover {
-    text-decoration: none;
-  }
-`
 
 const Header = styled.div`
   background-color: #26262b;

@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import './js/index'
 import styled from 'styled-components'
-import { Switch, Route, Link, Redirect } from 'react-router-dom'
+import { Switch, Route, Redirect } from 'react-router-dom'
 import colors from './js/constants/colors'
 import 'react-toastify/dist/ReactToastify.min.css'
 import './semantic/dist/semantic.min.css'
@@ -26,12 +26,6 @@ const mapStateToProps = state => {
   }
 }
 
-const CleanLink = styled(Link)`
-  &:hover {
-    text-decoration: none;
-  }
-`
-
 const EmptyBackground = styled.div`
   height: 100vh;
   width: 100vw;
@@ -45,10 +39,6 @@ const EmptyBackground = styled.div`
     color: white;
   }
   color: ${colors.discord.text};
-`
-
-const LoginContainer = styled.div`
-  color: white;
 `
 
 const Wrapper = styled.div`
