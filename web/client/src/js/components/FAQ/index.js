@@ -228,7 +228,7 @@ function FAQ (props) {
         <QAWrapperInner show={selected}>
           <div />
           <div>
-            <Link to={pages.FAQ + `/${item.qe}`} onClick={e => setQuestion(selected ? null : item)}>
+            <Link to={selected ? pages.FAQ : `${pages.FAQ}/${item.qe}`} onClick={e => setQuestion(selected ? null : item)}>
               <SectionItemTitle as='span' style={{ fontSize: '18px', lineHeight: '30px', fontWeight: selected ? 600 : 'normal', color: selected ? lighten(0.125, colors.discord.blurple) : colors.discord.text }}>{item.q}</SectionItemTitle>
             </Link>
             <Answer pose={selected ? 'expand' : 'minimize'} initialPose='minimize'>
@@ -259,7 +259,6 @@ function FAQ (props) {
           if (e.keyCode !== 13 || !searchTerm || contentClone.length === 0) return
           setQuestion(contentClone[0])
           setPage(pageByQuestions[contentClone[0].q])
-          console.log('page is ', pageByQuestions)
           setSearch('')
           props.history.push(`${pages.FAQ}/${contentClone[0].qe}`)
         }} onChange={e => {
