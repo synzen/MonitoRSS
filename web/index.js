@@ -169,12 +169,12 @@ function start (mongooseConnection = mongoose.connection) {
   // Redirect all other routes not handled
   app.get('*', async (req, res) => {
     res.type('text/html')
-    if (!req.path.startsWith('/faq')) return res.send(htmlFile)
+    if (!req.path.startsWith('/faq')) return res.send(htmlFile.replace('Under Construction').replace('This site is currently under construction.'))
 
     const question = req.path.replace('/faq/', '')
     const item = faq.find(item => item.qe === question)
     if (item) return res.send(htmlFile.replace('__OG_TITLE__', item.q).replace('__OG_DESCRIPTION__', item.a))
-    res.send(htmlFile.replace('Under Construction', item.q).replace('This site is currently under construction.', item.a))
+    res.send(htmlFile.replace('Under Construction').replace('This site is currently under construction.'))
   })
 
   if (!TEST_ENV) {
