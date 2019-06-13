@@ -37911,9 +37911,18 @@ body.pushable > .pusher {
   transform: scale(0.75);
 }
 
-/*******************************
-         Theme Overrides
-*******************************/
+/* Page Context */
+
+.pushable:not(body) {
+  -webkit-transform: none;
+  transform: none;
+}
+
+.pushable:not(body) > .ui.sidebar,
+.pushable:not(body) > .fixed,
+.pushable:not(body) > .pusher:after {
+  position: fixed;
+}
 
 /*******************************
          Site Overrides

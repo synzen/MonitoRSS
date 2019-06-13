@@ -57,10 +57,7 @@ const BrandTitleContainer = styled.div`
       display: none !important;
     }
   }
-  height: 4em;
-  @media screen and (min-height: 400px) and (min-width: 525px) {
-    height: 5em;
-  }
+  height: 60px;
 `
 const Logo = styled.img`
   height:  2em;

@@ -12,7 +12,7 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import { Divider, Icon, Popup, Dropdown, Button, Input } from 'semantic-ui-react'
 import { Scrollbars } from 'react-custom-scrollbars';
-import modal from '../../../utils/modal'
+import modal from 'js/components/utils/modal'
 import toast from '../../../utils/toast'
 import axios from 'axios'
 import colors from 'js/constants/colors'

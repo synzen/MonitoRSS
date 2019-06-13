@@ -20,6 +20,7 @@ import axios from 'axios'
 import querystring from 'query-string'
 import FeedInput from './FeedInput'
 import colors from 'js/constants/colors'
+import hljs from 'highlight.js'
 
 const timezoneGuess = moment.tz(moment.tz.guess()).format('z')
 
@@ -42,16 +43,40 @@ const CleanLink = styled(Link)`
   }
 `
 
-const Container = styled.div`
-  padding: 20px;
-  @media only screen and (min-width: 930px) {
-    padding: 55px;
-  }
+const Header = styled.div`
+  background-color: #26262b;
   width: 100%;
-  /* max-width: 840px; */
+  height: 350px;
+  padding: 0 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  > div:first-child {
+    padding-bottom: 10px;
+  }
+  > p {
+    margin-bottom: 30px;
+  }
+  .ui.input {
+    max-width: 700px;
+    width: 100%;
+  }
+  .ui.dropdown {
+    max-width: 700px;
+    width: 100%;
+  }
 `
+
 const ArticlesSection = styled.div`
-  margin-top: 3em;
+  margin: 3em auto;
+  max-width: 1450px;
+  width: 100%;
+`
+
+const ArticlesSectionInner = styled.div`
+  padding: 0 25px;
 `
 
 const ArticlesSectionSearch = styled.div`
@@ -66,13 +91,42 @@ const ArticlesHeaderContainer = styled.div`
   flex-direction: column;
   justify-content: space-between;
   margin-bottom: 1em;
-  @media only screen and (min-width: 450px) {
+  @media only screen and (min-width: 650px) {
     flex-direction: row;
   }
 `
 
-const SortByContainer = styled.div`
+const SearchFilterSectionStyles = styled.section`
+  overflow: hidden;
+`
+
+const SearchFilterSection = posed(SearchFilterSectionStyles)({
+  enter: { height: 'auto', opacity: 1 },
+  exit: { height: 0, opacity: 0 }
+})
+
+
+const ViewOptions = styled.div`
   display: flex;
+  flex-direction: column;
+  
+  > .ui.dropdown:first-child {
+    flex-grow: 1;
+    margin-bottom: 5px;
+  }
+  @media only screen and (min-width: 650px) {
+    flex-direction: row;
+    > .ui.dropdown:first-child {
+      flex-grow: 0;
+      margin-bottom: 0;
+      margin-right: 10px;
+    }
+  }
+`
+
+const SortByContainerStyles = styled.div`
+  display: flex;
+  overflow: hidden;
   > .ui.dropdown {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
@@ -85,11 +139,16 @@ const SortByContainer = styled.div`
     border-top-right-radius: 4px;
     border-bottom-right-radius: 4px;
   }
-  @media only screen and (min-width: 450px) {
+  @media only screen and (min-width: 650px) {
     flex-direction: row;
     flex-grow: 0;
   }
 `
+
+const SortByContainer = posed(SortByContainerStyles)({
+  enter: { width: 'auto', opacity: 1 },
+  exit: { width: 0, opacity: 0 }
+})
 
 const ArticleImages = styled.div`
   a {
@@ -145,6 +204,8 @@ const OpacityTransition = posed.div({
   exit: { opacity: 0, height: 0 }
 })
 
+const viewTypeOptions = [{ text: 'Placeholders', value: 'placeholders' }, { text: 'Original XML', value: 'xml' }]
+
 class FeedBrowser extends Component {
   constructor (props) {
     super()
@@ -161,7 +222,10 @@ class FeedBrowser extends Component {
       searchDropdownOptions: [],
       articleList: [],
       sortBy: parsedQuery.sort,
-      sortDescending: parsedQuery.ascending === 'true' ? false : true
+      sortDescending: parsedQuery.ascending === 'true' ? false : true,
+      viewType: viewTypeOptions[0].value,
+      loadingXML: false,
+      xmlText: ''
     }
   }
 
@@ -170,10 +234,19 @@ class FeedBrowser extends Component {
   }
 
   componentDidMount () {
+    // const sessionData = sessionStorage.getItem('feedbrowserData')
+    // if (sessionData) {
+      
+    //   this.setState({ loading: true })
+    //   return setTimeout(() => {
+    //     const sessionDataParsed = JSON.parse(sessionData)
+    //     this.fillSearchDropdown(sessionDataParsed.articleList, sessionDataParsed.prevUrl, sessionDataParsed.prevUrlEncoded, sessionDataParsed.xml)
+    //   }, 0)
+    // }
     if (this.state.url) this.getArticles()
   }
 
-  fillSearchDropdown = (articleList, url, encodedUrl) => {
+  fillSearchDropdown = (articleList, url, encodedUrl, xmlText) => {
     const placeholdersSeen = {}
     const searchCategories = ['title'] // Title can always be shown regardless of whether articles have it or not. If there is no title, it will say as such.
     const searchDropdownOptions = []
@@ -182,7 +255,7 @@ class FeedBrowser extends Component {
       for (const placeholder in placeholders) {
         if (!placeholders[placeholder]) continue
         if (placeholder === 'date') placeholders[placeholder] = moment(placeholders[placeholder]).local().format('DD MMMM Y hh:mm A (HH:mm) zz')
-        if (placeholder.includes('image')) {
+        else if (placeholder.includes('image')) {
           if (!placeholdersSeen.images) {
             placeholdersSeen.images = true
             searchDropdownOptions.push({ text: 'images', value: 'images' })
@@ -208,16 +281,17 @@ class FeedBrowser extends Component {
       pathname: `${pages.FEED_BROWSER}/${encodedUrl}` //,
       // search: this.state.sortBy && searchCategories.includes(this.state.sortBy) ? `?sort=${this.state.sortBy}` : undefined
     })
-    this.setState({ searchDropdownOptions, searchCategories, loading: false, search: '', articleList, prevUrl: url, prevEncodedUrl: encodedUrl })
+    this.setState({ searchDropdownOptions, searchCategories, loading: false, search: '', articleList, prevUrl: url, prevUrlEncoded: encodedUrl, xmlText })
   }
 
   getArticles = (paramUrl) => {
     const url = paramUrl || this.state.url
     if (!url || this.state.loading) return
-    this.setState({ loading: true, error: '' })
+    this.setState({ loading: true, error: '', viewType: viewTypeOptions[0].value, xmlText: '', loadingXML: false })
     const encodedUrl = encodeURIComponent(url)
     axios.get(`/api/feeds/${encodedUrl}`).then(res => {
-      this.fillSearchDropdown(res.data, url, encodedUrl)
+      this.fillSearchDropdown(res.data.placeholders, url, encodedUrl, res.data.xml)
+      sessionStorage.setItem('feedbrowserData', JSON.stringify({ articleList: res.data.placeholders, xml: res.data.xml, prevUrl: url, prevUrlEncoded: encodedUrl }))
       // this.setState({ loading: false, articleList: res.data, prevUrl: url })
     }).catch(err => {
       console.log(err.response || err.message)
@@ -229,11 +303,21 @@ class FeedBrowser extends Component {
   }
 
   sortBy = sortBy => {
-    this.setState({ sortBy: sortBy || '' })
+    if (this.state.sortBy !== sortBy) this.setState({ sortBy: sortBy || '' })
     // this.props.history.push({
     //   pathname: `${pages.FEED_BROWSER}/${this.state.prevEncodedUrl}`,
     //   search: sortBy ? `?sort=${sortBy}` : ''
     // })
+  }
+
+  viewType = viewType => {
+    const { prevUrl } = this.state
+    if (!prevUrl || viewType === this.state.viewType) return
+    if (viewType === 'placeholders') {
+      this.setState({ viewType, error: '' })
+      return
+    }
+    if (this.state.xmlText) return this.setState({ viewType })
   }
 
   render () {
@@ -331,60 +415,74 @@ class FeedBrowser extends Component {
     })
 
 
-
+    const notPlaceholdersViewType = this.state.viewType !== 'placeholders'
     return (
-      <Container>
-        <CleanLink to='/'><Button style={{ marginBottom: '1em' }}>Back</Button></CleanLink>
-        <PageHeader heading='Feed Browser' subheading='Preview placeholders and browse their contents without adding them!' />
-        <SectionTitle heading='URL' subheading='Enter a feed URL.' />
+      <div>
+        <Header>
+        <PageHeader heading='Feed Browser' />
+        <p>Preview placeholders and browse their contents without adding them!</p>
+        {/* <SectionTitle heading='URL' subheading='Enter a feed URL.' /> */}
         {/* <Input fluid disabled={this.state.loading} onFocus={e => this.setState({ inputFocused: true })} onBlur={e => this.setState({ inputFocused: false })} action={<Button disabled={!this.state.url} content='Get' onClick={this.getArticles} />} onKeyPress={e => e.key === 'Enter' ? this.getArticles() : null} onChange={e => this.setState({ url: e.target.value }) } value={this.state.url}/> */}
         <FeedInput getArticles={this.getArticles} loading={this.state.loading} />
-        <Divider />
-        <ArticlesSection className='hello'>
+        </Header>
 
-          <OpacityTransition pose={this.state.loading || articleList.length === 0 ? 'exit' : 'enter'} className='world'>
-            <SectionTitle heading='Result' subheading='You can filter out article details by selecting certain article categories. You may also filter articles by search.' />
-            <UrlDisplay>
-              <SectionSubtitle>
-                URL
-              </SectionSubtitle>
-              <a href={this.state.prevUrl} rel='noopener noreferrer' target='_blank'>{this.state.prevUrl}</a>
-            </UrlDisplay>
-            <Divider />
-            <SectionSubtitle>
-              Search and Filter
-            </SectionSubtitle>
-            <ArticlesSectionSearch>
-              <Input disabled={this.state.loading || articleList.length === 0} icon='search' fluid onChange={e => this.setState({ search: e.target.value })} placeholder='Search' loading={this.state.loading} />
-              <Dropdown disabled={this.state.loading || articleList.length === 0} placeholder='Show Properties' selection fluid multiple options={this.state.searchDropdownOptions} value={this.state.searchCategories} onChange={(e, data) => data.value.length === 0 ? null : this.setState({ searchCategories: data.value }) } loading={this.state.loading} />
-            </ArticlesSectionSearch>
-            <Divider />
-            <ArticlesHeaderContainer>
-              <SectionSubtitle>{this.state.articleList.length} Articles</SectionSubtitle>
-              <SortByContainer>
-                <Dropdown selection value={this.state.sortBy} placeholder='Sort by' disabled={articleList.length === 0 || this.state.loading} onChange={(e, data) => this.sortBy(data.value)} options={this.state.searchDropdownOptions} />
-                <Button icon='sort' disabled={!this.state.sortBy || articleList.length === 0 || this.state.loading} onClick={e => this.setState({ sortDescending: !this.state.sortDescending })} />
-                <Button icon='cancel' disabled={!this.state.sortBy || articleList.length === 0 || this.state.loading} onClick={e => this.sortBy()} />
-              </SortByContainer>
-            </ArticlesHeaderContainer>
+        <ArticlesSection className='hello'>
+          <ArticlesSectionInner>
+            <OpacityTransition pose={this.state.loading || articleList.length === 0 ? 'exit' : 'enter'} className='world'>
+              <SectionTitle heading='Result' subheading='You can filter out article details by selecting certain article categories. You may also filter articles by search.' />
+              <UrlDisplay>
+                <SectionSubtitle>
+                  URL
+                </SectionSubtitle>
+                <a href={this.state.prevUrl} rel='noopener noreferrer' target='_blank'>{this.state.prevUrl}</a>
+              </UrlDisplay>
+              <Divider />
+              <SearchFilterSection pose={notPlaceholdersViewType ? 'exit' : 'enter'}>
+                <SectionSubtitle>
+                  Search and Filter
+                </SectionSubtitle>
+                <ArticlesSectionSearch>
+                  <Input disabled={this.state.loading || articleList.length === 0} icon='search' fluid onChange={e => this.setState({ search: e.target.value })} placeholder='Search' loading={this.state.loading} />
+                  <Dropdown disabled={this.state.loading || articleList.length === 0} placeholder='Show Properties' selection fluid multiple options={this.state.searchDropdownOptions} value={this.state.searchCategories} onChange={(e, data) => data.value.length === 0 ? null : this.setState({ searchCategories: data.value }) } loading={this.state.loading} />
+                </ArticlesSectionSearch>
+                <Divider />
+              </SearchFilterSection>
+              <ArticlesHeaderContainer>
+                <SectionSubtitle>{this.state.articleList.length} Articles</SectionSubtitle>
+                <ViewOptions>
+                  <Dropdown selection placeholder='View type' options={viewTypeOptions} value={this.state.viewType} onChange={(e, data) => this.viewType(data.value)} />
+                  <SortByContainer pose={notPlaceholdersViewType ? 'exit' : 'enter'}>
+                    <Dropdown selection value={this.state.sortBy} placeholder='Sort by' disabled={notPlaceholdersViewType || articleList.length === 0 || this.state.loading} onChange={(e, data) => this.sortBy(data.value)} options={this.state.searchDropdownOptions} />
+                    <Button icon='sort' disabled={notPlaceholdersViewType || !this.state.sortBy || articleList.length === 0 || this.state.loading} onClick={e => this.setState({ sortDescending: !this.state.sortDescending })} />
+                    <Button icon='cancel' disabled={notPlaceholdersViewType || !this.state.sortBy || articleList.length === 0 || this.state.loading} onClick={e => this.sortBy()} />
+                  </SortByContainer>
+                </ViewOptions>
+              </ArticlesHeaderContainer>
             </OpacityTransition>
-          { this.state.error
-            ? <StatusMessage><SectionSubtitleDescription style={{ color: colors.discord.red }} fontSize='20px'>{this.state.error}</SectionSubtitleDescription></StatusMessage>
-            : this.state.loading || articleList.length === 0
-            ? this.state.loading
-              ? <StatusMessage>
-                  <Loader active inverted size='massive' content={<SectionSubtitleDescription fontSize='20px'>Fetching...</SectionSubtitleDescription>}/>
-                </StatusMessage>
-              : this.state.prevUrl
-                ? <StatusMessage><SectionSubtitleDescription fontSize='20px'>No articles were found :(</SectionSubtitleDescription></StatusMessage>
-                : <StatusMessage><SectionSubtitleDescription fontSize='20px'>Enter a feed URL!</SectionSubtitleDescription></StatusMessage>
-            : null
-          }
-          <PoseGroup animateOnMount>
-            {this.state.loading ? [] : elems}
-          </PoseGroup>
+            { this.state.error
+              ? <StatusMessage><SectionSubtitleDescription style={{ color: colors.discord.red }} fontSize='20px'>{this.state.error}</SectionSubtitleDescription></StatusMessage>
+              : this.state.loading || articleList.length === 0 || this.state.loadingXML
+              ? (this.state.loading || this.state.loadingXML)
+                ? <StatusMessage>
+                    <Loader active inverted size='massive' content={<SectionSubtitleDescription fontSize='20px'>Fetching...</SectionSubtitleDescription>}/>
+                  </StatusMessage>
+                : this.state.prevUrl
+                  ? <StatusMessage><SectionSubtitleDescription fontSize='20px'>No articles were found :(</SectionSubtitleDescription></StatusMessage>
+                  : <StatusMessage><SectionSubtitleDescription fontSize='20px'>Enter a feed URL!</SectionSubtitleDescription></StatusMessage>
+              : null
+            }
+            <PoseGroup animateOnMount>
+              {notPlaceholdersViewType || this.state.loading || this.state.loadingXML ? [] : elems}
+            </PoseGroup>
+            <OpacityTransition pose={notPlaceholdersViewType && this.state.xmlText && !this.state.loading && !this.state.loadingXML ? 'enter' : 'exit'}>
+              <pre style={{ maxWidth: '100%', width: '100%' }}>
+                <code dangerouslySetInnerHTML={{ __html: hljs.highlight('xml', this.state.xmlText).value}} />
+              </pre>
+            </OpacityTransition>
+
+          </ArticlesSectionInner>
         </ArticlesSection>
-      </Container>
+      </div>
     )
   }
 }

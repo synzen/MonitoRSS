@@ -19,7 +19,7 @@ const Container = styled.div`
 class PageHeader extends React.PureComponent {
   render () {
     return (
-      <Container>
+      <Container {...this.props}>
         {this.props.heading ? <h2>{this.props.heading}</h2> : null}
         {this.props.subheading ? <p>{this.props.subheading}</p> : null}
         {this.props.children}

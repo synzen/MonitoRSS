@@ -11,7 +11,7 @@ import { changePage, setActiveFeed, setActiveGuild } from '../../../actions/inde
 import PropTypes from 'prop-types'
 import { isMobile } from "react-device-detect"
 import { Scrollbars } from 'react-custom-scrollbars'
-import modal from '../utils/modal'
+import modal from '../../utils/modal'
 
 const mapStateToProps = state => {
   return {
@@ -250,13 +250,13 @@ class LeftMenu extends Component {
           <MenuButton to={pages.FEED_BROWSER} onClick={() => this.menuButtonClick(pages.FEED_BROWSER)} selected={this.props.page === pages.FEED_BROWSER}>Feed Browser</MenuButton>
           <Divider /> */}
 
-          <MenuSectionHeader>Information</MenuSectionHeader>
+          {/* <MenuSectionHeader>Information</MenuSectionHeader> */}
 
           {/* <RouterLink to='/faq' onClick={() => this.props.changePage(pages.FAQ)}> */}
-            <MenuButton to='/' unsupported selected={this.props.page === pages.FAQ}>FAQ</MenuButton>
+            {/* <MenuButton to='/' unsupported selected={this.props.page === pages.FAQ}>FAQ</MenuButton> */}
           {/* </RouterLink> */}
           {/* <RouterLink to='/support' onClick={() => this.props.changePage(pages.SUPPORT)}> */}
-          <MenuButton to='/' unsupported selected={this.props.page === pages.SUPPORT}>Support</MenuButton>
+          {/* <MenuButton to='/' unsupported selected={this.props.page === pages.SUPPORT}>Support</MenuButton> */}
           {/* <MenuButton to={pages.TODO} onClick={() => this.menuButtonClick(pages.TODO)} selected={this.props.page === pages.TODO}>To Do List</MenuButton> */}
           {/* </RouterLink> */}
 

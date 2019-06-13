@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src/",
+    "paths": {
+      "@components/*": ["src/js/components/*"]
+    }
+  }
+}

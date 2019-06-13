@@ -3,9 +3,9 @@ const feeds = express.Router()
 const getArticles = require('../../../rss/getArticle.js')
 const config = require('../../../config.js')
 const Article = require('../../../structs/Article.js')
+const axios = require('axios')
 // const feedsJson = require('../../tests/files/feeds.json')
 const rateLimit = require('express-rate-limit')
-
 if (process.env.NODE_ENV !== 'test') {
   feeds.use(rateLimit({
     windowMs: 1 * 60 * 1000,
@@ -17,18 +17,32 @@ if (process.env.NODE_ENV !== 'test') {
   }))
 }
 
+async function validUrl (req, res, next) {
+  const feedUrl = req.params.url
+  if (!feedUrl) return res.status(400).json({ code: 400, message: 'No url in param specified' })
+  if (feedUrl.includes('feed43.com')) return res.status(403).json({ code: 403, message: 'feed43 feeds are forbidden' })
+  next()
+}
+
 async function getUrl (req, res, next) {
   try {
     const feedUrl = req.params.url
-    if (!feedUrl) return res.status(400).json({ code: 400, message: 'No url in param specified' })
-    if (feedUrl.includes('feed43.com')) return res.status(403).json({ code: 403, message: 'feed43 feeds are forbidden' })
     const mockGuildRss = { sources: { someName: { link: feedUrl } } }
     let rawArticleList = []
+    let xmlStr = ''
     try {
       [ , , rawArticleList ] = await getArticles(mockGuildRss, 'someName')
     } catch (err) {
       if (err.message.includes('No articles in feed')) return res.json(rawArticleList)
       else return res.status(500).json({ code: 500, message: err.message })
+    }
+
+    try {
+      xmlStr = (await axios.get(feedUrl)).data
+    } catch (err) {
+      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
+      console.log(errMessage)
+      res.status(500).json({ code: 500, message: errMessage })
     }
     const allPlaceholders = []
     for (const article of rawArticleList) {
@@ -44,7 +58,7 @@ async function getUrl (req, res, next) {
 
       allPlaceholders.push(articlePlaceholders)
     }
-    res.json(allPlaceholders)
+    res.json({ placeholders: allPlaceholders, xml: xmlStr })
   } catch (err) {
     next(err)
   }
@@ -53,6 +67,9 @@ async function getUrl (req, res, next) {
 feeds.get('/:url', getUrl)
 
 module.exports = {
+  middleware: {
+    validUrl
+  },
   routes: {
     getUrl
   },

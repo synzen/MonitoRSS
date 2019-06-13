@@ -1,5 +1,6 @@
 import React from 'react'
 import axios from 'axios'
+import { withRouter } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import styled from 'styled-components'
 import LeftMenu from './LeftMenu/index'
@@ -12,8 +13,6 @@ import openSocket from 'socket.io-client'
 import socketStatus from 'js/constants/socketStatus'
 import { Loader, Icon, Button } from 'semantic-ui-react'
 import TopBar from './TopBar/index'
-import DiscordModal from './utils/DiscordModal';
-import modal from './utils/modal'
 
 var socket
 
@@ -23,10 +22,7 @@ const MainContainer = styled.div`
   max-width: 100%;
   display: flex;
   flex-direction: row;
-  padding-top: 4em;
-  @media screen and (min-height: 400px) and (min-width: 525px) {
-    padding-top: 5em;
-  }
+  padding-top: 60px;
 `
 
 const EmptyBackground = styled.div`
@@ -144,6 +140,7 @@ class ControlPanel extends React.PureComponent {
       socket.removeEventListener('connect', this.socketConnected)
       socket.removeEventListener('reconnect', this.socketReconnect)
       window.removeEventListener("resize", this.updateDimensions)
+      socket.disconnect()
     }
   }
 
@@ -294,7 +291,9 @@ class ControlPanel extends React.PureComponent {
           <Icon name='x' size='massive' color='red' />
           <h1>Oops!<br/>Something went wrong!</h1>
           <h3>{this.state.errorMessage || ''}</h3>
-          <Button basic fluid onClick={e => { window.location.href = '/logout' }} color='red'>Logout</Button>
+          <Button basic fluid onClick={e => this.props.history.push('/')}>Back</Button>
+          <br />
+          {!this.state.loggedOut ? <Button basic fluid onClick={e => { window.location.href = '/logout' }} color='red'>Logout</Button> : null}
           </div>
       </EmptyBackground>
     )
@@ -317,7 +316,7 @@ class ControlPanel extends React.PureComponent {
           <h1>Disconnected from Server</h1>
           <h3>My lifeline to the server has been severed! Access will be restored once my connection has been re-established.</h3>
         </EmptyBackgroundTransparent>
-        <DiscordModal onClose={modal.hide} open={this.props.modalOpen} { ...this.props.modal.props }>{this.props.modal.children}</DiscordModal>
+        {/* <DiscordModal onClose={modal.hide} open={this.props.modalOpen} { ...this.props.modal.props }>{this.props.modal.children}</DiscordModal> */}
         <ToastContainer position='top-center' />
         <TopBar toggleLeftMenu={() => this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })} socketStatus={this.state.socketStatus} />
         <MainContainer>
@@ -335,4 +334,4 @@ ControlPanel.propTypes = {
   initializeState: PropTypes.func
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(ControlPanel)
+export default withRouter(connect(mapStateToProps, mapDispatchToProps)(ControlPanel))

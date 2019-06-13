@@ -6,7 +6,7 @@ import Wrapper from 'js/components/utils/Wrapper'
 import PropTypes from 'prop-types'
 import { connect } from 'react-redux'
 import parser from '../../../utils/textParser'
-import modal from '../../../utils/modal'
+import modal from 'js/components/utils/modal'
 import SectionSubtitleDescription from 'js/components/utils/SectionSubtitleDescription'
 import posed from 'react-pose';
 import SectionSubtitle from 'js/components/utils/SectionSubtitle'

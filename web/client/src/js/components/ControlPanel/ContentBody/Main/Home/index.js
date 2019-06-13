@@ -12,7 +12,7 @@ import AlertBox from 'js/components/utils/AlertBox'
 import Wrapper from 'js/components/utils/Wrapper'
 import toast from '../../../utils/toast'
 import axios from 'axios'
-import modal from '../../../utils/modal'
+import modal from 'js/components/utils/modal'
 import MenuButton from '../../../LeftMenu/MenuButton'
 import posed from 'react-pose'
 

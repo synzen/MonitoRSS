@@ -11,6 +11,7 @@
     "highlight.js": "^9.15.8",
     "immutability-helper": "^2.9.1",
     "js-file-download": "^0.4.7",
+    "keyword-extractor": "0.0.16",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.25",
     "node-sass": "^4.12.0",
@@ -27,6 +28,7 @@
     "react-redux": "^6.0.1",
     "react-router-dom": "^4.3.1",
     "react-scripts": "^3.0.1",
+    "react-scrollbars-custom": "^4.0.5",
     "react-toastify": "^4.5.2",
     "react-twemoji": "^0.1.0",
     "redux": "^4.0.1",
@@ -35,6 +37,7 @@
     "simple-markdown": "^0.4.4",
     "socket.io": "^2.2.0",
     "socket.io-client": "^2.2.0",
+    "stemmer": "^1.0.4",
     "styled-components": "^4.2.1",
     "twemoji": "^11.3.0"
   },

@@ -3,11 +3,13 @@ import { withRouter } from 'react-router-dom'
 import PropTypes from 'prop-types'
 import { Input, Button } from 'semantic-ui-react'
 
-class FeedBrowser extends Component {
+class FeedInput extends Component {
   constructor (props) {
     super()
+    const sessionData = sessionStorage.getItem('feedbrowserData')
+
     this.state = {
-      url: props.match.params.url ? decodeURIComponent(props.match.params.url) : ''
+      url: props.match.params.url ? decodeURIComponent(props.match.params.url) : sessionData ? JSON.parse(sessionData).prevUrl : ''
     }
   }
 
@@ -27,10 +29,10 @@ class FeedBrowser extends Component {
   }
 }
 
-FeedBrowser.propTypes = {
+FeedInput.propTypes = {
   match: PropTypes.object,
   location: PropTypes.object,
   getArticles: PropTypes.func
 }
 
-export default withRouter(FeedBrowser)
+export default withRouter(FeedInput)

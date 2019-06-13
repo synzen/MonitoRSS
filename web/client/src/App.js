@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef } from 'react'
 import './js/index'
 import styled from 'styled-components'
 import { Switch, Route, Link, Redirect } from 'react-router-dom'
@@ -9,8 +9,22 @@ import { Icon, Button } from 'semantic-ui-react'
 import pages from './js/constants/pages'
 import './App.css'
 import 'highlight.js/styles/solarized-dark.css'
+import NavBar from './js/components/NavBar/index'
+import Home from './js/components/Home/index'
+import FAQ from './js/components/FAQ/index'
 import FeedBrowser from './js/components/FeedBrowser/index'
 import ControlPanel from './js/components/ControlPanel/index'
+import { connect } from 'react-redux'
+import DiscordModal from './js/components/utils/DiscordModal'
+import modal from './js/components/utils/modal'
+import { Scrollbars } from 'react-custom-scrollbars';
+
+const mapStateToProps = state => {
+  return {
+    modalOpen: state.modalOpen,
+    modal: state.modal
+  }
+}
 
 const CleanLink = styled(Link)`
   &:hover {
@@ -37,51 +51,50 @@ const LoginContainer = styled.div`
   color: white;
 `
 
-class App extends React.PureComponent {
-  constructor () {
-    super()
-    this.state = {}
-  }
+const Wrapper = styled.div`
+  padding: 0 0px;
+  max-width: 1450px;
+  margin: 0 auto;
+  height: 60px;
+`
 
-  render () {
-    if (this.state.errorMessage) return (
+function App (props) {
+  const [ errorMessage ] = useState('')
+  const [ scrollbarRef, setScrollbarRef ] = useState()
+  if (errorMessage) {
+    return (
       <EmptyBackground>
         <div>
           <Icon name='x' size='massive' color='red' />
           <h1>Oops!<br />Something went wrong!</h1>
-          <h3>{this.state.errorMessage || ''}</h3>
+          <h3>{errorMessage || ''}</h3>
           <Button basic fluid onClick={e => { window.location.href = '/logout' }} color='red'>Logout</Button>
         </div>
       </EmptyBackground>
     )
-    return (
-      <div className='App'>
-
-        <Switch>
-          <Route exact path='/' render={props => {
-            return (
-              <EmptyBackground>
-                <LoginContainer>
-                  <img src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='175em' height='175em' alt='Discord.RSS Logo' />
-                  <h1>Discord.RSS</h1>
-                  <p style={{ color: colors.discord.yellow }}>Under Construction</p>
-                  {this.state.loggedOut
-                    ? <Button fluid onClick={e => { window.location.href = '/login' }}>{'Login'}</Button>
-                    : <CleanLink to={pages.DASHBOARD}><Button fluid>Control Panel</Button></CleanLink>
-                  }
-                  <CleanLink to={pages.FEED_BROWSER}><Button style={{ marginTop: '0.5em' }} fluid>Feed Browser</Button></CleanLink>
-                </LoginContainer>
-              </EmptyBackground>
-            )
-          }} />
-
-          <Route path={`${pages.FEED_BROWSER}/:url?`} component={FeedBrowser} />
-          <Route path={pages.DASHBOARD} component={ControlPanel} />
-          <Route render={() => <Redirect to='/' />} />
-        </Switch>
-      </div>
-    )
   }
+
+  return (
+    <div className='App'>
+      <DiscordModal onClose={modal.hide} open={props.modalOpen} { ...props.modal.props }>{props.modal.children}</DiscordModal>
+      <Switch>
+        <Route path={pages.DASHBOARD} component={ControlPanel} />
+        <Route render={() => (
+          <Scrollbars style={{ width: '100vw', height: '100vh' }} ref={scrollbar => setScrollbarRef(scrollbar)}>
+            <Wrapper>
+              <NavBar />
+            </Wrapper>
+            <Switch>
+              <Route path={`${pages.FEED_BROWSER}/:url?`} component={FeedBrowser} />
+              <Route path={`${pages.FAQ}/:question?`} render={props => <FAQ {...props} scrollbar={scrollbarRef} />} />
+              <Route path='/' component={Home} />
+              <Route render={() => <Redirect to='/' />} />
+            </Switch>
+          </Scrollbars>
+        )} />
+      </Switch>
+    </div>
+  )
 }
 
-export default App
+export default connect(mapStateToProps)(App)
