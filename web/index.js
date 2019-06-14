@@ -1,6 +1,5 @@
 const path = require('path')
 const fs = require('fs')
-const esmRequire = require('esm')(module)
 const config = require('../config.js')
 const TEST_ENV = process.env.NODE_ENV === 'test'
 if (!TEST_ENV) process.env.NODE_ENV = 'production'
@@ -22,7 +21,7 @@ const REDIRECT_URI = config.web.redirectUri
 const sharedSession = require('express-socket.io-session')
 const SCOPES = 'identify guilds'
 const tokenConfig = code => { return { code, redirect_uri: REDIRECT_URI, scope: SCOPES } }
-const { faq } = esmRequire('./client/src/js/constants/faq.js')
+const faq = JSON.parse(fs.readFileSync('./web/client/src/js/constants/faq.json'))
 const htmlFile = fs.readFileSync(path.join(__dirname, 'client/build', 'index.html')).toString()
 
 let httpIo = require('socket.io').listen(http)
