@@ -14,6 +14,8 @@ import posed, { PoseGroup } from 'react-pose'
 import PropTypes from 'prop-types'
 import stemmer from 'stemmer'
 import textParser from '../ControlPanel/utils/textParser'
+import querystring from 'query-string'
+import modal from '../utils/modal'
 
 const Header = styled.div`
   position: relative;
@@ -175,6 +177,29 @@ function FAQ (props) {
       props.scrollbar.scrollTop(topOffsets[selectedQuestion.qe])
     }
   }, [ searchTerm ])
+
+  useEffect(() => {
+    const focused = querystring.parse(props.location.search).focus
+    if (!focused || !selectedQuestion) return
+    const modalProps = {
+      header: <h2>{selectedQuestion.q}</h2>,
+      footer: <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div>
+          <SectionSubtitle>Keywords</SectionSubtitle>
+          <TagContainer>{selectedQuestion.t.map((tag, i) => <Tag key={i}>{tag}</Tag>)}</TagContainer>
+        </div>
+        <Button content='Ok' onClick={e => { modal.hide(); props.history.push(`${pages.FAQ}/${selectedQuestion.qe}`) }} />
+      </div>
+    }
+    const modalChildren = (
+      <p>
+        <Answer pose='expand' style={{ paddingLeft: 0 }}>
+          <p>{selectedQuestion.a}</p>
+        </Answer>
+      </p>
+    )
+    modal.show(modalProps, modalChildren)
+  }, [])
 
   const searchTermSplit = new Set(searchTerm.split(' ').map(stemmer).filter(item => item))
   const searchTermSplitSize = searchTermSplit.size

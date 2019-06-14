@@ -232,7 +232,7 @@ function NavBar (props) {
           <Logo src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' />
           <Title>Discord.RSS</Title>
         </Link>
-        <Sidebar pose={ showMobileNav ? 'enter' : 'exit' }>
+        <Sidebar pose={showMobileNav ? 'enter' : 'exit'}>
           <div />
           <ul>
             <li><Link to={pages.FAQ} onClick={e => setShowMobileNav(false)}>FAQ</Link></li>
