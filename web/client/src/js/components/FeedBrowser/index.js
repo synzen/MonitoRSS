@@ -224,6 +224,7 @@ class FeedBrowser extends Component {
   }
 
   componentWillMount () {
+    document.title = 'Discord.RSS - Feed Browser'
     this.props.setToThisPage()
   }
 
