@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, withRouter } from 'react-router-dom'
 import PageHeader from '../utils/PageHeader'
 import styled from 'styled-components'
-import { Button, Input, Divider } from 'semantic-ui-react'
+import { Button, Input, Divider, Icon } from 'semantic-ui-react'
 import colors from '../../constants/colors'
 import pages from '../../constants/pages'
 import SectionItemTitle from '../utils/SectionItemTitle'
@@ -49,6 +49,7 @@ const QAWrapper = posed.div({
 })
 
 const QAWrapperInner = styled.div`
+  position: relative;
   display: flex;
   > div:last-child {
     width: 100%;
@@ -155,54 +156,16 @@ faq.forEach((item, index) => {
   item.a = textParser.parseAllowLinks(item.a)
 })
 
-function FAQ (props) {
-  const [ searchTerm, setSearch ] = useState('')
-  const [ topOffsets, setTopOffsets ] = useState({})
+// const CopyIcon = styled(Icon)`
+//   position: absolute;
+//   left: -20px;
+//   top: 5px;
+// `
 
-  const paramQuestion = props.match.params.question
-  const [ selectedQuestion, setQuestion ] = useState(allQuestions.includes(paramQuestion) ? faq.find(item => item.qe === paramQuestion) : null)
-  const [ page, setPage ] = useState(selectedQuestion ? pageByQuestions[selectedQuestion.q] : 0)
-
-  // Scroll to selected item when the ref and scrollbar are defined
-  const canScroll = !!(props.scrollbar && selectedQuestion && topOffsets[selectedQuestion.qe])
-  useEffect(() => {
-    if (props.scrollbar && selectedQuestion && topOffsets[selectedQuestion.qe]) {
-      props.scrollbar.scrollTop(topOffsets[selectedQuestion.qe])
-    }
-  }, [ canScroll ])
-
-  // Scroll after searching an item
-  useEffect(() => {
-    if (searchTerm === '' && props.scrollbar && selectedQuestion && topOffsets[selectedQuestion.qe]) {
-      props.scrollbar.scrollTop(topOffsets[selectedQuestion.qe])
-    }
-  }, [ searchTerm ])
-
-  useEffect(() => {
-    const focused = querystring.parse(props.location.search).focus
-    if (!focused || !selectedQuestion) return
-    const modalProps = {
-      header: <h2>{selectedQuestion.q}</h2>,
-      footer: <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <div>
-          <SectionSubtitle>Keywords</SectionSubtitle>
-          <TagContainer>{selectedQuestion.t.map((tag, i) => <Tag key={i}>{tag}</Tag>)}</TagContainer>
-        </div>
-        <Button content='Ok' onClick={e => { modal.hide(); props.history.push(`${pages.FAQ}/${selectedQuestion.qe}`) }} />
-      </div>
-    }
-    const modalChildren = (
-      <p>
-        <Answer pose='expand' style={{ paddingLeft: 0 }}>
-          <p>{selectedQuestion.a}</p>
-        </Answer>
-      </p>
-    )
-    modal.show(modalProps, modalChildren)
-  }, [])
-
+function getDocumentSearchResults (searchTerm) {
   const searchTermSplit = new Set(searchTerm.split(' ').map(stemmer).filter(item => item))
   const searchTermSplitSize = searchTermSplit.size
+  if (searchTermSplitSize === 0) return faq
   const intersectingDocumentIndexes = []
   const documentCounts = {}
   const documentPoints = {}
@@ -224,8 +187,58 @@ function FAQ (props) {
   for (const docIndex in documentCounts) {
     if (documentCounts[docIndex] === searchTermSplitSize) intersectingDocumentIndexes.push([ docIndex, documentPoints[docIndex] ])
   }
-  const contentClone = searchTermSplitSize === 0 ? faq : intersectingDocumentIndexes.sort((a, b) => b[1] - a[1]).map((item, index) => faq[item[0]]) // 0th index is the document index, 1st index is the number of points (weight)
-  // contentClone.sort((a, b) => b.p - a.p)
+  return intersectingDocumentIndexes.sort((a, b) => b[1] - a[1]).map((item, index) => faq[item[0]]) // 0th index is the document index, 1st index is the number of points (weight)
+}
+
+function FAQ (props) {
+  const [ searchTerm, setSearch ] = useState('')
+  const [ topOffsets, setTopOffsets ] = useState({})
+
+  const paramQuestion = props.match.params.question
+  const [ selectedQuestion, setQuestion ] = useState(allQuestions.includes(paramQuestion) ? faq.find(item => item.qe === paramQuestion) : null)
+  const [ page, setPage ] = useState(selectedQuestion ? pageByQuestions[selectedQuestion.q] : 0)
+
+  // Scroll to selected item when the ref and scrollbar are defined
+  useEffect(() => {
+    if (props.scrollbar && selectedQuestion && topOffsets[selectedQuestion.qe]) {
+      props.scrollbar.scrollTop(topOffsets[selectedQuestion.qe])
+    }
+  }, [ props.scrollbar, selectedQuestion, topOffsets ])
+
+  // Scroll after searching an item
+  useEffect(() => {
+    if (searchTerm === '' && props.scrollbar && selectedQuestion && topOffsets[selectedQuestion.qe]) {
+      props.scrollbar.scrollTop(topOffsets[selectedQuestion.qe])
+    }
+  }, [ searchTerm, props.scrollbar, selectedQuestion, topOffsets ])
+
+  useEffect(() => {
+    const focused = querystring.parse(props.location.search).focus
+    if (!focused || !selectedQuestion) return
+    const modalProps = {
+      header: <h2>{selectedQuestion.q}</h2>,
+      footer: <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <div>
+          <SectionSubtitle>Keywords</SectionSubtitle>
+          <TagContainer>{selectedQuestion.t.map((tag, i) => <Tag key={i}>{tag}</Tag>)}</TagContainer>
+        </div>
+        <Button content='Ok' onClick={e => modal.hide()} />
+      </div>
+    }
+    const modalChildren = (
+      <Answer pose='expand' style={{ paddingLeft: 0 }}>
+        <p>{selectedQuestion.a}</p>
+      </Answer>
+    )
+    modal.show(modalProps, modalChildren)
+  }, [ props.history, props.location.search, selectedQuestion ])
+
+  useEffect(() => {
+    if (selectedQuestion) document.title = `Discord.RSS - FAQ - ${selectedQuestion.q}`
+    else document.title = `Discord.RSS - FAQ`
+  }, [selectedQuestion])
+
+  const contentClone = getDocumentSearchResults(searchTerm)
 
   let addedTopOffset = false
   const items = contentClone.map((item, index) => {
@@ -235,7 +248,7 @@ function FAQ (props) {
         if (!topOffsets[item.qe]) topOffsets[item.qe] = elem.offsetTop
       }}>
         <QAWrapperInner>
-          {/* <BlueSidebar show={selected} /> */}
+          {/* <CopyIcon name='copy' /> */}
           <div>
             <Link to={selected ? pages.FAQ : `${pages.FAQ}/${item.qe}`} onClick={e => setQuestion(selected ? null : item)}>
               <SectionItemTitle as='span' style={{ fontSize: '18px', lineHeight: '30px', fontWeight: selected ? 600 : 'normal', color: selected ? lighten(0.125, colors.discord.blurple) : colors.discord.text }}>{item.q}</SectionItemTitle>
@@ -271,7 +284,7 @@ function FAQ (props) {
             setQuestion(contentClone[0])
             setPage(pageByQuestions[contentClone[0].q])
             setSearch('')
-            props.history.push(`${pages.FAQ}/${contentClone[0].qe}`)
+            // props.history.push(`${pages.FAQ}/${contentClone[0].qe}`)
           }} onChange={e => {
             if (page !== 0) setPage(0)
             setSearch(e.target.value)
