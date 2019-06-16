@@ -26,8 +26,11 @@ Mobile responsive UI, built according to Discord's theme with Discord's blessing
     - Make sure the backend is running
     - Go to http://localhost:PORT/login with the PORT replaced with whatever you set in `config.web.port`
     - Authorize application to Discord
-2. `npm start` in ./client
-5. Go to http://localhost:CLIENT_PORT with the CLIENT_PORT replaced with `3000` (as specified in the npm start section of [web/client/README.md](https://github.com/synzen/Discord.RSS/blob/dev/web/client/README.md))
+4. `npm start` in ./client
+5. Go to http://localhost:CLIENT_PORT with the CLIENT_PORT replaced with `3000` (as specified in the npm start section of [web/client/README.md](https://github.com/synzen/Discord.RSS/blob/dev/web/client/README.md)). This is the development version over the server, not the final built one.
+6. Edit the files in src/js folder
+7. When finished editing, publish the development files with `npm run build` in ./client.
+8. The changes are now built and live on https://localhost:PORT  where PORT is what you set in `config.web.port`
 
 
 Note that if you don't do step 5, the files being served are NOT from the webpack dev server - it's from the built files from `npm run build`. For live changes, make sure to do step 5.
