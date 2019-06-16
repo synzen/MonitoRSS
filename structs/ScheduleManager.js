@@ -63,7 +63,6 @@ class ScheduleManager {
 
   stopSchedules () {
     this.scheduleList.forEach(schedule => schedule.stop())
-    this.scheduleList.length = 0
   }
 
   startSchedules () {
