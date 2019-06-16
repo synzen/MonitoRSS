@@ -27,7 +27,7 @@ Mobile responsive UI, built according to Discord's theme with Discord's blessing
     - Make sure the backend is running
     - Go to http://localhost:PORT/login with the PORT replaced with whatever you set in `config.web.port`
     - Authorize application to Discord
-5. Replace the port in the URL after the authorization redirects you with the port in `config.web.port`
+5. Replace the port in the URL after the authorization redirects you with the `3000` (as specified in web/client/README.md)
 
 Note that if you don't do step 5, the files being served are NOT from the webpack dev server - it's from the built files from `npm run build`. For live changes, make sure to do step 5.
 
