@@ -78,3 +78,5 @@ exports.suppressLevel = level => {
 exports.showTrace = show => {
   showTraceByDefault = show
 }
+
+exports.formatConsoleDate = formatConsoleDate

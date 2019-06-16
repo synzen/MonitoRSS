@@ -95,7 +95,7 @@ function start (mongooseConnection = mongoose.connection) {
   if (!TEST_ENV) {
     // Logging
     app.use(morgan(function (tokens, req, res) {
-      const custom = []
+      const custom = [log.formatConsoleDate(new Date())]
       if (req.session && req.session.identity) custom.push(`(U: ${req.session.identity.id}, ${req.session.identity.username})`)
       if (req.guildRss) custom.push(`(G: ${req.guildRss.id}, ${req.guildRss.name})`)
       const arr = [
