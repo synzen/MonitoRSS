@@ -196,6 +196,7 @@ class FeedSchedule extends EventEmitter {
     }
 
     const failedLinks = await dbOps.failedLinks.getAll()
+    this.failedLinks = {}
     failedLinks.forEach(item => {
       this.failedLinks[item.link] = item.failed || item.count
     })
