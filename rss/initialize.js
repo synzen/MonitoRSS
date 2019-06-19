@@ -124,7 +124,7 @@ exports.addNewFeed = async (settings, customTitle) => {
       if (errored) return
       try {
         const shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
-        const rssName = `${storage.collectionId(link, shardId)}>${Math.floor((Math.random() * 99999) + 1)}`
+        const rssName = `${storage.collectionId(link, shardId)}-${Math.floor((Math.random() * 99999) + 1)}`.replace(/[^a-zA-Z0-9-_]/g, '')
         let metaTitle = customTitle || ((articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled')
 
         if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`

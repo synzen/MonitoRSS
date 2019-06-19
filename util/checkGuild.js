@@ -161,9 +161,15 @@ exports.version = guildRss => {
     const versionIndex = versions.indexOf(guildVersion)
     if (versionIndex !== -1) {
       // There is an update file found for this version, so run every version past it
-      for (let i = versionIndex + 1; i < versions.length; ++i) {
-        const updated = require(`../updates/${versions[i]}.js`).updateGuildRss
-        if (updated(guildRss)) changed = true
+      for (let i = versionIndex; i < versions.length; ++i) {
+        const updateFile = require(`../updates/${versions[i]}.js`)
+        const updated = updateFile.updateGuildRss
+        // Sometimes the current version should be rerun
+        if (i === versionIndex && updateFile.rerun && updated(guildRss)) changed = true
+        else if (i > versionIndex) {
+          const updated = updateFile.updateGuildRss
+          if (updated(guildRss)) changed = true
+        }
       }
     } else {
       // No update file found for this version, so concat the guild's version with the existing versions, sort it, and run every update past it
