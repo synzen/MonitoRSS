@@ -9,6 +9,7 @@ const redisOps = require('../util/redisOps.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
 const EventEmitter = require('events')
+let webClient
 
 function overrideConfigs (configOverrides) {
   // Config overrides must be manually done for it to be changed in the original object (config)
@@ -35,6 +36,7 @@ class ClientManager extends EventEmitter {
     } catch (err) {
       overrideConfigs(configOverrides)
     }
+    webClient = require('../web/index.js')
     this.missingGuildRss = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
     this.refreshTimes = [config.feeds.refreshTimeMinutes]
@@ -48,12 +50,14 @@ class ClientManager extends EventEmitter {
     this.shardingManager = shardingManager
     this.shardingManager.on('message', this.messageHandler.bind(this))
     this.vipApiData = null
+    this.webClientInstance = undefined
   }
 
   async run () {
     try {
       if (config._vip && !this.vipApiData) this.vipApiData = await require('../settings/api.js')()
       await connectDb()
+      if (config.web.enabled === true && !this.webClientInstance) this.webClientInstance = webClient()
       await redisOps.flushDatabase()
       if (this.shardingManager.shards.size === 0) this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
     } catch (err) {
@@ -126,6 +130,7 @@ class ClientManager extends EventEmitter {
               .catch(err => log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err))
           })
           this.createIntervals()
+          if (config.web.enabled === true) this.webClientInstance.enableCP()
           this.emit('finishInit')
         })
         .catch(err => {

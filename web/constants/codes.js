@@ -23,6 +23,10 @@ module.exports = {
     code: 50042,
     message: 'Feed Connection Failed'
   },
+  '50043_BOT_DOWN': {
+    code: 50043,
+    message: 'Bot Currently Down'
+  },
   '40002_FEED_INVALID': {
     code: 40002,
     message: 'Invalid Feed'

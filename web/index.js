@@ -19,6 +19,7 @@ const fetchUser = require('./util/fetchUser.js')
 const PORT = TEST_ENV ? 8081 : config.web.port
 const REDIRECT_URI = config.web.redirectUri
 const sharedSession = require('express-socket.io-session')
+const redisOps = require('../util/redisOps.js')
 const SCOPES = 'identify guilds'
 const tokenConfig = code => { return { code, redirect_uri: REDIRECT_URI, scope: SCOPES } }
 const faq = JSON.parse(fs.readFileSync('./web/client/src/js/constants/faq.json'))
@@ -58,6 +59,14 @@ module.exports = () => {
   }
   if (!storage.redisClient) throw new Error('Redis is not connected for Web UI')
   start()
+  return {
+    enableCP: () => {
+      app.set('cpEnabled', true)
+      httpIo.sockets.emit('DRSS_BOT_READY')
+      if (httpsIo) httpsIo.sockets.emit('DRSS_BOT_READY')
+    },
+    disableCP: () => app.set('cpEnabled', false)
+  }
 }
 
 function start (mongooseConnection = mongoose.connection) {

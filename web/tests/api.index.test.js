@@ -35,6 +35,24 @@ describe('/api', function () {
     })
   })
   describe('middleware', function () {
+    describe('verifyBotStatus', function () {
+      it('returns 202 when bot is not ready', function () {
+        const request = httpMocks.createRequest({ app: { get: () => false } })
+        const response = httpMocks.createResponse()
+        apiRouter.middleware.verifyBotStatus(request, response)
+        expect(response.statusCode).toEqual(202)
+        const data = JSON.parse(response._getData())
+        expect(data.code).toEqual(statusCodes['50043_BOT_DOWN'].code)
+      })
+      it('calls next when bot is ready', function (done) {
+        const request = httpMocks.createRequest({ app: { get: () => true } })
+        const response = httpMocks.createResponse()
+        apiRouter.middleware.verifyBotStatus(request, response, function (err) {
+          if (err) return done(err)
+          done()
+        })
+      })
+    })
     describe('authenticate', function () {
       it('returns 401 if no auth credentials in session', function () {
         const request = httpMocks.createRequest({ session: {} })

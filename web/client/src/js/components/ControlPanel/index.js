@@ -82,7 +82,8 @@ class ControlPanel extends React.PureComponent {
       socketStatus: socketStatus.CONNECTING,
       authenticatingLogin: true,
       loggedOut: true,
-      errorMessage: ''
+      errorMessage: '',
+      enabled: true
     }
 
     this.notificationDOMRef = React.createRef()
@@ -103,29 +104,34 @@ class ControlPanel extends React.PureComponent {
     }, 3000)
   }
 
-  socketReconnect = attemptNum => {
-    console.log('[WEBSOCKET] Reconnected')
+  socketReconnect = botReady => {
+    if (!botReady) console.log('[WEBSOCKET] Reconnected')
     this.setState({ loaded: false })
-    this.initialize()
+    axios.get('/api/authenticated').then(({ data, status }) => {
+      if (status === 202) return // Bot is still initializing, wait for BOT_READY socket event
+      if (data.authenticated) this.initialize()
+      else this.setState({ authenticatingLogin: false })
+    }).catch(err => {
+      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
+      this.setState({ errorMessage: errMessage })
+    })
     // for (const guildId in guilds) socket.emit('identify', guildId)
   }
 
   componentWillMount () {
     const socketUrl = `${window.location.protocol}//${window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}`
     if (!socket) socket = openSocket(socketUrl, { forceNew: false })
+    socket.on('DRSS_BOT_READY', () => this.socketReconnect(true))
     socket.on('DRSS_PROFILE_UPDATE', message => {
       this.updateGuildInState(JSON.parse(message))
     })
-    socket.on('DRSS_SOURCE_SCHEDULE_UPDATE', message => {
-      this.updateSourceSchedule(JSON.parse(message))
-    })
     socket.on('linkStatus', message => this.linkStatusUpdate(JSON.parse(message)))
     socket.on('guildLimitsUpdate', message => this.guildLimitsUpdate(JSON.parse(message)))
-
     socket.on('disconnect', this.socketDisconnected)
     socket.on('connect', this.socketConnected)
     socket.on('reconnect', this.socketReconnect)
-    axios.get('/api/authenticated').then(({ data }) => {
+    axios.get('/api/authenticated').then(({ data, status }) => {
+      if (status === 202) return // Bot is still initializing, wait for BOT_READY socket event
       if (data.authenticated) this.initialize()
       else this.setState({ authenticatingLogin: false })
     }).catch(err => {
@@ -171,7 +177,7 @@ class ControlPanel extends React.PureComponent {
       cpResponse: null
     }
 
-    axios.get('/api/cp').then(({ data }) => {
+    axios.get('/api/cp').then(({ data, status }) => {
       const { defaultConfig, user, bot, guilds, linksStatus, csrfToken } = data
       state.cpResponse = data
       state.linksStatus = linksStatus
@@ -291,7 +297,7 @@ class ControlPanel extends React.PureComponent {
           <Icon name='x' size='massive' color='red' />
           <h1>Oops!<br/>Something went wrong!</h1>
           <h3>{this.state.errorMessage || ''}</h3>
-          <Button basic fluid onClick={e => this.props.history.push('/')}>Back</Button>
+          <Button basic fluid onClick={e => this.props.history.push('/')}>Home</Button>
           <br />
           {!this.state.loggedOut ? <Button basic fluid onClick={e => { window.location.href = '/logout' }} color='red'>Logout</Button> : null}
           </div>

@@ -20,6 +20,7 @@ const STATES = {
   STARTING: 'STARTING',
   READY: 'READY'
 }
+let webClient
 
 function overrideConfigs (configOverrides) {
   // Config overrides must be manually done for it to be changed in the original object (config)
@@ -73,6 +74,7 @@ class Client extends EventEmitter {
       const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
       overrideConfigs(fileConfigOverride)
     } catch (err) {}
+    webClient = require('../web/index.js')
     // Then override from constructor
     if (configOverrides) overrideConfigs(configOverrides)
     const configRes = checkConfig.check(config)
@@ -90,22 +92,33 @@ class Client extends EventEmitter {
     this.customSchedules = customSchedules
     this.STATES = STATES
     this.state = STATES.STOPPED
+    this.webClientInstance = undefined
   }
 
   login (token, noChildren) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
-    if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
-    else if (token instanceof Discord.ShardingManager) return new ClientManager(token)
-    else if (typeof token === 'string') {
+    if (token instanceof Discord.ShardingManager) return new ClientManager(token)
+    if (token instanceof Discord.Client) {
+      return connectDb()
+        .then(() => {
+          if (config.web.enabled === true && !this.webClientInstance && (!token.shard || token.shard.count === 0)) this.webClientInstance = webClient()
+          this._defineBot(token)
+        }).catch(err => {
+          throw err
+        })
+    }
+    if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 })
-      client.login(token)
-        .then(tok => this._defineBot(client))
+      connectDb()
+        .then(() => client.login(token))
+        .then(tok => {
+          if (config.web.enabled === true && !this.webClientInstance && (!client.shard || client.shard.count === 0)) this.webClientInstance = webClient()
+          this._defineBot(client)
+        })
         .catch(err => {
           if (!noChildren && err.message.includes('too many guilds')) {
             const shardedClient = new ClientManager(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
-            shardedClient.once('finishInit', () => {
-              this.emit('finishInit')
-            })
+            shardedClient.once('finishInit', () => this.emit('finishInit'))
           } else {
             log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
             setTimeout(() => this.login.bind(this)(token), 600000)
@@ -216,6 +229,7 @@ class Client extends EventEmitter {
     this.scheduleManager.stopSchedules()
     clearInterval(this._vipInterval)
     listeners.disableAll()
+    if (!storage.bot.shard || storage.bot.shard.count === 0 && config.web.enabled === true) this.webClientInstance.disableCP()
     this.state = STATES.STOPPED
   }
 
@@ -256,10 +270,13 @@ class Client extends EventEmitter {
     this.state = STATES.READY
     if (storage.bot.shard && storage.bot.shard.count > 0) {
       process.send({ _drss: true, type: 'initComplete', missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id })
-    } else if (config._vip) {
-      this._vipInterval = setInterval(() => {
-        dbOps.vips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err))
-      }, 600000)
+    } else {
+      if (config.web.enabled === true) this.webClientInstance.enableCP()
+      if (config._vip) {
+        this._vipInterval = setInterval(() => {
+          dbOps.vips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err))
+        }, 600000)
+      }
     }
     listeners.createManagers(storage.bot)
     this.scheduleManager.startSchedules()

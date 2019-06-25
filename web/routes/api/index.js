@@ -32,6 +32,11 @@ if (process.env.NODE_ENV !== 'test') {
   }))
 }
 
+function verifyBotStatus (req, res, next) {
+  if (!req.app.get('cpEnabled')) return res.status(202).json({ code: statusCodes['50043_BOT_DOWN'].code, message: statusCodes['50043_BOT_DOWN'].message })
+  next()
+}
+
 function getAuthenticated (req, res) {
   res.json({ authenticated: !!(req.session.identity && req.session.auth) })
 }
@@ -97,6 +102,7 @@ function errorHandler (err, req, res) {
   }
 }
 
+api.use(verifyBotStatus)
 api.get('/authenticated', getAuthenticated)
 api.use('/feeds', feedParser.router)
 
@@ -124,6 +130,7 @@ api.use(errorHandler)
 module.exports = {
   router: api,
   middleware: {
+    verifyBotStatus,
     authenticate,
     mongooseResults,
     errorHandler

@@ -4,6 +4,7 @@ const getArticles = require('../../../rss/getArticle.js')
 const config = require('../../../config.js')
 const Article = require('../../../structs/Article.js')
 const axios = require('axios')
+const log = require('../../../util/logger.js')
 // const feedsJson = require('../../tests/files/feeds.json')
 const rateLimit = require('express-rate-limit')
 if (process.env.NODE_ENV !== 'test') {
@@ -41,8 +42,8 @@ async function getUrl (req, res, next) {
       xmlStr = (await axios.get(feedUrl)).data
     } catch (err) {
       const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-      console.log(errMessage)
-      res.status(500).json({ code: 500, message: errMessage })
+      log.web.warning('Failed to get feed XML - ' + errMessage)
+      return res.status(500).json({ code: 500, message: errMessage })
     }
     const allPlaceholders = []
     for (const article of rawArticleList) {
