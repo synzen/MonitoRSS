@@ -16,7 +16,7 @@ module.exports = (message, limited) => {
   if (channelTracker.hasActiveMenus(message.channel.id)) return
 
   // Regular commands
-  if (!limited && commands.has(message)) {
+  if ((!limited && commands.has(message)) || (limited && isBotController(message.author.id))) {
     if (storage.initialized < 2) return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
     return commands.run(message)
   }

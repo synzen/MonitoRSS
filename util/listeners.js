@@ -65,7 +65,7 @@ if (fs.existsSync('./settings/commands.js')) {
 }
 
 function messageHandler (message) {
-  require('../events/message.js')(message, config.bot.enableCommands === true ? null : true)
+  require('../events/message.js')(message, config.bot.enableCommands === true && config.dev !== true ? null : true)
   try { if (cmdsExtension) cmdsExtension(storage.bot, message) } catch (e) {}
 }
 
