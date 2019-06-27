@@ -259,7 +259,7 @@ exports.failedLinks = {
           if (!rssList) return
           for (var i in rssList) {
             const source = rssList[i]
-            if (source.link !== link || config._skipMessages === true) continue
+            if (source.link !== link || config.dev === true) continue
             let sent = false
             if (Array.isArray(guildRss.sendAlertsTo)) { // Each array item is a user id
               const userIds = guildRss.sendAlertsTo
@@ -279,7 +279,7 @@ exports.failedLinks = {
               if (channel) { // The channel may not exist since this function is broadcasted to all shards
                 const attach = channel.guild.me.permissionsIn(channel).has('ATTACH_FILES')
                 const m = attach ? `${message}\n\nA backup for this server at this point in time has been attached in case this feed is subjected to forced removal in the future.` : message
-                if (config._skipMessages !== true) channel.send(m, attach ? new Discord.Attachment(Buffer.from(JSON.stringify(guildRss, null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
+                if (config.dev !== true) channel.send(m, attach ? new Discord.Attachment(Buffer.from(JSON.stringify(guildRss, null, 2)), `${channel.guild.id}.json`) : null).catch(err => log.general.warning(`Unable to send limit notice for feed ${link}`, channel.guild, channel, err))
               }
             }
           }

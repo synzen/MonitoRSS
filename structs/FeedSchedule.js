@@ -108,7 +108,7 @@ class FeedSchedule extends EventEmitter {
     }
 
     // Send notices about any feeds that were enabled/disabled
-    if (config._skipMessages === true) return feedCount
+    if (config.dev === true) return feedCount
     // for (var channelId in status) {
     //   let m = '**ATTENTION** - The following changes have been made due to a feed limit change for this server:\n\n'
     //   const enabled = status[channelId].enabled

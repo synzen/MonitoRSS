@@ -1,4 +1,5 @@
 const UPDATE_SETTINGS = { upsert: true, strict: true }
+const config = require('../../config.js')
 const mongoose = require('mongoose')
 
 exports.findAll = async Model => {
@@ -13,7 +14,10 @@ exports.update = async (Model, article) => {
   const toUpdate = { id: article._id, title: article.title }
   if (article.customComparisons) toUpdate.customComparisons = article.customComparisons
   // Database
-  if (mongoose.connection.name) return Model.updateOne({ id: toUpdate.id }, { $set: toUpdate }, UPDATE_SETTINGS).exec()
+  if (mongoose.connection.name) {
+    if (config.dev === true) return
+    return Model.updateOne({ id: toUpdate.id }, { $set: toUpdate }, UPDATE_SETTINGS).exec()
+  }
 
   // Memory
   for (var x = 0; x < Model.length; ++x) {
@@ -28,6 +32,7 @@ exports.bulkInsert = async (Model, articles) => {
   // Database
   if (mongoose.connection.name) {
     articles.forEach(article => insert.push(new Model({ id: article._id, title: article.title })))
+    if (config.dev === true) return
     return Model.collection.insertMany(insert)
   }
 

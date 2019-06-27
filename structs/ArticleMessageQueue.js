@@ -32,7 +32,7 @@ class ArticleMessageQueue {
   }
 
   async send (article, isTestMessage, skipFilters) {
-    if (config._skipMessages === true) return
+    if (config.dev === true) return
     const articleMessage = new ArticleMessage(article, isTestMessage, skipFilters)
     await this._pushNext(articleMessage)
   }
