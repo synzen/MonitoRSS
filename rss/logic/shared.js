@@ -215,9 +215,11 @@ module.exports = (data, callback) => {
     let c = 0
     for (var id in toUpdate) {
       const article = toUpdate[id]
-      dbCmds.update(feedCollection || Feed, article, err => {
-        if (err) log.cycle.error(`Failed to update an article entry`, err)
-        if (++c === toUpdateLength) callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
+      dbCmds.update(feedCollection || Feed, article).then(() => {
+        if (++c >= toUpdateLength) callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
+      }).catch(err => {
+        log.cycle.error(`Failed to update an article entry`, err)
+        if (++c >= toUpdateLength) callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
       })
     }
   }
