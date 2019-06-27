@@ -116,7 +116,7 @@ const ViewOptions = styled.div`
 
 const SortByContainerStyles = styled.div`
   display: flex;
-  overflow: hidden;
+  /* overflow: hidden; */
   > .ui.dropdown {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
