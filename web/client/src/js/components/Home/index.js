@@ -6,6 +6,7 @@ import Section from './Section'
 import colors from '../../constants/colors'
 import modal from '../utils/modal'
 import pages from '../../constants/pages'
+import PropTypes from 'prop-types'
 
 const Header = styled.div`
   position: relative;
@@ -280,6 +281,10 @@ function Home (props) {
       </Section>
     </div>
   )
+}
+
+Home.propTypes = {
+  history: PropTypes.object
 }
 
 export default withRouter(Home)
