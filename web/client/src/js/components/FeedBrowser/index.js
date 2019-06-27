@@ -90,11 +90,7 @@ const ArticlesHeaderContainer = styled.div`
   }
 `
 
-const SearchFilterSectionStyles = styled.section`
-  overflow: hidden;
-`
-
-const SearchFilterSection = posed(SearchFilterSectionStyles)({
+const SearchFilterSection = posed.div({
   enter: { height: 'auto', opacity: 1 },
   exit: { height: 0, opacity: 0 }
 })
