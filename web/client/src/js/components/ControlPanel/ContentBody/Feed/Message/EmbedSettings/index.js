@@ -7,7 +7,7 @@ import styled from 'styled-components'
 import pages from 'js/constants/pages'
 import colors from 'js/constants/colors'
 import toast from '../../../../utils/toast'
-import SectionSubtitle from 'js/components/utils/SectionSubtitle'
+import SectionTitle from 'js/components/utils/SectionTitle'
 import SectionItemTitle from 'js/components/utils/SectionItemTitle'
 import PopInButton from '../../../../utils/PopInButton'
 import TextArea from 'js/components/utils/TextArea'
@@ -65,6 +65,7 @@ const SelectionControls = styled.div`
 const ActionButtons = styled.div`
   display: flex;
   justify-content: flex-end;
+  margin-top: 14px;
   .ui.button {
     margin-left: 1em;
   }
@@ -428,6 +429,18 @@ class EmbedSettings extends React.Component {
 
     return (
       <div>
+        <SectionTitle heading='Embeds' subheading='Embeds are fancy boxes that can be shown under your message. Placeholders may also be used here.' sideComponent={          <Button.Group>
+            <Button disabled={this.state.index === 0 || unsaved} icon='chevron left' onClick={this.prevIndex} size='large' />
+            <Button.Or text={`${this.state.index + 1}/${this.state.index >= embedsOriginal.length - 1 ? embedsOriginal.length : this.state.index + 2}`} />
+            {!hasWebhooks
+          ? <Popup
+              inverted
+              content='Only feeds with webhooks attached may use more embeds'
+              trigger={<span><Button disabled icon='add' circular size='large' /></span>}
+            />
+          : <Button disabled={this.state.index >= 8 || this.state.index >= embedsOriginal.length} icon={this.state.index >= embedsOriginal.length - 1 ? 'add' : 'chevron right'} onClick={this.nextIndex} size='large' />
+          }
+          </Button.Group>} />
         <Section
           name='Author'
           inputs={[
@@ -495,22 +508,6 @@ class EmbedSettings extends React.Component {
             </EmbedFieldsWrapper>
           }
         />
-        <SelectionControls>
-          <Button disabled={this.state.index === 0 || unsaved} icon='chevron left' circular onClick={this.prevIndex} />
-          <div>
-            <h6>{this.state.index === 0 ? '' : this.state.index}</h6>
-            <SectionSubtitle>{this.state.index + 1}</SectionSubtitle>
-            <h6>{this.state.index >= embedsOriginal.length - 1 ? '' : this.state.index + 2}</h6>
-          </div>
-          {!hasWebhooks
-          ? <Popup
-              inverted
-              content='Only feeds with webhooks attached may use more embeds'
-              trigger={<span><Button disabled icon='add' circular/></span>}
-            />
-          : <Button disabled={this.state.index >= 8 || this.state.index >= embedsOriginal.length} icon={this.state.index >= embedsOriginal.length - 1 ? 'add' : 'chevron right'} circular onClick={this.nextIndex} />
-          }
-        </SelectionControls>
         <ActionButtons>
           <PopInButton key='discard-changes-embed' content='Reset' basic inverted onClick={this.discardChanges} pose={this.state.saving ? 'exit' : unsaved ? 'enter' : 'exit'} />
           <Button disabled={this.state.saving || !unsaved} content='Save' color='green' onClick={this.apply} />

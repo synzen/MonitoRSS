@@ -10,7 +10,7 @@ import AddFeed from './AddFeed'
 import PaginatedTable from '../../../utils/PaginatedTable'
 import PropTypes from 'prop-types'
 import styled from 'styled-components'
-import { Divider, Icon, Popup, Dropdown, Button, Input } from 'semantic-ui-react'
+import { Divider, Icon, Popup, Dropdown, Button, Input, Checkbox } from 'semantic-ui-react'
 import { Scrollbars } from 'react-custom-scrollbars';
 import modal from 'js/components/utils/modal'
 import toast from '../../../utils/toast'
@@ -56,6 +56,29 @@ const SideBarContainer = styled.div`
   display: none;
   @media only screen and (min-width: 1475px) {
     display: block;
+  }
+`
+
+const CheckboxWrapper = styled.div`
+  display: flex;
+  > .ui.checkbox {
+    min-width: 18px;
+    min-height: 18px;
+    > input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+    label:before,
+    .box:before {
+      width: 18px;
+      height: 18px;
+    }
+    label:after {
+      top: -2px;
+      width: 18px;
+      height: 18px;
+      font-size: 16px;
+    }
   }
 `
 
@@ -298,16 +321,21 @@ class Feeds extends Component {
               items={tableItems}
               compact={tableItems.length > 5}
               maxPerPage={tableItems.length > 5 ? 10 : 5}
-              headers={['', 'Title', 'Link', 'Channel']}
+              headers={['Status', 'Title', 'Link', 'Channel']}
               itemFunc={feed => {
                 return (
                   <PaginatedTable.Row active={feed.rssName === this.state.selectedFeedId} style={{ cursor: 'pointer' }} key={feed.rssName}onClick={e => this.onClickFeedRow(feed)}>
+                    {/* <PaginatedTable.Cell collapsing>
+                      <CheckboxWrapper>
+                        <Checkbox />
+                      </CheckboxWrapper>
+                    </PaginatedTable.Cell> */}
                     <PaginatedTable.Cell collapsing>
                       { feed.disabled
-                        ? <Icon name='warning circle' size='large' color='yellow' />
+                        ? <Icon name='warning circle' style={{ fontSize: '18px' }} color='yellow' />
                         : typeof linkStatuses[feed.link] === 'string'
-                          ? <Icon name='dont' size='large' color='red' />
-                          : <Icon name='check circle' size='large' color='green' />
+                          ? <Icon name='dont' style={{ fontSize: '18px' }} color='red' />
+                          : <Icon name='check circle' style={{ fontSize: '18px' }} color='green' />
                       }
                     </PaginatedTable.Cell>
                     <PaginatedTable.Cell>{feed.title}</PaginatedTable.Cell>

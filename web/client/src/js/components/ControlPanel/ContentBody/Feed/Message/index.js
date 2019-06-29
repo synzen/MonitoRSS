@@ -226,7 +226,6 @@ class Message extends Component {
             } />
           <MessageSettings messageOriginal={this.state.messageOriginal} onUpdate={this.onMessageUpdate} />
           <Divider />
-          <SectionTitle heading='Embeds' subheading='Embeds are fancy boxes that can be shown under your message. Placeholders may also be used here.' />
           <EmbedSettings onUpdate={this.onEmbedPropertyUpdate} embeds={this.state.embeds} embedsOriginal={this.state.embedsOriginal} resetEmbedProperties={this.resetEmbedProperties} />
           <Divider />
           {this.state.window.width >= MAX_VIEWPORT_WIDTH_STICKY

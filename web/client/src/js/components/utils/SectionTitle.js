@@ -20,13 +20,16 @@ const Container = styled.div`
 const Main = styled.div`
   display: flex;
   justify-content: space-between;
+  > div:first-child {
+    margin-right: ${props => props.hasSideComponent ? '30px' : 0};
+  }
 `
 
 class PageHeader extends React.PureComponent {
   render () {
     return (
       <Container hasSubheading={!!this.props.subheading}>
-        <Main>
+        <Main hasSideComponent={!!this.props.sideComponent}>
           <div>
             {this.props.heading ? <h3>{this.props.heading}</h3> : null}
             {this.props.subheading ? <p>{this.props.subheading}</p> : null}
