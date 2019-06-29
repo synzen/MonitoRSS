@@ -132,6 +132,8 @@ exports.addNewFeed = async (settings, customTitle) => {
 
         if (metaTitle.length > 200) metaTitle = metaTitle.slice(0, 200) + '...'
 
+        const allArticlesHaveDates = articleList.reduce((acc, article) => acc && (!!article.pubdate), true)
+
         if (guildRss) {
           if (!guildRss.sources) guildRss.sources = {}
 
@@ -156,6 +158,8 @@ exports.addNewFeed = async (settings, customTitle) => {
             addedOn: new Date()
           }
         }
+        if (!allArticlesHaveDates) guildRss.sources[rssName].checkDates = false
+
         await dbOps.guildRss.update(guildRss) // Must be added to database first for the FeedSchedules to see the feed
         if (storage.scheduleManager) {
           await storage.scheduleManager.assignScheduleToSource(guildRss, rssName)
