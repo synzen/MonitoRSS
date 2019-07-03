@@ -112,14 +112,14 @@ async function patchEmbed (req, res, next) {
     if (embedId === lastCurrentEmbedIndex + 1) {
       // Remove empty values
       for (const key in newEmbedProperties) {
-        if (!newEmbedProperties[key]) delete newEmbedProperties[key]
+        if (newEmbedProperties[key] === undefined || newEmbedProperties[key] === null) delete newEmbedProperties[key]
       }
       req.source.embeds.push(newEmbedProperties)
     } else {
       if (!req.source.embeds[embedId]) return res.status(400).json({ code: 400, message: `Modifying undefined embed object at index ${embedId}` })
       for (const key in VALID_EMBED_KEYS_LENGTHS) {
         if (newEmbedProperties[key] === '') delete req.source.embeds[embedId][key]
-        else if (newEmbedProperties[key]) req.source.embeds[embedId][key] = newEmbedProperties[key]
+        else if (newEmbedProperties[key] !== undefined && newEmbedProperties[key] !== null) req.source.embeds[embedId][key] = newEmbedProperties[key]
       }
 
       // Clean up
