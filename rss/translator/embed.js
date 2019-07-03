@@ -17,7 +17,7 @@ module.exports = (embeds, article) => {
     if (isStr(objectEmbed.description)) richEmbed.setDescription(article.convertKeywords(objectEmbed.description))
     if (isStr(objectEmbed.url)) richEmbed.setURL(article.convertKeywords(objectEmbed.url))
 
-    if (objectEmbed.color && !isNaN(objectEmbed.color) && objectEmbed.color <= 16777215 && objectEmbed.color > 0) richEmbed.setColor(parseInt(objectEmbed.color, 10))
+    if (objectEmbed.color !== null && objectEmbed.color !== undefined && !isNaN(objectEmbed.color) && objectEmbed.color <= 16777215 && objectEmbed.color >= 0) richEmbed.setColor(parseInt(objectEmbed.color, 10))
     else if (isStr(objectEmbed.color) && objectEmbed.color.startsWith('#') && objectEmbed.color.length === 7) richEmbed.setColor(objectEmbed.color)
 
     if (isStr(objectEmbed['footer_text'])) richEmbed.setFooter(article.convertKeywords(objectEmbed['footer_text']), isStr(objectEmbed['footer_icon_url']) ? article.convertKeywords(objectEmbed['footer_icon_url']) : undefined)
@@ -36,6 +36,7 @@ module.exports = (embeds, article) => {
       const setting = objectEmbed.timestamp
       richEmbed.setTimestamp(setting === 'article' ? new Date(article.rawDate) : setting === 'now' ? new Date() : new Date(setting)) // No need to check for invalid date since discord.js does it
     }
+    console.log(richEmbed)
 
     const fields = objectEmbed.fields
     if (Array.isArray(fields)) {
