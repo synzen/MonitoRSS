@@ -36,7 +36,6 @@ module.exports = (embeds, article) => {
       const setting = objectEmbed.timestamp
       richEmbed.setTimestamp(setting === 'article' ? new Date(article.rawDate) : setting === 'now' ? new Date() : new Date(setting)) // No need to check for invalid date since discord.js does it
     }
-    console.log(richEmbed)
 
     const fields = objectEmbed.fields
     if (Array.isArray(fields)) {
