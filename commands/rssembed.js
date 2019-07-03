@@ -210,7 +210,7 @@ async function setProperty (m, data) {
   }
 
   const valid = validate(property, userSetting)
-  if (valid === true) data.settings[property] = userSetting
+  if (valid === true) data.settings[property] = property === 'color' ? parseInt(userSetting, 10) : userSetting
   else throw new SyntaxError(valid)
   properties.shift()
   return data
