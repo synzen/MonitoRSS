@@ -108,10 +108,9 @@ function ColorPicker (props) {
         <Popup
           style={{ background: 'transparent' }}
           inverted
-          hoverable
           position='bottom left'
           basic
-          on='focus'
+          on='click'
           trigger={<Button icon='eyedropper' />}
         >
           <DiscordColorPicker color={numberToColour(props.value)} onChange={(color, event) => {

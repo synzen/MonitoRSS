@@ -195,9 +195,9 @@ class EmbedSettings extends React.Component {
           if (!originalEmbed) {
             if (thisEmbed[propertyName]) return this.setState({ unsaved: true }) // Check if any values exist to qualify it for unsaved as a new embed
           } else {
-            if ((originalEmbed[propertyName] && thisEmbed[propertyName] && originalEmbed[propertyName] !== thisEmbed[propertyName])) return this.setState({ unsaved: true })
-            else if (!originalEmbed[propertyName] && thisEmbed[propertyName]) return this.setState({ unsaved: true })
-            else if (originalEmbed[propertyName] && !thisEmbed[propertyName]) return this.setState({ unsaved: true })
+            if ((originalEmbed[propertyName] != null && thisEmbed[propertyName] != null && originalEmbed[propertyName] !== thisEmbed[propertyName])) return this.setState({ unsaved: true })
+            else if (originalEmbed[propertyName] == null && thisEmbed[propertyName] != null) return this.setState({ unsaved: true })
+            else if (originalEmbed[propertyName] != null && thisEmbed[propertyName] == null) return this.setState({ unsaved: true })
           }
         }
       }
@@ -348,8 +348,8 @@ class EmbedSettings extends React.Component {
     if (!this.state.unsaved) return
     const { csrfToken, guildId, feedId } = this.props
     const payload = { ...this.state.embeds[this.state.index] }
-    // Convert color to int
-    if (payload.color) payload.color = +payload.color
+    // Convert color to int - manually check null/undefined since it may be 0
+    if (payload.color !== null && payload.color !== undefined) payload.color = +payload.color
     // Fix the timestamp from the none value
     if (payload.timestamp === 'none') payload.timestamp = ''
     // Take care of fields
@@ -393,7 +393,8 @@ class EmbedSettings extends React.Component {
     const valuesToUse = {}
     for (const key in embedPropertiesNames) {
       const propertyName = embedPropertiesNames[key]
-      valuesToUse[propertyName] = this.state.embeds[this.state.index] && this.state.embeds[this.state.index][propertyName] === '' ? '' : this.state.embeds[this.state.index] ? (this.state.embeds[this.state.index][propertyName] || originalValues[propertyName] || '') : ''
+      const thisEmbed = this.state.embeds[this.state.index]
+      valuesToUse[propertyName] = thisEmbed && thisEmbed[propertyName] === '' ? '' : thisEmbed && propertyName === 'color' && thisEmbed[propertyName] === 0 ? '0' : thisEmbed ? (thisEmbed[propertyName] || originalValues[propertyName] || '') : ''
     }
 
 

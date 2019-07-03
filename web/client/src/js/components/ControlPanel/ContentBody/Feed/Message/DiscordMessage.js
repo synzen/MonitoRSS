@@ -91,7 +91,7 @@ const Pill = styled.div`
   border-top-left-radius: 3px;
   border-bottom-left-radius: 3px;
   width: 4px;
-  background-color: ${props => props.color ? numberToColour(props.color) : '#4f545c'};
+  background-color: ${props => props.color != null ? numberToColour(props.color) : '#4f545c'};
 `
 const NonPill = styled.div`
   padding-left: 10px;
