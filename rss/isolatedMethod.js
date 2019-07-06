@@ -44,7 +44,7 @@ function getFeed (data, callback) {
 
   feedparser.on('end', () => {
     if (articleList.length === 0) return process.send({ status: 'success', link: link })
-    processSources({ articleList, useId: idResolver.getIDType(), ...data }, (err, results) => {
+    processSources({ articleList, useIdType: idResolver.getIDType(), ...data }, (err, results) => {
       if (err) log.cycle.error(`Cycle logic`, err, true)
       if (results) process.send(results)
     })
