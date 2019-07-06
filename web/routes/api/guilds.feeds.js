@@ -8,6 +8,7 @@ const dbOps = require('../../../util/dbOps')
 const initialize = require('../../../rss/initialize.js')
 const serverLimit = require('../../../util/serverLimit.js')
 const redisOps = require('../../../util/redisOps.js')
+const ArticleIDResolver = require('../../../structs/ArticleIDResolver.js')
 const VALID_SOURCE_KEYS_TYPES = {
   title: String,
   channel: String,
@@ -107,6 +108,9 @@ async function getFeedPlaceholders (req, res, next) {
     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) Fetching articles for ${req.source.link}`)
     const [ , , rawArticleList ] = await getArticles(mockGuildRss, 'someName')
     const allPlaceholders = []
+    const idResolver = new ArticleIDResolver()
+    for (const article of rawArticleList) idResolver.recordArticle(article)
+    const useIDType = idResolver.getIDType()
     for (const article of rawArticleList) {
       const parsed = new Article(article, req.source, {
         timezone: req.guildRss.timezone || config.feeds.timezone,
@@ -116,6 +120,7 @@ async function getFeedPlaceholders (req, res, next) {
       const articlePlaceholders = {}
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
+        articlePlaceholders.id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIDType)
       }
       articlePlaceholders.fullDescription = parsed.fullDescription
       articlePlaceholders.fullSummary = parsed.fullSummary
