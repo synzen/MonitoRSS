@@ -3,6 +3,7 @@ const feeds = express.Router()
 const getArticles = require('../../../rss/getArticle.js')
 const config = require('../../../config.js')
 const Article = require('../../../structs/Article.js')
+const ArticleIDResolver = require('../../../structs/ArticleIDResolver.js')
 const axios = require('axios')
 const log = require('../../../util/logger.js')
 // const feedsJson = require('../../tests/files/feeds.json')
@@ -46,6 +47,8 @@ async function getUrl (req, res, next) {
       return res.status(500).json({ code: 500, message: errMessage })
     }
     const allPlaceholders = []
+    const idResolver = new ArticleIDResolver()
+    for (const article of rawArticleList) idResolver.recordArticle(article)
     for (const article of rawArticleList) {
       const parsed = new Article(article, {}, {
         timezone: config.feeds.timezone,
@@ -53,8 +56,10 @@ async function getUrl (req, res, next) {
         language: config.feeds.dateLanguage
       })
       const articlePlaceholders = {}
+      const useIdType = idResolver.getIDType()
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
+        articlePlaceholders.id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIdType)
       }
 
       allPlaceholders.push(articlePlaceholders)
