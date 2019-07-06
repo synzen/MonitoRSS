@@ -193,6 +193,12 @@ const OpacityTransition = posed.div({
   exit: { opacity: 0, height: 0 }
 })
 
+const XMLWrapperStyles = styled.pre`
+  max-width: 100%;
+  width: 100%;
+`
+const XMLWrapper = posed(XMLWrapperStyles)()
+
 const viewTypeOptions = [{ text: 'Placeholders', value: 'placeholders' }, { text: 'Original XML', value: 'xml' }]
 
 class FeedBrowser extends Component {
@@ -468,14 +474,17 @@ class FeedBrowser extends Component {
               : null
             }
             <PoseGroup animateOnMount>
-              {notPlaceholdersViewType || this.state.loading || this.state.loadingXML ? [] : elems}
+              {this.state.loading || this.state.loadingXML
+                ? []
+                : notPlaceholdersViewType && this.state.xmlText ?
+                [
+                  <XMLWrapper key='xml'>
+                    <code dangerouslySetInnerHTML={{ __html: hljs.highlight('xml', this.state.xmlText).value}} />
+                  </XMLWrapper>
+                ]
+                : elems
+              }
             </PoseGroup>
-            <OpacityTransition pose={notPlaceholdersViewType && this.state.xmlText && !this.state.loading && !this.state.loadingXML ? 'enter' : 'exit'}>
-              <pre style={{ maxWidth: '100%', width: '100%' }}>
-                <code dangerouslySetInnerHTML={{ __html: hljs.highlight('xml', this.state.xmlText).value}} />
-              </pre>
-            </OpacityTransition>
-
           </ArticlesSectionInner>
         </ArticlesSection>
       </div>
