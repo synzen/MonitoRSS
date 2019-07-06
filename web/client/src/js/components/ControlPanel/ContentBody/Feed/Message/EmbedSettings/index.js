@@ -5,7 +5,6 @@ import { changePage } from 'js/actions/index-actions'
 import { Input, Popup, Button, Divider, Checkbox, Icon } from 'semantic-ui-react'
 import styled from 'styled-components'
 import pages from 'js/constants/pages'
-import colors from 'js/constants/colors'
 import toast from '../../../../utils/toast'
 import SectionTitle from 'js/components/utils/SectionTitle'
 import SectionItemTitle from 'js/components/utils/SectionItemTitle'
@@ -38,29 +37,6 @@ const mapDispatchToProps = dispatch => {
     setToThisPage: () => dispatch(changePage(pages.MESSAGE))
   }
 }
-
-const SelectionControls = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 1.5em;
-  margin-bottom: 1.5em;
-  font-size: 125%;
-  > div:nth-child(even) {
-    display: flex;
-    align-content: center;
-    > h5 {
-      margin: 0;
-      color: ${colors.discord.white};
-    }
-    > h6 {
-      padding-left: 1em;
-      padding-right: 1em;
-      margin: 0;
-      color: ${colors.discord.text};
-    }
-  }
-`
 
 const ActionButtons = styled.div`
   display: flex;

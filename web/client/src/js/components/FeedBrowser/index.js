@@ -13,7 +13,6 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import { Input, Divider, Popup, Image, Dropdown, Loader, Button } from 'semantic-ui-react'
 import SectionSubtitleDescription from '../utils/SectionSubtitleDescription';
-import articleId from '../ControlPanel/utils/articleId'
 import posed, { PoseGroup } from 'react-pose'
 import moment from 'moment-timezone'
 import axios from 'axios'
@@ -244,9 +243,14 @@ class FeedBrowser extends Component {
     let firstValidCategory = ''
     articleList.forEach(placeholders => {
       for (const placeholder in placeholders) {
-        if (!placeholders[placeholder]) continue
-        if (placeholder === 'date') placeholders[placeholder] = moment(placeholders[placeholder]).local().format('DD MMMM Y hh:mm A (HH:mm) zz')
-        else if (placeholder.includes('image')) {
+        if (!placeholders[placeholder] || placeholder === 'id') continue
+        if (placeholder === 'date') {
+          placeholders[placeholder] = moment(placeholders[placeholder]).local().format('DD MMMM Y hh:mm A (HH:mm) zz')
+          if (!placeholdersSeen.date) {
+            placeholdersSeen.date = true
+            searchDropdownOptions.push({ text: 'date', value: 'date' })
+          }
+        } else if (placeholder.includes('image')) { 
           if (!placeholdersSeen.images) {
             placeholdersSeen.images = true
             searchDropdownOptions.push({ text: 'images', value: 'images' })
@@ -366,8 +370,9 @@ class FeedBrowser extends Component {
         if (category === 'title' || category === 'date' || category === 'link' || category === 'description' || category === 'anchors' || category === 'images') continue
         singleLineElements.push(<div key={placeholders[category] + 'sll'}><PlaceholderTitle>{category}</PlaceholderTitle><Popup position='left center' hideOnScroll trigger={<p>{parser.parseAllowLinks(placeholders[category])}</p>} inverted content={`{${category}}`} on='hover' /></div>)
       }
+
       return (
-        <PosedDiv key={articleId(articleList, placeholders)}>
+        <PosedDiv key={placeholders.id}>
           <Wrapper>
             { searchCategoriesHasDate
               ? placeholders.date

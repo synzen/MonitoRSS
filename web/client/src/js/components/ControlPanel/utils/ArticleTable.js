@@ -2,7 +2,6 @@ import React from 'react'
 import { connect } from 'react-redux'
 import PropTypes from 'prop-types'
 import PaginatedTable from './PaginatedTable'
-import articleId from './articleId'
 import { Dropdown, Loader } from 'semantic-ui-react'
 import styled from 'styled-components'
 import colors from 'js/constants/colors'
@@ -134,7 +133,7 @@ class ArticleBrowser extends React.PureComponent {
 
     const classificationsTableRowFunc = data => {
       const positive = positiveNegativeRowFunc ? positiveNegativeRowFunc(data) : null
-      const id = articleId(articleList, data)
+      const id = data.id
       return (
       <StyledRow
         clickable={(!!this.props.onClickArticle).toString()}
