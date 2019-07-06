@@ -7,6 +7,7 @@ const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const assignedSchedules = require('../util/assignedSchedules.js')
+const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
 
 async function resolveLink (link) {
   try {
@@ -30,21 +31,8 @@ async function resolveLink (link) {
   }
 }
 
-exports.initializeFeed = async (articleList, link, rssName) => {
+exports.initializeFeed = async (articleList, link, rssName, idResolver) => {
   if (articleList.length === 0) return
-
-  function getArticleId (article) {
-    let equalGuids = (articleList.length > 1) // default to true for most feeds
-    if (equalGuids && articleList[0].guid) {
-      articleList.forEach((article, index) => {
-        if (index > 0 && article.guid !== articleList[index - 1].guid) equalGuids = false
-      })
-    }
-
-    if ((!article.guid || equalGuids) && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate
-    if ((!article.guid || equalGuids) && article.title) return article.title
-    return article.guid
-  }
 
   // Initialize the feed collection if necessary, but only if a database is used. This file has no access to the feed collections if config.database.uri is a databaseless folder path
   if (!config.database.uri.startsWith('mongo')) return
@@ -53,8 +41,9 @@ exports.initializeFeed = async (articleList, link, rssName) => {
     const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, assignedSchedules.getScheduleName(rssName))
     const docs = await dbCmds.findAll(Feed)
     if (docs.length > 0) return // The collection already exists from a previous addition, no need to initialize
+    const useIDType = idResolver.getIDType()
     articleList.forEach(article => {
-      article._id = getArticleId(article)
+      article._id = ArticleIDResolver.getIdTypeValue(article, useIDType)
     })
     await dbCmds.bulkInsert(Feed, articleList)
   } catch (err) {
@@ -66,6 +55,7 @@ exports.addNewFeed = async (settings, customTitle) => {
   const { channel } = settings
   let link = settings.link
   const feedparser = new FeedParser()
+  const idResolver = new ArticleIDResolver()
   const articleList = []
   let errored = false // Sometimes feedparser emits error twice
 
@@ -116,7 +106,10 @@ exports.addNewFeed = async (settings, customTitle) => {
       let item
       do {
         item = this.read()
-        if (item) articleList.push(item)
+        if (item) {
+          idResolver.recordArticle(item)
+          articleList.push(item)
+        }
       } while (item)
     })
 
@@ -170,7 +163,7 @@ exports.addNewFeed = async (settings, customTitle) => {
         }
         // The user doesn't need to wait for the initializeFeed
 
-        if (storage.bot) exports.initializeFeed(articleList, link, rssName).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
+        if (storage.bot) exports.initializeFeed(articleList, link, rssName, idResolver).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
         resolve([ link, metaTitle, rssName ])
       } catch (err) {
         reject(err)

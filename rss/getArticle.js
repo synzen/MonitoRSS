@@ -1,6 +1,7 @@
 const requestStream = require('./request.js')
 const Article = require('../structs/Article.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
+const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
 const testFilters = require('./translator/filters.js')
 const dbOps = require('../util/dbOps.js')
 
@@ -10,6 +11,7 @@ module.exports = async (guildRss, rssName, passFiltersOnly) => {
   const failedLinkResult = await dbOps.failedLinks.get(source.link)
   if (failedLinkResult && failedLinkResult.failed) throw new Error('Reached connection failure limit')
   const feedparser = new DecodedFeedParser(null, source.link)
+  const idResolver = new ArticleIDResolver()
   const currentFeed = []
   const cookies = (source.advanced && source.advanced.cookies) ? source.advanced.cookies : undefined
 
@@ -31,17 +33,22 @@ module.exports = async (guildRss, rssName, passFiltersOnly) => {
       let item
       do {
         item = this.read()
-        if (item) currentFeed.push(item)
+        if (item) {
+          idResolver.recordArticle(item)
+          currentFeed.push(item)
+        }
       } while (item)
     })
 
     feedparser.on('end', () => {
       if (currentFeed.length === 0) reject(new Error('No articles in feed to send'))
+      const useIdType = idResolver.getIDType()
 
       if (passFiltersOnly) {
         const filteredCurrentFeed = []
 
         currentFeed.forEach(article => {
+          article._id = ArticleIDResolver.getIdTypeValue(article, useIdType)
           const constructedArticle = new Article(article, source, { })
           if (testFilters(guildRss.sources[rssName], constructedArticle).passed) filteredCurrentFeed.push(article) // returns null if no article is sent from passesFilters
         })
@@ -56,6 +63,7 @@ module.exports = async (guildRss, rssName, passFiltersOnly) => {
         const feedLinkList = []
         const rawArticleList = []
         currentFeed.forEach(article => {
+          article._id = ArticleIDResolver.getIdTypeValue(article, useIdType)
           if (!feedLinkList.includes(article.link)) feedLinkList.push(article.link)
           rawArticleList.push(article)
         })

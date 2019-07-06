@@ -166,6 +166,7 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
 
 module.exports = class Article {
   constructor (raw, source, dateSettings) {
+    this.id = raw._id || null
     this.source = source
     this.dateSettings = dateSettings
     this.raw = raw

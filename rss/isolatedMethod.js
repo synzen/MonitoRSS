@@ -4,10 +4,12 @@ const requestStream = require('./request.js')
 const connectDb = require('./db/connect.js')
 const processSources = require('./logic/shared.js')
 const log = require('../util/logger.js')
+const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
 
 function getFeed (data, callback) {
   const { link, rssList, uniqueSettings } = data
   const feedparser = new DecodedFeedParser(null, link)
+  const idResolver = new ArticleIDResolver()
   const articleList = []
 
   const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
@@ -33,13 +35,16 @@ function getFeed (data, callback) {
     let item
     do {
       item = this.read()
-      if (item) articleList.push(item)
+      if (item) {
+        idResolver.recordArticle(item)
+        articleList.push(item)
+      }
     } while (item)
   })
 
   feedparser.on('end', () => {
     if (articleList.length === 0) return process.send({ status: 'success', link: link })
-    processSources({ articleList: articleList, ...data }, (err, results) => {
+    processSources({ articleList, useId: idResolver.getIDType(), ...data }, (err, results) => {
       if (err) log.cycle.error(`Cycle logic`, err, true)
       if (results) process.send(results)
     })

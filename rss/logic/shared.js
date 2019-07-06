@@ -3,22 +3,10 @@ const moment = require('moment-timezone')
 const defaultConfigs = require('../../util/checkConfig.js').defaultConfigs
 const log = require('../../util/logger.js')
 const storage = require('../../util/storage.js')
-
-function getArticleId (articleList, article) {
-  let equalGuids = (articleList.length > 1) // default to true for most feeds
-  if (equalGuids && articleList[0].guid) {
-    articleList.forEach((article, index) => {
-      if (index > 0 && article.guid !== articleList[index - 1].guid) equalGuids = false
-    })
-  }
-
-  if ((!article.guid || equalGuids) && article.pubdate && article.pubdate.toString() !== 'Invalid Date') return article.pubdate.toString()
-  if ((!article.guid || equalGuids) && article.title) return article.title
-  return article.guid
-}
+const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 
 module.exports = (data, callback) => {
-  const { rssList, articleList, debugFeeds, link, shardId, config, feedData, scheduleName, runNum } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+  const { rssList, articleList, debugFeeds, link, shardId, config, feedData, scheduleName, runNum, useIdType } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
   if (!scheduleName) throw new Error('Missing schedule name for shared logic')
   const RSSLIST_LENGTH = Object.keys(rssList).length
   let sourcesCompleted = 0
@@ -30,7 +18,7 @@ module.exports = (data, callback) => {
   const dbCustomComparisonsToDelete = []
   const customComparisonsToUpdate = []
   const toInsert = []
-  const toUpdate = {} // Article's resolved IDs (getArticleId) as key and the article as value
+  const toUpdate = {} // Article's resolved IDs as key and the article as value
   const collectionId = storage.collectionId(link, shardId, scheduleName)
   const Feed = storage.models.FeedByCollectionId(collectionId)
   const feedCollectionId = feedData ? collectionId : undefined
@@ -57,7 +45,7 @@ module.exports = (data, callback) => {
       const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
       for (var a = 0; a < articleList.length; ++a) {
         const article = articleList[a]
-        article._id = getArticleId(articleList, article)
+        article._id = ArticleIDResolver.getIdTypeValue(article, useIdType)
         if (checkCustomComparisons) {
         // Iterate over the values stored in the db, and see if the custom comparison names in the db exist in any of the articles. If they do, then it is marked valid
           for (var compName in dbCustomComparisons) {
