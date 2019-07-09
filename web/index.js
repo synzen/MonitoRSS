@@ -19,10 +19,9 @@ const fetchUser = require('./util/fetchUser.js')
 const PORT = TEST_ENV ? 8081 : config.web.port
 const REDIRECT_URI = config.web.redirectUri
 const sharedSession = require('express-socket.io-session')
-const redisOps = require('../util/redisOps.js')
 const SCOPES = 'identify guilds'
 const tokenConfig = code => { return { code, redirect_uri: REDIRECT_URI, scope: SCOPES } }
-const faq = JSON.parse(fs.readFileSync('./web/client/src/js/constants/faq.json'))
+const faq = JSON.parse(fs.readFileSync(path.join(__dirname, 'client', `src`, 'js', 'constants', 'faq.json')))
 const htmlFile = fs.readFileSync(path.join(__dirname, 'client/build', 'index.html')).toString()
 
 let httpIo = require('socket.io').listen(http)

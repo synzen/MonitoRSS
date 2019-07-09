@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 const log = require('./logger.js')
 const config = require('../config.js')
 const storage = require('./storage.js')
@@ -51,9 +52,9 @@ const VALID_EVENTS = [
   'warn' ]
 
 let cmdsExtension
-if (fs.existsSync('./settings/commands.js')) {
+if (fs.existsSync(path.join(__dirname, '..', 'settings', 'commands.js'))) {
   try { cmdsExtension = require('../settings/commands.js') } catch (e) { log.general.error(`Unable to load commands extension file`, e) }
-  fs.watchFile('./settings/commands.js', (cur, prev) => {
+  fs.watchFile(path.join(__dirname, '..', 'settings', 'commands.js',), (cur, prev) => {
     delete require.cache[require.resolve('../settings/commands.js')]
     try {
       cmdsExtension = require('../settings/commands.js')
@@ -70,7 +71,7 @@ function messageHandler (message) {
 }
 
 exports.createManagers = () => {
-  const fileNames = fs.readdirSync('./events')
+  const fileNames = fs.readdirSync(path.join(__dirname, '..', 'events'))
   for (const fileName of fileNames) {
     const eventName = fileName.replace('.js', '')
     if (!VALID_EVENTS.includes(eventName)) throw new Error('Invalid event file found:', fileName)

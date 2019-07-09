@@ -36,7 +36,7 @@ class ClientManager extends EventEmitter {
     } catch (err) {
       overrideConfigs(configOverrides)
     }
-    webClient = require('../web/index.js')
+    if (config.web.enabled === true) webClient = require('../web/index.js')
     this.missingGuildRss = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
     this.refreshTimes = [config.feeds.refreshTimeMinutes]

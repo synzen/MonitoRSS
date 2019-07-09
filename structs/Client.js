@@ -74,7 +74,7 @@ class Client extends EventEmitter {
       const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
       overrideConfigs(fileConfigOverride)
     } catch (err) {}
-    webClient = require('../web/index.js')
+    if (config.web.enabled === true) webClient = require('../web/index.js')
     // Then override from constructor
     if (configOverrides) overrideConfigs(configOverrides)
     const configRes = checkConfig.check(config)
@@ -109,7 +109,7 @@ class Client extends EventEmitter {
     }
     if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 })
-      connectDb()
+      return connectDb()
         .then(() => client.login(token))
         .then(tok => {
           if (config.web.enabled === true && !this.webClientInstance && (!client.shard || client.shard.count === 0)) this.webClientInstance = webClient()
@@ -124,7 +124,8 @@ class Client extends EventEmitter {
             setTimeout(() => this.login.bind(this)(token), 600000)
           }
         })
-    } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
+    }
+    throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 
   _defineBot (bot) {
@@ -229,7 +230,7 @@ class Client extends EventEmitter {
     this.scheduleManager.stopSchedules()
     clearInterval(this._vipInterval)
     listeners.disableAll()
-    if (!storage.bot.shard || storage.bot.shard.count === 0 && config.web.enabled === true) this.webClientInstance.disableCP()
+    if ((!storage.bot.shard || storage.bot.shard.count === 0) && config.web.enabled === true) this.webClientInstance.disableCP()
     this.state = STATES.STOPPED
   }
 
