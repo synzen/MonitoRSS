@@ -111,7 +111,8 @@ class Client extends EventEmitter {
             setTimeout(() => this.login.bind(this)(token), 600000)
           }
         })
-    } else throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
+    }
+    throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
   }
 
   _defineBot (bot) {
