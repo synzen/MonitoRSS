@@ -54,11 +54,11 @@ There are multiple ways of integrating Discord.RSS programmatically - see [here]
 
 ### Deploy to Heroku
 
-You can deploy in a simple way to Heroku using the button below.
+You can deploy the bot in a simple way to Heroku using the button below. [Click here for detailed instructions](https://github.com/synzen/Discord.RSS/issues/45).
 
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-*If you want to deploy manually you should go to the settings of your applications and add a "Config Var" DRSS_DISCORD_TOKEN with the token of your discord bot.*
+*If you want to deploy manually you can [follow this guide](https://github.com/synzen/Discord.RSS/issues/95).*
 
 ### Contributing
 
