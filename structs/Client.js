@@ -95,10 +95,10 @@ class Client extends EventEmitter {
   login (token, noChildren) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
     if (token instanceof Discord.Client) return this._defineBot(token) // May also be the client
-    else if (token instanceof Discord.ShardingManager) return new ClientManager(token)
-    else if (typeof token === 'string') {
+    if (token instanceof Discord.ShardingManager) return new ClientManager(token)
+    if (typeof token === 'string') {
       const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 })
-      client.login(token)
+      return client.login(token)
         .then(tok => this._defineBot(client))
         .catch(err => {
           if (!noChildren && err.message.includes('too many guilds')) {
