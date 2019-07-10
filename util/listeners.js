@@ -54,7 +54,7 @@ const VALID_EVENTS = [
 let cmdsExtension
 if (fs.existsSync(path.join(__dirname, '..', 'settings', 'commands.js'))) {
   try { cmdsExtension = require('../settings/commands.js') } catch (e) { log.general.error(`Unable to load commands extension file`, e) }
-  fs.watchFile(path.join(__dirname, '..', 'settings', 'commands.js',), (cur, prev) => {
+  fs.watchFile(path.join(__dirname, '..', 'settings', 'commands.js'), (cur, prev) => {
     delete require.cache[require.resolve('../settings/commands.js')]
     try {
       cmdsExtension = require('../settings/commands.js')
