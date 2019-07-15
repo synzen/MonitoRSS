@@ -19,13 +19,13 @@
   },
   "dependencies": {
     "cloudscraper": "^4.1.2",
-    "discord.js": "^11.5.0",
+    "discord.js": "^11.5.1",
     "feedparser": "^2.2.9",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.4.24",
     "moment": "^2.24.0",
-    "moment-timezone": "^0.5.25",
-    "mongoose": "^5.5.11",
+    "moment-timezone": "^0.5.26",
+    "mongoose": "^5.6.4",
     "node-fetch": "^2.6.0",
     "redis": "^2.8.0",
     "request": "^2.88.0"
@@ -42,9 +42,9 @@
     "dotenv": "^8.0.0",
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.17.3",
+    "eslint-plugin-import": "^2.18.0",
     "eslint-plugin-node": "^9.1.0",
-    "eslint-plugin-promise": "^4.1.1",
+    "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.0"
   }
 }
