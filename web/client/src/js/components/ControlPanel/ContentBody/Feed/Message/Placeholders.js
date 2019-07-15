@@ -172,7 +172,7 @@ class Placeholders extends React.Component {
     const seenPlaceholders = {}
     for (const article of articleList) {
       for (const placeholder in article) {
-        if (placeholder.startsWith('regex:') || placeholder === 'fullDescription' || placeholder === 'fullSummary' || placeholder === 'fullTitle' || placeholder.startsWith('raw:')) continue
+        if (placeholder.startsWith('regex:') || placeholder.startsWith('_') || placeholder.startsWith('raw:')) continue
         if (article[placeholder]) seenPlaceholders[placeholder] = true
       }
     }
@@ -192,11 +192,11 @@ class Placeholders extends React.Component {
     if (article) {
       for (const placeholderName in article) {
         const content = article[placeholderName]
-        if (!content || placeholderName === 'fullTitle' || placeholderName === 'fullDescription' || placeholderName === 'fullSummary' || placeholderName.startsWith('raw:')) continue
+        if (!content || placeholderName.startsWith('raw:') || placeholderName.startsWith('_')) continue
         const phname = placeholderName.replace('regex:', '') // The {regex: in the beginning is for internal reference only
-        if (this.state.searchPlaceholder && !phname.includes(this.state.searchPlaceholder)) continue
+        if ((this.state.searchPlaceholder && !phname.includes(this.state.searchPlaceholder)) || phname.startsWith('_')) continue
         placeholderElements.push(
-          <PlaceholderImage key={`article.${placeholderName}`}>
+          <PlaceholderImage key={`${placeholderName}`}>
             <div>
               <div>
                 <PlaceholderNameContainer>

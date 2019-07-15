@@ -249,7 +249,7 @@ class FeedBrowser extends Component {
     let firstValidCategory = ''
     articleList.forEach(placeholders => {
       for (const placeholder in placeholders) {
-        if (!placeholders[placeholder] || placeholder === 'id') continue
+        if (!placeholders[placeholder] || placeholder.startsWith('_')) continue
         if (placeholder === 'date') {
           placeholders[placeholder] = moment(placeholders[placeholder]).local().format('DD MMMM Y hh:mm A (HH:mm) zz')
           if (!placeholdersSeen.date) {
@@ -266,7 +266,6 @@ class FeedBrowser extends Component {
             placeholdersSeen.anchors = true
             searchDropdownOptions.push({ text: 'anchors', value: 'anchors' })
           }
-        // } else if (placeholder !== 'fullDescription' && placeholder !== 'fullSummary' && placeholder !== 'fullTitle' && !placeholdersSeen[placeholder]) {
         } else if (!placeholdersSeen[placeholder]) {
           if (!firstValidCategory) firstValidCategory = placeholder
           placeholdersSeen[placeholder] = true
@@ -378,7 +377,7 @@ class FeedBrowser extends Component {
       }
 
       return (
-        <PosedDiv key={placeholders.id}>
+        <PosedDiv key={placeholders._id}>
           <Wrapper>
             { searchCategoriesHasDate
               ? placeholders.date

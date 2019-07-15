@@ -124,7 +124,7 @@ class ArticleBrowser extends React.PureComponent {
         if (added[placeholder]) continue
         const isRegexPlaceholder = placeholder.includes('regex:')
         const prettyPlaceholderName = placeholder.replace('regex:', '')
-        if (placeholder !== 'fullTitle' && placeholder !== 'fullDescription' && placeholder !== 'fullSummary') {
+        if (!placeholder.startsWith('_')) {
           classificationsDropdownOptions.push({ text: isRegexPlaceholder ? `${prettyPlaceholderName} (regex)` : prettyPlaceholderName, value: placeholder })
           added[placeholder] = true
         }
@@ -133,7 +133,7 @@ class ArticleBrowser extends React.PureComponent {
 
     const classificationsTableRowFunc = data => {
       const positive = positiveNegativeRowFunc ? positiveNegativeRowFunc(data) : null
-      const id = data.id
+      const id = data._id
       return (
       <StyledRow
         clickable={(!!this.props.onClickArticle).toString()}

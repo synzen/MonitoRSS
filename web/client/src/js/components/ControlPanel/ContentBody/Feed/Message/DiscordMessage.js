@@ -227,7 +227,7 @@ class Message extends Component {
     if (word.length === 0) return word
     let content = word
     for (const placeholderName in article) {
-      if (placeholderName === 'fullTitle' || placeholderName === 'fullDescription' || placeholderName === 'fullSummary') continue
+      if (placeholderName.startsWith('_')) continue
       if (placeholderName === 'subscriptions') continue
       const sanitizedPlaceholderName = `{${placeholderName.replace('regex:', '')}}`
       // console.log('replacing', sanitizedPlaceholderName, 'with', article[placeholderName])

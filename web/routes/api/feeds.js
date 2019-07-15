@@ -59,7 +59,7 @@ async function getUrl (req, res, next) {
       const useIdType = idResolver.getIDType()
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
-        articlePlaceholders.id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIdType)
+        articlePlaceholders._id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIdType)
       }
 
       allPlaceholders.push(articlePlaceholders)

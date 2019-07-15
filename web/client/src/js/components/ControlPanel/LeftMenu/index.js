@@ -156,33 +156,6 @@ class LeftMenu extends Component {
     this.props.changePage(page)
   }
 
-  // componentDidUpdate (prevProps) {
-    // if (prevProps.feedId !== this.props.feedId) {
-    //   return this.setState({ showArticleBy: '', showArticleByOptions: [] })
-    // }
-  //   if (prevProps.articleList.length !== this.props.articleList.length) {
-  //     this.setState({ showArticleBy: '', showArticleByOptions: [] })
-  //     let showArticleBy = ''
-  //     const seenPlaceholders = {}
-  //     for (const article of this.props.articleList) {
-  //       for (const placeholder in article) {
-  //         if (placeholder.startsWith('regex:') || placeholder === 'fullDescription' || placeholder === 'fullSummary' || placeholder === 'fullTitle') continue
-  //         if (article[placeholder]) seenPlaceholders[placeholder] = true
-  //       }
-  //     }
-  //     const showArticleByOptions = Object.keys(seenPlaceholders).map(placeholder => {
-  //       if (!showArticleBy && placeholder === 'title') showArticleBy = placeholder
-  //       return { text: placeholder, value: placeholder }
-  //     })
-  //     if (!showArticleBy && showArticleByOptions.length > 0) showArticleBy = showArticleByOptions[0].value
-
-  //     if (showArticleByOptions.length > 0) {
-  //       if (!showArticleBy) showArticleBy = showArticleByOptions[0].value
-  //       this.setState({ showArticleBy, showArticleByOptions })
-  //     }
-  //   }
-  // }
-
   logoutClick = () => {
     const modalProps = {
       footer: (<LogoutModalFooter>

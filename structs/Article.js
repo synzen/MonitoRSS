@@ -190,8 +190,8 @@ module.exports = class Article {
     // Title
     this.titleImages = []
     this.titleAnchors = []
-    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors, this.encoding)
-    this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
+    this._fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors, this.encoding)
+    this.title = this._fullTitle.length > 150 ? `${this._fullTitle.slice(0, 150)}...` : this._fullTitle
     if (this.title) this.placeholders.push('title')
     for (var titleImgNum in this.titleImages) {
       const term = `title:image${parseInt(titleImgNum, 10) + 1}`
@@ -230,8 +230,8 @@ module.exports = class Article {
     // Description and reddit-specific placeholders
     this.descriptionImages = []
     this.descriptionAnchors = []
-    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors, this.encoding) // Account for youtube's description
-    this.description = this.fullDescription
+    this._fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors, this.encoding) // Account for youtube's description
+    this.description = this._fullDescription
     this.description = this.description.length > 800 ? `${this.description.slice(0, 790)}...` : this.description
     if (this.description) this.placeholders.push('description')
     for (var desImgNum in this.descriptionImages) {
@@ -249,15 +249,15 @@ module.exports = class Article {
 
     if (this.reddit) {
       // Truncate the useless end of reddit description after anchors are removed
-      this.fullDescription = this.fullDescription.replace('\n[link] [comments]', '')
+      this._fullDescription = this._fullDescription.replace('\n[link] [comments]', '')
       this.description = this.description.replace('\n[link] [comments]', '')
     }
 
     // Summary
     this.summaryImages = []
     this.summaryAnchors = []
-    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
-    this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
+    this._fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
+    this.summary = this._fullSummary.length > 800 ? `${this._fullSummary.slice(0, 790)}...` : this._fullSummary
     if (this.summary && raw.summary !== raw.description) this.placeholders.push('summary')
     for (var sumImgNum in this.summaryImages) {
       const term = `summary:image${+sumImgNum + 1}`
@@ -499,12 +499,12 @@ module.exports = class Article {
   convertKeywords (word, ignoreCharLimits) {
     if (word.length === 0) return word
     let content = word.replace(/{date}/g, this.date)
-      .replace(/{title}/g, ignoreCharLimits ? this.fullTitle : this.title)
+      .replace(/{title}/g, ignoreCharLimits ? this._fullTitle : this.title)
       .replace(/{author}/g, this.author)
-      .replace(/{summary}/g, ignoreCharLimits ? this.fullSummary : this.summary)
+      .replace(/{summary}/g, ignoreCharLimits ? this._fullSummary : this.summary)
       .replace(/{subscriptions}/g, this.subscriptions)
       .replace(/{link}/g, this.link)
-      .replace(/{description}/g, ignoreCharLimits ? this.fullDescription : this.description)
+      .replace(/{description}/g, ignoreCharLimits ? this._fullDescription : this.description)
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
 

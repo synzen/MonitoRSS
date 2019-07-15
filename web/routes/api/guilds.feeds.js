@@ -120,7 +120,7 @@ async function getFeedPlaceholders (req, res, next) {
       const articlePlaceholders = {}
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
-        articlePlaceholders.id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIDType)
+        articlePlaceholders._id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIDType)
       }
       articlePlaceholders.fullDescription = parsed.fullDescription
       articlePlaceholders.fullSummary = parsed.fullSummary

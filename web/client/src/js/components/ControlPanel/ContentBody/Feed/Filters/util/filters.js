@@ -87,8 +87,9 @@ function findFilterWords (filterType, content) {
 
 export default (filters, article) => {
   const referenceOverrides = {
-    description: article.fullDescription,
-    summary: article.fullSummary,
+    description: article._fullDescription,
+    summary: article._fullSummary,
+    title: article._fullTitle,
     tags: article.tags ? article.tags.split('\n') : []
   }
 
