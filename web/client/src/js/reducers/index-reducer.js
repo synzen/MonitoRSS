@@ -33,92 +33,152 @@ const initialState = {
 
 // Always use immutability-helper for updating nested objects like guildRss
 
-function rootReducer (state = initialState, action) {
+function initState (state, action) {
+  return { ...state, ...action.data }
+}
+
+function clearGuild (state, action) {
+  const guildIdToUse = action.guildId || state.guildId
+  return update(state, {
+    feeds: { [guildIdToUse]: { $set: undefined } },
+    filters: { [guildIdToUse]: { $set: undefined } },
+    subscriptions: { [guildIdToUse]: { $set: undefined } }
+  })
+}
+
+function updateGuildAfterWebSocket (state, action) {
   const guildId = state.guildId
 
+  const newState = update(state, {
+    guilds: { [guildId]: { $set: {} } },
+    messages: { [guildId]: { $set: {} } },
+    embeds: { [guildId]: { $set: {} } },
+    filters: { [guildId]: { $set: {} } },
+    subscribers: { [guildId]: { $set: {} } },
+    feeds: { [guildId]: { $set: {} } }
+  })
+
+  const guildRss = action.guildRss
+  for (const keyName in guildRss) {
+    const value = guildRss[keyName]
+    if (typeof value !== 'object' && value !== undefined) newState.guilds[guildId][keyName] = value
+    if (keyName !== 'sources') continue
+    const rssList = value
+    for (const rssName in rssList) {
+      const source = rssList[rssName]
+      source.rssName = rssName
+      const copy = JSON.parse(JSON.stringify(source))
+      newState.feeds[guildId][rssName] = copy
+      newState.embeds[guildId][rssName] = source.embeds
+      newState.messages[guildId][rssName] = source.message
+      // Feed Filters
+      if (source.filters) newState.filters[guildId][rssName] = source.filters
+
+      // Feed Subscriptions
+      newState.subscribers[guildId][rssName] = {}
+      if (source.subscribers && source.subscribers.length > 0) {
+        for (const subscriber of source.subscribers) {
+          newState.subscribers[guildId][rssName][subscriber.id] = subscriber
+        }
+      }
+      if (state.feedId === rssName) newState.feed = source
+    }
+  }
+  return state.guildId === guildRss.id ? update(newState, { guild: { $set: newState.guilds[state.guildId] } }) : newState
+}
+
+function changePage (state, action) {
+  return update(state, { page: { $set: action.page } })
+}
+
+function changeFilters (state, action) {
+  const { rssName, data } = action
+  return update(state, { feeds: { [action.guildId || state.guildId]: { [rssName]: { filters: { $set: data } } } } })
+}
+
+function setActiveGuild (state, action) {
+  if (state.guildId === action.guildId) return state
+  return update(state, { guildId: { $set: action.guildId }, feedId: { $set: '' }, articleList: { $set: [] }, articlesError: { $set: '' }, guild: { $set: state.guilds[action.guildId] } }) // MUST be an empty string. undefined will cause some components to be unintentionally uncontrolled
+}
+
+function setActiveFeed (state, action) {
+  if (state.feedId === action.rssName) return state
+  return update(state, { feedId: { $set: action.rssName }, feed: { $set: JSON.parse(JSON.stringify(state.feeds[state.guildId][action.rssName])) } })
+}
+
+function articlesFetched (state, action) {
+  return update(state, { articlesFetching: { $set: false }, articleList: { $set: action.articleList }, articlesError: { $set: '' } })
+}
+
+function articlesFetching (state, action) {
+  return update(state, { articlesFetching: { $set: true }, articleList: { $set: [] }, articlesError: { $set: '' } })
+}
+
+function articlesError (state, action) {
+  return update(state, { articlesFetching: { $set: false }, articlesError: { $set: action.err } })
+}
+
+function updateLinkStatus (state, action) {
+  return update(state, { linkStatuses: { [action.data.link]: { $set: action.data.status } } })
+}
+
+function updateGuildLimits (state, action) {
+  let newState = state
+  for (const guildId in action.limits) {
+    newState = update(newState, { guildLimits: { [guildId]: { $set: action.limits[guildId] } } })
+  }
+  return newState
+}
+
+function showModal (state, action) {
+  return update(state, {
+    modalOpen: { $set: true },
+    modal: { children: { $set: action.children }, props: { $set: action.props } }
+  })
+}
+
+function hideModal (state, action) {
+  return update(state, { modalOpen: { $set: false } })
+}
+
+function updateSourceSchedule (state, action) {
+  const { guildId, rssName, refreshTimeMinutes } = action.data
+  return update(state, { refreshRates: { [guildId]: { [rssName]: { $set: refreshTimeMinutes } } } })
+}
+
+function rootReducer (state = initialState, action) {
   if (action.type === TEST_ACTION) {
     return update(state, { testVal: { $set: action.payload } })
-  } else if (action.type === CLEAR_GUILD) {
-    const guildIdToUse = action.guildId || guildId
-    return update(state, {
-      feeds: { [guildIdToUse]: { $set: undefined } },
-      filters: { [guildIdToUse]: { $set: undefined } },
-      subscriptions: { [guildIdToUse]: { $set: undefined } }
-    })
-  } else if (action.type === UPDATE_GUILD_AFTER_WEBSOCKET) {
-    const newState = update(state, {
-      guilds: { [guildId]: { $set: {} } },
-      messages: { [guildId]: { $set: {} } },
-      embeds: { [guildId]: { $set: {} } },
-      filters: { [guildId]: { $set: {} } },
-      subscribers: { [guildId]: { $set: {} } },
-      feeds: { [guildId]: { $set: {} } }
-    })
-
-    const guildRss = action.guildRss
-    for (const keyName in guildRss) {
-      const value = guildRss[keyName]
-      if (typeof value !== 'object' && value !== undefined) newState.guilds[guildId][keyName] = value
-      if (keyName !== 'sources') continue
-      const rssList = value
-      for (const rssName in rssList) {
-        const source = rssList[rssName]
-        source.rssName = rssName
-        const copy = JSON.parse(JSON.stringify(source))
-        newState.feeds[guildId][rssName] = copy
-        newState.embeds[guildId][rssName] = source.embeds
-        newState.messages[guildId][rssName] = source.message
-        // Feed Filters
-        if (source.filters) newState.filters[guildId][rssName] = source.filters
-
-        // Feed Subscriptions
-        newState.subscribers[guildId][rssName] = {}
-        if (source.subscribers && source.subscribers.length > 0) {
-          for (const subscriber of source.subscribers) {
-            newState.subscribers[guildId][rssName][subscriber.id] = subscriber
-          }
-        }
-        if (state.feedId === rssName) newState.feed = source
-      }
-    }
-    return state.guildId === guildRss.id ? update(newState, { guild: { $set: newState.guilds[state.guildId] } }) : newState
-  } else if (action.type === CHANGE_PAGE) {
-    return update(state, { page: { $set: action.page } })
-  } else if (action.type === CHANGE_FILTERS) {
-    const { rssName, data } = action
-    return update(state, { feeds: { [action.guildId || guildId]: { [rssName]: { filters: { $set: data } } } } })
   } else if (action.type === INIT_STATE) {
-    return { ...state, ...action.data }
+    return initState(state, action)
+  } else if (action.type === CLEAR_GUILD) {
+    return clearGuild(state, action)
+  } else if (action.type === UPDATE_GUILD_AFTER_WEBSOCKET) {
+    return updateGuildAfterWebSocket(state, action)
+  } else if (action.type === CHANGE_PAGE) {
+    return changePage(state, action)
+  } else if (action.type === CHANGE_FILTERS) {
+    return changeFilters(state, action)
   } else if (action.type === SET_ACTIVE_GUILD) {
-    if (guildId === action.guildId) return state
-    return update(state, { guildId: { $set: action.guildId }, feedId: { $set: '' }, articleList: { $set: [] }, articlesError: { $set: '' }, guild: { $set: state.guilds[action.guildId] } }) // MUST be an empty string. undefined will cause some components to be unintentionally uncontrolled
+    return setActiveGuild(state, action)
   } else if (action.type === SET_ACTIVE_FEED) {
-    if (state.feedId === action.rssName) return state
-    return update(state, { feedId: { $set: action.rssName }, feed: { $set: JSON.parse(JSON.stringify(state.feeds[guildId][action.rssName])) } })
+    return setActiveFeed(state, action)
   } else if (action.type === ARTICLES_FETCHED) {
-    return update(state, { articlesFetching: { $set: false }, articleList: { $set: action.articleList }, articlesError: { $set: '' } })
+    return articlesFetched(state, action)
   } else if (action.type === ARTICLES_FETCHING) {
-    return update(state, { articlesFetching: { $set: true }, articleList: { $set: [] }, articlesError: { $set: '' } })
+    return articlesFetching(state, action)
   } else if (action.type === ARTICLES_ERROR) {
-    return update(state, { articlesFetching: { $set: false }, articlesError: { $set: action.err } })
+    return articlesError(state, action)
   } else if (action.type === UPDATE_LINK_STATUS) {
-    return update(state, { linkStatuses: { [action.data.link]: { $set: action.data.status } } })
+    return updateLinkStatus(state, action)
   } else if (action.type === UPDATE_GUILD_LIMITS) {
-    let newState = state
-    for (const guildId in action.limits) {
-      newState = update(newState, { guildLimits: { [guildId]: { $set: action.limits[guildId] } } })
-    }
-    return newState
+    return updateGuildLimits(state, action)
   } else if (action.type === SHOW_MODAL) {
-    return update(state, {
-      modalOpen: { $set: true },
-      modal: { children: { $set: action.children }, props: { $set: action.props } }
-    })
+    return showModal(state, action)
   } else if (action.type === HIDE_MODAL) {
-    return update(state, { modalOpen: { $set: false } })
+    return hideModal(state, action)
   } else if (action.type === UPDATE_SOURCE_SCHEDULE) {
-    const { guildId, rssName, refreshTimeMinutes } = action.data
-    return update(state, { refreshRates: { [guildId]: { [rssName]: { $set: refreshTimeMinutes } } } })
+    return updateSourceSchedule(state, action)
   }
 
   return state
