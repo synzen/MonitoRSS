@@ -23,7 +23,6 @@ module.exports = (message, limited) => {
 
   // Bot controller commands
   if (isBotController(message.author.id)) {
-    if (storage.initialized < 2) return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
     commands.runController(message)
   }
 }
