@@ -1,18 +1,22 @@
-const storage = require('../../util/storage.js')
-const config = require('../../config.js')
 const log = require('../../util/logger.js')
 const dbOps = require('../../util/dbOps.js')
+const serverLimit = require('../../util/serverLimit.js')
 
 exports.normal = async (bot, message) => {
-  const overrides = storage.limitOverrides
   try {
+    const allVips = await dbOps.vips.getAll()
     const guildRssList = await dbOps.guildRss.getAll()
     const illegals = []
     guildRssList.forEach(guildRss => {
-      const guildId = guildRss.id
-      const guildSourcesCnt = Object.keys(guildRss.sources).length
-      const guildLimit = overrides[guildId] ? overrides[guildId] : config.feeds.max
-      if (guildSourcesCnt > guildLimit) illegals.push(guildId)
+      const { max } = serverLimit(guildRss.id, allVips)
+      let activeFeeds = 0
+      const rssList = guildRss.sources
+      if (rssList) {
+        for (const rssName in rssList) {
+          if (!rssList[rssName].disabled) ++activeFeeds
+        }
+      }
+      if (activeFeeds > max) illegals.push(guildRss.id)
     })
 
     if (illegals.length === 0) await message.channel.send(`Everything looks good!`)
