@@ -10,6 +10,7 @@ const serverLimit = require('../../util/serverLimit.js')
 const initialize = require('../../rss/initialize.js')
 const getArticles = require('../../rss/getArticle.js')
 const Article = require('../../structs/Article.js')
+const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 
 jest.mock('../../util/dbOps.js')
 jest.mock('../../util/redisOps.js')
@@ -17,6 +18,7 @@ jest.mock('../../util/serverLimit.js')
 jest.mock('../../rss/initialize.js')
 jest.mock('../../rss/getArticle.js')
 jest.mock('../../structs/Article.js')
+jest.mock('../../structs/ArticleIDResolver.js')
 
 describe('/api/guilds/:guildId/feeds', function () {
   const userId = 'georgie'
@@ -311,17 +313,25 @@ describe('/api/guilds/:guildId/feeds', function () {
       Article.mockReset()
     })
     it('returns the articles placeholders', async function () {
+      const articleID = 123
       const rawArticleList = [{
         title: 'title1',
         description: 'description1'
       }, {
+        title: 'ja',
         description: 'description2'
       }]
+      const resData = [ ...rawArticleList ]
+      resData.forEach((item, index) => {
+        resData[index] = { ...item, _id: articleID }
+      })
       for (let article of rawArticleList) {
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
+          this.raw = article
           for (const key in article) this[key] = article[key]
         })
+        ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
       }
 
       getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
@@ -330,7 +340,7 @@ describe('/api/guilds/:guildId/feeds', function () {
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
       expect(response.statusCode).toEqual(200)
       const data = JSON.parse(response._getData())
-      expect(data).toEqual(rawArticleList)
+      expect(data).toEqual(resData)
     })
     it('returns the articles placeholders with regex placeholders', async function () {
       const rawArticleList = [{
@@ -375,36 +385,40 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(data).toEqual(expectedResponse)
     })
     it('returns the articles placeholders with the additional full description, summary and title', async function () {
+      const articleID = 123
       const rawArticleList = [{
         title: 'title1',
         description: 'description1'
       }, {
         description: 'description2'
       }]
-      const fullTitle = 'aiwetk njlwseitg'
-      const fullDescription = 'w35ofm34erfv'
-      const fullSummary = 'we35mf349fuc348'
+      const _fullTitle = 'aiwetk njlwseitg'
+      const _fullDescription = 'w35ofm34erfv'
+      const _fullSummary = 'we35mf349fuc348'
       for (let article of rawArticleList) {
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
           for (const key in article) this[key] = article[key]
-          this.fullTitle = fullTitle
-          this.fullDescription = fullDescription
-          this.fullSummary = fullSummary
+          this._fullTitle = _fullTitle
+          this._fullDescription = _fullDescription
+          this._fullSummary = _fullSummary
         })
+        ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
       }
 
       const expectedResponse = [{
+        _id: articleID,
         title: 'title1',
         description: 'description1',
-        fullTitle,
-        fullSummary,
-        fullDescription
+        _fullTitle,
+        _fullSummary,
+        _fullDescription
       }, {
+        _id: articleID,
         description: 'description2',
-        fullTitle,
-        fullSummary,
-        fullDescription
+        _fullTitle,
+        _fullSummary,
+        _fullDescription
       }]
 
       getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
@@ -416,22 +430,23 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(data).toEqual(expectedResponse)
     })
     it('returns the raw placeholders', async function () {
+      const articleID = 123
       const rawArticleList = [{
         title: 'title1',
         description: 'description1'
       }, {
         description: 'description2'
       }]
-      const fullTitle = 'aiwetk njlwseitg'
-      const fullDescription = 'w35ofm34erfv'
-      const fullSummary = 'we35mf349fuc348'
+      const _fullTitle = 'aiwetk njlwseitg'
+      const _fullDescription = 'w35ofm34erfv'
+      const _fullSummary = 'we35mf349fuc348'
       for (let article of rawArticleList) {
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
           for (const key in article) this[key] = article[key]
-          this.fullTitle = fullTitle
-          this.fullDescription = fullDescription
-          this.fullSummary = fullSummary
+          this._fullTitle = _fullTitle
+          this._fullDescription = _fullDescription
+          this._fullSummary = _fullSummary
           this.getRawPlaceholders = () => (
             {
               test: 'val1',
@@ -439,21 +454,24 @@ describe('/api/guilds/:guildId/feeds', function () {
             }
           )
         })
+        ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
       }
 
       const expectedResponse = [{
+        _id: articleID,
         title: 'title1',
         description: 'description1',
-        fullTitle,
-        fullSummary,
-        fullDescription,
+        _fullTitle,
+        _fullSummary,
+        _fullDescription,
         'raw:test': 'val1',
         'raw:test2': 'val2'
       }, {
+        _id: articleID,
         description: 'description2',
-        fullTitle,
-        fullSummary,
-        fullDescription,
+        _fullTitle,
+        _fullSummary,
+        _fullDescription,
         'raw:test': 'val1',
         'raw:test2': 'val2'
       }]
