@@ -8,14 +8,15 @@ exports.client = {
 }
 
 exports.guilds = {
-  STORED_KEYS: [ 'name', 'iconURL', 'ownerID' ],
+  STORED_KEYS: [ 'name', 'iconURL', 'ownerID', 'shard' ],
   recognize: async guild => {
     if (!storage.redisClient) return
     if (!(guild instanceof Discord.Guild)) throw new TypeError('Guild is not instance of Discord.Guild')
     const multi = storage.redisClient.multi()
     const toStore = {}
+    const shardId = storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
     exports.guilds.STORED_KEYS.forEach(key => {
-      toStore[key] = guild[key] || '' // MUST be a flat structure
+      toStore[key] = key === 'shard' ? shardId === null ? -1 : shardId : guild[key] || '' // MUST be a flat structure
     })
     multi.hmset(storage.redisKeys.guilds(guild.id), toStore)
     guild.members.forEach(member => exports.members.recognizeTransaction(multi, member))
