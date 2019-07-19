@@ -120,11 +120,11 @@ async function getFeedPlaceholders (req, res, next) {
       const articlePlaceholders = {}
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
-        articlePlaceholders._id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIDType)
       }
-      articlePlaceholders.fullDescription = parsed.fullDescription
-      articlePlaceholders.fullSummary = parsed.fullSummary
-      articlePlaceholders.fullTitle = parsed.fullTitle
+      articlePlaceholders._id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIDType)
+      articlePlaceholders._fullDescription = parsed._fullDescription
+      articlePlaceholders._fullSummary = parsed._fullSummary
+      articlePlaceholders._fullTitle = parsed._fullTitle
 
       const regexPlaceholders = parsed.regexPlaceholders
       for (const placeholder in regexPlaceholders) {
