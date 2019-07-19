@@ -55,6 +55,11 @@ describe('/api/cp', function () {
       { id: '3', anotherAnotherKey: 'foobar3', sources: { rssId2: { link: 'link2' } } },
       { id: '4', aaa: 'fff', sources: { rssId3: { link: 'link3' }, rssId4: { link: 'link4' } } }
     ]
+    const shardIds = {
+      '2': '100',
+      '3': '235',
+      '4': '7534'
+    }
     const roleIdsOfGuilds = {
       '2': ['1r', '2r'],
       '3': [],
@@ -108,6 +113,7 @@ describe('/api/cp', function () {
       csrfToken,
       guilds: {
         '2': {
+          shard: shardIds['2'],
           discord: apiGuilds[1],
           profile: guildRsses[0],
           maxFeeds: serverLimits['2'],
@@ -115,6 +121,7 @@ describe('/api/cp', function () {
           channels: channelIdsOfGuilds['2'].map(channelId => ({ id: channelId, name: channelNamesOfIds[channelId] }))
         },
         '3': {
+          shard: shardIds['3'],
           discord: apiGuilds[2],
           profile: guildRsses[1],
           maxFeeds: serverLimits['3'],
@@ -122,6 +129,7 @@ describe('/api/cp', function () {
           channels: channelIdsOfGuilds['3'].map(channelId => ({ id: channelId, name: channelNamesOfIds[channelId] }))
         },
         '4': {
+          shard: shardIds['4'],
           discord: apiGuilds[3],
           profile: guildRsses[2],
           maxFeeds: serverLimits['4'],
@@ -150,6 +158,9 @@ describe('/api/cp', function () {
         const id = guildRsses[i].id
         // guild rss
         dbOps.guildRss.get.mockResolvedValueOnce(guildRsses[i])
+
+        // shard
+        redisOps.guilds.getValue.mockResolvedValueOnce(shardIds[id])
 
         // roles
         const roleIdsOfThisGuild = roleIdsOfGuilds[id]

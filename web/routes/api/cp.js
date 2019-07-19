@@ -41,6 +41,9 @@ async function get (req, res, next) {
       const discordProfile = approvedGuilds[i]
       const guildId = discordProfile.id
 
+      // shard id
+      const shard = await redisOps.guilds.getValue(guildId, 'shard')
+
       // roles
       const roleIds = await redisOps.roles.getRolesOfGuild(guildId)
       const unadjustedRoles = await Promise.all(roleIds.map(roleId => redisOps.roles.get(roleId)))
@@ -57,6 +60,7 @@ async function get (req, res, next) {
       const { max } = await serverLimit(guildId, allVips)
 
       data.guilds[guildId] = {
+        shard,
         discord: discordProfile,
         profile: guildRss,
         maxFeeds: max,
