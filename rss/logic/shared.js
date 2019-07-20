@@ -139,10 +139,10 @@ module.exports = (data, callback) => {
         if (!Array.isArray(customComparisons)) return ++processedArticles === totalArticles ? finishSource() : null // Stops here if it already exists in table, AKA "seen"
         for (var z = 0; z < customComparisons.length; ++z) {
           const comparisonName = customComparisons[z]
-          const dbCustomComparisonValues = dbCustomComparisons[comparisonName]
+          const dbCustomComparisonValues = dbCustomComparisons[comparisonName] // Might be an array of descriptions, authors, etc.
           const articleCustomComparisonValue = article[comparisonName]
-          if (!dbCustomComparisonValues || dbCustomComparisonValues.includes(articleCustomComparisonValue)) {
-            if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
+          if (!dbCustomComparisonValues || dbCustomComparisonValues.includes(articleCustomComparisonValue) || !articleCustomComparisonValue) {
+            if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}${!articleCustomComparisonValue ? ' (No article value for custom comparison field)' : ''}`)
             if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: (ID: ${article._id}, TITLE: ${article.title}) ${comparisonName} dbCustomComparisonValues: ${dbCustomComparisonValues ? JSON.stringify(dbCustomComparisonValues) : undefined} `)
             continue // The comparison must either be uninitialized or invalid (no such comparison exists in any articles from the request), handled by a previous function. OR it exists in the db
           }
