@@ -11,8 +11,8 @@ module.exports = (data, callback) => {
   const RSSLIST_LENGTH = Object.keys(rssList).length
   let sourcesCompleted = 0
   const totalArticles = articleList.length
-  const dbIds = []
-  const dbTitles = []
+  const dbIds = new Set()
+  const dbTitles = new Set()
   const dbCustomComparisons = {} // Object with comparison names as key, and array as values whose function is similar to how dbIds and dbTitles work
   const dbCustomComparisonsValid = {} // Object with comparison names as key, and only boolean true values as values
   const dbCustomComparisonsToDelete = []
@@ -29,8 +29,8 @@ module.exports = (data, callback) => {
       for (var d = 0; d < docs.length; ++d) {
         const doc = docs[d]
         // Push the main data for built in comparisons
-        dbIds.push(doc.id)
-        dbTitles.push(doc.title)
+        dbIds.add(doc.id)
+        dbTitles.add(doc.title)
 
         // Now deal with custom comparisons
         const docCustomComparisons = doc.customComparisons
@@ -52,7 +52,7 @@ module.exports = (data, callback) => {
             if (article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null)) dbCustomComparisonsValid[compName] = true
           }
         }
-        if (!dbIds.includes(article._id)) toInsert.push(article)
+        if (!dbIds.has(article._id)) toInsert.push(article)
       }
 
       // If any invalid custom comparisons are found, delete them
@@ -65,7 +65,7 @@ module.exports = (data, callback) => {
         }
       }
       dbCmds.bulkInsert(feedCollection || Feed, toInsert).then(() => {
-        if (dbIds.length > 0) for (var rssName in rssList) processSource(rssName)
+        if (dbIds.size > 0) for (var rssName in rssList) processSource(rssName)
         else callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
       })
         .catch(err => {
@@ -80,7 +80,7 @@ module.exports = (data, callback) => {
     const source = rssList[rssName]
     const channelId = source.channel
     const customComparisons = rssList[rssName].customComparisons // Array of names
-    const sentTitles = []
+    const sentTitles = new Set()
 
     if (Array.isArray(customComparisons)) {
       for (var n = customComparisons.length - 1; n >= 0; --n) {
@@ -109,13 +109,13 @@ module.exports = (data, callback) => {
 
     for (var a = articleList.length - 1; a >= 0; --a) { // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
       const article = articleList[a]
-      if (dbIds.length === 0 && articleList.length !== 1) { // Only skip if the articleList length is !== 1, otherwise a feed with only 1 article to send since it may have been the first item added
+      if (dbIds.size === 0 && articleList.length !== 1) { // Only skip if the articleList length is !== 1, otherwise a feed with only 1 article to send since it may have been the first item added
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection.`)
         seenArticle(true, article)
-      } else if (dbIds.includes(article._id)) {
+      } else if (dbIds.has(article._id)) {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched.`)
         seenArticle(true, article)
-      } else if (checkTitle && (dbTitles.includes(article.title) || sentTitles.includes(article.title))) {
+      } else if (checkTitle && (dbTitles.has(article.title) || sentTitles.has(article.title))) {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID.`)
         seenArticle(true, article)
       } else if (checkDate && ((!article.pubdate || article.pubdate.toString() === 'Invalid Date') || (article.pubdate && article.pubdate.toString() !== 'Invalid Date' && article.pubdate < cutoffDay))) {
@@ -123,7 +123,7 @@ module.exports = (data, callback) => {
         seenArticle(true, article)
       } else {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) to queue for send`)
-        if (checkTitle && article.title) sentTitles.push(article.title)
+        if (checkTitle && article.title) sentTitles.add(article.title)
         seenArticle(false, article)
       }
     }
