@@ -45,10 +45,16 @@ class FeedSchedule extends EventEmitter {
 
   _delegateFeed (guildRss, rssName) {
     const originalSource = guildRss.sources[rssName]
+    let updated = false
     if (!originalSource.lastRefreshRateMin || originalSource.lastRefreshRateMin !== this.refreshTime) {
       originalSource.lastRefreshRateMin = this.refreshTime
-      dbOps.guildRss.update(guildRss).catch(err => log.general.warning(`Failed to update lastRefreshRateMin to ${this.refreshTime} for source ${rssName}, guild ${guildRss.id}`, err))
+      updated = true
     }
+    if (!originalSource._schedule || originalSource._schedule !== this.name) {
+      originalSource._schedule = this.name
+      updated = true
+    }
+    if (updated) dbOps.guildRss.update(guildRss).catch(err => log.general.warning(`Failed to update meta info during feed schedule delegation for source ${rssName}, guild ${guildRss.id}`, err))
     const source = { ...originalSource }
 
     // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
