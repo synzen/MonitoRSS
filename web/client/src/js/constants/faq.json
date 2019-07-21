@@ -135,5 +135,16 @@
       "anchor",
       "link"
     ]
+  },
+  {
+    "q": "How do I get fewer articles delivered, or get slower delivery?",
+    "a": "To get slower article delivery, you will have to self host and set the refresh rate in config to your needs. To get fewer aticles delivered, you can set filters to only get the content you want delivered.",
+    "t": [
+      "slow",
+      "fewer",
+      "rate",
+      "less",
+      "fast"
+    ]
   }
 ]
