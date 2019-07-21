@@ -1,4 +1,19 @@
+const fs = require('fs')
+const path = require('path')
 const config = require('./config.json')
+
+function overrideConfigs (configOverrides) {
+  // Config overrides must be manually done for it to be changed in the original object (config)
+  for (var category in config) {
+    const configCategory = config[category]
+    if (!configOverrides[category]) continue
+    for (var configName in configCategory) {
+      if (configOverrides[category][configName] !== undefined && configOverrides[category][configName] !== config[category][configName]) {
+        configCategory[configName] = configOverrides[category][configName]
+      }
+    }
+  }
+}
 
 // Environment variable in Docker container and Heroku if available
 config.bot.token = !process.env.DRSS_BOT_TOKEN || process.env.DRSS_BOT_TOKEN === 'drss_docker_token' ? (config.bot.token || 's') : process.env.DRSS_BOT_TOKEN
@@ -27,5 +42,11 @@ config.web.port = process.env.DRSS_WEB_PORT || process.env.PORT || config.web.po
 config.web.redirectUri = process.env.DRSS_WEB_REDIRECT_URI || config.web.redirectUri
 config.web.clientId = process.env.DRSS_WEB_CLIENT_ID || config.web.clientId
 config.web.clientSecret = process.env.DRSS_WEB_CLIENT_SECRET || config.web.clientSecret
+
+const overrideFilePath = path.join(__dirname, 'settings', 'configOverride.json')
+
+if (fs.existsSync(overrideFilePath)) {
+  overrideConfigs(JSON.parse(fs.readFileSync(overrideFilePath)))
+}
 
 module.exports = config

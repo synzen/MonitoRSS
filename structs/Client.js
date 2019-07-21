@@ -70,10 +70,6 @@ class Client extends EventEmitter {
   constructor (configOverrides, customSchedules) {
     super()
     // Override from file first
-    try {
-      const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
-      overrideConfigs(fileConfigOverride)
-    } catch (err) {}
     if (config.web.enabled === true) webClient = require('../web/index.js')
     // Then override from constructor
     if (configOverrides) overrideConfigs(configOverrides)
@@ -281,6 +277,7 @@ class Client extends EventEmitter {
     }
     listeners.createManagers(storage.bot)
     this.scheduleManager.startSchedules()
+    this.scheduleManager.run()
     if (callback) callback()
     this.emit('finishInit')
   }

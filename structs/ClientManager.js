@@ -29,13 +29,7 @@ class ClientManager extends EventEmitter {
   constructor (shardingManager, configOverrides) {
     super()
     if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
-    try {
-      const fileConfigOverride = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'configOverride.json')))
-      overrideConfigs(fileConfigOverride)
-      overrideConfigs(configOverrides)
-    } catch (err) {
-      overrideConfigs(configOverrides)
-    }
+    if (configOverrides) overrideConfigs(configOverrides)
     if (config.web.enabled === true) webClient = require('../web/index.js')
     this.missingGuildRss = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
