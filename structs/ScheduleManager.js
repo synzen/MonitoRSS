@@ -53,7 +53,7 @@ class ScheduleManager {
 
   run (refreshTime) { // Run schedules with respect to their refresh times
     for (var feedSchedule of this.scheduleList) {
-      if (feedSchedule.refreshTime === refreshTime) {
+      if (feedSchedule.refreshTime === refreshTime || !refreshTime) {
         return feedSchedule.run().catch(err => log.cycle.error(`${this.bot.shard && this.bot.shard.count > 0 ? `SH ${this.bot.shard.id} ` : ''}Schedule ${this.name} failed to run cycle`, err))
       }
     }
