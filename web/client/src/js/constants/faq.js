@@ -70,4 +70,32 @@ for (const word in invertedIndexes) {
   invertedIndexes[word] = invertedIndex.filter(item => item)
 }
 
-export { content as faq, invertedIndexes }
+function search (searchTerm) {
+  const searchTermSplit = new Set(searchTerm.split(' ').map(stemmer).filter(item => item))
+  const searchTermSplitSize = searchTermSplit.size
+  if (searchTermSplitSize === 0) return content
+  const intersectingDocumentIndexes = []
+  const documentCounts = {}
+  const documentPoints = {}
+  for (const term of searchTermSplit) {
+    if (!invertedIndexes[term]) continue
+    for (const arr of invertedIndexes[term]) {
+      const documentIndex = arr[0]
+      const points = arr[1]
+      if (!documentCounts[documentIndex]) {
+        documentCounts[documentIndex] = 1
+        documentPoints[documentIndex] = points
+      } else {
+        ++documentCounts[documentIndex]
+        documentPoints[documentIndex] += points
+      }
+    }
+  }
+
+  for (const docIndex in documentCounts) {
+    if (documentCounts[docIndex] === searchTermSplitSize) intersectingDocumentIndexes.push([ docIndex, documentPoints[docIndex] ])
+  }
+  return intersectingDocumentIndexes.sort((a, b) => b[1] - a[1]).map((item, index) => content[item[0]]) // 0th index is the document index, 1st index is the number of points (weight)
+}
+
+export { content as faq, invertedIndexes, search as searchFAQ }

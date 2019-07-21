@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import './js/index'
 import styled from 'styled-components'
-import { Switch, Route, Redirect } from 'react-router-dom'
+import { Switch, Route, Redirect, withRouter } from 'react-router-dom'
 import colors from './js/constants/colors'
 import 'react-toastify/dist/ReactToastify.min.css'
 import './semantic/dist/semantic.min.css'
@@ -77,7 +77,7 @@ function App (props) {
             <Switch>
               <Route path={`${pages.FEED_BROWSER}/:url?`} component={FeedBrowser} />
               <Route path={`${pages.FAQ}/:question?`} render={props => <FAQ {...props} scrollbar={scrollbarRef} />} />
-              <Route path='/' component={Home} />
+              <Route path='/' component={routerProps => <Home {...routerProps} />} />
               <Route render={() => <Redirect to='/' />} />
             </Switch>
           </Scrollbars>
@@ -87,4 +87,4 @@ function App (props) {
   )
 }
 
-export default connect(mapStateToProps)(App)
+export default withRouter(connect(mapStateToProps)(App))

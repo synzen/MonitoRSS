@@ -35,7 +35,7 @@ const StyledModal = styled(Modal)`
   color: ${colors.discord.text};
   margin-right: 1em;
   margin-left: 1em;
-  ${props => props.isImage ? '' : 'max-width: 490px'};
+  ${props => props.isImage || props.fullWidth ? '' : 'max-width: 490px'};
   ${props => props.isImage ? '' : 'width: 100%'};
 `
 
@@ -56,7 +56,7 @@ const ModalFooter = styled.div`
   background-color: ${props => props.transparent ? 'transparent' : colors.discord.darkButNotBlack};
   border-bottom-left-radius: 0.75em;
   border-bottom-right-radius: 0.75em;
-  max-width: 490px;
+  ${props => props.fullWidth ? '' : 'max-width: 490px'};
   width: 100%;
 `
 
@@ -114,7 +114,7 @@ class DiscordModal extends React.PureComponent {
           <StyledShade key='shade' onClick={e => {
             if (e.target === e.currentTarget && this.props.onClose) this.props.onClose()
           }}>
-            <StyledModal key='dialog' isImage={this.props.isImage}>
+            <StyledModal key='dialog' isImage={this.props.isImage} fullWidth={this.props.fullWidth}>
               {props.header
                 ? <ModalHeader>{props.header}</ModalHeader>
                 : props.title || props.subtitle
@@ -123,7 +123,7 @@ class DiscordModal extends React.PureComponent {
                   {/* <Scrollbars> */}
               <ModalBody isImage={this.props.isImage} transparent={props.transparentBody} hasHeader={!!props.header || !!props.title || !!props.subtitle} hasFooter={!!props.footer}><div>{props.children}</div></ModalBody>
               {/* </Scrollbars> */}
-              {props.footer ? <ModalFooter transparent={props.transparentFooter}>{props.footer}</ModalFooter> : undefined}
+              {props.footer ? <ModalFooter transparent={props.transparentFooter} fullWidth={this.props.fullWidth}>{props.footer}</ModalFooter> : undefined}
             </StyledModal>
           </StyledShade>,
         ]}
@@ -133,6 +133,7 @@ class DiscordModal extends React.PureComponent {
 }
 
 DiscordModal.propTypes = {
+  fullWidth: PropTypes.bool,
   onClose: PropTypes.func,
   open: PropTypes.bool,
   isImage: PropTypes.bool,

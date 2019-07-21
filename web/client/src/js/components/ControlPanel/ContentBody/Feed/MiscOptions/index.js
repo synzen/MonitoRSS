@@ -10,7 +10,7 @@ import colors from 'js/constants/colors'
 import SectionItemTitle from 'js/components/utils/SectionItemTitle'
 import PageHeader from 'js/components/utils/PageHeader'
 import { Divider, Checkbox, Button } from 'semantic-ui-react'
-import SectionSubtitle from 'js/components/utils/SectionSubtitle';
+import SectionSubtitle from 'js/components/utils/SectionSubtitle'
 import axios from 'axios'
 import toast from '../../../utils/toast'
 

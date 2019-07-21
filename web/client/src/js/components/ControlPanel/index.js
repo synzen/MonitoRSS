@@ -151,8 +151,8 @@ class ControlPanel extends React.PureComponent {
   }
 
   initialize = () => {
-    const localGuildId = window.localStorage.getItem('guildId')
-    const localFeedId = window.localStorage.getItem('feedId')
+    let localGuildId = window.localStorage.getItem('guildId')
+    let localFeedId = window.localStorage.getItem('feedId')
 
     const state = {
       user: null,
@@ -200,6 +200,15 @@ class ControlPanel extends React.PureComponent {
         state.refreshRates[guildId] = {}
         state.guildLimits[guildId] = maxFeeds
         
+        if (!localGuildId || localGuildId === guildId) {
+          if (!localGuildId) {
+            window.localStorage.setItem('guildId', guildId)
+            localGuildId = guildId
+          }
+          state.guildId = guildId
+          state.guild = { ...state.guilds[guildId] }
+        }
+
         for (const keyName in profile) {
           const value = profile[keyName]
           if (typeof value !== 'object' && value !== undefined) state.guilds[guildId][keyName] = value
@@ -209,7 +218,11 @@ class ControlPanel extends React.PureComponent {
             const source = rssList[rssName]
             source.rssName = rssName
             const copy = JSON.parse(JSON.stringify(source))
-            if (guildId === localGuildId && rssName === localFeedId) {
+            if (localGuildId && localGuildId === guildId && (!localFeedId || localFeedId === rssName)) {
+              if (!localFeedId) {
+                window.localStorage.setItem('feedId', rssName)
+                localFeedId = rssName
+              }
               state.feedId = rssName
               state.feed = copy
             }
@@ -229,10 +242,7 @@ class ControlPanel extends React.PureComponent {
             }
           }
         }
-        if (guildId === localGuildId) {
-          state.guildId = guildId
-          state.guild = { ...state.guilds[guildId] }
-        }
+
         for (const channel of channels) state.channels[guildId][channel.id] = channel
         for (const role of roles) state.roles[guildId][role.id] = role
       }

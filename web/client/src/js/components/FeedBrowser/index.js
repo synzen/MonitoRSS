@@ -20,6 +20,7 @@ import querystring from 'query-string'
 import FeedInput from './FeedInput'
 import colors from 'js/constants/colors'
 import hljs from 'highlight.js'
+import { isHiddenProperty } from '../../constants/hiddenArticleProperties'
 
 const timezoneGuess = moment.tz(moment.tz.guess()).format('z')
 
@@ -249,7 +250,7 @@ class FeedBrowser extends Component {
     let firstValidCategory = ''
     articleList.forEach(placeholders => {
       for (const placeholder in placeholders) {
-        if (!placeholders[placeholder] || placeholder.startsWith('_')) continue
+        if (!placeholders[placeholder] || isHiddenProperty(placeholder)) continue
         if (placeholder === 'date') {
           placeholders[placeholder] = moment(placeholders[placeholder]).local().format('DD MMMM Y hh:mm A (HH:mm) zz')
           if (!placeholdersSeen.date) {
@@ -277,10 +278,15 @@ class FeedBrowser extends Component {
     if (placeholdersSeen.description) searchCategories.push('description')
     if (placeholdersSeen.link) searchCategories.push('link')
     if (searchCategories.length === 0) searchCategories.push(firstValidCategory)
-    this.props.history.push({
-      pathname: `${pages.FEED_BROWSER}/${encodedUrl}` //,
-      // search: this.state.sortBy && searchCategories.includes(this.state.sortBy) ? `?sort=${this.state.sortBy}` : undefined
-    })
+
+    const pathname = `${pages.FEED_BROWSER}/${encodedUrl}`
+    // console.log(this.props.history)
+    if (this.props.history.location.pathname !== pathname) {
+      this.props.history.push({
+        pathname //,
+        // search: this.state.sortBy && searchCategories.includes(this.state.sortBy) ? `?sort=${this.state.sortBy}` : undefined
+      })
+    }
     this.setState({ searchDropdownOptions, searchCategories, loading: false, search: '', articleList, prevUrl: url, prevUrlEncoded: encodedUrl, xmlText })
   }
 
@@ -377,7 +383,7 @@ class FeedBrowser extends Component {
       }
 
       return (
-        <PosedDiv key={placeholders._id}>
+        <PosedDiv key={placeholders._id} className='hodunk'>
           <Wrapper>
             { searchCategoriesHasDate
               ? placeholders.date
@@ -452,7 +458,7 @@ class FeedBrowser extends Component {
                 <SectionSubtitle>{this.state.articleList.length} Articles</SectionSubtitle>
                 <ViewOptions>
                   <Dropdown selection placeholder='View type' options={viewTypeOptions} value={this.state.viewType} onChange={(e, data) => this.viewType(data.value)} />
-                  <SortByContainer pose={notPlaceholdersViewType ? 'exit' : 'enter'}>
+                  <SortByContainer pose={notPlaceholdersViewType ? 'exit' : 'enter'} style={articleList.length === 0 ? { overflow: 'hidden' } : {}}>
                     <Dropdown selection value={this.state.sortBy} placeholder='Sort by' disabled={notPlaceholdersViewType || articleList.length === 0 || this.state.loading} onChange={(e, data) => this.sortBy(data.value)} options={this.state.searchDropdownOptions} />
                     <Button icon='sort' disabled={notPlaceholdersViewType || !this.state.sortBy || articleList.length === 0 || this.state.loading} onClick={e => this.setState({ sortDescending: !this.state.sortDescending })} />
                     <Button icon='cancel' disabled={notPlaceholdersViewType || !this.state.sortBy || articleList.length === 0 || this.state.loading} onClick={e => this.sortBy()} />

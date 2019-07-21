@@ -6,6 +6,7 @@ export default {
   MISC_OPTIONS: '/cp/miscoptions',
   FEEDS: '/cp/feeds',
   SERVER_SETTINGS: '/cp/settings',
+  DEBUGGER: '/cp/debugger',
   FAQ: '/faq',
   TODO: '/todo',
   SUPPORT: '/support',

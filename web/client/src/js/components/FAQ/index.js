@@ -8,11 +8,10 @@ import pages from '../../constants/pages'
 import SectionItemTitle from '../utils/SectionItemTitle'
 import SectionSubtitle from '../utils/SectionSubtitle'
 import { lighten, transparentize } from 'polished'
-import { faq, invertedIndexes } from '../../constants/faq'
+import { faq, searchFAQ } from '../../constants/faq'
 import Section from '../Home/Section'
 import posed, { PoseGroup } from 'react-pose'
 import PropTypes from 'prop-types'
-import stemmer from 'stemmer'
 import textParser from '../ControlPanel/utils/textParser'
 import querystring from 'query-string'
 import modal from '../utils/modal'
@@ -162,34 +161,6 @@ faq.forEach((item, index) => {
 //   top: 5px;
 // `
 
-function getDocumentSearchResults (searchTerm) {
-  const searchTermSplit = new Set(searchTerm.split(' ').map(stemmer).filter(item => item))
-  const searchTermSplitSize = searchTermSplit.size
-  if (searchTermSplitSize === 0) return faq
-  const intersectingDocumentIndexes = []
-  const documentCounts = {}
-  const documentPoints = {}
-  for (const term of searchTermSplit) {
-    if (!invertedIndexes[term]) continue
-    for (const arr of invertedIndexes[term]) {
-      const documentIndex = arr[0]
-      const points = arr[1]
-      if (!documentCounts[documentIndex]) {
-        documentCounts[documentIndex] = 1
-        documentPoints[documentIndex] = points
-      } else {
-        ++documentCounts[documentIndex]
-        documentPoints[documentIndex] += points
-      }
-    }
-  }
-
-  for (const docIndex in documentCounts) {
-    if (documentCounts[docIndex] === searchTermSplitSize) intersectingDocumentIndexes.push([ docIndex, documentPoints[docIndex] ])
-  }
-  return intersectingDocumentIndexes.sort((a, b) => b[1] - a[1]).map((item, index) => faq[item[0]]) // 0th index is the document index, 1st index is the number of points (weight)
-}
-
 function FAQ (props) {
   const [ searchTerm, setSearch ] = useState('')
   const [ topOffsets, setTopOffsets ] = useState({})
@@ -238,7 +209,7 @@ function FAQ (props) {
     else document.title = `Discord.RSS - FAQ`
   }, [selectedQuestion])
 
-  const contentClone = getDocumentSearchResults(searchTerm)
+  const contentClone = searchFAQ(searchTerm)
 
   let addedTopOffset = false
   const items = contentClone.map((item, index) => {
@@ -315,7 +286,10 @@ function FAQ (props) {
 }
 
 FAQ.propTypes = {
-  scrollbar: PropTypes.object
+  scrollbar: PropTypes.object,
+  history: PropTypes.object,
+  location: PropTypes.object,
+  match: PropTypes.object
 }
 
 export default withRouter(FAQ)

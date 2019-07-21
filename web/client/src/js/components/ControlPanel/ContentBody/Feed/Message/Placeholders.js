@@ -11,8 +11,9 @@ import SectionSubtitleDescription from 'js/components/utils/SectionSubtitleDescr
 import posed from 'react-pose';
 import SectionSubtitle from 'js/components/utils/SectionSubtitle'
 import { Scrollbars } from 'react-custom-scrollbars';
+import { isHiddenProperty } from 'js/constants/hiddenArticleProperties'
 
-const mapStateToProps = state => {
+ const mapStateToProps = state => {
   return {
     feedId: state.feedId,
     articleList: state.articleList,
@@ -172,7 +173,7 @@ class Placeholders extends React.Component {
     const seenPlaceholders = {}
     for (const article of articleList) {
       for (const placeholder in article) {
-        if (placeholder.startsWith('regex:') || placeholder.startsWith('_') || placeholder.startsWith('raw:')) continue
+        if (placeholder.startsWith('regex:') || isHiddenProperty(placeholder) || placeholder.startsWith('raw:')) continue
         if (article[placeholder]) seenPlaceholders[placeholder] = true
       }
     }

@@ -51,10 +51,10 @@ export function setActiveGuild (guildId) {
   return { type: SET_ACTIVE_GUILD, guildId }
 }
 
-export function setActiveFeed (rssName) {
+export function setActiveFeed (rssName, again) {
   return async (dispatch, getState) => {
     const { guildId, feedId } = getState()
-    if (rssName === feedId) return
+    if (rssName === feedId && !again) return
     dispatch({ type: SET_ACTIVE_FEED, rssName })
     await fetchArticles(guildId, rssName, dispatch)
   }

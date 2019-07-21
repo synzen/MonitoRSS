@@ -216,6 +216,7 @@ class LeftMenu extends Component {
           <MenuButton to={pages.FILTERS} disabled={!feedId} onClick={() => !feedId ? null : this.menuButtonClick(pages.FILTERS)} selected={this.props.page === pages.FILTERS}>Filters</MenuButton>
           <MenuButton to={pages.SUBSCRIPTIONS} disabled={!feedId} onClick={() => !feedId ? null : this.menuButtonClick(pages.SUBSCRIPTIONS)} selected={this.props.page === pages.SUBSCRIPTIONS}>Subscriptions</MenuButton>
           <MenuButton to={pages.MISC_OPTIONS} disabled={!feedId} onClick={() => !feedId ? null : this.menuButtonClick(pages.MISC_OPTIONS)} selected={this.props.page === pages.MISC_OPTIONS}>Misc Options</MenuButton>
+          <MenuButton to={pages.DEBUGGER} disabled={!feedId} onClick={() => !feedId ? null : this.menuButtonClick(pages.DEBUGGER)} selected={this.props.page === pages.DEBUGGER}>Debugger</MenuButton>
 
           <Divider />
           

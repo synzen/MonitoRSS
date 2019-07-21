@@ -9,6 +9,7 @@ import embedProperties from 'js/constants/embed'
 import PropTypes from 'prop-types'
 import parser from '../../../utils/textParser'
 import testFilters from '../Filters/util/filters'
+import { isHiddenProperty } from 'js/constants/hiddenArticleProperties'
 
 const mapStateToProps = state => {
   return {
@@ -227,7 +228,7 @@ class Message extends Component {
     if (word.length === 0) return word
     let content = word
     for (const placeholderName in article) {
-      if (placeholderName.startsWith('_')) continue
+      if (isHiddenProperty(placeholderName)) continue
       if (placeholderName === 'subscriptions') continue
       const sanitizedPlaceholderName = `{${placeholderName.replace('regex:', '')}}`
       // console.log('replacing', sanitizedPlaceholderName, 'with', article[placeholderName])

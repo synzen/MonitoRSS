@@ -110,6 +110,11 @@ button, input, optgroup, select, textarea {
   font-weight: 500 !important;
 }
 
+.ui.button {
+  font-family: Whitney, sans-serif !important;
+  font-weight: 500 !important;
+}
+
 body {
   font-family: Whitney, sans-serif !important;
   color: #b9bbbe;

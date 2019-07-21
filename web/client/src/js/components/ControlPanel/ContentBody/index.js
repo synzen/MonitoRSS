@@ -7,9 +7,8 @@ import Settings from './Server/Settings/index'
 import Message from './Feed/Message/index'
 import Filters from './Feed/Filters/index'
 import Subscriptions from './Feed/Subscriptions/index'
-// import FAQ from './Information/FAQ/index'
-import Support from './Information/Support/index'
 import MiscOptions from './Feed/MiscOptions/index'
+import Debugger from './Feed/Debugger/index'
 import { Switch, Route } from 'react-router-dom'
 import { connect } from 'react-redux'
 import { setActiveGuild } from '../../../actions/index-actions'
@@ -53,15 +52,15 @@ class ContentBody extends Component {
         <Scrollbars>
           <Switch>
             
-            <Route exact path={pages.DASHBOARD} render={props => <Home redirect={this.redirect} />}/>
-            <Route exact path={pages.FEEDS} render={props => <Feeds redirect={this.redirect} />} />
-            <Route exact path={pages.SERVER_SETTINGS} component={Settings} />
-            <Route exact path={pages.MESSAGE} component={Message} />
-            <Route exact path={pages.FILTERS} component={Filters} />
-            <Route exact path={pages.SUBSCRIPTIONS} component={Subscriptions} />
-            <Route exact path={pages.MISC_OPTIONS} component={MiscOptions} />
-            <Route exact path={pages.SUPPORT} component={Support} />
-            <Route component={Home} />
+            <Route exact path={pages.DASHBOARD} render={routerProps => <Home redirect={this.redirect} {...routerProps} />}/>
+            <Route exact path={pages.FEEDS} render={routerProps => <Feeds redirect={this.redirect} {...routerProps} />} />
+            <Route exact path={pages.SERVER_SETTINGS} render={routerProps => <Settings {...routerProps} />} />
+            <Route exact path={pages.MESSAGE} render={routerProps => <Message {...routerProps} />} />
+            <Route exact path={pages.FILTERS} render={routerProps => <Filters {...routerProps} />} />
+            <Route exact path={pages.SUBSCRIPTIONS} render={routerProps => <Subscriptions {...routerProps} />} />
+            <Route exact path={pages.MISC_OPTIONS} render={routerProps => <MiscOptions {...routerProps} />} />
+            <Route exact path={pages.DEBUGGER} component={routerProps => <Debugger {...routerProps} />} />
+            <Route render={routerProps => <Home {...routerProps} />} />
           </Switch>
         </Scrollbars>
       </Body>

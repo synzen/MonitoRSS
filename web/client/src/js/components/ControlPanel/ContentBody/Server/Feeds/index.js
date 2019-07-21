@@ -10,7 +10,7 @@ import AddFeed from './AddFeed'
 import PaginatedTable from '../../../utils/PaginatedTable'
 import PropTypes from 'prop-types'
 import styled from 'styled-components'
-import { Divider, Icon, Popup, Dropdown, Button, Input, Checkbox } from 'semantic-ui-react'
+import { Divider, Icon, Popup, Dropdown, Button, Input } from 'semantic-ui-react'
 import { Scrollbars } from 'react-custom-scrollbars';
 import modal from 'js/components/utils/modal'
 import toast from '../../../utils/toast'
@@ -56,29 +56,6 @@ const SideBarContainer = styled.div`
   display: none;
   @media only screen and (min-width: 1475px) {
     display: block;
-  }
-`
-
-const CheckboxWrapper = styled.div`
-  display: flex;
-  > .ui.checkbox {
-    min-width: 18px;
-    min-height: 18px;
-    > input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-    }
-    label:before,
-    .box:before {
-      width: 18px;
-      height: 18px;
-    }
-    label:after {
-      top: -2px;
-      width: 18px;
-      height: 18px;
-      font-size: 16px;
-    }
   }
 `
 

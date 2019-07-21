@@ -2,6 +2,7 @@ import styled from 'styled-components'
 
 export default styled.label`
   display: block;
+  user-select: none;
   letter-spacing: .5px;
   margin-bottom: 8px;
   font-weight: 700;

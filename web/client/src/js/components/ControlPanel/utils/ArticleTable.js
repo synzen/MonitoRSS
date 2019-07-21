@@ -5,7 +5,8 @@ import PaginatedTable from './PaginatedTable'
 import { Dropdown, Loader } from 'semantic-ui-react'
 import styled from 'styled-components'
 import colors from 'js/constants/colors'
-import SectionSubtitleDescription from 'js/components/utils/SectionSubtitleDescription';
+import SectionSubtitleDescription from 'js/components/utils/SectionSubtitleDescription'
+import { isHiddenProperty } from 'js/constants/hiddenArticleProperties'
 
 const mapStateToProps = state => {
   return {
@@ -124,7 +125,7 @@ class ArticleBrowser extends React.PureComponent {
         if (added[placeholder]) continue
         const isRegexPlaceholder = placeholder.includes('regex:')
         const prettyPlaceholderName = placeholder.replace('regex:', '')
-        if (!placeholder.startsWith('_')) {
+        if (!isHiddenProperty(placeholder)) {
           classificationsDropdownOptions.push({ text: isRegexPlaceholder ? `${prettyPlaceholderName} (regex)` : prettyPlaceholderName, value: placeholder })
           added[placeholder] = true
         }
