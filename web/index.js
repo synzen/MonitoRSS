@@ -110,7 +110,7 @@ function start (mongooseConnection = mongoose.connection) {
       if (req.session && req.session.identity) custom.push(`(U: ${req.session.identity.id}, ${req.session.identity.username})`)
       if (req.guildRss) custom.push(`(G: ${req.guildRss.id}, ${req.guildRss.name})`)
       const arr = [
-        log.formatConsoleDate(new Date()),
+        log.formatConsoleDate(new Date()).slice(0, -1), // Remove extra white space at the end
         requestIp.getClientIp(req),
         ...custom,
         tokens.method(req, res),

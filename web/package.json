@@ -19,6 +19,7 @@
     "moment": "^2.24.0",
     "morgan": "^1.9.1",
     "redis": "^2.8.0",
+    "request-ip": "^2.1.3",
     "simple-oauth2": "^2.2.1",
     "socket.io": "^2.2.0"
   },
