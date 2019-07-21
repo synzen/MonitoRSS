@@ -8,6 +8,7 @@ const dbOps = require('../../../util/dbOps')
 const initialize = require('../../../rss/initialize.js')
 const serverLimit = require('../../../util/serverLimit.js')
 const redisOps = require('../../../util/redisOps.js')
+const storage = require('../../../util/storage.js')
 const ArticleIDResolver = require('../../../structs/ArticleIDResolver.js')
 const VALID_SOURCE_KEYS_TYPES = {
   title: String,
@@ -125,6 +126,7 @@ async function getFeedPlaceholders (req, res, next) {
       articlePlaceholders._fullDescription = parsed._fullDescription
       articlePlaceholders._fullSummary = parsed._fullSummary
       articlePlaceholders._fullTitle = parsed._fullTitle
+      articlePlaceholders._fullDate = parsed._fullDate
 
       const regexPlaceholders = parsed.regexPlaceholders
       for (const placeholder in regexPlaceholders) {
@@ -140,12 +142,25 @@ async function getFeedPlaceholders (req, res, next) {
 
       allPlaceholders.push(articlePlaceholders)
     }
+
     res.json(allPlaceholders)
   } catch (err) {
     if (err.message.includes('No articles')) return res.json([])
     if (err.message.includes('Connection failed')) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
     if (err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
     if (err.message.includes('connection failure limit')) return res.status(400).json({ code: statusCodes['40005_CONNECTION_FAILURE_LIMIT'], message: err.message })
+    next(err)
+  }
+}
+
+async function getFeedDebug (req, res, next) {
+  try {
+    const guildId = req.params.guildId
+    const shard = await redisOps.guilds.getValue(guildId, 'shard') // -1 means no sharding
+    const collectionId = storage.collectionId(req.source.link, shard === '-1' ? null : shard, req.guildRss._schedule || 'default')
+    const results = await storage.models.FeedByCollectionId(collectionId).find({}).lean().exec()
+    res.json(results)
+  } catch (err) {
     next(err)
   }
 }
@@ -202,6 +217,7 @@ async function patchFeed (req, res, next) {
 }
 
 feeds.get('/:feedId/placeholders', getFeedPlaceholders)
+feeds.get('/:feedId/debug', getFeedDebug)
 feeds.delete('/:feedId', deleteFeed)
 feeds.patch('/:feedId', patchFeed)
 
@@ -217,6 +233,7 @@ module.exports = {
   routes: {
     postFeed,
     getFeedPlaceholders,
+    getFeedDebug,
     deleteFeed,
     patchFeed
   },
