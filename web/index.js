@@ -23,6 +23,9 @@ const SCOPES = 'identify guilds'
 const tokenConfig = code => { return { code, redirect_uri: REDIRECT_URI, scope: SCOPES } }
 const faq = JSON.parse(fs.readFileSync(path.join(__dirname, 'client', `src`, 'js', 'constants', 'faq.json')))
 const htmlFile = fs.readFileSync(path.join(__dirname, 'client/build', 'index.html')).toString()
+const requestIp = require('request-ip')
+const AuthPathAttempts = require('./util/AuthPathAttempts.js')
+const attemptedPaths = new AuthPathAttempts()
 
 let httpIo = require('socket.io').listen(http)
 let https
@@ -108,7 +111,7 @@ function start (mongooseConnection = mongoose.connection) {
       if (req.guildRss) custom.push(`(G: ${req.guildRss.id}, ${req.guildRss.name})`)
       const arr = [
         log.formatConsoleDate(new Date()),
-        tokens['remote-addr'](req, res),
+        requestIp.getClientIp(req),
         ...custom,
         tokens.method(req, res),
         tokens.url(req, res),
@@ -159,7 +162,8 @@ function start (mongooseConnection = mongoose.connection) {
       req.session.auth = accessTokenObject.token
       req.session.identity = await fetchUser.info(req.session.identity ? req.session.identity.id : null, req.session.auth.access_token)
       log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) Logged in`)
-      res.redirect('/cp')
+      const ip = requestIp.getClientIp(req)
+      res.redirect(attemptedPaths.get(ip) || '/cp')
     } catch (err) {
       log.web.error(`Failed to authorize Discord`, err)
       res.redirect('/')
@@ -177,7 +181,14 @@ function start (mongooseConnection = mongoose.connection) {
   // Redirect all other routes not handled
   app.get('*', async (req, res) => {
     res.type('text/html')
-    if (!req.path.startsWith('/faq')) return res.send(htmlFile.replace('Under Construction').replace('This site is currently under construction.'))
+    console.log(req.path)
+    const pathLowercase = req.path.toLowerCase()
+    if (pathLowercase.startsWith('/cp') && (!req.session.identity || !req.session.auth)) {
+      // Save the path to redirect them later after they're authorized
+      const ip = requestIp.getClientIp(req)
+      if (ip) attemptedPaths.add(ip, req.path)
+    }
+    if (!pathLowercase.startsWith('/faq')) return res.send(htmlFile.replace('Under Construction').replace('This site is currently under construction.'))
 
     const question = req.path.replace('/faq/', '')
     const item = faq.find(item => item.qe === question)
