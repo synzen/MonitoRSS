@@ -395,6 +395,8 @@ describe('/api/guilds/:guildId/feeds', function () {
       const _fullTitle = 'aiwetk njlwseitg'
       const _fullDescription = 'w35ofm34erfv'
       const _fullSummary = 'we35mf349fuc348'
+      const _fullDate = new Date()
+      const _fullDateString = JSON.stringify(_fullDate).replace(/"/g, '') // Quotes are added when dates are json-stringified for some reason, so remove them
       for (let article of rawArticleList) {
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
@@ -402,6 +404,7 @@ describe('/api/guilds/:guildId/feeds', function () {
           this._fullTitle = _fullTitle
           this._fullDescription = _fullDescription
           this._fullSummary = _fullSummary
+          this._fullDate = _fullDate
         })
         ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
       }
@@ -412,13 +415,15 @@ describe('/api/guilds/:guildId/feeds', function () {
         description: 'description1',
         _fullTitle,
         _fullSummary,
-        _fullDescription
+        _fullDescription,
+        _fullDate: _fullDateString
       }, {
         _id: articleID,
         description: 'description2',
         _fullTitle,
         _fullSummary,
-        _fullDescription
+        _fullDescription,
+        _fullDate: _fullDateString
       }]
 
       getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
@@ -437,16 +442,10 @@ describe('/api/guilds/:guildId/feeds', function () {
       }, {
         description: 'description2'
       }]
-      const _fullTitle = 'aiwetk njlwseitg'
-      const _fullDescription = 'w35ofm34erfv'
-      const _fullSummary = 'we35mf349fuc348'
       for (let article of rawArticleList) {
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
           for (const key in article) this[key] = article[key]
-          this._fullTitle = _fullTitle
-          this._fullDescription = _fullDescription
-          this._fullSummary = _fullSummary
           this.getRawPlaceholders = () => (
             {
               test: 'val1',
@@ -457,32 +456,16 @@ describe('/api/guilds/:guildId/feeds', function () {
         ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
       }
 
-      const expectedResponse = [{
-        _id: articleID,
-        title: 'title1',
-        description: 'description1',
-        _fullTitle,
-        _fullSummary,
-        _fullDescription,
-        'raw:test': 'val1',
-        'raw:test2': 'val2'
-      }, {
-        _id: articleID,
-        description: 'description2',
-        _fullTitle,
-        _fullSummary,
-        _fullDescription,
-        'raw:test': 'val1',
-        'raw:test2': 'val2'
-      }]
-
       getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
       expect(response.statusCode).toEqual(200)
       const data = JSON.parse(response._getData())
-      expect(data).toEqual(expectedResponse)
+      for (const article of data) {
+        expect(article['raw:test']).toEqual('val1')
+        expect(article['raw:test2']).toEqual('val2')
+      }
     })
     it('calls next(err) if getArticles failed with unrecognized error', async function (done) {
       const error = new Error('azsfrwn5fc9 w45t 9834 b')
