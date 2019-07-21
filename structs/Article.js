@@ -224,7 +224,7 @@ module.exports = class Article {
       const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       this.date = vanityDate !== 'Invalid Date' ? vanityDate : ''
       if (this.date) this.placeholders.push('date')
-      this.rawDate = raw.pubdate
+      this._fullDate = raw.pubdate
     }
 
     // Description and reddit-specific placeholders

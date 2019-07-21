@@ -34,7 +34,7 @@ module.exports = (embeds, article) => {
 
     if (isStr(objectEmbed.timestamp)) {
       const setting = objectEmbed.timestamp
-      richEmbed.setTimestamp(setting === 'article' ? new Date(article.rawDate) : setting === 'now' ? new Date() : new Date(setting)) // No need to check for invalid date since discord.js does it
+      richEmbed.setTimestamp(setting === 'article' ? new Date(article._fullDate) : setting === 'now' ? new Date() : new Date(setting)) // No need to check for invalid date since discord.js does it
     }
 
     const fields = objectEmbed.fields
