@@ -187,7 +187,13 @@ exports.guildRss = {
 }
 
 exports.guildRssBackup = {
-  dropIndexes: async () => models.GuildRssBackup().collection.dropIndexes()
+  dropIndexes: async () => {
+    try {
+      await models.GuildRssBackup().collection.dropIndexes()
+    } catch (err) {
+      if (err.code !== 26) throw err // 26 means does not exist - resolve the promise in this case
+    }
+  }
 }
 
 exports.feeds = {

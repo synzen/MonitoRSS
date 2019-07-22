@@ -24,11 +24,12 @@ module.exports = async (bot, vipApiData) => {
   const activeSourcesForTracker = []
 
   // Remove expires index, but ignores the log if it's "ns not found" error (meaning the collection doesn't exist)
+  const backupIndexPromises = []
   if (config.database.guildBackupsExpire <= 0) {
-    dbOps.guildRssBackup.dropIndexes().catch(err => {
-      if (err.code !== 26) log.init.warning(`Unable to drop indexes for Guild_Backup collection for`, err)
-    })
+    backupIndexPromises.push(dbOps.guildRssBackup.dropIndexes())
   }
+
+  await Promise.all(backupIndexPromises)
 
   // Cache blacklisted users and guilds
   const docs = await dbOps.blacklists.getAll()
@@ -46,7 +47,6 @@ module.exports = async (bot, vipApiData) => {
   // Remove missing guilds and empty guildRsses, along with other checks
   const guildRssList = await dbOps.guildRss.getAll()
   const updatePromises = []
-  // const feedIDUpdatePromises = []
   for (var r = 0; r < guildRssList.length; ++r) {
     const guildRss = guildRssList[r]
     const guildId = guildRss.id
@@ -104,16 +104,8 @@ module.exports = async (bot, vipApiData) => {
   bot.guilds.forEach((guild, guildId) => {
     redisPromises.push(redisOps.guilds.recognize(guild)) // This will recognize all guild info, members, channels and roles
     if (guildsInfo[guildId]) return // If the guild profile exists, then mark as completed - otherwise check for backups
-    // const id = guildId
     restorePromises.push(dbOps.guildRss.restore(guildId))
     restorePromisesIDRecord.push(guildId)
-    // dbOps.guildRss.restore(guildId, true).then(guildRss => {
-    //   if (guildRss) log.init.info(`Restored profile for ${guildRss.id}`)
-    //   if (++c === total) checkVIPs()
-    // }).catch(err => {
-    //   log.init.info(`Unable to restore ${id}`, err)
-    //   if (++c === total) checkVIPs()
-    // })
   })
 
   if (redisOps.client.exists()) {
