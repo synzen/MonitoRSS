@@ -191,7 +191,13 @@ exports.guildRssBackup = {
 }
 
 exports.feeds = {
-  dropIndexes: async (link, shardId, scheduleName) => models.Feed(link, shardId, scheduleName).collection.dropIndexes()
+  dropIndexes: async (link, shardId, scheduleName) => {
+    try {
+      await models.Feed(link, shardId, scheduleName).collection.dropIndexes()
+    } catch (err) {
+      if (err.code !== 26) throw err // 26 means does not exist - resolve the promise in this case
+    }
+  }
 }
 
 // linkTracker for determine when to drop collections during bot's lifetime, and for URL resolution
@@ -359,7 +365,11 @@ exports.blacklists = {
 exports.statistics = {
   clear: async () => {
     if (!config.database.uri.startsWith('mongo')) return
-    return models.Statistics().collection.drop()
+    try {
+      await models.Statistics().collection.drop()
+    } catch (err) {
+      if (err.code !== 26) throw err // 26 means collection does not exist
+    }
   },
   get: async (shard = 0) => {
     if (!config.database.uri.startsWith('mongo')) return

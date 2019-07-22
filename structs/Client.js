@@ -230,30 +230,27 @@ class Client extends EventEmitter {
     this.state = STATES.STOPPED
   }
 
-  start (callback, vipApiData) {
+  async start (callback, vipApiData) {
     if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
     const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
-    connectDb()
-      .then(() => !this.bot.shard || this.bot.shard.count === 0 ? redisOps.flushDatabase() : null)
-      .then(() => config._vip && (!this.bot.shard || this.bot.shard.count === 0) ? require('../settings/api.js')() : null)
-      .then(async clientVipApiData => {
-        if (!this.scheduleManager) {
-          this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules)
-          storage.scheduleManager = this.scheduleManager
-        }
-        await this.scheduleManager.assignSchedules()
-        return clientVipApiData
-      })
-      .then(clientVipApiData => {
-        initialize(this.bot, (missingGuilds, linkDocs) => {
-          // feedData is only defined if config.database.uri is a databaseless folder path
-          this._finishInit(missingGuilds, linkDocs, callback)
-        }, vipApiData || clientVipApiData)
-      })
-      .catch(err => log.general.error(`Client db connection`, err))
+    try {
+      await connectDb()
+      if (!this.bot.shard || this.bot.shard.count === 0) await redisOps.flushDatabase()
+      let clientVipApiData
+      if (config._vip && (!this.bot.shard || this.bot.shard.count === 0)) clientVipApiData = await require('../settings/api.js')()
+      if (!this.scheduleManager) {
+        this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules)
+        storage.scheduleManager = this.scheduleManager
+      }
+      await this.scheduleManager.assignSchedules()
+      const { missingGuilds, linkTrackerDocs } = await initialize(this.bot, vipApiData || clientVipApiData)
+      this._finishInit(missingGuilds, linkTrackerDocs, callback)
+    } catch (err) {
+      log.general.error(`Client start`, err)
+    }
   }
 
   restart (callback) {

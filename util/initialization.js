@@ -14,7 +14,7 @@ function reachedFailCount (link, failedLinks) {
   return failed
 }
 
-module.exports = async (bot, callback, vipApiData) => {
+module.exports = async (bot, vipApiData) => {
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new LinkTracker([], bot)
   const feedIDs = new Set() // Keep track of rssNames to be sure they are all unique
@@ -99,80 +99,71 @@ module.exports = async (bot, callback, vipApiData) => {
   const total = bot.guilds.size
 
   // Redis is only for UI use
-  Promise.all(updatePromises).then(() => {
-    bot.guilds.forEach((guild, guildId) => {
-      redisOps.guilds.recognize(guild).catch(err => {
-        // This will recognize all guild info, members, channels and roles
-        throw err
-      })
-      if (guildsInfo[guildId]) {
-        if (++c === total) checkVIPs()
-        return
-      }
-      const id = guildId
-      dbOps.guildRss.restore(guildId, true).then(guildRss => {
-        if (guildRss) log.init.info(`Restored profile for ${guildRss.id}`)
-        if (++c === total) checkVIPs()
-      }).catch(err => {
-        log.init.info(`Unable to restore ${id}`, err)
-        if (++c === total) checkVIPs()
-      })
-    })
-  }).catch(err => {
-    throw err
+  const redisPromises = []
+  const restorePromises = []
+  const restorePromisesIDRecord = []
+
+  await Promise.all(updatePromises)
+  bot.guilds.forEach((guild, guildId) => {
+    redisPromises.push(redisOps.guilds.recognize(guild)) // This will recognize all guild info, members, channels and roles
+    if (guildsInfo[guildId]) return  // If the guild profile exists, then mark as completed - otherwise check for backups
+    // const id = guildId
+    restorePromises.push(dbOps.guildRss.restore(guildId))
+    restorePromisesIDRecord.push(guildId)
+    // dbOps.guildRss.restore(guildId, true).then(guildRss => {
+    //   if (guildRss) log.init.info(`Restored profile for ${guildRss.id}`)
+    //   if (++c === total) checkVIPs()
+    // }).catch(err => {
+    //   log.init.info(`Unable to restore ${id}`, err)
+    //   if (++c === total) checkVIPs()
+    // })
   })
 
   if (redisOps.client.exists()) {
-    bot.users.forEach(user => {
-      redisOps.users.recognize(user).catch(err => {
-        if (err) throw err
-      })
-    })
+    bot.users.forEach(user => redisPromises.push(redisOps.users.recognize(user)))
   }
 
-  if (total === 0) checkVIPs()
+  await Promise.all(restorePromises)
+  await Promise.all(restorePromisesIDRecord)
+  await Promise.all(redisPromises)
 
-  async function checkVIPs () {
-    try {
-      // For patron tracking on the public bot
-      if (config.database.uri.startsWith('mongo') && config._vip) {
-        const vipServers = await require('../settings/vips.js')(bot, vipApiData)
-        finish(vipServers)
-      } else finish()
-    } catch (e) {
-      if (config._vip) log.general.error(`Failed to load VIP module`, e, true)
-      finish()
+  let vipServers = []
+
+  try {
+    // For patron tracking on the public bot
+    if (config.database.uri.startsWith('mongo') && config._vip) {
+      vipServers = await require('../settings/vips.js')(bot, vipApiData)
     }
+  } catch (e) {
+    if (config._vip) log.general.error(`Failed to load VIP module`, e, true)
   }
 
-  function finish (vipServers = []) {
-    const linkTrackerArr = linkTracker.toDocs()
-    for (var obj of linkTrackerArr) {
-      if (config.database.articlesExpire === 0) {
-        dbOps.feeds.dropIndexes(obj.link, linkTracker.shardId, obj.scheduleName).catch(err => {
-          if (err.code !== 26) log.init.warning(`Unable to drop indexes for Feed collection ${obj.link}:`, err)
-        })
-      }
-    }
+  const linkTrackerArr = linkTracker.toDocs()
+  const dropIndexPromises = []
+  for (var obj of linkTrackerArr) {
+    // These indexes allow articles to auto-expire - if it is 0, remove such indexes
+    if (config.database.articlesExpire === 0) dropIndexPromises.push(dbOps.feeds.dropIndexes(obj.link, linkTracker.shardId, obj.scheduleName))      
+  }
 
-    // Decides what collections get removed from database later on
-    for (const item of activeSourcesForTracker) {
-      const itemSchedule = vipServers.includes(item.server) ? 'vip' : assignedSchedules.getScheduleName(item.rssName)
-      const collectionId = storage.collectionId(item.link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, itemSchedule)
-      linkTracker.increment(item.link, itemSchedule)
-      if ((!bot.shard || bot.shard.count === 0) && !currentCollections.includes(collectionId)) currentCollections.push(collectionId)
-    }
+  await Promise.all(dropIndexPromises)
 
-    log.init.info(`${SHARD_ID}Finished initialization`)
-    if (!bot.shard || bot.shard.count === 0) {
-      if (config.database.uri.startsWith('mongo')) dbOps.statistics.clear().catch(err => err.code === 26 ? null : log.general.warning('Unable to drop statistics database', err)) // 26 is ns not found - it's fine if it didn't exist in the first place
-      dbOps.linkTracker.write(linkTracker).catch(err => log.general.warning('Unable to write link tracker links to collection after initialization', err)) // If this is a shard, then it's handled by the sharding manager
-      dbOps.general.cleanDatabase(currentCollections)
-        .then(() => callback(missingGuilds, linkTracker.toDocs()))
-        .catch(err => {
-          log.general.error(`Unable to clean database`, err)
-          callback(missingGuilds, linkTracker.toDocs())
-        })
-    } else callback(missingGuilds, linkTracker.toDocs())
+  // Decides what collections get removed from database later on
+  for (const item of activeSourcesForTracker) {
+    const itemSchedule = vipServers.includes(item.server) ? 'vip' : assignedSchedules.getScheduleName(item.rssName)
+    const collectionId = storage.collectionId(item.link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, itemSchedule)
+    linkTracker.increment(item.link, itemSchedule)
+    if ((!bot.shard || bot.shard.count === 0) && !currentCollections.includes(collectionId)) currentCollections.push(collectionId)
+  }
+
+  log.init.info(`${SHARD_ID}Finished initialization`)
+  if (!bot.shard || bot.shard.count === 0) {
+    if (config.database.uri.startsWith('mongo')) await dbOps.statistics.clear()
+    await dbOps.linkTracker.write(linkTracker) // If this is a shard, then it's handled by the sharding manager
+    await dbOps.general.cleanDatabase(currentCollections)
+  }
+
+  return {
+    missingGuilds,
+    linkTrackerDocs: linkTracker.toDocs()
   }
 }
