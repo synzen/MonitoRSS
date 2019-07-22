@@ -66,8 +66,9 @@ module.exports = async (bot, callback, vipApiData) => {
     if (guildRss.prefix) storage.prefixes[guildId] = guildRss.prefix
     if (dbOps.guildRss.empty(guildRss)) continue
     let shouldUpdate = false
-    shouldUpdate = shouldUpdate || await checkGuild.subscriptions(bot, guildRss)
-    shouldUpdate = shouldUpdate || await checkGuild.version(guildRss)
+    const updatedSubscriptions = await checkGuild.subscriptions(bot, guildRss)
+    const updatedVersion = await checkGuild.version(guildRss)
+    shouldUpdate = updatedSubscriptions || updatedVersion
 
     guildsInfo[guildId] = guildRss
     const rssList = guildRss.sources
