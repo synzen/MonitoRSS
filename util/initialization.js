@@ -17,6 +17,7 @@ function reachedFailCount (link, failedLinks) {
 module.exports = async (bot, callback, vipApiData) => {
   const currentCollections = [] // currentCollections is only used if there is no sharding (for database cleaning)
   const linkTracker = new LinkTracker([], bot)
+  const feedIDs = new Set() // Keep track of rssNames to be sure they are all unique
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
   const guildsInfo = {}
   const missingGuilds = {}
@@ -44,7 +45,8 @@ module.exports = async (bot, callback, vipApiData) => {
 
   // Remove missing guilds and empty guildRsses, along with other checks
   const guildRssList = await dbOps.guildRss.getAll()
-  const versionCheckPromises = []
+  const updatePromises = []
+  // const feedIDUpdatePromises = []
   for (var r = 0; r < guildRssList.length; ++r) {
     const guildRss = guildRssList[r]
     const guildId = guildRss.id
@@ -63,23 +65,40 @@ module.exports = async (bot, callback, vipApiData) => {
     }
     if (guildRss.prefix) storage.prefixes[guildId] = guildRss.prefix
     if (dbOps.guildRss.empty(guildRss)) continue
-    checkGuild.subscriptions(bot, guildRss)
-    versionCheckPromises.push(checkGuild.version(guildRss))
+    let shouldUpdate = false
+    shouldUpdate = shouldUpdate || await checkGuild.subscriptions(bot, guildRss)
+    shouldUpdate = shouldUpdate || await checkGuild.version(guildRss)
 
     guildsInfo[guildId] = guildRss
     const rssList = guildRss.sources
-    for (var rssName in rssList) {
-      const source = rssList[rssName]
+
+    for (const rssName in rssList) {
+      let id = rssName
+      if (!feedIDs.has(rssName)) feedIDs.add(rssName)
+      else {
+        // duplicate found, update the name
+        let newID = rssName + Math.floor((Math.random() * 9) + 1)
+        while (feedIDs.has(newID)) {
+          newID += Math.floor((Math.random() * 9) + 1)
+        }
+        Object.defineProperty(rssList, newID, Object.getOwnPropertyDescriptor(rssList, rssName))
+        delete rssList[rssName]
+        id = newID
+        if (!shouldUpdate) shouldUpdate = true
+      }
+      const source = rssList[id]
       // Assign feeds to specific schedules in assignedSchedules for use by feedSchedules by rssNames first
-      if (checkGuild.config(bot, guildRss, rssName, true) && !reachedFailCount(source.link, failedLinks)) activeSourcesForTracker.push({ link: source.link, rssName: rssName, server: guildId })
+      if (checkGuild.config(bot, guildRss, id, true) && !reachedFailCount(source.link, failedLinks)) activeSourcesForTracker.push({ link: source.link, rssName: id, server: guildId })
     }
+
+    if (shouldUpdate) updatePromises.push(dbOps.guildRss.update(guildRss))
   }
 
   let c = 0
   const total = bot.guilds.size
 
   // Redis is only for UI use
-  Promise.all(versionCheckPromises).then(() => {
+  Promise.all(updatePromises).then(() => {
     bot.guilds.forEach((guild, guildId) => {
       redisOps.guilds.recognize(guild).catch(err => {
         // This will recognize all guild info, members, channels and roles

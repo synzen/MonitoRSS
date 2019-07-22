@@ -11,73 +11,83 @@ const semVerSort = (a, b) => a.localeCompare(b, undefined, { numeric: true, sens
 const versions = files.filter(name => /\d{1}\.\d{1}\.\d{1}\.js/.test(name)).sort(semVerSort).map(file => file.replace('.js', '')) // Filter in and sort the versions
 // if (versions.concat(currentVersion).sort(semVerSort)[versions.length] !== currentVersion) throw new Error('Package version found to be lower than update files. Either updates or package.json is outdated')
 
-exports.subscriptions = (bot, guildRss) => {
+const fetchUserWrapper = (bot, id) => new Promise((resolve, reject) => {
+  bot.fetchUser(id).then(resolve).catch(err => {
+    if (err.code === 10013) resolve() // Unknown User
+    else reject(err)
+  })
+})
+
+// Returns true or false whether the calling function should update
+exports.subscriptions = async (bot, guildRss) => {
   const guild = bot.guilds.get(guildRss.id)
   const idsToRemove = []
+  let toUpdate = false
 
   if (guildRss.name !== guild.name) {
     guildRss.name = guild.name
-    dbOps.guildRss.update(guildRss).catch(err => log.general.warning('checkGuild', guild, err))
+    toUpdate = true
   }
 
   const rssList = guildRss.sources
-  if (!rssList) return
-  let subscriptionsTotal = 0
-  let subscriptionsChecked = 0
+  if (!rssList) return toUpdate
 
-  function updateGuildRss () {
-    if (idsToRemove.length === 0) return
-    for (const rssName in rssList) {
-      const subscribers = rssList[rssName].subscribers
-      if (!subscribers) continue
-      for (let i = subscribers.length - 1; i >= 0; --i) {
-        const subscriber = subscribers[i]
-        if (idsToRemove.includes(subscriber.id)) subscribers.splice(i, 1)
-      }
-      if (subscribers.length === 0) delete rssList[rssName].subscribers
-    }
-    dbOps.guildRss.update(guildRss).then(() => log.guild.info(`Updated after checkGuild`, guild)).catch(err => log.general.warning('checkGuild', guild, err))
-  }
-
-  function finishSubscriptionCheck () {
-    if (++subscriptionsChecked === subscriptionsTotal) updateGuildRss()
-  }
-
-  for (const rssName in rssList) {
-    if (rssList[rssName].subscribers) subscriptionsTotal += rssList[rssName].subscribers.length
-  }
+  const fetchUserPromises = []
+  const fetchUserIDRecord = []
+  const subscriberUserNames = {}
 
   for (const rssName in rssList) {
     const source = rssList[rssName]
     const subscribers = source.subscribers
-    if (!subscribers) return
+    if (!subscribers) continue
     for (const subscriber of subscribers) {
       const id = subscriber.id
       const type = subscriber.type
       if (type === 'user') {
-        bot.fetchUser(id)
-          .then(user => finishSubscriptionCheck())
-          .catch(err => {
-            log.guild.info(`(${id}, ${subscriber.name}) Unable to fetch during checkGuild. Preparing for removal.`, guild, err)
-            idsToRemove.push(id)
-            finishSubscriptionCheck()
-          })
+        fetchUserPromises.push(fetchUserWrapper(bot, id))
+        fetchUserIDRecord.push(id)
+        subscriberUserNames[id] = subscriber.name || 0
       } else if (type === 'role') {
-        const retrieved = guild.roles.get(id)
-        if (retrieved) finishSubscriptionCheck()
-        else {
-          log.guild.info(`(${id}, ${subscriber.name}) Nonexistent subscriber ${id} (${type}). Preparing for removal`, guild)
+        const role = guild.roles.get(id)
+        if (!role) {
           idsToRemove.push(id)
-          finishSubscriptionCheck()
+        } else if (role.name !== subscriber.name) {
+          subscriber.name = role.name
+          toUpdate = true
         }
       } else {
         idsToRemove.push(id)
-        log.guild.info(`Invalid subscriber type for member shown below. Preparing for removal.`, guild)
-        console.log(subscriber)
-        finishSubscriptionCheck()
       }
     }
   }
+
+  const userFetches = await Promise.all(fetchUserPromises)
+  const subscriberUserNamesToUpdate = {}
+  for (let i = 0; i < userFetches.length; ++i) {
+    const user = userFetches[i]
+    const id = fetchUserIDRecord[i]
+    if (!user) idsToRemove.push(id)
+    else if (subscriberUserNames[id] !== user.username) {
+      subscriberUserNamesToUpdate[id] = user.username
+      toUpdate = true
+    }
+  }
+
+  if (idsToRemove.length === 0 && !toUpdate) return false
+
+  for (const rssName in rssList) {
+    const subscribers = rssList[rssName].subscribers
+    if (!subscribers) continue
+    for (let i = subscribers.length - 1; i >= 0; --i) {
+      const subscriber = subscribers[i]
+      const id = subscriber.id
+      if (idsToRemove.includes(id)) subscribers.splice(i, 1)
+      else if (subscriberUserNamesToUpdate[id]) subscriber.name = subscriberUserNamesToUpdate[id]
+    }
+    if (subscribers.length === 0) delete rssList[rssName].subscribers
+  }
+
+  return true
 }
 
 exports.config = (bot, guildRss, rssName, logging) => {
@@ -149,6 +159,7 @@ exports.config = (bot, guildRss, rssName, logging) => {
   }
 }
 
+// Returns true or false whether the calling function should update
 exports.version = guildRss => {
   const guildVersion = guildRss.version
   let changed = false
@@ -182,5 +193,5 @@ exports.version = guildRss => {
       }
     }
   }
-  return changed ? dbOps.guildRss.update(guildRss) : null
+  return changed
 }
