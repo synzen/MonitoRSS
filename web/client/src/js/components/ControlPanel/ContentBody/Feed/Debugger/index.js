@@ -83,9 +83,7 @@ function articleToString (article) {
 
 function getDiff (dateStr) {
   const now = moment()
-  console.log(1)
   const original = moment(dateStr)
-  console.log(12)
   const secondsDiff = now.diff(original, 'seconds')
   if (secondsDiff < 60) return `${secondsDiff}s`
   const minutesDiff = now.diff(original, 'minutes')
@@ -95,7 +93,7 @@ function getDiff (dateStr) {
   const daysDiff = now.diff(original, 'days')
   const monthsDiff = now.diff(original, 'months')
   if (monthsDiff >= 1) return `${monthsDiff}mo`
-  return `${daysDiff}d ${hoursDiff}h`
+  return `${daysDiff}d ${hoursDiff - (24 * daysDiff)}h`
 }
 
 const jsonViewModalProps = {
@@ -281,7 +279,7 @@ function Debugger (props) {
     for (const articleID of toBeDelivered) {
       const article = articleListById[articleID]
       if (!article.date) continue
-      const articleMoment = moment(article.date)
+      const articleMoment = moment(article._fullDate)
       if (!earliestArticleMoment || (articleMoment < earliestArticleMoment)) earliestArticleMoment = articleMoment
     }
     if (!earliestArticleMoment) etaAvailable = 'Unresolvable'
@@ -289,6 +287,14 @@ function Debugger (props) {
       const toAdd = feed.lastRefreshRateMin || config.refreshTimeMinutes
       earliestArticleMoment.add(toAdd, 'minutes')
       etaAvailable = `${earliestArticleMoment.diff(moment(), 'minutes')} minutes`
+    }
+  }
+
+  let latestArticleMoment = null
+  if (feed) {
+    for (const article of articleList) {
+      const mom = moment(article._fullDate)
+      if (!latestArticleMoment || mom > latestArticleMoment) latestArticleMoment = mom
     }
   }
 
@@ -342,7 +348,7 @@ function Debugger (props) {
 
       { !allArticlesHaveDates && checkDate ? <AlertBox warn>Date checking is turned on but some articles in this feed have missing dates. Date checking will cause such articles to never be delivered - be sure to turn it off in Misc Options.</AlertBox> : null }
       <Divider />
-      <SectionTitle heading='Details' subheading='Note that these are predictions, and may not be indicative of actual behavior. Custom Comparisons are not accounted for here. New articles are defined as new if they are added to the feed *past* the time of addition.' />
+      <SectionTitle heading='Details' subheading={<span>Note that these are predictions, and may not be indicative of actual behavior. New articles are defined as new if they are added to the feed <b>past the time of addition</b>.</span>} />
 
       <SectionSubtitle>Default Algorithm</SectionSubtitle>
       <DetailButton title='New Articles' number={newArticles.length} numberColor={newArticles.length > 0 ? colors.discord.yellow : null}>
@@ -372,7 +378,7 @@ function Debugger (props) {
       <SectionTitle heading='Summary' />
       <p style={{ fontSize: '16px' }}>
         { newArticles.length === 0 && passedCustomComparisons.length === 0
-          ? `No new articles detected at this time. Once new articles are found, please wait at least ${waitDuration} for them to be delivered.`
+          ? `No new articles detected at this time.${latestArticleMoment ? ` The newest article currently in the feed was posted ${getDiff(latestArticleMoment)} ago.` : ``} Once new articles are found, please wait at least ${waitDuration} for them to be delivered.`
           : newArticles.length === 0 && passedCustomComparisons.length > 0
             ? `New articles were found through custom comparisons (while none were found through the default algorithm). Please wait at least ${waitDuration} for them to be delivered.`
             : newArticles.length > 0 && passedCustomComparisons.length > 0
