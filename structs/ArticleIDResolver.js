@@ -23,7 +23,7 @@ class ArticleIDResolver {
 
   recordArticle (article) {
     const { useIdTypes, idsRecorded } = this
-    for (const idType in useIdTypes) {      
+    for (const idType in useIdTypes) {
       if (!useIdTypes[idType]) continue
       const articleValue = this.constructor.getIdTypeValue(article, idType)
       if (!articleValue || idsRecorded[idType][articleValue]) {

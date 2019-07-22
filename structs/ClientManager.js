@@ -1,5 +1,3 @@
-const fs = require('fs')
-const path = require('path')
 const config = require('../config.js')
 const storage = require('../util/storage.js')
 const connectDb = require('../rss/db/connect.js')

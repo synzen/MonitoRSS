@@ -2,8 +2,6 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const requestStream = require('../rss/request.js')
 const dbOps = require('../util/dbOps.js')
-const FeedSelector = require('../structs/FeedSelector.js')
-const MenuUtils = require('../structs/MenuUtils.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {

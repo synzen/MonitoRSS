@@ -95,9 +95,6 @@ module.exports = async (bot, vipApiData) => {
     if (shouldUpdate) updatePromises.push(dbOps.guildRss.update(guildRss))
   }
 
-  let c = 0
-  const total = bot.guilds.size
-
   // Redis is only for UI use
   const redisPromises = []
   const restorePromises = []
@@ -106,7 +103,7 @@ module.exports = async (bot, vipApiData) => {
   await Promise.all(updatePromises)
   bot.guilds.forEach((guild, guildId) => {
     redisPromises.push(redisOps.guilds.recognize(guild)) // This will recognize all guild info, members, channels and roles
-    if (guildsInfo[guildId]) return  // If the guild profile exists, then mark as completed - otherwise check for backups
+    if (guildsInfo[guildId]) return // If the guild profile exists, then mark as completed - otherwise check for backups
     // const id = guildId
     restorePromises.push(dbOps.guildRss.restore(guildId))
     restorePromisesIDRecord.push(guildId)
@@ -142,7 +139,7 @@ module.exports = async (bot, vipApiData) => {
   const dropIndexPromises = []
   for (var obj of linkTrackerArr) {
     // These indexes allow articles to auto-expire - if it is 0, remove such indexes
-    if (config.database.articlesExpire === 0) dropIndexPromises.push(dbOps.feeds.dropIndexes(obj.link, linkTracker.shardId, obj.scheduleName))      
+    if (config.database.articlesExpire === 0) dropIndexPromises.push(dbOps.feeds.dropIndexes(obj.link, linkTracker.shardId, obj.scheduleName))
   }
 
   await Promise.all(dropIndexPromises)
