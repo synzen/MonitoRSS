@@ -1,11 +1,11 @@
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const moment = require('moment')
-const dbOps = require('../util/dbOps.js')
+const dbOpsStatistics = require('../util/db/statistics.js')
 
 module.exports = async (bot, message) => {
   try {
-    const results = await dbOps.statistics.getAll()
+    const results = await dbOpsStatistics.getAll()
     if ((bot.shard && bot.shard.count > results.length) || results.length === 0) return await message.channel.send('More time is needed to gather enough information. Try again later.')
 
     let shardCount = 0

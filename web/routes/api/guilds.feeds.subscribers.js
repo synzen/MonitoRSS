@@ -1,11 +1,11 @@
 const express = require('express')
 const feedSubscriptions = express.Router({ mergeParams: true })
-const dbOps = require('../../../util/dbOps.js')
+const dbOpsGuilds = require('../../../util/db/guilds.js')
 const isObject = obj => typeof obj === 'object' && obj !== null && !Array.isArray(obj)
-const redisOps = require('../../../util/redisOps.js')
+const RedisRole = require('../../../structs/db/Redis/Role.js')
 
 function checkSubscriptionExist (req, res, next) {
-  const id = req.params.subscriberId
+  const id = req.params.subscriberID
   const source = req.source
   const subscribers = source.subscribers
   if (!subscribers) return res.status(404).json({ code: 404, message: 'Unknown Subscriber' })
@@ -22,7 +22,7 @@ function checkSubscriptionExist (req, res, next) {
 async function putFeedSubscription (req, res, next) {
   // TO DO: If user support is ever added, the tests must be written
   try {
-    const guildId = req.guildRss.id // Provided earlier in the middleware
+    const guildID = req.guildRss.id // Provided earlier in the middleware
     const type = req.body.type
     const id = req.body.id
     const filters = req.body.filters
@@ -36,12 +36,15 @@ async function putFeedSubscription (req, res, next) {
     //   if (cached) toPush.name = cached.username
     //   else {
     //     return res.status(401).json({ code: 401, message: 'Unsupported' })
-    // log.web.info(`[1 DISCORD API REQUEST] [BOT] POST /api/guilds/:guildId/feeds/:feedId/subscribers`)
+    // log.web.info(`[1 DISCORD API REQUEST] [BOT] POST /api/guilds/:guildID/feeds/:feedID/subscribers`)
     // const response = (await axios.get(`${discordAPIConstants.apiHost}/users/${id}`, BOT_HEADERS))
     // toPush.name = response.data.username
     // }
     // } else {
-    const [ partOfGuild, roleName ] = await Promise.all([ redisOps.roles.isRoleOfGuild(id, guildId), redisOps.roles.getValue(id, 'name') ])
+    const role = await RedisRole.fetch(id)
+    if (!role) return res.status(404).json({ code: 404, message: 'Unknown Role' })
+    const partOfGuild = role.guildID === guildID
+    const roleName = role.name
     if (!partOfGuild) return res.status(403).json({ code: 403, message: `Role is not in guild` })
     if (roleName === '@everyone') return res.status(403).json({ code: 403, message: '@everyone role cannot be a subscriber' })
     toPush.name = roleName
@@ -57,7 +60,7 @@ async function putFeedSubscription (req, res, next) {
     if (filters) toPush.filters = filters
     if (!req.source.subscribers) req.source.subscribers = []
     req.source.subscribers.push(toPush)
-    await dbOps.guildRss.update(req.guildRss)
+    await dbOpsGuilds.update(req.guildRss)
     res.status(201).json(toPush)
   } catch (err) {
     next(err)
@@ -65,8 +68,7 @@ async function putFeedSubscription (req, res, next) {
 }
 
 feedSubscriptions.put('/', putFeedSubscription)
-
-feedSubscriptions.use('/:subscriberId', checkSubscriptionExist)
+feedSubscriptions.use('/:subscriberID', checkSubscriptionExist)
 
 async function patchFeedSubscription (req, res, next) {
   try {
@@ -86,7 +88,7 @@ async function patchFeedSubscription (req, res, next) {
     if (filters === '') delete subscriber.filters
     else subscriber.filters = filters
 
-    const result = await dbOps.guildRss.update(req.guildRss)
+    const result = await dbOpsGuilds.update(req.guildRss)
     req.patchResult = result
     next()
   } catch (err) {
@@ -98,7 +100,7 @@ async function deleteFeedSubscription (req, res, next) {
   try {
     req.source.subscribers.splice(req.subscriberIndex, 1)
     if (req.source.subscribers.length === 0) delete req.source.subscribers
-    const result = await dbOps.guildRss.update(req.guildRss)
+    const result = await dbOpsGuilds.update(req.guildRss)
     req.deleteResult = result
     next()
   } catch (err) {
@@ -106,8 +108,8 @@ async function deleteFeedSubscription (req, res, next) {
   }
 }
 
-feedSubscriptions.patch('/:subscriberId', patchFeedSubscription)
-feedSubscriptions.delete('/:subscriberId', deleteFeedSubscription)
+feedSubscriptions.patch('/:subscriberID', patchFeedSubscription)
+feedSubscriptions.delete('/:subscriberID', deleteFeedSubscription)
 
 module.exports = {
   middleware: {

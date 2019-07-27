@@ -397,6 +397,7 @@ class Subscriptions extends Component {
       this.props.toDashboard()
       return <Redirect to='/' />
     }
+    console.log(roles)
     const rolesById = roles[guildId]
     const subscribersArr = []
     // const subscribers = (subscriptions[guildId] && subscriptions[guildId][feedId] ? subscriptions[guildId][feedId] : []).map(subscriber => {

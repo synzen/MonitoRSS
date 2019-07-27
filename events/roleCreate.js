@@ -1,6 +1,6 @@
 const log = require('../util/logger.js')
-const redisOps = require('../util/redisOps.js')
+const RedisRole = require('../structs/db/Redis/Role.js')
 
 module.exports = async role => {
-  redisOps.roles.recognize(role).catch(err => log.general.error(`Redis failed to recognize after roleCreate event`, role.guild, role, err))
+  RedisRole.utils.recognize(role).catch(err => log.general.error(`Redis failed to recognize after roleCreate event`, role.guild, role, err))
 }

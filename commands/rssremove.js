@@ -1,12 +1,12 @@
 const config = require('../config.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
     if (!data) return
@@ -18,11 +18,11 @@ module.exports = async (bot, message, command) => {
     for (var i = 0; i < rssNameList.length; ++i) {
       const link = guildRss.sources[rssNameList[i]].link
       try {
-        await dbOps.guildRss.removeFeed(guildRss, rssNameList[i])
+        await dbOpsGuilds.removeFeed(guildRss, rssNameList[i])
         removed += `\n${link}`
         log.guild.info(`Removed feed ${link}`, message.guild)
       } catch (err) {
-        log.guild.error(`Failed to remove feed ${link}`, message.guild, err)
+        log.guild.error(`Failed to remove feed ${link}`, message.guild, err, true)
         errors.push(err)
       }
     }

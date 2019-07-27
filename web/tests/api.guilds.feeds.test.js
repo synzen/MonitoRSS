@@ -3,8 +3,9 @@ process.env.NODE_ENV = 'test'
 process.env.DRSS_EXPERIMENTAL_FEATURES = 'true'
 
 const httpMocks = require('node-mocks-http')
-const dbOps = require('../../util/dbOps.js')
-const redisOps = require('../../util/redisOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
+const RedisChannel = require('../../structs/db/Redis/Channel.js')
+const RedisGuild = require('../../structs/db/Redis/Guild.js')
 const guildFeedsRoute = require('../routes/api/guilds.feeds.js')
 const serverLimit = require('../../util/serverLimit.js')
 const initialize = require('../../rss/initialize.js')
@@ -12,24 +13,31 @@ const getArticles = require('../../rss/getArticle.js')
 const Article = require('../../structs/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 
-jest.mock('../../util/dbOps.js')
-jest.mock('../../util/redisOps.js')
+jest.mock('../../util/db/guilds.js')
+jest.mock('../../structs/db/Redis/Channel.js')
+jest.mock('../../structs/db/Redis/Guild.js')
 jest.mock('../../util/serverLimit.js')
 jest.mock('../../rss/initialize.js')
 jest.mock('../../rss/getArticle.js')
 jest.mock('../../structs/Article.js')
 jest.mock('../../structs/ArticleIDResolver.js')
 
-describe('/api/guilds/:guildId/feeds', function () {
-  const userId = 'georgie'
+ArticleIDResolver.getIDTypeValue = jest.fn()
+
+RedisChannel.utils = {
+  isChannelOfGuild: jest.fn(() => Promise.resolve())
+}
+
+describe('/api/guilds/:guildID/feeds', function () {
+  const userID = 'georgie'
   const session = {
     identity: {
-      id: userId
+      id: userID
     }
   }
   const params = {
-    guildId: '9887',
-    feedId: '34y54yhb'
+    guildID: '9887',
+    feedID: '34y54yhb'
   }
   describe('middleware checkGuildFeedExists', function () {
     it('returns 404 if there is no guildRss', function () {
@@ -61,7 +69,7 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(data.message).toEqual('Unknown Feed')
     })
     it('calls next() if feed is found', function (done) {
-      const guildRss = { sources: { id1: {}, [params.feedId]: {}, id3: {} } }
+      const guildRss = { sources: { id1: {}, [params.feedID]: {}, id3: {} } }
       const request = httpMocks.createRequest({ session, params, guildRss })
       const response = httpMocks.createResponse()
       guildFeedsRoute.middleware.checkGuildFeedExists(request, response, nextErr => {
@@ -71,13 +79,13 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(response.statusCode).toEqual(200)
     })
     it('attaches source to req.source if feed is found', function (done) {
-      const guildRss = { sources: { id1: {}, [params.feedId]: { foo: 'bar' }, id3: {} } }
+      const guildRss = { sources: { id1: {}, [params.feedID]: { foo: 'bar' }, id3: {} } }
       const request = httpMocks.createRequest({ session, params, guildRss })
       const response = httpMocks.createResponse()
       guildFeedsRoute.middleware.checkGuildFeedExists(request, response, nextErr => {
         if (nextErr) return done(nextErr)
         try {
-          expect(request.source).toEqual(guildRss.sources[params.feedId])
+          expect(request.source).toEqual(guildRss.sources[params.feedID])
           done()
         } catch (err) {
           done(err)
@@ -87,15 +95,9 @@ describe('/api/guilds/:guildId/feeds', function () {
     })
   })
   describe('POST /', function () {
-    beforeAll(function () {
-      redisOps.guilds.getValue.mockResolvedValue(1)
-    })
-    afterAll(function () {
-      redisOps.guilds.getValue.mockReset()
-    })
     afterEach(function () {
-      redisOps.channels.isChannelOfGuild.mockReset()
-      redisOps.guilds.getValue.mockReset()
+      // redisOps.channels.isChannelOfGuild.mockReset()
+      // redisOps.guilds.getValue.mockReset()
       initialize.addNewFeed.mockReset()
     })
     it('returns 400 if body is missing link', async function () {
@@ -193,7 +195,7 @@ describe('/api/guilds/:guildId/feeds', function () {
     })
     it('returns 403 if feed already exists', async function () {
       const body = { link: 'sdf', channel: 'w3t4' }
-      const guildRss = { sources: { id1: {}, [params.feedId]: { link: body.link, channel: body.channel } } }
+      const guildRss = { sources: { id1: {}, [params.feedID]: { link: body.link, channel: body.channel } } }
       const request = httpMocks.createRequest({ session, params, guildRss, body })
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
@@ -203,13 +205,28 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(data.code).toEqual(403)
       expect(data.message).toEqual('Feed already exists for this channel')
     })
-    it('returns 403 if channel is not part of guild', async function () {
+    it('returns 404 if channel is not found', async function () {
       const body = { link: 'sdf', channel: 'w3t4' }
       const guildRss = { sources: { id1: {} } }
       const request = httpMocks.createRequest({ session, params, guildRss, body })
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(false)
+      RedisChannel.fetch.mockResolvedValueOnce(null)
+      await guildFeedsRoute.routes.postFeed(request, response)
+      expect(response.statusCode).toEqual(404)
+      const data = JSON.parse(response._getData())
+      expect(data.code).toEqual(404)
+      expect(data.message).toEqual('Unknown Channel')
+    })
+    it('returns 403 if channel is not part of guild', async function () {
+      const body = { link: 'sdf', channel: 'w3t4' }
+      const guildID = '124r3e4tr'
+      const guildRss = { id: guildID, sources: { id1: {} } }
+      const request = httpMocks.createRequest({ session, params, guildRss, body })
+      const response = httpMocks.createResponse()
+      const channel = { guildID: guildID + '123' }
+      serverLimit.mockResolvedValueOnce({ max: 100 })
+      RedisChannel.fetch.mockResolvedValueOnce(channel)
       await guildFeedsRoute.routes.postFeed(request, response)
       expect(response.statusCode).toEqual(403)
       const data = JSON.parse(response._getData())
@@ -219,11 +236,13 @@ describe('/api/guilds/:guildId/feeds', function () {
     })
     it('returns 403 if util addNewFeed function throws an error of exists for this channel', async function () {
       const body = { link: 'sdf', channel: 'w3t4' }
-      const guildRss = { sources: { id1: {} } }
-      const request = httpMocks.createRequest({ session, params, guildRss, body })
+      const guildID = params.guildID
+      const guildRss = { id: guildID, sources: { id1: {} } }
+      const request = httpMocks.createRequest({ session, params, guildRss, body, guild: {} })
       const response = httpMocks.createResponse()
+      const channel = { guildID }
       serverLimit.mockResolvedValueOnce({ max: 100 })
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.fetch.mockResolvedValueOnce(channel)
       const error = new Error('exists for this channel')
       initialize.addNewFeed.mockRejectedValueOnce(error)
       await guildFeedsRoute.routes.postFeed(request, response)
@@ -234,11 +253,13 @@ describe('/api/guilds/:guildId/feeds', function () {
     })
     it('returns 500 if util addNewFeed function throws an error of feed connection failed', async function () {
       const body = { link: 'sdf', channel: 'w3t4' }
-      const guildRss = { sources: { id1: {} } }
-      const request = httpMocks.createRequest({ session, params, guildRss, body })
+      const guildID = params.guildID
+      const guildRss = { id: guildID, sources: { id1: {} } }
+      const channel = { guildID }
+      const request = httpMocks.createRequest({ session, params, guildRss, body, guild: {} })
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.fetch.mockResolvedValueOnce(channel)
       const error = new Error('Connection failed')
       initialize.addNewFeed.mockRejectedValueOnce(error)
       await guildFeedsRoute.routes.postFeed(request, response)
@@ -249,11 +270,13 @@ describe('/api/guilds/:guildId/feeds', function () {
     })
     it('returns 400 if util addNewFeed function throws an error of invalid feed', async function () {
       const body = { link: 'sdf', channel: 'w3t4' }
-      const guildRss = { sources: { id1: {} } }
-      const request = httpMocks.createRequest({ session, params, guildRss, body })
+      const guildID = params.guildID
+      const guildRss = { id: guildID, sources: { id1: {} } }
+      const channel = { guildID }
+      const request = httpMocks.createRequest({ session, params, guildRss, body, guild: {} })
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.fetch.mockResolvedValueOnce(channel)
       const error = new Error('invalid feed')
       initialize.addNewFeed.mockRejectedValueOnce(error)
       await guildFeedsRoute.routes.postFeed(request, response)
@@ -264,11 +287,13 @@ describe('/api/guilds/:guildId/feeds', function () {
     })
     it('calls next(err) util addNewFeed function throws an unrecognized error', async function (done) {
       const body = { link: 'sdf', channel: 'w3t4' }
-      const guildRss = { sources: { id1: {} } }
-      const request = httpMocks.createRequest({ session, params, guildRss, body })
+      const guildID = params.guildID
+      const guildRss = { id: guildID, sources: { id1: {} } }
+      const channel = { guildID }      
+      const request = httpMocks.createRequest({ session, params, guildRss, body, guild: {} })
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.fetch.mockResolvedValueOnce(channel)
       const error = new Error('akijfrogishngeou')
       initialize.addNewFeed.mockRejectedValueOnce(error)
       await guildFeedsRoute.routes.postFeed(request, response, nextErr => {
@@ -283,31 +308,35 @@ describe('/api/guilds/:guildId/feeds', function () {
     })
     it('returns 201 if util addNewFeed function is successful', async function () {
       const body = { link: 'sdf', channel: 'w3t4' }
-      const guildRss = { sources: { id1: {} } }
+      const guildID = params.guildID
+      const guildRss = { id: guildID, sources: { id1: {} } }
+      const channel = { guildID }
       const addNewFeedReturn = [ 'resolved url', 'meta title', 'rssname' ]
-      const request = httpMocks.createRequest({ session, params, guildRss, body })
+      const request = httpMocks.createRequest({ session, params, guildRss, body, guild: {} })
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.fetch.mockResolvedValueOnce(channel)
       initialize.addNewFeed.mockResolvedValueOnce(addNewFeedReturn)
       await guildFeedsRoute.routes.postFeed(request, response)
       expect(response.statusCode).toEqual(201)
     })
     it('returns the correct json if util addNewFeed function is successful', async function () {
       const body = { link: 'sdf', channel: 'w3t4' }
-      const guildRss = { sources: { id1: {} } }
+      const guildID = params.guildID
+      const guildRss = { id: guildID, sources: { id1: {} } }
+      const channel = { guildID }
       const addNewFeedReturn = [ 'resolved url', 'meta title', 'rssname' ]
-      const request = httpMocks.createRequest({ session, params, guildRss, body })
+      const request = httpMocks.createRequest({ session, params, guildRss, body, guild: {} })
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.fetch.mockResolvedValueOnce(channel)
       initialize.addNewFeed.mockResolvedValueOnce(addNewFeedReturn)
       await guildFeedsRoute.routes.postFeed(request, response)
       const data = JSON.parse(response._getData())
       expect(data).toEqual({ _rssName: addNewFeedReturn[2], title: addNewFeedReturn[1], channel: body.channel, link: addNewFeedReturn[0] })
     })
   })
-  describe('GET /:feedId', function () {
+  describe('GET /:feedID', function () {
     afterEach(function () {
       getArticles.mockReset()
       Article.mockReset()
@@ -331,7 +360,7 @@ describe('/api/guilds/:guildId/feeds', function () {
           this.raw = article
           for (const key in article) this[key] = article[key]
         })
-        ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
+        ArticleIDResolver.getIDTypeValue.mockImplementationOnce(() => articleID)
       }
 
       getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
@@ -406,7 +435,7 @@ describe('/api/guilds/:guildId/feeds', function () {
           this._fullSummary = _fullSummary
           this._fullDate = _fullDate
         })
-        ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
+        ArticleIDResolver.getIDTypeValue.mockImplementationOnce(() => articleID)
       }
 
       const expectedResponse = [{
@@ -453,7 +482,7 @@ describe('/api/guilds/:guildId/feeds', function () {
             }
           )
         })
-        ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
+        ArticleIDResolver.getIDTypeValue.mockImplementationOnce(() => articleID)
       }
 
       getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
@@ -519,18 +548,18 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(JSON.parse(response._getData()).message).toEqual(error.message)
     })
   })
-  describe('DELETE /:feedId', function () {
+  describe('DELETE /:feedID', function () {
     afterEach(function () {
-      dbOps.guildRss.removeFeed.mockReset()
+      dbOpsGuilds.removeFeed.mockReset()
     })
     it('calls guildRss.removeFeed', async function (done) {
       const request = httpMocks.createRequest({ session, params, guildRss: {} })
       const response = httpMocks.createResponse()
-      dbOps.guildRss.removeFeed.mockResolvedValueOnce(true)
+      dbOpsGuilds.removeFeed.mockResolvedValueOnce(true)
       await guildFeedsRoute.routes.deleteFeed(request, response, nextErr => {
         if (nextErr) return done(nextErr)
         try {
-          expect(dbOps.guildRss.removeFeed).toHaveBeenCalledTimes(1)
+          expect(dbOpsGuilds.removeFeed).toHaveBeenCalledTimes(1)
           done()
         } catch (err) {
           done(err)
@@ -542,7 +571,7 @@ describe('/api/guilds/:guildId/feeds', function () {
       const request = httpMocks.createRequest({ session, params, guildRss: {} })
       const response = httpMocks.createResponse()
       const error = new Error('asd hsng ohdt')
-      dbOps.guildRss.removeFeed.mockRejectedValueOnce(error)
+      dbOpsGuilds.removeFeed.mockRejectedValueOnce(error)
       await guildFeedsRoute.routes.deleteFeed(request, response, nextErr => {
         try {
           expect(nextErr).toEqual(error)
@@ -555,10 +584,10 @@ describe('/api/guilds/:guildId/feeds', function () {
     })
   })
 
-  describe('PATCH /:feedId', function () {
+  describe('PATCH /:feedID', function () {
     afterEach(function () {
-      redisOps.channels.isChannelOfGuild.mockReset()
-      dbOps.guildRss.update.mockReset()
+      RedisChannel.utils.isChannelOfGuild.mockReset()
+      dbOpsGuilds.update.mockReset()
     })
     it('returns a 400 on invalid body keys', async function () {
       const body = { invalid1: 'ad', invalid2: null, invalid3: undefined, invalid4: 1, invalid5: [] }
@@ -603,7 +632,7 @@ describe('/api/guilds/:guildId/feeds', function () {
       const body = { title: '123', message: '123', channel: '123', checkTitles: true, checkDates: true, imgPreviews: true, imgLinksExistence: true, formatTables: true, toggleRoleMentions: true }
       const request = httpMocks.createRequest({ session, params, body, source: {} })
       const response = httpMocks.createResponse()
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(false)
+      RedisChannel.utils.isChannelOfGuild.mockResolvedValueOnce(false)
       await guildFeedsRoute.routes.patchFeed(request, response)
       expect(response.statusCode).toEqual(403)
       const data = JSON.parse(response._getData())
@@ -616,7 +645,7 @@ describe('/api/guilds/:guildId/feeds', function () {
       const source = { key: 'hoaa', doa: 'adf' }
       const request = httpMocks.createRequest({ session, params, body, source })
       const response = httpMocks.createResponse()
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.utils.isChannelOfGuild.mockResolvedValueOnce(true)
       await guildFeedsRoute.routes.patchFeed(request, response, nextErr => {
         if (nextErr) return done(nextErr)
         try {
@@ -639,7 +668,7 @@ describe('/api/guilds/:guildId/feeds', function () {
       }
       const request = httpMocks.createRequest({ session, params, body, source })
       const response = httpMocks.createResponse()
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.utils.isChannelOfGuild.mockResolvedValueOnce(true)
       await guildFeedsRoute.routes.patchFeed(request, response, nextErr => {
         if (nextErr) return done(nextErr)
         try {
@@ -655,11 +684,11 @@ describe('/api/guilds/:guildId/feeds', function () {
       const body = { title: '123', message: '123', channel: '123', checkTitles: true, checkDates: true, imgPreviews: true, imgLinksExistence: true, formatTables: true, toggleRoleMentions: true }
       const request = httpMocks.createRequest({ session, params, body, source: {} })
       const response = httpMocks.createResponse()
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
+      RedisChannel.utils.isChannelOfGuild.mockResolvedValueOnce(true)
       await guildFeedsRoute.routes.patchFeed(request, response, nextErr => {
         if (nextErr) return done(nextErr)
         try {
-          expect(dbOps.guildRss.update).toHaveBeenCalledTimes(1)
+          expect(dbOpsGuilds.update).toHaveBeenCalledTimes(1)
           done()
         } catch (err) {
           done(err)

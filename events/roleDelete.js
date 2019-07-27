@@ -1,16 +1,17 @@
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const log = require('../util/logger.js')
-const redisOps = require('../util/redisOps.js')
+const RedisRole = require('../structs/db/Redis/Role.js')
+const RedisGuildMember = require('../structs/db/Redis/GuildMember.js')
 const MANAGE_CHANNELS_PERM = 'MANAGE_CHANNELS'
 
 module.exports = async role => {
-  if (redisOps.client.exists()) {
-    redisOps.roles.forget(role).catch(err => log.general.error(`Redis failed to forget after roleDelete event`, role.guild, role, err))
-    if (role.hasPermission(MANAGE_CHANNELS_PERM)) role.members.forEach(member => redisOps.members.removeManager(member).catch(err => log.general.error(`Redis failed to removeManager after roleDelete event`, member.guild, member, err)))
+  if (RedisRole.clientExists) {
+    RedisRole.utils.forget(role).catch(err => log.general.error(`Redis failed to forget after roleDelete event`, role.guild, role, err))
+    if (role.hasPermission(MANAGE_CHANNELS_PERM)) role.members.forEach(member => RedisGuildMember.utils.forgetManager(member).catch(err => log.general.error(`Redis failed to forgetManager after roleDelete event`, member.guild, member, err)))
   }
 
   try {
-    const guildRss = await dbOps.guildRss.get(role.guild.id)
+    const guildRss = await dbOpsGuilds.get(role.guild.id)
 
     if (!guildRss || !guildRss.sources || !Object.keys(guildRss.sources).length === 0) return
     const rssList = guildRss.sources
@@ -42,7 +43,7 @@ module.exports = async role => {
     }
 
     if (!edited) return
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
     log.guild.info(`Role has been removed from config by guild role deletion`, role.guild, role)
   } catch (err) {
     log.guild.warning(`Role could not be removed from config by guild role deletion`, role.guild, role, err)

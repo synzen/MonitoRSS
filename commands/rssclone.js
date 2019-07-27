@@ -1,5 +1,5 @@
 const config = require('../config.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -33,7 +33,7 @@ async function confirmFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const sourceSelector = new FeedSelector(message, undefined, { command: command, prependDescription: 'Select the source to copy from.', globalSelect: true }, guildRss)
     const destSelector = new FeedSelector(message, destSelectorFn, { command: command, prependDescription: 'Select the destination(s) to copy to.', multiSelect: true, globalSelect: true }, guildRss)
     const confirm = new MenuUtils.Menu(message, confirmFn, { splitOptions: { prepend: '```', append: '```' } })
@@ -111,7 +111,7 @@ module.exports = async (bot, message, command) => {
     })
 
     log.command.info(`Properties ${data.clonedProps.join(',')} for the feed ${sourceFeed.link} cloning to to ${destLinksCount} feeds`, message.guild)
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
     await m.edit(`The following settings\n\n\`${data.clonedProps.join('`, `')}\`\n\nfor the feed <${sourceFeed.link}> have been successfully cloned into ${destLinksCount} feed(s). After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } catch (err) {
     log.command.warning(`rssclone`, message.guild, err)

@@ -4,7 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MIN_PERMISSION_BOT = ['VIEW_CHANNEL', 'SEND_MESSAGES']
 const MIN_PERMISSION_USER = ['VIEW_CHANNEL', 'SEND_MESSAGES', 'MANAGE_CHANNELS']
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 
 async function selectChannelFn (m, data) {
   const { guildRss, rssNameList } = data
@@ -49,14 +49,14 @@ async function selectChannelFn (m, data) {
     summary.push(`<${source.link}>`)
   }
   log.command.info(`Channel for feeds ${summary.join(',')} moving to to ${selected.id} (${selected.name})`, m.guild, m.channel)
-  await dbOps.guildRss.update(guildRss)
+  await dbOpsGuilds.update(guildRss)
   m.channel.send(`The channel for the following feed(s):\n\n${summary.join('\n')}\n\nhave been successfully moved to <#${selected.id}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning('rssmove 1', err))
   return data
 }
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
     const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: 'Mention the channel to move the feed(s) to, or type `this` for this channel.' })
     await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel]).start()

@@ -4,23 +4,24 @@ const debugFeeds = require('../util/debugFeeds.js').list
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
-const dbOps = require('../util/dbOps.js')
-const assignedSchedules = require('../util/assignedSchedules.js')
+const dbOpsSchedules = require('../util/db/schedules.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsVips = require('../util/db/vips.js')
 
 class ScheduleManager {
-  constructor (bot, customSchedules) { // Third parameter is only used when config.database.uri is a databaseless folder path
+  constructor (bot) { // Third parameter is only used when config.database.uri is a databaseless folder path
     this.bot = bot
     this.articleMessageQueue = new ArticleMessageQueue()
     this.scheduleList = []
     storage.scheduleManager = this
     // Set up the default schedule
-    this.scheduleList.push(new FeedSchedule(this.bot, { name: 'default', refreshTimeMinutes: config.feeds.refreshTimeMinutes }, this))
+    // this.scheduleList.push(new FeedSchedule(this.bot, { name: 'default', refreshRateMinutes: config.feeds.refreshRateMinutes }, this))
     // Set up custom schedules
-    if (customSchedules) for (var i = 0; i < customSchedules.length; ++i) this.scheduleList.push(new FeedSchedule(this.bot, customSchedules[i], null, this))
-    for (const schedule of this.scheduleList) {
-      schedule.on('article', this._queueArticle.bind(this))
-      schedule.on('finish', this._finishSchedule.bind(this))
-    }
+    // if (customSchedules) for (var i = 0; i < customSchedules.length; ++i) this.scheduleList.push(new FeedSchedule(this.bot, customSchedules[i], null, this))
+    // for (const schedule of this.scheduleList) {
+    //   schedule.on('article', this._queueArticle.bind(this))
+    //   schedule.on('finish', this._finishSchedule.bind(this))
+    // }
   }
 
   async _queueArticle (article) {
@@ -40,25 +41,40 @@ class ScheduleManager {
     this.articleMessageQueue.sendDelayed()
   }
 
-  addSchedule (schedule) {
-    if (!schedule) throw new TypeError('schedule is not defined for addSchedule')
-    if ((!config._vip || (config._vip && schedule.name !== 'vip')) && (!schedule.refreshTimeMinutes || (!schedule.keywords && !schedule.rssNames))) throw new TypeError('refreshTimeMinutes, keywords or rssNames is missing in schedule to addSchedule')
+  async addSchedule (schedule, assignAllSchedules, doNotStart) {
+    if (!schedule) {
+      throw new TypeError('Undefined schedule')
+    }
+    if (schedule.name !== 'default' && (!schedule.refreshRateMinutes || (!schedule.keywords && !schedule.feedIDs))) {
+      throw new TypeError('refreshRateMinutes, keywords or feedIDs is missing in schedule to addSchedule')
+    }
+    if (this.scheduleList.length === 0 && (!this.bot.shard || this.bot.shard.count === 0)) {
+      await dbOpsSchedules.schedules.clear() // Only clear if it is unsharded, otherwise it's clearing multiple times on multiple shards
+    }
     const feedSchedule = new FeedSchedule(this.bot, schedule, this)
-    feedSchedule.start()
+    await dbOpsSchedules.schedules.add(schedule.name, schedule.refreshRateMinutes)
     this.scheduleList.push(feedSchedule)
     feedSchedule.on('article', this._queueArticle.bind(this))
     feedSchedule.on('finish', this._finishSchedule.bind(this))
-    if (this.bot.shard && this.bot.shard.count > 0) process.send({ _drss: true, type: 'addCustomSchedule', schedule: schedule })
+    if (this.bot.shard && this.bot.shard.count > 0) {
+      process.send({ _drss: true, type: 'addCustomSchedule', schedule: schedule })
+    }
+    if (assignAllSchedules) {
+      await this.assignAllSchedules()
+    }
+    if (!doNotStart) {
+      feedSchedule.start()
+    }
   }
 
-  run (refreshTime) { // Run schedules with respect to their refresh times
+  run (refreshRate) { // Run schedules with respect to their refresh times
     for (var feedSchedule of this.scheduleList) {
-      if (feedSchedule.refreshTime === refreshTime || !refreshTime) {
+      if (feedSchedule.refreshRate === refreshRate) {
         return feedSchedule.run().catch(err => log.cycle.error(`${this.bot.shard && this.bot.shard.count > 0 ? `SH ${this.bot.shard.id} ` : ''}Schedule ${this.name} failed to run cycle`, err))
       }
     }
     // If there is no schedule with that refresh time
-    if (this.bot.shard && this.bot.shard.count > 0) process.send({ _drss: true, type: 'scheduleComplete', refreshTime: refreshTime })
+    if (this.bot.shard && this.bot.shard.count > 0) process.send({ _drss: true, type: 'scheduleComplete', refreshRate })
   }
 
   stopSchedules () {
@@ -73,80 +89,125 @@ class ScheduleManager {
     for (const schedule of this.scheduleList) {
       if (schedule.name === name) return schedule
     }
-    return null
   }
 
-  async assignSchedules () {
-    const guildRssList = await dbOps.guildRss.getAll()
+  getScheduleOfFeedID (feedID) {
+    for (const schedule of this.scheduleList) {
+      if (schedule.feedIDs.has(feedID)) return schedule
+    }
+  }
+
+  async assignAllSchedules () {
+    // Remove the old schedules
+    if (!this.bot.shard || this.bot.shard.count === 0) {
+      // Only clear if it is unsharded, otherwise it's clearing multiple times on multiple shards
+      await dbOpsSchedules.assignedSchedules.clear()
+    }
+
+    const schedulesByName = {}
+    for (const schedule of this.scheduleList) {
+      schedule.feedIDs.clear()
+      schedulesByName[schedule.name] = schedule
+    }
+
+    const guildRssList = await dbOpsGuilds.getAll()
     const vipServers = []
     if (config._vip === true) {
-      const vipUsers = await dbOps.vips.getAll()
+      const vipUsers = await dbOpsVips.getAll()
       for (const vipUser of vipUsers) {
         if (vipUser.invalid) continue
         for (const serverId of vipUser.servers) vipServers.push(serverId)
       }
     }
+    const scheduleDeterminationPromises = []
+    const feedRecords = []
     guildRssList.forEach(guildRss => {
       if (!this.bot.guilds.has(guildRss.id)) return
       const rssList = guildRss.sources
       for (const rssName in rssList) {
-        this.assignScheduleToSource(guildRss, rssName, vipServers)
+        scheduleDeterminationPromises.push(this.determineSchedule(rssName, guildRss, vipServers))
+        feedRecords.push({ feedID: rssName, guildID: guildRss.id, link: rssList[rssName].link })
       }
     })
+    const scheduleNames = await Promise.all(scheduleDeterminationPromises)
+
+    const documentsToInsert = []
+    const AssignedSchedule = storage.models.AssignedSchedule()
+    const shard = this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : -1
+    for (let i = 0; i < scheduleNames.length; ++i) {
+      const scheduleName = scheduleNames[i]
+      const { feedID, link, guildID } = feedRecords[i]
+      schedulesByName[scheduleName].feedIDs.add(feedID)
+      const toInsert = { feedID, schedule: scheduleName, link, guildID, shard }
+      documentsToInsert.push(new AssignedSchedule(toInsert))
+    }
+
+    await dbOpsSchedules.assignedSchedules.setMany(documentsToInsert)
   }
 
-  async assignScheduleToSource (guildRss, rssName, vipServers) {
+  async determineSchedule (rssName, guildRss, vipServers) {
     if (config._vip === true && !vipServers) {
       vipServers = []
-      const vipUsers = await dbOps.vips.getAll()
+      const vipUsers = await dbOpsVips.getAll()
       for (const vipUser of vipUsers) {
         if (vipUser.invalid) continue
         for (const serverId of vipUser.servers) vipServers.push(serverId)
       }
     }
+
+    const shardID = this.bot.shard ? this.bot.shard.id : undefined
     const source = guildRss.sources[rssName]
-    let sourceScheduleName = assignedSchedules.getScheduleName(rssName)
+    let assignedSchedule = await dbOpsSchedules.assignedSchedules.get(rssName, shardID)
 
     // Take care of our VIPs
     if (config._vip === true && !source.link.includes('feed43')) {
       const validVip = vipServers.includes(guildRss.id)
-      const vipSchedule = this.getSchedule('vip')
       if (validVip) {
-        if (sourceScheduleName !== 'vip') {
-          assignedSchedules.setScheduleName(rssName, 'vip')
-          // Only do the below if ran is 0, since on initialization it counted it first already for link tracking purposes
+        if (assignedSchedule !== 'vip') {
+          return 'vip'
         }
-        if (!vipSchedule) this.addSchedule({ name: 'vip', refreshTimeMinutes: config._vipRefreshTimeMinutes ? config._vipRefreshTimeMinutes : 10 }) // Make it
-      } else if (!validVip && sourceScheduleName === 'vip') assignedSchedules.clearScheduleName(rssName)
+      }
     }
 
-    sourceScheduleName = assignedSchedules.getScheduleName(rssName) // Get the new value since it may be different
-
-    if (!sourceScheduleName) {
+    if (!assignedSchedule) {
       for (const schedule of this.scheduleList) {
-        if (schedule.name === 'default') continue
+        if (schedule.name === 'default' || (config._vip === true && schedule.name === 'vip')) continue
         // Check if non-default schedules first
         // rssnames first
-        const sRssNames = schedule.rssNames // Potential array
-        if (sRssNames && sRssNames.includes(rssName)) {
-          assignedSchedules.setScheduleName(rssName, schedule.name)
-          dbOps.linkTracker.increment(source.link, schedule.name).catch(err => log.cycle.warning(`Unable to increment link tracker for link ${source.link} (a)`, err))
-          log.cycle.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${schedule.name} by rssName`)
-          break
+        const feedIDs = schedule.feedIDs // Potential array
+        if (feedIDs && feedIDs.has(rssName)) {
+          return schedule.name
         }
         // keywords second
         const sKeywords = schedule.keywords
         if (!sKeywords) continue
-        sKeywords.forEach(word => {
-          if (!source.link.includes(word)) return
-          assignedSchedules.setScheduleName(rssName, schedule.name) // Assign this feed to this this.schedule so no other feed this.schedule can take it on subsequent cycles
-          dbOps.linkTracker.increment(source.link, schedule.name).catch(err => log.cycle.warning(`Unable to increment link tracker for link ${source.link} (b)`, err))
-          log.cycle.info(`Undelegated feed ${rssName} (${source.link}) has been delegated to custom schedule ${schedule.name} by keywords`)
-        })
+        for (const word of sKeywords) {
+          if (!source.link.includes(word)) continue
+          return schedule.name
+        }
       }
 
-      sourceScheduleName = assignedSchedules.getScheduleName(rssName)
-      if (!sourceScheduleName) assignedSchedules.setScheduleName(rssName, 'default')
+      if (!assignedSchedule) return 'default'
+    }
+  }
+
+  async assignSchedule (feedID, guildRss, vipServers) {
+    const scheduleName = await this.determineSchedule(feedID, guildRss, vipServers)
+    const schedule = this.getSchedule(scheduleName)
+    schedule.feedIDs.add(feedID)
+    await dbOpsSchedules.assignedSchedules.set(feedID, scheduleName, guildRss.sources[feedID].link, guildRss.id)
+    return scheduleName
+  }
+
+  async removeScheduleOfFeed (feedID, link) {
+    const schedule = await this.getScheduleOfFeedID(feedID)
+    if (!schedule) return
+    schedule.feedIDs.delete(feedID)
+    const shardID = this.bot.shard ? this.bot.shard.id : 0
+    await dbOpsSchedules.assignedSchedules.remove(feedID)
+    const assignedSchedules = await dbOpsSchedules.assignedSchedules.getMany(shardID, schedule.name, link)
+    if (assignedSchedules.length === 0 && config.database.uri.startsWith('mongo')) {
+      await storage.models.Feed(link, shardID, schedule.name).collection.drop()
     }
   }
 

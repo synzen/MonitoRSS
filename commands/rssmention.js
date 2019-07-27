@@ -1,5 +1,5 @@
 const Discord = require('discord.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const filters = require('./util/filters.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
@@ -100,7 +100,7 @@ async function deleteSubscription (message, guildRss, role, user) {
   if (!found) await message.channel.send(`This ${role ? 'role' : 'user'} has no subscriptions to remove.`)
   else {
     log.command.info(`Deleting all subscriptions`, message.guild, user || role)
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
     await message.channel.send(`All subscriptions successfully deleted for ${role ? `role \`${role.name}\`` : `user \`${user.username}\``}. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   }
 }
@@ -129,7 +129,7 @@ async function addGlobalSub (message, guildRss, rssName, role, user) {
     })
   }
 
-  await dbOps.guildRss.update(guildRss)
+  await dbOpsGuilds.update(guildRss)
   log.command.info(`Added global subscriber to feed ${source.link}`, message.guild, role || user)
   await message.channel.send(`Global subscriber \`${name}\` successfully added to feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
 }
@@ -150,7 +150,7 @@ async function removeGlobalSub (message, guildRss, rssName, role, user) {
   if (!found) return message.channel.send(`The user \`${user.username}\` is not a global subscriber to this feed.`)
   if (subscribers.length === 0) delete source.subscribers
 
-  await dbOps.guildRss.update(guildRss)
+  await dbOpsGuilds.update(guildRss)
   log.command.info(`Removed global subscription for feed ${source.link}`, message.guild, role || user)
   await message.channel.send(`Successfully removed the global subscription of the ${role ? `role \`${role.name}\`` : `user \`${user.username}#${user.discriminator}\``} from the feed <${source.link}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
 }
@@ -243,7 +243,7 @@ async function selectOptionFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('Cannot add role customizations without any active feeds.')
 
     const rssList = guildRss.sources

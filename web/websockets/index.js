@@ -1,5 +1,5 @@
 const { httpSocketsByGuildId, httpsSocketsByGuildId, guildIdsByHttpSockets, guildIdsByHttpsSockets } = require('./util/directory.js')
-const dbOps = require('../../util/dbOps.js')
+const dbOpsFailedLinks = require('../../util/db/failedLinks.js')
 const log = require('../../util/logger.js')
 
 module.exports = (io, isHttps) => {
@@ -27,7 +27,7 @@ module.exports = (io, isHttps) => {
       getLinkStatus: async link => {
         try {
           let status
-          const doc = await dbOps.failedLinks.get(link)
+          const doc = await dbOpsFailedLinks.get(link)
           if (!doc) status = 0 // OK
           else if (doc.failed) status = doc.failed // FAILED
           else status = doc.count // OK so far

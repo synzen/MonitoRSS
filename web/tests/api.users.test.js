@@ -11,14 +11,20 @@ const httpMocks = require('node-mocks-http')
 // const discordAPIConstants = require('../constants/discordAPI.js')
 // const agent = request.agent(app())
 const fetchUser = require('../util/fetchUser.js')
-const dbOps = require('../../util/dbOps.js')
-const redisOps = require('../../util/redisOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
+const RedisUser = require('../../structs/db/Redis/User.js')
+const RedisGuild = require('../../structs/db/Redis/Guild.js')
 const userRoute = require('../routes/api/users.js')
 
 // config.feeds.max = 1000
 jest.mock('../util/fetchUser.js')
-jest.mock('../../util/dbOps.js')
-jest.mock('../../util/redisOps.js')
+jest.mock('../../util/db/guilds.js')
+jest.mock('../../structs/db/Redis/User.js')
+jest.mock('../../structs/db/Redis/Guild.js')
+
+RedisGuild.utils = {
+  exists: jest.fn(() => Promise.resolve())
+}
 
 describe('/api/users', function () {
   const userId = '53377393422652091224'
@@ -43,7 +49,7 @@ describe('/api/users', function () {
   describe('GET /@me', function () {
     it('returns with redis response if user is cached', async function () {
       const redisResponse = { username: '12325' }
-      redisOps.users.get.mockResolvedValueOnce(redisResponse)
+      RedisUser.fetch.mockResolvedValueOnce({ ...redisResponse, toJSON: () => redisResponse })
       const request = httpMocks.createRequest({ session })
       const response = httpMocks.createResponse()
       await userRoute.routes.getMe(request, response)
@@ -66,7 +72,7 @@ describe('/api/users', function () {
   describe('GET /@bot', function () {
     it('returns the redis response if cached', async function () {
       const redisResponse = { foo: 'baz' }
-      redisOps.users.get.mockResolvedValueOnce(redisResponse)
+      RedisUser.fetch.mockResolvedValueOnce({ ...redisResponse, toJSON: () => redisResponse })
       const request = httpMocks.createRequest({ session })
       const response = httpMocks.createResponse()
       await userRoute.routes.getBot(request, response)
@@ -75,7 +81,7 @@ describe('/api/users', function () {
       expect(data).toEqual(redisResponse)
     })
     it('returns empty object if uncached', async function () {
-      redisOps.users.get.mockResolvedValueOnce(null)
+      RedisUser.fetch.mockResolvedValueOnce(null)
       const request = httpMocks.createRequest({ session })
       const response = httpMocks.createResponse()
       await userRoute.routes.getBot(request, response)
@@ -83,163 +89,162 @@ describe('/api/users', function () {
       const data = JSON.parse(response._getData())
       expect(data).toEqual({})
     })
+  })
 
-    describe('GET /@me/guilds', function () {
-      const MANAGE_CHANNEL_PERMISSION = 16
-      const ADMINISTRATOR_PERMISSION = 8
-      afterEach(function () {
-        fetchUser.guilds.mockClear()
-        redisOps.guilds.exists.mockClear()
-        dbOps.guildRss.get.mockClear()
-      })
-      it('returns no guilds if no API guilds are in cache', async function () {
-        const apiGuilds = [
-          { id: '1' }
-        ]
-        fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
-        redisOps.guilds.exists.mockResolvedValueOnce(0)
-        const request = httpMocks.createRequest({ session })
-        const response = httpMocks.createResponse()
-        await userRoute.routes.getMeGuilds(request, response)
-        expect(response.statusCode).toEqual(200)
-        const data = JSON.parse(response._getData())
-        expect(data).toEqual([])
-      })
-      it('returns only guilds that user is owner of', async function () {
-        const apiGuilds = [
-          { id: '1', owner: true },
-          { id: '2', owner: false }
-        ]
-        const guildRsses = [
-          { foo: 'bar' },
-          { foo: 'baz' }
-        ]
-        const expectedResponse = [
-          {
-            discord: apiGuilds[0],
-            profile: guildRsses[0]
-          }
-        ]
-        fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
-        redisOps.guilds.exists.mockResolvedValueOnce(1)
-        redisOps.guilds.exists.mockResolvedValueOnce(1)
-        dbOps.guildRss.get.mockResolvedValueOnce(guildRsses[0])
-
-        const request = httpMocks.createRequest({ session })
-        const response = httpMocks.createResponse()
-        await userRoute.routes.getMeGuilds(request, response)
-        expect(response.statusCode).toEqual(200)
-        const data = JSON.parse(response._getData())
-        expect(data).toEqual(expectedResponse)
-      })
-      it('returns only guilds that user has MANAGE_CHANNEL permissions in', async function () {
-        const apiGuilds = [
-          { id: '2', permissions: MANAGE_CHANNEL_PERMISSION },
-          { id: '1', permissions: 0 }
-        ]
-        const guildRsses = [
-          { foo: 'bar' },
-          { foo: 'baz' }
-        ]
-        const expectedResponse = [
-          {
-            discord: apiGuilds[0],
-            profile: guildRsses[0]
-          }
-        ]
-        fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
-        redisOps.guilds.exists.mockResolvedValueOnce(1)
-        redisOps.guilds.exists.mockResolvedValueOnce(1)
-
-        dbOps.guildRss.get.mockResolvedValueOnce(guildRsses[0])
-
-        const request = httpMocks.createRequest({ session })
-        const response = httpMocks.createResponse()
-        await userRoute.routes.getMeGuilds(request, response)
-        expect(response.statusCode).toEqual(200)
-        const data = JSON.parse(response._getData())
-        expect(data).toEqual(expectedResponse)
-      })
-      it('returns only guilds that user has ADMINISTRATOR permissions in', async function () {
-        const apiGuilds = [
-          { id: '1wt', permissions: 0 },
-          { id: '2sg', permissions: ADMINISTRATOR_PERMISSION }
-        ]
-        const guildRsses = [
-          { foo: 'bar' },
-          { foo: 'baz' }
-        ]
-        const expectedResponse = [
-          {
-            discord: apiGuilds[1],
-            profile: guildRsses[1]
-          }
-        ]
-        fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
-        redisOps.guilds.exists.mockResolvedValueOnce(1)
-        redisOps.guilds.exists.mockResolvedValueOnce(1)
-
-        dbOps.guildRss.get.mockResolvedValueOnce(guildRsses[1])
-
-        const request = httpMocks.createRequest({ session })
-        const response = httpMocks.createResponse()
-        await userRoute.routes.getMeGuilds(request, response)
-        expect(response.statusCode).toEqual(200)
-        const data = JSON.parse(response._getData())
-        expect(data).toEqual(expectedResponse)
-      })
-      it('returns only guilds that user is owner OR has ADMINISTRATOR/MANAGE_CHANNELS permissions in', async function () {
-        const apiGuilds = [
-          { id: '1wt' },
-          { id: '2DFGsg', permissions: ADMINISTRATOR_PERMISSION | MANAGE_CHANNEL_PERMISSION },
-          { id: '2DFsrgGsg', owner: true, permissions: ADMINISTRATOR_PERMISSION },
-          { id: 'aw35r', owner: true, permissions: MANAGE_CHANNEL_PERMISSION },
-          { id: 'aqwr3e52' }
-
-        ]
-        const guildRsses = [
-          { foo: 'bar' },
-          { foo: 'baz' },
-          { as: 'here' },
-          { world: 'war' },
-          { john: 'doe' }
-        ]
-        const expectedResponse = [
-          {
-            discord: apiGuilds[1],
-            profile: guildRsses[1]
-          }, {
-            discord: apiGuilds[2],
-            profile: guildRsses[2]
-          }, {
-            discord: apiGuilds[3],
-            profile: guildRsses[3]
-          }
-        ]
-        fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
-        const mocked = redisOps.guilds.exists.mockResolvedValueOnce(1)
-        for (let i = 1; i < apiGuilds.length; ++i) {
-          mocked.mockResolvedValueOnce(1)
+  describe('GET /@me/guilds', function () {
+    const MANAGE_CHANNEL_PERMISSION = 16
+    const ADMINISTRATOR_PERMISSION = 8
+    // afterEach(function () {
+    //   fetchUser.guilds.mockClear()
+    //   redisOps.guilds.exists.mockClear()
+    //   dbOpsGuilds.get.mockClear()
+    // })
+    it('returns no guilds if no API guilds are in cache', async function () {
+      const apiGuilds = [
+        { id: '1' }
+      ]
+      fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
+      RedisGuild.utils.exists.mockResolvedValueOnce(0)
+      const request = httpMocks.createRequest({ session })
+      const response = httpMocks.createResponse()
+      await userRoute.routes.getMeGuilds(request, response)
+      expect(response.statusCode).toEqual(200)
+      const data = JSON.parse(response._getData())
+      expect(data).toEqual([])
+    })
+    it('returns only guilds that user is owner of', async function () {
+      const apiGuilds = [
+        { id: '1', owner: true },
+        { id: '2', owner: false }
+      ]
+      const guildRsses = [
+        { foo: 'bar' },
+        { foo: 'baz' }
+      ]
+      const expectedResponse = [
+        {
+          discord: apiGuilds[0],
+          profile: guildRsses[0]
         }
+      ]
+      fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
+      RedisGuild.utils.exists.mockResolvedValueOnce(1)
+      RedisGuild.utils.exists.mockResolvedValueOnce(1)
+      dbOpsGuilds.get.mockResolvedValueOnce(guildRsses[0])
 
-        dbOps.guildRss.get.mockResolvedValueOnce(guildRsses[1])
-        dbOps.guildRss.get.mockResolvedValueOnce(guildRsses[2])
-        dbOps.guildRss.get.mockResolvedValueOnce(guildRsses[3])
+      const request = httpMocks.createRequest({ session })
+      const response = httpMocks.createResponse()
+      await userRoute.routes.getMeGuilds(request, response)
+      expect(response.statusCode).toEqual(200)
+      const data = JSON.parse(response._getData())
+      expect(data).toEqual(expectedResponse)
+    })
+    it('returns only guilds that user has MANAGE_CHANNEL permissions in', async function () {
+      const apiGuilds = [
+        { id: '2', permissions: MANAGE_CHANNEL_PERMISSION },
+        { id: '1', permissions: 0 }
+      ]
+      const guildRsses = [
+        { foo: 'bar' },
+        { foo: 'baz' }
+      ]
+      const expectedResponse = [
+        {
+          discord: apiGuilds[0],
+          profile: guildRsses[0]
+        }
+      ]
+      fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
+      RedisGuild.utils.exists.mockResolvedValueOnce(1)
+      RedisGuild.utils.exists.mockResolvedValueOnce(1)
+      dbOpsGuilds.get.mockResolvedValueOnce(guildRsses[0])
 
-        const request = httpMocks.createRequest({ session })
-        const response = httpMocks.createResponse()
-        await userRoute.routes.getMeGuilds(request, response)
-        expect(response.statusCode).toEqual(200)
-        const data = JSON.parse(response._getData())
-        expect(data).toEqual(expectedResponse)
-        // agent
-        //   .get('/api/users/@me/guilds')
-        //   .expect(200, response, function () {
-        //     expect(redisOps.guilds.exists).toHaveBeenCalledTimes(5)
-        //     expect(dbOps.guildRss.get).toHaveBeenCalledTimes(3)
-        //     done()
-        //   })
-      })
+      const request = httpMocks.createRequest({ session })
+      const response = httpMocks.createResponse()
+      await userRoute.routes.getMeGuilds(request, response)
+      expect(response.statusCode).toEqual(200)
+      const data = JSON.parse(response._getData())
+      expect(data).toEqual(expectedResponse)
+    })
+    it('returns only guilds that user has ADMINISTRATOR permissions in', async function () {
+      const apiGuilds = [
+        { id: '1wt', permissions: 0 },
+        { id: '2sg', permissions: ADMINISTRATOR_PERMISSION }
+      ]
+      const guildRsses = [
+        { foo: 'bar' },
+        { foo: 'baz' }
+      ]
+      const expectedResponse = [
+        {
+          discord: apiGuilds[1],
+          profile: guildRsses[1]
+        }
+      ]
+      fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
+      RedisGuild.utils.exists.mockResolvedValueOnce(1)
+      RedisGuild.utils.exists.mockResolvedValueOnce(1)
+
+      dbOpsGuilds.get.mockResolvedValueOnce(guildRsses[1])
+
+      const request = httpMocks.createRequest({ session })
+      const response = httpMocks.createResponse()
+      await userRoute.routes.getMeGuilds(request, response)
+      expect(response.statusCode).toEqual(200)
+      const data = JSON.parse(response._getData())
+      expect(data).toEqual(expectedResponse)
+    })
+    it('returns only guilds that user is owner OR has ADMINISTRATOR/MANAGE_CHANNELS permissions in', async function () {
+      const apiGuilds = [
+        { id: '1wt' },
+        { id: '2DFGsg', permissions: ADMINISTRATOR_PERMISSION | MANAGE_CHANNEL_PERMISSION },
+        { id: '2DFsrgGsg', owner: true, permissions: ADMINISTRATOR_PERMISSION },
+        { id: 'aw35r', owner: true, permissions: MANAGE_CHANNEL_PERMISSION },
+        { id: 'aqwr3e52' }
+
+      ]
+      const guildRsses = [
+        { foo: 'bar' },
+        { foo: 'baz' },
+        { as: 'here' },
+        { world: 'war' },
+        { john: 'doe' }
+      ]
+      const expectedResponse = [
+        {
+          discord: apiGuilds[1],
+          profile: guildRsses[1]
+        }, {
+          discord: apiGuilds[2],
+          profile: guildRsses[2]
+        }, {
+          discord: apiGuilds[3],
+          profile: guildRsses[3]
+        }
+      ]
+      fetchUser.guilds.mockResolvedValueOnce(apiGuilds)
+      const mocked = RedisGuild.utils.exists.mockResolvedValueOnce(1)
+      for (let i = 1; i < apiGuilds.length; ++i) {
+        mocked.mockResolvedValueOnce(1)
+      }
+
+      dbOpsGuilds.get.mockResolvedValueOnce(guildRsses[1])
+      dbOpsGuilds.get.mockResolvedValueOnce(guildRsses[2])
+      dbOpsGuilds.get.mockResolvedValueOnce(guildRsses[3])
+
+      const request = httpMocks.createRequest({ session })
+      const response = httpMocks.createResponse()
+      await userRoute.routes.getMeGuilds(request, response)
+      expect(response.statusCode).toEqual(200)
+      const data = JSON.parse(response._getData())
+      expect(data).toEqual(expectedResponse)
+      // agent
+      //   .get('/api/users/@me/guilds')
+      //   .expect(200, response, function () {
+      //     expect(redisOps.guilds.exists).toHaveBeenCalledTimes(5)
+      //     expect(dbOpsGuilds.get).toHaveBeenCalledTimes(3)
+      //     done()
+      //   })
     })
   })
 
@@ -299,7 +304,7 @@ describe('/api/users', function () {
   //     afterEach(function () {
   //       fetchUser.guilds.mockClear()
   //       redisOps.guilds.exists.mockClear()
-  //       dbOps.guildRss.get.mockClear()
+  //       dbOpsGuilds.get.mockClear()
   //     })
   //     it('returns no guilds if no API guilds are in cache', function (done) {
   //       const apiGuilds = [
@@ -347,7 +352,7 @@ describe('/api/users', function () {
   //         return 1
   //       })
 
-  //       dbOps.guildRss.get.mockImplementationOnce(async arg => {
+  //       dbOpsGuilds.get.mockImplementationOnce(async arg => {
   //         // expect(arg).toEqual(apiGuilds[0].id)
   //         return guildRsses[0]
   //       })
@@ -356,7 +361,7 @@ describe('/api/users', function () {
   //         .get('/api/users/@me/guilds')
   //         .expect(200, response, function () {
   //           expect(redisOps.guilds.exists).toHaveBeenCalledTimes(2)
-  //           expect(dbOps.guildRss.get).toHaveBeenCalledTimes(1)
+  //           expect(dbOpsGuilds.get).toHaveBeenCalledTimes(1)
   //           done()
   //         })
   //     })
@@ -388,7 +393,7 @@ describe('/api/users', function () {
   //         return 1
   //       })
 
-  //       dbOps.guildRss.get.mockImplementationOnce(async arg => {
+  //       dbOpsGuilds.get.mockImplementationOnce(async arg => {
   //         // expect(arg).toEqual(apiGuilds[0].id)
   //         return guildRsses[0]
   //       })
@@ -397,7 +402,7 @@ describe('/api/users', function () {
   //         .get('/api/users/@me/guilds')
   //         .expect(200, response, function () {
   //           expect(redisOps.guilds.exists).toHaveBeenCalledTimes(2)
-  //           expect(dbOps.guildRss.get).toHaveBeenCalledTimes(1)
+  //           expect(dbOpsGuilds.get).toHaveBeenCalledTimes(1)
   //           done()
   //         })
   //     })
@@ -429,7 +434,7 @@ describe('/api/users', function () {
   //         return 1
   //       })
 
-  //       dbOps.guildRss.get.mockImplementationOnce(async arg => {
+  //       dbOpsGuilds.get.mockImplementationOnce(async arg => {
   //         // expect(arg).toEqual(apiGuilds[1].id)
   //         return guildRsses[1]
   //       })
@@ -438,7 +443,7 @@ describe('/api/users', function () {
   //         .get('/api/users/@me/guilds')
   //         .expect(200, response, function () {
   //           expect(redisOps.guilds.exists).toHaveBeenCalledTimes(2)
-  //           expect(dbOps.guildRss.get).toHaveBeenCalledTimes(1)
+  //           expect(dbOpsGuilds.get).toHaveBeenCalledTimes(1)
   //           done()
   //         })
   //     })
@@ -486,7 +491,7 @@ describe('/api/users', function () {
   //         })
   //       }
 
-  //       dbOps.guildRss.get.mockImplementationOnce(async arg => {
+  //       dbOpsGuilds.get.mockImplementationOnce(async arg => {
   //         // expect(arg).toEqual(apiGuilds[1].id)
   //         return guildRsses[1]
   //       }).mockImplementationOnce(async arg => {
@@ -501,7 +506,7 @@ describe('/api/users', function () {
   //         .get('/api/users/@me/guilds')
   //         .expect(200, response, function () {
   //           expect(redisOps.guilds.exists).toHaveBeenCalledTimes(5)
-  //           expect(dbOps.guildRss.get).toHaveBeenCalledTimes(3)
+  //           expect(dbOpsGuilds.get).toHaveBeenCalledTimes(3)
   //           done()
   //         })
   //     })

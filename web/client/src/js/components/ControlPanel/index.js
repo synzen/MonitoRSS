@@ -178,13 +178,14 @@ class ControlPanel extends React.PureComponent {
     }
 
     axios.get('/api/cp').then(({ data, status }) => {
-      const { defaultConfig, user, bot, guilds, linksStatus, csrfToken } = data
+      const { defaultConfig, user, bot, guilds, linksStatus, csrfToken, feedRefreshRates } = data
       state.cpResponse = data
       state.linksStatus = linksStatus
       state.defaultConfig = defaultConfig
       state.user = user
       state.bot = bot
       state.csrfToken = csrfToken
+      state.feedRefreshRates = feedRefreshRates
       for (const guildId in guilds) {
         socket.emit('identify', guildId)
         const guild = guilds[guildId]

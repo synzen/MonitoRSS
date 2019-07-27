@@ -1,4 +1,4 @@
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
@@ -69,7 +69,7 @@ module.exports = async (bot, message, command) => {
   }
 
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const data = await new MenuUtils.MenuSeries(message, [select], { command, guildRss }).start()
     if (!data) return
     const { rssName, chosenProp } = data
@@ -91,7 +91,7 @@ module.exports = async (bot, message, command) => {
     const prettyPropName = PROPERTIES[chosenProp].display
 
     log.command.info(`${prettyPropName} ${finalSetting ? 'enabling' : 'disabling'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
     await message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${source.link}>${followGlobal ? ', and is now following the global setting.' : '.'} After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } catch (err) {
     log.command.warning(`rssoptions`, message.guild, err)

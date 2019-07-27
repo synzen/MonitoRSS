@@ -25,7 +25,7 @@ class ArticleIDResolver {
     const { useIdTypes, idsRecorded } = this
     for (const idType in useIdTypes) {
       if (!useIdTypes[idType]) continue
-      const articleValue = this.constructor.getIdTypeValue(article, idType)
+      const articleValue = ArticleIDResolver.getIDTypeValue(article, idType)
       if (!articleValue || idsRecorded[idType][articleValue]) {
         useIdTypes[idType] = false
         this.failedTypeNames.push(idType)
@@ -41,7 +41,7 @@ class ArticleIDResolver {
     return this.failedTypeNames[this.failedTypeNames.length - 1]
   }
 
-  static getIdTypeValue (article, idType) {
+  static getIDTypeValue (article, idType) {
     const properties = idType.split(',')
     return properties.map(property => article[property]).join('')
   }

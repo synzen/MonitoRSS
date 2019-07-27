@@ -4,10 +4,12 @@ const Article = require('../../../structs/Article.js')
 const feeds = express.Router({ mergeParams: true })
 const statusCodes = require('../../constants/codes.js')
 const getArticles = require('../../../rss/getArticle.js')
-const dbOps = require('../../../util/dbOps')
+const dbOpsGuilds = require('../../../util/db/guilds.js')
+const dbOpsSchedules = require('../../../util/db/schedules.js')
 const initialize = require('../../../rss/initialize.js')
 const serverLimit = require('../../../util/serverLimit.js')
-const redisOps = require('../../../util/redisOps.js')
+const RedisGuild = require('../../../structs/db/Redis/Guild.js')
+const RedisChannel = require('../../../structs/db/Redis/Channel.js')
 const storage = require('../../../util/storage.js')
 const ArticleIDResolver = require('../../../structs/ArticleIDResolver.js')
 const VALID_SOURCE_KEYS_TYPES = {
@@ -37,7 +39,7 @@ function checkGuildFeedExists (req, res, next) {
   const rssList = req.guildRss.sources
   for (const rssName in rssList) {
     const source = rssList[rssName]
-    if (rssName === req.params.feedId) {
+    if (rssName === req.params.feedID) {
       req.source = source
       return next()
     }
@@ -48,51 +50,55 @@ function checkGuildFeedExists (req, res, next) {
 async function postFeed (req, res, next) {
   // Required keys in body are channel and feed
   try {
-    const guildId = req.params.guildId
+    const guildID = req.params.guildID
     const guildRss = req.guildRss
     const link = typeof req.body.link === 'string' ? req.body.link.trim() : req.body.link
     const title = typeof req.body.title === 'string' ? req.body.title.trim() : req.body.title
-    const channelId = typeof req.body.channel === 'string' ? req.body.channel.trim() : req.body.channel
+    const channelID = typeof req.body.channel === 'string' ? req.body.channel.trim() : req.body.channel
     const errors = {}
     if (title && typeof title !== 'string') errors.title = 'Must be a string'
 
     if (!link) errors.link = 'This field is required'
     else if (typeof link !== 'string') errors.link = 'Must be a string'
 
-    if (!channelId) errors.channel = 'This field is required'
-    else if (typeof channelId !== 'string') errors.channel = 'Must be a string'
+    if (!channelID) errors.channel = 'This field is required'
+    else if (typeof channelID !== 'string') errors.channel = 'Must be a string'
 
     if (Object.keys(errors).length > 0) return res.status(400).json({ code: 400, message: errors })
 
-    const serverLimitData = await serverLimit(guildId)
+    const serverLimitData = await serverLimit(guildID)
     if (guildRss && guildRss.sources) {
       const rssList = guildRss.sources
       if (serverLimitData.max !== 0 && Object.keys(rssList).length + 1 > serverLimitData.max) return res.status(403).json({ code: 403, message: `Feed limit reached (${serverLimitData.max})` })
       for (const rssName in rssList) {
         const source = rssList[rssName]
-        if (source.link === link && source.channel === channelId) return res.status(403).json({ code: 403, message: 'Feed already exists for this channel' })
+        if (source.link === link && source.channel === channelID) return res.status(403).json({ code: 403, message: 'Feed already exists for this channel' })
       }
     }
 
-    if (!(await redisOps.channels.isChannelOfGuild(channelId, guildId))) return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
-    // const response = await axios.get(`${discordAPIConstants.apiHost}/channels/${channelId}`, BOT_HEADERS) // Check if the bot is able to see the channel
-    // if (response.data.guild_id !== guildId) return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
+    const fetchedChannel = await RedisChannel.fetch(channelID)
+    if (!fetchedChannel) return res.status(404).json({ code: 404, message: 'Unknown Channel' })
+    else if (fetchedChannel.guildID !== guildID) return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
+    // const response = await axios.get(`${discordAPIConstants.apiHost}/channels/${channelID}`, BOT_HEADERS) // Check if the bot is able to see the channel
+    // if (response.data.guild_id !== guildID) return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
 
     try {
-      var guildName = await redisOps.guilds.getValue(guildId, 'name')
+      var guildName = req.guild.name
       const [ resolvedUrl, metaTitle, rssName ] = await initialize.addNewFeed({ link,
         channel: {
-          id: channelId,
-          guild: { id: guildId, name: guildName }
+          id: channelID,
+          guild: { id: guildID, name: guildName }
         } }, title)
-      // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildId}, ${guildName}) Added feed ${resolvedUrl}`)
-      return res.status(201).json({ _rssName: rssName, title: metaTitle, channel: channelId, link: resolvedUrl })
+      // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildID}, ${guildName}) Added feed ${resolvedUrl}`)
+      return res.status(201).json({ _rssName: rssName, title: metaTitle, channel: channelID, link: resolvedUrl })
     } catch (err) {
-      // log.web.warning(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildId}, ${guildName}) Unable to add feed ${link}`, err)
+      // log.web.warning(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildID}, ${guildName}) Unable to add feed ${link}`, err)
       if (err.message.includes('exists for this channel')) return res.status(403).json({ code: statusCodes['40003_FEED_EXISTS_IN_CHANNEL'].code, message: err.message })
       if (err.message.includes('Connection failed')) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
       if (err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
-      else return next(err)
+      else {
+        return next(err)
+      }
     }
   } catch (err) {
     next(err)
@@ -101,7 +107,7 @@ async function postFeed (req, res, next) {
 
 // This route will auto create the profile if it doesn't exist through initialize.addNewFeed
 feeds.post('/', postFeed)
-feeds.use('/:feedId', checkGuildFeedExists)
+feeds.use('/:feedID', checkGuildFeedExists)
 
 async function getFeedPlaceholders (req, res, next) {
   try {
@@ -122,7 +128,7 @@ async function getFeedPlaceholders (req, res, next) {
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
       }
-      articlePlaceholders._id = ArticleIDResolver.getIdTypeValue(parsed.raw, useIDType)
+      articlePlaceholders._id = ArticleIDResolver.getIDTypeValue(parsed.raw, useIDType)
       articlePlaceholders._fullDescription = parsed._fullDescription
       articlePlaceholders._fullSummary = parsed._fullSummary
       articlePlaceholders._fullTitle = parsed._fullTitle
@@ -155,10 +161,13 @@ async function getFeedPlaceholders (req, res, next) {
 
 async function getFeedDebug (req, res, next) {
   try {
-    const guildId = req.params.guildId
-    const shard = await redisOps.guilds.getValue(guildId, 'shard') // -1 means no sharding
-    const collectionId = storage.collectionId(req.source.link, shard === '-1' ? null : shard, req.guildRss._schedule || 'default')
-    const results = await storage.models.FeedByCollectionId(collectionId).find({}).lean().exec()
+    const guildID = req.params.guildID
+    const shard = await RedisGuild.utils.getValue(guildID, 'shard') // -1 means no sharding
+    console.log(req.params.feedID, shard, typeof shard)
+    const assignedSchedule = await dbOpsSchedules.assignedSchedules.get(req.params.feedID, shard)
+    if (!assignedSchedule) return res.status(500).json({ code: 500, message: 'No schedule was assigned to feed' })
+    const collectionID = storage.collectionID(req.source.link, shard === '-1' ? null : shard, assignedSchedule.schedule)
+    const results = await storage.models.FeedByCollectionID(collectionID).find({}).lean().exec()
     res.json(results)
   } catch (err) {
     next(err)
@@ -167,7 +176,7 @@ async function getFeedDebug (req, res, next) {
 
 async function deleteFeed (req, res, next) {
   try {
-    const result = await dbOps.guildRss.removeFeed(req.guildRss, req.params.feedId)
+    const result = await dbOpsGuilds.removeFeed(req.guildRss, req.params.feedID)
     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) DELETE ${req.url} - Feed link ${req.source.link}`)
     req.deleteResult = result
     next()
@@ -178,7 +187,7 @@ async function deleteFeed (req, res, next) {
 
 async function patchFeed (req, res, next) {
   try {
-    const guildId = req.params.guildId
+    const guildID = req.params.guildID
     const newSource = req.body
     const guildRss = req.guildRss
     const source = req.source
@@ -194,7 +203,7 @@ async function patchFeed (req, res, next) {
     for (const key in newSource) {
       if (key === 'channel') {
         const newChannel = newSource.channel
-        if (!(await redisOps.channels.isChannelOfGuild(newChannel, guildId))) {
+        if (!(await RedisChannel.utils.isChannelOfGuild(newChannel, guildID))) {
           return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
           // const channel = await axios.get(`${discordAPIConstants.apiHost}/channels/${newChannel}`, BOT_HEADERS) // Check if the bot is able to see the channel
           // if (channel.data.guild_id !== guildRss.id) errors[key] = 'Not part of guild' // return res.status(403).json({ code: 403, message: { channel: `Not part of guild` } })
@@ -207,7 +216,7 @@ async function patchFeed (req, res, next) {
         else source[key] = newSource[key]
       }
     }
-    const result = await dbOps.guildRss.update(guildRss)
+    const result = await dbOpsGuilds.update(guildRss)
     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) (${req.guildRss.id}, ${req.guildRss.name}) PATCH ${req.url} - Feed link ${req.source.link}`)
     req.patchResult = result
     next()
@@ -216,10 +225,10 @@ async function patchFeed (req, res, next) {
   }
 }
 
-feeds.get('/:feedId/placeholders', getFeedPlaceholders)
-feeds.get('/:feedId/debug', getFeedDebug)
-feeds.delete('/:feedId', deleteFeed)
-feeds.patch('/:feedId', patchFeed)
+feeds.get('/:feedID/placeholders', getFeedPlaceholders)
+feeds.get('/:feedID/debug', getFeedDebug)
+feeds.delete('/:feedID', deleteFeed)
+feeds.patch('/:feedID', patchFeed)
 
 module.exports = {
   constants: {

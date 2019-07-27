@@ -23,7 +23,7 @@ const initialState = {
   articlesError: '',
   modalOpen: false,
   csrfToken: '',
-  refreshRates: {},
+  feedRefreshRates: {},
   cpResponse: null,
   modal: {
     props: null,

@@ -1,6 +1,6 @@
 const express = require('express')
 const feedEmbed = express.Router({ mergeParams: true })
-const dbOps = require('../../../util/dbOps.js')
+const dbOpsGuilds = require('../../../util/db/guilds.js')
 const VALID_EMBED_KEYS_LENGTHS = {
   title: 256,
   description: 2048,
@@ -32,24 +32,24 @@ const VALID_FIELD_KEYS = {
 const isObject = obj => typeof obj === 'object' && obj !== null && !Array.isArray(obj)
 
 function idChecker (req, res, next) {
-  const embedId = req.params.embedId
-  if (isNaN(embedId) || !Number.isInteger(+embedId) || +embedId < 0) return res.status(400).json({ code: 400, message: 'ID in parameter must be an integer greater than or equal to 0' })
-  if (+embedId > 8) return res.status(400).json({ code: 400, message: 'ID in parameter is out of bounds, must be less than 8' })
+  const embedID = req.params.embedID
+  if (isNaN(embedID) || !Number.isInteger(+embedID) || +embedID < 0) return res.status(400).json({ code: 400, message: 'ID in parameter must be an integer greater than or equal to 0' })
+  if (+embedID > 8) return res.status(400).json({ code: 400, message: 'ID in parameter is out of bounds, must be less than 8' })
   next()
 }
 
 function embedExists (req, res, next) {
   const embeds = req.source.embeds
-  const embedId = req.params.embedId
-  if (!embeds || !embeds[embedId]) return res.status(404).json({ code: 404, message: 'Unknown embed' })
+  const embedID = req.params.embedID
+  if (!embeds || !embeds[embedID]) return res.status(404).json({ code: 404, message: 'Unknown embed' })
   next()
 }
 
 async function deleteEmbed (req, res, next) {
   try {
-    const embedId = req.params.embedId
-    req.source.embeds.splice(embedId, 1)
-    const result = await dbOps.guildRss.update(req.guildRss)
+    const embedID = req.params.embedID
+    req.source.embeds.splice(embedID, 1)
+    const result = await dbOpsGuilds.update(req.guildRss)
     req.deleteResult = result
     next()
   } catch (err) {
@@ -63,12 +63,12 @@ async function patchEmbed (req, res, next) {
     const lastCurrentEmbedIndex = currentEmbeds ? currentEmbeds.length - 1 : -1
 
     // This check will also work for an id of "0" since it is initially a string
-    const embedId = +req.params.embedId // Convert to a number. Middleware already made sure it is an non-negative integer.
-    if (embedId > lastCurrentEmbedIndex + 1) return res.status(400).json({ code: 400, message: 'ID in parameter is out of bounds. Must be at a maximum of the current length' })
+    const embedID = +req.params.embedID // Convert to a number. Middleware already made sure it is an non-negative integer.
+    if (embedID > lastCurrentEmbedIndex + 1) return res.status(400).json({ code: 400, message: 'ID in parameter is out of bounds. Must be at a maximum of the current length' })
     const newEmbedProperties = req.body
     if (Object.keys(newEmbedProperties).length === 0) return res.status(400).json({ code: 400, message: 'Must have at least one value in body' })
 
-    if (!req.source.webhook && req.source.embeds && embedId !== 0) return res.status(403).json({ code: 403, message: 'Sources with no webhooks may only edit the 0th embed' })
+    if (!req.source.webhook && req.source.embeds && embedID !== 0) return res.status(403).json({ code: 403, message: 'Sources with no webhooks may only edit the 0th embed' })
 
     // Validate the keys
     const errors = {}
@@ -109,17 +109,17 @@ async function patchEmbed (req, res, next) {
 
     // Now make the actual changes
     if (!Array.isArray(req.source.embeds)) req.source.embeds = []
-    if (embedId === lastCurrentEmbedIndex + 1) {
+    if (embedID === lastCurrentEmbedIndex + 1) {
       // Remove empty values
       for (const key in newEmbedProperties) {
         if (newEmbedProperties[key] === undefined || newEmbedProperties[key] === null) delete newEmbedProperties[key]
       }
       req.source.embeds.push(newEmbedProperties)
     } else {
-      if (!req.source.embeds[embedId]) return res.status(400).json({ code: 400, message: `Modifying undefined embed object at index ${embedId}` })
+      if (!req.source.embeds[embedID]) return res.status(400).json({ code: 400, message: `Modifying undefined embed object at index ${embedID}` })
       for (const key in VALID_EMBED_KEYS_LENGTHS) {
-        if (newEmbedProperties[key] === '') delete req.source.embeds[embedId][key]
-        else if (newEmbedProperties[key] !== undefined && newEmbedProperties[key] !== null) req.source.embeds[embedId][key] = newEmbedProperties[key]
+        if (newEmbedProperties[key] === '') delete req.source.embeds[embedID][key]
+        else if (newEmbedProperties[key] !== undefined && newEmbedProperties[key] !== null) req.source.embeds[embedID][key] = newEmbedProperties[key]
       }
 
       // Clean up
@@ -129,7 +129,7 @@ async function patchEmbed (req, res, next) {
       if (req.source.embeds.length === 0) delete req.source.embeds
     }
 
-    const result = await dbOps.guildRss.update(req.guildRss)
+    const result = await dbOpsGuilds.update(req.guildRss)
     req.patchResult = result
     next()
   } catch (err) {
@@ -138,8 +138,8 @@ async function patchEmbed (req, res, next) {
   }
 }
 
-feedEmbed.patch('/:embedId', idChecker, patchEmbed)
-feedEmbed.delete('/:embedId', idChecker, embedExists, deleteEmbed)
+feedEmbed.patch('/:embedID', idChecker, patchEmbed)
+feedEmbed.delete('/:embedID', idChecker, embedExists, deleteEmbed)
 
 module.exports = {
   constants: {

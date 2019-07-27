@@ -4,21 +4,21 @@ process.env.DRSS_EXPERIMENTAL_FEATURES = 'true'
 
 const httpMocks = require('node-mocks-http')
 const guildFeedEmbedRoute = require('../routes/api/guilds.feeds.embeds.js')
-const dbOps = require('../../util/dbOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
 
-jest.mock('../../util/dbOps.js')
+jest.mock('../../util/db/guilds.js')
 
-describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
-  const userId = 'georgie'
+describe('/api/guilds/:guildID/feeds/:feedID/embeds', function () {
+  const userID = 'georgie'
   const session = {
     identity: {
-      id: userId
+      id: userID
     }
   }
   describe('middleware', function () {
     describe('idChecker', function () {
-      it('returns 400 if embedId is NaN', function () {
-        const params = { embedId: 'joey' }
+      it('returns 400 if embedID is NaN', function () {
+        const params = { embedID: 'joey' }
         const request = httpMocks.createRequest({ session, params, source: {} })
         const response = httpMocks.createResponse()
         guildFeedEmbedRoute.middleware.idChecker(request, response)
@@ -26,8 +26,8 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
       })
-      it('returns 400 if embedId is not an integer', function () {
-        const params = { embedId: 1.23 }
+      it('returns 400 if embedID is not an integer', function () {
+        const params = { embedID: 1.23 }
         const request = httpMocks.createRequest({ session, params, source: {} })
         const response = httpMocks.createResponse()
         guildFeedEmbedRoute.middleware.idChecker(request, response)
@@ -35,8 +35,8 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
       })
-      it('returns 400 if embedId is less than 0', function () {
-        const params = { embedId: -1 }
+      it('returns 400 if embedID is less than 0', function () {
+        const params = { embedID: -1 }
         const request = httpMocks.createRequest({ session, params, source: {} })
         const response = httpMocks.createResponse()
         guildFeedEmbedRoute.middleware.idChecker(request, response)
@@ -44,8 +44,8 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
       })
-      it('returns 400 if embedId is greater than 8', function () {
-        const params = { embedId: 9 }
+      it('returns 400 if embedID is greater than 8', function () {
+        const params = { embedID: 9 }
         const request = httpMocks.createRequest({ session, params, source: {} })
         const response = httpMocks.createResponse()
         guildFeedEmbedRoute.middleware.idChecker(request, response)
@@ -53,8 +53,8 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
       })
-      it('calls next() if embedId is integer >= 0 and <= 8', function (done) {
-        const params = { embedId: 8 }
+      it('calls next() if embedID is integer >= 0 and <= 8', function (done) {
+        const params = { embedID: 8 }
         const request = httpMocks.createRequest({ session, params, source: {} })
         const response = httpMocks.createResponse()
         guildFeedEmbedRoute.middleware.idChecker(request, response, nextErr => {
@@ -81,7 +81,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
       })
       it('returns 404 if no item exists in index of source embeds', function () {
         const source = { embeds: [] }
-        const params = { embedId: 0 }
+        const params = { embedID: 0 }
         const request = httpMocks.createRequest({ session, source, params })
         const response = httpMocks.createResponse()
         guildFeedEmbedRoute.middleware.embedExists(request, response)
@@ -92,7 +92,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
       })
       it('calls next() if item exists in index of source embeds', function (done) {
         const source = { embeds: [{}, {}, {}, {}] }
-        const params = { embedId: 3 }
+        const params = { embedID: 3 }
         const request = httpMocks.createRequest({ session, source, params })
         const response = httpMocks.createResponse()
         guildFeedEmbedRoute.middleware.embedExists(request, response, nextErr => {
@@ -107,13 +107,13 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
       })
     })
   })
-  describe('DELETE /:embedId', function () {
+  describe('DELETE /:embedID', function () {
     afterEach(function () {
-      dbOps.guildRss.update.mockReset()
+      dbOpsGuilds.update.mockReset()
     })
     it('removes the embed from array', async function (done) {
       const source = { embeds: [{ a: 'b' }, { c: 'd' }, { e: 'f' }] }
-      const params = { embedId: 1 }
+      const params = { embedID: 1 }
       const expectedSource = { embeds: [{ a: 'b' }, { e: 'f' }] }
       const request = httpMocks.createRequest({ session, source, params })
       const response = httpMocks.createResponse()
@@ -130,13 +130,13 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('calls guildRss.update', async function (done) {
       const source = { embeds: [{ a: 'b' }, { c: 'd' }, { e: 'f' }] }
-      const params = { embedId: 1 }
+      const params = { embedID: 1 }
       const request = httpMocks.createRequest({ session, source, params })
       const response = httpMocks.createResponse()
       await guildFeedEmbedRoute.routes.deleteEmbed(request, response, nextErr => {
         if (nextErr) return done(nextErr)
         try {
-          expect(dbOps.guildRss.update).toHaveBeenCalledTimes(1)
+          expect(dbOpsGuilds.update).toHaveBeenCalledTimes(1)
           done()
         } catch (err) {
           done(err)
@@ -145,13 +145,13 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
       expect(response.statusCode).toEqual(200)
     })
   })
-  describe('PATCH /:embedId', function () {
+  describe('PATCH /:embedID', function () {
     afterEach(function () {
-      dbOps.guildRss.update.mockReset()
+      dbOpsGuilds.update.mockReset()
     })
     it('returns 400 if id is out of bounds', async function () {
       const source = { embeds: [{}, {}] }
-      const params = { embedId: 3 }
+      const params = { embedID: 3 }
       const request = httpMocks.createRequest({ session, source, params })
       const response = httpMocks.createResponse()
       await guildFeedEmbedRoute.routes.patchEmbed(request, response)
@@ -162,7 +162,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('returns 400 if body is empty', async function () {
       const source = { embeds: [{}, {}] }
-      const params = { embedId: 1 }
+      const params = { embedID: 1 }
       const request = httpMocks.createRequest({ session, source, params })
       const response = httpMocks.createResponse()
       await guildFeedEmbedRoute.routes.patchEmbed(request, response)
@@ -171,9 +171,9 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
       expect(data.code).toEqual(400)
       expect(data.message.includes('body')).toEqual(true)
     })
-    it('returns 403 if there is no webhook and the embedId is not 0', async function () {
+    it('returns 403 if there is no webhook and the embedID is not 0', async function () {
       const source = { embeds: [{}, {}] }
-      const params = { embedId: 1 }
+      const params = { embedID: 1 }
       const body = { title: 'dsf' }
       const request = httpMocks.createRequest({ session, source, params, body })
       const response = httpMocks.createResponse()
@@ -185,7 +185,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('returns 400 on invalid body keys', async function () {
       const source = { embeds: [] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { invalid1: 'dsf', invalid2: 'd', invalid3: 1, invalid4: null }
       const request = httpMocks.createRequest({ session, source, params, body })
       const response = httpMocks.createResponse()
@@ -200,7 +200,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('returns 400 on non-empty-string and non-number color', async function () {
       const source = { embeds: [] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { color: 'fhbnio', title: 'gsdg' }
       const request = httpMocks.createRequest({ session, source, params, body })
       const response = httpMocks.createResponse()
@@ -211,7 +211,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('returns 400 on non-empty-string and non-"article" and non-"now" timestamp', async function () {
       const source = { embeds: [] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { timestamp: 'fhbnio', title: 'gsdg' }
       const request = httpMocks.createRequest({ session, source, params, body })
       const response = httpMocks.createResponse()
@@ -223,7 +223,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('returns 400 on keys with required string values but with no string value', async function () {
       const source = { embeds: [] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { }
       for (const key in guildFeedEmbedRoute.constants.VALID_EMBED_KEYS_LENGTHS) {
         if (guildFeedEmbedRoute.constants.NON_STRING_KEYS.includes(key)) continue
@@ -242,7 +242,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('returns 400 on keys that exceeds their max lengths', async function () {
       const source = { embeds: [] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { }
       for (const key in guildFeedEmbedRoute.constants.VALID_EMBED_KEYS_LENGTHS) {
         const len = guildFeedEmbedRoute.constants.VALID_EMBED_KEYS_LENGTHS[key]
@@ -264,7 +264,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('allows all keys to have empty strings', async function (done) {
       const source = { embeds: [] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { }
       for (const key in guildFeedEmbedRoute.constants.VALID_EMBED_KEYS_LENGTHS) {
         body[key] = ''
@@ -283,7 +283,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('removes the specified embed from source if all keys are strings with no webhook', async function (done) {
       const source = { embeds: [{ title: 'zzz' }, { title: 'ha' }, { description: 'ho', footerText: 'sg' }] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const expectedSource = { embeds: [{ title: 'ha' }, { description: 'ho', footerText: 'sg' }] }
       const body = { }
       for (const key in guildFeedEmbedRoute.constants.VALID_EMBED_KEYS_LENGTHS) {
@@ -304,7 +304,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('removes the specified embed from source if all keys are strings with webhook', async function (done) {
       const source = { embeds: [{ title: 'zzz' }, { title: 'ha' }, { description: 'ho', footerText: 'sg' }], webhook: { id: 123 } }
-      const params = { embedId: 1 }
+      const params = { embedID: 1 }
       const expectedSource = { embeds: [{ title: 'zzz' }, { description: 'ho', footerText: 'sg' }], webhook: { id: 123 } }
       const body = { }
       for (const key in guildFeedEmbedRoute.constants.VALID_EMBED_KEYS_LENGTHS) {
@@ -325,7 +325,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('adds the specified embed from source if embeds do not exist already with no webhook', async function (done) {
       const source = { }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { title: 'hzzzz' }
       const expectedSource = { embeds: [ body ] }
       const request = httpMocks.createRequest({ session, source, params, body })
@@ -343,7 +343,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('adds the specified embed from source if embeds do not exist with webhook', async function (done) {
       const source = { webhook: { id: '123' } }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { title: 'hzzzz' }
       const expectedSource = { embeds: [ body ], ...source }
       const request = httpMocks.createRequest({ session, source, params, body })
@@ -361,7 +361,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('adds the specified embed from source if other embeds do exist with webhook', async function (done) {
       const source = { webhook: { id: '123' }, embeds: [{ title: 'edf' }, { description: 'sgwe' }] }
-      const params = { embedId: 2 }
+      const params = { embedID: 2 }
       const body = { title: 'hzzzz' }
       const expectedSource = { embeds: [ ...source.embeds, body ], webhook: { ...source.webhook } }
       const request = httpMocks.createRequest({ session, source, params, body })
@@ -379,7 +379,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('edits the specified embed that exists in source with no webhook', async function (done) {
       const source = { embeds: [{ title: 'edf' }] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       const body = { title: 'hzzzz' }
       const expectedSource = { embeds: [ body ] }
       const request = httpMocks.createRequest({ session, source, params, body })
@@ -397,9 +397,9 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     it('edits the specified embed that exists in source with keys with webhook', async function (done) {
       const source = { embeds: [{ title: 'edf' }, { description: 'fallout' }], webhook: { id: '123' } }
-      const params = { embedId: 1 }
+      const params = { embedID: 1 }
       const body = { title: 'hzzzz' }
-      const expectedSource = { embeds: [ source.embeds[0], { ...source.embeds[params.embedId], ...body } ], webhook: { ...source.webhook } }
+      const expectedSource = { embeds: [ source.embeds[0], { ...source.embeds[params.embedID], ...body } ], webhook: { ...source.webhook } }
       const request = httpMocks.createRequest({ session, source, params, body })
       const response = httpMocks.createResponse()
       await guildFeedEmbedRoute.routes.patchEmbed(request, response, nextErr => {
@@ -415,7 +415,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/embeds', function () {
     })
     describe('with embed fields', function () {
       const source = { embeds: [] }
-      const params = { embedId: 0 }
+      const params = { embedID: 0 }
       it('returns 400 on non-array fields key', async function () {
         const body = { fields: 1, title: 'g' }
         const request = httpMocks.createRequest({ session, source, params, body })

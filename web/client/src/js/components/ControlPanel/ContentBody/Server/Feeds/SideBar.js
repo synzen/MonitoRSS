@@ -26,6 +26,7 @@ const mapStateToProps = state => {
     articlesFetching: state.articlesFetching,
     defaultConfig: state.defaultConfig,
     linkStatuses: state.linkStatuses,
+    feedRefreshRates: state.feedRefreshRates,
     csrfToken: state.csrfToken
   }
 }
@@ -132,8 +133,9 @@ class SideBar extends Component {
   }
 
   render () {
-    const { guildId, guild, feeds, selectedFeedId, channelDropdownOptions, articlesFetching, linkStatuses, defaultConfig } = this.props
+    const { feedRefreshRates, guildId, guild, feeds, selectedFeedId, channelDropdownOptions, articlesFetching, linkStatuses, defaultConfig } = this.props
     const selectedFeed = feeds[guildId] && feeds[guildId][selectedFeedId] ? feeds[guildId][selectedFeedId] : null
+    const refreshRate = feedRefreshRates[selectedFeedId]
     let differentFromDefault = false
     if (selectedFeed) {
       if (this.state.title && this.state.title !== selectedFeed.title) differentFromDefault = true
@@ -165,7 +167,7 @@ class SideBar extends Component {
           }
           <EditField>
             <SectionSubtitle>Refresh Rate</SectionSubtitle>
-        { failed || disabled ? 'None ' : !selectedFeed ? '\u200b' : !selectedFeed.lastRefreshRateMin ? 'To be determined ' : selectedFeed.lastRefreshRateMin < 1 ? `${selectedFeed.lastRefreshRateMin * 60} seconds      ` : `${selectedFeed.lastRefreshRateMin} minutes      `}{ failed ? null : <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>－</a> }
+        { failed || disabled ? 'None ' : !selectedFeed ? '\u200b' : !refreshRate ? 'To be determined ' : refreshRate < 1 ? `${refreshRate * 60} seconds      ` : `${refreshRate} minutes      `}{ failed ? null : <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>－</a> }
           </EditField>
           <EditField>
             <SectionSubtitle>Added On</SectionSubtitle>
@@ -218,7 +220,8 @@ SideBar.propTypes = {
   selectedFeedId: PropTypes.string,
   guildId: PropTypes.string,
   setActiveFeed: PropTypes.func,
-  changePage: PropTypes.func
+  changePage: PropTypes.func,
+  feedRefreshRates: PropTypes.object
 }
 
 export default withRouter(connect(mapStateToProps, mapDispatchToProps)(SideBar))

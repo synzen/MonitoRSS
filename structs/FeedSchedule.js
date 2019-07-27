@@ -1,19 +1,21 @@
 const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
 const checkGuild = require('../util/checkGuild.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsFailedLinks = require('../util/db/failedLinks.js')
+const dbOpsVips = require('../util/db/vips.js')
+const dbOpsStatistics = require('../util/db/statistics.js')
 const debugFeeds = require('../util/debugFeeds.js').list
 const EventEmitter = require('events')
 const childProcess = require('child_process')
 const storage = require('../util/storage.js') // All properties of storage must be accessed directly due to constant changes
 const log = require('../util/logger.js')
-const assignedSchedules = require('../util/assignedSchedules.js')
 const BATCH_SIZE = config.advanced.batchSize
 const FAIL_LIMIT = config.feeds.failLimit
 
 class FeedSchedule extends EventEmitter {
   constructor (bot, schedule, scheduleManager) {
-    if (!schedule.refreshTimeMinutes) throw new Error('No refreshTimeMinutes has been declared for a schedule')
+    if (!schedule.refreshRateMinutes) throw new Error('No refreshRateMinutes has been declared for a schedule')
     if (schedule.name !== 'default' && schedule.name !== 'vip' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0) && (!Array.isArray(schedule.rssNames) || schedule.rssNames.length === 0)) throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     super()
     this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
@@ -23,7 +25,7 @@ class FeedSchedule extends EventEmitter {
     this.scheduleManager = scheduleManager
     this.keywords = schedule.keywords
     this.rssNames = schedule.rssNames
-    this.refreshTime = schedule.refreshTimeMinutes
+    this.refreshRate = schedule.refreshRateMinutes
     this._linksResponded = {}
     this._processorList = []
     this._regBatchList = []
@@ -35,6 +37,7 @@ class FeedSchedule extends EventEmitter {
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedCount = 0 // For statistics
     this.failedLinks = {}
+    this.feedIDs = new Set() // feed ids assigned to this schedule
     this.ran = 0 // # of times this schedule has ran
 
     // For vip tracking
@@ -44,18 +47,7 @@ class FeedSchedule extends EventEmitter {
   }
 
   _delegateFeed (guildRss, rssName) {
-    const originalSource = guildRss.sources[rssName]
-    let updated = false
-    if (!originalSource.lastRefreshRateMin || originalSource.lastRefreshRateMin !== this.refreshTime) {
-      originalSource.lastRefreshRateMin = this.refreshTime
-      updated = true
-    }
-    if (!originalSource._schedule || originalSource._schedule !== this.name) {
-      originalSource._schedule = this.name
-      updated = true
-    }
-    if (updated) dbOps.guildRss.update(guildRss).catch(err => log.general.warning(`Failed to update meta info during feed schedule delegation for source ${rssName}, guild ${guildRss.id}`, err))
-    const source = { ...originalSource }
+    const source = guildRss.sources[rssName]
 
     // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
     source.guildId = guildRss.id
@@ -91,26 +83,32 @@ class FeedSchedule extends EventEmitter {
     const status = {}
     let feedCount = 0 // For statistics in storage
 
-    for (var rssName in rssList) {
+    let wrongBot = false
+    for (const rssName in rssList) {
+      if (wrongBot || !this.feedIDs.has(rssName)) continue
+      if (!this.bot.guilds.has(guildRss.id)) {
+        wrongBot = true
+        log.general.error(`${this.SHARD_ID}Feed ${rssName} of guild ${guildRss.id} was delegated to schedule ${this.name} but this shard does not contain this guild`)
+        continue
+      }
       const source = rssList[rssName]
       ++feedCount
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === 'Exceeded feed limit') {
         // log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
-        dbOps.guildRss.enableFeed(guildRss, rssName, 'Feed limit change').catch(err => log.general.warning(`Failed to enable feed named ${rssName}`, err))
+        dbOpsGuilds.enableFeed(guildRss, rssName, 'Feed limit change').catch(err => log.general.warning(`Failed to enable feed named ${rssName}`, err))
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].enabled.push(source.link)
       } else if (max !== 0 && c > max && !source.disabled) {
         // log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
-        dbOps.guildRss.disableFeed(guildRss, rssName, 'Exceeded feed limit').catch(err => log.general.warning(`Failed to disable feed named ${rssName}`, err))
+        dbOpsGuilds.disableFeed(guildRss, rssName, 'Exceeded feed limit').catch(err => log.general.warning(`Failed to disable feed named ${rssName}`, err))
         if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
         status[source.channel].disabled.push(source.link)
       }
 
       if (!checkGuild.config(this.bot, guildRss, rssName) || typeof this.failedLinks[source.link] === 'string') continue
 
-      if (!assignedSchedules.getScheduleName(rssName)) this.scheduleManager.assignScheduleToSource(guildRss, rssName, this.vipServers)
-      if (assignedSchedules.getScheduleName(rssName) === this.name) this._delegateFeed(guildRss, rssName) // If assigned to a this.schedule
+      this._delegateFeed(guildRss, rssName)
     }
 
     // Send notices about any feeds that were enabled/disabled
@@ -171,8 +169,8 @@ class FeedSchedule extends EventEmitter {
         let c = 0
         for (const link in this._linksResponded) {
           if (this._linksResponded[link] === 0) continue
-          if (this.failedLinks[link] >= FAIL_LIMIT) dbOps.failedLinks.fail(link).catch(err => log.cycle.warning(`Unable to fail failed link ${link}`, err))
-          else dbOps.failedLinks.increment(link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${link}`, err))
+          if (this.failedLinks[link] >= FAIL_LIMIT) dbOpsFailedLinks.fail(link).catch(err => log.cycle.warning(`Unable to fail failed link ${link}`, err))
+          else dbOpsFailedLinks.increment(link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${link}`, err))
           list += `${link}\n`
           ++c
         }
@@ -190,7 +188,7 @@ class FeedSchedule extends EventEmitter {
     this.allowWebhooks = {}
 
     if (config._vip === true) {
-      const vipUsers = await dbOps.vips.getAll()
+      const vipUsers = await dbOpsVips.getAll()
       for (const vipUser of vipUsers) {
         for (const serverId of vipUser.servers) {
           if (vipUser.invalid !== true) this.allowWebhooks[serverId] = true
@@ -201,12 +199,12 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
-    const failedLinks = await dbOps.failedLinks.getAll()
+    const failedLinks = await dbOpsFailedLinks.getAll()
     this.failedLinks = {}
     failedLinks.forEach(item => {
       this.failedLinks[item.link] = item.failed || item.count
     })
-    const guildRssList = await dbOps.guildRss.getAll()
+    const guildRssList = await dbOpsGuilds.getAll()
     this._startTime = new Date()
     this._regBatchList = []
     this._modBatchList = []
@@ -259,10 +257,10 @@ class FeedSchedule extends EventEmitter {
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          if (this.failedLinks[linkCompletion.link] >= FAIL_LIMIT) dbOps.failedLinks.fail(linkCompletion.link).catch(err => log.cycle.warning(`Unable to fail failed link ${linkCompletion.link}`, err))
-          else dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
+          if (this.failedLinks[linkCompletion.link] >= FAIL_LIMIT) dbOpsFailedLinks.fail(linkCompletion.link).catch(err => log.cycle.warning(`Unable to fail failed link ${linkCompletion.link}`, err))
+          else dbOpsFailedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
-          if (this.failedLinks[linkCompletion.link]) dbOps.failedLinks.reset(linkCompletion.link).catch(err => log.cycle.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
+          if (this.failedLinks[linkCompletion.link]) dbOpsFailedLinks.reset(linkCompletion.link).catch(err => log.cycle.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
           if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
         }
 
@@ -301,10 +299,10 @@ class FeedSchedule extends EventEmitter {
         if (linkCompletion.status === 'batch_connected' && callback) return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          if (this.failedLinks[linkCompletion.link] >= FAIL_LIMIT) dbOps.failedLinks.fail(linkCompletion.link).catch(err => log.cycle.warning(`Unable to fail failed link ${linkCompletion.link}`, err))
-          else dbOps.failedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
+          if (this.failedLinks[linkCompletion.link] >= FAIL_LIMIT) dbOpsFailedLinks.fail(linkCompletion.link).catch(err => log.cycle.warning(`Unable to fail failed link ${linkCompletion.link}`, err))
+          else dbOpsFailedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
-          if (this.failedLinks[linkCompletion.link]) dbOps.failedLinks.reset(linkCompletion.link).catch(err => log.cycle.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
+          if (this.failedLinks[linkCompletion.link]) dbOpsFailedLinks.reset(linkCompletion.link).catch(err => log.cycle.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
           if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
         }
 
@@ -352,7 +350,7 @@ class FeedSchedule extends EventEmitter {
 
   _finishCycle (noFeeds) {
     if (this.bot.shard && this.bot.shard.count > 0) {
-      process.send({ _drss: true, type: 'scheduleComplete', refreshTime: this.refreshTime })
+      process.send({ _drss: true, type: 'scheduleComplete', refreshRate: this.refreshRate })
     }
     const diff = (new Date() - this._startTime) / 1000
     const timeTaken = diff.toFixed(2)
@@ -368,15 +366,17 @@ class FeedSchedule extends EventEmitter {
 
     if (!config.database.uri.startsWith('mongo')) return
     // Update statistics
-    dbOps.statistics.update({
-      shard: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : 0,
-      guilds: this.bot.guilds.size,
-      feeds: this.feedCount,
-      cycleTime: diff,
-      cycleFails: this._cycleFailCount,
-      cycleLinks: this._cycleTotalCount,
-      lastUpdated: new Date()
-    }).catch(err => log.general.warning('Unable to update statistics after cycle', err))
+    if (this.name === 'default') {
+      dbOpsStatistics.update({
+        shard: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : 0,
+        guilds: this.bot.guilds.size,
+        feeds: this.feedCount,
+        cycleTime: diff,
+        cycleFails: this._cycleFailCount,
+        cycleLinks: this._cycleTotalCount,
+        lastUpdated: new Date()
+      }).catch(err => log.general.warning('Unable to update statistics after cycle', err, true))
+    }
   }
 
   stop () {
@@ -389,7 +389,7 @@ class FeedSchedule extends EventEmitter {
   start () {
     if (!this.bot.shard || this.bot.shard.count === 0) {
       if (this._timer) return log.general.warning(`${this.SHARD_ID}Schedule '${this.name}' ignoring start command because schedule is already started`)
-      this._timer = setInterval(this.run.bind(this), this.refreshTime * 60000)
+      this._timer = setInterval(this.run.bind(this), this.refreshRate * 60000)
       log.cycle.info(`${this.SHARD_ID}Schedule '${this.name}' has begun`)
     }
   }

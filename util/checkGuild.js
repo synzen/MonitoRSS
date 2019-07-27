@@ -1,6 +1,6 @@
 // Check for guild names/role names changes
 
-const dbOps = require('./dbOps.js')
+const dbOpsGuilds = require('./db/guilds.js')
 const log = require('./logger.js')
 const fs = require('fs')
 const path = require('path')
@@ -113,7 +113,7 @@ exports.config = (bot, guildRss, rssName, logging) => {
     log.cycle.warning(`${shardPrefix}Channel ${source.channel} in guild ${guildId} for feed ${source.link} was not found, skipping source`, guild)
     missingChannelCount[rssName] = missingChannelCount[rssName] ? missingChannelCount[rssName] + 1 : 1
     if (missingChannelCount[rssName] >= 3 && storage.initialized) {
-      dbOps.guildRss.removeFeed(guildRss, rssName)
+      dbOpsGuilds.removeFeed(guildRss, rssName)
         .then(() => {
           log.general.info(`Removed feed ${source.link} from guild ${guildId} due to excessive missing channels warnings`)
           delete missingChannelCount[rssName]
@@ -141,20 +141,20 @@ exports.config = (bot, guildRss, rssName, logging) => {
       if (!allowEmbedLinks) reasons.push('EMBED_LINKS')
       if (!allowView) reasons.push('VIEW_CHANNEL')
       const reason = `Missing permissions ${reasons.join(', ')}`
-      if (!source.disabled) dbOps.guildRss.disableFeed(guildRss, rssName, reason).catch(err => log.general.warning(`Failed to disable feed ${rssName} due to missing permissions (${reason})`, guild, err))
+      if (!source.disabled) dbOpsGuilds.disableFeed(guildRss, rssName, reason).catch(err => log.general.warning(`Failed to disable feed ${rssName} due to missing permissions (${reason})`, guild, err))
       else if (source.disabled.startsWith('Missing permissions') && source.disabled !== reason) {
         source.disabled = reason
-        dbOps.guildRss.update(guildRss).catch(err => log.general.warning(`Failed to update disabled reason for feed ${rssName}`, guild, err))
+        dbOpsGuilds.update(guildRss).catch(err => log.general.warning(`Failed to update disabled reason for feed ${rssName}`, guild, err))
       }
       return false
     } else if (source.disabled && source.disabled.startsWith('Missing permissions')) {
-      dbOps.guildRss.enableFeed(guildRss, rssName, `Found channel permissions`)
+      dbOpsGuilds.enableFeed(guildRss, rssName, `Found channel permissions`)
         .catch(err => log.general.warning('Failed to enable feed after channel permissions found', err))
       return true
     }
 
     // For any other non-channel-permission related reason, just return !source.disabled
-    if (logging && source.disabled) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
+    // if (logging && source.disabled) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
     return !source.disabled
   }
 }

@@ -1,5 +1,3 @@
-const fs = require('fs')
-const path = require('path')
 const Discord = require('discord.js')
 const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
@@ -7,8 +5,11 @@ const config = require('../config.js')
 const ScheduleManager = require('./ScheduleManager.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
-const dbOps = require('../util/dbOps.js')
-const redisOps = require('../util/redisOps.js')
+const dbOpsBlacklists = require('../util/db/blacklists.js')
+const dbOpsFailedLinks = require('../util/db/failedLinks.js')
+const dbOpsGeneral = require('../util/db/general.js')
+const dbOpsVips = require('../util/db/vips.js')
+const redisIndex = require('../structs/db/Redis/index.js')
 const checkConfig = require('../util/checkConfig.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientManager = require('./ClientManager.js')
@@ -36,36 +37,6 @@ function overrideConfigs (configOverrides) {
   }
 }
 
-function readSchedulesFromFile () {
-  try {
-    const files = fs.readdirSync(path.join(__dirname, '..', 'settings', 'schedules'))
-    if (files.length === 0 || (files.length === 1 && files[0] === 'exampleSchedule.json')) return
-    const arr = []
-    for (var i = 0; i < files.length; ++i) {
-      const fileName = files[i]
-      if (fileName === 'exampleSchedule.json') continue
-      try {
-        const read = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'settings', 'schedules', fileName)))
-        if (!read.keywords || !Array.isArray(read.keywords) || read.keywords.length === 0) {
-          log.general.warning(`Skipping custom schedule ${fileName} due to missing keywords (array)`)
-          continue
-        }
-        if (!read.refreshTimeMinutes) {
-          log.general.warning(`Skipping custom schedule ${fileName} due to missing refreshTimeMinutes`)
-          continue
-        }
-        read.name = fileName.replace(/\.json/gi, '')
-        arr.push(read)
-      } catch (err) {
-        log.general.error(`Schedule ${fileName} is improperly configured\n`, err)
-      }
-    }
-    return arr.length > 0 ? arr : undefined
-  } catch (err) {
-    log.general.info('Unable to read settings/schedules directory, skipping custom schedules', err)
-  }
-}
-
 class Client extends EventEmitter {
   constructor (configOverrides, customSchedules) {
     super()
@@ -77,11 +48,17 @@ class Client extends EventEmitter {
     if (configRes && configRes.fatal) throw new Error(configRes.message)
     else if (configRes) log.general.warning(configRes.message)
     if (configOverrides && Array.isArray(configOverrides.suppressLogLevels)) log.suppressLevel(configOverrides.suppressLogLevels)
-    if (customSchedules && !Array.isArray(customSchedules)) throw new Error('customSchedules parameter must be an array of objects')
-    if (customSchedules && configOverrides && configOverrides.readFileSchedules === true) throw new Error('readFileSchedules config must be undefined if customSchedules (second) parameter is defined')
-    if (!customSchedules && configOverrides && configOverrides.readFileSchedules === true) {
-      customSchedules = readSchedulesFromFile()
-      if (!customSchedules) log.general.info('No custom schedules found in settings/schedules folder')
+    if (customSchedules) {
+      if (!Array.isArray(customSchedules)) throw new Error('customSchedules parameter must be an array of objects')
+      else {
+        for (const schedule of customSchedules) {
+          if (schedule.name === 'default') throw new Error('Schedule name cannot be "default"')
+          const keys = Object.keys(schedule)
+          if (!keys.includes('name')) throw new Error('Schedule "name" must be defined')
+          if (!keys.includes('refreshRateMinutes')) throw new Error('Schedule "refreshRateMinutes" must be defined')
+          if (!keys.includes('keywords') && !keys.includes('feedIDs')) throw new Error('Schedule "keywords" or "feedIDs" must be defined')
+        }
+      }
     }
     this.scheduleManager = undefined
     this.configOverrides = configOverrides
@@ -184,26 +161,26 @@ class Client extends EventEmitter {
           case 'kill' :
             process.exit(0)
           case 'startInit':
-            if (bot.shard.id === message.shardId) this.start(null, message.vipApiData)
+            if (bot.shard.id === message.shardId) this.start()
             break
           case 'stop':
             this.stop()
             break
           case 'finishedInit':
             storage.initialized = 2
-            if (config.database.uri.startsWith('mongodb')) await dbOps.blacklists.refresh()
+            if (config.database.uri.startsWith('mongodb')) await dbOpsBlacklists.refresh()
             break
           case 'cycleVIPs':
-            if (bot.shard.id === message.shardId) await dbOps.vips.refresh(true, message.vipApiData)
+            if (bot.shard.id === message.shardId) await dbOpsVips.refresh(true)
             break
           case 'runSchedule':
-            if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshTime)
+            if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshRate)
             break
           case 'failedLinks._sendAlert':
-            dbOps.failedLinks._sendAlert(message.link, message.message, true)
+            dbOpsFailedLinks._sendAlert(message.link, message.message, true)
             break
           case 'blacklists.uniformize':
-            await dbOps.blacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, true)
+            await dbOpsBlacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, true)
             break
           case 'dbRestoreSend':
             const channel = bot.channels.get(message.channelID)
@@ -230,7 +207,7 @@ class Client extends EventEmitter {
     this.state = STATES.STOPPED
   }
 
-  async start (callback, vipApiData) {
+  async start (callback) {
     if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     this.state = STATES.STARTING
     listeners.enableCommands()
@@ -238,18 +215,31 @@ class Client extends EventEmitter {
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     try {
       await connectDb()
-      if (!this.bot.shard || this.bot.shard.count === 0) await redisOps.flushDatabase()
-      let clientVipApiData
-      if (config._vip && (!this.bot.shard || this.bot.shard.count === 0)) clientVipApiData = await require('../settings/api.js')()
+      if (!this.bot.shard || this.bot.shard.count === 0) {
+        await dbOpsGeneral.verifyFeedIDs()
+        await redisIndex.flushDatabase()
+      }
       if (!this.scheduleManager) {
-        this.scheduleManager = new ScheduleManager(storage.bot, this.customSchedules)
+        this.scheduleManager = new ScheduleManager(storage.bot)
+        const addSchedulePromises = []
+        addSchedulePromises.push(this.scheduleManager.addSchedule({ name: 'default', refreshRateMinutes: config.feeds.refreshRateMinutes }, false, true))
+        if (config._vip === true) addSchedulePromises.push(this.scheduleManager.addSchedule({ name: 'vip', refreshRateMinutes: config._vipRefreshRateMinutes || config.feeds.refreshRateMinutes, feedIDs: [] }, false, true))
+        const names = new Set()
+        for (const schedule of this.customSchedules) {
+          const name = schedule.name
+          if (name === 'example') continue
+          if (names.has(name)) throw new Error(`Schedules cannot have the same name (${name})`)
+          names.add(name)
+          addSchedulePromises.push(this.scheduleManager.addSchedule(schedule, false, true))
+        }
+        await Promise.all(addSchedulePromises)
         storage.scheduleManager = this.scheduleManager
       }
-      await this.scheduleManager.assignSchedules()
-      const { missingGuilds, linkTrackerDocs } = await initialize(this.bot, vipApiData || clientVipApiData)
+      await this.scheduleManager.assignAllSchedules()
+      const { missingGuilds, linkTrackerDocs } = await initialize(this.bot)
       this._finishInit(missingGuilds, linkTrackerDocs, callback)
     } catch (err) {
-      log.general.error(`Client start`, err)
+      log.general.error(`Client start`, err, true)
     }
   }
 
@@ -268,13 +258,13 @@ class Client extends EventEmitter {
       if (config.web.enabled === true) this.webClientInstance.enableCP()
       if (config._vip) {
         this._vipInterval = setInterval(() => {
-          dbOps.vips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err))
+          dbOpsVips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err, true))
         }, 600000)
       }
     }
     listeners.createManagers(storage.bot)
     this.scheduleManager.startSchedules()
-    this.scheduleManager.run()
+    // if (!this.bot.shard || this.bot.shard.count === 0) this.scheduleManager.run()
     if (callback) callback()
     this.emit('finishInit')
   }

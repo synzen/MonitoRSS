@@ -1,4 +1,5 @@
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsVips = require('../util/db/vips.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
@@ -42,7 +43,7 @@ async function collectWebhook (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const [ guildRss, isVipServer ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), dbOps.vips.isVipServer(message.guild.id) ])
+    const [ guildRss, isVipServer ] = await Promise.all([ dbOpsGuilds.get(message.guild.id), dbOpsVips.isVipServer(message.guild.id) ])
     if (!isVipServer) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
       return await message.channel.send(`Only servers with patron backing have access to webhooks.`)
@@ -79,7 +80,7 @@ module.exports = async (bot, message, command) => {
           if (err.message.includes('avatar_url')) return webhook.send(connected, { username: customNameSrch }).catch(err => log.comamnd.warning(`rsswebhook 2`, message.guild, err)) // This may be a placeholder
         })
     }
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
   } catch (err) {
     log.command.warning(`rsswebhook`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsswebhook 1', message.guild, err))

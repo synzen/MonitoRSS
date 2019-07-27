@@ -1,6 +1,7 @@
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsVips = require('../util/db/vips.js')
 const helpText = guildRss => `Proper usage:
 
 \`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
@@ -33,12 +34,12 @@ async function switchServerArg (bot, message, args, vipUser, guildRss) {
       const m = await message.channel.send(`Adding server ${server}...`)
       const gotServer = await verifyServer(bot, server)
       if (!gotServer) return await m.edit(`Unable to add server \`${server}\`. Either it does not exist, or I am not in it.`)
-      await dbOps.vips.addServers({ vipUser, serversToAdd: [server] })
+      await dbOpsVips.addServers({ vipUser, serversToAdd: [server] })
       await m.edit(`Successfully added ${server} (${gotServer.name})`)
     } else if (action === 'remove') {
       if (!vipUser.servers.includes(server)) return await message.channel.send(`That server does not have your patron backing.`)
       const m2 = await message.channel.send(`Removing server ${server}...`)
-      await dbOps.vips.removeServers({ vipUser, serversToRemove: [server] })
+      await dbOpsVips.removeServers({ vipUser, serversToRemove: [server] })
       await m2.edit(`Successfully removed`)
     } else if (action === 'list') {
       if (!vipUser.servers || vipUser.servers.length === 0) return await message.channel.send(`You have no servers under your patron backing. The maximum number of servers you may have under your patron backing is ${vipUser.maxServers ? vipUser.maxServers : 1}.`)
@@ -61,7 +62,7 @@ async function switchServerArg (bot, message, args, vipUser, guildRss) {
 
 module.exports = async (bot, message) => {
   try {
-    const [ guildRss, vipUser ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), dbOps.vips.get(message.author.id) ])
+    const [ guildRss, vipUser ] = await Promise.all([ dbOpsGuilds.get(message.guild.id), dbOpsVips.get(message.author.id) ])
 
     if (!vipUser || vipUser.invalid === true) return await message.channel.send('You must be a patron to use this command.')
     const args = message.content.toLowerCase().split(' ').map(item => item.trim())
@@ -84,7 +85,7 @@ module.exports = async (bot, message) => {
     //   timeLimited[message.author.id] = true
     //   setTimeout(() => delete timeLimited[message.author.id], 300000) // 5 minutes
     //   const m = await message.channel.send('Refreshing...')
-    //   dbOps.vips.refresh(async err => {
+    //   dbOpsVips.refresh(async err => {
     //     try {
     //       if (err) {
     //         log.command.error('Failed to update VIPs', message.author, err)

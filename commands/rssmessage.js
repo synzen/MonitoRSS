@@ -1,4 +1,4 @@
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
@@ -30,7 +30,7 @@ async function messagePromptFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
     const messagePrompt = new MenuUtils.Menu(message, messagePromptFn)
 
@@ -44,14 +44,14 @@ module.exports = async (bot, message, command) => {
       delete guildRss.sources[rssName].message
 
       log.command.info(`Message resetting for ${source.link}`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       await m.edit(`Message reset and using default message:\n \`\`\`Markdown\n${config.feeds.defaultMessage}\`\`\` \nfor feed ${source.link}`)
     } else {
       const m = await message.channel.send(`Updating message...`)
       source.message = setting
 
       log.command.info(`New message being recorded for ${source.link}`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       await m.edit(`Message recorded:\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\` \nfor feed <${source.link}>. You may use \`${config.bot.prefix}rsstest\` to see your new message format.${setting.search(/{subscriptions}/) === -1 ? ` Note that because there is no \`{subscriptions}\`, whatever role subscriptions you add through ${config.bot.prefix}rssroles will *not* appear in this feed's article messages. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.` : ` After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`}`) // Escape backticks in code blocks by inserting zero-width space before each backtick
     }
   } catch (err) {

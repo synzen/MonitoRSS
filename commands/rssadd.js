@@ -2,12 +2,13 @@ const channelTracker = require('../util/channelTracker.js')
 const initialize = require('../rss/initialize.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsFailedLinks = require('../util/db/failedLinks.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const serverLimit = require('../util/serverLimit.js')
 
 module.exports = async (bot, message) => {
   try {
-    const [ guildRss, serverLimitData ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), serverLimit(message.guild.id) ])
+    const [ guildRss, serverLimitData ] = await Promise.all([ dbOpsGuilds.get(message.guild.id), serverLimit(message.guild.id) ])
     const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
@@ -57,7 +58,7 @@ module.exports = async (bot, message) => {
         if (addedLink) link = addedLink
         channelTracker.remove(message.channel.id)
         log.command.info(`Added ${link}`, message.guild)
-        dbOps.failedLinks.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
+        dbOpsFailedLinks.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
         passedAddLinks.push(link)
         ++checkedSoFar
       } catch (err) {

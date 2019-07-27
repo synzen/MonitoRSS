@@ -3,12 +3,12 @@ const Article = require('../structs/Article.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
 const testFilters = require('./translator/filters.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 
 module.exports = async (guildRss, rssName, passFiltersOnly) => {
   const rssList = guildRss.sources
   const source = rssList[rssName]
-  const failedLinkResult = await dbOps.failedLinks.get(source.link)
+  const failedLinkResult = await dbOpsFailedLinks.get(source.link)
   if (failedLinkResult && failedLinkResult.failed) throw new Error('Reached connection failure limit')
   const feedparser = new DecodedFeedParser(null, source.link)
   const idResolver = new ArticleIDResolver()
@@ -48,7 +48,7 @@ module.exports = async (guildRss, rssName, passFiltersOnly) => {
         const filteredCurrentFeed = []
 
         currentFeed.forEach(article => {
-          article._id = ArticleIDResolver.getIdTypeValue(article, useIdType)
+          article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
           const constructedArticle = new Article(article, source, { })
           if (testFilters(guildRss.sources[rssName], constructedArticle).passed) filteredCurrentFeed.push(article) // returns null if no article is sent from passesFilters
         })
@@ -63,7 +63,7 @@ module.exports = async (guildRss, rssName, passFiltersOnly) => {
         const feedLinkList = []
         const rawArticleList = []
         currentFeed.forEach(article => {
-          article._id = ArticleIDResolver.getIdTypeValue(article, useIdType)
+          article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
           if (!feedLinkList.includes(article.link)) feedLinkList.push(article.link)
           rawArticleList.push(article)
         })

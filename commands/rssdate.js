@@ -1,6 +1,6 @@
 const config = require('../config.js')
 const moment = require('moment-timezone')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 
@@ -58,7 +58,7 @@ async function setOptionFn (m, data, callback) {
 
 module.exports = async (bot, message) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return message.channel.send('You cannot customize the date placeholder if you have not added any feeds.').catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
     const selectOption = new MenuUtils.Menu(message, selectOptionFn).setAuthor('Date Customizations')
       .setDescription('\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
@@ -77,7 +77,7 @@ module.exports = async (bot, message) => {
       guildRss.dateLanguage = undefined
 
       log.command.info(`Date settings resetting to default`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       return await message.channel.send(`All date customizations have been reset back to default.`)
     }
 
@@ -87,7 +87,7 @@ module.exports = async (bot, message) => {
       else guildRss.timezone = undefined
 
       log.command.info(`Date setting ${settingName} resetting to default`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       await message.channel.send(`${settingName} has been reset to the default: \`${config.feeds[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone']}\`.`)
     } else {
       if (num === 3) guildRss.dateLanguage = setting.toLowerCase() === config.feeds.dateLanguage.toLowerCase() ? undefined : setting
@@ -95,7 +95,7 @@ module.exports = async (bot, message) => {
       else if (num === 1) guildRss.timezone = setting.toLowerCase() === config.feeds.timezone.toLowerCase() ? undefined : setting
 
       log.command.info(`Date setting ${settingName} updating to '${setting}'`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       await message.channel.send(`${settingName} has been successfully updated to \`${setting}\`.`)
     }
   } catch (err) {

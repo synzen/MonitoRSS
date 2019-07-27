@@ -4,33 +4,38 @@ process.env.DRSS_EXPERIMENTAL_FEATURES = 'true'
 
 // const agent = request.agent(app())
 const httpMocks = require('node-mocks-http')
-const redisOps = require('../../util/redisOps.js')
 const channelsRoute = require('../routes/api/guilds.channels.js')
+const RedisChannel = require('../../structs/db/Redis/Channel.js')
 
-jest.mock('../../util/redisOps.js')
+jest.mock('../../structs/db/Redis/Channel.js')
 
-describe('/api/guilds/:guildId/channels', function () {
-  const userId = 'georgie'
+RedisChannel.utils = {
+  getChannelsOfGuild: jest.fn(() => Promise.resolve())
+}
+
+describe('/api/guilds/:guildID/channels', function () {
+  const userID = 'georgie'
   const session = {
     identity: {
-      id: userId
+      id: userID
     }
   }
   const params = {
-    guildId: '9887'
+    guildID: '9887'
   }
   describe('GET /', function () {
     afterEach(function () {
-      redisOps.channels.getChannelsOfGuild.mockReset()
-      redisOps.channels.getName.mockReset()
+      RedisChannel.fetch.mockReset()
+      RedisChannel.utils.getChannelsOfGuild.mockReset()
     })
     it('returns guild channels with their names', async function () {
       const request = httpMocks.createRequest({ session, params })
       const response = httpMocks.createResponse()
       const expectedResponse = [{ id: '1', name: 'name1' }, { id: '2', name: 'name2' }]
-      redisOps.channels.getChannelsOfGuild.mockResolvedValueOnce([expectedResponse[0].id, expectedResponse[1].id])
-      redisOps.channels.getName.mockResolvedValueOnce(expectedResponse[0].name)
-      redisOps.channels.getName.mockResolvedValueOnce(expectedResponse[1].name)
+      RedisChannel.utils.getChannelsOfGuild.mockResolvedValueOnce(expectedResponse.map(item => item.id))
+      for (const expected of expectedResponse) {
+        RedisChannel.fetch.mockResolvedValueOnce({ ...expected, toJSON: () => expected })
+      }
       await channelsRoute.routes.getChannels(request, response)
       expect(response.statusCode).toEqual(200)
       const data = JSON.parse(response._getData())
@@ -40,57 +45,62 @@ describe('/api/guilds/:guildId/channels', function () {
       const request = httpMocks.createRequest({ session, params })
       const response = httpMocks.createResponse()
       const expectedResponse = []
-      redisOps.channels.getChannelsOfGuild.mockResolvedValueOnce(expectedResponse)
+      RedisChannel.utils.getChannelsOfGuild.mockResolvedValueOnce(expectedResponse)
       await channelsRoute.routes.getChannels(request, response)
       expect(response.statusCode).toEqual(200)
       const data = JSON.parse(response._getData())
       expect(data).toEqual(expectedResponse)
     })
   })
-  describe('GET /:channelId', function () {
-    afterEach(function () {
-      redisOps.channels.isChannelOfGuild.mockReset()
-      redisOps.channels.getName.mockReset()
-    })
+  describe('GET /:channelID', function () {
     it('returns the channel if it is part of guild and cached', async function () {
-      const channelId = '235trg'
+      const channelID = '235trg'
       const channelName = 'adegs'
-      const expectedResponse = { id: channelId, name: channelName }
-      const request = httpMocks.createRequest({ session, params: { ...params, channelId } })
+      const expectedResponse = { id: channelID, name: channelName, guildID: params.guildID }
+      const request = httpMocks.createRequest({ session, params: { ...params, channelID } })
       const response = httpMocks.createResponse()
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(true)
-      redisOps.channels.getName.mockResolvedValueOnce(channelName)
-      await channelsRoute.routes.getChannelWithId(request, response)
+      RedisChannel.fetch.mockResolvedValueOnce({ ...expectedResponse, toJSON: () => expectedResponse })
+      await channelsRoute.routes.getChannelWithID(request, response)
       expect(response.statusCode).toEqual(200)
       const data = JSON.parse(response._getData())
       expect(data).toEqual(expectedResponse)
     })
-    it('returns 404 if not part of guild', async function () {
-      const channelId = '235trg'
-      const request = httpMocks.createRequest({ session, params: { ...params, channelId } })
+    it('returns 404 if not found', async function () {
+      const channelID = '235trg'
+      const request = httpMocks.createRequest({ session, params: { ...params, channelID } })
       const response = httpMocks.createResponse()
-      redisOps.channels.isChannelOfGuild.mockResolvedValueOnce(false)
-      await channelsRoute.routes.getChannelWithId(request, response)
+      RedisChannel.fetch.mockResolvedValueOnce(null)
+      await channelsRoute.routes.getChannelWithID(request, response)
       expect(response.statusCode).toEqual(404)
       const data = JSON.parse(response._getData())
       expect(data.message.includes('Not found')).toEqual(true)
     })
+    it('returns 403 if found but not part of guild', async function () {
+      const channelID = '235trg'
+      const request = httpMocks.createRequest({ session, params: { ...params, channelID } })
+      const response = httpMocks.createResponse()
+      RedisChannel.fetch.mockResolvedValueOnce({ id: channelID, guildID: params.guildID + 'abc' })
+      await channelsRoute.routes.getChannelWithID(request, response)
+      expect(response.statusCode).toEqual(403)
+      const data = JSON.parse(response._getData())
+      expect(data.message.includes('Forbidden')).toEqual(true)
+    })
   })
   // const discordAPIRoutes = [
-  //   { route: `/guilds/${guildId}`, response: { owner_id: userId } },
-  //   { route: `/guilds/${guildId}/roles`, response: [] },
-  //   { route: `/guilds/${guildId}/members/${userId}`, response: { roles: [] } }
+  //   { route: `/guilds/${guildID}`, response: { owner_id: userID } },
+  //   { route: `/guilds/${guildID}/roles`, response: [] },
+  //   { route: `/guilds/${guildID}/members/${userID}`, response: { roles: [] } }
   // ]
   // beforeEach(function () {
   //   discordAPIRoutes.forEach(route => nock(discordAPIConstants.apiHost).get(route.route).reply(200, route.response))
-  //   return models.GuildRss().deleteOne({ id: guildId })
+  //   return models.GuildRss().deleteOne({ id: guildID })
   // })
   // beforeAll(async function (done) {
   //   agent
   //     .post('/session')
   //     .send({
   //       auth: { access_token: 'humpdy dumpdy' },
-  //       identity: { id: userId }
+  //       identity: { id: userID }
   //     })
   //     .expect(200, done)
   // })
@@ -99,63 +109,63 @@ describe('/api/guilds/:guildId/channels', function () {
   //   it('returns channels response from discord if 200 code', function (done) {
   //     const discordResponse = { code: 200, message: { ho: 'dunk', fo: 'dur' } }
   //     nock(discordAPIConstants.apiHost)
-  //       .get(`/guilds/${guildId}/channels`)
+  //       .get(`/guilds/${guildID}/channels`)
   //       .reply(discordResponse.code, discordResponse)
 
   //     agent
-  //       .get(`/api/guilds/${guildId}/channels`)
+  //       .get(`/api/guilds/${guildID}/channels`)
   //       .expect(discordResponse.code, discordResponse, done)
   //   })
   //   it('returns channels response from discord if non-200 code', function (done) {
   //     const discordResponse = { code: 405, message: { ho: 'dunk', fo: 'dur' } }
   //     nock(discordAPIConstants.apiHost)
-  //       .get(`/guilds/${guildId}/channels`)
+  //       .get(`/guilds/${guildID}/channels`)
   //       .reply(discordResponse.code, discordResponse)
 
   //     agent
-  //       .get(`/api/guilds/${guildId}/channels`)
+  //       .get(`/api/guilds/${guildID}/channels`)
   //       .expect(discordResponse.code, { ...discordResponse, discord: true }, done)
   //   })
   // })
 
-  // describe('GET /:channelId', function () {
+  // describe('GET /:channelID', function () {
   //   it('gives back the channel response from discord', function (done) {
-  //     const channelId = `azsdfepgjmkgsdxcfgb`
-  //     const discordResponse = { elon: 'is', the: 'future?', guild_id: guildId }
+  //     const channelID = `azsdfepgjmkgsdxcfgb`
+  //     const discordResponse = { elon: 'is', the: 'future?', guild_id: guildID }
   //     nock(discordAPIConstants.apiHost)
-  //       .get(`/channels/${channelId}`)
+  //       .get(`/channels/${channelID}`)
   //       .reply(200, discordResponse)
 
   //     agent
-  //       .get(`/api/guilds/${guildId}/channels/${channelId}`)
+  //       .get(`/api/guilds/${guildID}/channels/${channelID}`)
   //       .expect(200, discordResponse, done)
   //   })
   //   it('returns a 403 code for a channel not in guild', function (done) {
-  //     const channelId = `azsdfepgb`
-  //     const discordResponse = { elon: 'is', the: 'future?', guild_id: guildId + 1 }
+  //     const channelID = `azsdfepgb`
+  //     const discordResponse = { elon: 'is', the: 'future?', guild_id: guildID + 1 }
   //     const expectedResponse = { code: 403, message: { channel: 'Not part of guild' } }
   //     nock(discordAPIConstants.apiHost)
-  //       .get(`/channels/${channelId}`)
+  //       .get(`/channels/${channelID}`)
   //       .reply(200, discordResponse)
 
   //     agent
-  //       .get(`/api/guilds/${guildId}/channels/${channelId}`)
+  //       .get(`/api/guilds/${guildID}/channels/${channelID}`)
   //       .expect(expectedResponse.code, expectedResponse, done)
   //   })
   //   it(`returns discord's status code and message for channel not in guild`, function (done) {
-  //     const channelId = `azsdfepgb`
+  //     const channelID = `azsdfepgb`
   //     const expectedResponse = { code: 450, message: 'no!' }
   //     nock(discordAPIConstants.apiHost)
-  //       .get(`/channels/${channelId}`)
+  //       .get(`/channels/${channelID}`)
   //       .reply(expectedResponse.code, expectedResponse)
 
   //     agent
-  //       .get(`/api/guilds/${guildId}/channels/${channelId}`)
+  //       .get(`/api/guilds/${guildID}/channels/${channelID}`)
   //       .expect(expectedResponse.code, { ...expectedResponse, discord: true }, done)
   //   })
   // })
 
   // afterAll(function () {
-  //   return models.GuildRss().deleteOne({ id: guildId })
+  //   return models.GuildRss().deleteOne({ id: guildID })
   // })
 })

@@ -6,18 +6,32 @@ const nock = require('nock')
 const discordAPIConstants = require('../constants/discordAPI.js')
 const guildsRoute = require('../routes/api/guilds')
 const httpMocks = require('node-mocks-http')
-const dbOps = require('../../util/dbOps.js')
-const redisOps = require('../../util/redisOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
+const RedisGuild = require('../../structs/db/Redis/Guild.js')
+const RedisGuildMember = require('../../structs/db/Redis/GuildMember.js')
+const RedisRole = require('../../structs/db/Redis/Role.js')
 const moment = require('moment-timezone')
 
-jest.mock('../../util/dbOps.js')
-jest.mock('../../util/redisOps.js')
+jest.mock('../../util/db/guilds.js')
+jest.mock('../../structs/db/Redis/Guild.js')
+jest.mock('../../structs/db/Redis/GuildMember.js')
+jest.mock('../../structs/db/Redis/Role.js')
 jest.mock('moment-timezone')
 
-describe('/api/guilds', function () {
-  const userId = '62368028891823362391'
+RedisGuildMember.utils = {
+  recognizeManagerManual: jest.fn(() => Promise.resolve()),
+  recognizeManual: jest.fn(() => Promise.resolve()),
+  recognizeNonMember: jest.fn(() => Promise.resolve())
+}
 
-  describe('GET /:guildId', function () {
+RedisRole.utils = {
+  isManagerOfGuild: jest.fn(() => Promise.resolve())
+}
+
+describe('/api/guilds', function () {
+  const userID = '62368028891823362391'
+
+  describe('GET /:guildID', function () {
     // it('returns 400 with no guild id in params', function (done) {
     //   agent
     //     .get('/api/guilds/')
@@ -31,19 +45,18 @@ describe('/api/guilds', function () {
     // })
     const session = {
       identity: {
-        id: userId
+        id: userID
       }
     }
     const params = {
-      guildId: '9887'
+      guildID: '9887'
     }
     afterEach(function () {
-      redisOps.guilds.getValue.mockClear()
-      redisOps.members.isManagerOfGuild.mockClear()
-      redisOps.members.isMemberOfGuild.mockClear()
-      redisOps.members.isNotManagerOfGuild.mockClear()
-      redisOps.guilds.get.mockClear()
-      dbOps.guildRss.get.mockClear()
+      RedisGuild.fetch.mockClear()
+      RedisGuildMember.fetch.mockClear()
+      RedisGuildMember.utils.recognizeManagerManual.mockClear()
+      RedisGuildMember.utils.recognizeManual.mockClear()
+      RedisGuildMember.utils.recognizeNonMember.mockClear()
     })
     describe('middleware', function () {
       it('returns 400 on no guild ID in param', async function () {
@@ -52,17 +65,39 @@ describe('/api/guilds', function () {
         await guildsRoute.middleware.checkUserGuildPermission(request, response)
         expect(response.statusCode).toEqual(400)
       })
+      it('returns 404 on unknown guild', async function () {
+        const request = httpMocks.createRequest({ session, params })
+        const response = httpMocks.createResponse()
+        RedisGuild.fetch.mockResolvedValueOnce(null)
+        dbOpsGuilds.get.mockResolvedValueOnce(null)
+        RedisGuildMember.fetch.mockResolvedValueOnce(null)
+        await guildsRoute.middleware.checkUserGuildPermission(request, response)
+        expect(response.statusCode).toEqual(404)
+      })
+      it('goes to next() as owner if guild is cached', async function (done) {
+        const cachedGuild = { foo: 'bar', ownerID: session.identity.id }
+        const guildRss = { joe: 'biden' }
+        const cachedMember = { isManager: true }
+        const request = httpMocks.createRequest({ session, params })
+        const response = httpMocks.createResponse()
+
+        RedisGuild.fetch.mockResolvedValueOnce({ toJSON: () => cachedGuild })
+        dbOpsGuilds.get.mockResolvedValueOnce(guildRss)
+        RedisGuildMember.fetch.mockResolvedValueOnce(cachedMember)
+
+        await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
+        expect(response.statusCode).toEqual(200)
+      })
       it('attaches req.guildRss and req.guild', async function (done) {
         const cachedGuild = { foo: 'bar' }
         const guildRss = { joe: 'biden' }
         const request = httpMocks.createRequest({ session, params })
         const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(null)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(true)
-        redisOps.members.isMemberOfGuild.mockResolvedValueOnce(true)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(false)
-        redisOps.guilds.get.mockResolvedValueOnce(cachedGuild)
-        dbOps.guildRss.get.mockResolvedValueOnce(guildRss)
+
+        RedisGuild.fetch.mockResolvedValueOnce({ toJSON: () => cachedGuild })
+        dbOpsGuilds.get.mockResolvedValueOnce(guildRss)
+        RedisGuildMember.fetch.mockResolvedValueOnce({ isManager: true })
+
         await guildsRoute.middleware.checkUserGuildPermission(request, response, () => {
           try {
             expect(request.guildRss).toEqual(guildRss)
@@ -75,233 +110,152 @@ describe('/api/guilds', function () {
       })
     })
     describe('member is cached as part of guild', function () {
-      beforeEach(function () {
-        redisOps.members.isMemberOfGuild.mockResolvedValueOnce(true)
-        redisOps.guilds.get.mockResolvedValueOnce(null)
-        dbOps.guildRss.get.mockResolvedValueOnce(null)
-      })
-      afterEach(function () {
-        expect(redisOps.guilds.getValue).toHaveBeenNthCalledWith(1, params.guildId, 'ownerID')
-        expect(redisOps.members.isManagerOfGuild).toHaveBeenNthCalledWith(1, userId, params.guildId)
-        expect(redisOps.members.isMemberOfGuild).toHaveBeenNthCalledWith(1, userId, params.guildId)
-        expect(redisOps.members.isNotManagerOfGuild).toHaveBeenNthCalledWith(1, userId, params.guildId)
-        expect(redisOps.guilds.get).toHaveBeenNthCalledWith(1, params.guildId)
-        expect(dbOps.guildRss.get).toHaveBeenNthCalledWith(1, params.guildId)
-      })
-      it('goes to next() as owner', async function (done) {
+      it('goes to next() as manager', async function (done) {
+        const cachedGuild = { foo: 'bar' }
+        const guildRss = { joe: 'biden' }
+        const cachedMember = { isManager: true }
         const request = httpMocks.createRequest({ session, params })
         const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(userId)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(false)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(false)
+
+        RedisGuild.fetch.mockResolvedValueOnce({ toJSON: () => cachedGuild })
+        dbOpsGuilds.get.mockResolvedValueOnce(guildRss)
+        RedisGuildMember.fetch.mockResolvedValueOnce(cachedMember)
+
         await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
         expect(response.statusCode).toEqual(200)
       })
-      it('goes to next() as non-owner, cached as non-manager and is cached as manager', async function (done) {
+      it('returns 403 as non-manager', async function () {
+        const cachedGuild = { foo: 'bar' }
+        const guildRss = { joe: 'biden' }
+        const cachedMember = { isManager: false }
+
+        RedisGuild.fetch.mockResolvedValueOnce({ toJSON: () => cachedGuild })
+        dbOpsGuilds.get.mockResolvedValueOnce(guildRss)
+        RedisGuildMember.fetch.mockResolvedValueOnce(cachedMember)
+
         const request = httpMocks.createRequest({ session, params })
         const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(null)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(true)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(true)
-        await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
-        expect(response.statusCode).toEqual(200)
-      })
-      it('returns 401 as non-owner, cached as non-manager, and is not cached as manager', async function () {
-        const request = httpMocks.createRequest({ session, params })
-        const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(null)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(false)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(true)
         await guildsRoute.middleware.checkUserGuildPermission(request, response)
-        expect(response.statusCode).toEqual(401)
-      })
-      it('goes to next() as non-owner, not cached as non-manager and is cached as manager', async function (done) {
-        const request = httpMocks.createRequest({ session, params })
-        const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(null)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(true)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(false)
-        await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
-        expect(response.statusCode).toEqual(200)
-      })
-      it('returns 401 as non-owner, not cached as non-manager and is not cached as manager', async function () {
-        const request = httpMocks.createRequest({ session, params })
-        const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(null)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(false)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(false)
-        await guildsRoute.middleware.checkUserGuildPermission(request, response)
-        expect(response.statusCode).toEqual(401)
+        expect(response.statusCode).toEqual(403)
       })
     })
     describe('member is not cached as part of guild', function () {
+      const cachedGuild = { foo: 'bar' }
+      const guildRss = { joe: 'biden' }
       beforeEach(function () {
-        redisOps.members.isMemberOfGuild.mockResolvedValueOnce(false)
-        redisOps.guilds.get.mockResolvedValueOnce(null)
-        dbOps.guildRss.get.mockResolvedValueOnce(null)
+        RedisGuild.fetch.mockResolvedValueOnce({ toJSON: () => cachedGuild })
+        dbOpsGuilds.get.mockResolvedValueOnce(guildRss)
+        RedisGuildMember.fetch.mockResolvedValueOnce(null)
       })
-      it('goes to next() as owner', async function (done) {
-        const request = httpMocks.createRequest({ session, params })
-        const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(userId)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(false)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(false)
-        await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
-        expect(response.statusCode).toEqual(200)
+      afterEach(function () {
+        RedisGuild.fetch.mockReset()
+        dbOpsGuilds.get.mockReset()
+        RedisGuildMember.fetch.mockReset()
+        RedisRole.utils.isManagerOfGuild.mockReset()
       })
-      it('returns 401 as non-owner, cached as non-manager and is cached as manager', async function () {
-        const request = httpMocks.createRequest({ session, params })
-        const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(null)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(true)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(true)
-        await guildsRoute.middleware.checkUserGuildPermission(request, response)
-        expect(response.statusCode).toEqual(401)
-      })
-      it('returns 401 as non-owner, cached as non-manager, and is not cached as manager', async function () {
-        const request = httpMocks.createRequest({ session, params })
-        const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(null)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(false)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(true)
-        await guildsRoute.middleware.checkUserGuildPermission(request, response)
-        expect(response.statusCode).toEqual(401)
-      })
-      it('goes to next() as non-owner, not cached as non-manager and is cached as manager', async function (done) {
-        const request = httpMocks.createRequest({ session, params })
-        const response = httpMocks.createResponse()
-        redisOps.guilds.getValue.mockResolvedValueOnce(null)
-        redisOps.members.isManagerOfGuild.mockResolvedValueOnce(true)
-        redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(false)
-        await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
-        expect(response.statusCode).toEqual(200)
-      })
-      describe('as non-owner, not cached as non-manager and is not cached as manager', function () {
-        beforeEach(function () {
-          redisOps.guilds.getValue.mockResolvedValueOnce(null)
-          redisOps.members.isManagerOfGuild.mockResolvedValueOnce(null)
-          redisOps.members.isNotManagerOfGuild.mockResolvedValueOnce(null)
+      describe('Discord API call succeeds', function () {
+        it('calls addNonManager and adds member to cache if they have no auth roles', async function () {
+          const request = httpMocks.createRequest({ session, params })
+          const response = httpMocks.createResponse()
+          const discordAPIResponse = { roles: [] }
+          nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildID}/members/${userID}`).reply(200, discordAPIResponse)
+          await guildsRoute.middleware.checkUserGuildPermission(request, response)
+          expect(RedisGuildMember.utils.recognizeManual).toHaveBeenCalledTimes(1)
         })
-        afterEach(function () {
-          redisOps.roles.isManagerOfGuild.mockReset()
-          redisOps.members.addManagerManual.mockReset()
-          redisOps.members.addNonManager.mockReset()
+        it('returns 403 with API request with no eligible roles', async function () {
+          const request = httpMocks.createRequest({ session, params })
+          const response = httpMocks.createResponse()
+          const discordAPIResponse = { roles: ['abc', 'def', 'ghi'] }
+          nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildID}/members/${userID}`).reply(200, discordAPIResponse)
+          RedisRole.utils.isManagerOfGuild.mockResolvedValueOnce(false)
+          await guildsRoute.middleware.checkUserGuildPermission(request, response)
+          expect(response.statusCode).toEqual(403)
         })
-        describe('Discord API call succeeds', function () {
-          it('calls addNonManager and adds user to cache if unauthorized', async function () {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            const discordAPIResponse = { roles: [] }
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(200, discordAPIResponse)
-            await guildsRoute.middleware.checkUserGuildPermission(request, response)
-            expect(redisOps.members.addNonManager).toHaveBeenCalledTimes(1)
-          })
-          it('returns 401 with API request with no roles', async function () {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            const discordAPIResponse = { roles: [] }
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(200, discordAPIResponse)
-            await guildsRoute.middleware.checkUserGuildPermission(request, response)
-            expect(response.statusCode).toEqual(401)
-          })
-          it('returns 401 with API request with no eligible roles', async function () {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            const discordAPIResponse = { roles: ['abc', 'def', 'ghi'] }
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(200, discordAPIResponse)
-            redisOps.roles.isManagerOfGuild.mockResolvedValue(0)
-            await guildsRoute.middleware.checkUserGuildPermission(request, response)
-            expect(response.statusCode).toEqual(401)
-          })
-          it('calls addManagerManual and adds user to cache if authorized', async function (done) {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            const discordAPIResponse = { roles: ['abc', 'def', 'ghi'] }
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(200, discordAPIResponse)
-            redisOps.roles.isManagerOfGuild.mockResolvedValue(1)
-            await guildsRoute.middleware.checkUserGuildPermission(request, response, () => {
-              try {
-                expect(redisOps.members.addManagerManual).toHaveBeenCalledTimes(1)
-                done()
-              } catch (err) {
-                done(err)
-              }
-            })
-          })
-          it('calls next() with API request with eligible roles', async function (done) {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            const discordAPIResponse = { roles: ['abc', 'def', 'ghi'] }
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(200, discordAPIResponse)
-            redisOps.roles.isManagerOfGuild.mockResolvedValue(1)
-            await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
-            expect(response.statusCode).toEqual(200)
+        it('calls recognizeManagerManual and adds user to cache if authorized', async function (done) {
+          const request = httpMocks.createRequest({ session, params })
+          const response = httpMocks.createResponse()
+          const discordAPIResponse = { roles: ['abc', 'def', 'ghi'] }
+          nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildID}/members/${userID}`).reply(200, discordAPIResponse)
+          RedisRole.utils.isManagerOfGuild.mockResolvedValueOnce(true)
+          await guildsRoute.middleware.checkUserGuildPermission(request, response, () => {
+            try {
+              expect(RedisGuildMember.utils.recognizeManagerManual).toHaveBeenCalledTimes(1)
+              done()
+            } catch (err) {
+              done(err)
+            }
           })
         })
-        describe('Discord API call fails', function () {
-          beforeEach(function () {
-            redisOps.members.addNonManager.mockResolvedValueOnce(1)
+        it('calls next() with API request with eligible roles', async function (done) {
+          const request = httpMocks.createRequest({ session, params })
+          const response = httpMocks.createResponse()
+          const discordAPIResponse = { roles: ['abc', 'def', 'ghi'] }
+          nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildID}/members/${userID}`).reply(200, discordAPIResponse)
+          RedisRole.utils.isManagerOfGuild.mockResolvedValueOnce(true)
+          await guildsRoute.middleware.checkUserGuildPermission(request, response, done)
+          expect(response.statusCode).toEqual(200)
+        })
+      })
+      describe('Discord API call fails', function () {
+        it('calls recognizeNonMember if Discord API access returns 401', async function (done) {
+          const request = httpMocks.createRequest({ session, params })
+          const response = httpMocks.createResponse()
+          nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildID}/members/${userID}`).reply(401, {})
+          await guildsRoute.middleware.checkUserGuildPermission(request, response, () => {
+            try {
+              expect(RedisGuildMember.utils.recognizeNonMember).toHaveBeenCalledTimes(1)
+              done()
+            } catch (err) {
+              done(err)
+            }
           })
-          it('calls addNonManager and adds user to cache if Discord API access returns 401', async function (done) {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(401, {})
-            await guildsRoute.middleware.checkUserGuildPermission(request, response, () => {
-              try {
-                expect(redisOps.members.addNonManager).toHaveBeenCalledTimes(1)
-                done()
-              } catch (err) {
-                done(err)
-              }
-            })
+        })
+        it('passes to next middleware if Discord API returns 401', async function (done) {
+          const request = httpMocks.createRequest({ session, params })
+          const response = httpMocks.createResponse()
+          nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildID}/members/${userID}`).reply(401, {})
+          await guildsRoute.middleware.checkUserGuildPermission(request, response, nextErr => {
+            try {
+              expect(nextErr).toBeDefined()
+              done()
+            } catch (err) {
+              done(err)
+            }
           })
-          it('passes to next middleware if Discord API returns 401', async function (done) {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(401, {})
-            await guildsRoute.middleware.checkUserGuildPermission(request, response, nextErr => {
-              try {
-                expect(nextErr).toBeDefined()
-                done()
-              } catch (err) {
-                done(err)
-              }
-            })
+        })
+        it('calls addNonManager if Discord API access returns 403', async function (done) {
+          const request = httpMocks.createRequest({ session, params })
+          const response = httpMocks.createResponse()
+          nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildID}/members/${userID}`).reply(403, {})
+          await guildsRoute.middleware.checkUserGuildPermission(request, response, () => {
+            try {
+              expect(RedisGuildMember.utils.recognizeNonMember).toHaveBeenCalledTimes(1)
+              done()
+            } catch (err) {
+              done(err)
+            }
           })
-          it('calls addNonManager and adds user to cache if Discord API access returns 403', async function (done) {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(403, {})
-            await guildsRoute.middleware.checkUserGuildPermission(request, response, () => {
-              try {
-                expect(redisOps.members.addNonManager).toHaveBeenCalledTimes(1)
-                done()
-              } catch (err) {
-                done(err)
-              }
-            })
-          })
-          it('passes to next middleware if Discord API returns 403', async function (done) {
-            const request = httpMocks.createRequest({ session, params })
-            const response = httpMocks.createResponse()
-            nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildId}/members/${userId}`).reply(403, {})
-            await guildsRoute.middleware.checkUserGuildPermission(request, response, nextErr => {
-              try {
-                expect(nextErr).toBeDefined()
-                done()
-              } catch (err) {
-                done(err)
-              }
-            })
+        })
+        it('passes to next middleware if Discord API returns 403', async function (done) {
+          const request = httpMocks.createRequest({ session, params })
+          const response = httpMocks.createResponse()
+          nock(discordAPIConstants.apiHost).get(`/guilds/${params.guildID}/members/${userID}`).reply(403, {})
+          await guildsRoute.middleware.checkUserGuildPermission(request, response, nextErr => {
+            try {
+              expect(nextErr).toBeDefined()
+              done()
+            } catch (err) {
+              done(err)
+            }
           })
         })
       })
     })
-    describe('GET /:guildId', function () {
+    describe('GET /:guildID', function () {
       it('returns 404 if no guildRss is found', function () {
         const request = httpMocks.createRequest({ session })
         const response = httpMocks.createResponse()
-        guildsRoute.routes.getGuildId(request, response)
+        guildsRoute.routes.getGuildID(request, response)
         expect(response.statusCode).toEqual(404)
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(404)
@@ -310,22 +264,22 @@ describe('/api/guilds', function () {
         const guildRss = { foo: 'bzz' }
         const request = httpMocks.createRequest({ session, guildRss })
         const response = httpMocks.createResponse()
-        guildsRoute.routes.getGuildId(request, response)
+        guildsRoute.routes.getGuildID(request, response)
         expect(JSON.parse(response._getData())).toEqual(guildRss)
         expect(response._isJSON()).toEqual(true)
       })
     })
 
-    describe('PATCH /:guildId', function () {
+    describe('PATCH /:guildID', function () {
       afterEach(function () {
         moment.tz.zone.mockReset()
-        dbOps.guildRss.update.mockReset()
-        dbOps.guildRss.get.mockReset()
+        dbOpsGuilds.update.mockReset()
+        dbOpsGuilds.get.mockReset()
       })
       it('returns 404 if no guildRss is found', function () {
         const request = httpMocks.createRequest({ session, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        guildsRoute.routes.patchGuildId(request, response)
+        guildsRoute.routes.patchGuildID(request, response)
         expect(response.statusCode).toEqual(404)
         expect(JSON.parse(response._getData()).code).toEqual(404)
       })
@@ -337,7 +291,7 @@ describe('/api/guilds', function () {
         }
         const request = httpMocks.createRequest({ session, body, guildRss: {}, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.patchGuildId(request, response)
+        await guildsRoute.routes.patchGuildID(request, response)
         expect(response.statusCode).toEqual(400)
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
@@ -354,7 +308,7 @@ describe('/api/guilds', function () {
         }
         const request = httpMocks.createRequest({ session, body, guildRss: {}, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.patchGuildId(request, response)
+        await guildsRoute.routes.patchGuildID(request, response)
         expect(response.statusCode).toEqual(400)
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
@@ -368,7 +322,7 @@ describe('/api/guilds', function () {
         }
         const request = httpMocks.createRequest({ session, body, guildRss: {}, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.patchGuildId(request, response)
+        await guildsRoute.routes.patchGuildID(request, response)
         expect(response.statusCode).toEqual(400)
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
@@ -380,7 +334,7 @@ describe('/api/guilds', function () {
         }
         const request = httpMocks.createRequest({ session, body, guildRss: {}, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.patchGuildId(request, response)
+        await guildsRoute.routes.patchGuildID(request, response)
         expect(response.statusCode).toEqual(400)
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
@@ -391,7 +345,7 @@ describe('/api/guilds', function () {
         moment.tz.zone.mockReturnValueOnce(null)
         const request = httpMocks.createRequest({ session, body, guildRss: {}, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.patchGuildId(request, response)
+        await guildsRoute.routes.patchGuildID(request, response)
         expect(response.statusCode).toEqual(400)
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(400)
@@ -404,7 +358,7 @@ describe('/api/guilds', function () {
         moment.tz.zone.mockReturnValue({ name: 'foobar-name' })
         const request = httpMocks.createRequest({ session, body, guildRss, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.patchGuildId(request, response, nextErr => {
+        await guildsRoute.routes.patchGuildID(request, response, nextErr => {
           if (nextErr) return done(nextErr)
           try {
             expect(guildRss.timezone).toEqual(undefined)
@@ -421,7 +375,7 @@ describe('/api/guilds', function () {
         const expectedResponse = { timezone: guildRss.timezone }
         const request = httpMocks.createRequest({ session, body, guildRss, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.patchGuildId(request, response, nextErr => {
+        await guildsRoute.routes.patchGuildID(request, response, nextErr => {
           if (nextErr) return done(nextErr)
           try {
             expect(guildRss).toEqual(expectedResponse)
@@ -441,7 +395,7 @@ describe('/api/guilds', function () {
           .mockImplementationOnce(arg => { return true })
           .mockImplementationOnce(arg => { return { name: 'foobar-name' } })
           .mockImplementationOnce(arg => { return { name: 'foobar-name-diff' } }) // Two different calls to indicate different timezones
-        await guildsRoute.routes.patchGuildId(request, response, nextErr => {
+        await guildsRoute.routes.patchGuildID(request, response, nextErr => {
           if (nextErr) return done(nextErr)
           try {
             expect(guildRss).toEqual(body)
@@ -452,15 +406,15 @@ describe('/api/guilds', function () {
         })
         expect(response.statusCode).toEqual(200)
       })
-      it('calls guildRss.update on success', async function (done) {
+      it('calls guilRss update func on success', async function (done) {
         const body = { dateFormat: 'abc' }
         moment.tz.zone.mockReturnValueOnce(null)
         const request = httpMocks.createRequest({ session, body, guildRss: {}, method: 'PATCH' })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.patchGuildId(request, response, nextErr => {
+        await guildsRoute.routes.patchGuildID(request, response, nextErr => {
           if (nextErr) return done(nextErr)
           try {
-            expect(dbOps.guildRss.update).toHaveBeenCalledTimes(1)
+            expect(dbOpsGuilds.update).toHaveBeenCalledTimes(1)
             done()
           } catch (err) {
             done(err)
@@ -469,14 +423,14 @@ describe('/api/guilds', function () {
         expect(response.statusCode).toEqual(200)
       })
     })
-    describe('DELETE /:guildId', function () {
+    describe('DELETE /:guildID', function () {
       afterEach(function () {
-        dbOps.guildRss.remove.mockReset()
+        dbOpsGuilds.remove.mockReset()
       })
       it('returns 404 if no guildRss is found', function () {
         const request = httpMocks.createRequest({ session })
         const response = httpMocks.createResponse()
-        guildsRoute.routes.deleteGuildId(request, response)
+        guildsRoute.routes.deleteGuildID(request, response)
         expect(response.statusCode).toEqual(404)
         const data = JSON.parse(response._getData())
         expect(data.code).toEqual(404)
@@ -484,10 +438,10 @@ describe('/api/guilds', function () {
       it('calls guildRss.remove if guildRss is found', async function (done) {
         const request = httpMocks.createRequest({ session, guildRss: {} })
         const response = httpMocks.createResponse()
-        await guildsRoute.routes.deleteGuildId(request, response, nextErr => {
+        await guildsRoute.routes.deleteGuildID(request, response, nextErr => {
           if (nextErr) return done(nextErr)
           try {
-            expect(dbOps.guildRss.remove).toHaveBeenCalledTimes(1)
+            expect(dbOpsGuilds.remove).toHaveBeenCalledTimes(1)
             done()
           } catch (err) {
             done(err)
@@ -506,57 +460,57 @@ describe('/api/guilds', function () {
   //   id: '8124',
   //   permissions: 372628569
   // }
-  // const roleIdManageChannel = roleManageChannel.id
-  // const roleIdAdministrator = roleAdministrator.id
-  // const discordAPIRoutes = (guildId, isOwner, hasRoleInGuild, hasManageChannelRole, hasAdministratorRole) => [
-  //   { route: `/guilds/${guildId}`, response: { owner_id: isOwner ? userId : userId + '123' } },
-  //   { route: `/guilds/${guildId}/roles`, response: hasRoleInGuild ? [ roleManageChannel, roleAdministrator ] : [] },
-  //   { route: `/guilds/${guildId}/members/${userId}`, response: { roles: [ hasManageChannelRole ? roleIdManageChannel : hasAdministratorRole ? roleIdAdministrator : 0 ] } }
+  // const roleIDManageChannel = roleManageChannel.id
+  // const roleIDAdministrator = roleAdministrator.id
+  // const discordAPIRoutes = (guildID, isOwner, hasRoleInGuild, hasManageChannelRole, hasAdministratorRole) => [
+  //   { route: `/guilds/${guildID}`, response: { owner_id: isOwner ? userID : userID + '123' } },
+  //   { route: `/guilds/${guildID}/roles`, response: hasRoleInGuild ? [ roleManageChannel, roleAdministrator ] : [] },
+  //   { route: `/guilds/${guildID}/members/${userID}`, response: { roles: [ hasManageChannelRole ? roleIDManageChannel : hasAdministratorRole ? roleIDAdministrator : 0 ] } }
   // ]
-  // const mockDiscordAPIRoutes = (guildId, isOwner, hasRoleInGuild, hasManageChannelRole, hasAdministratorRole) => {
-  //   discordAPIRoutes(guildId, isOwner, hasRoleInGuild, hasManageChannelRole, hasAdministratorRole).forEach(route => nock(discordAPIConstants.apiHost).get(route.route).reply(200, route.response))
+  // const mockDiscordAPIRoutes = (guildID, isOwner, hasRoleInGuild, hasManageChannelRole, hasAdministratorRole) => {
+  //   discordAPIRoutes(guildID, isOwner, hasRoleInGuild, hasManageChannelRole, hasAdministratorRole).forEach(route => nock(discordAPIConstants.apiHost).get(route.route).reply(200, route.response))
   // }
 
-  // describe('GET /:guildId', function () {
-  //   const guildId = '5292010923'
-  //   const guildRss = { id: guildId }
+  // describe('GET /:guildID', function () {
+  //   const guildID = '5292010923'
+  //   const guildRss = { id: guildID }
   //   // The user must meet two conditions to have access to this guild - they are either the owner, or has a role with MANAGE_CHANNELS permission
   //   beforeAll(function () {
-  //     return models.GuildRss().updateOne({ id: guildId }, { $set: guildRss }, { upsert: true })
+  //     return models.GuildRss().updateOne({ id: guildID }, { $set: guildRss }, { upsert: true })
   //   })
 
   //   it('returns the guild for user as owner but no roles', function (done) {
-  //     mockDiscordAPIRoutes(guildId, true)
+  //     mockDiscordAPIRoutes(guildID, true)
   //     agent
-  //       .get(`/api/guilds/${guildId}`)
+  //       .get(`/api/guilds/${guildID}`)
   //       .expect(200, guildRss, done)
   //   })
 
   //   it('returns the guild for user with Manage Channels role', function (done) {
-  //     mockDiscordAPIRoutes(guildId, false, true, true)
+  //     mockDiscordAPIRoutes(guildID, false, true, true)
   //     agent
-  //       .get(`/api/guilds/${guildId}`)
+  //       .get(`/api/guilds/${guildID}`)
   //       .expect(200, guildRss, done)
   //   })
 
   //   it('returns a guild for user with Administrator role', function (done) {
-  //     mockDiscordAPIRoutes(guildId, false, true, false, true)
+  //     mockDiscordAPIRoutes(guildID, false, true, false, true)
   //     agent
-  //       .get(`/api/guilds/${guildId}`)
+  //       .get(`/api/guilds/${guildID}`)
   //       .expect(200, guildRss, done)
   //   })
 
   //   it('returns a 401 code for user with no role in guild', function (done) {
-  //     mockDiscordAPIRoutes(guildId)
+  //     mockDiscordAPIRoutes(guildID)
   //     agent
-  //       .get(`/api/guilds/${guildId}`)
+  //       .get(`/api/guilds/${guildID}`)
   //       .expect(401, done)
   //   })
 
   //   it('returns a 401 code for user with no role in guild and also not owner', function (done) {
-  //     mockDiscordAPIRoutes(guildId, false, false, true, true)
+  //     mockDiscordAPIRoutes(guildID, false, false, true, true)
   //     agent
-  //       .get(`/api/guilds/${guildId}`)
+  //       .get(`/api/guilds/${guildID}`)
   //       .expect(401, done)
   //   })
 
@@ -565,32 +519,32 @@ describe('/api/guilds', function () {
   //   })
   // })
 
-  // describe('DELETE /:guildId', function () {
-  //   const guildId = '2974936509'
-  //   const guildRss = { id: guildId }
+  // describe('DELETE /:guildID', function () {
+  //   const guildID = '2974936509'
+  //   const guildRss = { id: guildID }
   //   beforeEach(async function () {
-  //     mockDiscordAPIRoutes(guildId, true) // Just let the user be owner for these tests
-  //     return models.GuildRss().deleteOne({ id: guildId })
+  //     mockDiscordAPIRoutes(guildID, true) // Just let the user be owner for these tests
+  //     return models.GuildRss().deleteOne({ id: guildID })
   //   })
   //   it('returns a 204 code on success', async function (done) {
-  //     await models.GuildRss().updateOne({ id: guildId }, { $set: guildRss }, { upsert: true })
+  //     await models.GuildRss().updateOne({ id: guildID }, { $set: guildRss }, { upsert: true })
   //     agent
-  //       .delete(`/api/guilds/${guildId}`)
+  //       .delete(`/api/guilds/${guildID}`)
   //       .expect(204, done)
   //   })
   //   it('returns a 404 on no guild found', async function (done) {
-  //     await models.GuildRss().deleteOne({ id: guildId })
+  //     await models.GuildRss().deleteOne({ id: guildID })
   //     agent
-  //       .delete(`/api/guilds/${guildId}`)
+  //       .delete(`/api/guilds/${guildID}`)
   //       .expect(404, done)
   //   })
   //   afterAll(function () {
-  //     return models.GuildRss().deleteOne({ id: guildId })
+  //     return models.GuildRss().deleteOne({ id: guildID })
   //   })
   // })
 
-  // describe('PATCH /:guildId', function () {
-  //   const guildId = '1003077591'
+  // describe('PATCH /:guildID', function () {
+  //   const guildID = '1003077591'
   //   const correctlyModifyWith = {
   //     timezone: 'joey',
   //     prefix: 'asad',
@@ -605,32 +559,32 @@ describe('/api/guilds', function () {
   //     dateFormat: 1
   //   }
   //   beforeEach(function () {
-  //     return models.GuildRss().deleteOne({ id: guildId })
+  //     return models.GuildRss().deleteOne({ id: guildID })
   //   })
   //   it('returns the updated guildRss with valid keys for an existent guildRss', async function (done) {
-  //     await models.GuildRss().updateOne({ id: guildId }, { $set: { id: guildId } }, { upsert: true })
-  //     mockDiscordAPIRoutes(guildId, true)
+  //     await models.GuildRss().updateOne({ id: guildID }, { $set: { id: guildID } }, { upsert: true })
+  //     mockDiscordAPIRoutes(guildID, true)
   //     agent
-  //       .patch(`/api/guilds/${guildId}`)
+  //       .patch(`/api/guilds/${guildID}`)
   //       .send(correctlyModifyWith)
-  //       .expect(200, { id: guildId, ...correctlyModifyWith }, done)
+  //       .expect(200, { id: guildID, ...correctlyModifyWith }, done)
   //   })
 
   //   it('returns a 201 code with the updated guildRss with valid keys for a nonexistent guildRss', async function (done) {
-  //     await models.GuildRss().deleteOne({ id: guildId })
-  //     mockDiscordAPIRoutes(guildId, true)
+  //     await models.GuildRss().deleteOne({ id: guildID })
+  //     mockDiscordAPIRoutes(guildID, true)
   //     agent
-  //       .patch(`/api/guilds/${guildId}`)
+  //       .patch(`/api/guilds/${guildID}`)
   //       .send(correctlyModifyWith)
   //       // .expect(res => console.log(res))
-  //       .expect(201, { id: guildId, ...correctlyModifyWith }, done)
+  //       .expect(201, { id: guildID, ...correctlyModifyWith }, done)
   //   })
 
   //   it('returns a 400 code for using wrong types on modifications with correct details', async function (done) {
-  //     await models.GuildRss().updateOne({ id: guildId }, { $set: { id: guildId } }, { upsert: true })
-  //     mockDiscordAPIRoutes(guildId, true)
+  //     await models.GuildRss().updateOne({ id: guildID }, { $set: { id: guildID } }, { upsert: true })
+  //     mockDiscordAPIRoutes(guildID, true)
   //     agent
-  //       .patch(`/api/guilds/${guildId}`)
+  //       .patch(`/api/guilds/${guildID}`)
   //       .send(incorrectlyModifyWith)
   //       // .expect(res => console.log(res))
   //       .expect(400)
@@ -646,7 +600,7 @@ describe('/api/guilds', function () {
   //       })
   //   })
   //   afterAll(function () {
-  //     return models.GuildRss().deleteOne({ id: guildId })
+  //     return models.GuildRss().deleteOne({ id: guildID })
   //   })
   // })
 })

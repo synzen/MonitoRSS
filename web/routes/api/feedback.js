@@ -1,6 +1,6 @@
 const express = require('express')
 const feedback = express.Router({ mergeParams: true })
-const dbOps = require('../../../util/dbOps.js')
+const dbOpsGeneral = require('../../../util/db/general.js')
 const rateLimit = require('express-rate-limit')
 
 if (process.env.NODE_ENV !== 'test') {
@@ -20,7 +20,7 @@ feedback.post('/', async (req, res, next) => {
   if (!message) return res.status(400).json({ code: 400, message: { message: 'This field is required' } })
   else if (typeof message !== 'string') return res.status(400).json({ code: 400, message: { message: 'Must be a string' } })
   try {
-    await dbOps.general.addFeedback({ id, username }, message, 'web')
+    await dbOpsGeneral.addFeedback({ id, username }, message, 'web')
     res.status(204).end()
   } catch (err) {
     next(err)

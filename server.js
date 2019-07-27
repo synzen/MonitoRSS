@@ -2,13 +2,12 @@
 
 const DiscordRSS = require('./index.js')
 const config = require('./config.js')
+const fs = require('fs')
+const path = require('path')
+const schedulesPath = path.join(__dirname, 'settings', 'schedules.json')
+const schedules = fs.existsSync(schedulesPath) ? JSON.parse(fs.readFileSync(schedulesPath)) : []
 
-const drss = new DiscordRSS.Client({ readFileSchedules: true, setPresence: true })
+const drss = new DiscordRSS.Client({ setPresence: true }, schedules)
 let token = config.bot.token
-
-try {
-  const override = require('./settings/configOverride.json')
-  token = override.bot && override.bot.token ? override.bot.token : token
-} catch (err) {}
 
 drss.login(token)

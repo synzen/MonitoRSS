@@ -1,5 +1,6 @@
 const getRandomArticle = require('../rss/getArticle.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsVips = require('../util/db/vips.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
@@ -9,7 +10,7 @@ const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
     if (!data) return
@@ -26,7 +27,7 @@ module.exports = async (bot, message, command) => {
         language: guildRss.dateLanguage
       }
     }
-    if (config._vip && source.webhook && !(await dbOps.vips.isVipServer(message.guild.id))) {
+    if (config._vip && source.webhook && !(await dbOpsVips.isVipServer(message.guild.id))) {
       log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
       delete guildRss.sources[rssName].webhook
     }

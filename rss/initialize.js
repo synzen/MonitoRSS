@@ -1,6 +1,7 @@
 const requestStream = require('./request.js')
 const FeedParser = require('feedparser')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsSchedules = require('../util/db/schedules.js')
 const config = require('../config.js')
 const path = require('path')
 const fs = require('fs')
@@ -8,48 +9,25 @@ const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'pa
 const dbCmds = require('./db/commands.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
-const assignedSchedules = require('../util/assignedSchedules.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
 
-async function resolveLink (link) {
-  try {
-    const linkList = await dbOps.linkTracker.get()
-    let newLink
-
-    if (link.startsWith('http:')) {
-      const temp = link.replace('http:', 'https:')
-      if (linkList.get(temp)) newLink = temp
-    }
-
-    if (link.endsWith('/')) {
-      const temp = link.slice(0, -1)
-      if (linkList.get(temp)) newLink = temp
-    }
-
-    if (newLink) log.general.info(`New link ${link} has been resolved to ${newLink}`)
-    return newLink
-  } catch (err) {
-    log.general.warning(`Unable to get linkList for link resolution for ${link}`, err)
-  }
-}
-
-exports.initializeFeed = async (articleList, link, rssName, idResolver) => {
+exports.initializeFeed = async (articleList, link, rssName, idResolver, assignedSchedule) => {
   if (articleList.length === 0) return
 
   // Initialize the feed collection if necessary, but only if a database is used. This file has no access to the feed collections if config.database.uri is a databaseless folder path
   if (!config.database.uri.startsWith('mongo')) return
   try {
     // The schedule must be assigned to the feed first in order to get the correct feed collection ID for the feed model (through storage.schedulesAssigned, third argument of models.Feed)
-    const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, assignedSchedules.getScheduleName(rssName))
+    const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, assignedSchedule)
     const docs = await dbCmds.findAll(Feed)
     if (docs.length > 0) return // The collection already exists from a previous addition, no need to initialize
     const useIDType = idResolver.getIDType()
     articleList.forEach(article => {
-      article._id = ArticleIDResolver.getIdTypeValue(article, useIDType)
+      article._id = ArticleIDResolver.getIDTypeValue(article, useIDType)
     })
     await dbCmds.bulkInsert(Feed, articleList)
   } catch (err) {
-    log.general.warning(`Unable to initialize ${link}`, err)
+    log.general.warning(`Unable to initialize ${link}`, err, true)
   }
 }
 
@@ -61,9 +39,7 @@ exports.addNewFeed = async (settings, customTitle) => {
   const articleList = []
   let errored = false // Sometimes feedparser emits error twice
 
-  const resolved = await resolveLink(link)
-  link = resolved || link
-  let guildRss = await dbOps.guildRss.get(channel.guild.id)
+  let guildRss = await dbOpsGuilds.get(channel.guild.id)
   if (guildRss) {
     const currentRSSList = guildRss.sources
     if (currentRSSList) {
@@ -119,7 +95,12 @@ exports.addNewFeed = async (settings, customTitle) => {
       if (errored) return
       try {
         const shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
-        const rssName = `${storage.collectionId(link, shardId)}-${Math.floor((Math.random() * 99999) + 1)}`.replace(/[^a-zA-Z0-9-_]/g, '')
+        let rssName = `${storage.collectionID(link, shardId)}-${Math.floor((Math.random() * 99999) + 1)}`.replace(/[^a-zA-Z0-9-_]/g, '')
+        let assignedSchedule = await dbOpsSchedules.assignedSchedules.get(rssName)
+        while (assignedSchedule) {
+          rssName += Math.floor((Math.random() * 9) + 1)
+          assignedSchedule = await dbOpsSchedules.assignedSchedules.get(rssName)
+        }
         let metaTitle = customTitle || ((articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled')
 
         if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
@@ -154,18 +135,12 @@ exports.addNewFeed = async (settings, customTitle) => {
           }
         }
         if (!allArticlesHaveDates) guildRss.sources[rssName].checkDates = false
-
-        await dbOps.guildRss.update(guildRss) // Must be added to database first for the FeedSchedules to see the feed
         if (storage.scheduleManager) {
-          await storage.scheduleManager.assignScheduleToSource(guildRss, rssName)
-          const scheduleName = assignedSchedules.getScheduleName(rssName)
-          await dbOps.linkTracker.increment(link, scheduleName)
-          guildRss.sources[rssName].lastRefreshRateMin = storage.scheduleManager.getSchedule(scheduleName).refreshTime
-          await dbOps.guildRss.update(guildRss)
+          assignedSchedule = await storage.scheduleManager.assignSchedule(rssName, guildRss)
         }
-        // The user doesn't need to wait for the initializeFeed
 
-        if (storage.bot) exports.initializeFeed(articleList, link, rssName, idResolver).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
+        if (storage.bot) exports.initializeFeed(articleList, link, rssName, idResolver, assignedSchedule).catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
+        await dbOpsGuilds.update(guildRss) // Must be added to database first for the FeedSchedules to see the feed
         resolve([ link, metaTitle, rssName ])
       } catch (err) {
         reject(err)

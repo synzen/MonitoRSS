@@ -1,4 +1,4 @@
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const config = require('../config.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -324,7 +324,7 @@ ${val && val.length > 1500 ? val.slice(0, 1500) + '...' : val || '\u200b'}
 module.exports = async (bot, message, command) => {
   // Fields
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const setFields = message.content.split(' ')[1] === 'fields'
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
 
@@ -334,7 +334,7 @@ module.exports = async (bot, message, command) => {
       const { rssName, successText, removeAllEmbeds } = fieldsData
 
       log.command.info(`Removing all embeds for ${guildRss.sources[rssName].link}`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       if (removeAllEmbeds) return await message.channel.send('Successfully removed all embeds.')
       else return await message.channel.send(successText)
     }
@@ -346,7 +346,7 @@ module.exports = async (bot, message, command) => {
 
     if (removeAllEmbeds) {
       log.command.info(`Removing all embeds for ${guildRss.sources[rssName].link}`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       return await message.channel.send('Successfully removed all embeds.')
     }
 
@@ -358,7 +358,7 @@ module.exports = async (bot, message, command) => {
       if (source.embeds.length === 0) delete source.embeds
       if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
       log.command.info(`Embed resetting for ${source.link}`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       return await resetting.edit(`Embed has been disabled, and all properties have been removed for <${source.link}>.`)
     }
 
@@ -380,7 +380,7 @@ module.exports = async (bot, message, command) => {
         if (source.embeds.length === 0) delete source.embeds
 
         log.command.info(`Property '${prop}' resetting for ${source.link}`, message.guild)
-        await dbOps.guildRss.update(guildRss)
+        await dbOpsGuilds.update(guildRss)
         reset += `☑ **${propName}** has been reset\n`
         continue
       }
@@ -394,7 +394,7 @@ module.exports = async (bot, message, command) => {
       status += `☑ **${propName}** updated to \n\`\`\`\n${userSetting}\n\`\`\`\n`
     }
 
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
     await message.channel.send(`Settings updated for <${source.link}>:\n\n${reset}${status}\nYou may use \`~rsstest\` or \`~rsstest simple\` to see your new embed format. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`, { split: true })
   } catch (err) {
     log.command.warning(`rssembed`, message.guild, err)

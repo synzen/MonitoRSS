@@ -1,6 +1,6 @@
-const redisOps = require('../util/redisOps.js')
+const RedisUser = require('../structs/db/Redis/User.js')
 const log = require('../util/logger.js')
 
 module.exports = async (oldUser, newUser) => {
-  redisOps.users.update(oldUser, newUser).catch(err => log.general.error(`Redis failed to update after userUpdate event`, newUser, err))
+  RedisUser.utils.update(oldUser, newUser).catch(err => log.general.error(`Redis failed to update after userUpdate event`, newUser, err))
 }

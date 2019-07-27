@@ -1,5 +1,5 @@
 const config = require('../config.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -48,7 +48,7 @@ async function enable (m, data) {
   source.splitMessage = { enabled: true }
 
   log.command.info(`Enabling message splitting for ${source.link}`, m.channel.guild)
-  await dbOps.guildRss.update(guildRss)
+  await dbOpsGuilds.update(guildRss)
 
   const nextMenu = new MenuUtils.Menu(m, selectSetting)
     .setAuthor('Message Splitting Options')
@@ -73,7 +73,7 @@ async function selectSetting (m, data) {
   if (selected === '5') {
     delete source.splitMessage
     log.command.info(`Disabling message splitting for ${source.link}`, m.channel.guild)
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
     await m.channel.send(`Message splitting is now disabled for feed <${source.link}>.`).catch(err => log.command.warning('rsssplit 1', m.channel.guild, err))
     return data
   }
@@ -144,14 +144,14 @@ async function setSetting (m, data) {
     }
   }
 
-  await dbOps.guildRss.update(guildRss)
+  await dbOpsGuilds.update(guildRss)
   await m.channel.send(`${successText} After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   return data
 }
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command }, guildRss)
     await new MenuUtils.MenuSeries(message, [feedSelector]).start()
   } catch (err) {

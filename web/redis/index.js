@@ -1,9 +1,9 @@
 const config = require('../../config.js')
-const dbOps = require('../../util/dbOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
 const log = require('../../util/logger.js')
-const redisOps = require('../../util/redisOps.js')
+const redisIndex = require('../../structs/db/Redis/index.js')
 const subscriber = require('redis').createClient(config.database.redis)
-const DRSS_PROFILE_UPDATE_EVENT = redisOps.events.NAMES.DRSS_PROFILE_UPDATE
+const DRSS_PROFILE_UPDATE_EVENT = redisIndex.events.NAMES.DRSS_PROFILE_UPDATE
 const { httpSocketsByGuildId, httpsSocketsByGuildId } = require('../websockets/util/directory.js')
 const allSocketsByGuildId = [ httpSocketsByGuildId, httpsSocketsByGuildId ]
 
@@ -11,7 +11,7 @@ module.exports = (httpIo, httpsIo) => {
   subscriber.on('message', (channel, message) => {
     if (channel.startsWith(DRSS_PROFILE_UPDATE_EVENT)) {
       const guildId = message
-      dbOps.guildRss.get(guildId).then(guildRss => {
+      dbOpsGuilds.get(guildId).then(guildRss => {
         allSocketsByGuildId.forEach((socketsByGuildId, i) => {
           if (i === 1 && !httpsIo) return
           const socketIds = socketsByGuildId[guildId]

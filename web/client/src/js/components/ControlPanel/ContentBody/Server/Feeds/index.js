@@ -29,6 +29,7 @@ const mapStateToProps = state => {
     linkStatuses: state.linkStatuses,
     guild: state.guild,
     defaultConfig: state.defaultConfig,
+    feedRefreshRates: state.feedRefreshRates,
     csrfToken: state.csrfToken
   }
 }
@@ -190,7 +191,7 @@ class Feeds extends Component {
   onClickFeedRow = feed => {
     if (this.state.ignoreModal) return this.state.selectedFeedId === feed.rssName ? this.setState({ selectedFeedId : '' }) : this.setState({ selectedFeedId: feed.rssName })
     this.setState({ selectedFeedId: feed.rssName })
-    const { defaultConfig, channels, guildId, guild, linkStatuses } = this.props
+    const { defaultConfig, channels, guildId, guild, linkStatuses, feedRefreshRates } = this.props
     const cancelCondition = (this.state.title === feed.title && !this.state.channel) || (this.state.channel === feed.channel && !this.state.title) || (this.state.title === feed.title && this.state.channel === feed.channel) || (!this.state.title && !this.state.channel)
     const dateTimezone = guild.timezone || defaultConfig.timezone
     const dateFormat = guild.dateFormat || defaultConfig.dateFormat
@@ -205,6 +206,7 @@ class Feeds extends Component {
     }
 
     const channelDropdownValue = feed.channel && channels[guildId][feed.channel] ? feed.channel : null // The feed channel may be deleted
+    const refreshRate = feedRefreshRates[feed.rssName]
     const props = {
       title: feed.title,
       subtitle: feed.link,
@@ -232,7 +234,7 @@ class Feeds extends Component {
           }
           <Divider />
           <SectionSubtitle>Refresh Rate</SectionSubtitle>
-          { !feed ? '\u200b' : feed.disabled || typeof linkStatuses[feed.link] === 'string' ? 'None ' : !feed.lastRefreshRateMin ? 'To be determined ' : feed.lastRefreshRateMin < 1 ? `${feed.lastRefreshRateMin * 60} seconds      ` : `${feed.lastRefreshRateMin} minutes      `}<a rel='noopener noreferrer' href='https://www.patreon.com/discordrss' target='_blank'>－</a>
+          { !feed ? '\u200b' : feed.disabled || typeof linkStatuses[feed.link] === 'string' ? 'None ' : !refreshRate ? 'To be determined ' : refreshRate < 1 ? `${refreshRate * 60} seconds      ` : `${refreshRate} minutes      `}<a rel='noopener noreferrer' href='https://www.patreon.com/discordrss' target='_blank'>－</a>
           <Divider />
           <SectionSubtitle>Added On</SectionSubtitle>
           { !feed ? '\u200b' : !feed.addedOn ? 'Unknown' : moment(feed.addedOn).locale(dateLanguage).tz(dateTimezone).format(dateFormat)}
@@ -348,7 +350,8 @@ Feeds.propTypes = {
   channels: PropTypes.object,
   redirect: PropTypes.func,
   linkStatuses: PropTypes.object,
-  feeds: PropTypes.object
+  feeds: PropTypes.object,
+  feedRefreshRates: PropTypes.object
 }
 
 export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Feeds))

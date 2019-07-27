@@ -4,9 +4,9 @@ process.env.DRSS_EXPERIMENTAL_FEATURES = 'true'
 
 const httpMocks = require('node-mocks-http')
 const guildFeedFiltersRoute = require('../routes/api/guilds.feeds.filters.js')
-const dbOps = require('../../util/dbOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
 
-jest.mock('../../util/dbOps.js')
+jest.mock('../../util/db/guilds.js')
 
 describe('/api/guilds/:guildId/feeds/:feedId/filters', function () {
   const userId = 'georgie'
@@ -91,7 +91,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/filters', function () {
   })
   describe('DELETE /', function () {
     afterEach(function () {
-      dbOps.guildRss.update.mockReset()
+      dbOpsGuilds.update.mockReset()
     })
     it('returns 404 if source has no filters', async function () {
       const request = httpMocks.createRequest({ session, params, source: {}, method: 'DELETE' })
@@ -246,7 +246,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/filters', function () {
       await guildFeedFiltersRoute.routes.deleteFeedFilters(request, response, nextErr => {
         if (nextErr) return done(nextErr)
         try {
-          expect(dbOps.guildRss.update).toHaveBeenCalledTimes(1)
+          expect(dbOpsGuilds.update).toHaveBeenCalledTimes(1)
           done()
         } catch (err) {
           done(err)
@@ -257,7 +257,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/filters', function () {
   })
   describe('PUT /', function () {
     afterEach(function () {
-      dbOps.guildRss.update.mockReset()
+      dbOpsGuilds.update.mockReset()
     })
     it('returns 409 if term already exists', async function () {
       const source = {
@@ -430,7 +430,7 @@ describe('/api/guilds/:guildId/feeds/:feedId/filters', function () {
       await guildFeedFiltersRoute.routes.putFeedFilters(request, response, nextErr => {
         if (nextErr) return done(nextErr)
         try {
-          expect(dbOps.guildRss.update).toHaveBeenCalledTimes(1)
+          expect(dbOpsGuilds.update).toHaveBeenCalledTimes(1)
           done()
         } catch (err) {
           done(err)

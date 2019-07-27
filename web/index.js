@@ -181,7 +181,6 @@ function start (mongooseConnection = mongoose.connection) {
   // Redirect all other routes not handled
   app.get('*', async (req, res) => {
     res.type('text/html')
-    console.log(req.path)
     const pathLowercase = req.path.toLowerCase()
     if (pathLowercase.startsWith('/cp') && (!req.session.identity || !req.session.auth)) {
       // Save the path to redirect them later after they're authorized

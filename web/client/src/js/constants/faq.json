@@ -60,13 +60,15 @@
     ]
   },
   {
-    "q": "How do I mention a user when a new article comes in?",
+    "q": "How do I mention a user or role when a new article comes in?",
     "a": "To mention everyone, put the @everyone mention in ~rssmessage. To mention a specific role or user, use the ~rssmention command for users and roles. **Make sure you use the `{subscriptions}` placeholder since this is where the mentions are located.",
     "t": [
       "notify",
       "mention",
       "new",
-      "ping"
+      "ping",
+      "role",
+      "user"
     ]
   },
   {

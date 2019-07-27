@@ -1,6 +1,6 @@
 const express = require('express')
 const feedFilters = express.Router({ mergeParams: true })
-const dbOps = require('../../../util/dbOps.js')
+const dbOpsGuilds = require('../../../util/db/guilds.js')
 
 function validBody (req, res, next) {
   const errors = {}
@@ -29,8 +29,8 @@ const deleteFilters = (req, res, next) => async target => {
       if (filters[type].length === 0) delete filters[type]
       if (Object.keys(filters).length === 0) delete target.filters
     }
-    const result = await dbOps.guildRss.update(req.guildRss)
-    // const guildId = req.params.guildId
+    const result = await dbOpsGuilds.update(req.guildRss)
+    // const guildID = req.params.guildID
     req.deleteResult = result
     next()
   } catch (err) {
@@ -40,7 +40,7 @@ const deleteFilters = (req, res, next) => async target => {
 
 const putFilters = (req, res, next) => async target => {
   try {
-    // const guildId = req.params.guildId
+    // const guildID = req.params.guildID
     let { filters } = target
     const type = req.body.type
     const term = req.body.term.toLowerCase()
@@ -49,7 +49,7 @@ const putFilters = (req, res, next) => async target => {
     filters = target.filters
     if (!filters[type]) filters[type] = [ term ]
     else filters[type].push(term)
-    const result = await dbOps.guildRss.update(req.guildRss)
+    const result = await dbOpsGuilds.update(req.guildRss)
     req.putResult = result // Piggyback on patchResult
     next()
   } catch (err) {

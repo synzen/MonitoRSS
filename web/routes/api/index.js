@@ -2,7 +2,7 @@ const express = require('express')
 const users = require('./users.js')
 const guilds = require('./guilds.js')
 const log = require('../../../util/logger.js')
-const dbOps = require('../../../util/dbOps.js')
+const dbOpsVips = require('../../../util/db/vips')
 const api = express.Router()
 const cp = require('./cp.js')
 const feedback = require('./feedback.js')
@@ -43,10 +43,10 @@ function getAuthenticated (req, res) {
 
 async function authenticate (req, res, next) {
   if (process.env.VIP_ONLY === 'true' && req.session.identity && req.session.identity.id) {
-    const vipUser = await dbOps.vips.get(req.session.identity.id)
+    const vipUser = await dbOpsVips.get(req.session.identity.id)
     if (!vipUser || vipUser.invalid) {
-      const manualIds = (process.env.VIPS || '').split(',').map(id => id.trim())
-      if (!manualIds.includes(req.session.identity.id)) {
+      const manualIDs = (process.env.VIPS || '').split(',').map(id => id.trim())
+      if (!manualIDs.includes(req.session.identity.id)) {
         log.web.warning(`(${req.session.identity.id}, ${req.session.identity.username}) DENIED API REQUEST ${req.url} - NON PATRON`)
         return res.status(401).json({ code: 9999, message: 'Unauthorized access from a non-VIP user' })
       }
@@ -116,14 +116,14 @@ api.use('/rating', rating)
 // api.use('/config', config)
 api.use('/users', users.router)
 api.use('/guilds', guilds.router)
-guilds.router.use('/:guildId/feeds', feeds.router)
-guilds.router.use('/:guildId/roles', roles.router)
-guilds.router.use('/:guildId/channels', channels.router)
-feeds.router.use('/:feedId/message', message.router)
-feeds.router.use('/:feedId/embeds', embeds.router)
-feeds.router.use('/:feedId/filters', filters.router)
-feeds.router.use('/:feedId/subscribers', subscribers.router)
-feeds.router.use('/:feedId/subscribers/:subscriberId/filters', subscribersFilters.router)
+guilds.router.use('/:guildID/feeds', feeds.router)
+guilds.router.use('/:guildID/roles', roles.router)
+guilds.router.use('/:guildID/channels', channels.router)
+feeds.router.use('/:feedID/message', message.router)
+feeds.router.use('/:feedID/embeds', embeds.router)
+feeds.router.use('/:feedID/filters', filters.router)
+feeds.router.use('/:feedID/subscribers', subscribers.router)
+feeds.router.use('/:feedID/subscribers/:subscriberID/filters', subscribersFilters.router)
 api.use(mongooseResults)
 api.use(errorHandler)
 

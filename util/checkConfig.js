@@ -30,7 +30,7 @@ exports.defaultConfigs = {
     guildBackupsExpire: { type: Number, default: 7 }
   },
   feeds: {
-    refreshTimeMinutes: { type: Number, default: 10 },
+    refreshRateMinutes: { type: Number, default: 10 },
     checkTitles: { type: Boolean, default: false },
     timezone: { type: String, default: 'America/New_York' },
     dateFormat: { type: String, default: 'ddd, D MMMM YYYY, h:mm A z' },

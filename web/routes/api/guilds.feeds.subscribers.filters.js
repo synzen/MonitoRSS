@@ -3,12 +3,12 @@ const subscriberFilters = express.Router({ mergeParams: true })
 const { middleware, filterFuncs } = require('./guilds.feeds.filters')
 
 function validSubscriber (req, res, next) {
-  const reqSubscriberId = req.params.subscriberId
+  const reqSubscriberID = req.params.subscriberID
   const source = req.source
   const subscribers = source.subscribers
   if (subscribers) {
     for (const subscriber of subscribers) {
-      if (subscriber.id === reqSubscriberId) {
+      if (subscriber.id === reqSubscriberID) {
         req.subscriber = subscriber
         return next()
       }
@@ -32,8 +32,8 @@ subscriberFilters.use(validSubscriber, middleware.validBody)
 //       if (Object.keys(filters).length === 0) delete req.subscriber.filters
 //     }
 //     const result = await dbOps.guildRss.update(req.guildRss)
-//     const guildId = req.params.guildId
-//     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) POST ${req.url} - Guild ${guildId} removed filter type ${type}, term ${term}`)
+//     const guildID = req.params.guildID
+//     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) POST ${req.url} - Guild ${guildID} removed filter type ${type}, term ${term}`)
 //     req.deleteResult = result
 //     next()
 //   } catch (err) {
@@ -43,7 +43,7 @@ subscriberFilters.use(validSubscriber, middleware.validBody)
 
 // async function putSubscriberFilters (req, res, next) {
 //   try {
-//     const guildId = req.params.guildId
+//     const guildID = req.params.guildID
 //     let { filters } = req.subscriber
 //     const type = req.body.type
 //     const term = req.body.term.toLowerCase()
@@ -53,7 +53,7 @@ subscriberFilters.use(validSubscriber, middleware.validBody)
 //     if (!filters[type]) filters[type] = [ term ]
 //     else filters[type].push(term)
 //     const result = await dbOps.guildRss.update(req.guildRss)
-//     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) POST ${req.url} - Guild ${guildId} added filter type ${type}, term ${term}`)
+//     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) POST ${req.url} - Guild ${guildID} added filter type ${type}, term ${term}`)
 //     req.patchResult = result // Piggyback on patchResult
 //     next()
 //   } catch (err) {

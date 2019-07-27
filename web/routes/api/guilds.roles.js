@@ -1,15 +1,18 @@
 const express = require('express')
 const roles = express.Router({ mergeParams: true })
-const redisOps = require('../../../util/redisOps.js')
+const RedisRole = require('../../../structs/db/Redis/Role.js')
 
 async function getRoles (req, res, next) {
   const guildId = req.params.guildId
   try {
-    const roles = await redisOps.roles.getRolesOfGuild(guildId)
-    const resolvedRoles = await Promise.all(roles.map(roleId => redisOps.roles.get(roleId)))
+    const roles = await RedisRole.utils.getRolesOfGuild(guildId)
+    const resolvedRoles = await Promise.all(roles.map(roleId => RedisRole.fetch(roleId)))
     res.json(
       resolvedRoles
-        .map(role => ({ ...role, position: +role.position, hexColor: role.hexColor === '#000000' ? '' : role.hexColor }))
+        .map(role => {
+          const json = role.toJSON()
+          return { ...json, hexColor: role.hexColor === '#000000' ? '' : role.hexColor }
+        })
         .sort((a, b) => b.position - a.position)
     )
   } catch (err) {

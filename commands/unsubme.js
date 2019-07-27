@@ -1,5 +1,5 @@
 const getSubList = require('./util/getSubList.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const config = require('../config.js')
@@ -18,7 +18,7 @@ function removeRole (message, role) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
     const botRole = message.guild.members.get(bot.user.id).highestRole
     const memberRoles = message.member.roles

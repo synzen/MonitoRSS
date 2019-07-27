@@ -19,8 +19,8 @@ module.exports = (data, callback) => {
   const customComparisonsToUpdate = []
   const toInsert = []
   const toUpdate = {} // Article's resolved IDs as key and the article as value
-  const collectionId = storage.collectionId(link, shardId, scheduleName)
-  const Feed = storage.models.FeedByCollectionId(collectionId)
+  const collectionId = storage.collectionID(link, shardId, scheduleName)
+  const Feed = storage.models.FeedByCollectionID(collectionId)
   const feedCollectionId = feedData ? collectionId : undefined
   const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
 
@@ -45,7 +45,7 @@ module.exports = (data, callback) => {
       const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
       for (var a = 0; a < articleList.length; ++a) {
         const article = articleList[a]
-        article._id = ArticleIDResolver.getIdTypeValue(article, useIdType)
+        article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
         if (checkCustomComparisons) {
         // Iterate over the values stored in the db, and see if the custom comparison names in the db exist in any of the articles. If they do, then it is marked valid
           for (var compName in dbCustomComparisons) {

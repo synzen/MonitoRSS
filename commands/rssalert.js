@@ -1,11 +1,11 @@
 const log = require('../util/logger.js')
 const config = require('../config.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 const explanation = guildRss => `This command adds users for direct messaging (instead of posting such alerts to the feed's channel by default) when there are any warnings or alerts concerning feeds, such as feed limit changes or feed failures. **The user you're adding or removing will be notified.** The correct syntaxes are:\n\n\`${guildRss.prefix || config.bot.prefix}rssalert add <user id/mention>\` - Add a user to alerted.\n\`${guildRss.prefix || config.bot.prefix}rssalert remove <user id/mention>\` - Remove a user currently receiving alerts\n\`${guildRss.prefix || config.bot.prefix}rssalert list\` - Show all users currently receiving alerts`
 
 module.exports = async (bot, message, automatic) => { // automatic indicates invokation by the bot
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('You cannot set up user alerts if you have not added any feeds.')
     const contentArray = message.content.split(' ').map(item => item.trim())
 
@@ -36,7 +36,7 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
             await message.channel.send(`Successfully removed user ${member} from direct messaging feed warnings/failures. The user has been notified of this change.`)
           } else return await message.channel.send('You cannot remove a user that is not currently enabled for feed warning/failure direct messaging alerts.')
         }
-        await dbOps.guildRss.update(guildRss, true)
+        await dbOpsGuilds.guildRss.update(guildRss, true)
         break
       case 'list':
         if (!Array.isArray(guildRss.sendAlertsTo) || guildRss.sendAlertsTo.length === 0) return await message.channel.send(`There are currently no users that will be notified through direct messaging when there are feed warnings/failures in this server.`)

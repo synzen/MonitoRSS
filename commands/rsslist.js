@@ -2,13 +2,15 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const serverLimit = require('../util/serverLimit.js')
+const storage = require('../util/storage.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {
   try {
-    const [ guildRss, serverLimitData ] = await Promise.all([ dbOps.guildRss.get(message.guild.id), serverLimit(message.guild.id) ])
+    const [ guildRss, serverLimitData ] = await Promise.all([ dbOpsGuilds.get(message.guild.id), serverLimit(message.guild.id) ])
     if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('There are no existing feeds.')
 
     const failedLinks = {}
@@ -18,13 +20,13 @@ module.exports = async (bot, message, command) => {
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
 
-    const refreshRate = vipUser && !vipUser.invalid && (vipUser.pledged >= 500 || vipUser.override === true) ? config._vipRefreshTimeMinutes : config.feeds.refreshTimeMinutes
     // Generate the info for each feed as an array, and push into another array
     const currentRSSList = []
     const failedLinksToCheck = []
     for (const rssName in rssList) {
       const feed = rssList[rssName]
       let o = {
+        id: rssName,
         link: feed.link,
         title: feed.title,
         webhook: feed.webhook ? feed.webhook.id : undefined,
@@ -35,7 +37,7 @@ module.exports = async (bot, message, command) => {
       if (feed.disabled) o.status = `Status: DISABLED (${feed.disabled})\n`
       currentRSSList.push(o)
     }
-    const results = await dbOps.failedLinks.getMultiple(failedLinksToCheck)
+    const results = await dbOpsFailedLinks.getMultiple(failedLinksToCheck)
     for (const result of results) failedLinks[result.link] = result.failed || result.count
     if (FAIL_LIMIT !== 0) {
       for (const feed of currentRSSList) {
@@ -56,7 +58,7 @@ module.exports = async (bot, message, command) => {
       } else vipDetails += 'Ongoing\n'
     } else vipDetails = '\n'
 
-    let desc = maxFeedsAllowed === 0 ? `${vipDetails}**Refresh Rate:** ${refreshRate} minutes\n\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n**Refresh Rate:** ${refreshRate} minutes [－](https://www.patreon.com/discordrss)\n\u200b\n`
+    let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**Server Limit:** ${Object.keys(rssList).length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
     desc += failedFeedCount > 0 ? `**Attention!** Feeds that have reached ${FAIL_LIMIT} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use **${guildRss.prefix || config.bot.prefix}rssrefresh** to try to reset its status.\u200b\n\u200b\n` : ''
 
     const list = new MenuUtils.Menu(message)
@@ -72,8 +74,9 @@ module.exports = async (bot, message, command) => {
       const status = item.status
       const titleChecks = item.titleChecks
       const webhook = item.webhook
-
-      list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}Channel: #${channelName}\n${webhook ? 'Webhook: ' + webhook + '\n' : ''}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
+      const schedule = storage.scheduleManager.getScheduleOfFeedID(item.id)
+      const refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} seconds` : `${schedule.refreshRate} minutes` : 'Unknown'
+      list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}Channel: #${channelName}\nRefresh Rate: ${refreshRate}\n${webhook ? 'Webhook: ' + webhook + '\n' : ''}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
     })
 
     await list.send()

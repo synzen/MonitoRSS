@@ -4,11 +4,11 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FlattenedJSON = require('../structs/FlattenedJSON.js')
 const getArticle = require('../rss/getArticle.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const feedSelector = new FeedSelector(message, undefined, { command: command }, guildRss)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
     if (!data) return

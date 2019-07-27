@@ -1,5 +1,6 @@
 const filters = require('./util/filters.js')
-const dbOps = require('../util/dbOps.js')
+const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsVips = require('../util/db/vips.js')
 const getArticle = require('../rss/getArticle.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -41,7 +42,7 @@ async function setMessage (m, data) {
 
 module.exports = async (bot, message, command, role) => {
   try {
-    const guildRss = await dbOps.guildRss.get(message.guild.id)
+    const guildRss = await dbOpsGuilds.get(message.guild.id)
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
     const messagePrompt = new MenuUtils.Menu(message, setMessage)
       .setAuthor('Feed Filters Customization')
@@ -66,7 +67,7 @@ module.exports = async (bot, message, command, role) => {
       if (Object.keys(filterList).length === 0) delete source.filters
 
       log.command.info(`Removing all filters from ${source.link}`, message.guild)
-      await dbOps.guildRss.update(guildRss)
+      await dbOpsGuilds.update(guildRss)
       return await message.channel.send(`All feed filters have been successfully removed from <${source.link}>.`)
     } else if (selectedOption === '4') { // 4 = List all existing filters
       if (!filterList || (filterList && Object.keys(filterList).length === 1 && filterList.roleSubscriptions !== undefined)) return await message.channel.send(`There are no filters assigned to ${source.link}`)
@@ -97,7 +98,7 @@ module.exports = async (bot, message, command, role) => {
           language: guildRss.dateLanguage
         }
       }
-      if (source.webhook && !(await dbOps.vips.isVipServer(message.guild.id))) {
+      if (source.webhook && !(await dbOpsVips.isVipServer(message.guild.id))) {
         log.general.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
         delete guildRss.sources[rssName].webhook
       }

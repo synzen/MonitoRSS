@@ -3,8 +3,10 @@ const guilds = express.Router()
 const axios = require('axios')
 const statusCodes = require('../../constants/codes.js')
 const discordAPIConstants = require('../../constants/discordAPI.js')
-const dbOps = require('../../../util/dbOps.js')
-const redisOps = require('../../../util/redisOps.js')
+const dbOpsGuilds = require('../../../util/db/guilds.js')
+const RedisGuild = require('../../../structs/db/Redis/Guild.js')
+const RedisGuildMember = require('../../../structs/db/Redis/GuildMember.js')
+const RedisRole = require('../../../structs/db/Redis/Role.js')
 const log = require('../../../util/logger.js')
 const config = require('../../../config.js')
 const moment = require('moment-timezone')
@@ -25,70 +27,69 @@ const BOT_HEADERS = require('../../constants/discordAPIHeaders.js').bot
 
 async function checkUserGuildPermission (req, res, next) {
   try {
-    var guildId = req.params.guildId
-    var userId = req.session.identity.id
-    if (!guildId) return res.status(400).json({ code: 400, message: 'Guild ID is not defined in parameter' })
+    var guildID = req.params.guildID
+    var userID = req.session.identity.id
+    if (!guildID) return res.status(400).json({ code: 400, message: 'Guild ID is not defined in parameter' })
     // First see if they are cached
-    const [ ownerId, isManager, isMember, notManager, guild, guildRss ] = await Promise.all([
-      redisOps.guilds.getValue(guildId, 'ownerID'),
-      redisOps.members.isManagerOfGuild(userId, guildId),
-      redisOps.members.isMemberOfGuild(userId, guildId),
-      redisOps.members.isNotManagerOfGuild(userId, guildId),
-      redisOps.guilds.get(guildId),
-      dbOps.guildRss.get(guildId)
+    const [ guild, guildRss, member ] = await Promise.all([
+      RedisGuild.fetch(guildID),
+      dbOpsGuilds.get(guildID),
+      RedisGuildMember.fetch({ id: userID, guildID: guildID })
     ])
-    req.guildRss = guildRss
-    req.guild = guild
 
-    const isOwner = ownerId === userId
-    // The notManager is checked first because they are explicitly recorded by failed API requests, meaning the bot has no permission in that guild
-    // isMember must also be checked - if they are, then they are cached - otherwise an API request should be made to check if they're authorized
-    const nonManagerByApi = !isMember && notManager && !isOwner
-    const nonManagerByCache = isMember && !isManager && !isOwner
-    if (nonManagerByApi || nonManagerByCache) return res.status(401).json({ code: 401, message: 'Unauthorized member' })
-    if (isManager || isOwner) return next()
+    if (!guild) return res.status(404).json({ code: 404, message: 'Unknown guild' })
+    req.guildRss = guildRss
+    req.guild = guild.toJSON()
+
+    if (req.guild.ownerID === userID) return next() // Owner may not always be cached as a member, so check this first
+    if (member && member.isManager) return next()
+    if (member) return res.status(403).json({ code: 403, message: 'Unauthorized member' })
 
     // The remaining condition is that the user is not a member of the guild. This could mean they're uncached, or unauthorized.
     log.general.info(`[1 DISCORD API REQUEST] [BOT] MIDDLEWARE /api/guilds`)
-    const memberJson = (await axios.get(`${discordAPIConstants.apiHost}/guilds/${guildId}/members/${userId}`, BOT_HEADERS)).data
+    const memberJson = (await axios.get(`${discordAPIConstants.apiHost}/guilds/${guildID}/members/${userID}`, BOT_HEADERS)).data
 
-    // Now check if they have the permissions
+    // Now check if their roles have the permissions
     let memberHasPerm = false
     const memberRoles = memberJson.roles
     if (!memberHasPerm) {
-      for (const roleId of memberRoles) {
-        if (!(await redisOps.roles.isManagerOfGuild(roleId, guildId))) continue
-        await redisOps.members.addManagerManual(userId, guildId)
-        return next()
+      for (const roleID of memberRoles) {
+        if (await RedisRole.utils.isManagerOfGuild(roleID, guildID)) {
+          await RedisGuildMember.utils.recognizeManagerManual(userID, guildID)
+          return next()
+        }
+        // if (!(await redisOps.roles.isManagerOfGuild(roleID, guildID))) continue
+        // return next()
       }
-      await redisOps.members.addNonManager(userId, guildId)
-      return res.status(401).json({ code: 401, message: 'Unauthorized member' })
+      await RedisGuildMember.utils.recognizeManual(userID, guildID)
+      return res.status(403).json({ code: 403, message: 'Unauthorized member' })
 
       // The below is used if we were to fetch the roles of a guild, and compare them against the member roles
       // for (const roleObject of rolesArray) {
-      //   const roleId = roleObject.id
-      //   if (!memberJson.roles.includes(roleId)) continue
+      //   const roleID = roleObject.id
+      //   if (!memberJson.roles.includes(roleID)) continue
       //   memberHasPerm = memberHasPerm || ((roleObject.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION) || ((roleObject.permissions & ADMINISTRATOR_PERMISSION) === ADMINISTRATOR_PERMISSION)
       // }
     }
   } catch (err) {
+    // This user is not part of the defined guild
     if (err.response && (err.response.status === 403 || err.response.status === 401)) {
-      redisOps.members.addNonManager(userId, guildId).then(() => {
+      RedisGuildMember.utils.recognizeNonMember(userID, guildID).then(() => {
         next(err)
       }).catch(redisErr => {
-        log.general.warning(`Redis failed to store nonmanager after 401/403 response from discord for checkUserGuildPermission (Guild ${guildId}, User ${userId})`, redisErr)
+        log.general.warning(`Redis failed to store nonmanager after 401/403 response from discord for checkUserGuildPermission (Guild ${guildID}, User ${userID})`, redisErr)
         next(err)
       })
     } else next(err)
   }
 }
 
-const getGuildId = (req, res, next) => {
+const getGuildID = (req, res, next) => {
   if (!req.guildRss) return res.status(404).json({ code: 404, message: statusCodes['404'].message })
   res.json(req.guildRss)
 }
 
-const patchGuildId = async (req, res, next) => {
+const patchGuildID = async (req, res, next) => {
   const errors = {}
   const body = req.body
   if (!req.guildRss) return res.status(404).json({ code: 404, message: 'Cannot edit guild when there are no feeds' })
@@ -127,31 +128,31 @@ const patchGuildId = async (req, res, next) => {
     }
   }
   try {
-    req.patchResult = await dbOps.guildRss.update(req.guildRss)
+    req.patchResult = await dbOpsGuilds.update(req.guildRss)
     next()
   } catch (err) {
     next(err)
   }
 }
 
-const deleteGuildId = async (req, res, next) => {
+const deleteGuildID = async (req, res, next) => {
   try {
     if (!req.guildRss) return res.status(404).json({ code: 404, message: 'Cannot edit guild when there are no feeds' })
-    req.deleteResult = await dbOps.guildRss.remove({ id: req.params.guildId })
+    req.deleteResult = await dbOpsGuilds.remove({ id: req.params.guildID })
     next()
   } catch (err) {
     next(err)
   }
 }
 
-guilds.use('/:guildId', checkUserGuildPermission)
+guilds.use('/:guildID', checkUserGuildPermission)
 
-guilds.get('/:guildId', getGuildId)
+guilds.get('/:guildID', getGuildID)
 
 // Modify a guild profile, and create it if it doesn't exist before the PATCH
-guilds.patch(`/:guildId`, patchGuildId)
+guilds.patch(`/:guildID`, patchGuildID)
 
-guilds.delete('/:guildId', deleteGuildId)
+guilds.delete('/:guildID', deleteGuildID)
 
 module.exports = {
   constants: {
@@ -162,9 +163,9 @@ module.exports = {
     checkUserGuildPermission
   },
   routes: {
-    getGuildId,
-    patchGuildId,
-    deleteGuildId
+    getGuildID,
+    patchGuildID,
+    deleteGuildID
   },
   router: guilds
 }

@@ -17,3 +17,5 @@ yarn-error.log*
 .env
 
 settings/configOverride.json
+settings/vips.js
+settings/api.js

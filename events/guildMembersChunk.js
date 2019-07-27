@@ -1,6 +1,7 @@
 const log = require('../util/logger.js')
-const redisOps = require('../util/redisOps.js')
+const storage = require('../util/storage.js')
+const RedisGuildMember = require('../structs/db/Redis/GuildMember.js')
 
 module.exports = (members, guild) => {
-  if (redisOps.client.exists()) members.forEach(member => redisOps.members.recognize(member).catch(err => log.general.error(`Redis failed to recognize member after guildMembersChunk event`, member.guild, member, err)))
+  if (storage.redisClient) members.forEach(member => RedisGuildMember.utils.recognize(member).catch(err => log.general.error(`Redis failed to recognize member after guildMembersChunk event`, member.guild, member, err)))
 }

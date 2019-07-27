@@ -5,20 +5,20 @@ process.env.DRSS_EXPERIMENTAL_FEATURES = 'true'
 const httpMocks = require('node-mocks-http')
 const subscriberFilters = require('../routes/api/guilds.feeds.subscribers.filters.js')
 
-describe('/api/guilds/:guildId/feeds', function () {
-  const userId = 'georgie'
+describe('/api/guilds/:guildID/feeds', function () {
+  const userID = 'georgie'
   const session = {
     identity: {
-      id: userId
+      id: userID
     }
   }
   const params = {
-    guildId: '9887',
-    subscriberId: 'q23t59w9oju'
+    guildID: '9887',
+    subscriberID: 'q23t59w9oju'
   }
   describe('middleware validSubscriber', function () {
     it('returns 404 if subscriber is not found', async function () {
-      const source = { random: 'key', subscribers: [{ id: params.subscriberId + 1 }] }
+      const source = { random: 'key', subscribers: [{ id: params.subscriberID + 1 }] }
       const request = httpMocks.createRequest({ session, params, source, guildRss: {} })
       const response = httpMocks.createResponse()
       await subscriberFilters.middleware.validSubscriber(request, response)
@@ -28,7 +28,7 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(data.message).toEqual('Unknown Subscriber')
     })
     it('calls next() if subscriber is found in subscribers', async function (done) {
-      const source = { subscribers: [{ id: params.subscriberId }] }
+      const source = { subscribers: [{ id: params.subscriberID }] }
       const request = httpMocks.createRequest({ session, params, source, guildRss: {} })
       const response = httpMocks.createResponse()
       await subscriberFilters.middleware.validSubscriber(request, response, nextErr => {
@@ -42,7 +42,7 @@ describe('/api/guilds/:guildId/feeds', function () {
       expect(response.statusCode).toEqual(200)
     })
     it('defines req.subscriber if subscriber is found in subscribers', async function (done) {
-      const source = { subscribers: [{ id: params.subscriberId }] }
+      const source = { subscribers: [{ id: params.subscriberID }] }
       const request = httpMocks.createRequest({ session, params, source, guildRss: {} })
       const response = httpMocks.createResponse()
       await subscriberFilters.middleware.validSubscriber(request, response, nextErr => {

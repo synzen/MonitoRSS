@@ -1,12 +1,12 @@
 const express = require('express')
 const feedMessage = express.Router({ mergeParams: true })
-const dbOps = require('../../../util/dbOps.js')
+const dbOpsGuilds = require('../../../util/db/guilds.js')
 
 async function deleteFeedMessage (req, res, next) {
   try {
     if (!req.source.message) return res.status(404).json({ code: 404, message: 'Unknown feed message' })
     delete req.source.message
-    const result = await dbOps.guildRss.update(req.guildRss)
+    const result = await dbOpsGuilds.update(req.guildRss)
     req.deleteResult = result
     next()
   } catch (err) {
@@ -26,7 +26,7 @@ async function patchFeedMessage (req, res, next) {
     if (newMessage.length === 0) return res.status(400).json({ code: 400, message: { message: 'This is a required field' } })
     if (newMessage.length > 1000) return res.status(400).json({ code: 400, message: { message: 'Must be less than or equal to 1000 characters' } })
     req.source.message = newMessage
-    const result = await dbOps.guildRss.update(req.guildRss)
+    const result = await dbOpsGuilds.update(req.guildRss)
     req.patchResult = result
     next()
   } catch (err) {

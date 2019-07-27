@@ -9,9 +9,6 @@ const Article = require('../../structs/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 const axios = require('axios')
 
-
-jest.mock('../../util/dbOps.js')
-jest.mock('../../util/redisOps.js')
 jest.mock('../../util/serverLimit.js')
 jest.mock('../../structs/Article.js')
 jest.mock('../../rss/getArticle.js')
@@ -72,6 +69,15 @@ describe('/api/feeds', function () {
       expect(data.code).toEqual(500)
       expect(data.message).toEqual(error.message)
     })
+    it('returns empty placeholders object and empty xml string if getArticles has no articles', async function () {
+      const request = httpMocks.createRequest({ session, params: { url: 'ads' } })
+      const response = httpMocks.createResponse()
+      const error = new Error('No articles in feed')
+      getArticles.mockRejectedValueOnce(error)
+      await feedsRouter.routes.getUrl(request, response)
+      const data = JSON.parse(response._getData())
+      expect(data).toEqual({ placeholders: [], xml: '' })
+    })
     it('returns all placeholders of an article', async function () {
       const xml = '12344tge3r45tgy'
       const articleID = 123
@@ -92,7 +98,7 @@ describe('/api/feeds', function () {
           this.raw = article
           for (let ph in article) this[ph] = article[ph]
         })
-        ArticleIDResolver.getIdTypeValue.mockImplementationOnce(() => articleID)
+        ArticleIDResolver.getIDTypeValue.mockImplementationOnce(() => articleID)
       }
       const request = httpMocks.createRequest({ session, params: { url: 'ads' } })
       const response = httpMocks.createResponse()
