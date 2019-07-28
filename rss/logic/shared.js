@@ -26,7 +26,7 @@ module.exports = (data, callback) => {
 
   dbCmds.findAll(feedCollection || Feed)
     .then(docs => {
-      for (var d = 0; d < docs.length; ++d) {
+      for (let d = 0; d < docs.length; ++d) {
         const doc = docs[d]
         // Push the main data for built in comparisons
         dbIds.add(doc.id)
@@ -35,21 +35,25 @@ module.exports = (data, callback) => {
         // Now deal with custom comparisons
         const docCustomComparisons = doc.customComparisons
         if (docCustomComparisons !== undefined && Object.keys(docCustomComparisons).length > 0) {
-          for (var n in docCustomComparisons) { // n = customComparison's name (such as description, author, etc.)
-            if (!dbCustomComparisons[n]) dbCustomComparisons[n] = []
+          for (const n in docCustomComparisons) { // n = customComparison's name (such as description, author, etc.)
+            if (!dbCustomComparisons[n]) {
+              dbCustomComparisons[n] = []
+            }
             dbCustomComparisons[n].push(docCustomComparisons[n])
           }
         }
       }
 
       const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
-      for (var a = 0; a < articleList.length; ++a) {
+      for (let a = 0; a < articleList.length; ++a) {
         const article = articleList[a]
         article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
         if (checkCustomComparisons) {
         // Iterate over the values stored in the db, and see if the custom comparison names in the db exist in any of the articles. If they do, then it is marked valid
           for (var compName in dbCustomComparisons) {
-            if (article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null)) dbCustomComparisonsValid[compName] = true
+            if (article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null)) {
+              dbCustomComparisonsValid[compName] = true
+            }
           }
         }
         if (!dbIds.has(article._id)) toInsert.push(article)
@@ -57,7 +61,7 @@ module.exports = (data, callback) => {
 
       // If any invalid custom comparisons are found, delete them
       if (checkCustomComparisons) {
-        for (var q in dbCustomComparisons) {
+        for (const q in dbCustomComparisons) {
           if (!dbCustomComparisonsValid[q]) {
             dbCustomComparisonsToDelete.push(q)
             delete dbCustomComparisons[q]
@@ -65,8 +69,13 @@ module.exports = (data, callback) => {
         }
       }
       dbCmds.bulkInsert(feedCollection || Feed, toInsert).then(() => {
-        if (dbIds.size > 0) for (var rssName in rssList) processSource(rssName)
-        else callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
+        if (dbIds.size > 0) {
+          for (const rssName in rssList) {
+            processSource(rssName)
+          }
+        } else {
+          callback(null, { status: 'success', link: link, feedCollection: feedCollection, feedCollectionId: feedCollectionId })
+        }
       })
         .catch(err => {
           if (err) return callback(new Error(`Database Error: Unable to bulk insert articles for link ${link}`, err.message || err), { status: 'failed', link: link, rssList: rssList })

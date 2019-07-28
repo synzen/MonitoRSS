@@ -1,9 +1,9 @@
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const requestStream = require('../rss/request.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const channelTracker = require('../util/channelTracker.js')
+const FeedFetcher = require('../util/FeedFetcher.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {
@@ -29,7 +29,7 @@ module.exports = async (bot, message, command) => {
     for (const link of toRefresh) {
       log.command.info(`Attempting to refresh ${link}`, message.guild)
       try {
-        await requestStream(link)
+        await FeedFetcher.fetchURL(link)
         await dbOpsFailedLinks.reset(link)
         log.command.info(`Refreshed ${link} and is back on cycle`, message.guild)
       } catch (err) {

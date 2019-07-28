@@ -1,4 +1,4 @@
-const dbOps = require('../../util/dbOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
 const config = require('../../config.js')
 const filterTypes = [
   { show: 'Title', use: 'title' },
@@ -57,7 +57,7 @@ async function inputFilterFn (m, data) {
 
   if (!user && !role) {
     log.command.info(`New filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}`, m.guild)
-    await dbOps.guildRss.update(guildRss, true)
+    await dbOpsGuilds.update(guildRss, true)
     let msg = ''
     if (addedList) msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
     if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
@@ -65,7 +65,7 @@ async function inputFilterFn (m, data) {
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
   } else {
     log.command.info(`New ${user ? 'user' : 'role'} filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}.`, m.guild, user || role)
-    await dbOps.guildRss.update(guildRss, true)
+    await dbOpsGuilds.update(guildRss, true)
     let msg = `Subscription updated for ${user ? 'user' : 'role'} \`${user ? `${user.username}#${user.discriminator}` : role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
     if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
     if (addedList) msg += `\nYou may test your filters on random articles via \`${config.bot.prefix}rsstest\` and see what articles will mention the ${user ? 'user' : 'role'}.`
@@ -202,13 +202,13 @@ async function removeFilterFn (m, data) {
     let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
     if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
     log.command.info(`Removing filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild)
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`filterRemove 8a`, m.guild, err))
   } else {
     let msg = `Subscription updated for ${user ? 'user' : 'role'} \`${user ? `${user.username}#${user.discriminator}` : role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
     if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
     log.command.info(`Removing ${user ? 'user' : 'role'} filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild, user || role)
-    await dbOps.guildRss.update(guildRss)
+    await dbOpsGuilds.update(guildRss)
     await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`filterRemove 8b`, m.guild, err))
   }
   return { __end: true }

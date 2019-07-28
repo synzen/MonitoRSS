@@ -1,54 +1,24 @@
 const logLinkErrs = require('../config.js').log.linkErrs
-const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
-const requestStream = require('./request.js')
 const connectDb = require('./db/connect.js')
 const processSources = require('./logic/shared.js')
 const log = require('../util/logger.js')
-const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
+const FeedFetcher = require('../util/FeedFetcher.js')
 
-function getFeed (data, callback) {
+async function getFeed (data, callback) {
   const { link, rssList, uniqueSettings } = data
-  const feedparser = new DecodedFeedParser(null, link)
-  const idResolver = new ArticleIDResolver()
-  const articleList = []
-
-  const cookies = (uniqueSettings && uniqueSettings.cookies) ? uniqueSettings.cookies : undefined
-
-  requestStream(link, cookies, feedparser)
-    .then(stream => {
-      stream.pipe(feedparser)
-      callback()
-    })
-    .catch(err => {
-      if (logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
-      process.send({ status: 'failed', link: link, rssList: rssList })
-      callback()
-    })
-
-  feedparser.on('error', err => {
-    feedparser.removeAllListeners('end')
-    if (logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
-    process.send({ status: 'failed', link: link, rssList: rssList })
-  })
-
-  feedparser.on('readable', function () {
-    let item
-    do {
-      item = this.read()
-      if (item) {
-        idResolver.recordArticle(item)
-        articleList.push(item)
-      }
-    } while (item)
-  })
-
-  feedparser.on('end', () => {
+  try {
+    const stream = await FeedFetcher.fetchURL(link, uniqueSettings)
+    callback()
+    const { articleList, idType } = await FeedFetcher.parseStream(stream, link)
     if (articleList.length === 0) return process.send({ status: 'success', link: link })
-    processSources({ articleList, useIdType: idResolver.getIDType(), ...data }, (err, results) => {
+    processSources({ articleList, useIdType: idType, ...data }, (err, results) => {
       if (err) log.cycle.error(`Cycle logic`, err, true)
       if (results) process.send(results)
     })
-  })
+  } catch (err) {
+    if (logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
+    process.send({ status: 'failed', link: link, rssList: rssList })
+  }
 }
 
 process.on('message', m => {
