@@ -36,7 +36,7 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
             await message.channel.send(`Successfully removed user ${member} from direct messaging feed warnings/failures. The user has been notified of this change.`)
           } else return await message.channel.send('You cannot remove a user that is not currently enabled for feed warning/failure direct messaging alerts.')
         }
-        await dbOpsGuilds.guildRss.update(guildRss, true)
+        await dbOpsGuilds.update(guildRss, true)
         break
       case 'list':
         if (!Array.isArray(guildRss.sendAlertsTo) || guildRss.sendAlertsTo.length === 0) return await message.channel.send(`There are currently no users that will be notified through direct messaging when there are feed warnings/failures in this server.`)
