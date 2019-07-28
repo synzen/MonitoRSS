@@ -5,6 +5,9 @@ const Article = require('../../../structs/Article.js')
 const axios = require('axios')
 const log = require('../../../util/logger.js')
 const FeedFetcher = require('../../../util/FeedFetcher.js')
+const RequestError = require('../../../structs/errors/RequestError.js')
+const FeedParserError = require('../../../structs/errors/FeedParserError.js')
+const statusCodes = require('../../constants/codes.js')
 // const feedsJson = require('../../tests/files/feeds.json')
 const rateLimit = require('express-rate-limit')
 const DATE_SETTINGS = {
@@ -48,8 +51,9 @@ async function getUrl (req, res, next) {
         allPlaceholders.push(articlePlaceholders)
       }
     } catch (err) {
-      if (err.message.includes('No articles in feed')) return res.json({ placeholders: [], xml: '' })
-      else return res.status(500).json({ code: 500, message: err.message })
+      if (err instanceof RequestError) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
+      if (err instanceof FeedParserError && err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
+      return res.status(500).json({ code: 500, message: err.message })
     }
 
     try {

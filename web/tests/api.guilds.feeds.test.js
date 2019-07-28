@@ -9,20 +9,20 @@ const RedisGuild = require('../../structs/db/Redis/Guild.js')
 const guildFeedsRoute = require('../routes/api/guilds.feeds.js')
 const serverLimit = require('../../util/serverLimit.js')
 const initialize = require('../../rss/initialize.js')
-const getArticles = require('../../rss/getArticle.js')
 const Article = require('../../structs/Article.js')
-const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
+const FeedFetcher = require('../../util/FeedFetcher.js')
+const FeedParserError = require('../../structs/errors/FeedParserError.js')
+const RequestError = require('../../structs/errors/RequestError.js')
+const dbOpsFailedLinks = require('../../util/db/failedLinks.js')
 
 jest.mock('../../util/db/guilds.js')
 jest.mock('../../structs/db/Redis/Channel.js')
 jest.mock('../../structs/db/Redis/Guild.js')
 jest.mock('../../util/serverLimit.js')
 jest.mock('../../rss/initialize.js')
-jest.mock('../../rss/getArticle.js')
 jest.mock('../../structs/Article.js')
-jest.mock('../../structs/ArticleIDResolver.js')
-
-ArticleIDResolver.getIDTypeValue = jest.fn()
+jest.mock('../../util/FeedFetcher.js')
+jest.mock('../../util/db/failedLinks.js')
 
 RedisChannel.utils = {
   isChannelOfGuild: jest.fn(() => Promise.resolve())
@@ -260,7 +260,7 @@ describe('/api/guilds/:guildID/feeds', function () {
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
       RedisChannel.fetch.mockResolvedValueOnce(channel)
-      const error = new Error('Connection failed')
+      const error = new RequestError(1, 'Connection failed')
       initialize.addNewFeed.mockRejectedValueOnce(error)
       await guildFeedsRoute.routes.postFeed(request, response)
       expect(response.statusCode).toEqual(500)
@@ -277,9 +277,9 @@ describe('/api/guilds/:guildID/feeds', function () {
       const response = httpMocks.createResponse()
       serverLimit.mockResolvedValueOnce({ max: 100 })
       RedisChannel.fetch.mockResolvedValueOnce(channel)
-      const error = new Error('invalid feed')
+      const error = new FeedParserError(1, 'invalid feed')
       initialize.addNewFeed.mockRejectedValueOnce(error)
-      await guildFeedsRoute.routes.postFeed(request, response)
+      await guildFeedsRoute.routes.postFeed(request, response, console.log)
       expect(response.statusCode).toEqual(400)
       const data = JSON.parse(response._getData())
       expect(data.code).toEqual(40002)
@@ -338,51 +338,53 @@ describe('/api/guilds/:guildID/feeds', function () {
   })
   describe('GET /:feedID', function () {
     afterEach(function () {
-      getArticles.mockReset()
       Article.mockReset()
     })
     it('returns the articles placeholders', async function () {
-      const articleID = 123
       const rawArticleList = [{
+        _id: '2345',
         title: 'title1',
         description: 'description1'
       }, {
+        _id: 'ywhe3r45',
         title: 'ja',
         description: 'description2'
       }]
-      const resData = [ ...rawArticleList ]
-      resData.forEach((item, index) => {
-        resData[index] = { ...item, _id: articleID }
-      })
-      for (let article of rawArticleList) {
+      for (const article of rawArticleList) {
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
           this.raw = article
-          for (const key in article) this[key] = article[key]
+          this.id = article._id
+          for (const key in article) {
+            this[key] = article[key]
+          }
         })
-        ArticleIDResolver.getIDTypeValue.mockImplementationOnce(() => articleID)
       }
-
-      getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: rawArticleList })
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
       expect(response.statusCode).toEqual(200)
       const data = JSON.parse(response._getData())
-      expect(data).toEqual(resData)
+      expect(data).toEqual(rawArticleList)
     })
     it('returns the articles placeholders with regex placeholders', async function () {
       const rawArticleList = [{
+        _id: 'q235r',
         title: 'title1',
         description: 'description1'
       }, {
+        _id: '123',
         description: 'description2'
       }]
       for (let i = 0; i < rawArticleList.length; ++i) {
         const article = rawArticleList[i]
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
-          for (const key in article) this[key] = article[key]
+          this.id = article._id
+          for (const key in article) {
+            this[key] = article[key]
+          }
           if (i === 0) {
             this.regexPlaceholders = {
               title: {
@@ -397,15 +399,14 @@ describe('/api/guilds/:guildID/feeds', function () {
       }
 
       const expectedResponse = [{
-        title: 'title1',
-        description: 'description1',
+        ...rawArticleList[0],
         'regex:title:custom1': 'value1',
         'regex:description:custom2': 'value2'
       }, {
-        description: 'description2'
+        ...rawArticleList[1]
       }]
-
-      getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
+      dbOpsFailedLinks.get.mockResolvedValueOnce()
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: rawArticleList })
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
@@ -414,11 +415,12 @@ describe('/api/guilds/:guildID/feeds', function () {
       expect(data).toEqual(expectedResponse)
     })
     it('returns the articles placeholders with the additional full description, summary and title', async function () {
-      const articleID = 123
       const rawArticleList = [{
+        _id: '123',
         title: 'title1',
         description: 'description1'
       }, {
+        _id: '432wt',
         description: 'description2'
       }]
       const _fullTitle = 'aiwetk njlwseitg'
@@ -429,33 +431,33 @@ describe('/api/guilds/:guildID/feeds', function () {
       for (let article of rawArticleList) {
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
-          for (const key in article) this[key] = article[key]
+          this.id = article._id
+          for (const key in article) {
+            this[key] = article[key]
+          }
           this._fullTitle = _fullTitle
           this._fullDescription = _fullDescription
           this._fullSummary = _fullSummary
           this._fullDate = _fullDate
         })
-        ArticleIDResolver.getIDTypeValue.mockImplementationOnce(() => articleID)
       }
 
       const expectedResponse = [{
-        _id: articleID,
-        title: 'title1',
-        description: 'description1',
+        ...rawArticleList[0],
         _fullTitle,
         _fullSummary,
         _fullDescription,
         _fullDate: _fullDateString
       }, {
-        _id: articleID,
-        description: 'description2',
+        ...rawArticleList[1],
         _fullTitle,
         _fullSummary,
         _fullDescription,
         _fullDate: _fullDateString
       }]
 
-      getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
+      dbOpsFailedLinks.get.mockResolvedValueOnce()
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: rawArticleList })
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
@@ -464,7 +466,6 @@ describe('/api/guilds/:guildID/feeds', function () {
       expect(data).toEqual(expectedResponse)
     })
     it('returns the raw placeholders', async function () {
-      const articleID = 123
       const rawArticleList = [{
         title: 'title1',
         description: 'description1'
@@ -474,7 +475,9 @@ describe('/api/guilds/:guildID/feeds', function () {
       for (let article of rawArticleList) {
         Article.mockImplementationOnce(function () {
           this.placeholders = Object.keys(article)
-          for (const key in article) this[key] = article[key]
+          for (const key in article) {
+            this[key] = article[key]
+          }
           this.getRawPlaceholders = () => (
             {
               test: 'val1',
@@ -482,10 +485,10 @@ describe('/api/guilds/:guildID/feeds', function () {
             }
           )
         })
-        ArticleIDResolver.getIDTypeValue.mockImplementationOnce(() => articleID)
       }
 
-      getArticles.mockResolvedValueOnce([ null, null, rawArticleList ])
+      dbOpsFailedLinks.get.mockResolvedValueOnce()
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: rawArticleList })
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
@@ -496,9 +499,10 @@ describe('/api/guilds/:guildID/feeds', function () {
         expect(article['raw:test2']).toEqual('val2')
       }
     })
-    it('calls next(err) if getArticles failed with unrecognized error', async function (done) {
+    it('calls next(err) if feed fetch failed with unrecognized error', async function (done) {
       const error = new Error('azsfrwn5fc9 w45t 9834 b')
-      getArticles.mockRejectedValueOnce(error)
+      dbOpsFailedLinks.get.mockResolvedValueOnce()
+      FeedFetcher.fetchFeed.mockRejectedValueOnce(error)
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response, nextErr => {
@@ -512,17 +516,18 @@ describe('/api/guilds/:guildID/feeds', function () {
       expect(response.statusCode).toEqual(200)
     })
     it('returns empty array if there are no articles', async function () {
-      const error = new Error('No articles in feed')
-      getArticles.mockRejectedValueOnce(error)
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
+      dbOpsFailedLinks.get.mockResolvedValueOnce()
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: [] })
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
       expect(response.statusCode).toEqual(200)
       expect(JSON.parse(response._getData())).toEqual([])
     })
     it('returns 500 if connection failed', async function () {
-      const error = new Error('Connection failed')
-      getArticles.mockRejectedValueOnce(error)
+      const error = new RequestError(1, 'Connection failed')
+      dbOpsFailedLinks.get.mockResolvedValueOnce()
+      FeedFetcher.fetchFeed.mockRejectedValueOnce(error)
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
@@ -530,8 +535,9 @@ describe('/api/guilds/:guildID/feeds', function () {
       expect(JSON.parse(response._getData()).message).toEqual(error.message)
     })
     it('returns 400 if invalid feed', async function () {
-      const error = new Error('Not a valid feed')
-      getArticles.mockRejectedValueOnce(error)
+      const error = new FeedParserError(1, 'Not a valid feed')
+      dbOpsFailedLinks.get.mockResolvedValueOnce()
+      FeedFetcher.fetchFeed.mockRejectedValueOnce(error)
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
       await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
@@ -539,13 +545,11 @@ describe('/api/guilds/:guildID/feeds', function () {
       expect(JSON.parse(response._getData()).message).toEqual(error.message)
     })
     it('returns 400 if feed reached connection failure limit', async function () {
-      const error = new Error('Reached connection failure limit')
-      getArticles.mockRejectedValueOnce(error)
+      dbOpsFailedLinks.get.mockResolvedValueOnce({ failed: '1231' })
       const request = httpMocks.createRequest({ session, params, source: {}, guildRss: {} })
       const response = httpMocks.createResponse()
-      await guildFeedsRoute.routes.getFeedPlaceholders(request, response)
+      await guildFeedsRoute.routes.getFeedPlaceholders(request, response, console.log)
       expect(response.statusCode).toEqual(400)
-      expect(JSON.parse(response._getData()).message).toEqual(error.message)
     })
   })
   describe('DELETE /:feedID', function () {

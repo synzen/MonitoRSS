@@ -5,12 +5,15 @@ const feeds = express.Router({ mergeParams: true })
 const statusCodes = require('../../constants/codes.js')
 const dbOpsGuilds = require('../../../util/db/guilds.js')
 const dbOpsSchedules = require('../../../util/db/schedules.js')
+const dbOpsFailedLinks = require('../../../util/db/failedLinks.js')
 const initialize = require('../../../rss/initialize.js')
 const serverLimit = require('../../../util/serverLimit.js')
 const RedisGuild = require('../../../structs/db/Redis/Guild.js')
 const RedisChannel = require('../../../structs/db/Redis/Channel.js')
 const storage = require('../../../util/storage.js')
 const FeedFetcher = require('../../../util/FeedFetcher.js')
+const RequestError = require('../../../structs/errors/RequestError.js')
+const FeedParserError = require('../../../structs/errors/FeedParserError.js')
 const VALID_SOURCE_KEYS_TYPES = {
   title: String,
   channel: String,
@@ -93,8 +96,8 @@ async function postFeed (req, res, next) {
     } catch (err) {
       // log.web.warning(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildID}, ${guildName}) Unable to add feed ${link}`, err)
       if (err.message.includes('exists for this channel')) return res.status(403).json({ code: statusCodes['40003_FEED_EXISTS_IN_CHANNEL'].code, message: err.message })
-      if (err.message.includes('Connection failed')) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
-      if (err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
+      if (err instanceof RequestError) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
+      if (err instanceof FeedParserError && err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
       else {
         return next(err)
       }
@@ -115,7 +118,11 @@ async function getFeedPlaceholders (req, res, next) {
     language: req.guildRss.dateLanguage || config.feeds.dateLanguage
   }
   try {
+    const failedLinksStatus = await dbOpsFailedLinks.get(req.source.link)
+    if (failedLinksStatus && failedLinksStatus.failed) return res.status(400).json({ code: statusCodes['40005_CONNECTION_FAILURE_LIMIT'], message: 'Reached connection failure limit' })
+
     const { articleList } = await FeedFetcher.fetchFeed(req.source.link)
+    if (articleList.length === 0) return res.json([])
     const allPlaceholders = []
     for (const article of articleList) {
       const parsed = new Article(article, req.source, dateSettings)
@@ -146,10 +153,8 @@ async function getFeedPlaceholders (req, res, next) {
 
     res.json(allPlaceholders)
   } catch (err) {
-    if (err.message.includes('No articles')) return res.json([])
-    if (err.message.includes('Connection failed')) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
-    if (err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
-    if (err.message.includes('connection failure limit')) return res.status(400).json({ code: statusCodes['40005_CONNECTION_FAILURE_LIMIT'], message: err.message })
+    if (err instanceof RequestError) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
+    if (err instanceof FeedParserError && err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
     next(err)
   }
 }
@@ -158,7 +163,6 @@ async function getFeedDebug (req, res, next) {
   try {
     const guildID = req.params.guildID
     const shard = await RedisGuild.utils.getValue(guildID, 'shard') // -1 means no sharding
-    console.log(req.params.feedID, shard, typeof shard)
     const assignedSchedule = await dbOpsSchedules.assignedSchedules.get(req.params.feedID, shard)
     if (!assignedSchedule) return res.status(500).json({ code: 500, message: 'No schedule was assigned to feed' })
     const collectionID = storage.collectionID(req.source.link, shard === '-1' ? null : shard, assignedSchedule.schedule)
