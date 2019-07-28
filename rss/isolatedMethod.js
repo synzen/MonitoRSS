@@ -18,6 +18,7 @@ async function getFeed (data, callback) {
   } catch (err) {
     if (logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
     process.send({ status: 'failed', link: link, rssList: rssList })
+    callback()
   }
 }
 
