@@ -106,22 +106,25 @@ const jsonViewModalProps = {
 const autoFetch = 0
 
 function Debugger (props) {
-  const { feed, guildId, feedId, articleList, articlesError, articlesFetching, defaultConfig: config, channels } = useSelector(state => ({
-    feed: state.feed, guildId: state.guildId, feedId: state.feedId, articleList: state.articleList, articlesError: state.articlesError, articlesFetching: state.articlesFetching, defaultConfig: state.defaultConfig, channels: state.channels
+  const { feed, guildId, feedId, articleList, articlesError, articlesFetching, defaultConfig: config, channels, feedRefreshRates } = useSelector(state => ({
+    feed: state.feed, guildId: state.guildId, feedId: state.feedId, articleList: state.articleList, articlesError: state.articlesError, articlesFetching: state.articlesFetching, defaultConfig: state.defaultConfig, channels: state.channels, feedRefreshRates: state.feedRefreshRates
   }), shallowEqual)
   const dispatch = useDispatch()
   const [ feedData, setFeedData ] = useState()
   const [ loadingState, setLoadingState ] = useState(autoFetch) // 0 = await user start, 1 = waiting for request and article fetch, 2 = fetched feed data OR articles, 3 = fetched all data
   const [ loadError, setLoadError ] = useState()
   const articleListById = {}
-  for (const article of articleList) articleListById[article._id] = article
+  for (const article of articleList) {
+    articleListById[article._id] = article
+  }
+  const refreshRate = feedRefreshRates[feedId]
   const waitDuration = !feed
     ? 'unknown'
-    : !feed.lastRefreshRateMin
+    : !refreshRate
       ? config.refreshTimeMinutes < 1
         ? `${config.refreshTimeMinutes * 60} second(s)`
         : `${config.refreshTimeMinutes} minute(s)`
-      : feed.lastRefreshRateMin < 1 ? `${feed.lastRefreshRateMin * 60} second(s)` : `${feed.lastRefreshRateMin} minute(s)`
+      : refreshRate < 1 ? `${refreshRate * 60} second(s)` : `${refreshRate} minute(s)`
 
   useEffect(() => {
     if (!articlesFetching && (loadingState === 2 || loadingState === 3)) {
@@ -254,6 +257,7 @@ function Debugger (props) {
 
   const articleListView = (articleArray, symbolType) => articleArray.map(articleID => {
     const article = articleListById[articleID]
+    console.log(article)
     return (
       <li key={article._id}>
         <div>
