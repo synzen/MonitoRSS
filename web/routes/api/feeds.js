@@ -44,6 +44,7 @@ async function getUrl (req, res, next) {
         for (const placeholder of parsed.placeholders) {
           articlePlaceholders[placeholder] = parsed[placeholder]
         }
+        articlePlaceholders._id = parsed.id
         allPlaceholders.push(articlePlaceholders)
       }
     } catch (err) {

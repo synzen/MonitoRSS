@@ -123,7 +123,7 @@ async function getFeedPlaceholders (req, res, next) {
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
       }
-      articlePlaceholders._id = parsed._id
+      articlePlaceholders._id = parsed.id
       articlePlaceholders._fullDescription = parsed._fullDescription
       articlePlaceholders._fullSummary = parsed._fullSummary
       articlePlaceholders._fullTitle = parsed._fullTitle
