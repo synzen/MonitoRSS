@@ -36,7 +36,7 @@ class FeedFetcher {
     if (res.status === 200) return res.body
     if (res.status === 403 || res.status === 400) {
       delete options.headers
-      const res2 = await this.fetch(url, options)
+      const res2 = await this.fetchURL(url, options)
       endStatus = res2.status
       if (res2.status === 200) return res2.body
     }
