@@ -3,7 +3,6 @@ const config = require('../../../config.js')
 const Article = require('../../../structs/Article.js')
 const feeds = express.Router({ mergeParams: true })
 const statusCodes = require('../../constants/codes.js')
-const getArticles = require('../../../rss/getArticle.js')
 const dbOpsGuilds = require('../../../util/db/guilds.js')
 const dbOpsSchedules = require('../../../util/db/schedules.js')
 const initialize = require('../../../rss/initialize.js')
@@ -11,7 +10,7 @@ const serverLimit = require('../../../util/serverLimit.js')
 const RedisGuild = require('../../../structs/db/Redis/Guild.js')
 const RedisChannel = require('../../../structs/db/Redis/Channel.js')
 const storage = require('../../../util/storage.js')
-const ArticleIDResolver = require('../../../structs/ArticleIDResolver.js')
+const FeedFetcher = require('../../../util/FeedFetcher.js')
 const VALID_SOURCE_KEYS_TYPES = {
   title: String,
   channel: String,
@@ -110,25 +109,21 @@ feeds.post('/', postFeed)
 feeds.use('/:feedID', checkGuildFeedExists)
 
 async function getFeedPlaceholders (req, res, next) {
+  const dateSettings = {
+    timezone: req.guildRss.timezone || config.feeds.timezone,
+    format: req.guildRss.dateFormat || config.feeds.dateFormat,
+    language: req.guildRss.dateLanguage || config.feeds.dateLanguage
+  }
   try {
-    const mockGuildRss = { sources: { someName: { link: req.source.link } } }
-    // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) Fetching articles for ${req.source.link}`)
-    const [ , , rawArticleList ] = await getArticles(mockGuildRss, 'someName')
+    const { articleList } = await FeedFetcher.fetchFeed(req.source.link)
     const allPlaceholders = []
-    const idResolver = new ArticleIDResolver()
-    for (const article of rawArticleList) idResolver.recordArticle(article)
-    const useIDType = idResolver.getIDType()
-    for (const article of rawArticleList) {
-      const parsed = new Article(article, req.source, {
-        timezone: req.guildRss.timezone || config.feeds.timezone,
-        format: req.guildRss.dateFormat || config.feeds.dateFormat,
-        language: req.guildRss.dateLanguage || config.feeds.dateLanguage
-      })
+    for (const article of articleList) {
+      const parsed = new Article(article, req.source, dateSettings)
       const articlePlaceholders = {}
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
       }
-      articlePlaceholders._id = ArticleIDResolver.getIDTypeValue(parsed.raw, useIDType)
+      articlePlaceholders._id = parsed._id
       articlePlaceholders._fullDescription = parsed._fullDescription
       articlePlaceholders._fullSummary = parsed._fullSummary
       articlePlaceholders._fullTitle = parsed._fullTitle

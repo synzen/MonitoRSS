@@ -10,7 +10,7 @@ module.exports = (source, rawArticle, isTestMessage, ignoreLimits, dateSettings)
   // Filter message
   let filterExists = false
   if (source.filters && typeof source.filters === 'object' && source.filters !== null && Object.keys(source.filters).length > 0) filterExists = true
-  const filterResults = filterExists ? testFilters(source, article) : true
+  const filterResults = filterExists ? testFilters(source.filters, article) : true
 
   let textFormat = source.message === undefined ? source.message : source.message.trim()
   let embedFormat = source.embeds
@@ -24,7 +24,7 @@ module.exports = (source, rawArticle, isTestMessage, ignoreLimits, dateSettings)
     for (var a = 0; a < filteredFormats.length; ++a) {
       const filteredFormat = filteredFormats[a]
       const thisPriority = filteredFormat.priority === undefined || filteredFormat.priority < 0 ? 0 : filteredFormat.priority
-      const res = testFilters(filteredFormat, article) // messageFiltered.filters must exist as an object
+      const res = testFilters(filteredFormat.filters, article) // messageFiltered.filters must exist as an object
       if (!res.passed) continue
       matched[thisPriority] = matched[thisPriority] === undefined ? 1 : matched[thisPriority] + 1
       if (thisPriority >= highestPriority) {

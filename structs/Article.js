@@ -321,7 +321,7 @@ module.exports = class Article {
         const type = subscriber.type
         if (type !== 'role' && type !== 'user') continue
         const mentionText = type === 'role' ? `<@&${subscriber.id}> ` : `<@${subscriber.id}> `
-        if (subscriber.filters && testFilters(subscriber, this).passed) this.subscriptions += mentionText
+        if (subscriber.filters && testFilters(subscriber.filters, this).passed) this.subscriptions += mentionText
         else if (!subscriber.filters || Object.keys(subscriber.filters).length === 0) this.subscriptions += mentionText
         if (type === 'role') this.subscriptionIds.push(subscriber.id) // For ArticleMessage mention toggling
       }

@@ -5,6 +5,7 @@ const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
+const testFilters = require('../rss/translator/filters.js')
 const REQUEST_ERROR_CODE = 50042
 const FEEDPARSER_ERROR_CODE = 40002
 
@@ -95,6 +96,18 @@ class FeedFetcher {
     const stream = await this.fetchURL(url, options)
     const { articleList, idType } = await this.parseStream(stream, url)
     return { articleList, idType }
+  }
+
+  static async fetchRandomArticle (url, filters) {
+    const { articleList } = await this.fetchFeed(url)
+    if (!filters) {
+      return articleList[Math.round(Math.random() * (articleList.length - 1))]
+    }
+    const filtered = []
+    for (const article of articleList) {
+      if (testFilters(filters, article).passed) filtered.push(article)
+    }
+    return filtered.length === 0 ? null : filtered[Math.round(Math.random() * (filtered.length - 1))]
   }
 }
 

@@ -1,10 +1,11 @@
-const getRandomArticle = require('../rss/getArticle.js')
+const config = require('../config.js')
+const log = require('../util/logger.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsVips = require('../util/db/vips.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
-const log = require('../util/logger.js')
-const config = require('../config.js')
+const FeedFetcher = require('../util/FeedFetcher.js')
+
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 
 module.exports = async (bot, message, command) => {
@@ -17,7 +18,7 @@ module.exports = async (bot, message, command) => {
     const { rssName } = data
     const source = guildRss.sources[rssName]
     const grabMsg = await message.channel.send(`Grabbing a random feed article...`)
-    const [ article ] = await getRandomArticle(guildRss, rssName, false)
+    const article = FeedFetcher.fetchRandomArticle(source.link)
     article._delivery = {
       rssName,
       channelId: message.channel.id,
@@ -31,7 +32,7 @@ module.exports = async (bot, message, command) => {
       log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
       delete guildRss.sources[rssName].webhook
     }
-    article._delivery.source = guildRss.sources[rssName]
+    article._delivery.source = source
 
     const queue = new ArticleMessageQueue()
     await queue.send(article, !simple, true)

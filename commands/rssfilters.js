@@ -1,12 +1,13 @@
+const log = require('../util/logger.js')
+const VALID_OPTIONS = ['1', '2', '3', '4', '5']
 const filters = require('./util/filters.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsVips = require('../util/db/vips.js')
-const getArticle = require('../rss/getArticle.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
-const log = require('../util/logger.js')
-const VALID_OPTIONS = ['1', '2', '3', '4', '5']
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
+const FeedFetcher = require('../util/FeedFetcher.js')
+const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 
 async function feedSelectorFn (m, data) {
   const { guildRss, rssName } = data
@@ -87,7 +88,10 @@ module.exports = async (bot, message, command, role) => {
       return await list.send(undefined)
     } else if (selectedOption === '5') { // 5 = Send passing article
       if (data.noFilters) return await message.channel.send(`There are no filters assigned to ${source.link}`)
-      const [ article ] = await getArticle(guildRss, rssName, true)
+      const failedLinkResult = await dbOpsFailedLinks.get(source.link)
+      if (failedLinkResult && failedLinkResult.failed) return await message.channel.send(`Reached connection failure limit.`)
+      const article = await FeedFetcher.fetchRandomArticle(source.link, guildRss.sources[rssName].filters)
+      if (!article) return await message.channel.send('No articles were able to pass this feed\'s filters.')
       log.command.info(`Sending filtered article for ${source.link}`, message.guild)
       article._delivery = {
         rssName,

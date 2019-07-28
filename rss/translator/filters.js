@@ -85,7 +85,7 @@ function findFilterWords (filterType, content) {
   }
 }
 
-module.exports = (source, article) => {
+module.exports = (filters, article) => {
   const referenceOverrides = {
     description: article._fullDescription,
     summary: article._fullSummary,
@@ -101,8 +101,8 @@ module.exports = (source, article) => {
   let invertedFiltersExists = false
 
   const filterResults = new _FilterResults()
-  for (var filterTypeName in source.filters) {
-    const userFilters = source.filters[filterTypeName]
+  for (var filterTypeName in filters) {
+    const userFilters = filters[filterTypeName]
     const reference = filterTypeName.startsWith('raw:') ? article.getRawPlaceholderContent(filterTypeName) : (referenceOverrides[filterTypeName] || article[filterTypeName])
 
     if (!reference) {
