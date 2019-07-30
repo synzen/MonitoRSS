@@ -14,7 +14,7 @@ class FeedFetcher {
     throw new Error('Cannot be instantiated')
   }
 
-  static async fetchURL (url, requestOptions = {}) {
+  static async fetchURL (url, requestOptions = {}, retried) {
     if (!url) throw new Error('No url defined')
     const options = {
       timeout: 15000,
@@ -34,9 +34,9 @@ class FeedFetcher {
     endStatus = res.status
 
     if (res.status === 200) return res.body
-    if (res.status === 403 || res.status === 400) {
+    if (!retried && (res.status === 403 || res.status === 400)) {
       delete options.headers
-      const res2 = await this.fetchURL(url, options)
+      const res2 = await this.fetchURL(url, { ...options, headers: {} }, true)
       endStatus = res2.status
       if (res2.status === 200) return res2.body
     }
@@ -60,10 +60,11 @@ class FeedFetcher {
   static async parseStream (stream, url) {
     const feedparser = new DecodedFeedParser(null, url)
     const idResolver = new ArticleIDResolver()
-    stream.pipe(feedparser)
     const articleList = []
 
     return new Promise((resolve, reject) => {
+      stream.on('error', reject) // feedparser may not handle all errors such as incorrect headers. (feedparser v2.2.9)
+
       feedparser.on('error', err => {
         feedparser.removeAllListeners('end')
         if (err.message === 'Not a feed') reject(new FeedParserError(FEEDPARSER_ERROR_CODE, 'That is a not a valid feed. Note that you cannot add just any link. You may check if it is a valid feed by using online RSS feed validators'))
@@ -89,6 +90,8 @@ class FeedFetcher {
         }
         resolve({ articleList, idType })
       })
+
+      stream.pipe(feedparser)
     })
   }
 
