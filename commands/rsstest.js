@@ -18,7 +18,7 @@ module.exports = async (bot, message, command) => {
     const { rssName } = data
     const source = guildRss.sources[rssName]
     const grabMsg = await message.channel.send(`Grabbing a random feed article...`)
-    const article = FeedFetcher.fetchRandomArticle(source.link)
+    const article = await FeedFetcher.fetchRandomArticle(source.link)
     article._delivery = {
       rssName,
       channelId: message.channel.id,
