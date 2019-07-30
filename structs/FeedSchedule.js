@@ -83,14 +83,8 @@ class FeedSchedule extends EventEmitter {
     const status = {}
     let feedCount = 0 // For statistics in storage
 
-    let wrongBot = false
     for (const rssName in rssList) {
-      if (wrongBot || !this.feedIDs.has(rssName)) continue
-      if (!this.bot.guilds.has(guildRss.id)) {
-        wrongBot = true
-        log.general.error(`${this.SHARD_ID}Feed ${rssName} of guild ${guildRss.id} was delegated to schedule ${this.name} but this shard does not contain this guild`)
-        continue
-      }
+      if (!this.feedIDs.has(rssName)) continue
       const source = rssList[rssName]
       ++feedCount
       // Determine whether any feeds should be disabled
