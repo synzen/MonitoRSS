@@ -6,9 +6,11 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 
 async function getFeed (data, callback) {
   const { link, rssList, uniqueSettings } = data
+  let calledbacked = false
   try {
     const stream = await FeedFetcher.fetchURL(link, uniqueSettings)
     callback()
+    calledbacked = true
     const { articleList, idType } = await FeedFetcher.parseStream(stream, link)
     if (articleList.length === 0) return process.send({ status: 'success', link: link })
     processSources({ articleList, useIdType: idType, ...data }, (err, results) => {
@@ -18,7 +20,10 @@ async function getFeed (data, callback) {
   } catch (err) {
     if (logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
     process.send({ status: 'failed', link: link, rssList: rssList })
-    callback()
+    if (!calledbacked) {
+      callback()
+    }
+    calledbacked = true
   }
 }
 
