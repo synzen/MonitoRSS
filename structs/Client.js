@@ -220,10 +220,18 @@ class Client extends EventEmitter {
         await redisIndex.flushDatabase()
       }
       if (!this.scheduleManager) {
+        const refreshRates = new Set()
+        refreshRates.add(config.feeds.refreshRateMinutes)
         this.scheduleManager = new ScheduleManager(storage.bot)
         const addSchedulePromises = []
         addSchedulePromises.push(this.scheduleManager.addSchedule({ name: 'default', refreshRateMinutes: config.feeds.refreshRateMinutes }, false, true))
-        if (config._vip === true) addSchedulePromises.push(this.scheduleManager.addSchedule({ name: 'vip', refreshRateMinutes: config._vipRefreshRateMinutes || config.feeds.refreshRateMinutes, feedIDs: [] }, false, true))
+        if (config._vip === true) {
+          if (!config._vipRefreshRateMinutes || config.feeds.refreshRateMinutes === config._vipRefreshRateMinutes) {
+            throw new Error('Missing valid VIP refresh rate')
+          }
+          refreshRates.add(config._vipRefreshRateMinutes)
+          addSchedulePromises.push(this.scheduleManager.addSchedule({ name: 'vip', refreshRateMinutes: config._vipRefreshRateMinutes, feedIDs: [] }, false, true))
+        }
         const names = new Set()
         for (const schedule of this.customSchedules) {
           const name = schedule.name
@@ -231,6 +239,10 @@ class Client extends EventEmitter {
           if (names.has(name)) throw new Error(`Schedules cannot have the same name (${name})`)
           names.add(name)
           addSchedulePromises.push(this.scheduleManager.addSchedule(schedule, false, true))
+          if (refreshRates.has(schedule.refreshRateMinutes)) {
+            throw new Error('Duplicate schedule refresh rates are not allowed')
+          }
+          refreshRates.add(schedule.refreshRateMinutes)
         }
         await Promise.all(addSchedulePromises)
         storage.scheduleManager = this.scheduleManager
