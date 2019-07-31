@@ -15,7 +15,7 @@ const connectDb = require('../rss/db/connect.js')
 const ClientManager = require('./ClientManager.js')
 const EventEmitter = require('events')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
-const SHARDED_OPTIONS = { respawn: false }
+const CLIENT_OPTIONS = { disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 }
 const STATES = {
   STOPPED: 'STOPPED',
   STARTING: 'STARTING',
@@ -68,49 +68,46 @@ class Client extends EventEmitter {
     this.webClientInstance = undefined
   }
 
-  login (token) {
-    if (this.bot) return log.general.error('Cannot login when already logged in')
-    if (token instanceof Discord.ShardingManager) return new ClientManager(token)
-    if (token instanceof Discord.Client) {
-      return connectDb()
-        .then(() => {
-          if (config.web.enabled === true && !this.webClientInstance && (!token.shard || token.shard.count === 0)) this.webClientInstance = webClient()
-          this._defineBot(token)
-        }).catch(err => {
-          throw err
-        })
+  async login (token) {
+    if (this.bot) {
+      return log.general.error('Cannot login when already logged in')
     }
-    if (typeof token === 'string') {
-      const client = new Discord.Client({ disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 })
-      return connectDb()
-        .then(() => client.login(token))
-        .then(tok => {
-          if (config.web.enabled === true && !this.webClientInstance && (!client.shard || client.shard.count === 0)) this.webClientInstance = webClient()
-          this._defineBot(client)
-        })
-        .catch(err => {
-          if (err.message.includes('too many guilds')) {
-            throw err
-          } else {
-            log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
-            setTimeout(() => this.login.bind(this)(token), 600000)
-          }
-        })
+    if (token instanceof Discord.ShardingManager) {
+      return new ClientManager(token)
     }
-    throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
-  }
-
-  _defineBot (bot) {
-    this.bot = bot
-    this.SHARD_PREFIX = bot.shard && bot.shard.count > 0 ? `SH ${bot.shard.id} ` : ''
-    if (bot && bot.shard && bot.shard.count > 0) {
-      process.send({ _drss: true, type: 'spawned', shardId: bot.shard.id, customSchedules: this.customSchedules && bot.shard.id === 0 ? this.customSchedules : undefined })
+    const isClient = token instanceof Discord.Client
+    if (!isClient && typeof token !== 'string') {
+      throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
     }
-    storage.bot = bot
-    if (bot.shard && bot.shard.count > 0) this.listenToShardedEvents(bot)
-    if (!bot.readyAt) bot.once('ready', this._initialize.bind(this))
-    else this._initialize()
-  }
+    const client = isClient ? token : new Discord.Client(CLIENT_OPTIONS)
+    try { 
+      await connectDb()
+      if (!isClient) {
+        await client.login(token)
+      }
+      if (config.web.enabled === true && !this.webClientInstance && (!client.shard || client.shard.count === 0)) {
+        this.webClientInstance = webClient()
+      }
+      this.bot = client
+      this.SHARD_PREFIX = client.shard && client.shard.count > 0 ? `SH ${client.shard.id} ` : ''
+      if (client.shard && client.shard.count > 0) {
+        process.send({ _drss: true, type: 'spawned', shardId: client.shard.id, customSchedules: this.customSchedules && client.shard.id === 0 ? this.customSchedules : undefined })
+      }
+      storage.bot = client
+      if (client.shard && client.shard.count > 0) this.listenToShardedEvents(client)
+      if (!client.readyAt) {
+        client.once('ready', this._initialize.bind(this))
+      } else {
+        this._initialize()
+      }
+    } catch (err) {
+      if (err.message.includes('too many guilds')) {
+        throw err
+      } else if (!isClient) {
+        log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
+        setTimeout(() => this.login.bind(this)(token), 600000)
+      }
+    }
 
   _initialize () {
     const bot = storage.bot
