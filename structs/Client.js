@@ -108,6 +108,7 @@ class Client extends EventEmitter {
         setTimeout(() => this.login.bind(this)(token), 600000)
       }
     }
+  }
 
   _initialize () {
     const bot = storage.bot
