@@ -80,7 +80,7 @@ class Client extends EventEmitter {
       throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
     }
     const client = isClient ? token : new Discord.Client(CLIENT_OPTIONS)
-    try { 
+    try {
       await connectDb()
       if (!isClient) {
         await client.login(token)
@@ -111,7 +111,7 @@ class Client extends EventEmitter {
   }
 
   _initialize () {
-    const bot = storage.bot
+    const bot = this.bot
     if (this.configOverrides && this.configOverrides.setPresence === true) {
       if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL || undefined })
       else bot.user.setActivity(null)
@@ -195,19 +195,10 @@ class Client extends EventEmitter {
     })
   }
 
-  stop () {
-    if (this.state === STATES.STARTING || this.state === STATES.STOPPED) return log.general.warning(`${this.SHARD_PREFIX}Ignoring stop command because of ${this.state} state`)
-    log.general.warning(`${this.SHARD_PREFIX}Discord.RSS has received stop command`)
-    storage.initialized = 0
-    this.scheduleManager.stopSchedules()
-    clearInterval(this._vipInterval)
-    listeners.disableAll()
-    if ((!storage.bot.shard || storage.bot.shard.count === 0) && config.web.enabled === true) this.webClientInstance.disableCP()
-    this.state = STATES.STOPPED
-  }
-
-  async start (callback) {
-    if (this.state === STATES.STARTING || this.state === STATES.READY) return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
+  async start () {
+    if (this.state === STATES.STARTING || this.state === STATES.READY) {
+      return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
+    }
     this.state = STATES.STARTING
     listeners.enableCommands()
     const uri = config.database.uri
@@ -252,36 +243,49 @@ class Client extends EventEmitter {
       }
       await this.scheduleManager.assignAllSchedules()
       const { missingGuilds, linkTrackerDocs } = await initialize(this.bot)
-      this._finishInit(missingGuilds, linkTrackerDocs, callback)
+
+      storage.initialized = 2
+      this.state = STATES.READY
+      if (storage.bot.shard && storage.bot.shard.count > 0) {
+        process.send({ _drss: true, type: 'initComplete', missingGuilds: missingGuilds, linkDocs: linkTrackerDocs, shard: storage.bot.shard.id })
+      } else {
+        if (config.web.enabled === true) {
+          this.webClientInstance.enableCP()
+        }
+        if (config._vip === true) {
+          this._vipInterval = setInterval(() => {
+            dbOpsVips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err, true))
+          }, 600000)
+        }
+      }
+      listeners.createManagers(storage.bot)
+      this.scheduleManager.startSchedules()
+      // if (!this.bot.shard || this.bot.shard.count === 0) this.scheduleManager.run()
+      this.emit('finishInit')
     } catch (err) {
       log.general.error(`Client start`, err, true)
     }
   }
 
-  restart (callback) {
-    if (this.state === STATES.STARTING) return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because of ${this.state} state`)
-    if (this.state === STATES.READY) this.stop()
-    this.start(callback)
+  stop () {
+    if (this.state === STATES.STARTING || this.state === STATES.STOPPED) {
+      return log.general.warning(`${this.SHARD_PREFIX}Ignoring stop command because of ${this.state} state`)
+    }
+    log.general.warning(`${this.SHARD_PREFIX}Discord.RSS has received stop command`)
+    storage.initialized = 0
+    this.scheduleManager.stopSchedules()
+    clearInterval(this._vipInterval)
+    listeners.disableAll()
+    if ((!storage.bot.shard || storage.bot.shard.count === 0) && config.web.enabled === true) {
+      this.webClientInstance.disableCP()
+    }
+    this.state = STATES.STOPPED
   }
 
-  _finishInit (missingGuilds, linkDocs, callback) {
-    storage.initialized = 2
-    this.state = STATES.READY
-    if (storage.bot.shard && storage.bot.shard.count > 0) {
-      process.send({ _drss: true, type: 'initComplete', missingGuilds: missingGuilds, linkDocs: linkDocs, shard: storage.bot.shard.id })
-    } else {
-      if (config.web.enabled === true) this.webClientInstance.enableCP()
-      if (config._vip) {
-        this._vipInterval = setInterval(() => {
-          dbOpsVips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err, true))
-        }, 600000)
-      }
-    }
-    listeners.createManagers(storage.bot)
-    this.scheduleManager.startSchedules()
-    // if (!this.bot.shard || this.bot.shard.count === 0) this.scheduleManager.run()
-    if (callback) callback()
-    this.emit('finishInit')
+  async restart () {
+    if (this.state === STATES.STARTING) return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because of ${this.state} state`)
+    if (this.state === STATES.READY) this.stop()
+    return this.start()
   }
 
   disableCommands () {
