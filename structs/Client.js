@@ -68,7 +68,7 @@ class Client extends EventEmitter {
     this.webClientInstance = undefined
   }
 
-  login (token, noChildren) {
+  login (token) {
     if (this.bot) return log.general.error('Cannot login when already logged in')
     if (token instanceof Discord.ShardingManager) return new ClientManager(token)
     if (token instanceof Discord.Client) {
@@ -89,9 +89,8 @@ class Client extends EventEmitter {
           this._defineBot(client)
         })
         .catch(err => {
-          if (!noChildren && err.message.includes('too many guilds')) {
-            const shardedClient = new ClientManager(new Discord.ShardingManager('./server.js', SHARDED_OPTIONS), this.configOverrides)
-            shardedClient.once('finishInit', () => this.emit('finishInit'))
+          if (err.message.includes('too many guilds')) {
+            throw err
           } else {
             log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
             setTimeout(() => this.login.bind(this)(token), 600000)
@@ -142,7 +141,9 @@ class Client extends EventEmitter {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
         if (this.scheduleManager) {
           // Check if it exists first since it may disconnect before it's even initialized
-          for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+          for (const sched of this.scheduleManager.scheduleList) {
+            sched.killChildren()
+          }
         }
         if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
         else process.exit(0)
@@ -235,8 +236,12 @@ class Client extends EventEmitter {
         const names = new Set()
         for (const schedule of this.customSchedules) {
           const name = schedule.name
-          if (name === 'example') continue
-          if (names.has(name)) throw new Error(`Schedules cannot have the same name (${name})`)
+          if (name === 'example') {
+            continue
+          }
+          if (names.has(name)) {
+            throw new Error(`Schedules cannot have the same name (${name})`)
+          }
           names.add(name)
           addSchedulePromises.push(this.scheduleManager.addSchedule(schedule, false, true))
           if (refreshRates.has(schedule.refreshRateMinutes)) {
