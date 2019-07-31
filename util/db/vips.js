@@ -2,17 +2,17 @@ const fs = require('fs')
 const path = require('path')
 const storage = require('../storage.js')
 const config = require('../../config.js')
-const models = storage.models
+const VIP = require('../../models/VIP.js')
 const log = require('../logger.js')
 const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FIND_PROJECTION = '-_id -__v'
 const dbOpsGuilds = require('./guilds.js')
 
-exports.get = id => models.VIP().findOne({ id }, FIND_PROJECTION).lean().exec()
+exports.get = id => VIP.model().findOne({ id }, FIND_PROJECTION).lean().exec()
 
 exports.getAll = async () => {
   if (!config.database.uri.startsWith('mongo')) return []
-  return models.VIP().find({}, FIND_PROJECTION).lean().exec()
+  return VIP.model().find({}, FIND_PROJECTION).lean().exec()
 }
 
 exports.update = async settings => {
@@ -21,7 +21,7 @@ exports.update = async settings => {
     const dUser = storage.bot.users.get(settings.id)
     settings.name = dUser ? dUser.username : null
   }
-  await models.VIP().updateOne({ id: settings.id }, { $set: settings }, UPDATE_SETTINGS).exec()
+  await VIP.model().updateOne({ id: settings.id }, { $set: settings }, UPDATE_SETTINGS).exec()
   log.general.success(`Updated VIP ${settings.id} (${settings.name})`)
 }
 
@@ -43,7 +43,7 @@ exports.updateBulk = async vipUsers => {
           unsets.$unset[field] = 1
         }
       }
-      models.VIP().updateOne({ id: vipUser.id }, { $set: vipUser, ...unsets }, UPDATE_SETTINGS).exec()
+      VIP.model().updateOne({ id: vipUser.id }, { $set: vipUser, ...unsets }, UPDATE_SETTINGS).exec()
         .then(() => {
           log.general.success(`Bulk updated VIP ${vipUser.id} (${vipUser.name})`)
           if (++complete === total) return errored ? reject(new Error('Previous errors encountered with vips.updateBulk')) : resolve()
@@ -59,7 +59,7 @@ exports.updateBulk = async vipUsers => {
 
 exports.remove = async id => {
   if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.remove is not supported when config.database.uri is set to a databaseless folder path')
-  await models.VIP().deleteOne({ id: id }).exec()
+  await VIP.model().deleteOne({ id: id }).exec()
 }
 
 exports.addServers = async settings => {
@@ -80,7 +80,7 @@ exports.addServers = async settings => {
     }
     log.general.success(`VIP servers added for VIP ${vipUser.id} (${vipUser.name}): ${serversToAdd.join(',')}`)
   }
-  await models.VIP().updateOne({ id: vipUser.id }, { $addToSet: { servers: { $each: serversToAdd } } }, UPDATE_SETTINGS).exec()
+  await VIP.model().updateOne({ id: vipUser.id }, { $addToSet: { servers: { $each: serversToAdd } } }, UPDATE_SETTINGS).exec()
 }
 
 exports.removeServers = async settings => {
@@ -97,7 +97,7 @@ exports.removeServers = async settings => {
         storage.scheduleManager.removeScheduleOfFeed(rssName, rssList[rssName].link).catch(err => log.general.error('Failed to remove schedules from removed vip server feeds', err))
       }
     }
-    await models.VIP().updateOne({ id: vipUser.id }, { $pull: { servers: { $in: serversToRemove } } }, UPDATE_SETTINGS).exec()
+    await VIP.model().updateOne({ id: vipUser.id }, { $pull: { servers: { $in: serversToRemove } } }, UPDATE_SETTINGS).exec()
   }
   log.general.success(`VIP servers removed from VIP ${vipUser.id} (${vipUser.name}): ${serversToRemove.join(',')}`)
 }

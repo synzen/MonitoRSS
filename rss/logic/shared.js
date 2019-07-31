@@ -2,7 +2,7 @@ const dbCmds = require('../db/commands.js')
 const moment = require('moment-timezone')
 const defaultConfigs = require('../../util/checkConfig.js').defaultConfigs
 const log = require('../../util/logger.js')
-const storage = require('../../util/storage.js')
+const Article = require('../../models/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 
 module.exports = (data, callback) => {
@@ -19,9 +19,9 @@ module.exports = (data, callback) => {
   const customComparisonsToUpdate = []
   const toInsert = []
   const toUpdate = {} // Article's resolved IDs as key and the article as value
-  const collectionId = storage.collectionID(link, shardId, scheduleName)
-  const Feed = storage.models.FeedByCollectionID(collectionId)
-  const feedCollectionId = feedData ? collectionId : undefined
+  const collectionID = Article.getCollectionID(link, shardId, scheduleName)
+  const Feed = Article.modelByID(collectionID)
+  const feedCollectionId = feedData ? collectionID : undefined
   const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
 
   dbCmds.findAll(feedCollection || Feed)

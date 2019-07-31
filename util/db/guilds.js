@@ -2,9 +2,10 @@ const fs = require('fs')
 const util = require('util')
 const path = require('path')
 const storage = require('../storage.js')
+const GuildProfile = require('../../models/GuildProfile.js')
+const GuildProfileBackup = require('../../models/GuildProfileBackup.js')
 const config = require('../../config.js')
 const redisIndex = require('../../structs/db/Redis/index.js')
-const models = storage.models
 const log = require('../logger.js')
 const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FIND_PROJECTION = '-_id -__v'
@@ -15,14 +16,14 @@ const mkdirPromise = util.promisify(fs.mkdir)
 const unlinkPromise = util.promisify(fs.unlink)
 
 exports.get = async id => {
-  if (config.database.uri.startsWith('mongo')) return models.GuildRss().findOne({ id }, FIND_PROJECTION).lean().exec()
+  if (config.database.uri.startsWith('mongo')) return GuildProfile.model().findOne({ id }, FIND_PROJECTION).lean().exec()
   const filePath = path.join(config.database.uri, `${id}.json`)
   if (!fs.existsSync(filePath)) return null
   return JSON.parse(await readFilePromise(filePath))
 }
 
 exports.getMany = async ids => {
-  if (config.database.uri.startsWith('mongo')) return models.GuildRss().find({ id: { $in: ids } }, FIND_PROJECTION).lean().exec()
+  if (config.database.uri.startsWith('mongo')) return GuildProfile.model().find({ id: { $in: ids } }, FIND_PROJECTION).lean().exec()
   const promises = []
   for (const id of ids) promises.push(exports.get(id))
   return Promise.all(promises)
@@ -30,7 +31,7 @@ exports.getMany = async ids => {
 
 exports.getAll = async () => {
   // Database version
-  if (config.database.uri.startsWith('mongo')) return models.GuildRss().find({}, FIND_PROJECTION).lean().exec()
+  if (config.database.uri.startsWith('mongo')) return GuildProfile.model().find({}, FIND_PROJECTION).lean().exec()
 
   // Memory Version
   if (!fs.existsSync(path.join(config.database.uri))) return []
@@ -79,7 +80,7 @@ exports.update = async guildRss => {
   //   else if (Array.isArray(val) && val.length === 0) delete guildRss[key]
   //   else if (typeof val === 'object' && val !== null && Object.keys(val).length === 0) delete guildRss[key]
   // }
-  const res = await models.GuildRss().replaceOne({ id: guildRss.id }, guildRss, UPDATE_SETTINGS).exec()
+  const res = await GuildProfile.model().replaceOne({ id: guildRss.id }, guildRss, UPDATE_SETTINGS).exec()
   redisIndex.events.emitUpdatedProfile(guildRss.id)
   return res
 }
@@ -100,7 +101,7 @@ exports.remove = async (guildRss, suppressLog) => {
       storage.deletedFeeds.push(rssName)
     }
   }
-  const res = await models.GuildRss().deleteOne({ id: guildId })
+  const res = await GuildProfile.model().deleteOne({ id: guildId })
   if (!suppressLog) log.general.info(`Removed Guild document ${guildId}`)
   return res
 }
@@ -138,7 +139,7 @@ exports.backup = async guildRss => {
     await writeFilePromise(path.join(config.database.uri, 'backup', `${guildRss.id}.json`), JSON.stringify(guildRss, null, 2))
   }
   // Database version
-  await models.GuildRssBackup().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
+  await GuildProfileBackup.model()().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
 }
 
 exports.restore = async guildId => {
@@ -156,7 +157,7 @@ exports.restore = async guildId => {
     }
   } else {
     // Database version
-    guildRss = await models.GuildRssBackup().findOne({ id: guildId }, FIND_PROJECTION).lean().exec()
+    guildRss = await GuildProfileBackup.model().findOne({ id: guildId }, FIND_PROJECTION).lean().exec()
     if (!guildRss || exports.empty(guildRss, true)) return
   }
 
@@ -171,7 +172,7 @@ exports.restore = async guildId => {
       }
     }
   }
-  await models.GuildRssBackup().deleteOne({ id: guildId })
+  await GuildProfileBackup.model().deleteOne({ id: guildId })
   return guildRss
 }
 
@@ -189,7 +190,7 @@ exports.empty = (guildRss, skipRemoval) => { // Used on the beginning of each cy
 exports.dropBackupIndexes = async () => {
   // Dropping the indexes removes auto-expiration on guild backup documents
   try {
-    await models.GuildRssBackup().collection.dropIndexes()
+    await GuildProfileBackup.model().collection.dropIndexes()
   } catch (err) {
     if (err.code !== 26) throw err // 26 means does not exist - resolve the promise in this case
   }

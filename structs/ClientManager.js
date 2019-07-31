@@ -1,5 +1,4 @@
 const config = require('../config.js')
-const storage = require('../util/storage.js')
 const connectDb = require('../rss/db/connect.js')
 const LinkTracker = require('./LinkTracker.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
@@ -9,6 +8,7 @@ const redisIndex = require('../structs/db/Redis/index.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/controller/dbrestore.js')
 const EventEmitter = require('events')
+const ArticleModel = require('../models/Article.js')
 let webClient
 
 function overrideConfigs (configOverrides) {
@@ -107,7 +107,7 @@ class ClientManager extends EventEmitter {
     for (var x = 0; x < linkDocs.length; ++x) {
       const doc = linkDocs[x]
       this.linkTracker.set(doc.link, doc.count, doc.shard, doc.scheduleName)
-      const id = storage.collectionID(doc.link, doc.shard, doc.scheduleName)
+      const id = ArticleModel.getCollectionID(doc.link, doc.shard, doc.scheduleName)
       this.currentCollections.add(id) // To find out any unused collections eligible for removal
     }
 

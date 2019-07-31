@@ -1,12 +1,12 @@
 const mongoose = require('mongoose')
-const storage = require('../storage.js')
 const config = require('../../config.js')
-const models = storage.models
+const Feedback = require('../../models/Feedback.js')
+const Rating = require('../../models/Rating.js')
 const log = require('../logger.js')
 const dbOpsGuilds = require('./guilds.js')
 
 exports.addFeedback = async (user, content, type = 'general') => {
-  return models.Feedback().create({
+  return Feedback.model().create({
     type,
     userId: user.id,
     username: user.username,
@@ -15,7 +15,7 @@ exports.addFeedback = async (user, content, type = 'general') => {
 }
 
 exports.addRating = async (user, rating, type = 'general') => {
-  return models.Rating().create({
+  return Rating.model().create({
     type,
     userId: user.id,
     username: user.username,

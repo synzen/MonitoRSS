@@ -1,7 +1,7 @@
 const Discord = require('discord.js')
 const storage = require('../storage.js')
 const config = require('../../config.js')
-const models = storage.models
+const FailedLink = require('../../models/FailedLink.js')
 const log = require('../logger.js')
 const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FAIL_LIMIT = config.feeds.failLimit
@@ -48,22 +48,22 @@ exports._sendAlert = (link, message, skipProcessSend) => {
 
 exports.get = async link => {
   if (!config.database.uri.startsWith('mongo')) return
-  return models.FailedLink().findOne({ link }, FIND_PROJECTION).lean().exec()
+  return FailedLink.model().findOne({ link }, FIND_PROJECTION).lean().exec()
 }
 
 exports.getMultiple = async links => {
   if (!config.database.uri.startsWith('mongo')) return []
-  return models.FailedLink().find({ link: { $in: links } }, FIND_PROJECTION).lean().exec()
+  return FailedLink.model().find({ link: { $in: links } }, FIND_PROJECTION).lean().exec()
 }
 
 exports.getAll = async () => {
   if (!config.database.uri.startsWith('mongo')) return []
-  return models.FailedLink().find({}, FIND_PROJECTION).lean().exec()
+  return FailedLink.model().find({}, FIND_PROJECTION).lean().exec()
 }
 
 exports.increment = async link => {
   if (FAIL_LIMIT === 0 || !config.database.uri.startsWith('mongo')) return
-  await storage.models.FailedLink().updateOne({ link: link }, { $inc: { count: 1 } }, UPDATE_SETTINGS).exec()
+  await FailedLink.model().updateOne({ link: link }, { $inc: { count: 1 } }, UPDATE_SETTINGS).exec()
 }
 
 exports.fail = async link => {
@@ -71,11 +71,11 @@ exports.fail = async link => {
   if (config.feeds.failLimit === 0) throw new Error('Unable to fail a link when config.feeds.failLimit is 0')
   const now = new Date().toString()
   if (config.feeds.notifyFail === true) exports._sendAlert(link, `**ATTENTION** - Feed link <${link}> has reached the connection failure limit and will not be retried until it is manually refreshed by this server, or another server using this feed. See \`${config.bot.prefix}rsslist\` for more information.`)
-  await storage.models.FailedLink().updateOne({ link: link }, { $set: { link: link, failed: now } }, UPDATE_SETTINGS).exec()
+  await FailedLink.model().updateOne({ link: link }, { $set: { link: link, failed: now } }, UPDATE_SETTINGS).exec()
   log.cycle.error(`${link} has been failed and will no longer be retrieved on subsequent retrieval cycles`)
 }
 
 exports.reset = async link => {
   if (!config.database.uri.startsWith('mongo')) return
-  await storage.models.FailedLink().deleteOne({ link: link })
+  await FailedLink.model().deleteOne({ link: link })
 }

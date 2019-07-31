@@ -8,6 +8,7 @@ const dbOpsBlacklists = require('./db/blacklists.js')
 const dbOpsSchedules = require('./db/schedules.js')
 const dbOpsStatistics = require('./db/statistics.js')
 const dbOpsGeneral = require('./db/general.js')
+const Article = require('../models/Article.js')
 const log = require('./logger.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const FAIL_LIMIT = config.feeds.failLimit
@@ -103,7 +104,7 @@ module.exports = async bot => {
   for (var obj of linkTrackerArr) {
     // These indexes allow articles to auto-expire - if it is 0, remove such indexes
     if (config.database.articlesExpire === 0 && config.database.uri.startsWith('mongo')) {
-      dropIndexPromises.push(storage.models.Feed(obj.link, linkTracker.shardId, obj.scheduleName).collection.dropIndexes())
+      dropIndexPromises.push(Article.model(obj.link, linkTracker.shardId, obj.scheduleName).collection.dropIndexes())
     }
   }
 
@@ -113,7 +114,7 @@ module.exports = async bot => {
   const assignedSchedules = await dbOpsSchedules.assignedSchedules.getAll() // The schedules should be assigned before this initialization function runs
   for (const assigned of assignedSchedules) {
     const { link, schedule } = assigned
-    const collectionID = storage.collectionID(link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, schedule)
+    const collectionID = Article.getCollectionID(link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, schedule)
     if (!bot.shard || bot.shard.count === 0) currentCollections.add(collectionID)
     else linkTracker.increment(link, schedule)
   }

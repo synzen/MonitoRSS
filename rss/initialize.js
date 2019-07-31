@@ -7,6 +7,7 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const storage = require('../util/storage.js')
+const Article = require('../models/Article.js')
 const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'))).version
 
 exports.initializeFeed = async (articleList, link, assignedSchedule) => {
@@ -16,7 +17,7 @@ exports.initializeFeed = async (articleList, link, assignedSchedule) => {
   if (!config.database.uri.startsWith('mongo')) return
   try {
     // The schedule must be assigned to the feed first in order to get the correct feed collection ID for the feed model (through storage.schedulesAssigned, third argument of models.Feed)
-    const Feed = storage.models.Feed(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, assignedSchedule)
+    const Feed = Article.model(link, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null, assignedSchedule)
     const docs = await dbCmds.findAll(Feed)
     if (docs.length > 0) return // The collection already exists from a previous addition, no need to initialize
 
@@ -48,7 +49,7 @@ exports.addNewFeed = async (settings, customTitle) => {
   }
 
   const shardId = storage.bot && storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : null
-  let rssName = `${storage.collectionID(link, shardId)}-${Math.floor((Math.random() * 99999) + 1)}`.replace(/[^a-zA-Z0-9-_]/g, '')
+  let rssName = `${Article.getCollectionID(link, shardId)}-${Math.floor((Math.random() * 99999) + 1)}`.replace(/[^a-zA-Z0-9-_]/g, '')
   let assignedSchedule = await dbOpsSchedules.assignedSchedules.get(rssName)
   while (assignedSchedule) {
     rssName += Math.floor((Math.random() * 9) + 1)

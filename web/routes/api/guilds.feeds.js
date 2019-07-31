@@ -14,6 +14,7 @@ const storage = require('../../../util/storage.js')
 const FeedFetcher = require('../../../util/FeedFetcher.js')
 const RequestError = require('../../../structs/errors/RequestError.js')
 const FeedParserError = require('../../../structs/errors/FeedParserError.js')
+const ArticleModel = require('../../../models/Article.js')
 const VALID_SOURCE_KEYS_TYPES = {
   title: String,
   channel: String,
@@ -165,8 +166,8 @@ async function getFeedDebug (req, res, next) {
     const shard = await RedisGuild.utils.getValue(guildID, 'shard') // -1 means no sharding
     const assignedSchedule = await dbOpsSchedules.assignedSchedules.get(req.params.feedID, shard)
     if (!assignedSchedule) return res.status(500).json({ code: 500, message: 'No schedule was assigned to feed' })
-    const collectionID = storage.collectionID(req.source.link, shard === '-1' ? null : shard, assignedSchedule.schedule)
-    const results = await storage.models.FeedByCollectionID(collectionID).find({}).lean().exec()
+    const collectionID = ArticleModel.getCollectionID(req.source.link, shard === '-1' ? null : shard, assignedSchedule.schedule)
+    const results = await ArticleModel.modelByID(collectionID).find({}).lean().exec()
     res.json(results)
   } catch (err) {
     next(err)

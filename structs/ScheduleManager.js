@@ -2,26 +2,18 @@ const config = require('../config.js')
 const FeedSchedule = require('./FeedSchedule.js')
 const debugFeeds = require('../util/debugFeeds.js').list
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')
-const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsVips = require('../util/db/vips.js')
+const AssignedScheduleModel = require('../models/AssignedSchedule.js')
+const ArticleModel = require('../models/Article.js')
 
 class ScheduleManager {
-  constructor (bot) { // Third parameter is only used when config.database.uri is a databaseless folder path
+  constructor (bot) {
     this.bot = bot
     this.articleMessageQueue = new ArticleMessageQueue()
     this.scheduleList = []
-    storage.scheduleManager = this
-    // Set up the default schedule
-    // this.scheduleList.push(new FeedSchedule(this.bot, { name: 'default', refreshRateMinutes: config.feeds.refreshRateMinutes }, this))
-    // Set up custom schedules
-    // if (customSchedules) for (var i = 0; i < customSchedules.length; ++i) this.scheduleList.push(new FeedSchedule(this.bot, customSchedules[i], null, this))
-    // for (const schedule of this.scheduleList) {
-    //   schedule.on('article', this._queueArticle.bind(this))
-    //   schedule.on('finish', this._finishSchedule.bind(this))
-    // }
   }
 
   async _queueArticle (article) {
@@ -132,7 +124,7 @@ class ScheduleManager {
     const scheduleNames = await Promise.all(scheduleDeterminationPromises)
 
     const documentsToInsert = []
-    const AssignedSchedule = storage.models.AssignedSchedule()
+    const AssignedSchedule = AssignedScheduleModel.model()
     const shard = this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : -1
     for (let i = 0; i < scheduleNames.length; ++i) {
       const scheduleName = scheduleNames[i]
@@ -207,7 +199,7 @@ class ScheduleManager {
     await dbOpsSchedules.assignedSchedules.remove(feedID)
     const assignedSchedules = await dbOpsSchedules.assignedSchedules.getMany(shardID, schedule.name, link)
     if (assignedSchedules.length === 0 && config.database.uri.startsWith('mongo')) {
-      await storage.models.Feed(link, shardID, schedule.name).collection.drop()
+      await ArticleModel.model(link, shardID, schedule.name).collection.drop()
     }
   }
 
