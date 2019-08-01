@@ -33,7 +33,7 @@ module.exports = (io, isHttps) => {
           else status = doc.count // OK so far
           socket.emit('linkStatus', JSON.stringify({ link, status }))
         } catch (err) {
-          log.web.err('Failed to get link status after websocket request', err)
+          log.web.error('Failed to get link status after websocket request', err)
         }
       }
     }
