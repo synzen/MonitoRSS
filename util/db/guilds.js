@@ -139,7 +139,7 @@ exports.backup = async guildRss => {
     await writeFilePromise(path.join(config.database.uri, 'backup', `${guildRss.id}.json`), JSON.stringify(guildRss, null, 2))
   }
   // Database version
-  await GuildProfileBackup.model()().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
+  await GuildProfileBackup.model().updateOne({ id: guildRss.id }, { $set: guildRss }, UPDATE_SETTINGS).exec()
 }
 
 exports.restore = async guildId => {
