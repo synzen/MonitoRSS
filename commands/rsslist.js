@@ -75,7 +75,8 @@ module.exports = async (bot, message, command) => {
       const titleChecks = item.titleChecks
       const webhook = item.webhook
       const schedule = storage.scheduleManager.getScheduleOfFeedID(item.id)
-      const refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} seconds` : `${schedule.refreshRate} minutes` : 'Unknown'
+      let refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} seconds` : `${schedule.refreshRate} minutes` : 'Unknown'
+      if (config._vip === true && !vipUser) refreshRate += ' [－](https://www.patreon.com/discordrss)'
       list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}Channel: #${channelName}\nRefresh Rate: ${refreshRate}\n${webhook ? 'Webhook: ' + webhook + '\n' : ''}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
     })
 
