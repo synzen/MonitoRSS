@@ -1,0 +1,14 @@
+{
+  "commands": {
+    "rssadd": {
+      "correctSyntax": "The correct syntax is {{prefix}}rssadd https://www.some_url_here.com. Multiple links can be added at once, separated by `>`.",
+      "improperFormat": "Invalid/improperly-formatted link.",
+      "limitReached": "Maximum feed limit of {{max}} reached.",
+      "alreadyExists": "Already exists for this channel.",
+      "success": "The following feeds have been successfully added to **this channel**:",
+      "successInfo": "Articles will be automatically delivered once new articles are found. After completely setting up, it is recommended that you use {{prefix}}rssbackup to have a personal backup of your settings.",
+      "failedLimit": "Feed(s) not listed here could not be added due to the feed limit ({{max}})",
+      "failedList": "The following feed(s) could not be added:"
+    }
+  }
+}

@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "postinstall": "cd web && npm install",
+    "postinstall": "cd src && cd web && npm install",
     "dev": "node -r dotenv/config server.js",
     "dev-sharded": "node -r dotenv/config server-manager.js",
     "dev-client": "node -r dotenv/config server-client.js",
