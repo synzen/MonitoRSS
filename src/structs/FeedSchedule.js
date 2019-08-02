@@ -1,3 +1,4 @@
+const path = require('path')
 const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
 const checkGuild = require('../util/checkGuild.js')
@@ -283,7 +284,7 @@ class FeedSchedule extends EventEmitter {
       let completedLinks = 0
       const currentBatch = batchList[index]
       const currentBatchLen = Object.keys(currentBatch).length
-      this._processorList.push(childProcess.fork('./rss/isolatedMethod.js'))
+      this._processorList.push(childProcess.fork(path.join(__dirname, '..', 'rss', 'isolatedMethod.js')))
 
       const processorIndex = this._processorList.length - 1
       const processor = this._processorList[processorIndex]

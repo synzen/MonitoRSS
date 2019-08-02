@@ -105,8 +105,8 @@ exports.removeServers = async settings => {
 exports.refresh = async (updateNamesFromRedis, vipApiData) => {
   if (!config._vip) return
   if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.refresh is not supported when config.database.uri is set to a databaseless folder path')
-  if (!fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'vips.js'))) throw new Error('Missing VIP module')
-  return require('../../settings/vips.js')(storage.bot, vipApiData || await require('../../settings/api.js')(), updateNamesFromRedis)
+  if (!fs.existsSync(path.join(__dirname, '..', '..', '..', 'settings', 'vips.js'))) throw new Error('Missing VIP module')
+  return require('../../../settings/vips.js')(storage.bot, vipApiData || await require('../../../settings/api.js')(), updateNamesFromRedis)
 }
 
 exports.isVipServer = async serverId => {

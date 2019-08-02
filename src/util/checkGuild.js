@@ -166,7 +166,7 @@ exports.version = guildRss => {
   // Anything with no version attached must be below 5.0.0. Run all updates.
   if (!guildVersion) {
     for (const version of versions) {
-      const updated = require(`../updates/${version}.js`).updateGuildRss
+      const updated = require(`../../scripts/updates/${version}.js`).updateGuildRss
       if (updated(guildRss)) changed = true
     }
   } else {
@@ -174,7 +174,7 @@ exports.version = guildRss => {
     if (versionIndex !== -1) {
       // There is an update file found for this version, so run every version past it
       for (let i = versionIndex; i < versions.length; ++i) {
-        const updateFile = require(`../updates/${versions[i]}.js`)
+        const updateFile = require(`../../scripts/updates/${versions[i]}.js`)
         const updated = updateFile.updateGuildRss
         // Sometimes the current version should be rerun
         if (i === versionIndex && updateFile.rerun && updated(guildRss)) changed = true
@@ -188,7 +188,7 @@ exports.version = guildRss => {
       const withGuildVersion = versions.concat(guildVersion).sort(semVerSort)
       const indexOfGuildVersion = withGuildVersion.indexOf(guildVersion)
       for (let i = indexOfGuildVersion + 1; i < withGuildVersion.length; ++i) {
-        const updated = require(`../updates/${withGuildVersion[i]}.js`).updateGuildRss
+        const updated = require(`../../scripts/updates/${withGuildVersion[i]}.js`).updateGuildRss
         if (updated(guildRss)) changed = true
       }
     }
