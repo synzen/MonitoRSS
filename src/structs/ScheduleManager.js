@@ -199,7 +199,7 @@ class ScheduleManager {
     await dbOpsSchedules.assignedSchedules.remove(feedID)
     const assignedSchedules = await dbOpsSchedules.assignedSchedules.getMany(shardID, schedule.name, link)
     if (assignedSchedules.length === 0 && config.database.uri.startsWith('mongo')) {
-      await ArticleModel.model(link, shardID, schedule.name).collection.drop()
+      ArticleModel.model(link, shardID, schedule.name).collection.drop().catch(err => err.code === 26 ? null : log.general.error('Failed to drop unused collection after feed removal', err))
     }
   }
 
