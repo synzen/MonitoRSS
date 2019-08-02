@@ -100,6 +100,15 @@
     ]
   },
   {
+    "q": "Why is the bot sending empty messages whenever I send a command?",
+    "a": "Your user settings are preventing you from seeing embeds. In your Discord User Settings, make sure you have the options \"Show website preview info from links pasted into chat\" and \"When posted as links to chat\" options enabled.",
+    "t": [
+      "empty",
+      "command",
+      "nothing"
+    ]
+  },
+  {
     "q": "How do I give a custom name and avatar to the bot?",
     "a": "For a custom name, you can set its nickname by right click and change nickname.\n    \n    If you want a custom avatar, this can only be done via webhooks (https://github.com/synzen/Discord.RSS/wiki/Webhook-Integration). For use of webhooks on the public bot, you will need to be a patron (https://www.patreon.com/discordrss).",
     "t": [
