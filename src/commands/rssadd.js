@@ -5,6 +5,7 @@ const log = require('../util/logger.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const serverLimit = require('../util/serverLimit.js')
+const Translator = require('../structs/Translator.js')
 
 module.exports = async (bot, message) => {
   try {
@@ -12,8 +13,9 @@ module.exports = async (bot, message) => {
     const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
-
-    if (message.content.split(' ').length === 1) return await message.channel.send(`The correct syntax is \`${guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix}rssadd https://www.some_url_here.com\`. Multiple links can be added at once, separated by \`>\`.`) // If there is no link after rssadd, return.
+    const prefix = guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix
+    const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+    if (message.content.split(' ').length === 1) return await message.channel.send(translate('commands.rssadd.correctSyntax', { prefix })) // If there is no link after rssadd, return.
 
     let linkList = message.content.split(' ')
     linkList.shift()
@@ -27,27 +29,27 @@ module.exports = async (bot, message) => {
     channelTracker.add(message.channel.id)
     let checkedSoFar = 0
 
-    const verifyMsg = await message.channel.send('Processing...')
+    const verifyMsg = await message.channel.send(translate('commands.rssadd.processing'))
 
     // Start loop over links
-    for (var i = 0; i < linkList.length; ++i) {
+    for (let i = 0; i < linkList.length; ++i) {
       const curLink = linkList[i]
       const linkItem = curLink.split(' ')
       let link = linkItem[0].trim()
       if (!link.startsWith('http')) {
-        failedAddLinks[link] = 'Invalid/improperly-formatted link.'
+        failedAddLinks[link] = translate('commands.rssadd.improperFormat')
         continue
       } else if (maxFeedsAllowed !== 0 && Object.keys(rssList).length + checkedSoFar >= maxFeedsAllowed) {
         log.command.info(`Unable to add feed ${link} due to limit of ${maxFeedsAllowed} feeds`, message.guild)
         // Only show link-specific error if it's one link since they user may be trying to add a huge number of links that exceeds the message size limit
-        if (totalLinks.length === 1) failedAddLinks[link] = `Maximum feed limit of ${maxFeedsAllowed} has been reached.`
+        if (totalLinks.length === 1) failedAddLinks[link] = translate('commands.rssadd.limitReached', { max: maxFeedsAllowed })
         else limitExceeded = true
         continue
       }
 
-      for (var x in rssList) {
+      for (let x in rssList) {
         if (rssList[x].link === link && message.channel.id === rssList[x].channel) {
-          failedAddLinks[link] = 'Already exists for this channel.'
+          failedAddLinks[link] = translate('commands.rssadd.alreadyExists')
           continue
         }
       }
@@ -71,21 +73,21 @@ module.exports = async (bot, message) => {
 
     let msg = ''
     if (passedAddLinks.length > 0) {
-      let successBox = 'The following feed(s) have been successfully added to **this channel**:\n```\n'
+      let successBox = translate('commands.rssadd.success') + ':\n```\n'
       for (const passedLink of passedAddLinks) successBox += `\n${passedLink}`
       msg += successBox + '\n```\n'
     }
     if (Object.keys(failedAddLinks).length > 0) {
-      let failBox = `\n${limitExceeded ? `Feed(s) not listed here could not be added due to the feed limit (${maxFeedsAllowed}). ` : ''}The following feed(s) could not be added:\n\`\`\`\n`
+      let failBox = `\n${limitExceeded ? translate('commands.rssadd.failedLimit', { max: maxFeedsAllowed }) : ''}${translate('commands.rssadd.failedList')}:\n\`\`\`\n`
       for (const failedLink in failedAddLinks) {
-        failBox += `\n\n${failedLink}\nReason: ${failedAddLinks[failedLink]}`
+        failBox += `\n\n${failedLink}\n${translate('commands.rssadd.reason')}: ${failedAddLinks[failedLink]}`
       }
       msg += failBox + '\n```\n'
     } else if (limitExceeded) {
-      msg += `Feed(s) not listed here could not be added due to the feed limit (${maxFeedsAllowed}).`
+      msg += translate('commands.rssadd.failedLimit', { max: maxFeedsAllowed })
     }
     if (passedAddLinks.length > 0) {
-      msg += `Articles will be automatically delivered once new articles are found. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`
+      msg += `${translate('commands.rssadd.successInfo', { prefix })} ${translate('generics.backupReminder', { prefix })}`
     }
 
     channelTracker.remove(message.channel.id)

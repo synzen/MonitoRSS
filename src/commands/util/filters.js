@@ -8,31 +8,34 @@ const filterTypes = [
   { show: 'Tags', use: 'tags' }
 ]
 const MenuUtils = require('../../structs/MenuUtils.js')
+const Translator = require('../../structs/Translator.js')
 const log = require('../../util/logger.js')
 
 // BEGIN ADD FUNCTIONS
 
 async function selectCategoryFn (m, data) {
   let chosenFilterType = ''
+  const guildRss = data.guildRss
   const input = m.content
+  const translator = new Translator(guildRss ? guildRss.locale : null)
+  const translate = translator.translate.bind(translator)
+
   // Validate the chosen filter category
   if (input.startsWith('raw:')) chosenFilterType = input
   else {
-    for (var x = 0; x < filterTypes.length; ++x) {
-      if (input.toLowerCase() === filterTypes[x].use) chosenFilterType = filterTypes[x].use
+    for (let x = 0; x < filterTypes.length; ++x) {
+      if (input.toLowerCase() === filterTypes[x].use) {
+        chosenFilterType = filterTypes[x].use
+      }
     }
   }
 
-  if (!chosenFilterType) throw new SyntaxError('That is not a valid filter category. Try again, or type `exit` to cancel.')
+  if (!chosenFilterType) throw new MenuUtils.MenuOptionError(translate('commands.utils.filters.invalidCategory'))
 
   return { ...data,
     chosenFilterType: chosenFilterType,
     next: {
-      text: `Type the filter word/phrase you would like to add in the category \`${chosenFilterType}\` by typing it, type multiple word/phrases on different lines to add more than one, or type \`exit\` to cancel. The following can be added in front of a search term to change its behavior:\n\n
-\`~\` - Broad filter modifier to trigger even if the term is found embedded inside words/phrases.
-\`!\` - NOT filter modifier to do the opposite of a normal search term. Can be added in front of any term, including one with broad filter mod.
-\`\\\` - Escape symbol added before modifiers to interpret them as regular characters and not modifiers.\n\n
-Filters will be applied as **case insensitive** to feeds. Because of this, all input will be converted to be lowercase.`
+      text: translate('commands.utils.filters.promptAdd', { type: chosenFilterType })
     } }
 }
 
@@ -40,9 +43,10 @@ async function inputFilterFn (m, data) {
   const { guildRss, rssName, role, user, filterList, chosenFilterType } = data
   const source = guildRss.sources[rssName]
   const input = m.content
-
+  const prefix = guildRss.prefix || config.bot.prefix
+  const translator = new Translator(guildRss.locale)
+  const translate = translator.translate.bind(translator)
   if (!filterList[chosenFilterType]) filterList[chosenFilterType] = []
-  const editing = await m.channel.send(`Updating filters...`)
 
   // Assume the chosen filters are an array
   const addList = input.trim().split('\n').map(item => item.trim().toLowerCase()).filter((item, index, self) => item && index === self.indexOf(item)) // Valid items to be added, trimmed and lowercased
@@ -56,20 +60,20 @@ async function inputFilterFn (m, data) {
   })
 
   if (!user && !role) {
-    log.command.info(`New filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}`, m.guild)
-    await dbOpsGuilds.update(guildRss, true)
+    await dbOpsGuilds.update(guildRss)
+    log.command.info(`New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}`, m.guild)
     let msg = ''
-    if (addedList) msg = `The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
-    if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-    if (addedList) msg += `\nYou may test random articles with \`${config.bot.prefix}rsstest\` to see what articles pass your filters, or specifically send filtered articles with \`${config.bot.prefix}rssfilters\` option 5.`
-    await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+    if (addedList) msg = `${translate('commands.utils.filters.addSuccess')} \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
+    if (invalidItems) msg += `\n${translate('commands.utils.filters.addFailed')}:\n\`\`\`\n\n${invalidItems}\`\`\``
+    if (addedList) msg += translate('commands.utils.filters.testFilters', { prefix })
+    await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`)
   } else {
-    log.command.info(`New ${user ? 'user' : 'role'} filter(s) [${addedList.trim().split('\n')}] being added to '${chosenFilterType}' for ${source.link}.`, m.guild, user || role)
-    await dbOpsGuilds.update(guildRss, true)
-    let msg = `Subscription updated for ${user ? 'user' : 'role'} \`${user ? `${user.username}#${user.discriminator}` : role.name}\`. The following filter(s) have been successfully added for the filter category \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
-    if (invalidItems) msg += `\nThe following filter(s) could not be added because they already exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-    if (addedList) msg += `\nYou may test your filters on random articles via \`${config.bot.prefix}rsstest\` and see what articles will mention the ${user ? 'user' : 'role'}.`
-    await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+    await dbOpsGuilds.update(guildRss)
+    log.command.info(`New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}.`, m.guild, user || role)
+    let msg = `${translate('commands.utils.filters.updatedFor', { name: user ? `${user.username}#${user.discriminator}` : role.name })} ${translate('commands.utils.filters.addSuccess')} \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
+    if (invalidItems) msg += `\n${translate('commands.utils.filters.addFailed')}:\n\`\`\`\n\n${invalidItems}\`\`\``
+    if (addedList) msg += translate('commands.utils.filters.testFiltersSubscriber', { prefix })
+    await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`)
   }
 
   return { __end: true }
@@ -79,10 +83,12 @@ exports.add = (message, guildRss, rssName, role, user) => {
   const selectCategory = new MenuUtils.Menu(message, selectCategoryFn, { numbered: false })
   const inputFilter = new MenuUtils.Menu(message, inputFilterFn)
   const source = guildRss.sources[rssName]
+  const translator = new Translator(guildRss.locale)
+  const translate = translator.translate.bind(translator)
 
   const targetId = role ? role.id : user ? user.id : undefined
   const targetName = role ? role.name : user ? user.username : undefined
-  const targetType = role ? 'Role' : user ? 'User' : undefined
+  const targetType = role ? translate('commands.utils.filters.role') : user ? translate('commands.utils.filters.user') : undefined
   let targetFilterList
   if (targetId) {
     if (!source.subscribers) source.subscribers = []
@@ -108,7 +114,7 @@ exports.add = (message, guildRss, rssName, role, user) => {
 
   // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
   const options = []
-  for (var x = 0; x < filterTypes.length; ++x) {
+  for (let x = 0; x < filterTypes.length; ++x) {
     options.push({ title: filterTypes[x].show, description: '\u200b' })
   }
 
@@ -119,8 +125,8 @@ exports.add = (message, guildRss, rssName, role, user) => {
     filterList: targetFilterList,
     next:
     { embed: {
-      title: 'Feed Filters Customization',
-      description: `**Chosen Feed:** ${source.link}${targetId ? `\n**Chosen ${targetType}:** ${targetName}` : ''}\n\nBelow is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with \`raw:\`.\u200b\n\u200b\n`,
+      title: translate('commands.utils.filters.filtersCustomization'),
+      description: `**${translate('commands.utils.filters.feed')}:** ${source.link}${targetId ? `\n**${targetType}:** ${targetName}` : ''}\n\n${translate('commands.utils.filters.categoryDescription')}`,
       options: options
     }
     }
@@ -136,20 +142,28 @@ exports.add = (message, guildRss, rssName, role, user) => {
 async function filterRemoveCategory (m, data, callback) {
   // Select filter category here
   const input = m.content
-  var chosenFilterType = ''
+  const guildRss = data.guildRss
+  const translator = new Translator(guildRss ? guildRss.locale : null)
+  const translate = translator.translate.bind(translator)
+  let chosenFilterType = ''
 
-  if (input.startsWith('raw:')) chosenFilterType = input
-  else {
-    for (var x = 0; x < filterTypes.length; ++x) {
-      if (input.toLowerCase() === filterTypes[x].use) chosenFilterType = filterTypes[x].use
+  if (input.startsWith('raw:')) {
+    chosenFilterType = input
+  } else {
+    for (let x = 0; x < filterTypes.length; ++x) {
+      if (input.toLowerCase() === filterTypes[x].use) {
+        chosenFilterType = filterTypes[x].use
+      }
     }
   }
 
-  if (!chosenFilterType) throw new SyntaxError('That is not a valid filter category. Try again, or type `exit` to cancel.')
+  if (!chosenFilterType) {
+    throw new MenuUtils.MenuOptionError(translate('commands.utils.filters.invalidCategory'))
+  }
   return { ...data,
     chosenFilterType: chosenFilterType,
     next: {
-      text: `Confirm the filter word/phrase you would like to remove in the category \`${chosenFilterType}\` by typing one or multiple word/phrases separated by new lines (case sensitive).`,
+      text: translate('commands.utils.filters.removeFilterConfirm', { category: chosenFilterType }),
       embed: null
     } }
 }
@@ -157,6 +171,9 @@ async function filterRemoveCategory (m, data, callback) {
 async function removeFilterFn (m, data) {
   const { guildRss, rssName, role, user, chosenFilterType, filterList } = data
   const source = guildRss.sources[rssName]
+  const translator = new Translator(guildRss.locale)
+  const translate = translator.translate.bind(translator)
+  const prefix = guildRss.prefix || config.bot.prefix
   // Select the word/phrase filter here from that filter category
   const removeList = m.content.trim().split('\n').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Items to be removed
   let validFilter = false
@@ -174,11 +191,12 @@ async function removeFilterFn (m, data) {
     if (!valid) invalidItems += `\n${item}` // Invalid items are ones that do not exist
   })
 
-  if (!validFilter) throw new SyntaxError(`That is not a valid filter to remove from \`${chosenFilterType}\`. Try again, or type \`exit\` to cancel.`)
+  if (!validFilter) {
+    throw new MenuUtils.MenuOptionError(translate('commands.utils.filters.removeFilterInvalid', { category: chosenFilterType }))
+  }
 
-  const editing = await m.channel.send(`Removing filter \`${m.content}\` from category \`${chosenFilterType}\`...`)
   let deletedList = '' // Valid items that were removed
-  for (var i = validFilter.length - 1; i >= 0; i--) { // Delete the filters stored from before from highest index to lowest since it is an array
+  for (let i = validFilter.length - 1; i >= 0; i--) { // Delete the filters stored from before from highest index to lowest since it is an array
     deletedList += `\n${validFilter[i].filter}`
     filterList[chosenFilterType].splice(validFilter[i].index, 1)
     if (filterList[chosenFilterType].length === 0) delete filterList[chosenFilterType]
@@ -199,23 +217,25 @@ async function removeFilterFn (m, data) {
   }
 
   if (!user && !role) {
-    let msg = `The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
-    if (invalidItems) msg += `\n\nThe following filter(s) were unable to be deleted because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-    log.command.info(`Removing filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild)
+    let msg = `${translate('commands.utils.filters.removeSuccess')} \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
+    if (invalidItems) msg += `\n\n${translate('commands.utils.filters.removeFailedNoExist')}:\n\`\`\`\n\n${invalidItems}\`\`\``
     await dbOpsGuilds.update(guildRss)
-    await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`filterRemove 8a`, m.guild, err))
+    log.command.info(`Removed filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild)
+    await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`).catch(err => log.command.warning(`filterRemove 8a`, m.guild, err))
   } else {
-    let msg = `Subscription updated for ${user ? 'user' : 'role'} \`${user ? `${user.username}#${user.discriminator}` : role.name}\`. The following filter(s) have been successfully removed from the filter category \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
-    if (invalidItems) msg += `\n\nThe following filters were unable to be removed because they do not exist:\n\`\`\`\n\n${invalidItems}\`\`\``
-    log.command.info(`Removing ${user ? 'user' : 'role'} filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild, user || role)
+    let msg = `${translate('commands.utils.filters.removeSuccessSubscriber', { name: user ? `${user.username}#${user.discriminator}` : role.name })} \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
+    if (invalidItems) msg += `\n\n${translate('commands.utils.filters.removeFailedNoExist')}:\n\`\`\`\n\n${invalidItems}\`\`\``
     await dbOpsGuilds.update(guildRss)
-    await editing.edit(`${msg}\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning(`filterRemove 8b`, m.guild, err))
+    log.command.info(`Removed ${user ? 'user' : 'role'} filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild, user || role)
+    await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`).catch(err => log.command.warning(`filterRemove 8b`, m.guild, err))
   }
   return { __end: true }
 }
 
 exports.remove = (message, guildRss, rssName, role, user) => {
   const source = guildRss.sources[rssName]
+  const translator = new Translator(guildRss.locale)
+  const translate = translator.translate.bind(translator)
   let targetFilterList
   const targetId = role ? role.id : user ? user.id : undefined
 
@@ -231,7 +251,9 @@ exports.remove = (message, guildRss, rssName, role, user) => {
   const selectCategory = new MenuUtils.Menu(message, filterRemoveCategory, { numbered: false })
   const removeFilter = new MenuUtils.Menu(message, removeFilterFn)
 
-  if (!targetFilterList) return message.channel.send(`There are no filters to remove for ${source.link}${user ? ` for the user \`${user.username}#${user.discriminator}\`` : role ? ` for the role \`${role.name}\`` : ''}.`).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
+  if (!targetFilterList) {
+    return message.channel.send(translate('commands.utils.filters.removeNone', { link: source.link })).catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
+  }
 
   const options = []
   for (const filterCategory in targetFilterList) {
@@ -247,8 +269,8 @@ exports.remove = (message, guildRss, rssName, role, user) => {
     filterList: targetFilterList,
     next:
     { embed: {
-      author: { text: `List of Assigned Filters` },
-      description: `**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type **exit** to cancel.\u200b\n\u200b\n`,
+      author: { text: translate('commands.utils.filters.listOfFilters') },
+      description: translate('commands.utils.filters.listOfFiltersDescription', { title: source.title, link: source.link }),
       options: options
     }
     }

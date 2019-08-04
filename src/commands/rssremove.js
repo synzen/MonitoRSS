@@ -3,17 +3,20 @@ const dbOpsGuilds = require('../util/db/guilds.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
+const Translator = require('../structs/Translator.js')
 
 module.exports = async (bot, message, command) => {
   try {
     const guildRss = await dbOpsGuilds.get(message.guild.id)
+    const guildLocale = guildRss ? guildRss.locale : undefined
+    const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
-    const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
+    const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
     const { rssNameList } = data
-    const removing = await message.channel.send(`Removing...`)
+    const removing = await message.channel.send(translate('commands.rssremove.removing'))
     const errors = []
-    let removed = 'Successfully removed the following link(s):\n```\n'
+    let removed = translate('commands.rssremove.success') + '\n```\n'
 
     for (var i = 0; i < rssNameList.length; ++i) {
       const link = guildRss.sources[rssNameList[i]].link
@@ -26,8 +29,11 @@ module.exports = async (bot, message, command) => {
         errors.push(err)
       }
     }
-    if (errors.length > 0) await removing.edit('Unable to remove specified feeds due to internal error.')
-    else await removing.edit(`${removed}\`\`\`\n\nAfter completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+    const prefix = guildRss.prefix || config.bot.prefix
+    if (errors.length > 0) {
+      await removing.edit(translate('commands.rssremove.internalError'))
+    }
+    else await removing.edit(`${removed}\`\`\`\n\n${translate('generics.backupReminder', { prefix })}`)
   } catch (err) {
     log.command.warning(`rssremove`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssremove 1', message.guild, err))

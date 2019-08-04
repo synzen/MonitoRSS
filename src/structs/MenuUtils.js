@@ -3,8 +3,9 @@ const config = require('../config.js')
 const channelTracker = require('../util/channelTracker.js')
 const MessageCleaner = require('./MessageCleaner.js')
 const pageControls = require('../util/pageControls.js')
+const MenuOptionError = require('./errors/MenuOptionError.js')
+const Translator = require('./Translator.js')
 const log = require('../util/logger.js')
-const WRONG_INPUT = 'That is not a valid choice. Try again, or type `exit` to cancel.'
 
 /**
  * A model that automatically handles pagination via reactions for multiple embeds and able to be used in series with data passed in a sequence.
@@ -20,6 +21,7 @@ class Menu {
    * @param {number} [settings.maxPerPage] Max number of options per page before the next page is sutomatically created
    * @param {Boolean} [settings.numbered] Whether to number the options or not
    * @param {Object} [settings.splitOptions] Settings to split the message into multiple ones if it is too long
+   * @param {string} [settings.locale] Language locale
    * @memberof Menu
    */
   constructor (message, fn, settings) {
@@ -28,6 +30,8 @@ class Menu {
     this.channel = message.channel
     this.hasReactionPermissions = this.message.guild.me.permissionsIn(this.message.channel).has(['ADD_REACTIONS', 'READ_MESSAGE_HISTORY'])
     this.fn = fn
+    this.locale = settings ? settings.locale : undefined
+    this.translate = Translator.createLocaleTranslator(this.locale)
     this.pages = []
     this._pageNum = 0
     this._series = false
@@ -65,9 +69,9 @@ class Menu {
     ++this._pageNum
     const newPage = new RichEmbed(this.pages[0])
     newPage.fields = []
-    const missingPermText = !this.hasReactionPermissions ? ` (WARNING: Missing "Add Reactions" or "Read Message History" permissions in this channel. Because this menu has more than ${this.maxPerPage} options, it will not function properly without the right permissions)` : ''
+    const missingPermText = !this.hasReactionPermissions ? ` (${this.translate('structs.MenuUtils.permissionWarning', { maxPerPage: this.maxPerPage })})` : ''
     this.pages[this._pageNum] = newPage
-    for (var x = 0; x < this.pages.length; ++x) {
+    for (let x = 0; x < this.pages.length; ++x) {
       const p = this.pages[x]
       p.setFooter((`Page ${x + 1}/${this.pages.length}`) + missingPermText)
     }
@@ -212,7 +216,7 @@ class Menu {
       collector.on('collect', async m => {
         this._msgCleaner.add(m)
         if (m.content.toLowerCase() === 'exit') {
-          collector.stop('Menu closed.')
+          collector.stop(this.translate('structs.MenuUtils.closed'))
           // __end will cause the MenuSeries, if it exists, to skip all further menus
           return resolve(this._series ? [{ __end: true }, this._msgCleaner] : [])
         }
@@ -224,9 +228,13 @@ class Menu {
           // Pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
           resolve([ passover, this._msgCleaner ])
         } catch (err) {
-          // SyntaxError allows input retries for this collector due to incorrect input
-          if (err instanceof SyntaxError) m.channel.send(err.message ? err.message : WRONG_INPUT, { split: true }).then(m => this._msgCleaner.add(m)).catch(reject)
-          else reject(err)
+          if (err instanceof MenuOptionError) {
+            const message = err.message || this.translate('structs.errors.MenuOptionError.message')
+            m.channel.send(message, { split: true }).then(m => this._msgCleaner.add(m)).catch(reject)
+          } else {
+            collector.stop()
+            reject(err)
+          }
         }
       })
 
@@ -234,7 +242,7 @@ class Menu {
         // Remove the channel tracker to allow commands in this channel again
         channelTracker.remove(this.channel.id)
         if (reason === 'user') return
-        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
+        if (reason === 'time') this.channel.send(this.translate('structs.MenuUtils.closedInactivity')).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
         else this.channel.send(reason).then(m => m.delete(6000)).catch(err => log.command.warning(`Menu collector on end message.send`, this.channel.guild, err))
       })
     })
@@ -250,6 +258,7 @@ class MenuSeries {
    * @param {Message} message A Discord.js Message
    * @param {Menu[]} menus Menus to be merged in order
    * @param {Object} data Data to pass over to the first Menu
+   * @param {string} [data.locale] Language locale that will apply to all in this series
    * @memberof MenuSeries
    */
   constructor (message, menus, data) {
@@ -257,8 +266,10 @@ class MenuSeries {
     this._data = data
     this._mergedData = {}
     this._msgCleaner = new MessageCleaner(message)
+    if (data.locale) this.locale = data.locale
     menus.forEach(item => {
       item._series = true
+      if (this.locale) item.locale = data.locale
       this._menus.push(item)
     })
   }
@@ -275,8 +286,11 @@ class MenuSeries {
     if (!(series instanceof MenuSeries)) throw new TypeError('Not a MenuSeries')
 
     // Data to merge from the new MenuSeries constructor to the last function's passover data of this MenuSeries. Must be done before the series is merged.
-    if (series._data) this._mergedData[this._menus.length] = [series._data]
+    if (series._data) {
+      this._mergedData[this._menus.length] = [series._data]
+    }
     series._menus.forEach(item => {
+      if (this.locale) item.locale = this.locale
       this._msgCleaner.merge(item._msgCleaner)
       this._menus.push(item)
     })
@@ -295,6 +309,7 @@ class MenuSeries {
   add (menu, data) {
     if (!(menu instanceof Menu)) throw new TypeError('Not a Menu')
     if (data) this._mergedData[this._menus.length] = [data]
+    if (this.locale) menu.locale = this.locale
     this._menus.push(menu)
     return this
   }
@@ -379,6 +394,7 @@ class MenuSeries {
 
 exports.Menu = Menu
 exports.MenuSeries = MenuSeries
+exports.MenuOptionError = MenuOptionError
 exports.extractArgsAfterCommand = string => {
   const args = string.split(' ')
   args.shift()

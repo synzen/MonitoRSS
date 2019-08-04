@@ -1,38 +1,38 @@
 const config = require('../config.js')
-const commands = require('../util/commands.js').list
 const channelTracker = require('../util/channelTracker.js')
 const pageControls = require('../util/pageControls.js')
 const log = require('../util/logger.js')
-const Menu = require('./MenuUtils.js').Menu
+const { Menu, MenuOptionError } = require('./MenuUtils.js')
+const Translator = require('./Translator.js')
 const MULTI_SELECT = ['rssremove', 'rssmove']
 const GLOBAL_SELECT = ['rssmove']
 const SINGLE_NUMBER_REGEX = /^\d+$/
-const OPTIONS_TEXTS = {
+const getOptionTexts = translate => ({
   imgPreviews: {
-    status: 'Image Link Previews: ',
-    toggle: 'Toggle Image Link Previews'
+    status: `${translate('commands.rssoptions.imagePreviews')}: `,
+    toggle: translate('commands.rssoptions.imagePreviewsDescription')
   },
   imgLinksExistence: {
-    status: 'Image Links Existence: ',
-    toggle: 'Toggle Image Links Existence'
+    status: `${translate('commands.rssoptions.imageLinksExistence')}: `,
+    toggle: translate('commands.rssoptions.imageLinksExistenceToggle')
   },
   checkTitles: {
-    status: 'Title Checks: ',
-    toggle: 'Toggle Title Checks'
+    status: `${translate('commands.rssoptions.titleChecks')}: `,
+    toggle: translate('commands.rssoptions.titleChecksToggle')
   },
   checkDates: {
-    status: 'Date Checks: ',
-    toggle: 'Toggle Date Checks'
+    status: `${translate('commands.rssoptions.dateChecks')}: `,
+    toggle: translate('commands.rssoptions.dateChecksToggle')
   },
   formatTables: {
-    status: 'Table Formatting: ',
-    toggle: 'Toggle Table Formatting'
+    status: `${translate('commands.rssoptions.tableFormatting')}: `,
+    toggle: translate('commands.rssoptions.tableFormattingToggle')
   },
   toggleRoleMentions: {
-    status: 'Role Mention Toggling: ',
-    toggle: 'Toggle Role Mentionability'
+    status: `${translate('commands.rssoptions.roleMentioning')}: `,
+    toggle: translate('commands.rssoptions.roleMentioningToggle')
   }
-}
+})
 
 function parseNumbers (str) {
   if (SINGLE_NUMBER_REGEX.test(str)) return [parseInt(str, 10)]
@@ -71,8 +71,7 @@ async function selectFeedFn (m, data, callback) {
     }
 
     // Replace the indices in valid with their respective rssNames in currentRSSList
-    if (invalid.length > 0) throw new SyntaxError(`The number(s) \`${invalid}\` are invalid. Try again, or type \`exit\` to cancel.`)
-    else if (valid.length === 0) throw new SyntaxError(`You did not choose any valid numbers. Try again, or type \`exit\` to cancel.`)
+    if (invalid.length > 0 || valid.length === 0) throw new MenuOptionError()
     else {
       for (var q = 0; q < valid.length; ++q) valid[q] = currentRSSList[valid[q]].rssName
       return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssNameList: valid })
@@ -81,7 +80,9 @@ async function selectFeedFn (m, data, callback) {
 
   // Return a single index for non feed removal actions
   const index = parseInt(chosenOption, 10) - 1
-  if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) throw new SyntaxError('That is not a valid number. Try again, or type `exit` to cancel.')
+  if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) {
+    throw new MenuOptionError()
+  }
 
   // Data is pre-passed into a FeedSelector's fn, merged with the previous Menu's data
   return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssName: currentRSSList[index].rssName })
@@ -111,31 +112,36 @@ class FeedSelector extends Menu {
     this.guildRss = guildRss
     this.passoverFn = passoverFn
     if (!this.guildRss || !this.guildRss.sources || Object.keys(this.guildRss.sources).length === 0) {
-      this.text = 'There are no existing feeds.'
+      this.text = Translator.translate('structs.FeedSelector.noFeeds', this.locale)
       return
     }
+    if (guildRss) this.locale = guildRss.locale
     const { command, miscOption, multiSelect, prependDescription, globalSelect } = cmdInfo
     this.command = command
     this.miscOption = miscOption
     this.multiSelect = MULTI_SELECT.includes(command) || multiSelect
     this.globalSelect = GLOBAL_SELECT.includes(command) || globalSelect
+    const translator = new Translator(this.locale)
+    this.translate = translator.translate.bind(translator)
 
     const rssList = this.guildRss.sources
     this._currentRSSList = []
+
+    const optionTexts = getOptionTexts(this.translate)
 
     for (var rssName in rssList) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
       const source = rssList[rssName]
       if (message.channel.id !== source.channel && !this.globalSelect) continue
       let o = { link: source.link, rssName: rssName, title: source.title }
 
-      if (OPTIONS_TEXTS[miscOption]) {
-        const statusText = OPTIONS_TEXTS[miscOption].status
+      if (optionTexts[miscOption]) {
+        const statusText = optionTexts[miscOption].status
         let decision = ''
 
         const globalSetting = config.feeds[miscOption]
-        decision = globalSetting ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
+        decision = globalSetting ? `${statusText} ${this.translate('generics.enabledUpper')}\n` : `${statusText} ${this.translate('generics.disabledUpper')}\n`
         const specificSetting = source[miscOption]
-        decision = typeof specificSetting !== 'boolean' ? decision : specificSetting === true ? `${statusText} Enabled\n` : `${statusText} Disabled\n`
+        decision = typeof specificSetting !== 'boolean' ? decision : specificSetting === true ? `${statusText} ${this.translate('generics.enabledUpper')}\n` : `${statusText} ${this.translate('generics.disabledUpper')}\n`
 
         o.miscOption = decision
       }
@@ -144,23 +150,23 @@ class FeedSelector extends Menu {
     }
 
     if (this._currentRSSList.length === 0) {
-      this.text = 'No feeds assigned to this channel.'
+      this.text = Translator.translate('structs.FeedSelector.noFeedsInChannel', this.locale)
       return
     }
     let desc = ''
-    desc += (this.globalSelect ? '' : `**Channel:** #${message.channel.name}\n`) + `**Action**: ${command === 'rssoptions' ? OPTIONS_TEXTS[miscOption].toggle : commands[command].action}\n\n${prependDescription ? `${prependDescription}\n\n` : ''}Choose a feed to from this channel by typing the number to execute your requested action on. ${this.multiSelect ? 'You may select multiple feeds by separation with commas, and/or with hyphens (for example `1,3,4-6,8`). ' : ''}Type **exit** to cancel.\u200b\n\u200b\n`
-    this.setAuthor('Feed Selection Menu')
+    desc += (this.globalSelect ? '' : `**${this.translate('generics.channelUpper')}:** #${message.channel.name}\n`) + `**${this.translate('structs.FeedSelector.action')}**: ${command === 'rssoptions' ? optionTexts[miscOption].toggle : this.translate(`commandDescriptions.${command}.action`)}\n\n${prependDescription ? `${prependDescription}\n\n` : ''}${this.translate('structs.FeedSelector.prompt')} ${this.multiSelect ? `${this.translate('structs.FeedSelector.multiSelect')} ` : ''}${this.translate('structs.FeedSelector.exitToCancel')}\u200b\n\u200b\n`
+    this.setAuthor(this.translate('structs.FeedSelector.feedSelectionMenu'))
     this.setDescription(desc)
 
     this._currentRSSList.forEach(item => {
-      const channel = item.channel ? message.client.channels.has(item.channel) ? `Channel: #${message.client.channels.get(item.channel).name}\n` : undefined : undefined
+      const channel = item.channel ? message.client.channels.has(item.channel) ? `${this.translate('generics.channelUpper')}: #${message.client.channels.get(item.channel).name}\n` : undefined : undefined
       const link = item.link
       const title = item.title
       const status = item.status || ''
 
       // const miscOption = item.checkTitles || item.imagePreviews || item.imageLinksExistence || item.checkDates || item.formatTables || ''
       const miscOption = item.miscOption || ''
-      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel || ''}${miscOption}${status}Link: ${link.length > 500 ? '*Exceeds 500 characters*' : link}`)
+      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel || ''}${miscOption}${status}${this.translate('commands.rsslist.link')}: ${link.length > 500 ? this.translate('commands.rsslist.exceeds500Characters') : link}`)
     })
 
     this.fn = selectFeedFn.bind(this)
@@ -202,7 +208,7 @@ class FeedSelector extends Menu {
       collector.on('collect', async m => {
         this._msgCleaner.add(m)
         if (m.content.toLowerCase() === 'exit') {
-          collector.stop('Menu closed.')
+          collector.stop(this.translate('structs.MenuUtils.closed'))
           return resolve(this._series ? [{ __end: true }, this._msgCleaner] : [])
         }
 
@@ -211,15 +217,20 @@ class FeedSelector extends Menu {
           collector.stop()
           resolve([ passover, this._msgCleaner ])
         } catch (err) {
-          if (err instanceof SyntaxError) m.channel.send(err.message).then(m => this._msgCleaner.add(m)).catch(reject)
-          else reject(err)
+          if (err instanceof MenuOptionError) {
+            const message = err.message || this.translate('structs.errors.MenuOptionError.message')
+            m.channel.send(message).then(m => this._msgCleaner.add(m)).catch(reject)
+          } else {
+            collector.stop()
+            reject(err)
+          }
         }
       })
 
       collector.on('end', (collected, reason) => {
         channelTracker.remove(this.channel.id)
         if (reason === 'user') return
-        if (reason === 'time') this.channel.send(`I have closed the menu due to inactivity.`).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
+        if (reason === 'time') this.channel.send(this.translate('structs.MenuUtils.closedInactivity')).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
         else this.channel.send(reason).then(m => m.delete(6000))
       })
     })

@@ -16,6 +16,7 @@ const schema = mongoose.Schema({
   timezone: String,
   vip: Object,
   prefix: String,
+  locale: String,
   version: String
 })
 

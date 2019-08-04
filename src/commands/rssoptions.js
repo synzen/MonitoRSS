@@ -3,52 +3,62 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
-const PROPERTIES = {
-  checkTitles: {
-    title: 'Toggle Title Checks for a feed',
-    description: `**Only enable this if necessary!** Default is ${config.feeds.checkTitles === true ? 'enabled.' : 'disabled.'} Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.`,
-    display: 'Title Checks',
-    num: 1
-  },
-  imgPreviews: {
-    title: `Toggle Image Link Previews for a feed's placeholders`,
-    description: `Default is ${config.feeds.imgPreviews === false ? 'disabled' : 'enabled'}. Toggle automatic Discord image link embedded previews for image links found inside placeholders such as {description}.`,
-    display: 'Image Previews',
-    num: 2
-  },
-  imgLinksExistence: {
-    title: `Toggle Image Links Existence for a feed's placeholders`,
-    description: `Default is ${config.feeds.imgLinksExistence === false ? 'disabled' : 'enabled'}. Remove image links found inside placeholders such as {description}. If disabled, all image \`src\` links in such placeholders will be removed.`,
-    display: 'Image Links Existence',
-    num: 3
-  },
-  checkDates: {
-    title: 'Toggle Date Checks for a feed',
-    description: `Default is ${config.feeds.checkDates === false ? 'disabled' : 'enabled'}. Date checking ensures that articles that are ${config.feeds.cycleMaxAge} day(s) old or has invalid/no pubdates are't sent.`,
-    display: 'Date Checks',
-    num: 4
-  },
-  formatTables: {
-    title: 'Toggle Table Formatting for a feed',
-    description: `Default is ${config.feeds.formatTables === false ? 'disabled' : 'enabled'}. If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing.`,
-    display: 'Table Formatting',
-    num: 5
-  },
-  toggleRoleMentions: {
-    title: 'Toggle Role Mentioning for Subscriptions',
-    description: `Default is ${config.feeds.toggleRoleMentions === false ? 'disabled' : 'enabled'}. Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent.\n\n**WARNING**: Only applies if roles are below the bot's highest role, and the bot has **Manage Roles** permission. Otherwise, __THIS WILL NOT WORK__.`,
-    display: 'Role Mentioning Toggle',
-    num: 6
+const Translator = require('../structs/Translator.js')
+
+const getProperties = translate => {
+  const ENABLED_TRANSLATED = translate('generics.enabledLower')
+  const DISABLED_TRANSLATED = translate('generics.disabledLower')
+
+  return {
+    checkTitles: {
+      title: translate('commands.rssoptions.titleChecksToggle'),
+      description: `**${translate('commands.rssoptions.onlyIfNecessary')}** ${translate('generics.defaultSetting', { value: config.feeds.checkTitles === true ? ENABLED_TRANSLATED : DISABLED_TRANSLATED })} ${translate('commands.rssoptions.titleChecksDescription')}`,
+      display: translate('commands.rssoptions.titleChecks'),
+      num: 1
+    },
+    imgPreviews: {
+      title: translate('commands.rssoptions.imagePreviewsToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.imgPreviews === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.imagePreviewsDescription')}`,
+      display: translate('commands.rssoptions.imagePreviews'),
+      num: 2
+    },
+    imgLinksExistence: {
+      title: translate('commands.rssoptions.imageLinksExistenceToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.imgLinksExistence === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.imageLinksExistenceDescription')}`,
+      display: translate('commands.rssoptions.imageLinksExistence'),
+      num: 3
+    },
+    checkDates: {
+      title: translate('commands.rssoptions.dateChecksToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.checkDates === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.dateChecksDescription', { cycleMaxAge: config.feeds.cycleMaxAge })}`,
+      display: translate('commands.rssoptions.dateChecks'),
+      num: 4
+    },
+    formatTables: {
+      title: translate('commands.rssoptions.tableFormattingToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.formatTables === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.tableFormattingDescription')}`,
+      display: translate('commands.rssoptions.tableFormatting'),
+      num: 5
+    },
+    toggleRoleMentions: {
+      title: translate('commands.rssoptions.roleMentioningToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.toggleRoleMentions === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.roleMentioningDescription')}`,
+      display: translate('commands.rssoptions.roleMentioning'),
+      num: 6
+    }
   }
 }
 
 async function selectOption (m, data) {
   const input = m.content
-  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5' && input !== '6') throw new SyntaxError()
+  const guildRss = data.guildRss
+  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5' && input !== '6') throw new MenuUtils.MenuOptionError()
   const num = parseInt(input, 10)
   let chosenProp
-  for (var propRef in PROPERTIES) {
-    if (PROPERTIES[propRef].num === num) chosenProp = propRef
+  const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+  const properties = getProperties(translate)
+  for (const propRef in properties) {
+    if (properties[propRef].num === num) chosenProp = propRef
   }
 
   return { ...data,
@@ -59,18 +69,20 @@ async function selectOption (m, data) {
 }
 
 module.exports = async (bot, message, command) => {
-  const select = new MenuUtils.Menu(message, selectOption)
-    .setAuthor('Miscellaneous Feed Options')
-    .setDescription('\u200b\nPlease select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n')
-
-  for (var propRef in PROPERTIES) {
-    const data = PROPERTIES[propRef]
-    select.addOption(data.title, data.description)
-  }
-
   try {
     const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const data = await new MenuUtils.MenuSeries(message, [select], { command, guildRss }).start()
+    const guildLocale = guildRss ? guildRss.locale : undefined
+    const translate = Translator.createLocaleTranslator(guildLocale)
+    const select = new MenuUtils.Menu(message, selectOption)
+      .setAuthor(translate('commands.rssoptions.miscFeedOptions'))
+      .setDescription(translate('commands.rssoptions.selectOption'))
+
+    const properties = getProperties(translate)
+    for (const propRef in properties) {
+      const data = properties[propRef]
+      select.addOption(data.title, data.description)
+    }
+    const data = await new MenuUtils.MenuSeries(message, [select], { command, guildRss, locale: guildLocale }).start()
     if (!data) return
     const { rssName, chosenProp } = data
     const source = guildRss.sources[rssName]
@@ -88,11 +100,16 @@ module.exports = async (bot, message, command) => {
       followGlobal = true
     }
 
-    const prettyPropName = PROPERTIES[chosenProp].display
+    const prettyPropName = properties[chosenProp].display
 
-    log.command.info(`${prettyPropName} ${finalSetting ? 'enabling' : 'disabling'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)
     await dbOpsGuilds.update(guildRss)
-    await message.channel.send(`${prettyPropName} have been ${finalSetting ? 'enabled' : 'disabled'} for <${source.link}>${followGlobal ? ', and is now following the global setting.' : '.'} After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+    log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)
+    await message.channel.send(`${translate('commands.rssoptions.settingChanged', {
+      propName: prettyPropName,
+      isDefault: followGlobal ? ` (${translate('commands.rssoptions.defaultSetting')})` : '',
+      link: source.link,
+      finalSetting: finalSetting ? translate('generics.enabledLower') : translate('generics.disabledLower')
+    })} ${translate('generics.backupReminder', { prefix: guildRss.prefix || config.bot.prefix })}`)
   } catch (err) {
     log.command.warning(`rssoptions`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssoptions 1', message.guild, err))

@@ -4,14 +4,21 @@ const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const channelTracker = require('../util/channelTracker.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
+const Translator = require('../structs/Translator.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {
   try {
-    if (FAIL_LIMIT === 0) return await message.channel.send(`No fail limit has been set.`)
     const guildRss = await dbOpsGuilds.get(message.guild.id)
+    const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+
+    if (FAIL_LIMIT === 0) {
+      return await message.channel.send(translate('commands.rssrefresh.noFailLimit'))
+    }
     const rssList = guildRss.sources
-    if (!rssList || Object.keys(rssList).length === 0) return await message.channel.send('There are no failed feeds.')
+    if (!rssList || Object.keys(rssList).length === 0) {
+      return await message.channel.send(translate('commands.rssrefresh.noFailedFeeds'))
+    }
     let toRefresh = []
     channelTracker.add(message.channel.id)
     for (const rssName in rssList) {
@@ -22,9 +29,9 @@ module.exports = async (bot, message, command) => {
     }
     if (toRefresh.length === 0) {
       channelTracker.remove(message.channel.id)
-      return await message.channel.send('There are no failed feeds to refresh.')
+      return await message.channel.send(translate('commands.rssrefresh.noFailedFeeds'))
     }
-    const processing = await message.channel.send(`Processing requests for refresh...`)
+    const processing = await message.channel.send(translate('commands.rssrefresh.processing'))
     let failedReasons = {}
     for (const link of toRefresh) {
       log.command.info(`Attempting to refresh ${link}`, message.guild)
@@ -45,8 +52,8 @@ module.exports = async (bot, message, command) => {
     }
 
     let reply = ''
-    if (successfulLinks) reply += 'The following links have successfully been refreshed:\n```' + successfulLinks + '```\n\n'
-    if (failedLinks) reply += 'The following links failed to refresh:\n```' + failedLinks + '```'
+    if (successfulLinks) reply += translate('commands.rssrefresh.success') + '\n```' + successfulLinks + '```\n\n'
+    if (failedLinks) reply += translate('commands.rssrefresh.failed') + '\n```' + failedLinks + '```'
     channelTracker.remove(message.channel.id)
     await processing.edit(reply)
   } catch (err) {

@@ -3,32 +3,44 @@ const dbOpsGuilds = require('../util/db/guilds.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
+const Translator = require('../structs/Translator.js')
 function escapeBackticks (str) {
   return str.replace('`', '​`') // Replace backticks with zero-width space and backtick to escape
 }
 
+const defSplitCharStr = translate => translate('commands.rsssplit.defaultIsValue', { value: `\`\\n\` (${translate('commands.rsssplit.newLine')})` })
+const defPrependCharStr = translate => translate('commands.rsssplit.defaultIsNothing')
+const defAppendCharStr = defPrependCharStr
+const defMaxLenStr = translate => translate('commands.rsssplit.defaultIsValue', { value: '1950' })
+
 async function feedSelectorFn (m, data) {
-  const { guildRss, rssName } = data
+  const { guildRss, rssName, translate } = data
   const source = guildRss.sources[rssName]
   const splitOptions = source.splitMessage // Show toggle if it is disabled
 
   const nextMenu = new MenuUtils.Menu(m, splitOptions ? selectSetting : enable)
-    .setAuthor('Message Splitting Options')
-    .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nMessage splitting for this feed is currently ${splitOptions ? 'enabled' : 'disabled'}. Select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n`)
+    .setAuthor(translate('commands.rsssplit.messageSplittingOptions'))
+    .setDescription(translate('commands.rsssplit.description', { title: source.title, link: source.link, currently: splitOptions ? translate('generics.enabledLower') : translate('generics.disabledLower') }))
 
-  const currentSplitChar = splitOptions ? splitOptions.char : undefined
-  const currentSplitPrepend = splitOptions ? splitOptions.prepend : undefined
-  const currentSplitAppend = splitOptions ? splitOptions.append : undefined
-  const currentSplitLength = splitOptions ? splitOptions.maxLength : undefined
+  const currentSplitChar = splitOptions && splitOptions.char ? splitOptions.char : ''
+  const currentSplitPrepend = splitOptions && splitOptions.prepend ? splitOptions.prepend : ''
+  const currentSplitAppend = splitOptions && splitOptions.append ? splitOptions.append : ''
+  const currentSplitLength = splitOptions && splitOptions.maxLength ? splitOptions.maxLength : ''
 
-  if (!splitOptions) nextMenu.addOption('Enable Message Splitting', 'Message splitting splits a message that exceeds the Discord character limit into multiple messages instead.')
-  else {
+  if (!splitOptions) {
+    nextMenu.addOption(translate('commands.rsssplit.optionEnable'), translate('commands.rsssplit.optionEnableDescription'))
+  } else {
+    const curSplitCharStr = translate('commands.rsssplit.currentlySetTo', { value: escapeBackticks(currentSplitChar) })
+    const curPrependCharStr = translate('commands.rsssplit.currentlySetTo', { value: escapeBackticks(currentSplitPrepend) })
+    const curAppendCharStr = translate('commands.rsssplit.currentlySetTo', { value: escapeBackticks(currentSplitAppend) })
+    const curMaxLenStr = translate('commands.rsssplit.currentlySetTo', { value: currentSplitLength })
+
     nextMenu
-      .addOption(`Set split character`, `Specify the character that the message should split according to.${currentSplitChar ? ` Currently set to \`${escapeBackticks(currentSplitChar)}\`.` : ''} Default is \`\\n\` (new lines).`)
-      .addOption('Set prepend character', `Specify the character that every message except the first should be prepended (added before) with.${currentSplitPrepend ? ` Currently set to \`${escapeBackticks(currentSplitPrepend)}\`.` : ''} Default is nothing. `)
-      .addOption('Set append character', `Specify the character that every message except the last should be appended (added after) with.${currentSplitAppend ? ` Currently set to \`${escapeBackticks(currentSplitAppend)}\`.` : ''} Default is nothing.`)
-      .addOption('Set max length', `Specify the maximum length a single message should have.${currentSplitLength ? ` Currently set to \`${currentSplitLength}\`.` : ''} Default is \`1950\`.`)
-      .addOption('Disable Message Splitting', 'Default is disabled.')
+      .addOption(translate('commands.rsssplit.optionSetSplitChar'), `${translate('commands.rsssplit.optionSetSplitCharDescription')}${currentSplitChar ? ` ${curSplitCharStr}` : ''} ${defSplitCharStr(translate)}`)
+      .addOption(translate('commands.rsssplit.optionSetPrependChar'), `${translate('commands.rsssplit.optionSetPrependCharDescription')}${currentSplitPrepend ? ` ${curPrependCharStr}` : ''} ${defPrependCharStr(translate)}`)
+      .addOption(translate('commands.rsssplit.optionSetAppendChar'), `${translate('commands.rsssplit.optionSetAppendCharDescription')}${currentSplitAppend ? ` ${curAppendCharStr}` : ''} ${defAppendCharStr(translate)}`)
+      .addOption(translate('commands.rsssplit.optionSetMaxLength'), `${translate('commands.rsssplit.optionSetMaxLengthDescription')}${currentSplitLength ? ` ${curMaxLenStr}` : ''} ${defMaxLenStr(translate)}`)
+      .addOption(translate('commands.rsssplit.optionDisable'), '\u200b')
   }
 
   return { ...data,
@@ -40,24 +52,23 @@ async function feedSelectorFn (m, data) {
 
 async function enable (m, data) {
   // This function only triggers if it is initially disabled
-  const { guildRss, rssName } = data
+  const { guildRss, rssName, translate } = data
   const source = guildRss.sources[rssName]
-
-  if (m.content !== '1') throw new SyntaxError()
+  if (m.content !== '1') throw new MenuUtils.MenuOptionError()
 
   source.splitMessage = { enabled: true }
 
-  log.command.info(`Enabling message splitting for ${source.link}`, m.channel.guild)
   await dbOpsGuilds.update(guildRss)
+  log.command.info(`Enabled message splitting for ${source.link}`, m.channel.guild)
 
   const nextMenu = new MenuUtils.Menu(m, selectSetting)
-    .setAuthor('Message Splitting Options')
-    .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\n**Message Splitting is now enabled for this feed.**\n\nYou may customize message splitting further by selecting one of the options below by typing its number, or type **exit** to leave as is. It is recommended to leave at the default settings.\u200b\n\u200b\n`)
-    .addOption(`Set split character`, `Specify the character that the message should split on. Default is \`\\n\` (new lines).`)
-    .addOption('Set prepend character', 'Specify the character that every message except the first should be prepended (added before) with. Default is nothing. ')
-    .addOption('Set append character', 'Specify the character that every message except the last should be appended (added after) with. Default is nothing.')
-    .addOption('Set max length', 'Specify the maximum length a single message should have. Default is `1950`.')
-    .addOption('Disable Message Splitting', 'Default is disabled.')
+    .setAuthor(translate('commands.rsssplit.messageSplittingOptions'))
+    .setDescription(translate('commands.rsssplit.enabledDescription', { title: source.title, link: source.link }))
+    .addOption(translate('commands.rsssplit.optionSetSplitChar'), `${translate('commands.rsssplit.optionSetSplitCharDescription')} ${defSplitCharStr(translate)}`)
+    .addOption(translate('commands.rsssplit.optionSetPrependChar'), `${translate('commands.rsssplit.optionSetPrependCharDescription')} ${defPrependCharStr(translate)}`)
+    .addOption(translate('commands.rsssplit.optionSetAppendChar'), `${translate('commands.rsssplit.optionSetAppendCharDescription')} ${defAppendCharStr(translate)}`)
+    .addOption(translate('commands.rsssplit.optionSetMaxLength'), `${translate('commands.rsssplit.optionSetMaxLengthDescription')} ${defMaxLenStr(translate)}`)
+    .addOption(translate('commands.rsssplit.optionDisable'), '\u200b')
 
   return { ...data,
     next: {
@@ -66,24 +77,24 @@ async function enable (m, data) {
 }
 
 async function selectSetting (m, data) {
-  const { guildRss, rssName } = data
+  const { guildRss, rssName, translate } = data
   const source = guildRss.sources[rssName]
   const selected = m.content
 
   if (selected === '5') {
     delete source.splitMessage
-    log.command.info(`Disabling message splitting for ${source.link}`, m.channel.guild)
     await dbOpsGuilds.update(guildRss)
-    await m.channel.send(`Message splitting is now disabled for feed <${source.link}>.`).catch(err => log.command.warning('rsssplit 1', m.channel.guild, err))
+    log.command.info(`Disabled message splitting for ${source.link}`, m.channel.guild)
+    await m.channel.send(translate('commands.rsssplit.disabledSuccess', { link: source.link }))
     return data
   }
 
   let nextText = ''
-  if (selected === '1') nextText = 'Type a split character now, `reset` to reset, or `exit` to cancel.'
-  else if (selected === '2') nextText = 'Type a prepend character now, `reset` to reset, or `exit` to cancel.'
-  else if (selected === '3') nextText = 'Type an append character now, `reset` to reset, or `exit` to cancel.'
-  else if (selected === '4') nextText = 'Type the max length a single message should have now, `reset` to reset, or `exit` to cancel. **Must be a number >= 500 and <= 1950.**'
-  else throw new SyntaxError()
+  if (selected === '1') nextText = translate('commands.rsssplit.promptSplitChar')
+  else if (selected === '2') nextText = translate('commands.rsssplit.promptPrependChar')
+  else if (selected === '3') nextText = translate('commands.rsssplit.promptAppendChar')
+  else if (selected === '4') nextText = translate('commands.rsssplit.promptMaxLen')
+  else throw new MenuUtils.MenuOptionError()
 
   return { ...data,
     selected: selected,
@@ -94,66 +105,69 @@ async function selectSetting (m, data) {
 }
 
 async function setSetting (m, data) {
-  const { guildRss, rssName, selected } = data
+  const { guildRss, rssName, selected, translate } = data
   const source = guildRss.sources[rssName]
 
   let successText = ''
 
+  const translateArg = { link: source.link }
   if (selected === '1') {
     if (m.content === 'reset') {
       delete source.splitMessage.char
-      successText = `The split character for the feed <${source.link}> has been reset to \`\\n\`.`
+      successText = translate('commands.rsssplit.resetSplitChar', translateArg)
       log.command.info(`Message splitting split character for ${source.link} resetting`, m.channel.guild)
-    } else if (m.content === '\\n' && source.splitMessage.char === undefined) throw new SyntaxError('That is already the default character. Try again, or type `exit` to cancel and leave it at default.')
+    } else if (m.content === '\\n' && source.splitMessage.char === undefined) throw new MenuUtils.MenuOptionError(translate('commands.rsssplit.setSplitCharDefault'))
     else {
       source.splitMessage.char = m.content
-      successText = `The split character for the feed <${source.link}> has been set to \`${m.content}\`.`
+      successText = translate('commands.rsssplit.setSplitChar', { link: source.link, content: m.content })
       log.command.info(`Message splitting split character for ${source.link} setting to ${m.content}`, m.channel.guild)
     }
   } else if (selected === '2') {
     if (m.content === 'reset') {
       delete source.splitMessage.prepend
-      successText = `The prepend character for the feed <${source.link}> has been reset to be nothing.`
+      successText = translate('commands.rsssplit.resetPrependChar', translateArg)
       log.command.info(`Message splitting prepend character for ${source.link} has been reset`, m.channel.guild)
     } else {
       source.splitMessage.prepend = m.content
-      successText = `The prepend character for the feed <${source.link}> has been set to \`${escapeBackticks(m.content)}\`.`
+      successText = translate('commands.rsssplit.setPrependChar', { link: source.link, content: escapeBackticks(m.content) })
       log.command.info(`Message splitting prepend character for ${source.link} setting to ${m.content}`, m.channel.guild)
     }
   } else if (selected === '3') {
     if (m.content === 'reset') {
       delete source.splitMessage.append
-      successText = `The append character for the feed <${source.link}> has been reset to be nothing.`
+      successText = translate('commands.rsssplit.resetAppendChar', translateArg)
       log.command.info(`Message splitting append character for ${source.link} resetting`, m.channel.guild)
     } else {
       source.splitMessage.append = m.content
-      successText = `The append character for the feed <${source.link}> has been set to \`${escapeBackticks(m.content)}\`.`
+      successText = translate('commands.rsssplit.setAppendChar', { link: source.link, content: escapeBackticks(m.content) })
       log.command.info(`Message splitting append character for ${source.link} setting to ${m.content}`, m.channel.guild)
     }
   } else if (selected === '4') {
     const num = parseInt(m.content, 10)
     if (m.content === 'reset') {
       delete source.splitMessage.maxLength
-      successText = `The max length for a single message for the feed <${source.link}> has been reset to be \`1950\`.`
+      successText = translate('commands.rsssplit.resetMaxLen', translateArg)
       log.command.info(`Message splitting max length for ${source.link} resetting`, m.channel.guild)
-    } else if (!/^\d+$/.test(m.content) || num < 500 || num > 1950) throw new SyntaxError('That is not a valid number >= 500 and <= 1950. Try again.')
-    else {
+    } else if (!/^\d+$/.test(m.content) || num < 500 || num > 1950) {
+      throw new MenuUtils.MenuOptionError(translate('commands.rsssplit.setInvalidMaxLen'))
+    } else {
       source.splitMessage.maxLength = num
-      successText = `The max length for a single message for the feed <${source.link}> has been set to \`${num}\`.`
+      successText = translate('commands.rsssplit.setMaxLen', { link: source.link, num })
       log.command.info(`Message splitting max length for ${source.link} setting to ${m.content}`, m.channel.guild)
     }
   }
 
   await dbOpsGuilds.update(guildRss)
-  await m.channel.send(`${successText} After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`)
+  await m.channel.send(`${successText} ${translate('generics.backupReminder', { prefix: guildRss.prefix || config.bot.prefix })}`)
   return data
 }
 
 module.exports = async (bot, message, command) => {
   try {
     const guildRss = await dbOpsGuilds.get(message.guild.id)
+    const guildLocale = guildRss ? guildRss.locale : undefined
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command }, guildRss)
-    await new MenuUtils.MenuSeries(message, [feedSelector]).start()
+    await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale, translate: Translator.createLocaleTranslator(guildLocale) }).start()
   } catch (err) {
     log.command.warning(`rsssplit`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsssplit 1', message.guild, err))

@@ -5,32 +5,41 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const MIN_PERMISSION_BOT = ['VIEW_CHANNEL', 'SEND_MESSAGES']
 const MIN_PERMISSION_USER = ['VIEW_CHANNEL', 'SEND_MESSAGES', 'MANAGE_CHANNELS']
 const dbOpsGuilds = require('../util/db/guilds.js')
+const Translator = require('../structs/Translator.js')
 
 async function selectChannelFn (m, data) {
   const { guildRss, rssNameList } = data
   const rssList = guildRss.sources
+  const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+
   const selected = m.content === 'this' ? m.channel : m.mentions.channels.first()
-  if (!selected) throw new SyntaxError('That is not a valid channel. Try again, or type `exit` to cancel.')
+  if (!selected) throw new MenuUtils.MenuOptionError(translate('commands.rssmove.invalidChannel'))
   const me = m.guild.me
   let errors = ''
-  if (!me.permissionsIn(selected).has(MIN_PERMISSION_BOT)) errors += `\nI am missing **Read Messages** or **Send Messages** permission in <#${selected.id}>.`
-  if (!m.member.permissionsIn(selected).has(MIN_PERMISSION_USER)) errors += `\nYou are missing **Read Messages**, **Send Messages**, or **Manage Channel** permission in <#${selected.id}>.`
+  if (!me.permissionsIn(selected).has(MIN_PERMISSION_BOT)) errors += translate('commands.rssmove.meMissingPermission', { id: selected.id })
+  if (!m.member.permissionsIn(selected).has(MIN_PERMISSION_USER)) errors += translate('commands.rssmove.youMissingPermission', { id: selected.id })
 
   let feedSpecificErrors = ''
-  for (var x = 0; x < rssNameList.length; ++x) {
+  for (let x = 0; x < rssNameList.length; ++x) {
     let curErrors = ''
     const rssName = rssNameList[x]
     const source = rssList[rssName]
     const hasEmbed = source.embedMessage && Object.keys(source.embedMessage).length > 0
     const sourceChannel = m.guild.channels.get(source.channel)
 
-    if (sourceChannel && selected.id === sourceChannel.id) curErrors += `\nThe feed is already in that channel.`
+    if (sourceChannel && selected.id === sourceChannel.id) curErrors += translate('commands.rssmove.alreadyInChannel')
     else {
-      if (sourceChannel && !m.member.permissionsIn(sourceChannel).has(MIN_PERMISSION_USER)) errors += `\nYou are missing **Read Messages**, **Send Messages**, or **Manage Channel** permission in <#${sourceChannel.id}>.`
-      if (hasEmbed && !me.permissionsIn(selected).has('EMBED_LINKS')) curErrors += `\nI am missing **Embed Links** permission in the <#${selected.id}>. To bypass this permission, you can reset this feed's embed via the rssembed command.`
-      for (var n in rssList) {
+      if (sourceChannel && !m.member.permissionsIn(sourceChannel).has(MIN_PERMISSION_USER)) {
+        errors += translate('commands.rssmove.meMissingPermission', { id: sourceChannel.id })
+      }
+      if (hasEmbed && !me.permissionsIn(selected).has('EMBED_LINKS')) {
+        curErrors += translate('commands.rssmove.meMissingEmbedLinks', { id: selected.id })
+      }
+      for (const n in rssList) {
         const cur = rssList[n]
-        if (cur.channel === selected.id && cur.link === source.link && n !== rssName) errors += `\nA feed with this link already exists in that channel.`
+        if (cur.channel === selected.id && cur.link === source.link && n !== rssName) {
+          errors += translate('commands.rssmove.linkAlreadyExists')
+        }
       }
     }
     if (curErrors) feedSpecificErrors += `\n__Errors for <${source.link}>:__${curErrors}${x === rssNameList.length - 1 ? '' : '\n'}`
@@ -41,25 +50,27 @@ async function selectChannelFn (m, data) {
   if (feedSpecificErrors && errors) errors += '\n' + feedSpecificErrors
   else if (feedSpecificErrors) errors += feedSpecificErrors
 
-  if (errors) throw new SyntaxError('Unable to move channel for the following reasons:\n' + errors + '\n\nTry again, or type `exit` to cancel.')
+  if (errors) throw new MenuUtils.MenuOptionError(translate('commands.rssmove.moveFailed', { errors }))
   const summary = []
-  for (var y = 0; y < rssNameList.length; ++y) {
+  for (let y = 0; y < rssNameList.length; ++y) {
     const source = rssList[rssNameList[y]]
     source.channel = selected.id
     summary.push(`<${source.link}>`)
   }
-  log.command.info(`Channel for feeds ${summary.join(',')} moving to to ${selected.id} (${selected.name})`, m.guild, m.channel)
+
   await dbOpsGuilds.update(guildRss)
-  m.channel.send(`The channel for the following feed(s):\n\n${summary.join('\n')}\n\nhave been successfully moved to <#${selected.id}>. After completely setting up, it is recommended that you use ${config.bot.prefix}rssbackup to have a personal backup of your settings.`).catch(err => log.command.warning('rssmove 1', err))
+  log.command.info(`Channel for feeds ${summary.join(',')} moved to ${selected.id} (${selected.name})`, m.guild, m.channel)
+  m.channel.send(`${translate('commands.rssmove.moveSuccess', { summary: summary.join('\n'), id: selected.id })} ${translate('generics.backupReminder', { prefix: guildRss.prefix || config.bot.prefix })}`).catch(err => log.command.warning('rssmove 1', err))
   return data
 }
 
 module.exports = async (bot, message, command) => {
   try {
     const guildRss = await dbOpsGuilds.get(message.guild.id)
+    const guildLocale = guildRss ? guildRss.locale : undefined
     const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
-    const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: 'Mention the channel to move the feed(s) to, or type `this` for this channel.' })
-    await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel]).start()
+    const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: Translator.translate('commands.rssmove.prompt', guildLocale) })
+    await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel], { locale: guildLocale }).start()
   } catch (err) {
     log.command.warning(`rssmove`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssmove 1', message.guild, err))

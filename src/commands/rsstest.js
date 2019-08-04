@@ -5,20 +5,25 @@ const dbOpsVips = require('../util/db/vips.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
-
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
+const Translator = require('../structs/Translator.js')
 
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
   try {
     const guildRss = await dbOpsGuilds.get(message.guild.id)
+    const guildLocale = guildRss ? guildRss.locale : undefined
+    const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
-    const data = await new MenuUtils.MenuSeries(message, [feedSelector]).start()
+    const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
     const { rssName } = data
     const source = guildRss.sources[rssName]
-    const grabMsg = await message.channel.send(`Grabbing a random feed article...`)
+    const grabMsg = await message.channel.send(translate('commands.rsstest.grabbingRandom'))
     const article = await FeedFetcher.fetchRandomArticle(source.link)
+    if (!article) {
+      return await message.channel.send(translate('commands.rsstest.noArticles'))
+    }
     article._delivery = {
       rssName,
       channelId: message.channel.id,

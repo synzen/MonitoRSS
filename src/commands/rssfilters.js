@@ -8,6 +8,7 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
+const Translator = require('../structs/Translator')
 
 async function feedSelectorFn (m, data) {
   const { guildRss, rssName } = data
@@ -17,7 +18,7 @@ async function feedSelectorFn (m, data) {
     rssName: rssName,
     next: {
       embed: {
-        description: `**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n` }
+        description: Translator.translate('commands.rssfilters.selectFeedDescription', guildRss.locale, { title: source.title, link: source.link }) }
     }
   }
 }
@@ -26,7 +27,7 @@ async function setMessage (m, data) {
   const { guildRss, rssName } = data
   const source = guildRss.sources[rssName]
   const input = m.content
-  if (!VALID_OPTIONS.includes(input)) throw new SyntaxError('That is not a valid choice. Try again, or type `exit` to cancel.')
+  if (!VALID_OPTIONS.includes(input)) throw new MenuUtils.MenuOptionError()
 
   if (input === '1') return { guildRss: guildRss, rssName: rssName, next: { series: filters.add(m, guildRss, rssName) } }
   else if (input === '2') return { guildRss: guildRss, rssName: rssName, next: { series: filters.remove(m, guildRss, rssName) } }
@@ -44,16 +45,18 @@ async function setMessage (m, data) {
 module.exports = async (bot, message, command, role) => {
   try {
     const guildRss = await dbOpsGuilds.get(message.guild.id)
+    const guildLocale = guildRss ? guildRss.locale : undefined
+    const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
     const messagePrompt = new MenuUtils.Menu(message, setMessage)
-      .setAuthor('Feed Filters Customization')
-      .addOption(`Add feed filter(s)`, `Add new filter(s) to a specific category in a feed.`)
-      .addOption(`Remove feed filter(s)`, `Remove existing filter(s), if any.`)
-      .addOption(`Remove all feed filter(s)`, `Remove all filters, if any.`)
-      .addOption(`List existing filter(s)`, `List all filters in all categories, if any.`)
-      .addOption(`Send passing article`, `Send a randomly chosen article that passes currently specified filters.`)
+      .setAuthor(translate('commands.rssfilters.feedFiltersCustomization'))
+      .addOption(translate('commands.rssfilters.optionAddFilters'), translate('commands.rssfilters.optionAddFiltersDescription'))
+      .addOption(translate('commands.rssfilters.optionRemoveFilters'), translate('commands.rssfilters.optionRemoveFiltersDescription'))
+      .addOption(translate('commands.rssfilters.optionRemoveAllFilters'), translate('commands.rssfilters.optionRemoveAllFiltersDescription'))
+      .addOption(translate('commands.rssfilters.optionListFilters'), translate('commands.rssfilters.optionListFiltersDescription'))
+      .addOption(translate('commands.rssfilters.optionSendArticle'), translate('commands.rssfilters.optionSendArticleDescription'))
 
-    const data = await new MenuUtils.MenuSeries(message, [feedSelector, messagePrompt]).start()
+    const data = await new MenuUtils.MenuSeries(message, [feedSelector, messagePrompt], { locale: guildLocale }).start()
     if (!data) return
     const { selectedOption, rssName } = data
 
@@ -67,31 +70,40 @@ module.exports = async (bot, message, command, role) => {
       }
       if (Object.keys(filterList).length === 0) delete source.filters
 
-      log.command.info(`Removing all filters from ${source.link}`, message.guild)
       await dbOpsGuilds.update(guildRss)
-      return await message.channel.send(`All feed filters have been successfully removed from <${source.link}>.`)
+      log.command.info(`Removed all filters from ${source.link}`, message.guild)
+      return await message.channel.send(translate('commands.rssfilters.removedAllSuccess', { link: source.link }))
     } else if (selectedOption === '4') { // 4 = List all existing filters
-      if (!filterList || (filterList && Object.keys(filterList).length === 1 && filterList.roleSubscriptions !== undefined)) return await message.channel.send(`There are no filters assigned to ${source.link}`)
+      if (!filterList || (filterList && Object.keys(filterList).length === 1 && filterList.roleSubscriptions !== undefined)) {
+        return await message.channel.send(`There are no filters assigned to ${source.link}`)
+      }
       const list = new MenuUtils.Menu(message, undefined, { numbered: false })
-      list.setAuthor('List of Assigned Filters')
-        .setDescription(`**Feed Title:** ${source.title}\n**Feed Link:** ${source.link}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n`)
+      list
+        .setAuthor(translate('commands.rssfilters.listFilters'))
+        .setDescription(translate('commands.rssfilters.listFiltersDescription', { title: source.title, link: source.link }))
 
       // Generate the list of filters assigned to a feed and add to embed to be sent
-      for (var filterCat in filterList) {
+      for (const filterCat in filterList) {
         let value = ''
         if (filterCat !== 'roleSubscriptions') {
-          for (var filter in filterList[filterCat]) { value += `${filterList[filterCat][filter]}\n` }
+          for (const filter in filterList[filterCat]) {
+            value += `${filterList[filterCat][filter]}\n`
+          }
         }
         list.addOption(filterCat, value, true)
       }
 
       return await list.send(undefined)
     } else if (selectedOption === '5') { // 5 = Send passing article
-      if (data.noFilters) return await message.channel.send(`There are no filters assigned to ${source.link}`)
+      if (data.noFilters) return await message.channel.send(translate('commands.rssfilters.noFilters', { link: source.link }))
       const failedLinkResult = await dbOpsFailedLinks.get(source.link)
-      if (failedLinkResult && failedLinkResult.failed) return await message.channel.send(`Reached connection failure limit.`)
+      if (failedLinkResult && failedLinkResult.failed) {
+        return await message.channel.send(translate('commands.rssfilters.connectionFailureLimit'))
+      }
       const article = await FeedFetcher.fetchRandomArticle(source.link, guildRss.sources[rssName].filters)
-      if (!article) return await message.channel.send('No articles were able to pass this feed\'s filters.')
+      if (!article) {
+        return await message.channel.send(translate('commands.rssfilters.noArticlesPassed'))
+      }
       log.command.info(`Sending filtered article for ${source.link}`, message.guild)
       article._delivery = {
         rssName,

@@ -1,14 +1,560 @@
 {
+  "generics": {
+    "defaultSetting": "Default is `{{value}}`.",
+    "backupReminder": "After completely setting up, it is recommended that you use {{prefix}}rssbackup to have a personal backup of your settings.",
+    "channelUpper": "Channel",
+    "channelLower": "channel",
+    "enabledUpper": "Enabled",
+    "enabledLower": "enabled",
+    "disabledUpper": "Disabled",
+    "disabledLower": "disabled"
+  },
+  "commandDescriptions": {
+    "rssadd": {
+      "description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with `>`.",
+      "args": {
+        "<link>": "Feed URL."
+      }
+    },
+    "rssremove": {
+      "action": "Feed Removal",
+      "description": "Open a menu to delete a feed from the channel."
+    },
+    "rsslist": {
+      "description": "List all active feeds in server."
+    },
+    "rssmessage": {
+      "action": "Message Customization",
+      "description": "Open a menu to customize a feed's text message."
+    },
+    "rssembed": {
+      "args": {
+        "fields": "Customize Fields for the embed."
+      },
+      "action": "Embed Message Customization",
+      "description": "Open a menu to customize a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
+    },
+    "rssfilters": {
+      "action": "Feed Filter Addition/Removal",
+      "description": "Open a menu to add or remove global filters from a feed. Messages that do not have any of the words in any of your filters won't be sent to your Discord."
+    },
+    "rssdate": {
+      "description": "Open a menu to customize how dates are displayed."
+    },
+    "rssmention": {
+      "action": "Subscriber Customization",
+      "description": "Open a menu to add global/filtered subscriptions for roles/users to feeds."
+    },
+    "rsstest": {
+      "args": {
+        "simple": "Omit the test results and only send the message."
+      },
+      "action": "Feed Delivery Test",
+      "description": "Opens a menu to send a test message for a random article in a feed, along with the available properties and placeholders for various customizations. You may add `simple` as a parameter to exclude the test details."
+    },
+    "subme": {
+      "args": {
+        "<role name/mention>": "Directly input the role instead of going through the menu."
+      },
+      "description": "Open a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
+    },
+    "unsubme": {
+      "args": {
+        "<role name/mention>": "Directly input the role instead of going through the menu."
+      },
+      "description": "Open a menu similar to `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
+    },
+    "rssrefresh": {
+      "action": "Refresh Feed",
+      "description": "Open a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit."
+    },
+    "rssoptions": {
+      "description": "Open a menu for miscellaneous feed options."
+    },
+    "rsssplit": {
+      "action": "Message Splitting Customization",
+      "description": "Open a menu to customize message splitting settings."
+    },
+    "rssmove": {
+      "description": "Open a menu to move a feed into another channel.",
+      "action": "Feed Channel Transfer"
+    },
+    "rssclone": {
+      "action": "Feed Settings Cloning",
+      "description": "Clone a feed's settings to other feed(s).",
+      "args": {
+        "<property>": "Use the command without arguments for further information."
+      }
+    },
+    "rssbackup": {
+      "description": "Send server profile as a JSON attachment for personal backups."
+    },
+    "rssdump": {
+      "action": "Raw Placeholders Dump",
+      "args": {
+        "original": "Output the original, untrimmed JSON form instead."
+      }
+    },
+    "rssstats": {
+      "description": "Show simple stats on bot performance and size."
+    },
+    "rsswebhook": {
+      "action": "Webhook Connection",
+      "description": "Open a menu to connect a webhook to a feed to send messages instead."
+    },
+    "rssprefix": {
+      "action": "Commands Prefix Change",
+      "description": "Change the prefix used for commands from the default ({{prefix}}).",
+      "args": {
+        "<prefix>": "The prefix to use.",
+        "reset": "Reset prefix back to default ({{prefix}})."
+      }
+    },
+    "rssalert": {
+      "description": "Set up user direct messaging for feed warnings/failures.",
+      "args": {
+        "add <user id/mention>": "Add a user to direct message.",
+        "remove <user id/mention>": "Remove a user from direct messaging.",
+        "list": "List the current users enabled for direct messaging."
+      }
+    },
+    "rsslocale": {
+      "description": "Change the language of commands (if the desired language is supported)",
+      "args": {
+        "<locale>": "The desired locale"
+      }
+    },
+    "rssinvite": {
+      "description": "Send the invite links for this bot."
+    },
+    "rssversion": {
+      "description": "Show version of the bot."
+    }
+  },
   "commands": {
     "rssadd": {
       "correctSyntax": "The correct syntax is {{prefix}}rssadd https://www.some_url_here.com. Multiple links can be added at once, separated by `>`.",
       "improperFormat": "Invalid/improperly-formatted link.",
+      "processing": "Processing...",
       "limitReached": "Maximum feed limit of {{max}} reached.",
       "alreadyExists": "Already exists for this channel.",
-      "success": "The following feeds have been successfully added to **this channel**:",
-      "successInfo": "Articles will be automatically delivered once new articles are found. After completely setting up, it is recommended that you use {{prefix}}rssbackup to have a personal backup of your settings.",
-      "failedLimit": "Feed(s) not listed here could not be added due to the feed limit ({{max}})",
-      "failedList": "The following feed(s) could not be added:"
+      "success": "The following feeds have been successfully added to **this channel**",
+      "successInfo": "Articles will be automatically delivered once new articles are found.",
+      "failedLimit": "Feed(s) not listed here could not be added due to the feed limit ({{max}}).",
+      "failedList": "The following feed(s) could not be added",
+      "reason": "Reason"
+    },
+    "rssalert": {
+      "noFeeds": "You cannot set up user alerts if you have not added any feeds.",
+      "info": "This command adds users for direct messaging (instead of posting such alerts to the feed's channel by default) when there are any warnings or alerts concerning feeds, such as feed limit changes or feed failures. **The user you're adding or removing will be notified.** The correct syntaxes are:\n\n`{{prefix}}rssalert add <user id/mention>` - Add a user to alerted.\n`{{prefix}}rssalert remove <user id/mention>` - Remove a user currently receiving alerts\n`{{prefix}}rssalert list` - Show all users currently receiving alerts",
+      "notFound": "The user {{user}} was not found in this server.",
+      "alreadyEnabled": "That user is already enabled for direct messaging feed warnings/failures in this server.",
+      "successDM": "At the request of {{member}}, you will now be notified of any warnings/failures of feeds in the server `{{guildName}}` (ID `{{guildID}}`).",
+      "success": "Successfully enabled user {{member}} for direct messaging feed warnings/failures. The user has been notified of this change.",
+      "removedDM": "At the request of {{member}}, you will no longer be notified of any warnings or failures of feeds in the server `{{guildName}}` (ID `{{guildID}}`).",
+      "removed": "Successfully removed user {{member}} from direct messaging feed warnings/failures. The user has been notified of this change.",
+      "removeFail": "You cannot remove a user that is not currently enabled for feed warning/failure direct messaging alerts.",
+      "listEmpty": "There are currently no users that will be notified through direct messaging when there are feed warnings/failures in this server.",
+      "list": "The current list of users below will be notified through direct messaging when there are feed warnings/failures in this server:\n\n"
+    },
+    "rssbackup": {
+      "noProfile": "This server does not have a profile.",
+      "noPermission": "Unable to send backup due to missing `Attach Files` permission."
+    },
+    "rssclone": {
+      "copyFrom": "Select the source to copy from.",
+      "copyTo": "Select the destination(s) to copy to.",
+      "noProperties": "You must add at least one property to clone as an argument. The properties available for cloning are `{{properties}}`. To clone all these properties, you can just use `all`.\n\nFor example, to clone a feed's message and embed, type `{{prefix}}rssclone message embed`.",
+      "invalidProperties": "Invalid properties found: `{{invalid}}`\n\nValid properties available for cloning are `{{properties}}`.",
+      "confirm": "The following settings for the feed <{{link}}>\n\n`{{cloning}}`\n\nare about to be cloned into the following feeds:\n```{{destinations}}```\nNote that if a property does not exist in the source feed, the same property in the destination feed(s) will be **deleted**.To confirm this, type `yes`. Otherwise, type `exit` to cancel.",
+      "confirmError": "You must confirm by typing `yes`, or cancel by typing `exit`. Try again.",
+      "success": "The following settings\n\n`{{cloned}}`\n\nfor the feed <{{link}}> have been successfully cloned into {{destinationCount}} feed(s)."
+    },
+    "rssdate": {
+      "dateLanguage": "Date language",
+      "dateFormat": "Date format",
+      "timezone": "Timezone",
+      "noFeeds": "You cannot customize the date placeholder if you have not added any feeds.",
+      "description": "\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "optionCurrentSetting": "Your current setting is `{{value}}`.",
+      "optionChangeTimezone": "Change Timezone",
+      "optionCustomizeFormat": "Customize Format",
+      "optionChangeLanguage": "Change Language",
+      "optionReset": "Reset",
+      "optionResetValue": "Reset all of the above back to default.",
+      "successResetAll": "All date customizations have been reset back to default.",
+      "successReset": "{{name}} has been reset to the default: `{{value}}`.",
+      "successSet": "{{name}} has been successfully updated to `{{value}}`.",
+      "promptNewLanguage": "Type the abbreviation for a new language now, `reset` to reset back to default, or `exit` to cancel. The available list of languages supported at this time are (separated by commas):\n\n{{localesList}}",
+      "promptNewDateFormat": "Type your new date format now, `reset` to reset back to default, or `exit` to cancel. See <https://momentjs.com/docs/#/displaying/> on how to format a date.",
+      "promptNewTimezone": "Type your new timezone now, `reset` to reset back to default, or `exit` to cancel. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.",
+      "invalidLanguage": "`{{input}}` is not a supported language abbreviation. The available languages are:\n\n{{localesList}}\n\nTry again, or type `exit` to cancel.",
+      "invalidTimezone": "`{{input}}` is not a valid timezone. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for more information. Valid timezones are in the `TZ` column. Try again, or type `exit` to cancel."
+    },
+    "rssdump": {
+      "generatingDump": "Generating dump...",
+      "generatedDump": "Dump has been generated. Attempting to attach file, see below."
+    },
+    "rssembed": {
+      "defaultEmbed": "Default Embed",
+      "numberedEmbed": "Embed #{{number}}",
+      "embedSelection": "Embed Selection",
+      "embedSelectionDescription": "The properties for each embed is shown below. Select one of the embeds by typing the number next to it, or type **exit** to cancel.\n\u200b",
+      "embedSelectionOptionAdd": "Add a new embed",
+      "embedSelectionOptionAddDescription": "A maximum of 10 embeds may be added.\n\u200b",
+      "embedSelectionOptionRemoveAll": "Remove all embeds",
+      "currentProperties": "Current Properties",
+      "currentPropertiesList": "The current embed properties for {{link}} are: \n{{list}}```\n",
+      "availableProperties": "Available Properties",
+      "availablePropertiesList": "The list of embed properties that can be set are:\n{{list}}\nType the embed property (for example, `color` or `message`) you want to set/reset, or multiple properties by separation with commas (for example, `color, message`). Type `reset` to remove all properties, or type `exit` to cancel.",
+      "invalidColorNumber": "The color must be an **number**. See <https://www.shodor.org/stella2java/rgbint.html>. Try again, or type `exit` to cancel.",
+      "invalidColorRange": "The color must be a number between 0 and 16777215. Try again, or type `exit` to cancel.",
+      "invalidURL": "URLs must link to actual images or be `{imageX}` placeholders. Try again, or type `exit` to cancel.",
+      "invalidProperties": "The following properties {{invalids}} are invalid. Try again, or type `exit` to cancel.",
+      "noPropertiesSelected": "No valid properties selected. Try again, or type `exit` to cancel.",
+      "removedAllEmbeds": "Successfully removed all embeds.",
+      "removedEmbed": "Embed has been disabled, and all properties have been removed for <{{link}}>.",
+      "resetNothing": "🇽 **{{propName}}** has nothing to reset\n",
+      "resetSuccess": "☑ **{{propName}}** has been reset\n",
+      "updatedSuccess": "☑ **{{propName}}** updated to \n```\n{{userSetting}}\n```\n",
+      "updatedInfo": "Settings updated for <{{link}}>:\n\n{{resetList}}{{updateList}}\nYou may use `{{prefix}}rsstest` or `{{prefix}}rsstest simple` to see your new embed format.",
+      "title": "Title",
+      "titleDescription": "Title under Author Title\nAccepts placeholders",
+      "description": "Description",
+      "descriptionDescription": "Main message\nAccepts placeholders",
+      "url": "URL",
+      "urlDescription": "Clicking on the Title/Thumbnail will lead to this URL\nMUST be a link. Set to the article's url by default",
+      "color": "Color",
+      "colorDescription": "Sidebar color\nMUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html",
+      "timestamp": "Timestamp",
+      "timestampDescription": "Date that is visually localized to every user\nIf an invalid timestamp date is detected, timestamp will not be shown",
+      "footerIconURL": "Footer Icon URL",
+      "footerIconURLDescription": "Icon to the left of Footer Text\nMUST be a link to an image. If Footer Text is unspecified, the Footer Icon will be hidden\nAccepts placeholders",
+      "footerText": "Footer Text",
+      "footerTextDescription": "Bottom-most text\nAccepts placeholders",
+      "thumbnailURL": "Thumbnail Image URL",
+      "thumbnailURLDescription": "Image on the right side\nMUST be a link to an image, OR an image placeholder",
+      "imageURL": "Image URL",
+      "imageURLDescription": "Image on the bottom\nMUST be a link to an image, OR an image placeholder",
+      "authorName": "Author Name",
+      "authorNameDescription": "Name at the top\nAccepts placeholders",
+      "authorURL": "Author URL",
+      "authorURLDescription": "Clicking on the Author Name will lead to this URL\nMUST be a link",
+      "authorIconURL": "Author Icon URL",
+      "authorIconURLDescription": "Icon to the left of Author Name\nMUST be a link to an image. If Author Name is unspecified, the Author Icon will be hidden",
+      "settingProperty": "You are now customizing the **{{property}}**. Type your input now. To reset the property, type `reset`.",
+      "settingPropertyTimezone": "You are now customizing the **timezone**. Type your input now.\n\nTo set the timestamp to the time the article is sent to Discord, type `now`.\nTo set the timestamp to the time the article was published (if available in the feed), type `article`.\nFor a custom timestamp, type the text representation of a custom date (see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nTo reset the property, type `reset`.",
+      "settingPropertyTimezoneError": "That is not a valid setting. It must be either `now`, `article`, or a valid text representation of a date. Try again.",
+      "inline": "Inline",
+      "regular": "Regular",
+      "blankField": "Blank Field",
+      "embedFields": "Embed Fields",
+      "embedFieldsMaximum": "You have reached the maximum number of fields you can add (10).",
+      "embedFieldsRemoveNone": "There are no embed fields to remove for this feed.",
+      "embedFieldsRemoved": "The Field(s) numbered {{numbers}} have been removed from the embed for the feed <{{link}}>.",
+      "embedFieldsDescription": "\u200b\nSelect whether to add or remove a field from this feed's embed. For an example of what a field looks like, see https://i.imgur.com/WSHwmyB.png. Type **exit** to cancel.\n\u200b",
+      "embedFieldsOptionRemove": "Remove a Field",
+      "embedFieldsOptionRemoveDescription": "Remove a Field if it exists.",
+      "embedFieldsOptionAddRegular": "Add a regular Field",
+      "embedFieldsOptionAddRegularDescription": "Fields will be stacked on top of each other.",
+      "embedFieldsOptionAddInline": "Add an inline Field",
+      "embedFieldsOptionAddInlineDescription": "Fields will be placed beside each other whenever possible instead of being stacked.",
+      "embedFieldsOptionAddRegularBlank": "Add a regular blank Field",
+      "embedFieldsOptionAddRegularBlankDescription": "Contains no title or description. This is used to take up empty space.",
+      "embedFieldsOptionAddInlineBlank": "Add an inline blank Field",
+      "embedFieldsOptionAddInlineBlankDescription": "A Blank Field, but inline.",
+      "embedFieldsOptionRemoveEmbedTitle": "Embed Fields Removal",
+      "embedFieldsOptionRemoveEmbedDescription": "\u200b\nYour Fields are listed below, ordered by when they were added. Type the Field's number to remove it, or type multiple Field numbers separateed by commas (`,`). Type **exit** to cancel.\n\u200b",
+      "embedFieldsAddedBlank": "An blank Field has been added to the embed for the feed <{{link}}>.",
+      "embedFieldsAddedBlankInline": "An inline blank Field has been added to the embed for the feed <{{link}}>.",
+      "embedFieldsSettingPrompt": "Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type `exit` to cancel.",
+      "embedFieldsSettingNoTitle": "No valid title found. Try again, or type `exit` to cancel.",
+      "embedFieldsSettingTitleLong": "Titles cannot exceed 256 characters. Try again, or type `exit` to cancel.",
+      "embedFieldsSettingValueLong": "Field values cannot exceed 1024 characters. Try again, or type `exit` to cancel.",
+      "embedFieldsAdded": "A new{{type}} Field has been added to the embed with the following details:\n\n**Title**\n```\n{{title}}\n```\n**Value**\n```\n{{value}}\n```\nfor the feed {{link}}."
+    },
+    "rssfilters": {
+      "selectFeedDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n",
+      "feedFiltersCustomization": "Feed Filters Customization",
+      "optionAddFilters": "Add feed filter(s)",
+      "optionAddFiltersDescription": "Add new filter(s) to a specific category in a feed.",
+      "optionRemoveFilters": "Remove feed filter(s)",
+      "optionRemoveFiltersDescription": "Remove existing filter(s), if any.",
+      "optionRemoveAllFilters": "Remove all feed filter(s)",
+      "optionRemoveAllFiltersDescription": "Remove all filter(s), if any.",
+      "optionListFilters": "List existing filter(s)",
+      "optionListFiltersDescription": "List all filters in all categories, if any.",
+      "optionSendArticle": "Send passing article",
+      "optionSendArticleDescription": "Send a randomly chosen article that passes current filter(s) if they exist.",
+      "removedAllSuccess": "All feed filters have been successfully removed from <{{link}}>.",
+      "noFilters": "There are no filters assigned to {{link}}.",
+      "listFilters": "List of Assigned Filters",
+      "listFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n",
+      "connectionFailureLimit": "Reached connection failure limit.",
+      "noArticlesPassed": "No articles were able to pass this feed's filters."
+    },
+    "rsshelp": {
+      "controlPanelLink": "Be sure to check out your control panel at {{url}} for easy feed management!",
+      "description": "Arguments for commands are added after the command. For example: `{{prefix}}rsstest simple`. Do not include `<` or `>` in the arguments.",
+      "arguments": "Arguments",
+      "support": "\nSupport can be found at https://discord.gg/pudv7Rx",
+      "checkDM": "Check your direct messages!"
+    },
+    "rssinvite": {
+      "text": "Invite with Role - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot&permissions=19456>\n\nInvite without Role - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot>"
+    },
+    "rsslist": {
+      "noFeeds": "There are no existing feeds.",
+      "titleChecksEnabled": "Title Checks: Enabled\n",
+      "statusDisabled": "Status: DISABLED ({{reason}})\n",
+      "statusFailed": "Status: FAILED\n",
+      "statusOk": "Status: OK {{failCount}}\n",
+      "serverLimit": "Server Limit",
+      "failAlert": "**Attention!** Feeds that have reached {{failLimit}} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use **{{prefix}}rssrefresh** to try to reset its status.\u200b\n\u200b\n",
+      "currentActiveFeeds": "Current Active Feeds",
+      "refreshRate": "Refresh Rate",
+      "webhook": "Webhook",
+      "link": "Link",
+      "exceeds500Characters": "*Exceeds 500 characters*",
+      "seconds": "seconds",
+      "minutes": "minutes",
+      "unknown": "unknown"
+    },
+    "rsslocale": {
+      "helpText": "To change the interface language of commands, type the locale name after `{{prefix}}rsslocale`. Supported locales are: `{{localeList}}`. ",
+      "resetNone": "This server already has no locale set.",
+      "resetNoDefault": "`{{locale}}` is already the default locale.",
+      "resetSuccess": "Locale has been successfully reset back to `{{locale}}`.",
+      "setSuccess": "Locale has successfully been changed to `{{locale}}`."
+    },
+    "rssmention": {
+      "role": "role",
+      "user": "user",
+      "noFeeds": "Cannot add mention customizations without any active feeds.",
+      "subscriptionsList": "Subscriptions List",
+      "description": "\n**Current Channel:** #{{channel}}\n\nAdding a subscription for a user or role will automatically add their mentions in the `{subscribers}` placeholder. If the subscriber is a role, then the role will be added to the list of eligible roles for role mention toggling, and also for the commands {{prefix}}subme/unsubme.\n\nSelect an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "subscriptionOptions": "Subscription Options",
+      "optionSubscriberFeed": "Add/Remove Role or User Subscriber to a Feed",
+      "optionSubscriberFeedDescription": "Enable mentions for a role/user for all delivered articles of this feed.\n*Using global subscriptions will remove filtered subscriptions if enabled for that role/user.*",
+      "optionFilteredSubscriberFeed": "Add/Remove Role or User Filtered Subscriber to a Feed",
+      "optionFilteredSubscriberFeedDescription": "Create role/user-specific filters where only selected articles will mention a role/user.\n*Using filtered subscriptions will remove global subscriptions if enabled for that role/user.*",
+      "optionRemoveSubscriptions": "Remove All Subscriptions for a Role or User",
+      "optionRemoveSubscriptionsDescription": "Remove all subscriptions for a role/user.",
+      "optionListSubscriptions": "List All Subscribers",
+      "optionListSubscriptionsDescription": "List all subscribers.",
+      "promptUserOrRole": "Enter a valid case-sensitive role name, role/user mention or user ID. The `@everyone` role cannot be used.",
+
+      "globalSubscriptionsTitle": "Subscription Customization - Add/Remove Global Subscription",
+      "globalSubscriptionsOptionAdd": "Add a global subscription",
+      "globalSubscriptionsOptionAddDescription": "Have the role/user get mentioned every time a new article is posted from this feed.",
+      "globalSubscriptionsOptionRemove": "Remove a global subscription",
+      "globalSubscriptionsOptionRemoveDescription": "Remove the role/user's subscription to this feed.",
+
+      "filteredSubscriptionsTitle": "Subscription Customization - Add/Remove Filtered Subscription",
+      "filteredSubscriptionsOptionAdd": "Add filter(s) to filtered subscriber",
+      "filteredSubscriptionsOptionAddDescription": "Add a filtered subscription so that this role/user will get mentioned everytime an article from a feed passes its filter tests.",
+      "filteredSubscriptionsOptionRemove": "Remove filter(s) to filtered subscriber",
+      "filteredSubscriptionsOptionRemoveDescription": "Remove a word/phrase from this role/user's subscription to a feed.",
+
+      "listSubscriptionsDescription": "\nBelow are the feed titles with any roles and users subscribed to that feed under it. Each role is then categorized as either a global or filtered subscription.\u200b\n\u200b\n",
+      "listSubscriptionsNone": "There are no subscriptions for any feeds.",
+      "removeSubscriptionsNone": "This {{type}} has no subscriptions to remove.",
+      "removeSubscriptionsSuccess": "All subscriptions successfully deleted for {{type}} `{{name}}`.",
+      "addSubscriberGlobalExists": "Unable to add global subscriber. {{type}} `{{name}}` is already subscribed to this feed.",
+      "addSubscriberGlobalSuccess": "Global subscriber {{type}} `{{name}}` successfully added to feed <{{link}}>.",
+      "removeGlobalSubscriberExists": "This subscriber is not globally subscribed to the feed <{{link}}>.",
+      "removeGlobalSubscriberSuccess": "Successfully removed the global subscription of the {{type}} `{{name}}` from the feed <{{link}}>.",
+      "removeAnySubscriberNone": "There are no subscribers to remove from the feed <{{link}}>.",
+      "invalidRoleOrUser": "That is not a valid role or user. Try again, or type `exit` to cancel.",
+      "multipleRoles": "There are multiple roles with that name. Mention the role, type another role/user, or type `exit` to cancel.",
+      "selectedRoleDescription": "**Selected**: {{name}}\n**Feed Title:** {{feedTitle}\n**Feed Link:** {{feedLink}}\n\nSelect an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "globalSubscribers": "**Global Subscribers:**\n",
+      "filteredSubscribers": "**Filtered Subscribers:**\n"
+    },
+    "rssmessage": {
+      "prompt": "The current message for {{link}} is: \n{{currentMsg}}\nType your new customized message now, type `reset` to use the default message, or type `exit` to cancel. \n\nRemember that you can use the placeholders `{title}`, `{description}`, `{link}`, and etc. `{empty}` will create an empty message, but only if an embed is used. Regular formatting such as **bold** and etc. is also available. To find other placeholders, type `exit` then `{{prefix}}rsstest`.\n\n",
+      "noEmpty": "You cannot have an empty message if there is no embed used for this feed. Try again.",
+      "noSetMessage": "None has been set. Currently using default message below:",
+      "resetSuccess": "Message has been reset and using default message for feed {{link}}:",
+      "setSuccess": "Message recorded for feed <{{link}}>:",
+      "noSubscriptionsPlaceholder": "Note that because there is no `{subscriptions}`, whatever subscriptions you add through {{prefix}}rssmention will *not* appear in this feed's article messages.",
+      "reminder": "You may use `{{prefix}}rsstest` to see your new message format."
+    },
+    "rssmove": {
+      "prompt": "Mention the channel to move the feed(s) to, or type `this` for this channel.",
+      "invalidChannel": "That is not a valid channel. Try again, or type `exit` to cancel.",
+      "alreadyInChannel": "\nThe feed is already in that channel.",
+      "linkAlreadyExists": "\nA feed with this link already exists in that channel.",
+      "meMissingPermission": "\nI am missing **Read Messages** or **Send Messages** permission in <#{{id}}>.",
+      "meMissingEmbedLinks": "\nI am missing **Embed Links** permission in the <#{{id}}>. To bypass this permission, you can reset this feed's embed via the rssembed command.",
+      "youMissingPermission": "\nYou are missing **Read Messages**, **Send Messages**, or **Manage Channel** permission in <#{{id}}>.",
+      "moveFailed": "Unable to move channel for the following reasons:\n{{errors}}\n\nTry again, or type `exit` to cancel.",
+      "moveSuccess": "The channel for the following feed(s):\n\n{{summary}}\n\nhave been successfully moved to <#{{id}}>."
+    },
+    "rssoptions": {
+      "miscFeedOptions": "Miscellaneous Feed Options",
+      "selectOption": "\u200b\nPlease select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "onlyIfNecessary": "Only enable this if necessary!",
+      "titleChecks": "Title Checks",
+      "titleChecksToggle": "Toggle Title Checks for a feed",
+      "titleChecksDescription": "Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.",
+      "imagePreviews": "Image Link Previews",
+      "imagePreviewsToggle": "Toggle Image Link Previews for a feed's placeholders",
+      "imagePreviewsDescription": "Toggle automatic Discord image link embedded previews for image links found inside placeholders such as {description}.",
+      "imageLinksExistence": "Image Links Existence",
+      "imageLinksExistenceToggle": "Toggle Image Links Existence for a feed's placeholders",
+      "imageLinksExistenceDescription": "Remove image links found inside placeholders such as {description}. If disabled, all image `src` links in such placeholders will be removed.",
+      "dateChecks": "Date Checks",
+      "dateChecksToggle": "Toggle Date Checks for a feed",
+      "dateChecksDescription": "Date checking ensures that articles that are {{cycleMaxAge}} day(s) old or has invalid/no pubdates are't sent.",
+      "tableFormatting": "Table Formatting",
+      "tableFormattingToggle": "Toggle Table Formatting for a feed",
+      "tableFormattingDescription": "If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing.",
+      "roleMentioning": "Role Mentioning Toggle",
+      "roleMentioningToggle": "Toggle Role Mentioning for Subscriptions",
+      "roleMentioningDescription": "Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent.\n\n**WARNING**: Only applies if roles are below the bot's highest role, and the bot has **Manage Roles** permission. Otherwise, __THIS WILL NOT WORK__.",
+      "settingChanged": "{{propName}} has been {{finalSetting}} for <{{link}}>{{isDefault}}.",
+      "defaultSetting": "default setting"
+    },
+    "rssprefix": {
+      "helpText": "You must specify a prefix 4 characters or less as the first argument to set a custom prefix, or `reset` to reset the prefix to default if a custom prefix is already set.",
+      "resetNone": "You have no custom prefix to reset.",
+      "resetSuccess": "Commands prefix has been reset back to the default ({{prefix}}).",
+      "mustBeLess": "Commands prefix length must be less than 5 characters.",
+      "cannotUseDefault": "Cannot use this commands prefix because it is already the default prefix.",
+      "setSuccess": "Successfully changed commands prefix to \"{{prefix}}\"."
+    },
+    "rssrefresh": {
+      "noFailLimit": "No failure limit has been set.",
+      "noFailedFeeds": "There are no failed feeds to refresh.",
+      "processing": "Processing requests for refresh. This may take a while. Please wait...",
+      "success": "The following links have successfully been refreshed:",
+      "failed": "The following links failed to refresh:"
+    },
+    "rssremove": {
+      "removing": "Removing...",
+      "success": "Successfully removed the following link(s):",
+      "internalError": "Unable to remove specified feeds due to internal error."
+    },
+    "rsssplit": {
+      "messageSplittingOptions": "Message Splitting Options",
+      "description": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nMessage splitting for this feed is currently {{currently}}. Select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "enabledDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\n**Message Splitting is now enabled for this feed.**\n\nYou may customize message splitting further by selecting one of the options below by typing its number, or type **exit** to leave as is. It is recommended to leave at the default settings.\u200b\n\u200b\n",
+      "optionEnable": "Enable Message Splitting",
+      "optionEnableDescription": "Message splitting splits a message that exceeds the Discord character limit into multiple messages instead.",
+      "optionDisable": "Disable Message Splitting",
+      "optionSetSplitChar": "Set split character",
+      "optionSetSplitCharDescription": "Specify the character that the message should split according to.",
+      "optionSetPrependChar": "Set prepend character",
+      "optionSetPrependCharDescription": "Specify the character that every message except the first should be prepended (added before) with.",
+      "optionSetAppendChar": "Set append character",
+      "optionSetAppendCharDescription": "Specify the character that every message except the last should be appended (added after) with.",
+      "optionSetMaxLength": "Set max length",
+      "optionSetMaxLengthDescription": "Specify the maximum length a single message should have.",
+      "currentlySetTo": "Currently set to `{{value}}`.",
+      "defaultIsValue": "Default is {{value}}",
+      "defaultIsNothing": "Default is nothing.",
+      "newLine": "new line",
+      "promptSplitChar": "Type a split character now, `reset` to reset, or `exit` to cancel.",
+      "promptPrependChar": "Type a prepend character now, `reset` to reset, or `exit` to cancel.",
+      "promptAppendChar": "Type an append character now, `reset` to reset, or `exit` to cancel.",
+      "promptMaxLen": "Type the max length a single message should have now, `reset` to reset, or `exit` to cancel. **Must be a number >= 500 and <= 1950.**",
+      "setSplitCharDefault": "That is already the default character. Try again, or type `exit` to cancel and leave it at default.",
+      "setSplitChar": "The split character for the feed <{{link}}> has been set to `{{content}}`.",
+      "setPrependChar": "The prepend character for the feed <{{link}}> has been set to `{{content}}`.",
+      "setAppendChar": "The append character for the feed <{{link}}> has been set to `{{content}}`.",
+      "setMaxLen": "The max length for a single message for the feed <{{link}}> has been set to `{{num}}`.",
+      "setInvalidMaxLen": "That is not a valid number >= 500 and <= 1950. Try again.",
+      "resetSplitChar": "The split character for the feed <{{link}}> has been reset to `\\n`.",
+      "resetPrependChar": "The prepend character for the feed <{{link}}> has been reset to be nothing.",
+      "resetAppendChar": "The append character for the feed <{{link}}> has been reset to be nothing.",
+      "resetMaxLen": "The max length for a single message for the feed <{{link}}> has been reset to be `1950`.",
+      "disabledSuccess": "Message splitting is now disabled for feed <{{link}}>."
+    },
+    "rsstest": {
+      "grabbingRandom": "Grabbing a random feed article...",
+      "noArticles": "There are no articles in this feed to send."
+    },
+    "rsswebhook": {
+      "existingFound": "An existing webhook was found ({{name}}). You may type `{remove}` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n",
+      "prompt": "Type the name of the webhook in this channel you wish to use (case sensitive), or type `exit` to cancel.\n\nTo use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters `--name=\"my new name here\"` or `--avatar=\"http://website.com/image.jpg\"`. Placeholders are supported.",
+      "notFound": "No such webhook named \"{{name}}\" found for this channel. Try again, or type `exit` to cancel.",
+      "tooLong": "Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.",
+      "noPermission": "I must have Manage Webhooks permission in this channel in order to work.",
+      "noneAssigned": "There is no webhook assigned to this feed.",
+      "removeSuccess": "Successfully removed webhook \"{{name}}\" from the feed <{{link}}>.",
+      "connected": "I am now connected to {{botUser}}, and will send feed articles for <{{link}}>!"
+    },
+    "subme": {
+      "noFeeds": "There are no feeds to subscribe to.",
+      "noEligible": "There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.",
+      "invalidRole": "That is not a valid role to add. To see the the full list of roles that can be added, type `{{prefix}}subme`.",
+      "selfSubscriptionAddition": "Self-Subscription Addition",
+      "listDescription": "Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name after **{{prefix}}subme** to add the role to yourself.\u200b\n\u200b\n",
+      "link": "Link",
+      "channel": "Channel",
+      "roles": "Roles",
+      "addSuccess": "You now have the role `{{name}}`, subscribed to:\n\n**<{{links}}>**",
+      "addFailed": "Error: Unable to add role."
+    },
+    "unsubme": {
+      "noEligible": "There are no eligible roles to be removed from you.",
+      "invalidRole": "That is not a valid role to remove. To see the the full list of roles that can be removed, type `{{prefix}}unsubme`.",
+      "selfSubscriptionRemoval": "Self-Subscription Removal",
+      "listDescription": "Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name after **{{prefix}}unsubme** to remove a role from yourself.\u200b\n\u200b\n",
+      "otherRoles": "Other Roles",
+      "removeSuccess": "You no longer have the role `{{name}}`.",
+      "removeFailed": "Error: Unable to remove role."
+    },
+    "utils": {
+      "filters": {
+        "title": "Title",
+        "dscription": "Description",
+        "summary": "Summary",
+        "author": "Author",
+        "tags": "Tags",
+        "feed": "Feed",
+        "role": "Role",
+        "user": "User",
+        "filtersCustomization": "Filters Customization",
+        "categoryDescription": "Below is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with `raw:`.\u200b\n\u200b\n",
+        "invalidCategory": "That is not a valid filter category. Try again, or type `exit` to cancel.",
+        "promptAdd": "Type the filter word/phrase you would like to add in the category `{{type}}` by typing it, type multiple word/phrases on different lines to add more than one, or type `exit` to cancel. The following can be added in front of a search term to change its behavior:\n\n\n`~` - Broad filter modifier to trigger even if the term is found embedded inside words/phrases.\n`!` - NOT filter modifier to do the opposite of a normal search term. Can be added in front of any term, including one with broad filter mod.\n`\\` - Escape symbol added before modifiers to interpret them as regular characters and not modifiers.\n\n\nFilters will be applied as **case insensitive** to feeds. Because of this, all input will be converted to be lowercase.",
+        "addSuccess": "The following filter(s) have been successfully added for the filter category",
+        "addFailed": "The following filter(s) could not be added because they already exist",
+        "updatedFor": "Subscription updated for {{name}}.",
+        "testFiltersSubscriber": "\nYou may test your filters on random articles via `{{prefix}}rsstest` and see what articles will mention this subscriber.",
+        "testFilters": "\nYou may test random articles with `{{prefix}}rsstest` to see what articles pass your filters, or specifically send filtered articles with `{{prefix}}rssfilters` option 5.",
+        "removeFilterConfirm": "Confirm the filter word/phrase you would like to remove in the category `{{category}}` by typing one or multiple word/phrases separated by new lines (case sensitive).",
+        "removeFilterInvalid": "That is not a valid filter to remove from `{{category}}`. Try again, or type `exit` to cancel.",
+        "removeSuccess": "The following filter(s) have been successfully removed from the filter category",
+        "removeSuccessSubscriber": "Subscription updated for `{{name}}`. The following filter(s) have been successfully removed from the filter category",
+        "removeFailedNoExist": "The following filter(s) were unable to be deleted because they do not exist",
+        "removeNone": "There are no filters to remove for <{{link}}>.",
+        "listOfFilters": "List of Assigned Filters",
+        "listOfFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type **exit** to cancel.\u200b\n\u200b\n"
+      }
+    }
+  },
+  "structs": {
+    "MenuUtils": {
+      "permissionWarning": "WARNING: Missing \"Add Reactions\" or \"Read Message History\" permissions in this channel. Because this menu has more than {{maxPerPage}} options, it will not function properly without the right permissions",
+      "closedInactivity": "I have closed the menu due to inactivity.",
+      "closed": "Menu closed."
+    },
+    "FeedSelector": {
+      "noFeeds": "This server does not have any feeds.",
+      "noFeedsInChannel": "There are no feeds assigned to this channel.",
+      "feedSelectionMenu": "Feed Selection Menu",
+      "action": "Action",
+      "prompt": "Choose a feed to from this channel by typing the number to execute your requested action on.",
+      "multiSelect": "You may select multiple feeds by separation with commas, and/or with hyphens (for example `1,3,4-6,8`).",
+      "exitToCancel": "Type **exit** to cancel."
+    },
+    "errors": {
+      "MenuOptionError": {
+        "message": "That is not a valid choice. Try again, or type `exit` to cancel."
+      }
     }
   }
 }

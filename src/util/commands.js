@@ -45,179 +45,117 @@ const list = {
   },
   rssadd: {
     initLevel: 2,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with `>`.',
-    args: {
-      '<link>': 'Feed URL.'
-    }
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssremove: {
     initLevel: 2,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Feed Removal',
-    description: 'Open a menu to delete a feed from the channel.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rsslist: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'List all active feeds in server.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssmessage: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Message Customization',
-    description: "Open a menu to customize a feed's text message."
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssembed: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    args: {
-      fields: 'Customize Fields for the embed.'
-    },
-    action: 'Embed Message Customization',
-    description: "Open a menu to customize a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssfilters: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Global Filter Addition/Removal',
-    description: "Open a menu to add or remove global filters from a feed. Messages that do not have any of the words in any of your filters won't be sent to your Discord."
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssdate: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Open a menu to customize how dates are displayed.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssmention: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Role Customization',
-    description: 'Open a menu to add global/filtered subscriptions for roles/users to feeds.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rsstest: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    args: {
-      'simple': 'Omit the test results and only send the message.'
-    },
-    action: 'Feed Delivery Test',
-    description: 'Opens a menu to send a test message for a random article in a feed, along with the available properties and placeholders for various customizations. You may add `simple` as a parameter to exclude the test details.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   subme: {
     initLevel: 1,
-    botPerm: MANAGE_ROLES_OR_PERMISSIONS_PERM,
-    args: {
-      '<role name/mention>': 'Directly input the role instead of going through the menu.'
-    },
-    description: "Open a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
+    botPerm: MANAGE_ROLES_OR_PERMISSIONS_PERM
   },
   unsubme: {
     initLevel: 1,
-    botPerm: MANAGE_ROLES_OR_PERMISSIONS_PERM,
-    args: {
-      '<role name/mention>': 'Directly input the role instead of going through the menu.'
-    },
-    description: "Open a menu similar to `subme`, except to remove a role. Any role beneath the bot's role order will be removeable."
+    botPerm: MANAGE_ROLES_OR_PERMISSIONS_PERM
   },
   rssrefresh: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Refresh Feed',
-    description: 'Open a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssoptions: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Open a menu for miscellaneous feed options.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rsssplit: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Message Splitting Customization',
-    description: 'Open a menu to customize message splitting settings.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssmove: {
     initLevel: 1,
     userPerm: MANAGE_CHANNELS_PERM,
-    botPerm: EMBED_LINKS_PERM,
-    description: 'Open a menu to move a feed into another channel.',
-    action: 'Feed Channel Transfer'
+    botPerm: EMBED_LINKS_PERM
   },
   rssclone: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Feed Settings Cloning',
-    description: "Clone a feed's settings to other feed(s).",
-    args: {
-      '<property>': 'Use the command without arguments for further information.'
-    }
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssbackup: {
     initLevel: 1,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Send server profile as a JSON attachment for personal backups.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssdump: {
     initLevel: 1,
     botPerm: ['ATTACH_FILES', EMBED_LINKS_PERM],
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Raw Placeholders Dump',
-    args: {
-      'original': 'Output the original, untrimmed JSON form instead.'
-    }
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssstats: {
     initLevel: 2,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Show simple stats on bot performance and size.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rsswebhook: {
     initLevel: 1,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Webhook Connection',
-    description: 'Open a menu to connect a webhook to a feed to send messages instead.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssprefix: {
     initLevel: 1,
-    userPerm: MANAGE_CHANNELS_PERM,
-    action: 'Commands Prefix Change',
-    description: `Change the prefix used for commands from the default ${config.bot.prefix}.`,
-    args: {
-      '<prefix>': 'The prefix to use.',
-      'reset': `Reset prefix back to default (${config.bot.prefix}).`
-    }
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssalert: {
     initLevel: 1,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Set up user direct messaging for feed warnings/failures.',
-    args: {
-      'add <user id/mention>': 'Add a user to direct message.',
-      'remove <user id/mention>': 'Remove a user from direct messaging.',
-      'list': 'List the current users enabled for direct messaging.'
-    }
+    userPerm: MANAGE_CHANNELS_PERM
+  },
+  rsslocale: {
+    initLevel: 1,
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssinvite: {
     initLevel: 0,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Send the invite links for this bot.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rssversion: {
     initLevel: 0,
-    userPerm: MANAGE_CHANNELS_PERM,
-    description: 'Show version of the bot.'
+    userPerm: MANAGE_CHANNELS_PERM
   },
   rsspatron: {
     initLevel: 2,

@@ -1,17 +1,18 @@
+const config = require('../config.js')
 const getSubList = require('./util/getSubList.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const MenuUtils = require('../structs/MenuUtils.js')
+const Translator = require('../structs/Translator.js')
 const log = require('../util/logger.js')
-const config = require('../config.js')
 
-function addRole (message, role, links) {
+function addRole (message, role, links, translate) {
   message.member.addRole(role)
     .then(mem => {
+      message.channel.send(translate('commands.subme.addSuccess', { name: role.name, links: links.join('>\n<') }), { split: true }).catch(err => log.command.warning('subme addrole 1', err))
       log.command.info(`Role successfully added to member`, message.guild, role, message.author)
-      message.channel.send(`You now have the role \`${role.name}\`, subscribed to:\n\n**<${links.join('>\n<')}>**`, { split: true }).catch(err => log.command.warning('subme addrole 1', err))
     })
     .catch(err => {
-      message.channel.send(`Error: Unable to add role.` + err.message ? ` (${err.message})` : '', { split: true }).catch(err => log.comamnd.warning('subme addrole 2', err))
+      message.channel.send(translate('commands.subme.addFailed') + err.message ? ` (${err.message})` : '', { split: true }).catch(err => log.comamnd.warning('subme addrole 2', err))
       log.command.warning(`Unable to add role to user`, message.guild, role, message.author, err)
     })
 }
@@ -19,11 +20,16 @@ function addRole (message, role, links) {
 module.exports = async (bot, message, command) => {
   try {
     const guildRss = await dbOpsGuilds.get(message.guild.id)
-    if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) return await message.channel.send('There are no active feeds to subscribe to.')
-
+    const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+    if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) {
+      return await message.channel.send(translate('commands.subme.noFeeds'))
+    }
+    const prefix = guildRss.prefix || config.bot.prefix
     const rssList = guildRss.sources
     const options = getSubList(message.guild, rssList)
-    if (!options) return await message.channel.send('There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.')
+    if (!options) {
+      return await message.channel.send(translate('commands.subme.noEligible'))
+    }
     const mention = message.mentions.roles.first()
     const msgArr = message.content.split(' ')
     msgArr.shift()
@@ -37,13 +43,13 @@ module.exports = async (bot, message, command) => {
           if (roleIds.includes(role.id)) links.push(subscriptionData.source.link)
         }
       }
-      if (links.length > 0 && (role || mention)) return addRole(message, role || mention, links)
-      return await message.channel.send(`That is not a valid role to add. To see the the full list of roles that can be added, type \`${config.bot.prefix}subme\`.`)
+      if (links.length > 0 && (role || mention)) return addRole(message, role || mention, links, translate)
+      return await message.channel.send(translate('commands.subme.invalidRole', { prefix }))
     }
 
     const ask = new MenuUtils.Menu(message, null, { numbered: false })
-      .setTitle('Self-Subscription Addition')
-      .setDescription(`Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name after **${config.bot.prefix}subme** to add the role to yourself.\u200b\n\u200b\n`)
+      .setTitle(translate('commands.subme.selfSubscriptionAddition'))
+      .setDescription(translate('commands.subme.listDescription', { prefix }))
 
     for (const subscriptionData of options) {
       // const roleData = options[option]
@@ -52,7 +58,7 @@ module.exports = async (bot, message, command) => {
       temp.sort()
       const channelName = message.guild.channels.get(subscriptionData.source.channel).name
       const title = subscriptionData.source.title + (temp.length > 0 ? ` (${temp.length})` : '')
-      let desc = `**Link**: ${subscriptionData.source.link}\n**Channel**: #${channelName}\n**Roles**:\n`
+      let desc = `**${translate('commands.subme.link')}**: ${subscriptionData.source.link}\n**${translate('commands.subme.channel')}**: #${channelName}\n**${translate('commands.subme.roles')}**:\n`
       for (var x = 0; x < temp.length; ++x) {
         const cur = temp[x]
         const next = temp[x + 1]
@@ -66,10 +72,7 @@ module.exports = async (bot, message, command) => {
       ask.addOption(title, desc, true)
     }
 
-    ask.send().catch(err => {
-      log.command.warning(`subme 2`, message.guild, err)
-      if (err.code !== 50013) message.channel.send(err.message)
-    })
+    await ask.send()
   } catch (err) {
     log.command.warning(`subme`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('subme 1', message.guild, err))

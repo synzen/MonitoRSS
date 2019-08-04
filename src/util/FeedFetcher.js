@@ -14,6 +14,12 @@ class FeedFetcher {
     throw new Error('Cannot be instantiated')
   }
 
+  /**
+   * Fetch a URL
+   * @param {string} url - URL to fetch
+   * @param {object} requestOptions - Options to directly pass to fetch
+   * @param {boolean} retried - If true, recursive retries will not be made
+   */
   static async fetchURL (url, requestOptions = {}, retried) {
     if (!url) throw new Error('No url defined')
     const options = {
@@ -56,7 +62,18 @@ class FeedFetcher {
       return feedStream
     })
   }
+  /**
+ * @typedef {object} FeedData
+ * @property {object[]} articleList - Array of articles
+ * @property {string} idType - The ID type used for the article ._id property
+ */
 
+  /**
+   * Parse a stream and return the article list, and the article ID type used
+   * @param {object} stream
+   * @param {string} url - The fetched URL of this stream
+   * @returns {FeedData} - The article list and the id type used
+   */
   static async parseStream (stream, url) {
     const feedparser = new DecodedFeedParser(null, url)
     const idResolver = new ArticleIDResolver()
@@ -95,14 +112,27 @@ class FeedFetcher {
     })
   }
 
+  /**
+   * Fetch and parse results, and result the article list and id type
+   * @param {string} url - The URL to fetch
+   * @param {object} options - The options to pass to fetch
+   * @returns {FeedData} - The article list and the id type used
+   */
   static async fetchFeed (url, options) {
     const stream = await this.fetchURL(url, options)
     const { articleList, idType } = await this.parseStream(stream, url)
     return { articleList, idType }
   }
 
+  /**
+   * Get a random article in the feed
+   * @param {string} url - The URL to fetch
+   * @param {object} filters
+   * @returns {object} - Either null, or an article object
+   */
   static async fetchRandomArticle (url, filters) {
     const { articleList } = await this.fetchFeed(url)
+    if (articleList.length === 0) return null
     if (!filters) {
       return articleList[Math.round(Math.random() * (articleList.length - 1))]
     }
