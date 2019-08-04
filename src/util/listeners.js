@@ -52,12 +52,16 @@ const VALID_EVENTS = [
   'warn' ]
 
 let cmdsExtension
-if (fs.existsSync(path.join(__dirname, '..', 'settings', 'commands.js'))) {
-  try { cmdsExtension = require('../settings/commands.js') } catch (e) { log.general.error(`Unable to load commands extension file`, e) }
+if (fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'commands.js'))) {
+  try {
+    cmdsExtension = require('../../settings/commands.js')
+  } catch (e) {
+    log.general.error(`Unable to load commands extension file`, e)
+  }
   fs.watchFile(path.join(__dirname, '..', 'settings', 'commands.js'), (cur, prev) => {
-    delete require.cache[require.resolve('../settings/commands.js')]
+    delete require.cache[require.resolve('../../settings/commands.js')]
     try {
-      cmdsExtension = require('../settings/commands.js')
+      cmdsExtension = require('../../settings/commands.js')
       log.general.success(`Commands extension file has been updated`)
     } catch (e) {
       log.general.error(`Commands extension file was changed, but could not be updated`, e)
@@ -67,14 +71,20 @@ if (fs.existsSync(path.join(__dirname, '..', 'settings', 'commands.js'))) {
 
 function messageHandler (message) {
   require('../events/message.js')(message, config.bot.enableCommands === true && config.dev !== true ? null : true)
-  try { if (cmdsExtension) cmdsExtension(storage.bot, message) } catch (e) {}
+  try {
+    if (cmdsExtension) {
+      cmdsExtension(storage.bot, message)
+    }
+  } catch (e) {}
 }
 
 exports.createManagers = () => {
   const fileNames = fs.readdirSync(path.join(__dirname, '..', 'events'))
   for (const fileName of fileNames) {
     const eventName = fileName.replace('.js', '')
-    if (!VALID_EVENTS.includes(eventName)) throw new Error('Invalid event file found:', fileName)
+    if (!VALID_EVENTS.includes(eventName)) {
+      throw new Error('Invalid event file found:', fileName)
+    }
     if (eventName === 'message') continue
     const eventHandler = require(`../events/${fileName}`)
     eventHandlers.push({ name: eventName, func: eventHandler })
@@ -89,5 +99,7 @@ exports.enableCommands = () => {
 }
 
 exports.disableAll = () => {
-  for (const eventHandler of eventHandlers) storage.bot.removeListener(eventHandler.name, eventHandler.func)
+  for (const eventHandler of eventHandlers) {
+    storage.bot.removeListener(eventHandler.name, eventHandler.func)
+  }
 }
