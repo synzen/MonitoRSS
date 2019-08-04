@@ -1,11 +1,12 @@
 const log = require('../../util/logger.js')
-const dbOps = require('../../util/dbOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
+const dbOpsFailedLinks = require('../../util/db/failedLinks.js')
 
 exports.normal = async (bot, message) => {
   try {
     const link = message.content.split(' ')[1]
     if (!link) return await message.channel.send('No link detected.')
-    const guildRssList = await dbOps.guildRss.getAll()
+    const guildRssList = await dbOpsGuilds.getAll()
     const affected = {}
 
     guildRssList.forEach(guildRss => {
@@ -19,13 +20,13 @@ exports.normal = async (bot, message) => {
       }
     })
 
-    const failedLinkStatus = await dbOps.failedLinks.get(link)
+    const failedLinkStatus = await dbOpsFailedLinks.get(link)
     if (failedLinkStatus && failedLinkStatus.failed) return await message.channel.send(`That link has already failed on ${failedLinkStatus.failed}.`)
     if (Object.keys(affected).length === 0) return await message.channel.send('No guilds found with that link.')
-    await dbOps.failedLinks.fail(link)
+    await dbOpsFailedLinks.fail(link)
     await message.channel.send('Successfully failed a link.')
   } catch (err) {
-    log.controller.warning('forceremove', message.guild, message.author, err)
+    log.owner.warning('forceremove', message.guild, message.author, err)
   }
 }
 

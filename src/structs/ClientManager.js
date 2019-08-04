@@ -6,7 +6,7 @@ const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGeneral = require('../util/db/general.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const log = require('../util/logger.js')
-const dbRestore = require('../commands/controller/dbrestore.js')
+const dbRestore = require('../commands/owner/dbrestore.js')
 const EventEmitter = require('events')
 const ArticleModel = require('../models/Article.js')
 let webClient
@@ -18,7 +18,7 @@ function overrideConfigs (configOverrides) {
     if (!configOverrides[category]) continue
     for (var configName in configCategory) {
       if (configOverrides[category][configName] !== undefined && configOverrides[category][configName] !== config[category][configName]) {
-        log.controller.info(`Overriding config.${category}.${configName} from ${JSON.stringify(config[category][configName])} to ${JSON.stringify(configOverrides[category][configName])} from configOverride.json`)
+        log.owner.info(`Overriding config.${category}.${configName} from ${JSON.stringify(config[category][configName])} to ${JSON.stringify(configOverrides[category][configName])} from configOverride.json`)
         configCategory[configName] = configOverrides[category][configName]
       }
     }

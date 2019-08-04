@@ -19,8 +19,8 @@ exports.normal = async (bot, message) => {
     config.bot.game = game // Make sure the change is saved even after a login retry
     await message.channel.send(`Successfully changed game to ${game}`)
   } catch (err) {
-    log.controller.warning('setgame', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('setgame 1a', message.guild, err))
+    log.owner.warning('setgame', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('setgame 1a', message.guild, err))
   }
 }
 
@@ -31,13 +31,13 @@ exports.sharded = async (bot, message) => {
     bot.shard.broadcastEval(`
       const path = require('path');
       const appDir = path.dirname(require.main.filename);
-      const config = require(appDir + '/config.js');
+      const config = require(appDir + 'src/config.js');
       this.user.setPresence({ game: { name: ${game === null ? null : `${game}`}, type: 0 } });
       config.bot.game = game;
     `)
     await message.channel.send(`Successfully changed game to ${game}`)
   } catch (err) {
-    log.controller.warning('setgame', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('setgame 1b', message.guild, err))
+    log.owner.warning('setgame', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('setgame 1b', message.guild, err))
   }
 }

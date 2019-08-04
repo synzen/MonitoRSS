@@ -7,11 +7,11 @@ exports.normal = (bot, message) => {
 
   const rssName = content[1]
 
-  if (!debugFeeds.includes(rssName)) return log.controller.info(`Cannot remove, ${rssName} is not in debugging list.`)
+  if (!debugFeeds.includes(rssName)) return log.owner.info(`Cannot remove, ${rssName} is not in debugging list.`)
   for (var index in debugFeeds) {
     if (debugFeeds[index] === rssName) {
       debugFeeds.splice(index, 1)
-      return log.controller.info(`Removed ${rssName} from debugging list.`)
+      return log.owner.info(`Removed ${rssName} from debugging list.`)
     }
   }
 }
@@ -25,18 +25,18 @@ exports.sharded = (bot, message, Manager) => {
     const fs = require('fs');
     const path = require('path');
     const appDir = path.dirname(require.main.filename);
-    const log = require(appDir + '/util/logger.js');
-    const debugFeeds = require(appDir + '/util/debugFeeds.js').list;
+    const log = require(appDir + 'src/util/logger.js');
+    const debugFeeds = require(appDir + 'src/util/debugFeeds.js').list;
 
     if (debugFeeds.includes('${rssName}')) {
       for (var index in debugFeeds) {
         if (debugFeeds[index] === '${rssName}') {
           debugFeeds.splice(index, 1);
-          log.controller.info('Removed ${rssName} from debugging list');
+          log.owner.info('Removed ${rssName} from debugging list');
         }
       }
     }
   `).catch(err => {
-    log.controller.warning(`Unable to broadcast undebug eval`, message.author, err)
+    log.owner.warning(`Unable to broadcast undebug eval`, message.author, err)
   })
 }

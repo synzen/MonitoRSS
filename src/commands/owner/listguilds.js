@@ -30,8 +30,8 @@ exports.normal = async (bot, message) => {
       ]
     })
   } catch (err) {
-    log.controller.warning('listguilds', message.author, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('listguilds 1a', message.guild, err))
+    log.owner.warning('listguilds', message.author, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('listguilds 1a', message.guild, err))
   }
 }
 
@@ -72,7 +72,7 @@ exports.sharded = async (bot, message) => {
       ]
     })
   } catch (err) {
-    log.controller.warning(`listguilds`, message.author, err, true)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('listguilds 1b', message.guild, err))
+    log.owner.warning(`listguilds`, message.author, err, true)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('listguilds 1b', message.guild, err))
   }
 }

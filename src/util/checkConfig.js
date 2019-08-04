@@ -19,7 +19,7 @@ exports.defaultConfigs = {
     status: { type: String, default: 'online' },
     activityType: { type: String, default: '' },
     activityName: { type: String, default: '' },
-    controllerIds: { type: Array, default: [] },
+    ownerIDs: { type: Array, default: [] },
     menuColor: { type: Number, default: 7833753 },
     deleteMenus: { type: Boolean, default: true },
     exitOnSocketIssues: { type: Boolean, default: true }
@@ -87,7 +87,7 @@ exports.check = userConfig => {
         else if (configName === 'processorMethod' && userVal !== 'concurrent' && userVal !== 'parallel-isolated') checkIfRequired(configCategory, configName, 'Must be either "concurrent", or "parallel-isolated"')
         else if (configName === 'activityType' && !ACTIVITY_TYPES.includes(userVal)) checkIfRequired(configCategory, configName, `Must be one of the following: "${ACTIVITY_TYPES.join('","')}"`)
         else if (configName === 'status' && !STATUS_TYPES.includes(userVal)) checkIfRequired(configCategory, configName, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
-        else if (configName === 'controllerIds') {
+        else if (configName === 'ownerIDs') {
           for (var i = 0; i < userVal.length; ++i) {
             if (userVal[i] === '') continue
             if (!userVal[i] || userVal[i].constructor !== String) {

@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const log = require('./logger.js')
-const loadCCommand = name => require(`../commands/controller/${name}.js`)
+const loadCCommand = name => require(`../commands/owner/${name}.js`)
 const loadCommand = file => require(`../commands/${file}.js`)
 const config = require('../config.js')
 const storage = require('./storage.js')
@@ -223,7 +223,7 @@ exports.run = async message => {
     const member = await message.guild.fetchMember(message.author)
     if (!message.member) message.member = member
 
-    if (!userPerm || !PERMISSIONS.includes(userPerm) || config.bot.controllerIds.includes(message.author.id)) return loadCommand(name)(bot, message, name)
+    if (!userPerm || !PERMISSIONS.includes(userPerm) || config.bot.ownerIDs.includes(message.author.id)) return loadCommand(name)(bot, message, name)
     const serverPerm = member.hasPermission(userPerm)
     const channelPerm = member.permissionsIn(channel).has(userPerm)
 
@@ -235,12 +235,12 @@ exports.run = async message => {
   }
 }
 
-exports.runController = message => {
+exports.runOwner = message => {
   const bot = message.client
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   const command = first.substr(prefix.length)
-  if (fs.existsSync(path.join(__dirname, '..', 'commands', 'controller', `${command}.js`))) {
+  if (fs.existsSync(path.join(__dirname, '..', 'commands', 'owner', `${command}.js`))) {
     if (storage.initialized < 2) return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
     loadCCommand(command)[bot.shard && bot.shard.count > 0 ? 'sharded' : 'normal'](bot, message)
   }

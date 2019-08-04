@@ -1,5 +1,5 @@
 const debug = require('../../util/debugFeeds.js')
-const dbOps = require('../../util/dbOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
 const log = require('../../util/logger.js')
 
 exports.normal = async (bot, message) => {
@@ -11,7 +11,7 @@ exports.normal = async (bot, message) => {
 
   let found = false
   try {
-    const guildRssList = await dbOps.guildRss.getAll()
+    const guildRssList = await dbOpsGuilds.getAll()
     guildRssList.forEach(guildRss => {
       if (found) return
       const rssList = guildRss.sources
@@ -19,15 +19,15 @@ exports.normal = async (bot, message) => {
         if (rssName === name) {
           found = true
           if (!debugFeeds.includes(rssName)) debugFeeds.push(rssName)
-          log.controller.success(`Added ${rssName} to debugging list.`)
+          log.owner.success(`Added ${rssName} to debugging list.`)
         }
       }
     })
-    if (!found) log.controller.warning(`Unable to add ${rssName} to debugging list, not found in any guild sources.`)
+    if (!found) log.owner.warning(`Unable to add ${rssName} to debugging list, not found in any guild sources.`)
     else return true
   } catch (err) {
-    log.controller.warning('debug', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('debug 1', message.guild, err))
+    log.owner.warning('debug', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('debug 1', message.guild, err))
   }
 }
 
@@ -42,16 +42,16 @@ exports.sharded = async (bot, message) => {
       const fs = require('fs');
       const path = require('path');
       const appDir = path.dirname(require.main.filename);
-      const storage = require(appDir + '/util/storage.js');
-      const log = require(appDir + '/util/logger.js');
-      const debugFeeds = require(appDir + '/util/debugFeeds.js').list;
+      const storage = require(appDir + 'src/util/storage.js');
+      const log = require(appDir + 'src/util/logger.js');
+      const debugFeeds = require(appDir + 'src/util/debugFeeds.js').list;
 
       debugFeeds.push('${rssName}')
       'done'
     `)
-    log.controller.success(`Added ${rssName} to debugging list.`)
+    log.owner.success(`Added ${rssName} to debugging list.`)
   } catch (err) {
-    log.controller.warning('debug', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('debug 1', message.guild, err))
+    log.owner.warning('debug', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('debug 1', message.guild, err))
   }
 }

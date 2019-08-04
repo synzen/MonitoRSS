@@ -1,5 +1,5 @@
 const fetch = require('node-fetch')
-const dbOps = require('../../util/dbOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
 const log = require('../../util/logger.js')
 
 async function getID (message) {
@@ -31,12 +31,12 @@ exports.normal = async (bot, message) => {
     const id = file.id
     const guild = bot.guilds.get(id)
     if (!guild) return await message.chanel.send(`Unable to restore server, ID ${id} was not found in cache.`)
-    await dbOps.guildRss.update(file)
-    log.controller.success(`Server (ID: ${id}, Name: ${guild.name}) has been restored`, message.author)
+    await dbOpsGuilds.update(file)
+    log.owner.success(`Server (ID: ${id}, Name: ${guild.name}) has been restored`, message.author)
     await message.channel.send(`Server (ID: ${id}, Name: ${guild.name}) has been restored.`)
   } catch (err) {
-    log.controller.warning(`restore`, message.author, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('restore 1a', message.guild, err))
+    log.owner.warning(`restore`, message.author, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('restore 1a', message.guild, err))
   }
 }
 
@@ -50,12 +50,12 @@ exports.sharded = async (bot, message) => {
     `)
     for (var i = 0; i < res.length; ++i) {
       if (!res[i]) continue
-      await dbOps.guildRss.update(file)
-      log.controller.success(`Server (ID: ${id}, Name: ${res[i]}) has been restored`, message.author)
+      await dbOpsGuilds.update(file)
+      log.owner.success(`Server (ID: ${id}, Name: ${res[i]}) has been restored`, message.author)
       await message.channel.send(`Server (ID: ${id}, Name: ${res[i]}) has been restored.`)
     }
   } catch (err) {
-    log.controller.warning(`restore`, message.author, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('restore 1b', message.guild, err))
+    log.owner.warning(`restore`, message.author, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('restore 1b', message.guild, err))
   }
 }

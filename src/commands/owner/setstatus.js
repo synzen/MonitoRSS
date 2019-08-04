@@ -15,8 +15,8 @@ exports.normal = async (bot, message) => {
     await bot.user.setStatus(status)
     await message.channel.send(`Successfully changed the status to \`${status}\`.`)
   } catch (err) {
-    log.controller.warning('setstatus', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('setstatus', message.guild, err))
+    log.owner.warning('setstatus', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('setstatus', message.guild, err))
   }
 }
 

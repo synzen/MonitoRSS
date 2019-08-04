@@ -1,4 +1,4 @@
-const dbOps = require('../../util/dbOps.js')
+const dbOpsGuilds = require('../../util/db/guilds.js')
 const log = require('../../util/logger.js')
 
 exports.normal = async (bot, message) => {
@@ -7,7 +7,7 @@ exports.normal = async (bot, message) => {
   let found = false
 
   try {
-    const guildRssList = await dbOps.guildRss.getAll()
+    const guildRssList = await dbOpsGuilds.getAll()
     guildRssList.forEach(guildRss => {
       if (found) return
       const rssList = guildRss.sources
@@ -21,8 +21,8 @@ exports.normal = async (bot, message) => {
     if (!found) await message.channel.send(`Could not find any feeds with that rssName.`)
     else await message.channel.send(`Found guild ${found}.`)
   } catch (err) {
-    log.controller.warning('feedguild', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('checklimits 1a', message.guild, err))
+    log.owner.warning('feedguild', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('checklimits 1a', message.guild, err))
   }
 }
 

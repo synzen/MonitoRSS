@@ -7,11 +7,11 @@ exports.normal = async (bot, message) => {
     const guild = bot.guilds.get(content[1])
     if (!guild) return await message.channel.send('No such guild found.')
     await guild.leave()
-    log.controller.success(`Guild ${content[1]} (${guild.name}) has been removed`, message.author)
+    log.owner.success(`Guild ${content[1]} (${guild.name}) has been removed`, message.author)
     return await message.channel.send(`Guild ${content[1]} (${guild.name}) removed.`)
   } catch (err) {
-    log.controller.warning('leaveguild', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('leaveguild 1a', message.guild, err))
+    log.owner.warning('leaveguild', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('leaveguild 1a', message.guild, err))
   }
 }
 
@@ -31,10 +31,10 @@ exports.sharded = async (bot, message) => {
     `)
     const removed = results.filter(kicked => kicked)
     if (removed.length === 0) return await message.channel.send('No such guild found.')
-    log.controller.success(`Guild ${content[1]} (${removed[0].name}) has been removed`, message.author)
+    log.owner.success(`Guild ${content[1]} (${removed[0].name}) has been removed`, message.author)
     return await message.channel.send(`Guild ${content[1]} (${removed[0].name}) was found - see console for whether the removal was successful.`)
   } catch (err) {
-    log.controller.warning('leaveguild', message.author, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.controller.warning('leaveguild 1b', message.guild, err))
+    log.owner.warning('leaveguild', message.author, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('leaveguild 1b', message.guild, err))
   }
 }
