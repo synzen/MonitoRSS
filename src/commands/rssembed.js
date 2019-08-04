@@ -262,9 +262,9 @@ const fieldFunctions = {
       if (input === 3 || input === 4) {
         // Non-inline blank field
         if (!source.embeds) source.embeds = [ { fields: [] } ]
-        if (!source.embeds[selectedEmbedIndex]) source.embeds.push = { fields: [] }
-        if (!source.embeds[selectedEmbedIndex].fields) source.embeds[selectedEmbedIndex].fields = []
-        source.embeds.fields.push({ title: '' })
+        if (!source.embeds[selectedEmbedIndex]) source.embeds.push({ fields: [] })
+        if (!Array.isArray(source.embeds[selectedEmbedIndex].fields)) source.embeds[selectedEmbedIndex].fields = []
+        source.embeds[selectedEmbedIndex].fields.push({ title: '' })
         return { ...data, successText: translate('commands.rssembed.embedFieldsAddedBlank', { link: source.link }) }
       } else if (input === 4) {
         // Inline blank field
@@ -348,10 +348,14 @@ module.exports = async (bot, message, command) => {
       if (!fieldsData) return
       const { rssName, successText, removeAllEmbeds } = fieldsData
 
-      log.command.info(`Removing all embeds for ${guildRss.sources[rssName].link}`, message.guild)
       await dbOpsGuilds.update(guildRss)
-      if (removeAllEmbeds) return await message.channel.send(translate('commands.rssembed.removedAllEmbeds'))
-      else return await message.channel.send(successText)
+      if (removeAllEmbeds) {
+        log.command.info(`Removing all embeds for ${guildRss.sources[rssName].link}`, message.guild)
+        return await message.channel.send(translate('commands.rssembed.removedAllEmbeds'))
+      } else {
+        log.command.info(`Updated embed fields for ${guildRss.sources[rssName].link}`, message.guild)
+        return await message.channel.send(successText)
+      }
     }
 
     // Regular properties
