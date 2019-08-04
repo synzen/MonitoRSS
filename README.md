@@ -63,3 +63,12 @@ You can deploy the bot in a simple way to Heroku using the button below. [Click 
 ### Contributing
 
 [Read the contribution guidelines](https://github.com/synzen/Discord.RSS/blob/master/CONTRIBUTING.md). All the latest updates are commited to the dev branch. 
+
+#### Locales
+
+To add or contribute to menu translations (locales):
+
+1. If the locale JSON doesn't exist in src/locales, create one by running scripts/localeTemplate.js
+2. Open the relevant locale file in src/locales
+3. Add your translations (use the en-US.json locale as reference)
+4. Make a pull request for your changes!
