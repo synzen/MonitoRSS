@@ -213,6 +213,10 @@ class FeedSelector extends Menu {
         }
 
         try {
+          if (this._series) {
+            // Save the command history for debugging purposes
+            this._series._commandHistory.push(m.content)
+          }
           const passover = await this.fn(m, data)
           collector.stop()
           resolve([ passover, this._msgCleaner ])

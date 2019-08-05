@@ -34,7 +34,7 @@ class Menu {
     this.translate = Translator.createLocaleTranslator(this.locale)
     this.pages = []
     this._pageNum = 0
-    this._series = false
+    this._series = null
     this._numbered = settings && settings.numbered != null ? settings.numbered : true
     this._msgCleaner = new MessageCleaner(message)
     if (!settings) return
@@ -223,6 +223,10 @@ class Menu {
 
         // Call the function defined in the constructor
         try {
+          if (this._series) {
+            // Save the command history for debugging purposes
+            this._series._commandHistory.push(m.content)
+          }
           const passover = await this.fn(m, data)
           collector.stop()
           // Pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
@@ -264,11 +268,12 @@ class MenuSeries {
   constructor (message, menus, data) {
     this._menus = []
     this._data = data
+    this._commandHistory = []
     this._mergedData = {}
     this._msgCleaner = new MessageCleaner(message)
     if (data.locale) this.locale = data.locale
     menus.forEach(item => {
-      item._series = true
+      item._series = this
       if (this.locale) item.locale = data.locale
       this._menus.push(item)
     })
@@ -291,6 +296,7 @@ class MenuSeries {
     }
     series._menus.forEach(item => {
       if (this.locale) item.locale = this.locale
+      item._series = this
       this._msgCleaner.merge(item._msgCleaner)
       this._menus.push(item)
     })
@@ -310,6 +316,7 @@ class MenuSeries {
     if (!(menu instanceof Menu)) throw new TypeError('Not a Menu')
     if (data) this._mergedData[this._menus.length] = [data]
     if (this.locale) menu.locale = this.locale
+    menu._series = this
     this._menus.push(menu)
     return this
   }
@@ -327,6 +334,9 @@ class MenuSeries {
     this._msgCleaner.deleteAll()
     if (err) {
       err.message = `[MenuSeries Error] ` + err.message
+      if (err.code !== 50013) {
+        log.command.info(`MenuSeries command history: ${this._commandHistory.toString()}`)
+      }
       throw err
     } else return data
   }
