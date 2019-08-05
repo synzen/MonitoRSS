@@ -106,8 +106,8 @@ const jsonViewModalProps = {
 const autoFetch = 0
 
 function Debugger (props) {
-  const { feed, guildId, feedId, articleList, articlesError, articlesFetching, defaultConfig: config, channels, feedRefreshRates } = useSelector(state => ({
-    feed: state.feed, guildId: state.guildId, feedId: state.feedId, articleList: state.articleList, articlesError: state.articlesError, articlesFetching: state.articlesFetching, defaultConfig: state.defaultConfig, channels: state.channels, feedRefreshRates: state.feedRefreshRates
+  const { feed, guildId, feedId, articleList, articlesError, articlesFetching, defaultConfig: config, channels, feedRefreshRates, owner } = useSelector(state => ({
+    feed: state.feed, guildId: state.guildId, feedId: state.feedId, articleList: state.articleList, articlesError: state.articlesError, articlesFetching: state.articlesFetching, defaultConfig: state.defaultConfig, channels: state.channels, feedRefreshRates: state.feedRefreshRates, owner: state.owner
   }), shallowEqual)
   const dispatch = useDispatch()
   const [ feedData, setFeedData ] = useState()
@@ -182,11 +182,11 @@ function Debugger (props) {
   const cutoffDay = moment().subtract(maxAge, 'days')
 
   const globalDateCheck = config.checkDates
-  const localDateCheck = feed.checkDates
+  const localDateCheck = feed ? feed.checkDates : globalDateCheck
   const checkDate = typeof localDateCheck !== 'boolean' ? globalDateCheck : localDateCheck
 
   const globalTitleCheck = config.checkTitles
-  const localTitleCheck = feed.checkTitles
+  const localTitleCheck = feed ? feed.checkTitles : globalTitleCheck
   const checkTitle = typeof globalTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
 
   let allArticlesHaveDates = true
@@ -212,7 +212,7 @@ function Debugger (props) {
     // Then make the important decisions
     const seenTitles = new Set()
 
-    for (var a = articleList.length - 1; a >= 0; --a) {
+    for (let a = articleList.length - 1; a >= 0; --a) {
       const article = articleList[a]
       const notInitialized = dbIds.size === 0 && articleList.length !== 1
       const idMatched = dbIds.has(article._id)
@@ -295,11 +295,42 @@ function Debugger (props) {
   }
 
   let latestArticleMoment = null
-  if (feed) {
+  let referenceDatabaseMoment = null
+  let latestDatabaseMoment = null
+  let dataseArticlesWithin5s = true
+  let noDatabaseDate = false
+  if (feed && feedData) {
     for (const article of articleList) {
       const mom = moment(article._fullDate)
       if (!latestArticleMoment || mom > latestArticleMoment) latestArticleMoment = mom
     }
+
+    for (const item of feedData) {
+      if (!item.expiresAt || noDatabaseDate) {
+        noDatabaseDate = true
+        continue
+      }
+      // console.log(item.date)
+      const mom = moment(item.expiresAt)
+      if (!latestDatabaseMoment) {
+        latestDatabaseMoment = mom
+        referenceDatabaseMoment = mom
+      } else {
+        if (mom > latestDatabaseMoment) {
+          latestDatabaseMoment = mom
+        }
+        const diff = Math.abs(mom.diff(referenceDatabaseMoment, 'minutes'))
+        // console.log(mom, referenceDatabaseMoment)
+        if (dataseArticlesWithin5s && diff > 3) {
+          dataseArticlesWithin5s = false
+        }
+        
+      }
+    }
+  }
+
+  if (noDatabaseDate || dataseArticlesWithin5s) {
+    latestDatabaseMoment = null
   }
 
   const mainBody = (
@@ -382,7 +413,7 @@ function Debugger (props) {
       <SectionTitle heading='Summary' />
       <p style={{ fontSize: '16px' }}>
         { newArticles.length === 0 && passedCustomComparisons.length === 0
-          ? `No new articles detected at this time.${latestArticleMoment ? ` The newest article currently in the feed was posted ${getDiff(latestArticleMoment)} ago.` : ``} Once new articles are found, please wait at least ${waitDuration} for them to be delivered.`
+          ? `No new articles detected at this time.${latestArticleMoment ? ` The newest article currently in the feed was posted ${getDiff(latestArticleMoment)} ago.` : ``}${latestDatabaseMoment ? ` The date at which the latest article was recognized by the bot was ${getDiff(latestDatabaseMoment)} ago.` : ``} ${latestDatabaseMoment && latestArticleMoment && latestDatabaseMoment < latestArticleMoment ? `There appears to be a problem. No new articles were recognized by the algorithm, but there appears to be new articles in the current feed.` : `Once new articles are found, please wait at least ${waitDuration} for them to be delivered.`}`
           : newArticles.length === 0 && passedCustomComparisons.length > 0
             ? `New articles were found through custom comparisons (while none were found through the default algorithm). Please wait at least ${waitDuration} for them to be delivered.`
             : newArticles.length > 0 && passedCustomComparisons.length > 0
@@ -417,7 +448,7 @@ function Debugger (props) {
       <PageHeader heading='Debugger' subheading='Understand why your feed may not be working as expected.' />
       <Divider />
 
-      { feed.disabled
+      { feed && feed.disabled
         ? <AlertBox warn >This feed has been disabled for the following reason: <strong>{feed.disabled || 'No reason specified'}</strong></AlertBox>
         : articlesError
           ? <ErrorWrapper><h1>Failed to load feed articles</h1><h3>{articlesError}</h3></ErrorWrapper>
@@ -437,7 +468,7 @@ function Debugger (props) {
           Frequently Asked Questions
           <Icon name='right arrow' />
         </Button>
-        <Button fluid icon labelPosition='right' onClick={e => props.history.push(`${pages.FEED_BROWSER}/${encodeURIComponent(feed.link)}`)}>
+        <Button fluid icon labelPosition='right' onClick={e => props.history.push(`${pages.FEED_BROWSER}/${encodeURIComponent(feed ? feed.link : '')}`)}>
           Feed Browser
           <Icon name='right arrow' />
         </Button>

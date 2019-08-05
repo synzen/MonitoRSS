@@ -2,6 +2,7 @@ import { TEST_ACTION, CHANGE_PAGE, SET_ACTIVE_GUILD, SET_ACTIVE_FEED, INIT_STATE
 import update from 'immutability-helper'
 
 const initialState = {
+  owner: false,
   user: undefined,
   defaultConfig: {},
   guildId: '',

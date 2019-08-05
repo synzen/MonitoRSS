@@ -41,6 +41,7 @@ async function checkUserGuildPermission (req, res, next) {
     req.guildRss = guildRss
     req.guild = guild.toJSON()
 
+    if (config.bot.ownerIDs.includes(userID)) return next()
     if (req.guild.ownerID === userID) return next() // Owner may not always be cached as a member, so check this first
     if (member && member.isManager) return next()
     if (member) return res.status(403).json({ code: 403, message: 'Unauthorized member' })

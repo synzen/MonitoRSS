@@ -36,6 +36,7 @@ async function get (req, res, next) {
     const guildRsses = await Promise.all(approvedProfilesPromises)
 
     const data = {
+      owner: config.bot.ownerIDs.includes(req.session.identity.id),
       defaultConfig: config.feeds,
       csrfToken: req.csrfToken(),
       user,

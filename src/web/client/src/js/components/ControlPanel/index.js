@@ -178,7 +178,8 @@ class ControlPanel extends React.PureComponent {
     }
 
     axios.get('/api/cp').then(({ data, status }) => {
-      const { defaultConfig, user, bot, guilds, linksStatus, csrfToken, feedRefreshRates } = data
+      const { defaultConfig, user, bot, guilds, linksStatus, csrfToken, feedRefreshRates, owner } = data
+      state.owner = owner
       state.cpResponse = data
       state.linksStatus = linksStatus
       state.defaultConfig = defaultConfig
