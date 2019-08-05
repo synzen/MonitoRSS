@@ -44,7 +44,7 @@ module.exports = (data, callback) => {
         }
       }
 
-      const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
+      const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0 
       for (let a = 0; a < articleList.length; ++a) {
         const article = articleList[a]
         article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
@@ -92,7 +92,7 @@ module.exports = (data, callback) => {
     const sentTitles = new Set()
 
     if (Array.isArray(customComparisons)) {
-      for (var n = customComparisons.length - 1; n >= 0; --n) {
+      for (let n = customComparisons.length - 1; n >= 0; --n) {
         const name = customComparisons[n]
         if (name === 'title' || name === 'guid' || name === 'pubdate') { // Forbidden custom comparisons since these are already used by the bot
           customComparisons.splice(n, 1)
@@ -116,13 +116,17 @@ module.exports = (data, callback) => {
     const localTitleCheck = source.checkTitles
     const checkTitle = typeof globalTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
 
-    for (var a = articleList.length - 1; a >= 0; --a) { // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
+    if (debugFeeds && debugFeeds.includes(rssName)) {
+      log.debug.info('Database IDs:', JSON.stringify(Array.from(dbIds)))
+      log.debug.info('Database Titless:', JSON.stringify(Array.from(dbTitles)))
+    }
+    for (let a = articleList.length - 1; a >= 0; --a) { // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
       const article = articleList[a]
       if (dbIds.size === 0 && articleList.length !== 1) { // Only skip if the articleList length is !== 1, otherwise a feed with only 1 article to send since it may have been the first item added
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to empty collection.`)
         seenArticle(true, article)
       } else if (dbIds.has(article._id)) {
-        if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched.`)
+        if (debugFeeds && debugFeeds.includes(rssName)) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), ID was matched (${article._id}).`)
         seenArticle(true, article)
       } else if (checkTitle && (dbTitles.has(article.title) || sentTitles.has(article.title))) {
         if (debugFeeds && debugFeeds.includes(rssName)) log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), Title was matched but not ID.`)
