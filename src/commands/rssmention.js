@@ -38,42 +38,42 @@ async function printSubscriptions (message, rssList, translate) {
     }
   }
 
-  if (Object.keys(subList).length === 0) await message.channel.send(translate('commands.rssmention.listSubscriptionsNone'))
-  else {
-    for (const feed in subList) {
-      let list = ''
-      let globalSubs = []
-      for (let globalSubber in subList[feed].globalSubs) {
-        globalSubs.push(subList[feed].globalSubs[globalSubber])
-      }
-      globalSubs.sort()
-      if (globalSubs.length > 0) list += translate('commands.rssmention.globalSubscribers') + globalSubs.join('\n')
-
-      const filteredSubs = []
-      for (let filteredSubber in subList[feed].filteredSubs) {
-        filteredSubs.push(subList[feed].filteredSubs[filteredSubber])
-      }
-      filteredSubs.sort()
-      if (filteredSubs.length > 0) list += (globalSubs.length > 0 ? '\n' : '') + translate('commands.rssmention.filteredSubscribers') + filteredSubs.join('\n')
-      if (!list) continue
-      if (list.length <= 1024) msg.addField(feed, list)
-      else {
-        const lines = list.split('\n')
-        let curStr = ''
-        for (let i = 0; i < lines.length; ++i) {
-          const line = lines[i]
-          if (curStr.length + line.length <= 1000) {
-            curStr += line + '\n'
-          } else {
-            msg.addField(feed, curStr)
-            curStr = line
-          }
-        }
-        if (curStr.length > 0) msg.addField(feed, curStr)
-      }
-    }
-    await message.channel.send({ embed: msg })
+  if (Object.keys(subList).length === 0) {
+    return message.channel.send(translate('commands.rssmention.listSubscriptionsNone'))
   }
+  for (const feed in subList) {
+    let list = ''
+    let globalSubs = []
+    for (let globalSubber in subList[feed].globalSubs) {
+      globalSubs.push(subList[feed].globalSubs[globalSubber])
+    }
+    globalSubs.sort()
+    if (globalSubs.length > 0) list += translate('commands.rssmention.globalSubscribers') + globalSubs.join('\n')
+
+    const filteredSubs = []
+    for (let filteredSubber in subList[feed].filteredSubs) {
+      filteredSubs.push(subList[feed].filteredSubs[filteredSubber])
+    }
+    filteredSubs.sort()
+    if (filteredSubs.length > 0) list += (globalSubs.length > 0 ? '\n' : '') + translate('commands.rssmention.filteredSubscribers') + filteredSubs.join('\n')
+    if (!list) continue
+    if (list.length <= 1024) msg.addField(feed, list)
+    else {
+      const lines = list.split('\n')
+      let curStr = ''
+      for (let i = 0; i < lines.length; ++i) {
+        const line = lines[i]
+        if (curStr.length + line.length <= 1000) {
+          curStr += line + '\n'
+        } else {
+          msg.addField(feed, curStr)
+          curStr = line
+        }
+      }
+      if (curStr.length > 0) msg.addField(feed, curStr)
+    }
+  }
+  await message.channel.send({ embed: msg })
 }
 
 // Remove all subscriptions for a role
@@ -217,6 +217,7 @@ async function getUserOrRoleFn (m, data) {
 async function feedSelectorFn (m, data) {
   const { guildRss, rssName, role, user } = data
   const source = guildRss.sources[rssName]
+  const translate = Translator.createLocaleTranslator(guildRss.locale)
   return { ...data,
     next:
     { embed: {
@@ -285,7 +286,7 @@ module.exports = async (bot, message, command) => {
     if (optionSelected === '3') return await deleteSubscription(message, guildRss, role, user, translate)
     // 2 and 1 are handled within the Menu functions due to their complexity
   } catch (err) {
-    log.command.warning(`rssroles`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssroles 1', message.guild, err))
+    log.command.warning(`rssmention`, message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssmention 1', message.guild, err))
   }
 }
