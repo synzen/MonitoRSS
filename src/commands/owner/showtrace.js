@@ -24,7 +24,7 @@ exports.sharded = async (bot, message) => {
     await bot.shard.broadcastEval(`
       const path = require('path');
       const appDir = path.dirname(require.main.filename);
-      const log = require(appDir + 'src/util/logger.js');
+      const log = require(appDir + '/src/util/logger.js');
       log.showTrace(${val})
     `)
     await message.channel.send(val === true ? `Error stack traces will now be shown.` : `Error stack traces will now be hidden.`)

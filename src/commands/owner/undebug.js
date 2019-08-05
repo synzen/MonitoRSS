@@ -25,8 +25,8 @@ exports.sharded = (bot, message, Manager) => {
     const fs = require('fs');
     const path = require('path');
     const appDir = path.dirname(require.main.filename);
-    const log = require(appDir + 'src/util/logger.js');
-    const debugFeeds = require(appDir + 'src/util/debugFeeds.js').list;
+    const log = require(appDir + '/src/util/logger.js');
+    const debugFeeds = require(appDir + '/src/util/debugFeeds.js').list;
 
     if (debugFeeds.includes('${rssName}')) {
       for (var index in debugFeeds) {

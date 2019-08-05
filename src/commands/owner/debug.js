@@ -42,9 +42,9 @@ exports.sharded = async (bot, message) => {
       const fs = require('fs');
       const path = require('path');
       const appDir = path.dirname(require.main.filename);
-      const storage = require(appDir + 'src/util/storage.js');
-      const log = require(appDir + 'src/util/logger.js');
-      const debugFeeds = require(appDir + 'src/util/debugFeeds.js').list;
+      const storage = require(appDir + '/src/util/storage.js');
+      const log = require(appDir + '/src/util/logger.js');
+      const debugFeeds = require(appDir + '/src/util/debugFeeds.js').list;
 
       debugFeeds.push('${rssName}')
       'done'
