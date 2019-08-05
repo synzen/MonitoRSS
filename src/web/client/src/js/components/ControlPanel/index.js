@@ -153,6 +153,8 @@ class ControlPanel extends React.PureComponent {
   initialize = () => {
     let localGuildId = window.localStorage.getItem('guildId')
     let localFeedId = window.localStorage.getItem('feedId')
+    let foundLocalGuildID = false
+    let foundLocalFeedID = false
 
     const state = {
       user: null,
@@ -209,6 +211,7 @@ class ControlPanel extends React.PureComponent {
           }
           state.guildId = guildId
           state.guild = { ...state.guilds[guildId] }
+          foundLocalGuildID = true
         }
 
         for (const keyName in profile) {
@@ -227,6 +230,7 @@ class ControlPanel extends React.PureComponent {
               }
               state.feedId = rssName
               state.feed = copy
+              foundLocalFeedID = true
             }
             state.feeds[guildId][rssName] = copy
             state.embeds[guildId][rssName] = source.embeds
@@ -247,6 +251,14 @@ class ControlPanel extends React.PureComponent {
 
         for (const channel of channels) state.channels[guildId][channel.id] = channel
         for (const role of roles) state.roles[guildId][role.id] = role
+      }
+      if (!foundLocalFeedID) {
+        state.feed = null
+        state.feedId = ''
+      }
+      if (!state.feedId || !foundLocalGuildID) {
+        state.guild = null
+        state.guildId = ''
       }
       this.props.initializeState(state)
       window.addEventListener("resize", this.updateDimensions)
