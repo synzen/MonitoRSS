@@ -10,11 +10,16 @@ module.exports = async (bot, message) => {
     let guildRss = await dbOpsGuilds.get(message.guild.id)
     const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
     const prefix = guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix
-    const localeList = Translator.getLocales().join('`, `')
-    console.log(Translator.getLocales())
+    const localeList = Translator.getLocales()
+
     if (!locale) {
-      return await message.channel.send(translate('commands.rsslocale.helpText', { prefix, localeList }))
+      return await message.channel.send(translate('commands.rsslocale.helpText', { prefix, localeList: localeList.join('`, `') }))
     }
+
+    if (!localeList.includes(locale)) {
+      return await message.channel.send(translate('commands.rsslocale.setNone', { prefix, locale, localeList: localeList.join('`, `') }))
+    }
+
     // Reset
     if (locale === 'reset') {
       if (!guildRss || !guildRss.locale) {
