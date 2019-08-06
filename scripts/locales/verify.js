@@ -8,11 +8,11 @@ const COLORS = {
   GREEN: '\x1b[32m',
   CYAN: '\x1b[36m'
 }
-const CONSTANT_CHARACTERS = ['"', '\n', '`']
+const CONSTANT_CHARACTERS = ['"', '\n', '`', '\u200b']
 const referenceLocaleData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `${defaultLocale}.json`)))
 const fileNames = fs.readdirSync(path.join(__dirname, '..', '..', 'src', 'locales'))
 
-
+const stringCountsByLocale = {}
 const errorStringsByLocale = {}
 
 function traverse (object, reference, location, locale) {
@@ -22,11 +22,12 @@ function traverse (object, reference, location, locale) {
     } else if (typeof reference[key] === 'object') {
       traverse(object[key], reference[key], location + `[${key}]`, locale)
     } else if (typeof reference[key] === 'string' && object[key].length > 0) {
+      ++stringCountsByLocale[locale]
       for (const character of CONSTANT_CHARACTERS) {
         const referenceCharCount = (reference[key].match(new RegExp(character, 'g')) || []).length
         const charCount = (object[key].match(new RegExp(character, 'g')) || []).length
         if (referenceCharCount !== charCount) {
-          const printCharacter = character === '\n' ? '\\n' : character
+          const printCharacter = character === '\n' ? '\\n' : character === '\u200b' ? '\\u200b' : character
           errorStringsByLocale[locale].push(`${COLORS.CYAN}${location}[${key}]${COLORS.RESET} expected ${COLORS.GREEN}${referenceCharCount} ${COLORS.BRIGHT}${printCharacter}${COLORS.RESET} character(s)${COLORS.RESET} but found ${COLORS.RED}${charCount} ${COLORS.BRIGHT}${printCharacter}${COLORS.RESET} character(s)`)
         }
       }
@@ -35,22 +36,21 @@ function traverse (object, reference, location, locale) {
 }
 
 for (const fileName of fileNames) {
-  if (fileName === 'en-US.json') {
-    continue
-  }
   const localeData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', fileName)))
   const locale = fileName.replace('.json', '')
   errorStringsByLocale[locale] = []
+  stringCountsByLocale[locale] = 0
   traverse(localeData, referenceLocaleData, locale, locale)
 }
 
+const totalStrings = stringCountsByLocale['en-US']
 const okStrings = []
 const errorStrings = []
 
 for (const locale in errorStringsByLocale) {
   const strings = errorStringsByLocale[locale]
   if (strings.length === 0) {
-    okStrings.push(`${COLORS.GREEN}√${COLORS.RESET} ${locale} ${locale === 'en-US' ? '(Reference)' : ''}`)
+    okStrings.push(`${COLORS.GREEN}√${COLORS.RESET} ${locale} ${locale === 'en-US' ? '(Reference)' : `(${((stringCountsByLocale[locale] / totalStrings) * 100).toFixed(2)}%)`}`)
     continue
   }
   // Prettify the logs
