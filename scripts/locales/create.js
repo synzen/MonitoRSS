@@ -1,8 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const readline = require('readline')
-const defaultLocale = require('../src/config.js').bot.locale
-const localeData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'locales', `${defaultLocale}.json`)))
+const defaultLocale = require('../../src/config.js').bot.locale
+const localeData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `${defaultLocale}.json`)))
 
 const obj = {}
 
@@ -25,7 +25,7 @@ const rl = readline.createInterface({
 
 rl.question('Type the locale to generate a template: ', name => {
   traverse(localeData, obj)
-  const file = path.join(__dirname, '..', 'src', 'locales', `${name}.json`)
+  const file = path.join(__dirname, '..', '..', 'src', 'locales', `${name}.json`)
   fs.writeFileSync(file, JSON.stringify(obj, null, 2))
   console.log(`Created at ${file}`)
   rl.close()
