@@ -2,13 +2,16 @@ const fs = require('fs')
 const path = require('path')
 const defaultLocale = require('../../src/config.js').bot.locale
 const COLORS = {
+  BRIGHT: '\x1b[1m',
   RESET: '\x1b[0m',
   RED: '\x1b[31m',
   GREEN: '\x1b[32m',
   CYAN: '\x1b[36m'
 }
+const CONSTANT_CHARACTERS = ['"', '\n', '`']
 const referenceLocaleData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `${defaultLocale}.json`)))
 const fileNames = fs.readdirSync(path.join(__dirname, '..', '..', 'src', 'locales'))
+
 
 const errorStringsByLocale = {}
 
@@ -16,13 +19,25 @@ function traverse (object, reference, location, locale) {
   for (const key in reference) {
     if (typeof reference[key] !== typeof object[key]) {
       errorStringsByLocale[locale].push(`${COLORS.CYAN}${location}[${key}]${COLORS.RESET} expected ${COLORS.GREEN}${typeof reference[key]}${COLORS.RESET} but found ${COLORS.RED}${typeof object[key]}${COLORS.RESET}`)
-    } else if (typeof reference[key] === 'object' && typeof object[key] === 'object') {
+    } else if (typeof reference[key] === 'object') {
       traverse(object[key], reference[key], location + `[${key}]`, locale)
+    } else if (typeof reference[key] === 'string' && object[key].length > 0) {
+      for (const character of CONSTANT_CHARACTERS) {
+        const referenceCharCount = (reference[key].match(new RegExp(character, 'g')) || []).length
+        const charCount = (object[key].match(new RegExp(character, 'g')) || []).length
+        if (referenceCharCount !== charCount) {
+          const printCharacter = character === '\n' ? '\\n' : character
+          errorStringsByLocale[locale].push(`${COLORS.CYAN}${location}[${key}]${COLORS.RESET} expected ${COLORS.GREEN}${referenceCharCount} ${COLORS.BRIGHT}${printCharacter}${COLORS.RESET} character(s)${COLORS.RESET} but found ${COLORS.RED}${charCount} ${COLORS.BRIGHT}${printCharacter}${COLORS.RESET} character(s)`)
+        }
+      }
     }
   }
 }
 
 for (const fileName of fileNames) {
+  if (fileName === 'en-US.json') {
+    continue
+  }
   const localeData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', fileName)))
   const locale = fileName.replace('.json', '')
   errorStringsByLocale[locale] = []
