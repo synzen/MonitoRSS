@@ -175,7 +175,7 @@
       "dateFormat": "Date format",
       "timezone": "Timezone",
       "noFeeds": "You cannot customize the date placeholder if you have not added any feeds.",
-      "description": "\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "description": "\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
       "optionCurrentSetting": "Your current setting is `{{value}}`.",
       "optionChangeTimezone": "Change Timezone",
       "optionCustomizeFormat": "Customize Format",
@@ -199,7 +199,7 @@
       "defaultEmbed": "Default Embed",
       "numberedEmbed": "Embed #{{number}}",
       "embedSelection": "Embed Selection",
-      "embedSelectionDescription": "The properties for each embed is shown below. Select one of the embeds by typing the number next to it, or type **exit** to cancel.\n\u200b",
+      "embedSelectionDescription": "The properties for each embed is shown below. Select one of the embeds by typing the number next to it, or type `exit` to cancel.\n\u200b",
       "embedSelectionOptionAdd": "Add a new embed",
       "embedSelectionOptionAddDescription": "A maximum of 10 embeds may be added.\n\u200b",
       "embedSelectionOptionRemoveAll": "Remove all embeds",
@@ -252,7 +252,7 @@
       "embedFieldsMaximum": "You have reached the maximum number of fields you can add (10).",
       "embedFieldsRemoveNone": "There are no embed fields to remove for this feed.",
       "embedFieldsRemoved": "The Field(s) numbered {{numbers}} have been removed from the embed for the feed <{{link}}>.",
-      "embedFieldsDescription": "\u200b\nSelect whether to add or remove a field from this feed's embed. For an example of what a field looks like, see https://i.imgur.com/WSHwmyB.png. Type **exit** to cancel.\n\u200b",
+      "embedFieldsDescription": "\u200b\nSelect whether to add or remove a field from this feed's embed. For an example of what a field looks like, see https://i.imgur.com/WSHwmyB.png. Type `exit` to cancel.\n\u200b",
       "embedFieldsOptionRemove": "Remove a Field",
       "embedFieldsOptionRemoveDescription": "Remove a Field if it exists.",
       "embedFieldsOptionAddRegular": "Add a regular Field",
@@ -264,7 +264,7 @@
       "embedFieldsOptionAddInlineBlank": "Add an inline blank Field",
       "embedFieldsOptionAddInlineBlankDescription": "A Blank Field, but inline.",
       "embedFieldsOptionRemoveEmbedTitle": "Embed Fields Removal",
-      "embedFieldsOptionRemoveEmbedDescription": "\u200b\nYour Fields are listed below, ordered by when they were added. Type the Field's number to remove it, or type multiple Field numbers separateed by commas (`,`). Type **exit** to cancel.\n\u200b",
+      "embedFieldsOptionRemoveEmbedDescription": "\u200b\nYour Fields are listed below, ordered by when they were added. Type the Field's number to remove it, or type multiple Field numbers separateed by commas (`,`). Type `exit` to cancel.\n\u200b",
       "embedFieldsAddedBlank": "An blank Field has been added to the embed for the feed <{{link}}>.",
       "embedFieldsAddedBlankInline": "An inline blank Field has been added to the embed for the feed <{{link}}>.",
       "embedFieldsSettingPrompt": "Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type `exit` to cancel.",
@@ -333,7 +333,7 @@
       "user": "user",
       "noFeeds": "Cannot add mention customizations without any active feeds.",
       "subscriptionsList": "Subscriptions List",
-      "description": "\n**Current Channel:** #{{channel}}\n\nAdding a subscription for a user or role will automatically add their mentions in the `{subscribers}` placeholder. If the subscriber is a role, then the role will be added to the list of eligible roles for role mention toggling, and also for the commands {{prefix}}subme/unsubme.\n\nSelect an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "description": "\n**Current Channel:** #{{channel}}\n\nAdding a subscription for a user or role will automatically add their mentions in the `{subscribers}` placeholder. If the subscriber is a role, then the role will be added to the list of eligible roles for role mention toggling, and also for the commands {{prefix}}subme/unsubme.\n\nSelect an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
       "subscriptionOptions": "Subscription Options",
       "optionSubscriberFeed": "Add/Remove Role or User Subscriber to a Feed",
       "optionSubscriberFeedDescription": "Enable mentions for a role/user for all delivered articles of this feed.\n*Using global subscriptions will remove filtered subscriptions if enabled for that role/user.*",
@@ -365,7 +365,7 @@
       "removeAnySubscriberNone": "There are no subscribers to remove from the feed <{{link}}>.",
       "invalidRoleOrUser": "That is not a valid role or user. Try again, or type `exit` to cancel.",
       "multipleRoles": "There are multiple roles with that name. Mention the role, type another role/user, or type `exit` to cancel.",
-      "selectedRoleDescription": "**Selected**: {{name}}\n**Feed Title:** {{feedTitle}\n**Feed Link:** {{feedLink}}\n\nSelect an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "selectedRoleDescription": "**Selected**: {{name}}\n**Feed Title:** {{feedTitle}\n**Feed Link:** {{feedLink}}\n\nSelect an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
       "globalSubscribers": "**Global Subscribers:**\n",
       "filteredSubscribers": "**Filtered Subscribers:**\n"
     },
@@ -391,7 +391,7 @@
     },
     "rssoptions": {
       "miscFeedOptions": "Miscellaneous Feed Options",
-      "selectOption": "\u200b\nPlease select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
+      "selectOption": "\u200b\nPlease select an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
       "onlyIfNecessary": "Only enable this if necessary!",
       "titleChecks": "Title Checks",
       "titleChecksToggle": "Toggle Title Checks for a feed",
@@ -436,8 +436,8 @@
     },
     "rsssplit": {
       "messageSplittingOptions": "Message Splitting Options",
-      "description": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nMessage splitting for this feed is currently {{currently}}. Select an option by typing its number, or type **exit** to cancel.\u200b\n\u200b\n",
-      "enabledDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\n**Message Splitting is now enabled for this feed.**\n\nYou may customize message splitting further by selecting one of the options below by typing its number, or type **exit** to leave as is. It is recommended to leave at the default settings.\u200b\n\u200b\n",
+      "description": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nMessage splitting for this feed is currently {{currently}}. Select an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
+      "enabledDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\n**Message Splitting is now enabled for this feed.**\n\nYou may customize message splitting further by selecting one of the options below by typing its number, or type `exit` to leave as is. It is recommended to leave at the default settings.\u200b\n\u200b\n",
       "optionEnable": "Enable Message Splitting",
       "optionEnableDescription": "Message splitting splits a message that exceeds the Discord character limit into multiple messages instead.",
       "optionDisable": "Disable Message Splitting",
@@ -515,7 +515,7 @@
         "role": "Role",
         "user": "User",
         "filtersCustomization": "Filters Customization",
-        "categoryDescription": "Below is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type **exit** to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with `raw:`.\u200b\n\u200b\n",
+        "categoryDescription": "Below is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type `exit` to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with `raw:`.\u200b\n\u200b\n",
         "invalidCategory": "That is not a valid filter category. Try again, or type `exit` to cancel.",
         "promptAdd": "Type the filter word/phrase you would like to add in the category `{{type}}` by typing it, type multiple word/phrases on different lines to add more than one, or type `exit` to cancel. The following can be added in front of a search term to change its behavior:\n\n\n`~` - Broad filter modifier to trigger even if the term is found embedded inside words/phrases.\n`!` - NOT filter modifier to do the opposite of a normal search term. Can be added in front of any term, including one with broad filter mod.\n`\\` - Escape symbol added before modifiers to interpret them as regular characters and not modifiers.\n\n\nFilters will be applied as **case insensitive** to feeds. Because of this, all input will be converted to be lowercase.",
         "addSuccess": "The following filter(s) have been successfully added for the filter category",
@@ -530,7 +530,7 @@
         "removeFailedNoExist": "The following filter(s) were unable to be deleted because they do not exist",
         "removeNone": "There are no filters to remove for <{{link}}>.",
         "listOfFilters": "List of Assigned Filters",
-        "listOfFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type **exit** to cancel.\u200b\n\u200b\n"
+        "listOfFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type `exit` to cancel.\u200b\n\u200b\n"
       }
     }
   },
@@ -547,7 +547,7 @@
       "action": "Action",
       "prompt": "Choose a feed to from this channel by typing the number to execute your requested action on.",
       "multiSelect": "You may select multiple feeds by separation with commas, and/or with hyphens (for example `1,3,4-6,8`).",
-      "exitToCancel": "Type **exit** to cancel."
+      "exitToCancel": "Type `exit` to cancel."
     },
     "errors": {
       "MenuOptionError": {
