@@ -3,7 +3,7 @@
     "defaultSetting": "Padrão é `{{value}}`.",
     "backupReminder": "Depois de configurado, é recomendado que você use {{prefix}}rssbackup para ter um backup pessoal de suas configurações.",
     "channelUpper": "Canal",
-    "channelLower": "canal",
+    "channelLower": "Canal",
     "enabledUpper": "Ativado",
     "enabledLower": "ativado",
     "disabledUpper": "Desativado",
@@ -326,7 +326,7 @@
       "resetNoDefault": "`{{locale}}` já é o idioma padrão.",
       "resetSuccess": "Local de idioma foi redefinido com sucesso de volta para `{{locale}}`.",
       "setSuccess": "Linguagem foi alterada com sucesso para `{{locale}}`.",
-	  "setNone": "`{{locale}}` não é uma linguagem suportada. Linguagens suportadas atualmente são: `{{localeList}}`."
+      "setNone": "`{{locale}}` não é uma linguagem suportada. Linguagens suportadas atualmente são: `{{localeList}}`."
     },
     "rssmention": {
       "role": "cargo",
