@@ -23,10 +23,20 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
-rl.question('Type the locale to generate a template: ', name => {
-  traverse(localeData, obj)
-  const file = path.join(__dirname, '..', '..', 'src', 'locales', `${name}.json`)
-  fs.writeFileSync(file, JSON.stringify(obj, null, 2))
-  console.log(`Created at ${file}`)
-  rl.close()
-})
+console.log('The locale name should by in the format of \x1b[1mlanguage-region\x1b[0m.')
+
+function prompt () {
+  rl.question('\nType the locale to generate a template: ', name => {
+    traverse(localeData, obj)
+    if (name.includes('_')) {
+      console.log('Invalid. Hyphens (-) must be used, not underscores.')
+      return prompt()
+    }
+    const file = path.join(__dirname, '..', '..', 'src', 'locales', `${name}.json`)
+    fs.writeFileSync(file, JSON.stringify(obj, null, 2))
+    console.log(`Created at ${file}`)
+    rl.close()
+  })
+}
+
+prompt()
