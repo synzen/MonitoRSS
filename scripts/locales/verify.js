@@ -1,35 +1,43 @@
 const fs = require('fs')
 const path = require('path')
 const defaultLocale = require('../../src/config.js').bot.locale
+const COLORS = {
+  RESET: '\x1b[0m',
+  RED: '\x1b[31m',
+  GREEN: '\x1b[32m',
+  CYAN: '\x1b[36m'
+}
 const referenceLocaleData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `${defaultLocale}.json`)))
 const fileNames = fs.readdirSync(path.join(__dirname, '..', '..', 'src', 'locales'))
 
-const strings = []
+const errorStringsByLocale = {}
 
-function traverse (object, reference, location) {
+function traverse (object, reference, location, locale) {
   for (const key in reference) {
     if (typeof reference[key] !== typeof object[key]) {
-      strings.push(`\x1b[36m${location}[${key}]\x1b[0m expected \x1b[32m${typeof reference[key]}\x1b[0m but found \x1b[31m${typeof object[key]}\x1b[0m`)
+      errorStringsByLocale[locale].push(`${COLORS.CYAN}${location}[${key}]${COLORS.RESET} expected ${COLORS.GREEN}${typeof reference[key]}${COLORS.RESET} but found ${COLORS.RED}${typeof object[key]}${COLORS.RESET}`)
     } else if (typeof reference[key] === 'object' && typeof object[key] === 'object') {
-      traverse(object[key], reference[key], location + `[${key}]`)
+      traverse(object[key], reference[key], location + `[${key}]`, locale)
     }
   }
 }
 
-function checkLocale (fileName) {
-  const localeData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', fileName)))
-  traverse(localeData, referenceLocaleData, fileName.replace('.json', ''))
-}
-
 for (const fileName of fileNames) {
-  if (fileName !== 'en-US.json') {
-    checkLocale(fileName)
-  }
+  const localeData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', fileName)))
+  const locale = fileName.replace('.json', '')
+  errorStringsByLocale[locale] = []
+  traverse(localeData, referenceLocaleData, locale, locale)
 }
 
-if (strings.length === 0) {
-  console.log('Everything looks good!')
-} else {
+const okStrings = []
+const errorStrings = []
+
+for (const locale in errorStringsByLocale) {
+  const strings = errorStringsByLocale[locale]
+  if (strings.length === 0) {
+    okStrings.push(`${COLORS.GREEN}√${COLORS.RESET} ${locale} ${locale === 'en-US' ? '(Reference)' : ''}`)
+    continue
+  }
   // Prettify the logs
   let longestLocation = 0
   for (const line of strings) {
@@ -49,6 +57,9 @@ if (strings.length === 0) {
     parts[0] = location
     strings[i] = parts.join('expected')
   }
-
-  console.log(`${strings.join('\n')}\n\nNote that for untranslated strings, their values must be "" (an empty string). They cannot be undefined.`)
+  errorStrings.push(`${COLORS.RED}X${COLORS.RESET} ${locale}\n${strings.join('\n')}`)
 }
+
+console.log(okStrings.join('\n'))
+console.log(errorStrings.join('\n'))
+console.log(`\nNote that for untranslated strings, their values must be "" (an empty string). They cannot be undefined.`)
