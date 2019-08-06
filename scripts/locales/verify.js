@@ -62,4 +62,4 @@ for (const locale in errorStringsByLocale) {
 
 console.log(okStrings.join('\n'))
 console.log(errorStrings.join('\n'))
-console.log(`\nNote that for untranslated strings, their values must be "" (an empty string). They cannot be undefined.`)
+console.log(`\nNote that for untranslated strings, their values must be "" (an empty string). They cannot be undefined.\nEmpty string translations will fall back to using the default en-US strings.`)
