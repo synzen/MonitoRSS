@@ -152,6 +152,10 @@ class ScheduleManager {
     let assignedSchedule = await dbOpsSchedules.assignedSchedules.get(rssName, shardID)
 
     // Take care of our VIPs
+    if (!source.link) {
+      console.log(guildRss)
+      console.log(source)
+    }
     if (config._vip === true && !source.link.includes('feed43')) {
       const validVip = vipServers.includes(guildRss.id)
       if (validVip) {
@@ -181,6 +185,11 @@ class ScheduleManager {
 
       if (!assignedSchedule) return 'default'
     }
+  }
+
+  async reassignSchedule (feedID, guildRss, vipServers) {
+    await this.removeScheduleOfFeed(feedID, guildRss.sources[feedID].link)
+    await this.assignSchedule(feedID, guildRss, vipServers)
   }
 
   async assignSchedule (feedID, guildRss, vipServers) {

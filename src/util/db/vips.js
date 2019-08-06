@@ -74,7 +74,7 @@ exports.addServers = async settings => {
       const rssList = guildRss.sources
       if (rssList) {
         for (const rssName in rssList) {
-          storage.scheduleManager.assignSchedule(rssName, guildRss).catch(err => log.general.error('Failed to assign schedules to newly added vip server feeds', err))
+          storage.scheduleManager.reassignSchedule(rssName, guildRss).catch(err => log.general.error('Failed to assign schedules to newly added vip server feeds', err, true))
         }
       }
     }
@@ -94,7 +94,7 @@ exports.removeServers = async settings => {
     if (guildRss && guildRss.sources) {
       const rssList = guildRss.sources
       for (var rssName in rssList) {
-        storage.scheduleManager.removeScheduleOfFeed(rssName, rssList[rssName].link).catch(err => log.general.error('Failed to remove schedules from removed vip server feeds', err))
+        storage.scheduleManager.reassignSchedule(rssName, guildRss).catch(err => log.general.error('Failed to remove schedules from removed vip server feeds', err, true))
       }
     }
     await VIP.model().updateOne({ id: vipUser.id }, { $pull: { servers: { $in: serversToRemove } } }, UPDATE_SETTINGS).exec()
