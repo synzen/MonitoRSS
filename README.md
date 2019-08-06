@@ -68,7 +68,8 @@ You can deploy the bot in a simple way to Heroku using the button below. [Click 
 
 To add or contribute to menu translations (locales):
 
-1. If the locale JSON doesn't exist in src/locales, create one by running scripts/localeTemplate.js
+1. If the locale JSON doesn't exist in src/locales, create one by running `node scripts/locales/create.js`
 2. Open the relevant locale file in src/locales
 3. Add your translations (use the en-US.json locale as reference)
+4. Verify your file(s) by running `node scripts/locales/verify.js` and make appropriate fixes
 4. Make a pull request for your changes!
