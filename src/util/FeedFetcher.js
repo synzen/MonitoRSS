@@ -25,8 +25,17 @@ class FeedFetcher {
     const options = {
       timeout: 15000,
       follow: 5,
-      headers: { 'user-agent': `Mozilla/5.0 ${url.includes('.tumblr.com') ? 'GoogleBot' : ''} (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36` },
-      ...requestOptions
+      ...requestOptions,
+      headers: {
+        'user-agent': `Mozilla/5.0 ${url.includes('.tumblr.com') ? 'GoogleBot' : ''} (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36`,
+      }
+    }
+
+    if (requestOptions.headers) {
+      options.headers = {
+        ...options.headers,
+        ...requestOptions.headers
+      }
     }
     let endStatus
     let res
@@ -39,12 +48,23 @@ class FeedFetcher {
 
     endStatus = res.status
 
-    if (res.status === 200) return res.body
+    // Fetch returns a 304 if the two properties below were passed in by the calling function to check if there are new feeds
+    if (res.status === 200 || (res.status === 304 && 'If-Modified-Since' in options.headers && 'If-None-Match' in options.headers)) {
+      return {
+        stream: res.body,
+        response: res
+      }
+    }
     if (!retried && (res.status === 403 || res.status === 400)) {
       delete options.headers
-      const res2 = await this.fetchURL(url, { ...options, headers: {} }, true)
+      const res2 = await this.fetchURL(url, { ...options, headers: { ...options.headers, 'user-agent': '' } }, true)
       endStatus = res2.status
-      if (res2.status === 200) return res2.body
+      if (res2.status === 200) {
+        return {
+          stream: res2.body,
+          response: res2
+        }
+      }
     }
 
     const serverHeaders = res.headers.get('server')
@@ -59,7 +79,9 @@ class FeedFetcher {
       const feedStream = new Readable()
       feedStream.push(res.body)
       feedStream.push(null)
-      return feedStream
+      return {
+        stream: feedStream
+      }
     })
   }
   /**
@@ -119,7 +141,7 @@ class FeedFetcher {
    * @returns {FeedData} - The article list and the id type used
    */
   static async fetchFeed (url, options) {
-    const stream = await this.fetchURL(url, options)
+    const { stream } = await this.fetchURL(url, options)
     const { articleList, idType } = await this.parseStream(stream, url)
     return { articleList, idType }
   }

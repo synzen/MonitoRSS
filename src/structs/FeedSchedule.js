@@ -40,6 +40,7 @@ class FeedSchedule extends EventEmitter {
     this.failedLinks = {}
     this.feedIDs = new Set() // feed ids assigned to this schedule
     this.ran = 0 // # of times this schedule has ran
+    this.headers = {}
 
     // For vip tracking
     this.vipServers = []
@@ -244,7 +245,17 @@ class FeedSchedule extends EventEmitter {
         }
       }
 
-      getArticles({ config: config, feedData: this.feedData, link: link, rssList: rssList, uniqueSettings: uniqueSettings, runNum: this.ran, scheduleName: this.name }, (err, linkCompletion) => {
+      const data = {
+        config,
+        link,
+        rssList,
+        uniqueSettings,
+        feedData: this.feedData,
+        runNum: this.ran,
+        scheduleName: this.name
+      }
+
+      getArticles(data, (err, linkCompletion) => {
         if (err) log.cycle.warning(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') {
           if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
@@ -290,6 +301,10 @@ class FeedSchedule extends EventEmitter {
       const processor = this._processorList[processorIndex]
 
       processor.on('message', linkCompletion => {
+        if (linkCompletion.status === 'headers') {
+          this.headers[linkCompletion.link] = { lastModified: linkCompletion.lastModified, etag: linkCompletion.etag }
+          return
+        }
         if (linkCompletion.status === 'article') return this.emit('article', linkCompletion.article)
         if (linkCompletion.status === 'batch_connected' && callback) return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'failed') {
@@ -314,7 +329,16 @@ class FeedSchedule extends EventEmitter {
         }
       })
 
-      processor.send({ config: config, feedData: this.feedData, currentBatch: currentBatch, debugFeeds: debugFeeds, shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null, runNum: this.ran, scheduleName: this.name })
+      processor.send({
+        config,
+        currentBatch,
+        debugFeeds,
+        headers: this.headers,
+        feedData: this.feedData,
+        runNum: this.ran,
+        scheduleName: this.name,
+        shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null
+      })
     }
 
     function spawn (count) {
