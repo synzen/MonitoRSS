@@ -344,19 +344,16 @@
       "optionListSubscriptions": "List All Subscribers",
       "optionListSubscriptionsDescription": "List all subscribers.",
       "promptUserOrRole": "Enter a valid case-sensitive role name, role/user mention or user ID. The `@everyone` role cannot be used.",
-
       "globalSubscriptionsTitle": "Subscription Customization - Add/Remove Global Subscription",
       "globalSubscriptionsOptionAdd": "Add a global subscription",
       "globalSubscriptionsOptionAddDescription": "Have the role/user get mentioned every time a new article is posted from this feed.",
       "globalSubscriptionsOptionRemove": "Remove a global subscription",
       "globalSubscriptionsOptionRemoveDescription": "Remove the role/user's subscription to this feed.",
-
       "filteredSubscriptionsTitle": "Subscription Customization - Add/Remove Filtered Subscription",
       "filteredSubscriptionsOptionAdd": "Add filter(s) to filtered subscriber",
       "filteredSubscriptionsOptionAddDescription": "Add a filtered subscription so that this role/user will get mentioned everytime an article from a feed passes its filter tests.",
       "filteredSubscriptionsOptionRemove": "Remove filter(s) to filtered subscriber",
       "filteredSubscriptionsOptionRemoveDescription": "Remove a word/phrase from this role/user's subscription to a feed.",
-
       "listSubscriptionsDescription": "\nBelow are the feed titles with any roles and users subscribed to that feed under it. Each role is then categorized as either a global or filtered subscription.\u200b\n\u200b\n",
       "listSubscriptionsNone": "There are no subscriptions for any feeds.",
       "removeSubscriptionsNone": "This {{type}} has no subscriptions to remove.",
