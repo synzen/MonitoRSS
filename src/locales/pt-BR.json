@@ -3,7 +3,7 @@
     "defaultSetting": "Padrão é `{{value}}`.",
     "backupReminder": "Depois de configurado, é recomendado que você use {{prefix}}rssbackup para ter um backup pessoal de suas configurações.",
     "channelUpper": "Canal",
-    "channelLower": "Canal",
+    "channelLower": "canal",
     "enabledUpper": "Ativado",
     "enabledLower": "ativado",
     "disabledUpper": "Desativado",
