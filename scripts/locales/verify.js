@@ -27,24 +27,28 @@ for (const fileName of fileNames) {
   }
 }
 
-// Prettify the logs
-let longestLocation = 0
-for (const line of strings) {
-  const parts = line.split('expected')
-  const location = parts[0]
-  if (location.length > longestLocation) {
-    longestLocation = location.length
+if (strings.length === 0) {
+  console.log('Everything looks good!')
+} else {
+  // Prettify the logs
+  let longestLocation = 0
+  for (const line of strings) {
+    const parts = line.split('expected')
+    const location = parts[0]
+    if (location.length > longestLocation) {
+      longestLocation = location.length
+    }
   }
-}
 
-for (let i = 0; i < strings.length; ++i) {
-  const parts = strings[i].split('expected')
-  let location = parts[0]
-  while (location.length < longestLocation) {
-    location += ' '
+  for (let i = 0; i < strings.length; ++i) {
+    const parts = strings[i].split('expected')
+    let location = parts[0]
+    while (location.length < longestLocation) {
+      location += ' '
+    }
+    parts[0] = location
+    strings[i] = parts.join('expected')
   }
-  parts[0] = location
-  strings[i] = parts.join('expected')
-}
 
-console.log(strings.join('\n'))
+  console.log(`${strings.join('\n')}\n\nNote that for untranslated strings, their values must be "" (an empty string). They cannot be undefined.`)
+}
