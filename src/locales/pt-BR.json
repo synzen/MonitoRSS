@@ -3,7 +3,7 @@
     "defaultSetting": "Padrão é `{{value}}`.",
     "backupReminder": "Depois de configurado, é recomendado que você use {{prefix}}rssbackup para ter um backup pessoal de suas configurações.",
     "channelUpper": "Canal",
-    "channelLower": "Canal",
+    "channelLower": "canal",
     "enabledUpper": "Ativado",
     "enabledLower": "ativado",
     "disabledUpper": "Desativado",
@@ -29,7 +29,7 @@
     },
     "rssembed": {
       "args": {
-        "campos": "Customizar campos para a embed"
+        "fields": "Customizar campos para a embed"
       },
       "action": "Customizar mensagem da embed",
       "description": "Abre um menu para customizar a mensagem da embed. Isso irá substituir a embed padrão que o Discord utiliza quando um link é postado."
@@ -54,13 +54,13 @@
     },
     "subme": {
       "args": {
-        "<nome do cargo/mencionar>": "Adicione diretamente o cargo em vez de adicionar pelo menu."
+        "<role name/mention>": "Adicione diretamente o cargo em vez de adicionar pelo menu."
       },
-      "description": "Abre um menu para adicionar um cargo com uma menção filtrada ao usuário. Usável por qualquer um no servidor, ativável/desativável pela permissão \"Gerenciar Cargos\. Os cargo precisam estar abaixo do cargo do bot na configuração de cargos."
+      "description": "Abre um menu para adicionar um cargo com uma menção filtrada ao usuário. Usável por qualquer um no servidor, ativável/desativável pela permissão \"Gerenciar Cargos\". Os cargo precisam estar abaixo do cargo do bot na configuração de cargos."
     },
     "unsubme": {
       "args": {
-        "<nome do cargo/mencionar>": "Remova diretamente o cargo em vez de remover pelo menu."
+        "<role name/mention>": "Remova diretamente o cargo em vez de remover pelo menu."
       },
       "description": "Abre um menu semelhante ao `subme`, mas será para remover o cargo. Qualquer cargo abaixo do cargo do bot será removível."
     },
@@ -83,7 +83,7 @@
       "action": "Clonar configurações do feed.",
       "description": "Clona as configurações de um feed para outro.",
       "args": {
-        "<propriedades>": "Use o comando sem argumentos para mais informações."
+        "<property>": "Use o comando sem argumentos para mais informações."
       }
     },
     "rssbackup": {
@@ -113,15 +113,15 @@
     "rssalert": {
       "description": "Configurar mensagem direta a um usuário para caso um feed falhar",
       "args": {
-        "add <id do usuário/mencionar>": "Adicionar um usuário para direcionar a mensagem direta.",
-        "remove <id do usuário/mencionar>": "Remover um usuário da mensagem direta.",
+        "add <user id/mention>": "Adicionar um usuário para direcionar a mensagem direta.",
+        "remove <user id/mention>": "Remover um usuário da mensagem direta.",
         "list": "Listar usuarios ativos"
       }
     },
     "rsslocale": {
       "description": "Muda a linguagem dos comandos (se a linguagem desejada for suportada)",
       "args": {
-        "<localidade>": "Linguagem desejada"
+        "<locale>": "Linguagem desejada"
       }
     },
     "rssinvite": {
@@ -325,7 +325,8 @@
       "resetNone": "Este servidor não possui uma linguagem setada",
       "resetNoDefault": "`{{locale}}` já é o idioma padrão.",
       "resetSuccess": "Local de idioma foi redefinido com sucesso de volta para `{{locale}}`.",
-      "setSuccess": "Linguagem foi alterada com sucesso para `{{locale}}`."
+      "setSuccess": "Linguagem foi alterada com sucesso para `{{locale}}`.",
+	  "setNone": "`{{locale}}` não é uma linguagem suportada. Linguagens suportadas atualmente são: `{{localeList}}`."
     },
     "rssmention": {
       "role": "cargo",
@@ -414,7 +415,7 @@
       "defaultSetting": "configuração padrão"
     },
     "rssprefix": {
-      "helpText": "Você deve especificar um prefixo de 4 caracteres ou menos como o primeiro argumento para definir um prefixo personalizado ou "reset" para redefinir o prefixo para padrão se um prefixo personalizado já estiver definido.",
+      "helpText": "Você deve especificar um prefixo de 4 caracteres ou menos como o primeiro argumento para definir um prefixo personalizado ou `reset` para redefinir o prefixo para padrão se um prefixo personalizado já estiver definido.",
       "resetNone": "Você não tem prefixo personalizado para resetar.",
       "resetSuccess": "O prefixo de comandos foi redefinido de volta ao padrão ({{prefix}}).",
       "mustBeLess": "O comprimento do prefixo de comandos deve ser menor que 5 caracteres.",
@@ -457,15 +458,15 @@
       "promptAppendChar": "Digite um caractere anexado agora, `reset` para redefinir ou `exit` para cancelar.",
       "promptMaxLen": "Digite o tamanho máximo que uma única mensagem deve ter agora, `reset` para resetar, ou `exit` para cancelar. **Deve ser um número> = 500 e <= 1950.**",
       "setSplitCharDefault": "Esse já é o caractere padrão. Tente novamente ou digite `exit` para cancelar e deixar por padrão.",
-      "setSplitChar": "O caractere de divisão do feed <{{link}}> foi definido como "{{content}}".",
-      "setPrependChar": "O caractere anterior ao feed <{{link}}> foi definido como "{{content}}".",
-      "setAppendChar": "O caractere acrescentado ao feed <{{link}}> foi definido como "{{content}}".",
-      "setMaxLen": "O tamanho máximo de uma única mensagem para o feed <{{link}}> foi definido como "{{num}}".",
+      "setSplitChar": "O caractere de divisão do feed <{{link}}> foi definido como `{{content}}`.",
+      "setPrependChar": "O caractere anterior ao feed <{{link}}> foi definido como `{{content}}`.",
+      "setAppendChar": "O caractere acrescentado ao feed <{{link}}> foi definido como `{{content}}`.",
+      "setMaxLen": "O tamanho máximo de uma única mensagem para o feed <{{link}}> foi definido como `{{num}}`.",
       "setInvalidMaxLen": "Esse não é um número válido > = 500 e <= 1950. Tente novamente.",
       "resetSplitChar": "O caractere de divisão do feed <{{link}}> foi redefinido como `\\n`.",
       "resetPrependChar": "O caractere anterior ao feed <{{link}}> foi redefinido para não ser nada.",
       "resetAppendChar": "O caractere acrescentado ao feed <{{link}}> foi redefinido para não ser nada.",
-      "resetMaxLen": "O tamanho máximo de uma única mensagem para o feed <{{link}}> foi redefinido como "1950".",
+      "resetMaxLen": "O tamanho máximo de uma única mensagem para o feed <{{link}}> foi redefinido como `1950`.",
       "disabledSuccess": "A divisão de mensagens agora está desativada para o feed <{{link}}>."
     },
     "rsstest": {
@@ -516,13 +517,13 @@
         "filtersCustomization": "Personalização de Filtros",
         "categoryDescription": "Abaixo está a lista de categorias de filtro ás quais você pode adicionar filtros. Digite a categoria de filtro para a qual você deseja adicionar um filtro ou digite **exit** para cancelar. Para digitar uma categoria de filtr que não está listada aqui, mas está no rssdump, comece com `raw:`.\u200b\n\u200b\n",
         "invalidCategory": "Essa não é uma categoria de filtro válida. Tente novamente ou digite `exit` para cancelar.",
-        "promptAdd": "Type the filter word/phrase you would like to add in the category `{{type}}` by typing it, type multiple word/phrases on different lines to add more than one, or type `exit` to cancel. The following can be added in front of a search term to change its behavior:\n\n\n`~` - Broad filter modifier to trigger even if the term is found embedded inside words/phrases.\n`!` - NOT filter modifier to do the opposite of a normal search term. Can be added in front of any term, including one with broad filter mod.\n`\\` - Escape symbol added before modifiers to interpret them as regular characters and not modifiers.\n\n\nFilters will be applied as **case insensitive** to feeds. Because of this, all input will be converted to be lowercase.",
+        "promptAdd": "",
         "addSuccess": "Os seguintes filtros foram adicionados com sucesso para a categoria de filtro",
         "addFailed": "Os seguintes filtros não puderam ser adicionados porque já existem",
         "updatedFor": "Inscrição atualizada para {{name}}.",
         "testFiltersSubscriber": "\nVocê pode testar seus filtros em artigos aleatórios via `{{prefixo}}rsstest` e ver quais artigos mencionarão esta inscrição.",
         "testFilters": "\nVocê pode testar artigos aleatórios com `{{prefixo}}rsstest` para ver quais artigos passam seus filtros, ou especificamente enviar artigos filtrados com a opção` {{prefixo}}rssfilters` opção 5.",
-        "removeFilterConfirm": "Confirme a palavra/frase de filtro que você gostaria de remover na categoria "{{category}}" digitando uma ou várias palavras/frases separadas por novas linhas (diferenciando maiúsculas de minúsculas).",
+        "removeFilterConfirm": "Confirme a palavra/frase de filtro que você gostaria de remover na categoria `{{category}}` digitando uma ou várias palavras/frases separadas por novas linhas (diferenciando maiúsculas de minúsculas).",
         "removeFilterInvalid": "Esse não é um filtro válido para remover de {{category}} `. Tente novamente ou digite `exit` para cancelar.",
         "removeSuccess": "Os seguintes filtros foram removidos com sucesso da categoria de filtro",
         "removeSuccessSubscriber": "as seguintes inscrições foram atualizada para o `{{name}}`. Os seguintes filtros foram removidos com sucesso da categoria de filtro",
