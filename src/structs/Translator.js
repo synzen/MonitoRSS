@@ -50,7 +50,7 @@ class Translator {
    * @returns {string[]}
    */
   static getLocales () {
-    return Array.from(localesData.keys())
+    return Array.from(localesData.keys()).sort()
   }
 
   /**
