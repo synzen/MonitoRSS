@@ -67,14 +67,12 @@ module.exports = async (bot, message, command) => {
       if (typeof existingWebhook !== 'object') {
         await message.channel.send(translate('commands.rsswebhook.noneAssigned'))
       } else {
-        const name = source.webhook.name
         delete source.webhook
-        await message.channel.send(translate('commands.rsswebhook.removeSuccess', { name, link: source.link }))
+        await message.channel.send(translate('commands.rsswebhook.removeSuccess', { link: source.link }))
       }
     } else {
       source.webhook = {
-        id: webhook.id,
-        name: webhook.name
+        id: webhook.id
       }
 
       if (customNameSrch) source.webhook.name = customNameSrch

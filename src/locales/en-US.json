@@ -480,7 +480,7 @@
       "tooLong": "Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.",
       "noPermission": "I must have Manage Webhooks permission in this channel in order to work.",
       "noneAssigned": "There is no webhook assigned to this feed.",
-      "removeSuccess": "Successfully removed webhook \"{{name}}\" from the feed <{{link}}>.",
+      "removeSuccess": "Successfully removed webhook from the feed <{{link}}>.",
       "connected": "I am now connected to {{botUser}}, and will send feed articles for <{{link}}>!"
     },
     "subme": {
