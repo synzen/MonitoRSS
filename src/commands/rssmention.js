@@ -118,7 +118,7 @@ async function addGlobalSub (message, guildRss, rssName, role, user, translate) 
   for (const subscriber of subscribers) {
     if (id === subscriber.id) {
       found = true
-      if (!subscriber.filters) return message.channel.send(translate('commands.rssmention.addSubscriberGlobal', { type, name }))
+      if (!subscriber.filters) return message.channel.send(translate('commands.rssmention.addSubscriberGlobalExists', { type, name }))
       else delete subscriber.filters
     }
   }
