@@ -5,6 +5,7 @@ const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
+const Article = require('../structs/Article.js')
 const testFilters = require('../rss/translator/filters.js')
 const REQUEST_ERROR_CODE = 50042
 const FEEDPARSER_ERROR_CODE = 40002
@@ -160,7 +161,7 @@ class FeedFetcher {
     }
     const filtered = []
     for (const article of articleList) {
-      if (testFilters(filters, article).passed) filtered.push(article)
+      if (testFilters(filters, new Article(article, {}, {})).passed) filtered.push(article)
     }
     return filtered.length === 0 ? null : filtered[Math.round(Math.random() * (filtered.length - 1))]
   }
