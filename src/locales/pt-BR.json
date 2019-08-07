@@ -343,7 +343,7 @@
       "optionRemoveSubscriptionsDescription": "Remover todas as menções para um Cargo ou Usuário.",
       "optionListSubscriptions": "Listar todas as menções",
       "optionListSubscriptionsDescription": "Listar todas as menções",
-      "promptUserOrRole": "Digite um nome de um cargo com distinção entre maiúsculas e minúsculas, mencionar a função/Usuário ou ID do usuário. O cargo `@everyone` não pode ser usado.",
+      "promptUserOrRole": "Digite um nome de um cargo com distinção entre maiúsculas e minúsculas, mencionar o Cargo/Usuário ou ID do usuário. O cargo `@everyone` não pode ser usado.",
       "globalSubscriptionsTitle": "Customizar menções - Adicionar/Remover menção global",
       "globalSubscriptionsOptionAdd": "Adicionar uma inscrição global",
       "globalSubscriptionsOptionAddDescription": "O Cargo/Usuário será mencionado toda vez que um artigo for postado deste feed.",
