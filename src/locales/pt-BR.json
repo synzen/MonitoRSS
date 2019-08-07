@@ -321,12 +321,12 @@
       "unknown": "desconhecido"
     },
     "rsslocale": {
-      "helpText": "Para mudar a interface de linguagem de comandos, digite o nome do local depois de `{{prefix}}rsslocale`. linguagens suportadas são: `{{localeList}}`.",
+      "helpText": "Para mudar a interface de linguagem de comandos, digite o nome do local depois de `{{prefix}}rsslocale`. linguagens suportadas são:\n\n`{{localeList}}`.",
       "resetNone": "Este servidor não possui uma linguagem setada",
       "resetNoDefault": "`{{locale}}` já é o idioma padrão.",
       "resetSuccess": "Local de idioma foi redefinido com sucesso de volta para `{{locale}}`.",
       "setSuccess": "Linguagem foi alterada com sucesso para `{{locale}}`.",
-	  "setNone": "`{{locale}}` não é uma linguagem suportada. Linguagens suportadas atualmente são: `{{localeList}}`."
+      "setNone": "`{{locale}}` não é uma linguagem suportada. Linguagens suportadas atualmente são:\n\n`{{localeList}}`."
     },
     "rssmention": {
       "role": "cargo",
@@ -544,7 +544,7 @@
       "noFeeds": "Este servidor não possui nenhum feed.",
       "noFeedsInChannel": "Não há nenhum feed adicionado a este canal.",
       "feedSelectionMenu": "Menu de seleção de feed",
-      "action": "action",
+      "action": "Action",
       "prompt": "Escolha um feed nesse canal digitando o número para executar a ação solicitada.",
       "multiSelect": "Você pode selecionar vários feeds por separação com vírgulas e/ou com hífens (por exemplo `1,3,4-6,8`).",
       "exitToCancel": "digite `exit` para cancelar."
