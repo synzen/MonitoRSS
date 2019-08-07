@@ -75,6 +75,10 @@ for (const locale in errorStringsByLocale) {
   errorStrings.push(`${COLORS.RED}X${COLORS.RESET} ${locale}\n${strings.join('\n')}`)
 }
 
-console.log(okStrings.join('\n'))
-console.log(errorStrings.join('\n'))
+if (okStrings.length > 0) {
+  console.log(okStrings.join('\n'))
+}
+if (errorStrings.length > 0) {
+  console.log(errorStrings.join('\n'))
+}
 console.log(`\nNote that for untranslated strings, their values must be "" (an empty string). They cannot be undefined.\nEmpty string translations will fall back to using the default en-US strings.`)
