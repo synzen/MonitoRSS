@@ -22,7 +22,8 @@ exports.defaultConfigs = {
     ownerIDs: { type: Array, default: [] },
     menuColor: { type: Number, default: 7833753 },
     deleteMenus: { type: Boolean, default: true },
-    exitOnSocketIssues: { type: Boolean, default: true }
+    exitOnSocketIssues: { type: Boolean, default: true },
+    deleteInvalidGuildLocales: { type: Boolean, default: false }
   },
   database: {
     uri: { type: String, default: 'mongodb://localhost/rss' },

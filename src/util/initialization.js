@@ -62,7 +62,8 @@ module.exports = async bot => {
     let shouldUpdate = false
     const updatedSubscriptions = await checkGuild.subscriptions(bot, guildRss)
     const updatedVersion = await checkGuild.version(guildRss)
-    shouldUpdate = updatedSubscriptions || updatedVersion
+    const resetLocale = await checkGuild.locale(guildRss)
+    shouldUpdate = updatedSubscriptions || updatedVersion || resetLocale
 
     guildsInfo[guildId] = guildRss
     const rssList = guildRss.sources

@@ -4,12 +4,16 @@ const dbOpsGuilds = require('./db/guilds.js')
 const log = require('./logger.js')
 const fs = require('fs')
 const path = require('path')
+const config = require('../config.js')
 const missingChannelCount = {}
 const storage = require('./storage.js')
+const Translator = require('../structs/Translator.js')
 const files = fs.readdirSync(path.join(__dirname, '..', '..', 'scripts', 'updates'))
 const semVerSort = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
 const versions = files.filter(name => /\d{1}\.\d{1}\.\d{1}\.js/.test(name)).sort(semVerSort).map(file => file.replace('.js', '')) // Filter in and sort the versions
 // if (versions.concat(currentVersion).sort(semVerSort)[versions.length] !== currentVersion) throw new Error('Package version found to be lower than update files. Either updates or package json is outdated')
+
+const deleteGuildLocales = config.bot.deleteInvalidGuildLocales
 
 const fetchUserWrapper = (bot, id) => new Promise((resolve, reject) => {
   bot.fetchUser(id).then(resolve).catch(err => {
@@ -194,4 +198,16 @@ exports.version = guildRss => {
     }
   }
   return changed
+}
+
+exports.locale = guildRss => {
+  const guildLocale = guildRss.locale
+  if (guildLocale && !Translator.hasLocale(guildLocale)) {
+    log.general.warning(`Guild ${guildRss.id} has invalid locale: ${guildLocale} (${deleteGuildLocales ? 'deleting' : 'not deleting'} due to config)`)
+    if (deleteGuildLocales) {
+      delete guildRss.locale
+      return true
+    }
+  }
+  return false
 }

@@ -1,7 +1,6 @@
 const log = require('../util/logger.js')
 const config = require('../config.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
-const storage = require('../util/storage.js')
 const Translator = require('../structs/Translator.js')
 
 module.exports = async (bot, message) => {
@@ -26,7 +25,7 @@ module.exports = async (bot, message) => {
         return await message.channel.send(translate('commands.rsslocale.resetNone'))
       }
       delete guildRss.locale
-      await dbOpsGuilds.update(guildRss, true)
+      await dbOpsGuilds.update(guildRss)
       return await message.channel.send(translate('commands.rsslocale.resetSuccess', { locale: config.bot.locale }))
     }
     if (config.bot.locale === locale) {
@@ -38,7 +37,6 @@ module.exports = async (bot, message) => {
 
     await dbOpsGuilds.update(guildRss)
     await message.channel.send(translate('commands.rsslocale.setSuccess', { locale }))
-    storage.prefixes[guildRss.id] = locale
   } catch (err) {
     log.command.warning(`rsslocale`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsslocale 1', message.guild, err))

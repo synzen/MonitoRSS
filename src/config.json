@@ -18,6 +18,7 @@
     "menuColor": 5285609,
     "deleteMenus": true,
     "exitOnSocketIssues": true,
+    "deleteInvalidGuildLocales": false,
     "commandAliases": {}
   },
   "database": {
