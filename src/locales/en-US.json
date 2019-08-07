@@ -321,12 +321,12 @@
       "unknown": "unknown"
     },
     "rsslocale": {
-      "helpText": "To change the interface language of commands, type the locale name after `{{prefix}}rsslocale`. Locales are added through volunteer-sourced translations. Supported locales are: `{{localeList}}`.",
+      "helpText": "To change the interface language of commands, type the locale name after `{{prefix}}rsslocale`. Locales are added through volunteer-sourced translations. Supported locales are:\n\n`{{localeList}}`",
       "resetNone": "This server already has no locale set.",
       "resetNoDefault": "`{{locale}}` is already the default locale.",
       "resetSuccess": "Locale has been successfully reset back to `{{locale}}`.",
       "setSuccess": "Locale has successfully been changed to `{{locale}}`.",
-      "setNone": "`{{locale}}` is not a supported locale. Supported locales are: `{{localeList}}`."
+      "setNone": "`{{locale}}` is not a supported locale. Supported locales are:\n\n`{{localeList}}`"
     },
     "rssmention": {
       "role": "role",
