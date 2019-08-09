@@ -480,7 +480,7 @@
       "tooLong": "O nome do Webhook deve ter entre 2 e 32 caracteres. Tente novamente ou digite `exit` para cancelar.",
       "noPermission": "Eu preciso ter a permissão Gerenciar Webhooks neste canal para funcionar.",
       "noneAssigned": "Não há nenhum webhook atribuído a este feed.",
-      "removeSuccess": "Webhook removido com sucesso \"{{name}}\" do feed <{{link}}>.",
+      "removeSuccess": "Webhook removido com sucesso do feed <{{link}}>.",
       "connected": "Agora estou conectado a {{botUser}} e vou enviar artigos de feed para <{{link}}>!"
     },
     "subme": {
