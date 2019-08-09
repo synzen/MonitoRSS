@@ -9,7 +9,7 @@ function removeRole (message, role, translate) {
   message.member.removeRole(role)
     .then(mem => {
       log.command.info(`Removed role from member`, message.guild, role, message.author)
-      message.channel.send(translate('commmands.unsubme.success', { name: role.name }))
+      message.channel.send(translate('commmands.unsubme.removeSuccess', { name: role.name }))
     })
     .catch(err => {
       message.channel.send(translate('commands.unsubme.removeFailed') + err.message ? ` (${err.message})` : '')
