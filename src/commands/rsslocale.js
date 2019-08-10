@@ -7,7 +7,8 @@ module.exports = async (bot, message) => {
   const locale = message.content.split(' ')[1]
   try {
     let guildRss = await dbOpsGuilds.get(message.guild.id)
-    const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+    const guildLocale = guildRss ? guildRss.locale : undefined
+    const translate = Translator.createLocaleTranslator(guildLocale)
     const prefix = guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix
     const localeList = Translator.getLocales()
 
@@ -15,7 +16,11 @@ module.exports = async (bot, message) => {
       return await message.channel.send(translate('commands.rsslocale.helpText', { prefix, localeList: localeList.join('`, `') }))
     }
 
-    if (!localeList.includes(locale)) {
+    if (guildLocale === locale) {
+      return await message.channel.send(translate('commands.rsslocale.alreadySet', { locale }))
+    }
+
+    if (locale !== 'reset' && !localeList.includes(locale)) {
       return await message.channel.send(translate('commands.rsslocale.setNone', { prefix, locale, localeList: localeList.join('`, `') }))
     }
 
@@ -28,15 +33,16 @@ module.exports = async (bot, message) => {
       await dbOpsGuilds.update(guildRss)
       return await message.channel.send(translate('commands.rsslocale.resetSuccess', { locale: config.bot.locale }))
     }
+
     if (config.bot.locale === locale) {
-      return await message.channel.send(translate('commands.rsslocale.resetNoDefault', { locale }))
+      return await message.channel.send(translate('commands.rsslocale.resetNoDefault', { locale, prefix }))
     }
 
     if (!guildRss) guildRss = { id: message.guild.id, name: message.guild.name, locale }
     else guildRss.locale = locale
 
     await dbOpsGuilds.update(guildRss)
-    await message.channel.send(translate('commands.rsslocale.setSuccess', { locale }))
+    await message.channel.send(Translator.translate('commands.rsslocale.setSuccess', locale, { locale }))
   } catch (err) {
     log.command.warning(`rsslocale`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsslocale 1', message.guild, err))

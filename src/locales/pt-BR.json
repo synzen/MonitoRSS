@@ -323,10 +323,11 @@
     "rsslocale": {
       "helpText": "Para mudar a interface de linguagem de comandos, digite o nome do local depois de `{{prefix}}rsslocale`. linguagens suportadas são:\n\n`{{localeList}}`.",
       "resetNone": "Este servidor não possui uma linguagem setada",
-      "resetNoDefault": "`{{locale}}` já é o idioma padrão.",
+      "resetNoDefault": "",
       "resetSuccess": "Local de idioma foi redefinido com sucesso de volta para `{{locale}}`.",
       "setSuccess": "Linguagem foi alterada com sucesso para `{{locale}}`.",
-      "setNone": "`{{locale}}` não é uma linguagem suportada. Linguagens suportadas atualmente são:\n\n`{{localeList}}`."
+      "setNone": "`{{locale}}` não é uma linguagem suportada. Linguagens suportadas atualmente são:\n\n`{{localeList}}`.",
+      "alreadySet": ""
     },
     "rssmention": {
       "role": "cargo",
