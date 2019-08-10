@@ -107,16 +107,16 @@ async function get (req, res, next) {
       data.linksStatus = linksStatus
     }
 
+    const feedRefreshRates = {}
     if (feedIDs.length > 0) {
-      const feedRefreshRates = {}
       const scheduleNames = []
       for (const assigned of assignedSchedules) {
         const refreshRate = refreshRatesBySchedule[assigned.schedule]
         if (refreshRate) feedRefreshRates[assigned.feedID] = refreshRate
         scheduleNames.push(assigned.schedule)
       }
-      data.feedRefreshRates = feedRefreshRates
     }
+    data.feedRefreshRates = feedRefreshRates
 
     // console.log(JSON.stringify(data, null, 2))
     res.json(data)
