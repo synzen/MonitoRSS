@@ -192,7 +192,6 @@ class ScheduleManager {
 
   static async removeScheduleOfFeed (feedID, link, shardID) {
     const assigned = await dbOpsSchedules.assignedSchedules.get(feedID)
-    console.log(assigned)
     if (!assigned) return
     // const shardID = this.bot.shard ? this.bot.shard.id : 0
     await dbOpsSchedules.assignedSchedules.remove(feedID)
