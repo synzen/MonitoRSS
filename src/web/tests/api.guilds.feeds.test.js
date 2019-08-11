@@ -28,6 +28,10 @@ RedisChannel.utils = {
   isChannelOfGuild: jest.fn(() => Promise.resolve())
 }
 
+RedisGuild.utils = {
+  getValue: jest.fn(() => Promise.resolve())
+}
+
 describe('/api/guilds/:guildID/feeds', function () {
   const userID = 'georgie'
   const session = {
@@ -564,6 +568,21 @@ describe('/api/guilds/:guildID/feeds', function () {
         if (nextErr) return done(nextErr)
         try {
           expect(dbOpsGuilds.removeFeed).toHaveBeenCalledTimes(1)
+          done()
+        } catch (err) {
+          done(err)
+        }
+      })
+      expect(response.statusCode).toEqual(200)
+    })
+    it('calls next(err) if RedisGuild.utils.getValue fails', async function (done) {
+      const request = httpMocks.createRequest({ session, params, guildRss: {} })
+      const response = httpMocks.createResponse()
+      const error = new Error('asd hsng ohdt')
+      RedisGuild.utils.getValue.mockRejectedValueOnce(error)
+      await guildFeedsRoute.routes.deleteFeed(request, response, nextErr => {
+        try {
+          expect(nextErr).toEqual(error)
           done()
         } catch (err) {
           done(err)

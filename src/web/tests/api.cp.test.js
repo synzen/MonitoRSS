@@ -40,6 +40,7 @@ jest.mock('../util/fetchUser.js')
 
 describe('/api/cp', function () {
   const userID = '62368028891823362391'
+  config.bot.ownerIDs = [userID]
   describe('GET /', function () {
     const session = {
       identity: {
@@ -148,6 +149,7 @@ describe('/api/cp', function () {
 
     const expectedResult = {
       defaultConfig: config.feeds,
+      owner: true,
       user,
       bot: botJSON,
       csrfToken,

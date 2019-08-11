@@ -176,7 +176,9 @@ async function getFeedDebug (req, res, next) {
 
 async function deleteFeed (req, res, next) {
   try {
-    const result = await dbOpsGuilds.removeFeed(req.guildRss, req.params.feedID)
+    const guildID = req.params.guildID
+    const shard = await RedisGuild.utils.getValue(guildID, 'shard') // -1 means no sharding. It returns a string since redis values are strings
+    const result = await dbOpsGuilds.removeFeed(req.guildRss, req.params.feedID, shard === '-1' ? undefined : shard)
     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) DELETE ${req.url} - Feed link ${req.source.link}`)
     req.deleteResult = result
     next()
