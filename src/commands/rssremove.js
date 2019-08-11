@@ -17,11 +17,11 @@ module.exports = async (bot, message, command) => {
     const removing = await message.channel.send(translate('commands.rssremove.removing'))
     const errors = []
     let removed = translate('commands.rssremove.success') + '\n```\n'
-
-    for (var i = 0; i < rssNameList.length; ++i) {
+    const shardID = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : undefined
+    for (let i = 0; i < rssNameList.length; ++i) {
       const link = guildRss.sources[rssNameList[i]].link
       try {
-        await dbOpsGuilds.removeFeed(guildRss, rssNameList[i])
+        await dbOpsGuilds.removeFeed(guildRss, rssNameList[i], shardID)
         removed += `\n${link}`
         log.guild.info(`Removed feed ${link}`, message.guild)
       } catch (err) {

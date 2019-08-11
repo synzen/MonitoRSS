@@ -6,6 +6,7 @@ const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const dbOpsVips = require('../util/db/vips.js')
 const dbOpsStatistics = require('../util/db/statistics.js')
+const dbOpsSchedules = require('../util/db/schedules.js')
 const debugFeeds = require('../util/debugFeeds.js').list
 const EventEmitter = require('events')
 const childProcess = require('child_process')
@@ -17,7 +18,7 @@ const FAIL_LIMIT = config.feeds.failLimit
 class FeedSchedule extends EventEmitter {
   constructor (bot, schedule, scheduleManager) {
     if (!schedule.refreshRateMinutes) throw new Error('No refreshRateMinutes has been declared for a schedule')
-    if (schedule.name !== 'default' && schedule.name !== 'vip' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0) && (!Array.isArray(schedule.rssNames) || schedule.rssNames.length === 0)) throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
+    if (schedule.name !== 'default' && schedule.name !== 'vip' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0) && (!Array.isArray(schedule.feedIDs) || schedule.feedIDs.length === 0)) throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     super()
     this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
     this.shardId = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
@@ -195,12 +196,15 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
-    const failedLinks = await dbOpsFailedLinks.getAll()
+    this.feedIDs.clear()
+    const [ failedLinks, assignedSchedules, guildRssList ] = await Promise.all([ dbOpsFailedLinks.getAll(), dbOpsSchedules.assignedSchedules.getMany(this.shardId, this.name), dbOpsGuilds.getAll() ])
     this.failedLinks = {}
-    failedLinks.forEach(item => {
+    for (const item of failedLinks) {
       this.failedLinks[item.link] = item.failed || item.count
-    })
-    const guildRssList = await dbOpsGuilds.getAll()
+    }
+    for (const assigned of assignedSchedules) {
+      this.feedIDs.add(assigned.feedID)
+    }
     this._startTime = new Date()
     this._regBatchList = []
     this._modBatchList = []

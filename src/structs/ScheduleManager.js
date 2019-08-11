@@ -83,12 +83,6 @@ class ScheduleManager {
     }
   }
 
-  getScheduleOfFeedID (feedID) {
-    for (const schedule of this.scheduleList) {
-      if (schedule.feedIDs.has(feedID)) return schedule
-    }
-  }
-
   async assignAllSchedules () {
     // Remove the old schedules
     if (!this.bot.shard || this.bot.shard.count === 0) {
@@ -98,7 +92,6 @@ class ScheduleManager {
 
     const schedulesByName = {}
     for (const schedule of this.scheduleList) {
-      schedule.feedIDs.clear()
       schedulesByName[schedule.name] = schedule
     }
 
@@ -129,7 +122,6 @@ class ScheduleManager {
     for (let i = 0; i < scheduleNames.length; ++i) {
       const scheduleName = scheduleNames[i]
       const { feedID, link, guildID } = feedRecords[i]
-      schedulesByName[scheduleName].feedIDs.add(feedID)
       const toInsert = { feedID, schedule: scheduleName, link, guildID, shard }
       documentsToInsert.push(new AssignedSchedule(toInsert))
     }
@@ -194,21 +186,19 @@ class ScheduleManager {
 
   async assignSchedule (feedID, guildRss, vipServers) {
     const scheduleName = await this.determineSchedule(feedID, guildRss, vipServers)
-    const schedule = this.getSchedule(scheduleName)
-    schedule.feedIDs.add(feedID)
     await dbOpsSchedules.assignedSchedules.set(feedID, scheduleName, guildRss.sources[feedID].link, guildRss.id)
     return scheduleName
   }
 
-  async removeScheduleOfFeed (feedID, link) {
-    const schedule = await this.getScheduleOfFeedID(feedID)
-    if (!schedule) return
-    schedule.feedIDs.delete(feedID)
-    const shardID = this.bot.shard ? this.bot.shard.id : 0
+  static async removeScheduleOfFeed (feedID, link, shardID) {
+    const assigned = await dbOpsSchedules.assignedSchedules.get(feedID)
+    console.log(assigned)
+    if (!assigned) return
+    // const shardID = this.bot.shard ? this.bot.shard.id : 0
     await dbOpsSchedules.assignedSchedules.remove(feedID)
-    const assignedSchedules = await dbOpsSchedules.assignedSchedules.getMany(shardID, schedule.name, link)
+    const assignedSchedules = await dbOpsSchedules.assignedSchedules.getMany(shardID, assigned.schedule, link)
     if (assignedSchedules.length === 0 && config.database.uri.startsWith('mongo')) {
-      ArticleModel.model(link, shardID, schedule.name).collection.drop().catch(err => err.code === 26 ? null : log.general.error('Failed to drop unused collection after feed removal', err))
+      ArticleModel.model(link, shardID, assigned.schedule).collection.drop().catch(err => err.code === 26 ? null : log.general.error('Failed to drop unused collection after feed removal', err))
     }
   }
 

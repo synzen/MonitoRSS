@@ -99,6 +99,7 @@ exports.config = (bot, guildRss, rssName, logging) => {
   const source = guildRss.sources[rssName]
   const guild = bot.guilds.get(guildId)
   const channel = bot.channels.get(source.channel)
+  const shardID = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
   // if (source.disabled === true) {
   //   if (logging) log.cycle.warning(`${rssName} in guild ${guildRss.id} is disabled in channel ${source.channel}, skipping...`)
   //   return false
@@ -117,7 +118,7 @@ exports.config = (bot, guildRss, rssName, logging) => {
     log.cycle.warning(`${shardPrefix}Channel ${source.channel} in guild ${guildId} for feed ${source.link} was not found, skipping source`, guild)
     missingChannelCount[rssName] = missingChannelCount[rssName] ? missingChannelCount[rssName] + 1 : 1
     if (missingChannelCount[rssName] >= 3 && storage.initialized) {
-      dbOpsGuilds.removeFeed(guildRss, rssName)
+      dbOpsGuilds.removeFeed(guildRss, rssName, shardID)
         .then(() => {
           log.general.info(`Removed feed ${source.link} from guild ${guildId} due to excessive missing channels warnings`)
           delete missingChannelCount[rssName]

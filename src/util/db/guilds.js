@@ -6,6 +6,7 @@ const GuildProfile = require('../../models/GuildProfile.js')
 const GuildProfileBackup = require('../../models/GuildProfileBackup.js')
 const config = require('../../config.js')
 const redisIndex = require('../../structs/db/Redis/index.js')
+const ScheduleManager = require('../../structs/ScheduleManager.js')
 const log = require('../logger.js')
 const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FIND_PROJECTION = '-_id -__v'
@@ -120,12 +121,12 @@ exports.enableFeed = async (guildRss, rssName, reason) => {
   log.general.info(`Feed named ${rssName} (${guildRss.sources[rssName].link}) has been enabled in guild ${guildRss.id} (Reason: ${reason})`)
 }
 
-exports.removeFeed = async (guildRss, rssName) => {
+exports.removeFeed = async (guildRss, rssName, shardID) => {
   const link = guildRss.sources[rssName].link
   delete guildRss.sources[rssName]
   storage.deletedFeeds.push(rssName)
   const res = await exports.update(guildRss)
-  await storage.scheduleManager.removeScheduleOfFeed(rssName, link)
+  await ScheduleManager.removeScheduleOfFeed(rssName, link, shardID)
   return res
 }
 
@@ -164,10 +165,11 @@ exports.restore = async guildId => {
   await exports.update(guildRss)
   const rssList = guildRss.sources
   if (rssList) {
-    for (var rssName in rssList) {
+    const shardID = storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
+    for (const rssName in rssList) {
       const source = rssList[rssName]
       if (!storage.bot.channels.get(source.channel)) {
-        await exports.removeFeed(guildRss, rssName)
+        await exports.removeFeed(guildRss, rssName, shardID)
         log.general.info(`Removed feed ${source.link} due to missing channel ${source.channel}`, storage.bot.guilds.get(guildRss.id))
       }
     }

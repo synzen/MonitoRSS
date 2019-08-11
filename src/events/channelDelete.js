@@ -4,6 +4,7 @@ const log = require('../util/logger.js')
 
 module.exports = async channel => {
   RedisChannel.utils.forget(channel).catch(err => log.general.error(`Redis failed to forget after channelDelete event`, channel, err))
+  const shardID = channel.client.shard && channel.client.shard.count > 0 ? channel.client.shard.id : undefined
   const guildId = channel.guild.id
   try {
     const guildRss = await dbOpsGuilds.get(guildId)
@@ -12,7 +13,7 @@ module.exports = async channel => {
     if (!rssList) return
     for (const rssName in rssList) {
       const source = rssList[rssName]
-      if (source.channel === channel.id) await dbOpsGuilds.removeFeed(guildRss, rssName)
+      if (source.channel === channel.id) await dbOpsGuilds.removeFeed(guildRss, rssName, shardID)
     }
   } catch (err) {
     log.general.warning('Error while checking guild after channelDelete event', channel.guild, err)

@@ -4,6 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
+const dbOpsSchedules = require('../util/db/schedules.js')
 const serverLimit = require('../util/serverLimit.js')
 const storage = require('../util/storage.js')
 const Translator = require('../structs/Translator.js')
@@ -27,8 +28,11 @@ module.exports = async (bot, message, command) => {
     // Generate the info for each feed as an array, and push into another array
     const currentRSSList = []
     const failedLinksToCheck = []
+    const schedulesToFetch = []
+    const schedulesByFeedIDs = {}
     for (const rssName in rssList) {
       const feed = rssList[rssName]
+      schedulesToFetch.push(dbOpsSchedules.assignedSchedules.get(rssName))
       let o = {
         id: rssName,
         link: feed.link,
@@ -44,9 +48,12 @@ module.exports = async (bot, message, command) => {
       }
       currentRSSList.push(o)
     }
-    const results = await dbOpsFailedLinks.getMultiple(failedLinksToCheck)
-    for (const result of results) {
+    const [ failedLinksResults, assignedSchedules ] = await Promise.all([ dbOpsFailedLinks.getMultiple(failedLinksToCheck), Promise.all(schedulesToFetch) ])
+    for (const result of failedLinksResults) {
       failedLinks[result.link] = result.failed || result.count
+    }
+    for (const assigned of assignedSchedules) {
+      schedulesByFeedIDs[assigned.feedID] = assigned
     }
     if (FAIL_LIMIT !== 0) {
       for (const feed of currentRSSList) {
@@ -86,7 +93,7 @@ module.exports = async (bot, message, command) => {
       const status = item.status
       const titleChecks = item.titleChecks
       const webhook = item.webhook
-      const schedule = storage.scheduleManager.getScheduleOfFeedID(item.id)
+      const schedule = storage.scheduleManager.getSchedule(schedulesByFeedIDs[item.id].schedule)
       let refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} ${translate('commands.rsslist.seconds')}` : `${schedule.refreshRate} ${translate('commands.rsslist.minutes')}` : translate('commands.rsslist.unknown')
       if (config._vip === true && !vipUser) refreshRate += ' [－](https://www.patreon.com/discordrss)'
       list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}${translate('generics.channelUpper')}: #${channelName}\n${translate('commands.rsslist.refreshRate')}: ${refreshRate}\n${webhook ? `${translate('commands.rsslist.webhook')}: ${webhook}\n` : ''}${translate('commands.rsslist.link')}: ${link.length > 500 ? translate('commands.rsslist.exceeds500Characters') : link}`)
