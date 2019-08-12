@@ -180,7 +180,7 @@ class ScheduleManager {
   }
 
   async reassignSchedule (feedID, guildRss, vipServers) {
-    await this.removeScheduleOfFeed(feedID, guildRss.sources[feedID].link)
+    await ScheduleManager.removeScheduleOfFeed(feedID, guildRss.sources[feedID].link)
     await this.assignSchedule(feedID, guildRss, vipServers)
   }
 
