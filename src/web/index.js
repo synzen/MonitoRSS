@@ -69,7 +69,6 @@ module.exports = () => {
         return log.web.warning('Ignoring control panel enable instruction due to databaseless configuration')
       }
       app.set('cpEnabled', true)
-      console.log(httpIo.broadcast.emit)
       httpIo.sockets.emit('DRSS_BOT_READY')
       if (httpsIo) {
         httpsIo.sockets.emit('DRSS_BOT_READY')
