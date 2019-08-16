@@ -84,7 +84,7 @@ class Translator {
     for (const property of properties) {
       accessedSoFar = accessedSoFar[property]
       reference = reference[property]
-      if (!accessedSoFar) {
+      if (accessedSoFar === undefined) {
         log.general.error(`Invalid locale accessor ("${string}" stopped at "${property}") for locale ${locale}`)
         throw new Error(`Invalid locale accessor (stopped at "${property}") for locale ${locale}`)
       }
@@ -97,6 +97,9 @@ class Translator {
       log.general.error(`Invalid locale accessor that stopped with a non-string value ("${string}") for locale ${locale}`)
       throw new Error(`Invalid locale accessor that stopped with a non-string value for locale ${locale}`)
     }
+    if (accessedSoFar.length === 0) {
+      accessedSoFar = reference // Use the reference if the original locale is an empty string
+    }
     if (params) {
       for (const param in params) {
         const term = escapeRegExp(`{{${param}}}`)
@@ -104,7 +107,7 @@ class Translator {
         accessedSoFar = accessedSoFar.replace(regex, params[param])
       }
     }
-    return accessedSoFar || reference // Use the reference if the original locale is an empty string
+    return accessedSoFar
   }
 }
 
