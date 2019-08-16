@@ -1,6 +1,7 @@
 const config = require('../config.js')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
+const htmlDecoder = require('html-to-text/lib/formatter.js').text
 const FlattenedJSON = require('./FlattenedJSON.js')
 const testFilters = require('../rss/translator/filters.js')
 const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
@@ -113,7 +114,7 @@ function evalRegexConfig (source, text, placeholderName) {
 function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
   if (!text) return ''
 
-  text = text.replace(/\*/gi, '')
+  text = htmlDecoder({ data: text }, {}).replace(/\*/gi, '')
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
     .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
     .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
@@ -161,7 +162,7 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
     .replace(/@/g, '@' + String.fromCharCode(8203)) // Sanitize mentions with zero-width character "\u200b", does not affect subscribed roles or modify anything outside the scope of sanitizing Discord mentions in the raw RSS feed content
   const arr = text.split('\n')
   for (var q = 0; q < arr.length; ++q) arr[q] = arr[q].replace(/\s+$/, '') // Remove trailing spaces
-  return arr.join('\n')
+  return arr.join('\n').trim()
 }
 
 module.exports = class Article {
