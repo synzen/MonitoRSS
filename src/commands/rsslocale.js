@@ -12,8 +12,10 @@ module.exports = async (bot, message) => {
     const prefix = guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix
     const localeList = Translator.getLocales()
 
+    localeList.splice(localeList.indexOf(config.bot.locale), 1)
+    const printLocaleList = localeList.join('`, `')
     if (!locale) {
-      return await message.channel.send(translate('commands.rsslocale.helpText', { prefix, localeList: localeList.join('`, `') }))
+      return await message.channel.send(translate('commands.rsslocale.helpText', { prefix, localeList: printLocaleList }))
     }
 
     if (guildLocale === locale) {
@@ -21,7 +23,7 @@ module.exports = async (bot, message) => {
     }
 
     if (locale !== 'reset' && !localeList.includes(locale)) {
-      return await message.channel.send(translate('commands.rsslocale.setNone', { prefix, locale, localeList: localeList.join('`, `') }))
+      return await message.channel.send(translate('commands.rsslocale.setNone', { prefix, locale, localeList: printLocaleList }))
     }
 
     // Reset
@@ -31,7 +33,7 @@ module.exports = async (bot, message) => {
       }
       delete guildRss.locale
       await dbOpsGuilds.update(guildRss)
-      return await message.channel.send(translate('commands.rsslocale.resetSuccess', { locale: config.bot.locale }))
+      return await message.channel.send(Translator.translate('commands.rsslocale.resetSuccess', config.bot.locale, { locale: config.bot.locale }))
     }
 
     if (config.bot.locale === locale) {
