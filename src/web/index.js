@@ -59,13 +59,21 @@ module.exports = () => {
     mongoose.set('useCreateIndex', true)
     return start(mongoose.connection)
   }
-  if (!storage.redisClient) throw new Error('Redis is not connected for Web UI')
+  if (!storage.redisClient) {
+    throw new Error('Redis is not connected for Web UI')
+  }
   start()
   return {
     enableCP: () => {
+      if (!config.database.uri.startsWith('mongo')) {
+        return log.web.warning('Ignoring control panel enable instruction due to databaseless configuration')
+      }
       app.set('cpEnabled', true)
+      console.log(httpIo.broadcast.emit)
       httpIo.sockets.emit('DRSS_BOT_READY')
-      if (httpsIo) httpsIo.sockets.emit('DRSS_BOT_READY')
+      if (httpsIo) {
+        httpsIo.sockets.emit('DRSS_BOT_READY')
+      }
     },
     disableCP: () => app.set('cpEnabled', false)
   }

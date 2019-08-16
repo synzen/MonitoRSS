@@ -27,6 +27,10 @@ module.exports = {
     code: 50043,
     message: 'Bot Currently Down'
   },
+  '50044_CP_UNSUPPORTED': {
+    code: 50044,
+    message: 'Control panel disabled due to databaseless configuration'
+  },
   '40002_FEED_INVALID': {
     code: 40002,
     message: 'Invalid Feed'

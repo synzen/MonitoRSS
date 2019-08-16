@@ -19,6 +19,7 @@ const channels = require('./guilds.channels.js')
 const statusCodes = require('../../constants/codes.js')
 const csrf = require('csurf')
 const rateLimit = require('express-rate-limit')
+const config = require('../../../config.js')
 // All API routes tries to mirror Discord's own API routes
 
 if (process.env.NODE_ENV !== 'test') {
@@ -33,8 +34,13 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 function verifyBotStatus (req, res, next) {
-  if (!req.app.get('cpEnabled')) return res.status(202).json({ code: statusCodes['50043_BOT_DOWN'].code, message: statusCodes['50043_BOT_DOWN'].message })
-  next()
+  if (req.app.get('cpEnabled')) {
+    return next()
+  }
+  if (!config.database.uri.startsWith('mongo')) {
+    return res.status(403).json({ code: statusCodes['50044_CP_UNSUPPORTED'].code, message: statusCodes['50044_CP_UNSUPPORTED'].message })
+  }
+  return res.status(202).json({ code: statusCodes['50043_BOT_DOWN'].code, message: statusCodes['50043_BOT_DOWN'].message })
 }
 
 function getAuthenticated (req, res) {
@@ -87,6 +93,7 @@ function mongooseResults (req, res) {
 
 // Handle API route errors
 function errorHandler (err, req, res) {
+  console.log(123)
   if (err.response) {
     if (process.env.NODE_ENV !== 'test') console.log(err.response)
     // Axios errors for Discord API calls
