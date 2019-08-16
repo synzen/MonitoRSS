@@ -26,7 +26,7 @@ function setCurrentTime (momentObj) {
 function checkObjType (item, results) {
   if (Object.prototype.toString.call(item) === '[object Object]') {
     return () => findImages(item, results)
-  } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i) && !results.includes(item) && results.length < 9) {
+  } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp|php)$/i) && !results.includes(item) && results.length < 9) {
     if (item.startsWith('//')) item = 'http:' + item
     results.push(item)
   }
