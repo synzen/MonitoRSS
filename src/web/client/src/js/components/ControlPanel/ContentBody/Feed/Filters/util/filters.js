@@ -103,7 +103,7 @@ export default (filters, article) => {
   const filterResults = new _FilterResults()
   for (var filterTypeName in filters) {
     const userFilters = filters[filterTypeName]
-    const reference = referenceOverrides[filterTypeName] || article[filterTypeName]
+    const reference = referenceOverrides[filterTypeName.replace('other:', '')] || article[filterTypeName.replace('other:', '')]
 
     if (!reference) {
       regularFiltersExists = true
