@@ -4,6 +4,10 @@ const config = require('./config.json')
 const checkConfig = require('./util/checkConfig.js')
 
 function overrideConfigs (configOverrides) {
+  if (configOverrides._vip === true) {
+    config._vip = true
+    config._vipRefreshRateMinutes = configOverrides._vipRefreshRateMinutes
+  }
   // Config overrides must be manually done for it to be changed in the original object (config)
   for (var category in config) {
     const configCategory = config[category]
