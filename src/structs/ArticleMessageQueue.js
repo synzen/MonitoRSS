@@ -19,7 +19,7 @@ async function toggleRoleMentionable (mentionable, channelID, roleIDs) {
   try {
     await Promise.all(promises)
   } catch (err) {
-    throw err.code === 50013 ? new Error(err.message + ` Unable to toggle role permissions because one or more roles are above my role, or I don't have Manage Roles permission.`) : err
+    throw err.code === 50013 ? new Error(`Unable to toggle role permissions because one or more roles are above my role, or I don't have Manage Roles permission.`) : err
   }
 }
 
@@ -75,7 +75,7 @@ class ArticleMessageQueue {
     try {
       if (err) articleMessage.text += `\n\nFailed to toggle role mentions: ${err.message}`
       await articleMessage.send()
-      if (channelQueue.length === 0) await toggleRoleMentionable(false, channelId, roleIds)
+      if (channelQueue.length === 0 && !err) await toggleRoleMentionable(false, channelId, roleIds)
       else this._sendDelayedQueue(channelId, channelQueue, roleIds, err)
     } catch (err) {
       log.general.error('Failed to send a delayed articleMessage', err, articleMessage.channel ? articleMessage.channel.guild : undefined, true)
