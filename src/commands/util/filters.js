@@ -21,8 +21,9 @@ async function selectCategoryFn (m, data) {
   const translate = translator.translate.bind(translator)
 
   // Validate the chosen filter category
-  if (input.startsWith('raw:')) chosenFilterType = input
-  else {
+  if (input.startsWith('raw:') || input.startsWith('other:')) {
+    chosenFilterType = input
+  } else {
     for (let x = 0; x < filterTypes.length; ++x) {
       if (input.toLowerCase() === filterTypes[x].use) {
         chosenFilterType = filterTypes[x].use
@@ -59,8 +60,8 @@ async function inputFilterFn (m, data) {
     } else invalidItems += `\n${item}`
   })
 
+  await dbOpsGuilds.update(guildRss)
   if (!user && !role) {
-    await dbOpsGuilds.update(guildRss)
     log.command.info(`New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}`, m.guild)
     let msg = ''
     if (addedList) msg = `${translate('commands.utils.filters.addSuccess')} \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
@@ -68,7 +69,6 @@ async function inputFilterFn (m, data) {
     if (addedList) msg += translate('commands.utils.filters.testFilters', { prefix })
     await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`)
   } else {
-    await dbOpsGuilds.update(guildRss)
     log.command.info(`New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${source.link}.`, m.guild, user || role)
     let msg = `${translate('commands.utils.filters.updatedFor', { name: user ? `${user.username}#${user.discriminator}` : role.name })} ${translate('commands.utils.filters.addSuccess')} \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
     if (invalidItems) msg += `\n${translate('commands.utils.filters.addFailed')}:\n\`\`\`\n\n${invalidItems}\`\`\``
@@ -113,10 +113,7 @@ exports.add = (message, guildRss, rssName, role, user) => {
   }
 
   // Select the correct filter list, whether if it's for a role's filtered subscription or feed filters. null role = not adding filter for role
-  const options = []
-  for (let x = 0; x < filterTypes.length; ++x) {
-    options.push({ title: filterTypes[x].show, description: '\u200b' })
-  }
+  const options = filterTypes.map(item => ({ title: item.show, description: '\u200b' }))
 
   const data = { guildRss: guildRss,
     rssName: rssName,
@@ -147,7 +144,7 @@ async function filterRemoveCategory (m, data, callback) {
   const translate = translator.translate.bind(translator)
   let chosenFilterType = ''
 
-  if (input.startsWith('raw:')) {
+  if (input.startsWith('raw:') || input.startsWith('other:')) {
     chosenFilterType = input
   } else {
     for (let x = 0; x < filterTypes.length; ++x) {
@@ -216,16 +213,15 @@ async function removeFilterFn (m, data) {
     if (subscribers.length === 0) delete source.subscribers
   }
 
+  await dbOpsGuilds.update(guildRss)
   if (!user && !role) {
     let msg = `${translate('commands.utils.filters.removeSuccess')} \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
     if (invalidItems) msg += `\n\n${translate('commands.utils.filters.removeFailedNoExist')}:\n\`\`\`\n\n${invalidItems}\`\`\``
-    await dbOpsGuilds.update(guildRss)
     log.command.info(`Removed filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild)
     await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`).catch(err => log.command.warning(`filterRemove 8a`, m.guild, err))
   } else {
     let msg = `${translate('commands.utils.filters.removeSuccessSubscriber', { name: user ? `${user.username}#${user.discriminator}` : role.name })} \`${chosenFilterType}\`:\`\`\`\n\n${deletedList}\`\`\``
     if (invalidItems) msg += `\n\n${translate('commands.utils.filters.removeFailedNoExist')}:\n\`\`\`\n\n${invalidItems}\`\`\``
-    await dbOpsGuilds.update(guildRss)
     log.command.info(`Removed ${user ? 'user' : 'role'} filter(s) [${deletedList.trim().split('\n')}] from '${chosenFilterType}' for ${source.link}`, m.guild, user || role)
     await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`).catch(err => log.command.warning(`filterRemove 8b`, m.guild, err))
   }

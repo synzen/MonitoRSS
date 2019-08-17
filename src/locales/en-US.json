@@ -516,7 +516,7 @@
         "role": "Role",
         "user": "User",
         "filtersCustomization": "Filters Customization",
-        "categoryDescription": "Below is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type `exit` to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with `raw:`.\u200b\n\u200b\n",
+        "categoryDescription": "Below is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type `exit` to cancel. To type a filter category that's not listed here but is in the raw rssdump, start it with `raw:`. For other unlisted filter categories, start it with `other:`.\u200b\n\u200b\n",
         "invalidCategory": "That is not a valid filter category. Try again, or type `exit` to cancel.",
         "promptAdd": "Type the filter word/phrase you would like to add in the category `{{type}}` by typing it, type multiple word/phrases on different lines to add more than one, or type `exit` to cancel. The following can be added in front of a search term to change its behavior:\n\n\n`~` - Broad filter modifier to trigger even if the term is found embedded inside words/phrases.\n`!` - NOT filter modifier to do the opposite of a normal search term. Can be added in front of any term, including one with broad filter mod.\n`\\` - Escape symbol added before modifiers to interpret them as regular characters and not modifiers.\n\n\nFilters will be applied as **case insensitive** to feeds. Because of this, all input will be converted to be lowercase.",
         "addSuccess": "The following filter(s) have been successfully added for the filter category",

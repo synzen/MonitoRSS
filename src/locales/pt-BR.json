@@ -516,7 +516,7 @@
         "role": "Cargo",
         "user": "Usuário",
         "filtersCustomization": "Personalização de Filtros",
-        "categoryDescription": "Abaixo está a lista de categorias de filtro ás quais você pode adicionar filtros. Digite a categoria de filtro para a qual você deseja adicionar um filtro ou digite `exit` para cancelar. Para digitar uma categoria de filtr que não está listada aqui, mas está no rssdump, comece com `raw:`.\u200b\n\u200b\n",
+        "categoryDescription": "",
         "invalidCategory": "Essa não é uma categoria de filtro válida. Tente novamente ou digite `exit` para cancelar.",
         "promptAdd": "",
         "addSuccess": "Os seguintes filtros foram adicionados com sucesso para a categoria de filtro",
