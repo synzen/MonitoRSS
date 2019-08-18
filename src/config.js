@@ -45,7 +45,7 @@ config.feeds.imgPreviews = process.env.DRSS_FEEDS_IMGPREVIEWS || config.feeds.im
 config.feeds.imgLinksExistence = process.env.DRSS_FEEDS_IMGLINKSEXISTENCE || config.feeds.imgLinksExistence
 config.feeds.checkDates = process.env.DRSS_FEEDS_CHECKDATES || config.feeds.checkDates
 config.feeds.formatTables = process.env.DRSS_FEEDS_TABLEFORMAT || config.feeds.formatTables
-config.feeds.toggleRoleMentions = process.env.DRSS_BOT_TOGGLEROLEMENTIONS || config.feeds.toggleRoleMentions
+config.feeds.toggleRoleMentions = process.env.DRSS_FEEDS_TOGGLEROLEMENTIONS || config.feeds.toggleRoleMentions
 
 // Web
 config.web.enabled = process.env.DRSS_WEB_ENABLED === 'true' || config.web.enabled
