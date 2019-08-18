@@ -46,6 +46,12 @@ config.feeds.imgLinksExistence = process.env.DRSS_FEEDS_IMGLINKSEXISTENCE || con
 config.feeds.checkDates = process.env.DRSS_FEEDS_CHECKDATES || config.feeds.checkDates
 config.feeds.formatTables = process.env.DRSS_FEEDS_TABLEFORMAT || config.feeds.formatTables
 config.feeds.toggleRoleMentions = process.env.DRSS_FEEDS_TOGGLEROLEMENTIONS || config.feeds.toggleRoleMentions
+config.feeds.dateFormat = process.env.DRSS_FEEDS_DATEFORMAT || config.feeds.dateFormat
+config.feeds.dateFallback = process.env.DRSS_FEEDS_DATEFALLBACK || config.feeds.dateFallback
+config.feeds.timeFallback = process.env.DRSS_FEEDS_TIMEFALLBACK || config.feeds.timeFallback
+config.feeds.notifyFail = process.env.DRSS_FEEDS_NOTIFYFAIL || config.feeds.notifyFail
+config.feeds.sendOldOnFirstCycle = process.env.DRSS_FEEDS_SENDOLDFIRSTCYCLE || config.feeds.sendOldOnFirstCycle
+config.feeds.cycleMaxAge = process.env.DRSS_FEEDS_CYCLEMAXAGE || config.feeds.cycleMaxAge
 
 // Web
 config.web.enabled = process.env.DRSS_WEB_ENABLED === 'true' || config.web.enabled
