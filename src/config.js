@@ -2,9 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const config = require('./config.json')
 const checkConfig = require('./util/checkConfig.js')
-const log = require('./util/logger.js')
 const COLORS = {
-  BRIGHT: '\x1b[1m',
   RESET: '\x1b[0m',
   RED: '\x1b[31m',
   GREEN: '\x1b[32m',
@@ -51,12 +49,12 @@ function traverse (object, objectOverride, location, printOverrides, configSpeci
       const envVariableName = `${ENV_PREFIX}${location.replace('.', '_').toUpperCase()}_${key.toUpperCase()}`
       const resolvedValue = resolveWithEnv(envVariableName, object[key], configSpecification[key])
       if (printOverrides && object[key] !== resolvedValue) {
-        log.general.info(`Replacing ${COLORS.CYAN}config.${location}.${key}${COLORS.RESET} value of ${COLORS.RED}${object[key]}${COLORS.RESET} with ${COLORS.GREEN}${resolvedValue}${COLORS.RESET} from process.env.${envVariableName}`)
+        console.log(`Replacing ${COLORS.CYAN}config.${location}.${key}${COLORS.RESET} value of ${COLORS.RED}${object[key]}${COLORS.RESET} with ${COLORS.GREEN}${resolvedValue}${COLORS.RESET} from process.env.${envVariableName}`)
       }
       object[key] = resolvedValue
       if (objectOverride && objectOverride[key] !== undefined && objectOverride[key] !== object[key]) {
         if (printOverrides && objectOverride[key] !== object[key]) {
-          log.general.info(`Replacing ${COLORS.CYAN}config.${location}.${key}${COLORS.RESET} value of ${COLORS.RED}${object[key]}${COLORS.RESET} with ${COLORS.GREEN}${objectOverride[key]}${COLORS.RESET} from config override`)
+          console.log(`Replacing ${COLORS.CYAN}config.${location}.${key}${COLORS.RESET} value of ${COLORS.RED}${object[key]}${COLORS.RESET} with ${COLORS.GREEN}${objectOverride[key]}${COLORS.RESET} from config override`)
         }
         object[key] = objectOverride[key]
       }
