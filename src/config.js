@@ -2,11 +2,19 @@ const fs = require('fs')
 const path = require('path')
 const config = require('./config.json')
 const checkConfig = require('./util/checkConfig.js')
-const ENV_PREFIX = 'DRSS'
+const log = require('./util/logger.js')
+const COLORS = {
+  BRIGHT: '\x1b[1m',
+  RESET: '\x1b[0m',
+  RED: '\x1b[31m',
+  GREEN: '\x1b[32m',
+  CYAN: '\x1b[36m'
+}
+const ENV_PREFIX = 'DRSS_'
 
 function resolveWithEnv (variableName, configValue, configSpecification) {
   const value = process.env[variableName]
-  if (variableName === `${ENV_PREFIX}__VIP` || variableName === `${ENV_PREFIX}__VIPREFRESHRATEMINUTES`) {
+  if (variableName === `${ENV_PREFIX}_VIP` || variableName === `${ENV_PREFIX}_VIPREFRESHRATEMINUTES`) {
     return configValue
   }
   switch (variableName) {
@@ -21,9 +29,9 @@ function resolveWithEnv (variableName, configValue, configSpecification) {
     default:
       switch (configSpecification.type) {
         case Number:
-          return Number(value) || configValue
+          return value ? Number(value) : configValue
         case Boolean:
-          return value === 'true'
+          return value && value === 'true' ? true : configValue
         case Array:
           return value ? value.split(/\s*,\s*/) : configValue
         default:
@@ -32,17 +40,24 @@ function resolveWithEnv (variableName, configValue, configSpecification) {
   }
 }
 
-function traverse (object, objectOverride, envName, printOverrides, configSpecification = checkConfig.defaultConfigs) {
+function traverse (object, objectOverride, location, printOverrides, configSpecification = checkConfig.defaultConfigs) {
   for (const key in object) {
     if (key === '_overrideWith' || key === 'commandAliases' || key === 'decode') {
       continue
     }
     if (Object.prototype.toString.call(object[key]) === '[object Object]') {
-      traverse(object[key], objectOverride ? objectOverride[key] : undefined, envName + `_${key.toUpperCase()}`, printOverrides, configSpecification[key])
+      traverse(object[key], objectOverride ? objectOverride[key] : undefined, location ? `.${key}` : key, printOverrides, configSpecification[key])
     } else {
-      const envVariableName = `${envName}_${key.toUpperCase()}`
-      object[key] = resolveWithEnv(envVariableName, object[key], configSpecification[key])
+      const envVariableName = `${ENV_PREFIX}${location.replace('.', '_').toUpperCase()}_${key.toUpperCase()}`
+      const resolvedValue = resolveWithEnv(envVariableName, object[key], configSpecification[key])
+      if (printOverrides && object[key] !== resolvedValue) {
+        log.general.info(`Replacing ${COLORS.CYAN}config.${location}.${key}${COLORS.RESET} value of ${COLORS.RED}${object[key]}${COLORS.RESET} with ${COLORS.GREEN}${resolvedValue}${COLORS.RESET} from process.env.${envVariableName}`)
+      }
+      object[key] = resolvedValue
       if (objectOverride && objectOverride[key] !== undefined && objectOverride[key] !== object[key]) {
+        if (printOverrides && objectOverride[key] !== object[key]) {
+          log.general.info(`Replacing ${COLORS.CYAN}config.${location}.${key}${COLORS.RESET} value of ${COLORS.RED}${object[key]}${COLORS.RESET} with ${COLORS.GREEN}${objectOverride[key]}${COLORS.RESET} from config override`)
+        }
         object[key] = objectOverride[key]
       }
     }
@@ -54,7 +69,7 @@ function overrideConfigs (configOverrides, printWarnings, printOverrides) {
     config._vip = true
     config._vipRefreshRateMinutes = configOverrides._vipRefreshRateMinutes
   }
-  traverse(config, configOverrides, ENV_PREFIX, printOverrides)
+  traverse(config, configOverrides, '', printOverrides)
   const results = checkConfig.check(config)
   if (results) {
     if (results.fatal) {
@@ -73,6 +88,6 @@ if (fs.existsSync(overrideFilePath)) {
   overrideConfigs(undefined, process.env.DRSS)
 }
 
-config._overrideWith = override => overrideConfigs(override, false, true)
+config._overrideWith = override => overrideConfigs(override, true, true)
 
 module.exports = config
