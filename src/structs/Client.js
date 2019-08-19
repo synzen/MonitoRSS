@@ -1,3 +1,4 @@
+process.env.DRSS = true
 const Discord = require('discord.js')
 const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
@@ -10,7 +11,6 @@ const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const dbOpsGeneral = require('../util/db/general.js')
 const dbOpsVips = require('../util/db/vips.js')
 const redisIndex = require('../structs/db/Redis/index.js')
-const checkConfig = require('../util/checkConfig.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientManager = require('./ClientManager.js')
 const EventEmitter = require('events')
@@ -23,31 +23,20 @@ const STATES = {
 }
 let webClient
 
-function overrideConfigs (configOverrides) {
-  // Config overrides must be manually done for it to be changed in the original object (config)
-  for (var category in config) {
-    const configCategory = config[category]
-    if (!configOverrides[category]) continue
-    for (var configName in configCategory) {
-      if (configOverrides[category][configName] !== undefined && configOverrides[category][configName] !== config[category][configName]) {
-        log.general.info(`Overriding config.${category}.${configName} from ${JSON.stringify(config[category][configName])} to ${JSON.stringify(configOverrides[category][configName])} from configOverride.json`)
-        configCategory[configName] = configOverrides[category][configName]
-      }
-    }
-  }
-}
-
 class Client extends EventEmitter {
   constructor (configOverrides, customSchedules) {
     super()
     // Override from file first
-    if (config.web.enabled === true) webClient = require('../web/index.js')
+    if (config.web.enabled === true) {
+      webClient = require('../web/index.js')
+    }
     // Then override from constructor
-    if (configOverrides) overrideConfigs(configOverrides)
-    const configRes = checkConfig.check(config)
-    if (configRes && configRes.fatal) throw new Error(configRes.message)
-    else if (configRes) log.general.warning(configRes.message)
-    if (configOverrides && Array.isArray(configOverrides.suppressLogLevels)) log.suppressLevel(configOverrides.suppressLogLevels)
+    if (configOverrides) {
+      config._overrideWith(configOverrides)
+    }
+    if (configOverrides && Array.isArray(configOverrides.suppressLogLevels)) {
+      log.suppressLevel(configOverrides.suppressLogLevels)
+    }
     if (customSchedules) {
       if (!Array.isArray(customSchedules)) throw new Error('customSchedules parameter must be an array of objects')
       else {

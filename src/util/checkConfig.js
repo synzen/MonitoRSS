@@ -19,6 +19,7 @@ exports.defaultConfigs = {
     status: { type: String, default: 'online' },
     activityType: { type: String, default: '' },
     activityName: { type: String, default: '' },
+    streamActivityURL: { type: String, default: '' },
     ownerIDs: { type: Array, default: [] },
     menuColor: { type: Number, default: 7833753 },
     deleteMenus: { type: Boolean, default: true },
@@ -27,6 +28,7 @@ exports.defaultConfigs = {
   },
   database: {
     uri: { type: String, default: 'mongodb://localhost/rss' },
+    redis: { type: String, default: '' },
     clean: { type: Boolean, default: false },
     articlesExpire: { type: Number, default: 14 },
     guildBackupsExpire: { type: Number, default: 7 }
@@ -55,44 +57,80 @@ exports.defaultConfigs = {
     shards: { type: Number, default: 1 },
     batchSize: { type: Number, default: 400 },
     forkBatches: { type: Boolean, default: false },
-    parallelBatches: { type: Number, default: 2 },
+    parallelBatches: { type: Number, default: 1 },
     parallelShards: { type: Number, default: 1 }
+  },
+  web: {
+    enabled: { type: Boolean, default: false },
+    trustProxy: { type: Boolean, default: false },
+    sessionSecret: { type: String, default: 'keyboard cat' },
+    port: { type: Number, default: 8080 },
+    redirectUri: { type: String, default: '' },
+    clientId: { type: String, default: '' },
+    clientSecret: { type: String, default: '' },
+    https: {
+      enabled: { type: Boolean, default: false },
+      privateKey: { type: String, default: '' },
+      certificate: { type: String, default: '' },
+      chain: { type: String, default: '' },
+      port: { type: Number, default: 443 }
+    }
   }
 }
 
 exports.check = userConfig => {
   let fatalInvalidConfigs = {}
   let invalidConfigs = {}
-
-  function checkIfRequired (configCategory, configName, errMsg) {
-    let config = exports.defaultConfigs[configCategory][configName]
-    if (config.default === undefined) {
-      fatalInvalidConfigs[configCategory + '.' + configName] = errMsg
-    } else {
-      userConfig[configCategory][configName] = config.default
-      invalidConfigs[configCategory + '.' + configName] = `${errMsg}. Defaulting to ${Array.isArray(config.default) ? `[${config.default}]` : config.default === '' ? 'an empty string' : config.default}`
+  // console.log(userConfig)
+  function checkIfRequired (configSpecification, locationString, errMsg) {
+    if (configSpecification.default === undefined) {
+      fatalInvalidConfigs[locationString] = errMsg
+      return
     }
+    const locations = locationString.split('.')
+    let reference = userConfig
+    const len = locations.length
+    for (let i = 0; i < len; ++i) {
+      const location = locations[i]
+      // This is the only way to modify by reference in this case
+      if (i === len - 1) {
+        reference[location] = configSpecification.default
+      } else {
+        reference = reference[location]
+      }
+    }
+    invalidConfigs[locationString] = `${errMsg}. Defaulting to ${Array.isArray(configSpecification.default) ? `[${configSpecification.default}]` : configSpecification.default === '' ? 'an empty string' : configSpecification.default}`
   }
 
-  for (const configCategory in exports.defaultConfigs) {
-    for (const configName in exports.defaultConfigs[configCategory]) {
-      const configVal = exports.defaultConfigs[configCategory][configName]
-      const userVal = userConfig[configCategory][configName]
-
-      if (userVal === undefined || userVal.constructor !== configVal.type) {
-        checkIfRequired(configCategory, configName, `Expected ${configVal.type.name}, found ${userVal === undefined ? userVal : userVal.constructor.name}`)
+  function traverse (referenceObject, userObject, location) {
+    for (const key in referenceObject) {
+      const currentLocation = !location ? key : `${location}.${key}`
+      if (!referenceObject[key].type) {
+        traverse(referenceObject[key], userObject[key], currentLocation)
+        continue
+      }
+      const configSpecification = referenceObject[key]
+      const userVal = userObject[key]
+      if (userVal === undefined || userVal.constructor !== configSpecification.type) {
+        checkIfRequired(configSpecification, currentLocation, `Expected ${configSpecification.type.name}, found ${userVal === undefined ? userVal : userVal.constructor.name}`)
       } else {
-        if ((userVal).constructor === Number && userVal < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
-        else if (configName === 'timezone' && !moment.tz.zone(userVal)) checkIfRequired(configCategory, configName, 'Invalid timezone')
-        else if (configName === 'menuColor' && userVal > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
-        else if (configName === 'processorMethod' && userVal !== 'concurrent' && userVal !== 'parallel-isolated') checkIfRequired(configCategory, configName, 'Must be either "concurrent", or "parallel-isolated"')
-        else if (configName === 'activityType' && !ACTIVITY_TYPES.includes(userVal)) checkIfRequired(configCategory, configName, `Must be one of the following: "${ACTIVITY_TYPES.join('","')}"`)
-        else if (configName === 'status' && !STATUS_TYPES.includes(userVal)) checkIfRequired(configCategory, configName, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
-        else if (configName === 'ownerIDs') {
+        if ((userVal).constructor === Number && userVal < 0) {
+          checkIfRequired(configSpecification, currentLocation, `Cannot be less than 0`)
+        } else if (key === 'timezone' && !moment.tz.zone(userVal)) {
+          checkIfRequired(configSpecification, currentLocation, 'Invalid timezone')
+        } else if (key === 'menuColor' && userVal > 16777215) {
+          checkIfRequired(configSpecification, currentLocation, `Cannot be larger than 16777215`)
+        } else if (key === 'processorMethod' && userVal !== 'concurrent' && userVal !== 'parallel-isolated') {
+          checkIfRequired(configSpecification, currentLocation, 'Must be either "concurrent", or "parallel-isolated"')
+        } else if (key === 'activityType' && !ACTIVITY_TYPES.includes(userVal)) {
+          checkIfRequired(configSpecification, currentLocation, `Must be one of the following: "${ACTIVITY_TYPES.join('","')}"`)
+        } else if (key === 'status' && !STATUS_TYPES.includes(userVal)) {
+          checkIfRequired(configSpecification, currentLocation, `Must be one of the following: "${STATUS_TYPES.join('","')}"`)
+        } else if (key === 'ownerIDs') {
           for (var i = 0; i < userVal.length; ++i) {
             if (userVal[i] === '') continue
             if (!userVal[i] || userVal[i].constructor !== String) {
-              checkIfRequired(configCategory, configName, `Detected non-string value (${userVal[i]})`)
+              checkIfRequired(key, currentLocation, `Detected non-string value (${userVal[i]})`)
               break
             }
           }
@@ -100,6 +138,8 @@ exports.check = userConfig => {
       }
     }
   }
+
+  traverse(exports.defaultConfigs, userConfig)
 
   // Miscellaneous checks (such as configs using objects)
   const decodeSettings = userConfig.feeds.decode

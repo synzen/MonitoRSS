@@ -2,59 +2,76 @@ const fs = require('fs')
 const path = require('path')
 const config = require('./config.json')
 const checkConfig = require('./util/checkConfig.js')
+const ENV_PREFIX = 'DRSS'
 
-function overrideConfigs (configOverrides) {
-  if (configOverrides._vip === true) {
-    config._vip = true
-    config._vipRefreshRateMinutes = configOverrides._vipRefreshRateMinutes
+function resolveWithEnv (variableName, configValue, configSpecification) {
+  const value = process.env[variableName]
+  switch (variableName) {
+    case `${ENV_PREFIX}BOT_TOKEN`:
+      return !value || value === 'drss_docker_token' ? (configValue || 's') : value
+    case `${ENV_PREFIX}DATABASE_URI`:
+      return value || process.env.MONGODB_URI || configValue // MONGODB_URI may be set by Heroku
+    case `${ENV_PREFIX}DATABASE_REDIS`:
+      return value || process.env.REDIS_URL || configValue // REDIS_URL may be set by Heroku
+    case `${ENV_PREFIX}FEEDS_DEFAULTMESSAGE`:
+      return value ? value.replace(/\\n/g, '\n') : configValue
+    default:
+      switch (configSpecification.type) {
+        case Number:
+          return Number(value) || configValue
+        case Boolean:
+          return value === 'true'
+        case Array:
+          return value ? value.split(/\s*,\s*/) : configValue
+        default:
+          return configValue
+      }
   }
-  // Config overrides must be manually done for it to be changed in the original object (config)
-  for (var category in config) {
-    const configCategory = config[category]
-    if (!configOverrides[category]) continue
-    for (var configName in configCategory) {
-      if (configOverrides[category][configName] !== undefined && configOverrides[category][configName] !== config[category][configName]) {
-        configCategory[configName] = configOverrides[category][configName]
+}
+
+function traverse (object, objectOverride, envName, printOverrides, configSpecification = checkConfig.defaultConfigs) {
+  for (const key in object) {
+    if (key === '_overrideWith' || key === 'commandAliases' || key === 'decode') {
+      continue
+    }
+    if (Object.prototype.toString.call(object[key]) === '[object Object]') {
+      traverse(object[key], objectOverride ? objectOverride[key] : undefined, envName + `_${key.toUpperCase()}`, printOverrides, configSpecification[key])
+    } else {
+      const envVariableName = `${envName}_${key.toUpperCase()}`
+      object[key] = resolveWithEnv(envVariableName, object[key], configSpecification[key])
+      if (objectOverride && objectOverride[key] !== undefined && objectOverride[key] !== object[key]) {
+        object[key] = objectOverride[key]
       }
     }
   }
 }
 
-// Environment variable in Docker container and Heroku if available
-config.bot.token = !process.env.DRSS_BOT_TOKEN || process.env.DRSS_BOT_TOKEN === 'drss_docker_token' ? (config.bot.token || 's') : process.env.DRSS_BOT_TOKEN
-
-// process.env.MONGODB_URI is intended for use by Heroku
-config.database.uri = process.env.DRSS_DATABASE_URI || process.env.MONGODB_URI || config.database.uri
-
-// Heroku deployment configuration
-config.bot.prefix = process.env.DRSS_BOT_PREFIX || config.bot.prefix
-config.bot.ownerIDs = process.env.DRSS_BOT_OWNER_IDS ? process.env.DRSS_BOT_OWNER_IDS.split(/\s*,\s*/) : config.bot.ownerIDs
-config.feeds.refreshTimeMinutes = Number(process.env.DRSS_FEEDS_REFRESH_TIME_MINUTES) || config.feeds.refreshTimeMinutes
-config.feeds.defaultMessage = process.env.DRSS_FEEDS_DEFAULT_MESSAGE ? process.env.DRSS_FEEDS_DEFAULT_MESSAGE.replace(/\\n/g, '\n') : config.feeds.defaultMessage
-config.bot.status = process.env.DRSS_BOT_STATUS || config.bot.status
-config.bot.activityType = process.env.DRSS_BOT_ACTIVITY_TYPE || config.bot.activityType
-config.bot.activityName = process.env.DRSS_BOT_ACTIVITY_NAME || config.bot.activityName
-config.bot.streamActivityURL = process.env.DRSS_BOT_STREAM_URL || config.bot.streamActivityURL
-
-// Web
-config.web.enabled = process.env.DRSS_WEB_ENABLED === 'true' || config.web.enabled
-
-// process.env.REDIS_URL is intended for use by Heroku
-config.database.redis = process.env.DRSS_REDIS_URI || process.env.REDIS_URL || config.database.redis
-
-// process.env.PORT is intended for use by Heroku
-config.web.port = process.env.DRSS_WEB_PORT || process.env.PORT || config.web.port
-config.web.redirectUri = process.env.DRSS_WEB_REDIRECT_URI || config.web.redirectUri
-config.web.clientId = process.env.DRSS_WEB_CLIENT_ID || config.web.clientId
-config.web.clientSecret = process.env.DRSS_WEB_CLIENT_SECRET || config.web.clientSecret
+function overrideConfigs (configOverrides, printWarnings, printOverrides) {
+  if (configOverrides._vip === true) {
+    config._vip = true
+    config._vipRefreshRateMinutes = configOverrides._vipRefreshRateMinutes
+  }
+  traverse(config, configOverrides, ENV_PREFIX, printOverrides)
+  const results = checkConfig.check(config)
+  if (results) {
+    if (results.fatal) {
+      throw new Error(results.message)
+    } else if (results.message && printWarnings) {
+      console.log(results.message)
+    }
+  }
+}
 
 const overrideFilePath = path.join(__dirname, '..', 'settings', 'configOverride.json')
 
 if (fs.existsSync(overrideFilePath)) {
-  overrideConfigs(JSON.parse(fs.readFileSync(overrideFilePath)))
+  overrideConfigs(JSON.parse(fs.readFileSync(overrideFilePath)), process.env.DRSS)
+} else {
+  overrideConfigs(undefined, process.env.DRSS)
 }
 
-const results = checkConfig.check(config)
-if (results && results.fatal) throw new Error(results.message)
+console.log(config)
+
+config._overrideWith = override => overrideConfigs(override, false, true)
 
 module.exports = config

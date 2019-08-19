@@ -1,3 +1,4 @@
+process.env.DRSS = true
 const config = require('../config.js')
 const connectDb = require('../rss/db/connect.js')
 const LinkTracker = require('./LinkTracker.js')
@@ -11,26 +12,18 @@ const EventEmitter = require('events')
 const ArticleModel = require('../models/Article.js')
 let webClient
 
-function overrideConfigs (configOverrides) {
-  // Config overrides must be manually done for it to be changed in the original object (config)
-  for (var category in config) {
-    const configCategory = config[category]
-    if (!configOverrides[category]) continue
-    for (var configName in configCategory) {
-      if (configOverrides[category][configName] !== undefined && configOverrides[category][configName] !== config[category][configName]) {
-        log.owner.info(`Overriding config.${category}.${configName} from ${JSON.stringify(config[category][configName])} to ${JSON.stringify(configOverrides[category][configName])} from configOverride.json`)
-        configCategory[configName] = configOverrides[category][configName]
-      }
-    }
-  }
-}
-
 class ClientManager extends EventEmitter {
   constructor (shardingManager, configOverrides) {
     super()
-    if (shardingManager.respawn !== false) throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
-    if (configOverrides) overrideConfigs(configOverrides)
-    if (config.web.enabled === true) webClient = require('../web/index.js')
+    if (shardingManager.respawn !== false) {
+      throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
+    }
+    if (configOverrides) {
+      config._overrideWith(configOverrides)
+    }
+    if (config.web.enabled === true) {
+      webClient = require('../web/index.js')
+    }
     this.missingGuildRss = new Map()
     this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
     this.refreshRates = []
