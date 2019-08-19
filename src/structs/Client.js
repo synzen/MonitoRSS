@@ -24,18 +24,16 @@ const STATES = {
 let webClient
 
 class Client extends EventEmitter {
-  constructor (configOverrides, customSchedules) {
+  constructor (settings, customSchedules) {
     super()
-    // Override from file first
+    if (settings.config) {
+      config._overrideWith(settings.config)
+    }
     if (config.web.enabled === true) {
       webClient = require('../web/index.js')
     }
-    // Then override from constructor
-    if (configOverrides) {
-      config._overrideWith(configOverrides)
-    }
-    if (configOverrides && Array.isArray(configOverrides.suppressLogLevels)) {
-      log.suppressLevel(configOverrides.suppressLogLevels)
+    if (settings && Array.isArray(settings.suppressLogLevels)) {
+      log.suppressLevel(settings.suppressLogLevels)
     }
     if (customSchedules) {
       if (!Array.isArray(customSchedules)) throw new Error('customSchedules parameter must be an array of objects')
@@ -50,7 +48,7 @@ class Client extends EventEmitter {
       }
     }
     this.scheduleManager = undefined
-    this.configOverrides = configOverrides
+    this.setPresence = settings.setPresence
     this.customSchedules = customSchedules
     this.STATES = STATES
     this.state = STATES.STOPPED
@@ -101,7 +99,7 @@ class Client extends EventEmitter {
 
   _initialize () {
     const bot = this.bot
-    if (this.configOverrides && this.configOverrides.setPresence === true) {
+    if (this.setPresence === true) {
       if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL || undefined })
       else bot.user.setActivity(null)
       bot.user.setStatus(config.bot.status)

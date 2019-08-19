@@ -13,13 +13,13 @@ const ArticleModel = require('../models/Article.js')
 let webClient
 
 class ClientManager extends EventEmitter {
-  constructor (shardingManager, configOverrides) {
+  constructor (shardingManager, settings) {
     super()
     if (shardingManager.respawn !== false) {
       throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
     }
-    if (configOverrides) {
-      config._overrideWith(configOverrides)
+    if (settings.config) {
+      config._overrideWith(settings.config)
     }
     if (config.web.enabled === true) {
       webClient = require('../web/index.js')

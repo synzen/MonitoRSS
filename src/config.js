@@ -6,6 +6,9 @@ const ENV_PREFIX = 'DRSS'
 
 function resolveWithEnv (variableName, configValue, configSpecification) {
   const value = process.env[variableName]
+  if (variableName === `${ENV_PREFIX}__VIP` || variableName === `${ENV_PREFIX}__VIPREFRESHRATEMINUTES`) {
+    return configValue
+  }
   switch (variableName) {
     case `${ENV_PREFIX}BOT_TOKEN`:
       return !value || value === 'drss_docker_token' ? (configValue || 's') : value
@@ -69,8 +72,6 @@ if (fs.existsSync(overrideFilePath)) {
 } else {
   overrideConfigs(undefined, process.env.DRSS)
 }
-
-console.log(config)
 
 config._overrideWith = override => overrideConfigs(override, false, true)
 
