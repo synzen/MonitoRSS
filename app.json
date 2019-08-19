@@ -24,27 +24,27 @@
 			"description": "The prefix of your RSS feed bot. E.g. summoning the bot is done via ~rsshelp.",
 			"value": "~"
 		},
-		"DRSS_BOT_CONTROLLER_IDS": {
+		"DRSS_BOT_CONTROLLERIDS": {
 			"description": "Owner ID(s), separate multiple with a comma.",
 			"required": false
 		},
-		"DRSS_FEEDS_REFRESH_TIME_MINUTES": {
+		"DRSS_FEEDS_REFRESHRATEMINUTES": {
 			"description": "Refresh rate of your RSS feed bot.",
 			"value": "0.5"
 		},
-		"DRSS_FEEDS_DEFAULT_MESSAGE": {
+		"DRSS_FEEDS_DEFAULTMESSAGE": {
 			"description": "Default message. You can do role pings with <@DISCORD_ROLE_ID>.",
 			"value": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}"
 		},
-		"DRSS_WEB_REDIRECT_URI": {
+		"DRSS_WEB_REDIRECTURI": {
 			"description": "Insert the domain name appending /authorize. Example on heroku: https://APPNAME.herokuapp.com/authorize. Make sure the exact url is also set set under the application OAuth2 tab under redirects.",
 			"required": false
 		},
-		"DRSS_WEB_CLIENT_ID": {
+		"DRSS_WEB_CLIENTID": {
 			"description": "App ID that can be found on the general information page at https://discordapp.com/developers/applications/. This should only contain numbers.",
 			"required": false
 		},
-		"DRSS_WEB_CLIENT_SECRET": {
+		"DRSS_WEB_CLIENTSECRET": {
 			"description": "Found on your app page at Discord Developers at https://discordapp.com/developers/applications/",
 			"required": false
 		},
@@ -56,15 +56,15 @@
 			"description": "Choose from online, idle, dnd or invisible.",
 			"value": "online"
 		},
-		"DRSS_BOT_ACTIVITY_TYPE": {
+		"DRSS_BOT_ACTIVITYTYPE": {
 			"description": "Choose from PLAYING, LISTENING, STREAMING or WATCHING. Leave this blank if you don't want the bot to display a custom status.",
 			"required": false
 		},
-		"DRSS_BOT_ACTIVITY_NAME": {
+		"DRSS_BOT_ACTIVITYNAME": {
 			"description": "Displayed next to the activity type. Leave this blank if you don't want the bot to display a custom status.",
 			"required": false
 		},
-		"DRSS_BOT_STREAM_URL": {
+		"DRSS_BOT_STREAMURL": {
 			"description": "Stream URL for STREAMING activity. If you're not using the STREAMING activity type leave this blank.",
 			"required": false
 		}
