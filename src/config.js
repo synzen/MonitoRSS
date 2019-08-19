@@ -14,7 +14,7 @@ const ENV_PREFIX = 'DRSS_'
 
 function resolveWithEnv (variableName, configValue, configSpecification) {
   const value = process.env[variableName]
-  if (variableName === `${ENV_PREFIX}_VIP` || variableName === `${ENV_PREFIX}_VIPREFRESHRATEMINUTES`) {
+  if (variableName === `${ENV_PREFIX}__VIP` || variableName === `${ENV_PREFIX}__VIPREFRESHRATEMINUTES`) {
     return configValue
   }
   switch (variableName) {
