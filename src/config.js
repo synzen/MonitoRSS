@@ -9,12 +9,14 @@ const COLORS = {
   CYAN: '\x1b[36m'
 }
 const ENV_PREFIX = 'DRSS_'
+const SKIP_TYPE_CHECKS = ['_vip', '_vipRefreshRateMinutes', 'dev'].map(item => ENV_PREFIX + item.toUpperCase())
+const EXCLUDED_CONFIG_KEYS = ['_overrideWith', 'commandAliases', 'decode']
 
 function resolveWithEnv (variableName, configValue, configSpecification) {
-  const value = process.env[variableName]
-  if (variableName === `${ENV_PREFIX}__VIP` || variableName === `${ENV_PREFIX}__VIPREFRESHRATEMINUTES`) {
+  if (SKIP_TYPE_CHECKS.includes(variableName)) {
     return configValue
   }
+  const value = process.env[variableName]
   switch (variableName) {
     case `${ENV_PREFIX}BOT_TOKEN`:
       return !value || value === 'drss_docker_token' ? (configValue || 's') : value
@@ -40,7 +42,7 @@ function resolveWithEnv (variableName, configValue, configSpecification) {
 
 function traverse (object, objectOverride, location, printOverrides, configSpecification = checkConfig.defaultConfigs) {
   for (const key in object) {
-    if (key === '_overrideWith' || key === 'commandAliases' || key === 'decode') {
+    if (EXCLUDED_CONFIG_KEYS.includes(key)) {
       continue
     }
     if (Object.prototype.toString.call(object[key]) === '[object Object]') {
