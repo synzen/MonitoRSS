@@ -45,10 +45,11 @@ function traverse (object, objectOverride, location, printOverrides, configSpeci
     if (EXCLUDED_CONFIG_KEYS.includes(key)) {
       continue
     }
+    const currentLocation = location ? `${location}.${key}` : key
     if (Object.prototype.toString.call(object[key]) === '[object Object]') {
-      traverse(object[key], objectOverride ? objectOverride[key] : undefined, location ? `.${key}` : key, printOverrides, configSpecification[key])
+      traverse(object[key], objectOverride ? objectOverride[key] : undefined, currentLocation, printOverrides, configSpecification[key])
     } else {
-      const envVariableName = `${ENV_PREFIX}${location.replace('.', '_').toUpperCase()}_${key.toUpperCase()}`
+      const envVariableName = `${ENV_PREFIX}${currentLocation.replace(/\./g, '_').toUpperCase()}`
       const resolvedValue = resolveWithEnv(envVariableName, object[key], configSpecification[key])
       if (printOverrides && object[key] !== resolvedValue) {
         console.log(`Replacing ${COLORS.CYAN}config.${location}.${key}${COLORS.RESET} value of ${COLORS.RED}${object[key]}${COLORS.RESET} with ${COLORS.GREEN}${resolvedValue}${COLORS.RESET} from process.env.${envVariableName}`)
