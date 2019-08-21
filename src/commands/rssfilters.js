@@ -65,16 +65,12 @@ module.exports = async (bot, message, command, role) => {
     const filterList = source.filters
 
     if (selectedOption === '3') {
-      for (var filterCategory in filterList) {
-        if (filterCategory !== 'roleSubscriptions') delete filterList[filterCategory]
-      }
-      if (Object.keys(filterList).length === 0) delete source.filters
-
+      delete source.filters
       await dbOpsGuilds.update(guildRss)
       log.command.info(`Removed all filters from ${source.link}`, message.guild)
       return await message.channel.send(translate('commands.rssfilters.removedAllSuccess', { link: source.link }))
     } else if (selectedOption === '4') { // 4 = List all existing filters
-      if (!filterList || (filterList && Object.keys(filterList).length === 1 && filterList.roleSubscriptions !== undefined)) {
+      if (!filterList) {
         return await message.channel.send(`There are no filters assigned to ${source.link}`)
       }
       const list = new MenuUtils.Menu(message, undefined, { numbered: false })
@@ -84,8 +80,11 @@ module.exports = async (bot, message, command, role) => {
 
       // Generate the list of filters assigned to a feed and add to embed to be sent
       for (const filterCat in filterList) {
+        const filterContent = filterList[filterCat]
         let value = ''
-        if (filterCat !== 'roleSubscriptions') {
+        if (typeof filterContent === 'string') {
+          value = `\`\`\`${filterContent}\`\`\``
+        } else {
           for (const filter in filterList[filterCat]) {
             value += `${filterList[filterCat][filter]}\n`
           }

@@ -531,7 +531,8 @@
         "removeFailedNoExist": "The following filter(s) were unable to be deleted because they do not exist",
         "removeNone": "There are no filters to remove for <{{link}}>.",
         "listOfFilters": "List of Assigned Filters",
-        "listOfFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type `exit` to cancel.\u200b\n\u200b\n"
+        "listOfFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nBelow are the filter categories with their words/phrases under each. Type the filter category for which you would like you remove a filter from, or type `exit` to cancel.\u200b\n\u200b\n",
+        "regexExists": "Error: Filters cannot be modified through commands when a regex filter string exists for this filter category ({{category}}). Manually remove the regex string to be able to edit this filter category through commands again."
       }
     }
   },

@@ -15,7 +15,7 @@ const log = require('../../util/logger.js')
 
 async function selectCategoryFn (m, data) {
   let chosenFilterType = ''
-  const guildRss = data.guildRss
+  const { guildRss, filterList } = data
   const input = m.content
   const translator = new Translator(guildRss ? guildRss.locale : null)
   const translate = translator.translate.bind(translator)
@@ -31,7 +31,12 @@ async function selectCategoryFn (m, data) {
     }
   }
 
-  if (!chosenFilterType) throw new MenuUtils.MenuOptionError(translate('commands.utils.filters.invalidCategory'))
+  if (!chosenFilterType) {
+    throw new MenuUtils.MenuOptionError(translate('commands.utils.filters.invalidCategory'))
+  } else if (typeof filterList[chosenFilterType] === 'string') {
+    await m.channel.send(translate('commands.utils.filters.regexExists', { category: chosenFilterType }))
+    return { __end: true }
+  }
 
   return { ...data,
     chosenFilterType: chosenFilterType,
@@ -47,7 +52,9 @@ async function inputFilterFn (m, data) {
   const prefix = guildRss.prefix || config.bot.prefix
   const translator = new Translator(guildRss.locale)
   const translate = translator.translate.bind(translator)
-  if (!filterList[chosenFilterType]) filterList[chosenFilterType] = []
+  if (!filterList[chosenFilterType]) {
+    filterList[chosenFilterType] = []
+  }
 
   // Assume the chosen filters are an array
   const addList = input.trim().split('\n').map(item => item.trim().toLowerCase()).filter((item, index, self) => item && index === self.indexOf(item)) // Valid items to be added, trimmed and lowercased
@@ -139,7 +146,7 @@ exports.add = (message, guildRss, rssName, role, user) => {
 async function filterRemoveCategory (m, data, callback) {
   // Select filter category here
   const input = m.content
-  const guildRss = data.guildRss
+  const { filterList, guildRss } = data
   const translator = new Translator(guildRss ? guildRss.locale : null)
   const translate = translator.translate.bind(translator)
   let chosenFilterType = ''
@@ -156,7 +163,11 @@ async function filterRemoveCategory (m, data, callback) {
 
   if (!chosenFilterType) {
     throw new MenuUtils.MenuOptionError(translate('commands.utils.filters.invalidCategory'))
+  } else if (typeof filterList[chosenFilterType] === 'string') {
+    await m.channel.send(translate('commands.utils.filters.regexExists', { category: chosenFilterType }))
+    return { __end: true }
   }
+
   return { ...data,
     chosenFilterType: chosenFilterType,
     next: {
@@ -253,8 +264,15 @@ exports.remove = (message, guildRss, rssName, role, user) => {
 
   const options = []
   for (const filterCategory in targetFilterList) {
+    const filterContent = targetFilterList[filterCategory]
     let value = ''
-    for (const filter in targetFilterList[filterCategory]) value += `${targetFilterList[filterCategory][filter]}\n`
+    if (typeof filterContent === 'string') {
+      value = `\`\`\`${filterContent}\`\`\``
+    } else {
+      for (const filter in targetFilterList[filterCategory]) {
+        value += `${targetFilterList[filterCategory][filter]}\n`
+      }
+    }
     options.push({ title: filterCategory, description: value, inline: true })
   }
 

@@ -531,7 +531,8 @@
         "removeFailedNoExist": "Os seguintes filtros não puderam ser excluídos porque não existem",
         "removeNone": "Não há filtros para remover de <{{link}}>",
         "listOfFilters": "Lista de filtros atribuídos",
-        "listOfFiltersDescription": "**Feed Título:** {{title}}\n**Feed Link:** {{link}}\n\nAbaixo estão as categorias de filtro com suas palavras/frases em cada um. Digite a categoria de filtro da qual você deseja remover um filtro ou digite `exit` para cancelar.\u200b\n\u200b\n"
+        "listOfFiltersDescription": "**Feed Título:** {{title}}\n**Feed Link:** {{link}}\n\nAbaixo estão as categorias de filtro com suas palavras/frases em cada um. Digite a categoria de filtro da qual você deseja remover um filtro ou digite `exit` para cancelar.\u200b\n\u200b\n",
+        "regexExists": ""
       }
     }
   },
