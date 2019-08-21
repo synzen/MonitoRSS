@@ -76,6 +76,15 @@ function findFilterWords (filterType, content) {
         if (res.invertedMatches) invertedMatches = invertedMatches.concat(res.invertedMatches)
       }
     }
+  } else if (typeof filterType === 'string') {
+    const regex = new RegExp(filterType, 'i')
+    const found = regex.exec(content)
+    if (found) {
+      matches.push(found[0])
+      results.push({ passed: true, inverted: false })
+    } else {
+      results.push({ passed: false, inverted: false })
+    }
   }
 
   return {

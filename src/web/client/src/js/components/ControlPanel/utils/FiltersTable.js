@@ -46,8 +46,13 @@ class FiltersTable extends Component {
     const filtersArray = []
     for (const filterType in filters) {
       const filterTerms = filters[filterType]
-      for (const filterTerm of filterTerms) {
-        filtersArray.push({ type: filterType, term: filterTerm })
+      if (Array.isArray(filterTerms)) {
+        for (const filterTerm of filterTerms) {
+          filtersArray.push({ type: filterType, term: filterTerm })
+        }
+      } else {
+        // Regex
+        filtersArray.push({ type: filterType, term: filterTerms })
       }
     }
 

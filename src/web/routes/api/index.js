@@ -88,14 +88,20 @@ function mongooseResults (req, res) {
     // nModified may also be available since the mongoose operation is sometimes "updateOne"
     if (deleteResult.nModified !== undefined && deleteResult.nModified !== 1) return res.status(304).json({ code: 304, message: statusCodes['304'].message })
     return res.status(204).end()
-  } else return res.end()
+  } else {
+    return res.end()
+  }
 }
 
 // Handle API route errors
-function errorHandler (err, req, res) {
-  console.log(123)
+function errorHandler (err, req, res, next) {
+  if (res.headersSent) {
+    return next(err)
+  }
   if (err.response) {
-    if (process.env.NODE_ENV !== 'test') console.log(err.response)
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(err.response)
+    }
     // Axios errors for Discord API calls
     const status = err.response.status
     const data = err.response.data
