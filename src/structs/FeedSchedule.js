@@ -73,12 +73,16 @@ class FeedSchedule extends EventEmitter {
     } else if (this._sourceList.has(source.link)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
       let linkList = this._sourceList.get(source.link)
       linkList[rssName] = source
-      log.debug.info(`${rssName}: Adding to pre-existing source list`)
+      if (this._debugFeeds.has(rssName)) {
+        log.debug.info(`${rssName}: Adding to pre-existing source list`)
+      }
     } else {
       let linkList = {}
       linkList[rssName] = source
       this._sourceList.set(source.link, linkList)
-      log.debug.info(`${rssName}: Creating new source list`)
+      if (this._debugFeeds.has(rssName)) {
+        log.debug.info(`${rssName}: Creating new source list`)
+      }
     }
   }
 
@@ -220,7 +224,7 @@ class FeedSchedule extends EventEmitter {
     }
     for (const assigned of assignedSchedules) {
       if (this._debugFeeds.has(assigned.feedID)) {
-        log.debug.info(`${assigned.feedID}: Found assigned schedule`)
+        log.debug.info(`${assigned.feedID}: Found assigned schedule ${this.name} on shard ${this.SHARD_ID}`)
       }
       this.feedIDs.add(assigned.feedID)
     }
