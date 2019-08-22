@@ -114,9 +114,11 @@ class FeedSchedule extends EventEmitter {
         status[source.channel].disabled.push(source.link)
       }
 
-      if (!checkGuild.config(this.bot, guildRss, rssName, toDebug) || typeof this.failedLinks[source.link] === 'string') {
+      const isInvalidConfig = !checkGuild.config(this.bot, guildRss, rssName, toDebug)
+      const isFailed = typeof this.failedLinks[source.link] === 'string'
+      if (isInvalidConfig || isFailed) {
         if (toDebug) {
-          log.debug.info(`${rssName}: Skipping feed delegation due to invalid config`)
+          log.debug.info(`${rssName}: Skipping feed delegation - is invalid config: ${isInvalidConfig}, is failed: ${isFailed}`)
         }
         continue
       }
