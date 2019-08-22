@@ -471,6 +471,7 @@
       "disabledSuccess": "Message splitting is now disabled for feed <{{link}}>."
     },
     "rsstest": {
+      "failed": "Unable to grab a random article because this feed's current status is failed. See {{prefix}}rsslist for more information.",
       "grabbingRandom": "Grabbing a random feed article...",
       "noArticles": "There are no articles in this feed to send."
     },

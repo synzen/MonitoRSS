@@ -2,6 +2,7 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsVips = require('../util/db/vips.js')
+const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
@@ -19,6 +20,10 @@ module.exports = async (bot, message, command) => {
     if (!data) return
     const { rssName } = data
     const source = guildRss.sources[rssName]
+    const failedLinkResults = dbOpsFailedLinks.get(source.link)
+    if (failedLinkResults && failedLinkResults.failed) {
+      return await message.channel.send(translate('commands.rsstest.failed'))
+    }
     const grabMsg = await message.channel.send(translate('commands.rsstest.grabbingRandom'))
     const article = await FeedFetcher.fetchRandomArticle(source.link)
     if (!article) {

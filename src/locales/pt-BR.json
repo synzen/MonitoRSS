@@ -471,6 +471,7 @@
       "disabledSuccess": "A divisão de mensagens agora está desativada para o feed <{{link}}>."
     },
     "rsstest": {
+      "failed": "",
       "grabbingRandom": "Buscando um artigo de feed aleatório ...",
       "noArticles": "Não há artigos neste feed para enviar."
     },
