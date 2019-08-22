@@ -24,7 +24,7 @@ module.exports = (message, limited) => {
   }
 
   // Regular commands
-  if ((!limited && commands.has(message)) || (limited && ownerIDs.has(message.author.id))) {
+  if ((!limited && commands.has(message)) || (limited && ownerIDs.has(message.author.id) && commands.has('message'))) {
     if (storage.initialized < 2) return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
     return commands.run(message)
   }
