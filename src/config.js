@@ -70,6 +70,9 @@ function overrideConfigs (configOverrides, printWarnings, printOverrides) {
     config._vip = true
     config._vipRefreshRateMinutes = configOverrides._vipRefreshRateMinutes
   }
+  if (configOverrides.dev === true) {
+    config.dev = true
+  }
   traverse(config, configOverrides, '', printOverrides)
   const results = checkConfig.check(config)
   if (results) {
