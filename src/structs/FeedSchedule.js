@@ -34,6 +34,7 @@ class FeedSchedule extends EventEmitter {
     this._modBatchList = [] // Batch of sources with cookies
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
+    this._debugFeeds = new Set()
     this._sourceList = new Map()
     this._modSourceList = new Map()
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
@@ -72,10 +73,12 @@ class FeedSchedule extends EventEmitter {
     } else if (this._sourceList.has(source.link)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
       let linkList = this._sourceList.get(source.link)
       linkList[rssName] = source
+      log.debug.info(`${rssName}: Adding to pre-existing source list`)
     } else {
       let linkList = {}
       linkList[rssName] = source
       this._sourceList.set(source.link, linkList)
+      log.debug.info(`${rssName}: Creating new source list`)
     }
   }
 
@@ -88,6 +91,10 @@ class FeedSchedule extends EventEmitter {
 
     for (const rssName in rssList) {
       if (!this.feedIDs.has(rssName)) continue
+      const toDebug = this._debugFeeds.has(rssName)
+      if (toDebug) {
+        log.debug.info(`${rssName}: Preparing for feed delegation`)
+      }
       const source = rssList[rssName]
       ++feedCount
       // Determine whether any feeds should be disabled
@@ -103,7 +110,12 @@ class FeedSchedule extends EventEmitter {
         status[source.channel].disabled.push(source.link)
       }
 
-      if (!checkGuild.config(this.bot, guildRss, rssName) || typeof this.failedLinks[source.link] === 'string') continue
+      if (!checkGuild.config(this.bot, guildRss, rssName) || typeof this.failedLinks[source.link] === 'string') {
+        if (toDebug) {
+          log.debug.info(`${rssName}: Skipping feed delegation due to invalid config`)
+        }
+        continue
+      }
 
       this._delegateFeed(guildRss, rssName)
     }
@@ -196,6 +208,10 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
+    this._debugFeeds.clear()
+    for (const feedID of debugFeeds) {
+      this._debugFeeds.add(feedID)
+    }
     this.feedIDs.clear()
     const [ failedLinks, assignedSchedules, guildRssList ] = await Promise.all([ dbOpsFailedLinks.getAll(), dbOpsSchedules.assignedSchedules.getMany(this.shardId, this.name), dbOpsGuilds.getAll() ])
     this.failedLinks = {}
@@ -203,6 +219,9 @@ class FeedSchedule extends EventEmitter {
       this.failedLinks[item.link] = item.failed || item.count
     }
     for (const assigned of assignedSchedules) {
+      if (this._debugFeeds.has(assigned.feedID)) {
+        log.debug.info(`${assigned.feedID}: Found assigned schedule`)
+      }
       this.feedIDs.add(assigned.feedID)
     }
     this._startTime = new Date()
