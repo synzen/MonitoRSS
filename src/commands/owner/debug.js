@@ -49,7 +49,7 @@ exports.sharded = async (bot, message) => {
       debugFeeds.push('${rssName}')
       'done'
     `)
-    log.owner.success(`Added ${rssName} to debugging list.`)
+    log.owner.success(`Shard ${bot.shard.id} added ${rssName} to debugging list.`)
   } catch (err) {
     log.owner.warning('debug', err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('debug 1', message.guild, err))
