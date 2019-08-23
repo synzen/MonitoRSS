@@ -27,7 +27,8 @@ const schema = mongoose.Schema({
     type: Date,
     index: { expires: 0 }
   },
-  override: Boolean
+  override: Boolean,
+  comment: String
 })
 
 exports.schema = schema
