@@ -100,7 +100,7 @@ class ScheduleManager {
     if (config._vip === true) {
       const vipUsers = await dbOpsVips.getAll()
       for (const vipUser of vipUsers) {
-        if (vipUser.invalid) continue
+        if (vipUser.invalid || vipUser.regularRefreshRate) continue
         for (const serverId of vipUser.servers) vipServers.push(serverId)
       }
     }

@@ -28,7 +28,8 @@ const schema = mongoose.Schema({
     index: { expires: 0 }
   },
   override: Boolean,
-  comment: String
+  comment: String,
+  regularRefreshRate: Boolean
 })
 
 exports.schema = schema
