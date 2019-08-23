@@ -46,6 +46,7 @@ exports.defaultConfigs = {
     notifyFail: { type: Boolean, default: true },
     sendOldOnFirstCycle: { type: Boolean, default: true },
     cycleMaxAge: { type: Number, default: 1 },
+    max: { type: Number, default: 0 },
     defaultMessage: { type: String, default: ':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}' },
     imgPreviews: { type: Boolean, default: true },
     imgLinksExistence: { type: Boolean, default: true },

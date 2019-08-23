@@ -39,6 +39,7 @@
     "dateFallback": false,
     "timeFallback": false,
     "failLimit": 0,
+    "max": 0,
     "notifyFail": true,
     "sendOldOnFirstCycle": true,
     "cycleMaxAge": 1,
