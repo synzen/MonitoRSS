@@ -36,7 +36,7 @@ exports.sharded = async (bot, message) => {
   if (content.length !== 2) return
   try {
     const found = await exports.normal(bot, message)
-    if (!found) return
+    if (found) return
     const rssName = content[1]
     await bot.shard.broadcastEval(`
       const fs = require('fs');
