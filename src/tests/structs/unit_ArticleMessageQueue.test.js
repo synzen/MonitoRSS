@@ -302,26 +302,22 @@ describe('Unit::ArticleMessageQueue', function () {
     it('sends the article message in the queue', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
-      queue._sendDelayedQueue({}, '', [articleMessage])
+      await queue._sendDelayedQueue({}, '', [articleMessage])
       expect(articleMessage.send).toHaveBeenCalledTimes(1)
     })
     it('adds to the article message\'s text if there is an error', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
-      queue._sendDelayedQueue({}, '', [articleMessage], [], new Error())
+      await queue._sendDelayedQueue({}, '', [articleMessage], [], new Error())
       expect(articleMessage.text).toEqual(expect.stringContaining('Failed to toggle'))
     })
-    // it('', async function () {
-    //   const queue = new ArticleMessageQueue()
-    //   const articleMessage = new ArticleMessage()
-    //   const articleMessageTwo = new ArticleMessage()
-    //   const origFunc = ArticleMessageQueue.toggleRoleMentionable
-    //   ArticleMessageQueue.toggleRoleMentionable = jest.fn()
-    //   const spy = jest.spyOn(queue, '_sendDelayedQueue')
-    //   await queue._sendDelayedQueue({}, 'abc', [ articleMessage, articleMessageTwo ])
-    //   expect(spy).toHaveBeenCalledTimes(2)
-    //   spy.mockRestore()
-    //   ArticleMessageQueue.toggleRoleMentionable = origFunc
-    // })
+    it('deletes the channel queue after all is finished sending', async function () {
+      const queue = new ArticleMessageQueue()
+      const articleMessage = new ArticleMessage()
+      const channelID = 'azsfdegr'
+      queue.queuesWithSubs[channelID] = [articleMessage]
+      await queue._sendDelayedQueue({}, channelID, queue.queuesWithSubs[channelID], [])
+      expect(queue.queuesWithSubs[channelID]).toBeUndefined()
+    })
   })
 })

@@ -96,6 +96,7 @@ class ArticleMessageQueue {
       if (err) articleMessage.text += `\n\nFailed to toggle role mentions: ${err.message}`
       await articleMessage.send()
       if (channelQueue.length - 1 === 0) {
+        delete this.queuesWithSubs[channelId]
         if (!err) {
           await ArticleMessageQueue.toggleRoleMentionable(false, channelId, roleIds, bot)
         }
