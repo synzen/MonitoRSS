@@ -9,6 +9,7 @@ const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const Translator = require('../structs/Translator')
+const storage = require('../util/storage.js')
 
 async function feedSelectorFn (m, data) {
   const { guildRss, rssName } = data
@@ -120,8 +121,8 @@ module.exports = async (bot, message, command, role) => {
       article._delivery.source = guildRss.sources[rssName]
 
       const queue = new ArticleMessageQueue()
-      await queue.send(article, true, true)
-      queue.sendDelayed()
+      await queue.enqueue(article, true, true)
+      queue.send(storage.bot)
     }
   } catch (err) {
     log.command.warning(`rssfilters`, message.guild, err)

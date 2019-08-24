@@ -15,6 +15,7 @@
     "dev-sharded": "node -r dotenv/config server-manager.js",
     "dev-client": "node -r dotenv/config server-client.js",
     "update": "node -r dotenv/config updates/dev.js",
+    "test": "jest ./src/tests --detectOpenHandles",
     "eslint": "eslint --fix ."
   },
   "dependencies": {
@@ -39,12 +40,14 @@
     "npm": "6.x"
   },
   "devDependencies": {
+    "@types/jest": "^24.0.18",
     "dotenv": "^8.0.0",
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.18.0",
     "eslint-plugin-node": "^9.1.0",
     "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.0"
+    "eslint-plugin-standard": "^4.0.0",
+    "jest": "^24.9.0"
   }
 }

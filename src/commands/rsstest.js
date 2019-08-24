@@ -8,6 +8,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const Translator = require('../structs/Translator.js')
+const storage = require('../util/storage.js')
 
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
@@ -45,8 +46,8 @@ module.exports = async (bot, message, command) => {
     article._delivery.source = source
 
     const queue = new ArticleMessageQueue()
-    await queue.send(article, !simple, true)
-    queue.sendDelayed()
+    await queue.enqueue(article, !simple, true)
+    queue.send(bot)
     await grabMsg.delete()
   } catch (err) {
     log.command.warning(`rsstest`, message.guild, err)

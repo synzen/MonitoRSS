@@ -19,7 +19,7 @@ class ScheduleManager {
   async _queueArticle (article) {
     if (debugFeeds.includes(article._delivery.rssName)) log.debug.info(`${article._delivery.rssName} ScheduleManager queueing article ${article.link} to send`)
     try {
-      await this.articleMessageQueue.send(article)
+      await this.articleMessageQueue.enqueue(article)
     } catch (err) {
       if (config.log.linkErrs === true) {
         const channel = this.bot.channels.get(article._delivery.channelId)
@@ -30,7 +30,7 @@ class ScheduleManager {
   }
 
   _finishSchedule () {
-    this.articleMessageQueue.sendDelayed()
+    this.articleMessageQueue.send(this.bot)
   }
 
   async addSchedule (schedule, assignAllSchedules, doNotStart) {
