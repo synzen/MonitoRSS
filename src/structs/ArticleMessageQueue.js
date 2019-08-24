@@ -104,6 +104,7 @@ class ArticleMessageQueue {
         this._sendDelayedQueue(bot, channelId, channelQueue.slice(1, channelQueue.length), roleIds, err)
       }
     } catch (err) {
+      delete this.queuesWithSubs[channelId]
       log.general.error('Failed to send a delayed articleMessage', err, articleMessage.channel ? articleMessage.channel.guild : undefined, true)
     }
   }
