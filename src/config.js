@@ -66,11 +66,11 @@ function traverse (object, objectOverride, location, printOverrides, configSpeci
 }
 
 function overrideConfigs (configOverrides, printWarnings, printOverrides) {
-  if (configOverrides._vip === true) {
+  if (configOverrides && configOverrides._vip === true) {
     config._vip = true
     config._vipRefreshRateMinutes = configOverrides._vipRefreshRateMinutes
   }
-  if (configOverrides.dev === true) {
+  if (configOverrides && configOverrides.dev === true) {
     config.dev = true
   }
   traverse(config, configOverrides, '', printOverrides)
