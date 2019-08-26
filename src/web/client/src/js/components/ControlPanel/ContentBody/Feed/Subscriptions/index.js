@@ -492,9 +492,24 @@ class Subscriptions extends Component {
         <Divider />
         <SectionTitle heading='Add' subheading='Add a new subscriber! You may add filters to a subscriber only after they are added here.' />
         <AddSubscribersInputs>
-          <Dropdown selection options={[{ text: 'Role', value: 'role' }, { text: 'User', value: 'user' }]} value={this.state.addSubscriberType} onChange={(e, data) => this.state.addSubscriberType === data.value ? null : this.setState({ addSubscriberType: data.value, addSubscriberId: '' })} />
+          <Dropdown
+          selection
+            options={[{ text: 'Role', value: 'role' }, { text: 'User', value: 'user' }]}
+            value={this.state.addSubscriberType}
+            onChange={(e, data) => this.state.addSubscriberType === data.value ? null : this.setState({ addSubscriberType: data.value, addSubscriberId: '' })}
+          />
           {this.state.addSubscriberType === 'role'
-          ? <Dropdown selection search placeholder='Select a Role' options={addSubscriberList.map(subscriber => { return { text: <span style={{ color: subscriber.hexColor }}>{subscriber.name}</span>, value: subscriber.id } })} onChange={(e, data) => this.setState({ addSubscriberId: data.value })} value={this.state.addSubscriberId} />
+          ? <Dropdown
+              selection
+              search={(options, query) => options.filter((option) => option.subname.includes(query.toLowerCase()))}
+              placeholder='Select a Role'
+              options={addSubscriberList.map(subscriber => ({
+                subname: subscriber.name,
+                text: <span style={{ color: subscriber.hexColor }}>{subscriber.name}</span>,
+                value: subscriber.id }))
+              }
+              onChange={(e, data) => this.setState({ addSubscriberId: data.value })} value={this.state.addSubscriberId}
+            />
           : <Input value={this.state.addSubscriberId} disabled placeholder='Currently unsupported on this interface' onChange={e => isNaN(e.target.value) ? null : this.setState({ addSubscriberId: e.target.value })} onKeyPress={e => e.key === 'Enter' ? this.addSubscriber() : null} />
           }
         </AddSubscribersInputs>
