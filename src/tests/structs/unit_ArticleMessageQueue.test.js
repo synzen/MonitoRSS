@@ -1,5 +1,6 @@
 const ArticleMessageQueue = require('../../structs/ArticleMessageQueue.js')
 const ArticleMessage = require('../../structs/ArticleMessage.js')
+const ArticleMessageError = require('../../structs/errors/ArticleMessageError.js')
 const config = require('../../config.js')
 
 jest.mock('../../structs/ArticleMessage.js')
@@ -141,6 +142,15 @@ describe('Unit::ArticleMessageQueue', function () {
       expect(queue._pushNext).not.toHaveBeenCalled()
     })
 
+    it('creates the right number of ArticleMessages', async function () {
+      const queue = new ArticleMessageQueue()
+      const times = 13
+      for (let i = 0; i < times; ++i) {
+        queue.enqueue({})
+      }
+      expect(ArticleMessage.mock.instances.length).toEqual(times)
+    })
+
     it('calls ArticleMessage constructor', function () {
       const queue = new ArticleMessageQueue()
       queue.enqueue({})
@@ -219,7 +229,7 @@ describe('Unit::ArticleMessageQueue', function () {
   })
 
   describe('send', function () {
-    it('calls toggleRoleMentionable the correct number of times', function () {
+    it('calls toggleRoleMentionable the correct number of times', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
       articleMessage.subscriptionIds = ['1', '2']
@@ -232,11 +242,11 @@ describe('Unit::ArticleMessageQueue', function () {
       const origFunc = ArticleMessageQueue.toggleRoleMentionable
       ArticleMessageQueue.toggleRoleMentionable = jest.fn(() => Promise.resolve())
       queue._sendDelayedQueue = jest.fn()
-      queue.send()
+      await queue.send()
       expect(ArticleMessageQueue.toggleRoleMentionable).toHaveBeenCalledTimes(2)
       ArticleMessageQueue.toggleRoleMentionable = origFunc
     })
-    it('calls toggleRoleMentionable with the right arguments', function () {
+    it('calls toggleRoleMentionable with the right arguments', async function () {
       const channelOne = 'abc'
       const channelTwo = 'dcas'
       const bot = new Bot()
@@ -252,7 +262,7 @@ describe('Unit::ArticleMessageQueue', function () {
       const origFunc = ArticleMessageQueue.toggleRoleMentionable
       ArticleMessageQueue.toggleRoleMentionable = jest.fn(() => Promise.resolve())
       queue._sendDelayedQueue = jest.fn()
-      queue.send(bot)
+      await queue.send(bot)
       expect(ArticleMessageQueue.toggleRoleMentionable).toHaveBeenCalledWith(true, channelOne, new Set(['1', '2', '3', '4', '5']), bot)
       expect(ArticleMessageQueue.toggleRoleMentionable).toHaveBeenNthCalledWith(2, true, channelTwo, new Set(['6', '7']), bot)
       ArticleMessageQueue.toggleRoleMentionable = origFunc
@@ -318,6 +328,30 @@ describe('Unit::ArticleMessageQueue', function () {
       queue.queuesWithSubs[channelID] = [articleMessage]
       await queue._sendDelayedQueue({}, channelID, queue.queuesWithSubs[channelID], [])
       expect(queue.queuesWithSubs[channelID]).toBeUndefined()
+    })
+    it('deletes the channel queue of there is an error', function (done) {
+      const queue = new ArticleMessageQueue()
+      const articleMessage = new ArticleMessage()
+      const channelID = 'azsfdegr'
+      articleMessage.send.mockRejectedValueOnce(new Error())
+      queue.queuesWithSubs[channelID] = [articleMessage]
+      queue._sendDelayedQueue({}, channelID, queue.queuesWithSubs[channelID], [])
+        .then(() => done(new Error('Promise resolved with error')))
+        .catch(() => expect(queue.queuesWithSubs[channelID]).toBeUndefined())
+        .then(done)
+        .catch(done)
+    })
+    it('throws an ArticleMessageError if there is an error', function (done) {
+      const queue = new ArticleMessageQueue()
+      const articleMessage = new ArticleMessage()
+      const channelID = 'azsfdegr'
+      articleMessage.send.mockRejectedValueOnce(new Error())
+      queue.queuesWithSubs[channelID] = [articleMessage]
+      queue._sendDelayedQueue({}, channelID, queue.queuesWithSubs[channelID], [])
+        .then(() => done(new Error('Promise resolved with error')))
+        .catch(err => expect(err instanceof ArticleMessageError).toEqual(true))
+        .then(done)
+        .catch(done)
     })
   })
 })

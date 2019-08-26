@@ -122,7 +122,7 @@ module.exports = async (bot, message, command, role) => {
 
       const queue = new ArticleMessageQueue()
       await queue.enqueue(article, true, true)
-      queue.send(storage.bot)
+      await queue.send(storage.bot)
     }
   } catch (err) {
     log.command.warning(`rssfilters`, message.guild, err)

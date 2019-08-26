@@ -31,6 +31,7 @@ class ScheduleManager {
 
   _finishSchedule () {
     this.articleMessageQueue.send(this.bot)
+      .catch(err => log.general.error('Failed to send a delayed articleMessage', err, err.guild, true))
   }
 
   async addSchedule (schedule, assignAllSchedules, doNotStart) {

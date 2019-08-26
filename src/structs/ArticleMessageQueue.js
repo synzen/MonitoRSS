@@ -1,6 +1,6 @@
 const ArticleMessage = require('./ArticleMessage.js')
 const config = require('../config.js')
-const storage = require('../util/storage.js')
+const ArticleMessageError = require('../structs/errors/ArticleMessageError.js')
 const log = require('../util/logger.js')
 
 class ArticleMessageQueue {
@@ -74,7 +74,8 @@ class ArticleMessageQueue {
    * Send all the enqueued articles that require role mention toggles
    * @param {import('discord.js').Client} bot - Discord.js client
    */
-  send (bot) {
+  async send (bot) {
+    const promises = []
     for (const channelId in this.queuesWithSubs) {
       const channelQueue = this.queuesWithSubs[channelId]
       if (channelQueue.length === 0) continue
@@ -84,10 +85,13 @@ class ArticleMessageQueue {
         const messageSubscriptionIds = articleMessage.subscriptionIds
         messageSubscriptionIds.forEach(id => roleIds.add(id))
       }
-      ArticleMessageQueue.toggleRoleMentionable(true, cId, roleIds, bot)
-        .then(() => this._sendDelayedQueue(bot, cId, channelQueue, roleIds))
-        .catch(err => this._sendDelayedQueue(bot, cId, channelQueue, roleIds, err))
+      promises.push(
+        ArticleMessageQueue.toggleRoleMentionable(true, cId, roleIds, bot)
+          .then(() => this._sendDelayedQueue(bot, cId, channelQueue, roleIds))
+          .catch(err => this._sendDelayedQueue(bot, cId, channelQueue, roleIds, err))
+      )
     }
+    await Promise.all(promises)
   }
 
   async _sendDelayedQueue (bot, channelId, channelQueue, roleIds, err) {
@@ -101,11 +105,11 @@ class ArticleMessageQueue {
           await ArticleMessageQueue.toggleRoleMentionable(false, channelId, roleIds, bot)
         }
       } else {
-        this._sendDelayedQueue(bot, channelId, channelQueue.slice(1, channelQueue.length), roleIds, err)
+        await this._sendDelayedQueue(bot, channelId, channelQueue.slice(1, channelQueue.length), roleIds, err)
       }
     } catch (err) {
       delete this.queuesWithSubs[channelId]
-      log.general.error('Failed to send a delayed articleMessage', err, articleMessage.channel ? articleMessage.channel.guild : undefined, true)
+      throw new ArticleMessageError(articleMessage.channel ? articleMessage.channel.guild : undefined, err.message)
     }
   }
 }
