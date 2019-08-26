@@ -38,7 +38,7 @@ exports.defaultConfigs = {
     checkTitles: { type: Boolean, default: false },
     timezone: { type: String, default: 'America/New_York' },
     dateFormat: { type: String, default: 'ddd, D MMMM YYYY, h:mm A z' },
-    dateLanguage: { type: String, default: moment.locales()[0] },
+    dateLanguage: { type: String, default: moment.locales() ? moment.locales()[0] : 'en-US' },
     dateLanguageList: { type: Array, default: ['en'] },
     dateFallback: { type: Boolean, default: false },
     timeFallback: { type: Boolean, default: false },
