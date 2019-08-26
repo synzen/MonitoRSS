@@ -132,12 +132,12 @@ describe('Unit::ArticleMessageQueue', function () {
     afterEach(function () {
       ArticleMessage.mockClear()
     })
-    it('does not call pushNext when config.dev is true', function () {
+    it('does not call pushNext when config.dev is true', async function () {
       const originalValue = config.dev
       config.dev = true
       const queue = new ArticleMessageQueue()
       queue._pushNext = jest.fn()
-      queue.enqueue({})
+      await queue.enqueue({})
       config.dev = originalValue
       expect(queue._pushNext).not.toHaveBeenCalled()
     })
@@ -145,39 +145,44 @@ describe('Unit::ArticleMessageQueue', function () {
     it('creates the right number of ArticleMessages', async function () {
       const queue = new ArticleMessageQueue()
       const times = 13
+      const promises = []
+      const origFunc = queue._pushNext
+      queue._pushNext = jest.fn()
       for (let i = 0; i < times; ++i) {
-        queue.enqueue({})
+        promises.push(queue.enqueue({}))
       }
+      await Promise.all(promises)
       expect(ArticleMessage.mock.instances.length).toEqual(times)
+      queue._pushNext = origFunc
     })
 
-    it('calls ArticleMessage constructor', function () {
+    it('calls ArticleMessage constructor', async function () {
       const queue = new ArticleMessageQueue()
-      queue.enqueue({})
+      await queue.enqueue({})
       expect(ArticleMessage).toHaveBeenCalledTimes(1)
     })
 
-    it('calls pushNext', function () {
+    it('calls pushNext', async function () {
       const queue = new ArticleMessageQueue()
       queue._pushNext = jest.fn()
-      queue.enqueue({})
+      await queue.enqueue({})
       expect(queue._pushNext).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('_pushNext', function () {
-    it('adds to regular queue for article with no subscriptions', function () {
+    it('adds to regular queue for article with no subscriptions', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
       const channelID = '1asdw46'
       articleMessage.channelId = channelID
       queue._sendNext = jest.fn()
-      queue._pushNext(articleMessage)
+      await queue._pushNext(articleMessage)
       expect(Array.isArray(queue.queues[channelID])).toEqual(true)
       expect(queue.queues[channelID]).toHaveLength(1)
       expect(queue.queues[channelID][0]).toEqual(articleMessage)
     })
-    it('adds to queue with subs for article with subscriptions and toggleRoleMentions is true', function () {
+    it('adds to queue with subs for article with subscriptions and toggleRoleMentions is true', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
       articleMessage.subscriptionIds = ['a', 'b']
@@ -185,36 +190,27 @@ describe('Unit::ArticleMessageQueue', function () {
       const channelID = '1asdw46'
       articleMessage.channelId = channelID
       queue._sendNext = jest.fn()
-      queue._pushNext(articleMessage)
+      await queue._pushNext(articleMessage)
       expect(Array.isArray(queue.queuesWithSubs[channelID])).toEqual(true)
       expect(queue.queuesWithSubs[channelID]).toHaveLength(1)
       expect(queue.queuesWithSubs[channelID][0]).toEqual(articleMessage)
     })
-    it('calls sendNext once', function () {
+    it('calls sendNext once', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
       queue._sendNext = jest.fn()
-      queue._pushNext(articleMessage)
+      await queue._pushNext(articleMessage)
       expect(queue._sendNext).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('_sendNext', function () {
-    it('shifts the element from the queue', function () {
-      const channelID = '123'
-      const queue = new ArticleMessageQueue()
-      const articleMessage = new ArticleMessage()
-      const articleMessageTwo = new ArticleMessage()
-      queue.queues[channelID] = [articleMessage, articleMessageTwo]
-      queue._sendNext(channelID)
-      expect(queue.queues[channelID]).toEqual([articleMessageTwo])
-    })
-    it('calls send on the article message', function () {
+    it('calls send on the article message', async function () {
       const channelID = '123'
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
       queue.queues[channelID] = [articleMessage]
-      queue._sendNext(channelID)
+      await queue._sendNext(channelID)
       expect(articleMessage.send).toHaveBeenCalledTimes(1)
     })
     it('calls sendNext the correct number of times', async function () {

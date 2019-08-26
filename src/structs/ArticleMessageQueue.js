@@ -1,11 +1,18 @@
 const ArticleMessage = require('./ArticleMessage.js')
 const config = require('../config.js')
 const ArticleMessageError = require('../structs/errors/ArticleMessageError.js')
-const log = require('../util/logger.js')
 
 class ArticleMessageQueue {
   constructor () {
-    this.queues = {} // Object of objects (mapped by channel ID) with keys length and queue
+    /**
+     * Article objects by channel IDs
+     * @type {object.<string, object>}
+     */
+    this.queues = {}
+    /**
+     * Article objects with role subscribers by channel IDs
+     * @type {object.<string, object>}
+     */
     this.queuesWithSubs = {}
   }
 
@@ -64,7 +71,10 @@ class ArticleMessageQueue {
 
   async _sendNext (channelId) {
     const channelQueue = this.queues[channelId]
-    if (channelQueue.length === 0) return
+    if (channelQueue.length === 0) {
+      delete this.queues[channelId]
+      return
+    }
     const articleMessage = channelQueue.shift()
     await articleMessage.send()
     await this._sendNext(channelId)
@@ -97,7 +107,9 @@ class ArticleMessageQueue {
   async _sendDelayedQueue (bot, channelId, channelQueue, roleIds, err) {
     const articleMessage = channelQueue[0]
     try {
-      if (err) articleMessage.text += `\n\nFailed to toggle role mentions: ${err.message}`
+      if (err) {
+        articleMessage.text += `\n\nFailed to toggle role mentions: ${err.message}`
+      }
       await articleMessage.send()
       if (channelQueue.length - 1 === 0) {
         delete this.queuesWithSubs[channelId]
