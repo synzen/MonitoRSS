@@ -69,22 +69,34 @@ class FeedFetcher {
     }
 
     const serverHeaders = res.headers.get('server')
-    if (!serverHeaders || !serverHeaders.includes('cloudflare')) throw new RequestError(REQUEST_ERROR_CODE, `Bad status code (${endStatus})`)
+    if (!serverHeaders || !serverHeaders.includes('cloudflare')) {
+      throw new RequestError(REQUEST_ERROR_CODE, `Bad status code (${endStatus})`)
+    }
 
     // Cloudflare is used here
-    if (config._vip) throw new RequestError(REQUEST_ERROR_CODE, `Bad Cloudflare status code (${endStatus}) (Unsupported on public bot)`, true)
-
-    return cloudscraper({ method: 'GET', uri: url, resolveWithFullResponse: true }).then(res => {
-      if (res.statusCode !== 200) throw new RequestError(REQUEST_ERROR_CODE, `Bad Cloudflare status code (${res.statusCode})`, true)
-      const Readable = require('stream').Readable
-      const feedStream = new Readable()
-      feedStream.push(res.body)
-      feedStream.push(null)
-      return {
-        stream: feedStream
-      }
-    })
+    if (config._vip) {
+      throw new RequestError(REQUEST_ERROR_CODE, `Bad Cloudflare status code (${endStatus}) (Unsupported on public bot)`, true)
+    }
+    return this.fetchCloudScraper(url)
   }
+
+  /**
+   * Fetch a feed with cloudscraper instead of node-fetch for cloudflare feeds.
+   * Takes significantly longer than node-fetch.
+   * @param {string} uri - URL to fetch
+   */
+  static async fetchCloudScraper (uri) {
+    const res = await cloudscraper({ method: 'GET', uri, resolveWithFullResponse: true })
+    if (res.statusCode !== 200) throw new RequestError(REQUEST_ERROR_CODE, `Bad Cloudflare status code (${res.statusCode})`, true)
+    const Readable = require('stream').Readable
+    const feedStream = new Readable()
+    feedStream.push(res.body)
+    feedStream.push(null)
+    return {
+      stream: feedStream
+    }
+  }
+
   /**
  * @typedef {object} FeedData
  * @property {object[]} articleList - Array of articles
@@ -107,8 +119,11 @@ class FeedFetcher {
 
       feedparser.on('error', err => {
         feedparser.removeAllListeners('end')
-        if (err.message === 'Not a feed') reject(new FeedParserError(FEEDPARSER_ERROR_CODE, 'That is a not a valid feed. Note that you cannot add just any link. You may check if it is a valid feed by using online RSS feed validators'))
-        else reject(new FeedParserError(null, err.message))
+        if (err.message === 'Not a feed') {
+          reject(new FeedParserError(FEEDPARSER_ERROR_CODE, 'That is a not a valid feed. Note that you cannot add just any link. You may check if it is a valid feed by using online RSS feed validators'))
+        } else {
+          reject(new FeedParserError(null, err.message))
+        }
       })
 
       feedparser.on('readable', function () {
@@ -123,7 +138,9 @@ class FeedFetcher {
       })
 
       feedparser.on('end', () => {
-        if (articleList.length === 0) return resolve({ articleList })
+        if (articleList.length === 0) {
+          return resolve({ articleList })
+        }
         const idType = idResolver.getIDType()
         for (const article of articleList) {
           article._id = ArticleIDResolver.getIDTypeValue(article, idType)
@@ -161,7 +178,9 @@ class FeedFetcher {
     }
     const filtered = []
     for (const article of articleList) {
-      if (testFilters(filters, new Article(article, {}, {})).passed) filtered.push(article)
+      if (testFilters(filters, new Article(article, {}, {})).passed) {
+        filtered.push(article)
+      }
     }
     return filtered.length === 0 ? null : filtered[Math.round(Math.random() * (filtered.length - 1))]
   }
