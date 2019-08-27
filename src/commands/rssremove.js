@@ -32,8 +32,7 @@ module.exports = async (bot, message, command) => {
     const prefix = guildRss.prefix || config.bot.prefix
     if (errors.length > 0) {
       await removing.edit(translate('commands.rssremove.internalError'))
-    }
-    else await removing.edit(`${removed}\`\`\`\n\n${translate('generics.backupReminder', { prefix })}`)
+    } else await removing.edit(`${removed}\`\`\`\n\n${translate('generics.backupReminder', { prefix })}`)
   } catch (err) {
     log.command.warning(`rssremove`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssremove 1', message.guild, err))

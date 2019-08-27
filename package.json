@@ -13,10 +13,8 @@
     "postinstall": "cd src && cd web && npm install",
     "dev": "node -r dotenv/config server.js",
     "dev-sharded": "node -r dotenv/config server-manager.js",
-    "dev-client": "node -r dotenv/config server-client.js",
-    "update": "node -r dotenv/config updates/dev.js",
     "test": "jest ./src/tests --detectOpenHandles",
-    "eslint": "eslint --fix ."
+    "eslint": "eslint --fix ./src"
   },
   "dependencies": {
     "cloudscraper": "^4.1.2",
@@ -28,6 +26,7 @@
     "moment-timezone": "^0.5.26",
     "mongoose": "^5.6.4",
     "node-fetch": "^2.6.0",
+    "npm": "^6.11.2",
     "redis": "^2.8.0",
     "request": "^2.88.0"
   },

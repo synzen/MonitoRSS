@@ -28,7 +28,7 @@ class FeedFetcher {
       follow: 5,
       ...requestOptions,
       headers: {
-        'user-agent': `Mozilla/5.0 ${url.includes('.tumblr.com') ? 'GoogleBot' : ''} (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36`,
+        'user-agent': `Mozilla/5.0 ${url.includes('.tumblr.com') ? 'GoogleBot' : ''} (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36`
       }
     }
 
