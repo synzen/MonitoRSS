@@ -39,19 +39,19 @@ class Role {
 describe('Unit::ArticleMessageQueue', function () {
   describe('toggleRoleMentionability', function () {
     describe('does not changed mentionable', function () {
-      it('when there are no role IDs, returns undefined', async function () {
-        await expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(), {})).resolves.toEqual(undefined)
+      it('when there are no role IDs, returns undefined', function () {
+        return expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(), {})).resolves.toEqual(undefined)
       })
 
-      it('when the channel cannot be fetched, returns undefined', async function () {
+      it('when the channel cannot be fetched, returns undefined', function () {
         const bot = new Bot()
         bot.channels.get.mockResolvedValueOnce(undefined)
-        await expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(), bot)).resolves.toEqual(undefined)
+        return expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(), bot)).resolves.toEqual(undefined)
       })
 
-      it('if roles cannot be fetched, and returns empty array', async function () {
+      it('if roles cannot be fetched, and returns empty array', function () {
         const bot = new Bot()
-        await expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['123']), bot)).resolves.toEqual([])
+        return expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['123']), bot)).resolves.toEqual([])
       })
 
       it('if roles are already set to the passed in mentionable parameter, returns empty array', async function () {
@@ -65,7 +65,7 @@ describe('Unit::ArticleMessageQueue', function () {
           .mockReturnValueOnce(role2)
         channel.guild = guild
         bot.channels.get.mockReturnValueOnce(channel)
-        await expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['a', 'b']), bot)).resolves.toEqual([])
+        expect(await ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['a', 'b']), bot)).toEqual([])
         expect(guild.roles.get).toHaveBeenCalledTimes(2)
       })
     })

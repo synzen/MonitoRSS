@@ -1,9 +1,9 @@
 const FeedFetcher = require('../../util/FeedFetcher.js')
 const fetch = require('node-fetch')
-const DecodedFeedParser = require('../../structs/DecodedFeedParser.js')
+// const DecodedFeedParser = require('../../structs/DecodedFeedParser.js')
 // const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 // const Article = require('../../structs/Article.js')
-// const testFilters = require('../../rss/translator/filters.js')
+const testFilters = require('../../rss/translator/filters.js')
 const RequestError = require('../../structs/errors/RequestError.js')
 const cloudscraper = require('cloudscraper')
 const config = require('../../config.js')
@@ -27,7 +27,7 @@ describe('Unit::FeedFetcher', function () {
   describe('fetchURL', function () {
     describe('retried is false', function () {
       it('throws an error if url is not defined', function () {
-        expect(FeedFetcher.fetchURL()).rejects.toBeInstanceOf(Error)
+        return expect(FeedFetcher.fetchURL()).rejects.toBeInstanceOf(Error)
       })
       it('passes the shallow request options to fetch', async function () {
         const reqOpts = { a: 'b', c: 'd', e: 'f' }
@@ -100,9 +100,8 @@ describe('Unit::FeedFetcher', function () {
     })
     describe('request failed and retried is true', function () {
       it('throws a RequestError if res headers does not include cloudflare', async function () {
-        fetch
-          .mockResolvedValueOnce({ status: 403, headers: { get: () => null } })
-        expect(FeedFetcher.fetchURL('abc', {}, true)).rejects.toBeInstanceOf(RequestError)
+        fetch.mockResolvedValueOnce({ status: 403, headers: { get: () => null } })
+        return expect(FeedFetcher.fetchURL('abc', {}, true)).rejects.toBeInstanceOf(RequestError)
       })
       it('throws a RequestError with an unsupported Cloudflare message if cloudflare and config._vip is true', function (done) {
         const origVal = config._vip
@@ -148,11 +147,11 @@ describe('Unit::FeedFetcher', function () {
       cloudscraper.mockReset()
     })
     it('throws an Error if url is not defined', function () {
-      expect(FeedFetcher.fetchCloudScraper()).rejects.toBeInstanceOf(Error)
+      return expect(FeedFetcher.fetchCloudScraper()).rejects.toBeInstanceOf(Error)
     })
     it('throws a RequestError if res status code is not 200', function () {
       cloudscraper.mockResolvedValueOnce({ statusCode: 401 })
-      expect(FeedFetcher.fetchCloudScraper('d')).rejects.toBeInstanceOf(RequestError)
+      return  expect(FeedFetcher.fetchCloudScraper('d')).rejects.toBeInstanceOf(RequestError)
     })
     it('attaches the error code tto the error if res status code is not 200', function (done) {
       cloudscraper.mockResolvedValueOnce({ statusCode: 401 })
@@ -173,7 +172,7 @@ describe('Unit::FeedFetcher', function () {
   })
   describe('parseStream', function () {
     it('throws an error if no url is defined', function () {
-      expect(FeedFetcher.parseStream({})).rejects.toBeInstanceOf(Error)
+      return expect(FeedFetcher.parseStream({})).rejects.toBeInstanceOf(Error)
     })
     it('rejects if the stream emits an error', function (done) {
       const stream = new Readable()
@@ -197,13 +196,76 @@ describe('Unit::FeedFetcher', function () {
     it.todo('returns the article list with the id type')
   })
   describe('fetchFeed', function () {
-    it.todo('passes the url and options to fetchURl')
-    it.todo('passes the stream from fetchURL to parseStream')
-    it.todo('returns the articleList and idType')
+    const origFetchURL = FeedFetcher.fetchURL
+    const origParseStream = FeedFetcher.parseStream
+    const fetchURLResults = { stream: 'abc' }
+    beforeEach(function () {
+      FeedFetcher.fetchURL = jest.fn(() => fetchURLResults)
+      FeedFetcher.parseStream = jest.fn(() => ({}))
+    })
+    afterEach(function () {
+      FeedFetcher.fetchURL = origFetchURL
+      FeedFetcher.parseStream = origParseStream
+    })
+    it('passes the url and options to fetchURL', async function () {
+      const url = 'abc'
+      const opts = { a: 'b', c: 1 }
+      await FeedFetcher.fetchFeed(url, opts)
+      expect(FeedFetcher.fetchURL).toHaveBeenCalledWith(url, opts)
+    })
+    it('passes the stream from fetchURL and url to parseStream', async function () {
+      const url = 'abzz'
+      await FeedFetcher.fetchFeed(url)
+      expect(FeedFetcher.parseStream).toHaveBeenCalledWith(fetchURLResults.stream, url)
+    })
+    it('returns the articleList and idType', async function () {
+      const results = await FeedFetcher.fetchFeed()
+      expect(results.hasOwnProperty('articleList')).toEqual(true)
+      expect(results.hasOwnProperty('idType')).toEqual(true)
+    })
   })
   describe('fetchRandomArticle', function () {
-    it.todo('returns null if articleList length is 0')
-    it.todo('returns a random article with no filters')
-    it.todo('returns a random article within the the filtered articles if filters are passed in')
+    const origFetchURL = FeedFetcher.fetchFeed
+    const origMathRand = Math.random
+    const randNum = 0.7
+    beforeEach(function () {
+      FeedFetcher.fetchFeed = jest.fn()
+      Math.random = jest.fn(() => randNum)
+    })
+    afterEach(function () {
+      FeedFetcher.fetchFeed = origFetchURL
+      Math.random = origMathRand
+      testFilters.mockReset()
+    })
+    it('returns null if articleList length is 0', function () {
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: [] })
+      return expect(FeedFetcher.fetchRandomArticle()).resolves.toEqual(null)
+    })
+    it('returns a random article with no filters', function () {
+      const articleList = []
+      const articleCount = 150
+      for (let i = 0; i < articleCount; ++i) {
+        articleList.push(i)
+      }
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList })
+      const expectedIndex = Math.round(randNum * (articleList.length - 1))
+      return expect(FeedFetcher.fetchRandomArticle()).resolves.toEqual(articleList[expectedIndex])
+    })
+    it('returns null if there are no filtered articles if filters are passed in', function () {
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: [1, 2, 3] })
+      testFilters.mockReturnValue({ passed: false })
+      return expect(FeedFetcher.fetchRandomArticle('a', { a: 'b' })).resolves.toEqual(null)
+    })
+    it('returns a random article within the the filtered articles if filters are passed in', function () {
+      const articleList = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList })
+      const filterFunc = item => item >= 5
+      for (let i = 0; i < articleList.length; ++i) {
+        testFilters.mockReturnValueOnce({ passed: filterFunc(articleList[i]) }) // 5 - 10 inclusive are the passed
+      }
+      const filteredArticleList = articleList.filter(filterFunc)
+      const expectedIndex = Math.round(randNum * (filteredArticleList.length - 1))
+      return expect(FeedFetcher.fetchRandomArticle('a', { a: 'b' })).resolves.toEqual(filteredArticleList[expectedIndex])
+    })
   })
 })
