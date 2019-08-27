@@ -1,3 +1,7 @@
 language: node_js
 node_js:
   - 8
+script:
+  - npm run eslint
+  - npm test
+  - cd src/web && npm test
