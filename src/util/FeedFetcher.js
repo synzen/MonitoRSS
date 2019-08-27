@@ -7,19 +7,32 @@ const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
 const Article = require('../structs/Article.js')
 const testFilters = require('../rss/translator/filters.js')
-const REQUEST_ERROR_CODE = 50042
-const FEEDPARSER_ERROR_CODE = 40002
 
 class FeedFetcher {
   constructor () {
     throw new Error('Cannot be instantiated')
   }
 
+  static get REQUEST_ERROR_CODE () {
+    return 50042
+  }
+
+  static get FEEDPARSER_ERROR_CODE () {
+    return 40002
+  }
+
+  /**
+   * @typedef {object} FetchResults
+   * @property {import('stream').Readable} stream
+   * @property {import('node-fetch').Response} response
+   */
+
   /**
    * Fetch a URL
    * @param {string} url - URL to fetch
    * @param {object} requestOptions - Options to directly pass to fetch
    * @param {boolean} retried - If true, recursive retries will not be made
+   * @returns {FetchResults}
    */
   static async fetchURL (url, requestOptions = {}, retried) {
     if (!url) throw new Error('No url defined')
@@ -59,35 +72,42 @@ class FeedFetcher {
     if (!retried && (res.status === 403 || res.status === 400)) {
       delete options.headers
       const res2 = await this.fetchURL(url, { ...options, headers: { ...options.headers, 'user-agent': '' } }, true)
-      endStatus = res2.status
-      if (res2.status === 200) {
-        return {
-          stream: res2.body,
-          response: res2
-        }
+      endStatus = res2.response.status
+      if (endStatus === 200) {
+        return res2
       }
     }
 
     const serverHeaders = res.headers.get('server')
     if (!serverHeaders || !serverHeaders.includes('cloudflare')) {
-      throw new RequestError(REQUEST_ERROR_CODE, `Bad status code (${endStatus})`)
+      throw new RequestError(this.REQUEST_ERROR_CODE, `Bad status code (${endStatus})`)
     }
 
     // Cloudflare is used here
     if (config._vip) {
-      throw new RequestError(REQUEST_ERROR_CODE, `Bad Cloudflare status code (${endStatus}) (Unsupported on public bot)`, true)
+      throw new RequestError(this.REQUEST_ERROR_CODE, `Bad Cloudflare status code (${endStatus}) (Unsupported on public bot)`, true)
     }
     return this.fetchCloudScraper(url)
   }
+  /**
+   * @typedef CSResults
+   * @param {import('stream').Readable} stream
+   */
 
   /**
    * Fetch a feed with cloudscraper instead of node-fetch for cloudflare feeds.
    * Takes significantly longer than node-fetch.
    * @param {string} uri - URL to fetch
+   * @returns {CSResults}
    */
   static async fetchCloudScraper (uri) {
+    if (!uri) {
+      throw new Error('No url defined')
+    }
     const res = await cloudscraper({ method: 'GET', uri, resolveWithFullResponse: true })
-    if (res.statusCode !== 200) throw new RequestError(REQUEST_ERROR_CODE, `Bad Cloudflare status code (${res.statusCode})`, true)
+    if (res.statusCode !== 200) {
+      throw new RequestError(this.REQUEST_ERROR_CODE, `Bad Cloudflare status code (${res.statusCode})`, true)
+    }
     const Readable = require('stream').Readable
     const feedStream = new Readable()
     feedStream.push(res.body)
@@ -110,6 +130,9 @@ class FeedFetcher {
    * @returns {FeedData} - The article list and the id type used
    */
   static async parseStream (stream, url) {
+    if (!url) {
+      throw new Error('No url defined')
+    }
     const feedparser = new DecodedFeedParser(null, url)
     const idResolver = new ArticleIDResolver()
     const articleList = []
@@ -120,7 +143,7 @@ class FeedFetcher {
       feedparser.on('error', err => {
         feedparser.removeAllListeners('end')
         if (err.message === 'Not a feed') {
-          reject(new FeedParserError(FEEDPARSER_ERROR_CODE, 'That is a not a valid feed. Note that you cannot add just any link. You may check if it is a valid feed by using online RSS feed validators'))
+          reject(new FeedParserError(this.FEEDPARSER_ERROR_CODE, 'That is a not a valid feed. Note that you cannot add just any link. You may check if it is a valid feed by using online RSS feed validators'))
         } else {
           reject(new FeedParserError(null, err.message))
         }
@@ -168,7 +191,7 @@ class FeedFetcher {
    * Get a random article in the feed
    * @param {string} url - The URL to fetch
    * @param {object} filters
-   * @returns {object} - Either null, or an article object
+   * @returns {object|null} - Either null, or an article object
    */
   static async fetchRandomArticle (url, filters) {
     const { articleList } = await this.fetchFeed(url)
