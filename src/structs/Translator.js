@@ -24,6 +24,22 @@ class Translator {
   }
 
   /**
+   * Default locale parsed json
+   * @constant {object}
+   */
+  static get DEFAULT_LOCALE () {
+    return defaultLocale
+  }
+
+  /**
+   * Map of locales parsed jsons
+   * @constant {Map<string, object>}
+   */
+  static get LOCALES_DATA () {
+    return localesData
+  }
+
+  /**
    * Convert a string according to the translator's locale
    * @param {string} string - Accessor
    * @param {Object.<string, number|string>} params - Keys to replace in string
@@ -42,7 +58,7 @@ class Translator {
    * @returns {boolean}
    */
   static hasLocale (locale) {
-    return localesData.has(locale)
+    return this.LOCALES_DATA.has(locale)
   }
 
   /**
@@ -50,7 +66,7 @@ class Translator {
    * @returns {string[]}
    */
   static getLocales () {
-    return Array.from(localesData.keys()).sort()
+    return Array.from(this.LOCALES_DATA.keys()).sort()
   }
 
   /**
@@ -58,7 +74,7 @@ class Translator {
    * @param {string} locale
    */
   static getCommandDescriptions (locale = config.bot.locale) {
-    return localesData.get(locale).commandDescriptions
+    return this.LOCALES_DATA.get(locale).commandDescriptions
   }
 
   /**
@@ -75,12 +91,12 @@ class Translator {
     if (typeof locale !== 'string') {
       throw new TypeError('locale is not a string')
     }
-    if (!localesData.has(locale)) {
+    if (!this.LOCALES_DATA.has(locale)) {
       throw new Error('Unknown locale: ' + locale)
     }
     const properties = string.split('.')
-    let accessedSoFar = localesData.get(locale)
-    let reference = defaultLocale
+    let accessedSoFar = this.LOCALES_DATA.get(locale)
+    let reference = this.DEFAULT_LOCALE
     for (const property of properties) {
       accessedSoFar = accessedSoFar[property]
       reference = reference[property]
