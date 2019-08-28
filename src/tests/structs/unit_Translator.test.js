@@ -1,5 +1,7 @@
 const Translator = require('../../structs/Translator.js')
 
+jest.mock('../../config.js')
+
 describe('Unit::Translator', function () {
   describe('createLocaleTranslator', function () {
     it('returns a function', function () {
@@ -48,6 +50,15 @@ describe('Unit::Translator', function () {
     })
   })
   describe('translate', function () {
+    const testLocale = 'asfwsgikj'
+    const testLocaleData = { a: { b: { c: 1 }, arrayKey: [], numberKey: 1 } }
+    beforeAll(function () {
+      expect(Translator.LOCALES_DATA.has(testLocale)).toEqual(false)
+      Translator.LOCALES_DATA.set(testLocale, testLocaleData)
+    })
+    afterAll(function () {
+      Translator.LOCALES_DATA.delete(testLocale)
+    })
     it.todo('throws an error if translate string is not a string')
     it.todo('throws an error if locale is not a string')
     it.todo('throws an error if the locale is unknown')
