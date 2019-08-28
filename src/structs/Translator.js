@@ -43,11 +43,17 @@ class Translator {
    * Convert a string according to the translator's locale
    * @param {string} string - Accessor
    * @param {Object.<string, number|string>} params - Keys to replace in string
+   * @returns {string}
    */
   translate (string, params) {
     return Translator.translate(string, this.locale, params)
   }
 
+  /**
+   * Returns a translator function for a locale
+   * @param {string} locale
+   * @returns {function}
+   */
   static createLocaleTranslator (locale) {
     return (string, params) => this.translate(string, locale, params)
   }
@@ -72,6 +78,7 @@ class Translator {
   /**
    * Get command descriptions used for rsshelp
    * @param {string} locale
+   * @returns {Object.<string, object>}
    */
   static getCommandDescriptions (locale = config.bot.locale) {
     return this.LOCALES_DATA.get(locale).commandDescriptions
