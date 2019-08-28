@@ -98,7 +98,7 @@ class Translator {
     if (typeof locale !== 'string') {
       throw new TypeError('locale is not a string')
     }
-    if (!this.LOCALES_DATA.has(locale)) {
+    if (!this.hasLocale(locale)) {
       throw new Error('Unknown locale: ' + locale)
     }
     const properties = string.split('.')
