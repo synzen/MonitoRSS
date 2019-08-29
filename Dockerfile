@@ -4,8 +4,9 @@ RUN mkdir -p /app/node_modules && \
 WORKDIR /app
 COPY package*.json ./
 COPY --chown=node:node src/web/package*.json src/web/
+COPY --chown=node:node src/web/client/package*.json src/web/client/
 USER node
-RUN npm install
+RUN npm install && cd client; npm install
 COPY . .
 ENV DRSS_BOT_TOKEN='drss_docker_token' DRSS_DATABASE_URI='mongodb://mongo:27017/rss'
 CMD ["node", "server.js"]
