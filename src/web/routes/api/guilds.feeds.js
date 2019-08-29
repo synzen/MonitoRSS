@@ -51,7 +51,7 @@ function checkGuildFeedExists (req, res, next) {
 }
 
 async function postFeed (req, res, next) {
-  return res.status(403).json({ code: 403, message: 'This function is currently disabled' })
+  return res.status(403).json({ code: 403, message: 'This function is currently disabled. Please use Discord commands instead.' })
   // Required keys in body are channel and feed
   // try {
   //   const guildID = req.params.guildID
