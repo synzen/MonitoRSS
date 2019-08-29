@@ -51,61 +51,62 @@ function checkGuildFeedExists (req, res, next) {
 }
 
 async function postFeed (req, res, next) {
+  return res.status(403).json({ code: 403, message: 'This function is currently disabled' })
   // Required keys in body are channel and feed
-  try {
-    const guildID = req.params.guildID
-    const guildRss = req.guildRss
-    const link = typeof req.body.link === 'string' ? req.body.link.trim() : req.body.link
-    const title = typeof req.body.title === 'string' ? req.body.title.trim() : req.body.title
-    const channelID = typeof req.body.channel === 'string' ? req.body.channel.trim() : req.body.channel
-    const errors = {}
-    if (title && typeof title !== 'string') errors.title = 'Must be a string'
+  // try {
+  //   const guildID = req.params.guildID
+  //   const guildRss = req.guildRss
+  //   const link = typeof req.body.link === 'string' ? req.body.link.trim() : req.body.link
+  //   const title = typeof req.body.title === 'string' ? req.body.title.trim() : req.body.title
+  //   const channelID = typeof req.body.channel === 'string' ? req.body.channel.trim() : req.body.channel
+  //   const errors = {}
+  //   if (title && typeof title !== 'string') errors.title = 'Must be a string'
 
-    if (!link) errors.link = 'This field is required'
-    else if (typeof link !== 'string') errors.link = 'Must be a string'
+  //   if (!link) errors.link = 'This field is required'
+  //   else if (typeof link !== 'string') errors.link = 'Must be a string'
 
-    if (!channelID) errors.channel = 'This field is required'
-    else if (typeof channelID !== 'string') errors.channel = 'Must be a string'
+  //   if (!channelID) errors.channel = 'This field is required'
+  //   else if (typeof channelID !== 'string') errors.channel = 'Must be a string'
 
-    if (Object.keys(errors).length > 0) return res.status(400).json({ code: 400, message: errors })
+  //   if (Object.keys(errors).length > 0) return res.status(400).json({ code: 400, message: errors })
 
-    const serverLimitData = await serverLimit(guildID)
-    if (guildRss && guildRss.sources) {
-      const rssList = guildRss.sources
-      if (serverLimitData.max !== 0 && Object.keys(rssList).length + 1 > serverLimitData.max) return res.status(403).json({ code: 403, message: `Feed limit reached (${serverLimitData.max})` })
-      for (const rssName in rssList) {
-        const source = rssList[rssName]
-        if (source.link === link && source.channel === channelID) return res.status(403).json({ code: 403, message: 'Feed already exists for this channel' })
-      }
-    }
+  //   const serverLimitData = await serverLimit(guildID)
+  //   if (guildRss && guildRss.sources) {
+  //     const rssList = guildRss.sources
+  //     if (serverLimitData.max !== 0 && Object.keys(rssList).length + 1 > serverLimitData.max) return res.status(403).json({ code: 403, message: `Feed limit reached (${serverLimitData.max})` })
+  //     for (const rssName in rssList) {
+  //       const source = rssList[rssName]
+  //       if (source.link === link && source.channel === channelID) return res.status(403).json({ code: 403, message: 'Feed already exists for this channel' })
+  //     }
+  //   }
 
-    const fetchedChannel = await RedisChannel.fetch(channelID)
-    if (!fetchedChannel) return res.status(404).json({ code: 404, message: 'Unknown Channel' })
-    else if (fetchedChannel.guildID !== guildID) return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
-    // const response = await axios.get(`${discordAPIConstants.apiHost}/channels/${channelID}`, BOT_HEADERS) // Check if the bot is able to see the channel
-    // if (response.data.guild_id !== guildID) return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
+  //   const fetchedChannel = await RedisChannel.fetch(channelID)
+  //   if (!fetchedChannel) return res.status(404).json({ code: 404, message: 'Unknown Channel' })
+  //   else if (fetchedChannel.guildID !== guildID) return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
+  //   // const response = await axios.get(`${discordAPIConstants.apiHost}/channels/${channelID}`, BOT_HEADERS) // Check if the bot is able to see the channel
+  //   // if (response.data.guild_id !== guildID) return res.status(403).json({ code: 403, message: { channel: 'Not part of guild' } })
 
-    try {
-      var guildName = req.guild.name
-      const [ resolvedUrl, metaTitle, rssName ] = await initialize.addNewFeed({ link,
-        channel: {
-          id: channelID,
-          guild: { id: guildID, name: guildName }
-        } }, title)
-      // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildID}, ${guildName}) Added feed ${resolvedUrl}`)
-      return res.status(201).json({ _rssName: rssName, title: metaTitle, channel: channelID, link: resolvedUrl })
-    } catch (err) {
-      // log.web.warning(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildID}, ${guildName}) Unable to add feed ${link}`, err)
-      if (err.message.includes('exists for this channel')) return res.status(403).json({ code: statusCodes['40003_FEED_EXISTS_IN_CHANNEL'].code, message: err.message })
-      if (err instanceof RequestError) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
-      if (err instanceof FeedParserError && err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
-      else {
-        return next(err)
-      }
-    }
-  } catch (err) {
-    next(err)
-  }
+  //   try {
+  //     var guildName = req.guild.name
+  //     const [ resolvedUrl, metaTitle, rssName ] = await initialize.addNewFeed({ link,
+  //       channel: {
+  //         id: channelID,
+  //         guild: { id: guildID, name: guildName }
+  //       } }, title)
+  //     // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildID}, ${guildName}) Added feed ${resolvedUrl}`)
+  //     return res.status(201).json({ _rssName: rssName, title: metaTitle, channel: channelID, link: resolvedUrl })
+  //   } catch (err) {
+  //     // log.web.warning(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildID}, ${guildName}) Unable to add feed ${link}`, err)
+  //     if (err.message.includes('exists for this channel')) return res.status(403).json({ code: statusCodes['40003_FEED_EXISTS_IN_CHANNEL'].code, message: err.message })
+  //     if (err instanceof RequestError) return res.status(500).json({ code: statusCodes['50042_FEED_CONNECTION_FAILED'].code, message: err.message })
+  //     if (err instanceof FeedParserError && err.message.includes('valid feed')) return res.status(400).json({ code: statusCodes['40002_FEED_INVALID'].code, message: err.message })
+  //     else {
+  //       return next(err)
+  //     }
+  //   }
+  // } catch (err) {
+  //   next(err)
+  // }
 }
 
 // This route will auto create the profile if it doesn't exist through initialize.addNewFeed
