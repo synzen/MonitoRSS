@@ -3,7 +3,7 @@ RUN mkdir -p /app/node_modules && \
     chown -R node:node /app
 WORKDIR /app
 COPY package*.json ./
-COPY --chown=node:node src/web/package*.json web/
+COPY --chown=node:node src/web/package*.json src/web/
 USER node
 RUN npm install
 COPY . .
