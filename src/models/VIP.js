@@ -20,12 +20,10 @@ const schema = mongoose.Schema({
   allowWebhooks: Boolean,
   allowCookies: Boolean,
   expireAt: {
-    type: Date,
-    index: { expires: 0 }
+    type: Date
   },
   gracedUntil: {
-    type: Date,
-    index: { expires: 0 }
+    type: Date
   },
   override: Boolean,
   comment: String,

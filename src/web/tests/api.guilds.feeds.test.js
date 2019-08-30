@@ -98,7 +98,7 @@ describe('/api/guilds/:guildID/feeds', function () {
       expect(response.statusCode).toEqual(200)
     })
   })
-  describe('POST /', function () {
+  describe.skip('POST /', function () {
     afterEach(function () {
       // redisOps.channels.isChannelOfGuild.mockReset()
       // redisOps.guilds.getValue.mockReset()
