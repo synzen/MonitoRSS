@@ -1,7 +1,6 @@
 process.env.DRSS = true
 const config = require('../config.js')
 const connectDb = require('../rss/db/connect.js')
-const LinkTracker = require('./LinkTracker.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGeneral = require('../util/db/general.js')
@@ -31,7 +30,6 @@ class ClientManager extends EventEmitter {
     this.scheduleIntervals = [] // Array of intervals for each different refresh time
     this.scheduleTracker = {} // Key is refresh time, value is index for this.activeshardIds
     this.currentCollections = new Set() // Set of collection names currently in use by feeds
-    this.linkTracker = new LinkTracker()
     this.shardsReady = 0 // Shards that have reported that they're ready
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardingManager = shardingManager
@@ -90,17 +88,20 @@ class ClientManager extends EventEmitter {
     // Account for missing guilds
     const missing = message.missingGuilds
     for (var guildId in missing) {
-      if (!this.missingGuildsCounter[guildId]) this.missingGuildsCounter[guildId] = 1
-      else this.missingGuildsCounter[guildId]++
-      if (this.missingGuildsCounter[guildId] === this.shardingManager.totalShards) this.missingGuildRss.set(guildId, missing[guildId])
+      if (!this.missingGuildsCounter[guildId]) {
+        this.missingGuildsCounter[guildId] = 1
+      } else {
+        this.missingGuildsCounter[guildId]++
+      }
+      if (this.missingGuildsCounter[guildId] === this.shardingManager.totalShards) {
+        this.missingGuildRss.set(guildId, missing[guildId])
+      }
     }
 
     // Count all the links
-    const linkDocs = message.linkDocs
-    for (var x = 0; x < linkDocs.length; ++x) {
-      const doc = linkDocs[x]
-      this.linkTracker.set(doc.link, doc.count, doc.shard, doc.scheduleName)
-      const id = ArticleModel.getCollectionID(doc.link, doc.shard, doc.scheduleName)
+    const activeLinks = message.activeLinks
+    for (const item of activeLinks) {
+      const id = ArticleModel.getCollectionID(item.link, item.shard, item.scheduleName)
       this.currentCollections.add(id) // To find out any unused collections eligible for removal
     }
 

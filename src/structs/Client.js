@@ -229,12 +229,12 @@ class Client extends EventEmitter {
         storage.scheduleManager = this.scheduleManager
       }
       await this.scheduleManager.assignAllSchedules()
-      const { missingGuilds, linkTrackerDocs } = await initialize(this.bot)
+      const { missingGuilds, activeLinks } = await initialize(this.bot)
 
       storage.initialized = 2
       this.state = STATES.READY
       if (storage.bot.shard && storage.bot.shard.count > 0) {
-        process.send({ _drss: true, type: 'initComplete', missingGuilds: missingGuilds, linkDocs: linkTrackerDocs, shard: storage.bot.shard.id })
+        process.send({ _drss: true, type: 'initComplete', missingGuilds, activeLinks, shard: storage.bot.shard.id })
       } else {
         if (config.web.enabled === true) {
           this.webClientInstance.enableCP()

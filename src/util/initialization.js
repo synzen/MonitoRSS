@@ -1,7 +1,6 @@
 const config = require('../config.js')
 const storage = require('./storage.js')
 const checkGuild = require('./checkGuild.js')
-const LinkTracker = require('../structs/LinkTracker.js')
 const dbOpsGuilds = require('./db/guilds.js')
 const dbOpsFailedLinks = require('./db/failedLinks.js')
 const dbOpsBlacklists = require('./db/blacklists.js')
@@ -21,7 +20,7 @@ function reachedFailCount (link, failedLinks) {
 
 module.exports = async bot => {
   const currentCollections = new Set() // currentCollections is only used if there is no sharding (for database cleaning)
-  const linkTracker = new LinkTracker([], bot)
+  const shardIDNumber = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
   const guildsInfo = {}
   const missingGuilds = {}
@@ -100,25 +99,26 @@ module.exports = async bot => {
   await Promise.all(restorePromisesIDRecord)
   await Promise.all(redisPromises)
 
-  const linkTrackerArr = linkTracker.toDocs()
   const dropIndexPromises = []
-  for (var obj of linkTrackerArr) {
-    // These indexes allow articles to auto-expire - if it is 0, remove such indexes
-    if (config.database.articlesExpire === 0 && config.database.uri.startsWith('mongo')) {
-      dropIndexPromises.push(Article.model(obj.link, linkTracker.shardId, obj.scheduleName).collection.dropIndexes())
+
+  // Decides what collections get removed from database later on
+  const assignedSchedules = await dbOpsSchedules.assignedSchedules.getAll() // The schedules should be assigned before this initialization function runs
+  const activeLinks = []
+  for (const assigned of assignedSchedules) {
+    const { link, schedule } = assigned
+    const collectionID = Article.getCollectionID(link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, schedule)
+    if (!bot.shard || bot.shard.count === 0) {
+      currentCollections.add(collectionID)
+    } else {
+      if (config.database.articlesExpire === 0 && config.database.uri.startsWith('mongo')) {
+        // These indexes allow articles to auto-expire - if it is 0, remove such indexes
+        dropIndexPromises.push(Article.model(link, shardIDNumber, schedule).collection.dropIndexes())
+      }
+      activeLinks.push({ link, scheduleName: schedule, shard: shardIDNumber })
     }
   }
 
   await Promise.all(dropIndexPromises)
-
-  // Decides what collections get removed from database later on
-  const assignedSchedules = await dbOpsSchedules.assignedSchedules.getAll() // The schedules should be assigned before this initialization function runs
-  for (const assigned of assignedSchedules) {
-    const { link, schedule } = assigned
-    const collectionID = Article.getCollectionID(link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, schedule)
-    if (!bot.shard || bot.shard.count === 0) currentCollections.add(collectionID)
-    else linkTracker.increment(link, schedule)
-  }
 
   if (!bot.shard || bot.shard.count === 0) {
     await dbOpsStatistics.clear()
@@ -129,6 +129,6 @@ module.exports = async bot => {
 
   return {
     missingGuilds,
-    linkTrackerDocs: linkTracker.toDocs()
+    activeLinks
   }
 }
