@@ -3,6 +3,8 @@ const connectDb = require('./db/connect.js')
 const processSources = require('./logic/shared.js')
 const log = require('../util/logger.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
+const RequestError = require('../structs/errors/RequestError.js')
+const FeedParserError = require('../structs/errors/FeedParserError.js')
 
 async function getFeed (data, callback) {
   const { link, rssList, headers } = data
@@ -35,13 +37,19 @@ async function getFeed (data, callback) {
     callback()
     calledbacked = true
     const { articleList, idType } = await FeedFetcher.parseStream(stream, link)
-    if (articleList.length === 0) return process.send({ status: 'success', link: link })
-    processSources({ articleList, useIdType: idType, ...data }, (err, results) => {
-      if (err) log.cycle.error(`Cycle logic`, err, true)
-      if (results) process.send(results)
-    })
+    if (articleList.length === 0) {
+      return process.send({ status: 'success', link: link })
+    }
+    const { feedCollection, feedCollectionId } = await processSources({ articleList, useIdType: idType, ...data }, article => process.send(article))
+    process.send({ status: 'success', feedCollection, feedCollectionId, link })
   } catch (err) {
-    if (logLinkErrs) log.cycle.warning(`Skipping ${link}`, err)
+    if (err instanceof RequestError || err instanceof FeedParserError) {
+      if (logLinkErrs) {
+        log.cycle.warning(`Skipping ${link}`, err)
+      }
+    } else {
+      log.cycle.error('Cycle logic', err, true)
+    }
     process.send({ status: 'failed', link: link, rssList: rssList })
     if (!calledbacked) {
       callback()
