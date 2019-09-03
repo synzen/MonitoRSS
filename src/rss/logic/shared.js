@@ -132,7 +132,7 @@ module.exports = async (data, callbackArticle) => {
   const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
 
   const { dbIds, dbTitles, dbCustomComparisons } = await getDataFromDocuments(feedCollection || Feed)
-  const dbCustomComparisonsToDelete = await articleListTasks(dbIds, useIdType, articleList, dbCustomComparisons)
+  const dbCustomComparisonsToDelete = await articleListTasks(feedCollection || Feed, dbIds, useIdType, articleList, dbCustomComparisons)
 
   if (dbIds.size === 0) {
     // Tthe database collection has not been initialized. If a feed has 100 articles, skip everything past this point so it doesn't send 100 articles.
