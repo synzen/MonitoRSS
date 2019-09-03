@@ -5,6 +5,12 @@ const log = require('../../util/logger.js')
 const Article = require('../../models/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 
+/**
+ * @param {object} article
+ * @param {object} source
+ * @param {string} rssName
+ * @param {function} callbackFunc
+ */
 function formatCallbackArticle (article, source, rssName, callbackFunc) {
   // For ArticleMessage to access once ScheduleManager receives this article
   article._delivery = {
@@ -18,24 +24,23 @@ function formatCallbackArticle (article, source, rssName, callbackFunc) {
   callbackFunc({ status: 'article', article })
 }
 
-module.exports = async (data, callbackArticle) => {
-  const { rssList, articleList, debugFeeds, link, shardId, config, feedData, scheduleName, runNum, useIdType } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
-  if (!scheduleName) throw new Error('Missing schedule name for shared logic')
-  const totalArticles = articleList.length
+/**
+ * @typedef {object} DatabaseData
+ * @property {Set<string>} dbIds - Set of stored database IDs
+ * @property {Set<string>} dbTitles - Set of stored database titles
+ * @property {object<string, string[]>} dbCustomComparisons - Comparison names as keys, and their relevant article values in arrays
+ */
+
+/**
+ * @param {import('mongoose').Model|object[]} collection
+ * @returns {DatabaseData}
+ */
+async function getDataFromDocuments (collection) {
   const dbIds = new Set()
   const dbTitles = new Set()
-  const dbCustomComparisons = {} // Object with comparison names as key, and array as values whose function is similar to how dbIds and dbTitles work
-  const dbCustomComparisonsValid = {} // Object with comparison names as key, and only boolean true values as values
-  const dbCustomComparisonsToDelete = []
-  const customComparisonsToUpdate = []
-  const toInsert = []
-  const toUpdate = {} // Article's resolved IDs as key and the article as value
-  const collectionID = Article.getCollectionID(link, shardId, scheduleName)
-  const Feed = Article.modelByID(collectionID)
-  const feedCollectionId = feedData ? collectionID : undefined
-  const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
-
-  const docs = await dbCmds.findAll(feedCollection || Feed)
+  /** @type {object<string, string[]} */
+  const dbCustomComparisons = {}
+  const docs = await dbCmds.findAll(collection)
   for (const doc of docs) {
     // Push the main data for built in comparisons
     dbIds.add(doc.id)
@@ -44,15 +49,32 @@ module.exports = async (data, callbackArticle) => {
     // Now deal with custom comparisons
     const docCustomComparisons = doc.customComparisons
     if (docCustomComparisons !== undefined && Object.keys(docCustomComparisons).length > 0) {
-      for (const n in docCustomComparisons) { // n = customComparison's name (such as description, author, etc.)
-        if (!dbCustomComparisons[n]) {
-          dbCustomComparisons[n] = [docCustomComparisons[n]]
+      for (const articleProperty in docCustomComparisons) { // n = customComparison's name (such as description, author, etc.)
+        const value = docCustomComparisons[articleProperty]
+        if (!dbCustomComparisons[articleProperty]) {
+          dbCustomComparisons[articleProperty] = [value]
         } else {
-          dbCustomComparisons[n].push(docCustomComparisons[n])
+          dbCustomComparisons[articleProperty].push(value)
         }
       }
     }
   }
+
+  return { dbIds, dbTitles, dbCustomComparisons }
+}
+
+/**
+ * @param {object[]} collection
+ * @param {Set<string>} dbIds
+ * @param {string} useIdType
+ * @param {object[]} articleList
+ * @param {object<string, string[]>} dbCustomComparisons
+ * @returns {Set<string>}
+ */
+async function articleListTasks (collection, dbIds, useIdType, articleList, dbCustomComparisons) {
+  const toInsert = []
+  const dbCustomComparisonsValid = new Set()
+  const dbCustomComparisonsToDelete = new Set()
 
   const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
   for (const article of articleList) {
@@ -61,7 +83,7 @@ module.exports = async (data, callbackArticle) => {
     // Iterate over the values stored in the db, and see if the custom comparison names in the db exist in any of the articles. If they do, then it is marked valid
       for (const compName in dbCustomComparisons) {
         if (article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null)) {
-          dbCustomComparisonsValid[compName] = true
+          dbCustomComparisonsValid.add(compName)
         }
       }
     }
@@ -70,19 +92,53 @@ module.exports = async (data, callbackArticle) => {
     }
   }
 
-  // If any invalid custom comparisons are found, delete them
-  if (checkCustomComparisons) {
-    for (const q in dbCustomComparisons) {
-      if (!dbCustomComparisonsValid[q]) {
-        dbCustomComparisonsToDelete.push(q)
-        delete dbCustomComparisons[q]
-      }
+  for (const articleProperty in dbCustomComparisons) {
+    if (!dbCustomComparisonsValid.has(articleProperty)) {
+      dbCustomComparisonsToDelete.add(articleProperty)
+      delete dbCustomComparisons[articleProperty]
     }
   }
-  await dbCmds.bulkInsert(feedCollection || Feed, toInsert)
+
+  await dbCmds.bulkInsert(collection, toInsert)
+
+  return dbCustomComparisonsToDelete
+}
+
+/**
+ * @param {object} config - The default config.json
+ * @param {object} source - User's source config
+ */
+function determineArticleChecks (config, source) {
+  const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : defaultConfigs.feeds.checkDates.default
+  const localDateCheck = source.checkDates
+  const checkDate = typeof localDateCheck !== 'boolean' ? globalDateCheck : localDateCheck
+
+  const globalTitleCheck = config.feeds.checkTitles != null ? config.feeds.checkTitles : defaultConfigs.feeds.checkTitles.default
+  const localTitleCheck = source.checkTitles
+  const checkTitle = typeof globalTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
+
+  return { checkDate, checkTitle }
+}
+
+module.exports = async (data, callbackArticle) => {
+  const { rssList, articleList, debugFeeds, link, shardId, config, feedData, scheduleName, runNum, useIdType } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+  if (!scheduleName) throw new Error('Missing schedule name for shared logic')
+  const totalArticles = articleList.length
+  const customComparisonsToUpdate = []
+  const toUpdate = {} // Article's resolved IDs as key and the article as value
+  const collectionID = Article.getCollectionID(link, shardId, scheduleName)
+  const Feed = Article.modelByID(collectionID)
+  const feedCollectionId = feedData ? collectionID : undefined
+  const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
+
+  const { dbIds, dbTitles, dbCustomComparisons } = await getDataFromDocuments(feedCollection || Feed)
+  const dbCustomComparisonsToDelete = await articleListTasks(dbIds, useIdType, articleList, dbCustomComparisons)
+
   if (dbIds.size === 0) {
+    // Tthe database collection has not been initialized. If a feed has 100 articles, skip everything past this point so it doesn't send 100 articles.
     return { status: 'success', link, feedCollection, feedCollectionId }
   }
+
   for (const rssName in rssList) {
     const source = rssList[rssName]
     const toDebug = debugFeeds && debugFeeds.includes(rssName)
@@ -96,7 +152,7 @@ module.exports = async (data, callbackArticle) => {
           customComparisons.splice(n, 1)
           continue
         }
-        if (!dbCustomComparisons[name] && !customComparisonsToUpdate.includes(name)) {
+        if (!dbCustomComparisons[name] && !dbCustomComparisonsToDelete.has(name) && !customComparisonsToUpdate.includes(name)) {
           customComparisonsToUpdate.push(name) // Since this custom comparison wasn't found in the db, it might be uninitialized or not found in any articles (as checked previously)
         }
       }
@@ -109,13 +165,7 @@ module.exports = async (data, callbackArticle) => {
     const maxAge = config.feeds.cycleMaxAge
     const cutoffDay = moment().subtract(maxAge, 'days')
 
-    const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : defaultConfigs.feeds.checkDates.default
-    const localDateCheck = source.checkDates
-    const checkDate = typeof localDateCheck !== 'boolean' ? globalDateCheck : localDateCheck
-
-    const globalTitleCheck = config.feeds.checkTitles != null ? config.feeds.checkTitles : defaultConfigs.feeds.checkTitles.default
-    const localTitleCheck = source.checkTitles
-    const checkTitle = typeof globalTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
+    const { checkDate, checkTitle } = determineArticleChecks
 
     if (toDebug) {
       log.debug.info('Database IDs:', JSON.stringify(Array.from(dbIds)))
@@ -123,13 +173,12 @@ module.exports = async (data, callbackArticle) => {
     }
     for (let a = totalArticles - 1; a >= 0; --a) { // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
       const article = articleList[a]
-      const notInitialized = dbIds.size === 0 && totalArticles !== 1
       const matchedID = dbIds.has(article._id)
       const matchedTitle = checkTitle && (dbTitles.has(article.title) || sentTitles.has(article.title))
       const matchedDate = checkDate && ((!article.pubdate || article.pubdate.toString() === 'Invalid Date') || (article.pubdate && article.pubdate.toString() !== 'Invalid Date' && article.pubdate < cutoffDay))
       let seen = false
-      if (notInitialized || matchedID || matchedTitle || matchedDate) {
-        if (toDebug) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) Matched ${notInitialized ? 'init case' : matchedID ? 'ID' : matchedTitle ? 'title' : matchedDate ? 'date' : 'UNKNOWN CASE'}.`)
+      if (matchedID || matchedTitle || matchedDate) {
+        if (toDebug) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) Matched ${matchedID ? 'ID' : matchedTitle ? 'title' : matchedDate ? 'date' : 'UNKNOWN CASE'}.`)
         seen = true
       } else if (checkTitle && article.title) {
         sentTitles.add(article.title)
