@@ -165,7 +165,7 @@ module.exports = async (data, callbackArticle) => {
     const maxAge = config.feeds.cycleMaxAge
     const cutoffDay = moment().subtract(maxAge, 'days')
 
-    const { checkDate, checkTitle } = determineArticleChecks
+    const { checkDate, checkTitle } = determineArticleChecks(config, source)
 
     if (toDebug) {
       log.debug.info('Database IDs:', JSON.stringify(Array.from(dbIds)))
