@@ -5,13 +5,8 @@ const ArticleMessageError = require('../structs/errors/ArticleMessageError.js')
 class ArticleMessageQueue {
   constructor () {
     /**
-     * Article objects by channel IDs
-     * @type {object.<string, object>}
-     */
-    this.queues = {}
-    /**
      * Article objects with role subscribers by channel IDs
-     * @type {object.<string, object>}
+     * @type {object<string, import('./ArticleMessage.js')>}
      */
     this.queuesWithSubs = {}
   }
@@ -58,26 +53,14 @@ class ArticleMessageQueue {
   async _pushNext (articleMessage) {
     const delayArticleMessage = articleMessage.toggleRoleMentions && articleMessage.subscriptionIds.length > 0
     const channelId = articleMessage.channelId
-    const queues = delayArticleMessage ? this.queuesWithSubs : this.queues
-    if (!queues[channelId]) {
-      queues[channelId] = [articleMessage]
-    } else {
-      queues[channelId].push(articleMessage)
-    }
     if (!delayArticleMessage) {
-      await this._sendNext(articleMessage.channelId)
+      return articleMessage.send()
     }
-  }
-
-  async _sendNext (channelId) {
-    const channelQueue = this.queues[channelId]
-    if (channelQueue.length === 0) {
-      delete this.queues[channelId]
-      return
+    if (!this.queuesWithSubs[channelId]) {
+      this.queuesWithSubs[channelId] = [articleMessage]
+    } else {
+      this.queuesWithSubs[channelId].push(articleMessage)
     }
-    const articleMessage = channelQueue.shift()
-    await articleMessage.send()
-    await this._sendNext(channelId)
   }
 
   /**

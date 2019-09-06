@@ -50,28 +50,15 @@ describe('Int::ArticleMessageQueue', function () {
       await queue.enqueue({})
       expect(ArticleMessage.mock.instances[0].send).toHaveBeenCalledTimes(1)
     })
-    it('calls _sendNext the right number of times', async function () {
+    it('calls send on all articles after many enqueues', async function () {
       const queue = new ArticleMessageQueue()
-      const channelID = 'asb'
-      ArticleMessage.mockImplementation(function () {
-        this.channelId = channelID
-        return this
-      })
-      const spy = jest.spyOn(queue, '_sendNext')
-      queue.queues[channelID] = [new ArticleMessage(), new ArticleMessage(), new ArticleMessage()]
-      await queue.enqueue({})
-      expect(spy).toHaveBeenCalledTimes(5)
-      spy.mockRestore()
-    })
-    it('clears the queue after sending', async function () {
-      const queue = new ArticleMessageQueue()
-      const channelID = 'asb'
-      ArticleMessage.mockImplementation(function () {
-        this.channelId = channelID
-      })
-      queue.queues[channelID] = [new ArticleMessage(), new ArticleMessage(), new ArticleMessage()]
-      await queue.enqueue({})
-      expect(queue.queues[channelID]).toBeUndefined()
+      const times = 4
+      for (let i = 0; i < times; ++i) {
+        await queue.enqueue({})
+      }
+      for (let i = 0; i < times; ++i) {
+        expect(ArticleMessage.mock.instances[i].send).toHaveBeenCalledTimes(1)
+      }
     })
   })
 

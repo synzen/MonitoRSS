@@ -171,16 +171,13 @@ describe('Unit::ArticleMessageQueue', function () {
   })
 
   describe('_pushNext', function () {
-    it('adds to regular queue for article with no subscriptions', async function () {
+    it('immediately sends an article with no subscriptions', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
       const channelID = '1asdw46'
       articleMessage.channelId = channelID
-      queue._sendNext = jest.fn()
       await queue._pushNext(articleMessage)
-      expect(Array.isArray(queue.queues[channelID])).toEqual(true)
-      expect(queue.queues[channelID]).toHaveLength(1)
-      expect(queue.queues[channelID][0]).toEqual(articleMessage)
+      expect(articleMessage.send).toHaveBeenCalledTimes(1)
     })
     it('adds to queue with subs for article with subscriptions and toggleRoleMentions is true', async function () {
       const queue = new ArticleMessageQueue()
@@ -189,38 +186,10 @@ describe('Unit::ArticleMessageQueue', function () {
       articleMessage.toggleRoleMentions = true
       const channelID = '1asdw46'
       articleMessage.channelId = channelID
-      queue._sendNext = jest.fn()
       await queue._pushNext(articleMessage)
       expect(Array.isArray(queue.queuesWithSubs[channelID])).toEqual(true)
       expect(queue.queuesWithSubs[channelID]).toHaveLength(1)
       expect(queue.queuesWithSubs[channelID][0]).toEqual(articleMessage)
-    })
-    it('calls sendNext once', async function () {
-      const queue = new ArticleMessageQueue()
-      const articleMessage = new ArticleMessage()
-      queue._sendNext = jest.fn()
-      await queue._pushNext(articleMessage)
-      expect(queue._sendNext).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe('_sendNext', function () {
-    it('calls send on the article message', async function () {
-      const channelID = '123'
-      const queue = new ArticleMessageQueue()
-      const articleMessage = new ArticleMessage()
-      queue.queues[channelID] = [articleMessage]
-      await queue._sendNext(channelID)
-      expect(articleMessage.send).toHaveBeenCalledTimes(1)
-    })
-    it('calls sendNext the correct number of times', async function () {
-      const channelID = '123'
-      const queue = new ArticleMessageQueue()
-      queue.queues[channelID] = [new ArticleMessage(), new ArticleMessage(), new ArticleMessage(), new ArticleMessage()]
-      const spy = jest.spyOn(queue, '_sendNext')
-      await queue._sendNext(channelID)
-      expect(spy).toHaveBeenCalledTimes(5)
-      spy.mockRestore()
     })
   })
 
