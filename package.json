@@ -17,16 +17,16 @@
     "eslint": "eslint --fix ./src"
   },
   "dependencies": {
-    "cloudscraper": "^4.1.2",
+    "cloudscraper": "^4.1.4",
     "discord.js": "^11.5.1",
     "feedparser": "^2.2.9",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.4.24",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.26",
-    "mongoose": "^5.6.4",
+    "mongoose": "^5.6.13",
     "node-fetch": "^2.6.0",
-    "npm": "^6.11.2",
+    "npm": "^6.11.3",
     "redis": "^2.8.0",
     "request": "^2.88.0"
   },
@@ -40,13 +40,13 @@
   },
   "devDependencies": {
     "@types/jest": "^24.0.18",
-    "dotenv": "^8.0.0",
+    "dotenv": "^8.1.0",
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.18.0",
-    "eslint-plugin-node": "^9.1.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^9.2.0",
     "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.0",
+    "eslint-plugin-standard": "^4.0.1",
     "jest": "^24.9.0"
   }
 }
