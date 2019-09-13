@@ -134,6 +134,9 @@ class SideBar extends Component {
 
   render () {
     const { feedRefreshRates, guildId, guild, feeds, selectedFeedId, channelDropdownOptions, articlesFetching, linkStatuses, defaultConfig } = this.props
+    if (!guild) {
+      return <div />
+    }
     const selectedFeed = feeds[guildId] && feeds[guildId][selectedFeedId] ? feeds[guildId][selectedFeedId] : null
     const refreshRate = feedRefreshRates[selectedFeedId]
     let differentFromDefault = false
