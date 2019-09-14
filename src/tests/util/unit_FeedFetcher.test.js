@@ -151,7 +151,7 @@ describe('Unit::FeedFetcher', function () {
     })
     it('throws a RequestError if res status code is not 200', function () {
       cloudscraper.mockResolvedValueOnce({ statusCode: 401 })
-      return  expect(FeedFetcher.fetchCloudScraper('d')).rejects.toBeInstanceOf(RequestError)
+      return expect(FeedFetcher.fetchCloudScraper('d')).rejects.toBeInstanceOf(RequestError)
     })
     it('attaches the error code tto the error if res status code is not 200', function (done) {
       cloudscraper.mockResolvedValueOnce({ statusCode: 401 })
