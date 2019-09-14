@@ -66,6 +66,7 @@ class ArticleIDResolver {
 
   /**
    * Returns the first valid id type
+   * @returns {string}
    */
   getIDType () {
     const idTypes = ArticleIDResolver.ID_TYPE_NAMES.concat(this.mergedTypeNames)

@@ -1,15 +1,12 @@
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 
 describe('Unit::ArticleIDResolver', function () {
+  const spy = jest.spyOn(ArticleIDResolver, 'ID_TYPE_NAMES', 'get')
+  const idTypeNames = ['a', 'b', 'c']
+  const expectedIDTypes = ['a', 'b', 'c', 'a,b', 'a,c', 'b,c']
   describe('constructor', function () {
-    const idTypeNames = ['a', 'b', 'c']
-    const expectedIDTypes = ['a', 'b', 'c', 'a,b', 'a,c', 'b,c']
-    const spy = jest.spyOn(ArticleIDResolver, 'ID_TYPE_NAMES', 'get')
-    beforeAll(function () {
-      spy.mockReturnValue(idTypeNames)
-    })
-    afterAll(function () {
-      spy.mockRestore()
+    beforeEach(function () {
+      spy.mockReturnValueOnce(idTypeNames)
     })
     it('adds all id types to this.useIdTypes', function () {
       const idResolver = new ArticleIDResolver()
@@ -28,6 +25,40 @@ describe('Unit::ArticleIDResolver', function () {
       const idResolver = new ArticleIDResolver()
       const expectedMergedTypeNames = ['a,b', 'a,c', 'b,c']
       expect(idResolver.mergedTypeNames).toEqual(expectedMergedTypeNames)
+    })
+  })
+  describe('getIDType()', function () {
+    beforeEach(function () {
+      spy.mockReturnValue(idTypeNames)
+    })
+    it('returns the first valid id type', function () {
+      const idResolver = new ArticleIDResolver()
+      idResolver.mergedTypeNames = ['lswikedgjowir', 'rjhgyn;bkjdn']
+      expect(idResolver.getIDType()).toEqual(idTypeNames[0])
+    })
+    it('returns the first merged id type if there are invalids', function () {
+      const idResolver = new ArticleIDResolver()
+      for (const idType of idTypeNames) {
+        idResolver.useIdTypes.delete(idType)
+      }
+      expect(idResolver.getIDType()).toEqual(expectedIDTypes[3])
+    })
+    it('returns the last failed id type if there are no valid id types', function () {
+      const idResolver = new ArticleIDResolver()
+      idResolver.useIdTypes.clear()
+      const failedType = 'aedsgwtdrfkhjnb'
+      idResolver.failedTypeNames.push(failedType)
+      expect(idResolver.getIDType()).toEqual(failedType)
+    })
+  })
+  describe('static getIDTypeValue()', function () {
+    it('returns the article value for non-merged id type', function () {
+      const article = { a: 'b', dingus: 'berry' }
+      expect(ArticleIDResolver.getIDTypeValue(article, 'a')).toEqual(article.a)
+    })
+    it('returns the article values joined for a merged id type', function () {
+      const article = { joe: 'poe', doe: 'koe' }
+      expect(ArticleIDResolver.getIDTypeValue(article, 'doe,joe')).toEqual('koepoe')
     })
   })
   describe('recordArticle()', function () {
@@ -80,13 +111,5 @@ describe('Unit::ArticleIDResolver', function () {
       idResolver.recordArticle({})
       expect(idResolver.failedTypeNames).toContain('a')
     })
-  })
-  describe('getIDType()', function () {
-    it.todo('returns the first valid id type')
-    it.todo('returns the last failed id type if there are no valid id types')
-  })
-  describe('static getIDTypeValue()', function () {
-    it.todo('returns the article value for non-merged id type')
-    it.todo('returns the article values joined for a merged id type')
   })
 })
