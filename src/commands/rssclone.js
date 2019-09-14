@@ -4,7 +4,7 @@ const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
-const properties = [`message`, `embed`, `filters`, `misc-options`, `subscriptions`]
+const properties = [`message`, `embed`, `filters`, `misc-options`, `subscriptions`, 'all']
 
 async function destSelectorFn (m, data) {
   const { guildRss, rssName, rssNameList } = data
