@@ -3,7 +3,7 @@ class ArticleIDResolver {
     /**
      * Object of placeholder types as keys and sets of article values to see if such values were seen before.
      * If a article value was seen before in this set, then that placeholder should be made invalid
-     * @type {Object<string, Set<string>}
+     * @type {Object<string, Set<string>>}
      * */
     this.idsRecorded = {}
 
@@ -53,10 +53,7 @@ class ArticleIDResolver {
    */
   recordArticle (article) {
     const { useIdTypes, idsRecorded } = this
-    for (const idType in useIdTypes) {
-      if (!useIdTypes.has(idType)) {
-        continue
-      }
+    useIdTypes.forEach(idType => {
       const articleValue = ArticleIDResolver.getIDTypeValue(article, idType)
       if (!articleValue || idsRecorded[idType].has(articleValue)) {
         useIdTypes.delete(idType)
@@ -64,7 +61,7 @@ class ArticleIDResolver {
       } else {
         idsRecorded[idType].add(articleValue)
       }
-    }
+    })
   }
 
   /**
