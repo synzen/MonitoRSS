@@ -1,9 +1,9 @@
 const moment = require('moment')
+const { EventEmitter } = require('events')
 const Article = require('../../structs/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 const { defaultConfigs } = require('../../util/checkConfig.js')
 const dbCmds = require('../db/commands.js')
-const { EventEmitter } = require('events')
 const log = require('../../util/logger.js')
 
 /**
