@@ -6,8 +6,8 @@ const Article = require('../../models/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 
 /**
- * @param {object} article
- * @param {object} source
+ * @param {Object} article
+ * @param {Object} source
  * @param {string} rssName
  * @param {function} callbackFunc
  */
@@ -28,11 +28,11 @@ function formatCallbackArticle (article, source, rssName, callbackFunc) {
  * @typedef {object} DatabaseData
  * @property {Set<string>} dbIds - Set of stored database IDs
  * @property {Set<string>} dbTitles - Set of stored database titles
- * @property {object<string, string[]>} dbCustomComparisons - Comparison names as keys, and their relevant article values in arrays
+ * @property {Object<string, string[]>} dbCustomComparisons - Comparison names as keys, and their relevant article values in arrays
  */
 
 /**
- * @param {import('mongoose').Model|object[]} collection
+ * @param {import('mongoose').Model|Object[]} collection
  * @returns {DatabaseData}
  */
 async function getDataFromDocuments (collection) {
@@ -64,11 +64,11 @@ async function getDataFromDocuments (collection) {
 }
 
 /**
- * @param {object[]} collection
+ * @param {Object[]} collection
  * @param {Set<string>} dbIds
  * @param {string} useIdType
- * @param {object[]} articleList
- * @param {object<string, string[]>} dbCustomComparisons
+ * @param {Object[]} articleList
+ * @param {Object<string, string[]>} dbCustomComparisons
  * @returns {Set<string>}
  */
 async function articleListTasks (collection, dbIds, useIdType, articleList, dbCustomComparisons) {
@@ -105,8 +105,8 @@ async function articleListTasks (collection, dbIds, useIdType, articleList, dbCu
 }
 
 /**
- * @param {object} config - The default config.json
- * @param {object} source - User's source config
+ * @param {Object} config - The default config.json
+ * @param {Object} source - User's source config
  */
 function determineArticleChecks (config, source) {
   const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : defaultConfigs.feeds.checkDates.default
