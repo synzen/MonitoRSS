@@ -4,6 +4,7 @@ jest.mock('moment', () => {
   const func = () => ({ subtract: jest.fn() })
   func.tz = { zone: jest.fn() }
   func.locale = jest.fn()
+  func.locales = jest.fn(() => [])
   return func
 })
 jest.mock('moment-timezone', () => {
