@@ -16,7 +16,7 @@ jest.mock('../../util/db/guilds.js')
 jest.mock('../../structs/db/Redis/Guild.js')
 jest.mock('../../structs/db/Redis/GuildMember.js')
 jest.mock('../../structs/db/Redis/Role.js')
-jest.mock('moment-timezone')
+jest.mock('moment-timezone', () => ({ locales: jest.fn(() => []), tz: { zone: jest.fn() }, locale: jest.fn() }))
 
 RedisGuildMember.utils = {
   recognizeManagerManual: jest.fn(() => Promise.resolve()),
