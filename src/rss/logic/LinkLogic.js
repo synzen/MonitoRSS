@@ -53,27 +53,27 @@ class LinkLogic extends EventEmitter {
      * @type {Set<string, string>}
      */
     this.debug = new Set(debugFeeds || [])
-    
+
     /**
      * @type {Set<string, string>}
      */
     this.dbTitles = new Set()
-    
+
     /**
      * @type {Set<string, string>}
      */
     this.dbIds = new Set()
-    
+
     /**
      * @type {Object<string, Set<string>>}
      * */
     this.dbCustomComparisons = {}
-    
+
     /**
      * @type {Set<string, string>}
      */
     this.customComparisonsToUpdate = new Set()
-    
+
     /**
      * @type {Set<string, string>}
      */
@@ -158,7 +158,7 @@ class LinkLogic extends EventEmitter {
       }
       // Iterate over the values stored in the db, and see if the custom comparison names in the db exist in any of the articles. If they do, then it is marked valid
       for (const compName in dbCustomComparisons) {
-        const validValue = article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null))
+        const validValue = article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null)
         if (!validValue) {
           dbCustomComparisonsToDelete.add(compName)
         }
@@ -302,15 +302,11 @@ class LinkLogic extends EventEmitter {
 
       // Prepare it for update in the database
       if (pendingComparisonUpdate) {
-        if (!toUpdate[article._id]) {
-          if (!article.customComparisons) {
-            article.customComparisons = {}
-          }
-          article.customComparisons[comparisonName] = articleCustomComparisonValue
-          toUpdate[article._id] = article
-        } else {
-          toUpdate[article._id].customComparisons[customComparisonName] = articleCustomComparisonValue
+        if (!article.customComparisons) {
+          article.customComparisons = {}
         }
+        article.customComparisons[comparisonName] = articleCustomComparisonValue
+        toUpdate[article._id] = article
       } else if (articleValueInvalid) {
         delete article.customComparisons[comparisonName]
         toUpdate[article._id] = article
