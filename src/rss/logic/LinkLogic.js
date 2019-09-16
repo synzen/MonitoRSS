@@ -48,25 +48,48 @@ class LinkLogic extends EventEmitter {
     this.scheduleName = scheduleName
     this.runNum = runNum
     this.useIdType = useIdType
-    this.debug = new Set(debugFeeds || [])
 
-    // The 4 properties below are set during run()
+    /**
+     * @type {Set<string, string>}
+     */
+    this.debug = new Set(debugFeeds || [])
+    
+    /**
+     * @type {Set<string, string>}
+     */
     this.dbTitles = new Set()
+    
+    /**
+     * @type {Set<string, string>}
+     */
     this.dbIds = new Set()
+    
     /**
      * @type {Object<string, Set<string>>}
      * */
     this.dbCustomComparisons = {}
+    
+    /**
+     * @type {Set<string, string>}
+     */
     this.customComparisonsToUpdate = new Set()
+    
+    /**
+     * @type {Set<string, string>}
+     */
     this.dbCustomComparisonsToDelete = new Set()
 
-    this.cutoffDay = moment().subtract(config.feeds.cycleMaxAge, 'days')
+    /**
+     * @type {Object<string, Object>}
+     */
     this.toUpdate = {} // Article's resolved IDs as key and the article as value
 
     /**
      * @type {Object<string, SourceSettings>}
      */
     this.memoizedSourceSettings = {}
+
+    this.cutoffDay = moment().subtract(config.feeds.cycleMaxAge, 'days')
   }
 
   static get DEFAULT_CONFIGS () {
