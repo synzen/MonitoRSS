@@ -62,7 +62,7 @@ class LinkLogic extends EventEmitter {
     /**
      * @type {Set<string, string>}
      */
-    this.dbIds = new Set()
+    this.dbIDs = new Set()
 
     /**
      * @type {Object<string, Set<string>>}
@@ -97,60 +97,49 @@ class LinkLogic extends EventEmitter {
   }
 
   /**
-   * @typedef {object} DatabaseData
-   * @property {Set<string>} dbIds - Set of stored database IDs
-   * @property {Set<string>} dbTitles - Set of stored database titles
-   * @property {Object<string, Set<string>>} dbCustomComparisons - Comparison names as keys, and their relevant article values in arrays
-   */
-
-  /**
    * @param {import('mongoose').Model|Object[]} collection
    * @param {Object} dbCustomComparisons
-   * @returns {DatabaseData}
    */
   async getDataFromDocuments (collection) {
-    const { dbIds, dbTitles, dbCustomComparisons } = this
+    const { dbIDs, dbTitles, dbCustomComparisons } = this
 
     const docs = await dbCmds.findAll(collection)
     for (const doc of docs) {
       // Push the main data for built in comparisons
-      dbIds.add(doc.id)
+      dbIDs.add(doc.id)
       dbTitles.add(doc.title)
 
       // Now deal with custom comparisons
       const docCustomComparisons = doc.customComparisons
       if (docCustomComparisons !== undefined && Object.keys(docCustomComparisons).length > 0) {
         for (const articleProperty in docCustomComparisons) { // n = customComparison's name (such as description, author, etc.)
-          const value = docCustomComparisons[articleProperty]
+          const values = docCustomComparisons[articleProperty]
           if (!dbCustomComparisons[articleProperty]) {
-            dbCustomComparisons[articleProperty] = new Set([value])
+            dbCustomComparisons[articleProperty] = new Set(values)
           } else {
-            dbCustomComparisons[articleProperty].add(value)
+            values.forEach(value => dbCustomComparisons[articleProperty].add(value))
           }
         }
       }
     }
-
-    return { dbIds, dbTitles }
   }
 
   /**
    * @param {Object[]} collection
-   * @param {Set<string>} dbIds
+   * @param {Set<string>} dbIDs
    * @param {string} useIdType
    * @param {Object[]} articleList
    * @param {Object<string, Set<string>>} dbCustomComparisons
    * @param {Set<string>} dbCustomComparisonsToDelete
-   * @returns {Set<string>}
    */
   async articleListTasks (collection) {
-    const { dbIds, useIdType, articleList, dbCustomComparisons, dbCustomComparisonsToDelete } = this
+    const { dbIDs, useIdType, articleList, dbCustomComparisons, dbCustomComparisonsToDelete } = this
     const toInsert = []
 
     const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
     for (const article of articleList) {
       article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
-      if (!dbIds.has(article._id)) {
+      if (!dbIDs.has(article._id)) {
         toInsert.push(article)
       }
       if (!checkCustomComparisons) {
@@ -158,7 +147,7 @@ class LinkLogic extends EventEmitter {
       }
       // Iterate over the values stored in the db, and see if the custom comparison names in the db exist in any of the articles. If they do, then it is marked valid
       for (const compName in dbCustomComparisons) {
-        const validValue = article[compName] !== undefined && (typeof article[compName] !== 'object' || article[compName] === null)
+        const validValue = article[compName] !== undefined && (typeof article[compName] !== 'object' && article[compName] !== null)
         if (!validValue) {
           dbCustomComparisonsToDelete.add(compName)
         }
@@ -249,10 +238,10 @@ class LinkLogic extends EventEmitter {
    * @fires LinkLogic#article
    */
   checkIfNewArticle (rssName, source, article, sentTitles, toDebug) {
-    const { config, dbIds, dbTitles, runNum, cutoffDay } = this
+    const { config, dbIDs, dbTitles, runNum, cutoffDay } = this
     const { checkDate, checkTitle } = this.determineArticleChecks(config, source)
 
-    const matchedID = dbIds.has(article._id)
+    const matchedID = dbIDs.has(article._id)
     const matchedTitle = checkTitle && (dbTitles.has(article.title) || sentTitles.has(article.title))
     const matchedDate = checkDate && ((!article.pubdate || article.pubdate.toString() === 'Invalid Date') || (article.pubdate && article.pubdate.toString() !== 'Invalid Date' && article.pubdate < cutoffDay))
     let seen = false
@@ -327,7 +316,7 @@ class LinkLogic extends EventEmitter {
   }
 
   async run () {
-    const { scheduleName, link, shardId, feedData, rssList, toUpdate, dbIds } = this
+    const { scheduleName, link, shardId, feedData, rssList, toUpdate, dbIDs } = this
     if (!scheduleName) {
       throw new Error('Missing schedule name for shared logic')
     }
@@ -339,21 +328,21 @@ class LinkLogic extends EventEmitter {
     await LinkLogic.getDataFromDocuments(feedCollection || Feed)
     await LinkLogic.articleListTasks(feedCollection || Feed)
 
-    if (dbIds.size === 0) {
+    if (dbIDs.size === 0) {
       // Tthe database collection has not been initialized. If a feed has 100 articles, skip everything past this point so it doesn't send a crazy number of articles.
       return { link, feedCollection, feedCollectionId }
     }
 
     for (const rssName in rssList) {
       const source = rssList[rssName]
-      const { articleList, dbIds, dbTitles } = this
+      const { articleList, dbIDs, dbTitles } = this
       const totalArticles = this.articleList.length
       const toDebug = this.debug.has(rssName)
 
       this.validateCustomComparisons(source)
 
       if (toDebug) {
-        log.debug.info(`${rssName}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIds), null, 2)}\nDatabase Titles:\n${JSON.stringify(Array.from(dbTitles), null, 2)}`)
+        log.debug.info(`${rssName}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIDs), null, 2)}\nDatabase Titles:\n${JSON.stringify(Array.from(dbTitles), null, 2)}`)
       }
 
       const sentTitles = new Set()
