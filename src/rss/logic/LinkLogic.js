@@ -166,10 +166,7 @@ class LinkLogic extends EventEmitter {
   static formatArticle (article, source, rssName) {
     // For ArticleMessage to access once ScheduleManager receives this article
     article._delivery = {
-      guildId: source.guildId, // Originally set in source through FeedSchedule.js
-      dateSettings: source.dateSettings, // Not the actual date, but settings concerning date format/language/timezone. Originally set in source through FeedSchedule.js
       rssName,
-      channelId: source.channel,
       source
     }
 

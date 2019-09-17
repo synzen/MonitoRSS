@@ -11,13 +11,11 @@ class ArticleMessage {
     if (!article._delivery) throw new Error('article._delivery property missing')
     if (!article._delivery.rssName) throw new Error('article._delivery.rssName property missing')
     if (!article._delivery.source) throw new Error('article._delivery.source property missing')
-    if (!article._delivery.channelId) throw new Error('article._delivery.channelId property missing')
-    if (!article._delivery.dateSettings) throw new Error('article._delivery.dateSettings property missing')
     this.article = article
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
-    this.channelId = article._delivery.channelId
-    this.channel = storage.bot.channels.get(article._delivery.channelId)
+    this.channelId = article._delivery.source.channel
+    this.channel = storage.bot.channels.get(article._delivery.source.channel)
     if (!this.channel) return
     this.webhook = undefined
     this.sendFailed = 1
@@ -50,7 +48,7 @@ class ArticleMessage {
   }
 
   _translate (ignoreLimits) {
-    const results = translate(this.article._delivery.source, this.article, this.isTestMessage, ignoreLimits, this.article._delivery.dateSettings)
+    const results = translate(this.article._delivery.source, this.article, this.isTestMessage, ignoreLimits, this.article._delivery.source.dateSettings)
     this.parsedArticle = results.parsedArticle
     this.subscriptionIds = this.parsedArticle.subscriptionIds
     this.passedFilters = results.passedFilters

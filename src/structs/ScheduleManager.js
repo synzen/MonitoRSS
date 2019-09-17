@@ -17,14 +17,18 @@ class ScheduleManager {
   }
 
   async _queueArticle (article) {
-    if (debugFeeds.includes(article._delivery.rssName)) log.debug.info(`${article._delivery.rssName} ScheduleManager queueing article ${article.link} to send`)
+    if (debugFeeds.includes(article._delivery.rssName)) {
+      log.debug.info(`${article._delivery.rssName} ScheduleManager queueing article ${article.link} to send`)
+    }
     try {
       await this.articleMessageQueue.enqueue(article)
     } catch (err) {
       if (config.log.linkErrs === true) {
-        const channel = this.bot.channels.get(article._delivery.channelId)
+        const channel = this.bot.channels.get(article._delivery.source.channel)
         log.general.warning(`Failed to send article ${article.link}`, channel.guild, channel, err)
-        if (err.code === 50035) channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``).catch(err => log.general.warning(`Unable to send failed-to-send message for article`, err))
+        if (err.code === 50035) {
+          channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``).catch(err => log.general.warning(`Unable to send failed-to-send message for article`, err))
+        }
       }
     }
   }
