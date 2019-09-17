@@ -288,7 +288,7 @@ class LinkLogic extends EventEmitter {
 
       if (noComparisonsAvailable || articleValueStored || comparisonToBeDeleted) {
         if (toDebug) {
-          log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}. noComparisonsAvailable: ${noComparisonsAvailable}, pendingComparisonUpdate: ${pendingComparisonUpdate}, articleValueFound: ${articleValueFound}, articleValueInvalid: ${articleValueInvalid}.\ndbCustomComparisonValues:\n${dbCustomComparisonValues ? JSON.stringify(dbCustomComparisonValues, null, 2) : undefined}`)
+          log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}. noComparisonsAvailable: ${noComparisonsAvailable}, articleValueStored: ${articleValueStored}, comparisonToBeDeleted: ${comparisonToBeDeleted}.\ndbCustomComparisonValues:\n${dbCustomComparisonValues ? JSON.stringify(dbCustomComparisonValues, null, 2) : undefined}`)
         }
         return
       }
