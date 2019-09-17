@@ -4,20 +4,6 @@ const dbCmds = require('../../../rss/db/commands.js')
 
 const DEFAULT_DATA = { config: { feeds: {} } }
 
-jest.mock('moment', () => {
-  const func = () => ({ subtract: jest.fn() })
-  func.tz = { zone: jest.fn() }
-  func.locale = jest.fn()
-  func.locales = jest.fn(() => [])
-  return func
-})
-jest.mock('moment-timezone', () => {
-  const func = () => ({ subtract: jest.fn() })
-  func.tz = { zone: jest.fn() }
-  func.locale = jest.fn()
-  func.locales = jest.fn(() => [])
-  return func
-})
 jest.mock('../../../structs/Article.js')
 jest.mock('../../../rss/db/commands.js')
 jest.mock('../../../util/logger.js')
@@ -52,16 +38,14 @@ describe('Unit::LinkLogic', function () {
     })
     it('adds the custom comparison values to this.dbCustomComparisons', async function () {
       const logic = new LinkLogic(DEFAULT_DATA)
-      const resolvedDocuments = [{ customComparisons: { placeholder: ['c', 'd'] } }, { customComparisons: { title: ['a', 'b'] } }]
+      const resolvedDocuments = [{ customComparisons: { placeholder: 'c' } }, { customComparisons: { title: 'a' } }]
       dbCmds.findAll.mockResolvedValueOnce(resolvedDocuments)
       await logic.getDataFromDocuments()
       for (const doc of resolvedDocuments) {
         const comparisons = doc.customComparisons
         for (const comparisonName in comparisons) {
-          const values = comparisons[comparisonName]
-          for (const val of values) {
-            expect(logic.dbCustomComparisons[comparisonName].has(val)).toEqual(true)
-          }
+          const articleValue = comparisons[comparisonName]
+          expect(logic.dbCustomComparisons[comparisonName].has(articleValue)).toEqual(true)
         }
       }
     })
@@ -115,6 +99,327 @@ describe('Unit::LinkLogic', function () {
       LinkLogic.formatArticle(article, source, rssName)
       expect(article._delivery.source).toEqual(source)
       expect(article._delivery.rssName).toEqual(rssName)
+    })
+  })
+  describe('determineArticleChecks()', function () {
+    it('returns memoized settings if they exist', function () {
+      const rssName = 'aedkglnhrfjnb'
+      const memoized = { ho: 1, dunk: 2 }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.memoizedSourceSettings[rssName] = memoized
+      expect(logic.determineArticleChecks({}, rssName)).toEqual(memoized)
+    })
+    it('adds to memoized settings if they don\'t exist', function () {
+      const rssName = 'aedkglnhrfjnb'
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.determineArticleChecks({}, rssName)
+      expect(logic.memoizedSourceSettings).toHaveProperty(rssName)
+    })
+    it('returns the source date check settings if they exist', function () {
+      const rssName1 = 'aegkjt'
+      const rssName2 = rssName1 + 1
+      const logic = new LinkLogic(DEFAULT_DATA)
+      const source1 = { checkDates: true }
+      const source2 = { checkDates: false }
+      expect(logic.determineArticleChecks(source1, rssName1).checkDates).toEqual(source1.checkDates)
+      expect(logic.determineArticleChecks(source2, rssName2).checkDates).toEqual(source2.checkDates)
+    })
+    it('returns the source date check settings if they exist', function () {
+      const rssName1 = 'aegkjt'
+      const rssName2 = rssName1 + 1
+      const logic = new LinkLogic(DEFAULT_DATA)
+      const source1 = { checkDates: true }
+      const source2 = { checkDates: false }
+      expect(logic.determineArticleChecks(source1, rssName1).checkDates).toEqual(source1.checkDates)
+      expect(logic.determineArticleChecks(source2, rssName2).checkDates).toEqual(source2.checkDates)
+    })
+    it('returns the default date check settings if source setting does\'t exist', function () {
+      const data1 = { config: { feeds: { checkDates: true } } }
+      const data2 = { config: { feeds: { checkDates: false } } }
+      const logic1 = new LinkLogic(data1)
+      const logic2 = new LinkLogic(data2)
+      expect(logic1.determineArticleChecks({}, 'rssName1').checkDates).toEqual(data1.config.feeds.checkDates)
+      expect(logic2.determineArticleChecks({}, 'rssName1').checkDates).toEqual(data2.config.feeds.checkDates)
+    })
+    it('returns the source title check settings if they exist', function () {
+      const rssName1 = 'aegkjt'
+      const rssName2 = rssName1 + 1
+      const logic = new LinkLogic(DEFAULT_DATA)
+      const source1 = { checkDates: true }
+      const source2 = { checkDates: false }
+      expect(logic.determineArticleChecks(source1, rssName1).checkDates).toEqual(source1.checkDates)
+      expect(logic.determineArticleChecks(source2, rssName2).checkDates).toEqual(source2.checkDates)
+    })
+    it('returns the default title check settings if source setting does\'t exist', function () {
+      const data1 = { config: { feeds: { checkTitles: true } } }
+      const data2 = { config: { feeds: { checkTitles: false } } }
+      const logic1 = new LinkLogic(data1)
+      const logic2 = new LinkLogic(data2)
+      expect(logic1.determineArticleChecks({}, 'rssName1').checkTitles).toEqual(data1.config.feeds.checkTitles)
+      expect(logic2.determineArticleChecks({}, 'rssName1').checkTitles).toEqual(data2.config.feeds.checkTitles)
+    })
+    it('memoizes the calculated values', function () {
+      const rssName = 'rssNameqew'
+      const data1 = { config: { feeds: { checkTitles: true } } }
+      const source1 = { checkDates: false }
+      const logic1 = new LinkLogic(data1)
+      logic1.determineArticleChecks(source1, rssName)
+      expect(logic1.memoizedSourceSettings).toHaveProperty(rssName)
+      expect(logic1.memoizedSourceSettings[rssName].checkTitles).toEqual(data1.config.feeds.checkTitles)
+      expect(logic1.memoizedSourceSettings[rssName].checkDates).toEqual(source1.checkDates)
+    })
+  })
+  describe('validateCustomComparisons()', function () {
+    it('removes invalid custom comparison types from source.customComparisons', function () {
+      const source = { customComparisons: ['title', 'guid', 'valid1', 'pubdate', 'valid2'] }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.validateCustomComparisons(source)
+      expect(source.customComparisons).not.toContain('title')
+      expect(source.customComparisons).not.toContain('guid')
+      expect(source.customComparisons).not.toContain('pubdate')
+      expect(source.customComparisons).toContain('valid1')
+      expect(source.customComparisons).toContain('valid2')
+    })
+    it('adds to this.customComparisonsToUpdate if the comparison was not found in db', function () {
+      const source = { customComparisons: ['valid1', 'valid2', 'valid3'] }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.dbCustomComparisonsToDelete.add(source.customComparisons[1])
+      logic.validateCustomComparisons(source)
+      expect(logic.customComparisonsToUpdate).toContain(source.customComparisons[0])
+      expect(logic.customComparisonsToUpdate).toContain(source.customComparisons[2])
+    })
+  })
+  describe('checkIfNewArticle()', function () {
+    it('calls this.checkIfNewArticleByCC if article is not emitted', function () {
+      const article = { _id: 1 }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.dbIDs.add(article._id)
+      jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
+      const emitSpy = jest.spyOn(logic, 'checkIfNewArticleByCC')
+      logic.checkIfNewArticle('', {}, article)
+      expect(emitSpy).toHaveBeenCalled()
+    })
+    it('emits the formatted article', function () {
+      const formattedArticle = { dingus: 'berry' }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
+      jest.spyOn(LinkLogic, 'formatArticle').mockReturnValueOnce(formattedArticle)
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticle('', {}, {})
+      expect(emitSpy).toHaveBeenCalledWith('article', formattedArticle)
+    })
+    it('calls emit when this.runNum is 0 and config.feeds.sendOldOnFirstCycle is true', function () {
+      const logic = new LinkLogic({ ...DEFAULT_DATA, config: { feeds: { sendOldOnFirstCycle: true } }, runNum: 0 })
+      jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticle('', {}, {})
+      expect(emitSpy).toHaveBeenCalled()
+    })
+    it('does not call emit when this.runNum is 0 and config.feeds.sendOldOnFirstCycle is false', function () {
+      const logic = new LinkLogic({ ...DEFAULT_DATA, config: { feeds: { sendOldOnFirstCycle: false } }, runNum: 0 })
+      jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticle('', {}, {})
+      expect(emitSpy).not.toHaveBeenCalled()
+    })
+    describe('id', function () {
+      it('emits article when id was not found in this.dbIDs', function () {
+        const article = { _id: 1 }
+        const formattedArticle = { dingus: 'berry' }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
+        jest.spyOn(LinkLogic, 'formatArticle').mockReturnValueOnce(formattedArticle)
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).toHaveBeenCalled()
+      })
+      it('does not emit article if id was found in this.dbIDs', function () {
+        const article = { _id: 1 }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        logic.dbIDs.add(article._id)
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).not.toHaveBeenCalled()
+      })
+    })
+    describe('title checks', function () {
+      it('emits article when check titles is true, titles is not in this.dbTitles, and article.title exists', function () {
+        const article = { title: 'abc' }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).toHaveBeenCalled()
+      })
+      it('does not emit article when check titles is true, titles is in this.dbTitles, and article.title exists', function () {
+        const article = { title: 'abc' }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        logic.dbTitles.add(article.title)
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).not.toHaveBeenCalled()
+      })
+      it('does not emit article when check titles is true, titles is not in this.dbTitles, and article.title does exists', function () {
+        const article = { }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).not.toHaveBeenCalled()
+      })
+      it('adds the article to this.dbTitles when check titles is true and titles is not in this.dbTitles', function () {
+        const article = { title: 'abc' }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        expect(logic.dbTitles).not.toContain(article.title)
+        logic.dbTitles.add(article.title)
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
+        logic.checkIfNewArticle('', {}, article)
+        expect(logic.dbTitles).toContain(article.title)
+      })
+    })
+    describe('date checks', function () {
+      const invalidDate = new Date('foobar')
+      const twoDaysAgo = new Date()
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+      const oneDayAgo = new Date()
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+      it('emits article when check dates is true, article date is newer the cutoff date, and article date is valid', function () {
+        const article = { pubdate: oneDayAgo }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        logic.cutoffDay = twoDaysAgo
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: true, checkTitles: false })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).toHaveBeenCalled()
+      })
+      it('does not emit article when check dates is true, article date is older the cutoff day, and article date is valid', function () {
+        const article = { pubdate: twoDaysAgo }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        logic.cutoffDay = oneDayAgo
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: true, checkTitles: false })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).not.toHaveBeenCalled()
+      })
+      it('does not emit article when check dates is true and article date is invalid', function () {
+        const article = { pubdate: invalidDate }
+        const logic = new LinkLogic(DEFAULT_DATA)
+        logic.cutoffDay = oneDayAgo
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: true, checkTitles: false })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).not.toHaveBeenCalled()
+      })
+      it('does not emit article when there is no article date', function () {
+        const article = {}
+        const logic = new LinkLogic(DEFAULT_DATA)
+        logic.cutoffDay = oneDayAgo
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: true, checkTitles: false })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle('', {}, article)
+        expect(emitSpy).not.toHaveBeenCalled()
+      })
+    })
+  })
+  describe('checkIfNewArticleByCC()', function () {
+    const mockArticle = { hello: 'world' }
+    const spy = jest.spyOn(LinkLogic, 'formatArticle')
+    beforeEach(function () {
+      spy.mockReturnValueOnce(mockArticle)
+    })
+    it('emits an article if custom comparison is a key in this.dbCustomComparisons and article value was not found', function () {
+      const comparisonName = 'ooo'
+      const source = { customComparisons: [comparisonName] }
+      const article = { [comparisonName]: 'value' }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.updateArticleCCValues = jest.fn()
+      logic.dbCustomComparisons[comparisonName] = new Set()
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticleByCC('', source, article)
+      expect(emitSpy).toHaveBeenCalled()
+    })
+    it('emits a formatted article', function () {
+      const comparisonName = 'ooo'
+      const source = { customComparisons: [comparisonName] }
+      const article = { [comparisonName]: 'value' }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.updateArticleCCValues = jest.fn()
+      logic.dbCustomComparisons[comparisonName] = new Set()
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticleByCC('', source, article)
+      expect(emitSpy).toHaveBeenCalledWith('article', mockArticle)
+    })
+    it('does not emit article if the source has no customComparisons', function () {
+      const article = {}
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.updateArticleCCValues = jest.fn()
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticleByCC('', {}, article)
+      expect(emitSpy).not.toHaveBeenCalled()
+    })
+    it('does not emit article if the source has non-Array customComparisons', function () {
+      const source = { customComparisons: {} }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.updateArticleCCValues = jest.fn()
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticleByCC('', source, {})
+      expect(emitSpy).not.toHaveBeenCalled()
+    })
+    it('does not emit article if the custom comparison is not a key in this.dbCustomComparisons', function () {
+      const comparisonName = 'oo'
+      const source = { customComparisons: [comparisonName] }
+      const article = { [comparisonName]: '123' }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.updateArticleCCValues = jest.fn()
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticleByCC('', source, article)
+      expect(emitSpy).not.toHaveBeenCalled()
+    })
+    it('does not emit article if the custom comparison is a key in this.dbCustomComparisons and article value was found', function () {
+      const comparisonName = 'aijf'
+      const source = { customComparisons: [comparisonName] }
+      const article = { [comparisonName]: 'value' }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.updateArticleCCValues = jest.fn()
+      logic.dbCustomComparisons[comparisonName] = new Set([article[comparisonName]])
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticleByCC('', source, article)
+      expect(emitSpy).not.toHaveBeenCalled()
+    })
+    it('does not emit article if the custom comparison is in this.dbCustomComparisonsToDelete', function () {
+      const comparisonName = 'aijf'
+      const source = { customComparisons: [comparisonName] }
+      const article = { [comparisonName]: 'value' }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.updateArticleCCValues = jest.fn()
+      logic.dbCustomComparisonsToDelete.add(comparisonName)
+      logic.dbCustomComparisons[comparisonName] = new Set()
+      const emitSpy = jest.spyOn(logic, 'emit')
+      logic.checkIfNewArticleByCC('', source, article)
+      expect(emitSpy).not.toHaveBeenCalled()
+    })
+  })
+  describe('updateArticleCCValues()', function () {
+    it('adds the article comparison value to article.customComparisons if article.customComparisons does not exist', function () {
+      const comparisonName = 'abc'
+      const article = { foo: 'bar', [comparisonName]: 'hodunk' }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.customComparisonsToUpdate.add(comparisonName)
+      logic.updateArticleCCValues(article, comparisonName)
+      expect(article.customComparisons).toHaveProperty(comparisonName)
+      expect(article.customComparisons[comparisonName]).toEqual(article[comparisonName])
+    })
+    it('adds the article to this.toUpdate', function () {
+      const comparisonName = 'abc'
+      const articleID = 'aedgtjr'
+      const article = { foo: 'bar', [comparisonName]: 'hodunk', _id: articleID }
+      const logic = new LinkLogic(DEFAULT_DATA)
+      logic.customComparisonsToUpdate.add(comparisonName)
+      logic.updateArticleCCValues(article, comparisonName)
+      expect(logic.toUpdate).toHaveProperty(articleID)
+      expect(logic.toUpdate[articleID]).toEqual({ ...article, customComparisons: { [comparisonName]: article[comparisonName] } })
     })
   })
 })

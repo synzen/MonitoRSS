@@ -2,14 +2,29 @@ const moment = require('moment')
 const { EventEmitter } = require('events')
 const Article = require('../../structs/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
-const { defaultConfigs } = require('../../util/checkConfig.js')
 const dbCmds = require('../db/commands.js')
 const log = require('../../util/logger.js')
 
 /**
+ * @typedef {Object} FeedArticle
+ */
+
+/**
+ * @typedef {Object} SourceSettings
+ * @property {boolean} checkTitles
+ * @property {boolean} checkDates
+ */
+
+/**
+ * @typedef {Object} FormattedArticle
+ * @property {Object} source
+ * @property {string} rssName
+ */
+
+/**
  * @typedef {Object} LinkData
  * @property {Object<string, Object>} rssList - Aggregated feed objects by feed ID from all guilds who use the same feed URL
- * @property {Object[]} articleList - Feed articles
+ * @property {FeedArticle[]} articleList - Feed articles
  * @property {string[]} debugFeeds - Array of feed IDs to show debug info for
  * @property {string} link - The feed URL
  * @property {number} shardId - The shard ID of the parent process, if the bot is sharded
@@ -18,18 +33,6 @@ const log = require('../../util/logger.js')
  * @property {number} runNum - Number of times this schedule has run so far
  * @property {string} useIdType - The ID type that should be used for article differentiation
  * @property {Object<string, Object[]>} [feedData] - Databaseless in-memory collection of all stored articles
- */
-
-/**
- * @typedef {Object} SourceSettings
- * @property {boolean} checkTitle
- * @property {boolean} checkDate
- */
-
-/**
- * @typedef {Object} FormattedArticle
- * @property {Object} source
- * @property {string} rssName
  */
 
 class LinkLogic extends EventEmitter {
@@ -92,10 +95,6 @@ class LinkLogic extends EventEmitter {
     this.cutoffDay = moment().subtract(config.feeds.cycleMaxAge, 'days')
   }
 
-  static get DEFAULT_CONFIGS () {
-    return defaultConfigs
-  }
-
   /**
    * @param {import('mongoose').Model|Object[]} collection
    * @param {Object} dbCustomComparisons
@@ -112,12 +111,12 @@ class LinkLogic extends EventEmitter {
       // Now deal with custom comparisons
       const docCustomComparisons = doc.customComparisons
       if (docCustomComparisons !== undefined && Object.keys(docCustomComparisons).length > 0) {
-        for (const articleProperty in docCustomComparisons) { // n = customComparison's name (such as description, author, etc.)
-          const values = docCustomComparisons[articleProperty]
+        for (const articleProperty in docCustomComparisons) { // articleProperty = customComparison's name (such as description, author, etc.)
+          const articleValue = docCustomComparisons[articleProperty]
           if (!dbCustomComparisons[articleProperty]) {
-            dbCustomComparisons[articleProperty] = new Set(values)
+            dbCustomComparisons[articleProperty] = new Set([articleValue])
           } else {
-            values.forEach(value => dbCustomComparisons[articleProperty].add(value))
+            dbCustomComparisons[articleProperty].add(articleValue)
           }
         }
       }
@@ -174,28 +173,26 @@ class LinkLogic extends EventEmitter {
   }
 
   /**
-   * @param {Object} config - The default config.json
    * @param {Object} source - User's source config
    * @param {string} rssName - Feed ID
    * @returns {SourceSettings}
    */
-  determineArticleChecks (config, source, rssName) {
+  determineArticleChecks (source, rssName) {
+    const { config } = this
     const memoized = this.memoizedSourceSettings[rssName]
     if (memoized) {
       return this.memoizedSourceSettings[rssName]
     }
 
-    const globalDateCheck = config.feeds.checkDates != null ? config.feeds.checkDates : LinkLogic.DEFAULT_CONFIGS.feeds.checkDates.default
+    const globalDateCheck = config.feeds.checkDates
     const localDateCheck = source.checkDates
-    const checkDate = typeof localDateCheck !== 'boolean' ? globalDateCheck : localDateCheck
+    const checkDates = typeof localDateCheck !== 'boolean' ? globalDateCheck : localDateCheck
 
-    const globalTitleCheck = config.feeds.checkTitles != null ? config.feeds.checkTitles : LinkLogic.DEFAULT_CONFIGS.feeds.checkTitles.default
+    const globalTitleCheck = config.feeds.checkTitles
     const localTitleCheck = source.checkTitles
-    const checkTitle = typeof globalTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
+    const checkTitles = typeof localTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
 
-    if (!memoized) {
-      this.memoizedSourceSettings[rssName] = { checkDate, checkTitle }
-    }
+    this.memoizedSourceSettings[rssName] = { checkDates, checkTitles }
 
     return this.memoizedSourceSettings[rssName]
   }
@@ -229,24 +226,27 @@ class LinkLogic extends EventEmitter {
   /**
    * @param {string} rssName
    * @param {Object} source
-   * @param {Object} article
-   * @param {Set<string>} sentTitles - Previous titles stored in case of title checks
+   * @param {FeedArticle} article
    * @param {boolean} toDebug - Whether to log progress
    * @fires LinkLogic#article
    */
-  checkIfNewArticle (rssName, source, article, sentTitles, toDebug) {
+  checkIfNewArticle (rssName, source, article, toDebug) {
     const { config, dbIDs, dbTitles, runNum, cutoffDay } = this
-    const { checkDate, checkTitle } = this.determineArticleChecks(config, source)
+    const { checkDates, checkTitles } = this.determineArticleChecks(source, rssName)
 
     const matchedID = dbIDs.has(article._id)
-    const matchedTitle = checkTitle && (dbTitles.has(article.title) || sentTitles.has(article.title))
-    const matchedDate = checkDate && ((!article.pubdate || article.pubdate.toString() === 'Invalid Date') || (article.pubdate && article.pubdate.toString() !== 'Invalid Date' && article.pubdate < cutoffDay))
+    const matchedTitle = checkTitles && dbTitles.has(article.title)
+    const matchedDate = checkDates && (!article.pubdate || article.pubdate.toString() === 'Invalid Date' || article.pubdate < cutoffDay)
     let seen = false
     if (matchedID || matchedTitle || matchedDate) {
       if (toDebug) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) Matched ${matchedID ? 'ID' : matchedTitle ? 'title' : matchedDate ? 'date' : 'UNKNOWN CASE'}.`)
       seen = true
-    } else if (checkTitle && article.title) {
-      sentTitles.add(article.title)
+    } else if (checkTitles) {
+      if (article.title) {
+        dbTitles.add(article.title)
+      } else {
+        seen = true // Don't send an article with no title if title checks are on
+      }
     }
 
     if (runNum === 0 && config.feeds.sendOldOnFirstCycle === false) {
@@ -256,9 +256,8 @@ class LinkLogic extends EventEmitter {
       return
     }
 
-    // Check for extra user-specified comparisons
     if (!seen) {
-      this.emit(LinkLogic.formatArticle(article, source, rssName))
+      this.emit('article', LinkLogic.formatArticle(article, source, rssName))
       return
     }
 
@@ -268,37 +267,26 @@ class LinkLogic extends EventEmitter {
   /**
    * @param {string} rssName
    * @param {Object} source
-   * @param {Object} article
+   * @param {FeedArticle} article
    * @param {boolean} toDebug - Whether to log progress
    */
   checkIfNewArticleByCC (rssName, source, article, toDebug) {
-    const { dbCustomComparisons, toUpdate, customComparisonsToUpdate, dbCustomComparisonsToDelete } = this
+    const { dbCustomComparisons, dbCustomComparisonsToDelete } = this
     const { customComparisons } = source
     if (!Array.isArray(customComparisons)) {
       return
     }
     for (const comparisonName of customComparisons) {
-      const dbCustomComparisonValues = dbCustomComparisons[comparisonName] // Might be an array of descriptions, authors, etc.
+      const dbCustomComparisonValues = dbCustomComparisons[comparisonName] // Might be an set of description, author or etc. values
       const articleCustomComparisonValue = article[comparisonName]
 
-      const pendingComparisonUpdate = customComparisonsToUpdate.has(comparisonName)
       const noComparisonsAvailable = !dbCustomComparisonValues
-      const articleValueFound = dbCustomComparisonValues && dbCustomComparisonValues.has(articleCustomComparisonValue)
-      const articleValueInvalid = dbCustomComparisonsToDelete.has(comparisonName)
+      const articleValueStored = dbCustomComparisonValues && dbCustomComparisonValues.has(articleCustomComparisonValue)
+      const comparisonToBeDeleted = dbCustomComparisonsToDelete.has(comparisonName)
 
-      // Prepare it for update in the database
-      if (pendingComparisonUpdate) {
-        if (!article.customComparisons) {
-          article.customComparisons = {}
-        }
-        article.customComparisons[comparisonName] = articleCustomComparisonValue
-        toUpdate[article._id] = article
-      } else if (articleValueInvalid) {
-        delete article.customComparisons[comparisonName]
-        toUpdate[article._id] = article
-      }
+      this.updateArticleCCValues(article, comparisonName)
 
-      if (noComparisonsAvailable || articleValueFound || articleValueInvalid) {
+      if (noComparisonsAvailable || articleValueStored || comparisonToBeDeleted) {
         if (toDebug) {
           log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}. noComparisonsAvailable: ${noComparisonsAvailable}, pendingComparisonUpdate: ${pendingComparisonUpdate}, articleValueFound: ${articleValueFound}, articleValueInvalid: ${articleValueInvalid}.\ndbCustomComparisonValues:\n${dbCustomComparisonValues ? JSON.stringify(dbCustomComparisonValues, null, 2) : undefined}`)
         }
@@ -308,12 +296,28 @@ class LinkLogic extends EventEmitter {
       if (toDebug) {
         log.debug.info(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
       }
-      this.emit(LinkLogic.formatArticle(article, source, rssName))
+      this.emit('article', LinkLogic.formatArticle(article, source, rssName))
+    }
+  }
+
+  /**
+   * @param {FeedArticle} article
+   * @param {string} comparisonName
+   */
+  updateArticleCCValues (article, comparisonName) {
+    const { toUpdate, customComparisonsToUpdate } = this
+    // Prepare it for update in the database
+    if (customComparisonsToUpdate.has(comparisonName)) {
+      if (!article.customComparisons) {
+        article.customComparisons = {}
+      }
+      article.customComparisons[comparisonName] = article[comparisonName]
+      toUpdate[article._id] = article
     }
   }
 
   async run () {
-    const { scheduleName, link, shardId, feedData, rssList, toUpdate, dbIDs } = this
+    const { scheduleName, link, shardId, feedData, rssList, toUpdate, dbIDs, articleList, dbTitles, debug } = this
     if (!scheduleName) {
       throw new Error('Missing schedule name for shared logic')
     }
@@ -322,8 +326,8 @@ class LinkLogic extends EventEmitter {
     const feedCollectionId = feedData ? collectionID : undefined
     const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
 
-    await LinkLogic.getDataFromDocuments(feedCollection || Feed)
-    await LinkLogic.articleListTasks(feedCollection || Feed)
+    await this.getDataFromDocuments(feedCollection || Feed)
+    await this.articleListTasks(feedCollection || Feed)
 
     if (dbIDs.size === 0) {
       // Tthe database collection has not been initialized. If a feed has 100 articles, skip everything past this point so it doesn't send a crazy number of articles.
@@ -332,9 +336,8 @@ class LinkLogic extends EventEmitter {
 
     for (const rssName in rssList) {
       const source = rssList[rssName]
-      const { articleList, dbIDs, dbTitles } = this
-      const totalArticles = this.articleList.length
-      const toDebug = this.debug.has(rssName)
+      const totalArticles = articleList.length
+      const toDebug = debug.has(rssName)
 
       this.validateCustomComparisons(source)
 
@@ -342,9 +345,8 @@ class LinkLogic extends EventEmitter {
         log.debug.info(`${rssName}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIDs), null, 2)}\nDatabase Titles:\n${JSON.stringify(Array.from(dbTitles), null, 2)}`)
       }
 
-      const sentTitles = new Set()
       for (let a = totalArticles - 1; a >= 0; --a) { // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
-        this.checkIfNewArticle(rssName, source, articleList[a], sentTitles, toDebug)
+        this.checkIfNewArticle(rssName, source, articleList[a], toDebug)
       }
     }
 
