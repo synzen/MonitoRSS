@@ -14,7 +14,7 @@ module.exports = async (data, callback) => {
     if (articleList.length === 0) {
       return callback(null, { status: 'success', link: link })
     }
-    const { feedCollection, feedCollectionId } = await processSources({ articleList, debugFeeds, shardId: storage.bot.shard ? storage.bot.shard.id : undefined, scheduleName, useIdType: idType, ...data }, article => callback(null, article))
+    const { feedCollection, feedCollectionId } = await processSources({ articleList, debugFeeds, shardID: storage.bot.shard ? storage.bot.shard.id : undefined, scheduleName, useIdType: idType, ...data }, article => callback(null, article))
     callback(null, { status: 'success', feedCollection, feedCollectionId, link })
   } catch (err) {
     if (err instanceof RequestError || err instanceof FeedParserError) {

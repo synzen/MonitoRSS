@@ -21,7 +21,7 @@ class FeedSchedule extends EventEmitter {
     if (schedule.name !== 'default' && schedule.name !== 'vip' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0) && (!Array.isArray(schedule.feedIDs) || schedule.feedIDs.length === 0)) throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     super()
     this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
-    this.shardId = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
+    this.shardID = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
     this.bot = bot
     this.name = schedule.name
     this.scheduleManager = scheduleManager
@@ -219,7 +219,7 @@ class FeedSchedule extends EventEmitter {
       this._debugFeeds.add(feedID)
     }
     this.feedIDs.clear()
-    const [ failedLinks, assignedSchedules, guildRssList ] = await Promise.all([ dbOpsFailedLinks.getAll(), dbOpsSchedules.assignedSchedules.getMany(this.shardId, this.name), dbOpsGuilds.getAll() ])
+    const [ failedLinks, assignedSchedules, guildRssList ] = await Promise.all([ dbOpsFailedLinks.getAll(), dbOpsSchedules.assignedSchedules.getMany(this.shardID, this.name), dbOpsGuilds.getAll() ])
     this.failedLinks = {}
     for (const item of failedLinks) {
       this.failedLinks[item.link] = item.failed || item.count
@@ -366,7 +366,7 @@ class FeedSchedule extends EventEmitter {
         feedData: this.feedData,
         runNum: this.ran,
         scheduleName: this.name,
-        shardId: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null
+        shardID: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null
       })
     }
 

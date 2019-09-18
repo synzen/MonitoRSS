@@ -121,12 +121,12 @@ function determineArticleChecks (config, source) {
 }
 
 module.exports = async (data, callbackArticle) => {
-  const { rssList, articleList, debugFeeds, link, shardId, config, feedData, scheduleName, runNum, useIdType } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+  const { rssList, articleList, debugFeeds, link, shardID, config, feedData, scheduleName, runNum, useIdType } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
   if (!scheduleName) throw new Error('Missing schedule name for shared logic')
   const totalArticles = articleList.length
   const customComparisonsToUpdate = []
   const toUpdate = {} // Article's resolved IDs as key and the article as value
-  const collectionID = Article.getCollectionID(link, shardId, scheduleName)
+  const collectionID = Article.getCollectionID(link, shardID, scheduleName)
   const Feed = Article.modelByID(collectionID)
   const feedCollectionId = feedData ? collectionID : undefined
   const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined

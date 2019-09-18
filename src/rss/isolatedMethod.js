@@ -61,7 +61,7 @@ async function getFeed (data, callback) {
 process.on('message', m => {
   const currentBatch = m.currentBatch
   const config = m.config
-  const shardId = m.shardId
+  const shardID = m.shardID
   const debugFeeds = m.debugFeeds
   const feedData = m.feedData // Only defined if config.database.uri is set to a databaseless folder path
   const scheduleName = m.scheduleName
@@ -78,7 +78,7 @@ process.on('message', m => {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
-      getFeed({ link, rssList, uniqueSettings, shardId, debugFeeds, config, feedData, scheduleName, runNum, headers }, () => {
+      getFeed({ link, rssList, uniqueSettings, shardID, debugFeeds, config, feedData, scheduleName, runNum, headers }, () => {
         if (++c === len) process.send({ status: 'batch_connected' })
       })
     }
