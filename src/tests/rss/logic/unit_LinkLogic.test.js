@@ -95,9 +95,9 @@ describe('Unit::LinkLogic', function () {
       const article = { dink: 2 }
       const source = { donk: 1 }
       const rssName = 'abc!'
-      LinkLogic.formatArticle(article, source, rssName)
-      expect(article._delivery.source).toEqual(source)
-      expect(article._delivery.rssName).toEqual(rssName)
+      const formatted = LinkLogic.formatArticle(article, source, rssName)
+      expect(formatted._delivery.source).toEqual(source)
+      expect(formatted._delivery.rssName).toEqual(rssName)
     })
   })
   describe('determineArticleChecks()', function () {
@@ -268,14 +268,24 @@ describe('Unit::LinkLogic', function () {
         logic.checkIfNewArticle('', {}, article)
         expect(emitSpy).not.toHaveBeenCalled()
       })
-      it('adds the article to this.dbTitles when check titles is true and titles is not in this.dbTitles', function () {
+      it('adds the article title to this.sentTitlesByFeedID[rssName] when check titles is true and titles is not in this.dbTitles', function () {
         const article = { title: 'abc' }
+        const rssName = 'adeglk'
         const logic = new LinkLogic(DEFAULT_DATA)
-        expect(logic.dbTitles).not.toContain(article.title)
-        logic.dbTitles.add(article.title)
+        expect(logic.sentTitlesByFeedID[rssName]).toBeUndefined()
         jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
-        logic.checkIfNewArticle('', {}, article)
-        expect(logic.dbTitles).toContain(article.title)
+        logic.checkIfNewArticle(rssName, {}, article)
+        expect(logic.sentTitlesByFeedID[rssName]).toContain(article.title)
+      })
+      it('does not emit article when the article title is in this.sentTitlesByFeedID[rssName] when check titles is true', function () {
+        const article = { title: 'abc' }
+        const rssName = 'adeglk'
+        const logic = new LinkLogic(DEFAULT_DATA)
+        logic.sentTitlesByFeedID[rssName] = new Set([ article.title ])
+        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
+        const emitSpy = jest.spyOn(logic, 'emit')
+        logic.checkIfNewArticle(rssName, {}, article)
+        expect(emitSpy).not.toHaveBeenCalled()
       })
     })
     describe('date checks', function () {

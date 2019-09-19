@@ -53,17 +53,22 @@ class LinkLogic extends EventEmitter {
     this.useIdType = useIdType
 
     /**
-     * @type {Set<string, string>}
+     * @type {Set<string>}
      */
     this.debug = new Set(debugFeeds || [])
 
     /**
-     * @type {Set<string, string>}
+     * @type {Set<string>}
      */
     this.dbTitles = new Set()
 
     /**
-     * @type {Set<string, string>}
+     * @type {Object<string, Set<string>>}
+     */
+    this.sentTitlesByFeedID = {}
+
+    /**
+     * @type {Set<string>}
      */
     this.dbIDs = new Set()
 
@@ -73,12 +78,12 @@ class LinkLogic extends EventEmitter {
     this.dbCustomComparisons = {}
 
     /**
-     * @type {Set<string, string>}
+     * @type {Set<string>}
      */
     this.customComparisonsToUpdate = new Set()
 
     /**
-     * @type {Set<string, string>}
+     * @type {Set<string>}
      */
     this.dbCustomComparisonsToDelete = new Set()
 
@@ -163,12 +168,14 @@ class LinkLogic extends EventEmitter {
    */
   static formatArticle (article, source, rssName) {
     // For ArticleMessage to access once ScheduleManager receives this article
-    article._delivery = {
-      rssName,
-      source
-    }
 
-    return article
+    return {
+      ...article,
+      _delivery: {
+        rssName,
+        source
+      }
+    }
   }
 
   /**
@@ -230,11 +237,11 @@ class LinkLogic extends EventEmitter {
    * @fires LinkLogic#article
    */
   checkIfNewArticle (rssName, source, article, toDebug) {
-    const { config, dbIDs, dbTitles, runNum, cutoffDay } = this
+    const { config, dbIDs, dbTitles, runNum, cutoffDay, sentTitlesByFeedID } = this
     const { checkDates, checkTitles } = this.determineArticleChecks(source, rssName)
 
     const matchedID = dbIDs.has(article._id)
-    const matchedTitle = checkTitles && dbTitles.has(article.title)
+    const matchedTitle = checkTitles && (dbTitles.has(article.title) || (sentTitlesByFeedID[rssName] && sentTitlesByFeedID[rssName].has(article.title)))
     const matchedDate = checkDates && (!article.pubdate || article.pubdate.toString() === 'Invalid Date' || article.pubdate < cutoffDay)
     let seen = false
     if (matchedID || matchedTitle || matchedDate) {
@@ -242,7 +249,10 @@ class LinkLogic extends EventEmitter {
       seen = true
     } else if (checkTitles) {
       if (article.title) {
-        dbTitles.add(article.title)
+        if (!sentTitlesByFeedID[rssName]) {
+          sentTitlesByFeedID[rssName] = new Set()
+        }
+        sentTitlesByFeedID[rssName].add(article.title)
       } else {
         seen = true // Don't send an article with no title if title checks are on
       }
