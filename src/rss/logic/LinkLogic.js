@@ -1,6 +1,6 @@
 const moment = require('moment')
 const { EventEmitter } = require('events')
-const Article = require('../../structs/Article.js')
+const ArticleModel = require('../../models/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 const dbCmds = require('../db/commands.js')
 const log = require('../../util/logger.js')
@@ -152,7 +152,6 @@ class LinkLogic extends EventEmitter {
         }
       }
     }
-
     await dbCmds.bulkInsert(collection, toInsert)
   }
 
@@ -321,8 +320,8 @@ class LinkLogic extends EventEmitter {
     if (!scheduleName) {
       throw new Error('Missing schedule name for shared logic')
     }
-    const collectionID = Article.getCollectionID(link, shardId, scheduleName)
-    const Feed = Article.modelByID(collectionID)
+    const collectionID = ArticleModel.getCollectionID(link, shardId, scheduleName)
+    const Feed = ArticleModel.modelByID(collectionID)
     const feedCollectionId = feedData ? collectionID : undefined
     const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
 

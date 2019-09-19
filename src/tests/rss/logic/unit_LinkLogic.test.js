@@ -4,7 +4,6 @@ const dbCmds = require('../../../rss/db/commands.js')
 
 const DEFAULT_DATA = { config: { feeds: {} } }
 
-jest.mock('../../../structs/Article.js')
 jest.mock('../../../rss/db/commands.js')
 jest.mock('../../../util/logger.js')
 jest.mock('../../../config.js')
