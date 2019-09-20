@@ -1,4 +1,3 @@
-const moment = require('moment')
 const { EventEmitter } = require('events')
 const ArticleModel = require('../../models/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
@@ -97,7 +96,9 @@ class LinkLogic extends EventEmitter {
      */
     this.memoizedSourceSettings = {}
 
-    this.cutoffDay = moment().subtract(config.feeds.cycleMaxAge, 'days')
+    const cutoffDay = new Date()
+    cutoffDay.setDate(cutoffDay.getDate() - config.feeds.cycleMaxAge)
+    this.cutoffDay = cutoffDay
   }
 
   /**
@@ -317,11 +318,12 @@ class LinkLogic extends EventEmitter {
     const { toUpdate, customComparisonsToUpdate } = this
     // Prepare it for update in the database
     if (customComparisonsToUpdate.has(comparisonName)) {
-      if (!article.customComparisons) {
-        article.customComparisons = {}
+      toUpdate[article._id] = {
+        ...article,
+        customComparisons: {
+          [comparisonName]: article[comparisonName]
+        }
       }
-      article.customComparisons[comparisonName] = article[comparisonName]
-      toUpdate[article._id] = article
     }
   }
 

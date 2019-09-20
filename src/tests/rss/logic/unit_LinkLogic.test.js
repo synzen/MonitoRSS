@@ -1,4 +1,5 @@
 const LinkLogic = require('../../../rss/logic/LinkLogic.js')
+const ArticleModel = require('../../../models/Article.js')
 const ArticleIDResolver = require('../../../structs/ArticleIDResolver.js')
 const dbCmds = require('../../../rss/db/commands.js')
 
@@ -8,12 +9,75 @@ jest.mock('../../../rss/db/commands.js')
 jest.mock('../../../util/logger.js')
 jest.mock('../../../config.js')
 jest.mock('../../../structs/ArticleIDResolver.js')
+jest.mock('../../../models/Article.js')
 
 describe('Unit::LinkLogic', function () {
   describe('run()', function () {
+    afterEach(function () {
+      dbCmds.update.mockReset()
+    })
     it('throws an error if no scheduleName is defined', function () {
       const logic = new LinkLogic(DEFAULT_DATA)
       return expect(logic.run()).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('schedule') }))
+    })
+    it('returns the correct object with no db IDs for non-memory database', async function () {
+      const link = 'atgedi'
+      const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc' })
+      logic.getDataFromDocuments = async () => Promise.resolve()
+      logic.articleListTasks = async () => Promise.resolve()
+      const results = await logic.run()
+      expect(results).toEqual({ link, feedCollection: undefined, feedCollectionId: undefined })
+    })
+    it('returns the correct object with no db IDs for memory database', async function () {
+      const link = 'atgedi'
+      const feedCollectionId = 'aqetwh4'
+      const feedData = { [feedCollectionId]: [ 'abc' ] }
+      const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc', feedData })
+      ArticleModel.getCollectionID.mockReturnValueOnce(feedCollectionId)
+      logic.getDataFromDocuments = async () => Promise.resolve()
+      logic.articleListTasks = async () => Promise.resolve()
+      const results = await logic.run()
+      expect(results).toEqual({ link, feedCollection: feedData[feedCollectionId], feedCollectionId })
+    })
+    it('returns the correct object with IDs for non-memory database', async function () {
+      const link = 'atgedi'
+      const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc', rssList: {} })
+      logic.dbIDs.add('abc')
+      logic.getDataFromDocuments = async () => Promise.resolve()
+      logic.articleListTasks = async () => Promise.resolve()
+      logic.validateCustomComparisons = jest.fn()
+      logic.checkIfNewArticle = jest.fn()
+      const results = await logic.run()
+      expect(results).toEqual({ link, feedCollection: undefined, feedCollectionId: undefined })
+    })
+    it('returns the correct object with IDs for memory database', async function () {
+      const link = 'atgedi'
+      const feedCollectionId = 'aqetwh4'
+      const feedData = { [feedCollectionId]: [ 'abc' ] }
+      const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc', rssList: {}, feedData })
+      logic.dbIDs.add('abc')
+      logic.getDataFromDocuments = async () => Promise.resolve()
+      logic.articleListTasks = async () => Promise.resolve()
+      logic.validateCustomComparisons = jest.fn()
+      logic.checkIfNewArticle = jest.fn()
+      ArticleModel.getCollectionID.mockReturnValueOnce(feedCollectionId)
+      const results = await logic.run()
+      expect(results).toEqual({ link, feedCollection: feedData[feedCollectionId], feedCollectionId: feedCollectionId })
+    })
+    it('calls dbCmds.update for articles in toUpdate', async function () {
+      const logic = new LinkLogic({ ...DEFAULT_DATA, scheduleName: 'abc', rssList: {} })
+      logic.dbIDs.add('abc')
+      const article1 = { foo: '1' }
+      const article2 = { bar: '2' }
+      logic.toUpdate['asd'] = article1
+      logic.toUpdate['asd2'] = article2
+      logic.getDataFromDocuments = async () => Promise.resolve()
+      logic.articleListTasks = async () => Promise.resolve()
+      logic.validateCustomComparisons = jest.fn()
+      logic.checkIfNewArticle = jest.fn()
+      await logic.run()
+      expect(dbCmds.update).toHaveBeenCalledWith(undefined, article1)
+      expect(dbCmds.update).toHaveBeenCalledWith(undefined, article2)
     })
   })
   describe('getDataFromDocuments()', function () {
@@ -413,12 +477,14 @@ describe('Unit::LinkLogic', function () {
   describe('updateArticleCCValues()', function () {
     it('adds the article comparison value to article.customComparisons if article.customComparisons does not exist', function () {
       const comparisonName = 'abc'
-      const article = { foo: 'bar', [comparisonName]: 'hodunk' }
+      const articleID = 'aedf'
+      const article = { foo: 'bar', [comparisonName]: 'hodunk', _id: articleID }
       const logic = new LinkLogic(DEFAULT_DATA)
       logic.customComparisonsToUpdate.add(comparisonName)
       logic.updateArticleCCValues(article, comparisonName)
-      expect(article.customComparisons).toHaveProperty(comparisonName)
-      expect(article.customComparisons[comparisonName]).toEqual(article[comparisonName])
+      expect(logic.toUpdate[articleID].customComparisons).toBeDefined()
+      expect(logic.toUpdate[articleID].customComparisons).toHaveProperty(comparisonName)
+      expect(logic.toUpdate[articleID].customComparisons[comparisonName]).toEqual(article[comparisonName])
     })
     it('adds the article to this.toUpdate', function () {
       const comparisonName = 'abc'
