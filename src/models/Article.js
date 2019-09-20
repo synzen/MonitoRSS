@@ -1,3 +1,4 @@
+const URL = require('url').URL
 const mongoose = require('mongoose')
 const dbSettings = require('../config.js').database
 const articlesExpire = dbSettings.clean === true && (dbSettings.articlesExpire > 0 || dbSettings.articlesExpire === -1) ? dbSettings.articlesExpire : 14
