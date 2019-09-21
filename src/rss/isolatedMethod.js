@@ -1,10 +1,10 @@
 const logLinkErrs = require('../config.js').log.linkErrs
 const connectDb = require('./db/connect.js')
-const processSources = require('./logic/shared.js')
 const log = require('../util/logger.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
+const LinkLogic = require('./logic/LinkLogic.js')
 
 async function getFeed (data, callback) {
   const { link, rssList, headers } = data
@@ -40,7 +40,9 @@ async function getFeed (data, callback) {
     if (articleList.length === 0) {
       return process.send({ status: 'success', link: link })
     }
-    const { feedCollection, feedCollectionId } = await processSources({ articleList, useIdType: idType, ...data }, article => process.send(article))
+    const logic = new LinkLogic({ articleList, useIdType: idType, ...data })
+    logic.on('article', article => process.send({ status: 'article', article }))
+    const { feedCollection, feedCollectionId } = await logic.run()
     process.send({ status: 'success', feedCollection, feedCollectionId, link })
   } catch (err) {
     if (err instanceof RequestError || err instanceof FeedParserError) {

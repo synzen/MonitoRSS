@@ -267,6 +267,7 @@ class LinkLogic extends EventEmitter {
     }
 
     if (!seen) {
+      if (toDebug) log.debug.info(`${rssName}: Emitting article (ID: ${article._id}, TITLE: ${article.title}) for default checks.`)
       this.emit('article', LinkLogic.formatArticle(article, source, rssName))
       return
     }
