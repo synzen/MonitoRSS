@@ -166,10 +166,10 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
 }
 
 module.exports = class Article {
-  constructor (raw, source, dateSettings) {
+  constructor (raw, source) {
     this.id = raw._id || null
     this.source = source
-    this.dateSettings = dateSettings
+    this.dateSettings = source.dateSettings
     this.raw = raw
     this.encoding = raw.meta['#xml'].encoding ? raw.meta['#xml'].encoding.toLowerCase() : 'utf-8'
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
@@ -213,15 +213,15 @@ module.exports = class Article {
 
     // Date
     if (raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') {
-      const guildTimezone = dateSettings.timezone
+      const guildTimezone = this.dateSettings.timezone
       const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feeds.timezone
-      const dateFormat = dateSettings.format ? dateSettings.format : config.feeds.dateFormat
+      const dateFormat = this.dateSettings.format ? this.dateSettings.format : config.feeds.dateFormat
 
       const useDateFallback = config.feeds.dateFallback === true && (!raw.pubdate || raw.pubdate.toString() === 'Invalid Date')
       const useTimeFallback = config.feeds.timeFallback === true && raw.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(raw.pubdate)
       const date = useDateFallback ? new Date() : raw.pubdate
       const localMoment = moment(date)
-      if (dateSettings.language) localMoment.locale(dateSettings.language)
+      if (this.dateSettings.language) localMoment.locale(this.dateSettings.language)
       const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       this.date = vanityDate !== 'Invalid Date' ? vanityDate : ''
       if (this.date) this.placeholders.push('date')

@@ -31,18 +31,19 @@ module.exports = async (bot, message, command) => {
     }
     article._delivery = {
       rssName,
-      channelId: message.channel.id,
-      dateSettings: {
-        timezone: guildRss.timezone,
-        format: guildRss.dateFormat,
-        language: guildRss.dateLanguage
+      source: {
+        ...source,
+        dateSettings: {
+          timezone: guildRss.timezone,
+          format: guildRss.dateFormat,
+          language: guildRss.dateLanguage
+        }
       }
     }
     if (config._vip && source.webhook && !(await dbOpsVips.isVipServer(message.guild.id))) {
       log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
       delete guildRss.sources[rssName].webhook
     }
-    article._delivery.source = source
 
     const queue = new ArticleMessageQueue()
     await queue.enqueue(article, !simple, true)

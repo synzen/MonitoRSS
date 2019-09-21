@@ -107,18 +107,19 @@ module.exports = async (bot, message, command, role) => {
       log.command.info(`Sending filtered article for ${source.link}`, message.guild)
       article._delivery = {
         rssName,
-        channelId: message.channel.id,
-        dateSettings: {
-          timezone: guildRss.timezone,
-          format: guildRss.dateFormat,
-          language: guildRss.dateLanguage
+        source: {
+          ...source,
+          dateSettings: {
+            timezone: guildRss.timezone,
+            format: guildRss.dateFormat,
+            language: guildRss.dateLanguage
+          }
         }
       }
       if (source.webhook && !(await dbOpsVips.isVipServer(message.guild.id))) {
         log.general.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
         delete guildRss.sources[rssName].webhook
       }
-      article._delivery.source = guildRss.sources[rssName]
 
       const queue = new ArticleMessageQueue()
       await queue.enqueue(article, true, true)
