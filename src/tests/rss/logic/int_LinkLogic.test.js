@@ -62,7 +62,7 @@ describe('Int::LinkLogic', function () {
       },
       articleList: [
         { guid: '1', title: 'a' },
-        { guid: '2', title: 'b' },
+        { guid: '2', title: 'b' }
       ],
       runNum: 1,
       scheduleName: 'default',

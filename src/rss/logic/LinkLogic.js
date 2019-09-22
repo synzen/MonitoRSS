@@ -26,7 +26,7 @@ const log = require('../../util/logger.js')
  * @property {FeedArticle[]} articleList - Feed articles
  * @property {string[]} debugFeeds - Array of feed IDs to show debug info for
  * @property {string} link - The feed URL
- * @property {number} shardId - The shard ID of the parent process, if the bot is sharded
+ * @property {number} shardID - The shard ID of the parent process, if the bot is sharded
  * @property {Object} config - config.js values
  * @property {string} scheduleName - The calling process's schedule name
  * @property {number} runNum - Number of times this schedule has run so far
@@ -40,11 +40,11 @@ class LinkLogic extends EventEmitter {
    */
   constructor (data) {
     super()
-    const { rssList, articleList, debugFeeds, link, shardId, config, feedData, scheduleName, runNum, useIdType } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+    const { rssList, articleList, debugFeeds, link, shardID, config, feedData, scheduleName, runNum, useIdType } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
     this.rssList = rssList
     this.articleList = articleList
     this.link = link
-    this.shardId = shardId
+    this.shardID = shardID
     this.config = config
     this.feedData = feedData
     this.scheduleName = scheduleName
@@ -329,11 +329,11 @@ class LinkLogic extends EventEmitter {
   }
 
   async run () {
-    const { scheduleName, link, shardId, feedData, rssList, toUpdate, dbIDs, articleList, dbTitles, debug } = this
+    const { scheduleName, link, shardID, feedData, rssList, toUpdate, dbIDs, articleList, dbTitles, debug } = this
     if (!scheduleName) {
       throw new Error('Missing schedule name for shared logic')
     }
-    const collectionID = ArticleModel.getCollectionID(link, shardId, scheduleName)
+    const collectionID = ArticleModel.getCollectionID(link, shardID, scheduleName)
     const Feed = ArticleModel.modelByID(collectionID)
     const feedCollectionId = feedData ? collectionID : undefined
     const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
