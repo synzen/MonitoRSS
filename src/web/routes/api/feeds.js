@@ -43,7 +43,7 @@ async function getUrl (req, res, next) {
       const { articleList } = await FeedFetcher.fetchFeed(feedUrl)
       for (const article of articleList) {
         const articlePlaceholders = {}
-        const parsed = new Article(article, {}, DATE_SETTINGS)
+        const parsed = new Article(article, { dateSettings: DATE_SETTINGS })
         for (const placeholder of parsed.placeholders) {
           articlePlaceholders[placeholder] = parsed[placeholder]
         }

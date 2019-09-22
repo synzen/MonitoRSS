@@ -127,7 +127,7 @@ async function getFeedPlaceholders (req, res, next) {
     if (articleList.length === 0) return res.json([])
     const allPlaceholders = []
     for (const article of articleList) {
-      const parsed = new Article(article, req.source, dateSettings)
+      const parsed = new Article(article, { ...req.source, dateSettings })
       const articlePlaceholders = {}
       for (const placeholder of parsed.placeholders) {
         articlePlaceholders[placeholder] = parsed[placeholder]
