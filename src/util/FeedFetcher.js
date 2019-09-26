@@ -201,7 +201,7 @@ class FeedFetcher {
     }
     const filtered = []
     for (const article of articleList) {
-      if (testFilters(filters, new Article(article, {}, {})).passed) {
+      if (testFilters(filters, new Article(article, { dateSettings: {} })).passed) {
         filtered.push(article)
       }
     }
