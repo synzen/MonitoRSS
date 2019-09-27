@@ -7,6 +7,7 @@ class _FilterResults {
   constructor () {
     this.matches = {}
     this.invertedMatches = {}
+    this.passed = true
   }
 
   add (type, matches, inverted) {

@@ -3,8 +3,10 @@ const storage = require('../util/storage.js')
 const TEST_OPTIONS = { split: { prepend: '```md\n', append: '```' } }
 const log = require('../util/logger.js')
 const debugFeeds = require('../util/debugFeeds.js').list
-const translate = require('../rss/translator/translate.js')
+const generateEmbeds = require('../rss/translator/embed.js')
+const Article = require('./Article.js')
 const deletedFeeds = storage.deletedFeeds
+const testFilters = require('../rss/translator/filters.js')
 
 class ArticleMessage {
   constructor (article, isTestMessage, skipFilters) {
@@ -23,7 +25,16 @@ class ArticleMessage {
     this.source = article._delivery.source
     this.toggleRoleMentions = typeof this.source.toggleRoleMentions === 'boolean' ? this.source.toggleRoleMentions : config.feeds.toggleRoleMentions
     this.split = this.source.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
-    this._translate()
+    this.parsedArticle = new Article(article, this.source, this.article._delivery.source.dateSettings)
+    this.subscriptionIds = this.parsedArticle.subscriptionIds
+
+    this.filterResults = testFilters(this.source.filters, this.parsedArticle)
+    this.passedFilters = this.source.filters ? this.filterResults.passed : true
+
+    const { embeds, text } = this.generateMessage()
+    this.text = text
+    this.embeds = embeds
+    this.testDetails = isTestMessage ? this.generateTestMessage() : ''
   }
 
   async _resolveChannel () {
@@ -47,14 +58,93 @@ class ArticleMessage {
     }
   }
 
-  _translate (ignoreLimits) {
-    const results = translate(this.article._delivery.source, this.article, this.isTestMessage, ignoreLimits, this.article._delivery.source.dateSettings)
-    this.parsedArticle = results.parsedArticle
-    this.subscriptionIds = this.parsedArticle.subscriptionIds
-    this.passedFilters = results.passedFilters
-    this.testDetails = results.testDetails
-    this.embeds = results.embeds
-    this.text = results.text
+  generateMessage (ignoreLimits = !!this.source.splitMessage) {
+    const { source, parsedArticle } = this
+    let textFormat = source.message === undefined ? source.message : source.message.trim()
+    let embedFormat = source.embeds
+
+    // See if there are any filter-specific messages
+    if (Array.isArray(source.filteredFormats)) {
+      let matched = { }
+      let highestPriority = -1
+      let selectedFormat
+      const filteredFormats = source.filteredFormats
+      for (const filteredFormat of filteredFormats) {
+        const thisPriority = filteredFormat.priority === undefined || filteredFormat.priority < 0 ? 0 : filteredFormat.priority
+        const res = testFilters(filteredFormat.filters, parsedArticle) // messageFiltered.filters must exist as an object
+        if (!res.passed) continue
+        matched[thisPriority] = matched[thisPriority] === undefined ? 1 : matched[thisPriority] + 1
+        if (thisPriority >= highestPriority) {
+          highestPriority = thisPriority
+          selectedFormat = filteredFormat
+        }
+      }
+      // Only formats with 1 match will get the filtered format
+      if (highestPriority > -1 && matched[highestPriority] === 1) {
+        textFormat = selectedFormat.message === true ? textFormat : selectedFormat.message // If it's true, then it will use the feed's (or the config default, if applicable) message
+        embedFormat = selectedFormat.embeds === true ? embedFormat : selectedFormat.embeds
+      }
+    }
+
+    if (!textFormat) {
+      textFormat = config.feeds.defaultMessage.trim()
+    }
+
+    // Determine what the text is, based on whether an embed exists
+    if (Array.isArray(embedFormat) && embedFormat.length > 0) {
+      const embeds = generateEmbeds(embedFormat, parsedArticle)
+      const text = textFormat === '{empty}' ? '' : parsedArticle.convertKeywords(textFormat, ignoreLimits)
+      return { embeds, text }
+    } else {
+      const text = parsedArticle.convertKeywords(textFormat === '{empty}' ? config.feeds.defaultMessage : textFormat, ignoreLimits)
+      return { text }
+    }
+  }
+
+  generateTestMessage () {
+    const { parsedArticle, filterResults } = this
+    let testDetails = ''
+    const footer = '\nBelow is the configured message to be sent for this feed:\n\n--'
+    testDetails += `\`\`\`Markdown\n# BEGIN TEST DETAILS #\`\`\`\`\`\`Markdown`
+
+    if (parsedArticle.title) {
+      testDetails += `\n\n[Title]: {title}\n${parsedArticle.title}`
+    }
+
+    if (parsedArticle.summary && parsedArticle.summary !== parsedArticle.description) { // Do not add summary if summary === description
+      let testSummary
+      if (parsedArticle.description && parsedArticle.description.length > 500) {
+        testSummary = (parsedArticle.summary.length > 500) ? `${parsedArticle.summary.slice(0, 490)} [...]\n\n**(Truncated summary for shorter rsstest)**` : parsedArticle.summary // If description is long, truncate summary.
+      } else {
+        testSummary = parsedArticle.summary
+      }
+      testDetails += `\n\n[Summary]: {summary}\n${testSummary}`
+    }
+
+    if (parsedArticle.description) {
+      let testDescrip
+      if (parsedArticle.summary && parsedArticle.summary.length > 500) {
+        testDescrip = (parsedArticle.description.length > 500) ? `${parsedArticle.description.slice(0, 490)} [...]\n\n**(Truncated description for shorter rsstest)**` : parsedArticle.description // If summary is long, truncate description.
+      } else {
+        testDescrip = parsedArticle.description
+      }
+      testDetails += `\n\n[Description]: {description}\n${testDescrip}`
+    }
+
+    if (parsedArticle.date) testDetails += `\n\n[Published Date]: {date}\n${parsedArticle.date}`
+    if (parsedArticle.author) testDetails += `\n\n[Author]: {author}\n${parsedArticle.author}`
+    if (parsedArticle.link) testDetails += `\n\n[Link]: {link}\n${parsedArticle.link}`
+    if (parsedArticle.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${parsedArticle.subscriptions.split(' ').length - 1} subscriber(s)`
+    if (parsedArticle.images) testDetails += `\n\n${parsedArticle.listImages()}`
+    const placeholderImgs = parsedArticle.listPlaceholderImages()
+    if (placeholderImgs) testDetails += `\n\n${placeholderImgs}`
+    const placeholderAnchors = parsedArticle.listPlaceholderAnchors()
+    if (placeholderAnchors) testDetails += `\n\n${placeholderAnchors}`
+    if (parsedArticle.tags) testDetails += `\n\n[Tags]: {tags}\n${parsedArticle.tags}`
+    if (this.source.filters) testDetails += `\n\n[Passed Filters?]: ${this.passedFilters ? 'Yes' : 'No'}${this.passedFilters ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
+    testDetails += '```' + footer
+
+    return testDetails
   }
 
   async send () {
@@ -89,18 +179,22 @@ class ArticleMessage {
         return this.send()
       } else return m
     } catch (err) {
-      if (this.split && err.message.includes('2000 or fewer in length')) {
-        delete this.split
-        this._translate(false)
-        return this.send()
-      }
-      if (this.split && err.message.includes('no split characters')) {
-        this._translate(false) // Retranslate with the character limits for individual placeholders again
-        return this.send()
-      }
       if (err.code === 50013 || this.sendFailed++ === 4) { // 50013 = Missing Permissions
         if (debugFeeds.includes(this.rssName)) log.debug.error(`${this.rssName}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
         throw err
+      }
+      if (this.split) {
+        const tooLong = err.message.includes('2000 or fewer in length')
+        const noSplitChar = err.message.includes('no split characters')
+        if (tooLong) {
+          delete this.split
+        }
+        if (tooLong || noSplitChar) {
+          const messageWithCharacterLimits = this.generateMessage(false) // Regenerate with the character limits for individual placeholders again
+          this.embeds = messageWithCharacterLimits.embeds
+          this.text = messageWithCharacterLimits.text
+          return this.send()
+        }
       }
       return this.send()
     }
