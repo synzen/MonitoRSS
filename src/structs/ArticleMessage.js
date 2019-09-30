@@ -13,6 +13,7 @@ const testFilters = require('../rss/translator/filters.js')
  * @property {string} rssName - The feed ID where this article came from
  * @property {Object} _delivery - Delivery details
  * @property {Object} _delivery.source - The feed source where this article came from
+ * @property {string} _delivery.rssName - The feed ID where this article came from
  */
 
 class ArticleMessage {
@@ -21,7 +22,7 @@ class ArticleMessage {
    * @param {boolean} isTestMessage - Whether this should skip filters AND have test details
    * @param {boolean} skipFilters - Whether this should skip filters
    */
-  constructor (article, isTestMessage, skipFilters) {
+  constructor (article, isTestMessage = false, skipFilters = false) {
     if (!article._delivery) throw new Error('article._delivery property missing')
     if (!article._delivery.rssName) throw new Error('article._delivery.rssName property missing')
     if (!article._delivery.source) throw new Error('article._delivery.source property missing')
@@ -41,7 +42,7 @@ class ArticleMessage {
     this.subscriptionIds = this.parsedArticle.subscriptionIds
 
     this.filterResults = testFilters(this.source.filters, this.parsedArticle)
-    this.passedFilters = this.source.filters ? this.filterResults.passed : true
+    this.passedFilters = this.source.filters && !this.skipFilters ? this.filterResults.passed : true
 
     const { embeds, text } = this._generateMessage()
     this.text = text
