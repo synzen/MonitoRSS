@@ -497,7 +497,7 @@ module.exports = class Article {
   }
 
   // replace simple keywords
-  convertKeywords (word, ignoreCharLimits) {
+  convertKeywords (word = '', ignoreCharLimits) {
     if (word.length === 0) return word
     let content = word.replace(/{date}/g, this.date)
       .replace(/{title}/g, ignoreCharLimits ? this._fullTitle : this.title)

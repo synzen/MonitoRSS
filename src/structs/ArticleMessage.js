@@ -92,49 +92,53 @@ class ArticleMessage {
     for (const objectEmbed of embeds) {
       const richEmbed = new Discord.RichEmbed()
 
-      if (objectEmbed.title) {
-        const t = parsedArticle.convertKeywords(objectEmbed.title)
-        richEmbed.setTitle(t.length > 256 ? t.slice(0, 250) + '...' : t)
+      const title = convert(objectEmbed.title)
+      if (title) {
+        richEmbed.setTitle(title.length > 256 ? title.slice(0, 250) + '...' : title)
       }
 
-      if (objectEmbed.description) {
-        richEmbed.setDescription(parsedArticle.convertKeywords(objectEmbed.description))
-      }
-      if (objectEmbed.url) {
-        richEmbed.setURL(parsedArticle.convertKeywords(objectEmbed.url))
+      const description = convert(objectEmbed.description)
+      if (description) {
+        richEmbed.setDescription(description)
       }
 
-      if (objectEmbed.color !== null && objectEmbed.color !== undefined && !isNaN(objectEmbed.color) && objectEmbed.color <= 16777215 && objectEmbed.color >= 0) {
-        richEmbed.setColor(parseInt(objectEmbed.color, 10))
-      } else if (objectEmbed.color && objectEmbed.color.startsWith('#') && objectEmbed.color.length === 7) {
-        richEmbed.setColor(objectEmbed.color)
+      const url = convert(objectEmbed.url)
+      if (url) {
+        richEmbed.setURL(url)
       }
 
-      const footerText = objectEmbed.footer_text || objectEmbed.footerText
-      const footerIconURL = objectEmbed.footer_icon_url || objectEmbed.footerIconUrl
+      const color = objectEmbed.color
+      if (color !== null && color !== undefined && !isNaN(color) && color <= 16777215 && color >= 0) {
+        richEmbed.setColor(parseInt(color, 10))
+      } else if (color && color.startsWith('#') && color.length === 7) {
+        richEmbed.setColor(color)
+      }
+
+      const footerText = convert(objectEmbed.footer_text || objectEmbed.footerText)
+      const footerIconURL = convert(objectEmbed.footer_icon_url || objectEmbed.footerIconUrl)
       if (footerText) {
-        richEmbed.setFooter(convert(footerText), footerIconURL ? convert(footerIconURL) : undefined)
+        richEmbed.setFooter(footerText, footerIconURL)
       }
 
-      const authorName = objectEmbed.author_name || objectEmbed.authorName
-      const authorIconURL = objectEmbed.author_icon_url || objectEmbed.authorIconUrl
+      const authorName = convert(objectEmbed.author_name || objectEmbed.authorName)
+      const authorIconURL = convert(objectEmbed.author_icon_url || objectEmbed.authorIconUrl)
       if (authorName) {
-        richEmbed.setAuthor(convert(authorName), authorIconURL ? convert(authorIconURL) : undefined)
+        richEmbed.setAuthor(authorName, authorIconURL)
       }
 
-      const thumbnailURL = objectEmbed.thumbnail_url || objectEmbed.thumbnailUrl
+      const thumbnailURL = convert(objectEmbed.thumbnail_url || objectEmbed.thumbnailUrl)
       if (thumbnailURL) {
         richEmbed.setThumbnail(thumbnailURL)
       }
 
-      const imageURL = objectEmbed.image_url || objectEmbed.imageUrl
+      const imageURL = convert(objectEmbed.image_url || objectEmbed.imageUrl)
       if (imageURL) {
         richEmbed.setImage(imageURL)
       }
 
-      if (objectEmbed.timestamp) {
-        const setting = objectEmbed.timestamp
-        richEmbed.setTimestamp(setting === 'article' ? new Date(parsedArticle._fullDate) : setting === 'now' ? new Date() : new Date(setting)) // No need to check for invalid date since discord.js does it
+      const timestamp = objectEmbed.timestamp
+      if (timestamp) {
+        richEmbed.setTimestamp(timestamp === 'article' ? new Date(parsedArticle._fullDate) : timestamp === 'now' ? new Date() : new Date(timestamp)) // No need to check for invalid date since discord.js does it
       }
 
       const fields = objectEmbed.fields
@@ -143,10 +147,10 @@ class ArticleMessage {
           const field = fields[x]
           const inline = field.inline === true
 
-          let title = parsedArticle.convertKeywords(field.title)
+          let title = convert(field.title)
           title = title.length > 256 ? title.slice(0, 250) + '...' : title
 
-          let value = parsedArticle.convertKeywords(field.value ? field.value : '')
+          let value = convert(field.value ? field.value : '')
           value = value.length > 1024 ? value.slice(0, 1020) + '...' : value.length > 0 ? value : '\u200b'
 
           if (typeof title === 'string' && !title) {
