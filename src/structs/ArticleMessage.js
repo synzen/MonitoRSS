@@ -244,18 +244,8 @@ class ArticleMessage {
     return testDetails
   }
 
-  async send () {
-    if (!this.source) throw new Error('Missing feed source')
-    if (!this.channel) throw new Error('Missing feed channel')
-    await this._resolveWebhook()
-    if (!this.skipFilters && !this.passedFilters) {
-      if (config.log.unfiltered === true) log.general.info(`'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`, this.channel)
-      return
-    }
-    if (deletedFeeds.includes(this.rssName)) throw new Error(`${this.rssName} for channel ${this.channel.id} was deleted during cycle`)
-
-    // Set up the send options
-    const textContent = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embeds ? `Unable to send empty message for feed article <${this.article.link}> (${this.rssName}).` : this.text
+  _createSendOptions () {
+    const text = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embeds ? `Unable to send empty message for feed article <${this.article.link}> (${this.rssName}).` : this.text
     const options = this.isTestMessage ? TEST_OPTIONS : {}
     if (this.webhook) {
       options.username = this.webhook.name
@@ -266,15 +256,31 @@ class ArticleMessage {
       else options.embed = this.embeds[0]
     }
     if (!this.isTestMessage) options.split = this.split
+    return { text, options }
+  }
+
+  async send () {
+    if (!this.source) throw new Error('Missing feed source')
+    if (!this.channel) throw new Error('Missing feed channel')
+    await this._resolveWebhook()
+    if (!this.passedFilters) {
+      if (config.log.unfiltered === true) log.general.info(`'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`, this.channel)
+      return
+    }
+    if (deletedFeeds.includes(this.rssName)) throw new Error(`${this.rssName} for channel ${this.channel.id} was deleted during cycle`)
+
+    const { text, options } = this._createSendOptions()
 
     // Send the message, and repeat attempt if failed
     const medium = this.webhook ? this.webhook : this.channel
     try {
-      const m = await medium.send(textContent, options)
+      const m = await medium.send(text, options)
       if (this.isTestMessage) {
         this.isTestMessage = false
         return this.send()
-      } else return m
+      } else {
+        return m
+      }
     } catch (err) {
       if (err.code === 50013 || this.sendFailed++ === 4) { // 50013 = Missing Permissions
         if (debugFeeds.includes(this.rssName)) log.debug.error(`${this.rssName}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
@@ -290,7 +296,6 @@ class ArticleMessage {
           const messageWithCharacterLimits = this._generateMessage(false) // Regenerate with the character limits for individual placeholders again
           this.embeds = messageWithCharacterLimits.embeds
           this.text = messageWithCharacterLimits.text
-          return this.send()
         }
       }
       return this.send()

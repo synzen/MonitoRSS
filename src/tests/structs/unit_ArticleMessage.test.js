@@ -80,7 +80,125 @@ describe('Unit::ArticleMessage', function () {
     })
   })
   describe('send()', function () {
-    it.todo('throws an error if missing source')
-    it.todo('throws an error if missing channel')
+    const rawArticle = { _delivery: { rssName: 'hel', source: {} } }
+    beforeAll(function () {
+      const generatedMessage = { text: 'awszf', embeds: [1, 2] }
+      jest.spyOn(ArticleMessage.prototype, '_resolveWebhook').mockImplementation()
+      jest.spyOn(ArticleMessage.prototype, '_createSendOptions').mockImplementation(() => generatedMessage)
+    })
+    afterAll(function () {
+      jest.restoreAllMocks()
+    })
+    it('throws an error if missing source', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.source = undefined
+      return expect(m.send()).rejects.toBeInstanceOf(Error)
+    })
+    it('throws an error if missing channel', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.channel = undefined
+      return expect(m.send()).rejects.toBeInstanceOf(Error)
+    })
+    it('does not send the article if it did not pass filters', async function () {
+      const m = new ArticleMessage(rawArticle)
+      const medium = { send: jest.fn(async () => Promise.resolve()) }
+      m.passedFilters = false
+      m.channel = medium
+      await m.send()
+      expect(medium.send).not.toHaveBeenCalled()
+    })
+    it('sends via webhook if it exists', async function () {
+      const m = new ArticleMessage(rawArticle)
+      const channel = { send: jest.fn(async () => Promise.resolve()) }
+      const webhook = { send: jest.fn(async () => Promise.resolve()) }
+      m.channel = channel
+      m.webhook = webhook
+      await m.send()
+      expect(webhook.send).toHaveBeenCalledTimes(1)
+    })
+    it('throws the same error that channel.send throws ', async function () {
+      const m = new ArticleMessage(rawArticle)
+      const error = new Error('hello world')
+      error.code = 5555
+      const channel = { send: jest.fn(async () => Promise.reject(error)) }
+      m.channel = channel
+      try {
+        await m.send()
+        throw new Error('Send promise resolved')
+      } catch (err) {
+        expect(err).toEqual(error)
+      }
+    })
+    it('does not retry if errorCode is 50013', async function () {
+      const m = new ArticleMessage(rawArticle)
+      const error = new Error('hello world')
+      error.code = 50013
+      const channel = { send: jest.fn(async () => Promise.reject(error)) }
+      m.channel = channel
+      try {
+        await m.send()
+        throw new Error('Send promise resolved')
+      } catch (err) {
+        expect(channel.send).toHaveBeenCalledTimes(1)
+      }
+    })
+    it('retries a maximum of 4 times with an unrecognized error', async function () {
+      const m = new ArticleMessage(rawArticle)
+      const error = new Error('hello world')
+      const channel = { send: jest.fn(async () => Promise.reject(error)) }
+      m.channel = channel
+      try {
+        await m.send()
+        throw new Error('Send promise resolved')
+      } catch (err) {
+        expect(channel.send).toHaveBeenCalledTimes(4)
+      }
+    })
+    it('sends two times and sets isTestMessage to false on second run', async function () {
+      const m = new ArticleMessage(rawArticle)
+      const channel = { send: jest.fn(async () => Promise.resolve()) }
+      m.channel = channel
+      m.isTestMessage = true
+      await m.send()
+      expect(m.isTestMessage).toEqual(false)
+      expect(channel.send).toHaveBeenCalledTimes(2)
+    })
+    it('regenerates message with character limits if this.split is true and error is about message with >2000 chars', async function () {
+      const generated = {
+        embeds: [1, 2, 3],
+        text: 'adsefgrth'
+      }
+      const m = new ArticleMessage(rawArticle)
+      jest.spyOn(m, '_generateMessage').mockReturnValueOnce(generated)
+      const error = new Error('2000 or fewer in length')
+      const channel = { send: jest.fn(async () => Promise.resolve()) }
+      channel.send.mockImplementationOnce(async () => Promise.reject(error))
+      m.channel = channel
+      m.split = { a: 1 }
+      await m.send()
+      expect(channel.send).toHaveBeenCalledTimes(2)
+      expect(m.split).toBeUndefined()
+      expect(m.text).toEqual(generated.text)
+      expect(m.embeds).toEqual(generated.embeds)
+    })
+    it.only('regenerates message with character limits if this.split is true and error is about no split characters', async function () {
+      const generated = {
+        embeds: [1, 6, 3],
+        text: 'adsefftjgugrth'
+      }
+      const splitOptions = { b: 2 }
+      const m = new ArticleMessage(rawArticle)
+      jest.spyOn(m, '_generateMessage').mockReturnValueOnce(generated)
+      const error = new Error('no split characters')
+      const channel = { send: jest.fn(async () => Promise.resolve()) }
+      channel.send.mockImplementationOnce(async () => Promise.reject(error))
+      m.channel = channel
+      m.split = splitOptions
+      await m.send()
+      expect(channel.send).toHaveBeenCalledTimes(2)
+      expect(m.split).toEqual(splitOptions)
+      expect(m.text).toEqual(generated.text)
+      expect(m.embeds).toEqual(generated.embeds)
+    })
   })
 })
