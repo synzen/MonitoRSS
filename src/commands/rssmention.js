@@ -244,15 +244,15 @@ async function selectOptionFn (m, data) {
 
     if (optionSelected === '2') { // Filtered Sub Menu
       const filteredSubMenu = new MenuUtils.Menu(m, filteredSubMenuFn)
-        .setAuthor(translate('commands.rssmention.globalSubscriptionsTitle'))
-        .addOption(translate('commands.rssmention.globalSubscriptionsOptionAdd'), translate('commands.rssmention.globalSubscriptionsOptionAddDescription'))
-        .addOption(translate('commands.rssmention.globalSubscriptionsOptionRemove'), translate('commands.rssmention.globalSubscriptionsOptionRemoveDescription'))
-      nextData.next = { menu: [getUserOrRole, feedSelector, filteredSubMenu] }
-    } else { // Global Sub Menu
-      const globalSubMenu = new MenuUtils.Menu(m, globalSubMenuFn)
         .setAuthor(translate('commands.rssmention.filteredSubscriptionsTitle'))
         .addOption(translate('commands.rssmention.filteredSubscriptionsOptionAdd'), translate('commands.rssmention.filteredSubscriptionsOptionAddDescription'))
         .addOption(translate('commands.rssmention.filteredSubscriptionsOptionRemove'), translate('commands.rssmention.filteredSubscriptionsOptionRemoveDescription'))
+      nextData.next = { menu: [getUserOrRole, feedSelector, filteredSubMenu] }
+    } else { // Global Sub Menu
+      const globalSubMenu = new MenuUtils.Menu(m, globalSubMenuFn)
+        .setAuthor(translate('commands.rssmention.globalSubscriptionsTitle'))
+        .addOption(translate('commands.rssmention.globalSubscriptionsOptionAdd'), translate('commands.rssmention.globalSubscriptionsOptionAddDescription'))
+        .addOption(translate('commands.rssmention.globalSubscriptionsOptionRemove'), translate('commands.rssmention.globalSubscriptionsOptionRemoveDescription'))
       nextData.next = { menu: [getUserOrRole, feedSelector, globalSubMenu] }
     }
 

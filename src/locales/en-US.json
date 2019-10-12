@@ -366,7 +366,7 @@
       "removeAnySubscriberNone": "There are no subscribers to remove from the feed <{{link}}>.",
       "invalidRoleOrUser": "That is not a valid role or user. Try again, or type `exit` to cancel.",
       "multipleRoles": "There are multiple roles with that name. Mention the role, type another role/user, or type `exit` to cancel.",
-      "selectedRoleDescription": "**Selected**: {{name}}\n**Feed Title:** {{feedTitle}\n**Feed Link:** {{feedLink}}\n\nSelect an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
+      "selectedRoleDescription": "**Selected**: {{name}}\n**Feed Title:** {{feedTitle}}\n**Feed Link:** {{feedLink}}\n\nSelect an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
       "globalSubscribers": "**Global Subscribers:**\n",
       "filteredSubscribers": "**Filtered Subscribers:**\n"
     },
