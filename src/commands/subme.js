@@ -30,20 +30,19 @@ module.exports = async (bot, message, command) => {
     if (!options) {
       return await message.channel.send(translate('commands.subme.noEligible'))
     }
-    const mention = message.mentions.roles.first()
     const msgArr = message.content.split(' ')
     msgArr.shift()
     const predeclared = msgArr.join(' ').trim()
     if (predeclared) {
-      const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase())
+      const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase()) || message.mentions.roles.first()
       const links = []
-      if (role || mention) {
+      if (role) {
         for (const subscriptionData of options) {
           const roleIds = subscriptionData.roleList
           if (roleIds.includes(role.id)) links.push(subscriptionData.source.link)
         }
       }
-      if (links.length > 0 && (role || mention)) return addRole(message, role || mention, links, translate)
+      if (links.length > 0 && role) return addRole(message, role, links, translate)
       return await message.channel.send(translate('commands.subme.invalidRole', { prefix }))
     }
 
