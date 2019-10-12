@@ -181,7 +181,7 @@ describe('Unit::ArticleMessage', function () {
       expect(m.text).toEqual(generated.text)
       expect(m.embeds).toEqual(generated.embeds)
     })
-    it.only('regenerates message with character limits if this.split is true and error is about no split characters', async function () {
+    it('regenerates message with character limits if this.split is true and error is about no split characters', async function () {
       const generated = {
         embeds: [1, 6, 3],
         text: 'adsefftjgugrth'
@@ -199,6 +199,88 @@ describe('Unit::ArticleMessage', function () {
       expect(m.split).toEqual(splitOptions)
       expect(m.text).toEqual(generated.text)
       expect(m.embeds).toEqual(generated.embeds)
+    })
+  })
+  describe('_createSendOptions', function () {
+    const rawArticle = { _delivery: { rssName: 'hel', source: {} } }
+    beforeAll(function () {
+      jest.spyOn(ArticleMessage.prototype, '_convertEmbeds').mockImplementation()
+    })
+    afterAll(function () {
+      jest.restoreAllMocks()
+    })
+    it('returns text that is the test message if it is a test message', function () {
+      const testMessage = 'adzesgtwioug'
+      const m = new ArticleMessage(rawArticle)
+      m.isTestMessage = true
+      m.testDetails = testMessage
+      const data = m._createSendOptions()
+      expect(data.text).toEqual(testMessage)
+    })
+    it('returns the webhook if there is a webhook', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.webhook = { name: 'foo', avatar: 'bar' }
+      m.text = 'abc'
+      m.article = {}
+      const data = m._createSendOptions()
+      expect(data.options.username).toEqual('foo')
+      expect(data.options.avatarURL).toEqual('bar')
+    })
+    it('returns the text', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.text = 'abc'
+      m.article = {}
+      const data = m._createSendOptions()
+      expect(data.text).toEqual(m.text)
+    })
+    it('returns the first embed in a list of embeds if there is no webhook', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.text = 'abc'
+      m.embeds = [1, 2, 3]
+      const data = m._createSendOptions()
+      expect(data.options.embed).toEqual(m.embeds[0])
+      expect(data.options.embeds).toBeUndefined()
+    })
+    it('returns all the embeds in a list there is a webhook', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.webhook = { name: 'foo', avatar: 'bar' }
+      m.text = 'abc'
+      m.embeds = [1, 2, 3]
+      const data = m._createSendOptions()
+      expect(data.options.embed).toBeUndefined()
+      expect(data.options.embeds).toEqual(m.embeds)
+    })
+    it('does not attach user split options if it is a test message (it uses the static TEST_OPTIONS)', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.isTestMessage = true
+      m.split = { a: 'b' }
+      const data = m._createSendOptions()
+      expect(data.options).toEqual(ArticleMessage.TEST_OPTIONS)
+    })
+    it('attaches user split options for non-test-message', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.split = { a: 'b' }
+      m.article = {}
+      m.text = 'aszf'
+      const data = m._createSendOptions()
+      expect(data.options.split).toEqual(m.split)
+    })
+    it('changes the text to error if there is no split and the text exceeds 1950 length', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.article = {}
+      m.text = ''
+      while (m.text.length < 2000) {
+        m.text += 'awsfdegrhk'
+      }
+      const data = m._createSendOptions()
+      expect(data.text).toEqual(expect.stringContaining('>1950'))
+    })
+    it('changes the text to error if there is no text and no embeds', function () {
+      const m = new ArticleMessage(rawArticle)
+      m.article = {}
+      m.text = ''
+      const data = m._createSendOptions()
+      expect(data.text).toEqual(expect.stringContaining('empty message'))
     })
   })
 })

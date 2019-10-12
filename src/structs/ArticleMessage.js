@@ -1,7 +1,6 @@
 const config = require('../config.js')
 const Discord = require('discord.js')
 const storage = require('../util/storage.js')
-const TEST_OPTIONS = { split: { prepend: '```md\n', append: '```' } }
 const log = require('../util/logger.js')
 const debugFeeds = require('../util/debugFeeds.js').list
 const Article = require('./Article.js')
@@ -48,6 +47,10 @@ class ArticleMessage {
     this.text = text
     this.embeds = embeds
     this.testDetails = isTestMessage ? this._generateTestMessage() : ''
+  }
+
+  static get TEST_OPTIONS () {
+    return { split: { prepend: '```md\n', append: '```' } }
   }
 
   _determineFormat () {
@@ -250,7 +253,7 @@ class ArticleMessage {
 
   _createSendOptions () {
     const text = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embeds ? `Unable to send empty message for feed article <${this.article.link}> (${this.rssName}).` : this.text
-    const options = this.isTestMessage ? TEST_OPTIONS : {}
+    const options = this.isTestMessage ? ArticleMessage.TEST_OPTIONS : {}
     if (this.webhook) {
       options.username = this.webhook.name
       options.avatarURL = this.webhook.avatar
