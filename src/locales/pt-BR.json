@@ -366,7 +366,7 @@
       "removeAnySubscriberNone": "Não há inscritos para remover no feed <{{link}}>.",
       "invalidRoleOrUser": "Esse não é um cargo válido ou usuário válido. Tente novamente, ou digite `exit` para cancelar.",
       "multipleRoles": "Existem vários cargos com esse nome. Mencione o cargo, digite outro cargo/usuario, ou digite `exit` para cancelar.",
-      "selectedRoleDescription": "**selecionado**: {{name}}\n**Feed Título:** {{feedTitle}\n**Feed Link:** {{feedLink}}\n\nSelecione uma opção digitando o numero, ou digite `exit` para cancelar.\u200b\n\u200b\n",
+      "selectedRoleDescription": "**selecionado**: {{name}}\n**Feed Título:** {{feedTitle}}\n**Feed Link:** {{feedLink}}\n\nSelecione uma opção digitando o numero, ou digite `exit` para cancelar.\u200b\n\u200b\n",
       "globalSubscribers": "**Inscrições Globais:**\n",
       "filteredSubscribers": "**Inscrições filtrada:**\n"
     },
