@@ -514,7 +514,7 @@ module.exports = class Article {
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
 
-    const dateRegex = new RegExp('{date(:[a-zA-Z_/]*)?}', 'g')
+    const dateRegex = new RegExp('{date(:[a-zA-Z_/]*)?}')
 
     let result = dateRegex.exec(content)
     while (result !== null) {
