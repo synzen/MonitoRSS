@@ -27,7 +27,7 @@ function setCurrentTime (momentObj) {
 function checkObjType (item, results) {
   if (Object.prototype.toString.call(item) === '[object Object]') {
     return () => findImages(item, results)
-  } else if (typeof item === 'string' && item.match(/(?:([^:/?#]+):)?(?:\/\/([^/?#]*))?([^?#]*\.(?:jpg|jpeg|png|gif|bmp|webp|php))(?:\?([^#]*))?(?:#(.*))?/i) && !results.includes(item) && results.length < 9) {
+  } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp|php)$/i) && !results.includes(item) && results.length < 9) {
     if (item.startsWith('//')) item = 'http:' + item
     results.push(item)
   }
@@ -212,21 +212,10 @@ module.exports = class Article {
     if (this.guid) this.placeholders.push('guid')
 
     // Date
-    if (raw.pubdate && raw.pubdate.toString() !== 'Invalid Date') {
-      const guildTimezone = this.dateSettings.timezone
-      const timezone = (guildTimezone && moment.tz.zone(guildTimezone)) ? guildTimezone : config.feeds.timezone
-      const dateFormat = this.dateSettings.format ? this.dateSettings.format : config.feeds.dateFormat
-
-      const useDateFallback = config.feeds.dateFallback === true && (!raw.pubdate || raw.pubdate.toString() === 'Invalid Date')
-      const useTimeFallback = config.feeds.timeFallback === true && raw.pubdate.toString() !== 'Invalid Date' && dateHasNoTime(raw.pubdate)
-      const date = useDateFallback ? new Date() : raw.pubdate
-      const localMoment = moment(date)
-      if (this.dateSettings.language) localMoment.locale(this.dateSettings.language)
-      const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
-      this.date = vanityDate !== 'Invalid Date' ? vanityDate : ''
-      if (this.date) this.placeholders.push('date')
-      this._fullDate = raw.pubdate
-    }
+    this._fullDate = raw.pubdate
+    this.date = this.formatDate(this._fullDate, this.dateSettings.timezone)
+    if (this.date) this.placeholders.push('date')
+    
 
     // Description and reddit-specific placeholders
     this.descriptionImages = []
@@ -496,11 +485,28 @@ module.exports = class Article {
     }
   }
 
+  formatDate (date, tz) {
+    if (date && date.toString() !== 'Invalid Date') {
+      const timezone = tz && moment.tz.zone(tz) ? tz : config.feeds.timezone
+      const dateFormat = this.dateSettings.format ? this.dateSettings.format : config.feeds.dateFormat
+
+      const useDateFallback = config.feeds.dateFallback === true && (!date || date.toString() === 'Invalid Date')
+      const useTimeFallback = config.feeds.timeFallback === true && date.toString() !== 'Invalid Date' && dateHasNoTime(date)
+      const useDate = useDateFallback ? new Date() : date
+      const localMoment = moment(useDate)
+      if (this.dateSettings.language) {
+        localMoment.locale(this.dateSettings.language)
+      }
+      const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
+      return vanityDate === 'Invalid Date' ? '' : vanityDate
+    }
+    return ''
+  }
+
   // replace simple keywords
   convertKeywords (word = '', ignoreCharLimits) {
     if (word.length === 0) return word
-    let content = word.replace(/{date}/g, this.date)
-      .replace(/{title}/g, ignoreCharLimits ? this._fullTitle : this.title)
+    let content = word.replace(/{title}/g, ignoreCharLimits ? this._fullTitle : this.title)
       .replace(/{author}/g, this.author)
       .replace(/{summary}/g, ignoreCharLimits ? this._fullSummary : this.summary)
       .replace(/{subscriptions}/g, this.subscriptions)
@@ -508,6 +514,24 @@ module.exports = class Article {
       .replace(/{description}/g, ignoreCharLimits ? this._fullDescription : this.description)
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
+
+    const dateRegex = new RegExp('{date(:[a-zA-Z_\/]*)?}', 'g')
+
+    let result = dateRegex.exec(content)
+    while (result !== null) {
+      const zone = result[1] ? result[1].slice(1, result[1].length) : undefined // timezone within placeholder, e.g. {date:UTC}
+      const fullLength = result[0].length // full match
+      let convertedDate = ''
+      if (zone === undefined) {
+        // no custom timezone was defined after date within the placeholder
+        convertedDate = this.date
+      } else if (moment.tz.zone(zone)) {
+        convertedDate = this.formatDate(this._fullDate, zone)
+      }
+
+      content = content.substring(0, result.index) + convertedDate + content.substring(result.index + fullLength, content.length)
+      result = dateRegex.exec(content)
+    }
 
     const regexPlaceholders = this.regexPlaceholders
     for (var placeholder in regexPlaceholders) {
