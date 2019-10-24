@@ -215,7 +215,6 @@ module.exports = class Article {
     this._fullDate = raw.pubdate
     this.date = this.formatDate(this._fullDate, this.dateSettings.timezone)
     if (this.date) this.placeholders.push('date')
-    
 
     // Description and reddit-specific placeholders
     this.descriptionImages = []
@@ -515,7 +514,7 @@ module.exports = class Article {
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
 
-    const dateRegex = new RegExp('{date(:[a-zA-Z_\/]*)?}', 'g')
+    const dateRegex = new RegExp('{date(:[a-zA-Z_/]*)?}', 'g')
 
     let result = dateRegex.exec(content)
     while (result !== null) {
