@@ -125,8 +125,9 @@ class ArticleMessage {
 
       const authorName = convert(objectEmbed.author_name || objectEmbed.authorName)
       const authorIconURL = convert(objectEmbed.author_icon_url || objectEmbed.authorIconUrl)
+      const authorURL = convert(objectEmbed.author_url || objectEmbed.authorUrl)
       if (authorName) {
-        richEmbed.setAuthor(authorName, authorIconURL)
+        richEmbed.setAuthor(authorName, authorIconURL, authorURL)
       }
 
       const thumbnailURL = convert(objectEmbed.thumbnail_url || objectEmbed.thumbnailUrl)
