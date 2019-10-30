@@ -29,7 +29,7 @@ function checkObjType (item, results) {
     return () => findImages(item, results)
   } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp|php)$/i) && !results.includes(item) && results.length < 9) {
     if (item.startsWith('//')) item = 'http:' + item
-    results.push(item.replace(' ', '%20'))
+    results.push(item.replace(/\s/g, '%20'))
   }
 }
 
@@ -127,11 +127,13 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
     format: {
       image: node => {
         const isStr = typeof node.attribs.src === 'string'
-        let link = isStr ? node.attribs.src.trim() : node.attribs.src
+        let link = isStr ? node.attribs.src.trim().replace(/\s/g, '%20') : node.attribs.src
         if (isStr && link.startsWith('//')) link = 'http:' + link
         else if (isStr && !link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
 
-        if (Array.isArray(imgSrcs) && imgSrcs.length < 9 && isStr && link) imgSrcs.push(link)
+        if (Array.isArray(imgSrcs) && imgSrcs.length < 9 && isStr && link) {
+          imgSrcs.push(link)
+        }
 
         let exist = true
         const globalExistOption = config.feeds.imgLinksExistence != null ? config.feeds.imgLinksExistence : defaultConfigs.feeds.imgLinksExistence.default // Always a boolean via startup checks
