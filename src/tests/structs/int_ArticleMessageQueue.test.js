@@ -16,7 +16,7 @@ class Bot {
 class Guild {
   constructor () {
     this.roles = {
-      get: jest.fn()
+      get: jest.fn(() => new Role())
     }
   }
 }

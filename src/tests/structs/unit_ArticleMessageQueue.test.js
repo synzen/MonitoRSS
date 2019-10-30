@@ -49,12 +49,12 @@ describe('Unit::ArticleMessageQueue', function () {
         return expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(), bot)).resolves.toEqual(undefined)
       })
 
-      it('if roles cannot be fetched, and returns empty array', function () {
+      it('if roles cannot be fetched, and returns 0', function () {
         const bot = new Bot()
-        return expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['123']), bot)).resolves.toEqual([])
+        return expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['123']), bot)).resolves.toEqual(0)
       })
 
-      it('if roles are already set to the passed in mentionable parameter, returns empty array', async function () {
+      it('if roles are already set to the passed in mentionable parameter, returns 0', async function () {
         const bot = new Bot()
         const channel = new Channel()
         const guild = new Guild()
@@ -65,9 +65,24 @@ describe('Unit::ArticleMessageQueue', function () {
           .mockReturnValueOnce(role2)
         channel.guild = guild
         bot.channels.get.mockReturnValueOnce(channel)
-        expect(await ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['a', 'b']), bot)).toEqual([])
+        expect(await ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['a', 'b']), bot)).toEqual(0)
         expect(guild.roles.get).toHaveBeenCalledTimes(2)
       })
+    })
+
+    it('returns the number of roles toggled', async function () {
+      const bot = new Bot()
+      const channel = new Channel()
+      const guild = new Guild()
+      const role1 = new Role(true)
+      const role2 = new Role(false)
+      guild.roles.get
+        .mockReturnValueOnce(role1)
+        .mockReturnValueOnce(role2)
+      channel.guild = guild
+      bot.channels.get.mockReturnValueOnce(channel)
+      expect(await ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['a', 'b']), bot)).toEqual(1)
+      expect(guild.roles.get).toHaveBeenCalledTimes(2)
     })
 
     it('calls setMentionable for roles', async function () {
@@ -232,6 +247,32 @@ describe('Unit::ArticleMessageQueue', function () {
       expect(ArticleMessageQueue.toggleRoleMentionable).toHaveBeenNthCalledWith(2, true, channelTwo, new Set(['6', '7']), bot)
       ArticleMessageQueue.toggleRoleMentionable = origFunc
     })
+    it('throws the error that _sendDelayedQueue throws after toggling mentions', async function (done) {
+      const channelOne = 'abc'
+      const channelTwo = 'dcas'
+      const bot = new Bot()
+      const queue = new ArticleMessageQueue()
+      const articleMessage = new ArticleMessage()
+      articleMessage.subscriptionIds = ['1', '2']
+      const articleMessageTwo = new ArticleMessage()
+      articleMessageTwo.subscriptionIds = ['3', '4', '5']
+      const articleMessageThree = new ArticleMessage()
+      articleMessageThree.subscriptionIds = ['6', '7', '7']
+      queue.queuesWithSubs[channelOne] = [articleMessage, articleMessageTwo]
+      queue.queuesWithSubs[channelTwo] = [articleMessageThree]
+      const origFunc = ArticleMessageQueue.toggleRoleMentionable
+      ArticleMessageQueue.toggleRoleMentionable = jest.fn(() => Promise.resolve())
+      const error = new ArticleMessageError('hubba hubba')
+      queue._sendDelayedQueue = jest.fn(() => Promise.reject(error))
+      try {
+        await queue.send(bot)
+        done(new Error('Promise resolved when it should not'))
+      } catch (err) {
+        expect(err).toEqual(error)
+        done()
+      }
+      ArticleMessageQueue.toggleRoleMentionable = origFunc
+    })
   })
 
   describe('_sendDelayedQueue', function () {
@@ -248,10 +289,10 @@ describe('Unit::ArticleMessageQueue', function () {
       const articleMessageTwo = new ArticleMessage()
       const spy = jest.spyOn(queue, '_sendDelayedQueue')
       const channelID = 'abc'
-      await queue._sendDelayedQueue({}, channelID, [ articleMessage, articleMessageTwo ])
+      await queue._sendDelayedQueue({}, channelID, [ articleMessage, articleMessageTwo ], [], undefined, 1)
       expect(spy).toHaveBeenCalledTimes(2)
-      expect(spy).toHaveBeenCalledWith({}, channelID, [ articleMessage, articleMessageTwo ])
-      expect(spy).toHaveBeenNthCalledWith(2, {}, channelID, [ articleMessageTwo ], undefined, undefined)
+      expect(spy).toHaveBeenNthCalledWith(1, {}, channelID, [ articleMessage, articleMessageTwo ], [], undefined, 1)
+      expect(spy).toHaveBeenNthCalledWith(2, {}, channelID, [ articleMessageTwo ], [], undefined, 1)
       spy.mockRestore()
     })
     it('turns off role mentionability at the end', async function () {
@@ -260,7 +301,7 @@ describe('Unit::ArticleMessageQueue', function () {
       const articleMessageTwo = new ArticleMessage()
       const channelID = 'abc'
       const roleIDs = [1, 2, 3]
-      await queue._sendDelayedQueue({}, channelID, [ articleMessage, articleMessageTwo ], roleIDs)
+      await queue._sendDelayedQueue({}, channelID, [ articleMessage, articleMessageTwo ], roleIDs, null, 1)
       expect(ArticleMessageQueue.toggleRoleMentionable).toHaveBeenCalledTimes(1)
       expect(ArticleMessageQueue.toggleRoleMentionable).toHaveBeenCalledWith(false, channelID, roleIDs, {})
     })

@@ -32,7 +32,8 @@ class ArticleMessageQueue {
       }
     })
     try {
-      return await Promise.all(promises)
+      await Promise.all(promises)
+      return promises.length
     } catch (err) {
       throw err.code === 50013 ? new Error(`Unable to toggle role permissions because one or more roles are above my role, or I don't have Manage Roles permission.`) : err
     }
@@ -80,14 +81,19 @@ class ArticleMessageQueue {
       }
       promises.push(
         ArticleMessageQueue.toggleRoleMentionable(true, cId, roleIds, bot)
-          .then(() => this._sendDelayedQueue(bot, cId, channelQueue, roleIds))
-          .catch(err => this._sendDelayedQueue(bot, cId, channelQueue, roleIds, err))
+          .then(rolesToggled => this._sendDelayedQueue(bot, cId, channelQueue, roleIds, undefined, rolesToggled))
+          .catch(err => {
+            if (err instanceof ArticleMessageError) { // From the _sendDelayedQueue
+              throw err
+            }
+            this._sendDelayedQueue(bot, cId, channelQueue, roleIds, err, 0)
+          })
       )
     }
     await Promise.all(promises)
   }
 
-  async _sendDelayedQueue (bot, channelId, channelQueue, roleIds, err) {
+  async _sendDelayedQueue (bot, channelId, channelQueue, roleIds, err, rolesToggled) {
     const articleMessage = channelQueue[0]
     try {
       if (err) {
@@ -96,11 +102,11 @@ class ArticleMessageQueue {
       await articleMessage.send()
       if (channelQueue.length - 1 === 0) {
         delete this.queuesWithSubs[channelId]
-        if (!err) {
+        if (!err && rolesToggled > 0) {
           await ArticleMessageQueue.toggleRoleMentionable(false, channelId, roleIds, bot)
         }
       } else {
-        await this._sendDelayedQueue(bot, channelId, channelQueue.slice(1, channelQueue.length), roleIds, err)
+        await this._sendDelayedQueue(bot, channelId, channelQueue.slice(1, channelQueue.length), roleIds, err, rolesToggled)
       }
     } catch (err) {
       delete this.queuesWithSubs[channelId]
