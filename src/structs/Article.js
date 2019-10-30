@@ -29,7 +29,7 @@ function checkObjType (item, results) {
     return () => findImages(item, results)
   } else if (typeof item === 'string' && item.match(/\.(jpg|jpeg|png|gif|bmp|webp|php)$/i) && !results.includes(item) && results.length < 9) {
     if (item.startsWith('//')) item = 'http:' + item
-    results.push(item)
+    results.push(item.replace(' ', '%20'))
   }
 }
 
