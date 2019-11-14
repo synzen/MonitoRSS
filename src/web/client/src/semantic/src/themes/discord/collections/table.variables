@@ -3,7 +3,7 @@
 @darkButNotBlack: #2C2F33;
 @notQuiteblack: #23272A;
 
-@background: #35383c;
+@background: #18191c;
 @headerColor: hsla(0,0%,100%,.8);
 @headerBackground: #4f545c;
 @color: darken(#f6f6f7, 20%);

@@ -6,7 +6,8 @@
 @selectionBackground: #303339;
 @selectionVisibleTextColor: #aaabad;
 @selectionTextColor: white;
-@menuBackground: #26282c;
+@menuBackground: #18191c;
+@menuBorder: 1px solid #040405 !important;
 @selectedColor: #f6f6f7;
 
 @errorBackgroundColor: #303339;
@@ -15,13 +16,13 @@
 
 /* selected item color */
 @activeItemColor: white;
-@selectedBackground: darken(@notQuiteblack, 4%);
+@selectedBackground: #131416;
 
 
 /* non-selected item */
 @itemColor: white;
 @hoveredItemColor: white;
-@hoveredItemBackground: darken(@notQuiteblack, 3%);
+@hoveredItemBackground: #131416;
 
 /* top of selected item, border between box and menu */
 @selectionItemDivider: black;

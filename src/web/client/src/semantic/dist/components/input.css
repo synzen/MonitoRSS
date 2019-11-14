@@ -39,7 +39,7 @@
   line-height: 1.21428571em;
   font-family: 'Lato', 'Helvetica Neue', Arial, Helvetica, sans-serif;
   padding: 0.67857143em 1em;
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   border: 1px solid rgba(34, 36, 38, 0.15);
   color: white;
   border-radius: 0.28571429rem;
@@ -141,7 +141,7 @@
 .ui.input.focus > input,
 .ui.input > input:focus {
   border-color: #7289DA;
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   color: white;
   -webkit-box-shadow: none;
           box-shadow: none;

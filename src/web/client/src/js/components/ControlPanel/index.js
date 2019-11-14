@@ -12,7 +12,6 @@ import { clearGuild, updateGuildAfterWebsocket, changePage, initState, updateLin
 import openSocket from 'socket.io-client'
 import socketStatus from 'js/constants/socketStatus'
 import { Loader, Icon, Button } from 'semantic-ui-react'
-import TopBar from './TopBar/index'
 
 var socket
 
@@ -22,7 +21,7 @@ const MainContainer = styled.div`
   max-width: 100%;
   display: flex;
   flex-direction: row;
-  padding-top: 60px;
+  /* padding-top: 60px; */
 `
 
 const EmptyBackground = styled.div`
@@ -77,8 +76,8 @@ class ControlPanel extends React.PureComponent {
     super()
     this.state = {
       loaded: false,
-      leftMenuExpanded: window.innerWidth >= 860,
-      leftMenu300Width: window.innerWidth >= 860,
+      leftMenuExpanded: window.innerWidth >= 910,
+      leftMenu300Width: window.innerWidth >= 910,
       socketStatus: socketStatus.CONNECTING,
       authenticatingLogin: true,
       loggedOut: true,
@@ -351,7 +350,6 @@ class ControlPanel extends React.PureComponent {
         </EmptyBackgroundTransparent>
         {/* <DiscordModal onClose={modal.hide} open={this.props.modalOpen} { ...this.props.modal.props }>{this.props.modal.children}</DiscordModal> */}
         <ToastContainer position='top-center' />
-        <TopBar toggleLeftMenu={() => this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })} socketStatus={this.state.socketStatus} />
         <MainContainer>
           <LeftMenu disableMenuButtonToggle={this.state.leftMenu300Width} toggleLeftMenu={() => {
             this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })

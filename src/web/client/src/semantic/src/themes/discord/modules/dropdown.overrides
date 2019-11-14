@@ -9,13 +9,17 @@
 
 .ui.selection.dropdown {
   user-select: none;
-  border-color: rgba(0, 0, 0, 0.3);
+    background: #18191c !important;
+  border: 1px solid #040405 !important;
   cursor: default;
+  color: #dcddde;
 }
 
 .ui.search.dropdown > input.search {
   color: #f6f6f7;
-  
+  /*background: #18191c !important;
+  border: 1px solid #040405 !important;
+  border-radius: 3px !important;*/
 }
 
 .ui.search.dropdown > input.search::selection {

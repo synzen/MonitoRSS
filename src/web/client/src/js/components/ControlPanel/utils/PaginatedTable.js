@@ -98,7 +98,7 @@ class PaginatedTable extends Component {
           { this.props.button }
         </TableTop>
         <div style={{overflowX: 'auto'}}>
-        <Table celled selectable fixed={false} singleLine compact={compact} unstackable={unstackable} collapsing={collapsing} basic={basic}>
+        <Table celled selectable fixed={false} singleLine compact={compact} unstackable={unstackable} collapsing={collapsing} basic={basic} striped>
           <Table.Header>
             <Row>
               {this.props.headers.map(name => <Table.HeaderCell key={name}>{name}</Table.HeaderCell>  )}

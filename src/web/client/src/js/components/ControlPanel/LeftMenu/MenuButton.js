@@ -25,7 +25,7 @@ const ButtonBlank = styled.a`
   margin: .5em 0;
   border-radius: .25em;
   color: ${props => props.disabled || props.unsupported ? darken(0.4, colors.discord.text) : props.selected ? 'white' : lighten(0.45, colors.discord.darkButNotBlack)};
-  background-color: ${props => props.disabled || props.unsupported ? 'transparent' : props.selected ? '#40444B' : 'transparent'};
+  background-color: ${props => props.disabled || props.unsupported ? 'transparent' : props.selected ? colors.discord.blurple : 'transparent'};
   /* width: 100%; */
   user-select: none;
   cursor: ${props => props.disabled || props.unsupported ? 'not-allowed' : props.selected ? 'default' : 'pointer'} !important;
@@ -34,11 +34,11 @@ const ButtonBlank = styled.a`
     text-decoration: none !important;
     /* color: white; */
     color: ${props => props.disabled || props.unsupported ? darken(0.4, colors.discord.text) : 'white'};
-    background-color: ${props => props.disabled || props.unsupported ? 'transparent' : props.selected ? '#40444B' : '#292B2F'};
+    background-color: ${props => props.disabled || props.unsupported ? 'transparent' : props.selected ? colors.discord.blurple : 'transparent'}; // '#292B2F'};
     cursor: pointer;
   }
   &:active {
-    background-color: #202225;
+    /* background-color: #202225; */
     /* background-color: ${props => props.disabled || props.unsupported ? 'transparent' : props.selected ? colors.discord.blurple : 'rgba(255, 255, 255, .08)'}; */
   }
 `

@@ -699,6 +699,12 @@ input::-moz-selection {
   color: rgba(0, 0, 0, 0.87);
 }
 
+textarea::-moz-selection,
+input::-moz-selection {
+  background-color: rgba(100, 100, 100, 0.4);
+  color: rgba(0, 0, 0, 0.87);
+}
+
 textarea::selection,
 input::selection {
   background-color: rgba(100, 100, 100, 0.4);
@@ -14242,7 +14248,7 @@ img.ui.bordered.image {
   line-height: 1.21428571em;
   font-family: 'Lato', 'Helvetica Neue', Arial, Helvetica, sans-serif;
   padding: 0.67857143em 1em;
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   border: 1px solid rgba(34, 36, 38, 0.15);
   color: white;
   border-radius: 0.28571429rem;
@@ -14346,7 +14352,7 @@ img.ui.bordered.image {
 .ui.input.focus > input,
 .ui.input > input:focus {
   border-color: #7289DA;
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   color: white;
   -webkit-box-shadow: none;
   box-shadow: none;
@@ -26645,7 +26651,7 @@ Floated Menu / Item
 
 .ui.table {
   width: 100%;
-  background: #35383c;
+  background: #18191c;
   margin: 1em 0em;
   border: 1px solid rgba(34, 36, 38, 0.15);
   -webkit-box-shadow: none;
@@ -27928,6 +27934,31 @@ Floated Menu / Item
   word-break: break-all;
   font-size: 14px;
   font-weight: 300;
+}
+
+.ui.basic.table tr.active,
+.ui.basic.table td.active {
+  background: #40444B !important;
+}
+
+.ui.basic.selectable.table tr.active:hover,
+.ui.basic.table tr td.selectable.active:hover,
+.ui.basic.selectable.table tr:hover td.active {
+  background: #40444B !important;
+}
+
+.ui.basic.striped.selectable.selectable.selectable.table tbody tr.active:hover {
+  background: #40444B !important;
+  color: white !important;
+}
+
+.ui.basic.striped.table tbody tr:nth-child(2n).active {
+  background: #40444B !important;
+}
+
+.ui.striped.selectable.selectable.selectable.table tbody tr.active:hover {
+  background: #7289DA !important;
+  color: white !important;
 }
 
 .ui.selectable.table tr.active {
@@ -32342,13 +32373,13 @@ body.dimmable > .dimmer {
   min-width: max-content;
   margin: 0em;
   padding: 0em 0em;
-  background: #26282c;
+  background: #18191c;
   font-size: 1em;
   text-shadow: none;
   text-align: left;
   -webkit-box-shadow: 0px 2px 3px 0px rgba(34, 36, 38, 0.15);
   box-shadow: 0px 2px 3px 0px rgba(34, 36, 38, 0.15);
-  border: 1px solid rgba(34, 36, 38, 0.15);
+  border: 1px solid #040405 !important;
   border-radius: 0.28571429rem;
   -webkit-transition: opacity 0.1s ease;
   transition: opacity 0.1s ease;
@@ -33132,7 +33163,7 @@ select.ui.dropdown {
 /* Menu Item Hover */
 
 .ui.dropdown .menu > .item:hover {
-  background: #1c1f22;
+  background: #131416;
   color: white;
   z-index: 13;
 }
@@ -33261,7 +33292,7 @@ select.ui.dropdown {
 
 .ui.dropdown.selected,
 .ui.dropdown .menu .selected.item {
-  background: #1a1d1f;
+  background: #131416;
   color: #f6f6f7;
 }
 
@@ -33512,7 +33543,7 @@ select.ui.dropdown {
   margin: 0 !important;
   min-width: 100% !important;
   width: auto !important;
-  border-top: 1px solid rgba(34, 36, 38, 0.15);
+  border-top: 1px solid #040405 !important;
 }
 
 .ui.scrolling.dropdown .menu .item.item.item,
@@ -33903,12 +33934,17 @@ select.ui.dropdown {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  border-color: rgba(0, 0, 0, 0.3);
+  background: #18191c !important;
+  border: 1px solid #040405 !important;
   cursor: default;
+  color: #dcddde;
 }
 
 .ui.search.dropdown > input.search {
   color: #f6f6f7;
+  /*background: #18191c !important;
+  border: 1px solid #040405 !important;
+  border-radius: 3px !important;*/
 }
 
 .ui.search.dropdown > input.search::-moz-selection {

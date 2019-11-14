@@ -26,7 +26,7 @@ const mapDispatchToProps = dispatch => {
 const Body = styled.div`
   height: 100%;
   width: 100%;
-  background-color: #36393f;
+  background-color: #202225;
   /* overflow-y: auto; */
   /* scrollbar-width: thin; */
 `

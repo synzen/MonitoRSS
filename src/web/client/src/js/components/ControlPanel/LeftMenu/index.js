@@ -3,7 +3,8 @@ import { connect } from 'react-redux'
 import React, { Component } from 'react'
 import colors from '../../../constants/colors'
 import pages from '../../../constants/pages'
-import { Divider, Dropdown, Button } from 'semantic-ui-react'
+import socketStatus from '../../../constants/socketStatus'
+import { Divider, Dropdown, Button, Popup, Icon } from 'semantic-ui-react'
 import styled from 'styled-components'
 import DiscordAvatar from '../utils/DiscordAvatar'
 import MenuButton from './MenuButton'
@@ -55,9 +56,28 @@ const LeftMenuDiv = styled.div`
   }
   @media screen and (min-width: 860px) {
     position: static;
-    width: ${props => props.expanded ? '300px' : 0};
+    width: ${props => props.expanded ? '350px' : 0};
     > div {
       width: auto;
+    }
+  }
+`
+
+const Header = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  margin-bottom: 30px;
+  > div:first-child {
+    display: flex;
+    align-items: center;
+    > div {
+      display: flex;
+    }
+    h3 {
+      color: ${colors.discord.white};
+      /* text-transform: uppercase; */
     }
   }
 `
@@ -72,20 +92,33 @@ const MenuSectionHeader = styled.span`
   color: #dcddde;
   text-transform: uppercase;
   font-size: 12px;
+  /* margin-left: 20px; */
+  margin-bottom: 8px;
 `
 
 const UserContainer = styled.div`
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  /* flex-direction: column; */
   align-items: center;
-  margin: 20px 0 0;
-  > span {
+  margin: 10px 0;
+  > div {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  span {
     font-size: 20px;
     font-weight: 600;
     color: ${colors.discord.white};
     margin: 20px 0;
     word-break: break-all;
     text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-left: 10px;
+    margin-right: 10px;
   }
 `
 
@@ -93,6 +126,8 @@ const MyDropdown = styled(Dropdown)`
   display: flex !important;
   margin-bottom: 0;
   margin-top: 7px;
+  /* margin-left: 20px; */
+  /* margin-right: 20px; */
   background-color: green;
   &:hover {
     cursor: not-allowed;
@@ -196,11 +231,37 @@ class LeftMenu extends Component {
         <Scrollbars>
           <Content expanded={this.props.expanded}>
         <div>
+
+        <Header>
+          <div>
+            <img alt='Discord RSS logo' src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='30px' />
+            <div>
+              <h3 style={{margin: '0 10px'}}>Discord.RSS</h3><h4 style={{margin: 0}}>Control Panel</h4>
+            </div>
+          </div>
+          {
+            this.props.socketStatus === socketStatus.CONNECTED
+              ? <Popup trigger={<Icon name={'check circle outline'} size='large' color='green' />} content='Server is connected, and all changes are bidirectionally live' position='bottom left' inverted/>
+              : this.props.socketStatus === socketStatus.DISCONNECTED ? <Popup trigger={<Icon name={'x'} size='large' color='red' />} content='Server is disconnected. No changes will be saved!' position='bottom left' inverted/>
+                : <Popup trigger={<Icon name={'question circle outline'} size='large' color='grey' />} content='Attempting to connect to server...' position='bottom left' inverted/>
+          }
+        </Header>
+        {/* <Divider /> */}
           <UserContainer>
-            <DiscordAvatar src={userAvatar} width='90px' />
-            <span>{user ? user.username : undefined}</span>
+            <div>
+              <DiscordAvatar src={userAvatar} width='30px' />
+              <span>{user ? user.username : undefined}</span>
+            </div>
+            <Popup
+              trigger={<Button basic icon='log out' color='red' onClick={this.logoutClick} />}
+              inverted
+              position='bottom right'
+              content='Log Out'
+            />
+            
           </UserContainer>
-          <Button fluid content='Logout' basic color='red' onClick={this.logoutClick} />
+          
+          {/* <Button fluid content='Logout' basic color='red' onClick={this.logoutClick} /> */}
           <Divider />
           <MenuSectionHeader>Main</MenuSectionHeader>
           <MenuButton to={pages.DASHBOARD} selected={this.props.page === pages.DASHBOARD} onClick={() => this.menuButtonClick(pages.DASHBOARD)}>Home</MenuButton>
