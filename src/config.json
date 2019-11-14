@@ -62,7 +62,7 @@
     "enabled": false,
     "trustProxy": false,
     "sessionSecret": "keyboard cat",
-    "port": 8080,
+    "port": 8081,
     "redirectUri": "",
     "clientId": "",
     "clientSecret": "",
