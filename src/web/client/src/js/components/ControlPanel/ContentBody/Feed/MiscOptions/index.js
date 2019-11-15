@@ -67,7 +67,7 @@ const Categories = styled.div`
 `
 
 const Description = styled.p`
-  color: ${colors.discord.subtext};
+  color: ${colors.discord.text};
 `
 
 const boolToText = bool => bool ? 'Enabled' : 'Disabled'

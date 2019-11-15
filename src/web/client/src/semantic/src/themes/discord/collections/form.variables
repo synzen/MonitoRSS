@@ -1,4 +1,4 @@
-@inputBackground: rgba(0, 0, 0, .1);
+@inputBackground: #18191c;
 @inputColor: white;
 @inputFocusColor: white;
 @inputFocusBorderColor: #7289DA;

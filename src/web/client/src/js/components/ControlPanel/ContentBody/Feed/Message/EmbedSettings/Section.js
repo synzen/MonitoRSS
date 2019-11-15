@@ -29,9 +29,9 @@ const SettingSectionHead = styled.div`
   align-items: center;
   padding: 1em;
   display: flex;
-  background: rgba(44,47,53, 0.4);
+  background: #18191c;
   cursor: pointer;
-  use-select: none !important;
+  user-select: none !important;
   margin-bottom: 0.5em;
   margin-top: 0.5em;
   > label {

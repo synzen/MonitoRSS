@@ -2,7 +2,7 @@ import styled from 'styled-components'
 import colors from 'js/constants/colors'
 
 const DiscordTextArea = styled.textarea`
-  background-color: rgba(0,0,0,.1);
+  background-color: #18191c;
   border-radius: 0.25em;
   border-color: rgba(0,0,0,0.3);
   border-style: solid;

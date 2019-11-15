@@ -13,7 +13,8 @@ const Container = styled.div`
   p {
     margin-bottom: 20px !important;
     font-size: 16px;
-    color: #72767d;
+    font-weight: 600;
+    color: hsla(0,0%,100%,.5);
   }
 `
 

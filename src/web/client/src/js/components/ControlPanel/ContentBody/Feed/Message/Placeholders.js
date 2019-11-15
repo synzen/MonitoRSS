@@ -60,6 +60,7 @@ const PlaceholdersContainerStyles = styled(Wrapper)`
   scrollbar-width: thin;
   color: ${colors.discord.text};
   resize: vertical;
+  background: #18191c;
   /* overflow: auto; */
   /* background-color: rgba(32, 34, 37, 0.6); */
   padding: 0;

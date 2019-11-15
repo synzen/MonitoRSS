@@ -107,7 +107,7 @@
   line-height: 1.21428571em;
   padding: 0.67857143em 1em;
   font-size: 1em;
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   border: 1px solid rgba(34, 36, 38, 0.15);
   color: white;
   border-radius: 0.28571429rem;
@@ -123,7 +123,7 @@
   -webkit-appearance: none;
   tap-highlight-color: rgba(255, 255, 255, 0);
   padding: 0.78571429em 1em;
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   border: 1px solid rgba(34, 36, 38, 0.15);
   outline: none;
   color: white;
@@ -371,7 +371,7 @@
   color: white;
   border-color: #7289DA;
   border-radius: 0.28571429rem;
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   -webkit-box-shadow: 0px 0em 0em 0em rgba(34, 36, 38, 0.35) inset;
           box-shadow: 0px 0em 0em 0em rgba(34, 36, 38, 0.35) inset;
 }
@@ -379,7 +379,7 @@
   color: white;
   border-color: #7289DA;
   border-radius: 0.28571429rem;
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   -webkit-box-shadow: 0px 0em 0em 0em rgba(34, 36, 38, 0.35) inset;
           box-shadow: 0px 0em 0em 0em rgba(34, 36, 38, 0.35) inset;
   -webkit-appearance: none;
@@ -733,7 +733,7 @@
 .ui.inverted.form input[type="text"],
 .ui.inverted.form input[type="file"],
 .ui.inverted.form input[type="url"] {
-  background: rgba(0, 0, 0, 0.1);
+  background: #18191c;
   border-color: rgba(255, 255, 255, 0.1);
   color: white;
   -webkit-box-shadow: none;

@@ -39,8 +39,12 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   /* flex-direction: row; */
-  padding-top: 5px;
-  padding-bottom: 28px;
+  background: #36393f;
+  border-radius: 4px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: ${colors.discord.darkButNotBlack};
+  padding: 20px 0;
 `
 const Username = styled.span`
   font-weight: 600;
@@ -59,6 +63,7 @@ const UserInfo = styled.div`
     /* margin-left: 20px; */
     margin-right: 20px;
     margin-bottom: 20px;
+    margin-left: 20px;
     background-image: ${props => `url('${props.avatar}')`};
     background-size: 100%;
   }
@@ -76,7 +81,7 @@ const UserInfo = styled.div`
 
 const Content = styled.div`
   margin-top: 0.5em;
-  margin-left: 60px;
+  margin-left: 80px;
   margin-right: 10px;
   color: #dcddde;
   word-break: break-word;
