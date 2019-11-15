@@ -95,9 +95,7 @@ const Pill = styled.div`
   background-color: ${props => props.color != null ? numberToColour(props.color) : '#4f545c'};
 `
 const NonPill = styled.div`
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 8px;
+  padding: 8px 16px 16px;
   padding-bottom: 16px;
   background-color: rgba(46,48,54,.3);
   border-bottom-right-radius: 3px;
@@ -200,16 +198,18 @@ const TimeTag = styled.span`
 `
 
 const EmbedFields = styled.div`
-  margin-top: 4px;
+  margin-top: 8px;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   grid-column: 1/1;
   display: grid;
+  grid-gap: 8px;
+  line-height: 18px;
 `
 
 const EmbedField = styled.div`
-  margin-top: 6px;
+  /* margin-top: 6px; */
   margin-right: 6px;
   /* flex: ${props => props.inline ? 1 : 0}; */
   /* min-width: ${props => props.inline ? '150px' : '100%'}; */
@@ -306,10 +306,8 @@ class Message extends Component {
               gridColumnValues.push('1/13')
             }
           }
-          const gridColumnValue = gridColumnValues[i]
-          const gridLastColumn = gridColumnValue === '9/13' || gridColumnValue === '7/13' || gridColumnValue === '1/13'
           fieldElements.push(
-            <EmbedField key={`field${i}`} gridColumns={gridColumnValue} style={{ marginRight: gridLastColumn ? 0 : '6px' }}>
+            <EmbedField key={`field${i}`} gridColumns={gridColumnValues[i]}>
               <EmbedFieldTitle>{parser.parseEmbedTitle(this.convertKeywords(field.title))}</EmbedFieldTitle>
               <EmbedFieldValue>{parser.parseAllowLinks(this.convertKeywords(field.value))}</EmbedFieldValue>
             </EmbedField>
@@ -335,7 +333,10 @@ class Message extends Component {
                 </Title>
                 : null
               }
-              <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
+              {parsedProperties[embedProperties.description]
+                ? <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
+                : null
+              }
               { fieldElements.length > 0
                 ? <EmbedFields>{fieldElements}</EmbedFields>
                 : [] }
