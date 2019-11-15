@@ -95,28 +95,28 @@ const Pill = styled.div`
   background-color: ${props => props.color != null ? numberToColour(props.color) : '#4f545c'};
 `
 const NonPill = styled.div`
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: 16px;
+  padding-right: 16px;
   padding-top: 8px;
-  padding-bottom: 8px;
+  padding-bottom: 16px;
   background-color: rgba(46,48,54,.3);
   border-bottom-right-radius: 3px;
   border-top-right-radius: 3px;
-`
-
-const BodyWrapper = styled.div`
-  display: flex;
-  flex-direction: row;
-  max-width: ${props => props.appeaseImage ? '400px' : '516px'};
-  transition: max-width 0.5s;
+  display: inline-grid;
+  grid-template-columns: auto;
+  grid-template-rows: auto;
 `
 
 const Author = styled.div`
+  grid-column: 1/1;
   display: flex;
   align-items: center;
   color: white;
   margin-bottom: 4px;
+  margin-top: 8px;
   word-break: break-all;
+  font-weight: 600;
+  line-height: 1.375;
   img {
     width: 20px;
     height: 20px;
@@ -132,18 +132,25 @@ const Author = styled.div`
 `
 
 const Title = styled.a`
-  font-weight: 500;
+  font-weight: 700;
+  font-size: 16px;
   word-break: break-all;
+  margin-top: 8px;
+  line-height: 1.375;
+  grid-column: 1/1;
 `
 
 const Description = styled.div`
-  margin-top: 4px;
+  margin-top: 8px;
   color: hsla(0,0%,100%,.6);
+  grid-column: 1/1;
 `
 
 const Image = styled.a`
   display: block;
-  margin-top: 8px;
+  margin-top: 16px;
+  grid-column: 1/1;
+  border-radius: 4px;
   img {
     max-width: 400px;
   }
@@ -160,17 +167,17 @@ const Thumbnail = styled.a`
 const Footer = styled.div`
   display: flex;
   margin-top: 8px;
-  font-size: 0.75rem;
+  font-size: 12px;
   align-items: center;
-  color: ${colors.discord.text};
+  color: ${colors.discord.subtext};
   font-weight: 500;
   word-break: break-all;
+  grid-column: 1/1;
   img {
     width: 20px;
     height: 20px;
     margin-right: 8px;
     border-radius: 50%;
-
   }
 `
 
@@ -197,27 +204,34 @@ const EmbedFields = styled.div`
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  grid-column: 1/1;
+  display: grid;
 `
 
 const EmbedField = styled.div`
-  margin-top: 4px;
-  flex: ${props => props.inline ? 1 : 0};
-  min-width: ${props => props.inline ? '150px' : '100%'};
-  ${props => props.inline ? 'flex-basis: auto' : ''};
+  margin-top: 6px;
+  margin-right: 6px;
+  /* flex: ${props => props.inline ? 1 : 0}; */
+  /* min-width: ${props => props.inline ? '150px' : '100%'}; */
+  /* ${props => props.inline ? 'flex-basis: auto' : ''}; */
+
+  grid-column: ${props => props.gridColumns};
 `
 
 const EmbedFieldTitle = styled.div`
-  color: white;
-  font-size: 0.875rem;
+  color: ${colors.discord.subtext};
+  /* font-size: 0.875rem; */
   font-weight: 500;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  font-size: 14px;
 `
 
 const EmbedFieldValue = styled.div`
   color: hsla(0, 0%, 100%, .6);
-  font-size: 0.875rem;
+  /* font-size: 0.875rem; */
   font-weight: 400;
   white-space: pre-line;
+  font-size: 14px;
 `
 
 class Message extends Component {
@@ -268,12 +282,34 @@ class Message extends Component {
       const fields = properties.fields
       const fieldElements = []
       if (fields) {
-        for (let i = 0; i < fields.length; ++i) {
-          const field = fields[i]
-          if (!field.title || !field.value) continue
-          if (!populatedEmbed) populatedEmbed = true
+        const validFields = fields.filter(field => field.title && field.value)
+        const lookedAt = new Set()
+        const gridColumnValues = []
+        for (let i = 0; i < validFields.length; ++i) {
+          const field = validFields[i]
+          if (!populatedEmbed) {
+            populatedEmbed = true
+          }
+          const nextFieldInline = validFields[i + 1] && validFields[i + 1].inline
+          const nextNextFieldInline = validFields[i + 2] && validFields[i + 2].inline
+          if (!lookedAt.has(i)) {
+            if (field.inline && nextFieldInline) {
+              lookedAt.add(i).add(i + 1)
+              if (nextNextFieldInline) {
+                lookedAt.add(i + 2)
+                gridColumnValues.push('1/5', '5/9', '9/13')
+              } else {
+                gridColumnValues.push('1/7', '7/13')
+              }
+            } else {
+              lookedAt.add(i)
+              gridColumnValues.push('1/13')
+            }
+          }
+          const gridColumnValue = gridColumnValues[i]
+          const gridLastColumn = gridColumnValue === '9/13' || gridColumnValue === '7/13' || gridColumnValue === '1/13'
           fieldElements.push(
-            <EmbedField key={`field${i}`} inline={field.inline}>
+            <EmbedField key={`field${i}`} gridColumns={gridColumnValue} style={{ marginRight: gridLastColumn ? 0 : '6px' }}>
               <EmbedFieldTitle>{parser.parseEmbedTitle(this.convertKeywords(field.title))}</EmbedFieldTitle>
               <EmbedFieldValue>{parser.parseAllowLinks(this.convertKeywords(field.value))}</EmbedFieldValue>
             </EmbedField>
@@ -286,29 +322,26 @@ class Message extends Component {
           <Embed key={`embed_preview${i}`}>
             <Pill color={properties[embedProperties.color]} />
             <NonPill>
-              <BodyWrapper appeaseImage={!!(properties[embedProperties.imageUrl] || properties[embedProperties.imageUrlCamelCase])}>
-                <div>
-                  { properties[embedProperties.authorName] || properties[embedProperties.authorNameCamelCase]
-                    ? <Author>
-                      { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconUrlCamelCase] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconUrl] || parsedProperties[embedProperties.authorIconUrlCamelCase]} /> : null }
-                      { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase]}>{parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase]}</a> : parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase] }
-                    </Author>
-                    : undefined }
+              { properties[embedProperties.authorName] || properties[embedProperties.authorNameCamelCase]
+                ? <Author>
+                  { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconUrlCamelCase] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconUrl] || parsedProperties[embedProperties.authorIconUrlCamelCase]} /> : null }
+                  { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase]}>{parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase]}</a> : parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase] }
+                </Author>
+                : undefined }
 
-                  <Title as={properties[embedProperties.url] ? 'a' : 'span'} href={parsedProperties[embedProperties.url]} target='_blank' >
-                    {parser.parseEmbedTitle(parsedProperties[embedProperties.title])}
-                  </Title>
-                  <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
-                  { fieldElements.length > 0
-                    ? <EmbedFields>{fieldElements}</EmbedFields>
-                    : [] }
-                </div>
-                { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailUrlCamelCase]
-                  ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} target='_blank'>
-                    <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} alt='Embed Thumbnail' />
-                  </Thumbnail>
-                  : undefined }
-              </BodyWrapper>
+              <Title as={properties[embedProperties.url] ? 'a' : 'span'} href={parsedProperties[embedProperties.url]} target='_blank' >
+                {parser.parseEmbedTitle(parsedProperties[embedProperties.title])}
+              </Title>
+              <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
+              { fieldElements.length > 0
+                ? <EmbedFields>{fieldElements}</EmbedFields>
+                : [] }
+              { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailUrlCamelCase]
+                ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} target='_blank'>
+                  <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} alt='Embed Thumbnail' />
+                </Thumbnail>
+                : undefined }
+              {/* </BodyWrapper> */}
               { properties[embedProperties.imageUrl] || properties[embedProperties.imageUrlCamelCase]
                 ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} target='_blank' >
                   <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} alt='Embed MainImage' />
