@@ -329,9 +329,12 @@ class Message extends Component {
                 </Author>
                 : undefined }
 
-              <Title as={properties[embedProperties.url] ? 'a' : 'span'} href={parsedProperties[embedProperties.url]} target='_blank' >
-                {parser.parseEmbedTitle(parsedProperties[embedProperties.title])}
-              </Title>
+              {parsedProperties[embedProperties.title]
+                ? <Title as={properties[embedProperties.url] ? 'a' : 'span'} href={parsedProperties[embedProperties.url]} target='_blank' >
+                  {parser.parseEmbedTitle(parsedProperties[embedProperties.title])}
+                </Title>
+                : null
+              }
               <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
               { fieldElements.length > 0
                 ? <EmbedFields>{fieldElements}</EmbedFields>
