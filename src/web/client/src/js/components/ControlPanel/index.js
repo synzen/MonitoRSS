@@ -12,6 +12,7 @@ import { clearGuild, updateGuildAfterWebsocket, changePage, initState, updateLin
 import openSocket from 'socket.io-client'
 import socketStatus from 'js/constants/socketStatus'
 import { Loader, Icon, Button } from 'semantic-ui-react'
+import TopBar from './TopBar/index'
 
 var socket
 
@@ -21,7 +22,7 @@ const MainContainer = styled.div`
   max-width: 100%;
   display: flex;
   flex-direction: row;
-  /* padding-top: 60px; */
+  padding-top: ${props => props.offsetTop ? '60px' : 0};
 `
 
 const EmptyBackground = styled.div`
@@ -77,7 +78,7 @@ class ControlPanel extends React.PureComponent {
     this.state = {
       loaded: false,
       leftMenuExpanded: window.innerWidth >= 910,
-      leftMenu300Width: window.innerWidth >= 910,
+      leftMenuNotFull: window.innerWidth >= 910,
       socketStatus: socketStatus.CONNECTING,
       authenticatingLogin: true,
       loggedOut: true,
@@ -281,10 +282,10 @@ class ControlPanel extends React.PureComponent {
     const newState = {}
     if (window.innerWidth < 860) {
       // if (this.state.leftMenuExpanded) newState.leftMenuExpanded = false
-      if (this.state.leftMenu300Width) newState.leftMenu300Width = false
+      if (this.state.leftMenuNotFull) newState.leftMenuNotFull = false
     } else {
       if (!this.state.leftMenuExpanded) newState.leftMenuExpanded = true
-      if (!this.state.leftMenu300Width) newState.leftMenu300Width = true
+      if (!this.state.leftMenuNotFull) newState.leftMenuNotFull = true
     }
     if (Object.keys(newState).length > 0) this.setState(newState)
   }
@@ -350,8 +351,12 @@ class ControlPanel extends React.PureComponent {
         </EmptyBackgroundTransparent>
         {/* <DiscordModal onClose={modal.hide} open={this.props.modalOpen} { ...this.props.modal.props }>{this.props.modal.children}</DiscordModal> */}
         <ToastContainer position='top-center' />
-        <MainContainer>
-          <LeftMenu disableMenuButtonToggle={this.state.leftMenu300Width} toggleLeftMenu={() => {
+        {this.state.leftMenuNotFull
+          ? null
+          : <TopBar toggleLeftMenu={() => this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })} socketStatus={this.state.socketStatus} />
+        }
+        <MainContainer offsetTop={!this.state.leftMenuNotFull}>
+          <LeftMenu disableMenuButtonToggle={this.state.leftMenuNotFull} toggleLeftMenu={() => {
             this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })
           }} socketStatus={this.state.socketStatus} expanded={this.state.leftMenuExpanded} />
           <ContentBody />

@@ -237,19 +237,22 @@ class LeftMenu extends Component {
           <Content expanded={this.props.expanded}>
         <div>
 
-        <Header to='/'>
-          <div>
-            <img alt='Discord RSS logo' src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='30px' />
-            <h3 style={{margin: '0 10px'}}>Discord.RSS</h3>
-            <h4 style={{margin: 0}}>Control Panel</h4>
-          </div>
+        {this.props.disableMenuButtonToggle 
+          ? <Header to='/'>
+            <div>
+              <img alt='Discord RSS logo' src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='30px' />
+              <h3 style={{margin: '0 10px'}}>Discord.RSS</h3>
+              <h4 style={{margin: 0}}>Control Panel</h4>
+            </div>
           {
             this.props.socketStatus === socketStatus.CONNECTED
               ? <Popup trigger={<Icon name={'check circle outline'} size='large' color='green' />} content='Server is connected, and all changes are bidirectionally live' position='bottom left' inverted/>
               : this.props.socketStatus === socketStatus.DISCONNECTED ? <Popup trigger={<Icon name={'x'} size='large' color='red' />} content='Server is disconnected. No changes will be saved!' position='bottom left' inverted/>
                 : <Popup trigger={<Icon name={'question circle outline'} size='large' color='grey' />} content='Attempting to connect to server...' position='bottom left' inverted/>
           }
-        </Header>
+          </Header>
+          : null
+        }
         {/* <Divider /> */}
           <UserContainer>
             <div>
