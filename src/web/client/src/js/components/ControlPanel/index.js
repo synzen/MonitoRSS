@@ -119,7 +119,7 @@ class ControlPanel extends React.PureComponent {
 
   componentWillMount () {
     const socketUrl = `${window.location.protocol}//${window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}`
-    if (!socket) socket = openSocket(socketUrl, { forceNew: false })
+    if (!socket || socket.disconnected) socket = openSocket(socketUrl, { forceNew: false })
     socket.on('DRSS_BOT_READY', () => {
       console.log('bot ready')
       this.socketReconnect(true)

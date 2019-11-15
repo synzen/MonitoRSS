@@ -1,4 +1,4 @@
-import { withRouter } from 'react-router-dom'
+import { withRouter, Link } from 'react-router-dom'
 import { connect } from 'react-redux'
 import React, { Component } from 'react'
 import colors from '../../../constants/colors'
@@ -63,22 +63,27 @@ const LeftMenuDiv = styled.div`
   }
 `
 
-const Header = styled.div`
+const Header = styled(Link)`
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: 10px;
   margin-bottom: 30px;
-  > div:first-child {
+  &:hover {
+    text-decoration: none;
+  }
+  /* display: flex;
+  align-items: center; */
+  > div {
     display: flex;
-    align-items: center;
-    > div {
-      display: flex;
-    }
-    h3 {
-      color: ${colors.discord.white};
-      /* text-transform: uppercase; */
-    }
+    align-items: flex-end;
+  }
+  h3 {
+    color: ${colors.discord.white};
+    /* text-transform: uppercase; */
+  }
+  h4 {
+    color: ${colors.discord.text};
   }
 `
 
@@ -232,12 +237,11 @@ class LeftMenu extends Component {
           <Content expanded={this.props.expanded}>
         <div>
 
-        <Header>
+        <Header to='/'>
           <div>
             <img alt='Discord RSS logo' src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='30px' />
-            <div>
-              <h3 style={{margin: '0 10px'}}>Discord.RSS</h3><h4 style={{margin: 0}}>Control Panel</h4>
-            </div>
+            <h3 style={{margin: '0 10px'}}>Discord.RSS</h3>
+            <h4 style={{margin: 0}}>Control Panel</h4>
           </div>
           {
             this.props.socketStatus === socketStatus.CONNECTED
