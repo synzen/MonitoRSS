@@ -43,15 +43,14 @@ const Wrapper = styled.div`
   padding-bottom: 28px;
 `
 const Username = styled.span`
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0;
 `
 
 const UserInfo = styled.div`
   display: flex;
   flex-direction: row;
-  height: 21px;
-  margin-bottom: 3px;
+  height: 22px;
   > div {
     height: 40px;
     width: 40px;
@@ -65,8 +64,13 @@ const UserInfo = styled.div`
   }
   > h2 {
     color: white;
-    font-size: 1.1rem;
+    font-size: 16px;
     margin: 0;
+    white-space: nowrap;
+    line-height: 16px;
+    > span:first-child {
+      line-height: 22px;
+    }
   }
 `
 
@@ -77,6 +81,7 @@ const Content = styled.div`
   color: #dcddde;
   word-break: break-word;
   overflow-x: auto;
+  font-size: 16px;
 `
 
 const Embed = styled.div`
@@ -183,16 +188,17 @@ const BotTag = styled.span`
   background-color: rgb(114,117,217);
   border-radius: 3px;
   margin-left: 4.8px;
-  padding: 1px 2px;
+  margin-top: 0.75px;
+  padding: 1.152px 4.4px;
   text-transform: uppercase;
-  font-size: 0.7em;
+  font-size: 10px;
   font-weight: 500;
   line-height: 1.3;
 `
 
 const TimeTag = styled.span`
   color: hsla(0,0%,100%,0.2);
-  font-size: 0.8rem;
+  font-size: 12px;
   font-weight: 400;
   margin-left: 0.3rem;
 `
