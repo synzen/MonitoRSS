@@ -167,8 +167,12 @@ const Image = styled.a`
 const Thumbnail = styled.a`
   display: block;
   margin-left: 16px;
+  grid-row: 1/8;
+  grid-column: 2/2;
+  margin-top: 8px;
   img {
     max-width: 80px;
+    border-radius: 4px;
   }
 `
 
