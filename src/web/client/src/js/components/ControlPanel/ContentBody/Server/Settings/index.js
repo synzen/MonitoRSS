@@ -132,6 +132,7 @@ class ServerSettings extends Component {
       dateFormat: guild.dateFormat || '',
       timezone: timezone ? timezone.name : ''
     }
+    console.log(defaultConfig)
     newState.defaults = { ...newState, dateLanguageList: defaultConfig.dateLanguageList }
     this.setState(newState)
   }

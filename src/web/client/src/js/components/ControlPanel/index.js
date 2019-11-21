@@ -207,6 +207,12 @@ class ControlPanel extends React.PureComponent {
         state.refreshRates[guildId] = {}
         state.guildLimits[guildId] = maxFeeds
         
+        for (const key in profile) {
+          if (typeof profile[key] !== 'object') {
+            state.guilds[guildId][key] = profile[key]
+          }
+        }
+
         if (!localGuildId || localGuildId === guildId) {
           if (!localGuildId) {
             window.localStorage.setItem('guildId', guildId)
