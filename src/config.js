@@ -26,6 +26,8 @@ function resolveWithEnv (variableName, configValue, configSpecification) {
       return value || process.env.REDIS_URL || configValue // REDIS_URL may be set by Heroku
     case `${ENV_PREFIX}FEEDS_DEFAULTMESSAGE`:
       return value ? value.replace(/\\n/g, '\n') : configValue
+    case `${ENV_PREFIX}WEB_PORT`:
+      return value || process.env.PORT || configValue // PORT may be set by Heroku
     default:
       switch (configSpecification.type) {
         case Number:
