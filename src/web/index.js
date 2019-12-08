@@ -51,7 +51,12 @@ const credentials = {
   auth: discordAPIConstants.auth
 }
 const oauth2 = require('simple-oauth2').create(credentials)
-if (!TEST_ENV && (!config.web.clientId || !config.web.clientSecret || !config.web.port)) throw new Error('Missing Cient ID, Secret and/or Port for web UI')
+if (!TEST_ENV) {
+  const { clientId, clientSecret, port } = config.web
+  if (!clientId || !clientSecret || !port) {
+    throw new Error(`Missing required info for web (Client ID Exists: ${!!clientId}, Client Secret Exists: ${!!clientSecret}, Web Port Exists: ${!!port})`)
+  }
+}
 
 module.exports = () => {
   if (TEST_ENV) {

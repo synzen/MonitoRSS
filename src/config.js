@@ -27,7 +27,8 @@ function resolveWithEnv (variableName, configValue, configSpecification) {
     case `${ENV_PREFIX}FEEDS_DEFAULTMESSAGE`:
       return value ? value.replace(/\\n/g, '\n') : configValue
     case `${ENV_PREFIX}WEB_PORT`:
-      return value || process.env.PORT || configValue // PORT may be set by Heroku
+      const port = value || process.env.PORT || configValue // PORT may be set by Heroku
+      return port ? Number(port) : port
     default:
       switch (configSpecification.type) {
         case Number:
