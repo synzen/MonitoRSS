@@ -38,7 +38,7 @@ function resolveWithEnv (variableName, configValue, configSpecification) {
         case Array:
           return value ? value.split(/\s*,\s*/) : configValue
         default:
-          return configValue
+          return value || configValue
       }
   }
 }
