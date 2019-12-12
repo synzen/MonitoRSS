@@ -35,6 +35,7 @@ class FeedSchedule extends EventEmitter {
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
     this._debugFeeds = new Set()
+    this._debugLinks = new Set()
     this._sourceList = new Map()
     this._modSourceList = new Map()
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
@@ -96,10 +97,13 @@ class FeedSchedule extends EventEmitter {
     for (const rssName in rssList) {
       if (!this.feedIDs.has(rssName)) continue
       const toDebug = this._debugFeeds.has(rssName)
+      const source = rssList[rssName]
+
       if (toDebug) {
         log.debug.info(`${rssName}: Preparing for feed delegation`)
+        this._debugLinks.add(source.link)
       }
-      const source = rssList[rssName]
+
       ++feedCount
       // Determine whether any feeds should be disabled
       if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === 'Exceeded feed limit') {
@@ -154,6 +158,9 @@ class FeedSchedule extends EventEmitter {
         batch = {}
       }
       batch[link] = rssList
+      if (this._debugLinks.has(link)) {
+        log.debug.info(`${link}: Attached URL to regular batch list`)
+      }
       this._linksResponded[link] = 1
     })
 
@@ -167,6 +174,9 @@ class FeedSchedule extends EventEmitter {
         batch = {}
       }
       batch[link] = source
+      if (this._debugLinks.has(link)) {
+        log.debug.info(`${link}: Attached URL to modded batch list`)
+      }
       if (!this._linksResponded[link]) this._linksResponded = 1
       else ++this._linksResponded[link]
     })
@@ -215,6 +225,7 @@ class FeedSchedule extends EventEmitter {
     }
 
     this._debugFeeds.clear()
+    this._debugLinks.clear()
     for (const feedID of debugFeeds) {
       this._debugFeeds.add(feedID)
     }
@@ -319,7 +330,7 @@ class FeedSchedule extends EventEmitter {
     let regIndices = []
     let modIndices = []
 
-    function deployProcessor (batchList, index, callback) {
+    const deployProcessor = (batchList, index, callback) => {
       if (!batchList) return
       let completedLinks = 0
       const currentBatch = batchList[index]
@@ -348,6 +359,9 @@ class FeedSchedule extends EventEmitter {
         ++this._cycleTotalCount
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
+        if (this._debugLinks.has(linkCompletion.link)) {
+          log.debug.info(`${linkCompletion.link}: Link responded from processor`)
+        }
         if (completedLinks === currentBatchLen) {
           completedBatches++
           processor.kill()
@@ -362,6 +376,7 @@ class FeedSchedule extends EventEmitter {
         config,
         currentBatch,
         debugFeeds,
+        debugLinks: Array.from(this._debugLinks),
         headers: this.headers,
         feedData: this.feedData,
         runNum: this.ran,
@@ -370,13 +385,13 @@ class FeedSchedule extends EventEmitter {
       })
     }
 
-    function spawn (count) {
+    const spawn = (count) => {
       for (var q = 0; q < count; ++q) {
         willCompleteBatch++
         const batchList = regIndices.length > 0 ? this._regBatchList : modIndices.length > 0 ? this._modBatchList : undefined
         const index = regIndices.length > 0 ? regIndices.shift() : modIndices.length > 0 ? modIndices.shift() : undefined
-        deployProcessor.bind(this)(batchList, index, () => {
-          if (willCompleteBatch < totalBatchLengths) spawn.bind(this)(1)
+        deployProcessor(batchList, index, () => {
+          if (willCompleteBatch < totalBatchLengths) spawn(1)
         })
       }
     }
@@ -384,10 +399,10 @@ class FeedSchedule extends EventEmitter {
     if (config.advanced.parallelBatches > 0) {
       for (var g = 0; g < this._regBatchList.length; ++g) regIndices.push(g)
       for (var h = 0; h < this._modBatchList.length; ++h) modIndices.push(h)
-      spawn.bind(this)(config.advanced.parallelBatches)
+      spawn(config.advanced.parallelBatches)
     } else {
-      for (var i = 0; i < this._regBatchList.length; ++i) { deployProcessor.bind(this)(this._regBatchList, i) }
-      for (var y = 0; y < this._modBatchList.length; ++y) { deployProcessor.bind(this)(this._modBatchList, y) }
+      for (var i = 0; i < this._regBatchList.length; ++i) { deployProcessor(this._regBatchList, i) }
+      for (var y = 0; y < this._modBatchList.length; ++y) { deployProcessor(this._modBatchList, y) }
     }
   }
 
