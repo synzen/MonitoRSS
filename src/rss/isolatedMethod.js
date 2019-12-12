@@ -5,9 +5,11 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('./logic/LinkLogic.js')
+const debug = require('../util/debugFeeds.js')
+const DataDebugger = require('../structs/DataDebugger.js')
 
 async function getFeed (data, callback) {
-  const { link, rssList, headers, debug } = data
+  const { link, rssList, headers, toDebug } = data
   const linkHeaders = headers[link]
   const fetchOptions = {}
   if (linkHeaders) {
@@ -21,13 +23,13 @@ async function getFeed (data, callback) {
   }
   let calledbacked = false
   try {
-    if (debug) {
+    if (toDebug) {
       log.debug.info(`${link}: Fetching URL`)
     }
     const { stream, response } = await FeedFetcher.fetchURL(link, fetchOptions)
     if (response.status === 304) {
       callback()
-      if (debug) {
+      if (toDebug) {
         log.debug.info(`${link}: 304 response, sending success status`)
       }
       return process.send({ status: 'success', link })
@@ -37,7 +39,7 @@ async function getFeed (data, callback) {
 
       if (lastModified && etag) {
         process.send({ status: 'headers', link, lastModified, etag })
-        if (debug) {
+        if (toDebug) {
           log.debug.info(`${link}: Sending back headers`)
         }
       }
@@ -45,19 +47,19 @@ async function getFeed (data, callback) {
 
     callback()
     calledbacked = true
-    if (debug) {
+    if (toDebug) {
       log.debug.info(`${link}: Parsing stream`)
     }
     const { articleList, idType } = await FeedFetcher.parseStream(stream, link)
     if (articleList.length === 0) {
-      if (debug) {
+      if (toDebug) {
         log.debug.info(`${link}: No articles found, sending success status`)
       }
       return process.send({ status: 'success', link: link })
     }
     const logic = new LinkLogic({ articleList, useIdType: idType, ...data })
     logic.on('article', article => {
-      if (debug) {
+      if (toDebug) {
         log.debug.info(`${link}: Sending article status`)
       }
       process.send({ status: 'article', article })
@@ -66,13 +68,13 @@ async function getFeed (data, callback) {
     process.send({ status: 'success', feedCollection, feedCollectionId, link })
   } catch (err) {
     if (err instanceof RequestError || err instanceof FeedParserError) {
-      if (logLinkErrs || debug) {
+      if (logLinkErrs || toDebug) {
         log.cycle.warning(`Skipping ${link}`, err)
       }
     } else {
       log.cycle.error(`Cycle logic (${link})`, err, true)
     }
-    if (debug) {
+    if (toDebug) {
       log.debug.info(`${link}: Sending failed status`)
     }
     process.send({ status: 'failed', link: link, rssList: rssList })
@@ -85,13 +87,15 @@ async function getFeed (data, callback) {
 
 process.on('message', m => {
   const currentBatch = m.currentBatch
-  const { debugLinks } = m
+  const { debugFeeds, debugLinks } = m
+  debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
+  debug.links = new DataDebugger(debugLinks || [], 'links-processor')
   connectDb(true).then(() => {
     const len = Object.keys(currentBatch).length
     let c = 0
     for (const link in currentBatch) {
-      const debug = debugLinks.includes(link)
-      if (debug) {
+      const toDebug = debug.links.has(link)
+      if (toDebug) {
         log.debug.info(`${link}: Isolated processor received link in batch`)
       }
       const rssList = currentBatch[link]
@@ -101,7 +105,7 @@ process.on('message', m => {
           uniqueSettings = rssList[modRssName].advanced
         }
       }
-      getFeed({ ...m, link, rssList, uniqueSettings, debug }, () => {
+      getFeed({ ...m, link, rssList, uniqueSettings, toDebug }, () => {
         if (++c === len) process.send({ status: 'batch_connected' })
       })
     }

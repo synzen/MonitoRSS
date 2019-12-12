@@ -33,6 +33,7 @@ class DebugData {
 
   /**
    * @param {T} id
+   * @returns {boolean}
    */
   has (value) {
     return this.data.has(value)

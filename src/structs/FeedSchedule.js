@@ -93,8 +93,11 @@ class FeedSchedule extends EventEmitter {
     let feedCount = 0 // For statistics in storage
 
     for (const rssName in rssList) {
-      if (!this.feedIDs.has(rssName)) continue
       const toDebug = debug.feeds.has(rssName)
+      if (!this.feedIDs.has(rssName)) {
+        log.debug.info(`${rssName}: Not processing feed since it is not assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+        continue
+      }
       const source = rssList[rssName]
 
       if (toDebug) {
@@ -156,7 +159,7 @@ class FeedSchedule extends EventEmitter {
       }
       batch[link] = rssList
       if (debug.links.has(link)) {
-        log.debug.info(`${link}: Attached URL to regular batch list`)
+        log.debug.info(`${link}: Attached URL to regular batch list for ${this.name} on ${this.SHARD_ID}`)
       }
       this._linksResponded[link] = 1
     })
@@ -172,7 +175,7 @@ class FeedSchedule extends EventEmitter {
       }
       batch[link] = source
       if (debug.links.has(link)) {
-        log.debug.info(`${link}: Attached URL to modded batch list`)
+        log.debug.info(`${link}: Attached URL to modded batch list for ${this.name} on ${this.SHARD_ID}`)
       }
       if (!this._linksResponded[link]) this._linksResponded = 1
       else ++this._linksResponded[link]
@@ -307,6 +310,9 @@ class FeedSchedule extends EventEmitter {
         ++this._cycleTotalCount
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
+        if (debug.links.has(linkCompletion.link)) {
+          log.debug.info(`${linkCompletion.link} - Link finished in processor on ${this.name} for (${this.SHARD_ID})`)
+        }
         if (completedLinks === currentBatchLen) {
           if (batchNumber !== batchList.length - 1) setTimeout(this._getBatch.bind(this), 200, batchNumber + 1, batchList, type)
           else if (type === 'regular' && this._modBatchList.length > 0) setTimeout(this._getBatch.bind(this), 200, 0, this._modBatchList, 'modded')
@@ -354,7 +360,7 @@ class FeedSchedule extends EventEmitter {
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
         if (debug.links.has(linkCompletion.link)) {
-          log.debug.info(`${linkCompletion.link}: Link responded from processor`)
+          log.debug.info(`${linkCompletion.link}: Link responded from processor for ${this.name} on ${this.SHARD_ID}`)
         }
         if (completedLinks === currentBatchLen) {
           completedBatches++
