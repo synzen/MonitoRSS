@@ -2,7 +2,7 @@ const config = require('../config.js')
 const Discord = require('discord.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
-const debugFeeds = require('../util/debugFeeds.js').list
+const debug = require('../util/debugFeeds.js')
 const Article = require('./Article.js')
 const deletedFeeds = storage.deletedFeeds
 const testFilters = require('../rss/translator/filters.js')
@@ -291,7 +291,9 @@ class ArticleMessage {
       }
     } catch (err) {
       if (err.code === 50013 || this.sendFailed++ === 4) { // 50013 = Missing Permissions
-        if (debugFeeds.includes(this.rssName)) log.debug.error(`${this.rssName}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
+        if (debug.feeds.has(this.rssName)) {
+          log.debug.error(`${this.rssName}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
+        }
         throw err
       }
       if (this.split) {

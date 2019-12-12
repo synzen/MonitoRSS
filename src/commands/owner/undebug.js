@@ -1,18 +1,20 @@
-const debugFeeds = require('../../util/debugFeeds.js').list
+const debug = require('../../util/debugFeeds.js')
 const log = require('../../util/logger.js')
 
-exports.normal = (bot, message) => {
+exports.normal = async (bot, message) => {
   const content = message.content.split(' ')
   if (content.length !== 2) return
 
   const rssName = content[1]
-
-  if (!debugFeeds.includes(rssName)) return log.owner.info(`Cannot remove, ${rssName} is not in debugging list.`)
-  for (var index in debugFeeds) {
-    if (debugFeeds[index] === rssName) {
-      debugFeeds.splice(index, 1)
-      return log.owner.info(`Removed ${rssName} from debugging list.`)
+  try {
+    if (!debug.feeds.has(rssName)) {
+      return await message.channel.send(`Cannot remove, ${rssName} is not in debugging list.`)
     }
+    debug.feeds.remove(rssName)
+    return await message.channel.send(`Removed ${rssName} from debugging list.`)
+  } catch (err) {
+    log.owner.warning('debug', err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('undebug 1', message.guild, err))
   }
 }
 
@@ -26,16 +28,8 @@ exports.sharded = (bot, message, Manager) => {
     const path = require('path');
     const appDir = path.dirname(require.main.filename);
     const log = require(appDir + '/src/util/logger.js');
-    const debugFeeds = require(appDir + '/src/util/debugFeeds.js').list;
-
-    if (debugFeeds.includes('${rssName}')) {
-      for (var index in debugFeeds) {
-        if (debugFeeds[index] === '${rssName}') {
-          debugFeeds.splice(index, 1);
-          log.owner.info('Removed ${rssName} from debugging list');
-        }
-      }
-    }
+    const debug = require(appDir + '/src/util/debugFeeds.js');
+    debug.feeds.remove('${rssName}');
   `).catch(err => {
     log.owner.warning(`Unable to broadcast undebug eval`, message.author, err)
   })

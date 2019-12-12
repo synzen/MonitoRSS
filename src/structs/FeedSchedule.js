@@ -7,7 +7,7 @@ const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const dbOpsVips = require('../util/db/vips.js')
 const dbOpsStatistics = require('../util/db/statistics.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
-const debugFeeds = require('../util/debugFeeds.js').list
+const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
 const storage = require('../util/storage.js') // All properties of storage must be accessed directly due to constant changes
@@ -34,8 +34,6 @@ class FeedSchedule extends EventEmitter {
     this._modBatchList = [] // Batch of sources with cookies
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
-    this._debugFeeds = new Set()
-    this._debugLinks = new Set()
     this._sourceList = new Map()
     this._modSourceList = new Map()
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
@@ -74,14 +72,14 @@ class FeedSchedule extends EventEmitter {
     } else if (this._sourceList.has(source.link)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
       let linkList = this._sourceList.get(source.link)
       linkList[rssName] = source
-      if (this._debugFeeds.has(rssName)) {
+      if (debug.feeds.has(rssName)) {
         log.debug.info(`${rssName}: Adding to pre-existing source list`)
       }
     } else {
       let linkList = {}
       linkList[rssName] = source
       this._sourceList.set(source.link, linkList)
-      if (this._debugFeeds.has(rssName)) {
+      if (debug.feeds.has(rssName)) {
         log.debug.info(`${rssName}: Creating new source list`)
       }
     }
@@ -96,12 +94,11 @@ class FeedSchedule extends EventEmitter {
 
     for (const rssName in rssList) {
       if (!this.feedIDs.has(rssName)) continue
-      const toDebug = this._debugFeeds.has(rssName)
+      const toDebug = debug.feeds.has(rssName)
       const source = rssList[rssName]
 
       if (toDebug) {
         log.debug.info(`${rssName}: Preparing for feed delegation`)
-        this._debugLinks.add(source.link)
       }
 
       ++feedCount
@@ -158,7 +155,7 @@ class FeedSchedule extends EventEmitter {
         batch = {}
       }
       batch[link] = rssList
-      if (this._debugLinks.has(link)) {
+      if (debug.links.has(link)) {
         log.debug.info(`${link}: Attached URL to regular batch list`)
       }
       this._linksResponded[link] = 1
@@ -174,7 +171,7 @@ class FeedSchedule extends EventEmitter {
         batch = {}
       }
       batch[link] = source
-      if (this._debugLinks.has(link)) {
+      if (debug.links.has(link)) {
         log.debug.info(`${link}: Attached URL to modded batch list`)
       }
       if (!this._linksResponded[link]) this._linksResponded = 1
@@ -224,11 +221,6 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
-    this._debugFeeds.clear()
-    this._debugLinks.clear()
-    for (const feedID of debugFeeds) {
-      this._debugFeeds.add(feedID)
-    }
     this.feedIDs.clear()
     const [ failedLinks, assignedSchedules, guildRssList ] = await Promise.all([ dbOpsFailedLinks.getAll(), dbOpsSchedules.assignedSchedules.getMany(this.shardID, this.name), dbOpsGuilds.getAll() ])
     this.failedLinks = {}
@@ -236,7 +228,7 @@ class FeedSchedule extends EventEmitter {
       this.failedLinks[item.link] = item.failed || item.count
     }
     for (const assigned of assignedSchedules) {
-      if (this._debugFeeds.has(assigned.feedID)) {
+      if (debug.feeds.has(assigned.feedID)) {
         log.debug.info(`${assigned.feedID}: Found assigned schedule ${this.name} on shard ${this.SHARD_ID}`)
       }
       this.feedIDs.add(assigned.feedID)
@@ -298,7 +290,9 @@ class FeedSchedule extends EventEmitter {
       getArticles(data, (err, linkCompletion) => {
         if (err) log.cycle.warning(`Skipping ${linkCompletion.link}`, err)
         if (linkCompletion.status === 'article') {
-          if (debugFeeds.includes(linkCompletion.article.rssName)) log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
+          if (debug.feeds.has(linkCompletion.article.rssName)) {
+            log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
+          }
           return this.emit('article', linkCompletion.article)
         }
         if (linkCompletion.status === 'failed') {
@@ -359,7 +353,7 @@ class FeedSchedule extends EventEmitter {
         ++this._cycleTotalCount
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
-        if (this._debugLinks.has(linkCompletion.link)) {
+        if (debug.links.has(linkCompletion.link)) {
           log.debug.info(`${linkCompletion.link}: Link responded from processor`)
         }
         if (completedLinks === currentBatchLen) {
@@ -375,8 +369,8 @@ class FeedSchedule extends EventEmitter {
       processor.send({
         config,
         currentBatch,
-        debugFeeds,
-        debugLinks: Array.from(this._debugLinks),
+        debugFeeds: debug.feeds.serialize(),
+        debugLinks: debug.links.serialize(),
         headers: this.headers,
         feedData: this.feedData,
         runNum: this.ran,

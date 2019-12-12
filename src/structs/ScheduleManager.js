@@ -1,6 +1,6 @@
 const config = require('../config.js')
 const FeedSchedule = require('./FeedSchedule.js')
-const debugFeeds = require('../util/debugFeeds.js').list
+const debug = require('../util/debugFeeds.js')
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')
 const log = require('../util/logger.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
@@ -17,7 +17,7 @@ class ScheduleManager {
   }
 
   async _queueArticle (article) {
-    if (debugFeeds.includes(article._delivery.rssName)) {
+    if (debug.feeds.has(article._delivery.rssName)) {
       log.debug.info(`${article._delivery.rssName} ScheduleManager queueing article ${article.link} to send`)
     }
     try {
@@ -127,7 +127,7 @@ class ScheduleManager {
     for (let i = 0; i < scheduleNames.length; ++i) {
       const scheduleName = scheduleNames[i]
       const { feedID, link, guildID } = feedRecords[i]
-      if (debugFeeds.includes(feedID)) {
+      if (debug.feeds.has(feedID)) {
         log.debug.info(`${feedID}: Determined schedule is ${scheduleName}`)
       }
       const toInsert = { feedID, schedule: scheduleName, link, guildID, shard }
