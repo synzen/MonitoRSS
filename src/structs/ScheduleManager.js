@@ -127,6 +127,9 @@ class ScheduleManager {
     for (let i = 0; i < scheduleNames.length; ++i) {
       const scheduleName = scheduleNames[i]
       const { feedID, link, guildID } = feedRecords[i]
+      if (debugFeeds.includes(feedID)) {
+        log.debug.info(`${feedID}: Determined schedule is ${scheduleName}`)
+      }
       const toInsert = { feedID, schedule: scheduleName, link, guildID, shard }
       documentsToInsert.push(new AssignedSchedule(toInsert))
     }
