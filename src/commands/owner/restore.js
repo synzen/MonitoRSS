@@ -5,7 +5,7 @@ const log = require('../../util/logger.js')
 async function getID (message) {
   const arr = message.content.split(' ')
   const id = arr[1]
-  if (!id) throw new Error('No ID found')
+  if (!id) throw new Error('No ID found. You must pass the server ID as an argument to this command.')
   const attachment = message.attachments.first()
   const url = attachment ? attachment.url : undefined
   if (!url) throw new Error('No attachment found')
