@@ -4,7 +4,7 @@ A web server for https://github.com/synzen/Discord.RSS to manage your feeds. The
 
 Mobile responsive UI, built according to Discord's theme with Discord's blessing
 
-![UI Screenshot](https://i.imgur.com/lHnZOJi.png)
+![UI Screenshot](https://i.imgur.com/CD8mbRh.png)
 
 # Development:
 

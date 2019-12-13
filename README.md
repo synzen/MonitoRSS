@@ -38,6 +38,12 @@ drss.login('token')
 There are multiple ways of integrating Discord.RSS programmatically - see [here](https://github.com/synzen/Discord.RSS/wiki/Use-with-Existing-Bot) for more information. For full features, use a mongodb database.uri instead of a directory.
 
 
+### Web Interface
+
+For instructions on how to get the web interface working, see https://github.com/synzen/Discord.RSS/tree/dev/src/web
+
+![UI Screenshot](https://i.imgur.com/CD8mbRh.png)
+
 ## Built With		
 * [Node.js](https://nodejs.org/en/)		
 * [discord.js](https://www.npmjs.com/package/discord.js)
