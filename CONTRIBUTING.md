@@ -17,7 +17,7 @@ To get ready to work on the codebase, please do the following:
 3. Create a `.env` file in the root (or `.env.` if you're on Windows, which will automatically become `.env`) and copy the necessary variables there from the `.env.example`
 4. Create a new branch to work on
 5. Code
-6. Run `npm run eslint` to run ESLint and automatically fix problems in coding style
+6. Run `npm run lint` to run ESLint and automatically fix problems in coding style
 7. Run `npm run dev` (or `heroku local` if you prefer Heroku CLI) to test run the bot
 8. Push your work to your fork and submit a pull request (before that you may need to merge the latest from **upstream**)
 
