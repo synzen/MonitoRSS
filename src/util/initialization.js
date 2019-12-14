@@ -10,13 +10,6 @@ const dbOpsGeneral = require('./db/general.js')
 const Article = require('../models/Article.js')
 const log = require('./logger.js')
 const redisIndex = require('../structs/db/Redis/index.js')
-const FAIL_LIMIT = config.feeds.failLimit
-
-function reachedFailCount (link, failedLinks) {
-  const failed = typeof failedLinks[link] === 'string' || (typeof failedLinks[link] === 'number' && failedLinks[link] >= FAIL_LIMIT) // string indicates it has reached the fail count, and is the date of when it failed
-  if (failed && config.log.failedFeeds !== false) log.init.warning(`Feeds with link ${link} will be skipped due to reaching fail limit (${FAIL_LIMIT})`)
-  return failed
-}
 
 module.exports = async bot => {
   const currentCollections = new Set() // currentCollections is only used if there is no sharding (for database cleaning)
