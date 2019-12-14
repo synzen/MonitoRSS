@@ -24,7 +24,6 @@ module.exports = async bot => {
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
   const guildsInfo = {}
   const missingGuilds = {}
-  const activeSourcesForTracker = []
 
   // Remove expires index
   if (config.database.guildBackupsExpire <= 0) {
@@ -48,7 +47,7 @@ module.exports = async bot => {
   const guildRssList = await dbOpsGuilds.getAll()
   const updatePromises = []
   const removePromises = []
-  for (var r = 0; r < guildRssList.length; ++r) {
+  for (let r = 0; r < guildRssList.length; ++r) {
     const guildRss = guildRssList[r]
     const guildId = guildRss.id
     if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
@@ -65,13 +64,6 @@ module.exports = async bot => {
     shouldUpdate = updatedSubscriptions || updatedVersion || resetLocale
 
     guildsInfo[guildId] = guildRss
-    const rssList = guildRss.sources
-
-    for (const rssName in rssList) {
-      const source = rssList[rssName]
-      // Assign feeds to specific schedules in assignedSchedules for use by feedSchedules by rssNames first
-      if (checkGuild.config(bot, guildRss, rssName, true) && !reachedFailCount(source.link, failedLinks)) activeSourcesForTracker.push({ link: source.link, rssName, server: guildId })
-    }
 
     if (shouldUpdate) updatePromises.push(dbOpsGuilds.update(guildRss))
   }
