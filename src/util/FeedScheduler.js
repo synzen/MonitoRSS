@@ -66,7 +66,6 @@ class FeedScheduler {
         log.debug.info(`${feedID}: Determined schedule is ${scheduleName}`)
       }
       const toInsert = { feedID, schedule: scheduleName, link, guildID, shard }
-      console.log('toinsert', toInsert)
       documentsToInsert.push(new AssignedSchedule(toInsert))
     }
 
