@@ -11,6 +11,9 @@ module.exports = async (bot, message, command) => {
   try {
     const guildRss = await dbOpsGuilds.get(message.guild.id)
     const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+    if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) {
+      return await message.channel.send(translate('commands.rsslist.noFeeds'))
+    }
 
     if (FAIL_LIMIT === 0) {
       return await message.channel.send(translate('commands.rssrefresh.noFailLimit'))
