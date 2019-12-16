@@ -7,10 +7,13 @@ const AssignedScheduleModel = require('../models/AssignedSchedule.js')
 const ArticleModel = require('../models/Article.js')
 
 class FeedScheduler {
+  static async clearAll () {
+    await dbOpsSchedules.assignedSchedules.clear()
+  }
+
   static async assignSchedules (shard, guildIds, vipServers) {
     // Remove the old schedules
     const promises = [
-      dbOpsSchedules.assignedSchedules.clear(),
       dbOpsSchedules.schedules.getAll(),
       dbOpsGuilds.getAll()
     ]
@@ -21,14 +24,14 @@ class FeedScheduler {
 
     const results = await Promise.all(promises)
 
-    const scheduleList = results[1]
+    const scheduleList = results[0]
     const guildIdsSet = new Set(guildIds)
     const schedulesByName = {}
     for (const schedule of scheduleList) {
       schedulesByName[schedule.name] = schedule
     }
 
-    const guildRssList = results[2]
+    const guildRssList = results[1]
     // const vipServers = []
     // if (config._vip === true) {
     //   const vipUsers = results[3]
@@ -63,6 +66,7 @@ class FeedScheduler {
         log.debug.info(`${feedID}: Determined schedule is ${scheduleName}`)
       }
       const toInsert = { feedID, schedule: scheduleName, link, guildID, shard }
+      console.log('toinsert', toInsert)
       documentsToInsert.push(new AssignedSchedule(toInsert))
     }
 

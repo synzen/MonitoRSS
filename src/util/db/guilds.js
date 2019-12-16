@@ -6,7 +6,7 @@ const GuildProfile = require('../../models/GuildProfile.js')
 const GuildProfileBackup = require('../../models/GuildProfileBackup.js')
 const config = require('../../config.js')
 const redisIndex = require('../../structs/db/Redis/index.js')
-const ScheduleManager = require('../../structs/ScheduleManager.js')
+const FeedScheduler = require('../../util/FeedScheduler.js')
 const log = require('../logger.js')
 const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FIND_PROJECTION = '-_id -__v'
@@ -126,7 +126,7 @@ exports.removeFeed = async (guildRss, rssName, shardID) => {
   delete guildRss.sources[rssName]
   storage.deletedFeeds.push(rssName)
   const res = await exports.update(guildRss)
-  await ScheduleManager.removeScheduleOfFeed(rssName, link, shardID)
+  await FeedScheduler.removeScheduleOfFeed(rssName, link, shardID)
   return res
 }
 

@@ -44,6 +44,7 @@ class ClientManager extends EventEmitter {
   async run () {
     try {
       await connectDb()
+      await FeedScheduler.clearAll()
       await ScheduleManager.initializeSchedules()
       if (config.web.enabled === true && !this.webClientInstance) {
         this.webClientInstance = webClient()

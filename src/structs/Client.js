@@ -210,6 +210,7 @@ class Client extends EventEmitter {
         await dbOpsGeneral.verifyFeedIDs()
         await redisIndex.flushDatabase()
         await ScheduleManager.initializeSchedules(this.customSchedules)
+        await FeedScheduler.clearAll()
         await FeedScheduler.assignSchedules(undefined, Array.from(this.bot.guilds.keys()), await dbOpsVips.getValidServers())
       }
       if (!this.scheduleManager) {
