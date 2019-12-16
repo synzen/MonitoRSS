@@ -225,8 +225,7 @@ class ScheduleManager {
 
   static async assignSchedule (feedID, guildRss, shardId, vipServers) {
     const scheduleName = await ScheduleManager.determineSchedule(feedID, guildRss, vipServers, shardId)
-    await dbOpsSchedules.assignedSchedules.set(feedID, scheduleName, guildRss.sources[feedID].link, guildRss.id)
-    return scheduleName
+    return dbOpsSchedules.assignedSchedules.set(feedID, scheduleName, guildRss.sources[feedID].link, guildRss.id)
   }
 
   static async removeScheduleOfFeed (feedID, link, shardID) {

@@ -63,7 +63,7 @@ exports.assignedSchedules = {
     const exists = await exports.schedules.get(scheduleName)
     if (!exists) throw new Error(`Schedule ${scheduleName} does not exist`)
     const toSet = { feedID, schedule: scheduleName, link, guildID, shard }
-    return AssignedSchedule.model().updateOne({ feedID }, { $set: toSet }, UPDATE_SETTINGS).exec()
+    return AssignedSchedule.model().findOneAndUpdate({ feedID }, { $set: toSet }, { ...UPDATE_SETTINGS, new: true }).lean().exec()
   },
   setMany: async docs => {
     if (!config.database.uri.startsWith('mongo')) return
