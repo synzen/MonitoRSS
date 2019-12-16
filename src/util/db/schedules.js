@@ -6,9 +6,13 @@ const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FIND_PROJECTION = '-_id -__v'
 
 exports.schedules = {
-  add: async (name, refreshRateMinutes) => {
+  add: async (name, refreshRateMinutes, keywords, rssNames) => {
     if (!config.database.uri.startsWith('mongo')) return
-    return Schedule.model().updateOne({ name }, { name, refreshRateMinutes }, UPDATE_SETTINGS).exec()
+    const toAdd = { name, refreshRateMinutes, keywords, rssNames }
+    const ScheduleModel = Schedule.model()
+    const schedule = new ScheduleModel(toAdd)
+    await schedule.save()
+    return schedule
   },
   get: async name => {
     if (!config.database.uri.startsWith('mongo')) return

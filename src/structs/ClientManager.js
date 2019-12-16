@@ -4,6 +4,7 @@ const connectDb = require('../rss/db/connect.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGeneral = require('../util/db/general.js')
+const ScheduleManager = require('./ScheduleManager.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/owner/dbrestore.js')
@@ -40,12 +41,16 @@ class ClientManager extends EventEmitter {
   async run () {
     try {
       await connectDb()
-      if (config.web.enabled === true && !this.webClientInstance) this.webClientInstance = webClient()
+      await ScheduleManager.initializeSchedules()
+      if (config.web.enabled === true && !this.webClientInstance) {
+        this.webClientInstance = webClient()
+      }
       await dbOpsGeneral.verifyFeedIDs()
       await redisIndex.flushDatabase()
-      await dbOpsSchedules.schedules.clear()
       await dbOpsSchedules.assignedSchedules.clear()
-      if (this.shardingManager.shards.size === 0) this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
+      if (this.shardingManager.shards.size === 0) {
+        this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
+      }
     } catch (err) {
       log.general.error(`ClientManager db connection`, err)
     }
@@ -81,6 +86,7 @@ class ClientManager extends EventEmitter {
   }
 
   async _shardReadyEvent (shard, message) {
+    await ScheduleManager.assignSchedules(shard.id, message.guildIds)
     this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: shard.id }) // Send the signal for first shard to initialize
   }
 
@@ -180,7 +186,7 @@ class ClientManager extends EventEmitter {
       // Only needs to be run on a single shard since dbOps uniformizes it across all shards
       this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err))
     }, 900000)
-    this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err)) // Manually run this to update the names
+    // this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err)) // Manually run this to update the names
   }
 }
 

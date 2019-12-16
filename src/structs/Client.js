@@ -10,6 +10,7 @@ const dbOpsBlacklists = require('../util/db/blacklists.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const dbOpsGeneral = require('../util/db/general.js')
 const dbOpsVips = require('../util/db/vips.js')
+const dbOpsSchedules = require('../util/db/schedules.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientManager = require('./ClientManager.js')
@@ -36,14 +37,23 @@ class Client extends EventEmitter {
       log.suppressLevel(settings.suppressLogLevels)
     }
     if (customSchedules) {
-      if (!Array.isArray(customSchedules)) throw new Error('customSchedules parameter must be an array of objects')
-      else {
+      if (!Array.isArray(customSchedules)) {
+        throw new Error('customSchedules parameter must be an array of objects')
+      } else {
         for (const schedule of customSchedules) {
-          if (schedule.name === 'default') throw new Error('Schedule name cannot be "default"')
+          if (schedule.name === 'default') {
+            throw new Error('Schedule name cannot be "default"')
+          }
           const keys = Object.keys(schedule)
-          if (!keys.includes('name')) throw new Error('Schedule "name" must be defined')
-          if (!keys.includes('refreshRateMinutes')) throw new Error('Schedule "refreshRateMinutes" must be defined')
-          if (!keys.includes('keywords') && !keys.includes('feedIDs')) throw new Error('Schedule "keywords" or "feedIDs" must be defined')
+          if (!keys.includes('name')) {
+            throw new Error('Schedule "name" must be defined')
+          }
+          if (!keys.includes('refreshRateMinutes')) {
+            throw new Error('Schedule "refreshRateMinutes" must be defined')
+          }
+          if (!keys.includes('keywords') && !keys.includes('feedIDs')) {
+            throw new Error('Schedule "keywords" or "feedIDs" must be defined')
+          }
         }
       }
     }
@@ -135,8 +145,12 @@ class Client extends EventEmitter {
       } else this.stop()
     })
     log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
-    if (!bot.shard || bot.shard.count === 0) this.start()
-    else process.send({ _drss: true, type: 'shardReady', shardId: bot.shard.id })
+    if (!bot.shard || bot.shard.count === 0) {
+      this.start()
+    } else {
+      const guildIds = Array.from(bot.guilds.keyArray())
+      process.send({ _drss: true, type: 'shardReady', shardId: bot.shard.id, guildIds })
+    }
   }
 
   listenToShardedEvents (bot) {
@@ -195,20 +209,12 @@ class Client extends EventEmitter {
       if (!this.bot.shard || this.bot.shard.count === 0) {
         await dbOpsGeneral.verifyFeedIDs()
         await redisIndex.flushDatabase()
+        await ScheduleManager.initializeSchedules(this.customSchedules)
       }
       if (!this.scheduleManager) {
         const refreshRates = new Set()
         refreshRates.add(config.feeds.refreshRateMinutes)
         this.scheduleManager = new ScheduleManager(storage.bot)
-        const addSchedulePromises = []
-        addSchedulePromises.push(this.scheduleManager.addSchedule({ name: 'default', refreshRateMinutes: config.feeds.refreshRateMinutes }, false, true))
-        if (config._vip === true) {
-          if (!config._vipRefreshRateMinutes || config.feeds.refreshRateMinutes === config._vipRefreshRateMinutes) {
-            throw new Error('Missing valid VIP refresh rate')
-          }
-          refreshRates.add(config._vipRefreshRateMinutes)
-          addSchedulePromises.push(this.scheduleManager.addSchedule({ name: 'vip', refreshRateMinutes: config._vipRefreshRateMinutes, feedIDs: [] }, false, true))
-        }
         const names = new Set()
         for (const schedule of this.customSchedules) {
           const name = schedule.name
@@ -219,16 +225,14 @@ class Client extends EventEmitter {
             throw new Error(`Schedules cannot have the same name (${name})`)
           }
           names.add(name)
-          addSchedulePromises.push(this.scheduleManager.addSchedule(schedule, false, true))
           if (refreshRates.has(schedule.refreshRateMinutes)) {
             throw new Error('Duplicate schedule refresh rates are not allowed')
           }
           refreshRates.add(schedule.refreshRateMinutes)
         }
-        await Promise.all(addSchedulePromises)
+        await this.scheduleManager._registerSchedules()
         storage.scheduleManager = this.scheduleManager
       }
-      await this.scheduleManager.assignAllSchedules()
       const { missingGuilds, activeLinks } = await initialize(this.bot)
 
       storage.initialized = 2

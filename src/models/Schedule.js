@@ -5,7 +5,15 @@ const schema = mongoose.Schema({
     type: String,
     unique: true
   },
-  refreshRateMinutes: Number
+  refreshRateMinutes: Number,
+  keywords: {
+    type: Array,
+    default: []
+  },
+  feedIds: {
+    type: Array,
+    default: []
+  }
 })
 
 exports.schema = schema
