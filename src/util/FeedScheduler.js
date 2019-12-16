@@ -138,7 +138,7 @@ class FeedScheduler {
 
   static async assignSchedule (feedID, guildRss, shardId, vipServers) {
     const scheduleName = await FeedScheduler.determineSchedule(feedID, guildRss, vipServers, shardId)
-    return dbOpsSchedules.assignedSchedules.set(feedID, scheduleName, guildRss.sources[feedID].link, guildRss.id)
+    return dbOpsSchedules.assignedSchedules.set(feedID, scheduleName, guildRss.sources[feedID].link, guildRss.id, shardId)
   }
 
   static async removeScheduleOfFeed (feedID, link, shardID) {

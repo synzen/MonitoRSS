@@ -1,4 +1,3 @@
-const storage = require('../storage.js')
 const config = require('../../config.js')
 const Schedule = require('../../models/Schedule.js')
 const AssignedSchedule = require('../../models/AssignedSchedule.js')
@@ -57,12 +56,12 @@ exports.assignedSchedules = {
     if (!Array.isArray(ids)) throw new Error('ids is not an array')
     return AssignedSchedule.model().find({ feedID: { $in: ids } }, FIND_PROJECTION).lean().exec()
   },
-  set: async (feedID, scheduleName, link, guildID) => {
+  set: async (feedID, scheduleName, link, guildID, shardId) => {
     if (!config.database.uri.startsWith('mongo')) return
-    const shard = storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
+    // const shard = storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
     const exists = await exports.schedules.get(scheduleName)
     if (!exists) throw new Error(`Schedule ${scheduleName} does not exist`)
-    const toSet = { feedID, schedule: scheduleName, link, guildID, shard }
+    const toSet = { feedID, schedule: scheduleName, link, guildID, shard: Number(shardId) }
     return AssignedSchedule.model().findOneAndUpdate({ feedID }, { $set: toSet }, { ...UPDATE_SETTINGS, new: true }).lean().exec()
   },
   setMany: async docs => {
