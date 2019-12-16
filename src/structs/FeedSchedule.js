@@ -94,7 +94,7 @@ class FeedSchedule extends EventEmitter {
 
     for (const rssName in rssList) {
       const toDebug = debug.feeds.has(rssName)
-      if (!this.feedIDs.has(rssName)) {
+      if (this.feedIDs.has(rssName)) {
         log.debug.info(`${rssName}: Not processing feed since it is not assigned to schedule ${this.name} on ${this.SHARD_ID}`)
         continue
       }
