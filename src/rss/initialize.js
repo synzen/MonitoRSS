@@ -7,9 +7,8 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsVips = require('../util/db/vips.js')
-const storage = require('../util/storage.js')
 const Article = require('../models/Article.js')
-const ScheduleManager = require('../structs/ScheduleManager.js')
+const FeedScheduler = require('../util/FeedScheduler.js')
 const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'))).version
 
 exports.initializeFeed = async (articleList, link, assignedSchedule, shardId) => {
@@ -91,9 +90,7 @@ exports.addNewFeed = async (settings, customTitle) => {
     }
   }
   if (!allArticlesHaveDates) guildRss.sources[rssName].checkDates = false
-  if (storage.scheduleManager) {
-    assignedSchedule = await ScheduleManager.assignSchedule(rssName, guildRss, shardId, await dbOpsVips.getValidServers()) // await storage.scheduleManager.assignSchedule(rssName, guildRss)
-  }
+  assignedSchedule = await FeedScheduler.assignSchedule(rssName, guildRss, shardId, await dbOpsVips.getValidServers()) // await storage.scheduleManager.assignSchedule(rssName, guildRss)
 
   exports.initializeFeed(articleList, link, assignedSchedule.name, shardId)
     .catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))

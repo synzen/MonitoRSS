@@ -4,6 +4,7 @@ const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
 const config = require('../config.js')
 const ScheduleManager = require('./ScheduleManager.js')
+const FeedScheduler = require('../util/FeedScheduler.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const dbOpsBlacklists = require('../util/db/blacklists.js')
@@ -209,7 +210,7 @@ class Client extends EventEmitter {
         await dbOpsGeneral.verifyFeedIDs()
         await redisIndex.flushDatabase()
         await ScheduleManager.initializeSchedules(this.customSchedules)
-        await ScheduleManager.assignSchedules(undefined, Array.from(this.bot.guilds.keys()), await dbOpsVips.getValidServers())
+        await FeedScheduler.assignSchedules(undefined, Array.from(this.bot.guilds.keys()), await dbOpsVips.getValidServers())
       }
       if (!this.scheduleManager) {
         const refreshRates = new Set()

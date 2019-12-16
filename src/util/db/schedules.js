@@ -59,7 +59,7 @@ exports.assignedSchedules = {
   },
   set: async (feedID, scheduleName, link, guildID) => {
     if (!config.database.uri.startsWith('mongo')) return
-    const shard = storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : -1
+    const shard = storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined
     const exists = await exports.schedules.get(scheduleName)
     if (!exists) throw new Error(`Schedule ${scheduleName} does not exist`)
     const toSet = { feedID, schedule: scheduleName, link, guildID, shard }
