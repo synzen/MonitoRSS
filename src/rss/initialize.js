@@ -90,7 +90,7 @@ exports.addNewFeed = async (settings, customTitle) => {
     }
   }
   if (!allArticlesHaveDates) guildRss.sources[rssName].checkDates = false
-  assignedSchedule = await FeedScheduler.assignSchedule(rssName, guildRss, shardId, await dbOpsVips.getValidServers()) // await storage.scheduleManager.assignSchedule(rssName, guildRss)
+  assignedSchedule = await FeedScheduler.assignSchedule(rssName, guildRss, shardId, await dbOpsVips.getValidServers())
 
   exports.initializeFeed(articleList, link, assignedSchedule.name, shardId)
     .catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
