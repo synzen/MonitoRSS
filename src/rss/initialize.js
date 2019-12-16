@@ -6,6 +6,7 @@ const dbCmds = require('./db/commands.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
+const dbOpsVips = require('../util/db/vips.js')
 const storage = require('../util/storage.js')
 const Article = require('../models/Article.js')
 const ScheduleManager = require('../structs/ScheduleManager.js')
@@ -91,7 +92,7 @@ exports.addNewFeed = async (settings, customTitle) => {
   }
   if (!allArticlesHaveDates) guildRss.sources[rssName].checkDates = false
   if (storage.scheduleManager) {
-    assignedSchedule = await ScheduleManager.assignSchedule(rssName, guildRss, shardId) // await storage.scheduleManager.assignSchedule(rssName, guildRss)
+    assignedSchedule = await ScheduleManager.assignSchedule(rssName, guildRss, shardId, await dbOpsVips.getValidServers()) // await storage.scheduleManager.assignSchedule(rssName, guildRss)
   }
 
   exports.initializeFeed(articleList, link, assignedSchedule.name, shardId)

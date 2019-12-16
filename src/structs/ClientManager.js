@@ -4,12 +4,14 @@ const connectDb = require('../rss/db/connect.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGeneral = require('../util/db/general.js')
+const dbOpsVips = require('../util/db/vips.js')
 const ScheduleManager = require('./ScheduleManager.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const log = require('../util/logger.js')
 const dbRestore = require('../commands/owner/dbrestore.js')
 const EventEmitter = require('events')
 const ArticleModel = require('../models/Article.js')
+
 let webClient
 
 class ClientManager extends EventEmitter {
@@ -86,7 +88,7 @@ class ClientManager extends EventEmitter {
   }
 
   async _shardReadyEvent (shard, message) {
-    await ScheduleManager.assignSchedules(shard.id, message.guildIds)
+    await ScheduleManager.assignSchedules(shard.id, message.guildIds, await dbOpsVips.getValidServers())
     this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: shard.id }) // Send the signal for first shard to initialize
   }
 

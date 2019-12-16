@@ -5,7 +5,7 @@ const ArticleMessageQueue = require('./ArticleMessageQueue.js')
 const log = require('../util/logger.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGuilds = require('../util/db/guilds.js')
-const dbOpsVips = require('../util/db/vips.js')
+// const dbOpsVips = require('../util/db/vips.js')
 const AssignedScheduleModel = require('../models/AssignedSchedule.js')
 const ArticleModel = require('../models/Article.js')
 
@@ -99,7 +99,7 @@ class ScheduleManager {
     }
   }
 
-  static async assignSchedules (shard, guildIds) {
+  static async assignSchedules (shard, guildIds, vipServers) {
     // Remove the old schedules
     const promises = [
       dbOpsSchedules.assignedSchedules.clear(),
@@ -107,9 +107,9 @@ class ScheduleManager {
       dbOpsGuilds.getAll()
     ]
 
-    if (config._vip === true) {
-      promises.push(dbOpsVips.getAll())
-    }
+    // if (config._vip === true) {
+      // promises.push(dbOpsVips.getAll())
+    // }
 
     const results = await Promise.all(promises)
 
@@ -121,18 +121,18 @@ class ScheduleManager {
     }
 
     const guildRssList = results[2]
-    const vipServers = []
-    if (config._vip === true) {
-      const vipUsers = results[3]
-      for (const vipUser of vipUsers) {
-        if (vipUser.invalid || vipUser.regularRefreshRate) {
-          continue
-        }
-        for (const serverId of vipUser.servers) {
-          vipServers.push(serverId)
-        }
-      }
-    }
+    // const vipServers = []
+    // if (config._vip === true) {
+    //   const vipUsers = results[3]
+    //   for (const vipUser of vipUsers) {
+    //     if (vipUser.invalid || vipUser.regularRefreshRate) {
+    //       continue
+    //     }
+    //     for (const serverId of vipUser.servers) {
+    //       vipServers.push(serverId)
+    //     }
+    //   }
+    // }
     const scheduleDeterminationPromises = []
     const feedRecords = []
     guildRssList.forEach(guildRss => {
@@ -162,18 +162,18 @@ class ScheduleManager {
   }
 
   static async determineSchedule (rssName, guildRss, vipServers, shardID, scheduleList) {
-    if (config._vip === true && !vipServers) {
-      vipServers = []
-      const vipUsers = await dbOpsVips.getAll()
-      for (const vipUser of vipUsers) {
-        if (vipUser.invalid) {
-          continue
-        }
-        for (const serverId of vipUser.servers) {
-          vipServers.push(serverId)
-        }
-      }
-    }
+    // if (config._vip === true && !vipServers) {
+    //   vipServers = []
+    //   const vipUsers = await dbOpsVips.getAll()
+    //   for (const vipUser of vipUsers) {
+    //     if (vipUser.invalid) {
+    //       continue
+    //     }
+    //     for (const serverId of vipUser.servers) {
+    //       vipServers.push(serverId)
+    //     }
+    //   }
+    // }
 
     if (!scheduleList) {
       scheduleList = await dbOpsSchedules.schedules.getAll()

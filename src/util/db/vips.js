@@ -7,12 +7,27 @@ const log = require('../logger.js')
 const UPDATE_SETTINGS = { upsert: true, strict: true }
 const FIND_PROJECTION = '-_id -__v'
 const dbOpsGuilds = require('./guilds.js')
+const ScheduleManager = require('../../structs/ScheduleManager.js')
 
 exports.get = id => VIP.model().findOne({ id }, FIND_PROJECTION).lean().exec()
 
 exports.getAll = async () => {
   if (!config.database.uri.startsWith('mongo')) return []
   return VIP.model().find({}, FIND_PROJECTION).lean().exec()
+}
+
+exports.getValidServers = async () => {
+  const vipServers = []
+  const vipUsers = await exports.getAll()
+  for (const vipUser of vipUsers) {
+    if (vipUser.invalid) {
+      continue
+    }
+    for (const serverId of vipUser.servers) {
+      vipServers.push(serverId)
+    }
+  }
+  return vipServers
 }
 
 exports.update = async settings => {
@@ -63,9 +78,12 @@ exports.remove = async id => {
 }
 
 exports.addServers = async settings => {
-  if (!config.database.uri.startsWith('mongo')) throw new Error('dbOps.vips.addServers is not supported when config.database.uri is set to a databaseless folder path')
+  if (!config.database.uri.startsWith('mongo')) {
+    throw new Error('dbOps.vips.addServers is not supported when config.database.uri is set to a databaseless folder path')
+  }
   const { serversToAdd, vipUser } = settings
   if (serversToAdd.length === 0) return
+  const vipServers = await exports.getValidServers()
   for (const id of serversToAdd) {
     if (vipUser.servers.includes(id)) throw new Error(`Server ${id} already exists`)
     vipUser.servers.push(id)
@@ -74,7 +92,8 @@ exports.addServers = async settings => {
       const rssList = guildRss.sources
       if (rssList) {
         for (const rssName in rssList) {
-          storage.scheduleManager.reassignSchedule(rssName, guildRss).catch(err => log.general.error('Failed to assign schedules to newly added vip server feeds', err, true))
+          ScheduleManager.reassignSchedule(rssName, guildRss, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined, vipServers)
+            .catch(err => log.general.error('Failed to assign schedules to newly added vip server feeds', err, true))
         }
       }
     }
@@ -94,7 +113,8 @@ exports.removeServers = async settings => {
     if (guildRss && guildRss.sources) {
       const rssList = guildRss.sources
       for (var rssName in rssList) {
-        storage.scheduleManager.reassignSchedule(rssName, guildRss).catch(err => log.general.error('Failed to remove schedules from removed vip server feeds', err, true))
+        ScheduleManager.reassignSchedule(rssName, guildRss, storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : undefined)
+          .catch(err => log.general.error('Failed to remove schedules from removed vip server feeds', err, true))
       }
     }
     await VIP.model().updateOne({ id: vipUser.id }, { $pull: { servers: { $in: serversToRemove } } }, UPDATE_SETTINGS).exec()

@@ -209,6 +209,7 @@ class Client extends EventEmitter {
         await dbOpsGeneral.verifyFeedIDs()
         await redisIndex.flushDatabase()
         await ScheduleManager.initializeSchedules(this.customSchedules)
+        await ScheduleManager.assignSchedules(undefined, Array.from(this.bot.guilds.keys()), await dbOpsVips.getValidServers())
       }
       if (!this.scheduleManager) {
         const refreshRates = new Set()
