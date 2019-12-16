@@ -93,7 +93,7 @@ async function postFeed (req, res, next) {
           client: {
             shard: req.guild.shard === '-1'
               ? undefined
-              : { count: 1, id: new Number(req.guild.shard) } // The count just has to be >0
+              : { count: 1, id: Number(req.guild.shard) } // The count just has to be >0
           }
         } }, title)
       // log.web.info(`(${req.session.identity.id}, ${req.session.identity.username}) (${guildID}, ${guildName}) Added feed ${resolvedUrl}`)
