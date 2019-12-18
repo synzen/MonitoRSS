@@ -26,6 +26,8 @@ const htmlFile = fs.readFileSync(path.join(__dirname, 'client/build', 'index.htm
 const requestIp = require('request-ip')
 const AuthPathAttempts = require('./util/AuthPathAttempts.js')
 const attemptedPaths = new AuthPathAttempts()
+const DEFAULT_META_TITLE = 'Under Construction'
+const DEFAULT_META_DESCRIPTION = `Get news and notifications delivered from anywhere that supports RSS, whether it's Reddit, Youtube, or your favorite traditional news outlet.\n\nThis site is currently under construction.`
 
 let httpIo = require('socket.io').listen(http)
 let https
@@ -192,7 +194,7 @@ function start () {
   }
 
   // Cache control panel requests
-  app.get('/cp*', (req, res, next) => {
+  app.get(['/cp', '/cp/*'], (req, res, next) => {
     if (!req.session.identity || !req.session.auth) {
       // Save the path to redirect them later after they're authorized
       const ip = requestIp.getClientIp(req)
@@ -200,14 +202,17 @@ function start () {
         attemptedPaths.add(ip, req.path)
       }
     }
-    next()
+
+    return res
+      .type('text/html')
+      .send(htmlFile.replace('__OG_TITLE__', 'Control Panel').replace('__OG_DESCRIPTION__', `Customizing your feeds in multiple servers has never been easier!.\n\nThis site is under construction.`))
   })
 
   // Override the response from express.static by injecting meta title and description
   app.get('/', (req, res) => {
     return res
       .type('text/html')
-      .send(htmlFile.replace('__OG_TITLE__', 'Under Construction').replace('__OG_DESCRIPTION__', 'This site is currently under construction.'))
+      .send(htmlFile.replace('__OG_TITLE__', DEFAULT_META_TITLE).replace('__OG_DESCRIPTION__', DEFAULT_META_DESCRIPTION))
   })
 
   // Provide a custom meta title and description for FAQ
@@ -221,13 +226,14 @@ function start () {
       .type('text/html')
       .send(htmlFile.replace('__OG_TITLE__', item.q).replace('__OG_DESCRIPTION__', item.a))
   })
+
   app.use(express.static(path.join(__dirname, 'client/build')))
 
   // Redirect all other routes not handled
   app.get('*', async (req, res) => {
     return res
       .type('text/html')
-      .send(htmlFile.replace('__OG_TITLE__', 'Under Construction').replace('__OG_DESCRIPTION__', 'This site is currently under construction.'))
+      .send(htmlFile.replace('__OG_TITLE__', DEFAULT_META_TITLE).replace('__OG_DESCRIPTION__', DEFAULT_META_DESCRIPTION))
   })
 
   if (!TEST_ENV) {
