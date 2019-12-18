@@ -15,6 +15,7 @@ import axios from 'axios'
 import modal from 'js/components/utils/modal'
 import MenuButton from '../../../LeftMenu/MenuButton'
 import posed from 'react-pose'
+import colors from 'js/constants/colors'
 
 const mapStateToProps = state => {
   return {
@@ -219,7 +220,13 @@ class Home extends Component {
         {/* <SectionTitle heading='Rating'/>
         <Rating size='massive' maxRating={5} />
         <Divider /> */}
-        <SectionTitle heading='Feedback' subheading='Help make this a better experience for all and provide some feedback! ;) Any and all comments, suggestions, critiques and opinions are welcome. Bug reports are also welcome.' />
+        <SectionTitle heading='Feedback' subheading={
+          <span>
+            Help make this a better experience for all and provide some feedback! ;) Any and all comments, suggestions, critiques and opinions are welcome. Bug reports are also welcome.
+            <br/>
+            <br/>
+            <span style={{color: colors.discord.red}}>Please note that this is not for submitting requests for support.</span> See the home page for a link to the discord support server.
+          </span>} />
 
         <FeedbackForm>
           <Form.Field>
