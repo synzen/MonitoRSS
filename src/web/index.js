@@ -149,7 +149,6 @@ function start () {
   app.set('oauth2', oauth2)
 
   // Routes
-  app.use(express.static(path.join(__dirname, 'client/build')))
   app.use('/api', apiRoutes.router)
 
   app.get('/login', (req, res) => {
@@ -192,33 +191,43 @@ function start () {
     })
   }
 
-  // Redirect all other routes not handled
-  app.get('*', async (req, res) => {
-    res.type('text/html')
-    const pathLowercase = req.path.toLowerCase()
-    if (pathLowercase.startsWith('/cp') && (!req.session.identity || !req.session.auth)) {
+  // Cache control panel requests
+  app.get('/cp*', (req, res, next) => {
+    if (!req.session.identity || !req.session.auth) {
       // Save the path to redirect them later after they're authorized
       const ip = requestIp.getClientIp(req)
-      if (ip) attemptedPaths.add(ip, req.path)
+      if (ip) {
+        attemptedPaths.add(ip, req.path)
+      }
     }
-    let returnFaqHTML = pathLowercase.startsWith('/faq')
-    let matchedFaqItem
+    next()
+  })
 
-    if (returnFaqHTML) {
-      const question = decodeURI(req.path.replace('/faq/', '')).replace(/-/g, ' ')
-      const item = faq.find(item => item.q.replace(/\?/, '') === question)
-      if (!item) {
-        returnFaqHTML = false
-      } else {
-        matchedFaqItem = item
-      } 
-    }
+  // Override the response from express.static by injecting meta title and description
+  app.get('/', (req, res) => {
+    return res
+      .type('text/html')
+      .send(htmlFile.replace('__OG_TITLE__', 'Under Construction').replace('__OG_DESCRIPTION__', 'This site is currently under construction.'))
+  })
 
-    if (!returnFaqHTML) {
-      return res.send(htmlFile.replace('__OG_TITLE__', 'Under Construction').replace('__OG_DESCRIPTION__', 'This site is currently under construction.'))
-    } else {
-      return res.send(htmlFile.replace('__OG_TITLE__', matchedFaqItem.q).replace('__OG_DESCRIPTION__', matchedFaqItem.a))
+  // Provide a custom meta title and description for FAQ
+  app.get('/faq/*', (req, res, next) => {
+    const question = decodeURI(req.path.replace('/faq/', '')).replace(/-/g, ' ')
+    const item = faq.find(item => item.q.replace(/\?/, '') === question)
+    if (!item) {
+      return next()
     }
+    return res
+      .type('text/html')
+      .send(htmlFile.replace('__OG_TITLE__', item.q).replace('__OG_DESCRIPTION__', item.a))
+  })
+  app.use(express.static(path.join(__dirname, 'client/build')))
+
+  // Redirect all other routes not handled
+  app.get('*', async (req, res) => {
+    return res
+      .type('text/html')
+      .send(htmlFile.replace('__OG_TITLE__', 'Under Construction').replace('__OG_DESCRIPTION__', 'This site is currently under construction.'))
   })
 
   if (!TEST_ENV) {
