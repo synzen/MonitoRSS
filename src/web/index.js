@@ -201,12 +201,24 @@ function start () {
       const ip = requestIp.getClientIp(req)
       if (ip) attemptedPaths.add(ip, req.path)
     }
-    if (!pathLowercase.startsWith('/faq')) return res.send(htmlFile.replace('Under Construction').replace('This site is currently under construction.'))
+    let returnFaqHTML = pathLowercase.startsWith('/faq')
+    let matchedFaqItem
 
-    const question = req.path.replace('/faq/', '')
-    const item = faq.find(item => item.qe === question)
-    if (item) return res.send(htmlFile.replace('__OG_TITLE__', item.q).replace('__OG_DESCRIPTION__', item.a))
-    res.send(htmlFile.replace('Under Construction').replace('This site is currently under construction.'))
+    if (returnFaqHTML) {
+      const question = decodeURI(req.path.replace('/faq/', '')).replace(/-/g, ' ')
+      const item = faq.find(item => item.q.replace(/\?/, '') === question)
+      if (!item) {
+        returnFaqHTML = false
+      } else {
+        matchedFaqItem = item
+      } 
+    }
+
+    if (!returnFaqHTML) {
+      return res.send(htmlFile.replace('__OG_TITLE__', 'Under Construction').replace('__OG_DESCRIPTION__', 'This site is currently under construction.'))
+    } else {
+      return res.send(htmlFile.replace('__OG_TITLE__', matchedFaqItem.q).replace('__OG_DESCRIPTION__', matchedFaqItem.a))
+    }
   })
 
   if (!TEST_ENV) {
