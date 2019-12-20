@@ -2,6 +2,7 @@ process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const Base = require('../../../structs/db/Base.js')
 const config = require('../../../config.js')
+const path = require('path')
 const fs = require('fs')
 
 jest.mock('mongoose')
@@ -195,14 +196,14 @@ describe('Unit::Base', function () {
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue([])
       })
       it('checks the right path', async function () {
-        const folderPaths = ['a', 'a\\b']
+        const folderPaths = ['a', path.join('a', 'b')]
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         const spy = jest.spyOn(fs, 'existsSync').mockReturnValue(false)
         await BasicBase.getAll()
         expect(spy).toHaveBeenCalledWith(folderPaths[1])
       })
       it('reads the right path', async function () {
-        const folderPaths = ['a', 'a\\b']
+        const folderPaths = ['a', path.join('a', 'b')]
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         jest.spyOn(fs, 'existsSync').mockReturnValue(true)
         const spy = jest.spyOn(fs, 'readdirSync').mockReturnValue([])
@@ -272,7 +273,7 @@ describe('Unit::Base', function () {
         jest.spyOn(BasicBase, 'Model', 'get').mockReturnValueOnce(createMockModel())
       })
       it('checks the right path', async function () {
-        const folderPaths = ['a', 'a\\b']
+        const folderPaths = ['a', path.join('a', 'b')]
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         const spy = jest.spyOn(fs, 'existsSync').mockReturnValue(false)
         await BasicBase.delete(1)
@@ -293,7 +294,7 @@ describe('Unit::Base', function () {
         const id = 'qe3tw4ryhdt'
         await BasicBase.delete(id)
         expect(spy).toHaveBeenCalledTimes(1)
-        expect(spy).toHaveBeenCalledWith(`${folderPaths[1]}\\${id}.json`)
+        expect(spy).toHaveBeenCalledWith(path.join(folderPaths[1], `${id}.json`))
       })
     })
   })
@@ -359,7 +360,7 @@ describe('Unit::Base', function () {
         jest.spyOn(fs, 'writeFileSync').mockReturnValue()
       })
       it('checks all the paths', async function () {
-        const folderPaths = ['a', 'a\\b', 'a\\b\\c']
+        const folderPaths = ['a', path.join('a', 'b'), path.join('a', 'b', 'c')]
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         const spy = jest.spyOn(fs, 'existsSync').mockReturnValue(true)
         const base = new BasicBase()
@@ -371,7 +372,7 @@ describe('Unit::Base', function () {
         }
       })
       it('makes the appropriate dirs', async function () {
-        const folderPaths = ['a', 'a\\b', 'a\\b\\c']
+        const folderPaths = ['a', path.join('a', 'b'), path.join('a', 'b', 'c')]
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         jest.spyOn(fs, 'existsSync')
           .mockReturnValueOnce(true)
@@ -386,7 +387,7 @@ describe('Unit::Base', function () {
         expect(spy.mock.calls[1]).toEqual([folderPaths[2]])
       })
       it('writes the data', async function () {
-        const folderPaths = ['q', 'q\\w', 'q\\w\\e']
+        const folderPaths = ['q', path.join('q', 'w'), path.join('q', 'w', 'e')]
         const data = { fudge: 'popsicle' }
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         jest.spyOn(fs, 'existsSync').mockReturnValue(true)
@@ -396,7 +397,7 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         base.id = id
         await base.save()
-        const writePath = `${folderPaths[folderPaths.length - 1]}\\${id}.json`
+        const writePath = path.join(folderPaths[2], `${id}.json`)
         expect(spy).toHaveBeenCalledWith(writePath, JSON.stringify(data, null, 2))
       })
       it('returns this', async function () {
