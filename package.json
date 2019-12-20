@@ -14,6 +14,7 @@
     "dev": "node -r dotenv/config server.js",
     "dev-sharded": "node -r dotenv/config server-manager.js",
     "test": "jest ./src/tests --detectOpenHandles",
+    "test-watch": "jest ./src/tests --detectOpenHandles --watchAll",
     "eslint": "eslint --fix ./src"
   },
   "dependencies": {
