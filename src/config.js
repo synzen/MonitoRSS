@@ -89,10 +89,12 @@ function overrideConfigs (configOverrides, printWarnings, printOverrides) {
 
 const overrideFilePath = path.join(__dirname, '..', 'settings', 'configOverride.json')
 
-if (fs.existsSync(overrideFilePath)) {
-  overrideConfigs(JSON.parse(fs.readFileSync(overrideFilePath)), process.env.DRSS)
-} else {
-  overrideConfigs(undefined, process.env.DRSS)
+if (!process.env.TEST_ENV) {
+  if (fs.existsSync(overrideFilePath)) {
+    overrideConfigs(JSON.parse(fs.readFileSync(overrideFilePath)), process.env.DRSS)
+  } else {
+    overrideConfigs(undefined, process.env.DRSS)
+  }
 }
 
 config._overrideWith = override => overrideConfigs(override, true, true)
