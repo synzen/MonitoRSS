@@ -20,6 +20,7 @@ jest.mock('../../structs/DecodedFeedParser.js')
 describe('Unit::FeedFetcher', function () {
   afterEach(function () {
     fetch.mockReset()
+    config._vip = false
   })
   it('throws an error if it is instantiated', function () {
     expect(() => new FeedFetcher()).toThrowError()
