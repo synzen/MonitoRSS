@@ -64,7 +64,7 @@ describe('Unit::Base', function () {
       const result = BasicBase.getFolderPaths()
       expect(result).toEqual([
         config.database.uri,
-        `${config.database.uri}\\${collectionName}`
+        path.join(config.database.uri, collectionName)
       ])
       spy.mockRestore()
       config.database.uri = original
@@ -287,7 +287,7 @@ describe('Unit::Base', function () {
         expect(spy).not.toHaveBeenCalled()
       })
       it(`calls unlink if path exists`, async function () {
-        const folderPaths = ['a', 'a\\b']
+        const folderPaths = ['a', path.join('a', 'b')]
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         jest.spyOn(fs, 'existsSync').mockReturnValue(true)
         const spy = jest.spyOn(fs, 'unlinkSync').mockReturnValue()
