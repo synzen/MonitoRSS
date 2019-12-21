@@ -11,8 +11,13 @@ exports.findAll = async Model => {
 }
 
 exports.update = async (Model, article) => {
-  const toUpdate = { id: article._id, title: article.title }
-  if (article.customComparisons) toUpdate.customComparisons = article.customComparisons
+  const toUpdate = { id: article._id }
+  if (article.title) {
+    toUpdate.title = article.title.toLowerCase()
+  }
+  if (article.customComparisons) {
+    toUpdate.customComparisons = article.customComparisons
+  }
   // Database
   if (mongoose.connection.name) {
     if (config.dev === true) return
@@ -31,7 +36,13 @@ exports.bulkInsert = async (Model, articles) => {
   const insert = []
   // Database
   if (mongoose.connection.name) {
-    articles.forEach(article => insert.push(new Model({ id: article._id, title: article.title })))
+    articles.forEach(article => {
+      const data = { id: article._id }
+      if (article.title) {
+        data.title = article.title.toLowerCase()
+      }
+      insert.push(new Model())
+    })
     if (config.dev === true) return
     return Model.collection.insertMany(insert)
   }
