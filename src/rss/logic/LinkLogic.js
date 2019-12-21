@@ -242,20 +242,18 @@ class LinkLogic extends EventEmitter {
     const { checkDates, checkTitles } = this.determineArticleChecks(source, rssName)
 
     const matchedID = dbIDs.has(article._id)
-    const lowerTitle = article.title ? article.title.toLowerCase() : null
-    // Case shouldn't matter with titles - but these checks assume that the database already has the stored titles to be lowercase
-    const matchedTitle = checkTitles && (dbTitles.has(lowerTitle) || (sentTitlesByFeedID[rssName] && sentTitlesByFeedID[rssName].has(lowerTitle)))
+    const matchedTitle = checkTitles && (dbTitles.has(article.title) || (sentTitlesByFeedID[rssName] && sentTitlesByFeedID[rssName].has(article.title)))
     const matchedDate = checkDates && (!article.pubdate || article.pubdate.toString() === 'Invalid Date' || article.pubdate < cutoffDay)
     let seen = false
     if (matchedID || matchedTitle || matchedDate) {
       if (toDebug) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) Matched ${matchedID ? 'ID' : matchedTitle ? 'title' : matchedDate ? 'date' : 'UNKNOWN CASE'}.`)
       seen = true
     } else if (checkTitles) {
-      if (lowerTitle) {
+      if (article.title) {
         if (!sentTitlesByFeedID[rssName]) {
           sentTitlesByFeedID[rssName] = new Set()
         }
-        sentTitlesByFeedID[rssName].add(lowerTitle)
+        sentTitlesByFeedID[rssName].add(article.title)
       } else {
         seen = true // Don't send an article with no title if title checks are on
       }
