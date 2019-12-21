@@ -6,16 +6,22 @@ const log = require('../../util/logger.js')
 const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'package.json'))).version
 
 /**
- * @typedef {import('mongoose').Model} MongooseModel
+ * @typedef {import('mongoose').Model<import('mongoose').Document, {}>} MongooseModel
  */
 
 class Base {
   /**
    * Object data
-   * @param {Object<string, any>} data
+   * @param {MongooseModel|Object<string, any>} data
    */
-  constructor (data) {
+  constructor (data = {}) {
     this.data = data
+
+    /**
+     * MongoDB's generated ID if instantiated with a model
+     * @type {string}
+     */
+    this._id = data._id
 
     /**
      * The bot version this data model was created on
@@ -27,8 +33,11 @@ class Base {
     void this.constructor.Model
   }
 
+  /**
+   * Remove the internal version key when finding from database
+   */
   static FIND_PROJECTION () {
-    return { _id: 0, __v: 0 }
+    return { __v: 0 }
   }
 
   /**
@@ -47,10 +56,27 @@ class Base {
     return config.database.uri.startsWith('mongo')
   }
 
+  /**
+   * Get the folder paths of the intended fs location the data will
+   * be written to.
+   * @returns {string[]}
+   */
   static getFolderPaths () {
     const folderPath = config.database.uri
     const subfolderPath = path.join(folderPath, this.Model.collection.collectionName)
     return [ folderPath, subfolderPath ]
+  }
+
+  /**
+   * Check whether the data has been written to the database or file
+   * @returns {boolean}
+   */
+  isSaved () {
+    if (this.constructor.isMongoDatabase) {
+      return !!this._id && this.data instanceof mongoose.Model
+    } else {
+      return !!this._id
+    }
   }
 
   /**
@@ -178,40 +204,62 @@ class Base {
    * @returns {Base} - This instance
    */
   async save () {
-    if (this.data instanceof mongoose.Model) {
-      throw new Error('Data cannot be saved when instantiated by a Model (use update instead)')
+    if (this.constructor.isMongoDatabase) {
+      return this.saveToDatabase()
+    } else {
+      return this.saveToFile()
     }
-    if (!this.id) {
-      throw new Error('id field is not populated')
-    }
+  }
+
+  /**
+   * Save the data to the database
+   * @returns {Base}
+   */
+  async saveToDatabase () {
+    const toSave = this.toObject()
 
     /**
-     * @type {import('mongoose').Model}
+     * @type {MongooseModel}
      */
     const DatabaseModel = this.constructor.Model
 
-    // Otherwise it's a plain object
-    const toSave = this.toObject()
-    if (this.constructor.isMongoDatabase) {
-      const query = {
-        id: this.id
-      }
-      const options = {
-        ...this.constructor.FIND_PROJECTION,
-        upsert: true,
-        new: true
-      }
-      const document = await DatabaseModel.findOneAndUpdate(query, toSave, options).exec()
-      this.data = document
+    const options = {
+      ...this.constructor.FIND_PROJECTION,
+      upsert: true,
+      new: true
+    }
+
+    let document
+    if (!this.isSaved()) {
+      const model = new DatabaseModel(toSave)
+      document = await model.save()
     } else {
-      const folderPaths = this.constructor.getFolderPaths()
-      for (const p of folderPaths) {
-        if (!fs.existsSync(p)) {
-          fs.mkdirSync(p)
-        }
+      document = await DatabaseModel.findByIdAndUpdate(this._id, toSave, options).exec()
+    }
+    this.data = document
+    this._id = document._id
+    return this
+  }
+
+  /**
+   * Saves the data to a file
+   * @returns {Base}
+   */
+  async saveToFile () {
+    const toSave = JSON.stringify(this.toObject(), null, 2)
+    const folderPaths = this.constructor.getFolderPaths()
+    for (const p of folderPaths) {
+      if (!fs.existsSync(p)) {
+        fs.mkdirSync(p)
       }
-      const fullPath = folderPaths[folderPaths.length - 1]
-      await fs.writeFileSync(path.join(fullPath, `${this.id}.json`), JSON.stringify(toSave, null, 2))
+    }
+    const folderPath = folderPaths[folderPaths.length - 1]
+    if (!this.isSaved()) {
+      const newId = new mongoose.Types.ObjectId().toHexString()
+      await fs.writeFileSync(path.join(folderPath, `${newId}.json`), toSave)
+      this._id = newId
+    } else {
+      await fs.writeFileSync(path.join(folderPath, `${this._id}.json`), toSave)
     }
     return this
   }
