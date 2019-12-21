@@ -443,6 +443,7 @@ describe('Unit::Base', function () {
     beforeEach(function () {
       jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue({})
       fs.writeFileSync = jest.fn()
+      fs.mkdirSync = jest.fn()
     })
     afterEach(function () {
       fs.writeFileSync = fsWriteFileSync
