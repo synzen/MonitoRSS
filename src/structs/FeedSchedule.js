@@ -42,6 +42,7 @@ class FeedSchedule extends EventEmitter {
     this.feedIDs = new Set() // feed ids assigned to this schedule
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
+    this.debugFeedLinks = new Set()
 
     // For vip tracking
     this.vipServers = []
@@ -104,6 +105,7 @@ class FeedSchedule extends EventEmitter {
 
       if (toDebug) {
         log.debug.info(`${rssName}: Preparing for feed delegation`)
+        this.debugFeedLinks.add(source.link)
       }
 
       ++feedCount
@@ -210,6 +212,8 @@ class FeedSchedule extends EventEmitter {
         this._processorList = []
       }
     }
+
+    this.debugFeedLinks.clear()
     this.vipServers = []
     this.vipServerLimits = {}
     this.allowWebhooks = {}
@@ -378,7 +382,7 @@ class FeedSchedule extends EventEmitter {
         config,
         currentBatch,
         debugFeeds: debug.feeds.serialize(),
-        debugLinks: debug.links.serialize(),
+        debugLinks: [ debug.links.serialize(), ...this.debugFeedLinks ],
         headers: this.headers,
         feedData: this.feedData,
         runNum: this.ran,
