@@ -382,7 +382,7 @@ class FeedSchedule extends EventEmitter {
         config,
         currentBatch,
         debugFeeds: debug.feeds.serialize(),
-        debugLinks: [ debug.links.serialize(), ...this.debugFeedLinks ],
+        debugLinks: [ ...debug.links.serialize(), ...this.debugFeedLinks ],
         headers: this.headers,
         feedData: this.feedData,
         runNum: this.ran,
