@@ -1,4 +1,5 @@
 const TEST_ENV = process.env.NODE_ENV === 'test'
+const config = require('../config.js')
 const Discord = require('discord.js')
 const COLORS = {
   Error: '\x1b[31m',
@@ -60,7 +61,10 @@ class _Logger {
       if (TEST_ENV) return
       if (suppressedLevels.includes(level.toLowerCase())) return
       const extra = this._parseDetails(details)
-      console.log(`${LOG_DATES ? formatConsoleDate(new Date()) : ''}${color}${intro}${reset} | ${extra.identifier}${contents}${extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''}`)
+      const dev = config.dev === true ? `${COLORS.Error}[DEV MODE]${reset}` : ''
+      const date = LOG_DATES ? formatConsoleDate(new Date()) : ''
+      const extraErr = extra.err ? ` (${extra.err}${extra.err.code ? `, Code ${extra.err.code}` : ''})` : ''
+      console.log(`${dev}${date}${color}${intro}${reset} | ${extra.identifier}${contents}${extraErr}`)
       if (extra.err && (extra.printStack || showTraceByDefault)) console.log(extra.err.stack) // Print stack trace
     }
   }
