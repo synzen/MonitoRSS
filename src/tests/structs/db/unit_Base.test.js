@@ -301,23 +301,28 @@ describe('Unit::Base', function () {
     })
   })
   describe('delete', function () {
-    it('throws an error if id is undefined', function () {
-      return expect(BasicBase.delete()).rejects.toThrowError(new Error('id field is undefined'))
+    it('throws an error if unsaved', function () {
+      jest.spyOn(BasicBase.prototype, 'isSaved').mockReturnValue(false)
+      const base = new BasicBase()
+      return expect(base.delete()).rejects.toThrowError(new Error('Data has not been saved'))
     })
     describe('from database', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValueOnce(true)
+        jest.spyOn(BasicBase.prototype, 'isSaved').mockReturnValue(true)
       })
-      it('calls deleteOne', async function () {
-        const id = 'qe3wtisgrakf'
-        await BasicBase.delete(id)
-        expect(MockModel.deleteOne).toHaveBeenCalledTimes(1)
-        expect(MockModel.deleteOne).toHaveBeenCalledWith({ id })
+      it('calls remove', async function () {
+        const data = { remove: jest.fn() }
+        const base = new BasicBase()
+        base.data = data
+        await base.delete()
+        expect(data.remove).toHaveBeenCalledTimes(1)
       })
     })
     describe('from databaseless', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValueOnce(false)
+        jest.spyOn(BasicBase.prototype, 'isSaved').mockReturnValue(true)
       })
       afterEach(function () {
         fs.existsSync = fsExistsSync
@@ -327,14 +332,18 @@ describe('Unit::Base', function () {
         const folderPaths = ['a', path.join('a', 'b')]
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         fs.existsSync = jest.fn(() => false)
-        await BasicBase.delete(1)
-        expect(fs.existsSync).toHaveBeenCalledWith(folderPaths[1])
+        const id = 'wr43yeht'
+        const base = new BasicBase()
+        base._id = id
+        await base.delete()
+        expect(fs.existsSync).toHaveBeenCalledWith(path.join(folderPaths[1], `${id}.json`))
       })
       it(`doesn't call unlink if path doesn't exist`, async function () {
-        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue([])
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
         fs.existsSync = jest.fn(() => false)
         fs.unlinkSync = jest.fn(() => {})
-        await BasicBase.delete(1)
+        const base = new BasicBase()
+        await base.delete()
         expect(fs.unlinkSync).not.toHaveBeenCalled()
       })
       it(`calls unlink if path exists`, async function () {
@@ -343,7 +352,9 @@ describe('Unit::Base', function () {
         fs.existsSync = jest.fn(() => true)
         fs.unlinkSync = jest.fn()
         const id = 'qe3tw4ryhdt'
-        await BasicBase.delete(id)
+        const base = new BasicBase()
+        base._id = id
+        await base.delete()
         expect(fs.unlinkSync).toHaveBeenCalledTimes(1)
         expect(fs.unlinkSync).toHaveBeenCalledWith(path.join(folderPaths[1], `${id}.json`))
       })

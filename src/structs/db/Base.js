@@ -175,26 +175,30 @@ class Base {
   }
 
   /**
-   * Deletes a document from either the database from the file system
+   * Deletes this from either the database from the file system
    * depending on whether the app is databaseless.
    */
-  static async delete (id) {
-    if (!id) {
-      throw new Error('id field is undefined')
+  async delete () {
+    if (!this.isSaved()) {
+      throw new Error('Data has not been saved')
     }
 
     // Mongo
-    if (this.isMongoDatabase) {
-      return this.Model.deleteOne({ id })
+    if (this.constructor.isMongoDatabase) {
+      await this.data.remove()
+      return
     }
 
+    const Model = this.constructor.Model
+
     // Databaseless
-    const paths = this.getFolderPaths()
-    const fullPath = paths[paths.length - 1]
-    if (!fs.existsSync(fullPath)) {
-      log.general.warning(`Unable to delete ${this.Model.collection.collectionName} ${id} at ${fullPath} since its nonexistent`)
+    const paths = this.constructor.getFolderPaths()
+    const folderPath = paths[paths.length - 1]
+    const filePath = path.join(folderPath, `${this._id}.json`)
+    if (!fs.existsSync(filePath)) {
+      log.general.warning(`Unable to delete ${Model.collection.collectionName} ${this._id} at ${filePath} since its nonexistent`)
     } else {
-      fs.unlinkSync(path.join(fullPath, `${id}.json`))
+      fs.unlinkSync(filePath)
     }
   }
 
