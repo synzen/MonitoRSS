@@ -14,7 +14,7 @@ const schema = new mongoose.Schema({
     required: true
   },
   guild: {
-    type: mongoose.Types.ObjectId,
+    type: String,
     required: true
   },
   channel: {

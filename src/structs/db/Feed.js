@@ -3,7 +3,7 @@ const FeedModel = require('../../models/Feed.js')
 
 class Feed extends Base {
   /**
-   * @param {import('mongoose').Model|Object} data - Data
+   * @param {import('mongoose').Model|Object<string, any>} data - Data
    * @param {string} data.title - Feed meta title
    * @param {string} data.url - Feed URL
    * @param {string} data.guild - Guild ID
