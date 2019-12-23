@@ -190,6 +190,11 @@ describe('Unit::Base', function () {
         expect(result).toBeInstanceOf(BasicBase)
         expect(result.data).toEqual(execReturnValue)
       })
+      it('returns null if not found', async function () {
+        MockModel.findById.mockReturnValue(({ exec: () => Promise.resolve(null) }))
+        const result = await BasicBase.get('asdewtgr')
+        expect(result).toBeNull()
+      })
     })
     describe('from databaseless', function () {
       beforeEach(function () {

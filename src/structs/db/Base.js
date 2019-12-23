@@ -128,7 +128,7 @@ class Base {
     // Mongo
     if (this.isMongoDatabase) {
       const model = await DatabaseModel.findById(id).exec()
-      return new this(model)
+      return model ? new this(model) : null
     }
 
     // Databaseless
