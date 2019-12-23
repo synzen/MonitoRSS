@@ -1,5 +1,6 @@
 const Base = require('./Base.js')
-const GuildProfileModel = require('../../models/GuildProfile.js')
+const GuildProfileModel = require('../../models/GuildProfile.js').model
+const Feed = require('./Feed.js')
 
 class GuildProfile extends Base {
   /**
@@ -57,6 +58,12 @@ class GuildProfile extends Base {
      * @type {string}
      */
     this.locale = this.getField('locale')
+
+    /**
+     * IDs of feeds that belong to this guild
+     * @type {import('mongoose').Types.ObjectId[]}
+     */
+    this.feeds = this.getField('feeds', [])
   }
 
   get id () {
@@ -67,6 +74,7 @@ class GuildProfile extends Base {
     return {
       _id: this._id,
       name: this.name,
+      feeds: this.feeds,
       dateFormat: this.dateFormat,
       dateLanguage: this.dateLanguage,
       timezone: this.timezone,
@@ -75,8 +83,19 @@ class GuildProfile extends Base {
     }
   }
 
+  /**
+   * Return this guild's feeds
+   * @type {import('./Feed.js')[]}
+   */
+  async getFeeds () {
+    if (!this.isSaved()) {
+      throw new Error('Must be saved before getting feeds')
+    }
+    return this.feeds.map(id => Feed.get(id))
+  }
+
   static get Model () {
-    return GuildProfileModel.model
+    return GuildProfileModel
   }
 }
 

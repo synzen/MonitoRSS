@@ -1,6 +1,9 @@
 const GuildProfile = require('../../../structs/db/GuildProfile.js')
 
 describe('Unit::GuildProfile', function () {
+  afterEach(function () {
+    jest.restoreAllMocks()
+  })
   it('returns this._id as .id', function () {
     const _id = 1
     const profile = new GuildProfile({ _id, name: 'abc' })
@@ -52,6 +55,13 @@ describe('Unit::GuildProfile', function () {
       for (const key in initialize) {
         expect(exported[key]).toEqual(profile[key])
       }
+    })
+  })
+  describe('getFeeds', function () {
+    it('throws an error if unsaved', function () {
+      jest.spyOn(GuildProfile.prototype, 'isSaved').mockReturnValueOnce(false)
+      const profile = new GuildProfile({ _id: 1, name: 'abc' })
+      return expect(profile.getFeeds()).rejects.toThrowError(new Error('Must be saved before getting feeds'))
     })
   })
 })
