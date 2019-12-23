@@ -21,7 +21,7 @@ class Base {
      * MongoDB's generated ID if instantiated with a model
      * @type {string}
      */
-    this._id = data._id
+    this._id = this.getField('_id')
 
     /**
      * The bot version this data model was created on
@@ -108,6 +108,9 @@ class Base {
     if (!id) {
       throw new Error('Undefined id')
     }
+    if (typeof id !== 'string') {
+      throw new Error('id must be a string')
+    }
 
     /**
      * @type {MongooseModel}
@@ -116,8 +119,7 @@ class Base {
 
     // Mongo
     if (this.isMongoDatabase) {
-      const query = { id }
-      const model = await DatabaseModel.findOne(query).exec()
+      const model = await DatabaseModel.findById(id).exec()
       return new this(model)
     }
 

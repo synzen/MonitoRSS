@@ -18,6 +18,7 @@ const MockModel = jest.fn()
 MockModel.prototype.save = jest.fn()
 MockModel.findOne = jest.fn(() => ({ exec: async () => Promise.resolve() }))
 MockModel.findByIdAndUpdate = jest.fn(() => ({ exec: async () => Promise.resolve() }))
+MockModel.findById = jest.fn(() => ({ exec: async () => Promise.resolve() }))
 MockModel.find = jest.fn(() => ({ exec: async () => Promise.resolve() }))
 MockModel.deleteOne = jest.fn(() => ({ exec: async () => Promise.resolve() }))
 MockModel.collection = {
@@ -37,6 +38,7 @@ describe('Unit::Base', function () {
     MockModel.findOne.mockClear()
     MockModel.findByIdAndUpdate.mockClear()
     MockModel.find.mockClear()
+    MockModel.findById.mockClear()
     MockModel.deleteOne.mockClear()
   })
   describe('constructor', function () {
@@ -154,6 +156,9 @@ describe('Unit::Base', function () {
     it('throws an error for undefined id', function () {
       return expect(BasicBase.get()).rejects.toThrowError(new Error('Undefined id'))
     })
+    it('throws an error for non-string id', function () {
+      return expect(BasicBase.get(123)).rejects.toThrowError(new Error('id must be a string'))
+    })
     describe('from database', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(true)
@@ -161,12 +166,12 @@ describe('Unit::Base', function () {
       it(`uses findOne for database`, async function () {
         const id = '3w4e5rytu'
         await BasicBase.get(id)
-        expect(MockModel.findOne).toHaveBeenCalledWith({ id })
+        expect(MockModel.findById).toHaveBeenCalledWith(id)
       })
       it('returns a new Basic Base for database', async function () {
         const id = '12qw34r'
         const execReturnValue = 'w24r3'
-        MockModel.findOne.mockReturnValue(({ exec: () => Promise.resolve(execReturnValue) }))
+        MockModel.findById.mockReturnValue(({ exec: () => Promise.resolve(execReturnValue) }))
         const result = await BasicBase.get(id)
         expect(result).toBeInstanceOf(BasicBase)
         expect(result.data).toEqual(execReturnValue)
@@ -183,7 +188,7 @@ describe('Unit::Base', function () {
       })
       it('returns null if path does not exist', async function () {
         fs.existsSync = jest.fn(() => false)
-        const returnValue = await BasicBase.get(1)
+        const returnValue = await BasicBase.get('1')
         expect(returnValue).toBeNull()
         fs.existsSync = fsExistsSync
       })
@@ -191,7 +196,7 @@ describe('Unit::Base', function () {
         const jsonString = '{"foo": "bar"}'
         fs.existsSync = jest.fn(() => true)
         fs.readFileSync = jest.fn(() => jsonString)
-        const returnValue = await BasicBase.get(1)
+        const returnValue = await BasicBase.get('1')
         expect(returnValue).toBeInstanceOf(BasicBase)
         expect(returnValue.data).toEqual({ foo: 'bar' })
       })
@@ -199,7 +204,7 @@ describe('Unit::Base', function () {
         const jsonString = '{"foo": bar ;}'
         fs.existsSync = jest.fn(() => true)
         fs.readFileSync = jest.fn(() => jsonString)
-        const returnValue = await BasicBase.get(1)
+        const returnValue = await BasicBase.get('1')
         expect(returnValue).toBeNull()
       })
     })
