@@ -38,7 +38,7 @@ async function remove () {
         feeds: this._id
       }
     }
-    profile.update(update)
+    return profile.updateOne(update)
   })
 
   await Promise.all(updates)
