@@ -98,6 +98,12 @@ class Feed extends Base {
      * @type {boolean}
      */
     this.toggleRoleMentions = this.getField('toggleRoleMentions', false)
+
+    /**
+     * Disabled status
+     * @type {boolean}
+     */
+    this.disabled = this.getField('disabled', false)
   }
 
   toObject () {
@@ -111,7 +117,8 @@ class Feed extends Base {
       imgPreviews: this.imgPreviews,
       imgLinksExistence: this.imgLinksExistence,
       formatTables: this.formatTables,
-      toggleRoleMentions: this.toggleRoleMentions
+      toggleRoleMentions: this.toggleRoleMentions,
+      disabled: this.disabled
     }
   }
 

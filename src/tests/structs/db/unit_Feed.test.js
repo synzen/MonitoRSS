@@ -1,7 +1,15 @@
 const Feed = require('../../../structs/db/Feed.js')
 
 describe('Unit::Feed', function () {
-  const keys = ['checkDates', 'checkTitles', 'formatTables', 'imgLinksExistence', 'imgPreviews', 'toggleRoleMentions']
+  const keys = [
+    'checkDates',
+    'checkTitles',
+    'formatTables',
+    'imgLinksExistence',
+    'imgPreviews',
+    'toggleRoleMentions',
+    'disabled'
+  ]
   const necessaryInit = {
     title: 1,
     channel: 1,

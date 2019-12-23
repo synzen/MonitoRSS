@@ -27,6 +27,7 @@ const schema = new mongoose.Schema({
   imgLinksExistence: Boolean,
   formatTables: Boolean,
   toggleRoleMentions: Boolean,
+  disabled: Boolean,
   version: {
     type: String,
     default: packageVersion
