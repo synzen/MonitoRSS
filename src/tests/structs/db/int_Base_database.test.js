@@ -10,8 +10,8 @@ const CON_OPTIONS = {
 
 describe('Int::Base Database', function () {
   beforeAll(async function () {
-    await mongoose.connection.db.dropDatabase()
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await mongoose.connection.db.dropDatabase()
   })
   it('initializes correctly', async function () {
     const initData = { foo: 'qgfdew4' }
