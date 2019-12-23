@@ -65,6 +65,13 @@ describe('Unit::Base', function () {
       const base = new BasicBase({ ...init })
       expect(base._id).toEqual(init._id)
     })
+    it('sets this._id for mongoose ObjectId', function () {
+      const init = {
+        _id: new mongoose.Types.ObjectId()
+      }
+      const base = new BasicBase({ ...init })
+      expect(base._id).toEqual(init._id.toHexString())
+    })
   })
   describe('static get isMongoDatabase', function () {
     it('calls startsWith', function () {

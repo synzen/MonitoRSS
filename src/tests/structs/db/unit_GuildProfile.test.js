@@ -1,6 +1,11 @@
 const GuildProfile = require('../../../structs/db/GuildProfile.js')
 
 describe('Unit::GuildProfile', function () {
+  it('returns this._id as .id', function () {
+    const _id = 1
+    const profile = new GuildProfile({ _id, name: 'abc' })
+    expect(profile.id).toEqual(_id)
+  })
   describe('constructor', function () {
     it('throws an error if id is not set', function () {
       expect(() => new GuildProfile({ name: 1 }))
