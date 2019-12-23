@@ -73,6 +73,13 @@ describe('Unit::Base', function () {
       expect(base._id).toEqual(init._id.toHexString())
     })
   })
+  describe('static get id', function () {
+    it('returns this._id as .id', function () {
+      const _id = 12345
+      const base = new BasicBase({ _id, name: 'asd' })
+      expect(base.id).toEqual(_id)
+    })
+  })
   describe('static get isMongoDatabase', function () {
     it('calls startsWith', function () {
       const original = config.database.uri

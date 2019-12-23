@@ -68,6 +68,14 @@ class Base {
   }
 
   /**
+   * Getter for this._id
+   * @returns {string}
+   */
+  get id () {
+    return this._id
+  }
+
+  /**
    * Check whether the data has been written to the database or file
    * @returns {boolean}
    */
