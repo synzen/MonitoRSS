@@ -26,13 +26,13 @@ const schema = new mongoose.Schema({
     name: String,
     avatar: String
   },
+  disabled: String,
   checkTitles: Boolean,
   checkDates: Boolean,
   imgPreviews: Boolean,
   imgLinksExistence: Boolean,
   formatTables: Boolean,
   toggleRoleMentions: Boolean,
-  disabled: Boolean,
   version: {
     type: String,
     default: packageVersion
@@ -40,7 +40,7 @@ const schema = new mongoose.Schema({
   addedAt: {
     type: Date,
     default: Date.now
-  },
+  }
 })
 
 schema.pre('findOneAndUpdate', middleware.findOneAndUpdate)

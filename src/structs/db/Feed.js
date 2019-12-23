@@ -101,9 +101,9 @@ class Feed extends Base {
 
     /**
      * Disabled status
-     * @type {boolean}
+     * @type {String}
      */
-    this.disabled = this.getField('disabled', false)
+    this.disabled = this.getField('disabled')
 
     /**
      * This feed's webhook

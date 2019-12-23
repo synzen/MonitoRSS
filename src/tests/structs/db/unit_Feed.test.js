@@ -7,8 +7,7 @@ describe('Unit::Feed', function () {
     'formatTables',
     'imgLinksExistence',
     'imgPreviews',
-    'toggleRoleMentions',
-    'disabled'
+    'toggleRoleMentions'
   ]
   const necessaryInit = {
     title: 1,
