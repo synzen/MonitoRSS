@@ -20,7 +20,8 @@ class Base {
      * MongoDB's generated ID if instantiated with a model
      * @type {string}
      */
-    this._id = this.getField('_id')
+    const _id = this.getField('_id')
+    this._id = _id instanceof mongoose.Types.ObjectId ? _id.toHexString() : _id
 
     /**
      * The bot version this data model was created on
