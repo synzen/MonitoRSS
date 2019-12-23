@@ -3,7 +3,6 @@ const config = require('../../config.js')
 const fs = require('fs')
 const path = require('path')
 const log = require('../../util/logger.js')
-const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', '..', 'package.json'))).version
 
 /**
  * @typedef {import('mongoose').Model<import('mongoose').Document, {}>} MongooseModel
@@ -27,7 +26,7 @@ class Base {
      * The bot version this data model was created on
      * @type {string}
      */
-    this.version = packageVersion
+    this.version = this.getField('version')
 
     // Run the get method and throw its associated error if unimplemented
     void this.constructor.Model
