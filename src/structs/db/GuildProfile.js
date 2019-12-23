@@ -13,7 +13,7 @@ class GuildProfile extends Base {
    * @param {string} data.prefix - Prefix for commands
    * @param {string} data.locale - Locale for commands
    */
-  constructor(data) {
+  constructor (data) {
     super(data)
 
     if (!this._id) {
@@ -66,7 +66,7 @@ class GuildProfile extends Base {
     this.feeds = this.getField('feeds', [])
   }
 
-  toObject() {
+  toObject () {
     return {
       _id: this._id,
       name: this.name,
@@ -83,14 +83,14 @@ class GuildProfile extends Base {
    * Return this guild's feeds
    * @type {import('./Feed.js')[]}
    */
-  async getFeeds() {
+  async getFeeds () {
     if (!this.isSaved()) {
       throw new Error('Must be saved before getting feeds')
     }
     return this.feeds.map(id => Feed.get(id))
   }
 
-  static get Model() {
+  static get Model () {
     return GuildProfileModel
   }
 }
