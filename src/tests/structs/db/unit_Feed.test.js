@@ -48,6 +48,11 @@ describe('Unit::Feed', function () {
         val += 'r'
         init[key] = val
       }
+      init.webhook = {
+        id: 'asb',
+        avatar: 'adsef',
+        name: 'adesgrf'
+      }
       const profile = new Feed({ ...init })
       for (const key in init) {
         expect(profile[key]).toEqual(init[key])

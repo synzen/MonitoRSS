@@ -104,6 +104,12 @@ class Feed extends Base {
      * @type {boolean}
      */
     this.disabled = this.getField('disabled', false)
+
+    /**
+     * This feed's webhook
+     * @return {Object<string, string>}
+     */
+    this.webhook = this.getField('webhook')
   }
 
   toObject () {
@@ -118,7 +124,8 @@ class Feed extends Base {
       imgLinksExistence: this.imgLinksExistence,
       formatTables: this.formatTables,
       toggleRoleMentions: this.toggleRoleMentions,
-      disabled: this.disabled
+      disabled: this.disabled,
+      webhook: this.webhook
     }
   }
 

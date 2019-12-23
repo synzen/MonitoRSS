@@ -21,6 +21,11 @@ const schema = new mongoose.Schema({
     type: String,
     required: true
   },
+  webhook: {
+    id: String,
+    name: String,
+    avatar: String
+  },
   checkTitles: Boolean,
   checkDates: Boolean,
   imgPreviews: Boolean,
@@ -35,7 +40,7 @@ const schema = new mongoose.Schema({
   addedAt: {
     type: Date,
     default: Date.now
-  }
+  },
 })
 
 schema.pre('findOneAndUpdate', middleware.findOneAndUpdate)
