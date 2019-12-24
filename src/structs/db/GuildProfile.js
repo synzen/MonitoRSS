@@ -87,7 +87,7 @@ class GuildProfile extends Base {
     if (!this.isSaved()) {
       throw new Error('Must be saved before getting feeds')
     }
-    return this.feeds.map(id => Feed.get(id))
+    return Promise.all(this.feeds.map(id => Feed.get(id.toHexString())))
   }
 
   static get Model () {
