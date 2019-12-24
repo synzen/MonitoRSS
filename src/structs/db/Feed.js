@@ -171,9 +171,6 @@ class Feed extends Base {
   }
 
   set webhook (value) {
-    if (!value.id) {
-      throw new Error('id must be specified')
-    }
     this._webhook = value
   }
 
