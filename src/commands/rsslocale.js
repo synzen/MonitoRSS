@@ -1,15 +1,15 @@
 const log = require('../util/logger.js')
 const config = require('../config.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
 
 module.exports = async (bot, message) => {
   const locale = message.content.split(' ')[1]
   try {
-    let guildRss = await dbOpsGuilds.get(message.guild.id)
-    const guildLocale = guildRss ? guildRss.locale : undefined
+    const profile = await GuildProfile.get(message.guild.id)
+    const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
-    const prefix = guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     const localeList = Translator.getLocales()
 
     localeList.splice(localeList.indexOf(config.bot.locale), 1)
@@ -28,11 +28,11 @@ module.exports = async (bot, message) => {
 
     // Reset
     if (locale === 'reset') {
-      if (!guildRss || !guildRss.locale) {
+      if (!profile || !profile.locale) {
         return await message.channel.send(translate('commands.rsslocale.resetNone'))
       }
-      delete guildRss.locale
-      await dbOpsGuilds.update(guildRss)
+      profile.locale = undefined
+      await profile.save()
       return await message.channel.send(Translator.translate('commands.rsslocale.resetSuccess', config.bot.locale, { locale: config.bot.locale }))
     }
 
@@ -40,10 +40,18 @@ module.exports = async (bot, message) => {
       return await message.channel.send(translate('commands.rsslocale.resetNoDefault', { locale, prefix }))
     }
 
-    if (!guildRss) guildRss = { id: message.guild.id, name: message.guild.name, locale }
-    else guildRss.locale = locale
+    if (!profile) {
+      const newProfile = new GuildProfile({
+        _id: message.guild.id,
+        name: message.guild.name,
+        locale
+      })
+      await newProfile.save()
+    } else {
+      profile.locale = locale
+      await profile.save()
+    }
 
-    await dbOpsGuilds.update(guildRss)
     await message.channel.send(Translator.translate('commands.rsslocale.setSuccess', locale, { locale }))
   } catch (err) {
     log.command.warning(`rsslocale`, message.guild, err)
