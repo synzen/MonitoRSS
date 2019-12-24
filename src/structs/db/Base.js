@@ -68,6 +68,19 @@ class Base {
   }
 
   /**
+   * Helper function to return undefined for empty objects
+   * @param {any} field - The field name
+   * @private
+   */
+  static resolveObject (value) {
+    if (!value || Object.keys(value).length === 0) {
+      return undefined
+    } else {
+      return value
+    }
+  }
+
+  /**
    * Getter for this._id
    * @returns {string}
    */
@@ -231,7 +244,7 @@ class Base {
    */
   async saveToDatabase () {
     const toSave = this.toObject()
-    
+
     /**
      * @type {MongooseModel}
      */

@@ -136,6 +136,18 @@ describe('Unit::Base', function () {
       expect(base.getField('abc')).toEqual(undefined)
     })
   })
+  describe('static resolveObject', function () {
+    it('returns undefined for empty object', function () {
+      expect(Base.resolveObject({})).toBeUndefined()
+    })
+    it('returns the webhook if defined', function () {
+      const data = {
+        foo: 'baz',
+        id: '123'
+      }
+      expect(Base.resolveObject({ ...data })).toEqual(data)
+    })
+  })
   describe('isSaved', function () {
     it('for database returns correctly', function () {
       jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(true)

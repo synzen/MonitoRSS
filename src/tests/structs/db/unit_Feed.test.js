@@ -65,37 +65,7 @@ describe('Unit::Feed', function () {
       }
     })
   })
-  describe('get webhook', function () {
-    it('returns undefined for empty object', function () {
-      const feed = new Feed({ ...necessaryInit })
-      feed._webhook = {}
-      expect(feed.webhook).toBeUndefined()
-    })
-    it('returns the webhook if defined', function () {
-      const feed = new Feed({ ...necessaryInit })
-      const webhook = {
-        foo: 'baz',
-        id: '123'
-      }
-      feed._webhook = { ...webhook }
-      expect(feed.webhook).toEqual(webhook)
-    })
-  })
   describe('set webhook', function () {
-    it('throws an error if not object', function () {
-      const feed = new Feed({ ...necessaryInit })
-      expect(() => {
-        feed.webhook = 123
-      }).toThrowError(new Error('Webhook must be an object'))
-    })
-    it('throws an error if no id', function () {
-      const feed = new Feed({ ...necessaryInit })
-      expect(() => {
-        feed.webhook = {
-          george: 'costanza'
-        }
-      }).toThrowError(new Error('id must be specified'))
-    })
     it('sets correctly', function () {
       const feed = new Feed({ ...necessaryInit })
       const webhook = {
@@ -104,15 +74,19 @@ describe('Unit::Feed', function () {
         avatar: 'ewstrg',
         george: 'costanza'
       }
-      const expected = {
-        id: webhook.id,
-        name: webhook.name,
-        avatar: webhook.avatar
+      feed.webhook = webhook
+      expect(feed._webhook).toEqual(webhook)
+    })
+  })
+  describe('set split', function () {
+    it('sets correctly', function () {
+      const feed = new Feed({ ...necessaryInit })
+      const split = {
+        id: 123,
+        hawa: 'asdf'
       }
-      expect(() => {
-        feed.webhook = { ...webhook }
-      }).not.toThrowError()
-      expect(feed._webhook).toEqual(expected)
+      feed.webhook = split
+      expect(feed._webhook).toEqual(split)
     })
   })
 })

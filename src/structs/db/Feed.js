@@ -114,6 +114,21 @@ class Feed extends Base {
      * @type {Object<string, string>}
      */
     this._webhook = this.getField('webhook')
+
+    /**
+     * Split messages that are >2000 chars into multiple
+     * messages
+     * @type {Object<string, string|number>}
+     */
+    this._split = this.getField('split')
+  }
+
+  static get SPLIT_KEYS () {
+    return ['char', 'prepend', 'append', 'maxLength']
+  }
+
+  static get WEBHOOK_KEYS () {
+    return ['id', 'name', 'avatar']
   }
 
   toObject () {
@@ -134,39 +149,36 @@ class Feed extends Base {
       formatTables: this.formatTables,
       toggleRoleMentions: this.toggleRoleMentions,
       disabled: this.disabled,
-      webhook: this.webhook
+      webhook: this.webhook,
+      split: this.split
     }
   }
 
   /**
-   * The feed's webhook getter. Returns undefined if the
-   * this._webhook is empty.
+   * Webhook getter
    * @returns {Object<string, string>|undefined}
    */
   get webhook () {
-    if (!this._webhook || Object.keys(this._webhook).length === 0) {
-      return undefined
-    } else {
-      return this._webhook
-    }
+    return Base.resolveObject(this._webhook)
+  }
+
+  /**
+   * Split options getter
+   * @returns {Object<string, string>|undefined}
+   */
+  get split () {
+    return Base.resolveObject(this._split)
   }
 
   set webhook (value) {
-    if (typeof value !== 'object') {
-      throw new Error('Webhook must be an object')
-    }
     if (!value.id) {
       throw new Error('id must be specified')
     }
-    this._webhook = {
-      id: value.id
-    }
-    if (value.name) {
-      this._webhook.name = value.name
-    }
-    if (value.avatar) {
-      this._webhook.avatar = value.avatar
-    }
+    this._webhook = value
+  }
+
+  set split (value) {
+    this._split = value
   }
 
   /**
