@@ -27,6 +27,7 @@ const schema = new mongoose.Schema({
     avatar: String
   },
   split: {
+    enabled: Boolean,
     char: String,
     prepend: String,
     append: String,
