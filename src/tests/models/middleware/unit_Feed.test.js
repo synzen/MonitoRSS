@@ -54,5 +54,16 @@ describe('Unit::models/middleware/Feed', function () {
         }
       })
     })
+    it('throws an error if profile not found', function () {
+      const model = jest.fn(() => ({
+        findById: () => ({ exec: () => null })
+      }))
+      const Doc = {
+        _id: 123,
+        model,
+        guild: 'abc'
+      }
+      return expect(middleware.save.bind(Doc)()).rejects.toThrowError(new Error(`Feed's specified guild ${Doc.guild} was not found`))
+    })
   })
 })

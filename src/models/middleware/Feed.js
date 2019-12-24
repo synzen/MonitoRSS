@@ -18,6 +18,9 @@ async function save () {
       feeds: this._id
     }
   }
+  if (!profile) {
+    throw new Error(`Feed's specified guild ${this.guild} was not found`)
+  }
   await profile.update(update).exec()
 }
 
