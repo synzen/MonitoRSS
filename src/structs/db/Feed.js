@@ -134,6 +134,11 @@ class Feed extends Base {
     }
   }
 
+  /**
+   * The feed's webhook getter. Returns undefined if the
+   * this._webhook is empty.
+   * @returns {Object<string, string>|undefined}
+   */
   get webhook () {
     if (Object.keys(this._webhook).length === 0) {
       return undefined

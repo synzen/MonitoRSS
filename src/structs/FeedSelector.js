@@ -47,45 +47,60 @@ function parseNumbers (str) {
 }
 
 async function selectFeedFn (m, data, callback) {
-  const currentRSSList = this._currentRSSList
+  const filteredFeeds = this.filteredFeeds
   const chosenOption = m.content
 
   // Return an array of selected indices for feed removal
   if (this.multiSelect) {
-    let chosenOptionList = chosenOption.split(',').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Trim items, remove duplicates and empty items
+    // Trim items, remove duplicates and empty items
+    const chosenOptionList = chosenOption
+      .split(',')
+      .map(item => item.trim())
+      .filter((item, index, self) => item && index === self.indexOf(item))
     let valid = []
     let invalid = []
 
     // Validate user choices
-    for (var i = 0; i < chosenOptionList.length; ++i) {
-      const input = chosenOptionList[i]
+    for (const input of chosenOptionList) {
       const numbers = parseNumbers(input)
-      if (!numbers) invalid.push(input)
-      else {
-        for (var j = 0; j < numbers.length; ++j) {
+      if (!numbers) {
+        invalid.push(input)
+      } else {
+        for (let j = 0; j < numbers.length; ++j) {
           const num = numbers[j]
-          if (num < 1) invalid.push(num) // Do not push in any numbers greater than the currentRSSList length
-          else if (num <= currentRSSList.length && !valid.includes(num - 1)) valid.push(num - 1) // Push the index to be used
+          if (num < 1) {
+            invalid.push(num) // Do not push in any numbers greater than the feed list length
+          } else if (num <= filteredFeeds.length && !valid.includes(num - 1)) {
+            valid.push(num - 1) // Push the index to be used
+          }
         }
       }
     }
 
-    // Replace the indices in valid with their respective rssNames in currentRSSList
-    if (invalid.length > 0 || valid.length === 0) throw new MenuOptionError()
-    else {
-      for (var q = 0; q < valid.length; ++q) valid[q] = currentRSSList[valid[q]].rssName
-      return this.passoverFn(m, { ...data, feeds: this.feeds, rssNameList: valid })
+    // Replace the indices in valid with their respective feeds in feed list
+    if (invalid.length > 0 || valid.length === 0) {
+      throw new MenuOptionError()
     }
+
+    return this.passoverFn(m, {
+      ...data,
+      feeds: this.feeds,
+      feedList: valid.map(index => filteredFeeds[index])
+    })
   }
 
   // Return a single index for non feed removal actions
   const index = parseInt(chosenOption, 10) - 1
-  if (isNaN(index) || index + 1 > currentRSSList.length || index + 1 < 1) {
+  if (isNaN(index) || index + 1 > filteredFeeds.length || index + 1 < 1) {
     throw new MenuOptionError()
   }
 
   // Data is pre-passed into a FeedSelector's fn, merged with the previous Menu's data
-  return this.passoverFn(m, { ...data, feeds: this.feeds, rssName: currentRSSList[index].rssName })
+  return this.passoverFn(m, {
+    ...data,
+    feeds: this.feeds,
+    feed: filteredFeeds[index]
+  })
 }
 
 /**
@@ -117,6 +132,12 @@ class FeedSelector extends Menu {
       this.text = Translator.translate('structs.FeedSelector.noFeeds', this.locale)
       return
     }
+    this.filteredFeeds = feeds.filter(feed => feed.channel === message.channel.id)
+    if (this.filteredFeeds.length === 0) {
+      this.text = Translator.translate('structs.FeedSelector.noFeedsInChannel', this.locale)
+      return
+    }
+
     if (cmdInfo.locale) {
       this.locale = cmdInfo.locale
     }
@@ -128,53 +149,84 @@ class FeedSelector extends Menu {
     const translator = new Translator(this.locale)
     this.translate = translator.translate.bind(translator)
 
-    this._currentRSSList = []
-
     const optionTexts = getOptionTexts(this.translate)
 
-    for (const feed of feeds) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
-      if (message.channel.id !== feed.channel && !this.globalSelect) continue
-      let o = {
-        url: feed.url,
-        rssName: feed.id,
-        title: feed.title
-      }
+    let desc = ''
+    // Channel text
+    if (!this.globalSelect) {
+      desc += `**${this.translate('generics.channelUpper')}:** #${message.channel.name}\n**${this.translate('structs.FeedSelector.action')}**: `
+    }
 
+    // Actions text
+    if (command === 'rssoptions') {
+      desc += optionTexts[miscOption].toggle
+    } else {
+      desc += this.translate(`commandDescriptions.${command}.action`)
+    }
+
+    // Newline
+    desc += '\n\n'
+
+    // Add a description if specified
+    if (prependDescription) {
+      desc += `${prependDescription}\n\n`
+    }
+
+    // Select a number prompt
+    desc += `${this.translate('structs.FeedSelector.prompt')} `
+
+    // Multiple number selection may be available
+    if (this.multiSelect) {
+      desc += `${this.translate('structs.FeedSelector.multiSelect')} `
+    }
+
+    // Exit to cancel helper text
+    desc += `${this.translate('structs.FeedSelector.exitToCancel')}\u200b\n\u200b\n`
+
+    this.setAuthor(this.translate('structs.FeedSelector.feedSelectionMenu'))
+    this.setDescription(desc)
+
+    this.filteredFeeds.forEach(feed => {
+      const link = feed.url
+      const title = feed.title
+      const status = feed.status || ''
+
+      // Misc Option Text
+      let miscOptionText = ''
       if (optionTexts[miscOption]) {
         const statusText = optionTexts[miscOption].status
         let decision = ''
 
-        const globalSetting = config.feeds[miscOption]
-        decision = globalSetting ? `${statusText} ${this.translate('generics.enabledUpper')}\n` : `${statusText} ${this.translate('generics.disabledUpper')}\n`
-        const specificSetting = feed[miscOption]
-        decision = typeof specificSetting !== 'boolean' ? decision : specificSetting === true ? `${statusText} ${this.translate('generics.enabledUpper')}\n` : `${statusText} ${this.translate('generics.disabledUpper')}\n`
+        // Global setting
+        if (config.feeds[miscOption]) {
+          decision = `${statusText} ${this.translate('generics.enabledUpper')}\n`
+        } else {
+          decision = `${statusText} ${this.translate('generics.disabledUpper')}\n`
+        }
 
-        o.miscOption = decision
+        // Feed-specific setting
+        if (typeof feed[miscOption] === 'boolean') {
+          if (feed[miscOption] === true) {
+            decision = `${statusText} ${this.translate('generics.enabledUpper')}\n`
+          } else {
+            decision = `${statusText} ${this.translate('generics.disabledUpper')}\n`
+          }
+        }
+
+        miscOptionText = decision
       }
+
+      // Channel Text
+      let channelText = ''
       if (this.globalSelect) {
-        o.channel = feed.channel
+        if (message.client.channels.has(feed.channel)) {
+          channelText = `${this.translate('generics.channelUpper')}: #${message.client.channels.get(feed.channel).name}\n`
+        } else {
+          channelText = `${this.translate('generics.channelUpper')}: Unknown\n`
+        }
       }
-      this._currentRSSList.push(o)
-    }
-
-    if (this._currentRSSList.length === 0) {
-      this.text = Translator.translate('structs.FeedSelector.noFeedsInChannel', this.locale)
-      return
-    }
-    let desc = ''
-    desc += (this.globalSelect ? '' : `**${this.translate('generics.channelUpper')}:** #${message.channel.name}\n`) + `**${this.translate('structs.FeedSelector.action')}**: ${command === 'rssoptions' ? optionTexts[miscOption].toggle : this.translate(`commandDescriptions.${command}.action`)}\n\n${prependDescription ? `${prependDescription}\n\n` : ''}${this.translate('structs.FeedSelector.prompt')} ${this.multiSelect ? `${this.translate('structs.FeedSelector.multiSelect')} ` : ''}${this.translate('structs.FeedSelector.exitToCancel')}\u200b\n\u200b\n`
-    this.setAuthor(this.translate('structs.FeedSelector.feedSelectionMenu'))
-    this.setDescription(desc)
-
-    this._currentRSSList.forEach(item => {
-      const channel = item.channel ? message.client.channels.has(item.channel) ? `${this.translate('generics.channelUpper')}: #${message.client.channels.get(item.channel).name}\n` : undefined : undefined
-      const link = item.url
-      const title = item.title
-      const status = item.status || ''
-
-      // const miscOption = item.checkTitles || item.imagePreviews || item.imageLinksExistence || item.checkDates || item.formatTables || ''
-      const miscOption = item.miscOption || ''
-      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channel || ''}${miscOption}${status}${this.translate('commands.rsslist.link')}: ${link.length > 500 ? this.translate('commands.rsslist.exceeds500Characters') : link}`)
+      const url = link.length > 500 ? this.translate('commands.rsslist.exceeds500Characters') : link
+      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channelText}${miscOptionText}${status}${this.translate('commands.rsslist.link')}: ${url}`)
     })
 
     this.fn = selectFeedFn.bind(this)
