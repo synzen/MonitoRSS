@@ -7,12 +7,18 @@ class FoobarClass extends Base {
 
     this.foo = this.getField('foo')
     this.baz = this.getField('baz', 2)
+    this.undefinedField = this.getField('undefinedField')
+    this.object = this.getField('object')
+    this.array = this.getField('array', [])
   }
 
   toObject () {
     return {
       foo: this.foo,
-      baz: this.baz
+      baz: this.baz,
+      undefinedField: this.undefinedField,
+      object: this.object,
+      array: this.array
     }
   }
 

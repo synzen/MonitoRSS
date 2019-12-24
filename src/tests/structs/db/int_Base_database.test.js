@@ -82,12 +82,50 @@ describe('Int::Base Database', function () {
     const initFoobar = new Foobar(initData)
     const doc = await initFoobar.save()
     const foobar = new FoobarClass(doc)
-    foobar.foo = null
+    foobar.foo = undefined
     await foobar.save()
     const found = await Foobar.findById(initFoobar.id).lean().exec()
-    const keys = Object.keys(found)
-    expect(keys).not.toContain('foo')
-    // expect(found.foo).toEqual(newFooValue)
+    expect(Object.keys(found)).not.toContain('foo')
+  })
+  it(`doesn't add keys after update`, async function () {
+    const initData = { foo: 'w49t4j', baz: 9876 }
+    const foobar = new FoobarClass(initData)
+    const saved = await foobar.save()
+    foobar.foo = 'abc'
+    await foobar.save()
+    const found = await Foobar.findById(saved.id).lean().exec()
+    expect(found.nullField).toBeUndefined()
+  })
+  it(`doesn't set object field when undefined`, async function () {
+    const initData = { foo: 'w44j', baz: 13579 }
+    const foobar = new FoobarClass(initData)
+    const saved = await foobar.save()
+    const found = await Foobar.findById(saved.id).lean().exec()
+    expect(Object.keys(found)).not.toContain('object')
+  })
+  it(`doesn't set object field when undefined after update`, async function () {
+    const initData = { foo: 'w44j', baz: 13579 }
+    const foobar = new FoobarClass(initData)
+    const saved = await foobar.save()
+    foobar.foo = 'zack'
+    await foobar.save()
+    const found = await Foobar.findById(saved.id).lean().exec()
+    expect(Object.keys(found)).not.toContain('object')
+  })
+  it(`sets default empty array`, async function () {
+    const initData = { foo: 'w44j', baz: 13579 }
+    const foobar = new FoobarClass(initData)
+    expect(foobar.array).toBeInstanceOf(Array)
+    expect(foobar.array).toHaveLength(0)
+  })
+  it(`doesn't remove the array when updated`, async function () {
+    const initData = { foo: 'w44j', baz: 13579 }
+    const foobar = new FoobarClass(initData)
+    const saved = await foobar.save()
+    foobar.foo = 'qwe'
+    await foobar.save()
+    const found = await Foobar.findById(saved.id).lean().exec()
+    expect(Object.keys(found)).toContain('array')
   })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()

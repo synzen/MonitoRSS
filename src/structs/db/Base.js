@@ -247,7 +247,7 @@ class Base {
     if (!this.isSaved()) {
       // Delete all null keys
       for (const key in toSave) {
-        if (toSave[key] === null) {
+        if (toSave[key] === undefined) {
           delete toSave[key]
         }
       }
@@ -257,11 +257,12 @@ class Base {
       // Unset all null keys
       toSave.$unset = {}
       for (const key in toSave) {
-        if (toSave[key] === null) {
+        if (toSave[key] === undefined) {
           delete toSave[key]
           toSave.$unset[key] = ''
         }
       }
+
       document = await DatabaseModel.findByIdAndUpdate(this._id, toSave, options).exec()
     }
 
@@ -278,7 +279,7 @@ class Base {
     const toSave = this.toObject()
 
     for (const key in toSave) {
-      if (toSave[key] === null) {
+      if (toSave[key] === undefined) {
         delete toSave[key]
       }
     }

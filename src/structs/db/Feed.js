@@ -69,51 +69,51 @@ class Feed extends Base {
      * Check titles for determining article newness
      * @type {boolean}
      */
-    this.checkTitles = this.getField('checkTitles', null)
+    this.checkTitles = this.getField('checkTitles')
 
     /**
      * Have Discord automatically show embeds for image links
      * @type {boolean}
      */
-    this.imgPreviews = this.getField('imgPreviews', null)
+    this.imgPreviews = this.getField('imgPreviews')
 
     /**
      * Show image links in messages
      * @type {boolean}
      */
-    this.imgLinksExistence = this.getField('imgLinksExistence', null)
+    this.imgLinksExistence = this.getField('imgLinksExistence')
 
     /**
      * Check dates for determining article newness
      * @type {boolean}
      */
-    this.checkDates = this.getField('checkDates', null)
+    this.checkDates = this.getField('checkDates')
 
     /**
      * Format messages as if they're tables
      * @type {boolean}
      */
-    this.formatTables = this.getField('formatTables', null)
+    this.formatTables = this.getField('formatTables')
 
     /**
      * Toggle role mentions for subscribers when messages
      * are sent
      * @type {boolean}
      */
-    this.toggleRoleMentions = this.getField('toggleRoleMentions', null)
+    this.toggleRoleMentions = this.getField('toggleRoleMentions')
 
     /**
      * Disabled status
      * @type {String}
      */
-    this.disabled = this.getField('disabled', null)
+    this.disabled = this.getField('disabled')
 
     /**
      * This feed's webhook. Default value is an empty object,
      * as enforced by mongoose. Cannot be empty/null.
      * @type {Object<string, string>}
      */
-    this._webhook = this.getField('webhook', {})
+    this._webhook = this.getField('webhook')
   }
 
   toObject () {
@@ -140,7 +140,7 @@ class Feed extends Base {
    * @returns {Object<string, string>|undefined}
    */
   get webhook () {
-    if (Object.keys(this._webhook).length === 0) {
+    if (!this._webhook || Object.keys(this._webhook).length === 0) {
       return undefined
     } else {
       return this._webhook

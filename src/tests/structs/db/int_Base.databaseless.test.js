@@ -27,7 +27,7 @@ describe('Int::Base Databaseless', function () {
     const filePath = path.join(folderPath, `${fileName}.json`)
     expect(fs.existsSync(filePath)).toEqual(true)
     const read = JSON.parse(await fsReadFile(filePath))
-    expect(read).toEqual(data)
+    expect(read).toEqual({ ...data, array: [] })
     await fsUnlink(filePath)
   })
   it('deletes', async function () {

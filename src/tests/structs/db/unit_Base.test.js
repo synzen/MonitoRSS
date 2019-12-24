@@ -128,6 +128,13 @@ describe('Unit::Base', function () {
       const returnValue = base.getField(field)
       expect(returnValue).toEqual(value)
     })
+    it('returns undefined if not found in either', function () {
+      const base = new BasicBase()
+      base.data = {}
+      expect(base.getField('abc')).toEqual(undefined)
+      base.data = new mongoose.Model()
+      expect(base.getField('abc')).toEqual(undefined)
+    })
   })
   describe('isSaved', function () {
     it('for database returns correctly', function () {
@@ -435,12 +442,12 @@ describe('Unit::Base', function () {
         const returnValue = await base.saveToDatabase()
         expect(returnValue).toEqual(base)
       })
-      it('deletes null keys', async function () {
+      it('deletes undefined keys', async function () {
         const base = new BasicBase()
         const toSave = {
           foo: 12345,
-          bar: null,
-          buck: null
+          bar: undefined,
+          buck: undefined
         }
         const expectedSave = {
           foo: 12345
@@ -491,8 +498,8 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         const toSave = {
           foo: 1,
-          bar: null,
-          buck: null
+          bar: undefined,
+          buck: undefined
         }
         const expectedUpdate = {
           foo: 1,
@@ -545,11 +552,11 @@ describe('Unit::Base', function () {
       expect(fs.mkdirSync.mock.calls[0]).toEqual([folderPaths[1]])
       expect(fs.mkdirSync.mock.calls[1]).toEqual([folderPaths[2]])
     })
-    it('deletes null keys', async function () {
+    it('deletes undefined keys', async function () {
       const toSave = {
         foo: '123',
-        baz: null,
-        bar: null
+        baz: undefined,
+        bar: undefined
       }
       const expectedSave = {
         foo: toSave.foo
@@ -583,11 +590,11 @@ describe('Unit::Base', function () {
         const returnValue = await base.saveToFile()
         expect(returnValue).toEqual(base)
       })
-      it('deletes null keys', async function () {
+      it('deletes undefined keys', async function () {
         const toSave = {
           foo: '123',
-          baz: null,
-          bar: null
+          baz: undefined,
+          bar: undefined
         }
         const expectedSave = {
           foo: toSave.foo

@@ -32,12 +32,6 @@ describe('Unit::Feed', function () {
       expect(() => new Feed({ title: 1, url: 1, channel: 1 }))
         .toThrowError(new Error('Undefined guild'))
     })
-    it('sets default var values to be null', function () {
-      const profile = new Feed({ ...necessaryInit })
-      for (const key of keys) {
-        expect(profile[key]).toBeNull()
-      }
-    })
     it('sets defined values from arg', function () {
       const init = {
         ...necessaryInit
