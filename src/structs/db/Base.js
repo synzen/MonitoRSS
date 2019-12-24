@@ -231,7 +231,7 @@ class Base {
    */
   async saveToDatabase () {
     const toSave = this.toObject()
-
+    
     /**
      * @type {MongooseModel}
      */
@@ -254,7 +254,7 @@ class Base {
       const model = new DatabaseModel(toSave)
       document = await model.save()
     } else {
-      // Unset all null keys
+      // Unset all undefined keys
       toSave.$unset = {}
       for (const key in toSave) {
         if (toSave[key] === undefined) {

@@ -117,6 +117,10 @@ class Feed extends Base {
   }
 
   toObject () {
+    /**
+     * Use this.webhook instead of this._webhook since mongoose
+     * will return an empty object when we don't want it to
+     */
     return {
       title: this.title,
       url: this.url,
@@ -130,7 +134,7 @@ class Feed extends Base {
       formatTables: this.formatTables,
       toggleRoleMentions: this.toggleRoleMentions,
       disabled: this.disabled,
-      webhook: this._webhook
+      webhook: this.webhook
     }
   }
 
