@@ -106,17 +106,17 @@ module.exports = async (bot, message, command) => {
     const finalSetting = feed[chosenProp]
 
     if (feed[chosenProp] === globalSetting) {
-      // null marks it for deletion
-      feed[chosenProp] = null
+      // undefined marks it for deletion
+      feed[chosenProp] = undefined
     }
 
     const prettyPropName = properties[chosenProp].display
 
     await feed.save()
-    log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${feed.url}. ${feed[chosenProp] === null ? 'Now following global settings.' : ''}`, message.guild)
+    log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${feed.url}. ${feed[chosenProp] === undefined ? 'Now following global settings.' : ''}`, message.guild)
     await message.channel.send(`${translate('commands.rssoptions.settingChanged', {
       propName: prettyPropName,
-      isDefault: feed[chosenProp] === null ? ` (${translate('commands.rssoptions.defaultSetting')})` : '',
+      isDefault: feed[chosenProp] === undefined ? ` (${translate('commands.rssoptions.defaultSetting')})` : '',
       link: feed.url,
       finalSetting: finalSetting ? translate('generics.enabledLower') : translate('generics.disabledLower')
     })} ${translate('generics.backupReminder', { prefix: profile.prefix || config.bot.prefix })}`)
