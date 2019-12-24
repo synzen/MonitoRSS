@@ -2,9 +2,8 @@ const config = require('../config.js')
 const debug = require('../util/debugFeeds.js')
 const log = require('../util/logger.js')
 const dbOpsSchedules = require('../util/db/schedules.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const AssignedScheduleModel = require('../models/AssignedSchedule.js')
-const ArticleModel = require('../models/Article.js')
+const Feed = require('../structs/db/Feed.js')
 
 class FeedScheduler {
   static async clearAll () {
@@ -15,12 +14,8 @@ class FeedScheduler {
     // Remove the old schedules
     const promises = [
       dbOpsSchedules.schedules.getAll(),
-      dbOpsGuilds.getAll()
+      Feed.getAll()
     ]
-
-    // if (config._vip === true) {
-    // promises.push(dbOpsVips.getAll())
-    // }
 
     const results = await Promise.all(promises)
 
@@ -31,30 +26,20 @@ class FeedScheduler {
       schedulesByName[schedule.name] = schedule
     }
 
-    const guildRssList = results[1]
-    // const vipServers = []
-    // if (config._vip === true) {
-    //   const vipUsers = results[3]
-    //   for (const vipUser of vipUsers) {
-    //     if (vipUser.invalid || vipUser.regularRefreshRate) {
-    //       continue
-    //     }
-    //     for (const serverId of vipUser.servers) {
-    //       vipServers.push(serverId)
-    //     }
-    //   }
-    // }
+    const feeds = results[1]
     const scheduleDeterminationPromises = []
     const feedRecords = []
-    guildRssList.forEach(guildRss => {
-      if (!guildIdsSet.has(guildRss.id)) {
+    feeds.forEach(feed => {
+      if (!guildIdsSet.has(feed.guild)) {
         return
       }
-      const rssList = guildRss.sources
-      for (const rssName in rssList) {
-        scheduleDeterminationPromises.push(FeedScheduler.determineSchedule(rssName, guildRss, vipServers, shard, scheduleList))
-        feedRecords.push({ feedID: rssName, guildID: guildRss.id, link: rssList[rssName].link })
-      }
+
+      scheduleDeterminationPromises.push(FeedScheduler.determineSchedule(feed, feed.guild, vipServers, shard, scheduleList))
+      feedRecords.push({
+        feedID: feed.id,
+        guildID: feed.guild,
+        link: feed.url
+      })
     })
     const scheduleNames = await Promise.all(scheduleDeterminationPromises)
     const documentsToInsert = []
@@ -65,37 +50,37 @@ class FeedScheduler {
       if (debug.feeds.has(feedID)) {
         log.debug.info(`${feedID}: Determined schedule is ${scheduleName}`)
       }
-      const toInsert = { feedID, schedule: scheduleName, link, guildID, shard }
+      const toInsert = {
+        feedID,
+        schedule: scheduleName,
+        link,
+        guildID,
+        shard
+      }
       documentsToInsert.push(new AssignedSchedule(toInsert))
     }
 
     await dbOpsSchedules.assignedSchedules.setMany(documentsToInsert)
   }
 
-  static async determineSchedule (rssName, guildRss, vipServers, shardID, scheduleList) {
-    // if (config._vip === true && !vipServers) {
-    //   vipServers = []
-    //   const vipUsers = await dbOpsVips.getAll()
-    //   for (const vipUser of vipUsers) {
-    //     if (vipUser.invalid) {
-    //       continue
-    //     }
-    //     for (const serverId of vipUser.servers) {
-    //       vipServers.push(serverId)
-    //     }
-    //   }
-    // }
-
+  /**
+   * @param {import('../structs/db/Feed.js')} feed
+   * @param {string} guildId
+   * @param {string[]} vipServers
+   * @param {string} shardID
+   * @param {Object<string, Object>[]} scheduleList
+   */
+  static async determineSchedule (feed, guildId, vipServers, shardID, scheduleList) {
     if (!scheduleList) {
       scheduleList = await dbOpsSchedules.schedules.getAll()
     }
 
-    const source = guildRss.sources[rssName]
-    let assignedSchedule = await dbOpsSchedules.assignedSchedules.get(rssName, shardID)
+    // const source = guildRss.sources[rssName]
+    let assignedSchedule = await dbOpsSchedules.assignedSchedules.get(feed.id, shardID)
 
     // Take care of our VIPs
-    if (config._vip === true && !source.link.includes('feed43')) {
-      const validVip = vipServers.includes(guildRss.id)
+    if (config._vip === true && !feed.url.includes('feed43')) {
+      const validVip = vipServers.includes(guildId)
       if (validVip && assignedSchedule !== 'vip') {
         return 'vip'
       }
@@ -109,7 +94,7 @@ class FeedScheduler {
         // Check if non-default schedules first
         // rssnames first
         const feedIDs = schedule.feedIDs // Potential array
-        if (feedIDs && feedIDs.has(rssName)) {
+        if (feedIDs && feedIDs.has(feed.id)) {
           return schedule.name
         }
         // keywords second
@@ -118,7 +103,7 @@ class FeedScheduler {
           continue
         }
         for (const word of sKeywords) {
-          if (!source.link.includes(word)) {
+          if (!feed.url.includes(word)) {
             continue
           }
           return schedule.name
@@ -131,25 +116,26 @@ class FeedScheduler {
     }
   }
 
-  static async reassignSchedule (feedID, guildRss, shardId, vipServers) {
-    await FeedScheduler.removeScheduleOfFeed(feedID, guildRss.sources[feedID].link)
-    await this.assignSchedule(feedID, guildRss, shardId, vipServers)
+  /**
+   * @param {import('../structs/db/Feed.js')} feed
+   * @param {string} guildId
+   * @param {string} shardId
+   * @param {Object<string, Object>[]} vipServers
+   */
+  static async reassignSchedule (feed, guildId, shardId, vipServers) {
+    await feed.removeSchedule(shardId)
+    await this.assignSchedule(feed, guildId, shardId, vipServers)
   }
 
-  static async assignSchedule (feedID, guildRss, shardId, vipServers) {
-    const scheduleName = await FeedScheduler.determineSchedule(feedID, guildRss, vipServers, shardId)
-    return dbOpsSchedules.assignedSchedules.set(feedID, scheduleName, guildRss.sources[feedID].link, guildRss.id, shardId)
-  }
-
-  static async removeScheduleOfFeed (feedID, link, shardID) {
-    const assigned = await dbOpsSchedules.assignedSchedules.get(feedID)
-    if (!assigned) return
-    // const shardID = this.bot.shard ? this.bot.shard.id : 0
-    await dbOpsSchedules.assignedSchedules.remove(feedID)
-    const assignedSchedules = await dbOpsSchedules.assignedSchedules.getMany(shardID, assigned.schedule, link)
-    if (assignedSchedules.length === 0 && config.database.uri.startsWith('mongo')) {
-      ArticleModel.model(link, shardID, assigned.schedule).collection.drop().catch(err => err.code === 26 ? null : log.general.error('Failed to drop unused collection after feed removal', err))
-    }
+  /**
+   * @param {import('../structs/db/Feed.js')} feed
+   * @param {string} guildId
+   * @param {string} shardId
+   * @param {Object<string, Object>[]} vipServers
+   */
+  static async assignSchedule (feed, guildId, shardId, vipServers) {
+    const scheduleName = await FeedScheduler.determineSchedule(feed, guildId, vipServers, shardId)
+    return dbOpsSchedules.assignedSchedules.set(feed.id, scheduleName, feed.url, guildId, shardId)
   }
 }
 

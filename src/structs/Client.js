@@ -207,7 +207,7 @@ class Client extends EventEmitter {
     try {
       await connectDb()
       if (!this.bot.shard || this.bot.shard.count === 0) {
-        await dbOpsGeneral.verifyFeedIDs()
+        // await dbOpsGeneral.verifyFeedIDs()
         await redisIndex.flushDatabase()
         await ScheduleManager.initializeSchedules(this.customSchedules)
         await FeedScheduler.clearAll()

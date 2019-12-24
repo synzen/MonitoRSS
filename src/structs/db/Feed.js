@@ -1,5 +1,8 @@
 const Base = require('./Base.js')
-const FeedModel = require('../../models/Feed.js')
+const FeedModel = require('../../models/Feed.js').model
+const log = require('../../util/logger.js')
+const dbOpsSchedules = require('../../util/db/schedules.js')
+const ArticleModel = require('../../models/Article.js')
 
 class Feed extends Base {
   /**
@@ -116,6 +119,7 @@ class Feed extends Base {
     return {
       title: this.title,
       url: this.url,
+      guild: this.guild,
       channel: this.channel,
       addedAt: this.addedAt,
       checkTitles: this.checkTitles,
@@ -129,8 +133,34 @@ class Feed extends Base {
     }
   }
 
-  static Model () {
-    return FeedModel.model
+  /**
+   * Remove the feed and delete its schedule
+   * @param {string} shardID
+   */
+  async remove (shardID) {
+    await this.delete()
+    await this.removeSchedule(shardID)
+  }
+
+  /**
+   * Remove the schedule of this feed
+   * @param {string} shardID
+   */
+  async removeSchedule (shardID) {
+    const assigned = await dbOpsSchedules.assignedSchedules.get(this.id)
+    if (!assigned) {
+      return
+    }
+    // const shardID = this.bot.shard ? this.bot.shard.id : 0
+    await dbOpsSchedules.assignedSchedules.remove(this.id)
+    const assignedSchedules = await dbOpsSchedules.assignedSchedules.getMany(shardID, assigned.schedule, this.url)
+    if (assignedSchedules.length === 0 && Base.isMongoDatabase) {
+      ArticleModel.model(this.url, shardID, assigned.schedule).collection.drop().catch(err => err.code === 26 ? null : log.general.error('Failed to drop unused collection after feed removal', err))
+    }
+  }
+
+  static get Model () {
+    return FeedModel
   }
 }
 

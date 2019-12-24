@@ -66,6 +66,9 @@ describe('Unit::Feed', function () {
       for (const key of keys) {
         expect(exported[key]).toEqual(profile[key])
       }
+      for (const key in necessaryInit) {
+        expect(exported[key]).toEqual(necessaryInit[key])
+      }
     })
   })
 })

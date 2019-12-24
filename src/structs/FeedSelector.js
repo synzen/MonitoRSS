@@ -74,7 +74,7 @@ async function selectFeedFn (m, data, callback) {
     if (invalid.length > 0 || valid.length === 0) throw new MenuOptionError()
     else {
       for (var q = 0; q < valid.length; ++q) valid[q] = currentRSSList[valid[q]].rssName
-      return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssNameList: valid })
+      return this.passoverFn(m, { ...data, feeds: this.feeds, rssNameList: valid })
     }
   }
 
@@ -85,7 +85,7 @@ async function selectFeedFn (m, data, callback) {
   }
 
   // Data is pre-passed into a FeedSelector's fn, merged with the previous Menu's data
-  return this.passoverFn(m, { ...data, guildRss: this.guildRss, rssName: currentRSSList[index].rssName })
+  return this.passoverFn(m, { ...data, feeds: this.feeds, rssName: currentRSSList[index].rssName })
 }
 
 /**
@@ -104,18 +104,22 @@ class FeedSelector extends Menu {
    * @param {Boolean} [cmdInfo.multiSelect] Whether to allow multiple feeds to be selected
    * @param {Boolean} [cmdInfo.globalSelect] Whether to allow feeds from other channels to be selected
    * @param {String} [cmdInfo.prependDescription] Additional information in the description, before the FeedSelector's default instructions
+   * @param {String} [cmdInfo.locale] Locale language
+   * @param {import('./db/Feed.js')[]} [feeds] Guild feeds
    * @memberof FeedSelector
    */
-  constructor (message, passoverFn, cmdInfo, guildRss) {
+  constructor (message, passoverFn, cmdInfo, feeds = []) {
     super(message)
     if (!passoverFn) passoverFn = async (m, data) => data
-    this.guildRss = guildRss
+    this.feeds = feeds
     this.passoverFn = passoverFn
-    if (!this.guildRss || !this.guildRss.sources || Object.keys(this.guildRss.sources).length === 0) {
+    if (feeds.length === 0) {
       this.text = Translator.translate('structs.FeedSelector.noFeeds', this.locale)
       return
     }
-    if (guildRss) this.locale = guildRss.locale
+    if (cmdInfo.locale) {
+      this.locale = cmdInfo.locale
+    }
     const { command, miscOption, multiSelect, prependDescription, globalSelect } = cmdInfo
     this.command = command
     this.miscOption = miscOption
@@ -124,15 +128,17 @@ class FeedSelector extends Menu {
     const translator = new Translator(this.locale)
     this.translate = translator.translate.bind(translator)
 
-    const rssList = this.guildRss.sources
     this._currentRSSList = []
 
     const optionTexts = getOptionTexts(this.translate)
 
-    for (var rssName in rssList) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
-      const source = rssList[rssName]
-      if (message.channel.id !== source.channel && !this.globalSelect) continue
-      let o = { link: source.link, rssName: rssName, title: source.title }
+    for (const feed of feeds) { // Generate the info for each feed as an object, and push into array to be used in pages that are sent
+      if (message.channel.id !== feed.channel && !this.globalSelect) continue
+      let o = {
+        url: feed.url,
+        rssName: feed.id,
+        title: feed.title
+      }
 
       if (optionTexts[miscOption]) {
         const statusText = optionTexts[miscOption].status
@@ -140,12 +146,14 @@ class FeedSelector extends Menu {
 
         const globalSetting = config.feeds[miscOption]
         decision = globalSetting ? `${statusText} ${this.translate('generics.enabledUpper')}\n` : `${statusText} ${this.translate('generics.disabledUpper')}\n`
-        const specificSetting = source[miscOption]
+        const specificSetting = feed[miscOption]
         decision = typeof specificSetting !== 'boolean' ? decision : specificSetting === true ? `${statusText} ${this.translate('generics.enabledUpper')}\n` : `${statusText} ${this.translate('generics.disabledUpper')}\n`
 
         o.miscOption = decision
       }
-      if (this.globalSelect) o.channel = source.channel
+      if (this.globalSelect) {
+        o.channel = feed.channel
+      }
       this._currentRSSList.push(o)
     }
 
@@ -160,7 +168,7 @@ class FeedSelector extends Menu {
 
     this._currentRSSList.forEach(item => {
       const channel = item.channel ? message.client.channels.has(item.channel) ? `${this.translate('generics.channelUpper')}: #${message.client.channels.get(item.channel).name}\n` : undefined : undefined
-      const link = item.link
+      const link = item.url
       const title = item.title
       const status = item.status || ''
 

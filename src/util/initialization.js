@@ -1,6 +1,7 @@
 const config = require('../config.js')
 const storage = require('./storage.js')
-const checkGuild = require('./checkGuild.js')
+// const checkGuild = require('./checkGuild.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
 const dbOpsGuilds = require('./db/guilds.js')
 const dbOpsFailedLinks = require('./db/failedLinks.js')
 const dbOpsBlacklists = require('./db/blacklists.js')
@@ -18,11 +19,6 @@ module.exports = async bot => {
   const guildsInfo = {}
   const missingGuilds = {}
 
-  // Remove expires index
-  if (config.database.guildBackupsExpire <= 0) {
-    await dbOpsGuilds.dropBackupIndexes()
-  }
-
   // Cache blacklisted users and guilds
   const docs = await dbOpsBlacklists.getAll()
   for (var d = 0; d < docs.length; ++d) {
@@ -37,28 +33,34 @@ module.exports = async bot => {
   })
 
   // Remove missing guilds and empty guildRsses, along with other checks
-  const guildRssList = await dbOpsGuilds.getAll()
+  // const guildRssList = await dbOpsGuilds.getAll()
+  const profiles = await GuildProfile.getAll()
   const updatePromises = []
   const removePromises = []
-  for (let r = 0; r < guildRssList.length; ++r) {
-    const guildRss = guildRssList[r]
-    const guildId = guildRss.id
+  for (let r = 0; r < profiles.length; ++r) {
+    const profile = profiles[r]
+    const guildId = profile.id
     if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
-      if (bot.shard && bot.shard.count > 0) missingGuilds[guildId] = guildRss
-      else removePromises.push(dbOpsGuilds.remove(guildRss, true))
+      if (bot.shard && bot.shard.count > 0) {
+        missingGuilds[guildId] = profile.toObject()
+      } else {
+        removePromises.push(profile.delete())
+      }
       continue
     }
-    if (guildRss.prefix) storage.prefixes[guildId] = guildRss.prefix
-    if (dbOpsGuilds.empty(guildRss)) continue
-    let shouldUpdate = false
-    const updatedSubscriptions = await checkGuild.subscriptions(bot, guildRss)
-    const updatedVersion = await checkGuild.version(guildRss)
-    const resetLocale = await checkGuild.locale(guildRss)
-    shouldUpdate = updatedSubscriptions || updatedVersion || resetLocale
+    if (profile.prefix) {
+      storage.prefixes[guildId] = profile.prefix
+    }
+    // if (dbOpsGuilds.empty(guildRss)) continue
+    // let shouldUpdate = false
+    // const updatedSubscriptions = await checkGuild.subscriptions(bot, guildRss)
+    // const updatedVersion = await checkGuild.version(guildRss)
+    // const resetLocale = await checkGuild.locale(guildRss)
+    // shouldUpdate = updatedSubscriptions || updatedVersion || resetLocale
 
-    guildsInfo[guildId] = guildRss
+    // guildsInfo[guildId] = guildRss
 
-    if (shouldUpdate) updatePromises.push(dbOpsGuilds.update(guildRss))
+    // if (shouldUpdate) updatePromises.push(dbOpsGuilds.update(guildRss))
   }
 
   await Promise.all(updatePromises)
