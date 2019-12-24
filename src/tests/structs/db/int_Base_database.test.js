@@ -66,6 +66,29 @@ describe('Int::Base Database', function () {
     expect(classes[0].foo).toEqual('a')
     expect(classes[1].foo).toEqual('b')
   })
+  it('updates', async function () {
+    const initData = { foo: 'exquisite' }
+    const initFoobar = new Foobar(initData)
+    const doc = await initFoobar.save()
+    const foobar = new FoobarClass(doc)
+    const newFooValue = 'changzz'
+    foobar.foo = newFooValue
+    await foobar.save()
+    const found = await Foobar.findById(initFoobar.id)
+    expect(found.foo).toEqual(newFooValue)
+  })
+  it('deletes a key on undefined', async function () {
+    const initData = { foo: 'w49ti093u4j', baz: 987 }
+    const initFoobar = new Foobar(initData)
+    const doc = await initFoobar.save()
+    const foobar = new FoobarClass(doc)
+    foobar.foo = null
+    await foobar.save()
+    const found = await Foobar.findById(initFoobar.id).lean().exec()
+    const keys = Object.keys(found)
+    expect(keys).not.toContain('foo')
+    // expect(found.foo).toEqual(newFooValue)
+  })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()
     await mongoose.connection.close()

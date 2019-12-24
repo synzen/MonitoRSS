@@ -248,8 +248,16 @@ class Base {
       const model = new DatabaseModel(toSave)
       document = await model.save()
     } else {
+      toSave.$unset = {}
+      for (const key in toSave) {
+        if (toSave[key] === null) {
+          delete toSave[key]
+          toSave.$unset[key] = ''
+        }
+      }
       document = await DatabaseModel.findByIdAndUpdate(this._id, toSave, options).exec()
     }
+
     this.data = document
     this._id = document._id
     return this
@@ -260,7 +268,8 @@ class Base {
    * @returns {Base}
    */
   async saveToFile () {
-    const toSave = JSON.stringify(this.toObject(), null, 2)
+    const toSave = this.toObject()
+
     const folderPaths = this.constructor.getFolderPaths()
     for (const p of folderPaths) {
       if (!fs.existsSync(p)) {
@@ -270,10 +279,17 @@ class Base {
     const folderPath = folderPaths[folderPaths.length - 1]
     if (!this.isSaved()) {
       const newId = new mongoose.Types.ObjectId().toHexString()
-      await fs.writeFileSync(path.join(folderPath, `${newId}.json`), toSave)
+      const serialized = JSON.stringify(toSave, null, 2)
+      await fs.writeFileSync(path.join(folderPath, `${newId}.json`), serialized)
       this._id = newId
     } else {
-      await fs.writeFileSync(path.join(folderPath, `${this._id}.json`), toSave)
+      for (const key in toSave) {
+        if (toSave[key] === null) {
+          delete toSave[key]
+        }
+      }
+      const serialized = JSON.stringify(toSave, null, 2)
+      await fs.writeFileSync(path.join(folderPath, `${this._id}.json`), serialized)
     }
     return this
   }

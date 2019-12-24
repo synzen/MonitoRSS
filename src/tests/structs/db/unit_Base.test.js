@@ -472,6 +472,27 @@ describe('Unit::Base', function () {
         const returnValue = await base.saveToDatabase()
         expect(returnValue).toEqual(base)
       })
+      it('sets $unset correctly in the update', async function () {
+        MockModel.findByIdAndUpdate.mockReturnValue({ exec: () => Promise.resolve({}) })
+        const base = new BasicBase()
+        const toSave = {
+          foo: 1,
+          bar: null,
+          buck: null
+        }
+        const expectedUpdate = {
+          foo: 1,
+          $unset: {
+            bar: '',
+            buck: ''
+          }
+        }
+        const id = 123
+        base._id = id
+        jest.spyOn(base, 'toObject').mockReturnValue(toSave)
+        await base.saveToDatabase()
+        expect(MockModel.findByIdAndUpdate.mock.calls[0][1]).toEqual(expectedUpdate)
+      })
     })
   })
   describe('saveToFile', function () {
@@ -532,6 +553,21 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         const returnValue = await base.saveToFile()
         expect(returnValue).toEqual(base)
+      })
+      it('deletes null keys', async function () {
+        const toSave = {
+          foo: '123',
+          baz: null,
+          bar: null
+        }
+        const expectedSave = {
+          foo: toSave.foo
+        }
+        jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toSave)
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
+        const base = new BasicBase()
+        await base.saveToFile()
+        expect(fs.writeFileSync.mock.calls[0][1]).toEqual(JSON.stringify(expectedSave, null, 2))
       })
     })
     describe('isSaved is false', function () {
