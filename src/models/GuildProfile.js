@@ -7,9 +7,8 @@ const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..
 const schema = new mongoose.Schema({
   _id: String,
   name: String,
-  sendAlertsTo: {
-    type: [String],
-    default: undefined
+  alert: {
+    type: [String]
   },
   sources: Object,
   dateFormat: String,

@@ -31,6 +31,7 @@ describe('Unit::GuildProfile', function () {
       for (const key in initialize) {
         expect(profile[key]).toEqual(initialize[key])
       }
+      expect(profile.alert).toEqual([])
     })
   })
   describe('toObject', function () {

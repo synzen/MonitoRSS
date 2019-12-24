@@ -64,6 +64,12 @@ class GuildProfile extends Base {
      * @type {import('mongoose').Types.ObjectId[]}
      */
     this.feeds = this.getField('feeds', [])
+
+    /**
+     * User IDs to send alerts to
+     * @type {string[]}
+     */
+    this.alert = this.getField('alert', [])
   }
 
   toObject () {
@@ -75,7 +81,8 @@ class GuildProfile extends Base {
       dateLanguage: this.dateLanguage,
       timezone: this.timezone,
       prefix: this.prefix,
-      locale: this.locale
+      locale: this.locale,
+      alert: this.alert
     }
   }
 
