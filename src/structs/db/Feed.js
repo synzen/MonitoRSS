@@ -69,38 +69,38 @@ class Feed extends Base {
      * Check titles for determining article newness
      * @type {boolean}
      */
-    this.checkTitles = this.getField('checkTitles', false)
+    this.checkTitles = this.getField('checkTitles', null)
 
     /**
      * Have Discord automatically show embeds for image links
      * @type {boolean}
      */
-    this.imgPreviews = this.getField('imgPreviews', true)
+    this.imgPreviews = this.getField('imgPreviews', null)
 
     /**
      * Show image links in messages
      * @type {boolean}
      */
-    this.imgLinksExistence = this.getField('imgLinksExistence', true)
+    this.imgLinksExistence = this.getField('imgLinksExistence', null)
 
     /**
      * Check dates for determining article newness
      * @type {boolean}
      */
-    this.checkDates = this.getField('checkDates', false)
+    this.checkDates = this.getField('checkDates', null)
 
     /**
      * Format messages as if they're tables
      * @type {boolean}
      */
-    this.formatTables = this.getField('formatTables', false)
+    this.formatTables = this.getField('formatTables', null)
 
     /**
      * Toggle role mentions for subscribers when messages
      * are sent
      * @type {boolean}
      */
-    this.toggleRoleMentions = this.getField('toggleRoleMentions', false)
+    this.toggleRoleMentions = this.getField('toggleRoleMentions', null)
 
     /**
      * Disabled status

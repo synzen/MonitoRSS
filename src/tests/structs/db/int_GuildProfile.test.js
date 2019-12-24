@@ -1,6 +1,5 @@
 const GuildProfile = require('../../../structs/db/GuildProfile.js')
 const FeedModel = require('../../../models/Feed.js').model
-const Feed = require('../../../structs/db/Feed.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_guildprofile'
 const CON_OPTIONS = {
