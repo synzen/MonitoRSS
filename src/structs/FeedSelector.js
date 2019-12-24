@@ -85,7 +85,7 @@ async function selectFeedFn (m, data, callback) {
     return this.passoverFn(m, {
       ...data,
       feeds: this.feeds,
-      feedList: valid.map(index => filteredFeeds[index])
+      selectedFeeds: valid.map(index => filteredFeeds[index])
     })
   }
 

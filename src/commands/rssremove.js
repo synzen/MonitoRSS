@@ -14,12 +14,12 @@ module.exports = async (bot, message, command) => {
     const feedSelector = new FeedSelector(message, null, { command: command, locale: guildLocale }, feeds)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
-    const { feedList } = data
+    const { selectedFeeds } = data
     const removing = await message.channel.send(translate('commands.rssremove.removing'))
     const errors = []
     let removed = translate('commands.rssremove.success') + '\n```\n'
     const shardID = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : undefined
-    for (const feed of feedList) {
+    for (const feed of selectedFeeds) {
       const link = feed.url
       try {
         await feed.remove(shardID)
