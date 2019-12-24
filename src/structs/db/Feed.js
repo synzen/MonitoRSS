@@ -106,13 +106,14 @@ class Feed extends Base {
      * Disabled status
      * @type {String}
      */
-    this.disabled = this.getField('disabled')
+    this.disabled = this.getField('disabled', null)
 
     /**
-     * This feed's webhook
-     * @return {Object<string, string>}
+     * This feed's webhook. Default value is an empty object,
+     * as enforced by mongoose. Cannot be empty/null.
+     * @type {Object<string, string>}
      */
-    this.webhook = this.getField('webhook')
+    this._webhook = this.getField('webhook', {})
   }
 
   toObject () {
@@ -129,7 +130,33 @@ class Feed extends Base {
       formatTables: this.formatTables,
       toggleRoleMentions: this.toggleRoleMentions,
       disabled: this.disabled,
-      webhook: this.webhook
+      webhook: this._webhook
+    }
+  }
+
+  get webhook () {
+    if (Object.keys(this._webhook).length === 0) {
+      return undefined
+    } else {
+      return this._webhook
+    }
+  }
+
+  set webhook (value) {
+    if (typeof value !== 'object') {
+      throw new Error('Webhook must be an object')
+    }
+    if (!value.id) {
+      throw new Error('id must be specified')
+    }
+    this._webhook = {
+      id: value.id
+    }
+    if (value.name) {
+      this._webhook.name = value.name
+    }
+    if (value.avatar) {
+      this._webhook.avatar = value.avatar
     }
   }
 

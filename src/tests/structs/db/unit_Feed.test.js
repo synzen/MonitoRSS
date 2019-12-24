@@ -52,23 +52,73 @@ describe('Unit::Feed', function () {
         avatar: 'adsef',
         name: 'adesgrf'
       }
-      const profile = new Feed({ ...init })
+      const feed = new Feed({ ...init })
       for (const key in init) {
-        expect(profile[key]).toEqual(init[key])
+        expect(feed[key]).toEqual(init[key])
       }
     })
   })
   describe('toObject', function () {
     it('returns a plain with the right keys', function () {
-      const profile = new Feed({ ...necessaryInit })
-      const exported = profile.toObject()
+      const feed = new Feed({ ...necessaryInit })
+      const exported = feed.toObject()
       expect(Object.prototype.toString.call(exported) === '[object Object]').toEqual(true)
       for (const key of keys) {
-        expect(exported[key]).toEqual(profile[key])
+        expect(exported[key]).toEqual(feed[key])
       }
       for (const key in necessaryInit) {
         expect(exported[key]).toEqual(necessaryInit[key])
       }
+    })
+  })
+  describe('get webhook', function () {
+    it('returns undefined for empty object', function () {
+      const feed = new Feed({ ...necessaryInit })
+      feed._webhook = {}
+      expect(feed.webhook).toBeUndefined()
+    })
+    it('returns the webhook if defined', function () {
+      const feed = new Feed({ ...necessaryInit })
+      const webhook = {
+        foo: 'baz',
+        id: '123'
+      }
+      feed._webhook = { ...webhook }
+      expect(feed.webhook).toEqual(webhook)
+    })
+  })
+  describe('set webhook', function () {
+    it('throws an error if not object', function () {
+      const feed = new Feed({ ...necessaryInit })
+      expect(() => {
+        feed.webhook = 123
+      }).toThrowError(new Error('Webhook must be an object'))
+    })
+    it('throws an error if no id', function () {
+      const feed = new Feed({ ...necessaryInit })
+      expect(() => {
+        feed.webhook = {
+          george: 'costanza'
+        }
+      }).toThrowError(new Error('id must be specified'))
+    })
+    it('sets correctly', function () {
+      const feed = new Feed({ ...necessaryInit })
+      const webhook = {
+        id: 123,
+        name: 'aszdfe',
+        avatar: 'ewstrg',
+        george: 'costanza'
+      }
+      const expected = {
+        id: webhook.id,
+        name: webhook.name,
+        avatar: webhook.avatar
+      }
+      expect(() => {
+        feed.webhook = { ...webhook }
+      }).not.toThrowError()
+      expect(feed._webhook).toEqual(expected)
     })
   })
 })
