@@ -3,18 +3,21 @@ const initialize = require('../rss/initialize.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const serverLimit = require('../util/serverLimit.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
 
 module.exports = async (bot, message) => {
   try {
-    const [ guildRss, serverLimitData ] = await Promise.all([ dbOpsGuilds.get(message.guild.id), serverLimit(message.guild.id) ])
-    const rssList = guildRss && guildRss.sources ? guildRss.sources : {}
+    const [ profile, serverLimitData ] = await Promise.all([
+      GuildProfile.get(message.guild.id),
+      serverLimit(message.guild.id)
+    ])
+    const feeds = profile && profile.feeds ? profile.feeds : []
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
-    const prefix = guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix
-    const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+    const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     if (message.content.split(' ').length === 1) return await message.channel.send(translate('commands.rssadd.correctSyntax', { prefix })) // If there is no link after rssadd, return.
 
     let linkList = message.content.split(' ')
@@ -39,16 +42,19 @@ module.exports = async (bot, message) => {
       if (!link.startsWith('http')) {
         failedAddLinks[link] = translate('commands.rssadd.improperFormat')
         continue
-      } else if (maxFeedsAllowed !== 0 && Object.keys(rssList).length + checkedSoFar >= maxFeedsAllowed) {
+      } else if (maxFeedsAllowed !== 0 && feeds.length + checkedSoFar >= maxFeedsAllowed) {
         log.command.info(`Unable to add feed ${link} due to limit of ${maxFeedsAllowed} feeds`, message.guild)
         // Only show link-specific error if it's one link since they user may be trying to add a huge number of links that exceeds the message size limit
-        if (totalLinks.length === 1) failedAddLinks[link] = translate('commands.rssadd.limitReached', { max: maxFeedsAllowed })
-        else limitExceeded = true
+        if (totalLinks.length === 1) {
+          failedAddLinks[link] = translate('commands.rssadd.limitReached', { max: maxFeedsAllowed })
+        } else {
+          limitExceeded = true
+        }
         continue
       }
 
-      for (let x in rssList) {
-        if (rssList[x].link === link && message.channel.id === rssList[x].channel) {
+      for (const feed of feeds) {
+        if (feed.url === link && message.channel.id === feed.channel) {
           failedAddLinks[link] = translate('commands.rssadd.alreadyExists')
           continue
         }
@@ -57,7 +63,9 @@ module.exports = async (bot, message) => {
 
       try {
         const [ addedLink ] = await initialize.addNewFeed({ channel: message.channel, link, vipUser })
-        if (addedLink) link = addedLink
+        if (addedLink) {
+          link = addedLink
+        }
         channelTracker.remove(message.channel.id)
         log.command.info(`Added ${link}`, message.guild)
         dbOpsFailedLinks.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
@@ -74,7 +82,9 @@ module.exports = async (bot, message) => {
     let msg = ''
     if (passedAddLinks.length > 0) {
       let successBox = translate('commands.rssadd.success') + ':\n```\n'
-      for (const passedLink of passedAddLinks) successBox += `\n${passedLink}`
+      for (const passedLink of passedAddLinks) {
+        successBox += `\n${passedLink}`
+      }
       msg += successBox + '\n```\n'
     }
     if (Object.keys(failedAddLinks).length > 0) {
