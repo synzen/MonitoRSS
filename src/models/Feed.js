@@ -26,6 +26,12 @@ const schema = new mongoose.Schema({
     name: String,
     avatar: String
   },
+  split: {
+    char: String,
+    prepend: String,
+    append: String,
+    maxLength: Number
+  },
   disabled: String,
   checkTitles: Boolean,
   checkDates: Boolean,
