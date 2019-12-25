@@ -61,7 +61,7 @@ class GuildProfile extends Base {
 
     /**
      * IDs of feeds that belong to this guild
-     * @type {import('mongoose').Types.ObjectId[]}
+     * @type {string[]}
      */
     this.feeds = this.getField('feeds', [])
 
@@ -94,7 +94,7 @@ class GuildProfile extends Base {
     if (!this.isSaved()) {
       throw new Error('Must be saved before getting feeds')
     }
-    return Promise.all(this.feeds.map(id => Feed.get(id.toHexString())))
+    return Promise.all(this.feeds.map(id => Feed.get(id)))
   }
 
   static get Model () {

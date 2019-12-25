@@ -14,14 +14,14 @@ class Base {
    * @param {MongooseModel|Object<string, any>} data
    */
   constructor (data = {}) {
-    this.data = data
+    this.data = data instanceof mongoose.Model ? data.toObject() : data
+    this.document = data instanceof mongoose.Model ? data : null
 
     /**
-     * MongoDB's generated ID if instantiated with a model
+     * Internal ID, usually MongoDB's ObjectId
      * @type {string}
      */
-    const _id = this.getField('_id')
-    this._id = _id instanceof mongoose.Types.ObjectId ? _id.toHexString() : _id
+    this._id = this.getField('_id')
 
     /**
      * The bot version this data model was created on
@@ -94,7 +94,7 @@ class Base {
    */
   isSaved () {
     if (this.constructor.isMongoDatabase) {
-      return !!this._id && this.data instanceof mongoose.Model
+      return !!this._id && !!this.document
     } else {
       return !!this._id
     }
@@ -107,8 +107,7 @@ class Base {
    * @returns {*} - The field value
    */
   getField (field, def) {
-    const value = this.data instanceof mongoose.Model
-      ? this.data.get(field) : this.data[field]
+    const value = this.data[field]
     return value === undefined || value === null ? def : value
   }
 
@@ -208,7 +207,7 @@ class Base {
 
     // Mongo
     if (this.constructor.isMongoDatabase) {
-      await this.data.remove()
+      await this.document.remove()
       return
     }
 
@@ -260,13 +259,15 @@ class Base {
       const model = new DatabaseModel(toSave)
       const document = await model.save()
 
-      this.data = document
-      this._id = document._id
+      this.document = document
+
+      // doc.id converts the ObjectId to string
+      this._id = document.id
     } else {
       for (const key in toSave) {
-        this.data.set(key, toSave[key])
+        this.document.set(key, toSave[key])
       }
-      await this.data.save()
+      await this.document.save()
     }
     return this
   }

@@ -34,7 +34,7 @@ describe('Int::structs/db/GuildProfile', function () {
       const results = await Promise.all([ feed.save(), feed2.save() ])
       const feedIds = results.map(doc => doc._id)
       const freshProfile = await GuildProfile.get(guildData._id)
-      expect(freshProfile.feeds.toObject()).toEqual(feedIds)
+      expect(freshProfile.feeds).toEqual(feedIds)
     })
   })
   afterAll(async function () {

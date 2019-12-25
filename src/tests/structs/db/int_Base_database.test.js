@@ -18,7 +18,8 @@ describe('Int::Base Database', function () {
     const initFoobar = new Foobar(initData)
     const doc = await initFoobar.save()
     const foobar = new FoobarClass(doc)
-    expect(foobar.data).toBeInstanceOf(mongoose.Model)
+    expect(foobar.data).toEqual(doc.toObject())
+    expect(foobar.document).toBeInstanceOf(mongoose.Model)
     expect(foobar.isSaved()).toEqual(true)
     await doc.remove()
   })
@@ -30,7 +31,7 @@ describe('Int::Base Database', function () {
     const foobar = new FoobarClass(data)
     expect(foobar.isSaved()).toEqual(false)
     await foobar.save()
-    expect(foobar.data).toBeInstanceOf(mongoose.Model)
+    expect(foobar.document).toBeInstanceOf(mongoose.Model)
     expect(foobar.isSaved()).toEqual(true)
     const found = Foobar.findOne(data).exec()
     expect(found).toBeDefined()
@@ -40,7 +41,8 @@ describe('Int::Base Database', function () {
     const initFoobar = new Foobar(initData)
     const doc = await initFoobar.save()
     const foobar = await FoobarClass.get(doc._id.toHexString())
-    expect(foobar.data).toBeInstanceOf(mongoose.Model)
+    expect(foobar.document).toBeInstanceOf(mongoose.Model)
+    expect(foobar.data).toEqual(doc.toObject())
     for (const key in initData) {
       expect(foobar[key]).toEqual(initData[key])
     }

@@ -65,13 +65,6 @@ describe('Unit::Base', function () {
       const base = new BasicBase({ ...init })
       expect(base._id).toEqual(init._id)
     })
-    it('sets this._id for mongoose ObjectId', function () {
-      const init = {
-        _id: new mongoose.Types.ObjectId()
-      }
-      const base = new BasicBase({ ...init })
-      expect(base._id).toEqual(init._id.toHexString())
-    })
   })
   describe('static get id', function () {
     it('returns this._id as .id', function () {
@@ -109,17 +102,6 @@ describe('Unit::Base', function () {
     })
   })
   describe('static getField', function () {
-    it('returns the data from mongoose model get', function () {
-      const base = new BasicBase()
-      base.data = new mongoose.Model()
-      const field = 'w34rey5th'
-      const value = 'q w2tr4gyij'
-      base.data.get.mockReturnValueOnce(value)
-      const returnValue = base.getField(field)
-      expect(base.data.get).toHaveBeenCalledTimes(1)
-      expect(base.data.get.mock.calls[0]).toEqual([field])
-      expect(returnValue).toEqual(value)
-    })
     it('returns the data from plain object', function () {
       const base = new BasicBase()
       const field = 'we4ryhdt'
@@ -153,12 +135,12 @@ describe('Unit::Base', function () {
       jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(true)
       const base = new BasicBase()
       base._id = 123
-      base.data = new mongoose.Model()
+      base.document = new mongoose.Model()
       expect(base.isSaved()).toEqual(true)
       base._id = undefined
       expect(base.isSaved()).toEqual(false)
       base._id = 123
-      base.data = undefined
+      base.document = undefined
       expect(base.isSaved()).toEqual(false)
       base._id = undefined
       expect(base.isSaved()).toEqual(false)
@@ -357,7 +339,7 @@ describe('Unit::Base', function () {
       it('calls remove', async function () {
         const data = { remove: jest.fn() }
         const base = new BasicBase()
-        base.data = data
+        base.document = data
         await base.delete()
         expect(data.remove).toHaveBeenCalledTimes(1)
       })
@@ -436,18 +418,18 @@ describe('Unit::Base', function () {
         expect(MockModel.mock.instances[0].save).toHaveBeenCalledTimes(1)
       })
       it('saves _id to this', async function () {
-        const _id = '34TW2EGOSJMKI'
-        jest.spyOn(MockModel.prototype, 'save').mockResolvedValue({ _id })
+        const id = '34TW2EGOSJMKI'
+        jest.spyOn(MockModel.prototype, 'save').mockResolvedValue({ id })
         const base = new BasicBase()
         await base.saveToDatabase()
-        expect(base._id).toEqual(_id)
+        expect(base._id).toEqual(id)
       })
-      it('overwrites this.data with the document', async function () {
+      it('overwrites this.document with the document', async function () {
         const document = { foo: 'bazd' }
         jest.spyOn(MockModel.prototype, 'save').mockResolvedValue({ ...document })
         const base = new BasicBase()
         await base.saveToDatabase()
-        expect(base.data).toEqual({ ...document })
+        expect(base.document).toEqual({ ...document })
       })
       it('returns this', async function () {
         const base = new BasicBase()
@@ -484,27 +466,27 @@ describe('Unit::Base', function () {
         }
         jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toObjectValue)
         const base = new BasicBase()
-        base.data = {
+        base.document = {
           save: jest.fn(),
           set: jest.fn()
         }
         await base.saveToDatabase()
         for (const key in toObjectValue) {
-          expect(base.data.set).toHaveBeenCalledWith(key, toObjectValue[key])
+          expect(base.document.set).toHaveBeenCalledWith(key, toObjectValue[key])
         }
       })
       it('calls save', async function () {
         const base = new BasicBase()
-        base.data = {
+        base.document = {
           set: jest.fn(),
           save: jest.fn()
         }
         await base.saveToDatabase()
-        expect(base.data.save).toHaveBeenCalled()
+        expect(base.document.save).toHaveBeenCalled()
       })
       it('returns this', async function () {
         const base = new BasicBase()
-        base.data = { save: jest.fn() }
+        base.document = { save: jest.fn() }
         const returnValue = await base.saveToDatabase()
         expect(returnValue).toEqual(base)
       })
