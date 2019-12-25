@@ -7,7 +7,8 @@ const FoobarSchema = new mongoose.Schema({
   array: [String],
   object: {
     key: String
-  }
+  },
+  objectId: mongoose.Types.ObjectId
 })
 
 const Foobar = mongoose.model('Foobar', FoobarSchema)

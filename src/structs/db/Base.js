@@ -14,7 +14,17 @@ class Base {
    * @param {MongooseModel|Object<string, any>} data
    */
   constructor (data = {}) {
-    this.data = data instanceof mongoose.Model ? data.toObject() : data
+    /**
+     * this.data must be serialized to maintain equal function
+     * between database and databaseless
+     * @type {Object<string, any>}
+     */
+    this.data = data instanceof mongoose.Model ? JSON.parse(JSON.stringify(data.toObject())) : data
+
+    /**
+     * Only used for database methods
+     * @type {MongooseModel}
+     */
     this.document = data instanceof mongoose.Model ? data : null
 
     /**
@@ -268,6 +278,7 @@ class Base {
         this.document.set(key, toSave[key])
       }
       await this.document.save()
+      this.data = JSON.parse(JSON.stringify(this.document.toObject()))
     }
     return this
   }

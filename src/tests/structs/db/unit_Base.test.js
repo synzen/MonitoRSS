@@ -468,7 +468,8 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         base.document = {
           save: jest.fn(),
-          set: jest.fn()
+          set: jest.fn(),
+          toObject: jest.fn(() => ({}))
         }
         await base.saveToDatabase()
         for (const key in toObjectValue) {
@@ -479,14 +480,30 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         base.document = {
           set: jest.fn(),
-          save: jest.fn()
+          save: jest.fn(),
+          toObject: jest.fn(() => ({}))
         }
         await base.saveToDatabase()
         expect(base.document.save).toHaveBeenCalled()
       })
+      it('updates this.data', async function () {
+        const base = new BasicBase()
+        const serializedDoc = { foo: 'baz', a: 2 }
+        const toObject = jest.fn(() => serializedDoc)
+        base.document = {
+          save: jest.fn(),
+          toObject
+        }
+        await base.saveToDatabase()
+        expect(toObject).toHaveBeenCalled()
+        expect(base.data).toEqual(JSON.parse(JSON.stringify(serializedDoc)))
+      })
       it('returns this', async function () {
         const base = new BasicBase()
-        base.document = { save: jest.fn() }
+        base.document = {
+          save: jest.fn(),
+          toObject: jest.fn(() => ({}))
+        }
         const returnValue = await base.saveToDatabase()
         expect(returnValue).toEqual(base)
       })

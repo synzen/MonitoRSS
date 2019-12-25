@@ -13,12 +13,12 @@ describe('Int::Base Database', function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
   })
-  it('initializes correctly', async function () {
+  it.only('initializes correctly', async function () {
     const initData = { foo: 'qgfdew4' }
     const initFoobar = new Foobar(initData)
     const doc = await initFoobar.save()
     const foobar = new FoobarClass(doc)
-    expect(foobar.data).toEqual(doc.toObject())
+    expect(foobar.data).toEqual(JSON.parse(JSON.stringify(doc.toObject())))
     expect(foobar.document).toBeInstanceOf(mongoose.Model)
     expect(foobar.isSaved()).toEqual(true)
     await doc.remove()
@@ -42,7 +42,7 @@ describe('Int::Base Database', function () {
     const doc = await initFoobar.save()
     const foobar = await FoobarClass.get(doc._id.toHexString())
     expect(foobar.document).toBeInstanceOf(mongoose.Model)
-    expect(foobar.data).toEqual(doc.toObject())
+    expect(foobar.data).toEqual({ ...doc.toObject(), _id: doc.id })
     for (const key in initData) {
       expect(foobar[key]).toEqual(initData[key])
     }
@@ -128,6 +128,11 @@ describe('Int::Base Database', function () {
     await foobar.save()
     const found = await Foobar.findById(saved.id).lean().exec()
     expect(Object.keys(found)).toContain('array')
+  })
+  it('autocasts to ObjectId for strings', async function () {
+    const initData = { objectId: new mongoose.Types.ObjectId().toHexString() }
+    const foobar = new FoobarClass(initData)
+    expect(foobar.save()).resolves.toEqual(foobar)
   })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()
