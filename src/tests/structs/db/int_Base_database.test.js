@@ -42,7 +42,7 @@ describe('Int::Base Database', function () {
     const doc = await initFoobar.save()
     const foobar = await FoobarClass.get(doc._id.toHexString())
     expect(foobar.document).toBeInstanceOf(mongoose.Model)
-    expect(foobar.data).toEqual({ ...doc.toObject(), _id: doc.id })
+    expect(foobar.data).toEqual(JSON.parse(JSON.stringify(doc.toObject())))
     for (const key in initData) {
       expect(foobar[key]).toEqual(initData[key])
     }
