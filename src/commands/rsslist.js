@@ -19,52 +19,22 @@ module.exports = async (bot, message, command) => {
     }
 
     const failedLinks = {}
-    // const rssList = guildRss.sources
     const feeds = await profile.getFeeds()
-    let failedFeedCount = 0
 
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
 
     // Generate the info for each feed as an array, and push into another array
-    const currentRSSList = []
-    const failedLinksToCheck = []
-    const schedulesToFetch = []
+    const failedLinksToCheck = feeds.map(feed => feed.url)
+    const schedulesToFetch = feeds.map(feed => dbOpsSchedules.assignedSchedules.get(feed.id))
     const schedulesByFeedIDs = {}
-    for (const feed of feeds) {
-      schedulesToFetch.push(dbOpsSchedules.assignedSchedules.get(feed.id))
-      let o = {
-        id: feed.id,
-        url: feed.url,
-        title: feed.title,
-        webhook: feed.webhook ? feed.webhook.id : undefined,
-        channel: bot.channels.get(feed.channel) ? bot.channels.get(feed.channel).name : undefined,
-        checkTitles: feed.checkTitles === true ? translate('commands.rsslist.titleChecksEnabled') : null
-      }
-      failedLinksToCheck.push(feed.url)
-      if (feed.disabled) {
-        o.status = translate('commands.rsslist.statusDisabled', { reason: feed.disabled })
-        o.isDisabled = true
-      }
-      currentRSSList.push(o)
-    }
+
     const [ failedLinksResults, assignedSchedules ] = await Promise.all([ dbOpsFailedLinks.getMultiple(failedLinksToCheck), Promise.all(schedulesToFetch) ])
     for (const result of failedLinksResults) {
       failedLinks[result.link] = result.failed || result.count
     }
     for (const assigned of assignedSchedules) {
       schedulesByFeedIDs[assigned.feedID] = assigned
-    }
-    if (FAIL_LIMIT !== 0) {
-      for (const feed of currentRSSList) {
-        if (feed.isDisabled) continue
-        const failCount = failedLinks[feed.link]
-        const failCountText = failCount > Math.ceil(FAIL_LIMIT / 5) ? `(failed ${failCount}/${FAIL_LIMIT} times` : ''
-        feed.status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? translate('commands.rsslist.statusOk', { failCount: failCountText }) : translate('commands.rsslist.statusFailed')
-        if (feed.status.startsWith('Status: FAILED')) {
-          ++failedFeedCount
-        }
-      }
     }
 
     let vipDetails = ''
@@ -74,29 +44,59 @@ module.exports = async (bot, message, command) => {
         const expireAt = moment(vipUser.expireAt)
         const daysLeft = Math.round(moment.duration(expireAt.diff(moment())).asDays())
         vipDetails += `${expireAt.format('D MMMM YYYY')} (${daysLeft} days)\n`
-      } else vipDetails += 'Ongoing\n'
-    } else vipDetails = '\n'
+      } else {
+        vipDetails += 'Ongoing\n'
+      }
+    } else {
+      vipDetails = '\n'
+    }
 
     let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.rsslist.serverLimit')}:** ${profile.feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
-    desc += failedFeedCount > 0 ? translate('commands.rsslist.failAlert', { failLimit: FAIL_LIMIT, prefix: profile.prefix || config.bot.prefix }) : ''
+    // desc += failedFeedCount > 0 ? translate('commands.rsslist.failAlert', { failLimit: FAIL_LIMIT, prefix: profile.prefix || config.bot.prefix }) : ''
 
     const list = new MenuUtils.Menu(message)
       .setAuthor(translate('commands.rsslist.currentActiveFeeds'))
       .setDescription(desc)
 
-    if (vipUser) list.setFooter(`Patronage backed by ${vipUser.name} (${vipUser.id})`)
+    if (vipUser) {
+      list.setFooter(`Patronage backed by ${vipUser.name} (${vipUser.id})`)
+    }
 
-    currentRSSList.forEach(item => {
-      const url = item.url
-      const title = item.title
-      const channelName = item.channel
-      const status = item.status
-      const titleChecks = item.titleChecks
-      const webhook = item.webhook
-      const schedule = storage.scheduleManager.getSchedule(schedulesByFeedIDs[item.id].schedule)
+    feeds.forEach(feed => {
+      // URL
+      const url = feed.url.length > 500 ? translate('commands.rsslist.exceeds500Characters') : feed.url
+
+      // Title
+      const title = feed.title
+
+      // Channel
+      const channelName = bot.channels.get(feed.channel) ? bot.channels.get(feed.channel).name : 'Unknown'
+
+      // Status
+      let status = ''
+      if (feed.disabled) {
+        status = translate('commands.rsslist.statusDisabled', { reason: feed.disabled })
+      } else if (FAIL_LIMIT !== 0) {
+        const failCount = failedLinks[feed.url]
+        const failCountText = failCount > Math.ceil(FAIL_LIMIT / 5) ? `(failed ${failCount}/${FAIL_LIMIT} times` : ''
+        status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? translate('commands.rsslist.statusOk', { failCount: failCountText }) : translate('commands.rsslist.statusFailed')
+      }
+
+      // Title checks
+      const titleChecks = feed.checkTitles === true ? translate('commands.rsslist.titleChecksEnabled') : ''
+
+      // Webhook
+      const webhook = feed.webhook ? `${translate('commands.rsslist.webhook')}: ${feed.webhook.id}\n` : ''
+
+      // Refresh rate
+      const schedule = storage.scheduleManager.getSchedule(schedulesByFeedIDs[feed.id].schedule)
       let refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} ${translate('commands.rsslist.seconds')}` : `${schedule.refreshRate} ${translate('commands.rsslist.minutes')}` : translate('commands.rsslist.unknown')
-      if (config._vip === true && !vipUser) refreshRate += ' [－](https://www.patreon.com/discordrss)'
-      list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks || ''}${status || ''}${translate('generics.channelUpper')}: #${channelName}\n${translate('commands.rsslist.refreshRate')}: ${refreshRate}\n${webhook ? `${translate('commands.rsslist.webhook')}: ${webhook}\n` : ''}${translate('commands.rsslist.link')}: ${url.length > 500 ? translate('commands.rsslist.exceeds500Characters') : url}`)
+
+      // Patreon link
+      if (config._vip === true && !vipUser) {
+        refreshRate += ' [－](https://www.patreon.com/discordrss)'
+      }
+      list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('generics.channelUpper')}: #${channelName}\n${translate('commands.rsslist.refreshRate')}: ${refreshRate}\n${webhook}${translate('commands.rsslist.link')}: ${url}`)
     })
 
     await list.send()
