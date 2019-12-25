@@ -47,6 +47,25 @@ describe('Int::Base Database', function () {
       expect(foobar[key]).toEqual(initData[key])
     }
   })
+  it('getsBy', async function () {
+    const initData1 = {
+      foo: 'baz',
+      baz: 1
+    }
+    const initData2 = {
+      foo: 'bfgjz',
+      baz: 2
+    }
+    const initData3 = {
+      foo: 'bfgjz',
+      baz: 3
+    }
+    await new Foobar(initData1).save()
+    await new Foobar(initData2).save()
+    await new Foobar(initData3).save()
+    const found = await FoobarClass.getBy('foo', 'bfgjz')
+    expect(found.data).toEqual(expect.objectContaining(initData2))
+  })
   it('deletes', async function () {
     const initFoobar = new Foobar({ foo: 'abc' })
     const doc = await initFoobar.save()
