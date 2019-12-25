@@ -474,57 +474,39 @@ describe('Unit::Base', function () {
     describe('saved', function () {
       beforeEach(function () {
         jest.spyOn(Base.prototype, 'isSaved').mockReturnValue(true)
-        MockModel.findByIdAndUpdate.mockReturnValue({ exec: () => Promise.resolve({}) })
+        // MockModel.findByIdAndUpdate.mockReturnValue({ exec: () => Promise.resolve({}) })
       })
-      it('calls findByIdAndUpdate correctly', async function () {
-        const options = {
-          ...BasicBase.FIND_PROJECTION,
-          upsert: true,
-          new: true
+      it('calls data.set on all keys properly', async function () {
+        const toObjectValue = {
+          fo: 1,
+          fq: 'az',
+          gsd: 'frdbhg'
         }
-        const toObjectValue = { fo: 1 }
-        const exec = jest.fn(() => Promise.resolve({}))
-        MockModel.findByIdAndUpdate.mockReturnValue(({ exec }))
         jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toObjectValue)
         const base = new BasicBase()
-        const id = 123
-        base._id = id
+        base.data = {
+          save: jest.fn(),
+          set: jest.fn()
+        }
         await base.saveToDatabase()
-        expect(MockModel.findByIdAndUpdate)
-          .toHaveBeenCalledWith(id, toObjectValue, expect.objectContaining(options))
-        expect(exec).toHaveBeenCalled()
+        for (const key in toObjectValue) {
+          expect(base.data.set).toHaveBeenCalledWith(key, toObjectValue[key])
+        }
       })
-      it('overwrites this.data with the document', async function () {
-        const document = { foo: 'bazd' }
-        MockModel.findByIdAndUpdate.mockReturnValue({ exec: () => Promise.resolve({ ...document }) })
+      it('calls save', async function () {
         const base = new BasicBase()
+        base.data = {
+          set: jest.fn(),
+          save: jest.fn()
+        }
         await base.saveToDatabase()
-        expect(base.data).toEqual({ ...document })
+        expect(base.data.save).toHaveBeenCalled()
       })
       it('returns this', async function () {
         const base = new BasicBase()
+        base.data = { save: jest.fn() }
         const returnValue = await base.saveToDatabase()
         expect(returnValue).toEqual(base)
-      })
-      it('sets $unset correctly in the update', async function () {
-        const base = new BasicBase()
-        const toSave = {
-          foo: 1,
-          bar: undefined,
-          buck: undefined
-        }
-        const expectedUpdate = {
-          foo: 1,
-          $unset: {
-            bar: '',
-            buck: ''
-          }
-        }
-        const id = 123
-        base._id = id
-        jest.spyOn(base, 'toObject').mockReturnValue(toSave)
-        await base.saveToDatabase()
-        expect(MockModel.findByIdAndUpdate.mock.calls[0][1]).toEqual(expectedUpdate)
       })
     })
   })

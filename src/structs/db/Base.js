@@ -250,13 +250,6 @@ class Base {
      */
     const DatabaseModel = this.constructor.Model
 
-    const options = {
-      ...this.constructor.FIND_PROJECTION,
-      upsert: true,
-      new: true
-    }
-
-    let document
     if (!this.isSaved()) {
       // Delete all null keys
       for (const key in toSave) {
@@ -265,22 +258,16 @@ class Base {
         }
       }
       const model = new DatabaseModel(toSave)
-      document = await model.save()
+      const document = await model.save()
+
+      this.data = document
+      this._id = document._id
     } else {
-      // Unset all undefined keys
-      toSave.$unset = {}
       for (const key in toSave) {
-        if (toSave[key] === undefined) {
-          delete toSave[key]
-          toSave.$unset[key] = ''
-        }
+        this.data.set(key, toSave[key])
       }
-
-      document = await DatabaseModel.findByIdAndUpdate(this._id, toSave, options).exec()
+      await this.data.save()
     }
-
-    this.data = document
-    this._id = document._id
     return this
   }
 
