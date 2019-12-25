@@ -32,4 +32,4 @@ fieldSchema.pre('validate', middleware.checkEmptyField)
 embedSchema.pre('validate', middleware.checkEmptyEmbed)
 
 exports.schema = schema
-exports.model = mongoose.model('MessageFormat', schema)
+exports.model = mongoose.model('Format', schema)
