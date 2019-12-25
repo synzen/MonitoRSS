@@ -3,6 +3,7 @@ const FeedModel = require('../../models/Feed.js').model
 const log = require('../../util/logger.js')
 const dbOpsSchedules = require('../../util/db/schedules.js')
 const ArticleModel = require('../../models/Article.js')
+const Format = require('./Format.js')
 
 class Feed extends Base {
   /**
@@ -202,6 +203,15 @@ class Feed extends Base {
     if (assignedSchedules.length === 0 && Base.isMongoDatabase) {
       ArticleModel.model(this.url, shardID, assigned.schedule).collection.drop().catch(err => err.code === 26 ? null : log.general.error('Failed to drop unused collection after feed removal', err))
     }
+  }
+
+  /**
+   * Gets the message format of this feed. There is only
+   * one format per feed.
+   * @returns {Format}
+   */
+  async getFormat () {
+    return Format.getBy('feed', this.id)
   }
 
   static get Model () {
