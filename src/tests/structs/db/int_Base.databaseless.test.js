@@ -63,7 +63,35 @@ describe('Int::Base Databaseless', function () {
     for (const key in data2) {
       expect(foobar2[key]).toEqual(data2[key])
     }
-    await Promise.all([ fsUnlink(filePath), fsUnlink(filePath2) ])
+    await Promise.all([
+      fsUnlink(filePath),
+      fsUnlink(filePath2)
+    ])
+  })
+  it('getsBy', async function () {
+    const data = { foo: 'zzx', baz: 999 }
+    const data2 = { foo: 'zxccb' }
+    const data3 = { foo: 'zxch', jig: 'cc' }
+    const _id = 'ghj23tgrehtrgf'
+    const _id2 = 'aedgswrhft'
+    const _id3 = 'wseg'
+    const filePath = path.join(folderPath, `${_id}.json`)
+    const filePath2 = path.join(folderPath, `${_id2}.json`)
+    const filePath3 = path.join(folderPath, `${_id3}.json`)
+    await Promise.all([
+      fsWriteFile(filePath, JSON.stringify(data, null, 2)),
+      fsWriteFile(filePath2, JSON.stringify(data2, null, 2)),
+      fsWriteFile(filePath3, JSON.stringify(data3, null, 2))
+    ])
+    await expect(FoobarClass.getBy('foo', 'zxch'))
+      .resolves.toEqual(data3)
+    await expect(FoobarClass.getBy('ua', 'gde'))
+      .resolves.toBeNull()
+    await Promise.all([
+      fsUnlink(filePath),
+      fsUnlink(filePath2),
+      fsUnlink(filePath3)
+    ])
   })
   afterAll(async function () {
     const files = await fsReaddir(folderPath)

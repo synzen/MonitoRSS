@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const config = require('../../config.js')
 const fs = require('fs')
+const fsPromises = fs.promises
 const path = require('path')
 const log = require('../../util/logger.js')
 
@@ -149,8 +150,8 @@ class Base {
 
     // Mongo
     if (this.isMongoDatabase) {
-      const model = await DatabaseModel.findById(id).exec()
-      return model ? new this(model) : null
+      const doc = await DatabaseModel.findById(id).exec()
+      return doc ? new this(doc) : null
     }
 
     // Databaseless
@@ -166,6 +167,41 @@ class Base {
       log.general.warning(`Could not parse ${DatabaseModel.collection.collectionName} JSON from file ${id}`, err)
       return null
     }
+  }
+
+  static async getBy (field, value) {
+    /**
+     * @type {MongooseModel}
+     */
+    const DatabaseModel = this.Model
+
+    // Database
+    if (this.isMongoDatabase) {
+      const query = {
+        [field]: value
+      }
+      const doc = await DatabaseModel.findOne(query, this.FIND_PROJECTION).exec()
+      return doc ? new this(doc) : null
+    }
+
+    // Databaseless - very slow
+    const folderPaths = this.getFolderPaths()
+    const folderPath = folderPaths[folderPaths.length - 1]
+    if (!fs.existsSync(folderPath)) {
+      return null
+    }
+
+    const fileNames = await fsPromises.readdir(folderPath)
+    const promises = fileNames.map(name => fsPromises.readFile(path.join(folderPath, name)))
+    const resolved = await Promise.all(promises)
+    const jsons = resolved.map((contents, index) => {
+      try {
+        return JSON.parse(contents)
+      } catch (err) {
+        log.general.error(`Failed to parse json at ${folderPath} ${fileNames[index]}`, err)
+      }
+    })
+    return jsons.filter(item => item).find(json => json[field] === value) || null
   }
 
   /**

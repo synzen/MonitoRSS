@@ -4,12 +4,15 @@ const Base = require('../../../structs/db/Base.js')
 const config = require('../../../config.js')
 const path = require('path')
 const fs = require('fs')
+const fsPromises = fs.promises
 const fsReadFileSync = fs.readFileSync
 const fsWriteFileSync = fs.writeFileSync
 const fsExistsSync = fs.existsSync
 const fsReaddirSync = fs.readdirSync
 const fsMkdirSync = fs.mkdirSync
 const fsUnlinkSync = fs.unlinkSync
+const fsPromisesReaddir = fsPromises.readdir
+const fsPromisesReadFile = fsPromises.readFile
 
 jest.mock('mongoose')
 jest.mock('../../../config.js')
@@ -226,6 +229,86 @@ describe('Unit::Base', function () {
         fs.readFileSync = jest.fn(() => jsonString)
         const returnValue = await BasicBase.get('1')
         expect(returnValue).toBeNull()
+      })
+    })
+  })
+  describe('getBy', function () {
+    describe('from database', function () {
+      beforeEach(function () {
+        jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockResolvedValue(true)
+      })
+      it('calls findOne correctly', async function () {
+        const field = '234wt6r'
+        const value = 'w23et43'
+        const query = {
+          [field]: value
+        }
+        await BasicBase.getBy(field, value)
+        expect(MockModel.findOne).toHaveBeenCalledWith(query, BasicBase.FIND_PROJECTION)
+      })
+      it('returns a new instance correctly', async function () {
+        const doc = {
+          hello: 'world'
+        }
+        const exec = jest.fn(() => doc)
+        jest.spyOn(MockModel, 'findOne').mockReturnValue({ exec })
+        const returnValue = await BasicBase.getBy('asd', 'sdf')
+        expect(returnValue).toBeInstanceOf(BasicBase)
+      })
+      it('returns null correctly', async function () {
+        const exec = jest.fn(() => null)
+        jest.spyOn(MockModel, 'findOne').mockReturnValue({ exec })
+        const returnValue = await BasicBase.getBy('asd', 'sdf')
+        expect(returnValue).toBeNull()
+      })
+    })
+    describe('from databaseless', function () {
+      beforeEach(function () {
+        jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(false)
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['1'])
+        fs.existsSync = jest.fn()
+        fsPromises.readdir = jest.fn()
+        fsPromises.readFile = jest.fn()
+      })
+      afterEach(function () {
+        fs.existsSync = fsExistsSync
+        fsPromises.readdir = fsPromisesReaddir
+        fsPromises.readFile = fsPromisesReadFile
+      })
+      it('returns null if path does not exist', async function () {
+        fs.existsSync.mockReturnValue(false)
+        const returned = await BasicBase.getBy('sdef', 'sg')
+        expect(returned).toBeNull()
+      })
+      it('returns correctly', async function () {
+        const read1 = JSON.stringify({ key1: 'abcgfd' })
+        const readFail = '{wetfrg:}'
+        const read2 = JSON.stringify({ key1: 'gh' })
+        const read3 = JSON.stringify({ key1: 'abc' })
+        fsPromises.readdir.mockResolvedValue(['1', '2', '3'])
+        fs.existsSync.mockReturnValue(true)
+        fsPromises.readFile
+          .mockResolvedValueOnce(read1)
+          .mockResolvedValueOnce(readFail)
+          .mockResolvedValueOnce(read2)
+          .mockResolvedValueOnce(read3)
+        await expect(BasicBase.getBy('key1', 'gh'))
+          .toEqual(JSON.parse(read2))
+        await expect(BasicBase.getBy('random', 'key'))
+          .toBeNull()
+      })
+      it('returns only the first one found', async function () {
+        const read1Object = { key: 'rwse4yhg', george: 1 }
+        const read2Object = { key: read1Object.key, lucas: 1 }
+        const read1 = JSON.stringify(read1Object)
+        const read2 = JSON.stringify(read2Object)
+        fsPromises.readdir.mockResolvedValue(['1', '2'])
+        fs.existsSync.mockReturnValue(true)
+        fsPromises.readFile
+          .mockResolvedValueOnce(read1)
+          .mockResolvedValueOnce(read2)
+        const returned = await BasicBase.getBy('key', read1Object.key)
+        expect(returned).toEqual(read1Object)
       })
     })
   })

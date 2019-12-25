@@ -13,7 +13,7 @@ describe('Int::Base Database', function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
   })
-  it.only('initializes correctly', async function () {
+  it('initializes correctly', async function () {
     const initData = { foo: 'qgfdew4' }
     const initFoobar = new Foobar(initData)
     const doc = await initFoobar.save()
