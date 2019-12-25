@@ -1,61 +1,93 @@
-const dbOpsGuilds = require('../util/db/guilds.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Format = require('../structs/db/Format.js')
 
 async function feedSelectorFn (m, data) {
-  const { guildRss, rssName } = data
-  const source = guildRss.sources[rssName]
-  const currentMsg = source.message ? '```Markdown\n' + source.message + '```' : `\`\`\`Markdown\n${Translator.translate('commands.rssmessage.noSetMessage', guildRss.locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultMessage + '```'
-  const prefix = guildRss.prefix || config.bot.prefix
-  const nextData = { guildRss: guildRss,
-    rssName: rssName,
+  const { feed, profile, locale } = data
+  const format = await feed.getFormat()
+  let currentMsg = ''
+  if (format && format.text) {
+    currentMsg = '```Markdown\n' + format.text + '```'
+  } else {
+    currentMsg = `\`\`\`Markdown\n${Translator.translate('commands.rssmessage.noSetMessage', locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultMessage + '```'
+  }
+  const prefix = profile.prefix || config.bot.prefix
+  const nextData = {
+    ...data,
+    format,
     next: {
-      text: Translator.translate('commands.rssmessage.prompt', guildRss.locale, { prefix, currentMsg, link: source.link }) }
+      text: Translator.translate('commands.rssmessage.prompt', locale, { prefix, currentMsg, link: feed.url }) }
   }
   return nextData
 }
 
 async function messagePromptFn (m, data) {
-  const { guildRss, rssName } = data
-  const source = guildRss.sources[rssName]
+  const { format, locale } = data
   const input = m.content
 
   if (input.toLowerCase() === 'reset') {
-    return { setting: null, guildRss: guildRss, rssName: rssName }
-  } else if (input === '{empty}' && (!Array.isArray(source.embeds) || source.embeds.length === 0)) {
-    throw new MenuUtils.MenuOptionError(Translator.translate('commands.rssmessage.noEmpty', guildRss.locale)) // Allow empty messages only if embed is enabled
+    return {
+      ...data,
+      setting: null
+    }
+  } else if (input === '{empty}' && (!format || format.embeds.length === 0)) {
+    // Allow empty messages only if embed is enabled
+    throw new MenuUtils.MenuOptionError(Translator.translate('commands.rssmessage.noEmpty', locale))
   } else {
-    return { setting: input, guildRss: guildRss, rssName: rssName }
+    return {
+      ...data,
+      setting: input
+    }
   }
 }
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const guildLocale = guildRss ? guildRss.locale : undefined
+    // const guildRss = await dbOpsGuilds.get(message.guild.id)
+    const profile = await GuildProfile.get(message.guild.id)
+    const guildLocale = profile ? profile.locale : undefined
+    const feeds = profile ? await profile.getFeeds() : []
+
     const translate = Translator.createLocaleTranslator(guildLocale)
-    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
+    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command, locale: guildLocale }, feeds)
     const messagePrompt = new MenuUtils.Menu(message, messagePromptFn)
 
-    const data = await new MenuUtils.MenuSeries(message, [feedSelector, messagePrompt], { locale: guildLocale }).start()
-    if (!data) return
-    const { setting, rssName } = data
-    const prefix = guildRss.prefix || config.bot.prefix
-    const source = guildRss.sources[rssName]
+    const data = await new MenuUtils.MenuSeries(message, [feedSelector, messagePrompt], { locale: guildLocale, profile }).start()
+    if (!data) {
+      return
+    }
+    const { setting, feed, format } = data
+    const prefix = profile.prefix || config.bot.prefix
 
     if (setting === null) {
-      delete guildRss.sources[rssName].message
-      log.command.info(`Message resetting for ${source.link}`, message.guild)
-      await dbOpsGuilds.update(guildRss)
-      await message.channel.send(translate('commands.rssmessage.resetSuccess', { link: source.link }) + `\n \`\`\`Markdown\n${config.feeds.defaultMessage}\`\`\``)
+      if (format) {
+        format.text = undefined
+        if (format.embeds.length === 0) {
+          await format.delete()
+        } else {
+          await format.save()
+        }
+      }
+      log.command.info(`Message reset for ${feed.url}`, message.guild)
+      await message.channel.send(translate('commands.rssmessage.resetSuccess', { link: feed.url }) + `\n \`\`\`Markdown\n${config.feeds.defaultMessage}\`\`\``)
     } else {
-      source.message = setting
-      log.command.info(`New message being recorded for ${source.link}`, message.guild)
-      await dbOpsGuilds.update(guildRss)
-      await message.channel.send(`${translate('commands.rssmessage.setSuccess', { link: source.link })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.rssmessage.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.rssmessage.noSubscriptionsPlaceholder', { prefix })}` : ``}`) // Escape backticks in code blocks by inserting zero-width space before each backtick
+      if (format) {
+        format.text = setting
+        await format.save()
+      } else {
+        const data = {
+          feed: feed.id,
+          text: setting
+        }
+        const newFormat = new Format(data)
+        await newFormat.save()
+      }
+      log.command.info(`New message recorded for ${feed.url}`, message.guild)
+      await message.channel.send(`${translate('commands.rssmessage.setSuccess', { link: feed.url })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.rssmessage.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.rssmessage.noSubscriptionsPlaceholder', { prefix })}` : ``}`) // Escape backticks in code blocks by inserting zero-width space before each backtick
     }
   } catch (err) {
     log.command.warning(`rssmessage`, message.guild, err)
