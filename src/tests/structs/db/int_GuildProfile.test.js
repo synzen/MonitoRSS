@@ -13,29 +13,6 @@ describe('Int::structs/db/GuildProfile', function () {
     await mongoose.connection.db.dropDatabase()
   })
   describe('getFeeds', function () {
-    it('middleware works', async function () {
-      const guildData = { _id: '12345rfge3', name: 'hoasd' }
-      const profile = new GuildProfile(guildData)
-      await profile.save()
-      const feedData = {
-        title: 'ab',
-        url: 'asd',
-        guild: guildData._id,
-        channel: 'aqetwg'
-      }
-      const feedData2 = {
-        title: 'abdfhgtn',
-        url: 'asdgfnj',
-        guild: guildData._id,
-        channel: 'aqetwggyjhn'
-      }
-      const feed = new FeedModel(feedData)
-      const feed2 = new FeedModel(feedData2)
-      const results = await Promise.all([ feed.save(), feed2.save() ])
-      const feedIds = results.map(doc => doc._id.toHexString())
-      const freshProfile = await GuildProfile.get(guildData._id)
-      expect(freshProfile.feeds).toEqual(feedIds)
-    })
     it('getFeeds works', async function () {
       const feedIds = [
         new mongoose.Types.ObjectId(),
@@ -43,11 +20,11 @@ describe('Int::structs/db/GuildProfile', function () {
       ]
       const guildData = {
         _id: 'abce4y6t',
-        name: 'some name',
-        feeds: feedIds.map(id => id.toHexString())
+        name: 'some name'
       }
       const profile = new GuildProfile(guildData)
       await profile.save()
+      const promises = []
       for (const feedId of feedIds) {
         const data = {
           _id: feedId,
@@ -56,8 +33,9 @@ describe('Int::structs/db/GuildProfile', function () {
           url: 'ab',
           title: '24r'
         }
-        await mongoose.connection.db.collection('feeds').insertOne(data)
+        promises.push(mongoose.connection.db.collection('feeds').insertOne(data))
       }
+      await Promise.all(promises)
       const retrieved = await profile.getFeeds()
       expect(retrieved).toHaveLength(2)
       expect(retrieved[0].id).toEqual(feedIds[0].toHexString())

@@ -60,12 +60,6 @@ class GuildProfile extends Base {
     this.locale = this.getField('locale')
 
     /**
-     * IDs of feeds that belong to this guild
-     * @type {string[]}
-     */
-    this.feeds = this.getField('feeds', [])
-
-    /**
      * User IDs to send alerts to
      * @type {string[]}
      */
@@ -76,7 +70,6 @@ class GuildProfile extends Base {
     return {
       _id: this._id,
       name: this.name,
-      feeds: this.feeds,
       dateFormat: this.dateFormat,
       dateLanguage: this.dateLanguage,
       timezone: this.timezone,
@@ -94,7 +87,13 @@ class GuildProfile extends Base {
     if (!this.isSaved()) {
       throw new Error('Must be saved before getting feeds')
     }
-    return Promise.all(this.feeds.map(id => Feed.get(id)))
+    return Feed.getManyBy('guild', this.id)
+  }
+
+  async delete () {
+    const feeds = await this.getFeeds()
+    await Promise.all(feeds.map(feed => feed.delete()))
+    return super.delete()
   }
 
   static get Model () {
