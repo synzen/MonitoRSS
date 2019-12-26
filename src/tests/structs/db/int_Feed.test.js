@@ -7,12 +7,12 @@ const CON_OPTIONS = {
   useUnifiedTopology: true
 }
 
-describe('Int::structs/db/GuildProfile', function () {
+describe('Int::structs/db/Feed', function () {
   beforeAll(async function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
   })
-  describe('getFeeds', function () {
+  describe('getFormat', function () {
     it('works', async function () {
       const feedId = new mongoose.Types.ObjectId()
       const formatData = {
