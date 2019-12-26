@@ -76,4 +76,3 @@ describe('Int::structs/db/GuildProfile', function () {
     await mongoose.connection.close()
   })
 })
-
