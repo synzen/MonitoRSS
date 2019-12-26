@@ -554,8 +554,7 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         base.document = {
           save: jest.fn(() => savedDocumentMock),
-          set: jest.fn(),
-          toObject: jest.fn(() => ({}))
+          set: jest.fn()
         }
         await base.saveToDatabase()
         for (const key in toObjectValue) {
@@ -566,8 +565,7 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         base.document = {
           set: jest.fn(),
-          save: jest.fn(() => savedDocumentMock),
-          toObject: jest.fn(() => ({}))
+          save: jest.fn(() => savedDocumentMock)
         }
         await base.saveToDatabase()
         expect(base.document.save).toHaveBeenCalled()
@@ -589,29 +587,34 @@ describe('Unit::Base', function () {
       it('returns this', async function () {
         const base = new BasicBase()
         base.document = {
-          save: jest.fn(() => savedDocumentMock),
-          toObject: jest.fn(() => ({}))
+          save: jest.fn(() => savedDocumentMock)
         }
         const returnValue = await base.saveToDatabase()
         expect(returnValue).toEqual(base)
       })
       it('updates this class data', async function () {
+        const toSave = {
+          is: '35u4',
+          good: 'wet4'
+        }
+        jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toSave)
         const base = new BasicBase()
         const savedDocumentObject = {
           random: 'key',
-          is: 1
+          is: 1,
+          good: 1234
         }
         const savedDocument = {
           toObject: jest.fn(() => savedDocumentObject)
         }
         base.document = {
           save: jest.fn(() => savedDocument),
-          toObject: jest.fn(() => ({}))
+          set: jest.fn()
         }
         await base.saveToDatabase()
-        for (const key in savedDocumentObject) {
-          expect(base[key]).toEqual(savedDocumentObject[key])
-        }
+        expect(base.is).toEqual(savedDocumentObject.is)
+        expect(base.good).toEqual(savedDocumentObject.good)
+        expect(base.random).toBeUndefined()
       })
     })
   })

@@ -317,7 +317,7 @@ class Base {
       this.data = JSON.parse(JSON.stringify(saved.toObject()))
 
       // Update class data
-      for (const key in this.data) {
+      for (const key in toSave) {
         this[key] = this.data[key]
       }
     }
