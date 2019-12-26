@@ -8,7 +8,7 @@ const CON_OPTIONS = {
   useUnifiedTopology: true
 }
 
-describe('Int::Base Database', function () {
+describe('Int::structs/db/Base Database', function () {
   beforeAll(async function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()

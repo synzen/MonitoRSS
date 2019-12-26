@@ -1,6 +1,6 @@
 const Format = require('../../../structs/db/Format.js')
 
-describe('Unit::Format', function () {
+describe('Unit::structs/db/Format', function () {
   const keys = [
     'title',
     'description',

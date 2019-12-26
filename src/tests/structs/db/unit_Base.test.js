@@ -34,7 +34,7 @@ class BasicBase extends Base {
   }
 }
 
-describe('Unit::Base', function () {
+describe('Unit::structs/db/Base', function () {
   afterEach(function () {
     jest.restoreAllMocks()
     MockModel.mockClear()

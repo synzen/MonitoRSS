@@ -7,7 +7,7 @@ class FilterClass extends FilterBase {
   }
 }
 
-describe('Unit::FilterBase', function () {
+describe('Unit::structs/db/FilterBase', function () {
   afterEach(function () {
     jest.restoreAllMocks()
   })

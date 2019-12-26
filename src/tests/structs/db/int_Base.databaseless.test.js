@@ -11,7 +11,7 @@ const fsRmdir = util.promisify(fs.rmdir)
 const FoobarClass = require('./__mocks__/FoobarClass.js')
 const Foobar = require('./__mocks__/Foobar.js')
 
-describe('Int::Base Databaseless', function () {
+describe('Int::structs/db/Base Databaseless', function () {
   const originalDatabaseUri = config.database.uri
   let folderPath = ''
   beforeAll(async function () {

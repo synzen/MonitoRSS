@@ -1,6 +1,6 @@
 const GuildProfile = require('../../../structs/db/GuildProfile.js')
 
-describe('Unit::GuildProfile', function () {
+describe('Unit::structs/db/GuildProfile', function () {
   afterEach(function () {
     jest.restoreAllMocks()
   })

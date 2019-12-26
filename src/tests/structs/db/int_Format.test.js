@@ -1,6 +1,6 @@
 const Format = require('../../../structs/db/Format.js')
 
-describe('Unit::Format', function () {
+describe('Int::structs/db/Format', function () {
   describe('pruneEmbeds', function () {
     it('works with fields', function () {
       const embeds = [{

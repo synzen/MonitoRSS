@@ -1,6 +1,6 @@
 const Feed = require('../../../structs/db/Feed.js')
 
-describe('Unit::Feed', function () {
+describe('Unit::structs/db/Feed', function () {
   const keys = [
     'checkDates',
     'checkTitles',
