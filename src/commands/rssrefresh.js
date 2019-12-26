@@ -20,11 +20,6 @@ module.exports = async (bot, message, command) => {
       return await message.channel.send(translate('commands.rssrefresh.noFailLimit'))
     }
 
-    const feeds = await profile.getFeeds()
-    if (!feeds || feeds.length === 0) {
-      return await message.channel.send(translate('commands.rssrefresh.noFeeds'))
-    }
-
     let toRefresh = []
     channelTracker.add(message.channel.id)
     for (const feed of feeds) {
