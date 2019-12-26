@@ -20,7 +20,7 @@ class Base {
      * between database and databaseless
      * @type {Object<string, any>}
      */
-    this.data = data instanceof mongoose.Model ? JSON.parse(JSON.stringify(data.toObject())) : data
+    this.data = data instanceof mongoose.Model ? JSON.parse(JSON.stringify(data.toJSON())) : data
 
     /**
      * Only used for database methods
@@ -346,7 +346,7 @@ class Base {
         this.document.set(key, toSave[key])
       }
       const saved = await this.document.save()
-      this.data = JSON.parse(JSON.stringify(saved.toObject()))
+      this.data = JSON.parse(JSON.stringify(saved.toJSON()))
 
       // Update class data
       for (const key in toSave) {

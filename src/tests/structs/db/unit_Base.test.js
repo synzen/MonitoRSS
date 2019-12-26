@@ -584,7 +584,7 @@ describe('Unit::Base', function () {
     })
     describe('saved', function () {
       const savedDocumentMock = {
-        toObject: jest.fn(() => ({}))
+        toJSON: jest.fn(() => ({}))
       }
       beforeEach(function () {
         jest.spyOn(Base.prototype, 'isSaved').mockReturnValue(true)
@@ -620,14 +620,13 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         const serializedDoc = { foo: 'baz', a: 2 }
         const savedDoc = {
-          toObject: jest.fn(() => serializedDoc)
+          toJSON: jest.fn(() => serializedDoc)
         }
         base.document = {
-          save: jest.fn(() => savedDoc),
-          toObject: jest.fn()
+          save: jest.fn(() => savedDoc)
         }
         await base.saveToDatabase()
-        expect(savedDoc.toObject).toHaveBeenCalled()
+        expect(savedDoc.toJSON).toHaveBeenCalled()
         expect(base.data).toEqual(JSON.parse(JSON.stringify(serializedDoc)))
       })
       it('returns this', async function () {
@@ -651,7 +650,7 @@ describe('Unit::Base', function () {
           good: 1234
         }
         const savedDocument = {
-          toObject: jest.fn(() => savedDocumentObject)
+          toJSON: jest.fn(() => savedDocumentObject)
         }
         base.document = {
           save: jest.fn(() => savedDocument),
