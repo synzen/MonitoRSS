@@ -38,22 +38,6 @@ describe('Unit::models/middleware/Feed', function () {
       await middleware.save.bind(Doc)()
       expect(model).toHaveBeenCalledWith('Guild')
     })
-    it('calls the right query', async function () {
-      const update = jest.fn(() => ({ exec: jest.fn() }))
-      const model = jest.fn(() => ({
-        findById: () => ({ exec: () => ({ update }) })
-      }))
-      const Doc = {
-        _id: 123,
-        model
-      }
-      await middleware.save.bind(Doc)()
-      expect(update).toHaveBeenCalledWith({
-        $push: {
-          feeds: Doc._id
-        }
-      })
-    })
     it('throws an error if profile not found', function () {
       const model = jest.fn(() => ({
         findById: () => ({ exec: () => null })
