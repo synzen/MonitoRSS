@@ -50,7 +50,7 @@ module.exports = async (bot, message, command) => {
       vipDetails = '\n'
     }
 
-    let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.rsslist.serverLimit')}:** ${profile.feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
+    let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.rsslist.serverLimit')}:** ${feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
     // desc += failedFeedCount > 0 ? translate('commands.rsslist.failAlert', { failLimit: FAIL_LIMIT, prefix: profile.prefix || config.bot.prefix }) : ''
 
     const list = new MenuUtils.Menu(message)

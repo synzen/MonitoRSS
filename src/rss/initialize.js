@@ -33,7 +33,7 @@ exports.addNewFeed = async (settings, customTitle) => {
   const profile = await GuildProfile.get(channel.guild.id)
 
   if (profile) {
-    const feeds = profile.feeds
+    const feeds = await profile.getFeeds()
     for (const feed of feeds) {
       if (feed.url === link && feed.channel === channel.id) {
         const err = new Error('Already exists for this channel.')
