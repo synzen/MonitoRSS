@@ -321,10 +321,10 @@ describe('Unit::Base', function () {
         fsPromises.readdir = fsPromisesReaddir
         fsPromises.readFile = fsPromisesReadFile
       })
-      it('returns null if path does not exist', async function () {
+      it('returns empty array if path does not exist', async function () {
         fs.existsSync.mockReturnValue(false)
         const returned = await BasicBase.getManyBy('sdef', 'sg')
-        expect(returned).toBeNull()
+        expect(returned).toEqual([])
       })
       it('returns correctly', async function () {
         const read1 = JSON.stringify({ key1: 'abcgfd' })

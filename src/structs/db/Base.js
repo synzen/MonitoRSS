@@ -220,7 +220,7 @@ class Base {
     const folderPaths = this.getFolderPaths()
     const folderPath = folderPaths[folderPaths.length - 1]
     if (!fs.existsSync(folderPath)) {
-      return null
+      return []
     }
 
     const fileNames = await fsPromises.readdir(folderPath)
