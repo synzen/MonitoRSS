@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const FilterBase = require('../../models/FilterBase.js').model
+const FilterBase = require('../../../models/FilterBase.js').model
 const dbName = 'test_int_middleware_filterbase'
 const CON_OPTIONS = {
   useNewUrlParser: true,
@@ -26,7 +26,6 @@ describe('Int::models/middleware/FilterBase', function () {
     saved.filters.set('title', [])
     await saved.save()
     expect(saved.filters.get('title')).toBeUndefined()
-
   })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()

@@ -98,6 +98,12 @@ class Base {
   get id () {
     return this._id
   }
+  
+  /**
+   * A function that validates data before saving it.
+   * Used by extended classes.
+   */
+  async validate () {}
 
   /**
    * Check whether the data has been written to the database or file
@@ -308,6 +314,7 @@ class Base {
    * @returns {Base} - This instance
    */
   async save () {
+    await this.validate()
     if (this.constructor.isMongoDatabase) {
       return this.saveToDatabase()
     } else {
