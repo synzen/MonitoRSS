@@ -39,4 +39,31 @@ describe('Unit::structs/db/FilterBase', function () {
       expect(returned.filters).toEqual(filters)
     })
   })
+  describe('pruneFilters', function () {
+    it('deletes invalid filters', function () {
+      const filters = {
+        a: [],
+        b: 0,
+        good: ['a', 'bc', 'de'],
+        c: null,
+        d: undefined,
+        e: '3',
+        f: 1
+      }
+      const base = new FilterClass()
+      base.filters = { ...filters }
+      base.pruneFilters()
+      const keys = Object.keys(base.filters)
+      expect(keys).toHaveLength(1)
+      expect(base.filters.good).toEqual(filters.good)
+    })
+  })
+  describe('validate', function () {
+    it('calls pruneFilters', function () {
+      const base = new FilterClass()
+      const spy = jest.spyOn(base, 'pruneFilters').mockReturnValue()
+      base.validate()
+      expect(spy).toHaveBeenCalled()
+    })
+  })
 })
