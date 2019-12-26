@@ -51,7 +51,6 @@ const schema = new mongoose.Schema({
 })
 
 schema.pre('findOneAndUpdate', middleware.findOneAndUpdate)
-schema.pre('remove', middleware.remove)
 schema.pre('save', middleware.save)
 
 exports.schema = schema
