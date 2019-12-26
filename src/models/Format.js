@@ -1,5 +1,4 @@
 const mongoose = require('mongoose')
-const middleware = require('./middleware/Format.js')
 
 const fieldSchema = new mongoose.Schema({
   name: String,
@@ -27,9 +26,6 @@ const schema = new mongoose.Schema({
   text: String,
   embeds: [embedSchema]
 })
-
-fieldSchema.pre('validate', middleware.checkEmptyField)
-embedSchema.pre('validate', middleware.checkEmptyEmbed)
 
 exports.schema = schema
 exports.model = mongoose.model('Format', schema)
