@@ -169,6 +169,12 @@ class Base {
     }
   }
 
+  /**
+   * Get by a field's value
+   * @param {string} field - Field name
+   * @param {any} value - Field value
+   * @returns {Base|null}
+   */
   static async getBy (field, value) {
     /**
      * @type {MongooseModel}
@@ -182,6 +188,32 @@ class Base {
       }
       const doc = await DatabaseModel.findOne(query, this.FIND_PROJECTION).exec()
       return doc ? new this(doc) : null
+    }
+
+    // Databaseless
+    const many = await this.getManyBy(field, value)
+    return many[0] || null
+  }
+
+  /**
+   * Get many by a field's value
+   * @param {string} field - Field name
+   * @param {any} value - Field value
+   * @returns {Base[]}
+   */
+  static async getManyBy (field, value) {
+    /**
+     * @type {MongooseModel}
+     */
+    const DatabaseModel = this.Model
+
+    // Database
+    if (this.isMongoDatabase) {
+      const query = {
+        [field]: value
+      }
+      const docs = await DatabaseModel.find(query, this.FIND_PROJECTION).exec()
+      return docs.map(doc => new this(doc))
     }
 
     // Databaseless - very slow
@@ -201,7 +233,7 @@ class Base {
         log.general.error(`Failed to parse json at ${folderPath} ${fileNames[index]}`, err)
       }
     })
-    return jsons.filter(item => item).find(json => json[field] === value) || null
+    return jsons.filter(item => item && item[field] === value)
   }
 
   /**
