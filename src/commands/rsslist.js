@@ -14,13 +14,12 @@ module.exports = async (bot, message, command) => {
   try {
     const [ profile, serverLimitData ] = await Promise.all([ GuildProfile.get(message.guild.id), serverLimit(message.guild.id) ])
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
-    if (!profile || profile.feeds.length === 0) {
+    const feeds = profile ? await profile.getFeeds() : []
+    if (feeds.length === 0) {
       return await message.channel.send(translate('commands.rsslist.noFeeds'))
     }
 
     const failedLinks = {}
-    const feeds = await profile.getFeeds()
-
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
 

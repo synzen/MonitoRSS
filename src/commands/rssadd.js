@@ -13,7 +13,7 @@ module.exports = async (bot, message) => {
       GuildProfile.get(message.guild.id),
       serverLimit(message.guild.id)
     ])
-    const feeds = profile && profile.feeds ? profile.feeds : []
+    const feeds = profile ? await profile.getFeeds() : []
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
