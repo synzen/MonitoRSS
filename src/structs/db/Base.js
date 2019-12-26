@@ -313,8 +313,13 @@ class Base {
       for (const key in toSave) {
         this.document.set(key, toSave[key])
       }
-      await this.document.save()
-      this.data = JSON.parse(JSON.stringify(this.document.toObject()))
+      const saved = await this.document.save()
+      this.data = JSON.parse(JSON.stringify(saved.toObject()))
+
+      // Update class data
+      for (const key in this.data) {
+        this[key] = this.data[key]
+      }
     }
     return this
   }

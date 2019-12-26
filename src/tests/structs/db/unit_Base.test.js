@@ -293,9 +293,9 @@ describe('Unit::Base', function () {
           .mockResolvedValueOnce(read2)
           .mockResolvedValueOnce(read3)
         await expect(BasicBase.getBy('key1', 'gh'))
-          .toEqual(JSON.parse(read2))
+          .resolves.toEqual(JSON.parse(read2))
         await expect(BasicBase.getBy('random', 'key'))
-          .toBeNull()
+          .resolves.toBeNull()
       })
       it('returns only the first one found', async function () {
         const read1Object = { key: 'rwse4yhg', george: 1 }
@@ -537,6 +537,9 @@ describe('Unit::Base', function () {
       })
     })
     describe('saved', function () {
+      const savedDocumentMock = {
+        toObject: jest.fn(() => ({}))
+      }
       beforeEach(function () {
         jest.spyOn(Base.prototype, 'isSaved').mockReturnValue(true)
         // MockModel.findByIdAndUpdate.mockReturnValue({ exec: () => Promise.resolve({}) })
@@ -550,7 +553,7 @@ describe('Unit::Base', function () {
         jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toObjectValue)
         const base = new BasicBase()
         base.document = {
-          save: jest.fn(),
+          save: jest.fn(() => savedDocumentMock),
           set: jest.fn(),
           toObject: jest.fn(() => ({}))
         }
@@ -563,7 +566,7 @@ describe('Unit::Base', function () {
         const base = new BasicBase()
         base.document = {
           set: jest.fn(),
-          save: jest.fn(),
+          save: jest.fn(() => savedDocumentMock),
           toObject: jest.fn(() => ({}))
         }
         await base.saveToDatabase()
@@ -572,23 +575,43 @@ describe('Unit::Base', function () {
       it('updates this.data', async function () {
         const base = new BasicBase()
         const serializedDoc = { foo: 'baz', a: 2 }
-        const toObject = jest.fn(() => serializedDoc)
+        const savedDoc = {
+          toObject: jest.fn(() => serializedDoc)
+        }
         base.document = {
-          save: jest.fn(),
-          toObject
+          save: jest.fn(() => savedDoc),
+          toObject: jest.fn()
         }
         await base.saveToDatabase()
-        expect(toObject).toHaveBeenCalled()
+        expect(savedDoc.toObject).toHaveBeenCalled()
         expect(base.data).toEqual(JSON.parse(JSON.stringify(serializedDoc)))
       })
       it('returns this', async function () {
         const base = new BasicBase()
         base.document = {
-          save: jest.fn(),
+          save: jest.fn(() => savedDocumentMock),
           toObject: jest.fn(() => ({}))
         }
         const returnValue = await base.saveToDatabase()
         expect(returnValue).toEqual(base)
+      })
+      it('updates this class data', async function () {
+        const base = new BasicBase()
+        const savedDocumentObject = {
+          random: 'key',
+          is: 1
+        }
+        const savedDocument = {
+          toObject: jest.fn(() => savedDocumentObject)
+        }
+        base.document = {
+          save: jest.fn(() => savedDocument),
+          toObject: jest.fn(() => ({}))
+        }
+        await base.saveToDatabase()
+        for (const key in savedDocumentObject) {
+          expect(base[key]).toEqual(savedDocumentObject[key])
+        }
       })
     })
   })
