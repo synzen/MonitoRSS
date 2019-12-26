@@ -70,9 +70,10 @@ async function setOptionFn (m, data) {
 module.exports = async (bot, message) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
+    const feeds = profile ? await profile.getFeeds() : []
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
-    if (!profile || profile.feeds.length === 0) {
+    if (feeds.length === 0) {
       return message.channel.send(translate('commands.rssdate.noFeeds')).catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
     }
 

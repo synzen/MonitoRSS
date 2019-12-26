@@ -10,8 +10,9 @@ const FAIL_LIMIT = config.feeds.failLimit
 module.exports = async (bot, message, command) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
+    const feeds = profile ? await profile.getFeeds() : []
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
-    if (!profile || profile.feeds.length === 0) {
+    if (feeds.length === 0) {
       return await message.channel.send(translate('commands.rsslist.noFeeds'))
     }
 
