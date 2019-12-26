@@ -1,22 +1,23 @@
-const dbOpsGuilds = require('../util/db/guilds.js')
 const config = require('../config.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Format = require('../structs/db/Format.js')
 const getEmbedProperties = translate => ({
   title: { name: translate('commands.rssembed.title'), description: translate('commands.rssembed.titleDescription') },
   description: { name: translate('commands.rssembed.description'), description: translate('commands.rssembed.descriptionDescription') },
   url: { name: translate('commands.rssembed.url'), description: translate('commands.rssembed.urlDescription') },
   color: { name: translate('commands.rssembed.color'), description: translate('commands.rssembed.colorDescription') },
   timestamp: { name: translate('commands.rssembed.timestamp'), description: translate('commands.rssembed.timestampDescription') },
-  footer_icon_url: { name: translate('commands.rssembed.footerIconURL'), description: translate('commands.rssembed.footerIconURLDescription') },
-  footer_text: { name: translate('commands.rssembed.footerText'), description: translate('commands.rssembed.footerTextDescription') },
-  thumbnail_url: { name: translate('commands.rssembed.thumbnailURL'), description: translate('commands.rssembed.thumbnailURLDescription') },
-  image_url: { name: translate('commands.rssembed.imageURL'), description: translate('commands.rssembed.imageURLDescription') },
-  author_name: { name: translate('commands.rssembed.authorName'), description: translate('commands.rssembed.authorNameDescription') },
-  author_url: { name: translate('commands.rssembed.authorURL'), description: translate('commands.rssembed.authorURLDescription') },
-  author_icon_url: { name: translate('commands.rssembed.authorIconURL'), description: translate('commands.rssembed.authorIconURLDescription') }
+  footerIconURL: { name: translate('commands.rssembed.footerIconURL'), description: translate('commands.rssembed.footerIconURLDescription') },
+  footerText: { name: translate('commands.rssembed.footerText'), description: translate('commands.rssembed.footerTextDescription') },
+  thumbnailURL: { name: translate('commands.rssembed.thumbnailURL'), description: translate('commands.rssembed.thumbnailURLDescription') },
+  imageURL: { name: translate('commands.rssembed.imageURL'), description: translate('commands.rssembed.imageURLDescription') },
+  authorName: { name: translate('commands.rssembed.authorName'), description: translate('commands.rssembed.authorNameDescription') },
+  authorURL: { name: translate('commands.rssembed.authorURL'), description: translate('commands.rssembed.authorURLDescription') },
+  authorIconURL: { name: translate('commands.rssembed.authorIconURL'), description: translate('commands.rssembed.authorIconURLDescription') }
 })
 
 function validate (prop, setting, translate) {
@@ -54,58 +55,91 @@ function validImg (input) {
 }
 
 async function feedSelectorFn (m, data) {
-  const { guildRss, rssName, translate } = data
-  const source = guildRss.sources[rssName]
-
+  const { feed, translate } = data
+  let format = await feed.getFormat()
   // Skip embed selection if there is no webhook
-  if (!source.webhook) {
-    if (!source.embeds) source.embeds = []
-    return data.setFields ? generateFieldsMenu(m, { ...data, selectedEmbedIndex: 0 }) : generatePropertiesMessage(m, { ...data, selectedEmbedIndex: 0 })
+  if (!format) {
+    const formatData = {
+      feed: feed.id
+    }
+    format = new Format(formatData)
+  }
+
+  if (!format.webhook) {
+    if (data.setFields) {
+      return generateFieldsMenu(m, {
+        ...data,
+        format,
+        selectedEmbedIndex: 0
+      })
+    } else {
+      return generatePropertiesMessage(m, {
+        ...data,
+        format,
+        selectedEmbedIndex: 0
+      })
+    }
   }
 
   const selectEmbed = new MenuUtils.Menu(m, selectEmbedFn)
     .setAuthor(translate('commands.rssembed.embedSelection'))
     .setDescription(translate('commands.rssembed.embedSelectionDescription'))
-  if (source.embeds) {
-    for (var x = 0; x < source.embeds.length; ++x) {
-      const embed = source.embeds[x]
-      if (!embed) continue
-      let val = ''
-      for (var prop in embed) {
-        if (prop !== 'fields') val += `**${prop}:** ${embed[prop]}\n`
+  const embeds = format.embeds
+  for (let x = 0; x < embeds.length; ++x) {
+    const embed = embeds[0]
+    let val = ''
+    for (const prop in embed) {
+      if (prop !== 'fields') {
+        val += `**${prop}:** ${embed[prop]}\n`
       }
-      selectEmbed.addOption(x === 0 ? translate('commands.rssembed.defaultEmbed') : translate('commands.rssembed.numberedEmbed', { number: x + 1 }), `${val}\u200b`)
     }
+    selectEmbed.addOption(x === 0 ? translate('commands.rssembed.defaultEmbed') : translate('commands.rssembed.numberedEmbed', { number: x + 1 }), `${val}\u200b`)
   }
-  if (!source.embeds || source.embeds.length < 10) {
+
+  if (format.embeds.length < 10) {
     selectEmbed.addOption(translate('commands.rssembed.embedSelectionOptionAdd'), translate('commands.rssembed.embedSelectionOptionAddDescription'))
   }
-  if (source.embeds && source.embeds.length > 0) {
+  if (format.embeds.length > 0) {
     selectEmbed.addOption(translate('commands.rssembed.embedSelectionOptionRemoveAll'), `\u200b`)
   }
-  return { ...data, next: { menu: selectEmbed } }
+  return {
+    ...data,
+    format,
+    next: {
+      menu: selectEmbed
+    }
+  }
 }
 
 async function selectEmbedFn (m, data) {
-  const { guildRss, rssName } = data
-  const source = guildRss.sources[rssName]
+  const { format } = data
   const content = m.content
   const embedIndex = parseInt(content, 10) - 1
 
   // First condition is to add a new embed, second is to remove all embeds
-  if (source.embeds && embedIndex !== source.embeds.length && embedIndex !== source.embeds.length + 1 && (!source.embeds || !source.embeds[embedIndex])) throw new Error('Menu closed due to invalid embed index selected.')
-  if (embedIndex === 0 && !source.embeds) source.embeds = []
-  const nextData = { ...data, selectedEmbedIndex: embedIndex }
+  if (embedIndex !== format.embeds.length && embedIndex !== format.embeds.length + 1 && !format.embeds[embedIndex]) {
+    throw new Error('Menu closed due to invalid embed index selected.')
+  }
+
+  const nextData = {
+    ...data,
+    selectedEmbedIndex: embedIndex
+  }
 
   // Remove Embeds
-  if (embedIndex === source.embeds.length + 1) {
-    delete source.embeds
-    return { ...data, removeAllEmbeds: true }
+  if (embedIndex === format.embeds.length + 1) {
+    return {
+      ...data,
+      removeAllEmbeds: true
+    }
   }
 
   // Add an embed
-  if (data.setFields) return generateFieldsMenu(m, nextData)
-  return generatePropertiesMessage(m, nextData)
+  if (data.setFields) {
+    return generateFieldsMenu(m, nextData)
+  } else {
+    return generatePropertiesMessage(m, nextData)
+  }
 }
 
 async function generateFieldsMenu (m, nextData) {
@@ -124,17 +158,18 @@ async function generateFieldsMenu (m, nextData) {
 }
 
 async function generatePropertiesMessage (m, nextData) {
-  const { guildRss, embedProperties, translate } = nextData
-  const source = guildRss.sources[nextData.rssName]
+  const { feed, format, embedProperties, translate } = nextData
   let currentEmbedProps = `\`\`\`Markdown\n# ${translate('commands.rssembed.currentProperties')} #\n\n`
   let changed = false
-  const selectProp = new MenuUtils.Menu(m, selectProperty)
-  const propertyList = source.embeds[nextData.selectedEmbedIndex]
-  for (var property in propertyList) {
-    for (var p in embedProperties) {
-      if (p === property && propertyList[property]) {
-        currentEmbedProps += `[${embedProperties[p].name}]: ${propertyList[property]}\n\n`
-        changed = true
+  const selectProp = new MenuUtils.Menu(m, selectPropFn)
+  const selectedEmbed = format.embeds[nextData.selectedEmbedIndex]
+  if (selectedEmbed) {
+    for (const property in selectedEmbed) {
+      for (const p in embedProperties) {
+        if (p === property && selectedEmbed[property]) {
+          currentEmbedProps += `[${embedProperties[p].name}]: ${selectedEmbed[property]}\n\n`
+          changed = true
+        }
       }
     }
   }
@@ -149,7 +184,7 @@ async function generatePropertiesMessage (m, nextData) {
   }
 
   if (!changed) currentEmbedProps = '```\nNo properties set.\n'
-  const m1 = translate('commands.rssembed.currentPropertiesList', { link: source.link, list: currentEmbedProps })
+  const m1 = translate('commands.rssembed.currentPropertiesList', { link: feed.url, list: currentEmbedProps })
   const m2 = translate('commands.rssembed.availablePropertiesList', { list: embedPropertiesListed })
   let mFull
   mFull = (m1 + m2).length < 1995 ? `${m1}\n${m2}` : [m1, m2] // Separate into two messages if it exceeds Discord's max length of 2000
@@ -160,10 +195,15 @@ async function generatePropertiesMessage (m, nextData) {
   return nextData
 }
 
-async function selectProperty (m, data) {
+async function selectPropFn (m, data) {
   const input = m.content
   const { embedProperties, translate } = data
-  if (input === 'reset') return { ...data, property: 'resetAll' }
+  if (input === 'reset') {
+    return {
+      ...data,
+      property: 'resetAll'
+    }
+  }
   const choices = []
   const arr = input.split(',').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Trim items, remove empty elements and remove duplicates
   const invalids = []
@@ -176,11 +216,17 @@ async function selectProperty (m, data) {
         choices.push(p)
       }
     }
-    if (!valid) invalids.push(arr[q])
+    if (!valid) {
+      invalids.push(arr[q])
+    }
   }
 
-  if (invalids.length > 0) throw new MenuUtils.MenuOptionError(translate('commands.rssembed.invalidProperties', { invalids }))
-  if (choices.length === 0) throw new MenuUtils.MenuOptionError(translate('commands.rssembed.noPropertiesSelected'))
+  if (invalids.length > 0) {
+    throw new MenuUtils.MenuOptionError(translate('commands.rssembed.invalidProperties', { invalids }))
+  }
+  if (choices.length === 0) {
+    throw new MenuUtils.MenuOptionError(translate('commands.rssembed.noPropertiesSelected'))
+  }
   const setMenus = []
   for (let x = 0; x < choices.length; ++x) {
     setMenus.push(new MenuUtils.Menu(m, setProperty))
@@ -228,49 +274,69 @@ async function setProperty (m, data) {
 
 const fieldFunctions = {
   action: async (m, data) => {
-    const { guildRss, rssName, selectedEmbedIndex, translate } = data
+    const { feed, format, selectedEmbedIndex, translate } = data
     const input = parseInt(m.content, 10)
     if (isNaN(input) || input < 1 || input > 5) return new MenuUtils.MenuOptionError()
-    const source = guildRss.sources[rssName]
 
     if (input === 5) {
       // Remove a field
-      if (!source.embeds[selectedEmbedIndex] || !Array.isArray(source.embeds[selectedEmbedIndex].fields) || source.embeds[selectedEmbedIndex].fields.length === 0) {
+      if (!format.embeds[selectedEmbedIndex] || !format.embeds[selectedEmbedIndex].fields.length === 0) {
         throw new Error(translate('commands.rssembed.embedFieldsRemoveNone'))
       }
-      const fields = source.embeds[selectedEmbedIndex].fields
+      const fields = format.embeds[selectedEmbedIndex].fields
       const rmList = new MenuUtils.Menu(m, fieldFunctions.remove)
         .setAuthor(translate('commands.rssembed.embedFieldsOptionRemoveEmbedTitle'))
         .setDescription(translate('commands.rssembed.embedFieldsOptionRemoveEmbedDescription'))
 
       for (const field of fields) {
         const inline = field.inline === true ? `(${translate('commands.rssembed.inline')})` : `(${translate('commands.rssembed.regular')})`
-        if (!field.title && typeof field.title === 'string') {
+        // Empty string name
+        if (field.name === '\u200b') {
           rmList.addOption(`${inline} ${translate('commands.rssembed.blankField')}`, '\u200b')
         } else {
-          rmList.addOption(`${inline} ${field.title}`, field.value)
+          rmList.addOption(`${inline} ${field.name}`, field.value)
         }
       }
 
-      return { ...data, next: { menu: rmList } }
+      return {
+        ...data,
+        next: {
+          menu: rmList
+        }
+      }
     } else {
       // Add a field
-      if (source.embeds[selectedEmbedIndex] && Array.isArray(source.embeds[selectedEmbedIndex].fields) && source.embeds[selectedEmbedIndex].fields.length === 10) {
+      if (format.embeds[selectedEmbedIndex] && format.embeds[selectedEmbedIndex].fields.length === 10) {
         throw new Error(translate('commands.rssembed.embedFieldsMaximum'))
       }
 
-      if (input === 3 || input === 4) {
+      if (input === 3) {
         // Non-inline blank field
-        if (!source.embeds) source.embeds = [ { fields: [] } ]
-        if (!source.embeds[selectedEmbedIndex]) source.embeds.push({ fields: [] })
-        if (!Array.isArray(source.embeds[selectedEmbedIndex].fields)) source.embeds[selectedEmbedIndex].fields = []
-        source.embeds[selectedEmbedIndex].fields.push({ title: '' })
-        return { ...data, successText: translate('commands.rssembed.embedFieldsAddedBlank', { link: source.link }) }
+        if (!format.embeds[selectedEmbedIndex]) {
+          format.embeds.push({ fields: [] })
+        }
+        format.embeds[selectedEmbedIndex].fields.push({
+          name: '\u200b',
+          value: '\u200b'
+        })
+        return {
+          ...data,
+          successText: translate('commands.rssembed.embedFieldsAddedBlank', { link: feed.url })
+        }
       } else if (input === 4) {
         // Inline blank field
-        if (!source.embeds[selectedEmbedIndex]) source.embeds.push({ fields: [] })
-        source.embeds[selectedEmbedIndex].fields.push({ title: '', inline: true })
-        return { ...data, successText: translate('commands.rssembed.embedFieldsAddedBlankInline', { link: source.link }) }
+        if (!format.embeds[selectedEmbedIndex]) {
+          format.embeds.push({ fields: [] })
+        }
+        format.embeds[selectedEmbedIndex].fields.push({
+          name: '\u200b',
+          value: '\u200b',
+          inline: true
+        })
+        return {
+          ...data,
+          successText: translate('commands.rssembed.embedFieldsAddedBlankInline', { link: feed.url })
+        }
       }
 
       const specMenu = new MenuUtils.Menu(m, fieldFunctions.add)
@@ -283,101 +349,134 @@ const fieldFunctions = {
     }
   },
   add: async (m, data) => {
-    const { guildRss, rssName, selectedOption, selectedEmbedIndex, translate } = data
+    const { feed, format, selectedOption, selectedEmbedIndex, translate } = data
     const arr = m.content.split('\n')
-    while (!arr[0]) arr.shift()
-    const title = arr.shift().trim()
-    if (!title) throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingNoTitle'))
-    else if (title.length > 256) throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingTitleLong'))
+    while (!arr[0]) {
+      arr.shift()
+    }
+    const name = arr.shift().trim()
+    if (!name) {
+      throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingNoTitle'))
+    } else if (name.length > 256) {
+      throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingTitleLong'))
+    }
     const val = arr.join('\n').trim()
-    if (val.length > 1024) throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingValueLong'))
-    const setting = { title: title, value: val || '\u200b' }
-    if (selectedOption === 2) setting.inline = true
+    if (val.length > 1024) {
+      throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingValueLong'))
+    }
+    const setting = {
+      name,
+      value: val || '\u200b'
+    }
+    if (selectedOption === 2) {
+      setting.inline = true
+    }
+    if (!format.embeds[selectedEmbedIndex]) {
+      format.embeds.push({
+        fields: []
+      })
+    }
+    format.embeds[selectedEmbedIndex].fields.push(setting)
+    log.command.info(`Embed field added. Title: '${name}', Value: '${val}'`, m.guild)
 
-    const source = guildRss.sources[rssName]
-    if (!source.embeds) source.embeds = [{ fields: [] }]
-    else if (!source.embeds[selectedEmbedIndex]) source.embeds.push({ fields: [] })
-    else if (!source.embeds[selectedEmbedIndex].fields) source.embeds[selectedEmbedIndex].fields = []
-    const embedFields = guildRss.sources[rssName].embeds[selectedEmbedIndex].fields
-
-    log.command.info(`Embed field added. Title: '${title}', Value: '${val}'`, m.guild)
-
-    embedFields.push(setting)
     return { ...data,
       successText: translate('commands.rssembed.embedFieldsAdded', {
         type: selectedOption === 2 ? ' inline' : '',
-        title,
+        title: name,
         value: val && val.length > 1500 ? val.slice(0, 1500) + '...' : val || '\u200b',
-        link: source.link
+        link: feed.url
       })
     }
   },
   remove: async (m, data) => {
-    const { guildRss, rssName, selectedEmbedIndex, translate } = data
-    const source = guildRss.sources[rssName]
-    const fields = source.embeds[selectedEmbedIndex].fields
+    const { feed, format, selectedEmbedIndex, translate } = data
+    const fields = format.embeds[selectedEmbedIndex].fields
     const inputs = m.content.split(',').map(item => item.trim()).filter((item, index, self) => {
       const num = parseInt(item, 10)
       return item && index === self.indexOf(item) && !isNaN(num) && num > 0 && num <= fields.length
     })
-    if (inputs.length === 0) throw new MenuUtils.MenuOptionError()
-
-    for (var x = inputs.length; x >= 0; --x) {
-      log.command.info(`Embed field removed`, m.guild)
-      fields.splice(inputs[x] - 1, 1)
+    if (inputs.length === 0) {
+      throw new MenuUtils.MenuOptionError()
     }
-    if (fields.length === 0) delete source.embeds[selectedEmbedIndex].fields
-    if (Object.keys(source.embeds[selectedEmbedIndex]).length === 0) source.embeds.splice(selectedEmbedIndex, 1)
-    if (source.embeds.length === 0) delete source.embeds
-    return { ...data, successText: translate('commands.rssembed.embedFieldsRemoved', { numbers: inputs.join(', '), link: source.link }) }
+
+    for (let x = inputs.length - 1; x >= 0; --x) {
+      fields.splice(inputs[x] - 1, 1)
+      log.command.info(`Embed field index ${inputs[x] - 1} removed`, m.guild)
+    }
+
+    return {
+      ...data,
+      successText: translate('commands.rssembed.embedFieldsRemoved', {
+        numbers: inputs.join(', '),
+        link: feed.url
+      })
+    }
   }
 }
 
 module.exports = async (bot, message, command) => {
   // Fields
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const guildLocale = guildRss ? guildRss.locale : null
+    const profile = await GuildProfile.get(message.guild.id)
+    const guildLocale = profile ? profile.locale : null
+    const feeds = profile ? await profile.getFeeds() : []
     const translate = Translator.createLocaleTranslator(guildLocale)
     const embedProperties = getEmbedProperties(translate)
     const setFields = message.content.split(' ')[1] === 'fields'
-    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, guildRss)
-    const prefix = guildRss.prefix || config.bot.prefix
-    if (setFields) {
-      const fieldsData = await new MenuUtils.MenuSeries(message, [feedSelector], { setFields, locale: guildLocale, embedProperties, translate }).start()
-      if (!fieldsData) return
-      const { rssName, successText, removeAllEmbeds } = fieldsData
+    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command, locale: guildLocale }, feeds)
+    const prefix = profile.prefix || config.bot.prefix
 
-      await dbOpsGuilds.update(guildRss)
+    if (setFields) {
+      const fieldsData = await new MenuUtils.MenuSeries(message, [feedSelector], { setFields, embedProperties, translate }).start()
+      if (!fieldsData) {
+        return
+      }
+      const { feed, format, successText, removeAllEmbeds } = fieldsData
+
       if (removeAllEmbeds) {
-        log.command.info(`Removing all embeds for ${guildRss.sources[rssName].link}`, message.guild)
+        format.embeds = []
+        if (!format.text) {
+          await format.delete()
+        } else {
+          await format.save()
+        }
+        log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
         return await message.channel.send(translate('commands.rssembed.removedAllEmbeds'))
       } else {
-        log.command.info(`Updated embed fields for ${guildRss.sources[rssName].link}`, message.guild)
+        await format.save()
+        log.command.info(`Updated embed fields for ${feed.url}`, message.guild)
         return await message.channel.send(successText)
       }
     }
 
     // Regular properties
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale, embedProperties, translate }).start()
-    if (!data) return
-    const { rssName, property, settings, selectedEmbedIndex, removeAllEmbeds } = data
+    if (!data) {
+      return
+    }
+    const { feed, format, property, settings, selectedEmbedIndex, removeAllEmbeds } = data
 
     if (removeAllEmbeds) {
-      log.command.info(`Removing all embeds for ${guildRss.sources[rssName].link}`, message.guild)
-      await dbOpsGuilds.update(guildRss)
+      format.embeds = []
+      if (!format.text) {
+        await format.delete()
+      } else {
+        await format.save()
+      }
+      log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
+
       return await message.channel.send(translate('commands.rssembed.removedAllEmbeds'))
     }
 
-    const source = guildRss.sources[rssName]
-
     if (property === 'resetAll') {
-      source.embeds.splice(selectedEmbedIndex, 1)
-      if (source.embeds.length === 0) delete source.embeds
-      if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
-      log.command.info(`Embed resetting for ${source.link}`, message.guild)
-      await dbOpsGuilds.update(guildRss)
-      return await message.channel.send(translate('commands.rssembed.removedEmbed', { link: source.link }))
+      format.embeds.splice(selectedEmbedIndex, 1)
+      log.command.info(`Embed resetting for ${feed.url}`, message.guild)
+      if (format.embeds.length === 0 && !format.text) {
+        await format.delete()
+      } else {
+        await format.save()
+      }
+      return await message.channel.send(translate('commands.rssembed.removedEmbed', { link: feed.url }))
     }
 
     let updated = ''
@@ -386,34 +485,35 @@ module.exports = async (bot, message, command) => {
       const propName = embedProperties[prop].name
       const userSetting = settings[prop]
       if (userSetting === 'reset') {
-        if (!source.embeds || !source.embeds[selectedEmbedIndex] || !source.embeds[selectedEmbedIndex][prop]) {
+        if (!format.embeds[selectedEmbedIndex] || !format.embeds[selectedEmbedIndex][prop]) {
           reset += translate('commands.rssembed.resetNothing', { propName })
           continue
         }
-        delete source.embeds[selectedEmbedIndex][prop]
-        if (Object.keys(source.embeds[selectedEmbedIndex]).length === 0) {
-          source.embeds.splice(selectedEmbedIndex, 1)
-          if (source.message === '{empty}') delete source.message // An empty message is not allowed if there is no embed
+        delete format.embeds[selectedEmbedIndex][prop]
+        if (format.text === '{empty}') {
+          format.text = undefined
         }
-        if (source.embeds.length === 0) delete source.embeds
 
-        log.command.info(`Property '${prop}' resetting for ${source.link}`, message.guild)
-        await dbOpsGuilds.update(guildRss)
+        log.command.info(`Property '${prop}' resetting for ${feed.url}`, message.guild)
         reset += translate('commands.rssembed.resetSuccess', { propName })
         continue
       }
-      if (!Array.isArray(source.embeds)) source.embeds = []
-      if (!source.embeds[selectedEmbedIndex]) {
-        source.embeds.push({})
-        log.command.info(`Adding new embed for ${source.link}`, message.guild)
+      if (!format.embeds[selectedEmbedIndex]) {
+        format.embeds.push({})
+        log.command.info(`Adding new embed for ${feed.url}`, message.guild)
       }
-      source.embeds[selectedEmbedIndex][prop] = userSetting
-      log.command.info(`Embed updating for ${source.link}. Property '${prop}' set to '${userSetting}'`, message.guild)
+      format.embeds[selectedEmbedIndex][prop] = userSetting
+      log.command.info(`Embed updating for ${feed.url}. Property '${prop}' set to '${userSetting}'`, message.guild)
       updated += translate('commands.rssembed.updatedSuccess', { propName, userSetting })
     }
+    await format.save()
 
-    await dbOpsGuilds.update(guildRss)
-    await message.channel.send(`${translate('commands.rssembed.updatedInfo', { link: source.link, resetList: reset, updateList: updated, prefix })} ${translate('generics.backupReminder', { prefix })}`, { split: true })
+    // Validation may remove empty embeds during save
+    if (!format.text && format.embeds.length === 0) {
+      await format.delete()
+    }
+
+    await message.channel.send(`${translate('commands.rssembed.updatedInfo', { link: feed.url, resetList: reset, updateList: updated, prefix })} ${translate('generics.backupReminder', { prefix })}`, { split: true })
   } catch (err) {
     log.command.warning(`rssembed`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssembed 1', message.guild, err))
