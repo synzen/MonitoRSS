@@ -38,8 +38,8 @@ describe('Int::structs/db/GuildProfile Database', function () {
       await Promise.all(promises)
       const retrieved = await profile.getFeeds()
       expect(retrieved).toHaveLength(2)
-      expect(retrieved[0].id).toEqual(feedIds[0].toHexString())
-      expect(retrieved[1].id).toEqual(feedIds[1].toHexString())
+      expect(retrieved[0]._id).toEqual(feedIds[0].toHexString())
+      expect(retrieved[1]._id).toEqual(feedIds[1].toHexString())
     })
     it('also deletes other feeds', async function () {
       const guildData = {

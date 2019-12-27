@@ -66,6 +66,15 @@ class GuildProfile extends Base {
     this.alert = this.getField('alert', [])
   }
 
+  /**
+   * Getter for this._id since _id and id should be
+   * the same.
+   * @returns {string}
+   */
+  get id () {
+    return this.getField('_id')
+  }
+
   toObject () {
     return {
       _id: this._id,

@@ -100,14 +100,6 @@ class Base {
   }
 
   /**
-   * Getter for this._id
-   * @returns {string}
-   */
-  get id () {
-    return this.getField('_id')
-  }
-
-  /**
    * A function that validates data before saving it.
    * Used by extended classes.
    */

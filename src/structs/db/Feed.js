@@ -213,7 +213,7 @@ class Feed extends FilterBase {
    * @returns {Format}
    */
   async getFormat () {
-    return Format.getBy('feed', this.id)
+    return Format.getBy('feed', this._id)
   }
 
   static get Model () {

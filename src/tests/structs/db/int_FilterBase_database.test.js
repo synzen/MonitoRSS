@@ -44,12 +44,12 @@ describe('Int::structs/db/FilterBase Database', function () {
     }
     const foobar = new FoobarFilters({ filters })
     const saved = await foobar.save()
-    const found = await FoobarFiltersModel.findById(saved.id).lean().exec()
+    const found = await FoobarFiltersModel.findById(saved._id).lean().exec()
     expect(found.filters).toEqual(filters)
     foobar.filters.title = []
     foobar.filters.description.splice(1, 1)
     await foobar.save()
-    const foundNew = await FoobarFiltersModel.findById(saved.id).lean().exec()
+    const foundNew = await FoobarFiltersModel.findById(saved._id).lean().exec()
     expect(foundNew.filters).toEqual({
       description: ['1', '3']
     })

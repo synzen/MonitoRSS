@@ -1,4 +1,7 @@
 const Feed = require('../../../structs/db/Feed.js')
+const Format = require('../../../structs/db/Format.js')
+
+jest.mock('../../../structs/db/Format.js')
 
 describe('Unit::structs/db/Feed', function () {
   const keys = [
@@ -87,6 +90,15 @@ describe('Unit::structs/db/Feed', function () {
       }
       feed.webhook = split
       expect(feed._webhook).toEqual(split)
+    })
+  })
+  describe('getFormat', function () {
+    it('calls Feed.getBy correctly', async function () {
+      const _id = 'w4ytghre5ue35hu'
+      const feed = new Feed({ ...necessaryInit })
+      feed._id = _id
+      await feed.getFormat()
+      expect(Format.getBy).toHaveBeenCalledWith('feed', _id)
     })
   })
 })
