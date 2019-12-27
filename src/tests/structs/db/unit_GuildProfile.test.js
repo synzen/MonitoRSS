@@ -55,8 +55,8 @@ describe('Unit::structs/db/GuildProfile', function () {
   })
   describe('getFeeds', function () {
     it('throws an error if unsaved', function () {
-      jest.spyOn(GuildProfile.prototype, 'isSaved').mockReturnValueOnce(false)
       const profile = new GuildProfile({ _id: 1, name: 'abc' })
+      profile._saved = false
       return expect(profile.getFeeds()).rejects.toThrowError(new Error('Must be saved before getting feeds'))
     })
   })

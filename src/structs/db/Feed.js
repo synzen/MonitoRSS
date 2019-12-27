@@ -1,11 +1,12 @@
 const Base = require('./Base.js')
+const FilterBase = require('./FilterBase.js')
 const FeedModel = require('../../models/Feed.js').model
 const log = require('../../util/logger.js')
 const dbOpsSchedules = require('../../util/db/schedules.js')
 const ArticleModel = require('../../models/Article.js')
 const Format = require('./Format.js')
 
-class Feed extends Base {
+class Feed extends FilterBase {
   /**
    * @param {import('mongoose').Model|Object<string, any>} data - Data
    * @param {string} data.title - Feed meta title
@@ -20,8 +21,8 @@ class Feed extends Base {
    * @param {boolean} data.formatTables - Format messages as if they're tables
    * @param {boolean} data.toggleRoleMentions - Toggle role mentions for subscribers when messages are sent
    */
-  constructor (data) {
-    super(data)
+  constructor (data, _saved) {
+    super(data, _saved)
 
     /**
      * Feed name
@@ -138,6 +139,7 @@ class Feed extends Base {
      * will return an empty object when we don't want it to
      */
     return {
+      ...super.toObject(),
       title: this.title,
       url: this.url,
       guild: this.guild,

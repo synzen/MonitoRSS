@@ -41,7 +41,7 @@ describe('Int::structs/db/GuildProfile Database', function () {
       expect(retrieved[0].id).toEqual(feedIds[0].toHexString())
       expect(retrieved[1].id).toEqual(feedIds[1].toHexString())
     })
-    it('delete also deletes other feeds', async function () {
+    it('also deletes other feeds', async function () {
       const guildData = {
         _id: '2q35rrftjtyre',
         name: 'dszgehrf'

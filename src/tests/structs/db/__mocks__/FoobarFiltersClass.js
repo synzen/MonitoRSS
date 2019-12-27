@@ -1,30 +1,22 @@
-const Foobar = require('./Foobar.js')
+const FoobarFilters = require('./FoobarFilters.js')
 const FilterBase = require('../../../../structs/db/FilterBase.js')
 
 class FoobarClass extends FilterBase {
-  constructor (data) {
-    super(data)
+  constructor (data, _saved) {
+    super(data, _saved)
 
     this.foo = this.getField('foo')
-    this.baz = this.getField('baz', 2)
-    this.undefinedField = this.getField('undefinedField')
-    this.object = this.getField('object')
-    this.array = this.getField('array', [])
   }
 
   toObject () {
     return {
       ...super.toObject(),
-      foo: this.foo,
-      baz: this.baz,
-      undefinedField: this.undefinedField,
-      object: this.object,
-      array: this.array
+      foo: this.foo
     }
   }
 
   static get Model () {
-    return Foobar
+    return FoobarFilters
   }
 }
 

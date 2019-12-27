@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const middleware = require('./middleware/Feed.js')
 const path = require('path')
 const fs = require('fs')
+const FilterBase = require('./common/FilterBase.js')
 const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'))).version
 
 const schema = new mongoose.Schema({
@@ -49,6 +50,8 @@ const schema = new mongoose.Schema({
     default: Date.now
   }
 })
+
+schema.add(FilterBase)
 
 schema.pre('findOneAndUpdate', middleware.findOneAndUpdate)
 schema.pre('save', middleware.save)

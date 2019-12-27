@@ -7,8 +7,8 @@ class Format extends Base {
    * @param {string} data.text - Text message
    * @param {Object<string, any>[]} data.embeds - Embeds
    */
-  constructor (data) {
-    super(data)
+  constructor (data, _saved) {
+    super(data, _saved)
 
     /**
      * Feed this format belongs to

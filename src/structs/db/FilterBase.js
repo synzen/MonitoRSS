@@ -1,8 +1,8 @@
 const Base = require('./Base.js')
 
 class FilterBase extends Base {
-  constructor (data) {
-    super(data)
+  constructor (data, _saved) {
+    super(data, _saved)
 
     this.filters = this.getField('filters', {})
   }

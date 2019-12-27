@@ -13,8 +13,8 @@ class GuildProfile extends Base {
    * @param {string} data.prefix - Prefix for commands
    * @param {string} data.locale - Locale for commands
    */
-  constructor (data) {
-    super(data)
+  constructor (data, _saved) {
+    super(data, _saved)
 
     if (!this._id) {
       throw new Error('Undefined _id')
@@ -84,7 +84,7 @@ class GuildProfile extends Base {
    * @type {import('./Feed.js')[]}
    */
   async getFeeds () {
-    if (!this.isSaved()) {
+    if (!this._saved) {
       throw new Error('Must be saved before getting feeds')
     }
     return Feed.getManyBy('guild', this.id)

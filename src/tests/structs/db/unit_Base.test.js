@@ -2,6 +2,8 @@ process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const Base = require('../../../structs/db/Base.js')
 const config = require('../../../config.js')
+const MockModel = require('./__mocks__/MockModel.js')
+const BasicBase = require('./__mocks__/BasicBase.js')
 const path = require('path')
 const fs = require('fs')
 const fsPromises = fs.promises
@@ -16,23 +18,6 @@ const fsPromisesReadFile = fsPromises.readFile
 
 jest.mock('mongoose')
 jest.mock('../../../config.js')
-
-const MockModel = jest.fn()
-MockModel.prototype.save = jest.fn()
-MockModel.findOne = jest.fn(() => ({ exec: async () => Promise.resolve() }))
-MockModel.findByIdAndUpdate = jest.fn(() => ({ exec: async () => Promise.resolve() }))
-MockModel.findById = jest.fn(() => ({ exec: async () => Promise.resolve() }))
-MockModel.find = jest.fn(() => ({ exec: async () => Promise.resolve() }))
-MockModel.deleteOne = jest.fn(() => ({ exec: async () => Promise.resolve() }))
-MockModel.collection = {
-  collectionName: 123
-}
-
-class BasicBase extends Base {
-  static get Model () {
-    return MockModel
-  }
-}
 
 describe('Unit::structs/db/Base', function () {
   afterEach(function () {
@@ -131,31 +116,6 @@ describe('Unit::structs/db/Base', function () {
         id: '123'
       }
       expect(Base.resolveObject({ ...data })).toEqual(data)
-    })
-  })
-  describe('isSaved', function () {
-    it('for database returns correctly', function () {
-      jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(true)
-      const base = new BasicBase()
-      base._id = 123
-      base.document = new mongoose.Model()
-      expect(base.isSaved()).toEqual(true)
-      base._id = undefined
-      expect(base.isSaved()).toEqual(false)
-      base._id = 123
-      base.document = undefined
-      expect(base.isSaved()).toEqual(false)
-      base._id = undefined
-      expect(base.isSaved()).toEqual(false)
-    })
-    it('for databaseless returns correctly', function () {
-      jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(false)
-      const base = new BasicBase()
-      expect(base.isSaved()).toEqual(false)
-      base._id = 1
-      expect(base.isSaved()).toEqual(true)
-      base._id = undefined
-      expect(base.isSaved()).toEqual(false)
     })
   })
   describe('toObject', function () {
@@ -266,13 +226,13 @@ describe('Unit::structs/db/Base', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(false)
       })
-      it('returns correctly', async function () {
-        jest.spyOn(BasicBase, 'getManyBy').mockResolvedValue([1, 2, 3])
-        await expect(BasicBase.getBy())
-          .resolves.toEqual(1)
+      it('returns a new isntance', async function () {
+        jest.spyOn(BasicBase, 'getManyBy').mockResolvedValue([1])
+        await expect(BasicBase.getBy()).resolves.toBeInstanceOf(BasicBase)
+      })
+      it('returns null when none found', async function () {
         jest.spyOn(BasicBase, 'getManyBy').mockResolvedValue([])
-        await expect(BasicBase.getBy())
-          .resolves.toBeNull()
+        await expect(BasicBase.getBy()).resolves.toBeNull()
       })
     })
   })
@@ -338,8 +298,9 @@ describe('Unit::structs/db/Base', function () {
           .mockResolvedValueOnce(readFail)
           .mockResolvedValueOnce(read2)
           .mockResolvedValueOnce(read3)
-        await expect(BasicBase.getManyBy('key1', 'gh'))
-          .resolves.toEqual([JSON.parse(read2)])
+        const returned = await BasicBase.getManyBy('key1', 'gh')
+        expect(returned).toHaveLength(1)
+        expect(returned[0]).toBeInstanceOf(BasicBase)
         await expect(BasicBase.getManyBy('random', 'key'))
           .resolves.toEqual([])
       })
@@ -456,18 +417,18 @@ describe('Unit::structs/db/Base', function () {
   })
   describe('delete', function () {
     it('throws an error if unsaved', function () {
-      jest.spyOn(BasicBase.prototype, 'isSaved').mockReturnValue(false)
       const base = new BasicBase()
+      base._saved = false
       return expect(base.delete()).rejects.toThrowError(new Error('Data has not been saved'))
     })
     describe('from database', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValueOnce(true)
-        jest.spyOn(BasicBase.prototype, 'isSaved').mockReturnValue(true)
       })
       it('calls remove', async function () {
         const data = { remove: jest.fn() }
         const base = new BasicBase()
+        base._saved = true
         base.document = data
         await base.delete()
         expect(data.remove).toHaveBeenCalledTimes(1)
@@ -476,7 +437,6 @@ describe('Unit::structs/db/Base', function () {
     describe('from databaseless', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValueOnce(false)
-        jest.spyOn(BasicBase.prototype, 'isSaved').mockReturnValue(true)
       })
       afterEach(function () {
         fs.existsSync = fsExistsSync
@@ -488,6 +448,7 @@ describe('Unit::structs/db/Base', function () {
         fs.existsSync = jest.fn(() => false)
         const id = 'wr43yeht'
         const base = new BasicBase()
+        base._saved = true
         base._id = id
         await base.delete()
         expect(fs.existsSync).toHaveBeenCalledWith(path.join(folderPaths[1], `${id}.json`))
@@ -497,6 +458,7 @@ describe('Unit::structs/db/Base', function () {
         fs.existsSync = jest.fn(() => false)
         fs.unlinkSync = jest.fn(() => {})
         const base = new BasicBase()
+        base._saved = true
         await base.delete()
         expect(fs.unlinkSync).not.toHaveBeenCalled()
       })
@@ -507,6 +469,7 @@ describe('Unit::structs/db/Base', function () {
         fs.unlinkSync = jest.fn()
         const id = 'qe3tw4ryhdt'
         const base = new BasicBase()
+        base._saved = true
         base._id = id
         await base.delete()
         expect(fs.unlinkSync).toHaveBeenCalledTimes(1)
@@ -534,34 +497,46 @@ describe('Unit::structs/db/Base', function () {
     beforeEach(function () {
       jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue({})
       jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(true)
-      jest.spyOn(MockModel.prototype, 'save').mockResolvedValue({})
+      jest.spyOn(MockModel.prototype, 'save').mockResolvedValue({
+        toJSON: jest.fn(() => ({}))
+      })
     })
     describe('unsaved', function () {
-      beforeEach(function () {
-        jest.spyOn(Base.prototype, 'isSaved').mockReturnValue(false)
-      })
       it('calls save correctly', async function () {
         const base = new BasicBase()
+        base._saved = false
         await base.saveToDatabase()
         expect(MockModel.mock.instances).toHaveLength(1)
         expect(MockModel.mock.instances[0].save).toHaveBeenCalledTimes(1)
       })
-      it('saves _id to this', async function () {
-        const id = '34TW2EGOSJMKI'
-        jest.spyOn(MockModel.prototype, 'save').mockResolvedValue({ id })
-        const base = new BasicBase()
-        await base.saveToDatabase()
-        expect(base._id).toEqual(id)
-      })
       it('overwrites this.document with the document', async function () {
-        const document = { foo: 'bazd' }
+        const document = {
+          foo: 'bazd',
+          toJSON: () => ({})
+        }
         jest.spyOn(MockModel.prototype, 'save').mockResolvedValue({ ...document })
         const base = new BasicBase()
+        base._saved = false
         await base.saveToDatabase()
         expect(base.document).toEqual({ ...document })
       })
+      it('overwrites this.data with the doc data', async function () {
+        const data = {
+          foo: 21
+        }
+        const document = {
+          foo: 'bazd',
+          toJSON: () => data
+        }
+        jest.spyOn(MockModel.prototype, 'save').mockResolvedValue({ ...document })
+        const base = new BasicBase()
+        base._saved = false
+        await base.saveToDatabase()
+        expect(base.data).toEqual(data)
+      })
       it('returns this', async function () {
         const base = new BasicBase()
+        base._saved = false
         const returnValue = await base.saveToDatabase()
         expect(returnValue).toEqual(base)
       })
@@ -577,19 +552,22 @@ describe('Unit::structs/db/Base', function () {
         }
         const id = 123
         base._id = id
+        base._saved = false
         jest.spyOn(base, 'toObject').mockReturnValue(toSave)
         await base.saveToDatabase()
         expect(MockModel.mock.calls[0][0]).toEqual(expectedSave)
+      })
+      it('sets save property properly', async function () {
+        const base = new BasicBase()
+        base._saved = false
+        await base.saveToDatabase()
+        expect(base._saved).toEqual(true)
       })
     })
     describe('saved', function () {
       const savedDocumentMock = {
         toJSON: jest.fn(() => ({}))
       }
-      beforeEach(function () {
-        jest.spyOn(Base.prototype, 'isSaved').mockReturnValue(true)
-        // MockModel.findByIdAndUpdate.mockReturnValue({ exec: () => Promise.resolve({}) })
-      })
       it('calls data.set on all keys properly', async function () {
         const toObjectValue = {
           fo: 1,
@@ -598,6 +576,7 @@ describe('Unit::structs/db/Base', function () {
         }
         jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toObjectValue)
         const base = new BasicBase()
+        base._saved = true
         base.document = {
           save: jest.fn(() => savedDocumentMock),
           set: jest.fn()
@@ -609,6 +588,7 @@ describe('Unit::structs/db/Base', function () {
       })
       it('calls save', async function () {
         const base = new BasicBase()
+        base._saved = true
         base.document = {
           set: jest.fn(),
           save: jest.fn(() => savedDocumentMock)
@@ -618,6 +598,7 @@ describe('Unit::structs/db/Base', function () {
       })
       it('updates this.data', async function () {
         const base = new BasicBase()
+        base._saved = true
         const serializedDoc = { foo: 'baz', a: 2 }
         const savedDoc = {
           toJSON: jest.fn(() => serializedDoc)
@@ -631,6 +612,7 @@ describe('Unit::structs/db/Base', function () {
       })
       it('returns this', async function () {
         const base = new BasicBase()
+        base._saved = true
         base.document = {
           save: jest.fn(() => savedDocumentMock)
         }
@@ -644,6 +626,7 @@ describe('Unit::structs/db/Base', function () {
         }
         jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toSave)
         const base = new BasicBase()
+        base._saved = true
         const savedDocumentObject = {
           random: 'key',
           is: 1,
@@ -714,10 +697,7 @@ describe('Unit::structs/db/Base', function () {
       await base.saveToFile()
       expect(fs.writeFileSync.mock.calls[0][1]).toEqual(JSON.stringify(expectedSave, null, 2))
     })
-    describe('isSaved is true', function () {
-      beforeEach(function () {
-        jest.spyOn(BasicBase.prototype, 'isSaved').mockReturnValue(true)
-      })
+    describe('_saved is true', function () {
       it('writes the data', async function () {
         const folderPaths = ['q', path.join('q', 'w'), path.join('q', 'w', 'e')]
         const data = { fudge: 'popsicle' }
@@ -726,6 +706,7 @@ describe('Unit::structs/db/Base', function () {
         jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(data)
         const id = 'q3etwgjrhnft'
         const base = new BasicBase()
+        base._saved = true
         base._id = id
         await base.saveToFile()
         const writePath = path.join(folderPaths[2], `${id}.json`)
@@ -734,6 +715,7 @@ describe('Unit::structs/db/Base', function () {
       it('returns this', async function () {
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
         const base = new BasicBase()
+        base._saved = true
         const returnValue = await base.saveToFile()
         expect(returnValue).toEqual(base)
       })
@@ -749,13 +731,16 @@ describe('Unit::structs/db/Base', function () {
         jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toSave)
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
         const base = new BasicBase()
+        base._saved = true
         await base.saveToFile()
         expect(fs.writeFileSync.mock.calls[0][1]).toEqual(JSON.stringify(expectedSave, null, 2))
       })
     })
-    describe('isSaved is false', function () {
+    describe('_saved is false', function () {
       beforeEach(function () {
-        jest.spyOn(BasicBase.prototype, 'isSaved').mockReturnValue(false)
+        jest.spyOn(mongoose.Types, 'ObjectId').mockImplementation(() => ({
+          toHexString: jest.fn(() => 1)
+        }))
       })
       it('writes the data', async function () {
         const generatedId = '2343635erygbh5'
@@ -768,6 +753,7 @@ describe('Unit::structs/db/Base', function () {
         fs.existsSync = jest.fn(() => true)
         jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(data)
         const base = new BasicBase()
+        base._saved = false
         await base.saveToFile()
         expect(fs.writeFileSync)
           .toHaveBeenCalledWith(path.join(folderPaths[2], `${generatedId}.json`), JSON.stringify(data, null, 2))
@@ -780,18 +766,26 @@ describe('Unit::structs/db/Base', function () {
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
         fs.existsSync = jest.fn(() => true)
         const base = new BasicBase()
+        base._saved = false
         await base.saveToFile()
         expect(base._id).toEqual(generatedId)
       })
       it('returns this', async function () {
-        jest.spyOn(mongoose.Types, 'ObjectId').mockImplementation(() => ({
-          toHexString: jest.fn(() => 1)
-        }))
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
         fs.existsSync = jest.fn(() => true)
         const base = new BasicBase()
+        base._saved = false
         const returnValue = await base.saveToFile()
         expect(returnValue).toEqual(base)
+      })
+      it('sets saved property', async function () {
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
+        fs.existsSync = jest.fn(() => true)
+        const base = new BasicBase()
+        base._saved = false
+        await base.saveToFile()
+        expect(base._saved).toEqual(true)
+        
       })
     })
   })

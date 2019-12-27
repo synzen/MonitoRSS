@@ -20,7 +20,7 @@ describe('Int::structs/db/Base Database', function () {
     const foobar = new FoobarClass(doc)
     expect(foobar.data).toEqual(JSON.parse(JSON.stringify(doc.toObject())))
     expect(foobar.document).toBeInstanceOf(mongoose.Model)
-    expect(foobar.isSaved()).toEqual(true)
+    expect(foobar._saved).toEqual(false)
     await doc.remove()
   })
   it('saves', async function () {
@@ -29,10 +29,10 @@ describe('Int::structs/db/Base Database', function () {
       baz: 666
     }
     const foobar = new FoobarClass(data)
-    expect(foobar.isSaved()).toEqual(false)
+    expect(foobar._saved).toEqual(false)
     await foobar.save()
     expect(foobar.document).toBeInstanceOf(mongoose.Model)
-    expect(foobar.isSaved()).toEqual(true)
+    expect(foobar._saved).toEqual(true)
     const found = Foobar.findOne(data).exec()
     expect(found).toBeDefined()
   })
@@ -69,7 +69,7 @@ describe('Int::structs/db/Base Database', function () {
   it('deletes', async function () {
     const initFoobar = new Foobar({ foo: 'abc' })
     const doc = await initFoobar.save()
-    const foobar = new FoobarClass(doc)
+    const foobar = new FoobarClass(doc, true)
     await foobar.delete()
     const queried = await Foobar.findById(doc._id.toHexString())
     expect(queried).toBeNull()
@@ -91,7 +91,7 @@ describe('Int::structs/db/Base Database', function () {
     const initData = { foo: 'exquisite' }
     const initFoobar = new Foobar(initData)
     const doc = await initFoobar.save()
-    const foobar = new FoobarClass(doc)
+    const foobar = new FoobarClass(doc, true)
     const newFooValue = 'changzz'
     foobar.foo = newFooValue
     await foobar.save()
@@ -102,7 +102,7 @@ describe('Int::structs/db/Base Database', function () {
     const initData = { foo: 'w49ti093u4j', baz: 987 }
     const initFoobar = new Foobar(initData)
     const doc = await initFoobar.save()
-    const foobar = new FoobarClass(doc)
+    const foobar = new FoobarClass(doc, true)
     foobar.foo = undefined
     await foobar.save()
     const found = await Foobar.findById(initFoobar.id).lean().exec()

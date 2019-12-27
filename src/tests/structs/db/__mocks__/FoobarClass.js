@@ -2,8 +2,8 @@ const Foobar = require('./Foobar.js')
 const Base = require('../../../../structs/db/Base.js')
 
 class FoobarClass extends Base {
-  constructor (data) {
-    super(data)
+  constructor (data, _saved) {
+    super(data, _saved)
 
     this.foo = this.getField('foo')
     this.baz = this.getField('baz', 2)
