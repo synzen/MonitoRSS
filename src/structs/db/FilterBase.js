@@ -44,10 +44,10 @@ class FilterBase extends Base {
    * @returns {number}
    */
   getFilterIndex (category, value) {
-    value = value.toLowerCase()
+    value = value.toLowerCase().trim()
     const filters = this.filters[category]
     const index = !filters ? -1 : filters.indexOf(value)
-    return index !== -1
+    return index
   }
 
   /**
@@ -56,7 +56,7 @@ class FilterBase extends Base {
    * @param {string} value
    */
   async removeFilter (category, value) {
-    value = value.toLowerCase()
+    value = value.toLowerCase().trim()
     const index = this.getFilterIndex(category, value)
     if (index === -1) {
       throw new Error(`"${value}" does not exist`)
@@ -71,10 +71,10 @@ class FilterBase extends Base {
    * @param {string} value
    */
   async addFilter (category, value) {
-    value = value.toLowerCase()
+    value = value.toLowerCase().trim()
     const index = this.getFilterIndex(category, value)
-    if (index === -1) {
-      throw new Error(`"${value} already exists"`)
+    if (index !== -1) {
+      throw new Error(`"${value}" already exists`)
     }
     const filters = this.filters
     if (!filters[category]) {
@@ -90,11 +90,11 @@ class FilterBase extends Base {
    * @param {string[]} values
    */
   async addFilters (category, values) {
-    values = values.map(value => value.toLowerCase())
+    values = values.map(value => value.toLowerCase().trim())
     const filters = this.filters
     for (const value of values) {
       const index = this.getFilterIndex(category, value)
-      if (index === -1) {
+      if (index !== -1) {
         throw new Error(`"${value}" already exists`)
       }
     }
@@ -106,9 +106,27 @@ class FilterBase extends Base {
   }
 
   /**
+   * Remove multiple filters from a category
+   * @param {string} category
+   * @param {string[]} values
+   */
+  async removeFilters (category, values) {
+    const indexes = values.map(value => this.getFilterIndex(category, value))
+    const filtered = indexes.filter(index => index !== -1)
+    // Sort from highest to lowest
+    const sorted = filtered.sort((a, b) => b - a)
+    if (sorted.length > 0) {
+      for (const index of sorted) {
+        this.filters[category].splice(index, 1)
+      }
+      await this.save()
+    }
+  }
+
+  /**
    * Remove all filters
    */
-  async removeFilters () {
+  async removeAllFilters () {
     this.filters = {}
     return this.save()
   }
