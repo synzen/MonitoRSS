@@ -1,5 +1,7 @@
 const Feed = require('../../../structs/db/Feed.js')
+const FeedModel = require('../../../models/Feed.js').model
 const FormatModel = require('../../../models/Format.js').model
+require('../../../models/GuildProfile.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_feed'
 const CON_OPTIONS = {
@@ -33,6 +35,33 @@ describe('Int::structs/db/Feed Database', function () {
       expect(format).not.toBeNull()
       expect(format.text).toEqual(formatData.text)
       expect(format.feed).toEqual(formatData.feed.toHexString())
+    })
+  })
+  it('saves and updates with filters', async function () {
+    const guild = 'swrye57'
+    await mongoose.connection.db.collection('guilds').insertOne({
+      _id: guild
+    })
+    const feedData = {
+      title: 'abc',
+      url: 'asdf',
+      guild,
+      channel: 'sdxgdh',
+      filters: {
+        title: ['a', 'b']
+      }
+    }
+    const feed = new Feed(feedData)
+    await feed.save()
+    const found = await FeedModel.findById(feed._id).lean().exec()
+    expect(found.filters).toEqual(feedData.filters)
+    feed.filters.description = []
+    feed.filters.description.push('a')
+    delete feed.filters.title
+    await feed.save()
+    const foundAgain = await FeedModel.findById(feed._id).lean().exec()
+    expect(foundAgain.filters).toEqual({
+      description: ['a']
     })
   })
   afterAll(async function () {
