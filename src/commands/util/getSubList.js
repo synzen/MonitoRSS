@@ -18,7 +18,6 @@ module.exports = async (guild, feeds) => {
       if (subscriber.type === 'role') {
         const role = guild.roles.get(subscriber.id)
         if (role && role.comparePositionTo(botRole) < 0) {
-          console.log(123)
           subscribersFound.push(role.id)
         }
       }
