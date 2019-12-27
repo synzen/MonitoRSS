@@ -107,7 +107,6 @@ describe('Int::structs/db/Base Databaseless', function () {
         fsUnlink(filePath2),
         fsUnlink(filePath3)
       ])
-      
     })
     it('getsBy returns null when not found', async function () {
       const result = await FoobarClass.getBy('foFGJNFo', 'zdtjgxch')

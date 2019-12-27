@@ -778,7 +778,6 @@ describe('Unit::structs/db/Base', function () {
         base._saved = false
         await base.saveToFile()
         expect(base._saved).toEqual(true)
-        
       })
     })
   })
