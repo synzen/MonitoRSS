@@ -5,6 +5,7 @@ const log = require('../../util/logger.js')
 const dbOpsSchedules = require('../../util/db/schedules.js')
 const ArticleModel = require('../../models/Article.js')
 const Format = require('./Format.js')
+const Subscriber = require('./Subscriber.js')
 
 class Feed extends FilterBase {
   /**
@@ -214,6 +215,14 @@ class Feed extends FilterBase {
    */
   async getFormat () {
     return Format.getBy('feed', this._id)
+  }
+
+  /**
+   * Returns both role and user subscribers of this feed.
+   * @returns {Subscriber}
+   */
+  async getSubscribers () {
+    return Subscriber.getManyBy('feed', this._id)
   }
 
   static get Model () {

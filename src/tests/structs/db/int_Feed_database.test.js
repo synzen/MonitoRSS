@@ -1,6 +1,7 @@
 const Feed = require('../../../structs/db/Feed.js')
 const FeedModel = require('../../../models/Feed.js').model
 const FormatModel = require('../../../models/Format.js').model
+const SubscriberModel = require('../../../models/Subscriber.js').model
 require('../../../models/GuildProfile.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_feed'
@@ -35,6 +36,36 @@ describe('Int::structs/db/Feed Database', function () {
       expect(format).not.toBeNull()
       expect(format.text).toEqual(formatData.text)
       expect(format.feed).toEqual(formatData.feed.toHexString())
+    })
+  })
+  describe('getSubscribers', function () {
+    it('works', async function () {
+      const feedId = new mongoose.Types.ObjectId()
+      const subscriberData = {
+        type: 'role',
+        id: '23',
+        feed: feedId.toHexString()
+      }
+      const subscriberData2 = {
+        type: 'role',
+        id: '234',
+        feed: feedId.toHexString()
+      }
+      const feedData = {
+        title: 'absgrfc',
+        url: 'asdffjy',
+        guild: 'asdfyghfj',
+        channel: 'sdxgdhj',
+        _id: feedId
+      }
+      await new SubscriberModel(subscriberData).save()
+      await new SubscriberModel(subscriberData2).save()
+      await mongoose.connection.db.collection('feeds').insertOne(feedData)
+      const feed = await Feed.get(feedId.toHexString())
+      const subscribers = await feed.getSubscribers()
+      expect(subscribers).toHaveLength(2)
+      expect(subscribers[0].data).toEqual(expect.objectContaining(subscriberData))
+      expect(subscribers[1].data).toEqual(expect.objectContaining(subscriberData2))
     })
   })
   it('saves and updates with filters', async function () {
