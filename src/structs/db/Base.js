@@ -23,10 +23,12 @@ class Base {
     this.data = data instanceof mongoose.Model ? JSON.parse(JSON.stringify(data.toJSON())) : data
 
     /**
-     * Internal ID, usually MongoDB's ObjectId
+     * Internal ID, usually MongoDB's ObjectId purely used
+     * to distinguish between documents and to grab from
+     * database during testing.
      * @type {string}
      */
-    this._id = this.getField('_id')
+    this._id = this.data._id
 
     /**
      * Whether this has been saved to the database already
@@ -341,6 +343,7 @@ class Base {
       const document = await model.save()
 
       this._saved = true
+      this._id = document.id
       this.document = document
       this.data = JSON.parse(JSON.stringify(document.toJSON()))
     } else {
