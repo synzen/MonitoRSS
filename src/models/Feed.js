@@ -53,8 +53,7 @@ const schema = new mongoose.Schema({
 
 schema.add(FilterBase)
 
-schema.pre('findOneAndUpdate', middleware.findOneAndUpdate)
-schema.pre('save', middleware.save)
+schema.pre('validate', middleware.validate)
 
 exports.schema = schema
 exports.model = mongoose.model('Feed', schema)

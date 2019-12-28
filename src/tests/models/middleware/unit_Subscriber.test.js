@@ -1,6 +1,6 @@
-const middleware = require('../../../models/middleware/Feed.js')
+const middleware = require('../../../models/middleware/Subscriber.js')
 
-describe('Unit::models/middleware/Feed', function () {
+describe('Unit::models/middleware/Subscriber', function () {
   describe('validate', function () {
     it('calls the right Model', async function () {
       const model = jest.fn(() => ({
@@ -10,8 +10,8 @@ describe('Unit::models/middleware/Feed', function () {
         model
       }
       await middleware.validate.bind(Doc)()
-      expect(model).toHaveBeenCalledWith('Guild')
       expect(model).toHaveBeenCalledWith('Feed')
+      expect(model).toHaveBeenCalledWith('Subscriber')
     })
     it('throws an error if profile not found', function () {
       const model = jest.fn(() => ({
@@ -20,33 +20,33 @@ describe('Unit::models/middleware/Feed', function () {
       const Doc = {
         _id: 123,
         model,
-        guild: 'abc'
+        feed: 'abc'
       }
       return expect(middleware.validate.bind(Doc)())
-        .rejects.toThrowError(new Error(`Feed's specified guild ${Doc.guild} was not found`))
+        .rejects.toThrowError(new Error(`Subscriber's specified feed ${Doc.feed} was not found`))
     })
-    it('throws an error if guild tries to change', async function () {
-      const guild = 'wte4ry'
-      const exec = jest.fn(() => ({ guild }))
+    it('throws an error if feed tries to change', async function () {
+      const feed = 'wte4ry'
+      const exec = jest.fn(() => ({ feed }))
       const model = jest.fn(() => ({
         findById: () => ({ exec })
       }))
       const Doc = {
         model,
-        guild: guild + 1
+        feed: feed + 1
       }
       await expect(middleware.validate.bind(Doc)())
-        .rejects.toThrowError('Guild cannot be changed')
+        .rejects.toThrowError('Feed cannot be changed')
     })
     it.only('does not throw an error for all correct conditions', async function () {
-      const guild = 'wte4ry'
-      const exec = jest.fn(async () => ({ guild }))
+      const feed = 'wte4ry'
+      const exec = jest.fn(async () => ({ feed }))
       const model = jest.fn(() => ({
         findById: () => ({ exec })
       }))
       const Doc = {
         model,
-        guild
+        feed
       }
       await expect(middleware.validate.bind(Doc)())
         .resolves.toBeUndefined()

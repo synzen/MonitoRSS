@@ -3,6 +3,7 @@ const path = require('path')
 const fs = require('fs')
 const FilterBase = require('./common/FilterBase.js')
 const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'))).version
+const middleware = require('./middleware/Subscriber.js')
 
 const schema = new mongoose.Schema({
   feed: {
@@ -28,6 +29,8 @@ const schema = new mongoose.Schema({
 })
 
 schema.add(FilterBase)
+
+schema.pre('validate', middleware.validate)
 
 exports.schema = schema
 exports.model = mongoose.model('Subscriber', schema)

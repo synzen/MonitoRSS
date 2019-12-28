@@ -1,4 +1,5 @@
 const Subscriber = require('../../../structs/db/Subscriber.js')
+require('../../../models/Feed.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_guildprofile'
 const CON_OPTIONS = {
