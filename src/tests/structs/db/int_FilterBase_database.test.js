@@ -4,7 +4,8 @@ const FoobarFilters = require('./__mocks__/FoobarFiltersClass.js')
 const dbName = 'test_int_filterbase'
 const CON_OPTIONS = {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  useCreateIndex: true
 }
 
 describe('Int::structs/db/FilterBase Database', function () {

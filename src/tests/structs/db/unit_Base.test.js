@@ -430,19 +430,19 @@ describe('Unit::structs/db/Base', function () {
         fs.rmdirSync = fsRmdirSync
         fs.existsSync = fsExistsSync
       })
-      it(`doesn't call rmdir if the root folder doesn't exist`, async function () {
+      it(`doesn't call rmdir if the folder doesn't exist`, async function () {
         fs.existsSync.mockReturnValue(false)
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
         await BasicBase.deleteAll()
-        expect(fs.existsSync).toHaveBeenCalledWith('a')
+        expect(fs.existsSync).toHaveBeenCalledWith('b')
         expect(fs.rmdirSync).not.toHaveBeenCalled()
       })
-      it(`calls rmdir if the root folder exists`, async function () {
+      it(`calls rmdir if the folder exists`, async function () {
         fs.existsSync.mockReturnValue(true)
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
         await BasicBase.deleteAll()
-        expect(fs.existsSync).toHaveBeenCalledWith('a')
-        expect(fs.rmdirSync).toHaveBeenCalledWith('a')
+        expect(fs.existsSync).toHaveBeenCalledWith('b')
+        expect(fs.rmdirSync).toHaveBeenCalledWith('b')
       })
     })
   })

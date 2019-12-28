@@ -5,7 +5,8 @@ const mongoose = require('mongoose')
 const dbName = 'test_int_base'
 const CON_OPTIONS = {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  useCreateIndex: true
 }
 
 describe('Int::structs/db/Base Database', function () {
