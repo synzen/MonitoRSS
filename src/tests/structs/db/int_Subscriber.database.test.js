@@ -1,3 +1,5 @@
+process.env.TEST_ENV = true
+const config = require('../../../config.js')
 const Subscriber = require('../../../structs/db/Subscriber.js')
 require('../../../models/Feed.js')
 const mongoose = require('mongoose')
@@ -7,8 +9,11 @@ const CON_OPTIONS = {
   useUnifiedTopology: true
 }
 
+jest.mock('../../../config.js')
+
 describe('Int::structs/db/GuildProfile Database', function () {
   beforeAll(async function () {
+    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
   })

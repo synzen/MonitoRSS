@@ -1,3 +1,5 @@
+process.env.TEST_ENV = true
+const config = require('../../../config.js')
 const mongoose = require('mongoose')
 const FoobarFiltersModel = require('./__mocks__/FoobarFilters.js')
 const FoobarFilters = require('./__mocks__/FoobarFiltersClass.js')
@@ -8,8 +10,11 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
+jest.mock('../../../config.js')
+
 describe('Int::structs/db/FilterBase Database', function () {
   beforeAll(async function () {
+    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
   })

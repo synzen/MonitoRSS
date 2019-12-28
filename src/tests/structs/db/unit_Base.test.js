@@ -16,6 +16,8 @@ const fsUnlinkSync = fs.unlinkSync
 const fsRmdirSync = fs.rmdirSync
 const fsPromisesReaddir = fsPromises.readdir
 const fsPromisesReadFile = fsPromises.readFile
+const fsPromisesUnlink = fsPromises.unlink
+const fsPromisesRmdir = fsPromises.rmdir
 
 jest.mock('mongoose')
 jest.mock('../../../config.js')
@@ -158,6 +160,7 @@ describe('Unit::structs/db/Base', function () {
       beforeEach(function () {
         fs.readFileSync = jest.fn()
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(false)
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
       })
       afterEach(function () {
         fs.readFileSync = fsReadFileSync
@@ -168,6 +171,12 @@ describe('Unit::structs/db/Base', function () {
         const returnValue = await BasicBase.get('1')
         expect(returnValue).toBeNull()
         fs.existsSync = fsExistsSync
+      })
+      it('checks and reads the right file path', async function () {
+        fs.existsSync = jest.fn(() => true)
+        await BasicBase.get('abc')
+        expect(fs.existsSync)
+          .toHaveBeenCalledWith(path.join('b', 'abc.json'))
       })
       it('returns the a new instance correctly', async function () {
         const jsonString = '{"foo": "bar"}'
@@ -441,10 +450,16 @@ describe('Unit::structs/db/Base', function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(false)
         fs.rmdirSync = jest.fn()
         fs.existsSync = jest.fn()
+        fsPromises.readdir = jest.fn()
+        fsPromises.unlink = jest.fn()
+        fsPromises.rmdir = jest.fn()
       })
       afterEach(function () {
         fs.rmdirSync = fsRmdirSync
         fs.existsSync = fsExistsSync
+        fsPromises.readdir = fsPromisesReaddir
+        fsPromises.unlink = fsPromisesUnlink
+        fsPromises.rmdir = fsPromisesRmdir
       })
       it(`doesn't call rmdir if the folder doesn't exist`, async function () {
         fs.existsSync.mockReturnValue(false)
@@ -455,10 +470,20 @@ describe('Unit::structs/db/Base', function () {
       })
       it(`calls rmdir if the folder exists`, async function () {
         fs.existsSync.mockReturnValue(true)
+        fsPromises.readdir.mockResolvedValue(['file1.json', 'file2.json'])
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
         await BasicBase.deleteAll()
         expect(fs.existsSync).toHaveBeenCalledWith('b')
-        expect(fs.rmdirSync).toHaveBeenCalledWith('b')
+        expect(fsPromises.rmdir).toHaveBeenCalledWith('b')
+      })
+      it('deletes files within the directory', async function () {
+        fs.existsSync.mockReturnValue(true)
+        fsPromises.readdir.mockResolvedValue(['file1.json', 'file2.json'])
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
+        await BasicBase.deleteAll()
+        expect(fsPromises.unlink).toHaveBeenCalledTimes(2)
+        expect(fsPromises.unlink).toHaveBeenCalledWith(path.join('b', 'file1.json'))
+        expect(fsPromises.unlink).toHaveBeenCalledWith(path.join('b', 'file2.json'))
       })
     })
   })

@@ -1,6 +1,8 @@
+process.env.TEST_ENV = true
 const GuildProfile = require('../../../structs/db/GuildProfile.js')
 const FeedModel = require('../../../models/Feed.js').model
 const mongoose = require('mongoose')
+const config = require('../../../config.js')
 const dbName = 'test_int_guildprofile'
 const CON_OPTIONS = {
   useNewUrlParser: true,
@@ -8,8 +10,11 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
+jest.mock('../../../config.js')
+
 describe('Int::structs/db/GuildProfile Database', function () {
   beforeAll(async function () {
+    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
   })
@@ -42,6 +47,8 @@ describe('Int::structs/db/GuildProfile Database', function () {
       expect(retrieved[0]._id).toEqual(feedIds[0].toHexString())
       expect(retrieved[1]._id).toEqual(feedIds[1].toHexString())
     })
+  })
+  describe('delete', function () {
     it('also deletes other feeds', async function () {
       const guildData = {
         _id: '2q35rrftjtyre',
