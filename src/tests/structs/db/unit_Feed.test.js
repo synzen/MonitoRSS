@@ -101,4 +101,34 @@ describe('Unit::structs/db/Feed', function () {
       expect(Format.getBy).toHaveBeenCalledWith('feed', _id)
     })
   })
+  describe('enable', function () {
+    it('calls this.save', async function () {
+      const feed = new Feed({ ...necessaryInit })
+      feed.disabled = true
+      const spy = jest.spyOn(feed, 'save').mockResolvedValue()
+      await feed.enable()
+      expect(spy).toHaveBeenCalled()
+    })
+    it('sets this.disabled to false', async function () {
+      const feed = new Feed({ ...necessaryInit })
+      feed.disabled = true
+      jest.spyOn(feed, 'save').mockResolvedValue()
+      await feed.enable()
+      expect(feed.disabled).toEqual(undefined)
+    })
+  })
+  describe('disable', function () {
+    it('calls this.save', async function () {
+      const feed = new Feed({ ...necessaryInit })
+      const spy = jest.spyOn(feed, 'save').mockResolvedValue()
+      await feed.disable()
+      expect(spy).toHaveBeenCalled()
+    })
+    it('sets this.disabled to undefined', async function () {
+      const feed = new Feed({ ...necessaryInit })
+      jest.spyOn(feed, 'save').mockResolvedValue()
+      await feed.disable()
+      expect(feed.disabled).toEqual(true)
+    })
+  })
 })

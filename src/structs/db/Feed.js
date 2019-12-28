@@ -1,11 +1,9 @@
 const Base = require('./Base.js')
 const FilterBase = require('./FilterBase.js')
 const FeedModel = require('../../models/Feed.js').model
-const log = require('../../util/logger.js')
-const dbOpsSchedules = require('../../util/db/schedules.js')
-const ArticleModel = require('../../models/Article.js')
 const Format = require('./Format.js')
 const Subscriber = require('./Subscriber.js')
+const AssignedSchedule = require('./AssignedSchedule.js')
 
 class Feed extends FilterBase {
   /**
@@ -107,7 +105,7 @@ class Feed extends FilterBase {
 
     /**
      * Disabled status
-     * @type {String}
+     * @type {boolean}
      */
     this.disabled = this.getField('disabled')
 
@@ -196,16 +194,12 @@ class Feed extends FilterBase {
    * @param {string} shardID
    */
   async removeSchedule (shardID) {
-    const assigned = await dbOpsSchedules.assignedSchedules.get(this.id)
+    const assigned = await AssignedSchedule.getByFeedAndShard(this._id, shardID)
     if (!assigned) {
       return
     }
     // const shardID = this.bot.shard ? this.bot.shard.id : 0
-    await dbOpsSchedules.assignedSchedules.remove(this.id)
-    const assignedSchedules = await dbOpsSchedules.assignedSchedules.getMany(shardID, assigned.schedule, this.url)
-    if (assignedSchedules.length === 0 && Base.isMongoDatabase) {
-      ArticleModel.model(this.url, shardID, assigned.schedule).collection.drop().catch(err => err.code === 26 ? null : log.general.error('Failed to drop unused collection after feed removal', err))
-    }
+    await assigned.delete()
   }
 
   /**
@@ -223,6 +217,22 @@ class Feed extends FilterBase {
    */
   async getSubscribers () {
     return Subscriber.getManyBy('feed', this._id)
+  }
+
+  /**
+   * Disable this feed
+   */
+  async disable () {
+    this.disabled = true
+    return this.save()
+  }
+
+  /**
+   * Enable this feed
+   */
+  async enable () {
+    this.disabled = undefined
+    return this.save()
   }
 
   async delete () {
