@@ -343,6 +343,9 @@ class Base {
         const value = toSave[key]
         // Map values must be individually set and deleted
         if (value instanceof Map) {
+          if (!this.document[key]) {
+            this.document.set(key, new Map())
+          }
           const docMap = this.document[key]
           // First remove all unknown keys
           docMap.forEach((v, key) => {
