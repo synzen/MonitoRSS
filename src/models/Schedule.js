@@ -17,4 +17,4 @@ const schema = mongoose.Schema({
 })
 
 exports.schema = schema
-exports.model = () => mongoose.model('schedules', schema)
+exports.model = mongoose.model('schedules', schema)

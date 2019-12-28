@@ -9,18 +9,18 @@ class AssignedSchedule extends Base {
      * Feed ID this schedule belongs to
      * @type {string}
      */
-    this.feedID = this.getField('feedID')
-    if (!this.feedID) {
-      throw new Error('feedID is undefined')
+    this.feed = this.getField('feed')
+    if (!this.feed) {
+      throw new Error('feed is undefined')
     }
 
     /**
      * Guild ID this schedule belongs to
      * @type {string}
      */
-    this.guildID = this.getField('guildID')
-    if (!this.guildID) {
-      throw new Error('guildID is undefined')
+    this.guild = this.getField('guild')
+    if (!this.guild) {
+      throw new Error('guild is undefined')
     }
 
     /**
@@ -49,19 +49,19 @@ class AssignedSchedule extends Base {
     }
   }
 
+  static async getByFeedAndShard (feedID, shard = '') {
+    return AssignedSchedule.get(feedID + shard)
+  }
+
   toObject () {
     return {
-      _id: this.feedID + this.shard,
-      feedID: this.feedID,
-      guildID: this.guildID,
+      _id: this.feed + this.shard.toString(),
+      feed: this.feed,
+      guild: this.guild,
       shard: this.shard,
       url: this.url,
       schedule: this.schedule
     }
-  }
-
-  async getByFeedAndShard (feedID, shard) {
-    return AssignedSchedule.get(feedID + shard)
   }
 
   static get Model () {

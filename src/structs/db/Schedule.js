@@ -1,4 +1,5 @@
 const Base = require('./Base.js')
+const ScheduleModel = require('../../models/Schedule.js').model
 
 class Schedule extends Base {
   constructor (data, _saved) {
@@ -10,7 +11,7 @@ class Schedule extends Base {
      */
     this.name = this.getField('name')
     if (!this.name) {
-      throw new Error('Undefined name')
+      throw new Error('name is undefined')
     }
 
     /**
@@ -19,7 +20,9 @@ class Schedule extends Base {
      */
     this.refreshRateMinutes = this.getField('refreshRateMinutes')
     if (!this.refreshRateMinutes) {
-      throw new Error('Undefined refreshRateMinutes')
+      throw new Error('refreshRateMinutes is undefined')
+    } else if (isNaN(this.refreshRateMinutes)) {
+      throw new Error(`refreshRateMinutes must be a number`)
     }
 
     /**
@@ -42,6 +45,10 @@ class Schedule extends Base {
       keywords: this.keywords,
       feeds: this.feeds
     }
+  }
+
+  static get Model () {
+    return ScheduleModel
   }
 }
 
