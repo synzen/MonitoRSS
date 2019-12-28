@@ -80,7 +80,7 @@ module.exports = async (bot, message, command) => {
         await format.save()
       } else {
         const data = {
-          feed: feed.id,
+          feed: feed._id,
           text: setting
         }
         const newFormat = new Format(data)

@@ -60,7 +60,7 @@ async function feedSelectorFn (m, data) {
   // Skip embed selection if there is no webhook
   if (!format) {
     const formatData = {
-      feed: feed.id
+      feed: feed._id
     }
     format = new Format(formatData)
   }
