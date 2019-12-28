@@ -1,15 +1,16 @@
 const mongoose = require('mongoose')
 
 const schema = mongoose.Schema({
-  feedID: {
-    type: String,
+  _id: String,
+  feed: {
+    type: mongoose.Types.ObjectId,
     index: true,
     unique: true
   },
-  guildID: String,
+  guild: String,
   shard: Number,
   link: String,
   schedule: String
 })
 
-exports.model = () => mongoose.model('assigned_schedules', schema)
+exports.model = mongoose.model('assigned_schedules', schema)
