@@ -22,15 +22,27 @@ class ArticleMessage {
    * @param {boolean} skipFilters - Whether this should skip filters
    */
   constructor (article, isTestMessage = false, skipFilters = false) {
-    if (!article._delivery) throw new Error('article._delivery property missing')
-    if (!article._delivery.rssName) throw new Error('article._delivery.rssName property missing')
-    if (!article._delivery.source) throw new Error('article._delivery.source property missing')
+    if (!article._delivery) {
+      throw new Error('article._delivery property missing')
+    }
+    if (!article._delivery.rssName) {
+      throw new Error('article._delivery.rssName property missing')
+    }
+    if (!article._delivery.source) {
+      throw new Error('article._delivery.source property missing')
+    }
+    this.debug = debug.feeds.has(article._delivery.rssName)
     this.article = article
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
     this.channelId = article._delivery.source.channel
     this.channel = storage.bot.channels.get(article._delivery.source.channel)
-    if (!this.channel) return
+    if (!this.channel) {
+      if (this.debug) {
+        log.debug.info(`Skipping article delivery due to missing channel (${article._delivery.source.channel})`)
+      }
+      return
+    }
     this.webhook = undefined
     this.sendFailed = 1
     this.rssName = article._delivery.rssName
@@ -172,11 +184,15 @@ class ArticleMessage {
 
   async _resolveWebhook () {
     const { channel, source } = this
-    if (typeof source.webhook !== 'object' || !channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) return
+    if (typeof source.webhook !== 'object' || !channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) {
+      return
+    }
     try {
       const hooks = await channel.fetchWebhooks()
       const hook = hooks.get(source.webhook.id)
-      if (!hook) return
+      if (!hook) {
+        return
+      }
       const guildId = channel.guild.id
       const guildName = channel.guild.name
       this.webhook = hook
@@ -268,14 +284,22 @@ class ArticleMessage {
   }
 
   async send () {
-    if (!this.source) throw new Error('Missing feed source')
-    if (!this.channel) throw new Error('Missing feed channel')
+    if (!this.source) {
+      throw new Error('Missing feed source')
+    }
+    if (!this.channel) {
+      throw new Error('Missing feed channel')
+    }
     await this._resolveWebhook()
     if (!this.passedFilters) {
-      if (config.log.unfiltered === true) log.general.info(`'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`, this.channel)
+      if (config.log.unfiltered === true || this.debug) {
+        log.general.info(`'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`, this.channel)
+      }
       return
     }
-    if (deletedFeeds.includes(this.rssName)) throw new Error(`${this.rssName} for channel ${this.channel.id} was deleted during cycle`)
+    if (deletedFeeds.includes(this.rssName)) {
+      throw new Error(`${this.rssName} for channel ${this.channel.id} was deleted during cycle`)
+    }
 
     const { text, options } = this._createSendOptions()
 
