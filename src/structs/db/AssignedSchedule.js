@@ -54,7 +54,7 @@ class AssignedSchedule extends Base {
    * @param {string} feedID
    * @param {number} shard
    */
-  static async getByFeedAndShard (feedID, shard = '') {
+  static async getByFeedAndShard (feedID, shard = -1) {
     return AssignedSchedule.get(feedID + shard)
   }
 

@@ -10,7 +10,7 @@ describe('Unit::structs/db/AssignedSchedule', function () {
     it(`handles no shard correctly`, async function () {
       const spy = jest.spyOn(AssignedSchedule, 'get').mockResolvedValue()
       await AssignedSchedule.getByFeedAndShard('abc')
-      expect(spy).toHaveBeenCalledWith('abc')
+      expect(spy).toHaveBeenCalledWith('abc-1')
     })
   })
   describe('static getManyByFeedAndShard', function () {

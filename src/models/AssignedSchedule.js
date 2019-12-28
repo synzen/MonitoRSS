@@ -9,7 +9,7 @@ const schema = mongoose.Schema({
   },
   guild: String,
   shard: Number,
-  link: String,
+  url: String,
   schedule: String
 })
 
