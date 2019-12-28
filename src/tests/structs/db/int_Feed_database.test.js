@@ -1,6 +1,7 @@
 const Feed = require('../../../structs/db/Feed.js')
 const FeedModel = require('../../../models/Feed.js').model
 const FormatModel = require('../../../models/Format.js').model
+const SubscriberModel = require('../../../models/Subscriber.js').model
 require('../../../models/GuildProfile.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_feed'
@@ -95,6 +96,51 @@ describe('Int::structs/db/Feed Database', function () {
     expect(foundAgain.filters).toEqual({
       description: ['a']
     })
+  })
+  it('deletes associated format and subscribers on delete', async function () {
+    const guildId = new mongoose.Types.ObjectId()
+    const feedId = new mongoose.Types.ObjectId()
+    const db = mongoose.connection.db
+    await Promise.all([
+      db.collection('guilds').insertOne({
+        _id: guildId.toHexString()
+      }),
+      db.collection('formats').insertOne({
+        text: 'sde',
+        feed: feedId
+      }),
+      db.collection('subscribers').insertOne({
+        id: 'af',
+        type: 'role',
+        feed: feedId
+      }),
+      db.collection('subscribers').insertOne({
+        id: 'aed',
+        type: 'role',
+        feed: feedId
+      }),
+      db.collection('feeds').insertOne({
+        _id: feedId,
+        guild: guildId.toHexString(),
+        title: 'asd',
+        channel: 'se',
+        url: 'srfhy'
+      })
+    ])
+
+    const doc = await FeedModel.findById(feedId).exec()
+    await expect(FormatModel.find({ feed: feedId.toHexString() }))
+      .resolves.toHaveLength(1)
+    await expect(SubscriberModel.find({ feed: feedId.toHexString() }))
+      .resolves.toHaveLength(2)
+    const feed = new Feed(doc, true)
+    await feed.delete()
+    await expect(db.collection('subscribers').find({ feed: feedId })
+      .toArray())
+      .resolves.toHaveLength(0)
+    await expect(db.collection('formats').find({ feed: feedId })
+      .toArray())
+      .resolves.toHaveLength(0)
   })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()

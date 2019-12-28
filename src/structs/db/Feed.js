@@ -219,18 +219,20 @@ class Feed extends FilterBase {
 
   /**
    * Returns both role and user subscribers of this feed.
-   * @returns {Subscriber}
+   * @returns {Subscriber[]}
    */
   async getSubscribers () {
     return Subscriber.getManyBy('feed', this._id)
   }
 
   async delete () {
-    const [ format, subscribers ] = await Promise.all([
-      this.getFormat(),
-      this.getSubscribers()
-    ])
-    await Promise.all(subscribers.map(sub => sub.delete()).concat([format.delete()]))
+    const format = await this.getFormat()
+    const subscribers = await this.getSubscribers()
+    const toDelete = subscribers.map(sub => sub.delete())
+    if (format) {
+      toDelete.push(format.delete())
+    }
+    await Promise.all(toDelete)
     return super.delete()
   }
 
