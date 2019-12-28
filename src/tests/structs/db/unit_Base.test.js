@@ -230,25 +230,25 @@ describe('Unit::structs/db/Base', function () {
       })
     })
   })
-  describe('getManyBy', function () {
+  describe('getManyByQuery', function () {
     describe('from database', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockResolvedValue(true)
       })
       it('calls find correctly', async function () {
-        const field = '234wt6r'
-        const value = 'w23et43'
         const query = {
-          [field]: value
+          assrfh: 'srhyedhy',
+          joe: 1,
+          ahaaa: []
         }
         jest.spyOn(MockModel, 'find').mockReturnValue({ exec: () => [] })
-        await BasicBase.getManyBy(field, value)
+        await BasicBase.getManyByQuery(query)
         expect(MockModel.find).toHaveBeenCalledWith(query, BasicBase.FIND_PROJECTION)
       })
       it('returns a new array correctly', async function () {
         const exec = jest.fn(() => [{}, {}])
         jest.spyOn(MockModel, 'find').mockReturnValue({ exec })
-        const returnValues = await BasicBase.getManyBy('asd', 'sdf')
+        const returnValues = await BasicBase.getManyByQuery()
         expect(returnValues).toBeInstanceOf(Array)
         expect(returnValues).toHaveLength(2)
         for (const val of returnValues) {
@@ -258,7 +258,7 @@ describe('Unit::structs/db/Base', function () {
       it('returns empty array correctly', async function () {
         const exec = jest.fn(() => [])
         jest.spyOn(MockModel, 'find').mockReturnValue({ exec })
-        const returnValues = await BasicBase.getManyBy('asd', 'sdf')
+        const returnValues = await BasicBase.getManyByQuery()
         expect(returnValues).toHaveLength(0)
       })
     })
@@ -277,14 +277,14 @@ describe('Unit::structs/db/Base', function () {
       })
       it('returns empty array if path does not exist', async function () {
         fs.existsSync.mockReturnValue(false)
-        const returned = await BasicBase.getManyBy('sdef', 'sg')
+        const returned = await BasicBase.getManyByQuery({})
         expect(returned).toEqual([])
       })
-      it('returns correctly', async function () {
+      it('returns a single match', async function () {
         const read1 = JSON.stringify({ key1: 'abcgfd' })
         const readFail = '{wetfrg:}'
-        const read2 = JSON.stringify({ key1: 'gh' })
-        const read3 = JSON.stringify({ key1: 'abc' })
+        const read2 = JSON.stringify({ key1: 'gh', key2: 123 })
+        const read3 = JSON.stringify({ key1: 'gh', key: '2' })
         fsPromises.readdir.mockResolvedValue(['1', '2', '3'])
         fs.existsSync.mockReturnValue(true)
         fsPromises.readFile
@@ -292,15 +292,18 @@ describe('Unit::structs/db/Base', function () {
           .mockResolvedValueOnce(readFail)
           .mockResolvedValueOnce(read2)
           .mockResolvedValueOnce(read3)
-        const returned = await BasicBase.getManyBy('key1', 'gh')
+        const returned = await BasicBase.getManyByQuery({
+          key1: 'gh',
+          key2: 123
+        })
         expect(returned).toHaveLength(1)
         expect(returned[0]).toBeInstanceOf(BasicBase)
         await expect(BasicBase.getManyBy('random', 'key'))
           .resolves.toEqual([])
       })
-      it('returns all those that match', async function () {
-        const read1Object = { key: 'rwse4yhg', george: 1 }
-        const read2Object = { key: read1Object.key, lucas: 1 }
+      it('returns multiple matches', async function () {
+        const read1Object = { key: 'rwse4yhg', george: 1, fal: 6 }
+        const read2Object = { key: read1Object.key, lucas: 1, fal: read1Object.fal }
         const read1 = JSON.stringify(read1Object)
         const read2 = JSON.stringify(read2Object)
         fsPromises.readdir.mockResolvedValue(['1', '2'])
@@ -308,9 +311,22 @@ describe('Unit::structs/db/Base', function () {
         fsPromises.readFile
           .mockResolvedValueOnce(read1)
           .mockResolvedValueOnce(read2)
-        const returned = await BasicBase.getManyBy('key', read1Object.key)
+        const returned = await BasicBase.getManyByQuery({
+          key: read1Object.key,
+          fal: read1Object.fal
+        })
         expect(returned).toHaveLength(2)
       })
+    })
+  })
+  describe('getManyBy', function () {
+    it('calls getManyByQuery correctly', async function () {
+      const spy = jest.spyOn(BasicBase, 'getManyByQuery').mockResolvedValue()
+      const field = 'wt4ryhedt'
+      const value = 'srye57thr'
+      await BasicBase.getManyBy(field, value)
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(spy).toHaveBeenCalledWith({ [field]: value })
     })
   })
   describe('getMany', function () {

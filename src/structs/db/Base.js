@@ -190,12 +190,11 @@ class Base {
   }
 
   /**
-   * Get many by a field's value
-   * @param {string} field - Field name
-   * @param {any} value - Field value
+   * Get many with a custom query
+   * @param {Object<string, any>} query - MongoDB-format query
    * @returns {Base[]}
    */
-  static async getManyBy (field, value) {
+  static async getManyByQuery (query) {
     /**
      * @type {MongooseModel}
      */
@@ -203,9 +202,6 @@ class Base {
 
     // Database
     if (this.isMongoDatabase) {
-      const query = {
-        [field]: value
-      }
       const docs = await DatabaseModel.find(query, this.FIND_PROJECTION).exec()
       return docs.map(doc => new this(doc, true))
     }
@@ -228,8 +224,27 @@ class Base {
       }
     })
     return jsons
-      .filter(item => item && item[field] === value)
+      .filter(item => {
+        if (!item) {
+          return false
+        }
+        let allTrue = true
+        for (const key in query) {
+          allTrue = allTrue && item[key] === query[key]
+        }
+        return allTrue
+      })
       .map(item => new this(item, true))
+  }
+
+  /**
+   * Get many by a field's value
+   * @param {string} field - Field name
+   * @param {any} value - Field value
+   * @returns {Base[]}
+   */
+  static async getManyBy (field, value) {
+    return this.getManyByQuery({ [field]: value })
   }
 
   /**
