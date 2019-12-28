@@ -149,7 +149,9 @@ class Base {
     }
 
     // Databaseless
-    const filePath = path.join(config.database.uri, `${id}.json`)
+    const folderPaths = this.getFolderPaths()
+    const folderPath = folderPaths[folderPaths.length - 1]
+    const filePath = path.join(folderPath, `${id}.json`)
     if (!fs.existsSync(filePath)) {
       return null
     }
@@ -298,7 +300,9 @@ class Base {
     // Databaseless
     const folderPaths = this.getFolderPaths()
     if (fs.existsSync(folderPaths[1])) {
-      fs.rmdirSync(folderPaths[1])
+      const files = await fsPromises.readdir(folderPaths[1])
+      await Promise.all(files.map(name => fsPromises.unlink(path.join(folderPaths[1], name))))
+      await fsPromises.rmdir(folderPaths[1])
     }
   }
 
@@ -415,7 +419,6 @@ class Base {
         delete toSave[key]
       }
     }
-    const serialized = JSON.stringify(toSave, null, 2)
 
     const folderPaths = this.constructor.getFolderPaths()
     for (const p of folderPaths) {
@@ -425,11 +428,17 @@ class Base {
     }
     const folderPath = folderPaths[folderPaths.length - 1]
     if (!this._saved) {
-      const newId = new mongoose.Types.ObjectId().toHexString()
-      await fs.writeFileSync(path.join(folderPath, `${newId}.json`), serialized)
-      this._id = newId
+      let useId = toSave._id
+      if (!useId) {
+        useId = new mongoose.Types.ObjectId().toHexString()
+        toSave._id = useId
+      }
+      const serialized = JSON.stringify(toSave, null, 2)
+      await fs.writeFileSync(path.join(folderPath, `${useId}.json`), serialized)
+      this._id = useId
       this._saved = true
     } else {
+      const serialized = JSON.stringify(toSave, null, 2)
       await fs.writeFileSync(path.join(folderPath, `${this._id}.json`), serialized)
     }
     return this

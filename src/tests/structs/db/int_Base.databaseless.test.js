@@ -29,7 +29,7 @@ describe('Int::structs/db/Base Databaseless', function () {
     const filePath = path.join(folderPath, `${fileName}.json`)
     expect(fs.existsSync(filePath)).toEqual(true)
     const read = JSON.parse(await fsReadFile(filePath))
-    expect(read).toEqual({ ...data, array: [] })
+    expect(read).toEqual(expect.objectContaining({ ...data, array: [] }))
     await fsUnlink(filePath)
   })
   it('saves multiple times correctly', async function () {
@@ -40,11 +40,11 @@ describe('Int::structs/db/Base Databaseless', function () {
     const fileName = foobar._id
     const filePath = path.join(folderPath, `${fileName}.json`)
     const read = JSON.parse(await fsReadFile(filePath))
-    expect(read).toEqual({
+    expect(read).toEqual(expect.objectContaining({
       foo: 'abc',
       baz: data.baz,
       array: []
-    })
+    }))
   })
   it('deletes', async function () {
     const data = { foo: 'zzx', baz: 999 }
