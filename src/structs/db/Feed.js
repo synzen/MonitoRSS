@@ -104,8 +104,9 @@ class Feed extends FilterBase {
     this.toggleRoleMentions = this.getField('toggleRoleMentions')
 
     /**
-     * Disabled status
-     * @type {boolean}
+     * Disabled status. Either undefined if enabled, or
+     * a string stating the reason why.
+     * @type {string}
      */
     this.disabled = this.getField('disabled')
 
@@ -221,9 +222,10 @@ class Feed extends FilterBase {
 
   /**
    * Disable this feed
+   * @param {string} reason
    */
-  async disable () {
-    this.disabled = true
+  async disable (reason = 'No reason specified') {
+    this.disabled = reason
     return this.save()
   }
 

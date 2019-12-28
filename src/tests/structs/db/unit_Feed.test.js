@@ -104,14 +104,14 @@ describe('Unit::structs/db/Feed', function () {
   describe('enable', function () {
     it('calls this.save', async function () {
       const feed = new Feed({ ...necessaryInit })
-      feed.disabled = true
+      feed.disabled = 'hura'
       const spy = jest.spyOn(feed, 'save').mockResolvedValue()
       await feed.enable()
       expect(spy).toHaveBeenCalled()
     })
-    it('sets this.disabled to false', async function () {
+    it('sets this.disabled to undefined', async function () {
       const feed = new Feed({ ...necessaryInit })
-      feed.disabled = true
+      feed.disabled = 'hoopa dooop'
       jest.spyOn(feed, 'save').mockResolvedValue()
       await feed.enable()
       expect(feed.disabled).toEqual(undefined)
@@ -124,11 +124,18 @@ describe('Unit::structs/db/Feed', function () {
       await feed.disable()
       expect(spy).toHaveBeenCalled()
     })
-    it('sets this.disabled to undefined', async function () {
+    it('sets this.disabled to the reason given', async function () {
+      const feed = new Feed({ ...necessaryInit })
+      jest.spyOn(feed, 'save').mockResolvedValue()
+      const reason = 'hoopa doop'
+      await feed.disable(reason)
+      expect(feed.disabled).toEqual(reason)
+    })
+    it('sets this.disabled to the default reason if none given', async function () {
       const feed = new Feed({ ...necessaryInit })
       jest.spyOn(feed, 'save').mockResolvedValue()
       await feed.disable()
-      expect(feed.disabled).toEqual(true)
+      expect(feed.disabled).toEqual('No reason specified')
     })
   })
 })
