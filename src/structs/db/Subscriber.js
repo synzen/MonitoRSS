@@ -35,6 +35,8 @@ class Subscriber extends FilterBase {
 
   toObject () {
     return {
+      ...super.toObject(),
+      feed: this.feed,
       id: this.id,
       type: this.type
     }
