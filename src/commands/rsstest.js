@@ -32,7 +32,7 @@ module.exports = async (bot, message, command) => {
       return await message.channel.send(translate('commands.rsstest.noArticles'))
     }
     article._delivery = {
-      rssName: feed.id,
+      rssName: feed._id,
       source: {
         ...feed.toObject(),
         dateSettings: {
