@@ -3,11 +3,11 @@ const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
-const dbOpsSchedules = require('../util/db/schedules.js')
 const serverLimit = require('../util/serverLimit.js')
 const storage = require('../util/storage.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {
@@ -25,15 +25,19 @@ module.exports = async (bot, message, command) => {
 
     // Generate the info for each feed as an array, and push into another array
     const failedLinksToCheck = feeds.map(feed => feed.url)
-    const schedulesToFetch = feeds.map(feed => dbOpsSchedules.assignedSchedules.get(feed.id))
+    const shard = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : undefined
+    const schedulesToFetch = feeds.map(feed => AssignedSchedule.getByFeedAndShard(feed._id, shard))
     const schedulesByFeedIDs = {}
 
-    const [ failedLinksResults, assignedSchedules ] = await Promise.all([ dbOpsFailedLinks.getMultiple(failedLinksToCheck), Promise.all(schedulesToFetch) ])
+    const [ failedLinksResults, assignedSchedules ] = await Promise.all([
+      dbOpsFailedLinks.getMultiple(failedLinksToCheck),
+      Promise.all(schedulesToFetch)
+    ])
     for (const result of failedLinksResults) {
       failedLinks[result.link] = result.failed || result.count
     }
     for (const assigned of assignedSchedules) {
-      schedulesByFeedIDs[assigned.feedID] = assigned
+      schedulesByFeedIDs[assigned.feed] = assigned
     }
 
     let vipDetails = ''
@@ -88,7 +92,7 @@ module.exports = async (bot, message, command) => {
       const webhook = feed.webhook ? `${translate('commands.rsslist.webhook')}: ${feed.webhook.id}\n` : ''
 
       // Refresh rate
-      const schedule = storage.scheduleManager.getSchedule(schedulesByFeedIDs[feed.id].schedule)
+      const schedule = storage.scheduleManager.getSchedule(schedulesByFeedIDs[feed._id].schedule)
       let refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} ${translate('commands.rsslist.seconds')}` : `${schedule.refreshRate} ${translate('commands.rsslist.minutes')}` : translate('commands.rsslist.unknown')
 
       // Patreon link
