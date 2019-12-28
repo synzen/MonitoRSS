@@ -225,6 +225,15 @@ class Feed extends FilterBase {
     return Subscriber.getManyBy('feed', this._id)
   }
 
+  async delete () {
+    const [ format, subscribers ] = await Promise.all([
+      this.getFormat(),
+      this.getSubscribers()
+    ])
+    await Promise.all(subscribers.map(sub => sub.delete()).concat([format.delete()]))
+    return super.delete()
+  }
+
   static get Model () {
     return FeedModel
   }
