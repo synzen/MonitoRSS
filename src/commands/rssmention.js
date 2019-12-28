@@ -1,14 +1,15 @@
 const Discord = require('discord.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const filters = require('./util/filters.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Subscriber = require('../structs/db/Subscriber.js')
 const VALID_OPTIONS = ['1', '2', '3', '4']
 
-async function printSubscriptions (message, rssList, translate) {
+async function printSubscriptions (message, feeds, translate) {
   const guild = message.guild
   const subList = {}
   const msg = new Discord.RichEmbed()
@@ -16,24 +17,32 @@ async function printSubscriptions (message, rssList, translate) {
     .setDescription(translate('commands.rssmention.listSubscriptionsDescription'))
     .setAuthor(translate('commands.rssmention.subscriptionsList'))
 
-  for (const rssName in rssList) {
-    const source = rssList[rssName]
-    const subscribers = source.subscribers
-    if (!subscribers) continue
+  const allSubscribers = await Promise.all(feeds.map(feed => feed.getSubscribers()))
+  for (let i = 0; i < allSubscribers.length; ++i) {
+    const feed = feeds[i]
+    const subscribers = allSubscribers[i]
     for (const subscriber of subscribers) {
       const id = subscriber.id
       const type = subscriber.type
-      if (!subList[source.title]) subList[source.title] = {}
-      const embedReferenceTitle = !subscriber.filters || Object.keys(subscriber.filters).length === 0 ? 'globalSubs' : 'filteredSubs'
-      if (!subList[source.title][embedReferenceTitle]) subList[source.title][embedReferenceTitle] = []
+      if (!subList[feed.title]) {
+        subList[feed.title] = {}
+      }
+      const embedReferenceTitle = !subscriber.hasFilters() ? 'globalSubs' : 'filteredSubs'
+      if (!subList[feed.title][embedReferenceTitle]) {
+        subList[feed.title][embedReferenceTitle] = []
+      }
       if (type === 'user') {
         const resolvedUser = guild.members.get(id)
         const toInsert = resolvedUser ? `${resolvedUser.user.username}#${resolvedUser.user.discriminator}` : ''
-        if (resolvedUser && !subList[source.title][embedReferenceTitle].includes(toInsert)) subList[source.title][embedReferenceTitle].push(toInsert)
+        if (resolvedUser && !subList[feed.title][embedReferenceTitle].includes(toInsert)) {
+          subList[feed.title][embedReferenceTitle].push(toInsert)
+        }
       } else if (type === 'role') {
         const resolvedRole = guild.roles.get(id)
         const toInsert = resolvedRole ? resolvedRole.name : ''
-        if (resolvedRole && !subList[source.title][embedReferenceTitle].includes(toInsert)) subList[source.title][embedReferenceTitle].push(toInsert)
+        if (resolvedRole && !subList[feed.title][embedReferenceTitle].includes(toInsert)) {
+          subList[feed.title][embedReferenceTitle].push(toInsert)
+        }
       }
     }
   }
@@ -48,17 +57,24 @@ async function printSubscriptions (message, rssList, translate) {
       globalSubs.push(subList[feed].globalSubs[globalSubber])
     }
     globalSubs.sort()
-    if (globalSubs.length > 0) list += translate('commands.rssmention.globalSubscribers') + globalSubs.join('\n')
+    if (globalSubs.length > 0) {
+      list += translate('commands.rssmention.globalSubscribers') + globalSubs.join('\n')
+    }
 
     const filteredSubs = []
     for (let filteredSubber in subList[feed].filteredSubs) {
       filteredSubs.push(subList[feed].filteredSubs[filteredSubber])
     }
     filteredSubs.sort()
-    if (filteredSubs.length > 0) list += (globalSubs.length > 0 ? '\n' : '') + translate('commands.rssmention.filteredSubscribers') + filteredSubs.join('\n')
-    if (!list) continue
-    if (list.length <= 1024) msg.addField(feed, list)
-    else {
+    if (filteredSubs.length > 0) {
+      list += (globalSubs.length > 0 ? '\n' : '') + translate('commands.rssmention.filteredSubscribers') + filteredSubs.join('\n')
+    }
+    if (!list) {
+      continue
+    }
+    if (list.length <= 1024) {
+      msg.addField(feed, list)
+    } else {
       const lines = list.split('\n')
       let curStr = ''
       for (let i = 0; i < lines.length; ++i) {
@@ -70,129 +86,127 @@ async function printSubscriptions (message, rssList, translate) {
           curStr = line
         }
       }
-      if (curStr.length > 0) msg.addField(feed, curStr)
+      if (curStr.length > 0) {
+        msg.addField(feed, curStr)
+      }
     }
   }
   await message.channel.send({ embed: msg })
 }
 
 // Remove all subscriptions for a role
-async function deleteSubscription (message, guildRss, role, user, translate) {
+async function deleteSubscription (message, profile, feeds, role, user) {
   const roleID = role ? role.id : undefined
   const userID = user ? user.id : undefined
-  const rssList = guildRss.sources
-  let found = false
+  const matchID = roleID || userID
+  const prefix = profile.prefix || config.bot.prefix
+  const translate = Translator.createLocaleTranslator(profile.locale)
 
-  for (const rssName in rssList) {
-    const source = rssList[rssName]
-    const subscribers = source.subscribers
-    if (!subscribers) continue
-    for (let i = subscribers.length - 1; i >= 0; --i) {
-      const subscriber = subscribers[i]
-      const id = subscriber.id
-      if (id === roleID || id === userID) {
-        subscribers.splice(i, 1)
-        found = true
-      }
+  const allSubscribers = await Promise.all(feeds.map(feed => feed.getSubscribers()))
+
+  for (let i = 0; i < allSubscribers.length; ++i) {
+    const subscribers = allSubscribers[i]
+    if (subscribers.length === 0) {
+      continue
     }
-    if (subscribers && subscribers.length === 0) delete source.subscribers
+    const subscriber = subscribers.find(subscriber => subscriber.id === matchID)
+    if (subscriber) {
+      await subscriber.delete()
+      log.command.info(`Deleted all subscriptions`, message.guild, user || role)
+      await message.channel.send(`${translate('commands.rssmention.removeSubscriptionsSuccess', {
+        name: role ? role.name : user.username,
+        type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user')
+      })} ${translate('generics.backupReminder', { prefix })}`)
+      return
+    }
   }
-  const prefix = guildRss.prefix || config.bot.prefix
-  if (!found) await message.channel.send(translate('commands.rssmention.removeSubscriptionsNone', { type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user') }))
-  else {
-    await dbOpsGuilds.update(guildRss)
-    log.command.info(`Deleted all subscriptions`, message.guild, user || role)
-    await message.channel.send(`${translate('commands.rssmention.removeSubscriptionsSuccess', { name: role ? role.name : user.username, type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user') })} ${translate('generics.backupReminder', { prefix })}`)
-  }
+
+  await message.channel.send(translate('commands.rssmention.removeSubscriptionsNone', {
+    type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user')
+  }))
 }
 
 // Add global subscriptions, called from openSubMenu
-async function addGlobalSub (message, guildRss, rssName, role, user, translate) {
-  const source = guildRss.sources[rssName]
-  if (!source.subscribers) source.subscribers = []
-  const subscribers = source.subscribers
+async function addGlobalSub (message, profile, feed, role, user, translate) {
+  const subscribers = await feed.getSubscribers()
   const id = role ? role.id : user.id
   const name = role ? role.name : user.username
   const type = role ? 'Role' : 'User'
-  let found = false
-  for (const subscriber of subscribers) {
-    if (id === subscriber.id) {
-      found = true
-      if (!subscriber.filters) return message.channel.send(translate('commands.rssmention.addSubscriberGlobalExists', { type, name }))
-      else delete subscriber.filters
+  const found = subscribers.find(sub => sub.id === id)
+  if (found) {
+    if (!found.hasFilters()) {
+      return message.channel.send(translate('commands.rssmention.addSubscriberGlobalExists', { type, name }))
     }
-  }
-  if (!found) {
-    source.subscribers.push({
+    await found.removeFilters()
+  } else {
+    const subscriber = new Subscriber({
+      feed: feed._id,
       id,
-      name,
       type: type.toLowerCase()
     })
+    await subscriber.save()
   }
-  const prefix = guildRss.prefix || config.bot.prefix
-  await dbOpsGuilds.update(guildRss)
-  log.command.info(`Added global subscriber to feed ${source.link}`, message.guild, role || user)
-  await message.channel.send(`${translate('commands.rssmention.addSubscriberGlobalSuccess', { link: source.link, name, type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user') })} ${translate('generics.backupReminder', { prefix })}`)
+
+  const prefix = profile.prefix || config.bot.prefix
+  log.command.info(`Added global subscriber to feed ${feed.url}`, message.guild, role || user)
+  await message.channel.send(`${translate('commands.rssmention.addSubscriberGlobalSuccess', {
+    link: feed.url,
+    name,
+    type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user')
+  })} ${translate('generics.backupReminder', { prefix })}`)
 }
 
 // Remove global subscriptions, called from openSubMenu
-async function removeGlobalSub (message, guildRss, rssName, role, user, translate) {
-  const source = guildRss.sources[rssName]
-  const wantedId = role ? role.id : user.id
-  let found = false
-  if (!source.subscribers) {
-    return message.channel.send(translate('commands.rssmention.removeGlobalSubscriberExists', { link: source.link }))
+async function removeGlobalSub (message, profile, feed, role, user, translate) {
+  const subscribers = await feed.getSubscribers()
+  if (subscribers.length === 0) {
+    return message.channel.send(translate('commands.rssmention.removeAnySubscriberNone', { link: feed.url }))
   }
-  const { subscribers } = source
-  for (let i = subscribers.length - 1; i >= 0; --i) {
-    const subscriber = subscribers[i]
-    if (subscriber.id !== wantedId || subscriber.filters) continue
-    subscribers.splice(i, 1)
-    found = true
+  const prefix = profile.prefix || config.bot.prefix
+  const matchID = role ? role.id : user.id
+  const found = subscribers.find(sub => sub.id === matchID && !sub.hasFilters())
+  if (found) {
+    await found.delete()
+    log.command.info(`Removed global subscription for feed ${feed.url}`, message.guild, role || user)
+    return message.channel.send(`${translate('commands.rssmention.removeGlobalSubscriberSuccess', {
+      type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user'),
+      name: role ? role.name : `${user.username}#${user.discriminator}`,
+      link: feed.url
+    })} ${translate('generics.backupReminder', { prefix })}`)
   }
-  if (!found) {
-    return message.channel.send(translate('commands.rssmention.removeGlobalSubscriberExists', { link: source.link }))
-  }
-  if (subscribers.length === 0) delete source.subscribers
-
-  await dbOpsGuilds.update(guildRss)
-  const prefix = guildRss.prefix || config.bot.prefix
-  log.command.info(`Removed global subscription for feed ${source.link}`, message.guild, role || user)
-  await message.channel.send(`${translate('commands.rssmention.removeGlobalSubscriberSuccess', { type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user'), name: role ? role.name : `${user.username}#${user.discriminator}`, link: source.link })} ${translate('generics.backupReminder', { prefix })}`)
+  await message.channel.send(translate('commands.rssmention.removeGlobalSubscriberExists', { link: feed.url }))
 }
 
 async function filteredSubMenuFn (m, data) {
-  const { guildRss, rssName, role, user, translate } = data
-  const source = guildRss.sources[rssName]
+  const { profile, feed, role, user, translate } = data
   const input = m.content // 1 = add, 2 = remove
   if (input === '1') {
-    return { ...data,
+    return {
+      ...data,
       next: {
-        series: filters.add(m, guildRss, rssName, role, user)
+        series: await filters.add(m, profile, feed, role, user)
       } }
   } else if (input === '2') {
-    if (!source.subscribers || source.subscribers.length === 0) {
-      return m.channel.send(translate('commands.rssmention.removeAnySubscriberNone', { link: source.link }))
+    const subscribers = await feed.getSubscribers()
+    if (subscribers.length === 0) {
+      return m.channel.send(translate('commands.rssmention.removeAnySubscriberNone', { link: feed.url }))
     }
-    return { ...data,
+    return {
+      ...data,
       next: {
-        series: filters.remove(m, guildRss, rssName, role, user)
+        series: await filters.remove(m, profile, feed, role, user)
       } }
   } else throw new MenuUtils.MenuOptionError()
 }
 
 async function globalSubMenuFn (m, data) {
-  const { guildRss, rssName, role, user, translate } = data
-  const source = guildRss.sources[rssName]
+  const { profile, feed, role, user, translate } = data
   const input = m.content // 1 = add, 2 = remove
   if (input === '1') {
-    await addGlobalSub(m, guildRss, rssName, role, user, translate)
+    await addGlobalSub(m, profile, feed, role, user, translate)
     return data
   } else if (input === '2') {
-    if (!source.subscribers || source.subscribers.length === 0) {
-      return m.channel.send(translate('commands.rssmention.removeAnySubscriberNone', { link: source.link }))
-    }
-    await removeGlobalSub(m, guildRss, rssName, role, user, translate)
+    await removeGlobalSub(m, profile, feed, role, user, translate)
     return data
   } else throw new MenuUtils.MenuOptionError()
 }
@@ -201,7 +215,12 @@ async function getUserOrRoleFn (m, data) {
   const translate = data.translate
   const input = m.content
   const mention = m.mentions.roles.first()
-  if (mention) return { ...data, role: mention }
+  if (mention) {
+    return {
+      ...data,
+      role: mention
+    }
+  }
   const role = m.guild.roles.find(r => r.name === input)
   const member = m.guild.members.get(input) || m.mentions.members.first()
   if (input === '@everyone') {
@@ -211,17 +230,23 @@ async function getUserOrRoleFn (m, data) {
   } else if (!role && !member) {
     throw new MenuUtils.MenuOptionError(translate('commands.rssmention.invalidRoleOrUser'))
   }
-  return { ...data, role, user: member ? member.user : undefined }
+  return {
+    ...data,
+    role,
+    user: member ? member.user : undefined
+  }
 }
 
 async function feedSelectorFn (m, data) {
-  const { guildRss, rssName, role, user } = data
-  const source = guildRss.sources[rssName]
-  const translate = Translator.createLocaleTranslator(guildRss.locale)
-  return { ...data,
-    next:
-    { embed: {
-      description: translate('commands.rssmention.selectedRoleDescription', { name: role ? role.name : user.username, feedTitle: source.title, feedLink: source.link }) } }
+  const { profile, feed, role, user } = data
+  const translate = Translator.createLocaleTranslator(profile.locale)
+  return {
+    ...data,
+    next: {
+      embed: {
+        description: translate('commands.rssmention.selectedRoleDescription', { name: role ? role.name : user.username, feedTitle: feed.title, feedLink: feed.url })
+      }
+    }
   }
 }
 
@@ -231,16 +256,26 @@ async function selectOptionFn (m, data) {
   if (!VALID_OPTIONS.includes(optionSelected)) {
     throw new MenuUtils.MenuOptionError()
   }
-  const nextData = { ...data, optionSelected: optionSelected }
+  const nextData = {
+    ...data,
+    optionSelected
+  }
 
-  if (optionSelected === '4') return nextData
-  else if (optionSelected === '3' || optionSelected === '2' || optionSelected === '1') { // Options 1, 2, and 3 requires a role or user to be acquired first
+  if (optionSelected === '4') {
+    return nextData
+  } else if (optionSelected === '3' || optionSelected === '2' || optionSelected === '1') { // Options 1, 2, and 3 requires a role or user to be acquired first
     const getUserOrRole = new MenuUtils.Menu(m, getUserOrRoleFn, { text: translate('commands.rssmention.promptUserOrRole') })
     if (optionSelected === '3') {
-      nextData.next = { menu: getUserOrRole }
+      nextData.next = {
+        menu: getUserOrRole
+      }
       return nextData
     }
-    const feedSelector = new FeedSelector(m, feedSelectorFn, { command: data.command }, data.guildRss)
+    const { command, locale, feeds } = data
+    const feedSelector = new FeedSelector(m, feedSelectorFn, {
+      command,
+      locale
+    }, feeds)
 
     if (optionSelected === '2') { // Filtered Sub Menu
       const filteredSubMenu = new MenuUtils.Menu(m, filteredSubMenuFn)
@@ -262,15 +297,15 @@ async function selectOptionFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const guildLocale = guildRss ? guildRss.locale : undefined
-    const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
-    if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) {
+    const profile = await GuildProfile.get(message.guild.id)
+    const guildLocale = profile ? profile.locale : undefined
+    const translate = Translator.createLocaleTranslator(guildLocale)
+    const feeds = profile ? await profile.getFeeds() : []
+    if (feeds.length === 0) {
       return await message.channel.send(translate('commands.rssmention.noFeeds'))
     }
-    const prefix = guildRss.prefix || config.bot.prefix
+    const prefix = profile.prefix || config.bot.prefix
 
-    const rssList = guildRss.sources
     const selectOption = new MenuUtils.Menu(message, selectOptionFn)
       .setDescription(translate('commands.rssmention.description', { prefix, channel: message.channel.name }))
       .setAuthor(translate('commands.rssmention.subscriptionOptions'))
@@ -279,11 +314,17 @@ module.exports = async (bot, message, command) => {
       .addOption(translate('commands.rssmention.optionRemoveSubscriptions'), translate('commands.rssmention.optionRemoveSubscriptionsDescription'))
       .addOption(translate('commands.rssmention.optionListSubscriptions'), translate('commands.rssmention.optionListSubscriptionsDescription'))
 
-    const data = await new MenuUtils.MenuSeries(message, [selectOption], { command: command, guildRss, translate, locale: guildLocale }).start()
-    if (!data) return
+    const data = await new MenuUtils.MenuSeries(message, [selectOption], { command, feeds, profile, translate, locale: guildLocale }).start()
+    if (!data) {
+      return
+    }
     const { optionSelected, role, user } = data
-    if (optionSelected === '4') return await printSubscriptions(message, rssList, translate)
-    if (optionSelected === '3') return await deleteSubscription(message, guildRss, role, user, translate)
+    if (optionSelected === '4') {
+      return await printSubscriptions(message, feeds, translate)
+    }
+    if (optionSelected === '3') {
+      return await deleteSubscription(message, profile, feeds, role, user)
+    }
     // 2 and 1 are handled within the Menu functions due to their complexity
   } catch (err) {
     log.command.warning(`rssmention`, message.guild, err)
