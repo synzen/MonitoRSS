@@ -282,8 +282,8 @@ class Base {
 
     // Databaseless
     const folderPaths = this.getFolderPaths()
-    if (fs.existsSync(folderPaths[0])) {
-      fs.rmdirSync(folderPaths[0])
+    if (fs.existsSync(folderPaths[1])) {
+      fs.rmdirSync(folderPaths[1])
     }
   }
 
