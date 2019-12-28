@@ -13,6 +13,7 @@ const fsExistsSync = fs.existsSync
 const fsReaddirSync = fs.readdirSync
 const fsMkdirSync = fs.mkdirSync
 const fsUnlinkSync = fs.unlinkSync
+const fsRmdirSync = fs.rmdirSync
 const fsPromisesReaddir = fsPromises.readdir
 const fsPromisesReadFile = fsPromises.readFile
 
@@ -405,6 +406,43 @@ describe('Unit::structs/db/Base', function () {
         jest.spyOn(BasicBase, 'get').mockResolvedValue(resolveValue)
         const returnValue = await BasicBase.getAll()
         expect(returnValue).toEqual(getResolves)
+      })
+    })
+  })
+  describe('static deleteAll', function () {
+    describe('from database', function () {
+      beforeEach(function () {
+        jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(true)
+      })
+      it('calls deleteMany correctly', async function () {
+        await BasicBase.deleteAll()
+        expect(MockModel.deleteMany).toHaveBeenCalledTimes(1)
+        expect(MockModel.deleteMany).toHaveBeenCalledWith({})
+      })
+    })
+    describe('from databaseless', function () {
+      beforeEach(function () {
+        jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(false)
+        fs.rmdirSync = jest.fn()
+        fs.existsSync = jest.fn()
+      })
+      afterEach(function () {
+        fs.rmdirSync = fsRmdirSync
+        fs.existsSync = fsExistsSync
+      })
+      it(`doesn't call rmdir if the root folder doesn't exist`, async function () {
+        fs.existsSync.mockReturnValue(false)
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
+        await BasicBase.deleteAll()
+        expect(fs.existsSync).toHaveBeenCalledWith('a')
+        expect(fs.rmdirSync).not.toHaveBeenCalled()
+      })
+      it(`calls rmdir if the root folder exists`, async function () {
+        fs.existsSync.mockReturnValue(true)
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
+        await BasicBase.deleteAll()
+        expect(fs.existsSync).toHaveBeenCalledWith('a')
+        expect(fs.rmdirSync).toHaveBeenCalledWith('a')
       })
     })
   })

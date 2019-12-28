@@ -271,6 +271,23 @@ class Base {
   }
 
   /**
+   * Deletes all from the database
+   */
+  static async deleteAll () {
+    // Mongo
+    if (this.isMongoDatabase) {
+      await this.Model.deleteMany({}).exec()
+      return
+    }
+
+    // Databaseless
+    const folderPaths = this.getFolderPaths()
+    if (fs.existsSync(folderPaths[0])) {
+      fs.rmdirSync(folderPaths[0])
+    }
+  }
+
+  /**
    * Deletes this from either the database from the file system
    * depending on whether the app is databaseless.
    */
