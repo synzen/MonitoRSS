@@ -4,7 +4,7 @@ describe('Unit::models/middleware/Subscriber', function () {
   describe('validate', function () {
     it('calls the right Model', async function () {
       const model = jest.fn(() => ({
-        findById: () => ({ exec: jest.fn() })
+        findById: () => ({ exec: jest.fn(() => 1) })
       }))
       const Doc = {
         model
@@ -38,7 +38,7 @@ describe('Unit::models/middleware/Subscriber', function () {
       await expect(middleware.validate.bind(Doc)())
         .rejects.toThrowError('Feed cannot be changed')
     })
-    it.only('does not throw an error for all correct conditions', async function () {
+    it('does not throw an error for all correct conditions', async function () {
       const feed = 'wte4ry'
       const exec = jest.fn(async () => ({ feed }))
       const model = jest.fn(() => ({
