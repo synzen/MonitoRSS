@@ -49,8 +49,22 @@ class AssignedSchedule extends Base {
     }
   }
 
+  /**
+   * Get an AssignedSchedule via composite key
+   * @param {string} feedID
+   * @param {number} shard
+   */
   static async getByFeedAndShard (feedID, shard = '') {
     return AssignedSchedule.get(feedID + shard)
+  }
+
+  /**
+   * Get an AssignedSchedule via multiple composite keys
+   * @param {Object<string, string|number>[]} objects
+   */
+  static async getManyByFeedAndShard (objects) {
+    const ids = objects.map(object => object.feed + object.shard)
+    return AssignedSchedule.getManyBy(ids)
   }
 
   toObject () {

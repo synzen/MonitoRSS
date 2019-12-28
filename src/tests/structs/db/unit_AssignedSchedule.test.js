@@ -13,6 +13,20 @@ describe('Unit::structs/db/AssignedSchedule', function () {
       expect(spy).toHaveBeenCalledWith('abc')
     })
   })
+  describe('static getManyByFeedAndShard', function () {
+    it('calls getManyBy correctly', async function () {
+      const spy = jest.spyOn(AssignedSchedule, 'getManyBy').mockResolvedValue()
+      const objects = [
+        { feed: 'a', shard: 4 },
+        { feed: 'b', shard: 6 }
+      ]
+      await AssignedSchedule.getManyByFeedAndShard(objects)
+      expect(spy).toHaveBeenCalledWith([
+        'a4',
+        'b6'
+      ])
+    })
+  })
   describe('toObject', function () {
     it('returns correctly', async function () {
       const data = {
