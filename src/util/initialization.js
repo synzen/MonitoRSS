@@ -1,27 +1,23 @@
 const config = require('../config.js')
 const storage = require('./storage.js')
-const checkGuild = require('./checkGuild.js')
-const dbOpsGuilds = require('./db/guilds.js')
+// const checkGuild = require('./checkGuild.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 const dbOpsFailedLinks = require('./db/failedLinks.js')
 const dbOpsBlacklists = require('./db/blacklists.js')
-const dbOpsSchedules = require('./db/schedules.js')
 const dbOpsStatistics = require('./db/statistics.js')
 const dbOpsGeneral = require('./db/general.js')
 const Article = require('../models/Article.js')
 const log = require('./logger.js')
 const redisIndex = require('../structs/db/Redis/index.js')
+const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
 
 module.exports = async bot => {
   const currentCollections = new Set() // currentCollections is only used if there is no sharding (for database cleaning)
-  const shardIDNumber = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
+  const shardIDNumber = bot.shard && bot.shard.count > 0 ? bot.shard.id : -1
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
-  const guildsInfo = {}
-  const missingGuilds = {}
-
-  // Remove expires index
-  if (config.database.guildBackupsExpire <= 0) {
-    await dbOpsGuilds.dropBackupIndexes()
-  }
+  const danglingGuilds = []
+  const danglingFeeds = []
 
   // Cache blacklisted users and guilds
   const docs = await dbOpsBlacklists.getAll()
@@ -37,28 +33,36 @@ module.exports = async bot => {
   })
 
   // Remove missing guilds and empty guildRsses, along with other checks
-  const guildRssList = await dbOpsGuilds.getAll()
+  // const guildRssList = await dbOpsGuilds.getAll()
+  const profiles = await GuildProfile.getAll()
   const updatePromises = []
   const removePromises = []
-  for (let r = 0; r < guildRssList.length; ++r) {
-    const guildRss = guildRssList[r]
-    const guildId = guildRss.id
+  for (const profile of profiles) {
+    const guildId = profile.id
     if (!bot.guilds.has(guildId)) { // Check if it is a valid guild in bot's guild collection
-      if (bot.shard && bot.shard.count > 0) missingGuilds[guildId] = guildRss
-      else removePromises.push(dbOpsGuilds.remove(guildRss, true))
+      if (bot.shard && bot.shard.count > 0) {
+        danglingGuilds.push(guildId)
+      } else {
+        removePromises.push(profile.delete())
+      }
       continue
     }
-    if (guildRss.prefix) storage.prefixes[guildId] = guildRss.prefix
-    if (dbOpsGuilds.empty(guildRss)) continue
-    let shouldUpdate = false
-    const updatedSubscriptions = await checkGuild.subscriptions(bot, guildRss)
-    const updatedVersion = await checkGuild.version(guildRss)
-    const resetLocale = await checkGuild.locale(guildRss)
-    shouldUpdate = updatedSubscriptions || updatedVersion || resetLocale
+    if (profile.prefix) {
+      storage.prefixes[guildId] = profile.prefix
+    }
+  }
 
-    guildsInfo[guildId] = guildRss
-
-    if (shouldUpdate) updatePromises.push(dbOpsGuilds.update(guildRss))
+  const feeds = await Feed.getAll()
+  for (const feed of feeds) {
+    const guild = feed.guild
+    if (!bot.guilds.has(guild)) {
+      if (bot.shard && bot.shard.count > 0) {
+        danglingFeeds.push(feed._id)
+      } else {
+        removePromises.push(feed.delete())
+      }
+      continue
+    }
   }
 
   await Promise.all(updatePromises)
@@ -66,40 +70,33 @@ module.exports = async bot => {
 
   // Redis is only for UI use
   const redisPromises = []
-  const restorePromises = []
-  const restorePromisesIDRecord = []
 
   bot.guilds.forEach((guild, guildId) => {
     redisPromises.push(redisIndex.Guild.utils.recognize(guild)) // This will recognize all guild info, members, channels and roles
-    if (guildsInfo[guildId]) return // If the guild profile exists, then mark as completed - otherwise check for backups
-    restorePromises.push(dbOpsGuilds.restore(guildId))
-    restorePromisesIDRecord.push(guildId)
   })
 
   if (redisIndex.Base.clientExists) {
     bot.users.forEach(user => redisPromises.push(redisIndex.User.utils.recognize(user)))
   }
 
-  await Promise.all(restorePromises)
-  await Promise.all(restorePromisesIDRecord)
   await Promise.all(redisPromises)
 
   const dropIndexPromises = []
 
   // Decides what collections get removed from database later on
-  const assignedSchedules = await dbOpsSchedules.assignedSchedules.getAll() // The schedules should be assigned before this initialization function runs
+  const assignedSchedules = await AssignedSchedule.getAll() // The schedules should be assigned before this initialization function runs
   const activeLinks = []
   for (const assigned of assignedSchedules) {
-    const { link, schedule } = assigned
-    const collectionID = Article.getCollectionID(link, bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined, schedule)
+    const { url, schedule } = assigned
+    const collectionID = Article.getCollectionID(url, shardIDNumber, schedule)
     if (!bot.shard || bot.shard.count === 0) {
       currentCollections.add(collectionID)
     } else {
       if (config.database.articlesExpire === 0 && config.database.uri.startsWith('mongo')) {
         // These indexes allow articles to auto-expire - if it is 0, remove such indexes
-        dropIndexPromises.push(Article.model(link, shardIDNumber, schedule).collection.dropIndexes())
+        dropIndexPromises.push(Article.model(url, shardIDNumber, schedule).collection.dropIndexes())
       }
-      activeLinks.push({ link, scheduleName: schedule, shard: shardIDNumber })
+      activeLinks.push({ url, scheduleName: schedule, shard: shardIDNumber })
     }
   }
 
@@ -113,7 +110,8 @@ module.exports = async bot => {
   log.init.info(`${SHARD_ID}Finished initialization`)
 
   return {
-    missingGuilds,
+    danglingGuilds,
+    danglingFeeds,
     activeLinks
   }
 }

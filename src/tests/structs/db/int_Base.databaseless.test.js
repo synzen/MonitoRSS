@@ -11,7 +11,7 @@ const fsRmdir = util.promisify(fs.rmdir)
 const FoobarClass = require('./__mocks__/FoobarClass.js')
 const Foobar = require('./__mocks__/Foobar.js')
 
-describe('Int::Base Databaseless', function () {
+describe('Int::structs/db/Base Databaseless', function () {
   const originalDatabaseUri = config.database.uri
   let folderPath = ''
   beforeAll(async function () {
@@ -21,14 +21,30 @@ describe('Int::Base Databaseless', function () {
   it('saves', async function () {
     const data = { foo: 'zz', baz: 99 }
     const foobar = new FoobarClass(data)
+    expect(foobar._saved).toEqual(false)
     const returned = await foobar.save()
+    expect(foobar._saved).toEqual(true)
     const fileName = returned._id
     expect(fileName).toBeDefined()
     const filePath = path.join(folderPath, `${fileName}.json`)
     expect(fs.existsSync(filePath)).toEqual(true)
     const read = JSON.parse(await fsReadFile(filePath))
-    expect(read).toEqual(data)
+    expect(read).toEqual(expect.objectContaining({ ...data, array: [] }))
     await fsUnlink(filePath)
+  })
+  it('saves multiple times correctly', async function () {
+    const data = { foo: 'z', baz: 'abc' }
+    const foobar = new FoobarClass(data)
+    foobar.foo = 'abc'
+    await foobar.save()
+    const fileName = foobar._id
+    const filePath = path.join(folderPath, `${fileName}.json`)
+    const read = JSON.parse(await fsReadFile(filePath))
+    expect(read).toEqual(expect.objectContaining({
+      foo: 'abc',
+      baz: data.baz,
+      array: []
+    }))
   })
   it('deletes', async function () {
     const data = { foo: 'zzx', baz: 999 }
@@ -36,7 +52,7 @@ describe('Int::Base Databaseless', function () {
     const filePath = path.join(folderPath, `${_id}.json`)
     await fsWriteFile(filePath, JSON.stringify(data, null, 2))
     expect(fs.existsSync(filePath)).toEqual(true)
-    const foobar = new FoobarClass({ ...data, _id })
+    const foobar = new FoobarClass({ ...data, _id }, true)
     await foobar.delete()
     expect(fs.existsSync(filePath)).toEqual(false)
   })
@@ -63,7 +79,39 @@ describe('Int::Base Databaseless', function () {
     for (const key in data2) {
       expect(foobar2[key]).toEqual(data2[key])
     }
-    await Promise.all([ fsUnlink(filePath), fsUnlink(filePath2) ])
+    await Promise.all([
+      fsUnlink(filePath),
+      fsUnlink(filePath2)
+    ])
+  })
+  describe('getsBy', function () {
+    it('getsBy works', async function () {
+      const data = { foo: 'zzx', baz: 999 }
+      const data2 = { foo: 'zxccb' }
+      const data3 = { foo: 'zxch', jig: 'cc' }
+      const _id = 'ghj23tgrehtrgf'
+      const _id2 = 'aedgswrhft'
+      const _id3 = 'wseg'
+      const filePath = path.join(folderPath, `${_id}.json`)
+      const filePath2 = path.join(folderPath, `${_id2}.json`)
+      const filePath3 = path.join(folderPath, `${_id3}.json`)
+      await Promise.all([
+        fsWriteFile(filePath, JSON.stringify(data, null, 2)),
+        fsWriteFile(filePath2, JSON.stringify(data2, null, 2)),
+        fsWriteFile(filePath3, JSON.stringify(data3, null, 2))
+      ])
+      const result = await FoobarClass.getBy('foo', 'zxch')
+      expect(result).toBeInstanceOf(FoobarClass)
+      await Promise.all([
+        fsUnlink(filePath),
+        fsUnlink(filePath2),
+        fsUnlink(filePath3)
+      ])
+    })
+    it('getsBy returns null when not found', async function () {
+      const result = await FoobarClass.getBy('foFGJNFo', 'zdtjgxch')
+      expect(result).toBeNull()
+    })
   })
   afterAll(async function () {
     const files = await fsReaddir(folderPath)

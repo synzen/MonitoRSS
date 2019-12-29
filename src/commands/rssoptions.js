@@ -1,9 +1,10 @@
-const dbOpsGuilds = require('../util/db/guilds.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 const getProperties = translate => {
   const ENABLED_TRANSLATED = translate('generics.enabledLower')
@@ -51,11 +52,12 @@ const getProperties = translate => {
 
 async function selectOption (m, data) {
   const input = m.content
-  const guildRss = data.guildRss
-  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5' && input !== '6') throw new MenuUtils.MenuOptionError()
+  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5' && input !== '6') {
+    throw new MenuUtils.MenuOptionError()
+  }
   const num = parseInt(input, 10)
   let chosenProp
-  const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
+  const translate = Translator.createLocaleTranslator(data.locale)
   const properties = getProperties(translate)
   for (const propRef in properties) {
     if (properties[propRef].num === num) chosenProp = propRef
@@ -64,14 +66,19 @@ async function selectOption (m, data) {
   return { ...data,
     chosenProp: chosenProp,
     next: {
-      menu: new FeedSelector(m, null, { command: data.command, miscOption: chosenProp }, data.guildRss)
+      menu: new FeedSelector(m, null, {
+        command: data.command,
+        miscOption: chosenProp,
+        locale: data.locale
+      }, data.feeds)
     } }
 }
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const guildLocale = guildRss ? guildRss.locale : undefined
+    const profile = await GuildProfile.get(message.guild.id)
+    const guildLocale = profile ? profile.locale : undefined
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(guildLocale)
     const select = new MenuUtils.Menu(message, selectOption)
       .setAuthor(translate('commands.rssoptions.miscFeedOptions'))
@@ -82,34 +89,38 @@ module.exports = async (bot, message, command) => {
       const data = properties[propRef]
       select.addOption(data.title, data.description)
     }
-    const data = await new MenuUtils.MenuSeries(message, [select], { command, guildRss, locale: guildLocale }).start()
+    const data = await new MenuUtils.MenuSeries(message, [select], {
+      command,
+      profile,
+      feeds,
+      locale: guildLocale
+    }).start()
+
     if (!data) return
-    const { rssName, chosenProp } = data
-    const source = guildRss.sources[rssName]
+    const { feed, chosenProp } = data
 
     const globalSetting = config.feeds[chosenProp]
-    const specificSetting = source[chosenProp]
+    const specificSetting = feed[chosenProp]
 
-    let followGlobal = false
-    source[chosenProp] = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
+    feed[chosenProp] = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
 
-    const finalSetting = source[chosenProp]
+    const finalSetting = feed[chosenProp]
 
-    if (source[chosenProp] === globalSetting) {
-      delete source[chosenProp]
-      followGlobal = true
+    if (feed[chosenProp] === globalSetting) {
+      // undefined marks it for deletion
+      feed[chosenProp] = undefined
     }
 
     const prettyPropName = properties[chosenProp].display
 
-    await dbOpsGuilds.update(guildRss)
-    log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${source.link}. ${followGlobal ? 'Now following global settings.' : ''}`, message.guild)
+    await feed.save()
+    log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${feed.url}. ${feed[chosenProp] === undefined ? 'Now following global settings.' : ''}`, message.guild)
     await message.channel.send(`${translate('commands.rssoptions.settingChanged', {
       propName: prettyPropName,
-      isDefault: followGlobal ? ` (${translate('commands.rssoptions.defaultSetting')})` : '',
-      link: source.link,
+      isDefault: feed[chosenProp] === undefined ? ` (${translate('commands.rssoptions.defaultSetting')})` : '',
+      link: feed.url,
       finalSetting: finalSetting ? translate('generics.enabledLower') : translate('generics.disabledLower')
-    })} ${translate('generics.backupReminder', { prefix: guildRss.prefix || config.bot.prefix })}`)
+    })} ${translate('generics.backupReminder', { prefix: profile.prefix || config.bot.prefix })}`)
   } catch (err) {
     log.command.warning(`rssoptions`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssoptions 1', message.guild, err))

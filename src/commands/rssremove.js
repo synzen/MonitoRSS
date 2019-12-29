@@ -1,27 +1,29 @@
 const config = require('../config.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const guildLocale = guildRss ? guildRss.locale : undefined
+    const profile = await GuildProfile.get(message.guild.id)
+    const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
-    const feedSelector = new FeedSelector(message, null, { command: command }, guildRss)
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
+    const feedSelector = new FeedSelector(message, null, { command: command, locale: guildLocale }, feeds)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
-    const { rssNameList } = data
+    const { selectedFeeds } = data
     const removing = await message.channel.send(translate('commands.rssremove.removing'))
     const errors = []
     let removed = translate('commands.rssremove.success') + '\n```\n'
-    const shardID = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : undefined
-    for (let i = 0; i < rssNameList.length; ++i) {
-      const link = guildRss.sources[rssNameList[i]].link
+    const shardID = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : -1
+    for (const feed of selectedFeeds) {
+      const link = feed.url
       try {
-        await dbOpsGuilds.removeFeed(guildRss, rssNameList[i], shardID)
+        await feed.remove(shardID)
         removed += `\n${link}`
         log.guild.info(`Removed feed ${link}`, message.guild)
       } catch (err) {
@@ -29,7 +31,7 @@ module.exports = async (bot, message, command) => {
         errors.push(err)
       }
     }
-    const prefix = guildRss.prefix || config.bot.prefix
+    const prefix = profile.prefix || config.bot.prefix
     if (errors.length > 0) {
       await removing.edit(translate('commands.rssremove.internalError'))
     } else await removing.edit(`${removed}\`\`\`\n\n${translate('generics.backupReminder', { prefix })}`)

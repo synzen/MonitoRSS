@@ -1,15 +1,11 @@
-const fs = require('fs')
-const path = require('path')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbCmds = require('./db/commands.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
-const dbOpsSchedules = require('../util/db/schedules.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsVips = require('../util/db/vips.js')
 const Article = require('../models/Article.js')
 const FeedScheduler = require('../util/FeedScheduler.js')
-const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'))).version
+const Feed = require('../structs/db/Feed.js')
 
 exports.initializeFeed = async (articleList, link, assignedSchedule, shardId) => {
   if (articleList.length === 0) return
@@ -33,67 +29,47 @@ exports.addNewFeed = async (settings, customTitle) => {
   let link = settings.link
   const { articleList } = await FeedFetcher.fetchFeed(link)
 
-  let guildRss = await dbOpsGuilds.get(channel.guild.id)
-  if (guildRss) {
-    const currentRSSList = guildRss.sources
-    if (currentRSSList) {
-      for (const n in currentRSSList) {
-        const source = currentRSSList[n]
-        if (source.link === link && source.channel === channel.id) {
-          const err = new Error('Already exists for this channel.')
-          err.code = 40003
-          err.type = 'resolved'
-          throw err
-        }
-      }
+  const feeds = await Feed.getManyBy('guild', channel.guild.id)
+  for (const feed of feeds) {
+    if (feed.url === link && feed.channel === channel.id) {
+      const err = new Error('Already exists for this channel.')
+      err.code = 40003
+      err.type = 'resolved'
+      throw err
     }
   }
 
-  const shardId = channel.client.shard && channel.client.shard.count > 0 ? channel.client.shard.id : null
-  let rssName = `${Article.getCollectionID(link, shardId)}-${Math.floor((Math.random() * 99999) + 1)}`.replace(/[^a-zA-Z0-9-_]/g, '')
-  let assignedSchedule = await dbOpsSchedules.assignedSchedules.get(rssName)
-  while (assignedSchedule) {
-    rssName += Math.floor((Math.random() * 9) + 1)
-    assignedSchedule = await dbOpsSchedules.assignedSchedules.get(rssName)
-  }
+  const shardId = channel.client.shard && channel.client.shard.count > 0 ? channel.client.shard.id : -1
+  // const feedId = new mongoose.Types.ObjectId()
   let metaTitle = customTitle || ((articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled')
 
-  if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) metaTitle = `Youtube - ${articleList[0].meta.title}`
-  else if (articleList[0] && articleList[0].meta.link && articleList[0].meta.link.includes('reddit')) metaTitle = `Reddit - ${articleList[0].meta.title}`
-
-  if (metaTitle.length > 200) metaTitle = metaTitle.slice(0, 200) + '...'
+  if (articleList[0] && articleList[0].guid && articleList[0].guid.startsWith('yt:video')) {
+    metaTitle = `Youtube - ${articleList[0].meta.title}`
+  } else if (articleList[0] && articleList[0].meta.link && articleList[0].meta.link.includes('reddit')) {
+    metaTitle = `Reddit - ${articleList[0].meta.title}`
+  }
+  if (metaTitle.length > 200) {
+    metaTitle = metaTitle.slice(0, 200) + '...'
+  }
 
   const allArticlesHaveDates = articleList.reduce((acc, article) => acc && (!!article.pubdate), true)
 
-  if (guildRss) {
-    if (!guildRss.sources) guildRss.sources = {}
-
-    var rssList = guildRss.sources
-    rssList[rssName] = {
-      title: metaTitle,
-      link: link,
-      channel: channel.id,
-      addedOn: new Date()
-    }
-  } else {
-    guildRss = {
-      version: packageVersion,
-      name: channel.guild.name,
-      id: channel.guild.id,
-      sources: {}
-    }
-    guildRss.sources[rssName] = {
-      title: metaTitle,
-      link: link,
-      channel: channel.id,
-      addedOn: new Date()
-    }
+  const newFeedData = {
+    guild: channel.guild.id,
+    url: link,
+    title: metaTitle,
+    channel: channel.id
   }
-  if (!allArticlesHaveDates) guildRss.sources[rssName].checkDates = false
-  assignedSchedule = await FeedScheduler.assignSchedule(rssName, guildRss, shardId, await dbOpsVips.getValidServers())
+
+  if (!allArticlesHaveDates) {
+    newFeedData.checkDates = false
+  }
+  const newFeed = new Feed(newFeedData)
+  await newFeed.save()
+
+  const assignedSchedule = await FeedScheduler.assignSchedule(newFeed, channel.guild.id, shardId, await dbOpsVips.getValidServers())
 
   exports.initializeFeed(articleList, link, assignedSchedule.name, shardId)
-    .catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${rssName}`, channel.guild, err, true))
-  await dbOpsGuilds.update(guildRss) // Must be added to database first for the FeedSchedules to see the feed
-  return [ link, metaTitle, rssName, assignedSchedule ]
+    .catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${newFeed.id}`, channel.guild, err, true))
+  return [ link, metaTitle, newFeed.id, assignedSchedule ]
 }

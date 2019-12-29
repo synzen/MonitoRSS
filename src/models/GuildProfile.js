@@ -1,24 +1,25 @@
 const mongoose = require('mongoose')
+const path = require('path')
+const fs = require('fs')
+const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'))).version
 
-const schema = mongoose.Schema({
-  id: {
-    type: String,
-    unique: true
-  },
+const schema = new mongoose.Schema({
+  _id: String,
   name: String,
-  sendAlertsTo: {
-    type: [String],
-    default: undefined
+  alert: {
+    type: [String]
   },
   sources: Object,
   dateFormat: String,
   dateLanguage: String,
   timezone: String,
-  vip: Object,
   prefix: String,
   locale: String,
-  version: String
+  version: {
+    type: String,
+    default: packageVersion
+  }
 })
 
 exports.schema = schema
-exports.model = () => mongoose.model('guilds', schema)
+exports.model = mongoose.model('Guild', schema)

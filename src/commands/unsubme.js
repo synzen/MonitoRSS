@@ -1,9 +1,10 @@
 const config = require('../config.js')
 const getSubList = require('./util/getSubList.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 function removeRole (message, role, translate) {
   message.member.removeRole(role)
@@ -19,10 +20,10 @@ function removeRole (message, role, translate) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
-    const prefix = guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix
-    const rssList = (guildRss && guildRss.sources) ? guildRss.sources : {}
+    const profile = await GuildProfile.get(message.guild.id)
+    const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const botRole = message.guild.members.get(bot.user.id).highestRole
     const memberRoles = message.member.roles
 
@@ -44,8 +45,11 @@ module.exports = async (bot, message, command) => {
     const predeclared = msgArr.join(' ').trim()
     if (predeclared) {
       const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase())
-      if (role && eligibleRoles.includes(predeclared.toLowerCase())) return removeRole(message, role, translate)
-      else if (mention && eligibleRoles.includes(mention.name.toLowerCase())) return removeRole(message, mention, translate)
+      if (role && eligibleRoles.includes(predeclared.toLowerCase())) {
+        return removeRole(message, role, translate)
+      } else if (mention && eligibleRoles.includes(mention.name.toLowerCase())) {
+        return removeRole(message, mention, translate)
+      }
       return await message.channel.send(translate('commands.unsubme.invalidRole'))
     }
 
@@ -54,7 +58,7 @@ module.exports = async (bot, message, command) => {
       .setDescription(translate('commands.unsubme.listDescription', { prefix }))
 
     // Generate a list of feeds and eligible roles to be removed
-    const options = getSubList(message.guild, rssList)
+    const options = await getSubList(message.guild, feeds)
     if (!options) {
       return await message.channel.send(translate('commands.unsubme.noEligible'))
     }
@@ -63,15 +67,19 @@ module.exports = async (bot, message, command) => {
       const temp = []
       for (let i = filteredMemberRoles.length - 1; i >= 0; --i) {
         const memberRole = filteredMemberRoles[i]
-        if (!subscriptionData.roleList.includes(memberRole.id)) continue
+        if (!subscriptionData.roleList.includes(memberRole.id)) {
+          continue
+        }
         temp.push(memberRole.name)
         filteredMemberRoles.splice(i, 1)
       }
       temp.sort()
-      if (temp.length === 0) continue
+      if (temp.length === 0) {
+        continue
+      }
       const title = subscriptionData.source.title + ` (${temp.length})`
       let channelName = message.guild.channels.get(subscriptionData.source.channel).name
-      let desc = `**${translate('commands.subme.link')}**: ${subscriptionData.source.link}\n**${translate('commands.subme.channel')}**: #${channelName}\n**${translate('commands.subme.roles')}**:\n`
+      let desc = `**${translate('commands.subme.link')}**: ${subscriptionData.source.url}\n**${translate('commands.subme.channel')}**: #${channelName}\n**${translate('commands.subme.roles')}**:\n`
       for (var x = 0; x < temp.length; ++x) {
         const cur = temp[x]
         const next = temp[x + 1]

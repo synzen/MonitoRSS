@@ -4,12 +4,12 @@ const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
 const config = require('../config.js')
 const ScheduleManager = require('./ScheduleManager.js')
+const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
 const FeedScheduler = require('../util/FeedScheduler.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const dbOpsBlacklists = require('../util/db/blacklists.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
-const dbOpsGeneral = require('../util/db/general.js')
 const dbOpsVips = require('../util/db/vips.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const connectDb = require('../rss/db/connect.js')
@@ -207,11 +207,11 @@ class Client extends EventEmitter {
     try {
       await connectDb()
       if (!this.bot.shard || this.bot.shard.count === 0) {
-        await dbOpsGeneral.verifyFeedIDs()
+        // await dbOpsGeneral.verifyFeedIDs()
         await redisIndex.flushDatabase()
         await ScheduleManager.initializeSchedules(this.customSchedules)
-        await FeedScheduler.clearAll()
-        await FeedScheduler.assignSchedules(undefined, Array.from(this.bot.guilds.keys()), await dbOpsVips.getValidServers())
+        await AssignedSchedule.deleteAll()
+        await FeedScheduler.assignSchedules(-1, Array.from(this.bot.guilds.keys()), await dbOpsVips.getValidServers())
       }
       if (!this.scheduleManager) {
         const refreshRates = new Set()
@@ -235,12 +235,19 @@ class Client extends EventEmitter {
         await this.scheduleManager._registerSchedules()
         storage.scheduleManager = this.scheduleManager
       }
-      const { missingGuilds, activeLinks } = await initialize(this.bot)
-
+      const { danglingGuilds, danglingFeeds, activeLinks } = await initialize(this.bot)
+      // console.log('returned form initialize', danglingFeeds)
       storage.initialized = 2
       this.state = STATES.READY
-      if (storage.bot.shard && storage.bot.shard.count > 0) {
-        process.send({ _drss: true, type: 'initComplete', missingGuilds, activeLinks, shard: storage.bot.shard.id })
+      if (this.bot.shard && this.bot.shard.count > 0) {
+        process.send({
+          _drss: true,
+          type: 'initComplete',
+          danglingGuilds,
+          danglingFeeds: danglingFeeds,
+          activeLinks,
+          shard: this.bot.shard.id
+        })
       } else {
         if (config.web.enabled === true) {
           this.webClientInstance.enableCP()

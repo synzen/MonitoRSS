@@ -1,8 +1,6 @@
 process.env.DRSS = true
 const config = require('../config.js')
 const connectDb = require('../rss/db/connect.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
-const dbOpsSchedules = require('../util/db/schedules.js')
 const dbOpsGeneral = require('../util/db/general.js')
 const dbOpsVips = require('../util/db/vips.js')
 const ScheduleManager = require('./ScheduleManager.js')
@@ -12,7 +10,9 @@ const log = require('../util/logger.js')
 const dbRestore = require('../commands/owner/dbrestore.js')
 const EventEmitter = require('events')
 const ArticleModel = require('../models/Article.js')
-
+const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 let webClient
 
 class ClientManager extends EventEmitter {
@@ -27,8 +27,10 @@ class ClientManager extends EventEmitter {
     if (config.web.enabled === true) {
       webClient = require('../web/index.js')
     }
-    this.missingGuildRss = new Map()
-    this.missingGuildsCounter = {} // Object with guild IDs as keys and number as value
+    this.brokenGuilds = []
+    this.brokenFeeds = []
+    this.danglingGuildsCounter = {} // Object with guild IDs as keys and number as value
+    this.danglingFeedsCounter = {}
     this.refreshRates = []
     this.activeshardIds = []
     this.scheduleIntervals = [] // Array of intervals for each different refresh time
@@ -44,14 +46,13 @@ class ClientManager extends EventEmitter {
   async run () {
     try {
       await connectDb()
-      await FeedScheduler.clearAll()
       await ScheduleManager.initializeSchedules()
       if (config.web.enabled === true && !this.webClientInstance) {
         this.webClientInstance = webClient()
       }
       await dbOpsGeneral.verifyFeedIDs()
       await redisIndex.flushDatabase()
-      await dbOpsSchedules.assignedSchedules.clear()
+      await AssignedSchedule.deleteAll()
       if (this.shardingManager.shards.size === 0) {
         this.shardingManager.spawn(config.advanced.shards) // They may have already been spawned with a predefined ShardingManager
       }
@@ -96,22 +97,33 @@ class ClientManager extends EventEmitter {
 
   _initCompleteEvent (message) {
     // Account for missing guilds
-    const missing = message.missingGuilds
-    for (var guildId in missing) {
-      if (!this.missingGuildsCounter[guildId]) {
-        this.missingGuildsCounter[guildId] = 1
+    let { danglingGuilds, danglingFeeds } = message
+    for (const guildId of danglingGuilds) {
+      if (!this.danglingGuildsCounter[guildId]) {
+        this.danglingGuildsCounter[guildId] = 1
       } else {
-        this.missingGuildsCounter[guildId]++
+        this.danglingGuildsCounter[guildId]++
       }
-      if (this.missingGuildsCounter[guildId] === this.shardingManager.totalShards) {
-        this.missingGuildRss.set(guildId, missing[guildId])
+      if (this.danglingGuildsCounter[guildId] === this.shardingManager.totalShards) {
+        this.brokenGuilds.push(guildId)
+      }
+    }
+
+    for (const feedId of danglingFeeds) {
+      if (!this.danglingFeedsCounter[feedId]) {
+        this.danglingFeedsCounter[feedId] = 1
+      } else {
+        this.danglingFeedsCounter[feedId]++
+      }
+      if (this.danglingFeedsCounter[feedId] === this.shardingManager.totalShards) {
+        this.brokenFeeds.push(feedId)
       }
     }
 
     // Count all the links
     const activeLinks = message.activeLinks
     for (const item of activeLinks) {
-      const id = ArticleModel.getCollectionID(item.link, item.shard, item.scheduleName)
+      const id = ArticleModel.getCollectionID(item.url, item.shard, item.scheduleName)
       this.currentCollections.add(id) // To find out any unused collections eligible for removal
     }
 
@@ -120,10 +132,17 @@ class ClientManager extends EventEmitter {
       dbOpsGeneral.cleanDatabase(this.currentCollections).catch(err => log.general.error(`Unable to clean database`, err))
       this.shardingManager.broadcast({ _drss: true, type: 'finishedInit' })
       log.general.info(`All shards have initialized by the Sharding Manager.`)
-      this.missingGuildRss.forEach((guildRss, guildId) => {
-        dbOpsGuilds.remove(guildRss)
-          .then(() => log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`))
+      this.brokenGuilds.forEach(guildId => {
+        log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`)
+        GuildProfile.get(guildId)
+          .then(profile => profile ? profile.delete() : null)
           .catch(err => log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err))
+      })
+      this.brokenFeeds.forEach(feedId => {
+        log.init.warning(`(F: ${feedId}) Feed is declared missing by the Sharding Manager, removing`)
+        Feed.get(feedId)
+          .then(feed => feed ? feed.delete() : null)
+          .catch(err => log.init.warning(`(F: ${feedId}) Feed deletion error based on missing guild declared by the Sharding Manager`, err))
       })
       this.createIntervals()
       if (config.web.enabled === true) this.webClientInstance.enableCP()

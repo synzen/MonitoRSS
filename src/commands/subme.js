@@ -1,9 +1,10 @@
 const config = require('../config.js')
 const getSubList = require('./util/getSubList.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const Translator = require('../structs/Translator.js')
 const log = require('../util/logger.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 function addRole (message, role, links, translate) {
   message.member.addRole(role)
@@ -19,14 +20,14 @@ function addRole (message, role, links, translate) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const translate = Translator.createLocaleTranslator(guildRss ? guildRss.locale : undefined)
-    if (!guildRss || !guildRss.sources || Object.keys(guildRss.sources).length === 0) {
+    const profile = await GuildProfile.get(message.guild.id)
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
+    const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
+    if (feeds.length === 0) {
       return await message.channel.send(translate('commands.subme.noFeeds'))
     }
-    const prefix = guildRss.prefix || config.bot.prefix
-    const rssList = guildRss.sources
-    const options = getSubList(message.guild, rssList)
+    const prefix = profile.prefix || config.bot.prefix
+    const options = await getSubList(message.guild, feeds)
     if (!options) {
       return await message.channel.send(translate('commands.subme.noEligible'))
     }
@@ -39,7 +40,7 @@ module.exports = async (bot, message, command) => {
       if (role) {
         for (const subscriptionData of options) {
           const roleIds = subscriptionData.roleList
-          if (roleIds.includes(role.id)) links.push(subscriptionData.source.link)
+          if (roleIds.includes(role.id)) links.push(subscriptionData.source.url)
         }
       }
       if (links.length > 0 && role) return addRole(message, role, links, translate)
@@ -57,7 +58,7 @@ module.exports = async (bot, message, command) => {
       temp.sort()
       const channelName = message.guild.channels.get(subscriptionData.source.channel).name
       const title = subscriptionData.source.title + (temp.length > 0 ? ` (${temp.length})` : '')
-      let desc = `**${translate('commands.subme.link')}**: ${subscriptionData.source.link}\n**${translate('commands.subme.channel')}**: #${channelName}\n**${translate('commands.subme.roles')}**:\n`
+      let desc = `**${translate('commands.subme.link')}**: ${subscriptionData.source.url}\n**${translate('commands.subme.channel')}**: #${channelName}\n**${translate('commands.subme.roles')}**:\n`
       for (var x = 0; x < temp.length; ++x) {
         const cur = temp[x]
         const next = temp[x + 1]

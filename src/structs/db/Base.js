@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const config = require('../../config.js')
 const fs = require('fs')
+const fsPromises = fs.promises
 const path = require('path')
 const log = require('../../util/logger.js')
 
@@ -13,14 +14,33 @@ class Base {
    * Object data
    * @param {MongooseModel|Object<string, any>} data
    */
-  constructor (data = {}) {
-    this.data = data
+  constructor (data = {}, _saved = false) {
+    /**
+     * this.data must be serialized/deserialized to maintain
+     * equal function between database and databaseless
+     * @type {Object<string, any>}
+     */
+    this.data = data instanceof mongoose.Model ? JSON.parse(JSON.stringify(data.toJSON())) : data
 
     /**
-     * MongoDB's generated ID if instantiated with a model
+     * Internal ID, usually MongoDB's ObjectId purely used
+     * to distinguish between documents and to grab from
+     * database during testing.
      * @type {string}
      */
-    this._id = this.getField('_id')
+    this._id = this.data._id
+
+    /**
+     * Whether this has been saved to the database already
+     * @type {boolean}
+     */
+    this._saved = _saved
+
+    /**
+     * Only used for database methods
+     * @type {MongooseModel}
+     */
+    this.document = data instanceof mongoose.Model ? data : null
 
     /**
      * The bot version this data model was created on
@@ -67,16 +87,23 @@ class Base {
   }
 
   /**
-   * Check whether the data has been written to the database or file
-   * @returns {boolean}
+   * Helper function to return undefined for empty objects
+   * @param {any} field - The field name
+   * @private
    */
-  isSaved () {
-    if (this.constructor.isMongoDatabase) {
-      return !!this._id && this.data instanceof mongoose.Model
+  static resolveObject (value) {
+    if (!value || Object.keys(value).length === 0) {
+      return undefined
     } else {
-      return !!this._id
+      return value
     }
   }
+
+  /**
+   * A function that validates data before saving it.
+   * Used by extended classes.
+   */
+  async validate () {}
 
   /**
    * Resolves data acquisition based on whether the app is databaseless
@@ -85,8 +112,7 @@ class Base {
    * @returns {*} - The field value
    */
   getField (field, def) {
-    const value = this.data instanceof mongoose.Model
-      ? this.data.get(field) : this.data[field]
+    const value = this.data[field]
     return value === undefined || value === null ? def : value
   }
 
@@ -118,23 +144,109 @@ class Base {
 
     // Mongo
     if (this.isMongoDatabase) {
-      const model = await DatabaseModel.findById(id).exec()
-      return new this(model)
+      const doc = await DatabaseModel.findById(id).exec()
+      return doc ? new this(doc, true) : null
     }
 
     // Databaseless
-    const filePath = path.join(config.database.uri, `${id}.json`)
+    const folderPaths = this.getFolderPaths()
+    const folderPath = folderPaths[folderPaths.length - 1]
+    const filePath = path.join(folderPath, `${id}.json`)
     if (!fs.existsSync(filePath)) {
       return null
     }
 
     try {
       const readContent = fs.readFileSync(filePath)
-      return new this(JSON.parse(readContent))
+      return new this(JSON.parse(readContent), true)
     } catch (err) {
       log.general.warning(`Could not parse ${DatabaseModel.collection.collectionName} JSON from file ${id}`, err)
       return null
     }
+  }
+
+  /**
+   * Get by a field's value
+   * @param {string} field - Field name
+   * @param {any} value - Field value
+   * @returns {Base|null}
+   */
+  static async getBy (field, value) {
+    /**
+     * @type {MongooseModel}
+     */
+    const DatabaseModel = this.Model
+
+    // Database
+    if (this.isMongoDatabase) {
+      const query = {
+        [field]: value
+      }
+      const doc = await DatabaseModel.findOne(query, this.FIND_PROJECTION).exec()
+      return doc ? new this(doc, true) : null
+    }
+
+    // Databaseless
+    const many = await this.getManyBy(field, value)
+    return many[0] ? new this(many[0], true) : null
+  }
+
+  /**
+   * Get many with a custom query
+   * @param {Object<string, any>} query - MongoDB-format query
+   * @returns {Base[]}
+   */
+  static async getManyByQuery (query) {
+    /**
+     * @type {MongooseModel}
+     */
+    const DatabaseModel = this.Model
+
+    // Database
+    if (this.isMongoDatabase) {
+      const docs = await DatabaseModel.find(query, this.FIND_PROJECTION).exec()
+      return docs.map(doc => new this(doc, true))
+    }
+
+    // Databaseless - very slow
+    const folderPaths = this.getFolderPaths()
+    const folderPath = folderPaths[folderPaths.length - 1]
+    if (!fs.existsSync(folderPath)) {
+      return []
+    }
+
+    const fileNames = await fsPromises.readdir(folderPath)
+    const promises = fileNames.map(name => fsPromises.readFile(path.join(folderPath, name)))
+    const resolved = await Promise.all(promises)
+    const jsons = resolved.map((contents, index) => {
+      try {
+        return JSON.parse(contents)
+      } catch (err) {
+        log.general.error(`Failed to parse json at ${folderPath} ${fileNames[index]}`, err)
+      }
+    })
+    return jsons
+      .filter(item => {
+        if (!item) {
+          return false
+        }
+        let allTrue = true
+        for (const key in query) {
+          allTrue = allTrue && item[key] === query[key]
+        }
+        return allTrue
+      })
+      .map(item => new this(item, true))
+  }
+
+  /**
+   * Get many by a field's value
+   * @param {string} field - Field name
+   * @param {any} value - Field value
+   * @returns {Base[]}
+   */
+  static async getManyBy (field, value) {
+    return this.getManyByQuery({ [field]: value })
   }
 
   /**
@@ -176,17 +288,36 @@ class Base {
   }
 
   /**
+   * Deletes all from the database
+   */
+  static async deleteAll () {
+    // Mongo
+    if (this.isMongoDatabase) {
+      await this.Model.deleteMany({}).exec()
+      return
+    }
+
+    // Databaseless
+    const folderPaths = this.getFolderPaths()
+    if (fs.existsSync(folderPaths[1])) {
+      const files = await fsPromises.readdir(folderPaths[1])
+      await Promise.all(files.map(name => fsPromises.unlink(path.join(folderPaths[1], name))))
+      await fsPromises.rmdir(folderPaths[1])
+    }
+  }
+
+  /**
    * Deletes this from either the database from the file system
    * depending on whether the app is databaseless.
    */
   async delete () {
-    if (!this.isSaved()) {
+    if (!this._saved) {
       throw new Error('Data has not been saved')
     }
 
     // Mongo
     if (this.constructor.isMongoDatabase) {
-      await this.data.remove()
+      await this.document.remove()
       return
     }
 
@@ -209,6 +340,7 @@ class Base {
    * @returns {Base} - This instance
    */
   async save () {
+    await this.validate()
     if (this.constructor.isMongoDatabase) {
       return this.saveToDatabase()
     } else {
@@ -228,21 +360,50 @@ class Base {
      */
     const DatabaseModel = this.constructor.Model
 
-    const options = {
-      ...this.constructor.FIND_PROJECTION,
-      upsert: true,
-      new: true
+    if (!this._saved) {
+      // Delete all undefined keys
+      for (const key in toSave) {
+        if (toSave[key] === undefined) {
+          delete toSave[key]
+        }
+      }
+      const model = new DatabaseModel(toSave)
+      const document = await model.save()
+
+      this._saved = true
+      this._id = document.id
+      this.document = document
+      this.data = JSON.parse(JSON.stringify(document.toJSON()))
+    } else {
+      for (const key in toSave) {
+        const value = toSave[key]
+        // Map values must be individually set and deleted
+        if (value instanceof Map) {
+          if (!this.document[key]) {
+            this.document.set(key, new Map())
+          }
+          const docMap = this.document[key]
+          // First remove all unknown keys
+          docMap.forEach((v, key) => {
+            if (!value.has(key)) {
+              docMap.delete(key)
+            }
+          })
+          // Then set the new values
+          value.forEach((value, mapKey) => docMap.set(mapKey, value))
+        } else {
+          this.document.set(key, toSave[key])
+        }
+      }
+      const saved = await this.document.save()
+      this.data = JSON.parse(JSON.stringify(saved.toJSON()))
+
+      // Update class data
+      for (const key in toSave) {
+        this[key] = this.data[key]
+      }
     }
 
-    let document
-    if (!this.isSaved()) {
-      const model = new DatabaseModel(toSave)
-      document = await model.save()
-    } else {
-      document = await DatabaseModel.findByIdAndUpdate(this._id, toSave, options).exec()
-    }
-    this.data = document
-    this._id = document._id
     return this
   }
 
@@ -251,7 +412,14 @@ class Base {
    * @returns {Base}
    */
   async saveToFile () {
-    const toSave = JSON.stringify(this.toObject(), null, 2)
+    const toSave = this.toObject()
+
+    for (const key in toSave) {
+      if (toSave[key] === undefined) {
+        delete toSave[key]
+      }
+    }
+
     const folderPaths = this.constructor.getFolderPaths()
     for (const p of folderPaths) {
       if (!fs.existsSync(p)) {
@@ -259,12 +427,19 @@ class Base {
       }
     }
     const folderPath = folderPaths[folderPaths.length - 1]
-    if (!this.isSaved()) {
-      const newId = new mongoose.Types.ObjectId().toHexString()
-      await fs.writeFileSync(path.join(folderPath, `${newId}.json`), toSave)
-      this._id = newId
+    if (!this._saved) {
+      let useId = toSave._id
+      if (!useId) {
+        useId = new mongoose.Types.ObjectId().toHexString()
+        toSave._id = useId
+      }
+      const serialized = JSON.stringify(toSave, null, 2)
+      await fs.writeFileSync(path.join(folderPath, `${useId}.json`), serialized)
+      this._id = useId
+      this._saved = true
     } else {
-      await fs.writeFileSync(path.join(folderPath, `${this._id}.json`), toSave)
+      const serialized = JSON.stringify(toSave, null, 2)
+      await fs.writeFileSync(path.join(folderPath, `${this._id}.json`), serialized)
     }
     return this
   }

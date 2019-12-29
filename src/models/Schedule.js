@@ -7,14 +7,14 @@ const schema = mongoose.Schema({
   },
   refreshRateMinutes: Number,
   keywords: {
-    type: Array,
+    type: [String],
     default: []
   },
-  feedIds: {
-    type: Array,
+  feeds: {
+    type: [mongoose.Types.ObjectId],
     default: []
   }
 })
 
 exports.schema = schema
-exports.model = () => mongoose.model('schedules', schema)
+exports.model = mongoose.model('schedules', schema)
