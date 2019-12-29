@@ -5,7 +5,6 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const dbOpsVips = require('../util/db/vips.js')
 const Article = require('../models/Article.js')
 const FeedScheduler = require('../util/FeedScheduler.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
 const Feed = require('../structs/db/Feed.js')
 
 exports.initializeFeed = async (articleList, link, assignedSchedule, shardId) => {
@@ -30,21 +29,17 @@ exports.addNewFeed = async (settings, customTitle) => {
   let link = settings.link
   const { articleList } = await FeedFetcher.fetchFeed(link)
 
-  const profile = await GuildProfile.get(channel.guild.id)
-
-  if (profile) {
-    const feeds = await profile.getFeeds()
-    for (const feed of feeds) {
-      if (feed.url === link && feed.channel === channel.id) {
-        const err = new Error('Already exists for this channel.')
-        err.code = 40003
-        err.type = 'resolved'
-        throw err
-      }
+  const feeds = await Feed.getManyBy('guild', channel.guild.id)
+  for (const feed of feeds) {
+    if (feed.url === link && feed.channel === channel.id) {
+      const err = new Error('Already exists for this channel.')
+      err.code = 40003
+      err.type = 'resolved'
+      throw err
     }
   }
 
-  const shardId = channel.client.shard && channel.client.shard.count > 0 ? channel.client.shard.id : null
+  const shardId = channel.client.shard && channel.client.shard.count > 0 ? channel.client.shard.id : -1
   // const feedId = new mongoose.Types.ObjectId()
   let metaTitle = customTitle || ((articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled')
 
@@ -58,14 +53,6 @@ exports.addNewFeed = async (settings, customTitle) => {
   }
 
   const allArticlesHaveDates = articleList.reduce((acc, article) => acc && (!!article.pubdate), true)
-
-  if (!profile) {
-    const newGuild = new GuildProfile({
-      _id: channel.guild.id,
-      name: channel.guild.name
-    })
-    await newGuild.save()
-  }
 
   const newFeedData = {
     guild: channel.guild.id,
