@@ -7,6 +7,7 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const Subscriber = require('../structs/db/Subscriber.js')
+const Feed = require('../structs/db/Feed.js')
 const VALID_OPTIONS = ['1', '2', '3', '4']
 
 async function printSubscriptions (message, feeds, translate) {
@@ -300,7 +301,7 @@ module.exports = async (bot, message, command) => {
     const profile = await GuildProfile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     if (feeds.length === 0) {
       return await message.channel.send(translate('commands.rssmention.noFeeds'))
     }

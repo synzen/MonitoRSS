@@ -5,12 +5,13 @@ const channelTracker = require('../util/channelTracker.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     if (feeds.length === 0) {
       return await message.channel.send(translate('commands.rsslist.noFeeds'))

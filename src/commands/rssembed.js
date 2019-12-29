@@ -5,6 +5,7 @@ const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const Format = require('../structs/db/Format.js')
+const Feed = require('../structs/db/Feed.js')
 const getEmbedProperties = translate => ({
   title: { name: translate('commands.rssembed.title'), description: translate('commands.rssembed.titleDescription') },
   description: { name: translate('commands.rssembed.description'), description: translate('commands.rssembed.descriptionDescription') },
@@ -419,7 +420,7 @@ module.exports = async (bot, message, command) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : null
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(guildLocale)
     const embedProperties = getEmbedProperties(translate)
     const setFields = message.content.split(' ')[1] === 'fields'

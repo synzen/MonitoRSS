@@ -4,13 +4,14 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const feedSelector = new FeedSelector(message, null, { command: command, locale: guildLocale }, feeds)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return

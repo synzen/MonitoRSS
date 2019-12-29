@@ -4,6 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 function removeRole (message, role, translate) {
   message.member.removeRole(role)
@@ -22,7 +23,7 @@ module.exports = async (bot, message, command) => {
     const profile = await GuildProfile.get(message.guild.id)
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const botRole = message.guild.members.get(bot.user.id).highestRole
     const memberRoles = message.member.roles
 

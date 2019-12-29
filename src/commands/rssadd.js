@@ -6,6 +6,7 @@ const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const serverLimit = require('../util/serverLimit.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message) => {
   try {
@@ -13,7 +14,7 @@ module.exports = async (bot, message) => {
       GuildProfile.get(message.guild.id),
       serverLimit(message.guild.id)
     ])
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const vipUser = serverLimitData.vipUser
     const maxFeedsAllowed = serverLimitData.max
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix

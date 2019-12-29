@@ -3,6 +3,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 const log = require('../util/logger.js')
 
 async function feedSelectorFn (m, data) {
@@ -62,7 +63,7 @@ module.exports = async (bot, message, command) => {
     }
 
     const hooks = await message.channel.fetchWebhooks()
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, feeds)
     const collectWebhook = new MenuUtils.Menu(message, collectWebhookFn)
 

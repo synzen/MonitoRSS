@@ -6,6 +6,7 @@ const MIN_PERMISSION_BOT = ['VIEW_CHANNEL', 'SEND_MESSAGES']
 const MIN_PERMISSION_USER = ['VIEW_CHANNEL', 'SEND_MESSAGES', 'MANAGE_CHANNELS']
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 async function selectChannelFn (m, data) {
   const { feeds, selectedFeeds, locale, profile } = data
@@ -82,7 +83,7 @@ module.exports = async (bot, message, command) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const feedSelector = new FeedSelector(message, null, { command, locale: guildLocale, multiSelect: true }, feeds)
     const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: Translator.translate('commands.rssmove.prompt', guildLocale) })
     await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel], { locale: guildLocale, profile }).start()

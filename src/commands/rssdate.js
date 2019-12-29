@@ -4,6 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 async function selectOptionFn (m, data) {
   const translate = data.translate
@@ -70,7 +71,7 @@ async function setOptionFn (m, data) {
 module.exports = async (bot, message) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
     if (feeds.length === 0) {

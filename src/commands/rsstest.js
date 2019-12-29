@@ -8,12 +8,13 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
   try {
     const profile = await GuildProfile.get(message.guild.id)
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, null, { command: command }, feeds)
@@ -35,11 +36,13 @@ module.exports = async (bot, message, command) => {
       rssName: feed._id,
       source: {
         ...feed.toObject(),
-        dateSettings: {
-          timezone: profile.timezone,
-          format: profile.dateFormat,
-          language: profile.dateLanguage
-        }
+        dateSettings: profile
+          ? {
+            timezone: profile.timezone,
+            format: profile.dateFormat,
+            language: profile.dateLanguage
+          }
+          : {}
       }
     }
     if (config._vip && profile.webhook && !(await dbOpsVips.isVipServer(message.guild.id))) {

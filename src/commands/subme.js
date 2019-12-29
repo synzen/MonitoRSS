@@ -4,6 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const Translator = require('../structs/Translator.js')
 const log = require('../util/logger.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 function addRole (message, role, links, translate) {
   message.member.addRole(role)
@@ -20,7 +21,7 @@ function addRole (message, role, links, translate) {
 module.exports = async (bot, message, command) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
-    const feeds = profile ? await profile.getFeeds() : []
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     if (feeds.length === 0) {
       return await message.channel.send(translate('commands.subme.noFeeds'))
