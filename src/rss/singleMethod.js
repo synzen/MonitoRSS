@@ -14,7 +14,7 @@ module.exports = async (data, callback) => {
     if (articleList.length === 0) {
       return callback(null, { status: 'success', link: link })
     }
-    const logic = new LinkLogic({ articleList, debugFeeds, shardID: storage.bot.shard ? storage.bot.shard.id : undefined, scheduleName, useIdType: idType, ...data })
+    const logic = new LinkLogic({ articleList, debugFeeds, shardID: storage.bot.shard ? storage.bot.shard.id : -1, scheduleName, useIdType: idType, ...data })
     logic.on('article', article => callback(null, { status: 'article', article }))
     const { feedCollection, feedCollectionId } = await logic.run()
     callback(null, { status: 'success', feedCollection, feedCollectionId, link })
