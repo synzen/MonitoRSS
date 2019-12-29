@@ -48,37 +48,6 @@ describe('Int::structs/db/GuildProfile Database', function () {
       expect(retrieved[1]._id).toEqual(feedIds[1].toHexString())
     })
   })
-  describe('delete', function () {
-    it('also deletes other feeds', async function () {
-      const guildData = {
-        _id: '2q35rrftjtyre',
-        name: 'dszgehrf'
-      }
-      const profile = new GuildProfile(guildData)
-      await profile.save()
-      const feedIds = [
-        new mongoose.Types.ObjectId(),
-        new mongoose.Types.ObjectId()
-      ]
-      const promises = []
-      for (const feedId of feedIds) {
-        const data = {
-          _id: feedId,
-          channel: '1',
-          guild: guildData._id,
-          url: 'ab',
-          title: '24r'
-        }
-        promises.push(mongoose.connection.db.collection('feeds').insertOne(data))
-      }
-      await Promise.all(promises)
-      const found = await FeedModel.find({ guild: guildData._id }).exec()
-      expect(found).toHaveLength(2)
-      await profile.delete()
-      await expect(FeedModel.find({ guild: guildData._id }).exec())
-        .resolves.toEqual([])
-    })
-  })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()
     await mongoose.connection.close()

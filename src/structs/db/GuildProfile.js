@@ -99,12 +99,6 @@ class GuildProfile extends Base {
     return Feed.getManyBy('guild', this.id)
   }
 
-  async delete () {
-    const feeds = await this.getFeeds()
-    await Promise.all(feeds.map(feed => feed.delete()))
-    return super.delete()
-  }
-
   static get Model () {
     return GuildProfileModel
   }
