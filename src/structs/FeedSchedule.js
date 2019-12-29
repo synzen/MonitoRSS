@@ -2,31 +2,37 @@ const path = require('path')
 const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
 const checkGuild = require('../util/checkGuild.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const dbOpsVips = require('../util/db/vips.js')
 const dbOpsStatistics = require('../util/db/statistics.js')
-const dbOpsSchedules = require('../util/db/schedules.js')
+const AssignedSchedule = require('./db/AssignedSchedule.js')
+const GuildProfile = require('./db/GuildProfile.js')
+const Feed = require('./db/Feed.js')
 const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
 const storage = require('../util/storage.js') // All properties of storage must be accessed directly due to constant changes
 const log = require('../util/logger.js')
+
 const BATCH_SIZE = config.advanced.batchSize
 const FAIL_LIMIT = config.feeds.failLimit
 
 class FeedSchedule extends EventEmitter {
   constructor (bot, schedule, scheduleManager) {
-    if (!schedule.refreshRateMinutes) throw new Error('No refreshRateMinutes has been declared for a schedule')
-    if (schedule.name !== 'default' && schedule.name !== 'vip' && (!Array.isArray(schedule.keywords) || schedule.keywords.length === 0) && (!Array.isArray(schedule.feedIDs) || schedule.feedIDs.length === 0)) throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
+    if (!schedule.refreshRateMinutes) {
+      throw new Error('No refreshRateMinutes has been declared for a schedule')
+    }
+    if (schedule.name !== 'default' && schedule.name !== 'vip' && schedule.keywords.length === 0 && schedule.feeds.length === 0) {
+      throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
+    }
     super()
     this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
-    this.shardID = bot.shard && bot.shard.count > 0 ? bot.shard.id : undefined
+    this.shardID = bot.shard && bot.shard.count > 0 ? bot.shard.id : -1
     this.bot = bot
     this.name = schedule.name
     this.scheduleManager = scheduleManager
     this.keywords = schedule.keywords
-    this.rssNames = schedule.rssNames
+    this.rssNames = schedule.feeds
     this.refreshRate = schedule.refreshRateMinutes
     this._linksResponded = {}
     this._processorList = []
@@ -36,6 +42,7 @@ class FeedSchedule extends EventEmitter {
     this._cycleTotalCount = 0
     this._sourceList = new Map()
     this._modSourceList = new Map()
+    this._profilesById = new Map()
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedCount = 0 // For statistics
     this.failedLinks = {}
@@ -50,92 +57,93 @@ class FeedSchedule extends EventEmitter {
     this.allowWebhooks = {}
   }
 
-  _delegateFeed (guildRss, rssName) {
-    const source = guildRss.sources[rssName]
-
+  /**
+   * @param {Feed} feed
+   */
+  _delegateFeed (feed) {
     // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
-    source.guildId = guildRss.id
-    source.dateSettings = {
-      timezone: guildRss.timezone,
-      format: guildRss.dateFormat,
-      language: guildRss.dateLanguage
+    const guild = this._profilesById.get(feed.guild)
+    const data = {
+      ...feed.toObject(),
+      dateSettings: !guild
+        ? {}
+        : {
+          timezone: guild.timezone,
+          format: guild.dateFormat,
+          language: guild.dateLanguage
+        }
     }
 
-    if (config._vip === true && !this.allowWebhooks[guildRss.id] && source.webhook) {
+    if (config._vip === true && !this.allowWebhooks[feed.guild] && feed.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
-      delete source.webhook
+      feed.webhook = undefined
     }
 
-    if (source.advanced && Object.keys(source.advanced).length > 0) { // Special source list for feeds with unique settings defined
-      let linkList = {}
-      linkList[rssName] = source
-      this._modSourceList.set(source.link, linkList)
-    } else if (this._sourceList.has(source.link)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
-      let linkList = this._sourceList.get(source.link)
-      linkList[rssName] = source
-      if (debug.feeds.has(rssName)) {
-        log.debug.info(`${rssName}: Adding to pre-existing source list`)
+    if (this._sourceList.has(feed.url)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
+      let linkList = this._sourceList.get(feed.url)
+      linkList[feed._id] = data
+      if (debug.feeds.has(feed._id)) {
+        log.debug.info(`${feed._id}: Adding to pre-existing source list`)
       }
     } else {
       let linkList = {}
-      linkList[rssName] = source
-      this._sourceList.set(source.link, linkList)
-      if (debug.feeds.has(rssName)) {
-        log.debug.info(`${rssName}: Creating new source list`)
+      linkList[feed._id] = data
+      this._sourceList.set(feed.url, linkList)
+      if (debug.feeds.has(feed._id)) {
+        log.debug.info(`${feed._id}: Creating new source list`)
       }
     }
   }
 
-  _addToSourceLists (guildRss) { // rssList is an object per guildRss
-    const rssList = guildRss.sources
+  /**
+   * @param {Feed} feed
+   */
+  _addToSourceLists (feed) { // rssList is an object per guildRss
     let c = 0 // To count and determine what feeds should be disabled if they violate their limits
-    const max = this.vipServerLimits[guildRss.id] || config.feeds.max || 0
+    const max = this.vipServerLimits[feed.guild] || config.feeds.max || 0
     const status = {}
-    let feedCount = 0 // For statistics in storage
 
-    for (const rssName in rssList) {
-      const toDebug = debug.feeds.has(rssName)
-      if (!this.feedIDs.has(rssName)) {
-        if (debug.feeds.has(rssName)) {
-          log.debug.info(`${rssName}: Not processing feed since it is not assigned to schedule ${this.name} on ${this.SHARD_ID}`)
-        }
-        continue
+    const toDebug = debug.feeds.has(feed._id)
+    if (!this.feedIDs.has(feed._id)) {
+      if (debug.feeds.has(feed._id)) {
+        log.debug.info(`${feed._id}: Not processing feed since it is not assigned to schedule ${this.name} on ${this.SHARD_ID}`)
       }
-      const source = rssList[rssName]
-
-      if (toDebug) {
-        log.debug.info(`${rssName}: Preparing for feed delegation`)
-        this.debugFeedLinks.add(source.link)
-      }
-
-      ++feedCount
-      // Determine whether any feeds should be disabled
-      if (((max !== 0 && ++c <= max) || max === 0) && source.disabled === 'Exceeded feed limit') {
-        // log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
-        dbOpsGuilds.enableFeed(guildRss, rssName, 'Feed limit change').catch(err => log.general.warning(`Failed to enable feed named ${rssName}`, err))
-        if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
-        status[source.channel].enabled.push(source.link)
-      } else if (max !== 0 && c > max && !source.disabled) {
-        // log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
-        dbOpsGuilds.disableFeed(guildRss, rssName, 'Exceeded feed limit').catch(err => log.general.warning(`Failed to disable feed named ${rssName}`, err))
-        if (!status[source.channel]) status[source.channel] = { enabled: [], disabled: [] }
-        status[source.channel].disabled.push(source.link)
-      }
-
-      const isInvalidConfig = !checkGuild.config(this.bot, guildRss, rssName, toDebug)
-      const isFailed = typeof this.failedLinks[source.link] === 'string'
-      if (isInvalidConfig || isFailed) {
-        if (toDebug) {
-          log.debug.info(`${rssName}: Skipping feed delegation - is invalid config: ${isInvalidConfig}, is failed: ${isFailed}`)
-        }
-        continue
-      }
-
-      this._delegateFeed(guildRss, rssName)
+      return false
     }
 
+    if (toDebug) {
+      log.debug.info(`${feed._id}: Preparing for feed delegation`)
+      this.debugFeedLinks.add(feed.url)
+    }
+
+    // Determine whether any feeds should be disabled
+    if (((max !== 0 && ++c <= max) || max === 0) && feed.disabled === 'Exceeded feed limit') {
+      // log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
+      feed.enable().catch(err => log.general.warning(`Failed to enable feed named ${feed._id}`, err))
+      if (!status[feed.channel]) status[feed.channel] = { enabled: [], disabled: [] }
+      status[feed.channel].enabled.push(feed.url)
+    } else if (max !== 0 && c > max && !feed.disabled) {
+      // log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
+      feed.disable('Exceeded feed limit').catch(err => log.general.warning(`Failed to disable feed named ${feed._id}`, err))
+      if (!status[feed.channel]) status[feed.channel] = { enabled: [], disabled: [] }
+      status[feed.channel].disabled.push(feed.url)
+    }
+
+    const isInvalidConfig = false // !checkGuild.config(this.bot, guildRss, rssName, toDebug)
+    const isFailed = typeof this.failedLinks[feed.url] === 'string'
+    if (isInvalidConfig || isFailed) {
+      if (toDebug) {
+        log.debug.info(`${feed._id}: Skipping feed delegation - is invalid config: ${isInvalidConfig}, is failed: ${isFailed}`)
+      }
+      return false
+    }
+
+    this._delegateFeed(feed)
+
     // Send notices about any feeds that were enabled/disabled
-    if (config.dev === true) return feedCount
+    if (config.dev === true) {
+      return true
+    }
     // for (var channelId in status) {
     //   let m = '**ATTENTION** - The following changes have been made due to a feed limit change for this server:\n\n'
     //   const enabled = status[channelId].enabled
@@ -150,7 +158,7 @@ class FeedSchedule extends EventEmitter {
     //       .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel, err))
     //   }
     // }
-    return feedCount
+    return true
   }
 
   _genBatchLists () { // Each batch is a bunch of links. Too many links at once will cause request failures.
@@ -231,16 +239,24 @@ class FeedSchedule extends EventEmitter {
     }
 
     this.feedIDs.clear()
-    const [ failedLinks, assignedSchedules, guildRssList ] = await Promise.all([ dbOpsFailedLinks.getAll(), dbOpsSchedules.assignedSchedules.getMany(this.shardID, this.name), dbOpsGuilds.getAll() ])
+    const [ failedLinks, assignedSchedules, profiles, feeds ] = await Promise.all([
+      dbOpsFailedLinks.getAll(),
+      AssignedSchedule.getManyByQuery({ shard: this.shardID, schedule: this.name }),
+      GuildProfile.getAll(),
+      Feed.getAll()
+    ])
+    profiles.forEach(profile => {
+      this._profilesById.set(profile.id, profile)
+    })
     this.failedLinks = {}
     for (const item of failedLinks) {
       this.failedLinks[item.link] = item.failed || item.count
     }
     for (const assigned of assignedSchedules) {
-      if (debug.feeds.has(assigned.feedID)) {
-        log.debug.info(`${assigned.feedID}: Found assigned schedule ${this.name} on shard ${this.SHARD_ID}`)
+      if (debug.feeds.has(assigned.feed)) {
+        log.debug.info(`${assigned.feed}: Found assigned schedule ${this.name} on shard ${this.SHARD_ID}`)
       }
-      this.feedIDs.add(assigned.feedID)
+      this.feedIDs.add(assigned.feed)
     }
     this._startTime = new Date()
     this._regBatchList = []
@@ -253,9 +269,13 @@ class FeedSchedule extends EventEmitter {
     this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
-    guildRssList.forEach(guildRss => {
-      if (!this.bot.guilds.has(guildRss.id)) return
-      feedCount += this._addToSourceLists(guildRss) // Returns the feed count for this guildRss
+    feeds.forEach(feed => {
+      if (!this.bot.guilds.has(feed.guild)) {
+        return
+      }
+      if (this._addToSourceLists(feed)) {
+        feedCount++
+      }
     })
 
     this.inProgress = true
@@ -387,7 +407,7 @@ class FeedSchedule extends EventEmitter {
         feedData: this.feedData,
         runNum: this.ran,
         scheduleName: this.name,
-        shardID: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : null
+        shardID: this.shardID
       })
     }
 

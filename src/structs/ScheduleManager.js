@@ -3,7 +3,7 @@ const FeedSchedule = require('./FeedSchedule.js')
 const debug = require('../util/debugFeeds.js')
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')
 const log = require('../util/logger.js')
-const dbOpsSchedules = require('../util/db/schedules.js')
+const Schedule = require('../structs/db/Schedule.js')
 
 class ScheduleManager {
   constructor (bot) {
@@ -13,9 +13,13 @@ class ScheduleManager {
   }
 
   static async initializeSchedules (customSchedules) {
-    await dbOpsSchedules.schedules.clear()
+    await Schedule.deleteAll()
+    const defaultSchedule = new Schedule({
+      name: 'default',
+      refreshRateMinutes: config.feeds.refreshRateMinutes
+    })
     const promises = [
-      dbOpsSchedules.schedules.add('default', config.feeds.refreshRateMinutes)
+      defaultSchedule.save()
     ]
     if (customSchedules) {
       for (const schedule of customSchedules) {
@@ -23,15 +27,20 @@ class ScheduleManager {
         if (name === 'example') {
           continue
         }
-        promises.push(dbOpsSchedules.schedules.add(name, refreshRateMinutes))
+        promises.push(new Schedule({
+          name,
+          refreshRateMinutes
+        }).save())
       }
     }
     if (config._vip === true) {
       if (!config._vipRefreshRateMinutes || config.feeds.refreshRateMinutes === config._vipRefreshRateMinutes) {
         throw new Error('Missing valid VIP refresh rate')
       }
-      promises.push(dbOpsSchedules.schedules.add('vip', config._vipRefreshRateMinutes))
-      // refreshRates.add(config._vipRefreshRateMinutes)
+      promises.push(new Schedule({
+        name: 'vip',
+        refreshRateMinutes: config._vipRefreshRateMinutes
+      }).save())
     }
     await Promise.all(promises)
   }
@@ -59,7 +68,7 @@ class ScheduleManager {
   }
 
   async _registerSchedules () {
-    const schedules = await dbOpsSchedules.schedules.getAll()
+    const schedules = await Schedule.getAll()
     for (const schedule of schedules) {
       const feedSchedule = new FeedSchedule(this.bot, schedule, this)
       this.scheduleList.push(feedSchedule)

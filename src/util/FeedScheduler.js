@@ -1,19 +1,15 @@
 const config = require('../config.js')
 const debug = require('../util/debugFeeds.js')
 const log = require('../util/logger.js')
-const dbOpsSchedules = require('../util/db/schedules.js')
-const AssignedScheduleModel = require('../models/AssignedSchedule.js')
+const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
 const Feed = require('../structs/db/Feed.js')
+const Schedule = require('../structs/db/Schedule.js')
 
 class FeedScheduler {
-  static async clearAll () {
-    await dbOpsSchedules.assignedSchedules.clear()
-  }
-
   static async assignSchedules (shard, guildIds, vipServers) {
     // Remove the old schedules
     const promises = [
-      dbOpsSchedules.schedules.getAll(),
+      Schedule.getAll(),
       Feed.getAll()
     ]
 
@@ -21,10 +17,6 @@ class FeedScheduler {
 
     const scheduleList = results[0]
     const guildIdsSet = new Set(guildIds)
-    const schedulesByName = {}
-    for (const schedule of scheduleList) {
-      schedulesByName[schedule.name] = schedule
-    }
 
     const feeds = results[1]
     const scheduleDeterminationPromises = []
@@ -36,31 +28,29 @@ class FeedScheduler {
 
       scheduleDeterminationPromises.push(FeedScheduler.determineSchedule(feed, feed.guild, vipServers, shard, scheduleList))
       feedRecords.push({
-        feedID: feed.id,
-        guildID: feed.guild,
-        link: feed.url
+        feed: feed._id,
+        guild: feed.guild,
+        url: feed.url
       })
     })
     const scheduleNames = await Promise.all(scheduleDeterminationPromises)
     const documentsToInsert = []
-    const AssignedSchedule = AssignedScheduleModel.model()
     for (let i = 0; i < scheduleNames.length; ++i) {
       const scheduleName = scheduleNames[i]
-      const { feedID, link, guildID } = feedRecords[i]
-      if (debug.feeds.has(feedID)) {
-        log.debug.info(`${feedID}: Determined schedule is ${scheduleName}`)
+      const { feed, url, guild } = feedRecords[i]
+      if (debug.feeds.has(feed)) {
+        log.debug.info(`${feed}: Determined schedule is ${scheduleName}`)
       }
       const toInsert = {
-        feedID,
+        feed,
         schedule: scheduleName,
-        link,
-        guildID,
+        url,
+        guild: guild,
         shard
       }
-      documentsToInsert.push(new AssignedSchedule(toInsert))
+      documentsToInsert.push(new AssignedSchedule(toInsert).save())
     }
-
-    await dbOpsSchedules.assignedSchedules.setMany(documentsToInsert)
+    await Promise.all(documentsToInsert)
   }
 
   /**
@@ -72,11 +62,11 @@ class FeedScheduler {
    */
   static async determineSchedule (feed, guildId, vipServers, shardID, scheduleList) {
     if (!scheduleList) {
-      scheduleList = await dbOpsSchedules.schedules.getAll()
+      scheduleList = await Schedule.getAll()
     }
 
     // const source = guildRss.sources[rssName]
-    let assignedSchedule = await dbOpsSchedules.assignedSchedules.get(feed.id, shardID)
+    let assignedSchedule = await AssignedSchedule.getByFeedAndShard(feed._id, shardID)
 
     // Take care of our VIPs
     if (config._vip === true && !feed.url.includes('feed43')) {
@@ -93,8 +83,8 @@ class FeedScheduler {
         }
         // Check if non-default schedules first
         // rssnames first
-        const feedIDs = schedule.feedIDs // Potential array
-        if (feedIDs && feedIDs.has(feed.id)) {
+        const feedIDs = schedule.feeds // Potential array
+        if (feedIDs && feedIDs.has(feed._id)) {
           return schedule.name
         }
         // keywords second
@@ -135,7 +125,15 @@ class FeedScheduler {
    */
   static async assignSchedule (feed, guildId, shardId, vipServers) {
     const scheduleName = await FeedScheduler.determineSchedule(feed, guildId, vipServers, shardId)
-    return dbOpsSchedules.assignedSchedules.set(feed.id, scheduleName, feed.url, guildId, shardId)
+    const assigned = new AssignedSchedule({
+      feed: feed._id,
+      schedule: scheduleName,
+      url: feed.url,
+      guild: guildId,
+      shard: shardId
+    })
+    await assigned.save()
+    return assigned
   }
 }
 
