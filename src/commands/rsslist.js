@@ -26,7 +26,7 @@ module.exports = async (bot, message, command) => {
 
     // Generate the info for each feed as an array, and push into another array
     const failedLinksToCheck = feeds.map(feed => feed.url)
-    const shard = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : undefined
+    const shard = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : -1
     const schedulesToFetch = feeds.map(feed => AssignedSchedule.getByFeedAndShard(feed._id, shard))
     const schedulesByFeedIDs = {}
 
