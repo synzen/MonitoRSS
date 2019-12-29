@@ -16,8 +16,13 @@ function hash (str) {
 }
 
 function getCollectionID (link, shardId, scheduleName = '') {
-  if (!scheduleName || scheduleName === 'default') scheduleName = ''
-  let res = (shardId != null ? `${shardId}_` : '') + scheduleName.slice(0, 10) + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
+  if (shardId == null || isNaN(shardId)) {
+    throw new Error('shardId must be a number')
+  }
+  if (!scheduleName || scheduleName === 'default') {
+    scheduleName = ''
+  }
+  let res = `${shardId}_` + scheduleName.slice(0, 10) + hash(link).toString() + (new URL(link)).hostname.replace(/\.|\$/g, '')
   const len = mongoose.connection.name ? (res.length + mongoose.connection.name.length + 1) : res.length + 1 // mongoose.connection.name is undefined if config.database.uri is a databaseless folder path
   if (len > 115) res = res.slice(0, 115)
   return res
