@@ -858,6 +858,36 @@ describe('Unit::structs/db/Base', function () {
         await base.saveToFile()
         expect(base._saved).toEqual(true)
       })
+      it(`adds _id to the file if it doesn't already exists`, async function () {
+        const newId = 'qa3et54wry'
+        jest.spyOn(mongoose.Types, 'ObjectId').mockImplementation(() => ({
+          toHexString: jest.fn(() => newId)
+        }))
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
+        fs.existsSync = jest.fn(() => true)
+        const base = new BasicBase()
+        base._saved = false
+        await base.saveToFile()
+        const writtenTo = fs.writeFileSync.mock.calls[0][0]
+        const written = fs.writeFileSync.mock.calls[0][1]
+        expect(JSON.parse(written)._id).toEqual(newId)
+        expect(writtenTo).toEqual(path.join('a', `${newId}.json`))
+      })
+      it(`uses the current _id and adds it to the file if already exists`, async function () {
+        const _id = 'heasdz'
+        jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue({
+          _id
+        })
+        jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
+        fs.existsSync = jest.fn(() => true)
+        const base = new BasicBase()
+        base._saved = false
+        await base.saveToFile()
+        const writtenTo = fs.writeFileSync.mock.calls[0][0]
+        const written = fs.writeFileSync.mock.calls[0][1]
+        expect(JSON.parse(written)._id).toEqual(_id)
+        expect(writtenTo).toEqual(path.join('a', `${_id}.json`))
+      })
     })
   })
 })
