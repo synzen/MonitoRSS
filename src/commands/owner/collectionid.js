@@ -1,4 +1,4 @@
-const dbOpsSchedules = require('../../util/db/schedules.js')
+const AssignedSchedule = require('../../structs/db/AssignedSchedule.js')
 const ArticleModel = require('../../models/Article.js')
 const log = require('../../util/logger.js')
 
@@ -9,7 +9,7 @@ exports.normal = async (bot, message) => {
     if (!feedID) {
       return await message.channel.send('No feed ID argument')
     }
-    const assigned = await dbOpsSchedules.assignedSchedules.get(feedID)
+    const assigned = await AssignedSchedule.getByFeedAndShard(feedID, -1)
     if (!assigned) {
       return await message.channel.send('No assigned schedule')
     }
