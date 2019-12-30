@@ -64,6 +64,25 @@ describe('Unit::structs/db/FailCounter', function () {
       expect(found.delete).toHaveBeenCalled()
     })
   })
+  describe('static hasFailed', function () {
+    it('returns false if getBy returns null', async function () {
+      jest.spyOn(FailCounter, 'getBy').mockResolvedValue(null)
+      const returned = await FailCounter.hasFailed()
+      expect(returned).toEqual(false)
+    })
+    it('return the value of protoype.hasFailed if found', async function () {
+      const hasFailed = jest.fn(() => true)
+      const found = {
+        hasFailed
+      }
+      jest.spyOn(FailCounter, 'getBy').mockResolvedValue(found)
+      await expect(FailCounter.hasFailed())
+        .resolves.toEqual(true)
+      hasFailed.mockReturnValue(false)
+      await expect(FailCounter.hasFailed())
+        .resolves.toEqual(false)
+    })
+  })
   describe('fail', function () {
     it('sets this.reason to the new reason', async function () {
       const data = {

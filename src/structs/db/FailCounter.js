@@ -62,6 +62,19 @@ class FailCounter extends Base {
     }
   }
 
+  /**
+   * If a URL has failed
+   * @param {string} url
+   */
+  static async hasFailed (url) {
+    const found = await FailCounter.getBy('url', url)
+    if (!found) {
+      return false
+    } else {
+      return found.hasFailed()
+    }
+  }
+
   toObject () {
     return {
       url: this.url,
