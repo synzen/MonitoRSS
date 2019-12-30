@@ -1,7 +1,10 @@
 const mongoose = require('mongoose')
 
 const schema = mongoose.Schema({
-  url: String,
+  url: {
+    type: String,
+    unique: true
+  },
   count: Number,
   reason: String
 })
