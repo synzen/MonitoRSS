@@ -2,14 +2,13 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
-const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const serverLimit = require('../util/serverLimit.js')
 const storage = require('../util/storage.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
+const FailCounter = require('../structs/db/FailCounter.js')
 const Feed = require('../structs/db/Feed.js')
-const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {
   try {
@@ -25,17 +24,17 @@ module.exports = async (bot, message, command) => {
     const maxFeedsAllowed = serverLimitData.max
 
     // Generate the info for each feed as an array, and push into another array
-    const failedLinksToCheck = feeds.map(feed => feed.url)
+    const failCounters = await Promise.all(feeds.map(feed => FailCounter.getBy('url', feed.url)))
     const shard = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : -1
     const schedulesToFetch = feeds.map(feed => AssignedSchedule.getByFeedAndShard(feed._id, shard))
     const schedulesByFeedIDs = {}
 
-    const [ failedLinksResults, assignedSchedules ] = await Promise.all([
-      dbOpsFailedLinks.getMultiple(failedLinksToCheck),
-      Promise.all(schedulesToFetch)
-    ])
-    for (const result of failedLinksResults) {
-      failedLinks[result.link] = result.failed || result.count
+    const assignedSchedules = await Promise.all(schedulesToFetch)
+
+    for (const counter of failCounters) {
+      if (counter) {
+        failedLinks[counter.url] = counter
+      }
     }
     for (const assigned of assignedSchedules) {
       schedulesByFeedIDs[assigned.feed] = assigned
@@ -80,10 +79,15 @@ module.exports = async (bot, message, command) => {
       let status = ''
       if (feed.disabled) {
         status = translate('commands.rsslist.statusDisabled', { reason: feed.disabled })
-      } else if (FAIL_LIMIT !== 0) {
-        const failCount = failedLinks[feed.url]
-        const failCountText = failCount > Math.ceil(FAIL_LIMIT / 5) ? `(failed ${failCount}/${FAIL_LIMIT} times` : ''
-        status = !failCount || (typeof failCount === 'number' && failCount <= FAIL_LIMIT) ? translate('commands.rsslist.statusOk', { failCount: failCountText }) : translate('commands.rsslist.statusFailed')
+      } else if (FailCounter.limit !== 0) {
+        const failCounter = failedLinks[feed.url]
+        const count = !failCounter ? 0 : failCounter.count
+        if (!failCounter || !failCounter.hasFailed()) {
+          const failCountText = count > Math.ceil(FailCounter.limit / 5) ? `(failed ${count}/${FailCounter.limit} times` : ''
+          status = translate('commands.rsslist.statusOk', { failCount: failCountText })
+        } else {
+          status = translate('commands.rsslist.statusFailed')
+        }
       }
 
       // Title checks
