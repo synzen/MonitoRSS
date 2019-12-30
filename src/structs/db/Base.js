@@ -271,7 +271,7 @@ class Base {
     // Mongo
     if (this.isMongoDatabase) {
       const documents = await DatabaseModel.find({}, this.FIND_PROJECTION).exec()
-      return documents.map(doc => new this(doc))
+      return documents.map(doc => new this(doc, true))
     }
 
     // Databaseless
