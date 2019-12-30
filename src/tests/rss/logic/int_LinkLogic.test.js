@@ -11,6 +11,7 @@ describe('Int::LinkLogic', function () {
   })
   it('emits article for new articles via ID', async function () {
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {}
@@ -54,6 +55,7 @@ describe('Int::LinkLogic', function () {
   })
   it('does not emits new article for a new articles with seen title', async function () {
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {
@@ -80,6 +82,7 @@ describe('Int::LinkLogic', function () {
     const twoDaysAgo = new Date()
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {
@@ -104,6 +107,7 @@ describe('Int::LinkLogic', function () {
   })
   it('emits article for new articles for multiple sources', async function () {
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {},
@@ -148,6 +152,7 @@ describe('Int::LinkLogic', function () {
   it('emits article for new article via custom comparisons', async function () {
     const comparisonName = 'azdskgethn'
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {
@@ -195,6 +200,7 @@ describe('Int::LinkLogic', function () {
   it('emits article for new articles for multiple sources with custom comparisons', async function () {
     const comparisonName = 'uhiuyguiy'
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {
@@ -255,6 +261,7 @@ describe('Int::LinkLogic', function () {
   it('does not emit article for no new articles via custom comparisons', async function () {
     const comparisonName = 'azdskgethn'
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {
@@ -299,6 +306,7 @@ describe('Int::LinkLogic', function () {
   it('calls dbCmds.update if an article\'s custom comparisons needs to be updated', async function () {
     const comparisonName = 'azdskgethn'
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {
@@ -328,7 +336,7 @@ describe('Int::LinkLogic', function () {
     ])
     // logic.on('article', articleSpy)
     await logic.run()
-    const collectionID = ArticleModel.getCollectionID(data.link, undefined, data.scheduleName)
+    const collectionID = ArticleModel.getCollectionID(data.link, -1, data.scheduleName)
     const Feed = ArticleModel.modelByID(collectionID)
     expect(dbCmds.update).toHaveBeenCalledWith(Feed, {
       ...data.articleList[0],
@@ -345,6 +353,7 @@ describe('Int::LinkLogic', function () {
   })
   it('inserts unseen articles via ID into database', async function () {
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {}
@@ -361,12 +370,13 @@ describe('Int::LinkLogic', function () {
     const logic = new LinkLogic(data)
     dbCmds.findAll.mockResolvedValueOnce([ { id: '1' }, { id: '3' } ])
     await logic.run()
-    const collectionID = ArticleModel.getCollectionID(data.link, undefined, data.scheduleName)
+    const collectionID = ArticleModel.getCollectionID(data.link, -1, data.scheduleName)
     const Feed = ArticleModel.modelByID(collectionID)
     expect(dbCmds.bulkInsert).toHaveBeenCalledWith(Feed, [{ ...data.articleList[1], _id: data.articleList[1].guid }])
   })
   it('does not emit article for no new articles', async function () {
     const data = {
+      shardID: -1,
       link: 'https://www.rt.com/rss',
       rssList: {
         feedID1: {}
