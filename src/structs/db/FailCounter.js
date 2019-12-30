@@ -1,6 +1,6 @@
 const config = require('../../config.js')
 const Base = require('./Base.js')
-const FailCounterModel = require('../../models/FailCounter.js')
+const FailCounterModel = require('../../models/FailCounter.js').model
 
 class FailCounter extends Base {
   constructor (data, _saved) {
