@@ -1,12 +1,10 @@
-const config = require('../config.js')
 const log = require('../util/logger.js')
-const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const channelTracker = require('../util/channelTracker.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const FailCounter = require('../structs/db/FailCounter.js')
 const Feed = require('../structs/db/Feed.js')
-const FAIL_LIMIT = config.feeds.failLimit
 
 module.exports = async (bot, message, command) => {
   try {
@@ -17,43 +15,45 @@ module.exports = async (bot, message, command) => {
       return await message.channel.send(translate('commands.rsslist.noFeeds'))
     }
 
-    if (FAIL_LIMIT === 0) {
+    if (FailCounter.limit === 0) {
       return await message.channel.send(translate('commands.rssrefresh.noFailLimit'))
     }
 
-    let toRefresh = []
+    let counters = []
     channelTracker.add(message.channel.id)
     for (const feed of feeds) {
-      const failedLinkStatus = await dbOpsFailedLinks.get(feed.url)
-      if (!failedLinkStatus || !failedLinkStatus.failed) {
+      const failCounter = await FailCounter.getBy('url', feed.url)
+      if (!failCounter || !failCounter.hasFailed()) {
         continue
       }
-      toRefresh.push(feed.url)
+      counters.push(failCounter)
     }
-    if (toRefresh.length === 0) {
+    if (counters.length === 0) {
       channelTracker.remove(message.channel.id)
       return await message.channel.send(translate('commands.rssrefresh.noFailedFeeds'))
     }
     const processing = await message.channel.send(translate('commands.rssrefresh.processing'))
     let failedReasons = {}
-    for (const link of toRefresh) {
-      log.command.info(`Attempting to refresh ${link}`, message.guild)
+    for (const counter of counters) {
+      const url = counter.url
+      log.command.info(`Attempting to refresh ${url}`, message.guild)
       try {
-        await FeedFetcher.fetchURL(link)
-        await dbOpsFailedLinks.reset(link)
-        log.command.info(`Refreshed ${link} and is back on cycle`, message.guild)
+        await FeedFetcher.fetchURL(url)
+        await counter.delete()
+        log.command.info(`Refreshed ${url} and is back on cycle`, message.guild)
       } catch (err) {
-        failedReasons[link] = err.message
+        failedReasons[url] = err.message
       }
     }
 
     let successfulLinks = ''
     let failedLinks = ''
-    for (const link of toRefresh) {
-      if (!failedReasons[link]) {
-        successfulLinks += `${link}\n`
+    for (const counter of counters) {
+      const url = counter.url
+      if (!failedReasons[url]) {
+        successfulLinks += `${url}\n`
       } else {
-        failedLinks += `${link} (${failedReasons[link]})`
+        failedLinks += `${url} (${failedReasons[url]})`
       }
     }
 
