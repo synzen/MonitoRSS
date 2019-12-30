@@ -273,6 +273,11 @@ class FeedSchedule extends EventEmitter {
       if (!this.bot.guilds.has(feed.guild)) {
         return
       }
+      if (!this.bot.channels.has(feed.channel)) {
+        feed.delete()
+          .then(() => log.cycle.info(`Deleted feed ${feed._id} with missing channel ${feed.channel} of guild ${feed.guild} for feed ${feed._id}`))
+          .catch(err => log.cycle.warning(`Failed to delete feed ${feed._id} for missing channel ${feed.channel} of guild ${feed.guild}`, err))
+      }
       if (this._addToSourceLists(feed)) {
         feedCount++
       }
