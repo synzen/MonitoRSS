@@ -2,10 +2,10 @@ const channelTracker = require('../util/channelTracker.js')
 const initialize = require('../rss/initialize.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const serverLimit = require('../util/serverLimit.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const FailCounter = require('../structs/db/FailCounter.js')
 const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message) => {
@@ -69,7 +69,7 @@ module.exports = async (bot, message) => {
         }
         channelTracker.remove(message.channel.id)
         log.command.info(`Added ${link}`, message.guild)
-        dbOpsFailedLinks.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
+        FailCounter.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
         passedAddLinks.push(link)
         ++checkedSoFar
       } catch (err) {

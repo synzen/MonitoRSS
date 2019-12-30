@@ -6,10 +6,10 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
-const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const Feed = require('../structs/db/Feed.js')
+const FailCounter = require('../structs/db/FailCounter.js')
 
 async function feedSelectorFn (m, data) {
   const { feed, locale } = data
@@ -112,8 +112,7 @@ module.exports = async (bot, message, command, role) => {
       if (data.noFilters) {
         return await message.channel.send(translate('commands.rssfilters.noFilters', { link: feed.url }))
       }
-      const failedLinkResult = await dbOpsFailedLinks.get(feed.url)
-      if (failedLinkResult && failedLinkResult.failed) {
+      if (await FailCounter.hasFailed(feed.url)) {
         return await message.channel.send(translate('commands.rssfilters.connectionFailureLimit'))
       }
       const article = await FeedFetcher.fetchRandomArticle(feed.url, feed.filters)

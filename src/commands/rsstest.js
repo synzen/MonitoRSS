@@ -1,13 +1,13 @@
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbOpsVips = require('../util/db/vips.js')
-const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
+const FailCounter = require('../structs/db/FailCounter.js')
 const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
@@ -23,8 +23,7 @@ module.exports = async (bot, message, command) => {
       return
     }
     const { feed } = data
-    const failedLinkResults = dbOpsFailedLinks.get(feed.url)
-    if (failedLinkResults && failedLinkResults.failed) {
+    if (await FailCounter.hasFailed(feed.url)) {
       return await message.channel.send(translate('commands.rsstest.failed'))
     }
     const grabMsg = await message.channel.send(translate('commands.rsstest.grabbingRandom'))
