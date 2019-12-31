@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const Version = require('./common/Version.js')
 
 const fieldSchema = new mongoose.Schema({
   name: String,
@@ -26,6 +27,8 @@ const schema = new mongoose.Schema({
   text: String,
   embeds: [embedSchema]
 })
+
+schema.add(Version)
 
 exports.schema = schema
 exports.model = mongoose.model('Format', schema)

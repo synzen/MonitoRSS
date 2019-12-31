@@ -1,11 +1,11 @@
 const mongoose = require('mongoose')
 
 const schema = mongoose.Schema({
-  isGuild: Boolean,
   id: {
     type: String,
-    unique: true
+    required: true
   },
+  type: Number,
   name: String,
   date: {
     type: Date,

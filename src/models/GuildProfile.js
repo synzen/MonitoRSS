@@ -1,7 +1,5 @@
 const mongoose = require('mongoose')
-const path = require('path')
-const fs = require('fs')
-const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'))).version
+const Version = require('./common/Version.js')
 
 const schema = new mongoose.Schema({
   _id: String,
@@ -14,12 +12,10 @@ const schema = new mongoose.Schema({
   dateLanguage: String,
   timezone: String,
   prefix: String,
-  locale: String,
-  version: {
-    type: String,
-    default: packageVersion
-  }
+  locale: String
 })
+
+schema.add(Version)
 
 exports.schema = schema
 exports.model = mongoose.model('Guild', schema)

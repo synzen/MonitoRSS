@@ -1,9 +1,7 @@
 const mongoose = require('mongoose')
 const middleware = require('./middleware/Feed.js')
-const path = require('path')
-const fs = require('fs')
 const FilterBase = require('./common/FilterBase.js')
-const packageVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'))).version
+const Version = require('./common/Version.js')
 
 const schema = new mongoose.Schema({
   title: {
@@ -40,17 +38,10 @@ const schema = new mongoose.Schema({
   imgPreviews: Boolean,
   imgLinksExistence: Boolean,
   formatTables: Boolean,
-  toggleRoleMentions: Boolean,
-  version: {
-    type: String,
-    default: packageVersion
-  },
-  addedAt: {
-    type: Date,
-    default: Date.now
-  }
+  toggleRoleMentions: Boolean
 })
 
+schema.add(Version)
 schema.add(FilterBase)
 
 schema.pre('validate', middleware.validate)

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
+const Version = require('./common/Version.js')
 
-const schema = mongoose.Schema({
+const schema = new mongoose.Schema({
   name: {
     type: String,
     unique: true
@@ -15,6 +16,8 @@ const schema = mongoose.Schema({
     default: []
   }
 })
+
+schema.add(Version)
 
 exports.schema = schema
 exports.model = mongoose.model('schedules', schema)
