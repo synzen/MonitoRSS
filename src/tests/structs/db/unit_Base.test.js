@@ -195,7 +195,7 @@ describe('Unit::structs/db/Base', function () {
       })
     })
   })
-  describe('getBy', function () {
+  describe('getByQuery', function () {
     describe('from database', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(true)
@@ -206,7 +206,7 @@ describe('Unit::structs/db/Base', function () {
         const query = {
           [field]: value
         }
-        await BasicBase.getBy(field, value)
+        await BasicBase.getByQuery(query)
         expect(MockModel.findOne).toHaveBeenCalledWith(query, BasicBase.FIND_PROJECTION)
       })
       it('returns a new instance correctly', async function () {
@@ -215,13 +215,13 @@ describe('Unit::structs/db/Base', function () {
         }
         const exec = jest.fn(() => doc)
         jest.spyOn(MockModel, 'findOne').mockReturnValue({ exec })
-        const returnValue = await BasicBase.getBy('asd', 'sdf')
+        const returnValue = await BasicBase.getByQuery({})
         expect(returnValue).toBeInstanceOf(BasicBase)
       })
       it('returns null correctly', async function () {
         const exec = jest.fn(() => null)
         jest.spyOn(MockModel, 'findOne').mockReturnValue({ exec })
-        const returnValue = await BasicBase.getBy('asd', 'sdf')
+        const returnValue = await BasicBase.getByQuery({})
         expect(returnValue).toBeNull()
       })
     })
@@ -230,13 +230,23 @@ describe('Unit::structs/db/Base', function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(false)
       })
       it('returns a new isntance', async function () {
-        jest.spyOn(BasicBase, 'getManyBy').mockResolvedValue([1])
-        await expect(BasicBase.getBy()).resolves.toBeInstanceOf(BasicBase)
+        jest.spyOn(BasicBase, 'getManyByQuery').mockResolvedValue([1])
+        await expect(BasicBase.getByQuery()).resolves.toBeInstanceOf(BasicBase)
       })
       it('returns null when none found', async function () {
-        jest.spyOn(BasicBase, 'getManyBy').mockResolvedValue([])
-        await expect(BasicBase.getBy()).resolves.toBeNull()
+        jest.spyOn(BasicBase, 'getManyByQuery').mockResolvedValue([])
+        await expect(BasicBase.getByQuery()).resolves.toBeNull()
       })
+    })
+  })
+  describe('getBy', function () {
+    it('calls getByQuery correctly', async function () {
+      const spy = jest.spyOn(BasicBase, 'getByQuery').mockResolvedValue()
+      const field = 'w2346tyer5thujg'
+      const value = 'swe4t69ruyghj'
+      await BasicBase.getBy(field, value)
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(spy).toHaveBeenCalledWith({ [field]: value })
     })
   })
   describe('getManyByQuery', function () {

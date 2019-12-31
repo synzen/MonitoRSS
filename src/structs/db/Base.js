@@ -178,6 +178,15 @@ class Base {
    * @returns {Base|null}
    */
   static async getBy (field, value) {
+    return this.getByQuery({ [field]: value })
+  }
+
+  /**
+   * Get one with a custom query
+   * @param {Object<string, any>} query - MongoDB-format query
+   * @returns {Base[]}
+   */
+  static async getByQuery (query) {
     /**
      * @type {MongooseModel}
      */
@@ -185,16 +194,22 @@ class Base {
 
     // Database
     if (this.isMongoDatabase) {
-      const query = {
-        [field]: value
-      }
       const doc = await DatabaseModel.findOne(query, this.FIND_PROJECTION).exec()
       return doc ? new this(doc, true) : null
     }
 
-    // Databaseless
-    const many = await this.getManyBy(field, value)
-    return many[0] ? new this(many[0], true) : null
+    const results = await this.getManyByQuery(query)
+    return results.length > 0 ? new this(results[0], true) : null
+  }
+
+  /**
+   * Get many by a field's value
+   * @param {string} field - Field name
+   * @param {any} value - Field value
+   * @returns {Base[]}
+   */
+  static async getManyBy (field, value) {
+    return this.getManyByQuery({ [field]: value })
   }
 
   /**
@@ -243,16 +258,6 @@ class Base {
         return allTrue
       })
       .map(item => new this(item, true))
-  }
-
-  /**
-   * Get many by a field's value
-   * @param {string} field - Field name
-   * @param {any} value - Field value
-   * @returns {Base[]}
-   */
-  static async getManyBy (field, value) {
-    return this.getManyByQuery({ [field]: value })
   }
 
   /**
