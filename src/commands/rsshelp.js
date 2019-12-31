@@ -1,13 +1,13 @@
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
 const Translator = require('../structs/Translator.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const prefix = guildRss && guildRss.prefix ? guildRss.prefix : config.bot.prefix
-    const localeToUse = guildRss ? guildRss.locale : config.bot.locale
+    const profile = await GuildProfile.get(message.guild.id)
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+    const localeToUse = profile ? profile.locale : config.bot.locale
     const translate = Translator.createLocaleTranslator(localeToUse)
     const webInfo = config.web.enabled && config.web.redirectUri ? ` ${translate('commands.rsshelp.controlPanelLink', { url: config.web.redirectUri.replace('/authorize', '') })}` : ''
     let msg = `${translate('commands.rsshelp.description', { prefix: config.bot.prefix })}${webInfo}\n\n`

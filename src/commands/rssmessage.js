@@ -48,7 +48,6 @@ async function messagePromptFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    // const guildRss = await dbOpsGuilds.get(message.guild.id)
     const profile = await GuildProfile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const feeds = await Feed.getManyBy('guild', message.guild.id)
