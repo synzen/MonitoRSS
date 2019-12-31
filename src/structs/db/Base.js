@@ -16,7 +16,7 @@ class Base {
    */
   constructor (data = {}, _saved = false) {
     /**
-     * this.data must be serialized/deserialized to maintain
+     * this.data must be serialized to maintain
      * equal function between database and databaseless
      * @type {Object<string, any>}
      */
@@ -47,6 +47,12 @@ class Base {
      * @type {string}
      */
     this.version = this.getField('version')
+
+    /**
+     * Time of entry
+     * @type {String}
+     */
+    this.addedAt = this.getField('addedAt')
 
     // Run the get method and throw its associated error if unimplemented
     void this.constructor.Model
