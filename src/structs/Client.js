@@ -173,13 +173,6 @@ class Client extends EventEmitter {
           case 'runSchedule':
             if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshRate)
             break
-          case 'dbRestoreSend':
-            const channel = bot.channels.get(message.channelID)
-            if (!channel) return
-            const channelMsg = channel.messages.get(message.messageID)
-            if (channelMsg) channelMsg.edit('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send({ _drss: true, type: 'kill' }))
-            else channel.send('Database restore complete! Stopping bot process for manual reboot.').then(m => bot.shard.send({ _drss: true, type: 'kill' }))
-            break
         }
       } catch (err) {
         log.general.warning('client', err, true)

@@ -7,7 +7,6 @@ const ScheduleManager = require('./ScheduleManager.js')
 const FeedScheduler = require('../util/FeedScheduler.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const log = require('../util/logger.js')
-const dbRestore = require('../commands/owner/dbrestore.js')
 const EventEmitter = require('events')
 const ArticleModel = require('../models/Article.js')
 const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
@@ -71,7 +70,6 @@ class ClientManager extends EventEmitter {
       case 'initComplete': this._initCompleteEvent(message); break
       case 'scheduleComplete': this._scheduleCompleteEvent(message); break
       case 'addCustomSchedule': this._addCustomScheduleEvent(message); break
-      case 'dbRestore': this._dbRestoreEvent(message)
     }
   }
 
@@ -178,15 +176,6 @@ class ClientManager extends EventEmitter {
       const broadcast = { _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshRate: refreshRate }
       this.shardingManager.broadcast(broadcast)
     }, refreshRate * 60000)) // Convert minutes to ms
-  }
-
-  _dbRestoreEvent (message) {
-    this.scheduleIntervals.forEach(it => clearInterval(it))
-    this.shardingManager.broadcast({ _drss: true, type: 'stop' })
-    dbRestore.restoreUtil(null, err => {
-      if (err) throw err
-      this.shardingManager.broadcast({ _drss: true, type: 'dbRestoreSend', channelID: message.channelID, messageID: message.messageID })
-    })
   }
 
   createIntervals () {
