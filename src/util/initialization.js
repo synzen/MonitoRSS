@@ -3,7 +3,6 @@ const storage = require('./storage.js')
 // const checkGuild = require('./checkGuild.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const Feed = require('../structs/db/Feed.js')
-const dbOpsFailedLinks = require('./db/failedLinks.js')
 const dbOpsBlacklists = require('./db/blacklists.js')
 const dbOpsStatistics = require('./db/statistics.js')
 const dbOpsGeneral = require('./db/general.js')
@@ -26,11 +25,6 @@ module.exports = async bot => {
     if (blisted.isGuild) storage.blacklistGuilds.push(blisted.id)
     else storage.blacklistUsers.push(blisted.id)
   }
-  const failedLinks = {}
-  const failedLinksArr = await dbOpsFailedLinks.getAll()
-  failedLinksArr.forEach(item => {
-    failedLinks[item.link] = item.failed || item.count
-  })
 
   // Remove missing guilds and empty guildRsses, along with other checks
   // const guildRssList = await dbOpsGuilds.getAll()

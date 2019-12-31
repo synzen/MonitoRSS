@@ -9,7 +9,6 @@ const FeedScheduler = require('../util/FeedScheduler.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const dbOpsBlacklists = require('../util/db/blacklists.js')
-const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const dbOpsVips = require('../util/db/vips.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const connectDb = require('../rss/db/connect.js')
@@ -175,9 +174,6 @@ class Client extends EventEmitter {
             break
           case 'runSchedule':
             if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshRate)
-            break
-          case 'failedLinks._sendAlert':
-            dbOpsFailedLinks._sendAlert(message.link, message.message, true)
             break
           case 'blacklists.uniformize':
             await dbOpsBlacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, true)
