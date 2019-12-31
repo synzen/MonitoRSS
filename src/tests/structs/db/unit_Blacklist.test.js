@@ -54,4 +54,14 @@ describe('Unit::structs/db/Blacklist', function () {
       expect(Blacklist.TYPES.USER).toEqual(0)
     })
   })
+  describe('get id', function () {
+    it('gets the _id', function () {
+      const data = {
+        _id: 'aedgs',
+        type: Blacklist.TYPES.GUILD
+      }
+      const blacklist = new Blacklist(data)
+      expect(blacklist.id).toEqual(data._id)
+    })
+  })
 })
