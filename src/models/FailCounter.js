@@ -10,4 +10,4 @@ const schema = mongoose.Schema({
 })
 
 exports.schema = schema
-exports.model = () => mongoose.model('fail_counter', schema)
+exports.model = mongoose.model('fail_counter', schema)
