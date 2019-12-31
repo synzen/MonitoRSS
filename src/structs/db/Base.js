@@ -50,7 +50,7 @@ class Base {
 
     /**
      * Time of entry
-     * @type {String}
+     * @type {string}
      */
     this.addedAt = this.getField('addedAt')
 
