@@ -2,11 +2,11 @@ const path = require('path')
 const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
 const checkGuild = require('../util/checkGuild.js')
-const dbOpsFailedLinks = require('../util/db/failedLinks.js')
 const dbOpsVips = require('../util/db/vips.js')
 const dbOpsStatistics = require('../util/db/statistics.js')
 const AssignedSchedule = require('./db/AssignedSchedule.js')
 const GuildProfile = require('./db/GuildProfile.js')
+const FailCounter = require('./db/FailCounter.js')
 const Feed = require('./db/Feed.js')
 const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
@@ -15,7 +15,6 @@ const storage = require('../util/storage.js') // All properties of storage must 
 const log = require('../util/logger.js')
 
 const BATCH_SIZE = config.advanced.batchSize
-const FAIL_LIMIT = config.feeds.failLimit
 
 class FeedSchedule extends EventEmitter {
   constructor (bot, schedule, scheduleManager) {
@@ -45,7 +44,7 @@ class FeedSchedule extends EventEmitter {
     this._profilesById = new Map()
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedCount = 0 // For statistics
-    this.failedLinks = {}
+    this.failCounters = {}
     this.feedIDs = new Set() // feed ids assigned to this schedule
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
@@ -130,8 +129,8 @@ class FeedSchedule extends EventEmitter {
     }
 
     const isInvalidConfig = false // !checkGuild.config(this.bot, guildRss, rssName, toDebug)
-    const isFailed = typeof this.failedLinks[feed.url] === 'string'
-    if (isInvalidConfig || isFailed) {
+    const failCounter = this.failCounters[feed.url]
+    if (failCounter && failCounter.hasFailed()) {
       if (toDebug) {
         log.debug.info(`${feed._id}: Skipping feed delegation - is invalid config: ${isInvalidConfig}, is failed: ${isFailed}`)
       }
@@ -206,8 +205,8 @@ class FeedSchedule extends EventEmitter {
         let c = 0
         for (const link in this._linksResponded) {
           if (this._linksResponded[link] === 0) continue
-          if (this.failedLinks[link] >= FAIL_LIMIT) dbOpsFailedLinks.fail(link).catch(err => log.cycle.warning(`Unable to fail failed link ${link}`, err))
-          else dbOpsFailedLinks.increment(link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${link}`, err))
+          FailCounter.increment(link, 'Failed to respond in a timely manner')
+            .catch(err => log.cycle.warning(`Unable to increment fail counter for ${link}`, err))
           list += `${link}\n`
           ++c
         }
@@ -239,8 +238,8 @@ class FeedSchedule extends EventEmitter {
     }
 
     this.feedIDs.clear()
-    const [ failedLinks, assignedSchedules, profiles, feeds ] = await Promise.all([
-      dbOpsFailedLinks.getAll(),
+    const [ failCounters, assignedSchedules, profiles, feeds ] = await Promise.all([
+      FailCounter.getAll(),
       AssignedSchedule.getManyByQuery({ shard: this.shardID, schedule: this.name }),
       GuildProfile.getAll(),
       Feed.getAll()
@@ -248,9 +247,9 @@ class FeedSchedule extends EventEmitter {
     profiles.forEach(profile => {
       this._profilesById.set(profile.id, profile)
     })
-    this.failedLinks = {}
-    for (const item of failedLinks) {
-      this.failedLinks[item.link] = item.failed || item.count
+    this.failCounters = {}
+    for (const counter of failCounters) {
+      this.failCounters[counter.url] = counter
     }
     for (const assigned of assignedSchedules) {
       if (debug.feeds.has(assigned.feed)) {
@@ -331,10 +330,11 @@ class FeedSchedule extends EventEmitter {
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          if (this.failedLinks[linkCompletion.link] >= FAIL_LIMIT) dbOpsFailedLinks.fail(linkCompletion.link).catch(err => log.cycle.warning(`Unable to fail failed link ${linkCompletion.link}`, err))
-          else dbOpsFailedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
+          FailCounter.increment(linkCompletion.link)
+            .catch(err => log.cycle.warning(`Unable to increment fail counter ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
-          if (this.failedLinks[linkCompletion.link]) dbOpsFailedLinks.reset(linkCompletion.link).catch(err => log.cycle.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
+          FailCounter.reset(linkCompletion.link)
+            .catch(err => log.cycle.warning(`Unable to reset fail counter ${linkCompletion.link}`, err))
           if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
         }
 
@@ -380,10 +380,11 @@ class FeedSchedule extends EventEmitter {
         if (linkCompletion.status === 'batch_connected' && callback) return callback() // Spawn processor for next batch
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          if (this.failedLinks[linkCompletion.link] >= FAIL_LIMIT) dbOpsFailedLinks.fail(linkCompletion.link).catch(err => log.cycle.warning(`Unable to fail failed link ${linkCompletion.link}`, err))
-          else dbOpsFailedLinks.increment(linkCompletion.link, true).catch(err => log.cycle.warning(`Unable to increment failed link ${linkCompletion.link}`, err))
+          FailCounter.increment(linkCompletion.link)
+            .catch(err => log.cycle.warning(`Unable to increment fail counter ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
-          if (this.failedLinks[linkCompletion.link]) dbOpsFailedLinks.reset(linkCompletion.link).catch(err => log.cycle.warning(`Unable to reset failed link ${linkCompletion.link}`, err))
+          FailCounter.reset(linkCompletion.link)
+            .catch(err => log.cycle.warning(`Unable to reset fail counter ${linkCompletion.link}`, err))
           if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
         }
 
