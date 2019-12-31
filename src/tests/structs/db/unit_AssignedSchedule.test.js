@@ -3,28 +3,20 @@ const AssignedSchedule = require('../../../structs/db/AssignedSchedule.js')
 describe('Unit::structs/db/AssignedSchedule', function () {
   describe('static getByFeedAndShard', function () {
     it('calls get correctly', async function () {
-      const spy = jest.spyOn(AssignedSchedule, 'get').mockResolvedValue()
+      const spy = jest.spyOn(AssignedSchedule, 'getByQuery').mockResolvedValue()
       await AssignedSchedule.getByFeedAndShard('abc', '123')
-      expect(spy).toHaveBeenCalledWith('abc123')
+      expect(spy).toHaveBeenCalledWith({
+        feed: 'abc',
+        shard: '123'
+      })
     })
     it(`handles no shard correctly`, async function () {
-      const spy = jest.spyOn(AssignedSchedule, 'get').mockResolvedValue()
+      const spy = jest.spyOn(AssignedSchedule, 'getByQuery').mockResolvedValue()
       await AssignedSchedule.getByFeedAndShard('abc')
-      expect(spy).toHaveBeenCalledWith('abc-1')
-    })
-  })
-  describe('static getManyByFeedAndShard', function () {
-    it('calls getManyBy correctly', async function () {
-      const spy = jest.spyOn(AssignedSchedule, 'getManyBy').mockResolvedValue()
-      const objects = [
-        { feed: 'a', shard: 4 },
-        { feed: 'b', shard: 6 }
-      ]
-      await AssignedSchedule.getManyByFeedAndShard(objects)
-      expect(spy).toHaveBeenCalledWith([
-        'a4',
-        'b6'
-      ])
+      expect(spy).toHaveBeenCalledWith({
+        feed: 'abc',
+        shard: -1
+      })
     })
   })
   describe('toObject', function () {
@@ -36,12 +28,9 @@ describe('Unit::structs/db/AssignedSchedule', function () {
         schedule: 'segr',
         shard: 1
       }
-      const assigned = new AssignedSchedule(data)
+      const assigned = new AssignedSchedule({ ...data })
       const returned = assigned.toObject()
-      expect(returned).toEqual({
-        ...data,
-        _id: data.feed + data.shard
-      })
+      expect(returned).toEqual(data)
     })
   })
   describe('constructor', function () {
