@@ -13,7 +13,7 @@ module.exports = async guild => {
     }
   })
   const profile = await GuildProfile.get(guild.id)
-  const feeds = await Feed.getBy('guild', guild.id)
+  const feeds = await Feed.getManyBy('guild', guild.id)
   if (profile) {
     profile.delete()
       .catch(err => log.general.error(`Failed to delete guild after guild delete event`, guild, err))

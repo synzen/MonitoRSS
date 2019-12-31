@@ -73,7 +73,7 @@ if (fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'commands.js'))) 
 
 const messageHandler = blacklistCache => message => {
   const onlyOwner = config.bot.enableCommands !== true || config.dev === true
-  require('../events/message.js')(message, onlyOwner)
+  require('../events/message.js')(message, onlyOwner, blacklistCache)
   try {
     if (cmdsExtension) {
       cmdsExtension(storage.bot, message)
