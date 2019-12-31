@@ -28,6 +28,14 @@ class Blacklist extends Base {
     this.name = this.getField('name')
   }
 
+  /**
+   * Getter for _id
+   * @returns {string}
+   */
+  get id () {
+    return this.getField('_id')
+  }
+
   static get TYPES () {
     return {
       USER: 0,
