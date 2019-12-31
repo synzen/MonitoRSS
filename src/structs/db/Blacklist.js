@@ -1,3 +1,4 @@
+const BlacklistModel = require('../../models/Blacklist.js').model
 const Base = require('./Base.js')
 
 class Blacklist extends Base {
@@ -21,6 +22,9 @@ class Blacklist extends Base {
     if (this.type === undefined) {
       throw new TypeError('type is undefined')
     }
+    if (isNaN(this.type)) {
+      throw new TypeError('type is not a number')
+    }
 
     /**
      * Optional name of the target
@@ -42,6 +46,10 @@ class Blacklist extends Base {
       type: this.type,
       name: this.name
     }
+  }
+
+  static get Model () {
+    return BlacklistModel
   }
 }
 
