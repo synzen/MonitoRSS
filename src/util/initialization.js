@@ -18,7 +18,6 @@ module.exports = async bot => {
   const danglingFeeds = []
 
   // Remove missing guilds and empty guildRsses, along with other checks
-  // const guildRssList = await dbOpsGuilds.getAll()
   const profiles = await GuildProfile.getAll()
   const updatePromises = []
   const removePromises = []
