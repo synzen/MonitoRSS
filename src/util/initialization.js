@@ -3,7 +3,6 @@ const storage = require('./storage.js')
 // const checkGuild = require('./checkGuild.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const Feed = require('../structs/db/Feed.js')
-const dbOpsBlacklists = require('./db/blacklists.js')
 const dbOpsStatistics = require('./db/statistics.js')
 const dbOpsGeneral = require('./db/general.js')
 const Article = require('../models/Article.js')
@@ -17,14 +16,6 @@ module.exports = async bot => {
   const SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
   const danglingGuilds = []
   const danglingFeeds = []
-
-  // Cache blacklisted users and guilds
-  const docs = await dbOpsBlacklists.getAll()
-  for (var d = 0; d < docs.length; ++d) {
-    const blisted = docs[d]
-    if (blisted.isGuild) storage.blacklistGuilds.push(blisted.id)
-    else storage.blacklistUsers.push(blisted.id)
-  }
 
   // Remove missing guilds and empty guildRsses, along with other checks
   // const guildRssList = await dbOpsGuilds.getAll()

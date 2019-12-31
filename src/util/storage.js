@@ -32,15 +32,3 @@ exports.deletedFeeds = []
  * @type {import('../structs/ScheduleManager.js')}
  */
 exports.scheduleManager = undefined
-
-/**
- * List of IDs
- * @type {string[]}
- */
-exports.blacklistUsers = []
-
-/**
- * List of IDs
- * @type {string[]}
- */
-exports.blacklistGuilds = []
