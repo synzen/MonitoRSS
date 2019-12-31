@@ -2,9 +2,8 @@ const mongoose = require('mongoose')
 const Version = require('./common/Version.js')
 
 const schema = new mongoose.Schema({
-  id: {
-    type: String,
-    required: true
+  _id: {
+    type: String
   },
   type: {
     type: Number,

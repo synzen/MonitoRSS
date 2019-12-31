@@ -5,13 +5,8 @@ class Blacklist extends Base {
   constructor (data, _saved) {
     super(data, _saved)
 
-    /**
-     * ID
-     * @type {string}
-     */
-    this.id = this.getField('id')
-    if (!this.id) {
-      throw new TypeError('id is undefined')
+    if (!this._id) {
+      throw new TypeError('_id is undefined')
     }
 
     /**
@@ -42,7 +37,7 @@ class Blacklist extends Base {
 
   toObject () {
     return {
-      id: this.id,
+      _id: this._id,
       type: this.type,
       name: this.name
     }

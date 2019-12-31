@@ -8,11 +8,11 @@ describe('Unit::structs/db/Blacklist', function () {
         name: 'gfh'
       }
       expect(() => new Blacklist(data))
-        .toThrow(new TypeError('id is undefined'))
+        .toThrow(new TypeError('_id is undefined'))
     })
     it('throws for undefined type', function () {
       const data = {
-        id: 'asd',
+        _id: 'asd',
         name: 'gfh'
       }
       expect(() => new Blacklist(data))
@@ -20,7 +20,7 @@ describe('Unit::structs/db/Blacklist', function () {
     })
     it('throws for NaN type', function () {
       const data = {
-        id: 'asd',
+        _id: 'asd',
         name: 'gfh',
         type: 'he'
       }
@@ -29,7 +29,7 @@ describe('Unit::structs/db/Blacklist', function () {
     })
     it('does not throw for missing name', function () {
       const data = {
-        id: 'asd',
+        _id: 'asd',
         type: 2
       }
       expect(() => new Blacklist(data))
@@ -39,7 +39,7 @@ describe('Unit::structs/db/Blacklist', function () {
   describe('toObject', function () {
     it('returns correctly', function () {
       const data = {
-        id: 'srfh',
+        _id: 'srfh',
         name: '3e45y',
         type: 5
       }
