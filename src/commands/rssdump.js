@@ -30,7 +30,7 @@ module.exports = async (bot, message, command) => {
     }
     textOutput = textOutput.trim()
     await wait.edit(translate('commands.rssdump.generatedDump'))
-    await message.channel.send('', new Discord.Attachment(Buffer.from(raw ? JSON.stringify(objOutput, null, 2) : textOutput), raw ? `${link}.json` : `${link}.txt`))
+    await message.channel.send('', new Discord.Attachment(Buffer.from(raw ? JSON.stringify(objOutput, null, 2) : textOutput), raw ? `${url}.json` : `${url}.txt`))
   } catch (err) {
     log.command.warning(`rssdump`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssdump 1', message.guild, err))

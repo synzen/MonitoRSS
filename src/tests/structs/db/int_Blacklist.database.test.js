@@ -48,7 +48,6 @@ describe('Int::structs/db/FailCounter Database', function () {
     for (const key in data) {
       expect(blacklist[key]).toEqual(data[key])
     }
-    
   })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()
