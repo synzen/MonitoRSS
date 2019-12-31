@@ -4,7 +4,7 @@ const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
 const config = require('../config.js')
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'pubDate', 'pubdate', 'date']
 
-function cleanup (source, text, encoding) {
+function cleanup (feed, text, encoding) {
   if (!text) return ''
 
   let newText = text
@@ -14,7 +14,7 @@ function cleanup (source, text, encoding) {
     .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
 
   newText = htmlConvert.fromString(newText, {
-    tables: (source.formatTables !== undefined && typeof source.formatTables === 'boolean' ? source.formatTables : config.feeds.formatTables) === true ? true : [],
+    tables: (feed.formatTables !== undefined && typeof feed.formatTables === 'boolean' ? feed.formatTables : config.feeds.formatTables) === true ? true : [],
     wordwrap: null,
     ignoreHref: true,
     noLinkBrackets: true,
@@ -28,14 +28,14 @@ function cleanup (source, text, encoding) {
         let exist = true
         const globalExistOption = config.feeds.imgLinksExistence != null ? config.feeds.imgLinksExistence : defaultConfigs.feeds.imgLinksExistence.default // Always a boolean via startup checks
         exist = globalExistOption
-        const specificExistOption = source.imgLinksExistence
+        const specificExistOption = feed.imgLinksExistence
         exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
         if (!exist) return ''
 
         let image = ''
         const globalPreviewOption = config.feeds.imgPreviews != null ? config.feeds.imgPreviews : defaultConfigs.feeds.imgPreviews.default // Always a boolean via startup checks
         image = globalPreviewOption ? link : `<${link}>`
-        const specificPreviewOption = source.imgPreviews
+        const specificPreviewOption = feed.imgPreviews
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
 
         return image
@@ -50,9 +50,9 @@ function cleanup (source, text, encoding) {
 }
 
 class FlattenedJSON {
-  constructor (data, source, encoding = 'utf-8') {
+  constructor (data, feed, encoding = 'utf-8') {
     this.encoding = encoding.toLowerCase()
-    this.source = source
+    this.feed = feed
     this.data = data
     this.results = {}
     this.text = ''
@@ -107,7 +107,7 @@ class FlattenedJSON {
       let curStr = key
       while (curStr.length < longestNameLen) curStr += ' '
       const propNameLength = curStr.length
-      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ` [DATE OBJECT]`] : cleanup(this.source, this.results[key].toString(), this.encoding).split('\n')
+      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ` [DATE OBJECT]`] : cleanup(this.feed, this.results[key].toString(), this.encoding).split('\n')
       for (let u = 0; u < valueLines.length; ++u) {
         curStr += u === 0 ? `|  ${valueLines[u]}\r\n` : `   ${valueLines[u]}\r\n`
         if (u < valueLines.length - 1) {

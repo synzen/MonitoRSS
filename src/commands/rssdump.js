@@ -3,28 +3,30 @@ const Discord = require('discord.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FlattenedJSON = require('../structs/FlattenedJSON.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const guildLocale = guildRss ? guildRss.locale : undefined
-    const feedSelector = new FeedSelector(message, undefined, { command: command }, guildRss)
+    const profile = await GuildProfile.get(message.guild.id)
+    const guildLocale = profile ? profile.locale : undefined
+    const feeds = await Feed.getBy('guild', message.guild.id)
+    const feedSelector = new FeedSelector(message, undefined, { command: command }, feeds)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
     const translate = Translator.createLocaleTranslator(guildLocale)
     const wait = await message.channel.send(translate('commands.rssdump.generatingDump'))
-    const source = guildRss.sources[data.rssName]
-    const link = source.link
-    const { articleList } = await FeedFetcher.fetchFeed(link)
+    const feed = data.feed
+    const url = feed.url
+    const { articleList } = await FeedFetcher.fetchFeed(url)
     let textOutput = ''
     let objOutput = []
     const raw = message.content.split(' ')[1] === 'original'
     for (var articleObject of articleList) {
       if (raw) objOutput.push(articleObject)
-      else textOutput += new FlattenedJSON(articleObject, source).text + '\r\n\r\n'
+      else textOutput += new FlattenedJSON(articleObject, feed).text + '\r\n\r\n'
     }
     textOutput = textOutput.trim()
     await wait.edit(translate('commands.rssdump.generatedDump'))
