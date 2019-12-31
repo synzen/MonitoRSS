@@ -8,7 +8,6 @@ const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
 const FeedScheduler = require('../util/FeedScheduler.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
-const dbOpsBlacklists = require('../util/db/blacklists.js')
 const dbOpsVips = require('../util/db/vips.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const connectDb = require('../rss/db/connect.js')
@@ -167,16 +166,12 @@ class Client extends EventEmitter {
             break
           case 'finishedInit':
             storage.initialized = 2
-            if (config.database.uri.startsWith('mongodb')) await dbOpsBlacklists.refresh()
             break
           case 'cycleVIPs':
             if (bot.shard.id === message.shardId) await dbOpsVips.refresh(true)
             break
           case 'runSchedule':
             if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshRate)
-            break
-          case 'blacklists.uniformize':
-            await dbOpsBlacklists.uniformize(message.blacklistGuilds, message.blacklistUsers, true)
             break
           case 'dbRestoreSend':
             const channel = bot.channels.get(message.channelID)
@@ -197,7 +192,7 @@ class Client extends EventEmitter {
       return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     }
     this.state = STATES.STARTING
-    listeners.enableCommands()
+    await listeners.enableCommands()
     const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     try {

@@ -3,6 +3,8 @@ const path = require('path')
 const log = require('./logger.js')
 const config = require('../config.js')
 const storage = require('./storage.js')
+const Blacklist = require('../structs/db/Blacklist.js')
+const BlacklistCache = require('../structs/BlacklistCache.js')
 const eventHandlers = []
 const VALID_EVENTS = [
   'channelCreate',
@@ -69,8 +71,9 @@ if (fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'commands.js'))) 
   })
 }
 
-function messageHandler (message) {
-  require('../events/message.js')(message, config.bot.enableCommands === true && config.dev !== true ? null : true)
+const messageHandler = blacklistCache => message => {
+  const onlyOwner = config.bot.enableCommands !== true || config.dev === true
+  require('../events/message.js')(message, onlyOwner)
   try {
     if (cmdsExtension) {
       cmdsExtension(storage.bot, message)
@@ -92,8 +95,9 @@ exports.createManagers = () => {
   }
 }
 
-exports.enableCommands = () => {
-  eventHandlers.push({ name: 'message', func: messageHandler })
+exports.enableCommands = async () => {
+  const blacklistCache = new BlacklistCache(await Blacklist.getAll())
+  eventHandlers.push({ name: 'message', func: messageHandler(blacklistCache) })
   storage.bot.on('message', eventHandlers[eventHandlers.length - 1].func)
   log.general.info(`${storage.bot.shard && storage.bot.shard.count > 0 ? 'SH ' + storage.bot.shard.id + ' ' : ''}Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
 }

@@ -9,8 +9,14 @@ for (const id of config.bot.ownerIDs) {
   ownerIDs.add(id)
 }
 
-module.exports = (message, limited) => {
-  if (message.author.bot || !message.guild || storage.blacklistGuilds.includes(message.guild.id) || storage.blacklistUsers.includes(message.author.id)) {
+/**
+ * Handle discord messages from ws
+ * @param {import('discord.js').Message} message - Discord message
+ * @param {boolean} limited - Limit the listener to owners only
+ * @param {import('../structs/BlacklistCache.js')} blacklistCache - Blacklisted users and guilds
+ */
+function handler (message, limited, blacklistCache) {
+  if (message.author.bot || !message.guild || blacklistCache.guilds.has(message.guild.id) || blacklistCache.users.has(message.author.id)) {
     return
   }
 
@@ -34,3 +40,5 @@ module.exports = (message, limited) => {
     commands.runOwner(message)
   }
 }
+
+module.exports = handler

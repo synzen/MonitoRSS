@@ -24,8 +24,16 @@ class Blacklist extends Base {
 
     /**
      * Optional name of the target
+     * @type {string}
      */
     this.name = this.getField('name')
+  }
+
+  static get TYPES () {
+    return {
+      USER: 0,
+      GUILD: 1
+    }
   }
 
   toObject () {
