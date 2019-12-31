@@ -1,5 +1,4 @@
-const storage = require('../../util/storage.js')
-const dbOpsBlacklists = require('../../util/db/blacklists.js')
+const Blacklist = require('../../structs/db/Blacklist.js')
 const log = require('../../util/logger.js')
 
 exports.normal = async (bot, message) => {
@@ -7,8 +6,12 @@ exports.normal = async (bot, message) => {
   if (content.length !== 2) return
   const id = content[1]
   try {
-    if (!storage.blacklistUsers.includes(id) && !storage.blacklistGuilds.includes(id)) return message.channel.send(`ID ${id} is not blacklisted.`)
-    await dbOpsBlacklists.remove(id)
+    const blacklisted = await Blacklist.get(id)
+    if (!blacklisted) {
+      return message.channel.send(`ID ${id} is not blacklisted.`)
+    } else {
+      await blacklisted.delete()
+    }
     log.owner.success(`Removed ${id} from blacklist`)
     await message.channel.send(`Removed ${id} from blacklist.`)
   } catch (err) {
