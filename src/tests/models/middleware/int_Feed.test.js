@@ -44,7 +44,7 @@ describe('Int::models/middleware/Feed', function () {
         _id: newGuildId.toHexString()
       })
     ])
-    const feed = await FeedModel.findOne({ id }).exec()    
+    const feed = await FeedModel.findOne({ id }).exec()
     feed.guild = newGuildId.toHexString()
     await expect(feed.save())
       .rejects.toThrow('Guild cannot be changed')

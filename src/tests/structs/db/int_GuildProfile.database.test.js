@@ -1,6 +1,5 @@
 process.env.TEST_ENV = true
 const GuildProfile = require('../../../structs/db/GuildProfile.js')
-const FeedModel = require('../../../models/Feed.js').model
 const mongoose = require('mongoose')
 const config = require('../../../config.js')
 const dbName = 'test_int_guildprofile'

@@ -1,7 +1,7 @@
 const path = require('path')
 const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
-const checkGuild = require('../util/checkGuild.js')
+// const checkGuild = require('../util/checkGuild.js')
 const dbOpsVips = require('../util/db/vips.js')
 const dbOpsStatistics = require('../util/db/statistics.js')
 const AssignedSchedule = require('./db/AssignedSchedule.js')
@@ -132,7 +132,7 @@ class FeedSchedule extends EventEmitter {
     const failCounter = this.failCounters[feed.url]
     if (failCounter && failCounter.hasFailed()) {
       if (toDebug) {
-        log.debug.info(`${feed._id}: Skipping feed delegation - is invalid config: ${isInvalidConfig}, is failed: ${isFailed}`)
+        log.debug.info(`${feed._id}: Skipping feed delegation - is invalid config: ${isInvalidConfig}, is failed: ${failCounter.hasFailed()}`)
       }
       return false
     }
