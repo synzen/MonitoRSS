@@ -1,6 +1,8 @@
 const fs = require('fs')
 const path = require('path')
-const version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'))).version
+const packagePath = path.join(__dirname, '..', '..', '..', 'package.json')
+const packageContents = fs.readFileSync(packagePath)
+const version = JSON.parse(packageContents).version
 
 module.exports = {
   addedAt: {
