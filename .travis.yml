@@ -5,4 +5,4 @@ services: mongodb
 script:
   - npm run eslint
   - npm test
-  - cd src/web && npm test
+  # - cd src/web && npm test
