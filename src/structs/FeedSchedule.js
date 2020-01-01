@@ -7,6 +7,7 @@ const dbOpsStatistics = require('../util/db/statistics.js')
 const AssignedSchedule = require('./db/AssignedSchedule.js')
 const GuildProfile = require('./db/GuildProfile.js')
 const FailCounter = require('./db/FailCounter.js')
+const Format = require('./db/Format.js')
 const Feed = require('./db/Feed.js')
 const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
@@ -42,6 +43,7 @@ class FeedSchedule extends EventEmitter {
     this._sourceList = new Map()
     this._modSourceList = new Map()
     this._profilesById = new Map()
+    this._formatsByFeedId = new Map()
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedCount = 0 // For statistics
     this.failCounters = {}
@@ -62,8 +64,10 @@ class FeedSchedule extends EventEmitter {
   _delegateFeed (feed) {
     // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
     const guild = this._profilesById.get(feed.guild)
+    const format = this._formatsByFeedId.get(feed._id)
     const data = {
       ...feed.toObject(),
+      format: format ? format.toObject() : undefined,
       dateSettings: !guild
         ? {}
         : {
@@ -238,12 +242,17 @@ class FeedSchedule extends EventEmitter {
     }
 
     this.feedIDs.clear()
-    const [ failCounters, assignedSchedules, profiles, feeds ] = await Promise.all([
+    this._formatsByFeedId.clear()
+    const [ failCounters, assignedSchedules, profiles, feeds, formats ] = await Promise.all([
       FailCounter.getAll(),
       AssignedSchedule.getManyByQuery({ shard: this.shardID, schedule: this.name }),
       GuildProfile.getAll(),
-      Feed.getAll()
+      Feed.getAll(),
+      Format.getAll()
     ])
+    formats.forEach(format => {
+      this._formatsByFeedId.set(format.feed, format)
+    })
     profiles.forEach(profile => {
       this._profilesById.set(profile.id, profile)
     })
