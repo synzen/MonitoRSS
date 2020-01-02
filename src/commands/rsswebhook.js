@@ -53,7 +53,7 @@ module.exports = async (bot, message, command) => {
   try {
     const [ profile, validServer ] = await Promise.all([
       GuildProfile.get(message.guild.id),
-      Supporter.hasValidServer(message.guild.id)
+      Supporter.hasValidGuild(message.guild.id)
     ])
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)

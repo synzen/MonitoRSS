@@ -19,9 +19,9 @@ describe('Unit::structs/db/Supporter', function () {
       const data = {
         patron: 12,
         webhook: true,
-        maxServer: 1,
+        maxGuilds: 1,
         maxFeeds: 1,
-        servers: [],
+        guilds: [],
         expireAt: '3er',
         comment: '123',
         slowRate: true,
@@ -38,7 +38,7 @@ describe('Unit::structs/db/Supporter', function () {
     })
     it(`initializes correctly`, function () {
       const supporter = new Supporter({ ...initData })
-      expect(supporter.servers).toEqual([])
+      expect(supporter.guilds).toEqual([])
     })
   })
   describe('static get compatible', function () {
@@ -56,7 +56,7 @@ describe('Unit::structs/db/Supporter', function () {
     })
   })
   describe('static getValidSupporters', function () {
-    it('returns all servers of all valid supporters in 1 array', async function () {
+    it('returns all guilds of all valid supporters in 1 array', async function () {
       const supporters = [{
         _id: 1,
         isValid: () => Promise.resolve(true)
@@ -71,55 +71,55 @@ describe('Unit::structs/db/Supporter', function () {
         isValid: () => Promise.resolve(true)
       }]
       jest.spyOn(Supporter, 'getAll').mockResolvedValue(supporters)
-      const servers = await Supporter.getValidSupporters()
+      const guilds = await Supporter.getValidSupporters()
       const expected = [supporters[0], supporters[2], supporters[3]]
-      expect(servers).toEqual(expected)
+      expect(guilds).toEqual(expected)
     })
   })
-  describe('static getValidServers', function () {
-    it('returns all servers from valid supporters in 1 array', async function () {
+  describe('static getValidGuilds', function () {
+    it('returns all guilds from valid supporters in 1 array', async function () {
       const validSupporters = [{
-        servers: [1, 2, 3]
+        guilds: [1, 2, 3]
       }, {
-        servers: []
+        guilds: []
       }, {
-        servers: [4, 5, 6]
+        guilds: [4, 5, 6]
       }]
       jest.spyOn(Supporter, 'getValidSupporters').mockResolvedValue(validSupporters)
-      const returned = await Supporter.getValidServers()
+      const returned = await Supporter.getValidGuilds()
       expect(returned).toEqual([1, 2, 3, 4, 5, 6])
     })
   })
-  describe('static hasValidServer', function () {
-    it('returns whether valid servers have the id', async function () {
-      jest.spyOn(Supporter, 'getValidServers').mockResolvedValue(['a', 'b', 'c'])
-      await expect(Supporter.hasValidServer('b'))
+  describe('static hasValidGuild', function () {
+    it('returns whether valid guilds have the id', async function () {
+      jest.spyOn(Supporter, 'getValidGuilds').mockResolvedValue(['a', 'b', 'c'])
+      await expect(Supporter.hasValidGuild('b'))
         .resolves.toEqual(true)
-      await expect(Supporter.hasValidServer('z'))
+      await expect(Supporter.hasValidGuild('z'))
         .resolves.toEqual(false)
     })
   })
-  describe('getMaxServers', function () {
+  describe('getMaxGuilds', function () {
     it('returns the result from patron method if patron', async function () {
       const supporter = new Supporter({ ...initData })
       supporter.patron = true
-      const maxServers = 5555
+      const maxGuilds = 5555
       const patron = {
-        determineMaxServers: jest.fn(() => maxServers)
+        determineMaxGuilds: jest.fn(() => maxGuilds)
       }
       const spy = jest.spyOn(Patron, 'getBy').mockResolvedValue(patron)
-      const returned = await supporter.getMaxServers()
+      const returned = await supporter.getMaxGuilds()
       expect(spy).toHaveBeenCalledWith('discord', initData._id)
-      expect(returned).toEqual(maxServers)
+      expect(returned).toEqual(maxGuilds)
     })
-    it('returns 1 if maxServers is undefined, or maxServers if defined', async function () {
+    it('returns 1 if maxGuilds is undefined, or maxGuilds if defined', async function () {
       const supporter = new Supporter({ ...initData })
-      const maxServers = 999
+      const maxGuilds = 999
       supporter.patron = false
-      supporter.maxServers = 999
-      await expect(supporter.getMaxServers()).resolves.toEqual(maxServers)
-      supporter.maxServers = undefined
-      await expect(supporter.getMaxServers()).resolves.toEqual(1)
+      supporter.maxGuilds = 999
+      await expect(supporter.getMaxGuilds()).resolves.toEqual(maxGuilds)
+      supporter.maxGuilds = undefined
+      await expect(supporter.getMaxGuilds()).resolves.toEqual(1)
     })
   })
   describe('getMaxFeeds', function () {
@@ -186,11 +186,11 @@ describe('Unit::structs/db/Supporter', function () {
         _id: 'abc',
         patron: 'q3et',
         webhook: true,
-        servers: [1, 2, 3],
+        guilds: [1, 2, 3],
         expireAt: 'abc',
         comment: '123',
         slowRate: true,
-        maxServers: 435,
+        maxGuilds: 435,
         maxFeeds: 23
       }
       const supporter = new Supporter({ ...data })

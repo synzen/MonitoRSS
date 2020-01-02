@@ -11,12 +11,12 @@ class FeedScheduler {
     const results = await Promise.all([
       Schedule.getAll(),
       Feed.getAll(),
-      Supporter.getValidServers()
+      Supporter.getValidGuilds()
     ])
 
     const scheduleList = results[0]
     const feeds = results[1]
-    const supporterServers = results[2]
+    const supporterGuilds = results[2]
 
     const guildIdsSet = new Set(guildIds)
     const assignments = []
@@ -24,7 +24,7 @@ class FeedScheduler {
       if (!guildIdsSet.has(feed.guild)) {
         return
       }
-      const promise = this.assignSchedule(feed, feed.guild, shard, supporterServers, scheduleList)
+      const promise = this.assignSchedule(feed, feed.guild, shard, supporterGuilds, scheduleList)
       assignments.push(promise)
     })
     await Promise.all(assignments)
@@ -33,17 +33,17 @@ class FeedScheduler {
   /**
    * @param {import('../structs/db/Feed.js')} feed
    * @param {string} guildId
-   * @param {string[]} vipServers
+   * @param {string[]} supporterGuilds
    * @param {string} shardID
    * @param {Object<string, Object>[]} scheduleList
    */
-  static async determineSchedule (feed, guildId, supporterServers, shardID, scheduleList) {
+  static async determineSchedule (feed, guildId, supporterGuilds, shardID, scheduleList) {
     if (!scheduleList) {
       scheduleList = await Schedule.getAll()
     }
 
-    if (!supporterServers) {
-      supporterServers = await Supporter.getValidServers()
+    if (!supporterGuilds) {
+      supporterGuilds = await Supporter.getValidGuilds()
     }
 
     // const source = guildRss.sources[rssName]
@@ -51,7 +51,7 @@ class FeedScheduler {
 
     // Take care of our VIPs
     if (Supporter.compatible && !feed.url.includes('feed43')) {
-      const validVip = supporterServers.includes(guildId)
+      const validVip = supporterGuilds.includes(guildId)
       if (validVip && assignedSchedule !== 'vip') {
         return 'vip'
       }
@@ -91,22 +91,22 @@ class FeedScheduler {
    * @param {import('../structs/db/Feed.js')} feed
    * @param {string} guildId
    * @param {string} shardId
-   * @param {Object<string, Object>[]} supporterServers
+   * @param {Object<string, Object>[]} supporterGuilds
    */
-  static async reassignSchedule (feed, guildId, shardId, supporterServers) {
+  static async reassignSchedule (feed, guildId, shardId, supporterGuilds) {
     await feed.removeSchedule(shardId)
-    await this.assignSchedule(feed, guildId, shardId, supporterServers)
+    await this.assignSchedule(feed, guildId, shardId, supporterGuilds)
   }
 
   /**
    * @param {import('../structs/db/Feed.js')} feed
    * @param {string} guildId
    * @param {string} shardId
-   * @param {Object<string, Object>[]} [supporterServers]
+   * @param {Object<string, Object>[]} [supporterGuilds]
    * @param {Object<string, Object>[]} [scheduleList]
    */
-  static async assignSchedule (feed, guildId, shardId, supporterServers, scheduleList) {
-    const scheduleName = await FeedScheduler.determineSchedule(feed, guildId, supporterServers, shardId, scheduleList)
+  static async assignSchedule (feed, guildId, shardId, supporterGuilds, scheduleList) {
+    const scheduleName = await FeedScheduler.determineSchedule(feed, guildId, supporterGuilds, shardId, scheduleList)
     if (debug.feeds.has(feed._id)) {
       log.debug.info(`${feed._id}: Determined schedule is ${scheduleName}`)
     }

@@ -27,7 +27,7 @@ class Supporter extends Base {
      * Only referenced for non-patrons
      * @type {number}
      */
-    this.maxServers = this.getField('maxServers')
+    this.maxGuilds = this.getField('maxGuilds')
 
     /**
      * Only referenced for non-patrons
@@ -38,7 +38,7 @@ class Supporter extends Base {
     /**
      * @type {string[]}
      */
-    this.servers = this.getField('servers', [])
+    this.guilds = this.getField('guilds', [])
 
     /**
      * @type {string}
@@ -86,36 +86,36 @@ class Supporter extends Base {
   /**
    * @returns {string[]}
    */
-  static async getValidServers () {
-    const servers = []
+  static async getValidGuilds () {
+    const guilds = []
     const validSupporters = await this.getValidSupporters()
     validSupporters.forEach(supporter => {
-      supporter.servers.forEach(id => servers.push(id))
+      supporter.guilds.forEach(id => guilds.push(id))
     })
-    return servers
+    return guilds
   }
 
   /**
-   * @param {string} serverId
+   * @param {string} guildId
    * @returns {boolean}
    */
-  static async hasValidServer (serverId) {
-    const servers = await this.getValidServers()
-    return servers.includes(serverId)
+  static async hasValidGuild (guildId) {
+    const guilds = await this.getValidGuilds()
+    return guilds.includes(guildId)
   }
 
   /**
    * @returns {number}
    */
-  async getMaxServers () {
+  async getMaxGuilds () {
     let patron
     if (this.patron) {
       patron = await Patron.getBy('discord', this._id)
     }
     if (patron) {
-      return patron.determineMaxServers()
+      return patron.determineMaxGuilds()
     } else {
-      return this.maxServers || 1
+      return this.maxGuilds || 1
     }
   }
 
@@ -184,9 +184,9 @@ class Supporter extends Base {
       _id: this._id,
       patron: this.patron,
       webhook: this.webhook,
-      maxServers: this.maxServers,
+      maxGuilds: this.maxGuilds,
       maxFeeds: this.maxFeeds,
-      servers: this.servers,
+      guilds: this.guilds,
       expireAt: this.expireAt,
       comment: this.comment,
       slowRate: this.slowRate

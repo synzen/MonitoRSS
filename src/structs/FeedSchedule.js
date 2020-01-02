@@ -234,10 +234,10 @@ class FeedSchedule extends EventEmitter {
           supporter.getWebhookAccess(),
           supporter.getMaxFeeds()
         ])
-        const servers = supporter.servers
-        for (const serverId of servers) {
-          this.allowWebhooks[serverId] = allowWebhook
-          this.vipServerLimits[serverId] = maxFeeds
+        const guilds = supporter.guilds
+        for (const guildId of guilds) {
+          this.allowWebhooks[guildId] = allowWebhook
+          this.vipServerLimits[guildId] = maxFeeds
         }
       }
     }

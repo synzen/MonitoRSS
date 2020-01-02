@@ -4,9 +4,9 @@ const schema = new mongoose.Schema({
   _id: String,
   patron: Boolean,
   webhook: Boolean,
-  maxSevers: Number,
+  maxGuilds: Number,
   maxFeeds: Number,
-  servers: [String],
+  guilds: [String],
   expireAt: Date,
   comment: String,
   slowRate: Boolean

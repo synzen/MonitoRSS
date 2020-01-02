@@ -141,12 +141,12 @@ describe('Unit::structs/db/Patron', function () {
       })
     })
   })
-  describe('determineMaxServers', function () {
+  describe('determineMaxGuilds', function () {
     describe('inactive patron', function () {
       it('returns 1', function () {
         jest.spyOn(Patron.prototype, 'isActive').mockReturnValue(false)
         const patron = new Patron({ ...initData })
-        expect(patron.determineMaxServers()).toEqual(1)
+        expect(patron.determineMaxGuilds()).toEqual(1)
       })
     })
     describe('active patron', function () {
@@ -156,28 +156,28 @@ describe('Unit::structs/db/Patron', function () {
       it('returns 4 for >= 2500 for pledgeLifetime', function () {
         const patron = new Patron({ ...initData })
         patron.pledgeLifetime = 2511
-        expect(patron.determineMaxServers()).toEqual(4)
+        expect(patron.determineMaxGuilds()).toEqual(4)
         patron.pledgeLifetime = 2500
-        expect(patron.determineMaxServers()).toEqual(4)
+        expect(patron.determineMaxGuilds()).toEqual(4)
       })
       it('returns 3 for >= 1500 for pledgeLifetime', function () {
         const patron = new Patron({ ...initData })
         patron.pledgeLifetime = 1511
-        expect(patron.determineMaxServers()).toEqual(3)
+        expect(patron.determineMaxGuilds()).toEqual(3)
         patron.pledgeLifetime = 1500
-        expect(patron.determineMaxServers()).toEqual(3)
+        expect(patron.determineMaxGuilds()).toEqual(3)
       })
       it('returns 2 for >= 500 for pledgeLifetime', function () {
         const patron = new Patron({ ...initData })
         patron.pledgeLifetime = 511
-        expect(patron.determineMaxServers()).toEqual(2)
+        expect(patron.determineMaxGuilds()).toEqual(2)
         patron.pledgeLifetime = 500
-        expect(patron.determineMaxServers()).toEqual(2)
+        expect(patron.determineMaxGuilds()).toEqual(2)
       })
       it('returns 1 for < 500 for pledgeLifetime', function () {
         const patron = new Patron({ ...initData })
         patron.pledgeLifetime = 499
-        expect(patron.determineMaxServers()).toEqual(1)
+        expect(patron.determineMaxGuilds()).toEqual(1)
       })
     })
   })

@@ -46,7 +46,7 @@ module.exports = async (bot, message, command) => {
           : {}
       }
     }
-    if (Supporter.compatible && profile.webhook && !(await Supporter.hasValidServer(message.guild.id))) {
+    if (Supporter.compatible && profile.webhook && !(await Supporter.hasValidGuild(message.guild.id))) {
       log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
       profile.webhook = undefined
       await profile.save()

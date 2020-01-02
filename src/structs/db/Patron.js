@@ -124,7 +124,7 @@ class Patron extends Base {
   /**
    * @returns {number}
    */
-  determineMaxServers () {
+  determineMaxGuilds () {
     if (!this.isActive()) {
       return 1
     }

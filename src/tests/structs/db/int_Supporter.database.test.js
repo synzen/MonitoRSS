@@ -21,8 +21,8 @@ describe('Int::structs/db/Supporter Database', function () {
     await mongoose.connection.db.dropDatabase()
     collection = mongoose.connection.db.collection('supporters')
   })
-  describe('static getServers', function () {
-    it('returns servers of all valid supporters', async function () {
+  describe('static getGuilds', function () {
+    it('returns guilds of all valid supporters', async function () {
       const tenDaysAgo = new Date()
       tenDaysAgo.setDate(tenDaysAgo.getDate() - 10)
       const tenDaysFuture = new Date()
@@ -183,9 +183,9 @@ describe('Int::structs/db/Supporter Database', function () {
       await expect(supporter.getMaxFeeds()).resolves.toEqual(config.feeds.max)
     })
   })
-  describe('getMaxServers', function () {
-    it('returns max servers correctly for patron via method', async function () {
-      const discordId = 'getmaxfeeds max servers patron'
+  describe('getMaxGuilds', function () {
+    it('returns max guilds correctly for patron via method', async function () {
+      const discordId = 'getmaxfeeds max guilds patron'
       const data = {
         _id: discordId,
         patron: true
@@ -199,10 +199,10 @@ describe('Int::structs/db/Supporter Database', function () {
       }
       await mongoose.connection.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
-      await expect(supporter.getMaxServers()).resolves.toEqual(3)
+      await expect(supporter.getMaxGuilds()).resolves.toEqual(3)
     })
     it('returns 1 for inactive patron via method', async function () {
-      const discordId = 'getmaxfeeds max servers former patron'
+      const discordId = 'getmaxfeeds max guilds former patron'
       const data = {
         _id: discordId,
         patron: true
@@ -216,7 +216,7 @@ describe('Int::structs/db/Supporter Database', function () {
       }
       await mongoose.connection.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
-      await expect(supporter.getMaxServers()).resolves.toEqual(1)
+      await expect(supporter.getMaxGuilds()).resolves.toEqual(1)
     })
   })
   describe('getWebhookAccess', function () {
