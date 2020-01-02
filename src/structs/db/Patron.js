@@ -53,6 +53,16 @@ class Patron extends Base {
     this.email = this.getField('email')
   }
 
+  static get compatible () {
+    return config._vip === true
+  }
+
+  static async refresh () {
+    if (this.compatible) {
+      return require('../../../settings/api.js')()
+    }
+  }
+
   toObject () {
     return {
       _id: this._id,

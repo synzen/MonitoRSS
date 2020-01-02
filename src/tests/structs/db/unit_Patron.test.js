@@ -62,6 +62,16 @@ describe('Unit::structs/db/Patron', function () {
         .not.toThrow()
     })
   })
+  describe('static get compatible', function () {
+    it('returns the value compared to config', function () {
+      const oVal = config._vip
+      config._vip = true
+      expect(Patron.compatible).toEqual(true)
+      config._vip = 'drsyhet5huj'
+      expect(Patron.compatible).toEqual(false)
+      config._vip = oVal
+    })
+  })
   describe('toObject', function () {
     it('returns correctly', function () {
       const patron = new Patron({ ...initData })
