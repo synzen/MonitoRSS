@@ -1,7 +1,6 @@
-const config = require('../../config.js')
 const FeedFetcher = require('../../util/FeedFetcher.js')
 const log = require('../../util/logger.js')
-const dbOpsFailedLinks = require('../../util/db/failedLinks.js')
+const FailCounter = require('../../structs/db/FailCounter.js')
 
 exports.normal = async (bot, message) => {
   const content = message.content.split(' ')
@@ -9,12 +8,16 @@ exports.normal = async (bot, message) => {
   const link = content[1]
 
   try {
-    if (config.feeds.failLimit === 0) return await message.channel.send(`No fail limit has been set.`)
-    const failedLinkStatus = await dbOpsFailedLinks.get(link)
-    if (!failedLinkStatus || !failedLinkStatus.failed) return await message.channel.send('That is not a failed link.')
+    if (FailCounter.limit === 0) {
+      return await message.channel.send(`No fail limit has been set.`)
+    }
+    const counter = await FailCounter.getBy('url', link)
+    if (!counter || !counter.hasFailed()) {
+      return await message.channel.send('That is not a failed link.')
+    }
 
     await FeedFetcher.fetchURL(link)
-    await dbOpsFailedLinks.reset(link)
+    await counter.delete()
     log.owner.info(`Link ${link} has been refreshed and will be back on cycle.`, message.author)
     await message.channel.send(`Successfully refreshed <${link}>.`)
   } catch (err) {
