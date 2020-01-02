@@ -43,9 +43,16 @@ describe('Unit::structs/db/Supporter', function () {
   })
   describe('static get compatible', function () {
     it('returns Patron.compatible', function () {
-      const compatibleVal = 'we346yr75tu'
-      jest.spyOn(Patron, 'compatible', 'get').mockReturnValue(compatibleVal)
-      expect(Supporter.compatible).toEqual(compatibleVal)
+      const val = 'we346yr75tu'
+      jest.spyOn(Patron, 'compatible', 'get').mockReturnValue(val)
+      expect(Supporter.compatible).toEqual(val)
+    })
+  })
+  describe('static get refreshRateMinutes', function () {
+    it('returns Patron.refreshRateMinutes', function () {
+      const val = 4444
+      jest.spyOn(Patron, 'refreshRateMinutes', 'get').mockReturnValue(val)
+      expect(Supporter.refreshRateMinutes).toEqual(val)
     })
   })
   describe('static getValidSupporters', function () {

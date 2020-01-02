@@ -56,8 +56,18 @@ class Supporter extends Base {
     this.slowRate = this.getField('slowRate')
   }
 
+  /**
+   * @returns {boolean}
+   */
   static get compatible () {
     return Patron.compatible
+  }
+
+  /**
+   * @returns {number}
+   */
+  static get refreshRateMinutes () {
+    return Patron.refreshRateMinutes
   }
 
   /**

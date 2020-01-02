@@ -57,6 +57,10 @@ class Patron extends Base {
     return config._vip === true
   }
 
+  static get refreshRateMinutes () {
+    return config._vipRefreshRateMinutes
+  }
+
   static async refresh () {
     if (this.compatible) {
       return require('../../../settings/api.js')()

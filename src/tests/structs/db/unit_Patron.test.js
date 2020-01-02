@@ -72,6 +72,14 @@ describe('Unit::structs/db/Patron', function () {
       config._vip = oVal
     })
   })
+  describe('static get refreshRateMinutes', function () {
+    it('returns value in config', function () {
+      const oval = config._vipRefreshRateMinutes
+      config._vipRefreshRateMinutes = 4221
+      expect(Patron.refreshRateMinutes).toEqual(4221)
+      config._vipRefreshRateMinutes = oval
+    })
+  })
   describe('toObject', function () {
     it('returns correctly', function () {
       const patron = new Patron({ ...initData })
