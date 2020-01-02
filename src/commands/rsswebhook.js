@@ -1,9 +1,9 @@
-const dbOpsVips = require('../util/db/vips.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const Feed = require('../structs/db/Feed.js')
+const Supporter = require('../structs/db/Supporter.js')
 const log = require('../util/logger.js')
 
 async function feedSelectorFn (m, data) {
@@ -51,10 +51,13 @@ async function collectWebhookFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const [ profile, isVipServer ] = await Promise.all([ GuildProfile.get(message.guild.id), dbOpsVips.isVipServer(message.guild.id) ])
+    const [ profile, validServer ] = await Promise.all([
+      GuildProfile.get(message.guild.id),
+      Supporter.hasValidServer(message.guild.id)
+    ])
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
-    if (!isVipServer) {
+    if (!validServer) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
       return await message.channel.send(`Only servers with patron backing have access to webhooks.`)
     }

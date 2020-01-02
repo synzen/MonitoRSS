@@ -1,6 +1,4 @@
-const config = require('../config.js')
 const log = require('../util/logger.js')
-const dbOpsVips = require('../util/db/vips.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
@@ -10,6 +8,7 @@ const GuildProfile = require('../structs/db/GuildProfile.js')
 const FailCounter = require('../structs/db/FailCounter.js')
 const Feed = require('../structs/db/Feed.js')
 const Format = require('../structs/db/Format.js')
+const Supporter = require('../structs/db/Supporter.js')
 
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
@@ -47,7 +46,7 @@ module.exports = async (bot, message, command) => {
           : {}
       }
     }
-    if (config._vip && profile.webhook && !(await dbOpsVips.isVipServer(message.guild.id))) {
+    if (Supporter.compatible && profile.webhook && !(await Supporter.hasValidServer(message.guild.id))) {
       log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
       profile.webhook = undefined
       await profile.save()
