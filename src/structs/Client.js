@@ -12,6 +12,7 @@ const redisIndex = require('../structs/db/Redis/index.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientManager = require('./ClientManager.js')
 const Patron = require('./db/Patron.js')
+const Supporter = require('./db/Supporter.js')
 const EventEmitter = require('events')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const CLIENT_OPTIONS = { disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 }
@@ -188,7 +189,7 @@ class Client extends EventEmitter {
     try {
       await connectDb()
       if (!this.bot.shard || this.bot.shard.count === 0) {
-        if (Patron.compatible) {
+        if (Supporter.enabled) {
           await require('../../settings/api.js')()
         }
         // await dbOpsGeneral.verifyFeedIDs()
@@ -236,7 +237,7 @@ class Client extends EventEmitter {
         if (config.web.enabled === true) {
           this.webClientInstance.enableCP()
         }
-        if (Patron.compatible) {
+        if (Supporter.enabled) {
           this._patronTimer = setInterval(() => {
             Patron.refresh().catch(err => log.general.error(`Failed to refresh patrons on timer in Client`, err, true))
           }, 600000)

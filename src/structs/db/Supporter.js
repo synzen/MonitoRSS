@@ -56,18 +56,18 @@ class Supporter extends Base {
     this.slowRate = this.getField('slowRate')
   }
 
-  /**
-   * @returns {boolean}
-   */
-  static get compatible () {
-    return Patron.compatible
+  static get schedule () {
+    return {
+      name: 'supporter',
+      refreshRateMinutes: config._vipRefreshRateMinutes
+    }
   }
 
   /**
-   * @returns {number}
+   * @returns {boolean}
    */
-  static get refreshRateMinutes () {
-    return Patron.refreshRateMinutes
+  static get enabled () {
+    return config._vip === true
   }
 
   /**

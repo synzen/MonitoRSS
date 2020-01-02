@@ -22,7 +22,7 @@ class FeedSchedule extends EventEmitter {
     if (!schedule.refreshRateMinutes) {
       throw new Error('No refreshRateMinutes has been declared for a schedule')
     }
-    if (schedule.name !== 'default' && schedule.name !== 'supporter' && schedule.keywords.length === 0 && schedule.feeds.length === 0) {
+    if (schedule.name !== 'default' && schedule.name !== Supporter.schedule.name && schedule.keywords.length === 0 && schedule.feeds.length === 0) {
       throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     }
     super()
@@ -76,7 +76,7 @@ class FeedSchedule extends EventEmitter {
         }
     }
 
-    if (Supporter.compatible && !this.allowWebhooks[feed.guild] && feed.webhook) {
+    if (Supporter.enabled && !this.allowWebhooks[feed.guild] && feed.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
       feed.webhook = undefined
     }
@@ -227,7 +227,7 @@ class FeedSchedule extends EventEmitter {
     this.vipServerLimits = {}
     this.allowWebhooks = {}
 
-    if (Supporter.compatible) {
+    if (Supporter.enabled) {
       const supporters = await Supporter.getValidSupporters()
       for (const supporter of supporters) {
         const [ allowWebhook, maxFeeds ] = await Promise.all([

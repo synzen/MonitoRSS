@@ -62,24 +62,6 @@ describe('Unit::structs/db/Patron', function () {
         .not.toThrow()
     })
   })
-  describe('static get compatible', function () {
-    it('returns the value compared to config', function () {
-      const oVal = config._vip
-      config._vip = true
-      expect(Patron.compatible).toEqual(true)
-      config._vip = 'drsyhet5huj'
-      expect(Patron.compatible).toEqual(false)
-      config._vip = oVal
-    })
-  })
-  describe('static get refreshRateMinutes', function () {
-    it('returns value in config', function () {
-      const oval = config._vipRefreshRateMinutes
-      config._vipRefreshRateMinutes = 4221
-      expect(Patron.refreshRateMinutes).toEqual(4221)
-      config._vipRefreshRateMinutes = oval
-    })
-  })
   describe('toObject', function () {
     it('returns correctly', function () {
       const patron = new Patron({ ...initData })

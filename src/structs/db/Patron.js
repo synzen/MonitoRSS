@@ -53,14 +53,6 @@ class Patron extends Base {
     this.email = this.getField('email')
   }
 
-  static get compatible () {
-    return config._vip === true
-  }
-
-  static get refreshRateMinutes () {
-    return config._vipRefreshRateMinutes
-  }
-
   static async refresh () {
     if (this.compatible) {
       return require('../../../settings/api.js')()

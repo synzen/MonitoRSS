@@ -50,16 +50,16 @@ class FeedScheduler {
     let assignedSchedule = await AssignedSchedule.getByFeedAndShard(feed._id, shardID)
 
     // Take care of our VIPs
-    if (Supporter.compatible && !feed.url.includes('feed43')) {
-      const validVip = supporterGuilds.includes(guildId)
-      if (validVip && assignedSchedule !== 'vip') {
-        return 'vip'
+    if (Supporter.enabled && !feed.url.includes('feed43')) {
+      const validSupporter = supporterGuilds.includes(guildId)
+      if (validSupporter && assignedSchedule !== Supporter.schedule.name) {
+        return Supporter.schedule.name
       }
     }
 
     if (!assignedSchedule) {
       for (const schedule of scheduleList) {
-        if (schedule.name === 'default' || (Supporter.compatible && schedule.name === 'vip')) {
+        if (schedule.name === 'default' || (Supporter.enabled && schedule.name === Supporter.schedule.name)) {
           continue
         }
         // Check if non-default schedules first

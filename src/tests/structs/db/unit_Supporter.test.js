@@ -41,18 +41,27 @@ describe('Unit::structs/db/Supporter', function () {
       expect(supporter.guilds).toEqual([])
     })
   })
-  describe('static get compatible', function () {
-    it('returns Patron.compatible', function () {
-      const val = 'we346yr75tu'
-      jest.spyOn(Patron, 'compatible', 'get').mockReturnValue(val)
-      expect(Supporter.compatible).toEqual(val)
+  describe('static get schedule', function () {
+    it('returns the right object', function () {
+      const oValue = config._vipRefreshRateMinutes
+      config._vipRefreshRateMinutes = 1234
+      expect(Supporter.schedule).toEqual({
+        name: 'supporter',
+        refreshRateMinutes: 1234
+      })
+      config._vipRefreshRateMinutes = oValue
     })
   })
-  describe('static get refreshRateMinutes', function () {
-    it('returns Patron.refreshRateMinutes', function () {
-      const val = 4444
-      jest.spyOn(Patron, 'refreshRateMinutes', 'get').mockReturnValue(val)
-      expect(Supporter.refreshRateMinutes).toEqual(val)
+  describe('static get enabled', function () {
+    it('returns if config._vip is true', function () {
+      const oValue = config._vip
+      config._vip = true
+      expect(Supporter.enabled).toEqual(true)
+      config._vip = false
+      expect(Supporter.enabled).toEqual(false)
+      config._vip = 'abcdf'
+      expect(Supporter.enabled).toEqual(false)
+      config._vip = oValue
     })
   })
   describe('static getValidSupporters', function () {

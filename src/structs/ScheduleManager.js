@@ -34,13 +34,14 @@ class ScheduleManager {
         }).save())
       }
     }
-    if (Supporter.compatible) {
-      if (!Supporter.refreshRateMinutes || config.feeds.refreshRateMinutes === Supporter.refreshRateMinutes) {
+    if (Supporter.enabled) {
+      const supporterRefreshRate = Supporter.schedule.refreshRateMinutes
+      if (!supporterRefreshRate || config.feeds.refreshRateMinutes === supporterRefreshRate) {
         throw new Error('Missing valid supporter refresh rate')
       }
       promises.push(new Schedule({
-        name: 'supporter',
-        refreshRateMinutes: Supporter.refreshRateMinutes
+        name: Supporter.schedule.name,
+        refreshRateMinutes: supporterRefreshRate
       }).save())
     }
     await Promise.all(promises)
