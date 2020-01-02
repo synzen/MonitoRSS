@@ -69,6 +69,29 @@ describe('Unit::structs/db/Supporter', function () {
       expect(servers).toEqual(expected)
     })
   })
+  describe('static getValidServers', function () {
+    it('returns all servers from valid supporters in 1 array', async function () {
+      const validSupporters = [{
+        servers: [1, 2, 3]
+      }, {
+        servers: []
+      }, {
+        servers: [4, 5, 6]
+      }]
+      jest.spyOn(Supporter, 'getValidSupporters').mockResolvedValue(validSupporters)
+      const returned = await Supporter.getValidServers()
+      expect(returned).toEqual([1, 2, 3, 4, 5, 6])
+    })
+  })
+  describe('static hasValidServer', function () {
+    it('returns whether valid servers have the id', async function () {
+      jest.spyOn(Supporter, 'getValidServers').mockResolvedValue(['a', 'b', 'c'])
+      await expect(Supporter.hasValidServer('b'))
+        .resolves.toEqual(true)
+      await expect(Supporter.hasValidServer('z'))
+        .resolves.toEqual(false)
+    })
+  })
   describe('getMaxServers', function () {
     it('returns the result from patron method if patron', async function () {
       const supporter = new Supporter({ ...initData })

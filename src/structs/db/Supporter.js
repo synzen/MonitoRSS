@@ -61,7 +61,7 @@ class Supporter extends Base {
   }
 
   /**
-   * @returns {string[]}
+   * @returns {Supporter[]}
    */
   static async getValidSupporters () {
     const supporters = await this.getAll()
@@ -71,6 +71,27 @@ class Supporter extends Base {
     }
     const statuses = await Promise.all(promises)
     return supporters.filter((supporter, index) => statuses[index])
+  }
+
+  /**
+   * @returns {string[]}
+   */
+  static async getValidServers () {
+    const servers = []
+    const validSupporters = await this.getValidSupporters()
+    validSupporters.forEach(supporter => {
+      supporter.servers.forEach(id => servers.push(id))
+    })
+    return servers
+  }
+
+  /**
+   * @param {string} serverId
+   * @returns {boolean}
+   */
+  static async hasValidServer (serverId) {
+    const servers = await this.getValidServers()
+    return servers.includes(serverId)
   }
 
   /**
