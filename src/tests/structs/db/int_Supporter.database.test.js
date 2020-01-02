@@ -21,6 +21,64 @@ describe('Int::structs/db/Supporter Database', function () {
     await mongoose.connection.db.dropDatabase()
     collection = mongoose.connection.db.collection('supporters')
   })
+  describe('static getServers', function () {
+    it('returns servers of all valid supporters', async function () {
+      const tenDaysAgo = new Date()
+      tenDaysAgo.setDate(tenDaysAgo.getDate() - 10)
+      const tenDaysFuture = new Date()
+      tenDaysFuture.setDate(tenDaysFuture.getDate() + 10)
+      // Invalid non-patron, expired
+      const supporter1 = {
+        _id: 'w4e3yr5h',
+        expireAt: tenDaysAgo.toISOString(),
+        patron: false
+      }
+      // Valid patron, active
+      const supporter2 = {
+        _id: 'supporter2discord',
+        patron: true
+      }
+      const patron2 = {
+        discord: supporter2._id,
+        status: Patron.STATUS.ACTIVE,
+        pledge: 1,
+        pledgeLifetime: 1
+      }
+      // Invalid patron, former
+      const supporter3 = {
+        _id: 'supporter3discord',
+        patron: true
+      }
+      const patron3 = {
+        discord: supporter3._id,
+        status: Patron.STATUS.FORMER,
+        pledge: 1,
+        pledgeLifetime: 1
+      }
+      // Valid non-patron, not expired
+      const supporter4 = {
+        _id: 'w34e5rtu',
+        patron: false,
+        expireAt: tenDaysFuture.toISOString()
+      }
+      await collection.insertMany([
+        supporter1,
+        supporter2,
+        supporter3,
+        supporter4
+      ])
+      await mongoose.connection.db.collection('patrons').insertMany([
+        patron2,
+        patron3
+      ])
+      const returned = await Supporter.getValidSupporters()
+      expect(returned.length).toEqual(2)
+      expect(returned[0]).toBeInstanceOf(Supporter)
+      expect(returned[0].toObject()).toEqual(expect.objectContaining(supporter2))
+      expect(returned[1]).toBeInstanceOf(Supporter)
+      expect(returned[1].toObject()).toEqual(expect.objectContaining(supporter4))
+    })
+  })
   describe('isValid', function () {
     describe('no patron', function () {
       it('returns true if no expireAt', async function () {

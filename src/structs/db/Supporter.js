@@ -56,6 +56,23 @@ class Supporter extends Base {
     this.slowRate = this.getField('slowRate')
   }
 
+  static get compatible () {
+    return Patron.compatible
+  }
+
+  /**
+   * @returns {string[]}
+   */
+  static async getValidSupporters () {
+    const supporters = await this.getAll()
+    const promises = []
+    for (const supporter of supporters) {
+      promises.push(supporter.isValid())
+    }
+    const statuses = await Promise.all(promises)
+    return supporters.filter((supporter, index) => statuses[index])
+  }
+
   /**
    * @returns {number}
    */

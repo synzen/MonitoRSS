@@ -41,6 +41,34 @@ describe('Unit::structs/db/Supporter', function () {
       expect(supporter.servers).toEqual([])
     })
   })
+  describe('static get compatible', function () {
+    it('returns Patron.compatible', function () {
+      const compatibleVal = 'we346yr75tu'
+      jest.spyOn(Patron, 'compatible', 'get').mockReturnValue(compatibleVal)
+      expect(Supporter.compatible).toEqual(compatibleVal)
+    })
+  })
+  describe('static getValidSupporters', function () {
+    it('returns all servers of all valid supporters in 1 array', async function () {
+      const supporters = [{
+        _id: 1,
+        isValid: () => Promise.resolve(true)
+      }, {
+        _id: 2,
+        isValid: () => Promise.resolve(false)
+      }, {
+        _id: 3,
+        isValid: () => Promise.resolve(true)
+      }, {
+        _id: 4,
+        isValid: () => Promise.resolve(true)
+      }]
+      jest.spyOn(Supporter, 'getAll').mockResolvedValue(supporters)
+      const servers = await Supporter.getValidSupporters()
+      const expected = [supporters[0], supporters[2], supporters[3]]
+      expect(servers).toEqual(expected)
+    })
+  })
   describe('getMaxServers', function () {
     it('returns the result from patron method if patron', async function () {
       const supporter = new Supporter({ ...initData })
