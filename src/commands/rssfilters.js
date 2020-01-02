@@ -1,7 +1,6 @@
 const log = require('../util/logger.js')
 const VALID_OPTIONS = ['1', '2', '3', '4', '5']
 const filters = require('./util/filters.js')
-const dbOpsVips = require('../util/db/vips.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
@@ -130,10 +129,6 @@ module.exports = async (bot, message, command, role) => {
             language: feed.dateLanguage
           }
         }
-      }
-      if (feed.webhook && !(await dbOpsVips.isVipServer(message.guild.id))) {
-        log.general.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
-        feed.webhook = undefined
       }
 
       const queue = new ArticleMessageQueue()
