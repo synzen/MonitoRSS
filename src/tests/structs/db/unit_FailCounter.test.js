@@ -126,6 +126,38 @@ describe('Unit::structs/db/FailCounter', function () {
       await counter.fail(reason)
       expect(spy).not.toHaveBeenCalled()
     })
+    it('saves the current date to failedAt', async function () {
+      const data = {
+        url: 'aeswtry4'
+      }
+      const counter = new FailCounter(data)
+      expect(counter.failedAt).toBeUndefined()
+      jest.spyOn(counter, 'save').mockResolvedValue()
+      await counter.fail('my reason')
+      expect(counter.failedAt).toBeDefined()
+    })
+    it('does not overwrite previous failedAt date for another fail call', async function () {
+      const data = {
+        url: 'aeswtry4'
+      }
+      const counter = new FailCounter(data)
+      jest.spyOn(counter, 'save').mockResolvedValue()
+      await counter.fail('my reason')
+      const currentFailedAt = counter.failedAt
+      await counter.fail('dseghfrntg')
+      expect(counter.failedAt).toEqual(currentFailedAt)
+    })
+    it('sets the count to the fail limit', async function () {
+      const data = {
+        url: 'aged'
+      }
+      const limit = 1004
+      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(limit)
+      const counter = new FailCounter(data)
+      jest.spyOn(counter, 'save').mockResolvedValue()
+      await counter.fail('my reason')
+      expect(counter.count).toEqual(limit)
+    })
   })
   describe('increment', function () {
     it('calls fail if it reached the threshold', async function () {
@@ -170,14 +202,17 @@ describe('Unit::structs/db/FailCounter', function () {
       const url = 'w49y6huie'
       const count = 1111
       const reason = 'jackzzz'
+      const failedAt = 'q3w24t6ery5tu6'
       counter.url = url
       counter.count = count
       counter.reason = reason
+      counter.failedAt = failedAt
       const returned = counter.toObject()
       expect(returned).toEqual({
         url,
         count,
-        reason
+        reason,
+        failedAt
       })
     })
   })

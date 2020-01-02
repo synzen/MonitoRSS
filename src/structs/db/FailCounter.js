@@ -26,6 +26,12 @@ class FailCounter extends Base {
      * @type {string}
      */
     this.reason = this.getField('reason')
+
+    /**
+     * The date failure occurred
+     * @type {string}
+     */
+    this.failedAt = this.getField('failedAt')
   }
 
   static get limit () {
@@ -79,7 +85,8 @@ class FailCounter extends Base {
     return {
       url: this.url,
       count: this.count,
-      reason: this.reason
+      reason: this.reason,
+      failedAt: this.failedAt
     }
   }
 
@@ -109,6 +116,12 @@ class FailCounter extends Base {
    * @param {string} reason
    */
   async fail (reason) {
+    if (!this.failedAt) {
+      this.failedAt = new Date().toISOString()
+    }
+    if (this.count !== FailCounter.limit) {
+      this.count = FailCounter.limit
+    }
     if (this.reason !== reason) {
       this.reason = reason
       return this.save()

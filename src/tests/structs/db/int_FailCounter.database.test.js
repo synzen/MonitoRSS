@@ -160,6 +160,28 @@ describe('Int::structs/db/FailCounter Database', function () {
       await expect(collection.findOne({ url }))
         .resolves.toHaveProperty('reason', newReason)
     })
+    it('saves the failedAt date', async function () {
+      const url = 'instancefaildate'
+      await collection.insertOne({
+        url,
+        count: 0
+      })
+      const counter = await FailCounter.getBy('url', url)
+      await counter.fail('mz')
+      await expect(collection.findOne({ url }))
+        .resolves.toHaveProperty('failedAt')
+    })
+    it('sets the count to the fail limit', async function () {
+      const url = 'instancefailsetlimit'
+      await collection.insertOne({
+        url,
+        count: 0
+      })
+      const counter = await FailCounter.getBy('url', url)
+      await counter.fail('mz')
+      await expect(collection.findOne({ url }))
+        .resolves.toHaveProperty('count', config.feeds.failLimit)
+    })
   })
 
   afterAll(async function () {

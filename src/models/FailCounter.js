@@ -7,7 +7,8 @@ const schema = new mongoose.Schema({
     unique: true
   },
   count: Number,
-  reason: String
+  reason: String,
+  failedAt: Date
 })
 
 schema.add(Version)
