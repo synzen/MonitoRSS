@@ -90,6 +90,29 @@ describe('Unit::structs/db/Supporter', function () {
       expect(returned).toEqual([1, 2, 3, 4, 5, 6])
     })
   })
+  describe('static getValidSupporterOfGuild', function () {
+    it('returns the supporter of the guild', async function () {
+      const guildId = 'q23wt5'
+      const supporters = [{
+        _id: 1,
+        guilds: ['a', 'b']
+      }, {
+        _id: 2,
+        guilds: ['c', guildId]
+      }, {
+        _id: 3,
+        guilds: []
+      }]
+      jest.spyOn(Supporter, 'getValidSupporters').mockResolvedValue(supporters)
+      return expect(Supporter.getValidSupporterOfGuild(guildId))
+        .resolves.toEqual(supporters[1])
+    })
+    it('returns null if no supporter found', async function () {
+      jest.spyOn(Supporter, 'getValidSupporters').mockResolvedValue([])
+      return expect(Supporter.getValidSupporterOfGuild('sweg'))
+        .resolves.toBeNull()
+    })
+  })
   describe('static hasValidGuild', function () {
     it('returns whether valid guilds have the id', async function () {
       jest.spyOn(Supporter, 'getValidGuilds').mockResolvedValue(['a', 'b', 'c'])

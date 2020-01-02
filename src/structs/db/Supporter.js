@@ -97,6 +97,20 @@ class Supporter extends Base {
 
   /**
    * @param {string} guildId
+   * @returns {Supporter|null}
+   */
+  static async getValidSupporterOfGuild (guildId) {
+    const validSupporters = await this.getValidSupporters()
+    for (const supporter of validSupporters) {
+      if (supporter.guilds.includes(guildId)) {
+        return supporter
+      }
+    }
+    return null
+  }
+
+  /**
+   * @param {string} guildId
    * @returns {boolean}
    */
   static async hasValidGuild (guildId) {
