@@ -1,30 +1,31 @@
 const log = require('../../util/logger.js')
-const dbOpsGuilds = require('../../util/db/guilds.js')
-const dbOpsFailedLinks = require('../../util/db/failedLinks.js')
+const Feed = require('../../structs/db/Feed.js')
+const FailCounter = require('../../structs/db/FailCounter.js')
 
 exports.normal = async (bot, message) => {
   try {
-    const link = message.content.split(' ')[1]
-    if (!link) return await message.channel.send('No link detected.')
-    const guildRssList = await dbOpsGuilds.getAll()
-    const affected = {}
-
-    guildRssList.forEach(guildRss => {
-      const rssList = guildRss.sources
-      if (!rssList) return
-      for (var rssName in rssList) {
-        const source = rssList[rssName]
-        if (source.link !== link) continue
-        if (!affected[guildRss.id]) affected[guildRss.id] = { guildRss: guildRss, rssNames: [rssName] }
-        else affected[guildRss.id].rssNames.push(rssName)
+    const url = message.content.split(' ')[1]
+    if (!url) {
+      return await message.channel.send('No link detected.')
+    }
+    const randomFeed = await Feed.getBy('url', url)
+    if (!randomFeed) {
+      return await message.channel.send('No feeds found with that link.')
+    }
+    const counter = await FailCounter.getBy('url', url)
+    if (counter) {
+      if (counter.hasFailed()) {
+        return await message.channel.send(`This URL has already failed (dated ${counter.failedAt}).`)
       }
-    })
-
-    const failedLinkStatus = await dbOpsFailedLinks.get(link)
-    if (failedLinkStatus && failedLinkStatus.failed) return await message.channel.send(`That link has already failed on ${failedLinkStatus.failed}.`)
-    if (Object.keys(affected).length === 0) return await message.channel.send('No guilds found with that link.')
-    await dbOpsFailedLinks.fail(link)
-    await message.channel.send('Successfully failed a link.')
+      await counter.fail(`Forced failure by owner ${message.author.id} (${message.author.username})`)
+    } else {
+      const data = {
+        url
+      }
+      const newCounter = new FailCounter(data)
+      await newCounter.fail(`Forced failure by owner ${message.author.id} (${message.author.username})`)
+    }
+    await message.channel.send('Successfully failed the link.')
   } catch (err) {
     log.owner.warning('forceremove', message.guild, message.author, err)
   }
