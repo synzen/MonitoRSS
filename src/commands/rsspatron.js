@@ -1,12 +1,12 @@
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
-const dbOpsVips = require('../util/db/vips.js')
-const helpText = guildRss => `Proper usage:
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Supporter = require('../structs/db/Supporter.js')
+const helpText = profile => `Proper usage:
 
-\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
-\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
-\`${guildRss ? (guildRss.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
+\`${profile ? (profile.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
+\`${profile ? (profile.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
+\`${profile ? (profile.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
 `
 
 async function verifyServer (bot, serverId) {
@@ -20,8 +20,17 @@ async function verifyServer (bot, serverId) {
   } else return bot.guilds.get(serverId)
 }
 
-async function switchServerArg (bot, message, args, vipUser, guildRss) {
+/**
+ * @param {import('discord.js').Client} bot
+ * @param {import('discord.js').Message} message
+ * @param {string[]} args
+ * @param {Supporter} supporter
+ * @param {string[]} supportedGuilds
+ * @param {GuildProfile} profile
+ */
+async function switchServerArg (bot, message, args, supporter, supportedGuilds, profile) {
   try {
+    const maxServers = await supporter.getMaxGuilds()
     const action = args.shift() // Third arg
     if (!action) return await message.channel.send('You must specify either `add` or `remove` as your third argument.')
     let server = args.shift() // Fourth arg
@@ -29,30 +38,45 @@ async function switchServerArg (bot, message, args, vipUser, guildRss) {
     if (server === 'this') server = message.guild.id
 
     if (action === 'add') {
-      if ((vipUser.maxServers && vipUser.servers.length >= vipUser.maxServers) || (!vipUser.maxServers && vipUser.servers.length === 1)) return await message.channel.send(`You cannot add any more servers for your patron status. Your maximum is ${vipUser.maxServers ? vipUser.maxServers : 1}.`)
-      if (vipUser.servers.includes(server)) return await message.channel.send(`That server already has your patron backing.`)
+      if (supporter.guilds.length >= maxServers) {
+        return await message.channel.send(`You cannot add any more servers for your patron status. Your maximum is ${maxServers}.`)
+      }
+      if (supporter.guilds.includes(server)) {
+        return await message.channel.send(`That server already has your patron backing.`)
+      }
+      if (supportedGuilds.includes(server)) {
+        return await message.channel.send(`This server is already supported by another patron.`)
+      }
       const m = await message.channel.send(`Adding server ${server}...`)
-      const gotServer = await verifyServer(bot, server)
-      if (!gotServer) return await m.edit(`Unable to add server \`${server}\`. Either it does not exist, or I am not in it.`)
-      await dbOpsVips.addServers({ vipUser, serversToAdd: [server] })
-      await m.edit(`Successfully added ${server} (${gotServer.name})`)
+      const gotGuild = await verifyServer(bot, server)
+      if (!gotGuild) {
+        return await m.edit(`Unable to add server \`${server}\`. Either it does not exist, or I am not in it.`)
+      }
+      supporter.guilds.push(server)
+      await supporter.save()
+      await m.edit(`Successfully added ${server} (${gotGuild.name})`)
     } else if (action === 'remove') {
-      if (!vipUser.servers.includes(server)) return await message.channel.send(`That server does not have your patron backing.`)
+      if (!supporter.guilds.includes(server)) {
+        return await message.channel.send(`That server does not have your patron backing.`)
+      }
       const m2 = await message.channel.send(`Removing server ${server}...`)
-      await dbOpsVips.removeServers({ vipUser, serversToRemove: [server] })
+      supporter.guilds.splice(supporter.guilds.indexOf(server), 1)
+      await supporter.save()
       await m2.edit(`Successfully removed`)
     } else if (action === 'list') {
-      if (!vipUser.servers || vipUser.servers.length === 0) return await message.channel.send(`You have no servers under your patron backing. The maximum number of servers you may have under your patron backing is ${vipUser.maxServers ? vipUser.maxServers : 1}.`)
-      const myServers = vipUser.servers
-      let content = `The maximum number of servers you may add your patron backing to is ${vipUser.maxServers ? vipUser.maxServers : 1}. The following guilds are backed by your patron status:\n\n`
-      for (const id of myServers) {
-        const gotServer = await verifyServer(bot, id)
-        content += gotServer ? `${gotServer.id} (${gotServer.name})\n` : `${id} (Unknown)\n`
+      if (supporter.guilds.length === 0) {
+        return await message.channel.send(`You have no servers under your patron backing. The maximum number of servers you may have under your patron backing is ${maxServers}.`)
+      }
+      const myGuilds = supporter.guilds
+      let content = `The maximum number of servers you may add your patron backing to is ${maxServers}. The following guilds are backed by your patron status:\n\n`
+      for (const id of myGuilds) {
+        const gotGuild = await verifyServer(bot, id)
+        content += gotGuild ? `${gotGuild.id} (${gotGuild.name})\n` : `${id} (Unknown)\n`
       }
 
       await message.channel.send(content)
     } else {
-      await message.channel.send(`Invalid command usage. ${helpText(guildRss)}`)
+      await message.channel.send(`Invalid command usage. ${helpText(profile)}`)
     }
   } catch (err) {
     log.command.warning('rsspatron servers', message.guild, err, true)
@@ -62,17 +86,26 @@ async function switchServerArg (bot, message, args, vipUser, guildRss) {
 
 module.exports = async (bot, message) => {
   try {
-    const [ guildRss, vipUser ] = await Promise.all([ dbOpsGuilds.get(message.guild.id), dbOpsVips.get(message.author.id) ])
+    const [ profile, supporter, supportedGuilds ] = await Promise.all([
+      GuildProfile.get(message.guild.id),
+      Supporter.get(message.author.id),
+      Supporter.getValidGuilds()
+    ])
 
-    if (!vipUser || vipUser.invalid === true) return await message.channel.send('You must be a patron to use this command.')
+    if (!supporter || !(await supporter.isValid())) {
+      return await message.channel.send('You must be a patron to use this command.')
+    }
     const args = message.content.toLowerCase().split(' ').map(item => item.trim())
     args.shift() // Remove prefix
     if (args.length === 0) {
-      return await message.channel.send(helpText(guildRss))
+      return await message.channel.send(helpText(profile))
     }
     const type = args.shift() // Second arg
-    if (type === 'servers') switchServerArg(bot, message, args, vipUser, guildRss)
-    else await message.channel.send(`Invalid command usage. ${helpText(guildRss)}`)
+    if (type === 'servers') {
+      switchServerArg(bot, message, args, supporter, supportedGuilds, profile)
+    } else {
+      await message.channel.send(`Invalid command usage. ${helpText(profile)}`)
+    }
     // switch (type) {
     //   case 'servers':
 
