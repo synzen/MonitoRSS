@@ -2,7 +2,6 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const dbCmds = require('./db/commands.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
-const dbOpsVips = require('../util/db/vips.js')
 const Article = require('../models/Article.js')
 const FeedScheduler = require('../util/FeedScheduler.js')
 const Feed = require('../structs/db/Feed.js')
@@ -67,7 +66,7 @@ exports.addNewFeed = async (settings, customTitle) => {
   const newFeed = new Feed(newFeedData)
   await newFeed.save()
 
-  const assignedSchedule = await FeedScheduler.assignSchedule(newFeed, channel.guild.id, shardId, await dbOpsVips.getValidServers())
+  const assignedSchedule = await FeedScheduler.assignSchedule(newFeed, channel.guild.id, shardId)
 
   exports.initializeFeed(articleList, link, assignedSchedule.name, shardId)
     .catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${newFeed.id}`, channel.guild, err, true))
