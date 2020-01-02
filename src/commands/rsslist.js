@@ -103,7 +103,7 @@ module.exports = async (bot, message, command) => {
       let refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} ${translate('commands.rsslist.seconds')}` : `${schedule.refreshRate} ${translate('commands.rsslist.minutes')}` : translate('commands.rsslist.unknown')
 
       // Patreon link
-      if (config._vip === true && !supporter) {
+      if (Supporter.compatible === true && !supporter) {
         refreshRate += ' [－](https://www.patreon.com/discordrss)'
       }
       list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('generics.channelUpper')}: #${channelName}\n${translate('commands.rsslist.refreshRate')}: ${refreshRate}\n${webhook}${translate('commands.rsslist.link')}: ${url}`)

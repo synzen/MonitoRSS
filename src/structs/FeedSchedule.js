@@ -76,7 +76,7 @@ class FeedSchedule extends EventEmitter {
         }
     }
 
-    if (config._vip === true && !this.allowWebhooks[feed.guild] && feed.webhook) {
+    if (Supporter.compatible && !this.allowWebhooks[feed.guild] && feed.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
       feed.webhook = undefined
     }

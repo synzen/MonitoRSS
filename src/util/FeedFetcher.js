@@ -1,10 +1,10 @@
 const fetch = require('node-fetch')
-const config = require('../config.js')
 const cloudscraper = require('cloudscraper') // For cloudflare
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
+const Supporter = require('../structs/db/Supporter.js')
 const Article = require('../structs/Article.js')
 const testFilters = require('../rss/translator/filters.js')
 
@@ -84,7 +84,7 @@ class FeedFetcher {
     }
 
     // Cloudflare is used here
-    if (config._vip) {
+    if (Supporter.compatible) {
       throw new RequestError(this.REQUEST_ERROR_CODE, `Bad Cloudflare status code (${endStatus}) (Unsupported on public bot)`, true)
     }
     return this.fetchCloudScraper(url)
