@@ -2,21 +2,20 @@ const channelTracker = require('../util/channelTracker.js')
 const initialize = require('../rss/initialize.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const serverLimit = require('../util/serverLimit.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const FailCounter = require('../structs/db/FailCounter.js')
+const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message) => {
   try {
-    const [ profile, serverLimitData ] = await Promise.all([
+    const [ profile, supporter ] = await Promise.all([
       GuildProfile.get(message.guild.id),
-      serverLimit(message.guild.id)
+      Supporter.getValidSupporterOfGuild(message.guild.id)
     ])
     const feeds = await Feed.getManyBy('guild', message.guild.id)
-    const vipUser = serverLimitData.vipUser
-    const maxFeedsAllowed = serverLimitData.max
+    const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     if (message.content.split(' ').length === 1) return await message.channel.send(translate('commands.rssadd.correctSyntax', { prefix })) // If there is no link after rssadd, return.
@@ -63,7 +62,7 @@ module.exports = async (bot, message) => {
       linkItem.shift()
 
       try {
-        const [ addedLink ] = await initialize.addNewFeed({ channel: message.channel, link, vipUser })
+        const [ addedLink ] = await initialize.addNewFeed({ channel: message.channel, link })
         if (addedLink) {
           link = addedLink
         }
