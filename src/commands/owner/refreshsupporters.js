@@ -1,9 +1,9 @@
-const dbOpsVips = require('../../util/db/vips.js')
+const Patron = require('../../structs/db/Patron.js')
 const log = require('../../util/logger.js')
 
 exports.normal = async (bot, message) => {
   try {
-    await dbOpsVips.refresh()
+    await Patron.refresh()
     log.owner.success(`Refreshed VIPs`, message.author)
     await message.channel.send(`Refreshed VIPs.`)
   } catch (err) {
