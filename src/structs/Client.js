@@ -8,10 +8,10 @@ const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
 const FeedScheduler = require('../util/FeedScheduler.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
-const dbOpsVips = require('../util/db/vips.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientManager = require('./ClientManager.js')
+const Patron = require('./db/Patron.js')
 const EventEmitter = require('events')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const CLIENT_OPTIONS = { disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 }
@@ -167,9 +167,6 @@ class Client extends EventEmitter {
           case 'finishedInit':
             storage.initialized = 2
             break
-          case 'cycleVIPs':
-            if (bot.shard.id === message.shardId) await dbOpsVips.refresh(true)
-            break
           case 'runSchedule':
             if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshRate)
             break
@@ -191,11 +188,14 @@ class Client extends EventEmitter {
     try {
       await connectDb()
       if (!this.bot.shard || this.bot.shard.count === 0) {
+        if (Patron.compatible) {
+          await require('../../settings/api.js')()
+        }
         // await dbOpsGeneral.verifyFeedIDs()
         await redisIndex.flushDatabase()
         await ScheduleManager.initializeSchedules(this.customSchedules)
         await AssignedSchedule.deleteAll()
-        await FeedScheduler.assignSchedules(-1, Array.from(this.bot.guilds.keys()), await dbOpsVips.getValidServers())
+        await FeedScheduler.assignSchedules(-1, this.bot.guilds.keyArray())
       }
       if (!this.scheduleManager) {
         const refreshRates = new Set()
@@ -236,9 +236,9 @@ class Client extends EventEmitter {
         if (config.web.enabled === true) {
           this.webClientInstance.enableCP()
         }
-        if (config._vip === true) {
-          this._vipInterval = setInterval(() => {
-            dbOpsVips.refresh().catch(err => log.general.error('Unable to refresh vips on timer', err, true))
+        if (Patron.compatible) {
+          this._patronTimer = setInterval(() => {
+            Patron.refresh().catch(err => log.general.error(`Failed to refresh patrons on timer in Client`, err, true))
           }, 600000)
         }
       }
@@ -258,7 +258,7 @@ class Client extends EventEmitter {
     log.general.warning(`${this.SHARD_PREFIX}Discord.RSS has received stop command`)
     storage.initialized = 0
     this.scheduleManager.stopSchedules()
-    clearInterval(this._vipInterval)
+    clearInterval(this._patronTimer)
     listeners.disableAll()
     if ((!storage.bot.shard || storage.bot.shard.count === 0) && config.web.enabled === true) {
       this.webClientInstance.disableCP()
