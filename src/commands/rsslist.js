@@ -2,17 +2,20 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
-const serverLimit = require('../util/serverLimit.js')
 const storage = require('../util/storage.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
 const FailCounter = require('../structs/db/FailCounter.js')
+const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const [ profile, serverLimitData ] = await Promise.all([ GuildProfile.get(message.guild.id), serverLimit(message.guild.id) ])
+    const [ profile, supporter ] = await Promise.all([
+      GuildProfile.get(message.guild.id),
+      Supporter.getValidSupporterOfGuild(message.guild.id)
+    ])
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     if (feeds.length === 0) {
@@ -20,8 +23,7 @@ module.exports = async (bot, message, command) => {
     }
 
     const failedLinks = {}
-    const vipUser = serverLimitData.vipUser
-    const maxFeedsAllowed = serverLimitData.max
+    const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
 
     // Generate the info for each feed as an array, and push into another array
     const failCounters = await Promise.all(feeds.map(feed => FailCounter.getBy('url', feed.url)))
@@ -41,10 +43,10 @@ module.exports = async (bot, message, command) => {
     }
 
     let vipDetails = ''
-    if (vipUser) {
+    if (supporter) {
       vipDetails += '**Patron Until:** '
-      if (vipUser.expireAt) {
-        const expireAt = moment(vipUser.expireAt)
+      if (supporter.expireAt) {
+        const expireAt = moment(supporter.expireAt)
         const daysLeft = Math.round(moment.duration(expireAt.diff(moment())).asDays())
         vipDetails += `${expireAt.format('D MMMM YYYY')} (${daysLeft} days)\n`
       } else {
@@ -61,8 +63,8 @@ module.exports = async (bot, message, command) => {
       .setAuthor(translate('commands.rsslist.currentActiveFeeds'))
       .setDescription(desc)
 
-    if (vipUser) {
-      list.setFooter(`Patronage backed by ${vipUser.name} (${vipUser.id})`)
+    if (supporter) {
+      list.setFooter(`Patronage backed by ${supporter._id}`)
     }
 
     feeds.forEach(feed => {
@@ -101,7 +103,7 @@ module.exports = async (bot, message, command) => {
       let refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} ${translate('commands.rsslist.seconds')}` : `${schedule.refreshRate} ${translate('commands.rsslist.minutes')}` : translate('commands.rsslist.unknown')
 
       // Patreon link
-      if (config._vip === true && !vipUser) {
+      if (config._vip === true && !supporter) {
         refreshRate += ' [－](https://www.patreon.com/discordrss)'
       }
       list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('generics.channelUpper')}: #${channelName}\n${translate('commands.rsslist.refreshRate')}: ${refreshRate}\n${webhook}${translate('commands.rsslist.link')}: ${url}`)
