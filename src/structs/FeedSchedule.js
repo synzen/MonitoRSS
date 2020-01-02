@@ -2,13 +2,13 @@ const path = require('path')
 const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
 // const checkGuild = require('../util/checkGuild.js')
-const dbOpsVips = require('../util/db/vips.js')
 const dbOpsStatistics = require('../util/db/statistics.js')
 const AssignedSchedule = require('./db/AssignedSchedule.js')
 const GuildProfile = require('./db/GuildProfile.js')
 const FailCounter = require('./db/FailCounter.js')
 const Format = require('./db/Format.js')
 const Feed = require('./db/Feed.js')
+const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
@@ -22,7 +22,7 @@ class FeedSchedule extends EventEmitter {
     if (!schedule.refreshRateMinutes) {
       throw new Error('No refreshRateMinutes has been declared for a schedule')
     }
-    if (schedule.name !== 'default' && schedule.name !== 'vip' && schedule.keywords.length === 0 && schedule.feeds.length === 0) {
+    if (schedule.name !== 'default' && schedule.name !== 'supporter' && schedule.keywords.length === 0 && schedule.feeds.length === 0) {
       throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     }
     super()
@@ -53,7 +53,6 @@ class FeedSchedule extends EventEmitter {
     this.debugFeedLinks = new Set()
 
     // For vip tracking
-    this.vipServers = []
     this.vipServerLimits = {}
     this.allowWebhooks = {}
   }
@@ -225,18 +224,20 @@ class FeedSchedule extends EventEmitter {
     }
 
     this.debugFeedLinks.clear()
-    this.vipServers = []
     this.vipServerLimits = {}
     this.allowWebhooks = {}
 
-    if (config._vip === true) {
-      const vipUsers = await dbOpsVips.getAll()
-      for (const vipUser of vipUsers) {
-        for (const serverId of vipUser.servers) {
-          if (vipUser.invalid !== true) this.allowWebhooks[serverId] = true
-          if (vipUser.invalid === true) continue
-          this.vipServers.push(serverId)
-          if (vipUser.maxFeeds) this.vipServerLimits[serverId] = vipUser.maxFeeds
+    if (Supporter.compatible) {
+      const supporters = await Supporter.getValidSupporters()
+      for (const supporter of supporters) {
+        const [ allowWebhook, maxFeeds ] = await Promise.all([
+          supporter.getWebhookAccess(),
+          supporter.getMaxFeeds()
+        ])
+        const servers = supporter.servers
+        for (const serverId of servers) {
+          this.allowWebhooks[serverId] = allowWebhook
+          this.vipServerLimits[serverId] = maxFeeds
         }
       }
     }

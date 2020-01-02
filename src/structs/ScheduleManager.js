@@ -1,5 +1,6 @@
 const config = require('../config.js')
 const FeedSchedule = require('./FeedSchedule.js')
+const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')
 const log = require('../util/logger.js')
@@ -33,13 +34,13 @@ class ScheduleManager {
         }).save())
       }
     }
-    if (config._vip === true) {
-      if (!config._vipRefreshRateMinutes || config.feeds.refreshRateMinutes === config._vipRefreshRateMinutes) {
-        throw new Error('Missing valid VIP refresh rate')
+    if (Supporter.compatible) {
+      if (!Supporter.refreshRateMinutes || config.feeds.refreshRateMinutes === Supporter.refreshRateMinutes) {
+        throw new Error('Missing valid supporter refresh rate')
       }
       promises.push(new Schedule({
-        name: 'vip',
-        refreshRateMinutes: config._vipRefreshRateMinutes
+        name: 'supporter',
+        refreshRateMinutes: Supporter.refreshRateMinutes
       }).save())
     }
     await Promise.all(promises)
