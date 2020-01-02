@@ -2,10 +2,10 @@ process.env.DRSS = true
 const config = require('../config.js')
 const connectDb = require('../rss/db/connect.js')
 const dbOpsGeneral = require('../util/db/general.js')
-const dbOpsVips = require('../util/db/vips.js')
 const ScheduleManager = require('./ScheduleManager.js')
 const FeedScheduler = require('../util/FeedScheduler.js')
 const redisIndex = require('../structs/db/Redis/index.js')
+const Patron = require('./db/Patron.js')
 const log = require('../util/logger.js')
 const EventEmitter = require('events')
 const ArticleModel = require('../models/Article.js')
@@ -89,7 +89,7 @@ class ClientManager extends EventEmitter {
   }
 
   async _shardReadyEvent (shard, message) {
-    await FeedScheduler.assignSchedules(shard.id, message.guildIds, await dbOpsVips.getValidServers())
+    await FeedScheduler.assignSchedules(shard.id, message.guildIds)
     this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: shard.id }) // Send the signal for first shard to initialize
   }
 
@@ -128,23 +128,35 @@ class ClientManager extends EventEmitter {
     if (++this.shardsDone === this.shardingManager.totalShards) {
       // Drop the ones not in the current collections
       dbOpsGeneral.cleanDatabase(this.currentCollections).catch(err => log.general.error(`Unable to clean database`, err))
-      this.shardingManager.broadcast({ _drss: true, type: 'finishedInit' })
       log.general.info(`All shards have initialized by the Sharding Manager.`)
+      // Remove broken guilds
       this.brokenGuilds.forEach(guildId => {
         log.init.warning(`(G: ${guildId}) Guild is declared missing by the Sharding Manager, removing`)
         GuildProfile.get(guildId)
           .then(profile => profile ? profile.delete() : null)
           .catch(err => log.init.warning(`(G: ${guildId}) Guild deletion error based on missing guild declared by the Sharding Manager`, err))
       })
+      // Remove broken feeds
       this.brokenFeeds.forEach(feedId => {
         log.init.warning(`(F: ${feedId}) Feed is declared missing by the Sharding Manager, removing`)
         Feed.get(feedId)
           .then(feed => feed ? feed.delete() : null)
           .catch(err => log.init.warning(`(F: ${feedId}) Feed deletion error based on missing guild declared by the Sharding Manager`, err))
       })
-      this.createIntervals()
-      if (config.web.enabled === true) this.webClientInstance.enableCP()
-      this.emit('finishInit')
+      Patron.refresh()
+        .then(() => {
+          // Create feed schedule intervals
+          this.createIntervals()
+          // Start the web UI
+          if (config.web.enabled === true) {
+            this.webClientInstance.enableCP()
+          }
+          this.shardingManager.broadcast({ _drss: true, type: 'finishedInit' })
+          this.emit('finishInit')
+        })
+        .catch(err => {
+          log.general.error(`Failed to refresh supporters after initialization in sharding manager`, err, true)
+        })
     } else if (this.shardsDone < this.shardingManager.totalShards) {
       this.shardingManager.broadcast({ _drss: true, type: 'startInit', shardId: this.activeshardIds[this.shardsDone], vipServers: message.vipServers }).catch(err => this._handleErr(err, message)) // Send signal for next shard to init
     }
@@ -191,14 +203,12 @@ class ClientManager extends EventEmitter {
     this.refreshRates.forEach((refreshRate, i) => {
       this.scheduleIntervals.push(setInterval(initiateCycles(refreshRate).bind(this), refreshRate * 60000))
     })
-    initiateCycles(config.feeds.refreshRateMinutes)() // Immediately start the default retrieval cycles with the specified refresh rate
-
-    // Refresh VIPs on a schedule
+    // Immediately start the default retrieval cycles with the specified refresh rate
+    initiateCycles(config.feeds.refreshRateMinutes)()
     setInterval(() => {
-      // Only needs to be run on a single shard since dbOps uniformizes it across all shards
-      this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err))
+      Patron.refresh()
+        .catch(err => log.general.error(`Failed to refresh patrons on timer`, err))
     }, 900000)
-    // this.shardingManager.broadcast({ _drss: true, type: 'cycleVIPs', shardId: this.activeshardIds[0] }).catch(err => log.general.error('Unable to cycle VIPs from Sharding Manager', err)) // Manually run this to update the names
   }
 }
 
