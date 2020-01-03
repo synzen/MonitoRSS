@@ -1,7 +1,23 @@
 const FilterBase = require('../../../structs/db/FilterBase.js')
-const Base = require('../../../structs/db/Base.js')
 
 class FilterClass extends FilterBase {
+  static get Model () {
+
+  }
+}
+
+class FilterClassWithFoo extends FilterBase {
+  constructor (data, _saved) {
+    super(data, _saved)
+    this.foo = this.getField('foo')
+  }
+
+  toObject () {
+    return {
+      foo: this.foo
+    }
+  }
+
   static get Model () {
 
   }
@@ -32,11 +48,16 @@ describe('Unit::structs/db/FilterBase', function () {
         a: ['fdg'],
         b: [1, 2, 6]
       }
-      const base = new FilterClass()
+      const base = new FilterClassWithFoo()
       base.filters = filters
+      base.foo = 'helloa world'
       const returned = base.toJSON()
+      expect(returned).toEqual({
+        foo: base.foo,
+        filters
+      })
       expect(returned.filters).not.toBeInstanceOf(Map)
-      expect(returned.filters).toEqual(filters)
+      // expect(returned.filters).toEqual(filters)
     })
   })
   describe('pruneFilters', function () {

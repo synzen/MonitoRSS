@@ -33,7 +33,12 @@ class FilterBase extends Base {
   }
 
   toJSON () {
+    /**
+     * Overwrite the filters map from toObject with the
+     * regular object
+     */
     return {
+      ...this.toObject(),
       filters: this.filters
     }
   }
