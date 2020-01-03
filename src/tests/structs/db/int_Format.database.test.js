@@ -88,4 +88,8 @@ describe('Int::structs/db/Format', function () {
     })
     expect(result.embeds[0].fields[0]).not.toHaveProperty('_id')
   })
+  afterAll(async function () {
+    await mongoose.connection.db.dropDatabase()
+    await mongoose.connection.close()
+  })
 })
