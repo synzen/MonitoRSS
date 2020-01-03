@@ -1,53 +1,78 @@
 const config = require('../config.js')
-const dbOpsGuilds = require('../util/db/guilds.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
+const GuildProfile = require('../structs/db/GuildProfile.js')
+const Feed = require('../structs/db/Feed.js')
+const Format = require('../structs/db/Format.js')
+const Subscriber = require('../structs/db/Subscriber.js')
+
 const Translator = require('../structs/Translator.js')
-const properties = [`message`, `embed`, `filters`, `misc-options`, `subscriptions`, 'all']
+const properties = [`format`, `filters`, `misc-options`, `subscribers`, 'all']
 
 async function destSelectorFn (m, data) {
-  const { guildRss, rssName, rssNameList } = data
-  const sourceFeedLink = guildRss.sources[rssName].link
-  const destFeedLinks = []
-  for (let i = 0; i < rssNameList.length; ++i) {
-    destFeedLinks.push(guildRss.sources[rssNameList[i]].link)
-  }
+  const { feed, selectedFeeds, locale } = data
   const cloned = []
-  if (data.cloneMessage) cloned.push('message')
-  if (data.cloneEmbed) cloned.push('embed')
+  if (data.cloneFormat) cloned.push('format')
   if (data.cloneFilters) cloned.push('filters')
   if (data.cloneMiscOptions) cloned.push('misc-options')
-  if (data.cloneSubscriptions) cloned.push('subscriptions')
+  if (data.cloneSubscribers) cloned.push('subscribers')
 
   return {
     ...data,
     clonedProps: cloned,
     next: {
-      text: Translator.translate('commands.rssclone.confirm', guildRss.locale, { link: sourceFeedLink, cloning: cloned.join('`, `'), destinations: destFeedLinks.join('\n') })
+      text: Translator.translate('commands.rssclone.confirm', locale, {
+        link: feed.url,
+        cloning: cloned.join('`, `'),
+        destinations: selectedFeeds.map(selected => `${selected.url}\n`).join().trim()
+      })
     }
   }
 }
 
 async function confirmFn (m, data) {
   if (m.content !== 'yes') {
-    throw new MenuUtils.MenuOptionError(Translator.translate('commands.rssclone.confirmError', data.guildRss ? data.guildRss.locale : null))
+    throw new MenuUtils.MenuOptionError(Translator.translate('commands.rssclone.confirmError', data.locale))
   }
-  return { ...data, confirmed: true }
+  return {
+    ...data,
+    confirmed: true
+  }
 }
 
 module.exports = async (bot, message, command) => {
   try {
-    const guildRss = await dbOpsGuilds.get(message.guild.id)
-    const guildLocale = guildRss ? guildRss.locale : undefined
+    const profile = await GuildProfile.get(message.guild.id)
+    const guildLocale = profile ? profile.locale : undefined
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(guildLocale)
-    const sourceSelector = new FeedSelector(message, undefined, { command: command, prependDescription: translate('commands.rssclone.copyFrom'), globalSelect: true }, guildRss)
-    const destSelector = new FeedSelector(message, destSelectorFn, { command: command, prependDescription: translate('commands.rssclone.copyTo'), multiSelect: true, globalSelect: true }, guildRss)
-    const confirm = new MenuUtils.Menu(message, confirmFn, { splitOptions: { prepend: '```', append: '```' } })
-    const prefix = guildRss.prefix || config.bot.prefix
+    const sourceSelector = new FeedSelector(message, undefined, {
+      command,
+      locale: guildLocale,
+      prependDescription: translate('commands.rssclone.copyFrom'),
+      globalSelect: true
+    }, feeds)
+    const destSelector = new FeedSelector(message, destSelectorFn, {
+      command,
+      locale: guildLocale,
+      prependDescription: translate('commands.rssclone.copyTo'),
+      multiSelect: true,
+      globalSelect: true
+    }, feeds)
+    const confirm = new MenuUtils.Menu(message, confirmFn, {
+      splitOptions: {
+        prepend: '```',
+        append: '```'
+      }
+    })
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     const args = MenuUtils.extractArgsAfterCommand(message.content)
     if (args.length === 0) {
-      return await message.channel.send(translate('commands.rssclone.noProperties', { prefix, properties: properties.join('`, `') }))
+      return await message.channel.send(translate('commands.rssclone.noProperties', {
+        prefix,
+        properties: properties.join('`, `')
+      }))
     }
     let invalidArgs = []
     for (const arg of args) {
@@ -60,69 +85,94 @@ module.exports = async (bot, message, command) => {
     }
 
     const cloneAll = args.includes('all')
-    const cloneMessage = cloneAll || args.includes('message')
-    const cloneEmbed = cloneAll || args.includes('embed')
     const cloneFilters = cloneAll || args.includes('filters')
     const cloneMiscOptions = cloneAll || args.includes('misc-options')
-    const cloneSubscriptions = cloneAll || args.includes('subscriptions')
+    const cloneFormat = cloneAll || args.includes('format')
+    const cloneSubscribers = cloneAll || args.includes('subscribers')
 
-    const data = await new MenuUtils.MenuSeries(message, [sourceSelector, destSelector, confirm], { cloneMessage, cloneEmbed, cloneFilters, cloneMiscOptions, cloneSubscriptions, locale: guildLocale }).start()
+    const data = await new MenuUtils.MenuSeries(message, [sourceSelector, destSelector, confirm], {
+      cloneFormat,
+      cloneFilters,
+      cloneMiscOptions,
+      cloneSubscribers,
+      locale: guildLocale
+    }).start()
+
     if (!data || !data.confirmed) return
+    /** @type {Feed} */
+    const feed = data.feed
 
-    const sourceFeed = guildRss.sources[data.rssName]
-    const destFeeds = []
-    for (let i = 0; i < data.rssNameList.length; ++i) {
-      destFeeds.push(guildRss.sources[data.rssNameList[i]])
-    }
-    // If any of these props are empty in the source feed, then it will simply be deleted
-    const emptyMessage = !sourceFeed.message
-    const emptyEmbed = !sourceFeed.embeds || sourceFeed.embeds.length === 0
-    const emptyFilters = !sourceFeed.filters || Object.keys(sourceFeed.filters).length === 0
-    const emptySubscriptions = !sourceFeed.subscribers || sourceFeed.subscribers.length === 0
-    let destLinksCount = 0
+    /** @type {Feed[]} */
+    const selectedFeeds = data.selectedFeeds
 
-    destFeeds.forEach(destFeed => {
-      // Message
-      if (emptyMessage) delete destFeed.message
-      else if (cloneMessage) destFeed.message = sourceFeed.message
+    log.command.info(`Properties ${data.clonedProps.join(',')} for the feed ${feed.url} cloning to to ${selectedFeeds.length} feeds`, message.guild)
 
-      // Embed
-      if (emptyEmbed) delete destFeed.embeds
-      else if (cloneEmbed) destFeed.embeds = JSON.parse(JSON.stringify(sourceFeed.embeds))
+    const copyFromFormat = await feed.getFormat()
+    const copyFromSubscribers = await feed.getSubscribers()
 
+    for (const selected of selectedFeeds) {
+      let updateSelected = false
       // Filters
-      if (emptyFilters) {
-        const origFilteredRoleSubs = destFeed.filters && destFeed.filters.roleSubscriptions ? JSON.parse(JSON.stringify(destFeed.filters.roleSubscriptions)) : undefined
-        if (origFilteredRoleSubs) destFeed.filters = { roleSubscriptions: origFilteredRoleSubs }
-        else delete destFeed.filters
-      } else if (cloneFilters) {
-        const origFilteredRoleSubs = destFeed.filters && destFeed.filters.roleSubscriptions ? JSON.parse(JSON.stringify(destFeed.filters.roleSubscriptions)) : undefined
-        const copy = JSON.parse(JSON.stringify(sourceFeed.filters))
-        delete copy.roleSubscriptions
-        destFeed.filters = copy
-        if (origFilteredRoleSubs) destFeed.filters.roleSubscriptions = origFilteredRoleSubs
+      if (cloneFilters) {
+        selected.filters = feed.filters
+        updateSelected = true
       }
 
-      // Options
+      // Misc Options
       if (cloneMiscOptions) {
-        destFeed.checkTitles = sourceFeed.checkTitles
-        destFeed.imgPreviews = sourceFeed.imgPreviews
-        destFeed.imgLinksExistence = sourceFeed.imgLinksExistence
-        destFeed.checkDates = sourceFeed.checkDates
-        destFeed.formatTables = sourceFeed.formatTables
-        if (sourceFeed.splitMessage) destFeed.splitMessage = JSON.parse(JSON.stringify(sourceFeed.splitMessage))
+        selected.checkTitles = feed.checkTitles
+        selected.checkDates = feed.checkDates
+        selected.formatTables = feed.formatTables
+        selected.imgLinksExistence = feed.imgLinksExistence
+        selected.imgPreviews = feed.imgPreviews
+        selected.toggleRoleMentions = feed.toggleRoleMentions
+        updateSelected = true
       }
 
-      // Global Roles
-      if (emptySubscriptions) delete destFeed.subscribers
-      else if (cloneSubscriptions) destFeed.subscribers = JSON.parse(JSON.stringify(sourceFeed.subscribers))
+      if (updateSelected) {
+        await selected.save()
+      }
 
-      destLinksCount++
-    })
+      // Format
+      if (cloneFormat) {
+        const format = await selected.getFormat()
+        if (format) {
+          await format.delete()
+        }
+        if (copyFromFormat) {
+          const data = copyFromFormat.toJSON()
+          data.feed = selected._id
+          const clonedFormat = new Format(data)
+          await clonedFormat.save()
+        }
+      }
 
-    log.command.info(`Properties ${data.clonedProps.join(',')} for the feed ${sourceFeed.link} cloning to to ${destLinksCount} feeds`, message.guild)
-    await dbOpsGuilds.update(guildRss)
-    await message.channel.send(`${translate('commands.rssclone.success', { cloned: data.clonedProps.join('`, `'), link: sourceFeed.link, destinationCount: destLinksCount })} ${translate('generics.backupReminder', { prefix })}`)
+      // Subscribers
+      if (cloneSubscribers) {
+        // Delete the selected feed's subscribers
+        const subscribers = await selected.getSubscribers()
+        const deletions = []
+        for (const subscriber of subscribers) {
+          deletions.push(subscriber.delete())
+        }
+        await Promise.all(deletions)
+        // Save the new ones
+        const saves = []
+        for (const copyFromSubscriber of copyFromSubscribers) {
+          const data = copyFromSubscriber.toJSON()
+          data.feed = selected._id
+          const newSubscriber = new Subscriber(data)
+          saves.push(newSubscriber.save())
+        }
+        await Promise.all(saves)
+      }
+    }
+
+    await message.channel.send(`${translate('commands.rssclone.success', {
+      cloned: data.clonedProps.join('`, `'),
+      link: feed.url,
+      destinationCount: selectedFeeds.length
+    })} ${translate('generics.backupReminder', { prefix })}`)
   } catch (err) {
     log.command.warning(`rssclone`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssclone 1', message.guild, err))
