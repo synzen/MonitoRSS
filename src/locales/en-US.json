@@ -164,7 +164,7 @@
     "rssclone": {
       "copyFrom": "Select the source to copy from.",
       "copyTo": "Select the destination(s) to copy to.",
-      "noProperties": "You must add at least one property to clone as an argument. The properties available for cloning are `{{properties}}`. To clone all these properties, you can just use `all`.\n\nFor example, to clone a feed's message and embed, type `{{prefix}}rssclone message embed`.",
+      "noProperties": "You must add at least one property to clone as an argument. The properties available for cloning are `{{properties}}`. To clone all these properties, you can just use `all`.\n\nFor example, to clone a feed's filters and message/embed, type `{{prefix}}rssclone filters format`.",
       "invalidProperties": "Invalid properties found: `{{invalid}}`\n\nValid properties available for cloning are `{{properties}}`.",
       "confirm": "The following settings for the feed <{{link}}>\n\n`{{cloning}}`\n\nare about to be cloned into the following feeds:\n```{{destinations}}```\nNote that if a property does not exist in the source feed, the same property in the destination feed(s) will be **deleted**.To confirm this, type `yes`. Otherwise, type `exit` to cancel.",
       "confirmError": "You must confirm by typing `yes`, or cancel by typing `exit`. Try again.",
