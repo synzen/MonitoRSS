@@ -123,11 +123,21 @@ class Base {
   }
 
   /**
-   * Convert data into a plain object
-   * @returns {Object<string, any>} - The plain object
+   * Convert class data into an object, but still maintains some data
+   * structures such as Maps for compatibility with mongoose models.
+   * @returns {Object<string, any>} - The object
    */
   toObject () {
     throw new Error('Method must be implemented by subclasses')
+  }
+
+  /**
+   * Convert class data into a plain object with only primitive
+   * values.
+   * @returns {Object<string, any>} - The plain object
+   */
+  toJSON () {
+    return this.toObject()
   }
 
   /**
@@ -423,7 +433,7 @@ class Base {
    * @returns {Base}
    */
   async saveToFile () {
-    const toSave = this.toObject()
+    const toSave = this.toJSON()
 
     for (const key in toSave) {
       if (toSave[key] === undefined) {

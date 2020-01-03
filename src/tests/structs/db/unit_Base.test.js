@@ -126,6 +126,14 @@ describe('Unit::structs/db/Base', function () {
       spy.mockReset()
     })
   })
+  describe('toJSON', function () {
+    it('returns toObject by default', function () {
+      const base = new BasicBase()
+      const toObjectValue = 3456
+      jest.spyOn(base, 'toObject').mockReturnValue(toObjectValue)
+      expect(base.toJSON()).toEqual(toObjectValue)
+    })
+  })
   describe('get', function () {
     it('throws an error for undefined id', function () {
       return expect(BasicBase.get()).rejects.toThrowError(new Error('Undefined id'))
@@ -730,7 +738,7 @@ describe('Unit::structs/db/Base', function () {
   })
   describe('saveToFile', function () {
     beforeEach(function () {
-      jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue({})
+      jest.spyOn(BasicBase.prototype, 'toJSON').mockReturnValue({})
       fs.writeFileSync = jest.fn()
       fs.mkdirSync = jest.fn()
     })
@@ -773,7 +781,7 @@ describe('Unit::structs/db/Base', function () {
       const expectedSave = {
         foo: toSave.foo
       }
-      jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toSave)
+      jest.spyOn(BasicBase.prototype, 'toJSON').mockReturnValue(toSave)
       jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
       const base = new BasicBase()
       await base.saveToFile()
@@ -785,7 +793,7 @@ describe('Unit::structs/db/Base', function () {
         const data = { fudge: 'popsicle' }
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         fs.existsSync = jest.fn(() => true)
-        jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(data)
+        jest.spyOn(BasicBase.prototype, 'toJSON').mockReturnValue(data)
         const id = 'q3etwgjrhnft'
         const base = new BasicBase()
         base._saved = true
@@ -810,7 +818,7 @@ describe('Unit::structs/db/Base', function () {
         const expectedSave = {
           foo: toSave.foo
         }
-        jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(toSave)
+        jest.spyOn(BasicBase.prototype, 'toJSON').mockReturnValue(toSave)
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
         const base = new BasicBase()
         base._saved = true
@@ -833,7 +841,7 @@ describe('Unit::structs/db/Base', function () {
         const data = { fudgead: 'popsicle' }
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         fs.existsSync = jest.fn(() => true)
-        jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue(data)
+        jest.spyOn(BasicBase.prototype, 'toJSON').mockReturnValue(data)
         const base = new BasicBase()
         base._saved = false
         await base.saveToFile()
@@ -885,7 +893,7 @@ describe('Unit::structs/db/Base', function () {
       })
       it(`uses the current _id and adds it to the file if already exists`, async function () {
         const _id = 'heasdz'
-        jest.spyOn(BasicBase.prototype, 'toObject').mockReturnValue({
+        jest.spyOn(BasicBase.prototype, 'toJSON').mockReturnValue({
           _id
         })
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])

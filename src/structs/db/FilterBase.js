@@ -22,16 +22,17 @@ class FilterBase extends Base {
   }
 
   toObject () {
-    if (Base.isMongoDatabase) {
-      const map = new Map()
-      const filters = this.filters
-      for (const key in filters) {
-        map.set(key, filters[key])
-      }
-      return {
-        filters: map
-      }
+    const map = new Map()
+    const filters = this.filters
+    for (const key in filters) {
+      map.set(key, filters[key])
     }
+    return {
+      filters: map
+    }
+  }
+
+  toJSON () {
     return {
       filters: this.filters
     }

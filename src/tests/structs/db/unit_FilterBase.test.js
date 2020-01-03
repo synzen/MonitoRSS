@@ -12,8 +12,7 @@ describe('Unit::structs/db/FilterBase', function () {
     jest.restoreAllMocks()
   })
   describe('toObject', function () {
-    it('converts the filters into a map for database', function () {
-      jest.spyOn(Base, 'isMongoDatabase', 'get').mockReturnValue(true)
+    it('converts the filters into a map', function () {
       const base = new FilterClass()
       const filters = {
         title: ['ab', 'gf'],
@@ -26,15 +25,16 @@ describe('Unit::structs/db/FilterBase', function () {
         expect(returned.filters.get(key)).toEqual(filters[key])
       }
     })
-    it('returns plain object for databaseless', function () {
-      jest.spyOn(Base, 'isMongoDatabase', 'get').mockReturnValue(false)
+  })
+  describe('toJSON', function () {
+    it('returns plain object', function () {
       const filters = {
         a: ['fdg'],
         b: [1, 2, 6]
       }
       const base = new FilterClass()
       base.filters = filters
-      const returned = base.toObject()
+      const returned = base.toJSON()
       expect(returned.filters).not.toBeInstanceOf(Map)
       expect(returned.filters).toEqual(filters)
     })
