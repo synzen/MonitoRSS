@@ -6,6 +6,7 @@ const dbOpsStatistics = require('../util/db/statistics.js')
 const AssignedSchedule = require('./db/AssignedSchedule.js')
 const GuildProfile = require('./db/GuildProfile.js')
 const FailCounter = require('./db/FailCounter.js')
+const Subscriber = require('./db/Subscriber.js')
 const Format = require('./db/Format.js')
 const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
@@ -44,6 +45,7 @@ class FeedSchedule extends EventEmitter {
     this._modSourceList = new Map()
     this._profilesById = new Map()
     this._formatsByFeedId = new Map()
+    this._subscribersByFeedId = new Map()
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedCount = 0 // For statistics
     this.failCounters = {}
@@ -64,9 +66,11 @@ class FeedSchedule extends EventEmitter {
     // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
     const guild = this._profilesById.get(feed.guild)
     const format = this._formatsByFeedId.get(feed._id)
+    const subscribers = this._subscribersByFeedId.get(feed._id) || []
     const data = {
-      ...feed.toObject(),
-      format: format ? format.toObject() : undefined,
+      ...feed.toJSON(),
+      subscribers,
+      format,
       dateSettings: !guild
         ? {}
         : {
@@ -244,18 +248,36 @@ class FeedSchedule extends EventEmitter {
 
     this.feedIDs.clear()
     this._formatsByFeedId.clear()
-    const [ failCounters, assignedSchedules, profiles, feeds, formats ] = await Promise.all([
+    this._subscribersByFeedId.clear()
+    const [
+      failCounters,
+      assignedSchedules,
+      profiles,
+      feeds,
+      formats,
+      subscribers
+    ] = await Promise.all([
       FailCounter.getAll(),
       AssignedSchedule.getManyByQuery({ shard: this.shardID, schedule: this.name }),
       GuildProfile.getAll(),
       Feed.getAll(),
-      Format.getAll()
+      Format.getAll(),
+      Subscriber.getAll()
     ])
     formats.forEach(format => {
-      this._formatsByFeedId.set(format.feed, format)
+      this._formatsByFeedId.set(format.feed, format.toJSON())
     })
     profiles.forEach(profile => {
       this._profilesById.set(profile.id, profile)
+    })
+    subscribers.forEach(subscriber => {
+      const feedId = subscriber.feed
+      const json = subscriber.toJSON()
+      if (!this._subscribersByFeedId.has(feedId)) {
+        this._subscribersByFeedId.set(feedId, [json])
+      } else {
+        this._subscribersByFeedId.get(feedId).push(json)
+      }
     })
     this.failCounters = {}
     for (const counter of failCounters) {

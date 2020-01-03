@@ -8,6 +8,7 @@ const GuildProfile = require('../structs/db/GuildProfile.js')
 const FailCounter = require('../structs/db/FailCounter.js')
 const Feed = require('../structs/db/Feed.js')
 const Format = require('../structs/db/Format.js')
+const Subscriber = require('../structs/db/Subscriber.js')
 const Supporter = require('../structs/db/Supporter.js')
 
 module.exports = async (bot, message, command) => {
@@ -23,10 +24,11 @@ module.exports = async (bot, message, command) => {
       return
     }
     const { feed } = data
-    const format = await Format.getBy('feed', feed._id)
     if (await FailCounter.hasFailed(feed.url)) {
       return await message.channel.send(translate('commands.rsstest.failed'))
     }
+    const format = await Format.getBy('feed', feed._id)
+    const subscribers = await Subscriber.getManyBy('feed', feed._id)
     const grabMsg = await message.channel.send(translate('commands.rsstest.grabbingRandom'))
     const article = await FeedFetcher.fetchRandomArticle(feed.url)
     if (!article) {
@@ -35,8 +37,9 @@ module.exports = async (bot, message, command) => {
     article._delivery = {
       rssName: feed._id,
       source: {
-        ...feed.toObject(),
-        format: format ? format.toObject() : undefined,
+        ...feed.toJSON(),
+        format: format ? format.toJSON() : undefined,
+        subscribers: subscribers.map(s => s.toJSON()),
         dateSettings: profile
           ? {
             timezone: profile.timezone,
