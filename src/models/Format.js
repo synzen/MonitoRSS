@@ -5,7 +5,7 @@ const fieldSchema = new mongoose.Schema({
   name: String,
   value: String,
   inline: Boolean
-})
+}, { _id: false })
 
 const embedSchema = new mongoose.Schema({
   title: String,
@@ -20,7 +20,7 @@ const embedSchema = new mongoose.Schema({
   imageUrl: String,
   timestamp: String,
   fields: [fieldSchema]
-})
+}, { _id: false })
 
 const schema = new mongoose.Schema({
   feed: mongoose.Types.ObjectId,
