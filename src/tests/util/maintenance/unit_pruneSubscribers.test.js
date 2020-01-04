@@ -16,20 +16,6 @@ class Guild {
     this.roles = new Set()
   }
 }
-class Bot {
-  constructor () {
-    this.users = new Map()
-  }
-}
-
-class ShardedBot extends Bot {
-  constructor () {
-    super()
-    this.shard = {
-      count: 6
-    }
-  }
-}
 
 describe('utils/maintenance/pruneSubscribers', function () {
   beforeEach(function () {
