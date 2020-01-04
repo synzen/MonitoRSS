@@ -180,17 +180,17 @@ describe('Unit::structs/db/Patron', function () {
       expect(patron.isActive()).toEqual(false)
     })
     describe('declined status', function () {
-      it('returns false for >= 4 days ago', function () {
+      it('returns false for > 3 days ago', function () {
         const longAgo = new Date(new Date().toUTCString())
-        longAgo.setDate(longAgo.getDate() - 4)
+        longAgo.setDate(longAgo.getDate() - 3.1)
         const patron = new Patron({ ...initData })
         patron.status = Patron.STATUS.DECLINED
         patron.lastCharge = longAgo.toString()
         expect(patron.isActive()).toEqual(false)
       })
-      it('returns true for < 4 days ago', function () {
+      it('returns true for <= 3 days ago', function () {
         const longAgo = new Date(new Date().toUTCString())
-        longAgo.setDate(longAgo.getDate() - 3.9)
+        longAgo.setDate(longAgo.getDate() - 3)
         const patron = new Patron({ ...initData })
         patron.status = Patron.STATUS.DECLINED
         patron.lastCharge = longAgo.toString()
