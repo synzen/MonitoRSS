@@ -3,7 +3,11 @@ const FilterBase = require('./FilterBase.js')
 const FeedModel = require('../../models/Feed.js').model
 const Format = require('./Format.js')
 const Subscriber = require('./Subscriber.js')
+const Schedule = require('./Schedule.js')
 const AssignedSchedule = require('./AssignedSchedule.js')
+const Supporter = require('./Supporter.js')
+const debug = require('../../util/debugFeeds.js')
+const log = require('../../util/logger.js')
 
 class Feed extends FilterBase {
   /**
@@ -191,19 +195,6 @@ class Feed extends FilterBase {
   }
 
   /**
-   * Remove the schedule of this feed
-   * @param {string} shardID
-   */
-  async removeSchedule (shardID) {
-    const assigned = await AssignedSchedule.getByFeedAndShard(this._id, shardID)
-    if (!assigned) {
-      return
-    }
-    // const shardID = this.bot.shard ? this.bot.shard.id : 0
-    await assigned.delete()
-  }
-
-  /**
    * Gets the message format of this feed. There is only
    * one format per feed.
    * @returns {Format}
@@ -246,6 +237,106 @@ class Feed extends FilterBase {
     }
     await Promise.all(toDelete)
     return super.delete()
+  }
+
+  /**
+   * @param {number} shardID
+   * @param {string[]} [supporterGuilds] - Array of supporter guild IDs
+   * @param {Schedule[]} [schedules] - All stored schedules
+   */
+  async determineSchedule (shardID, supporterGuilds, schedules) {
+    const assignedSchedule = await AssignedSchedule.getByFeedAndShard(this._id, shardID)
+    if (assignedSchedule) {
+      return
+    }
+
+    if (!schedules) {
+      schedules = await Schedule.getAll()
+    }
+
+    if (!supporterGuilds) {
+      supporterGuilds = await Supporter.getValidGuilds()
+    }
+
+    // Take care of our supporters first
+    if (Supporter.enabled && !this.url.includes('feed43')) {
+      const validSupporter = supporterGuilds.includes(this.guild)
+      if (validSupporter && assignedSchedule !== Supporter.schedule.name) {
+        return Supporter.schedule.name
+      }
+    }
+
+    for (const schedule of schedules) {
+      if (schedule.name === 'default' || (Supporter.enabled && schedule.name === Supporter.schedule.name)) {
+        continue
+      }
+      // Check if non-default schedules first
+      // Feed IDs first
+      const feedIDs = schedule.feeds // Potential array
+      if (feedIDs && feedIDs.includes(this._id)) {
+        return schedule.name
+      }
+      // keywords second
+      const sKeywords = schedule.keywords
+      if (!sKeywords) {
+        continue
+      }
+      for (const word of sKeywords) {
+        if (!this.url.includes(word)) {
+          continue
+        }
+        return schedule.name
+      }
+    }
+
+    return 'default'
+  }
+
+  /**
+   * Remove the schedule of this feed
+   * @param {number} shardID
+   */
+  async removeSchedule (shardID) {
+    const assigned = await AssignedSchedule.getByFeedAndShard(this._id, shardID)
+    if (!assigned) {
+      return
+    }
+    // const shardID = this.bot.shard ? this.bot.shard.id : 0
+    await assigned.delete()
+  }
+
+  /**
+   * Assign a feed schedule
+   * @param {number} shardID
+   * @param {string[]} [supporterGuilds] - Array of supporter guild IDs
+   * @param {Schedule[]} [schedules]
+   * @returns {AssignedSchedule} - The assigned schedule
+   */
+  async assignSchedule (shardID, supporterGuilds, schedules) {
+    const scheduleName = await this.determineSchedule(shardID, supporterGuilds, schedules)
+    if (debug.feeds.has(this._id)) {
+      log.debug.info(`${this._id}: Determined schedule is ${scheduleName}`)
+    }
+    const assigned = new AssignedSchedule({
+      feed: this._id,
+      schedule: scheduleName,
+      url: this.url,
+      guild: this.guild,
+      shard: shardID
+    })
+    await assigned.save()
+    return assigned
+  }
+
+  /**
+   * Remove the current schedule and assign again. Used
+   * be used when new schedules are added.
+   * @param {number} shardID
+   * @returns {AssignedSchedule} - The assigned schedule
+   */
+  async reassignSchedule (shardID) {
+    await this.removeSchedule(shardID)
+    return this.assignSchedule(shardID)
   }
 
   static get Model () {
