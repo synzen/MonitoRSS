@@ -33,6 +33,13 @@ class Subscriber extends FilterBase {
     }
   }
 
+  static get TYPES () {
+    return {
+      USER: 'user',
+      ROLE: 'role'
+    }
+  }
+
   toObject () {
     return {
       ...super.toObject(),
