@@ -1,6 +1,5 @@
 const config = require('../config.js')
 const FeedSchedule = require('./FeedSchedule.js')
-const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')
 const log = require('../util/logger.js')
@@ -11,40 +10,6 @@ class ScheduleManager {
     this.bot = bot
     this.articleMessageQueue = new ArticleMessageQueue()
     this.scheduleList = []
-  }
-
-  static async initializeSchedules (customSchedules) {
-    await Schedule.deleteAll()
-    const defaultSchedule = new Schedule({
-      name: 'default',
-      refreshRateMinutes: config.feeds.refreshRateMinutes
-    })
-    const promises = [
-      defaultSchedule.save()
-    ]
-    if (customSchedules) {
-      for (const schedule of customSchedules) {
-        const { name, refreshRateMinutes } = schedule
-        if (name === 'example') {
-          continue
-        }
-        promises.push(new Schedule({
-          name,
-          refreshRateMinutes
-        }).save())
-      }
-    }
-    if (Supporter.enabled) {
-      const supporterRefreshRate = Supporter.schedule.refreshRateMinutes
-      if (!supporterRefreshRate || config.feeds.refreshRateMinutes === supporterRefreshRate) {
-        throw new Error('Missing valid supporter refresh rate')
-      }
-      promises.push(new Schedule({
-        name: Supporter.schedule.name,
-        refreshRateMinutes: supporterRefreshRate
-      }).save())
-    }
-    await Promise.all(promises)
   }
 
   async _queueArticle (article) {
@@ -76,9 +41,6 @@ class ScheduleManager {
       this.scheduleList.push(feedSchedule)
       feedSchedule.on('article', this._queueArticle.bind(this))
       feedSchedule.on('finish', this._finishSchedule.bind(this))
-      if (this.bot.shard && this.bot.shard.count > 0) {
-        process.send({ _drss: true, type: 'addCustomSchedule', schedule: schedule })
-      }
     }
   }
 

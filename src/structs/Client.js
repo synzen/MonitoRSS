@@ -4,16 +4,14 @@ const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
 const config = require('../config.js')
 const ScheduleManager = require('./ScheduleManager.js')
-const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
-const FeedScheduler = require('../util/FeedScheduler.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
-const redisIndex = require('../structs/db/Redis/index.js')
 const connectDb = require('../rss/db/connect.js')
 const ClientManager = require('./ClientManager.js')
 const Patron = require('./db/Patron.js')
 const Supporter = require('./db/Supporter.js')
 const EventEmitter = require('events')
+const maintenance = require('../util/maintenance/index.js')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const CLIENT_OPTIONS = { disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 }
 const STATES = {
@@ -56,9 +54,13 @@ class Client extends EventEmitter {
         }
       }
     }
+    /**
+     * Custom schedules gets written over by the ClientManager's
+     * if it exists
+     */
+    this.customSchedules = customSchedules || []
     this.scheduleManager = undefined
     this.setPresence = settings.setPresence
-    this.customSchedules = customSchedules
     this.STATES = STATES
     this.state = STATES.STOPPED
     this.webClientInstance = undefined
@@ -85,16 +87,16 @@ class Client extends EventEmitter {
         this.webClientInstance = webClient()
       }
       this.bot = client
+      this.shard = client.shard && client.shard.count > 0 ? client.shard.id : -1
       this.SHARD_PREFIX = client.shard && client.shard.count > 0 ? `SH ${client.shard.id} ` : ''
-      if (client.shard && client.shard.count > 0) {
-        process.send({ _drss: true, type: 'spawned', shardId: client.shard.id, customSchedules: this.customSchedules && client.shard.id === 0 ? this.customSchedules : undefined })
-      }
       storage.bot = client
-      if (client.shard && client.shard.count > 0) this.listenToShardedEvents(client)
+      if (client.shard && client.shard.count > 0) {
+        this.listenToShardedEvents(client)
+      }
       if (!client.readyAt) {
-        client.once('ready', this._initialize.bind(this))
+        client.once('ready', this._setup.bind(this))
       } else {
-        this._initialize()
+        this._setup()
       }
     } catch (err) {
       if (err.message.includes('too many guilds')) {
@@ -106,7 +108,7 @@ class Client extends EventEmitter {
     }
   }
 
-  _initialize () {
+  _setup () {
     const bot = this.bot
     if (this.setPresence === true) {
       if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL || undefined })
@@ -139,16 +141,24 @@ class Client extends EventEmitter {
             sched.killChildren()
           }
         }
-        if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
-        else process.exit(0)
-      } else this.stop()
+        if (bot.shard && bot.shard.count > 0) {
+          bot.shard.send({ _drss: true, type: 'kill' })
+        } else {
+          process.exit(0)
+        }
+      } else {
+        this.stop()
+      }
     })
     log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
     if (!bot.shard || bot.shard.count === 0) {
       this.start()
     } else {
-      const guildIds = Array.from(bot.guilds.keyArray())
-      process.send({ _drss: true, type: 'shardReady', shardId: bot.shard.id, guildIds })
+      process.send({
+        _drss: true,
+        type: 'shardReady',
+        guildIds: bot.guilds.keyArray()
+      })
     }
   }
 
@@ -160,7 +170,8 @@ class Client extends EventEmitter {
           case 'kill' :
             process.exit(0)
           case 'startInit':
-            if (bot.shard.id === message.shardId) this.start()
+            this.customSchedules = message.customSchedules
+            this.start()
             break
           case 'stop':
             this.stop()
@@ -182,6 +193,8 @@ class Client extends EventEmitter {
     if (this.state === STATES.STARTING || this.state === STATES.READY) {
       return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     }
+    const guildsArray = this.bot.guilds.keyArray()
+    const guildsSet = new Set(guildsArray)
     this.state = STATES.STARTING
     await listeners.enableCommands()
     const uri = config.database.uri
@@ -192,12 +205,16 @@ class Client extends EventEmitter {
         if (Supporter.enabled) {
           await require('../../settings/api.js')()
         }
-        // await dbOpsGeneral.verifyFeedIDs()
-        await redisIndex.flushDatabase()
-        await ScheduleManager.initializeSchedules(this.customSchedules)
-        await AssignedSchedule.deleteAll()
-        await FeedScheduler.assignSchedules(-1, this.bot.guilds.keyArray())
+        await maintenance.prunePreInit(guildsSet, this.bot)
+        // Feeds must be pruned before calling prune subscribers
+        await Promise.all([
+          initialize.populatePefixes(),
+          initialize.populateSchedules(this.customSchedules)
+        ])
+        await initialize.populateAssignedSchedules(this.shard, guildsSet)
       }
+      await initialize.populateRedis(this.bot)
+
       if (!this.scheduleManager) {
         const refreshRates = new Set()
         refreshRates.add(config.feeds.refreshRateMinutes)
@@ -220,20 +237,17 @@ class Client extends EventEmitter {
         await this.scheduleManager._registerSchedules()
         storage.scheduleManager = this.scheduleManager
       }
-      const { danglingGuilds, danglingFeeds, activeLinks } = await initialize(this.bot)
-      // console.log('returned form initialize', danglingFeeds)
       storage.initialized = 2
       this.state = STATES.READY
       if (this.bot.shard && this.bot.shard.count > 0) {
         process.send({
           _drss: true,
           type: 'initComplete',
-          danglingGuilds,
-          danglingFeeds: danglingFeeds,
-          activeLinks,
-          shard: this.bot.shard.id
+          shard: this.bot.shard.id,
+          guilds: guildsArray
         })
       } else {
+        await maintenance.prunePostInit()
         if (config.web.enabled === true) {
           this.webClientInstance.enableCP()
         }
@@ -245,7 +259,6 @@ class Client extends EventEmitter {
       }
       listeners.createManagers(storage.bot)
       this.scheduleManager.startSchedules()
-      // if (!this.bot.shard || this.bot.shard.count === 0) this.scheduleManager.run()
       this.emit('finishInit')
     } catch (err) {
       log.general.error(`Client start`, err, true)
