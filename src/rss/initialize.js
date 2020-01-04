@@ -3,7 +3,6 @@ const log = require('../util/logger.js')
 const dbCmds = require('./db/commands.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Article = require('../models/Article.js')
-const FeedScheduler = require('../util/FeedScheduler.js')
 const Feed = require('../structs/db/Feed.js')
 
 exports.initializeFeed = async (articleList, link, assignedSchedule, shardId) => {
