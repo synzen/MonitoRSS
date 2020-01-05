@@ -14,13 +14,18 @@ jest.mock('../../../config.js')
 describe('Int::structs/db/Format', function () {
   /** @type {import('mongoose').Collection} */
   let collection
+  let feedID = new mongoose.Types.ObjectId()
   beforeAll(async function () {
     config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
     collection = mongoose.connection.db.collection('formats')
+    await mongoose.connection.db.collection('feeds').insertOne({
+      _id: feedID
+    })
   })
   describe('pruneEmbeds', function () {
+    
     it('works with fields', function () {
       const embeds = [{
         fields: [{}, {
@@ -31,6 +36,7 @@ describe('Int::structs/db/Format', function () {
         }]
       }]
       const format = new Format({
+        feed: feedID.toHexString(),
         embeds
       })
       format.pruneEmbeds()
@@ -46,6 +52,7 @@ describe('Int::structs/db/Format', function () {
         title: 'dodat'
       }, {}]
       const format = new Format({
+        feed: feedID.toHexString(),
         embeds
       })
       format.pruneEmbeds()
@@ -59,6 +66,7 @@ describe('Int::structs/db/Format', function () {
       title: 'jack'
     }]
     const data = {
+      feed: feedID.toHexString(),
       text: 'no _id',
       embeds
     }
@@ -78,6 +86,7 @@ describe('Int::structs/db/Format', function () {
       }]
     }]
     const data = {
+      feed: feedID.toHexString(),
       text: 'no _id in fields',
       embeds
     }
