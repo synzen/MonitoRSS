@@ -15,6 +15,9 @@ class Format extends Base {
      * @type {string}
      */
     this.feed = this.getField('feed')
+    if (!this.feed) {
+      throw new Error('feed is undefined')
+    }
 
     /**
      * Text message

@@ -11,6 +11,20 @@ describe('Unit::structs/db/Format', function () {
     'imageUrl',
     'timestamp'
   ]
+  const initData = {
+    feed: '123b'
+  }
+  describe('constructor', function () {
+    it('throws for missing feed', function () {
+      expect(() => new Format({})).toThrow('feed is undefined')
+    })
+    it('does not throw for appropriate data', function () {
+      const data = {
+        feed: '1234345y'
+      }
+      expect(() => new Format(data)).not.toThrow()
+    })
+  })
   describe('static isPopulatedEmbedField', function () {
     afterEach(function () {
       jest.restoreAllMocks()
@@ -78,7 +92,7 @@ describe('Unit::structs/db/Format', function () {
   describe('pruneEmbeds', function () {
     it('splices correct embeds', function () {
       const embeds = [{}, {}, {}, { jack: 1 }]
-      const format = new Format()
+      const format = new Format({ ...initData })
       format.embeds = embeds
       jest.spyOn(Format, 'isPopulatedEmbed')
         .mockReturnValueOnce(true)
@@ -91,13 +105,13 @@ describe('Unit::structs/db/Format', function () {
   })
   describe('validate', function () {
     it('calls pruneEmbeds', async function () {
-      const format = new Format()
+      const format = new Format({ ...initData })
       jest.spyOn(format, 'pruneEmbeds').mockReturnValue()
       await format.validate()
       expect(format.pruneEmbeds).toHaveBeenCalledTimes(1)
     })
     it('throws an error for invalid timestamp in an embed', function () {
-      const format = new Format()
+      const format = new Format({ ...initData })
       format.embeds = [{ timestamp: 'o' }]
       jest.spyOn(format, 'pruneEmbeds').mockReturnValue()
       return expect(format.validate())
