@@ -14,6 +14,7 @@ const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
 const storage = require('../util/storage.js') // All properties of storage must be accessed directly due to constant changes
+const maintenance = require('../util/maintenance/index.js')
 const log = require('../util/logger.js')
 
 const BATCH_SIZE = config.advanced.batchSize
@@ -56,7 +57,7 @@ class FeedSchedule extends EventEmitter {
 
     // For vip tracking
     this.vipServerLimits = {}
-    this.allowWebhooks = {}
+    this.allowWebhooks = new Map()
   }
 
   /**
@@ -80,7 +81,7 @@ class FeedSchedule extends EventEmitter {
         }
     }
 
-    if (Supporter.enabled && !this.allowWebhooks[feed.guild] && feed.webhook) {
+    if (Supporter.enabled && !this.allowWebhooks.has(feed.guild) && feed.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
       feed.webhook = undefined
     }
@@ -105,14 +106,36 @@ class FeedSchedule extends EventEmitter {
    * @param {Feed} feed
    */
   _addToSourceLists (feed) { // rssList is an object per guildRss
-    let c = 0 // To count and determine what feeds should be disabled if they violate their limits
-    const max = this.vipServerLimits[feed.guild] || config.feeds.max || 0
-    const status = {}
-
     const toDebug = debug.feeds.has(feed._id)
+    const hasGuild = this.bot.guilds.has(feed.guild)
+    const hasChannel = this.bot.channels.has(feed.channel)
+    if (!hasGuild || !hasChannel) {
+      if (debug.feeds.has(feed._id)) {
+        log.debug.info(`${feed._id}: Not processing feed since it has missing guild (${hasGuild}) or channel (${hasChannel}), assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+      }
+      return false
+    }
+
     if (!this.feedIDs.has(feed._id)) {
       if (debug.feeds.has(feed._id)) {
         log.debug.info(`${feed._id}: Not processing feed since it is not assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+      }
+      return false
+    }
+
+    const failCounter = this.failCounters[feed.url]
+    if (failCounter && failCounter.hasFailed()) {
+      if (toDebug) {
+        log.debug.info(`${feed._id}: Skipping feed delegation due to failed status: ${failCounter.hasFailed()}`)
+      }
+      return false
+    }
+
+    const format = this._formatsByFeedId.get(feed._id)
+    const disabled = maintenance.checkPermissions(feed, format, this.bot)
+    if (disabled) {
+      if (toDebug) {
+        log.debug.info(`${feed._id}: Skipping feed delegation due to disabled status: ${failCounter.hasFailed()}`)
       }
       return false
     }
@@ -122,31 +145,8 @@ class FeedSchedule extends EventEmitter {
       this.debugFeedLinks.add(feed.url)
     }
 
-    // Determine whether any feeds should be disabled
-    if (((max !== 0 && ++c <= max) || max === 0) && feed.disabled === 'Exceeded feed limit') {
-      // log.general.info(`Enabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
-      feed.enable().catch(err => log.general.warning(`Failed to enable feed named ${feed._id}`, err))
-      if (!status[feed.channel]) status[feed.channel] = { enabled: [], disabled: [] }
-      status[feed.channel].enabled.push(feed.url)
-    } else if (max !== 0 && c > max && !feed.disabled) {
-      // log.general.warning(`Disabling feed named ${rssName} for server ${guildRss.id} due to feed limit change`)
-      feed.disable('Exceeded feed limit').catch(err => log.general.warning(`Failed to disable feed named ${feed._id}`, err))
-      if (!status[feed.channel]) status[feed.channel] = { enabled: [], disabled: [] }
-      status[feed.channel].disabled.push(feed.url)
-    }
-
-    const isInvalidConfig = false // !checkGuild.config(this.bot, guildRss, rssName, toDebug)
-    const failCounter = this.failCounters[feed.url]
-    if (failCounter && failCounter.hasFailed()) {
-      if (toDebug) {
-        log.debug.info(`${feed._id}: Skipping feed delegation - is invalid config: ${isInvalidConfig}, is failed: ${failCounter.hasFailed()}`)
-      }
-      return false
-    }
-
     this._delegateFeed(feed)
 
-    // Send notices about any feeds that were enabled/disabled
     if (config.dev === true) {
       return true
     }
@@ -167,7 +167,7 @@ class FeedSchedule extends EventEmitter {
     return true
   }
 
-  _genBatchLists () { // Each batch is a bunch of links. Too many links at once will cause request failures.
+  _genBatchLists () {
     let batch = {}
 
     this._sourceList.forEach((rssList, link) => { // rssList per link
@@ -228,8 +228,8 @@ class FeedSchedule extends EventEmitter {
     }
 
     this.debugFeedLinks.clear()
-    this.vipServerLimits = {}
-    this.allowWebhooks = {}
+    this.allowWebhooks.clear()
+    const supporterLimits = new Map()
 
     if (Supporter.enabled) {
       const supporters = await Supporter.getValidSupporters()
@@ -240,8 +240,10 @@ class FeedSchedule extends EventEmitter {
         ])
         const guilds = supporter.guilds
         for (const guildId of guilds) {
-          this.allowWebhooks[guildId] = allowWebhook
-          this.vipServerLimits[guildId] = maxFeeds
+          if (allowWebhook) {
+            this.allowWebhooks.set(guildId, true)
+          }
+          supporterLimits.set(guildId, maxFeeds)
         }
       }
     }
@@ -264,6 +266,7 @@ class FeedSchedule extends EventEmitter {
       Format.getAll(),
       Subscriber.getAll()
     ])
+    await maintenance.checkLimits(feeds, supporterLimits)
     formats.forEach(format => {
       this._formatsByFeedId.set(format.feed, format.toJSON())
     })
@@ -289,6 +292,7 @@ class FeedSchedule extends EventEmitter {
       }
       this.feedIDs.add(assigned.feed)
     }
+
     this._startTime = new Date()
     this._regBatchList = []
     this._modBatchList = []
@@ -301,14 +305,6 @@ class FeedSchedule extends EventEmitter {
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
     feeds.forEach(feed => {
-      if (!this.bot.guilds.has(feed.guild)) {
-        return
-      }
-      if (!this.bot.channels.has(feed.channel)) {
-        feed.delete()
-          .then(() => log.cycle.info(`Deleted feed ${feed._id} with missing channel ${feed.channel} of guild ${feed.guild} for feed ${feed._id}`))
-          .catch(err => log.cycle.warning(`Failed to delete feed ${feed._id} for missing channel ${feed.channel} of guild ${feed.guild}`, err))
-      }
       if (this._addToSourceLists(feed)) {
         feedCount++
       }
