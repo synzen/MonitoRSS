@@ -6,6 +6,8 @@ const pruneFailCounters = require('./pruneFailCounters.js')
 const pruneSubscribers = require('./pruneSubscribers.js')
 const pruneCollections = require('./pruneCollections.js')
 const flushRedis = require('./flushRedis.js')
+const checkLimits = require('./checkLimits.js')
+const checkPermissions = require('./checkPermissions.js')
 
 /**
  * @param {Set<string>} guildIds
@@ -41,5 +43,7 @@ module.exports = {
   pruneFormats,
   pruneFailCounters,
   pruneSubscribers,
-  pruneCollections
+  pruneCollections,
+  checkLimits,
+  checkPermissions
 }
