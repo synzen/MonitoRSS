@@ -4,8 +4,9 @@ const Feed = require('../../structs/db/Feed.js')
 const Article = require('../../models/Article.js')
 const Schedule = require('../../structs/db/Schedule.js')
 const Supporter = require('../../structs/db/Supporter.js')
+
 /**
- * Precondition: AssignedSchedules have already been created
+ * Precondition: Schedules have already been created in DB
  *
  * Prune article collections that are no longer used
  * @param {Map<string, number>} guildIdsByShard

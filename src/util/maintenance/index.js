@@ -1,4 +1,3 @@
-const AssignedSchedule = require('../../structs/db/AssignedSchedule.js')
 const pruneGuilds = require('./pruneGuilds.js')
 const pruneFeeds = require('./pruneFeeds.js')
 const pruneFormats = require('./pruneFormats.js')
@@ -15,7 +14,6 @@ const checkPermissions = require('./checkPermissions.js')
  */
 async function prunePreInit (guildIdsByShard, bot) {
   await Promise.all([
-    AssignedSchedule.deleteAll(),
     flushRedis(),
     pruneGuilds(guildIdsByShard)
   ])
