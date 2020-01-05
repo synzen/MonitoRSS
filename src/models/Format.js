@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const middleware = require('./middleware/Format.js')
 const Version = require('./common/Version.js')
 
 const fieldSchema = new mongoose.Schema({
@@ -29,6 +30,8 @@ const schema = new mongoose.Schema({
 })
 
 schema.add(Version)
+
+schema.pre('validate', middleware.validate)
 
 exports.schema = schema
 exports.model = mongoose.model('Format', schema)

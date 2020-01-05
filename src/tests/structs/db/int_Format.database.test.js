@@ -2,6 +2,7 @@ process.env.TEST_ENV = true
 const config = require('../../../config.js')
 const Format = require('../../../structs/db/Format.js')
 const mongoose = require('mongoose')
+require('../../../models/Feed.js')
 const dbName = 'test_int_base'
 const CON_OPTIONS = {
   useNewUrlParser: true,

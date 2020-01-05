@@ -6,7 +6,7 @@ async function validate () {
   if (!feed) {
     throw new Error(`Subscriber's specified feed ${this.feed} was not found`)
   }
-  const current = await this.model('Subscriber').findById(this._id).exec()
+  const current = await this.model('Format').findById(this._id).exec()
   // If current doesn't exist, then it's a new subscriber
   if (current && current.feed !== this.feed) {
     throw new Error('Feed cannot be changed')
