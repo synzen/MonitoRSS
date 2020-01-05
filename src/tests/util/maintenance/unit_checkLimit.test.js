@@ -22,17 +22,16 @@ describe('utils/maintenance/checkLimits', function () {
       guild: 'a'
     }, {
       guild: 'a',
-      disabled: true,
+      disabled: 'Exceeded feed limit',
       enable: jest.fn(),
       disable: jest.fn()
     }, {
       guild: 'a',
-      disabled: true,
+      disabled: 'Exceeded feed limit',
       enable: jest.fn(),
       disable: jest.fn()
     }]
-    Feed.getAll.mockResolvedValue(feeds)
-    await checkLimits()
+    await checkLimits(feeds, new Map())
     expect(feeds[1].enable).toHaveBeenCalledTimes(1)
     expect(feeds[1].disable).not.toHaveBeenCalled()
     expect(feeds[2].enable).not.toHaveBeenCalled()
@@ -42,24 +41,23 @@ describe('utils/maintenance/checkLimits', function () {
     const feeds = [{
       // Enabled
       guild: 'a',
-      disabled: false
+      disabled: undefined
     }, {
       // Enabled
       guild: 'a',
-      disabled: false
+      disabled: undefined
     }, {
       // Enabled, over limit
       guild: 'a',
-      disabled: false,
+      disabled: undefined,
       disable: jest.fn()
     }, {
       // Disabled, nothing should be called
       guild: 'a',
-      disabled: true,
+      disabled: 'Exceeded feed limit',
       disable: jest.fn()
     }]
-    Feed.getAll.mockResolvedValue(feeds)
-    await checkLimits()
+    await checkLimits(feeds, new Map())
     expect(feeds[2].disable).toHaveBeenCalledTimes(1)
     expect(feeds[3].disable).not.toHaveBeenCalled()
   })
@@ -67,22 +65,21 @@ describe('utils/maintenance/checkLimits', function () {
     const feeds = [{
       // Enabled
       guild: 'a',
-      disabled: false
+      disabled: undefined
     }, {
       // Disabled, should be enabled since it's the 2nd feed
       guild: 'a',
-      disabled: true,
+      disabled: 'Exceeded feed limit',
       enable: jest.fn(),
       disable: jest.fn()
     }, {
       // Enabled, should be disabled since the limit is 2
       guild: 'a',
-      disabled: false,
+      disabled: undefined,
       enable: jest.fn(),
       disable: jest.fn()
     }]
-    Feed.getAll.mockResolvedValue(feeds)
-    await checkLimits()
+    await checkLimits(feeds, new Map())
     expect(feeds[1].disable).not.toHaveBeenCalled()
     expect(feeds[1].enable).toHaveBeenCalledTimes(1)
     expect(feeds[2].enable).not.toHaveBeenCalled()
@@ -92,23 +89,107 @@ describe('utils/maintenance/checkLimits', function () {
     const feeds = [{
       // Enabled
       guild: 'a',
-      disabled: false
+      disabled: undefined
     }, {
       // Disabled, should be enabled since it's the 2nd feed
       guild: 'a',
-      disabled: true,
+      disabled: 'Exceeded feed limit',
       enable: jest.fn(),
       disable: jest.fn()
     }, {
       // Enabled, should be disabled since the limit is 2
       guild: 'a',
-      disabled: false,
+      disabled: undefined,
       enable: jest.fn(),
       disable: jest.fn()
     }]
-    Feed.getAll.mockResolvedValue(feeds)
-    const result = await checkLimits()
+    const result = await checkLimits(feeds, new Map())
     expect(result.enabled).toEqual(1)
     expect(result.disabled).toEqual(1)
+  })
+  it(`uses the supporter limit if available for guild`, async function () {
+    const feeds = [{
+      // Enabled
+      guild: 'a',
+      disabled: undefined
+    }, {
+      // Enabled
+      guild: 'a',
+      disabled: undefined
+    }, {
+      // Enabled, over limit
+      guild: 'a',
+      disabled: undefined,
+      disable: jest.fn()
+    }, {
+      // Disabled, nothing should be called
+      guild: 'a',
+      disabled: 'Exceeded feed limit',
+      disable: jest.fn()
+    }]
+    await checkLimits(feeds, new Map([['a', 3]]))
+    expect(feeds[2].disable).not.toHaveBeenCalledTimes(1)
+    expect(feeds[3].disable).not.toHaveBeenCalled()
+  })
+  it(`enables all and disables none if limit is 0`, async function () {
+    const oValue = config.feeds.max
+    config.feeds.max = 0
+    const feeds = [{
+      // Enabled
+      guild: 'a',
+      disabled: undefined,
+      disable: jest.fn()
+    }, {
+      // Enabled
+      guild: 'a',
+      disabled: undefined,
+      disable: jest.fn()
+    }, {
+      // Enabled, over limi
+      guild: 'a',
+      disabled: 'Exceeded feed limit',
+      enable: jest.fn(),
+      disable: jest.fn()
+    }, {
+      // Disabled, nothing should be called
+      guild: 'a',
+      disabled: 'Exceeded feed limit',
+      enable: jest.fn(),
+      disable: jest.fn()
+    }]
+    await checkLimits(feeds, new Map())
+    expect(feeds[2].enable).toHaveBeenCalledTimes(1)
+    expect(feeds[3].enable).toHaveBeenCalled()
+    expect(feeds[0].disable).not.toHaveBeenCalled()
+    expect(feeds[1].disable).not.toHaveBeenCalled()
+    expect(feeds[2].disable).not.toHaveBeenCalled()
+    expect(feeds[3].disable).not.toHaveBeenCalled()
+    config.feeds.max = oValue
+  })
+  it(`only calls enable for feeds with 'Exceeded feed limit' reason`, async function () {
+    const feeds = [{
+      // Disabled, under limit but should not be enabled be limit checks
+      guild: 'a',
+      disabled: 'Random reason',
+      enable: jest.fn()
+    }, {
+      // Enabled
+      guild: 'a',
+      disabled: undefined
+    }, {
+      // Disabled, should be enabled by limit checks
+      guild: 'a',
+      disabled: 'Exceeded feed limit',
+      enable: jest.fn()
+    }, {
+      // Disabled, should be enabled by limit checks
+      guild: 'a',
+      disabled: 'Exceeded feed limit',
+      enable: jest.fn()
+    }]
+    await checkLimits(feeds, new Map([['a', 3]]))
+    expect(feeds[0].enable).not.toHaveBeenCalled()
+    expect(feeds[2].enable).toHaveBeenCalled()
+    expect(feeds[3].enable).not.toHaveBeenCalled()
   })
 })
