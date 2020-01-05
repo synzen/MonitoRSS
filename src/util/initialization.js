@@ -1,7 +1,6 @@
 const config = require('../config.js')
 const storage = require('./storage.js')
 const Schedule = require('../structs/db/Schedule.js')
-const Feed = require('../structs/db/Feed.js')
 const Supporter = require('../structs/db/Supporter.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const redisIndex = require('../structs/db/Redis/index.js')

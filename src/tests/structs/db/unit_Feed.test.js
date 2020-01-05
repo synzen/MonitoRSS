@@ -1,7 +1,6 @@
 const Feed = require('../../../structs/db/Feed.js')
 const Schedule = require('../../../structs/db/Schedule.js')
 const Supporter = require('../../../structs/db/Supporter.js')
-const AssignedSchedule = require('../../../structs/db/AssignedSchedule.js')
 const Format = require('../../../structs/db/Format.js')
 
 jest.mock('../../../structs/db/Format.js')
