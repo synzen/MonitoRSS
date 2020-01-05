@@ -15,11 +15,9 @@ async function pruneCollections (guildIdsByShard) {
     return -1
   }
   // currentCollections is only used if there is no sharding (for database cleaning)
-  const [ feeds, supporterGuilds, schedules ] = await Promise.all([
-    Feed.getAll(),
-    Supporter.getValidGuilds(),
-    Schedule.getAll()
-  ])
+  const feeds = await Feed.getAll()
+  const supporterGuilds = await Supporter.getValidGuilds()
+  const schedules = await Schedule.getAll()
   const currentCollections = new Set()
   const dropIndexes = []
   const assignedSchedules = await Promise.all(

@@ -179,12 +179,12 @@ describe('Unit::structs/db/Feed', function () {
     })
     it('calls Schedule.getAll if it is not passed in', async function () {
       const feed = new Feed({ ...necessaryInit })
-      await feed.determineSchedule()
+      await feed.determineSchedule(undefined, [])
       expect(Schedule.getAll).toHaveBeenCalledTimes(1)
     })
     it('calls Supporter.getValidGuilds if it is not passed in', async function () {
       const feed = new Feed({ ...necessaryInit })
-      await feed.determineSchedule()
+      await feed.determineSchedule([], undefined)
       expect(Supporter.getValidGuilds).toHaveBeenCalledTimes(1)
     })
     it('does not call Supporter methods if both passed in', async function () {
@@ -194,40 +194,29 @@ describe('Unit::structs/db/Feed', function () {
     })
     it('does not call Schedule methods if both passed in', async function () {
       const feed = new Feed({ ...necessaryInit })
-      await feed.determineSchedule(undefined, undefined, [])
+      await feed.determineSchedule([], undefined)
       expect(Schedule.getAll).not.toHaveBeenCalled()
     })
     it(`returns the schedule that has the feed's id`, async function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'id1'
       feed.url = 'no match'
-      const name = await feed.determineSchedule(-1, [], schedules)
+      const name = await feed.determineSchedule(schedules, [])
       expect(name).toEqual(schedules[1].name)
     })
     it(`returns the schedule if it has a keyword in the feed's url`, async function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'no match'
       feed.url = 'dun yek2 haz'
-      const name = await feed.determineSchedule(-1, [], schedules)
+      const name = await feed.determineSchedule(schedules, [])
       expect(name).toEqual(schedules[1].name)
     })
     it(`returns the default schedule if it matches no schedules`, async function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'no match'
       feed.url = 'no match'
-      const name = await feed.determineSchedule(-1, [], schedules)
+      const name = await feed.determineSchedule(schedules, [])
       expect(name).toEqual('default')
-    })
-    it('returns undefined if schedule is already assigned', async function () {
-      const feed = new Feed({ ...necessaryInit })
-      feed._id = 'no match'
-      feed.url = 'dun yek2 haz'
-      AssignedSchedule.getByFeedAndShard.mockResolvedValue({
-        something: 'wog'
-      })
-      const name = await feed.determineSchedule(-1, [], schedules)
-      expect(name).toEqual(undefined)
-      AssignedSchedule.getByFeedAndShard.mockRestore()
     })
     describe('if supporter enabled', function () {
       beforeEach(function () {
@@ -247,7 +236,7 @@ describe('Unit::structs/db/Feed', function () {
         feed.url = 'no match'
         feed.guild = guild
         const supporterGuilds = ['a', 'b', guild, 'd']
-        const name = await feed.determineSchedule(-1, supporterGuilds, schedules)
+        const name = await feed.determineSchedule(schedules, supporterGuilds)
         expect(name).toEqual(scheduleName)
         Supporter.schedule = undefined
       })
@@ -262,7 +251,7 @@ describe('Unit::structs/db/Feed', function () {
         feed.url = 'https://feed43.com'
         feed.guild = guild
         const supporterGuilds = ['a', 'b', guild, 'd']
-        const name = await feed.determineSchedule(-1, supporterGuilds, schedules)
+        const name = await feed.determineSchedule(schedules, supporterGuilds)
         expect(name).not.toEqual(scheduleName)
         Supporter.schedule = undefined
       })
@@ -273,7 +262,7 @@ describe('Unit::structs/db/Feed', function () {
       const feed = new Feed({ ...necessaryInit })
       const spy = jest.spyOn(feed, 'determineSchedule').mockReturnValue()
       await feed.assignSchedule(1, 2, 3)
-      expect(spy).toHaveBeenCalledWith(1, 2, 3)
+      expect(spy).toHaveBeenCalledWith(3, 2)
       spy.mockRestore()
     })
     it('creates and saves a new assigned schedule with the right values', async function () {

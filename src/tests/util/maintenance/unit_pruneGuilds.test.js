@@ -22,7 +22,7 @@ describe('utils/maintenance/pruneGuilds', function () {
       _id: 'c',
       delete: jest.fn()
     }]
-    const guildIds = new Set(['a', 'c', 'z'])
+    const guildIds = new Map([['a', 0], ['c', 2], ['z', 1]])
     GuildProfile.getAll.mockResolvedValue(profiles)
     await pruneGuilds(guildIds)
     expect(profiles[0].delete).not.toHaveBeenCalled()
@@ -44,7 +44,7 @@ describe('utils/maintenance/pruneGuilds', function () {
       _id: 'c',
       delete: jest.fn()
     }]
-    const guildIds = new Set(['a', 'c', 'f'])
+    const guildIds = new Map([['a', 0], ['c', 1], ['f', 2]])
     GuildProfile.getAll.mockResolvedValue(profiles)
     const result = await pruneGuilds(guildIds)
     expect(result).toEqual(2)

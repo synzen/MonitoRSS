@@ -1,6 +1,7 @@
 process.env.TEST_ENV = true
 const config = require('../../../config.js')
 const Article = require('../../../models/Article.js')
+const Feed = require('../../../structs/db/Feed.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_pruneCollections'
 const pruneCollections = require('../../../util/maintenance/pruneCollections.js')
@@ -19,65 +20,60 @@ describe('Int::util/maintenance/pruneCollections', function () {
     await mongoose.connection.db.dropDatabase()
   })
   it('drops unused collections', async function () {
-    // Set up the database
-    const assignedSchedules = [{
-      feed: new mongoose.Types.ObjectId(),
-      guild: '124',
-      url: 'https://www.google.com/rss',
-      shard: 1,
-      schedule: 'default'
-    }, {
-      feed: new mongoose.Types.ObjectId(),
-      url: 'https://www.google.com/rss',
-      guild: '124',
-      shard: 2,
-      schedule: 'default'
-    }, {
-      feed: new mongoose.Types.ObjectId(),
-      url: 'https://www.google2.com/rss',
-      guild: '124',
-      shard: 2,
-      schedule: 'goggles'
-    }]
     const db = mongoose.connection.db
-    const usedCollectionIDs = []
-    const unusedCollectionIDs = ['53unused1', '591unused2']
-    const ignoreCollectionIDs = ['onlywords', 'donotcount']
-    const collectionCreations = [
-      db.collection('assigned_schedules')
-        .insertMany(assignedSchedules)
-    ]
-    for (const a of assignedSchedules) {
-      const collectionID = Article.getCollectionID(a.url, a.shard, a.schedule)
-      usedCollectionIDs.push(collectionID)
-      collectionCreations.push(db.collection(collectionID).insertOne({
+    const feeds = [{
+      title: 'title1',
+      url: 'https://www.url1.com',
+      guild: 'guild1',
+      channel: 'channel1'
+    }, {
+      title: 'title2',
+      url: 'https://www.url2.com',
+      guild: 'guild2',
+      channel: 'channel2'
+    }, {
+      title: 'title3',
+      url: 'https://www.url3.com',
+      guild: 'guild3',
+      channel: 'channel3'
+    }]
+    const guildIdsByShard = new Map([['guild1', 0], ['guild2', 1]])
+    const feed1 = new Feed(feeds[0])
+    const feed2 = new Feed(feeds[1])
+    const feed3 = new Feed(feeds[2])
+    const [ schedule1, schedule2 ] = await Promise.all([
+      feed1.determineSchedule(),
+      feed2.determineSchedule(),
+    ])
+    const schedule3 = await feed3.determineSchedule()
+    const feed1Collection = Article.getCollectionID(feed1.url, guildIdsByShard.get(feed1.guild), schedule1)
+    const feed2Collection = Article.getCollectionID(feed2.url, guildIdsByShard.get(feed2.guild), schedule2)
+    // Feeed 3 is not in guild ids, thus this collection should be deleted
+    const feed3Collection = Article.getCollectionID(feed3.url, 10, schedule3)
+    await Promise.all([
+      db.collection('feeds').insertMany(feeds),
+      db.collection(feed1Collection).insertOne({
         title: 'whatever'
-      }))
-    }
-    for (const n of [ ...unusedCollectionIDs, ...ignoreCollectionIDs ]) {
-      collectionCreations.push(db.collection(n).insertOne({
+      }),
+      db.collection(feed2Collection).insertOne({
         title: 'whatever'
-      }))
-    }
-    await Promise.all(collectionCreations)
+      }),
+      db.collection('123unused').insertOne({
+        title: 'whatever'
+      })
+    ])
+    await db.collection(feed3Collection).insertOne({
+      title: 'whatever'
+    })
+    const allCollections = await db.listCollections().toArray()
+    expect(allCollections.map(c => c.name))
+      .toEqual(expect.arrayContaining([feed1Collection, feed2Collection, feed3Collection, '123unused']))
 
     // Now assert
-    const allCollections = await db.listCollections().toArray()
-    const combinedCollectionIDs = [
-      ...unusedCollectionIDs,
-      ...usedCollectionIDs,
-      ...ignoreCollectionIDs
-    ]
-    expect(allCollections.map(c => c.name))
-      .toEqual(expect.arrayContaining(combinedCollectionIDs))
-    await pruneCollections()
+    await pruneCollections(guildIdsByShard)
     const remainingCollections = await db.listCollections().toArray()
     expect(remainingCollections.map(c => c.name))
-      .toEqual(expect.arrayContaining(usedCollectionIDs))
-    expect(remainingCollections.map(c => c.name))
-      .toEqual(expect.arrayContaining(ignoreCollectionIDs))
-    expect(remainingCollections.map(c => c.name))
-      .not.toEqual(expect.arrayContaining(unusedCollectionIDs))
+      .toEqual(expect.arrayContaining([feed1Collection, feed2Collection]))
   })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()
