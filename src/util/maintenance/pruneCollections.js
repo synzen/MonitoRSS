@@ -25,7 +25,7 @@ async function pruneCollections (guildIdsByShard) {
   )
   for (let i = 0; i < feeds.length; ++i) {
     const feed = feeds[i]
-    const schedule = assignedSchedules[i]
+    const schedule = assignedSchedules[i].name
     const guild = feed.guild
     const shard = guildIdsByShard.get(guild)
     if (shard !== undefined) {

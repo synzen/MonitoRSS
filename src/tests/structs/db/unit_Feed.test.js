@@ -161,6 +161,8 @@ describe('Unit::structs/db/Feed', function () {
   })
   describe('determineSchedule', function () {
     const schedules = [{
+      name: 'default'
+    }, {
       name: 'sched1',
       feeds: ['aa', 'bb', 'cc'],
       keywords: ['key1', 'key2']
@@ -201,22 +203,22 @@ describe('Unit::structs/db/Feed', function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'id1'
       feed.url = 'no match'
-      const name = await feed.determineSchedule(schedules, [])
-      expect(name).toEqual(schedules[1].name)
+      const schedule = await feed.determineSchedule(schedules, [])
+      expect(schedule).toEqual(schedules[2])
     })
     it(`returns the schedule if it has a keyword in the feed's url`, async function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'no match'
       feed.url = 'dun yek2 haz'
-      const name = await feed.determineSchedule(schedules, [])
-      expect(name).toEqual(schedules[1].name)
+      const schedule = await feed.determineSchedule(schedules, [])
+      expect(schedule).toEqual(schedules[2])
     })
     it(`returns the default schedule if it matches no schedules`, async function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'no match'
       feed.url = 'no match'
-      const name = await feed.determineSchedule(schedules, [])
-      expect(name).toEqual('default')
+      const schedule = await feed.determineSchedule(schedules, [])
+      expect(schedule).toEqual(schedules[0])
     })
     describe('if supporter enabled', function () {
       beforeEach(function () {
@@ -236,23 +238,23 @@ describe('Unit::structs/db/Feed', function () {
         feed.url = 'no match'
         feed.guild = guild
         const supporterGuilds = ['a', 'b', guild, 'd']
-        const name = await feed.determineSchedule(schedules, supporterGuilds)
-        expect(name).toEqual(scheduleName)
+        const schedule = await feed.determineSchedule(schedules, supporterGuilds)
+        expect(schedule).toEqual(Supporter.schedule)
         Supporter.schedule = undefined
       })
       it(`does not return supporter schedule if feed43`, async function () {
         const guild = 'w234hjnvbmr'
         const scheduleName = 'foobzz'
         Supporter.schedule = {
-          name: scheduleName
+          schedule: scheduleName
         }
         const feed = new Feed({ ...necessaryInit })
         feed._id = 'no match'
         feed.url = 'https://feed43.com'
         feed.guild = guild
         const supporterGuilds = ['a', 'b', guild, 'd']
-        const name = await feed.determineSchedule(schedules, supporterGuilds)
-        expect(name).not.toEqual(scheduleName)
+        const schedule = await feed.determineSchedule(schedules, supporterGuilds)
+        expect(schedule).not.toEqual(Supporter.schedule)
         Supporter.schedule = undefined
       })
     })
@@ -260,7 +262,7 @@ describe('Unit::structs/db/Feed', function () {
   describe('assignSchedule', function () {
     it('calls determineSchedule properly', async function () {
       const feed = new Feed({ ...necessaryInit })
-      const spy = jest.spyOn(feed, 'determineSchedule').mockReturnValue()
+      const spy = jest.spyOn(feed, 'determineSchedule').mockResolvedValue({})
       await feed.assignSchedule(1, 2, 3)
       expect(spy).toHaveBeenCalledWith(3, 2)
       spy.mockRestore()
@@ -272,7 +274,7 @@ describe('Unit::structs/db/Feed', function () {
       feed.guild = 'some guild'
       const scheduleName = 'w3e4t6yre5tu'
       const spy = jest.spyOn(feed, 'determineSchedule')
-        .mockReturnValue(scheduleName)
+        .mockResolvedValue({ name: scheduleName })
       await feed.assignSchedule(100)
       expect(AssignedSchedule).toHaveBeenCalledWith({
         feed: 'some id',

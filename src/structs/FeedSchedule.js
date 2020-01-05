@@ -298,9 +298,9 @@ class FeedSchedule extends EventEmitter {
     this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
-    const scheduleNames = await Promise.all(feeds.map(f => f.determineSchedule(schedules, supporterGuilds)))
+    const determinedSchedules = await Promise.all(feeds.map(f => f.determineSchedule(schedules, supporterGuilds)))
     feeds.forEach((feed, i) => {
-      const name = scheduleNames[i]
+      const name = determinedSchedules[i].name
       if (this.name !== name) {
         return
       }

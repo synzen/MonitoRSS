@@ -250,8 +250,11 @@ class Feed extends FilterBase {
   }
 
   /**
-   * @param {string[]} [supporterGuilds] - Array of supporter guild IDs
    * @param {Schedule[]} [schedules] - All stored schedules
+   * @param {string[]} [supporterGuilds] - Array of supporter guild IDs
+   * @returns {Object} schedule
+   * @returns {string} schedule.name
+   * @returns {number} schedule.refreshRateMinutes
    */
   async determineSchedule (schedules, supporterGuilds) {
     if (!schedules) {
@@ -265,7 +268,7 @@ class Feed extends FilterBase {
     // Take care of our supporters first
     if (Supporter.enabled && !this.url.includes('feed43')) {
       if (supporterGuilds.includes(this.guild)) {
-        return Supporter.schedule.name
+        return Supporter.schedule
       }
     }
 
@@ -277,7 +280,7 @@ class Feed extends FilterBase {
       // Feed IDs first
       const feedIDs = schedule.feeds // Potential array
       if (feedIDs && feedIDs.includes(this._id)) {
-        return schedule.name
+        return schedule
       }
       // keywords second
       const sKeywords = schedule.keywords
@@ -288,11 +291,11 @@ class Feed extends FilterBase {
         if (!this.url.includes(word)) {
           continue
         }
-        return schedule.name
+        return schedule
       }
     }
 
-    return 'default'
+    return schedules.find(s => s.name === 'default')
   }
 
   /**
@@ -316,13 +319,13 @@ class Feed extends FilterBase {
    * @returns {AssignedSchedule} - The assigned schedule
    */
   async assignSchedule (shardID, supporterGuilds, schedules) {
-    const scheduleName = await this.determineSchedule(schedules, supporterGuilds)
+    const schedule = await this.determineSchedule(schedules, supporterGuilds)
     if (debug.feeds.has(this._id)) {
-      log.debug.info(`${this._id}: Determined schedule is ${scheduleName}`)
+      log.debug.info(`${this._id}: Determined schedule is ${schedule.name}`)
     }
     const assigned = new AssignedSchedule({
       feed: this._id,
-      schedule: scheduleName,
+      schedule: schedule.name,
       url: this.url,
       guild: this.guild,
       shard: shardID

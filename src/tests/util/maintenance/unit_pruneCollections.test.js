@@ -43,7 +43,7 @@ describe('utils/maintenance/pruneCollections', function () {
       // Each feed has its own collection
       const feed = {
         guild: 'abc',
-        determineSchedule: jest.fn()
+        determineSchedule: jest.fn(() => ({}))
       }
       Feed.getAll.mockResolvedValue([feed, feed, feed, feed, feed])
       const collectionsInUse = ['1a', '2a', '3a', '4d', '5g']
@@ -62,7 +62,7 @@ describe('utils/maintenance/pruneCollections', function () {
     it('drops irrelevant collections', async function () {
       const feed = {
         guild: 'abc',
-        determineSchedule: jest.fn()
+        determineSchedule: jest.fn(() => ({}))
       }
       Feed.getAll.mockResolvedValue([feed, feed])
       const collectionsInUse = ['1a', '2a']
@@ -83,11 +83,11 @@ describe('utils/maintenance/pruneCollections', function () {
     it('drops collections for feeds whose guild is not found', async function () {
       const feed = {
         guild: 'abc',
-        determineSchedule: jest.fn()
+        determineSchedule: jest.fn(() => ({}))
       }
       const feed2 = {
         guild: 'notfound',
-        determineSchedule: jest.fn()
+        determineSchedule: jest.fn(() => ({}))
       }
       Feed.getAll.mockResolvedValue([feed, feed2])
       const collectionsInUse = ['forfeed', 'forfeed2']
