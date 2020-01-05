@@ -25,7 +25,6 @@ describe('Int::structs/db/Format', function () {
     })
   })
   describe('pruneEmbeds', function () {
-    
     it('works with fields', function () {
       const embeds = [{
         fields: [{}, {
