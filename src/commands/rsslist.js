@@ -2,19 +2,20 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
-const storage = require('../util/storage.js')
+const Schedule = require('../structs/db/Schedule.js')
 const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
-const AssignedSchedule = require('../structs/db/AssignedSchedule.js')
 const FailCounter = require('../structs/db/FailCounter.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const [ profile, supporter ] = await Promise.all([
+    const [ profile, supporter, schedules, supporterGuilds ] = await Promise.all([
       GuildProfile.get(message.guild.id),
-      Supporter.getValidSupporterOfGuild(message.guild.id)
+      Supporter.getValidSupporterOfGuild(message.guild.id),
+      Schedule.getAll(),
+      Supporter.getValidGuilds()
     ])
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
@@ -27,21 +28,13 @@ module.exports = async (bot, message, command) => {
 
     // Generate the info for each feed as an array, and push into another array
     const failCounters = await Promise.all(feeds.map(feed => FailCounter.getBy('url', feed.url)))
-    const shard = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : -1
-    const schedulesToFetch = feeds.map(feed => AssignedSchedule.getByFeedAndShard(feed._id, shard))
-    const schedulesByFeedIDs = {}
-
-    const assignedSchedules = await Promise.all(schedulesToFetch)
+    const fetchedSchedules = await Promise.all(feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds)))
 
     for (const counter of failCounters) {
       if (counter) {
         failedLinks[counter.url] = counter
       }
     }
-    for (const assigned of assignedSchedules) {
-      schedulesByFeedIDs[assigned.feed] = assigned
-    }
-
     let vipDetails = ''
     if (supporter) {
       vipDetails += '**Patron Until:** '
@@ -67,7 +60,7 @@ module.exports = async (bot, message, command) => {
       list.setFooter(`Patronage backed by ${supporter._id}`)
     }
 
-    feeds.forEach(feed => {
+    feeds.forEach((feed, i) => {
       // URL
       const url = feed.url.length > 500 ? translate('commands.rsslist.exceeds500Characters') : feed.url
 
@@ -99,8 +92,9 @@ module.exports = async (bot, message, command) => {
       const webhook = feed.webhook ? `${translate('commands.rsslist.webhook')}: ${feed.webhook.id}\n` : ''
 
       // Refresh rate
-      const schedule = storage.scheduleManager.getSchedule(schedulesByFeedIDs[feed._id].schedule)
-      let refreshRate = schedule ? schedule.refreshRate < 1 ? `${schedule.refreshRate * 60} ${translate('commands.rsslist.seconds')}` : `${schedule.refreshRate} ${translate('commands.rsslist.minutes')}` : translate('commands.rsslist.unknown')
+      const schedule = fetchedSchedules[i]
+      let refreshRate = schedule.refreshRateMinutes < 1 ? `${schedule.refreshRateMinutes * 60} ${translate('commands.rsslist.seconds')}` : `${schedule.refreshRateMinutes} ${translate('commands.rsslist.minutes')}`
+      // : translate('commands.rsslist.unknown')
 
       // Patreon link
       if (Supporter.enabled && !supporter) {
