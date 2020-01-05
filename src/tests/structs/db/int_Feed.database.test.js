@@ -4,7 +4,6 @@ const Feed = require('../../../structs/db/Feed.js')
 const FeedModel = require('../../../models/Feed.js').model
 const FormatModel = require('../../../models/Format.js').model
 const SubscriberModel = require('../../../models/Subscriber.js').model
-require('../../../models/GuildProfile.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_feed'
 const CON_OPTIONS = {
@@ -35,8 +34,8 @@ describe('Int::structs/db/Feed Database', function () {
         channel: 'sdxgdh',
         _id: feedId
       }
-      await new FormatModel(formatData).save()
       await mongoose.connection.db.collection('feeds').insertOne(feedData)
+      await new FormatModel(formatData).save()
       const feed = await Feed.get(feedId.toHexString())
       const format = await feed.getFormat()
       expect(format).not.toBeNull()

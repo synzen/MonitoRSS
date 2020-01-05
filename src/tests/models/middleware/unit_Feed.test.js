@@ -10,20 +10,7 @@ describe('Unit::models/middleware/Feed', function () {
         model
       }
       await middleware.validate.bind(Doc)()
-      expect(model).toHaveBeenCalledWith('Guild')
       expect(model).toHaveBeenCalledWith('Feed')
-    })
-    it('throws an error if profile not found', function () {
-      const model = jest.fn(() => ({
-        findById: () => ({ exec: () => null })
-      }))
-      const Doc = {
-        _id: 123,
-        model,
-        guild: 'abc'
-      }
-      return expect(middleware.validate.bind(Doc)())
-        .rejects.toThrowError(new Error(`Feed's specified guild ${Doc.guild} was not found`))
     })
     it('throws an error if guild tries to change', async function () {
       const guild = 'wte4ry'
