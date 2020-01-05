@@ -193,15 +193,6 @@ class Feed extends FilterBase {
   }
 
   /**
-   * Remove the feed and delete its schedule
-   * @param {string} shardID
-   */
-  async remove (shardID) {
-    await this.delete()
-    await this.removeSchedule(shardID)
-  }
-
-  /**
    * Gets the message format of this feed. There is only
    * one format per feed.
    * @returns {Format}

@@ -23,7 +23,7 @@ module.exports = async (bot, message, command) => {
     for (const feed of selectedFeeds) {
       const link = feed.url
       try {
-        await feed.remove(shardID)
+        await feed.delete()
         removed += `\n${link}`
         log.guild.info(`Removed feed ${link}`, message.guild)
       } catch (err) {
