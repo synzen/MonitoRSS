@@ -1,29 +1,42 @@
 const mongoose = require('mongoose')
 const config = require('../../config.js')
-const AssignedSchedule = require('../../structs/db/AssignedSchedule.js')
+const Feed = require('../../structs/db/Feed.js')
 const Article = require('../../models/Article.js')
-
+const Schedule = require('../../structs/db/Schedule.js')
+const Supporter = require('../../structs/db/Supporter.js')
 /**
  * Precondition: AssignedSchedules have already been created
  *
  * Prune article collections that are no longer used
+ * @param {Map<string, number>} guildIdsByShard
  */
-async function pruneCollections () {
-  if (config.database.clean !== true || !AssignedSchedule.isMongoDatabase) {
+async function pruneCollections (guildIdsByShard) {
+  if (config.database.clean !== true || !Feed.isMongoDatabase) {
     return -1
   }
   // currentCollections is only used if there is no sharding (for database cleaning)
-  const assignedSchedules = await AssignedSchedule.getAll()
+  const [ feeds, supporterGuilds, schedules ] = await Promise.all([
+    Feed.getAll(),
+    Supporter.getValidGuilds(),
+    Schedule.getAll()
+  ])
   const currentCollections = new Set()
   const dropIndexes = []
-  for (const assigned of assignedSchedules) {
-    const { url, shard, schedule } = assigned
-    const collectionID = Article.getCollectionID(url, shard, schedule)
-    currentCollections.add(collectionID)
-
+  const assignedSchedules = await Promise.all(
+    feeds.map(f => f.determineSchedule(schedules, supporterGuilds))
+  )
+  for (let i = 0; i < feeds.length; ++i) {
+    const feed = feeds[i]
+    const schedule = assignedSchedules[i]
+    const guild = feed.guild
+    const shard = guildIdsByShard.get(guild)
+    if (shard !== undefined) {
+      const collectionID = Article.getCollectionID(feed.url, shard, schedule)
+      currentCollections.add(collectionID)
+    }
     if (config.database.articlesExpire === 0) {
       // These indexes allow articles to auto-expire - if it is 0, remove such indexes
-      dropIndexes.push(Article.model(url, shard, schedule).collection.dropIndexes())
+      dropIndexes.push(Article.model(feed.url, shard, schedule).collection.dropIndexes())
     }
   }
   await Promise.all(dropIndexes)

@@ -10,16 +10,16 @@ const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
 
 /**
- * @param {Set<string>} guildIds
+ * @param {Map<string, number>} guildIdsByShard
  * @param {import('discord.js').Client} bot
  */
-async function prunePreInit (guildIds, bot) {
+async function prunePreInit (guildIdsByShard, bot) {
   await Promise.all([
     AssignedSchedule.deleteAll(),
     flushRedis(),
-    pruneGuilds(guildIds)
+    pruneGuilds(guildIdsByShard)
   ])
-  await pruneFeeds(guildIds)
+  await pruneFeeds(guildIdsByShard)
   await Promise.all([
     pruneFormats(),
     pruneFailCounters()
@@ -30,8 +30,11 @@ async function prunePreInit (guildIds, bot) {
   // Prune collections should not be called here until schedules were assigned
 }
 
-async function prunePostInit () {
-  await pruneCollections()
+/**
+ * @param {Map<string, number>} guildIdsByShard
+ */
+async function prunePostInit (guildIdsByShard) {
+  await pruneCollections(guildIdsByShard)
 }
 
 module.exports = {

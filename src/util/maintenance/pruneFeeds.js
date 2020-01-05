@@ -5,14 +5,14 @@ const Feed = require('../../structs/db/Feed.js')
  *
  * Removing feeds will also delete their formats/subscribers
  * according to the Feed.prototype.delete implementation
- * @param {Set<string>} guildIds
+ * @param {Map<string, number>} guildIdsByShard
  * @returns {number}
  */
-async function pruneFeeds (guildIds) {
+async function pruneFeeds (guildIdsByShard) {
   const feeds = await Feed.getAll()
   const deletions = []
   for (const feed of feeds) {
-    if (!guildIds.has(feed.guild)) {
+    if (!guildIdsByShard.has(feed.guild)) {
       deletions.push(feed.delete())
     }
   }

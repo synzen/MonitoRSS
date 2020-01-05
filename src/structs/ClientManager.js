@@ -75,22 +75,14 @@ class ClientManager extends EventEmitter {
   _shardReadyEvent (shard, message) {
     const totalShards = this.shardingManager.totalShards
     this.activeshardIds.push(shard.id)
-    this.guildIdsByShard.set(shard.id, message.guildIds)
+    message.guildIds.forEach(id => {
+      this.guildIdsByShard.set(id, shard.id)
+    })
+    // this.guildIdsByShard.set(shard.id, message.guildIds)
     if (++this.shardsReady < totalShards) {
       return
     }
-    const allGuildIds = new Set()
-    this.guildIdsByShard.forEach((guildIds, shard) => {
-      guildIds.forEach(id => allGuildIds.add(id))
-    })
-    maintenance.prunePreInit(allGuildIds)
-      .then(() => {
-        const promises = []
-        this.guildIdsByShard.forEach((guildIds, shardID) => {
-          promises.push(initialize.populateAssignedSchedules(shardID, new Set(guildIds)))
-        })
-        return Promise.all(promises)
-      })
+    maintenance.prunePreInit(this.guildIdsByShard)
       .then(() => {
         this.shardingManager.broadcast({
           _drss: true,
@@ -106,7 +98,7 @@ class ClientManager extends EventEmitter {
     // Count all the links
     if (++this.shardsDone === this.shardingManager.totalShards) {
       log.general.info(`All shards have initialized by the Sharding Manager.`)
-      maintenance.prunePostInit(new Set(this.guildIds))
+      maintenance.prunePostInit(this.guildIdsByShard)
         .then(() => Patron.refresh())
         .then(() => {
           // Create feed schedule intervals

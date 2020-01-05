@@ -194,7 +194,8 @@ class Client extends EventEmitter {
       return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
     }
     const guildsArray = this.bot.guilds.keyArray()
-    const guildsSet = new Set(guildsArray)
+    const guildIdsUnsharded = new Map()
+    guildsArray.forEach(id => guildIdsUnsharded.set(id, -1))
     this.state = STATES.STARTING
     await listeners.enableCommands()
     const uri = config.database.uri
@@ -205,13 +206,12 @@ class Client extends EventEmitter {
         if (Supporter.enabled) {
           await require('../../settings/api.js')()
         }
-        await maintenance.prunePreInit(guildsSet, this.bot)
+        await maintenance.prunePreInit(guildIdsUnsharded, this.bot)
         // Feeds must be pruned before calling prune subscribers
         await Promise.all([
           initialize.populatePefixes(),
           initialize.populateSchedules(this.customSchedules)
         ])
-        await initialize.populateAssignedSchedules(this.shard, guildsSet)
       }
       await initialize.populateRedis(this.bot)
 
@@ -247,7 +247,7 @@ class Client extends EventEmitter {
           guilds: guildsArray
         })
       } else {
-        await maintenance.prunePostInit()
+        await maintenance.prunePostInit(guildIdsUnsharded)
         if (config.web.enabled === true) {
           this.webClientInstance.enableCP()
         }

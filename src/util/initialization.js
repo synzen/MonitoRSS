@@ -59,33 +59,6 @@ async function populateSchedules (customSchedules = []) {
 }
 
 /**
- * Assign schedules to feeds
- * @param {number} shardID
- * @param {Set<string>} guildIds
- */
-async function populateAssignedSchedules (shardID, guildIds) {
-  const results = await Promise.all([
-    Schedule.getAll(),
-    Feed.getAll(),
-    Supporter.getValidGuilds()
-  ])
-
-  const scheduleList = results[0]
-  const feeds = results[1]
-  const supporterGuilds = results[2]
-
-  const assignments = []
-  feeds.forEach(feed => {
-    if (!guildIds.has(feed.guild)) {
-      return
-    }
-    const promise = feed.assignSchedule(shardID, supporterGuilds, scheduleList)
-    assignments.push(promise)
-  })
-  await Promise.all(assignments)
-}
-
-/**
  * Redis is only for UI use
  * @param {import('discord.js').Client} bot
  */
@@ -107,6 +80,5 @@ async function populateRedis (bot) {
 module.exports = {
   populateRedis,
   populateSchedules,
-  populateAssignedSchedules,
   populatePefixes
 }

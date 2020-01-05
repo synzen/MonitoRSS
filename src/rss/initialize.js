@@ -64,10 +64,9 @@ exports.addNewFeed = async (settings, customTitle) => {
   }
   const newFeed = new Feed(newFeedData)
   await newFeed.save()
+  const schedule = await newFeed.determineSchedule()
 
-  const assignedSchedule = await newFeed.assignSchedule(shardId)
-
-  exports.initializeFeed(articleList, link, assignedSchedule.name, shardId)
+  exports.initializeFeed(articleList, link, schedule, shardId)
     .catch(err => log.general.warning(`Unable to initialize feed collection for link ${link} with rssName ${newFeed.id}`, channel.guild, err, true))
-  return [ link, metaTitle, newFeed.id, assignedSchedule ]
+  return [ link, metaTitle, newFeed.id, schedule ]
 }
