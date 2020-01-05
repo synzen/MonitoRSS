@@ -28,6 +28,12 @@ class Feed extends FilterBase {
     super(data, _saved)
 
     /**
+     * Optinal override for _id. Use for restoring from JSON
+     * @type {string}
+     */
+    this._id = this.getField('_id')
+
+    /**
      * Feed name
      * @type {string}
      */
@@ -142,7 +148,7 @@ class Feed extends FilterBase {
      * Use this.webhook instead of this._webhook since mongoose
      * will return an empty object when we don't want it to
      */
-    return {
+    const data = {
       ...super.toObject(),
       title: this.title,
       url: this.url,
@@ -159,6 +165,10 @@ class Feed extends FilterBase {
       webhook: this.webhook,
       split: this.split
     }
+    if (this._id) {
+      data._id = this._id
+    }
+    return data
   }
 
   /**

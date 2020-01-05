@@ -58,10 +58,12 @@ describe('Unit::structs/db/Feed', function () {
         avatar: 'adsef',
         name: 'adesgrf'
       }
+      init._id = 'abc'
       const feed = new Feed({ ...init })
       for (const key in init) {
         expect(feed[key]).toEqual(init[key])
       }
+      expect(feed._id).toEqual(init._id)
     })
   })
   describe('toObject', function () {
@@ -75,6 +77,16 @@ describe('Unit::structs/db/Feed', function () {
       for (const key in necessaryInit) {
         expect(exported[key]).toEqual(necessaryInit[key])
       }
+      expect(exported).not.toHaveProperty('_id')
+    })
+    it('adds the _id if it exists', function () {
+      const _id = 'W34REY5'
+      const feed = new Feed({
+        ...necessaryInit,
+        _id
+      })
+      const exported = feed.toObject()
+      expect(exported._id).toEqual(_id)
     })
   })
   describe('set webhook', function () {
