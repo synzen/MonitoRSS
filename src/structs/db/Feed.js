@@ -250,16 +250,10 @@ class Feed extends FilterBase {
   }
 
   /**
-   * @param {number} shardID
    * @param {string[]} [supporterGuilds] - Array of supporter guild IDs
    * @param {Schedule[]} [schedules] - All stored schedules
    */
-  async determineSchedule (shardID, supporterGuilds, schedules) {
-    const assignedSchedule = await AssignedSchedule.getByFeedAndShard(this._id, shardID)
-    if (assignedSchedule) {
-      return
-    }
-
+  async determineSchedule (schedules, supporterGuilds) {
     if (!schedules) {
       schedules = await Schedule.getAll()
     }
@@ -270,8 +264,7 @@ class Feed extends FilterBase {
 
     // Take care of our supporters first
     if (Supporter.enabled && !this.url.includes('feed43')) {
-      const validSupporter = supporterGuilds.includes(this.guild)
-      if (validSupporter && assignedSchedule !== Supporter.schedule.name) {
+      if (supporterGuilds.includes(this.guild)) {
         return Supporter.schedule.name
       }
     }
@@ -323,7 +316,7 @@ class Feed extends FilterBase {
    * @returns {AssignedSchedule} - The assigned schedule
    */
   async assignSchedule (shardID, supporterGuilds, schedules) {
-    const scheduleName = await this.determineSchedule(shardID, supporterGuilds, schedules)
+    const scheduleName = await this.determineSchedule(schedules, supporterGuilds)
     if (debug.feeds.has(this._id)) {
       log.debug.info(`${this._id}: Determined schedule is ${scheduleName}`)
     }

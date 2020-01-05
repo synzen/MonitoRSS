@@ -3,7 +3,7 @@ const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
 // const checkGuild = require('../util/checkGuild.js')
 const dbOpsStatistics = require('../util/db/statistics.js')
-const AssignedSchedule = require('./db/AssignedSchedule.js')
+const Schedule = require('./db/Schedule.js')
 const GuildProfile = require('./db/GuildProfile.js')
 const FailCounter = require('./db/FailCounter.js')
 const Subscriber = require('./db/Subscriber.js')
@@ -50,7 +50,6 @@ class FeedSchedule extends EventEmitter {
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedCount = 0 // For statistics
     this.failCounters = {}
-    this.feedIDs = new Set() // feed ids assigned to this schedule
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
     this.debugFeedLinks = new Set()
@@ -116,12 +115,12 @@ class FeedSchedule extends EventEmitter {
       return false
     }
 
-    if (!this.feedIDs.has(feed._id)) {
-      if (debug.feeds.has(feed._id)) {
-        log.debug.info(`${feed._id}: Not processing feed since it is not assigned to schedule ${this.name} on ${this.SHARD_ID}`)
-      }
-      return false
-    }
+    // if (!this.feedIDs.has(feed._id)) {
+    //   if (debug.feeds.has(feed._id)) {
+    //     log.debug.info(`${feed._id}: Not processing feed since it is not assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+    //   }
+    //   return false
+    // }
 
     const failCounter = this.failCounters[feed.url]
     if (failCounter && failCounter.hasFailed()) {
@@ -248,23 +247,24 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
-    this.feedIDs.clear()
     this._formatsByFeedId.clear()
     this._subscribersByFeedId.clear()
     const [
       failCounters,
-      assignedSchedules,
       profiles,
       feeds,
       formats,
-      subscribers
+      subscribers,
+      supporterGuilds,
+      schedules
     ] = await Promise.all([
       FailCounter.getAll(),
-      AssignedSchedule.getManyByQuery({ shard: this.shardID, schedule: this.name }),
       GuildProfile.getAll(),
       Feed.getAll(),
       Format.getAll(),
-      Subscriber.getAll()
+      Subscriber.getAll(),
+      Supporter.getValidGuilds(),
+      Schedule.getAll()
     ])
     await maintenance.checkLimits(feeds, supporterLimits)
     formats.forEach(format => {
@@ -286,12 +286,6 @@ class FeedSchedule extends EventEmitter {
     for (const counter of failCounters) {
       this.failCounters[counter.url] = counter
     }
-    for (const assigned of assignedSchedules) {
-      if (debug.feeds.has(assigned.feed)) {
-        log.debug.info(`${assigned.feed}: Found assigned schedule ${this.name} on shard ${this.SHARD_ID}`)
-      }
-      this.feedIDs.add(assigned.feed)
-    }
 
     this._startTime = new Date()
     this._regBatchList = []
@@ -304,7 +298,15 @@ class FeedSchedule extends EventEmitter {
     this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
-    feeds.forEach(feed => {
+    const scheduleNames = await Promise.all(feeds.map(f => f.determineSchedule(schedules, supporterGuilds)))
+    feeds.forEach((feed, i) => {
+      const name = scheduleNames[i]
+      if (this.name !== name) {
+        return
+      }
+      if (debug.feeds.has(feed._id)) {
+        log.debug.info(`${feed._id}: Assigned schedule ${this.name} on shard ${this.SHARD_ID}`)
+      }
       if (this._addToSourceLists(feed)) {
         feedCount++
       }
