@@ -4,10 +4,7 @@ const FeedModel = require('../../models/Feed.js').model
 const Format = require('./Format.js')
 const Subscriber = require('./Subscriber.js')
 const Schedule = require('./Schedule.js')
-const AssignedSchedule = require('./AssignedSchedule.js')
 const Supporter = require('./Supporter.js')
-const debug = require('../../util/debugFeeds.js')
-const log = require('../../util/logger.js')
 
 class Feed extends FilterBase {
   /**
@@ -296,53 +293,6 @@ class Feed extends FilterBase {
     }
 
     return schedules.find(s => s.name === 'default')
-  }
-
-  /**
-   * Remove the schedule of this feed
-   * @param {number} shardID
-   */
-  async removeSchedule (shardID) {
-    const assigned = await AssignedSchedule.getByFeedAndShard(this._id, shardID)
-    if (!assigned) {
-      return
-    }
-    // const shardID = this.bot.shard ? this.bot.shard.id : 0
-    await assigned.delete()
-  }
-
-  /**
-   * Assign a feed schedule
-   * @param {number} shardID
-   * @param {string[]} [supporterGuilds] - Array of supporter guild IDs
-   * @param {Schedule[]} [schedules]
-   * @returns {AssignedSchedule} - The assigned schedule
-   */
-  async assignSchedule (shardID, supporterGuilds, schedules) {
-    const schedule = await this.determineSchedule(schedules, supporterGuilds)
-    if (debug.feeds.has(this._id)) {
-      log.debug.info(`${this._id}: Determined schedule is ${schedule.name}`)
-    }
-    const assigned = new AssignedSchedule({
-      feed: this._id,
-      schedule: schedule.name,
-      url: this.url,
-      guild: this.guild,
-      shard: shardID
-    })
-    await assigned.save()
-    return assigned
-  }
-
-  /**
-   * Remove the current schedule and assign again. Used
-   * be used when new schedules are added.
-   * @param {number} shardID
-   * @returns {AssignedSchedule} - The assigned schedule
-   */
-  async reassignSchedule (shardID) {
-    await this.removeSchedule(shardID)
-    return this.assignSchedule(shardID)
   }
 
   static get Model () {
