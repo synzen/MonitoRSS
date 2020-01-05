@@ -28,7 +28,7 @@ class Subscriber extends FilterBase {
      * @type {'role'|'user'}
      */
     this.type = this.getField('type')
-    if (this.type !== 'role' && this.type !== 'user') {
+    if (this.type !== Subscriber.TYPES.USER && this.type !== Subscriber.TYPES.ROLE) {
       throw new Error('type must be "user" or "role"')
     }
   }
@@ -51,7 +51,7 @@ class Subscriber extends FilterBase {
 
   async validate () {
     await super.validate()
-    if (this.type !== 'role' && this.type === 'user') {
+    if (this.type !== 'role' && this.type !== 'user') {
       throw new Error('type must be "user" or "role"')
     }
   }
