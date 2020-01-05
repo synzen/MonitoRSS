@@ -72,6 +72,20 @@ describe('Unit::structs/GuildData', function () {
       expect(() => new GuildData(data))
         .toThrow(`Subscriber whatever does not match any given feeds`)
     })
+    it('throws for multiple guild ids found for feeds', function () {
+      const feeds = [{
+        guild: 'a'
+      }, {
+        guild: 'b'
+      }]
+      const data = {
+        feeds,
+        subscribers: [],
+        formats: []
+      }
+      expect(() => new GuildData(data))
+        .toThrow('Mismatched guild IDs found for feeds')
+    })
     it('sets the instance vars', function () {
       const profile = {
         _id: 'id2'
@@ -95,6 +109,7 @@ describe('Unit::structs/GuildData', function () {
         formats
       }
       const guildData = new GuildData(data)
+      expect(guildData.id).toEqual('id2')
       expect(guildData.profile).toEqual(profile)
       expect(guildData.feeds).toEqual(feeds)
       expect(guildData.subscribers).toEqual(subscribers)

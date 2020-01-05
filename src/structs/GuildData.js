@@ -19,7 +19,12 @@ class GuildData {
       throw new Error(`Profile missing _id`)
     }
     const feedIDs = new Set()
+    const guildIDs = new Set()
     for (const feed of feeds) {
+      guildIDs.add(feed.guild)
+      if (guildIDs.size > 1) {
+        throw new Error(`Mismatched guild IDs found for feeds`)
+      }
       feedIDs.add(feed._id)
       if (profile && feed.guild !== profile._id) {
         throw new Error(`Feed ${feed._id} does not match profile`)
@@ -35,6 +40,12 @@ class GuildData {
         throw new Error(`Subscriber ${subscriber._id} does not match any given feeds`)
       }
     }
+    /**
+     * The guild's ID.
+     * @type {string}
+     */
+    this.id = Array.from(guildIDs.keys())[0]
+
     this.profile = profile
     this.feeds = feeds
     this.formats = formats
