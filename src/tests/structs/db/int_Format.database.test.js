@@ -97,6 +97,29 @@ describe('Int::structs/db/Format', function () {
     })
     expect(result.embeds[0].fields[0]).not.toHaveProperty('_id')
   })
+  it('does not save filters', async function () {
+    const embeds = [{
+      title: 'jack',
+      fields: [{
+        name: 'abas',
+        value: 'w46ye5t'
+      }]
+    }]
+    const data = {
+      feed: feedID.toHexString(),
+      text: 'no _id in fields',
+      filters: {
+        title: ['hoo ha']
+      },
+      embeds
+    }
+    const format = new Format(data)
+    await format.save()
+    const result = await collection.findOne({
+      text: data.text
+    })
+    expect(result.filters).toBeUndefined()
+  })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()
     await mongoose.connection.close()
