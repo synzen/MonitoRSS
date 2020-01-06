@@ -13,9 +13,9 @@
     "postinstall": "cd src && cd web && npm install",
     "dev": "node -r dotenv/config server.js",
     "dev-sharded": "node -r dotenv/config server-manager.js",
-    "test": "jest ./src/tests --detectOpenHandles",
+    "test": "jest ./src/tests --detectOpenHandles --testTimeout=10000",
     "test-unit": "jest ./src/tests --detectOpenHandles --testRegex=unit_",
-    "test-int": "jest ./src/tests --detectOpenHandles --testRegex=int_",
+    "test-int": "jest ./src/tests --detectOpenHandles --testRegex=int_ --testTimeout=10000",
     "test-watch": "jest ./src/tests --detectOpenHandles --watchAll",
     "eslint": "eslint --fix ./src"
   },
