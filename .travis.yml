@@ -4,5 +4,6 @@ node_js:
 services: mongodb
 script:
   - npm run eslint
-  - npm test
+  - npm run test-unit
+  - npm run test-int
   # - cd src/web && npm test
