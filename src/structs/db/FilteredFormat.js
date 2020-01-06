@@ -36,6 +36,12 @@ class Format extends FilterBase {
      * @type {Object<string, string[]>}
      */
     this.filters = this.getField('filters')
+
+    /**
+     * Optional priority to decide which filtered format to use if
+     * multiple are matched
+     */
+    this.priority = this.getField('priority')
   }
 
   static isPopulatedEmbedField (field) {
@@ -98,7 +104,8 @@ class Format extends FilterBase {
       ...super.toObject(),
       feed: this.feed,
       text: this.text,
-      embeds: this.embeds
+      embeds: this.embeds,
+      priority: this.priority
     }
   }
 

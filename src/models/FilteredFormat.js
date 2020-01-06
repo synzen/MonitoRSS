@@ -8,7 +8,11 @@ const middleware = require('./middleware/Format.js')
  */
 const schema = new mongoose.Schema({
   ...Format.schema.obj,
-  feed: mongoose.Types.ObjectId
+  feed: {
+    type: mongoose.Types.ObjectId,
+    required: true
+  },
+  priority: Number
 })
 
 schema.add(FilterBase)

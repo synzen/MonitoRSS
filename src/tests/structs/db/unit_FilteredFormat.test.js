@@ -1,6 +1,6 @@
-const Format = require('../../../structs/db/Format.js')
+const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
 
-describe('Unit::structs/db/Format', function () {
+describe('Unit::structs/db/FilteredFormat', function () {
   const keys = [
     'title',
     'description',
@@ -16,13 +16,13 @@ describe('Unit::structs/db/Format', function () {
   }
   describe('constructor', function () {
     it('throws for missing feed', function () {
-      expect(() => new Format({})).toThrow('feed is undefined')
+      expect(() => new FilteredFormat({})).toThrow('feed is undefined')
     })
     it('does not throw for appropriate data', function () {
       const data = {
         feed: '1234345y'
       }
-      expect(() => new Format(data)).not.toThrow()
+      expect(() => new FilteredFormat(data)).not.toThrow()
     })
   })
   describe('static isPopulatedEmbedField', function () {
@@ -30,19 +30,19 @@ describe('Unit::structs/db/Format', function () {
       jest.restoreAllMocks()
     })
     it('returns false for no field', function () {
-      expect(Format.isPopulatedEmbedField())
+      expect(FilteredFormat.isPopulatedEmbedField())
         .toBeFalsy()
     })
     it('false for no name or value', function () {
-      expect(Format.isPopulatedEmbedField({ name: 1 }))
+      expect(FilteredFormat.isPopulatedEmbedField({ name: 1 }))
         .toBeFalsy()
-      expect(Format.isPopulatedEmbedField({ value: 1 }))
+      expect(FilteredFormat.isPopulatedEmbedField({ value: 1 }))
         .toBeFalsy()
-      expect(Format.isPopulatedEmbedField({}))
+      expect(FilteredFormat.isPopulatedEmbedField({}))
         .toBeFalsy()
     })
     it('returns true when both exists', function () {
-      expect(Format.isPopulatedEmbedField({ name: 1, value: 1 }))
+      expect(FilteredFormat.isPopulatedEmbedField({ name: 1, value: 1 }))
         .toBeTruthy()
     })
   })
@@ -53,21 +53,21 @@ describe('Unit::structs/db/Format', function () {
           [key]: 'abc',
           fields: []
         }
-        expect(Format.isPopulatedEmbed(embed))
+        expect(FilteredFormat.isPopulatedEmbed(embed))
           .toBeTruthy()
       }
       const embedWithFields = {
         fields: [{}]
       }
-      jest.spyOn(Format, 'isPopulatedEmbedField')
+      jest.spyOn(FilteredFormat, 'isPopulatedEmbedField')
         .mockReturnValueOnce(true)
-      expect(Format.isPopulatedEmbed(embedWithFields))
+      expect(FilteredFormat.isPopulatedEmbed(embedWithFields))
         .toBeTruthy()
     })
     it('returns false for unfilled embeds', function () {
-      expect(Format.isPopulatedEmbed({}))
+      expect(FilteredFormat.isPopulatedEmbed({}))
         .toBeFalsy()
-      expect(Format.isPopulatedEmbed({ fields: [] }))
+      expect(FilteredFormat.isPopulatedEmbed({ fields: [] }))
         .toBeFalsy()
     })
     it('splices the correct fields', function () {
@@ -80,11 +80,11 @@ describe('Unit::structs/db/Format', function () {
           baz: 3
         }]
       }
-      jest.spyOn(Format, 'isPopulatedEmbedField')
+      jest.spyOn(FilteredFormat, 'isPopulatedEmbedField')
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(true)
-      Format.isPopulatedEmbed(embed, true)
+      FilteredFormat.isPopulatedEmbed(embed, true)
       expect(embed.fields).toHaveLength(1)
       expect(embed.fields[0]).toEqual({ foo: 1 })
     })
@@ -92,9 +92,9 @@ describe('Unit::structs/db/Format', function () {
   describe('pruneEmbeds', function () {
     it('splices correct embeds', function () {
       const embeds = [{}, {}, {}, { jack: 1 }]
-      const format = new Format({ ...initData })
+      const format = new FilteredFormat({ ...initData })
       format.embeds = embeds
-      jest.spyOn(Format, 'isPopulatedEmbed')
+      jest.spyOn(FilteredFormat, 'isPopulatedEmbed')
         .mockReturnValueOnce(true)
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(false)
@@ -105,13 +105,13 @@ describe('Unit::structs/db/Format', function () {
   })
   describe('validate', function () {
     it('calls pruneEmbeds', async function () {
-      const format = new Format({ ...initData })
+      const format = new FilteredFormat({ ...initData })
       jest.spyOn(format, 'pruneEmbeds').mockReturnValue()
       await format.validate()
       expect(format.pruneEmbeds).toHaveBeenCalledTimes(1)
     })
     it('throws an error for invalid timestamp in an embed', function () {
-      const format = new Format({ ...initData })
+      const format = new FilteredFormat({ ...initData })
       format.embeds = [{ timestamp: 'o' }]
       jest.spyOn(format, 'pruneEmbeds').mockReturnValue()
       return expect(format.validate())
