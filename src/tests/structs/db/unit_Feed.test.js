@@ -4,7 +4,6 @@ const Supporter = require('../../../structs/db/Supporter.js')
 const Format = require('../../../structs/db/Format.js')
 
 jest.mock('../../../structs/db/Format.js')
-jest.mock('../../../structs/db/AssignedSchedule.js')
 jest.mock('../../../structs/db/Schedule.js')
 jest.mock('../../../structs/db/Supporter.js')
 
