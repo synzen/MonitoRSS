@@ -3,8 +3,12 @@ const Format = require('./Format.js')
 const FilterBase = require('./common/FilterBase.js')
 const middleware = require('./middleware/Format.js')
 
+/**
+ * Override the feed key, removing the unique constraint
+ */
 const schema = new mongoose.Schema({
-  ...Format.schema.obj
+  ...Format.schema.obj,
+  feed: mongoose.Types.ObjectId
 })
 
 schema.add(FilterBase)

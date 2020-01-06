@@ -35,6 +35,34 @@ describe('Int::models/FilteredFormat', function () {
     expect(found).toBeDefined()
     expect(found).toEqual(expect.objectContaining(data))
   })
+  it('allows multiple filtered formats with same feed', async function () {
+    const feedID = new mongoose.Types.ObjectId()
+    await mongoose.connection.db.collection('feeds').insertOne({
+      _id: feedID
+    })
+    const data = {
+      feed: feedID,
+      text: 'hello',
+      filters: {
+        title: ['hello', 'world']
+      }
+    }
+    const data2 = {
+      feed: feedID,
+      text: 'hello2',
+      filters: {
+        title: ['hello2', 'world2']
+      }
+    }
+    const filteredFormat = new FilteredFormat(data)
+    const filteredFormat2 = new FilteredFormat(data2)
+    await Promise.all([
+      filteredFormat.save(),
+      filteredFormat2.save()
+    ])
+    const found = await collection.find({ feed: feedID }).toArray()
+    expect(found).toHaveLength(2)
+  })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()
     await mongoose.connection.close()
