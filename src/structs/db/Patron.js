@@ -54,9 +54,7 @@ class Patron extends Base {
   }
 
   static async refresh () {
-    if (this.compatible) {
-      return require('../../../settings/api.js')()
-    }
+    return require('../../../settings/api.js')()
   }
 
   toObject () {

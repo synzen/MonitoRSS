@@ -251,11 +251,7 @@ class Client extends EventEmitter {
         if (config.web.enabled === true) {
           this.webClientInstance.enableCP()
         }
-        if (Supporter.enabled) {
-          this._patronTimer = setInterval(() => {
-            Patron.refresh().catch(err => log.general.error(`Failed to refresh patrons on timer in Client`, err, true))
-          }, 600000)
-        }
+        this.maintenance = maintenance.cycle()
       }
       listeners.createManagers(storage.bot)
       this.scheduleManager.startSchedules()
@@ -272,7 +268,7 @@ class Client extends EventEmitter {
     log.general.warning(`${this.SHARD_PREFIX}Discord.RSS has received stop command`)
     storage.initialized = 0
     this.scheduleManager.stopSchedules()
-    clearInterval(this._patronTimer)
+    clearInterval(this.maintenance)
     listeners.disableAll()
     if ((!storage.bot.shard || storage.bot.shard.count === 0) && config.web.enabled === true) {
       this.webClientInstance.disableCP()

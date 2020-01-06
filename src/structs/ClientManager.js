@@ -20,6 +20,7 @@ class ClientManager extends EventEmitter {
     if (config.web.enabled === true) {
       webClient = require('../web/index.js')
     }
+    this.maintenance = maintenance.cycle()
     this.customSchedules = customSchedules
     this.guildIdsByShard = new Map()
     this.refreshRates = new Set()
@@ -149,10 +150,6 @@ class ClientManager extends EventEmitter {
     })
     // Immediately start the default retrieval cycles with the specified refresh rate
     initiateCycles(config.feeds.refreshRateMinutes)()
-    setInterval(() => {
-      Patron.refresh()
-        .catch(err => log.general.error(`Failed to refresh patrons on timer`, err))
-    }, 900000)
   }
 }
 

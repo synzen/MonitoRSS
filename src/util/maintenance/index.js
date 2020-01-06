@@ -7,6 +7,9 @@ const pruneCollections = require('./pruneCollections.js')
 const flushRedis = require('./flushRedis.js')
 const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
+const Supporter = require('../../structs/db/Supporter.js')
+const Patron = require('../../structs/db/Patron.js')
+const log = require('../logger.js')
 
 /**
  * @param {Map<string, number>} guildIdsByShard
@@ -35,6 +38,20 @@ async function prunePostInit (guildIdsByShard) {
   await pruneCollections(guildIdsByShard)
 }
 
+function cycleFunctions () {
+  if (Supporter.enabled) {
+    Patron.refresh()
+      .then(() => log.general.info(`Patron check finished`))
+      .catch(err => log.general.error(`Failed to refresh patrons on timer`, err))
+  }
+}
+
+async function cycle () {
+  cycleFunctions()
+  // Every 10 minutes run these functions
+  return setInterval(cycleFunctions, 600000)
+}
+
 module.exports = {
   flushRedis,
   prunePreInit,
@@ -46,5 +63,6 @@ module.exports = {
   pruneSubscribers,
   pruneCollections,
   checkLimits,
-  checkPermissions
+  checkPermissions,
+  cycle
 }
