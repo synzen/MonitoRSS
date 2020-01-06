@@ -24,7 +24,10 @@ const embedSchema = new mongoose.Schema({
 }, { _id: false })
 
 const schema = new mongoose.Schema({
-  feed: mongoose.Types.ObjectId,
+  feed: {
+    type: mongoose.Types.ObjectId,
+    unique: true
+  },
   text: String,
   embeds: [embedSchema]
 })
