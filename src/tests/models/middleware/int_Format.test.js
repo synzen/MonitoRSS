@@ -6,7 +6,8 @@ require('../../../models/Feed.js')
 const dbName = 'test_int_middleware_format'
 const CON_OPTIONS = {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  useCreateIndex: true
 }
 
 describe('Int::models/middleware/Format', function () {

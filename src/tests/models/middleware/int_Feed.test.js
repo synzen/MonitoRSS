@@ -4,7 +4,8 @@ const mongoose = require('mongoose')
 const dbName = 'test_int_middleware_feed'
 const CON_OPTIONS = {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  useCreateIndex: true
 }
 
 describe('Int::models/middleware/Feed', function () {
