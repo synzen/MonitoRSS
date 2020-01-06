@@ -19,7 +19,6 @@ module.exports = async (bot, message, command) => {
     const removing = await message.channel.send(translate('commands.rssremove.removing'))
     const errors = []
     let removed = translate('commands.rssremove.success') + '\n```\n'
-    const shardID = message.client.shard && message.client.shard.count > 0 ? message.client.shard.id : -1
     for (const feed of selectedFeeds) {
       const link = feed.url
       try {
