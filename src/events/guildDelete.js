@@ -1,6 +1,4 @@
 const channelTracker = require('../util/channelTracker.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
-const Feed = require('../structs/db/Feed.js')
 const log = require('../util/logger.js')
 const RedisGuild = require('../structs/db/Redis/Guild.js')
 
@@ -11,15 +9,5 @@ module.exports = async guild => {
     if (channelTracker.hasActiveMenus(channelId)) {
       channelTracker.remove(channelId)
     }
-  })
-  const profile = await GuildProfile.get(guild.id)
-  const feeds = await Feed.getManyBy('guild', guild.id)
-  if (profile) {
-    profile.delete()
-      .catch(err => log.general.error(`Failed to delete guild after guild delete event`, guild, err))
-  }
-  feeds.forEach(feed => {
-    feed.delete()
-      .catch(err => log.general.error(`Failed to delete feed ${feed._id} after guild deletion`, err))
   })
 }
