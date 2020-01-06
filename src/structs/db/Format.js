@@ -11,6 +11,13 @@ class Format extends FilteredFormat {
      * @type {undefined}
      */
     this.filters = undefined
+
+    /**
+     * Do *not* save priority on this model - there should only be
+     * one Format per feed
+     * @type {undefined}
+     */
+    this.priority = undefined
   }
 
   toObject () {
