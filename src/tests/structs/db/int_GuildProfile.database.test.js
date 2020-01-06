@@ -29,7 +29,6 @@ describe('Int::structs/db/GuildProfile Database', function () {
       }
       const profile = new GuildProfile(guildData)
       await profile.save()
-      const promises = []
       for (const feedId of feedIds) {
         const data = {
           _id: feedId,
@@ -38,9 +37,8 @@ describe('Int::structs/db/GuildProfile Database', function () {
           url: 'ab',
           title: '24r'
         }
-        promises.push(mongoose.connection.db.collection('feeds').insertOne(data))
+        await mongoose.connection.db.collection('feeds').insertOne(data)
       }
-      await Promise.all(promises)
       const retrieved = await profile.getFeeds()
       expect(retrieved).toHaveLength(2)
       expect(retrieved[0]._id).toEqual(feedIds[0].toHexString())
