@@ -33,6 +33,7 @@ class ArticleMessage {
     }
     this.debug = debug.feeds.has(article._delivery.rssName)
     this.article = article
+    this.filteredFormats = article._delivery.source.filteredFormats
     this.format = article._delivery.source.format
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
@@ -67,32 +68,31 @@ class ArticleMessage {
   }
 
   _determineFormat () {
-    const { format } = this
+    const { format, filteredFormats, parsedArticle } = this
     let textFormat = !format || format.text === undefined ? undefined : format.text.trim()
     let embedFormat = format ? format.embeds : undefined
 
     // See if there are any filter-specific messages
-    // if (Array.isArray(source.filteredFormats)) {
-    //   let matched = { }
-    //   let highestPriority = -1
-    //   let selectedFormat
-    //   const filteredFormats = source.filteredFormats
-    //   for (const filteredFormat of filteredFormats) {
-    //     const thisPriority = filteredFormat.priority === undefined || filteredFormat.priority < 0 ? 0 : filteredFormat.priority
-    //     const res = testFilters(filteredFormat.filters, parsedArticle) // messageFiltered.filters must exist as an object
-    //     if (!res.passed) continue
-    //     matched[thisPriority] = matched[thisPriority] === undefined ? 1 : matched[thisPriority] + 1
-    //     if (thisPriority >= highestPriority) {
-    //       highestPriority = thisPriority
-    //       selectedFormat = filteredFormat
-    //     }
-    //   }
-    //   // Only formats with 1 match will get the filtered format
-    //   if (highestPriority > -1 && matched[highestPriority] === 1) {
-    //     textFormat = selectedFormat.message === true ? textFormat : selectedFormat.message // If it's true, then it will use the feed's (or the config default, if applicable) message
-    //     embedFormat = selectedFormat.embeds === true ? embedFormat : selectedFormat.embeds
-    //   }
-    // }
+    if (filteredFormats.length > 0) {
+      let matched = { }
+      let highestPriority = -1
+      let selectedFormat
+      for (const filteredFormat of filteredFormats) {
+        const thisPriority = filteredFormat.priority === undefined || filteredFormat.priority < 0 ? 0 : filteredFormat.priority
+        const res = testFilters(filteredFormat.filters, parsedArticle) // messageFiltered.filters must exist as an object
+        if (!res.passed) continue
+        matched[thisPriority] = matched[thisPriority] === undefined ? 1 : matched[thisPriority] + 1
+        if (thisPriority >= highestPriority) {
+          highestPriority = thisPriority
+          selectedFormat = filteredFormat
+        }
+      }
+      // Only formats with 1 match will get the filtered format
+      if (highestPriority > -1 && matched[highestPriority] === 1) {
+        textFormat = selectedFormat.message === true ? textFormat : selectedFormat.message // If it's true, then it will use the feed's (or the config default, if applicable) message
+        embedFormat = selectedFormat.embeds === true ? embedFormat : selectedFormat.embeds
+      }
+    }
 
     if (!textFormat) {
       textFormat = config.feeds.defaultMessage.trim()

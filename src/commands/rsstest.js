@@ -10,12 +10,14 @@ const Feed = require('../structs/db/Feed.js')
 const Format = require('../structs/db/Format.js')
 const Subscriber = require('../structs/db/Subscriber.js')
 const Supporter = require('../structs/db/Supporter.js')
+const FilteredFormat = require('../structs/db/FilteredFormat.js')
 
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
   try {
     const profile = await GuildProfile.get(message.guild.id)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
+    
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, null, { command: command }, feeds)
@@ -27,8 +29,11 @@ module.exports = async (bot, message, command) => {
     if (await FailCounter.hasFailed(feed.url)) {
       return await message.channel.send(translate('commands.rsstest.failed'))
     }
-    const format = await Format.getBy('feed', feed._id)
-    const subscribers = await Subscriber.getManyBy('feed', feed._id)
+    const [ format, subscribers, filteredFormats ] = await Promise.all([
+      Format.getBy('feed', feed._id),
+      Subscriber.getManyBy('feed', feed._id),
+      FilteredFormat.getManyBy('feed', feed._id)
+    ])
     const grabMsg = await message.channel.send(translate('commands.rsstest.grabbingRandom'))
     const article = await FeedFetcher.fetchRandomArticle(feed.url)
     if (!article) {
@@ -39,6 +44,7 @@ module.exports = async (bot, message, command) => {
       source: {
         ...feed.toJSON(),
         format: format ? format.toJSON() : undefined,
+        filteredFormats: filteredFormats.map(f => f.toJSON()),
         subscribers: subscribers.map(s => s.toJSON()),
         dateSettings: profile
           ? {

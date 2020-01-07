@@ -8,6 +8,7 @@ const GuildProfile = require('./db/GuildProfile.js')
 const FailCounter = require('./db/FailCounter.js')
 const Subscriber = require('./db/Subscriber.js')
 const Format = require('./db/Format.js')
+const FilteredFormat = require('./db/FilteredFormat.js')
 const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
@@ -46,6 +47,7 @@ class FeedSchedule extends EventEmitter {
     this._modSourceList = new Map()
     this._profilesById = new Map()
     this._formatsByFeedId = new Map()
+    this._filteredFormatsByFeedId = new Map()
     this._subscribersByFeedId = new Map()
     this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedCount = 0 // For statistics
@@ -67,10 +69,12 @@ class FeedSchedule extends EventEmitter {
     const guild = this._profilesById.get(feed.guild)
     const format = this._formatsByFeedId.get(feed._id)
     const subscribers = this._subscribersByFeedId.get(feed._id) || []
+    const filteredFormats = this._filteredFormatsByFeedId.get(feed._id) || []
     const data = {
       ...feed.toJSON(),
       subscribers,
       format,
+      filteredFormats,
       dateSettings: !guild
         ? {}
         : {
@@ -248,12 +252,14 @@ class FeedSchedule extends EventEmitter {
     }
 
     this._formatsByFeedId.clear()
+    this._filteredFormatsByFeedId.clear()
     this._subscribersByFeedId.clear()
     const [
       failCounters,
       profiles,
       feeds,
       formats,
+      filteredFormats,
       subscribers,
       supporterGuilds,
       schedules
@@ -262,6 +268,7 @@ class FeedSchedule extends EventEmitter {
       GuildProfile.getAll(),
       Feed.getAll(),
       Format.getAll(),
+      FilteredFormat.getAll(),
       Subscriber.getAll(),
       Supporter.getValidGuilds(),
       Schedule.getAll()
@@ -269,6 +276,13 @@ class FeedSchedule extends EventEmitter {
     await maintenance.checkLimits(feeds, supporterLimits)
     formats.forEach(format => {
       this._formatsByFeedId.set(format.feed, format.toJSON())
+    })
+    filteredFormats.forEach(format => {
+      if (!this._filteredFormatsByFeedId.has(format.feed)) {
+        this._filteredFormatsByFeedId.set(format.feed, [format.toJSON()])
+      } else {
+        this._filteredFormatsByFeedId.get(format.feed).push(format.toJSON())
+      }
     })
     profiles.forEach(profile => {
       this._profilesById.set(profile.id, profile)
@@ -299,7 +313,8 @@ class FeedSchedule extends EventEmitter {
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
     const determinedSchedules = await Promise.all(feeds.map(f => f.determineSchedule(schedules, supporterGuilds)))
-    feeds.forEach((feed, i) => {
+    for (let i = 0; i < feeds.length; ++i) {
+      const feed = feeds[i]
       const name = determinedSchedules[i].name
       if (this.name !== name) {
         return
@@ -310,7 +325,7 @@ class FeedSchedule extends EventEmitter {
       if (this._addToSourceLists(feed)) {
         feedCount++
       }
-    })
+    }
 
     this.inProgress = true
     this.feedCount = feedCount
