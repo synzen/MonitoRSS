@@ -1,3 +1,4 @@
+const FilteredFormatModel = require('../../../models/FilteredFormat.js').model
 const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
 
 describe('Unit::structs/db/FilteredFormat', function () {
@@ -116,6 +117,11 @@ describe('Unit::structs/db/FilteredFormat', function () {
       jest.spyOn(format, 'pruneEmbeds').mockReturnValue()
       return expect(format.validate())
         .rejects.toThrowError(new Error('Timestamp can only be article or now'))
+    })
+  })
+  describe('static get Model', function () {
+    it('returns the right model', function () {
+      expect(FilteredFormat.Model).toEqual(FilteredFormatModel)
     })
   })
 })
