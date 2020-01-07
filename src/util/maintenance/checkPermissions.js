@@ -18,7 +18,7 @@ function checkPermissions (feed, format, bot) {
   const permissions = guild.me.permissionsIn(channel)
   const allowView = permissions.has('VIEW_CHANNEL')
   const allowSendMessages = permissions.has('SEND_MESSAGES')
-  const allowEmbedLinks = format.embeds.length === 0 ? true : permissions.has('EMBED_LINKS')
+  const allowEmbedLinks = !format || format.embeds.length === 0 ? true : permissions.has('EMBED_LINKS')
   if (!allowSendMessages || !allowEmbedLinks || !allowView) {
     let reasons = []
     if (!allowSendMessages) reasons.push('SEND_MESSAGES')
