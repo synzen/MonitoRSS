@@ -5,6 +5,12 @@ All documentation can be found at https://github.com/synzen/Discord.RSS/wiki.
 
 Looking for a non-Discord version of this bot? See https://github.com/synzen/feedtracker
 
+### Publicly Hosted Instance
+
+Don't want to bother hosting your own instance? Use the publicly hosted one!
+
+https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot&permissions=19456
+
 ### Setting Up via Cloning Repository (for most people)
 
 See https://github.com/synzen/Discord.RSS/wiki/Setup
