@@ -11,8 +11,25 @@ storage.bot = { channels: { get: () => ({}) } }
 
 describe('Unit::ArticleMessage', function () {
   describe('constructor', function () {
-    const rawArticle = { _delivery: { source: { channel: 'abc', filters: { a: 1 } }, rssName: 'asd' } }
-    const rawArticleWithNoFilters = { _delivery: { source: { channel: 'abc' }, rssName: 'asd' } }
+    const rawArticle = {
+      _delivery: {
+        source: {
+          channel: 'abc',
+          filters: { a: 1 },
+          filteredFormats: []
+        },
+        rssName: 'asd'
+      }
+    }
+    const rawArticleWithNoFilters = {
+      _delivery: {
+        source: {
+          channel: 'abc',
+          filteredFormats: []
+        },
+        rssName: 'asd'
+      }
+    }
 
     const testDetails = 'wseirtg4yjr'
     const generatedMessage = { text: 'awszf', embeds: [1, 2] }
@@ -80,7 +97,14 @@ describe('Unit::ArticleMessage', function () {
     })
   })
   describe('send()', function () {
-    const rawArticle = { _delivery: { rssName: 'hel', source: {} } }
+    const rawArticle = {
+      _delivery: {
+        rssName: 'hel',
+        source: {
+          filteredFormats: []
+        }
+      }
+    }
     beforeAll(function () {
       const generatedMessage = { text: 'awszf', embeds: [1, 2] }
       jest.spyOn(ArticleMessage.prototype, '_resolveWebhook').mockImplementation()
@@ -202,7 +226,14 @@ describe('Unit::ArticleMessage', function () {
     })
   })
   describe('_createSendOptions', function () {
-    const rawArticle = { _delivery: { rssName: 'hel', source: {} } }
+    const rawArticle = {
+      _delivery: {
+        rssName: 'hel',
+        source: {
+          filteredFormats: []
+        }
+      }
+    }
     beforeAll(function () {
       jest.spyOn(ArticleMessage.prototype, '_convertEmbeds').mockImplementation()
     })
