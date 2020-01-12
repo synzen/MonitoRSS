@@ -137,6 +137,6 @@ __pycache__
 .env
 
 # bot specific
-settings/configOverride.json
+settings/config.json
 settings/vips.js
 settings/api.js

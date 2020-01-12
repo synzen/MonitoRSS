@@ -87,7 +87,7 @@ function overrideConfigs (configOverrides, printWarnings, printOverrides) {
   }
 }
 
-const overrideFilePath = path.join(__dirname, '..', 'settings', 'configOverride.json')
+const overrideFilePath = path.join(__dirname, '..', 'settings', 'config.json')
 
 if (!process.env.TEST_ENV) {
   if (fs.existsSync(overrideFilePath)) {
