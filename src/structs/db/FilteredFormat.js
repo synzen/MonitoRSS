@@ -1,7 +1,7 @@
 const FilterBase = require('./FilterBase.js')
 const FilteredFormatModel = require('../../models/FilteredFormat.js').model
 
-class Format extends FilterBase {
+class FilteredFormat extends FilterBase {
   /**
    * @param {import('mongoose').Model|Object<string, any>} data - Data
    * @param {string} data.text - Text message
@@ -125,4 +125,4 @@ class Format extends FilterBase {
   }
 }
 
-module.exports = Format
+module.exports = FilteredFormat
