@@ -15,7 +15,7 @@ describe('Int::models/FilteredFormat', function () {
   beforeAll(async function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
-    collection = mongoose.connection.db.collection('filteredformats')
+    collection = mongoose.connection.db.collection('filtered_formats')
   })
   it('saves with filters', async function () {
     const feedID = new mongoose.Types.ObjectId()
