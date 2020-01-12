@@ -16,7 +16,7 @@ async function feedSelectorFn (m, data) {
   } else {
     currentMsg = `\`\`\`Markdown\n${Translator.translate('commands.rssmessage.noSetMessage', locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultMessage + '```'
   }
-  const prefix = profile.prefix || config.bot.prefix
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const nextData = {
     ...data,
     format,
@@ -61,7 +61,7 @@ module.exports = async (bot, message, command) => {
       return
     }
     const { setting, feed, format } = data
-    const prefix = profile.prefix || config.bot.prefix
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
     if (setting === null) {
       if (format) {
