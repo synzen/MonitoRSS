@@ -89,13 +89,13 @@ class ArticleMessage {
       }
       // Only formats with 1 match will get the filtered format
       if (highestPriority > -1 && matched[highestPriority] === 1) {
-        textFormat = selectedFormat.message === true ? textFormat : selectedFormat.message // If it's true, then it will use the feed's (or the config default, if applicable) message
+        textFormat = selectedFormat.text === true ? textFormat : selectedFormat.text // If it's true, then it will use the feed's (or the config default, if applicable) message
         embedFormat = selectedFormat.embeds === true ? embedFormat : selectedFormat.embeds
       }
     }
 
     if (!textFormat) {
-      textFormat = config.feeds.defaultMessage.trim()
+      textFormat = format && format.text ? format.text : config.feeds.defaultMessage.trim()
     }
 
     return { textFormat, embedFormat }
