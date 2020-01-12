@@ -20,4 +20,4 @@ schema.add(FilterBase)
 schema.pre('validate', middleware.validate)
 
 exports.schema = schema
-exports.model = mongoose.model('FilteredFormat', schema)
+exports.model = mongoose.model('Filtered_Format', schema)
