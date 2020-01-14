@@ -1,8 +1,6 @@
 const path = require('path')
 const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
-// const checkGuild = require('../util/checkGuild.js')
-const dbOpsStatistics = require('../util/db/statistics.js')
 const Schedule = require('./db/Schedule.js')
 const GuildProfile = require('./db/GuildProfile.js')
 const FailCounter = require('./db/FailCounter.js')
@@ -503,20 +501,6 @@ class FeedSchedule extends EventEmitter {
     }
 
     ++this.ran
-
-    if (!config.database.uri.startsWith('mongo')) return
-    // Update statistics
-    if (this.name === 'default') {
-      dbOpsStatistics.update({
-        shard: this.bot.shard && this.bot.shard.count > 0 ? this.bot.shard.id : 0,
-        guilds: this.bot.guilds.size,
-        feeds: this.feedCount,
-        cycleTime: diff,
-        cycleFails: this._cycleFailCount,
-        cycleLinks: this._cycleTotalCount,
-        lastUpdated: new Date()
-      }).catch(err => log.general.warning('Unable to update statistics after cycle', err, true))
-    }
   }
 
   stop () {
