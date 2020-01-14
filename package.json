@@ -20,8 +20,10 @@
     "eslint": "eslint --fix ./src"
   },
   "dependencies": {
+    "bufferutil": "^4.0.1",
     "cloudscraper": "^4.3.0",
     "discord.js": "^11.5.1",
+    "erlpack": "github:hammerandchisel/erlpack",
     "feedparser": "^2.2.9",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.4.24",
