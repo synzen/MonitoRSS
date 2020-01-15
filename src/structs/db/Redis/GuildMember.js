@@ -41,7 +41,7 @@ class GuildMember extends Base {
         if (!(member instanceof Discord.GuildMember)) throw new TypeError('Member is not instance of Discord.GuildMember')
         await promisify(this.client.sadd).bind(this.client)(this.utils.REDIS_KEYS.membersOfGuild(member.guild.id), member.id)
         // await promisify(this.client.sadd).bind(this.client)(this.utils.REDIS_KEYS.guildsOf(member.id), member.guild.id)
-        if (member.hasPermission(MANAGE_CHANNELS_PERM)) return GuildMember.utils.recognizeManager(member.guild)
+        if (member.permissions.has(MANAGE_CHANNELS_PERM)) return GuildMember.utils.recognizeManager(member.guild)
       },
       recognizeManual: async (userID, guildID) => {
         if (!this.clientExists) return

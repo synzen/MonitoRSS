@@ -8,7 +8,7 @@ module.exports = async role => {
   if (RedisRole.clientExists) {
     RedisRole.utils.forget(role)
       .catch(err => log.general.error(`Redis failed to forget after roleDelete event`, role.guild, role, err))
-    if (role.hasPermission(MANAGE_CHANNELS_PERM)) {
+    if (role.permissions.has(MANAGE_CHANNELS_PERM)) {
       role.members.forEach(member => {
         RedisGuildMember.utils.forgetManager(member)
           .catch(err => log.general.error(`Redis failed to forgetManager after roleDelete event`, member.guild, member, err))
