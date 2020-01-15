@@ -22,8 +22,8 @@
   "dependencies": {
     "bufferutil": "^4.0.1",
     "cloudscraper": "^4.3.0",
-    "discord.js": "^11.5.1",
-    "erlpack": "github:hammerandchisel/erlpack",
+    "discord.js": "github:discordjs/discord.js",
+    "erlpack": "github:discordapp/erlpack",
     "feedparser": "^2.2.9",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.4.24",
@@ -32,7 +32,9 @@
     "mongoose": "^5.8.2",
     "node-fetch": "^2.6.0",
     "redis": "^2.8.0",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "utf-8-validate": "^5.0.2",
+    "zlib-sync": "^0.1.6"
   },
   "repository": {
     "type": "git",
