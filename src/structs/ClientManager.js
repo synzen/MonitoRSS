@@ -2,6 +2,7 @@ process.env.DRSS = true
 const config = require('../config.js')
 const connectDb = require('../rss/db/connect.js')
 const Patron = require('./db/Patron.js')
+const Supporter = require('./db/Supporter.js')
 const log = require('../util/logger.js')
 const EventEmitter = require('events')
 const maintenance = require('../util/maintenance/index.js')
@@ -20,6 +21,9 @@ class ClientManager extends EventEmitter {
     if (config.web.enabled === true) {
       webClient = require('../web/index.js')
     }
+    this.config = settings.config
+    this.suppressLogLevels = settings.suppressLogLevels
+    this.setPresence = settings.setPresence
     this.maintenance = maintenance.cycle()
     this.customSchedules = customSchedules
     this.guildIdsByShard = new Map()
@@ -79,7 +83,6 @@ class ClientManager extends EventEmitter {
     message.guildIds.forEach(id => {
       this.guildIdsByShard.set(id, shard.id)
     })
-    // this.guildIdsByShard.set(shard.id, message.guildIds)
     if (++this.shardsReady < totalShards) {
       return
     }
@@ -88,6 +91,9 @@ class ClientManager extends EventEmitter {
         this.shardingManager.broadcast({
           _drss: true,
           type: 'startInit',
+          config: this.config || {},
+          suppressLogLevels: this.suppressLogLevels || [],
+          setPresence: this.setPresence || false,
           customSchedules: this.customSchedules || []
         })
       }).catch(err => {
@@ -100,7 +106,11 @@ class ClientManager extends EventEmitter {
     if (++this.shardsDone === this.shardingManager.totalShards) {
       log.general.info(`All shards have initialized by the Sharding Manager.`)
       maintenance.prunePostInit(this.guildIdsByShard)
-        .then(() => Patron.refresh())
+        .then(() => {
+          if (Supporter.enabled) {
+            return Patron.refresh()
+          }
+        })
         .then(() => {
           // Create feed schedule intervals
           this.createIntervals()

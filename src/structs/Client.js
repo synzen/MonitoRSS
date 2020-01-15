@@ -7,10 +7,7 @@ const ScheduleManager = require('./ScheduleManager.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const connectDb = require('../rss/db/connect.js')
-const ClientManager = require('./ClientManager.js')
-const Supporter = require('./db/Supporter.js')
 const EventEmitter = require('events')
-const maintenance = require('../util/maintenance/index.js')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const CLIENT_OPTIONS = { disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 }
 const STATES = {
@@ -18,80 +15,32 @@ const STATES = {
   STARTING: 'STARTING',
   READY: 'READY'
 }
-let webClient
 
 class Client extends EventEmitter {
-  constructor (settings, customSchedules) {
+  constructor () {
     super()
-    if (settings.config) {
-      config._overrideWith(settings.config)
-    }
-    if (config.web.enabled === true) {
-      webClient = require('../web/index.js')
-    }
-    if (settings && Array.isArray(settings.suppressLogLevels)) {
-      log.suppressLevel(settings.suppressLogLevels)
-    }
-    if (customSchedules) {
-      if (!Array.isArray(customSchedules)) {
-        throw new Error('customSchedules parameter must be an array of objects')
-      } else {
-        for (const schedule of customSchedules) {
-          if (schedule.name === 'default') {
-            throw new Error('Schedule name cannot be "default"')
-          }
-          const keys = Object.keys(schedule)
-          if (!keys.includes('name')) {
-            throw new Error('Schedule "name" must be defined')
-          }
-          if (!keys.includes('refreshRateMinutes')) {
-            throw new Error('Schedule "refreshRateMinutes" must be defined')
-          }
-          if (!keys.includes('keywords') && !keys.includes('feedIDs')) {
-            throw new Error('Schedule "keywords" or "feedIDs" must be defined')
-          }
-        }
-      }
-    }
-    /**
-     * Custom schedules gets written over by the ClientManager's
-     * if it exists
-     */
-    this.customSchedules = customSchedules || []
     this.scheduleManager = undefined
-    this.setPresence = settings.setPresence
     this.STATES = STATES
     this.state = STATES.STOPPED
-    this.webClientInstance = undefined
+    this.customSchedules = []
   }
 
   async login (token) {
     if (this.bot) {
       return log.general.error('Cannot login when already logged in')
     }
-    if (token instanceof Discord.ShardingManager) {
-      return new ClientManager(token)
+    if (typeof token !== 'string') {
+      throw new TypeError('Argument must a string')
     }
-    const isClient = token instanceof Discord.Client
-    if (!isClient && typeof token !== 'string') {
-      throw new TypeError('Argument must be a Discord.Client, Discord.ShardingManager, or a string')
-    }
-    const client = isClient ? token : new Discord.Client(CLIENT_OPTIONS)
+    const client = new Discord.Client(CLIENT_OPTIONS)
     try {
       await connectDb()
-      if (!isClient) {
-        await client.login(token)
-      }
-      if (config.web.enabled === true && !this.webClientInstance && (!client.shard || client.shard.count === 0)) {
-        this.webClientInstance = webClient()
-      }
+      await client.login(token)
       this.bot = client
-      this.shard = client.shard && client.shard.count > 0 ? client.shard.id : -1
-      this.SHARD_PREFIX = client.shard && client.shard.count > 0 ? `SH ${client.shard.id} ` : ''
+      this.shard = client.shard.id
+      this.SHARD_PREFIX = `SH ${client.shard.id} `
       storage.bot = client
-      if (client.shard && client.shard.count > 0) {
-        this.listenToShardedEvents(client)
-      }
+      this.listenToShardedEvents(client)
       if (!client.readyAt) {
         client.once('ready', this._setup.bind(this))
       } else {
@@ -100,7 +49,7 @@ class Client extends EventEmitter {
     } catch (err) {
       if (err.message.includes('too many guilds')) {
         throw err
-      } else if (!isClient) {
+      } else {
         log.general.error(`Discord.RSS unable to login, retrying in 10 minutes`, err)
         setTimeout(() => this.login.bind(this)(token), 600000)
       }
@@ -109,21 +58,17 @@ class Client extends EventEmitter {
 
   _setup () {
     const bot = this.bot
-    if (this.setPresence === true) {
-      if (config.bot.activityType) bot.user.setActivity(config.bot.activityName, { type: config.bot.activityType, url: config.bot.streamActivityURL || undefined })
-      else bot.user.setActivity(null)
-      bot.user.setStatus(config.bot.status)
-    }
     bot.on('error', err => {
       log.general.error(`${this.SHARD_PREFIX}Websocket error`, err)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
         if (this.scheduleManager) {
           // Check if it exists first since it may disconnect before it's even initialized
-          for (var sched of this.scheduleManager.scheduleList) sched.killChildren()
+          for (const sched of this.scheduleManager.scheduleList) {
+            sched.killChildren()
+          }
         }
-        if (bot.shard && bot.shard.count > 0) bot.shard.send({ _drss: true, type: 'kill' })
-        else process.exit(0)
+        bot.shard.send({ _drss: true, type: 'kill' })
       } else this.stop()
     })
     bot.on('resume', () => {
@@ -140,25 +85,17 @@ class Client extends EventEmitter {
             sched.killChildren()
           }
         }
-        if (bot.shard && bot.shard.count > 0) {
-          bot.shard.send({ _drss: true, type: 'kill' })
-        } else {
-          process.exit(0)
-        }
+        bot.shard.send({ _drss: true, type: 'kill' })
       } else {
         this.stop()
       }
     })
     log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
-    if (!bot.shard || bot.shard.count === 0) {
-      this.start()
-    } else {
-      process.send({
-        _drss: true,
-        type: 'shardReady',
-        guildIds: bot.guilds.keyArray()
-      })
-    }
+    process.send({
+      _drss: true,
+      type: 'shardReady',
+      guildIds: bot.guilds.keyArray()
+    })
   }
 
   listenToShardedEvents (bot) {
@@ -166,12 +103,28 @@ class Client extends EventEmitter {
       if (!message._drss) return
       try {
         switch (message.type) {
-          case 'kill' :
-            process.exit(0)
           case 'startInit':
             this.customSchedules = message.customSchedules
+            config._overrideWith(message.config)
+            log.suppressLevel(message.suppressLogLevels)
+            if (message.setPresence) {
+              if (config.bot.activityType) {
+                bot.user.setActivity(config.bot.activityName, {
+                  type: config.bot.activityType,
+                  url: config.bot.streamActivityURL || undefined
+                }).catch(err => log.general.error('Failed to set activity', err))
+              } else {
+                bot.user.setActivity(null)
+                  .catch(err => log.general.error('Failed to set null activity', err))
+              }
+              console.log(config.bot.status)
+              bot.user.setStatus(config.bot.status)
+                .catch(err => log.general.error('Failed to set status', err))
+            }
             this.start()
             break
+          case 'kill' :
+            process.exit(0)
           case 'stop':
             this.stop()
             break
@@ -179,7 +132,9 @@ class Client extends EventEmitter {
             storage.initialized = 2
             break
           case 'runSchedule':
-            if (bot.shard.id === message.shardId) this.scheduleManager.run(message.refreshRate)
+            if (bot.shard.id === message.shardId) {
+              this.scheduleManager.run(message.refreshRate)
+            }
             break
         }
       } catch (err) {
@@ -194,24 +149,13 @@ class Client extends EventEmitter {
     }
     const guildsArray = this.bot.guilds.keyArray()
     const guildIdsUnsharded = new Map()
-    guildsArray.forEach(id => guildIdsUnsharded.set(id, -1))
+    guildsArray.forEach(id => guildIdsUnsharded.set(id, this.shard))
     this.state = STATES.STARTING
     await listeners.enableCommands()
     const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     try {
       await connectDb()
-      if (!this.bot.shard || this.bot.shard.count === 0) {
-        if (Supporter.enabled) {
-          await require('../../settings/api.js')()
-        }
-        await maintenance.prunePreInit(guildIdsUnsharded, this.bot)
-        // Feeds must be pruned before calling prune subscribers
-        await Promise.all([
-          initialize.populatePefixes(),
-          initialize.populateSchedules(this.customSchedules)
-        ])
-      }
       await initialize.populateRedis(this.bot)
 
       if (!this.scheduleManager) {
@@ -238,20 +182,12 @@ class Client extends EventEmitter {
       }
       storage.initialized = 2
       this.state = STATES.READY
-      if (this.bot.shard && this.bot.shard.count > 0) {
-        process.send({
-          _drss: true,
-          type: 'initComplete',
-          shard: this.bot.shard.id,
-          guilds: guildsArray
-        })
-      } else {
-        await maintenance.prunePostInit(guildIdsUnsharded)
-        if (config.web.enabled === true) {
-          this.webClientInstance.enableCP()
-        }
-        this.maintenance = maintenance.cycle()
-      }
+      process.send({
+        _drss: true,
+        type: 'initComplete',
+        shard: this.bot.shard.id,
+        guilds: guildsArray
+      })
       listeners.createManagers(storage.bot)
       this.scheduleManager.startSchedules()
       this.emit('finishInit')
@@ -269,15 +205,16 @@ class Client extends EventEmitter {
     this.scheduleManager.stopSchedules()
     clearInterval(this.maintenance)
     listeners.disableAll()
-    if ((!storage.bot.shard || storage.bot.shard.count === 0) && config.web.enabled === true) {
-      this.webClientInstance.disableCP()
-    }
     this.state = STATES.STOPPED
   }
 
   async restart () {
-    if (this.state === STATES.STARTING) return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because of ${this.state} state`)
-    if (this.state === STATES.READY) this.stop()
+    if (this.state === STATES.STARTING) {
+      return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because of ${this.state} state`)
+    }
+    if (this.state === STATES.READY) {
+      this.stop()
+    }
     return this.start()
   }
 
