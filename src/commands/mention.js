@@ -13,7 +13,7 @@ const VALID_OPTIONS = ['1', '2', '3', '4']
 async function printSubscriptions (message, feeds, translate) {
   const guild = message.guild
   const subList = {}
-  const msg = new Discord.RichEmbed()
+  const msg = new Discord.MessageEmbed()
     .setColor(config.bot.menuColor)
     .setDescription(translate('commands.rssmention.listSubscriptionsDescription'))
     .setAuthor(translate('commands.rssmention.subscriptionsList'))

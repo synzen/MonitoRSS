@@ -106,7 +106,7 @@ class ArticleMessage {
     const richEmbeds = []
     const convert = parsedArticle.convertKeywords.bind(parsedArticle)
     for (const objectEmbed of embeds) {
-      const richEmbed = new Discord.RichEmbed()
+      const richEmbed = new Discord.MessageEmbed()
 
       const title = convert(objectEmbed.title)
       if (title) {

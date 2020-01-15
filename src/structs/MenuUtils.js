@@ -1,4 +1,4 @@
-const RichEmbed = require('discord.js').RichEmbed
+const MessageEmbed = require('discord.js').MessageEmbed
 const config = require('../config.js')
 const channelTracker = require('../util/channelTracker.js')
 const MessageCleaner = require('./MessageCleaner.js')
@@ -42,7 +42,7 @@ class Menu {
     if (settings.text) this.text = settings.text
     if (!settings.embed) return
     const { embed } = settings
-    this.pages[0] = new RichEmbed(embed).setColor(config.bot.menuColor)
+    this.pages[0] = new MessageEmbed(embed).setColor(config.bot.menuColor)
     this._curPage = this.pages[this._pageNum]
     this.pages[0].fields.length = 0
   }
@@ -54,7 +54,7 @@ class Menu {
    */
   _embedExists () {
     if (this._pageNum === 0 && !this._curPage) {
-      this.pages[0] = new RichEmbed().setColor(config.bot.menuColor)
+      this.pages[0] = new MessageEmbed().setColor(config.bot.menuColor)
       this._curPage = this.pages[0]
     }
   }
@@ -67,7 +67,7 @@ class Menu {
    */
   addPage () {
     ++this._pageNum
-    const newPage = new RichEmbed(this.pages[0])
+    const newPage = new MessageEmbed(this.pages[0])
     newPage.fields = []
     const missingPermText = !this.hasReactionPermissions ? ` (${this.translate('structs.MenuUtils.permissionWarning', { maxPerPage: this.maxPerPage })})` : ''
     this.pages[this._pageNum] = newPage

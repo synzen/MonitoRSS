@@ -2,7 +2,7 @@ const Discord = require('discord.js')
 const log = require('../../util/logger.js')
 
 module.exports = function (bot, message) {
-  const pong = new Discord.RichEmbed()
+  const pong = new Discord.MessageEmbed()
     .setTitle('Sending')
     .setDescription('pong!')
 
