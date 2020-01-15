@@ -39,125 +39,125 @@ const PERMISSIONS = [
   'MANAGE_EMOJIS'
 ]
 const list = {
-  rsshelp: {
+  help: {
     initLevel: 0,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssadd: {
+  add: {
     initLevel: 2,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssremove: {
+  remove: {
     initLevel: 2,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rsslist: {
+  list: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssmessage: {
+  message: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssembed: {
+  embed: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssfilters: {
+  filters: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssdate: {
+  date: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssmention: {
+  mention: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rsstest: {
+  test: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  subme: {
+  sub: {
     initLevel: 1,
     botPerm: MANAGE_ROLES_OR_PERMISSIONS_PERM
   },
-  unsubme: {
+  unsub: {
     initLevel: 1,
     botPerm: MANAGE_ROLES_OR_PERMISSIONS_PERM
   },
-  rssrefresh: {
+  refresh: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssoptions: {
+  options: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rsssplit: {
+  split: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssmove: {
+  move: {
     initLevel: 1,
     userPerm: MANAGE_CHANNELS_PERM,
     botPerm: EMBED_LINKS_PERM
   },
-  rssclone: {
+  clone: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssbackup: {
+  backup: {
     initLevel: 1,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssdump: {
+  dump: {
     initLevel: 1,
     botPerm: ['ATTACH_FILES', EMBED_LINKS_PERM],
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssstats: {
+  stats: {
     initLevel: 2,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rsswebhook: {
+  webhook: {
     initLevel: 1,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssprefix: {
+  prefix: {
     initLevel: 1,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssalert: {
+  alert: {
     initLevel: 1,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rsslocale: {
+  locale: {
     initLevel: 1,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssinvite: {
+  invite: {
     initLevel: 0,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rssversion: {
+  version: {
     initLevel: 0,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  rsspatron: {
+  patron: {
     initLevel: 2,
     userPerm: MANAGE_CHANNELS_PERM
   }

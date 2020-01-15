@@ -9,7 +9,7 @@
     "token": "",
     "locale": "en-US",
     "enableCommands": true,
-    "prefix": "~",
+    "prefix": "rss.",
     "status": "online",
     "activityType": "",
     "activityName": "",
