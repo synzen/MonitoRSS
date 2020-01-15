@@ -17,7 +17,7 @@ module.exports = async (bot, message, command) => {
   try {
     const profile = await GuildProfile.get(message.guild.id)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
-    
+
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, null, { command: command }, feeds)
