@@ -7,7 +7,7 @@ const log = require('../util/logger.js')
 class MessageCleaner {
   /**
      * Creates an instance of MessageCleaner.
-     * @param {Message} message A Discord.js Message
+     * @param {import('discord.js').Message} message A Discord.js Message
      * @memberof MessageCleaner
      */
   constructor (message) {
@@ -16,7 +16,7 @@ class MessageCleaner {
     this._messageList = []
     this._allowed = false
     if (!guildBot) {
-      message.guild.fetchMember(message.client.user).then(m => {
+      message.guild.members.fetch(message.client.user).then(m => {
         this._allowed = m.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true
       }).catch(err => log.general.warning('Unable to fetch client as member to determine message deletion permissions', err))
     } else this._allowed = !guildBot.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true

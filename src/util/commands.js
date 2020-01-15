@@ -220,7 +220,7 @@ exports.run = async message => {
     }
 
     // Check user perm
-    const member = await message.guild.fetchMember(message.author)
+    const member = await message.guild.members.fetch(message.author)
     if (!message.member) message.member = member
 
     if (!userPerm || !PERMISSIONS.includes(userPerm) || config.bot.ownerIDs.includes(message.author.id)) return loadCommand(name)(bot, message, name)
