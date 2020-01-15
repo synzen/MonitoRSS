@@ -120,6 +120,7 @@ describe('Unit::structs/db/FailCounter', function () {
         url: 'w234etr'
       }
       const counter = new FailCounter(data)
+      counter.failedAt = 'w4rey'
       const reason = 'wse4ry57h'
       counter.reason = reason
       const spy = jest.spyOn(counter, 'save').mockResolvedValue()
@@ -135,6 +136,18 @@ describe('Unit::structs/db/FailCounter', function () {
       jest.spyOn(counter, 'save').mockResolvedValue()
       await counter.fail('my reason')
       expect(counter.failedAt).toBeDefined()
+    })
+    it('saves for a new failedAt if there is none', async function () {
+      const data = {
+        url: 'aeswtry4'
+      }
+      const counter = new FailCounter(data)
+      const reason = '3w24tery5t'
+      counter.reason = reason
+      expect(counter.failedAt).toBeUndefined()
+      const spy = jest.spyOn(counter, 'save').mockResolvedValue()
+      await counter.fail(reason)
+      expect(spy).toHaveBeenCalledTimes(1)
     })
     it('does not overwrite previous failedAt date for another fail call', async function () {
       const data = {
@@ -158,6 +171,35 @@ describe('Unit::structs/db/FailCounter', function () {
       await counter.fail('my reason')
       expect(counter.count).toEqual(limit)
     })
+    it('saves if the count is not at fail limit', async function () {
+      const data = {
+        url: 'aged'
+      }
+      const limit = 1004
+      const reason = 'qw4et6r'
+      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(limit)
+      const counter = new FailCounter(data)
+      counter.failedAt = 'w43re5yt'
+      counter.reason = reason
+      const spy = jest.spyOn(counter, 'save').mockResolvedValue()
+      await counter.fail(reason)
+      expect(spy).toHaveBeenCalledTimes(1)
+    })
+    it('does not call save if nothing needs to be updated', async function () {
+      const data = {
+        url: 'aged'
+      }
+      const limit = 1004
+      const reason = 'qw4et6r'
+      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(limit)
+      const counter = new FailCounter(data)
+      counter.failedAt = 'w43re5yt'
+      counter.reason = reason
+      counter.count = limit
+      const spy = jest.spyOn(counter, 'save').mockResolvedValue()
+      await counter.fail(reason)
+      expect(spy).not.toHaveBeenCalled()
+    })
   })
   describe('increment', function () {
     it('calls fail if it reached the threshold', async function () {
@@ -171,7 +213,7 @@ describe('Unit::structs/db/FailCounter', function () {
       await counter.increment(reason)
       expect(spy).toHaveBeenCalledWith(reason)
     })
-    it('increments counter if it has not failed yet', async function () {
+    it('increments counter', async function () {
       const data = {
         url: 'esd'
       }

@@ -133,11 +133,22 @@ class Client extends EventEmitter {
               this.scheduleManager.run(message.refreshRate)
             }
             break
+          case 'sendMessage':
+            this.sendMessage(message.channel, message.message)
         }
       } catch (err) {
         log.general.warning('client', err, true)
       }
     })
+  }
+
+  sendMessage (channel, message) {
+    const fetched = this.bot.channels.get(channel)
+    if (!fetched) {
+      return
+    }
+    fetched.send(message)
+      .catch(err => log.general.error(`Failed to send global message for channel ${channel}`, err))
   }
 
   async start () {

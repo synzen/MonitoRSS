@@ -1,5 +1,7 @@
 const config = require('../../config.js')
 const Base = require('./Base.js')
+const Feed = require('./Feed.js')
+const log = require('../../util/logger.js')
 const FailCounterModel = require('../../models/FailCounter.js').model
 
 class FailCounter extends Base {
@@ -51,7 +53,7 @@ class FailCounter extends Base {
         url
       }
       const newCounter = new this(data)
-      return newCounter.save()
+      return newCounter.increment()
     } else {
       return found.increment(reason)
     }
@@ -103,10 +105,10 @@ class FailCounter extends Base {
    * @param {string} reason - Why the url failed
    */
   async increment (reason) {
+    ++this.count
     if (this.hasFailed()) {
       return this.fail(reason)
     } else {
-      ++this.count
       return this.save()
     }
   }
@@ -116,16 +118,46 @@ class FailCounter extends Base {
    * @param {string} reason
    */
   async fail (reason) {
+    let save = false
     if (!this.failedAt) {
       this.failedAt = new Date().toISOString()
+      FailCounter.sendFailMessage(this.url)
+      save = true
     }
     if (this.count !== FailCounter.limit) {
       this.count = FailCounter.limit
+      save = true
     }
     if (this.reason !== reason) {
       this.reason = reason
+      save = true
+    }
+    if (save) {
       return this.save()
     }
+  }
+
+  /**
+   * @param {string} url
+   */
+  static sendFailMessage (url) {
+    Feed.getManyBy('url', url)
+      .then(feeds => {
+        log.general.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
+        feeds.forEach(({ channel }) => {
+          const message = `**ATTENTION** - Feed url <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use the \`list\` command in your server for more information.`
+          process.send({
+            _drss: true,
+            _loopback: true,
+            type: 'sendMessage',
+            channel,
+            message
+          })
+        })
+      })
+      .catch(err => {
+        log.general.error(`Failed to get many feeds for sendFailMessage of ${url}`, err, true)
+      })
   }
 
   static get Model () {
