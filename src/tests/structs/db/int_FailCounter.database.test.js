@@ -30,7 +30,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         url
       })
       expect(result).toBeDefined()
-      expect(result.count).toEqual(0)
+      expect(result.count).toEqual(1)
       expect(result.reason).toBeUndefined()
       await collection.deleteOne({ url })
     })
