@@ -5,26 +5,32 @@ class PageContainer {
     this.messageList = {}
   }
 
+  /**
+   * @param {import('discord.js').Message} message
+   */
   async nextPage (message) {
     if (this.messageList[message.id].currentPage + 1 > this.messageList[message.id].pages.length - 1) return
     this.messageList[message.id].currentPage++
     const pageMsg = this.messageList[message.id]
 
     try {
-      const m = await message.channel.fetchMessage(message.id)
+      const m = await message.channel.messages.fetch(message.id)
       await m.edit({ embed: pageMsg.pages[pageMsg.currentPage] })
     } catch (err) {
       log.command.warning('pageControls nextPage', err, message.channel)
     }
   }
 
+  /**
+   * @param {import('discord.js').Message} message
+   */
   async prevPage (message) {
     if (this.messageList[message.id].currentPage - 1 < 0) return
     this.messageList[message.id].currentPage--
     const pageMsg = this.messageList[message.id]
 
     try {
-      const m = await message.channel.fetchMessage(message.id)
+      const m = await message.channel.messages.fetch(message.id)
       await m.edit({ embed: pageMsg.pages[pageMsg.currentPage] })
     } catch (err) {
       log.command.warning('pageControls prevpage', err, message.channel)
