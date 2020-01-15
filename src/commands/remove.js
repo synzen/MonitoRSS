@@ -16,9 +16,9 @@ module.exports = async (bot, message, command) => {
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
     const { selectedFeeds } = data
-    const removing = await message.channel.send(translate('commands.rssremove.removing'))
+    const removing = await message.channel.send(translate('commands.remove.removing'))
     const errors = []
-    let removed = translate('commands.rssremove.success') + '\n```\n'
+    let removed = translate('commands.remove.success') + '\n```\n'
     for (const feed of selectedFeeds) {
       const link = feed.url
       try {
@@ -32,7 +32,7 @@ module.exports = async (bot, message, command) => {
     }
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     if (errors.length > 0) {
-      await removing.edit(translate('commands.rssremove.internalError'))
+      await removing.edit(translate('commands.remove.internalError'))
     } else await removing.edit(`${removed}\`\`\`\n\n${translate('generics.backupReminder', { prefix })}`)
   } catch (err) {
     log.command.warning(`rssremove`, message.guild, err)

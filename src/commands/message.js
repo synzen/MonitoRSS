@@ -14,14 +14,14 @@ async function feedSelectorFn (m, data) {
   if (format && format.text) {
     currentMsg = '```Markdown\n' + format.text + '```'
   } else {
-    currentMsg = `\`\`\`Markdown\n${Translator.translate('commands.rssmessage.noSetMessage', locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultMessage + '```'
+    currentMsg = `\`\`\`Markdown\n${Translator.translate('commands.message.noSetMessage', locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultMessage + '```'
   }
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const nextData = {
     ...data,
     format,
     next: {
-      text: Translator.translate('commands.rssmessage.prompt', locale, { prefix, currentMsg, link: feed.url }) }
+      text: Translator.translate('commands.message.prompt', locale, { prefix, currentMsg, link: feed.url }) }
   }
   return nextData
 }
@@ -37,7 +37,7 @@ async function messagePromptFn (m, data) {
     }
   } else if (input === '{empty}' && (!format || format.embeds.length === 0)) {
     // Allow empty messages only if embed is enabled
-    throw new MenuUtils.MenuOptionError(Translator.translate('commands.rssmessage.noEmpty', locale))
+    throw new MenuUtils.MenuOptionError(Translator.translate('commands.message.noEmpty', locale))
   } else {
     return {
       ...data,
@@ -73,7 +73,7 @@ module.exports = async (bot, message, command) => {
         }
       }
       log.command.info(`Message reset for ${feed.url}`, message.guild)
-      await message.channel.send(translate('commands.rssmessage.resetSuccess', { link: feed.url }) + `\n \`\`\`Markdown\n${config.feeds.defaultMessage}\`\`\``)
+      await message.channel.send(translate('commands.message.resetSuccess', { link: feed.url }) + `\n \`\`\`Markdown\n${config.feeds.defaultMessage}\`\`\``)
     } else {
       if (format) {
         format.text = setting
@@ -87,7 +87,7 @@ module.exports = async (bot, message, command) => {
         await newFormat.save()
       }
       log.command.info(`New message recorded for ${feed.url}`, message.guild)
-      await message.channel.send(`${translate('commands.rssmessage.setSuccess', { link: feed.url })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.rssmessage.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.rssmessage.noSubscriptionsPlaceholder', { prefix })}` : ``}`) // Escape backticks in code blocks by inserting zero-width space before each backtick
+      await message.channel.send(`${translate('commands.message.setSuccess', { link: feed.url })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.message.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.message.noSubscriptionsPlaceholder', { prefix })}` : ``}`) // Escape backticks in code blocks by inserting zero-width space before each backtick
     }
   } catch (err) {
     log.command.warning(`rssmessage`, message.guild, err)

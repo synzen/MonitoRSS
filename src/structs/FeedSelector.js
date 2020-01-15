@@ -9,28 +9,28 @@ const GLOBAL_SELECT = ['rssmove']
 const SINGLE_NUMBER_REGEX = /^\d+$/
 const getOptionTexts = translate => ({
   imgPreviews: {
-    status: `${translate('commands.rssoptions.imagePreviews')}: `,
-    toggle: translate('commands.rssoptions.imagePreviewsDescription')
+    status: `${translate('commands.options.imagePreviews')}: `,
+    toggle: translate('commands.options.imagePreviewsDescription')
   },
   imgLinksExistence: {
-    status: `${translate('commands.rssoptions.imageLinksExistence')}: `,
-    toggle: translate('commands.rssoptions.imageLinksExistenceToggle')
+    status: `${translate('commands.options.imageLinksExistence')}: `,
+    toggle: translate('commands.options.imageLinksExistenceToggle')
   },
   checkTitles: {
-    status: `${translate('commands.rssoptions.titleChecks')}: `,
-    toggle: translate('commands.rssoptions.titleChecksToggle')
+    status: `${translate('commands.options.titleChecks')}: `,
+    toggle: translate('commands.options.titleChecksToggle')
   },
   checkDates: {
-    status: `${translate('commands.rssoptions.dateChecks')}: `,
-    toggle: translate('commands.rssoptions.dateChecksToggle')
+    status: `${translate('commands.options.dateChecks')}: `,
+    toggle: translate('commands.options.dateChecksToggle')
   },
   formatTables: {
-    status: `${translate('commands.rssoptions.tableFormatting')}: `,
-    toggle: translate('commands.rssoptions.tableFormattingToggle')
+    status: `${translate('commands.options.tableFormatting')}: `,
+    toggle: translate('commands.options.tableFormattingToggle')
   },
   toggleRoleMentions: {
-    status: `${translate('commands.rssoptions.roleMentioning')}: `,
-    toggle: translate('commands.rssoptions.roleMentioningToggle')
+    status: `${translate('commands.options.roleMentioning')}: `,
+    toggle: translate('commands.options.roleMentioningToggle')
   }
 })
 
@@ -225,8 +225,8 @@ class FeedSelector extends Menu {
           channelText = `${this.translate('generics.channelUpper')}: Unknown\n`
         }
       }
-      const url = link.length > 500 ? this.translate('commands.rsslist.exceeds500Characters') : link
-      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channelText}${miscOptionText}${status}${this.translate('commands.rsslist.link')}: ${url}`)
+      const url = link.length > 500 ? this.translate('commands.list.exceeds500Characters') : link
+      this.addOption(`${title.length > 200 ? title.slice(0, 200) + ' ...' : title}`, `${channelText}${miscOptionText}${status}${this.translate('commands.list.link')}: ${url}`)
     })
 
     this.fn = selectFeedFn.bind(this)

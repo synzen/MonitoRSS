@@ -15,14 +15,14 @@ async function selectChannelFn (m, data) {
 
   const selected = m.content === 'this' ? m.channel : m.mentions.channels.first()
   if (!selected) {
-    throw new MenuUtils.MenuOptionError(translate('commands.rssmove.invalidChannel'))
+    throw new MenuUtils.MenuOptionError(translate('commands.move.invalidChannel'))
   }
   const me = m.guild.me
   let errors = ''
   if (!me.permissionsIn(selected).has(MIN_PERMISSION_BOT)) {
-    errors += translate('commands.rssmove.meMissingPermission', { id: selected.id })
+    errors += translate('commands.move.meMissingPermission', { id: selected.id })
   } if (!m.member.permissionsIn(selected).has(MIN_PERMISSION_USER)) {
-    errors += translate('commands.rssmove.youMissingPermission', { id: selected.id })
+    errors += translate('commands.move.youMissingPermission', { id: selected.id })
   }
 
   const formats = await Promise.all(feeds.map(feed => feed.getFormat()))
@@ -35,17 +35,17 @@ async function selectChannelFn (m, data) {
     const sourceChannel = m.guild.channels.get(selectedFeed.channel)
 
     if (sourceChannel && selected.id === sourceChannel.id) {
-      curErrors += translate('commands.rssmove.alreadyInChannel')
+      curErrors += translate('commands.move.alreadyInChannel')
     } else {
       if (sourceChannel && !m.member.permissionsIn(sourceChannel).has(MIN_PERMISSION_USER)) {
-        errors += translate('commands.rssmove.meMissingPermission', { id: sourceChannel.id })
+        errors += translate('commands.move.meMissingPermission', { id: sourceChannel.id })
       }
       if (hasEmbed && !me.permissionsIn(selected).has('EMBED_LINKS')) {
-        curErrors += translate('commands.rssmove.meMissingEmbedLinks', { id: selected.id })
+        curErrors += translate('commands.move.meMissingEmbedLinks', { id: selected.id })
       }
       for (const feed of feeds) {
         if (feed.channel === selected.id && feed.link === selectedFeed.link && feed._id !== selectedFeed.id) {
-          errors += translate('commands.rssmove.linkAlreadyExists')
+          errors += translate('commands.move.linkAlreadyExists')
         }
       }
     }
@@ -63,7 +63,7 @@ async function selectChannelFn (m, data) {
   }
 
   if (errors) {
-    throw new MenuUtils.MenuOptionError(translate('commands.rssmove.moveFailed', { errors }))
+    throw new MenuUtils.MenuOptionError(translate('commands.move.moveFailed', { errors }))
   }
   const summary = []
   const promises = []
@@ -75,7 +75,7 @@ async function selectChannelFn (m, data) {
 
   await Promise.all(promises)
   log.command.info(`Channel for feeds ${summary.join(',')} moved to ${selected.id} (${selected.name})`, m.guild, m.channel)
-  m.channel.send(`${translate('commands.rssmove.moveSuccess', { summary: summary.join('\n'), id: selected.id })} ${translate('generics.backupReminder', { prefix })}`)
+  m.channel.send(`${translate('commands.move.moveSuccess', { summary: summary.join('\n'), id: selected.id })} ${translate('generics.backupReminder', { prefix })}`)
     .catch(err => log.command.warning('rssmove 1', err))
   return data
 }
@@ -86,7 +86,7 @@ module.exports = async (bot, message, command) => {
     const guildLocale = profile ? profile.locale : undefined
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     const feedSelector = new FeedSelector(message, null, { command, locale: guildLocale, multiSelect: true }, feeds)
-    const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: Translator.translate('commands.rssmove.prompt', guildLocale) })
+    const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: Translator.translate('commands.move.prompt', guildLocale) })
     await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel], { locale: guildLocale, profile }).start()
   } catch (err) {
     log.command.warning(`rssmove`, message.guild, err)

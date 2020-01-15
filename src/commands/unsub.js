@@ -10,10 +10,10 @@ function removeRole (message, role, translate) {
   message.member.roles.remove(role)
     .then(mem => {
       log.command.info(`Removed role from member`, message.guild, role, message.author)
-      message.channel.send(translate('commands.unsubme.removeSuccess', { name: role.name }))
+      message.channel.send(translate('commands.unsub.removeSuccess', { name: role.name }))
     })
     .catch(err => {
-      message.channel.send(translate('commands.unsubme.removeFailed') + err.message ? ` (${err.message})` : '')
+      message.channel.send(translate('commands.unsub.removeFailed') + err.message ? ` (${err.message})` : '')
       log.command.warning(`Unable to remove role`, message.guild, role, message.author, err)
     })
 }
@@ -36,7 +36,7 @@ module.exports = async (bot, message, command) => {
     }
 
     if (filteredMemberRoles.length === 0) {
-      return await message.channel.send(translate('commands.unsubme.noEligible'))
+      return await message.channel.send(translate('commands.unsub.noEligible'))
     }
 
     const msgArr = message.content.split(' ')
@@ -50,17 +50,17 @@ module.exports = async (bot, message, command) => {
       } else if (mention && eligibleRoles.includes(mention.name.toLowerCase())) {
         return removeRole(message, mention, translate)
       }
-      return await message.channel.send(translate('commands.unsubme.invalidRole'))
+      return await message.channel.send(translate('commands.unsub.invalidRole'))
     }
 
     const ask = new MenuUtils.Menu(message, null, { numbered: false })
-      .setTitle(translate('commands.unsubme.selfSubscriptionRemoval'))
-      .setDescription(translate('commands.unsubme.listDescription', { prefix }))
+      .setTitle(translate('commands.unsub.selfSubscriptionRemoval'))
+      .setDescription(translate('commands.unsub.listDescription', { prefix }))
 
     // Generate a list of feeds and eligible roles to be removed
     const options = await getSubList(message.guild, feeds)
     if (!options) {
-      return await message.channel.send(translate('commands.unsubme.noEligible'))
+      return await message.channel.send(translate('commands.unsub.noEligible'))
     }
     let userHasRoles = false
     for (const subscriptionData of options) {
@@ -79,7 +79,7 @@ module.exports = async (bot, message, command) => {
       }
       const title = subscriptionData.source.title + ` (${temp.length})`
       let channelName = message.guild.channels.get(subscriptionData.source.channel).name
-      let desc = `**${translate('commands.subme.link')}**: ${subscriptionData.source.url}\n**${translate('commands.subme.channel')}**: #${channelName}\n**${translate('commands.subme.roles')}**:\n`
+      let desc = `**${translate('commands.sub.link')}**: ${subscriptionData.source.url}\n**${translate('commands.sub.channel')}**: #${channelName}\n**${translate('commands.sub.roles')}**:\n`
       for (var x = 0; x < temp.length; ++x) {
         const cur = temp[x]
         const next = temp[x + 1]
@@ -95,7 +95,7 @@ module.exports = async (bot, message, command) => {
     }
 
     if (!userHasRoles) {
-      return await message.channel.send(translate('commands.unsubme.noEligible'))
+      return await message.channel.send(translate('commands.unsub.noEligible'))
     }
 
     // Some roles may not have a feed assigned since it prints all roles below the bot's role.
@@ -106,7 +106,7 @@ module.exports = async (bot, message, command) => {
         temp.push(filteredMemberRoles[leftoverRole].name)
       }
       temp.sort()
-      const title = `${translate('commands.unsubme.otherRoles')}${temp.length > 0 ? ` (${temp.length})` : ``}`
+      const title = `${translate('commands.unsub.otherRoles')}${temp.length > 0 ? ` (${temp.length})` : ``}`
       let desc = ''
       for (let y = 0; y < temp.length; ++y) {
         const cur = temp[y]
@@ -118,7 +118,7 @@ module.exports = async (bot, message, command) => {
           desc = ''
         }
       }
-      ask.addOption(translate('commands.unsubme.otherRoles'), desc, true)
+      ask.addOption(translate('commands.unsub.otherRoles'), desc, true)
     }
 
     await ask.send()

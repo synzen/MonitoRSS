@@ -12,11 +12,11 @@ module.exports = async (bot, message, command) => {
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     if (feeds.length === 0) {
-      return await message.channel.send(translate('commands.rsslist.noFeeds'))
+      return await message.channel.send(translate('commands.list.noFeeds'))
     }
 
     if (FailCounter.limit === 0) {
-      return await message.channel.send(translate('commands.rssrefresh.noFailLimit'))
+      return await message.channel.send(translate('commands.refresh.noFailLimit'))
     }
 
     let counters = []
@@ -30,9 +30,9 @@ module.exports = async (bot, message, command) => {
     }
     if (counters.length === 0) {
       channelTracker.remove(message.channel.id)
-      return await message.channel.send(translate('commands.rssrefresh.noFailedFeeds'))
+      return await message.channel.send(translate('commands.refresh.noFailedFeeds'))
     }
-    const processing = await message.channel.send(translate('commands.rssrefresh.processing'))
+    const processing = await message.channel.send(translate('commands.refresh.processing'))
     let failedReasons = {}
     for (const counter of counters) {
       const url = counter.url
@@ -59,10 +59,10 @@ module.exports = async (bot, message, command) => {
 
     let reply = ''
     if (successfulLinks) {
-      reply += translate('commands.rssrefresh.success') + '\n```' + successfulLinks + '```\n\n'
+      reply += translate('commands.refresh.success') + '\n```' + successfulLinks + '```\n\n'
     }
     if (failedLinks) {
-      reply += translate('commands.rssrefresh.failed') + '\n```' + failedLinks + '```'
+      reply += translate('commands.refresh.failed') + '\n```' + failedLinks + '```'
     }
     channelTracker.remove(message.channel.id)
     await processing.edit(reply)

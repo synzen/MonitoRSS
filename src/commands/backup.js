@@ -10,14 +10,14 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
     const locale = guildData.profile ? guildData.profile.locale : undefined
     const translate = Translator.createLocaleTranslator(locale)
     if (guildData.isEmpty() && !automatic) {
-      return await message.channel.send(translate('commands.rssbackup.noProfile'))
+      return await message.channel.send(translate('commands.backup.noProfile'))
     }
     if (message.guild.me.permissionsIn(message.channel).has('ATTACH_FILES')) {
       const data = Buffer.from(JSON.stringify(guildData.toJSON(), null, 2))
       const attachment = new Attachment(data, guildId + '.json')
       await message.channel.send(attachment)
     } else {
-      await message.channel.send(translate('commands.rssbackup.noPermission'))
+      await message.channel.send(translate('commands.backup.noPermission'))
     }
   } catch (err) {
     log.command.warning('rssbackup', err)

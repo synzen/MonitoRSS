@@ -10,7 +10,7 @@ async function feedSelectorFn (m, data) {
   const { feed, translate } = data
   const webhook = feed.webhook
 
-  const text = `${webhook ? translate('commands.rsswebhook.existingFound', { name: webhook.name }) : ''}${translate('commands.rsswebhook.prompt')}`
+  const text = `${webhook ? translate('commands.webhook.existingFound', { name: webhook.name }) : ''}${translate('commands.webhook.prompt')}`
 
   return { ...data,
     existingWebhook: webhook,
@@ -32,7 +32,7 @@ async function collectWebhookFn (m, data) {
   const hookName = m.content.replace(nameRegex, '').replace(avatarRegex, '').trim()
   const hook = hooks.find(h => h.name === hookName)
   if (!hook) {
-    throw new MenuUtils.MenuOptionError(translate('commands.rsswebhook.notFound', { name: hookName }))
+    throw new MenuUtils.MenuOptionError(translate('commands.webhook.notFound', { name: hookName }))
   }
   let customNameSrch = m.content.match(nameRegex)
   let customAvatarSrch = m.content.match(avatarRegex)
@@ -40,7 +40,7 @@ async function collectWebhookFn (m, data) {
   if (customNameSrch) {
     customNameSrch = customNameSrch[1]
     if (customNameSrch.length > 32 || customNameSrch.length < 2) {
-      throw new MenuUtils.MenuOptionError(translate('commands.rsswebhook.tooLong'))
+      throw new MenuUtils.MenuOptionError(translate('commands.webhook.tooLong'))
     }
   }
   if (customAvatarSrch) {
@@ -62,7 +62,7 @@ module.exports = async (bot, message, command) => {
       return await message.channel.send(`Only servers with patron backing have access to webhooks.`)
     }
     if (!message.guild.me.permissionsIn(message.channel).has('MANAGE_WEBHOOKS')) {
-      return await message.channel.send(translate('commands.rsswebhook.noPermission'))
+      return await message.channel.send(translate('commands.webhook.noPermission'))
     }
 
     const hooks = await message.channel.fetchWebhooks()
@@ -78,11 +78,11 @@ module.exports = async (bot, message, command) => {
 
     if (webhookName === '{remove}') {
       if (typeof existingWebhook !== 'object') {
-        await message.channel.send(translate('commands.rsswebhook.noneAssigned'))
+        await message.channel.send(translate('commands.webhook.noneAssigned'))
       } else {
         feed.webhook = undefined
         await feed.save()
-        await message.channel.send(translate('commands.rsswebhook.removeSuccess', { link: feed.url }))
+        await message.channel.send(translate('commands.webhook.removeSuccess', { link: feed.url }))
       }
       return
     }
@@ -98,7 +98,7 @@ module.exports = async (bot, message, command) => {
       feed.webhook.avatar = customAvatarSrch
     }
     log.command.info(`Webhook ID ${webhook.id} (${webhook.name}) connecting to feed ${feed.url}`, message.guild, message.channel)
-    const connected = translate('commands.rsswebhook.connected', { botUser: bot.user, link: feed.url })
+    const connected = translate('commands.webhook.connected', { botUser: bot.user, link: feed.url })
     await feed.save()
     webhook.send(connected, { username: customNameSrch, avatarURL: customAvatarSrch })
       .catch(err => {

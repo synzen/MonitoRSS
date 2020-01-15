@@ -7,30 +7,30 @@ const GuildProfile = require('../structs/db/GuildProfile.js')
 const Format = require('../structs/db/Format.js')
 const Feed = require('../structs/db/Feed.js')
 const getEmbedProperties = translate => ({
-  title: { name: translate('commands.rssembed.title'), description: translate('commands.rssembed.titleDescription') },
-  description: { name: translate('commands.rssembed.description'), description: translate('commands.rssembed.descriptionDescription') },
-  url: { name: translate('commands.rssembed.url'), description: translate('commands.rssembed.urlDescription') },
-  color: { name: translate('commands.rssembed.color'), description: translate('commands.rssembed.colorDescription') },
-  timestamp: { name: translate('commands.rssembed.timestamp'), description: translate('commands.rssembed.timestampDescription') },
-  footerIconURL: { name: translate('commands.rssembed.footerIconURL'), description: translate('commands.rssembed.footerIconURLDescription') },
-  footerText: { name: translate('commands.rssembed.footerText'), description: translate('commands.rssembed.footerTextDescription') },
-  thumbnailURL: { name: translate('commands.rssembed.thumbnailURL'), description: translate('commands.rssembed.thumbnailURLDescription') },
-  imageURL: { name: translate('commands.rssembed.imageURL'), description: translate('commands.rssembed.imageURLDescription') },
-  authorName: { name: translate('commands.rssembed.authorName'), description: translate('commands.rssembed.authorNameDescription') },
-  authorURL: { name: translate('commands.rssembed.authorURL'), description: translate('commands.rssembed.authorURLDescription') },
-  authorIconURL: { name: translate('commands.rssembed.authorIconURL'), description: translate('commands.rssembed.authorIconURLDescription') }
+  title: { name: translate('commands.embed.title'), description: translate('commands.embed.titleDescription') },
+  description: { name: translate('commands.embed.description'), description: translate('commands.embed.descriptionDescription') },
+  url: { name: translate('commands.embed.url'), description: translate('commands.embed.urlDescription') },
+  color: { name: translate('commands.embed.color'), description: translate('commands.embed.colorDescription') },
+  timestamp: { name: translate('commands.embed.timestamp'), description: translate('commands.embed.timestampDescription') },
+  footerIconURL: { name: translate('commands.embed.footerIconURL'), description: translate('commands.embed.footerIconURLDescription') },
+  footerText: { name: translate('commands.embed.footerText'), description: translate('commands.embed.footerTextDescription') },
+  thumbnailURL: { name: translate('commands.embed.thumbnailURL'), description: translate('commands.embed.thumbnailURLDescription') },
+  imageURL: { name: translate('commands.embed.imageURL'), description: translate('commands.embed.imageURLDescription') },
+  authorName: { name: translate('commands.embed.authorName'), description: translate('commands.embed.authorNameDescription') },
+  authorURL: { name: translate('commands.embed.authorURL'), description: translate('commands.embed.authorURLDescription') },
+  authorIconURL: { name: translate('commands.embed.authorIconURL'), description: translate('commands.embed.authorIconURLDescription') }
 })
 
 function validate (prop, setting, translate) {
   const lprop = prop.toLowerCase()
   switch (lprop) {
     case 'color':
-      return isNaN(parseInt(setting, 10)) ? translate('commands.rssembed.invalidColorNumber') : parseInt(setting, 10) < 0 || parseInt(setting, 10) > 16777215 ? translate('commands.rssembed.invalidColorRange') : true
+      return isNaN(parseInt(setting, 10)) ? translate('commands.embed.invalidColorNumber') : parseInt(setting, 10) < 0 || parseInt(setting, 10) > 16777215 ? translate('commands.embed.invalidColorRange') : true
     case 'thumbnailURL':
     case 'authorAvatarURL':
     case 'imageURL':
     case 'footerIconURL':
-      return validImg(setting) ? true : translate('commands.rssembed.invalidURL')
+      return validImg(setting) ? true : translate('commands.embed.invalidURL')
   }
   return true
 }
@@ -83,8 +83,8 @@ async function feedSelectorFn (m, data) {
   }
 
   const selectEmbed = new MenuUtils.Menu(m, selectEmbedFn)
-    .setAuthor(translate('commands.rssembed.embedSelection'))
-    .setDescription(translate('commands.rssembed.embedSelectionDescription'))
+    .setAuthor(translate('commands.embed.embedSelection'))
+    .setDescription(translate('commands.embed.embedSelectionDescription'))
   const embeds = format.embeds
   for (let x = 0; x < embeds.length; ++x) {
     const embed = embeds[0]
@@ -94,14 +94,14 @@ async function feedSelectorFn (m, data) {
         val += `**${prop}:** ${embed[prop]}\n`
       }
     }
-    selectEmbed.addOption(x === 0 ? translate('commands.rssembed.defaultEmbed') : translate('commands.rssembed.numberedEmbed', { number: x + 1 }), `${val}\u200b`)
+    selectEmbed.addOption(x === 0 ? translate('commands.embed.defaultEmbed') : translate('commands.embed.numberedEmbed', { number: x + 1 }), `${val}\u200b`)
   }
 
   if (format.embeds.length < 10) {
-    selectEmbed.addOption(translate('commands.rssembed.embedSelectionOptionAdd'), translate('commands.rssembed.embedSelectionOptionAddDescription'))
+    selectEmbed.addOption(translate('commands.embed.embedSelectionOptionAdd'), translate('commands.embed.embedSelectionOptionAddDescription'))
   }
   if (format.embeds.length > 0) {
-    selectEmbed.addOption(translate('commands.rssembed.embedSelectionOptionRemoveAll'), `\u200b`)
+    selectEmbed.addOption(translate('commands.embed.embedSelectionOptionRemoveAll'), `\u200b`)
   }
   return {
     ...data,
@@ -146,13 +146,13 @@ async function selectEmbedFn (m, data) {
 async function generateFieldsMenu (m, nextData) {
   const { translate } = nextData
   const fieldActionMenu = new MenuUtils.Menu(m, fieldFunctions.action)
-    .setAuthor(translate('commands.rssembed.embedFields'))
-    .setDescription(translate('commands.rssembed.embedFieldsDescription'))
-    .addOption(translate('commands.rssembed.embedFieldsOptionAddRegular'), translate('commands.rssembed.embedFieldsOptionAddRegularDescription'))
-    .addOption(translate('commands.rssembed.embedFieldsOptionAddInline'), translate('commands.rssembed.embedFieldsOptionAddInlineDescription'))
-    .addOption(translate('commands.rssembed.embedFieldsOptionAddRegularBlank'), translate('commands.rssembed.embedFieldsOptionAddRegularBlankDescription'))
-    .addOption(translate('commands.rssembed.embedFieldsOptionAddInlineBlank'), translate('commands.rssembed.embedFieldsOptionAddInlineBlankDescription'))
-    .addOption(translate('commands.rssembed.embedFieldsOptionRemove'), translate('commands.rssembed.embedFieldsOptionRemoveDescription'))
+    .setAuthor(translate('commands.embed.embedFields'))
+    .setDescription(translate('commands.embed.embedFieldsDescription'))
+    .addOption(translate('commands.embed.embedFieldsOptionAddRegular'), translate('commands.embed.embedFieldsOptionAddRegularDescription'))
+    .addOption(translate('commands.embed.embedFieldsOptionAddInline'), translate('commands.embed.embedFieldsOptionAddInlineDescription'))
+    .addOption(translate('commands.embed.embedFieldsOptionAddRegularBlank'), translate('commands.embed.embedFieldsOptionAddRegularBlankDescription'))
+    .addOption(translate('commands.embed.embedFieldsOptionAddInlineBlank'), translate('commands.embed.embedFieldsOptionAddInlineBlankDescription'))
+    .addOption(translate('commands.embed.embedFieldsOptionRemove'), translate('commands.embed.embedFieldsOptionRemoveDescription'))
 
   nextData.next = { menu: fieldActionMenu }
   return nextData
@@ -160,7 +160,7 @@ async function generateFieldsMenu (m, nextData) {
 
 async function generatePropertiesMessage (m, nextData) {
   const { feed, format, embedProperties, translate } = nextData
-  let currentEmbedProps = `\`\`\`Markdown\n# ${translate('commands.rssembed.currentProperties')} #\n\n`
+  let currentEmbedProps = `\`\`\`Markdown\n# ${translate('commands.embed.currentProperties')} #\n\n`
   let changed = false
   const selectProp = new MenuUtils.Menu(m, selectPropFn)
   const selectedEmbed = format.embeds[nextData.selectedEmbedIndex]
@@ -178,15 +178,15 @@ async function generatePropertiesMessage (m, nextData) {
   const embedPropertiesKeys = Object.keys(embedProperties)
   const embedPropertiesKeysLen = embedPropertiesKeys.length
 
-  let embedPropertiesListed = `\`\`\`Markdown\n# ${translate('commands.rssembed.availableProperties')} #\n\n`
+  let embedPropertiesListed = `\`\`\`Markdown\n# ${translate('commands.embed.availableProperties')} #\n\n`
   for (const pn in embedProperties) {
     const cur = embedProperties[pn]
     embedPropertiesListed += `[${cur.name}]: ${cur.description}\n\n${pn === embedPropertiesKeys[embedPropertiesKeysLen - 1] ? '```' : ''}`
   }
 
   if (!changed) currentEmbedProps = '```\nNo properties set.\n'
-  const m1 = translate('commands.rssembed.currentPropertiesList', { link: feed.url, list: currentEmbedProps })
-  const m2 = translate('commands.rssembed.availablePropertiesList', { list: embedPropertiesListed })
+  const m1 = translate('commands.embed.currentPropertiesList', { link: feed.url, list: currentEmbedProps })
+  const m2 = translate('commands.embed.availablePropertiesList', { list: embedPropertiesListed })
   let mFull
   mFull = (m1 + m2).length < 1995 ? `${m1}\n${m2}` : [m1, m2] // Separate into two messages if it exceeds Discord's max length of 2000
   nextData.next = {
@@ -223,10 +223,10 @@ async function selectPropFn (m, data) {
   }
 
   if (invalids.length > 0) {
-    throw new MenuUtils.MenuOptionError(translate('commands.rssembed.invalidProperties', { invalids }))
+    throw new MenuUtils.MenuOptionError(translate('commands.embed.invalidProperties', { invalids }))
   }
   if (choices.length === 0) {
-    throw new MenuUtils.MenuOptionError(translate('commands.rssembed.noPropertiesSelected'))
+    throw new MenuUtils.MenuOptionError(translate('commands.embed.noPropertiesSelected'))
   }
   const setMenus = []
   for (let x = 0; x < choices.length; ++x) {
@@ -234,7 +234,7 @@ async function selectPropFn (m, data) {
   }
 
   data.next = {
-    text: choices[0] === 'timestamp' ? translate('commands.rssembed.settingPropertyTimezone') : translate('commands.rssembed.settingProperty', { property: embedProperties[choices[0]].name }),
+    text: choices[0] === 'timestamp' ? translate('commands.embed.settingPropertyTimezone') : translate('commands.embed.settingProperty', { property: embedProperties[choices[0]].name }),
     menu: setMenus
   }
   return { ...data,
@@ -249,7 +249,7 @@ async function setProperty (m, data) {
   const userSetting = m.content.trim()
   if (properties[1]) {
     data.next = {
-      text: properties[1] !== 'timestamp' ? translate('commands.rssembed.settingProperty', { property: embedProperties[properties[1]].name }) : translate('commands.rssembed.settingPropertyTimezone')
+      text: properties[1] !== 'timestamp' ? translate('commands.embed.settingProperty', { property: embedProperties[properties[1]].name }) : translate('commands.embed.settingPropertyTimezone')
     }
   }
 
@@ -260,7 +260,7 @@ async function setProperty (m, data) {
   }
 
   if (property === 'timestamp') {
-    if (userSetting !== 'now' && userSetting !== 'article' && new Date(userSetting).toString() === 'Invalid Date') throw new MenuUtils.MenuOptionError(translate('commands.rssembed.settingPropertyTimezoneError'))
+    if (userSetting !== 'now' && userSetting !== 'article' && new Date(userSetting).toString() === 'Invalid Date') throw new MenuUtils.MenuOptionError(translate('commands.embed.settingPropertyTimezoneError'))
     data.settings[property] = userSetting
     properties.shift()
     return data
@@ -282,18 +282,18 @@ const fieldFunctions = {
     if (input === 5) {
       // Remove a field
       if (!format.embeds[selectedEmbedIndex] || !format.embeds[selectedEmbedIndex].fields.length === 0) {
-        throw new Error(translate('commands.rssembed.embedFieldsRemoveNone'))
+        throw new Error(translate('commands.embed.embedFieldsRemoveNone'))
       }
       const fields = format.embeds[selectedEmbedIndex].fields
       const rmList = new MenuUtils.Menu(m, fieldFunctions.remove)
-        .setAuthor(translate('commands.rssembed.embedFieldsOptionRemoveEmbedTitle'))
-        .setDescription(translate('commands.rssembed.embedFieldsOptionRemoveEmbedDescription'))
+        .setAuthor(translate('commands.embed.embedFieldsOptionRemoveEmbedTitle'))
+        .setDescription(translate('commands.embed.embedFieldsOptionRemoveEmbedDescription'))
 
       for (const field of fields) {
-        const inline = field.inline === true ? `(${translate('commands.rssembed.inline')})` : `(${translate('commands.rssembed.regular')})`
+        const inline = field.inline === true ? `(${translate('commands.embed.inline')})` : `(${translate('commands.embed.regular')})`
         // Empty string name
         if (field.name === '\u200b') {
-          rmList.addOption(`${inline} ${translate('commands.rssembed.blankField')}`, '\u200b')
+          rmList.addOption(`${inline} ${translate('commands.embed.blankField')}`, '\u200b')
         } else {
           rmList.addOption(`${inline} ${field.name}`, field.value)
         }
@@ -308,7 +308,7 @@ const fieldFunctions = {
     } else {
       // Add a field
       if (format.embeds[selectedEmbedIndex] && format.embeds[selectedEmbedIndex].fields.length === 10) {
-        throw new Error(translate('commands.rssembed.embedFieldsMaximum'))
+        throw new Error(translate('commands.embed.embedFieldsMaximum'))
       }
 
       if (input === 3) {
@@ -322,7 +322,7 @@ const fieldFunctions = {
         })
         return {
           ...data,
-          successText: translate('commands.rssembed.embedFieldsAddedBlank', { link: feed.url })
+          successText: translate('commands.embed.embedFieldsAddedBlank', { link: feed.url })
         }
       } else if (input === 4) {
         // Inline blank field
@@ -336,7 +336,7 @@ const fieldFunctions = {
         })
         return {
           ...data,
-          successText: translate('commands.rssembed.embedFieldsAddedBlankInline', { link: feed.url })
+          successText: translate('commands.embed.embedFieldsAddedBlankInline', { link: feed.url })
         }
       }
 
@@ -345,7 +345,7 @@ const fieldFunctions = {
         selectedOption: input,
         next:
         { menu: specMenu,
-          text: translate('commands.rssembed.embedFieldsSettingPrompt') }
+          text: translate('commands.embed.embedFieldsSettingPrompt') }
       }
     }
   },
@@ -357,13 +357,13 @@ const fieldFunctions = {
     }
     const name = arr.shift().trim()
     if (!name) {
-      throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingNoTitle'))
+      throw new MenuUtils.MenuOptionError(translate('commands.embed.embedFieldsSettingNoTitle'))
     } else if (name.length > 256) {
-      throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingTitleLong'))
+      throw new MenuUtils.MenuOptionError(translate('commands.embed.embedFieldsSettingTitleLong'))
     }
     const val = arr.join('\n').trim()
     if (val.length > 1024) {
-      throw new MenuUtils.MenuOptionError(translate('commands.rssembed.embedFieldsSettingValueLong'))
+      throw new MenuUtils.MenuOptionError(translate('commands.embed.embedFieldsSettingValueLong'))
     }
     const setting = {
       name,
@@ -381,7 +381,7 @@ const fieldFunctions = {
     log.command.info(`Embed field added. Title: '${name}', Value: '${val}'`, m.guild)
 
     return { ...data,
-      successText: translate('commands.rssembed.embedFieldsAdded', {
+      successText: translate('commands.embed.embedFieldsAdded', {
         type: selectedOption === 2 ? ' inline' : '',
         title: name,
         value: val && val.length > 1500 ? val.slice(0, 1500) + '...' : val || '\u200b',
@@ -407,7 +407,7 @@ const fieldFunctions = {
 
     return {
       ...data,
-      successText: translate('commands.rssembed.embedFieldsRemoved', {
+      successText: translate('commands.embed.embedFieldsRemoved', {
         numbers: inputs.join(', '),
         link: feed.url
       })
@@ -442,7 +442,7 @@ module.exports = async (bot, message, command) => {
           await format.save()
         }
         log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
-        return await message.channel.send(translate('commands.rssembed.removedAllEmbeds'))
+        return await message.channel.send(translate('commands.embed.removedAllEmbeds'))
       } else {
         await format.save()
         log.command.info(`Updated embed fields for ${feed.url}`, message.guild)
@@ -466,7 +466,7 @@ module.exports = async (bot, message, command) => {
       }
       log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
 
-      return await message.channel.send(translate('commands.rssembed.removedAllEmbeds'))
+      return await message.channel.send(translate('commands.embed.removedAllEmbeds'))
     }
 
     if (property === 'resetAll') {
@@ -477,7 +477,7 @@ module.exports = async (bot, message, command) => {
       } else {
         await format.save()
       }
-      return await message.channel.send(translate('commands.rssembed.removedEmbed', { link: feed.url }))
+      return await message.channel.send(translate('commands.embed.removedEmbed', { link: feed.url }))
     }
 
     let updated = ''
@@ -487,7 +487,7 @@ module.exports = async (bot, message, command) => {
       const userSetting = settings[prop]
       if (userSetting === 'reset') {
         if (!format.embeds[selectedEmbedIndex] || !format.embeds[selectedEmbedIndex][prop]) {
-          reset += translate('commands.rssembed.resetNothing', { propName })
+          reset += translate('commands.embed.resetNothing', { propName })
           continue
         }
         delete format.embeds[selectedEmbedIndex][prop]
@@ -496,7 +496,7 @@ module.exports = async (bot, message, command) => {
         }
 
         log.command.info(`Property '${prop}' resetting for ${feed.url}`, message.guild)
-        reset += translate('commands.rssembed.resetSuccess', { propName })
+        reset += translate('commands.embed.resetSuccess', { propName })
         continue
       }
       if (!format.embeds[selectedEmbedIndex]) {
@@ -505,7 +505,7 @@ module.exports = async (bot, message, command) => {
       }
       format.embeds[selectedEmbedIndex][prop] = userSetting
       log.command.info(`Embed updating for ${feed.url}. Property '${prop}' set to '${userSetting}'`, message.guild)
-      updated += translate('commands.rssembed.updatedSuccess', { propName, userSetting })
+      updated += translate('commands.embed.updatedSuccess', { propName, userSetting })
     }
     await format.save()
 
@@ -514,7 +514,7 @@ module.exports = async (bot, message, command) => {
       await format.delete()
     }
 
-    await message.channel.send(`${translate('commands.rssembed.updatedInfo', { link: feed.url, resetList: reset, updateList: updated, prefix })} ${translate('generics.backupReminder', { prefix })}`, { split: true })
+    await message.channel.send(`${translate('commands.embed.updatedInfo', { link: feed.url, resetList: reset, updateList: updated, prefix })} ${translate('generics.backupReminder', { prefix })}`, { split: true })
   } catch (err) {
     log.command.warning(`rssembed`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssembed 1', message.guild, err))

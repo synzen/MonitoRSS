@@ -22,7 +22,7 @@ async function destSelectorFn (m, data) {
     ...data,
     clonedProps: cloned,
     next: {
-      text: Translator.translate('commands.rssclone.confirm', locale, {
+      text: Translator.translate('commands.clone.confirm', locale, {
         link: feed.url,
         cloning: cloned.join('`, `'),
         destinations: selectedFeeds.map(selected => `${selected.url}\n`).join().trim()
@@ -33,7 +33,7 @@ async function destSelectorFn (m, data) {
 
 async function confirmFn (m, data) {
   if (m.content !== 'yes') {
-    throw new MenuUtils.MenuOptionError(Translator.translate('commands.rssclone.confirmError', data.locale))
+    throw new MenuUtils.MenuOptionError(Translator.translate('commands.clone.confirmError', data.locale))
   }
   return {
     ...data,
@@ -50,13 +50,13 @@ module.exports = async (bot, message, command) => {
     const sourceSelector = new FeedSelector(message, undefined, {
       command,
       locale: guildLocale,
-      prependDescription: translate('commands.rssclone.copyFrom'),
+      prependDescription: translate('commands.clone.copyFrom'),
       globalSelect: true
     }, feeds)
     const destSelector = new FeedSelector(message, destSelectorFn, {
       command,
       locale: guildLocale,
-      prependDescription: translate('commands.rssclone.copyTo'),
+      prependDescription: translate('commands.clone.copyTo'),
       multiSelect: true,
       globalSelect: true
     }, feeds)
@@ -69,7 +69,7 @@ module.exports = async (bot, message, command) => {
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     const args = MenuUtils.extractArgsAfterCommand(message.content)
     if (args.length === 0) {
-      return await message.channel.send(translate('commands.rssclone.noProperties', {
+      return await message.channel.send(translate('commands.clone.noProperties', {
         prefix,
         properties: properties.join('`, `')
       }))
@@ -81,7 +81,7 @@ module.exports = async (bot, message, command) => {
       }
     }
     if (invalidArgs.length > 0) {
-      return await message.channel.send(translate('commands.rssclone.invalidProperties', { invalid: invalidArgs.join('`, `'), properties: properties.join('`, `') }))
+      return await message.channel.send(translate('commands.clone.invalidProperties', { invalid: invalidArgs.join('`, `'), properties: properties.join('`, `') }))
     }
 
     const cloneAll = args.includes('all')
@@ -168,7 +168,7 @@ module.exports = async (bot, message, command) => {
       }
     }
 
-    await message.channel.send(`${translate('commands.rssclone.success', {
+    await message.channel.send(`${translate('commands.clone.success', {
       cloned: data.clonedProps.join('`, `'),
       link: feed.url,
       destinationCount: selectedFeeds.length

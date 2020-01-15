@@ -15,29 +15,29 @@ module.exports = async (bot, message) => {
     localeList.splice(localeList.indexOf(config.bot.locale), 1)
     const printLocaleList = localeList.join('`, `')
     if (!locale) {
-      return await message.channel.send(translate('commands.rsslocale.helpText', { prefix, localeList: printLocaleList }))
+      return await message.channel.send(translate('commands.locale.helpText', { prefix, localeList: printLocaleList }))
     }
 
     if (guildLocale === locale) {
-      return await message.channel.send(translate('commands.rsslocale.alreadySet', { locale }))
+      return await message.channel.send(translate('commands.locale.alreadySet', { locale }))
     }
 
     if (locale !== 'reset' && !localeList.includes(locale)) {
-      return await message.channel.send(translate('commands.rsslocale.setNone', { prefix, locale, localeList: printLocaleList }))
+      return await message.channel.send(translate('commands.locale.setNone', { prefix, locale, localeList: printLocaleList }))
     }
 
     // Reset
     if (locale === 'reset') {
       if (!profile || !profile.locale) {
-        return await message.channel.send(translate('commands.rsslocale.resetNone'))
+        return await message.channel.send(translate('commands.locale.resetNone'))
       }
       profile.locale = undefined
       await profile.save()
-      return await message.channel.send(Translator.translate('commands.rsslocale.resetSuccess', config.bot.locale, { locale: config.bot.locale }))
+      return await message.channel.send(Translator.translate('commands.locale.resetSuccess', config.bot.locale, { locale: config.bot.locale }))
     }
 
     if (config.bot.locale === locale) {
-      return await message.channel.send(translate('commands.rsslocale.resetNoDefault', { locale, prefix }))
+      return await message.channel.send(translate('commands.locale.resetNoDefault', { locale, prefix }))
     }
 
     if (!profile) {
@@ -52,7 +52,7 @@ module.exports = async (bot, message) => {
       await profile.save()
     }
 
-    await message.channel.send(Translator.translate('commands.rsslocale.setSuccess', locale, { locale }))
+    await message.channel.send(Translator.translate('commands.locale.setSuccess', locale, { locale }))
   } catch (err) {
     log.command.warning(`rsslocale`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsslocale 1', message.guild, err))

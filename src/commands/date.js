@@ -26,11 +26,11 @@ async function selectOptionFn (m, data) {
   if (num === 3) {
     locales = moment.locales()
     localesList = locales.join(', ')
-    desc = translate('commands.rssdate.promptNewLanguage', { localesList })
+    desc = translate('commands.date.promptNewLanguage', { localesList })
   } else if (num === 2) {
-    desc = translate('commands.rssdate.promptNewDateFormat')
+    desc = translate('commands.date.promptNewDateFormat')
   } else if (num === 1) {
-    desc = translate('commands.rssdate.promptNewTimezone')
+    desc = translate('commands.date.promptNewTimezone')
   }
 
   const setOption = new MenuUtils.Menu(m, setOptionFn)
@@ -51,19 +51,19 @@ async function setOptionFn (m, data) {
   const setting = m.content
   const settingLow = setting.toLowerCase()
 
-  const settingName = num === 3 ? translate('commands.rssdate.dateLanguage') : num === 2 ? translate('commands.rssdate.dateFormat') : translate('commands.rssdate.timezone')
+  const settingName = num === 3 ? translate('commands.date.dateLanguage') : num === 2 ? translate('commands.date.dateFormat') : translate('commands.date.timezone')
 
   if (settingLow === 'reset') {
     return { ...data, settingName, setting }
   }
 
   if (num === 3) {
-    if (!locales.includes(setting)) throw new MenuUtils.MenuOptionError(translate('commands.rssdate.invalidLanguage', { input: setting, localesList }))
+    if (!locales.includes(setting)) throw new MenuUtils.MenuOptionError(translate('commands.date.invalidLanguage', { input: setting, localesList }))
     return { ...data, settingName, setting }
   } else if (num === 2) {
     return { ...data, settingName, setting }
   } else if (num === 1) {
-    if (!moment.tz.zone(setting)) throw new MenuUtils.MenuOptionError(translate('commands.rssdate.invalidTimezone', { input: setting }))
+    if (!moment.tz.zone(setting)) throw new MenuUtils.MenuOptionError(translate('commands.date.invalidTimezone', { input: setting }))
     return { ...data, settingName, setting }
   }
 }
@@ -75,15 +75,15 @@ module.exports = async (bot, message) => {
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
     if (feeds.length === 0) {
-      return message.channel.send(translate('commands.rssdate.noFeeds')).catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
+      return message.channel.send(translate('commands.date.noFeeds')).catch(err => log.command.warning(`rssdate 1:`, message.guild, err))
     }
 
     const selectOption = new MenuUtils.Menu(message, selectOptionFn).setAuthor('Date Customizations')
-      .setDescription(translate('commands.rssdate.description'))
-      .addOption(translate('commands.rssdate.optionChangeTimezone'), `${translate('generics.defaultSetting', { value: config.feeds.timezone })} ${profile.timezone ? translate('commands.rssdate.optionCurrentSetting', { value: profile.timezone }) : ''}`)
-      .addOption(translate('commands.rssdate.optionCustomizeFormat'), `${translate('generics.defaultSetting', { value: config.feeds.dateFormat })} ${profile.dateFormat ? translate('commands.rssdate.optionCurrentSetting', { value: profile.dateFormat }) : ''}`)
-      .addOption(translate('commands.rssdate.optionChangeLanguage'), `${translate('generics.defaultSetting', { value: config.feeds.dateLanguage })} ${profile.dateLanguage ? translate('commands.rssdate.optionCurrentSetting', { value: profile.dateLanguage }) : ''}`)
-      .addOption(translate('commands.rssdate.optionReset'), translate('commands.rssdate.optionResetValue'))
+      .setDescription(translate('commands.date.description'))
+      .addOption(translate('commands.date.optionChangeTimezone'), `${translate('generics.defaultSetting', { value: config.feeds.timezone })} ${profile.timezone ? translate('commands.date.optionCurrentSetting', { value: profile.timezone }) : ''}`)
+      .addOption(translate('commands.date.optionCustomizeFormat'), `${translate('generics.defaultSetting', { value: config.feeds.dateFormat })} ${profile.dateFormat ? translate('commands.date.optionCurrentSetting', { value: profile.dateFormat }) : ''}`)
+      .addOption(translate('commands.date.optionChangeLanguage'), `${translate('generics.defaultSetting', { value: config.feeds.dateLanguage })} ${profile.dateLanguage ? translate('commands.date.optionCurrentSetting', { value: profile.dateLanguage }) : ''}`)
+      .addOption(translate('commands.date.optionReset'), translate('commands.date.optionResetValue'))
 
     const data = await new MenuUtils.MenuSeries(message, [selectOption], { profile, locale: guildLocale, translate }).start()
     if (!data) {
@@ -99,7 +99,7 @@ module.exports = async (bot, message) => {
 
       log.command.info(`Date settings resetting to default`, message.guild)
       await profile.save()
-      return await message.channel.send(translate('commands.rssdate.successResetAll'))
+      return await message.channel.send(translate('commands.date.successResetAll'))
     }
 
     if (setting.toLowerCase() === 'reset') {
@@ -113,7 +113,7 @@ module.exports = async (bot, message) => {
 
       log.command.info(`Date setting ${settingName} resetting to default`, message.guild)
       await profile.save()
-      await message.channel.send(translate('commands.rssdate.successReset', { name: settingName, value: config.feeds[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone'] }))
+      await message.channel.send(translate('commands.date.successReset', { name: settingName, value: config.feeds[num === 3 ? 'dateLanguage' : num === 2 ? 'dateFormat' : 'timezone'] }))
     } else {
       if (num === 3) {
         profile.dateLanguage = setting.toLowerCase() === config.feeds.dateLanguage.toLowerCase() ? undefined : setting
@@ -125,7 +125,7 @@ module.exports = async (bot, message) => {
 
       log.command.info(`Date setting ${settingName} updating to '${setting}'`, message.guild)
       await profile.save()
-      await message.channel.send(translate('commands.rssdate.successSet', { name: settingName, value: setting }))
+      await message.channel.send(translate('commands.date.successSet', { name: settingName, value: setting }))
     }
   } catch (err) {
     log.command.warning(`rssdate`, message.guild, err)

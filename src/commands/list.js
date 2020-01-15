@@ -20,7 +20,7 @@ module.exports = async (bot, message, command) => {
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     if (feeds.length === 0) {
-      return await message.channel.send(translate('commands.rsslist.noFeeds'))
+      return await message.channel.send(translate('commands.list.noFeeds'))
     }
 
     const failedLinks = {}
@@ -49,11 +49,11 @@ module.exports = async (bot, message, command) => {
       vipDetails = '\n'
     }
 
-    let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.rsslist.serverLimit')}:** ${feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
-    // desc += failedFeedCount > 0 ? translate('commands.rsslist.failAlert', { failLimit: FAIL_LIMIT, prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix }) : ''
+    let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
+    // desc += failedFeedCount > 0 ? translate('commands.list.failAlert', { failLimit: FAIL_LIMIT, prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix }) : ''
 
     const list = new MenuUtils.Menu(message)
-      .setAuthor(translate('commands.rsslist.currentActiveFeeds'))
+      .setAuthor(translate('commands.list.currentActiveFeeds'))
       .setDescription(desc)
 
     if (supporter) {
@@ -62,7 +62,7 @@ module.exports = async (bot, message, command) => {
 
     feeds.forEach((feed, i) => {
       // URL
-      const url = feed.url.length > 500 ? translate('commands.rsslist.exceeds500Characters') : feed.url
+      const url = feed.url.length > 500 ? translate('commands.list.exceeds500Characters') : feed.url
 
       // Title
       const title = feed.title
@@ -73,34 +73,34 @@ module.exports = async (bot, message, command) => {
       // Status
       let status = ''
       if (feed.disabled) {
-        status = translate('commands.rsslist.statusDisabled', { reason: feed.disabled })
+        status = translate('commands.list.statusDisabled', { reason: feed.disabled })
       } else if (FailCounter.limit !== 0) {
         const failCounter = failedLinks[feed.url]
         const count = !failCounter ? 0 : failCounter.count
         if (!failCounter || !failCounter.hasFailed()) {
           const failCountText = count > Math.ceil(FailCounter.limit / 5) ? `(failed ${count}/${FailCounter.limit} times` : ''
-          status = translate('commands.rsslist.statusOk', { failCount: failCountText })
+          status = translate('commands.list.statusOk', { failCount: failCountText })
         } else {
-          status = translate('commands.rsslist.statusFailed')
+          status = translate('commands.list.statusFailed')
         }
       }
 
       // Title checks
-      const titleChecks = feed.checkTitles === true ? translate('commands.rsslist.titleChecksEnabled') : ''
+      const titleChecks = feed.checkTitles === true ? translate('commands.list.titleChecksEnabled') : ''
 
       // Webhook
-      const webhook = feed.webhook ? `${translate('commands.rsslist.webhook')}: ${feed.webhook.id}\n` : ''
+      const webhook = feed.webhook ? `${translate('commands.list.webhook')}: ${feed.webhook.id}\n` : ''
 
       // Refresh rate
       const schedule = fetchedSchedules[i]
-      let refreshRate = schedule.refreshRateMinutes < 1 ? `${schedule.refreshRateMinutes * 60} ${translate('commands.rsslist.seconds')}` : `${schedule.refreshRateMinutes} ${translate('commands.rsslist.minutes')}`
-      // : translate('commands.rsslist.unknown')
+      let refreshRate = schedule.refreshRateMinutes < 1 ? `${schedule.refreshRateMinutes * 60} ${translate('commands.list.seconds')}` : `${schedule.refreshRateMinutes} ${translate('commands.list.minutes')}`
+      // : translate('commands.list.unknown')
 
       // Patreon link
       if (Supporter.enabled && !supporter) {
         refreshRate += ' [－](https://www.patreon.com/discordrss)'
       }
-      list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('generics.channelUpper')}: #${channelName}\n${translate('commands.rsslist.refreshRate')}: ${refreshRate}\n${webhook}${translate('commands.rsslist.link')}: ${url}`)
+      list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('generics.channelUpper')}: #${channelName}\n${translate('commands.list.refreshRate')}: ${refreshRate}\n${webhook}${translate('commands.list.link')}: ${url}`)
     })
 
     await list.send()

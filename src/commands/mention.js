@@ -15,8 +15,8 @@ async function printSubscriptions (message, feeds, translate) {
   const subList = {}
   const msg = new Discord.MessageEmbed()
     .setColor(config.bot.menuColor)
-    .setDescription(translate('commands.rssmention.listSubscriptionsDescription'))
-    .setAuthor(translate('commands.rssmention.subscriptionsList'))
+    .setDescription(translate('commands.mention.listSubscriptionsDescription'))
+    .setAuthor(translate('commands.mention.subscriptionsList'))
 
   const allSubscribers = await Promise.all(feeds.map(feed => feed.getSubscribers()))
   for (let i = 0; i < allSubscribers.length; ++i) {
@@ -49,7 +49,7 @@ async function printSubscriptions (message, feeds, translate) {
   }
 
   if (Object.keys(subList).length === 0) {
-    return message.channel.send(translate('commands.rssmention.listSubscriptionsNone'))
+    return message.channel.send(translate('commands.mention.listSubscriptionsNone'))
   }
   for (const feed in subList) {
     let list = ''
@@ -59,7 +59,7 @@ async function printSubscriptions (message, feeds, translate) {
     }
     globalSubs.sort()
     if (globalSubs.length > 0) {
-      list += translate('commands.rssmention.globalSubscribers') + globalSubs.join('\n')
+      list += translate('commands.mention.globalSubscribers') + globalSubs.join('\n')
     }
 
     const filteredSubs = []
@@ -68,7 +68,7 @@ async function printSubscriptions (message, feeds, translate) {
     }
     filteredSubs.sort()
     if (filteredSubs.length > 0) {
-      list += (globalSubs.length > 0 ? '\n' : '') + translate('commands.rssmention.filteredSubscribers') + filteredSubs.join('\n')
+      list += (globalSubs.length > 0 ? '\n' : '') + translate('commands.mention.filteredSubscribers') + filteredSubs.join('\n')
     }
     if (!list) {
       continue
@@ -114,16 +114,16 @@ async function deleteSubscription (message, profile, feeds, role, user) {
     if (subscriber) {
       await subscriber.delete()
       log.command.info(`Deleted all subscriptions`, message.guild, user || role)
-      await message.channel.send(`${translate('commands.rssmention.removeSubscriptionsSuccess', {
+      await message.channel.send(`${translate('commands.mention.removeSubscriptionsSuccess', {
         name: role ? role.name : user.username,
-        type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user')
+        type: role ? translate('commands.mention.role') : translate('commands.mention.user')
       })} ${translate('generics.backupReminder', { prefix })}`)
       return
     }
   }
 
-  await message.channel.send(translate('commands.rssmention.removeSubscriptionsNone', {
-    type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user')
+  await message.channel.send(translate('commands.mention.removeSubscriptionsNone', {
+    type: role ? translate('commands.mention.role') : translate('commands.mention.user')
   }))
 }
 
@@ -136,7 +136,7 @@ async function addGlobalSub (message, profile, feed, role, user, translate) {
   const found = subscribers.find(sub => sub.id === id)
   if (found) {
     if (!found.hasFilters()) {
-      return message.channel.send(translate('commands.rssmention.addSubscriberGlobalExists', { type, name }))
+      return message.channel.send(translate('commands.mention.addSubscriberGlobalExists', { type, name }))
     }
     await found.removeFilters()
   } else {
@@ -150,10 +150,10 @@ async function addGlobalSub (message, profile, feed, role, user, translate) {
 
   const prefix = profile.prefix || config.bot.prefix
   log.command.info(`Added global subscriber to feed ${feed.url}`, message.guild, role || user)
-  await message.channel.send(`${translate('commands.rssmention.addSubscriberGlobalSuccess', {
+  await message.channel.send(`${translate('commands.mention.addSubscriberGlobalSuccess', {
     link: feed.url,
     name,
-    type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user')
+    type: role ? translate('commands.mention.role') : translate('commands.mention.user')
   })} ${translate('generics.backupReminder', { prefix })}`)
 }
 
@@ -161,7 +161,7 @@ async function addGlobalSub (message, profile, feed, role, user, translate) {
 async function removeGlobalSub (message, profile, feed, role, user, translate) {
   const subscribers = await feed.getSubscribers()
   if (subscribers.length === 0) {
-    return message.channel.send(translate('commands.rssmention.removeAnySubscriberNone', { link: feed.url }))
+    return message.channel.send(translate('commands.mention.removeAnySubscriberNone', { link: feed.url }))
   }
   const prefix = profile.prefix || config.bot.prefix
   const matchID = role ? role.id : user.id
@@ -169,13 +169,13 @@ async function removeGlobalSub (message, profile, feed, role, user, translate) {
   if (found) {
     await found.delete()
     log.command.info(`Removed global subscription for feed ${feed.url}`, message.guild, role || user)
-    return message.channel.send(`${translate('commands.rssmention.removeGlobalSubscriberSuccess', {
-      type: role ? translate('commands.rssmention.role') : translate('commands.rssmention.user'),
+    return message.channel.send(`${translate('commands.mention.removeGlobalSubscriberSuccess', {
+      type: role ? translate('commands.mention.role') : translate('commands.mention.user'),
       name: role ? role.name : `${user.username}#${user.discriminator}`,
       link: feed.url
     })} ${translate('generics.backupReminder', { prefix })}`)
   }
-  await message.channel.send(translate('commands.rssmention.removeGlobalSubscriberExists', { link: feed.url }))
+  await message.channel.send(translate('commands.mention.removeGlobalSubscriberExists', { link: feed.url }))
 }
 
 async function filteredSubMenuFn (m, data) {
@@ -190,7 +190,7 @@ async function filteredSubMenuFn (m, data) {
   } else if (input === '2') {
     const subscribers = await feed.getSubscribers()
     if (subscribers.length === 0) {
-      return m.channel.send(translate('commands.rssmention.removeAnySubscriberNone', { link: feed.url }))
+      return m.channel.send(translate('commands.mention.removeAnySubscriberNone', { link: feed.url }))
     }
     return {
       ...data,
@@ -225,11 +225,11 @@ async function getUserOrRoleFn (m, data) {
   const role = m.guild.roles.find(r => r.name === input)
   const member = m.guild.members.get(input) || m.mentions.members.first()
   if (input === '@everyone') {
-    throw new MenuUtils.MenuOptionError(translate('commands.rssmention.invalidRoleOrUser'))
+    throw new MenuUtils.MenuOptionError(translate('commands.mention.invalidRoleOrUser'))
   } else if (m.guild.roles.filter(r => r.name === input).length > 1) {
-    throw new MenuUtils.MenuOptionError(translate('commands.rssmention.multipleRoles'))
+    throw new MenuUtils.MenuOptionError(translate('commands.mention.multipleRoles'))
   } else if (!role && !member) {
-    throw new MenuUtils.MenuOptionError(translate('commands.rssmention.invalidRoleOrUser'))
+    throw new MenuUtils.MenuOptionError(translate('commands.mention.invalidRoleOrUser'))
   }
   return {
     ...data,
@@ -245,7 +245,7 @@ async function feedSelectorFn (m, data) {
     ...data,
     next: {
       embed: {
-        description: translate('commands.rssmention.selectedRoleDescription', { name: role ? role.name : user.username, feedTitle: feed.title, feedLink: feed.url })
+        description: translate('commands.mention.selectedRoleDescription', { name: role ? role.name : user.username, feedTitle: feed.title, feedLink: feed.url })
       }
     }
   }
@@ -265,7 +265,7 @@ async function selectOptionFn (m, data) {
   if (optionSelected === '4') {
     return nextData
   } else if (optionSelected === '3' || optionSelected === '2' || optionSelected === '1') { // Options 1, 2, and 3 requires a role or user to be acquired first
-    const getUserOrRole = new MenuUtils.Menu(m, getUserOrRoleFn, { text: translate('commands.rssmention.promptUserOrRole') })
+    const getUserOrRole = new MenuUtils.Menu(m, getUserOrRoleFn, { text: translate('commands.mention.promptUserOrRole') })
     if (optionSelected === '3') {
       nextData.next = {
         menu: getUserOrRole
@@ -280,15 +280,15 @@ async function selectOptionFn (m, data) {
 
     if (optionSelected === '2') { // Filtered Sub Menu
       const filteredSubMenu = new MenuUtils.Menu(m, filteredSubMenuFn)
-        .setAuthor(translate('commands.rssmention.filteredSubscriptionsTitle'))
-        .addOption(translate('commands.rssmention.filteredSubscriptionsOptionAdd'), translate('commands.rssmention.filteredSubscriptionsOptionAddDescription'))
-        .addOption(translate('commands.rssmention.filteredSubscriptionsOptionRemove'), translate('commands.rssmention.filteredSubscriptionsOptionRemoveDescription'))
+        .setAuthor(translate('commands.mention.filteredSubscriptionsTitle'))
+        .addOption(translate('commands.mention.filteredSubscriptionsOptionAdd'), translate('commands.mention.filteredSubscriptionsOptionAddDescription'))
+        .addOption(translate('commands.mention.filteredSubscriptionsOptionRemove'), translate('commands.mention.filteredSubscriptionsOptionRemoveDescription'))
       nextData.next = { menu: [getUserOrRole, feedSelector, filteredSubMenu] }
     } else { // Global Sub Menu
       const globalSubMenu = new MenuUtils.Menu(m, globalSubMenuFn)
-        .setAuthor(translate('commands.rssmention.globalSubscriptionsTitle'))
-        .addOption(translate('commands.rssmention.globalSubscriptionsOptionAdd'), translate('commands.rssmention.globalSubscriptionsOptionAddDescription'))
-        .addOption(translate('commands.rssmention.globalSubscriptionsOptionRemove'), translate('commands.rssmention.globalSubscriptionsOptionRemoveDescription'))
+        .setAuthor(translate('commands.mention.globalSubscriptionsTitle'))
+        .addOption(translate('commands.mention.globalSubscriptionsOptionAdd'), translate('commands.mention.globalSubscriptionsOptionAddDescription'))
+        .addOption(translate('commands.mention.globalSubscriptionsOptionRemove'), translate('commands.mention.globalSubscriptionsOptionRemoveDescription'))
       nextData.next = { menu: [getUserOrRole, feedSelector, globalSubMenu] }
     }
 
@@ -303,17 +303,17 @@ module.exports = async (bot, message, command) => {
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     if (feeds.length === 0) {
-      return await message.channel.send(translate('commands.rssmention.noFeeds'))
+      return await message.channel.send(translate('commands.mention.noFeeds'))
     }
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
     const selectOption = new MenuUtils.Menu(message, selectOptionFn)
-      .setDescription(translate('commands.rssmention.description', { prefix, channel: message.channel.name }))
-      .setAuthor(translate('commands.rssmention.subscriptionOptions'))
-      .addOption(translate('commands.rssmention.optionSubscriberFeed'), translate('commands.rssmention.optionSubscriberFeedDescription'))
-      .addOption(translate('commands.rssmention.optionFilteredSubscriberFeed'), translate('commands.rssmention.optionFilteredSubscriberFeedDescription'))
-      .addOption(translate('commands.rssmention.optionRemoveSubscriptions'), translate('commands.rssmention.optionRemoveSubscriptionsDescription'))
-      .addOption(translate('commands.rssmention.optionListSubscriptions'), translate('commands.rssmention.optionListSubscriptionsDescription'))
+      .setDescription(translate('commands.mention.description', { prefix, channel: message.channel.name }))
+      .setAuthor(translate('commands.mention.subscriptionOptions'))
+      .addOption(translate('commands.mention.optionSubscriberFeed'), translate('commands.mention.optionSubscriberFeedDescription'))
+      .addOption(translate('commands.mention.optionFilteredSubscriberFeed'), translate('commands.mention.optionFilteredSubscriberFeedDescription'))
+      .addOption(translate('commands.mention.optionRemoveSubscriptions'), translate('commands.mention.optionRemoveSubscriptionsDescription'))
+      .addOption(translate('commands.mention.optionListSubscriptions'), translate('commands.mention.optionListSubscriptionsDescription'))
 
     const data = await new MenuUtils.MenuSeries(message, [selectOption], { command, feeds, profile, translate, locale: guildLocale }).start()
     if (!data) {

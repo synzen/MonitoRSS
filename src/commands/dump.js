@@ -17,7 +17,7 @@ module.exports = async (bot, message, command) => {
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
     const translate = Translator.createLocaleTranslator(guildLocale)
-    const wait = await message.channel.send(translate('commands.rssdump.generatingDump'))
+    const wait = await message.channel.send(translate('commands.dump.generatingDump'))
     const feed = data.feed
     const url = feed.url
     const { articleList } = await FeedFetcher.fetchFeed(url)
@@ -29,7 +29,7 @@ module.exports = async (bot, message, command) => {
       else textOutput += new FlattenedJSON(articleObject, feed).text + '\r\n\r\n'
     }
     textOutput = textOutput.trim()
-    await wait.edit(translate('commands.rssdump.generatedDump'))
+    await wait.edit(translate('commands.dump.generatedDump'))
     await message.channel.send('', new Discord.Attachment(Buffer.from(raw ? JSON.stringify(objOutput, null, 2) : textOutput), raw ? `${url}.json` : `${url}.txt`))
   } catch (err) {
     log.command.warning(`rssdump`, message.guild, err)

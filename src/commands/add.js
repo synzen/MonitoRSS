@@ -18,7 +18,10 @@ module.exports = async (bot, message) => {
     const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
-    if (message.content.split(' ').length === 1) return await message.channel.send(translate('commands.rssadd.correctSyntax', { prefix })) // If there is no link after rssadd, return.
+    if (message.content.split(' ').length === 1) {
+      // If there is no link after rssadd, return.
+      return await message.channel.send(translate('commands.add.correctSyntax', { prefix }))
+    }
 
     let linkList = message.content.split(' ')
     linkList.shift()
@@ -32,7 +35,7 @@ module.exports = async (bot, message) => {
     channelTracker.add(message.channel.id)
     let checkedSoFar = 0
 
-    const verifyMsg = await message.channel.send(translate('commands.rssadd.processing'))
+    const verifyMsg = await message.channel.send(translate('commands.add.processing'))
 
     // Start loop over links
     for (let i = 0; i < linkList.length; ++i) {
@@ -40,13 +43,13 @@ module.exports = async (bot, message) => {
       const linkItem = curLink.split(' ')
       let link = linkItem[0].trim()
       if (!link.startsWith('http')) {
-        failedAddLinks[link] = translate('commands.rssadd.improperFormat')
+        failedAddLinks[link] = translate('commands.add.improperFormat')
         continue
       } else if (maxFeedsAllowed !== 0 && feeds.length + checkedSoFar >= maxFeedsAllowed) {
         log.command.info(`Unable to add feed ${link} due to limit of ${maxFeedsAllowed} feeds`, message.guild)
         // Only show link-specific error if it's one link since they user may be trying to add a huge number of links that exceeds the message size limit
         if (totalLinks.length === 1) {
-          failedAddLinks[link] = translate('commands.rssadd.limitReached', { max: maxFeedsAllowed })
+          failedAddLinks[link] = translate('commands.add.limitReached', { max: maxFeedsAllowed })
         } else {
           limitExceeded = true
         }
@@ -55,7 +58,7 @@ module.exports = async (bot, message) => {
 
       for (const feed of feeds) {
         if (feed.url === link && message.channel.id === feed.channel) {
-          failedAddLinks[link] = translate('commands.rssadd.alreadyExists')
+          failedAddLinks[link] = translate('commands.add.alreadyExists')
           continue
         }
       }
@@ -81,23 +84,23 @@ module.exports = async (bot, message) => {
 
     let msg = ''
     if (passedAddLinks.length > 0) {
-      let successBox = translate('commands.rssadd.success') + ':\n```\n'
+      let successBox = translate('commands.add.success') + ':\n```\n'
       for (const passedLink of passedAddLinks) {
         successBox += `\n${passedLink}`
       }
       msg += successBox + '\n```\n'
     }
     if (Object.keys(failedAddLinks).length > 0) {
-      let failBox = `\n${limitExceeded ? translate('commands.rssadd.failedLimit', { max: maxFeedsAllowed }) : ''}${translate('commands.rssadd.failedList')}:\n\`\`\`\n`
+      let failBox = `\n${limitExceeded ? translate('commands.add.failedLimit', { max: maxFeedsAllowed }) : ''}${translate('commands.add.failedList')}:\n\`\`\`\n`
       for (const failedLink in failedAddLinks) {
-        failBox += `\n\n${failedLink}\n${translate('commands.rssadd.reason')}: ${failedAddLinks[failedLink]}`
+        failBox += `\n\n${failedLink}\n${translate('commands.add.reason')}: ${failedAddLinks[failedLink]}`
       }
       msg += failBox + '\n```\n'
     } else if (limitExceeded) {
-      msg += translate('commands.rssadd.failedLimit', { max: maxFeedsAllowed })
+      msg += translate('commands.add.failedLimit', { max: maxFeedsAllowed })
     }
     if (passedAddLinks.length > 0) {
-      msg += `${translate('commands.rssadd.successInfo', { prefix })} ${translate('generics.backupReminder', { prefix })}`
+      msg += `${translate('commands.add.successInfo', { prefix })} ${translate('generics.backupReminder', { prefix })}`
     }
 
     channelTracker.remove(message.channel.id)

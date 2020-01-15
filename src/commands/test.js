@@ -27,17 +27,17 @@ module.exports = async (bot, message, command) => {
     }
     const { feed } = data
     if (await FailCounter.hasFailed(feed.url)) {
-      return await message.channel.send(translate('commands.rsstest.failed'))
+      return await message.channel.send(translate('commands.test.failed'))
     }
     const [ format, subscribers, filteredFormats ] = await Promise.all([
       Format.getBy('feed', feed._id),
       Subscriber.getManyBy('feed', feed._id),
       FilteredFormat.getManyBy('feed', feed._id)
     ])
-    const grabMsg = await message.channel.send(translate('commands.rsstest.grabbingRandom'))
+    const grabMsg = await message.channel.send(translate('commands.test.grabbingRandom'))
     const article = await FeedFetcher.fetchRandomArticle(feed.url)
     if (!article) {
-      return await message.channel.send(translate('commands.rsstest.noArticles'))
+      return await message.channel.send(translate('commands.test.noArticles'))
     }
     article._delivery = {
       rssName: feed._id,

@@ -11,23 +11,23 @@ module.exports = async (bot, message) => {
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
 
     if (!prefix) {
-      return await message.channel.send(translate('commands.rssprefix.helpText'))
+      return await message.channel.send(translate('commands.prefix.helpText'))
     }
     // Reset
     if (prefix === 'reset') {
       if (!profile || !profile.prefix) {
-        return await message.channel.send(translate('commands.rssprefix.resetNone'))
+        return await message.channel.send(translate('commands.prefix.resetNone'))
       }
       profile.prefix = undefined
       delete storage.prefixes[profile.id]
       await profile.save()
-      return await message.channel.send(translate('commands.rssprefix.resetSuccess', { prefix: config.bot.prefix }))
+      return await message.channel.send(translate('commands.prefix.resetSuccess', { prefix: config.bot.prefix }))
     }
     if (prefix.length > 4) {
-      return await message.channel.send(translate('commands.rssprefix.mustBeLess'))
+      return await message.channel.send(translate('commands.prefix.mustBeLess'))
     }
     if (config.bot.prefix === prefix) {
-      return await message.channel.send(translate('commands.rssprefix.cannotUseDefault'))
+      return await message.channel.send(translate('commands.prefix.cannotUseDefault'))
     }
 
     if (!profile) {
@@ -43,7 +43,7 @@ module.exports = async (bot, message) => {
       await profile.save()
     }
 
-    await message.channel.send(translate('commands.rssprefix.setSuccess', { prefix }))
+    await message.channel.send(translate('commands.prefix.setSuccess', { prefix }))
     storage.prefixes[profile.id] = prefix
   } catch (err) {
     log.command.warning(`rssprefix`, message.guild, err)

@@ -12,39 +12,39 @@ const getProperties = translate => {
 
   return {
     checkTitles: {
-      title: translate('commands.rssoptions.titleChecksToggle'),
-      description: `**${translate('commands.rssoptions.onlyIfNecessary')}** ${translate('generics.defaultSetting', { value: config.feeds.checkTitles === true ? ENABLED_TRANSLATED : DISABLED_TRANSLATED })} ${translate('commands.rssoptions.titleChecksDescription')}`,
-      display: translate('commands.rssoptions.titleChecks'),
+      title: translate('commands.options.titleChecksToggle'),
+      description: `**${translate('commands.options.onlyIfNecessary')}** ${translate('generics.defaultSetting', { value: config.feeds.checkTitles === true ? ENABLED_TRANSLATED : DISABLED_TRANSLATED })} ${translate('commands.options.titleChecksDescription')}`,
+      display: translate('commands.options.titleChecks'),
       num: 1
     },
     imgPreviews: {
-      title: translate('commands.rssoptions.imagePreviewsToggle'),
-      description: `${translate('generics.defaultSetting', { value: config.feeds.imgPreviews === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.imagePreviewsDescription')}`,
-      display: translate('commands.rssoptions.imagePreviews'),
+      title: translate('commands.options.imagePreviewsToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.imgPreviews === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.imagePreviewsDescription')}`,
+      display: translate('commands.options.imagePreviews'),
       num: 2
     },
     imgLinksExistence: {
-      title: translate('commands.rssoptions.imageLinksExistenceToggle'),
-      description: `${translate('generics.defaultSetting', { value: config.feeds.imgLinksExistence === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.imageLinksExistenceDescription')}`,
-      display: translate('commands.rssoptions.imageLinksExistence'),
+      title: translate('commands.options.imageLinksExistenceToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.imgLinksExistence === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.imageLinksExistenceDescription')}`,
+      display: translate('commands.options.imageLinksExistence'),
       num: 3
     },
     checkDates: {
-      title: translate('commands.rssoptions.dateChecksToggle'),
-      description: `${translate('generics.defaultSetting', { value: config.feeds.checkDates === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.dateChecksDescription', { cycleMaxAge: config.feeds.cycleMaxAge })}`,
-      display: translate('commands.rssoptions.dateChecks'),
+      title: translate('commands.options.dateChecksToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.checkDates === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.dateChecksDescription', { cycleMaxAge: config.feeds.cycleMaxAge })}`,
+      display: translate('commands.options.dateChecks'),
       num: 4
     },
     formatTables: {
-      title: translate('commands.rssoptions.tableFormattingToggle'),
-      description: `${translate('generics.defaultSetting', { value: config.feeds.formatTables === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.tableFormattingDescription')}`,
-      display: translate('commands.rssoptions.tableFormatting'),
+      title: translate('commands.options.tableFormattingToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.formatTables === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.tableFormattingDescription')}`,
+      display: translate('commands.options.tableFormatting'),
       num: 5
     },
     toggleRoleMentions: {
-      title: translate('commands.rssoptions.roleMentioningToggle'),
-      description: `${translate('generics.defaultSetting', { value: config.feeds.toggleRoleMentions === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.rssoptions.roleMentioningDescription')}`,
-      display: translate('commands.rssoptions.roleMentioning'),
+      title: translate('commands.options.roleMentioningToggle'),
+      description: `${translate('generics.defaultSetting', { value: config.feeds.toggleRoleMentions === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.roleMentioningDescription')}`,
+      display: translate('commands.options.roleMentioning'),
       num: 6
     }
   }
@@ -81,8 +81,8 @@ module.exports = async (bot, message, command) => {
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(guildLocale)
     const select = new MenuUtils.Menu(message, selectOption)
-      .setAuthor(translate('commands.rssoptions.miscFeedOptions'))
-      .setDescription(translate('commands.rssoptions.selectOption'))
+      .setAuthor(translate('commands.options.miscFeedOptions'))
+      .setDescription(translate('commands.options.selectOption'))
 
     const properties = getProperties(translate)
     for (const propRef in properties) {
@@ -116,9 +116,9 @@ module.exports = async (bot, message, command) => {
 
     await feed.save()
     log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${feed.url}. ${feed[chosenProp] === undefined ? 'Now following global settings.' : ''}`, message.guild)
-    await message.channel.send(`${translate('commands.rssoptions.settingChanged', {
+    await message.channel.send(`${translate('commands.options.settingChanged', {
       propName: prettyPropName,
-      isDefault: feed[chosenProp] === undefined ? ` (${translate('commands.rssoptions.defaultSetting')})` : '',
+      isDefault: feed[chosenProp] === undefined ? ` (${translate('commands.options.defaultSetting')})` : '',
       link: feed.url,
       finalSetting: finalSetting ? translate('generics.enabledLower') : translate('generics.disabledLower')
     })} ${translate('generics.backupReminder', { prefix })}`)

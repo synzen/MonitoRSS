@@ -9,18 +9,18 @@ function escapeBackticks (str) {
   return str.replace('`', '​`') // Replace backticks with zero-width space and backtick to escape
 }
 
-const defSplitCharStr = translate => translate('commands.rsssplit.defaultIsValue', { value: `\`\\n\` (${translate('commands.rsssplit.newLine')})` })
-const defPrependCharStr = translate => translate('commands.rsssplit.defaultIsNothing')
+const defSplitCharStr = translate => translate('commands.split.defaultIsValue', { value: `\`\\n\` (${translate('commands.split.newLine')})` })
+const defPrependCharStr = translate => translate('commands.split.defaultIsNothing')
 const defAppendCharStr = defPrependCharStr
-const defMaxLenStr = translate => translate('commands.rsssplit.defaultIsValue', { value: '1950' })
+const defMaxLenStr = translate => translate('commands.split.defaultIsValue', { value: '1950' })
 
 async function feedSelectorFn (m, data) {
   const { feed, translate } = data
   const splitOptions = feed.split // Show toggle if it is disabled
 
   const nextMenu = new MenuUtils.Menu(m, splitOptions ? selectSetting : enable)
-    .setAuthor(translate('commands.rsssplit.messageSplittingOptions'))
-    .setDescription(translate('commands.rsssplit.description', {
+    .setAuthor(translate('commands.split.messageSplittingOptions'))
+    .setDescription(translate('commands.split.description', {
       title: feed.title,
       link: feed.url,
       currently: splitOptions ? translate('generics.enabledLower') : translate('generics.disabledLower')
@@ -32,19 +32,19 @@ async function feedSelectorFn (m, data) {
   const currentSplitLength = splitOptions && splitOptions.maxLength ? splitOptions.maxLength : ''
 
   if (!splitOptions) {
-    nextMenu.addOption(translate('commands.rsssplit.optionEnable'), translate('commands.rsssplit.optionEnableDescription'))
+    nextMenu.addOption(translate('commands.split.optionEnable'), translate('commands.split.optionEnableDescription'))
   } else {
-    const curSplitCharStr = translate('commands.rsssplit.currentlySetTo', { value: escapeBackticks(currentSplitChar) })
-    const curPrependCharStr = translate('commands.rsssplit.currentlySetTo', { value: escapeBackticks(currentSplitPrepend) })
-    const curAppendCharStr = translate('commands.rsssplit.currentlySetTo', { value: escapeBackticks(currentSplitAppend) })
-    const curMaxLenStr = translate('commands.rsssplit.currentlySetTo', { value: currentSplitLength })
+    const curSplitCharStr = translate('commands.split.currentlySetTo', { value: escapeBackticks(currentSplitChar) })
+    const curPrependCharStr = translate('commands.split.currentlySetTo', { value: escapeBackticks(currentSplitPrepend) })
+    const curAppendCharStr = translate('commands.split.currentlySetTo', { value: escapeBackticks(currentSplitAppend) })
+    const curMaxLenStr = translate('commands.split.currentlySetTo', { value: currentSplitLength })
 
     nextMenu
-      .addOption(translate('commands.rsssplit.optionSetSplitChar'), `${translate('commands.rsssplit.optionSetSplitCharDescription')}${currentSplitChar ? ` ${curSplitCharStr}` : ''} ${defSplitCharStr(translate)}`)
-      .addOption(translate('commands.rsssplit.optionSetPrependChar'), `${translate('commands.rsssplit.optionSetPrependCharDescription')}${currentSplitPrepend ? ` ${curPrependCharStr}` : ''} ${defPrependCharStr(translate)}`)
-      .addOption(translate('commands.rsssplit.optionSetAppendChar'), `${translate('commands.rsssplit.optionSetAppendCharDescription')}${currentSplitAppend ? ` ${curAppendCharStr}` : ''} ${defAppendCharStr(translate)}`)
-      .addOption(translate('commands.rsssplit.optionSetMaxLength'), `${translate('commands.rsssplit.optionSetMaxLengthDescription')}${currentSplitLength ? ` ${curMaxLenStr}` : ''} ${defMaxLenStr(translate)}`)
-      .addOption(translate('commands.rsssplit.optionDisable'), '\u200b')
+      .addOption(translate('commands.split.optionSetSplitChar'), `${translate('commands.split.optionSetSplitCharDescription')}${currentSplitChar ? ` ${curSplitCharStr}` : ''} ${defSplitCharStr(translate)}`)
+      .addOption(translate('commands.split.optionSetPrependChar'), `${translate('commands.split.optionSetPrependCharDescription')}${currentSplitPrepend ? ` ${curPrependCharStr}` : ''} ${defPrependCharStr(translate)}`)
+      .addOption(translate('commands.split.optionSetAppendChar'), `${translate('commands.split.optionSetAppendCharDescription')}${currentSplitAppend ? ` ${curAppendCharStr}` : ''} ${defAppendCharStr(translate)}`)
+      .addOption(translate('commands.split.optionSetMaxLength'), `${translate('commands.split.optionSetMaxLengthDescription')}${currentSplitLength ? ` ${curMaxLenStr}` : ''} ${defMaxLenStr(translate)}`)
+      .addOption(translate('commands.split.optionDisable'), '\u200b')
   }
 
   return { ...data,
@@ -69,13 +69,13 @@ async function enable (m, data) {
   log.command.info(`Enabled message splitting for ${feed.url}`, m.channel.guild)
 
   const nextMenu = new MenuUtils.Menu(m, selectSetting)
-    .setAuthor(translate('commands.rsssplit.messageSplittingOptions'))
-    .setDescription(translate('commands.rsssplit.enabledDescription', { title: feed.title, link: feed.url }))
-    .addOption(translate('commands.rsssplit.optionSetSplitChar'), `${translate('commands.rsssplit.optionSetSplitCharDescription')} ${defSplitCharStr(translate)}`)
-    .addOption(translate('commands.rsssplit.optionSetPrependChar'), `${translate('commands.rsssplit.optionSetPrependCharDescription')} ${defPrependCharStr(translate)}`)
-    .addOption(translate('commands.rsssplit.optionSetAppendChar'), `${translate('commands.rsssplit.optionSetAppendCharDescription')} ${defAppendCharStr(translate)}`)
-    .addOption(translate('commands.rsssplit.optionSetMaxLength'), `${translate('commands.rsssplit.optionSetMaxLengthDescription')} ${defMaxLenStr(translate)}`)
-    .addOption(translate('commands.rsssplit.optionDisable'), '\u200b')
+    .setAuthor(translate('commands.split.messageSplittingOptions'))
+    .setDescription(translate('commands.split.enabledDescription', { title: feed.title, link: feed.url }))
+    .addOption(translate('commands.split.optionSetSplitChar'), `${translate('commands.split.optionSetSplitCharDescription')} ${defSplitCharStr(translate)}`)
+    .addOption(translate('commands.split.optionSetPrependChar'), `${translate('commands.split.optionSetPrependCharDescription')} ${defPrependCharStr(translate)}`)
+    .addOption(translate('commands.split.optionSetAppendChar'), `${translate('commands.split.optionSetAppendCharDescription')} ${defAppendCharStr(translate)}`)
+    .addOption(translate('commands.split.optionSetMaxLength'), `${translate('commands.split.optionSetMaxLengthDescription')} ${defMaxLenStr(translate)}`)
+    .addOption(translate('commands.split.optionDisable'), '\u200b')
 
   return { ...data,
     next: {
@@ -91,19 +91,19 @@ async function selectSetting (m, data) {
     feed.split = undefined
     await feed.save()
     log.command.info(`Disabled message splitting for ${feed.url}`, m.channel.guild)
-    await m.channel.send(translate('commands.rsssplit.disabledSuccess', { link: feed.url }))
+    await m.channel.send(translate('commands.split.disabledSuccess', { link: feed.url }))
     return data
   }
 
   let nextText = ''
   if (selected === '1') {
-    nextText = translate('commands.rsssplit.promptSplitChar')
+    nextText = translate('commands.split.promptSplitChar')
   } else if (selected === '2') {
-    nextText = translate('commands.rsssplit.promptPrependChar')
+    nextText = translate('commands.split.promptPrependChar')
   } else if (selected === '3') {
-    nextText = translate('commands.rsssplit.promptAppendChar')
+    nextText = translate('commands.split.promptAppendChar')
   } else if (selected === '4') {
-    nextText = translate('commands.rsssplit.promptMaxLen')
+    nextText = translate('commands.split.promptMaxLen')
   } else {
     throw new MenuUtils.MenuOptionError()
   }
@@ -125,45 +125,45 @@ async function setSetting (m, data) {
   if (selected === '1') {
     if (m.content === 'reset') {
       delete feed.split.char
-      successText = translate('commands.rsssplit.resetSplitChar', translateArg)
+      successText = translate('commands.split.resetSplitChar', translateArg)
       log.command.info(`Message splitting split character for ${feed.url} resetting`, m.channel.guild)
-    } else if (m.content === '\\n' && feed.split.char === undefined) throw new MenuUtils.MenuOptionError(translate('commands.rsssplit.setSplitCharDefault'))
+    } else if (m.content === '\\n' && feed.split.char === undefined) throw new MenuUtils.MenuOptionError(translate('commands.split.setSplitCharDefault'))
     else {
       feed.split.char = m.content
-      successText = translate('commands.rsssplit.setSplitChar', { link: feed.url, content: m.content })
+      successText = translate('commands.split.setSplitChar', { link: feed.url, content: m.content })
       log.command.info(`Message splitting split character for ${feed.url} setting to ${m.content}`, m.channel.guild)
     }
   } else if (selected === '2') {
     if (m.content === 'reset') {
       delete feed.split.prepend
-      successText = translate('commands.rsssplit.resetPrependChar', translateArg)
+      successText = translate('commands.split.resetPrependChar', translateArg)
       log.command.info(`Message splitting prepend character for ${feed.url} has been reset`, m.channel.guild)
     } else {
       feed.split.prepend = m.content
-      successText = translate('commands.rsssplit.setPrependChar', { link: feed.url, content: escapeBackticks(m.content) })
+      successText = translate('commands.split.setPrependChar', { link: feed.url, content: escapeBackticks(m.content) })
       log.command.info(`Message splitting prepend character for ${feed.url} setting to ${m.content}`, m.channel.guild)
     }
   } else if (selected === '3') {
     if (m.content === 'reset') {
       delete feed.split.append
-      successText = translate('commands.rsssplit.resetAppendChar', translateArg)
+      successText = translate('commands.split.resetAppendChar', translateArg)
       log.command.info(`Message splitting append character for ${feed.url} resetting`, m.channel.guild)
     } else {
       feed.split.append = m.content
-      successText = translate('commands.rsssplit.setAppendChar', { link: feed.url, content: escapeBackticks(m.content) })
+      successText = translate('commands.split.setAppendChar', { link: feed.url, content: escapeBackticks(m.content) })
       log.command.info(`Message splitting append character for ${feed.url} setting to ${m.content}`, m.channel.guild)
     }
   } else if (selected === '4') {
     const num = parseInt(m.content, 10)
     if (m.content === 'reset') {
       delete feed.split.maxLength
-      successText = translate('commands.rsssplit.resetMaxLen', translateArg)
+      successText = translate('commands.split.resetMaxLen', translateArg)
       log.command.info(`Message splitting max length for ${feed.url} resetting`, m.channel.guild)
     } else if (!/^\d+$/.test(m.content) || num < 500 || num > 1950) {
-      throw new MenuUtils.MenuOptionError(translate('commands.rsssplit.setInvalidMaxLen'))
+      throw new MenuUtils.MenuOptionError(translate('commands.split.setInvalidMaxLen'))
     } else {
       feed.split.maxLength = num
-      successText = translate('commands.rsssplit.setMaxLen', { link: feed.url, num })
+      successText = translate('commands.split.setMaxLen', { link: feed.url, num })
       log.command.info(`Message splitting max length for ${feed.url} setting to ${m.content}`, m.channel.guild)
     }
   }
