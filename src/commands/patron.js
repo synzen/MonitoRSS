@@ -2,12 +2,14 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const Supporter = require('../structs/db/Supporter.js')
-const helpText = profile => `Proper usage:
-
-\`${profile ? (profile.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
-\`${profile ? (profile.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
-\`${profile ? (profile.prefix || config.bot.prefix) : config.bot.prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
-`
+const helpText = profile => {
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+  return `Proper usage:
+\`${prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
+\`${prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
+\`${prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
+  `
+}
 
 async function verifyServer (bot, serverId) {
   const results = (await bot.shard.broadcastEval(`

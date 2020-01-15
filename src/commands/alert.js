@@ -13,7 +13,7 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
     const contentArray = message.content.split(' ').map(item => item.trim())
     const guildID = profile.id
     const guildName = profile.name
-    const prefix = profile.prefix || config.bot.prefix
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     switch (contentArray[1]) {
       case 'add':
       case 'remove':

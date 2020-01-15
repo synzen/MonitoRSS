@@ -98,6 +98,7 @@ module.exports = async (bot, message, command) => {
 
     if (!data) return
     const { feed, chosenProp } = data
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
     const globalSetting = config.feeds[chosenProp]
     const specificSetting = feed[chosenProp]
@@ -120,7 +121,7 @@ module.exports = async (bot, message, command) => {
       isDefault: feed[chosenProp] === undefined ? ` (${translate('commands.rssoptions.defaultSetting')})` : '',
       link: feed.url,
       finalSetting: finalSetting ? translate('generics.enabledLower') : translate('generics.disabledLower')
-    })} ${translate('generics.backupReminder', { prefix: profile.prefix || config.bot.prefix })}`)
+    })} ${translate('generics.backupReminder', { prefix })}`)
   } catch (err) {
     log.command.warning(`rssoptions`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssoptions 1', message.guild, err))

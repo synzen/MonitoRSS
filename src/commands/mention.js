@@ -100,7 +100,7 @@ async function deleteSubscription (message, profile, feeds, role, user) {
   const roleID = role ? role.id : undefined
   const userID = user ? user.id : undefined
   const matchID = roleID || userID
-  const prefix = profile.prefix || config.bot.prefix
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const translate = Translator.createLocaleTranslator(profile.locale)
 
   const allSubscribers = await Promise.all(feeds.map(feed => feed.getSubscribers()))
@@ -305,7 +305,7 @@ module.exports = async (bot, message, command) => {
     if (feeds.length === 0) {
       return await message.channel.send(translate('commands.rssmention.noFeeds'))
     }
-    const prefix = profile.prefix || config.bot.prefix
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
     const selectOption = new MenuUtils.Menu(message, selectOptionFn)
       .setDescription(translate('commands.rssmention.description', { prefix, channel: message.channel.name }))

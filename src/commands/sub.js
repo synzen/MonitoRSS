@@ -26,7 +26,7 @@ module.exports = async (bot, message, command) => {
     if (feeds.length === 0) {
       return await message.channel.send(translate('commands.subme.noFeeds'))
     }
-    const prefix = profile.prefix || config.bot.prefix
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     const options = await getSubList(message.guild, feeds)
     if (!options) {
       return await message.channel.send(translate('commands.subme.noEligible'))

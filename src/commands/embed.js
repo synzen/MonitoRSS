@@ -425,7 +425,7 @@ module.exports = async (bot, message, command) => {
     const embedProperties = getEmbedProperties(translate)
     const setFields = message.content.split(' ')[1] === 'fields'
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command, locale: guildLocale }, feeds)
-    const prefix = profile.prefix || config.bot.prefix
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
     if (setFields) {
       const fieldsData = await new MenuUtils.MenuSeries(message, [feedSelector], { setFields, embedProperties, translate }).start()

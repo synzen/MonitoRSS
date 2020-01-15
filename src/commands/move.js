@@ -10,6 +10,7 @@ const Feed = require('../structs/db/Feed.js')
 
 async function selectChannelFn (m, data) {
   const { feeds, selectedFeeds, locale, profile } = data
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const translate = Translator.createLocaleTranslator(locale)
 
   const selected = m.content === 'this' ? m.channel : m.mentions.channels.first()
@@ -74,7 +75,7 @@ async function selectChannelFn (m, data) {
 
   await Promise.all(promises)
   log.command.info(`Channel for feeds ${summary.join(',')} moved to ${selected.id} (${selected.name})`, m.guild, m.channel)
-  m.channel.send(`${translate('commands.rssmove.moveSuccess', { summary: summary.join('\n'), id: selected.id })} ${translate('generics.backupReminder', { prefix: profile.prefix || config.bot.prefix })}`)
+  m.channel.send(`${translate('commands.rssmove.moveSuccess', { summary: summary.join('\n'), id: selected.id })} ${translate('generics.backupReminder', { prefix })}`)
     .catch(err => log.command.warning('rssmove 1', err))
   return data
 }

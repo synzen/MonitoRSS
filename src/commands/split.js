@@ -118,7 +118,7 @@ async function selectSetting (m, data) {
 
 async function setSetting (m, data) {
   const { feed, profile, selected, translate } = data
-
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   let successText = ''
 
   const translateArg = { link: feed.url }
@@ -169,7 +169,7 @@ async function setSetting (m, data) {
   }
 
   await feed.save()
-  await m.channel.send(`${successText} ${translate('generics.backupReminder', { prefix: profile.prefix || config.bot.prefix })}`)
+  await m.channel.send(`${successText} ${translate('generics.backupReminder', { prefix })}`)
   return data
 }
 

@@ -50,7 +50,7 @@ async function selectCategoryFn (m, data) {
 async function inputFilterFn (m, data) {
   const { profile, feed, role, user, target, chosenFilterType } = data
   const input = m.content
-  const prefix = profile.prefix || config.bot.prefix
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const translator = new Translator(profile.locale)
   const translate = translator.translate.bind(translator)
 
@@ -190,7 +190,7 @@ async function removeFilterFn (m, data) {
   const { profile, feed, role, user, chosenFilterType, target } = data
   const translator = new Translator(profile.locale)
   const translate = translator.translate.bind(translator)
-  const prefix = profile.prefix || config.bot.prefix
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   // Select the word/phrase filter here from that filter category
   const removeList = m.content.trim().split('\n').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Items to be removed
   let validItems = ''

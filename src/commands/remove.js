@@ -30,7 +30,7 @@ module.exports = async (bot, message, command) => {
         errors.push(err)
       }
     }
-    const prefix = profile.prefix || config.bot.prefix
+    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     if (errors.length > 0) {
       await removing.edit(translate('commands.rssremove.internalError'))
     } else await removing.edit(`${removed}\`\`\`\n\n${translate('generics.backupReminder', { prefix })}`)
