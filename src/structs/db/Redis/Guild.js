@@ -49,9 +49,8 @@ class Guild extends Base {
         if (!(guild instanceof Discord.Guild)) throw new TypeError('Guild is not instance of Discord.Guild')
         const multi = this.client.multi()
         const toStore = {}
-        const shardID = storage.bot.shard.id
         this.utils.JSON_KEYS.forEach(key => {
-          toStore[key] = key === 'shard' ? shardID : guild[key] || '' // MUST be a flat structure
+          toStore[key] = key === 'shard' ? guild.shardID : guild[key] || '' // MUST be a flat structure
         })
         multi.hmset(this.utils.REDIS_KEYS.guilds(guild.id), toStore)
         guild.members.forEach(member => GuildMember.utils.recognizeTransaction(multi, member))

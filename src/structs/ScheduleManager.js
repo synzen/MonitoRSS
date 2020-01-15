@@ -6,8 +6,13 @@ const log = require('../util/logger.js')
 const Schedule = require('../structs/db/Schedule.js')
 
 class ScheduleManager {
-  constructor (bot) {
+  /**
+   * @param {import('discord.js').Client} bot
+   * @param {number} shardID
+   */
+  constructor (bot, shardID) {
     this.bot = bot
+    this.shardID = shardID
     this.articleMessageQueue = new ArticleMessageQueue()
     this.scheduleList = []
   }
@@ -49,7 +54,7 @@ class ScheduleManager {
     for (var feedSchedule of this.scheduleList) {
       if (feedSchedule.refreshRate === refreshRate) {
         return feedSchedule.run()
-          .catch(err => log.cycle.error(`${`SH ${this.bot.shard.id} `}Schedule ${this.name} failed to run cycle`, err))
+          .catch(err => log.cycle.error(`SH ${this.shardID} Schedule ${this.name} failed to run cycle`, err))
       }
     }
     // If there is no schedule with that refresh time

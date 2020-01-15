@@ -25,7 +25,7 @@ module.exports = async (bot, message) => {
     const schedule = await feed.determineSchedule()
     const res = await bot.shard.broadcastEval(`
       const guild = this.guilds.get('${guild}');
-      guild ? this.shard.id : null
+      guild ? guild.shardID : null
     `)
     const shard = res.find(result => result !== null)
     if (shard === undefined) {

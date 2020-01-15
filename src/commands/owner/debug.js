@@ -4,8 +4,6 @@ module.exports = async (bot, message) => {
   const content = message.content.split(' ')
   if (content.length !== 2) return
   try {
-    const found = await exports.normal(bot, message)
-    if (found) return
     const rssName = content[1]
     await bot.shard.broadcastEval(`
       const fs = require('fs');
@@ -18,7 +16,7 @@ module.exports = async (bot, message) => {
       debug.feeds.add('${rssName}')
       'done'
     `)
-    log.owner.success(`Shard ${bot.shard.id} added ${rssName} to debugging list.`)
+    log.owner.success(`Added ${rssName} to debugging list for all shards.`)
   } catch (err) {
     log.owner.warning('debug', err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('debug 1', message.guild, err))

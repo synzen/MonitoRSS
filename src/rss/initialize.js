@@ -37,7 +37,7 @@ exports.addNewFeed = async (settings, customTitle) => {
     }
   }
 
-  const shardId = channel.client.shard.id
+  const shardId = channel.guild.shardID
   // const feedId = new mongoose.Types.ObjectId()
   let metaTitle = customTitle || ((articleList[0] && articleList[0].meta.title) ? articleList[0].meta.title : 'Untitled')
 

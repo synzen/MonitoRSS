@@ -37,8 +37,8 @@ class Client extends EventEmitter {
       await connectDb()
       await client.login(token)
       this.bot = client
-      this.shard = client.shard.id
-      this.SHARD_PREFIX = `SH ${client.shard.id} `
+      /** @type {number} */
+      this.shardID = undefined
       storage.bot = client
       this.listenToShardedEvents(client)
       if (!client.readyAt) {
@@ -59,7 +59,7 @@ class Client extends EventEmitter {
   _setup () {
     const bot = this.bot
     bot.on('error', err => {
-      log.general.error(`${this.SHARD_PREFIX}Websocket error`, err)
+      log.general.error(`SH ${this.shardID} Websocket error`, err)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
         if (this.scheduleManager) {
@@ -72,11 +72,11 @@ class Client extends EventEmitter {
       } else this.stop()
     })
     bot.on('resume', () => {
-      log.general.success(`${this.SHARD_PREFIX}Websocket resumed`)
+      log.general.success(`SH ${this.shardID} Websocket resumed`)
       this.start()
     })
     bot.on('disconnect', () => {
-      log.general.error(`${this.SHARD_PREFIX}Websocket disconnected`)
+      log.general.error(`SH ${this.shardID} Websocket disconnected`)
       if (config.bot.exitOnSocketIssues === true) {
         log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
         if (this.scheduleManager) {
@@ -90,7 +90,7 @@ class Client extends EventEmitter {
         this.stop()
       }
     })
-    log.general.success(`${this.SHARD_PREFIX}Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
+    log.general.success(`SH ${this.shardID} Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
     process.send({
       _drss: true,
       type: 'shardReady',
@@ -104,6 +104,7 @@ class Client extends EventEmitter {
       try {
         switch (message.type) {
           case 'startInit':
+            this.shardID = message.shardIDs[process.pid]
             this.customSchedules = message.customSchedules
             config._overrideWith(message.config)
             log.suppressLevel(message.suppressLogLevels)
@@ -122,8 +123,6 @@ class Client extends EventEmitter {
             }
             this.start()
             break
-          case 'kill' :
-            process.exit(0)
           case 'stop':
             this.stop()
             break
@@ -131,7 +130,7 @@ class Client extends EventEmitter {
             storage.initialized = 2
             break
           case 'runSchedule':
-            if (bot.shard.id === message.shardId) {
+            if (this.shardID === message.shardId) {
               this.scheduleManager.run(message.refreshRate)
             }
             break
@@ -144,13 +143,11 @@ class Client extends EventEmitter {
 
   async start () {
     if (this.state === STATES.STARTING || this.state === STATES.READY) {
-      return log.general.warning(`${this.SHARD_PREFIX}Ignoring start command because of ${this.state} state`)
+      return log.general.warning(`SH ${this.shardID} Ignoring start command because of ${this.state} state`)
     }
-    const guildsArray = this.bot.guilds.keyArray()
-    const guildIdsUnsharded = new Map()
-    guildsArray.forEach(id => guildIdsUnsharded.set(id, this.shard))
     this.state = STATES.STARTING
     await listeners.enableCommands()
+    log.general.info(`${'SH ' + this.shardID + ' '}Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
     const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     try {
@@ -160,7 +157,7 @@ class Client extends EventEmitter {
       if (!this.scheduleManager) {
         const refreshRates = new Set()
         refreshRates.add(config.feeds.refreshRateMinutes)
-        this.scheduleManager = new ScheduleManager(storage.bot)
+        this.scheduleManager = new ScheduleManager(storage.bot, this.shardID)
         const names = new Set()
         for (const schedule of this.customSchedules) {
           const name = schedule.name
@@ -183,9 +180,7 @@ class Client extends EventEmitter {
       this.state = STATES.READY
       process.send({
         _drss: true,
-        type: 'initComplete',
-        shard: this.bot.shard.id,
-        guilds: guildsArray
+        type: 'initComplete'
       })
       listeners.createManagers(storage.bot)
       this.emit('finishInit')
@@ -196,9 +191,9 @@ class Client extends EventEmitter {
 
   stop () {
     if (this.state === STATES.STARTING || this.state === STATES.STOPPED) {
-      return log.general.warning(`${this.SHARD_PREFIX}Ignoring stop command because of ${this.state} state`)
+      return log.general.warning(`SH ${this.shardID} Ignoring stop command because of ${this.state} state`)
     }
-    log.general.warning(`${this.SHARD_PREFIX}Discord.RSS has received stop command`)
+    log.general.warning(`SH ${this.shardID} Discord.RSS has received stop command`)
     storage.initialized = 0
     clearInterval(this.maintenance)
     listeners.disableAll()
@@ -207,7 +202,7 @@ class Client extends EventEmitter {
 
   async restart () {
     if (this.state === STATES.STARTING) {
-      return log.general.warning(`${this.SHARD_PREFIX}Ignoring restart command because of ${this.state} state`)
+      return log.general.warning(`SH ${this.shardID} Ignoring restart command because of ${this.state} state`)
     }
     if (this.state === STATES.READY) {
       this.stop()

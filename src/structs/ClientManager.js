@@ -10,6 +10,11 @@ const initialize = require('../util/initialization.js')
 let webClient
 
 class ClientManager extends EventEmitter {
+  /**
+   * @param {import('discord.js').ShardingManager} shardingManager
+   * @param {Object<string, any>} settings
+   * @param {Object<string, any>[]} customSchedules
+   */
   constructor (shardingManager, settings, customSchedules = []) {
     super()
     if (shardingManager.respawn !== false) {
@@ -34,7 +39,9 @@ class ClientManager extends EventEmitter {
     this.shardsReady = 0 // Shards that have reported that they're ready
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardingManager = shardingManager
-    this.shardingManager.on('message', this.messageHandler.bind(this))
+    this.shardingManager.on('shardCreate', shard => {
+      shard.on('message', message => this.messageHandler(shard, message))
+    })
     this.webClientInstance = undefined
   }
 
@@ -56,8 +63,13 @@ class ClientManager extends EventEmitter {
   }
 
   messageHandler (shard, message) {
-    if (!message._drss) return
-    if (message._loopback) return this.shardingManager.broadcast(message).catch(err => this._handleErr(err, message))
+    if (!message._drss) {
+      return
+    }
+    if (message._loopback) {
+      return this.shardingManager.broadcast(message)
+        .catch(err => this._handleErr(err, message))
+    }
     switch (message.type) {
       case 'kill': this.kill(); break
       case 'shardReady': this._shardReadyEvent(shard, message); break
@@ -68,7 +80,9 @@ class ClientManager extends EventEmitter {
   }
 
   kill () {
-    this.shardingManager.broadcast({ _drss: true, type: 'kill' })
+    this.shardingManager.shards.forEach(shard => {
+      shard.kill()
+    })
     process.exit(0)
   }
 
@@ -86,11 +100,16 @@ class ClientManager extends EventEmitter {
     if (++this.shardsReady < totalShards) {
       return
     }
+    const shardIDs = {}
+    this.shardingManager.shards.forEach(shard => {
+      shardIDs[shard.process.pid] = shard.id
+    })
     maintenance.prunePreInit(this.guildIdsByShard)
       .then(() => {
         this.shardingManager.broadcast({
           _drss: true,
           type: 'startInit',
+          shardIDs,
           config: this.config || {},
           suppressLogLevels: this.suppressLogLevels || [],
           setPresence: this.setPresence || false,

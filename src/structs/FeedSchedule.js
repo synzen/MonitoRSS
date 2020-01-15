@@ -18,6 +18,11 @@ const log = require('../util/logger.js')
 const BATCH_SIZE = config.advanced.batchSize
 
 class FeedSchedule extends EventEmitter {
+  /**
+   * @param {import('discord.js').Client} bot
+   * @param {Object<string, any>} schedule
+   * @param {import('./ScheduleManager.js')} scheduleManager
+   */
   constructor (bot, schedule, scheduleManager) {
     if (!schedule.refreshRateMinutes) {
       throw new Error('No refreshRateMinutes has been declared for a schedule')
@@ -26,8 +31,8 @@ class FeedSchedule extends EventEmitter {
       throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     }
     super()
-    this.SHARD_ID = 'SH ' + bot.shard.id + ' '
-    this.shardID = bot.shard.id
+    this.shardID = scheduleManager.shardID
+    this.SHARD_ID = 'SH ' + this.shardID + ' '
     this.bot = bot
     this.name = schedule.name
     this.scheduleManager = scheduleManager
@@ -358,7 +363,8 @@ class FeedSchedule extends EventEmitter {
         uniqueSettings,
         feedData: this.feedData,
         runNum: this.ran,
-        scheduleName: this.name
+        scheduleName: this.name,
+        shardID: this.shardID
       }
 
       getArticles(data, (err, linkCompletion) => {
