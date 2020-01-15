@@ -1,4 +1,3 @@
-const storage = require('../../../util/storage.js')
 const Discord = require('discord.js')
 const Base = require('./Base.js')
 const GuildMember = require('./GuildMember.js')
