@@ -100,16 +100,11 @@ class ClientManager extends EventEmitter {
     if (++this.shardsReady < totalShards) {
       return
     }
-    const shardIDs = {}
-    this.shardingManager.shards.forEach(shard => {
-      shardIDs[shard.process.pid] = shard.id
-    })
     maintenance.prunePreInit(this.guildIdsByShard)
       .then(() => {
         this.shardingManager.broadcast({
           _drss: true,
           type: 'startInit',
-          shardIDs,
           config: this.config || {},
           suppressLogLevels: this.suppressLogLevels || [],
           setPresence: this.setPresence || false,

@@ -38,7 +38,7 @@ class Client extends EventEmitter {
       await client.login(token)
       this.bot = client
       /** @type {number} */
-      this.shardID = undefined
+      this.shardID = client.shard.ids[0]
       storage.bot = client
       this.listenToShardedEvents(client)
       if (!client.readyAt) {
@@ -104,7 +104,6 @@ class Client extends EventEmitter {
       try {
         switch (message.type) {
           case 'startInit':
-            this.shardID = message.shardIDs[process.pid]
             this.customSchedules = message.customSchedules
             config._overrideWith(message.config)
             log.suppressLevel(message.suppressLogLevels)
