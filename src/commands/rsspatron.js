@@ -10,14 +10,12 @@ const helpText = profile => `Proper usage:
 `
 
 async function verifyServer (bot, serverId) {
-  if (bot.shard && bot.shard.count > 0) {
-    const results = (await bot.shard.broadcastEval(`
-      const guild = this.guilds.get('${serverId}')
-      guild ? { name: guild.name, id: guild.id } : null
-    `)).filter(item => item)
+  const results = (await bot.shard.broadcastEval(`
+    const guild = this.guilds.get('${serverId}')
+    guild ? { name: guild.name, id: guild.id } : null
+  `)).filter(item => item)
 
-    if (results.length > 0) return results[0]
-  } else return bot.guilds.get(serverId)
+  if (results.length > 0) return results[0]
 }
 
 /**

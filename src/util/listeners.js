@@ -99,7 +99,7 @@ exports.enableCommands = async () => {
   const blacklistCache = new BlacklistCache(await Blacklist.getAll())
   eventHandlers.push({ name: 'message', func: messageHandler(blacklistCache) })
   storage.bot.on('message', eventHandlers[eventHandlers.length - 1].func)
-  log.general.info(`${storage.bot.shard && storage.bot.shard.count > 0 ? 'SH ' + storage.bot.shard.id + ' ' : ''}Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
+  log.general.info(`${'SH ' + storage.bot.shard.id + ' '}Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
 }
 
 exports.disableAll = () => {

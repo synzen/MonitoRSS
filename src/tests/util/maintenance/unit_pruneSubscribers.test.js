@@ -76,9 +76,6 @@ describe('utils/maintenance/pruneSubscribers', function () {
           guild: 'guildA'
         }]
         const bot = {
-          shard: {
-            count: 6
-          },
           guilds: new Map([['guildB']])
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
@@ -87,100 +84,6 @@ describe('utils/maintenance/pruneSubscribers', function () {
         expect(subscribers[0].delete).not.toHaveBeenCalled()
         expect(subscribers[1].delete).not.toHaveBeenCalled()
       })
-      it('prunes user if they do not exist in bot', async function () {
-        const subscribers = [{
-          id: 'u1',
-          type: 'user',
-          feed: 'feedA',
-          delete: jest.fn()
-        }, {
-          id: 'u2',
-          type: 'user',
-          feed: 'feedA',
-          delete: jest.fn()
-        }]
-        const feeds = [{
-          _id: 'feedA',
-          guild: 'guildA'
-        }]
-        const users = new Set()
-        users.add(subscribers[1].id)
-        const bot = {
-          shard: {
-            count: 6
-          },
-          guilds: new Map([['guildA', {}]]),
-          users
-        }
-        Subscriber.getAll.mockResolvedValue(subscribers)
-        Feed.getAll.mockResolvedValue(feeds)
-        await pruneSubscribers(bot)
-        expect(subscribers[1].delete).not.toHaveBeenCalled()
-        expect(subscribers[0].delete).toHaveBeenCalled()
-      })
-      it('prunes roles if they is not in guild that exists in bot', async function () {
-        const subscribers = [{
-          id: 'rsub1',
-          type: 'role',
-          feed: 'feedA',
-          delete: jest.fn()
-        }, {
-          id: 'rsub12',
-          type: 'role',
-          feed: 'feedA',
-          delete: jest.fn()
-        }]
-        const feeds = [{
-          _id: 'feedA',
-          guild: 'guildA'
-        }]
-        const guildA = new Guild()
-        guildA.roles.add(subscribers[1].id)
-        const bot = {
-          shard: {
-            count: 6
-          },
-          guilds: new Map([['guildA', guildA]])
-        }
-        Subscriber.getAll.mockResolvedValue(subscribers)
-        Feed.getAll.mockResolvedValue(feeds)
-        await pruneSubscribers(bot)
-        expect(subscribers[1].delete).not.toHaveBeenCalled()
-        expect(subscribers[0].delete).toHaveBeenCalled()
-      })
-      it('prunes roles and useres if they both do not exist', async function () {
-        const subscribers = [{
-          id: 'rsub1',
-          type: 'role',
-          feed: 'feedA',
-          delete: jest.fn()
-        }, {
-          id: 'usub12',
-          type: 'user',
-          feed: 'feedA',
-          delete: jest.fn()
-        }]
-        const feeds = [{
-          _id: 'feedA',
-          guild: 'guildA'
-        }]
-        const guildA = new Guild()
-        const users = new Set()
-        const bot = {
-          shard: {
-            count: 6
-          },
-          guilds: new Map([['guildA', guildA]]),
-          users
-        }
-        Subscriber.getAll.mockResolvedValue(subscribers)
-        Feed.getAll.mockResolvedValue(feeds)
-        await pruneSubscribers(bot)
-        expect(subscribers[1].delete).toHaveBeenCalled()
-        expect(subscribers[0].delete).toHaveBeenCalled()
-      })
-    })
-    describe('unsharded', function () {
       it('prunes user if they do not exist in bot', async function () {
         const subscribers = [{
           id: 'u1',

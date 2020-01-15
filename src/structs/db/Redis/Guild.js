@@ -49,7 +49,7 @@ class Guild extends Base {
         if (!(guild instanceof Discord.Guild)) throw new TypeError('Guild is not instance of Discord.Guild')
         const multi = this.client.multi()
         const toStore = {}
-        const shardID = storage.bot.shard && storage.bot.shard.count > 0 ? storage.bot.shard.id : -1
+        const shardID = storage.bot.shard.id
         this.utils.JSON_KEYS.forEach(key => {
           toStore[key] = key === 'shard' ? shardID : guild[key] || '' // MUST be a flat structure
         })

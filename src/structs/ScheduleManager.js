@@ -23,7 +23,8 @@ class ScheduleManager {
         const channel = this.bot.channels.get(article._delivery.source.channel)
         log.general.warning(`Failed to send article ${article.link}`, channel.guild, channel, err)
         if (err.code === 50035) {
-          channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``).catch(err => log.general.warning(`Unable to send failed-to-send message for article`, err))
+          channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
+            .catch(err => log.general.warning(`Unable to send failed-to-send message for article`, err))
         }
       }
     }
@@ -47,11 +48,12 @@ class ScheduleManager {
   run (refreshRate) { // Run schedules with respect to their refresh times
     for (var feedSchedule of this.scheduleList) {
       if (feedSchedule.refreshRate === refreshRate) {
-        return feedSchedule.run().catch(err => log.cycle.error(`${this.bot.shard && this.bot.shard.count > 0 ? `SH ${this.bot.shard.id} ` : ''}Schedule ${this.name} failed to run cycle`, err))
+        return feedSchedule.run()
+          .catch(err => log.cycle.error(`${`SH ${this.bot.shard.id} `}Schedule ${this.name} failed to run cycle`, err))
       }
     }
     // If there is no schedule with that refresh time
-    if (this.bot.shard && this.bot.shard.count > 0) process.send({ _drss: true, type: 'scheduleComplete', refreshRate })
+    process.send({ _drss: true, type: 'scheduleComplete', refreshRate })
   }
 
   getSchedule (name) {

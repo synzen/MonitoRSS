@@ -3,7 +3,7 @@ const Feed = require('../../structs/db/Feed.js')
 
 /**
  * Precondition: Feeds have been pruned, and thus no feeds
- * with missing guilds remain.
+ * with missing guilds remain. The bot is also sharded.
  *
  * 1. Remove all subscribers whose feed doesn't exist
  * 2. Remove all subscribers that don't exist in Discord
@@ -11,7 +11,6 @@ const Feed = require('../../structs/db/Feed.js')
  * @returns {number}
  */
 async function pruneSubscribers (bot) {
-  const sharded = bot.shard && bot.shard.count > 0
   const [ subscribers, feeds ] = await Promise.all([
     Subscriber.getAll(),
     Feed.getAll()
@@ -32,7 +31,7 @@ async function pruneSubscribers (bot) {
     /**
      * If sharded, skip if this bot does not have this guild
      */
-    if (sharded && !guild) {
+    if (!guild) {
       continue
     }
     /**
