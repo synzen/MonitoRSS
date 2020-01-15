@@ -34,7 +34,12 @@ class User extends Base {
         if (!(user instanceof Discord.User)) throw new TypeError('User is not instance of Discord.User')
         const toStore = {}
         this.utils.JSON_KEYS.forEach(key => {
-          toStore[key] = user[key] || '' // MUST be a flat structure
+          // MUST be a flat structure
+          if (key === 'displayAvatarURL') {
+            toStore[key] = user[key]() || ''
+          } else {
+            toStore[key] = user[key] || ''
+          }
         })
         return promisify(this.client.hmset).bind(this.client)(this.utils.REDIS_KEYS.user(user.id), toStore)
       },

@@ -50,7 +50,14 @@ class Guild extends Base {
         const multi = this.client.multi()
         const toStore = {}
         this.utils.JSON_KEYS.forEach(key => {
-          toStore[key] = key === 'shard' ? guild.shardID : guild[key] || '' // MUST be a flat structure
+          // MUST be a flat structure
+          if (key === 'shard') {
+            toStore[key] = guild.shardID || ''
+          } else if (key === 'iconURL') {
+            toStore[key] = guild.iconURL() || ''
+          } else {
+            toStore[key] = guild[key] || ''
+          }
         })
         multi.hmset(this.utils.REDIS_KEYS.guilds(guild.id), toStore)
         guild.members.forEach(member => GuildMember.utils.recognizeTransaction(multi, member))
