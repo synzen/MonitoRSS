@@ -1,31 +1,6 @@
-const debug = require('../../util/debugFeeds.js')
-const Feed = require('../../structs/db/Feed.js')
 const log = require('../../util/logger.js')
 
-exports.normal = async (bot, message) => {
-  const content = message.content.split(' ')
-  if (content.length !== 2) return
-
-  const rssName = content[1]
-
-  try {
-    const feed = await Feed.get(rssName)
-    if (!feed) {
-      await message.channel.send(`Unable to add ${rssName} to debugging list, not found in any guild sources.`)
-      return false
-    }
-    if (!debug.feeds.has(rssName)) {
-      debug.feeds.add(rssName)
-    }
-    await message.channel.send(`Added ${rssName} to debug`)
-    return true
-  } catch (err) {
-    log.owner.warning('debug', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('debug 1', message.guild, err))
-  }
-}
-
-exports.sharded = async (bot, message) => {
+module.exports = async (bot, message) => {
   const content = message.content.split(' ')
   if (content.length !== 2) return
   try {

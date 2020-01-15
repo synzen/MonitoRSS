@@ -2,7 +2,7 @@ const log = require('../../util/logger.js')
 const GuildProfile = require('../../structs/db/GuildProfile.js')
 const Feed = require('../../structs/db/Feed.js')
 
-exports.normal = async (bot, message) => {
+module.exports = async (bot, message) => {
   const content = message.content.split(' ')
   if (content.length !== 2) return
   const guildId = content[1]
@@ -17,5 +17,3 @@ exports.normal = async (bot, message) => {
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('getguild 1a', message.guild, err))
   }
 }
-
-exports.sharded = exports.normal

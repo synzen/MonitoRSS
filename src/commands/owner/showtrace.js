@@ -5,19 +5,7 @@ function getVal (message) {
   return setting === '1' ? true : setting === '0' ? false : setting
 }
 
-exports.normal = async (bot, message) => {
-  try {
-    const val = getVal(message)
-    if (typeof val !== 'boolean') return await message.channel.send(`Invalid setting (\`${val}\`). Must be \`1\` or \`0\`.`)
-    log.showTrace(val)
-    await message.channel.send(val === true ? `Error stack traces will now be shown.` : `Error stack traces will now be hidden.`)
-  } catch (err) {
-    log.owner.warning(`showtrace`, message.author, err, true)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('showtrace 1b', message.guild, err))
-  }
-}
-
-exports.sharded = async (bot, message) => {
+module.exports = async (bot, message) => {
   try {
     const val = getVal(message)
     if (typeof val !== 'boolean') return await message.channel.send(`Invalid setting (\`${val}\`). Must be \`1\` or \`0\`.`)

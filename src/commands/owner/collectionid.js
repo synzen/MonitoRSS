@@ -15,21 +15,7 @@ async function getFeed (bot, message) {
   return feed
 }
 
-exports.normal = async (bot, message) => {
-  try {
-    const feed = await getFeed(bot, message)
-    if (!feed) {
-      return await message.channel.send('No such feed found.')
-    }
-    const schedule = await feed.determineSchedule()
-    await message.channel.send(ArticleModel.getCollectionID(feed.url, -1, schedule.name))
-  } catch (err) {
-    log.owner.warning('collectionid', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('collectionid 1a', message.guild, err))
-  }
-}
-
-exports.sharded = async (bot, message) => {
+module.exports = async (bot, message) => {
   try {
     const feed = await getFeed(bot, message)
     if (!feed) {

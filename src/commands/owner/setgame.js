@@ -1,4 +1,3 @@
-const config = require('../../config.js')
 const log = require('../../util/logger.js')
 
 function getGame (message) {
@@ -10,21 +9,7 @@ function getGame (message) {
   return game
 }
 
-exports.normal = async (bot, message) => {
-  const game = getGame(message)
-  // bot.user.setGame(game)
-  try {
-    if (game === undefined) return await message.channel.send(`Text must be specified as the first argument, or \`null\` to remove an existing game.`)
-    await bot.user.setPresence({ game: { name: game, type: 0 } })
-    config.bot.game = game // Make sure the change is saved even after a login retry
-    await message.channel.send(`Successfully changed game to ${game}`)
-  } catch (err) {
-    log.owner.warning('setgame', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('setgame 1a', message.guild, err))
-  }
-}
-
-exports.sharded = async (bot, message) => {
+module.exports = async (bot, message) => {
   const game = getGame(message)
   try {
     if (game === undefined) return await message.channel.send(`Text must be specified as the first argument, or \`null\` to remove an existing game.`)

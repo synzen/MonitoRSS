@@ -3,7 +3,7 @@ const config = require('../../config.js')
 const Feed = require('../../structs/db/Feed.js')
 const Supporter = require('../../structs/db/Supporter.js')
 
-exports.normal = async (bot, message) => {
+module.exports = async (bot, message) => {
   try {
     const supporters = await Supporter.getValidSupporters()
     const supporterLimits = new Map()
@@ -43,5 +43,3 @@ exports.normal = async (bot, message) => {
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('checklimits 1a', message.guild, err))
   }
 }
-
-exports.sharded = exports.normal

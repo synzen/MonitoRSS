@@ -242,6 +242,6 @@ exports.runOwner = message => {
   const command = first.substr(prefix.length)
   if (fs.existsSync(path.join(__dirname, '..', 'commands', 'owner', `${command}.js`))) {
     if (storage.initialized < 2) return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
-    loadCCommand(command)[bot.shard && bot.shard.count > 0 ? 'sharded' : 'normal'](bot, message)
+    loadCCommand(command)(bot, message)
   }
 }

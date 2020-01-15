@@ -2,7 +2,7 @@ const FeedFetcher = require('../../util/FeedFetcher.js')
 const log = require('../../util/logger.js')
 const FailCounter = require('../../structs/db/FailCounter.js')
 
-exports.normal = async (bot, message) => {
+module.exports = async (bot, message) => {
   const content = message.content.split(' ')
   if (content.length !== 2) return
   const link = content[1]
@@ -25,5 +25,3 @@ exports.normal = async (bot, message) => {
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('refresh 1a', message.guild, err))
   }
 }
-
-exports.sharded = exports.normal

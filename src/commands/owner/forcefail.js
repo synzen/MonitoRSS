@@ -2,7 +2,7 @@ const log = require('../../util/logger.js')
 const Feed = require('../../structs/db/Feed.js')
 const FailCounter = require('../../structs/db/FailCounter.js')
 
-exports.normal = async (bot, message) => {
+module.exports = async (bot, message) => {
   try {
     const url = message.content.split(' ')[1]
     if (!url) {
@@ -30,5 +30,3 @@ exports.normal = async (bot, message) => {
     log.owner.warning('forceremove', message.guild, message.author, err)
   }
 }
-
-exports.sharded = exports.normal

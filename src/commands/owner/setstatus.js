@@ -8,7 +8,7 @@ function getStatus (message) {
   return content.join(' ').trim()
 }
 
-exports.normal = async (bot, message) => {
+module.exports = async (bot, message) => {
   const status = getStatus(message)
   try {
     if (!VALID_STATUS.includes(status)) return await message.channel.send(`That is not a valid status (\`${status}\`). Must be one of the following: \`${VALID_STATUS.join('`, `')}\`. `)
@@ -19,5 +19,3 @@ exports.normal = async (bot, message) => {
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('setstatus', message.guild, err))
   }
 }
-
-exports.sharded = exports.normal

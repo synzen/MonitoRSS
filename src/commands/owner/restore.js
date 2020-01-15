@@ -21,25 +21,7 @@ async function getID (message) {
   return file
 }
 
-exports.normal = async (bot, message) => {
-  try {
-    const file = await getID(message)
-    const guildData = new GuildData(file)
-    const id = guildData.id
-    const guild = bot.guilds.get(id)
-    if (!guild) {
-      return await message.chanel.send(`Unable to restore server, ID ${id} was not found in cache.`)
-    }
-    await guildData.restore()
-    log.owner.success(`Server (ID: ${id}, Name: ${guild.name}) has been restored`, message.author)
-    await message.channel.send(`Server (ID: ${id}, Name: ${guild.name}) has been restored.`)
-  } catch (err) {
-    log.owner.warning(`restore`, message.author, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('restore 1a', message.guild, err))
-  }
-}
-
-exports.sharded = async (bot, message) => {
+module.exports = async (bot, message) => {
   try {
     const file = await getID(message)
     const guildData = new GuildData(file)
