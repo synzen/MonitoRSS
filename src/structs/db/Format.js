@@ -12,6 +12,9 @@ class Format extends FilteredFormat {
      */
     this.filters = undefined
 
+    /** @type {undefined} */
+    this.rfilters = undefined
+
     /**
      * Do *not* save priority on this model - there should only be
      * one Format per feed

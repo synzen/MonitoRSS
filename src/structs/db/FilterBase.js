@@ -4,7 +4,17 @@ class FilterBase extends Base {
   constructor (data, _saved) {
     super(data, _saved)
 
+    /**
+     * Regular filters
+     * @type {Object<string, string[]>}
+     */
     this.filters = this.getField('filters', {})
+
+    /**
+     * Regex filters
+     * @type {Object<string, string>}
+     */
+    this.rfilters = this.getField('rfilters', {})
   }
 
   pruneFilters () {
@@ -22,13 +32,19 @@ class FilterBase extends Base {
   }
 
   toObject () {
-    const map = new Map()
+    const filtersMap = new Map()
+    const rFiltersMap = new Map()
     const filters = this.filters
+    const rfilters = this.rfilters
     for (const key in filters) {
-      map.set(key, filters[key])
+      filtersMap.set(key, filters[key])
+    }
+    for (const key in rfilters) {
+      rFiltersMap.set(key, rfilters[key])
     }
     return {
-      filters: map
+      filters: filtersMap,
+      rfilters: rFiltersMap
     }
   }
 
@@ -39,7 +55,8 @@ class FilterBase extends Base {
      */
     return {
       ...this.toObject(),
-      filters: this.filters
+      filters: this.filters,
+      rfilters: this.rfilters
     }
   }
 

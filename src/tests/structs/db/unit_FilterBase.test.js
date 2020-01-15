@@ -27,6 +27,13 @@ describe('Unit::structs/db/FilterBase', function () {
   afterEach(function () {
     jest.restoreAllMocks()
   })
+  describe('constructor', function () {
+    it('initializes correctly', function () {
+      const base = new FilterClass()
+      expect(base.filters).toEqual({})
+      expect(base.rfilters).toEqual({})
+    })
+  })
   describe('toObject', function () {
     it('converts the filters into a map', function () {
       const base = new FilterClass()
@@ -41,6 +48,19 @@ describe('Unit::structs/db/FilterBase', function () {
         expect(returned.filters.get(key)).toEqual(filters[key])
       }
     })
+    it('converts rfilters into a map', function () {
+      const base = new FilterClass()
+      const rfilters = {
+        title: 'swrhyetg',
+        dasdge: '46treht5ru'
+      }
+      base.rfilters = rfilters
+      const returned = base.toObject()
+      expect(returned.rfilters).toBeInstanceOf(Map)
+      for (const key in rfilters) {
+        expect(returned.rfilters.get(key)).toEqual(rfilters[key])
+      }
+    })
   })
   describe('toJSON', function () {
     it('returns plain object', function () {
@@ -48,13 +68,20 @@ describe('Unit::structs/db/FilterBase', function () {
         a: ['fdg'],
         b: [1, 2, 6]
       }
+      const rfilters = {
+        a: 'qewts',
+        c: 'asedgrfh',
+        d: 'wse4yr5'
+      }
       const base = new FilterClassWithFoo()
       base.filters = filters
+      base.rfilters = rfilters
       base.foo = 'helloa world'
       const returned = base.toJSON()
       expect(returned).toEqual({
         foo: base.foo,
-        filters
+        filters,
+        rfilters
       })
       expect(returned.filters).not.toBeInstanceOf(Map)
       // expect(returned.filters).toEqual(filters)

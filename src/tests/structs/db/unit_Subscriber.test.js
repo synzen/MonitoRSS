@@ -56,6 +56,7 @@ describe('Unit::structs/db/Subscriber', function () {
       const subscriber = new Subscriber({ ...initData })
       expect(subscriber.toObject()).toEqual({
         filters: new Map(),
+        rfilters: new Map(),
         ...initData
       })
     })
@@ -65,6 +66,7 @@ describe('Unit::structs/db/Subscriber', function () {
       const subscriber = new Subscriber({ ...initData })
       expect(subscriber.toJSON()).toEqual({
         filters: {},
+        rfilters: {},
         ...initData
       })
     })
