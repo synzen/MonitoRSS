@@ -26,7 +26,7 @@ class ArticleMessageQueue {
     const promises = []
     roleIDs.forEach(roleID => {
       const role = guild.roles.get(roleID)
-      // Other checks may include guild.me.highestRole.comparePositionTo(role) <= 0, and whether the bot has manage roles permission, but don't check them and let the error show in the message
+      // Other checks may include guild.me.roles.highest.comparePositionTo(role) <= 0, and whether the bot has manage roles permission, but don't check them and let the error show in the message
       if (role && role.mentionable !== mentionable) {
         promises.push(role.setMentionable(mentionable))
       }

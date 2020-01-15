@@ -7,7 +7,7 @@ const GuildProfile = require('../structs/db/GuildProfile.js')
 const Feed = require('../structs/db/Feed.js')
 
 function addRole (message, role, links, translate) {
-  message.member.addRole(role)
+  message.member.roles.add(role)
     .then(mem => {
       message.channel.send(translate('commands.subme.addSuccess', { name: role.name, links: links.join('>\n<') }), { split: true }).catch(err => log.command.warning('subme addrole 1', err))
       log.command.info(`Role successfully added to member`, message.guild, role, message.author)

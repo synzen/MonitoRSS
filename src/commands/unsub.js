@@ -7,7 +7,7 @@ const GuildProfile = require('../structs/db/GuildProfile.js')
 const Feed = require('../structs/db/Feed.js')
 
 function removeRole (message, role, translate) {
-  message.member.removeRole(role)
+  message.member.roles.remove(role)
     .then(mem => {
       log.command.info(`Removed role from member`, message.guild, role, message.author)
       message.channel.send(translate('commands.unsubme.removeSuccess', { name: role.name }))
@@ -24,7 +24,7 @@ module.exports = async (bot, message, command) => {
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     const feeds = await Feed.getManyBy('guild', message.guild.id)
-    const botRole = message.guild.members.get(bot.user.id).highestRole
+    const botRole = message.guild.members.get(bot.user.id).roles.highest
     const memberRoles = message.member.roles
 
     // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it

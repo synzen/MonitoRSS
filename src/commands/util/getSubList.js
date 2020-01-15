@@ -5,7 +5,7 @@
 
 module.exports = async (guild, feeds) => {
   let finalList = []
-  const botRole = guild.members.get(guild.client.user.id).highestRole
+  const botRole = guild.members.get(guild.client.user.id).roles.highest
   const subscribers = await Promise.all(feeds.map(feed => feed.getSubscribers()))
 
   subscribers.forEach((feedSubscribers, index) => {
