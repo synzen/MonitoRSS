@@ -117,7 +117,6 @@ class Client extends EventEmitter {
                 bot.user.setActivity(null)
                   .catch(err => log.general.error('Failed to set null activity', err))
               }
-              console.log(config.bot.status)
               bot.user.setStatus(config.bot.status)
                 .catch(err => log.general.error('Failed to set status', err))
             }
@@ -189,7 +188,6 @@ class Client extends EventEmitter {
         guilds: guildsArray
       })
       listeners.createManagers(storage.bot)
-      this.scheduleManager.startSchedules()
       this.emit('finishInit')
     } catch (err) {
       log.general.error(`Client start`, err, true)
@@ -202,7 +200,6 @@ class Client extends EventEmitter {
     }
     log.general.warning(`${this.SHARD_PREFIX}Discord.RSS has received stop command`)
     storage.initialized = 0
-    this.scheduleManager.stopSchedules()
     clearInterval(this.maintenance)
     listeners.disableAll()
     this.state = STATES.STOPPED

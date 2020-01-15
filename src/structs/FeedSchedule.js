@@ -12,7 +12,6 @@ const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
-const storage = require('../util/storage.js') // All properties of storage must be accessed directly due to constant changes
 const maintenance = require('../util/maintenance/index.js')
 const log = require('../util/logger.js')
 
@@ -27,8 +26,8 @@ class FeedSchedule extends EventEmitter {
       throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     }
     super()
-    this.SHARD_ID = bot.shard && bot.shard.count > 0 ? 'SH ' + bot.shard.id + ' ' : ''
-    this.shardID = bot.shard && bot.shard.count > 0 ? bot.shard.id : -1
+    this.SHARD_ID = 'SH ' + bot.shard.id + ' '
+    this.shardID = bot.shard.id
     this.bot = bot
     this.name = schedule.name
     this.scheduleManager = scheduleManager
@@ -305,7 +304,6 @@ class FeedSchedule extends EventEmitter {
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
     this._linksResponded = {}
-    storage.deletedFeeds.length = 0
 
     this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     this._sourceList.clear()
@@ -487,9 +485,7 @@ class FeedSchedule extends EventEmitter {
   }
 
   _finishCycle (noFeeds) {
-    if (this.bot.shard && this.bot.shard.count > 0) {
-      process.send({ _drss: true, type: 'scheduleComplete', refreshRate: this.refreshRate })
-    }
+    process.send({ _drss: true, type: 'scheduleComplete', refreshRate: this.refreshRate })
     const diff = (new Date() - this._startTime) / 1000
     const timeTaken = diff.toFixed(2)
 
@@ -501,21 +497,6 @@ class FeedSchedule extends EventEmitter {
     }
 
     ++this.ran
-  }
-
-  stop () {
-    clearInterval(this._timer)
-    if (this._timer) log.general.info(`${this.SHARD_ID}Schedule '${this.name}' has stopped`)
-    else log.general.warning(`${this.SHARD_ID}Schedule '${this.name}' ignoring stop command because schedule is already stopped`)
-    delete this._timer
-  }
-
-  start () {
-    if (!this.bot.shard || this.bot.shard.count === 0) {
-      if (this._timer) return log.general.warning(`${this.SHARD_ID}Schedule '${this.name}' ignoring start command because schedule is already started`)
-      this._timer = setInterval(this.run.bind(this), this.refreshRate * 60000)
-      log.cycle.info(`${this.SHARD_ID}Schedule '${this.name}' has begun`)
-    }
   }
 }
 

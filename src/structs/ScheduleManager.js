@@ -54,14 +54,6 @@ class ScheduleManager {
     if (this.bot.shard && this.bot.shard.count > 0) process.send({ _drss: true, type: 'scheduleComplete', refreshRate })
   }
 
-  stopSchedules () {
-    this.scheduleList.forEach(schedule => schedule.stop())
-  }
-
-  startSchedules () {
-    this.scheduleList.forEach(schedule => schedule.start())
-  }
-
   getSchedule (name) {
     for (const schedule of this.scheduleList) {
       if (schedule.name === name) return schedule
