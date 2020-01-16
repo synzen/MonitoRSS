@@ -52,11 +52,16 @@ class ArticleMessage {
     this.toggleRoleMentions = typeof this.source.toggleRoleMentions === 'boolean' ? this.source.toggleRoleMentions : config.feeds.toggleRoleMentions
     this.split = this.source.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
     this.parsedArticle = new Article(article, this.source, this.article._delivery.source.dateSettings)
+
+    if (Object.keys(this.source.rfilters).length > 0) {
+      // Regex
+      this.filterResults = testFilters(this.source.rfilters, this.parsedArticle)
+    } else {
+      // Regular
+      this.filterResults = testFilters(this.source.filters, this.parsedArticle)
+    }
+
     this.subscriptionIds = this.parsedArticle.subscriptionIds
-
-    this.filterResults = testFilters(this.source.filters, this.parsedArticle)
-    this.passedFilters = this.source.filters && !this.skipFilters ? this.filterResults.passed : true
-
     const { embeds, text } = this._generateMessage()
     this.text = text
     this.embeds = embeds
@@ -65,6 +70,14 @@ class ArticleMessage {
 
   static get TEST_OPTIONS () {
     return { split: { prepend: '```md\n', append: '```' } }
+  }
+
+  passedFilters () {
+    if (this.skipFilters) {
+      return true
+    } else {
+      return this.filterResults.passed
+    }
   }
 
   _determineFormat () {
@@ -263,7 +276,9 @@ class ArticleMessage {
     const placeholderAnchors = parsedArticle.listPlaceholderAnchors()
     if (placeholderAnchors) testDetails += `\n\n${placeholderAnchors}`
     if (parsedArticle.tags) testDetails += `\n\n[Tags]: {tags}\n${parsedArticle.tags}`
-    if (this.source.filters) testDetails += `\n\n[Passed Filters?]: ${this.passedFilters ? 'Yes' : 'No'}${this.passedFilters ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
+    if (this.source.filters) {
+      testDetails += `\n\n[Passed Filters?]: ${filterResults.passed ? 'Yes' : 'No'}${filterResults.passed ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
+    }
     testDetails += '```' + footer
 
     return testDetails
@@ -292,7 +307,7 @@ class ArticleMessage {
       throw new Error('Missing feed channel')
     }
     await this._resolveWebhook()
-    if (!this.passedFilters) {
+    if (!this.passedFilters()) {
       if (config.log.unfiltered === true || this.debug) {
         log.general.info(`'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`, this.channel)
       }
