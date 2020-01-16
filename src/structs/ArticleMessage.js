@@ -54,7 +54,7 @@ class ArticleMessage {
 
     if (Object.keys(this.source.rfilters).length > 0) {
       // Regex
-      this.filterResults = this.parsedArticle.passesFilters(this.source.rfilters)
+      this.filterResults = this.parsedArticle.testFilters(this.source.rfilters)
     } else {
       // Regular
       this.filterResults = this.parsedArticle.testFilters(this.source.filters)
