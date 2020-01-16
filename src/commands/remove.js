@@ -12,7 +12,7 @@ module.exports = async (bot, message, command) => {
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
-    const feedSelector = new FeedSelector(message, null, { command: command, locale: guildLocale }, feeds)
+    const feedSelector = new FeedSelector(message, null, { command, locale: guildLocale, multiSelect: true }, feeds)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
     const { selectedFeeds } = data
