@@ -247,8 +247,7 @@ class Base {
     }
 
     const fileNames = await fsPromises.readdir(folderPath)
-    const promises = fileNames.map(name => fsPromises.readFile(path.join(folderPath, name)))
-    const resolved = await Promise.all(promises)
+    const resolved = fileNames.map(name => fs.readFileSync(path.join(folderPath, name)))
     const jsons = resolved.map((contents, index) => {
       try {
         return JSON.parse(contents)

@@ -294,13 +294,13 @@ describe('Unit::structs/db/Base', function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(false)
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['1'])
         fs.existsSync = jest.fn()
+        fs.readFileSync = jest.fn()
         fsPromises.readdir = jest.fn()
-        fsPromises.readFile = jest.fn()
       })
       afterEach(function () {
         fs.existsSync = fsExistsSync
         fsPromises.readdir = fsPromisesReaddir
-        fsPromises.readFile = fsPromisesReadFile
+        fs.readFileSync = fsReadFileSync
       })
       it('returns empty array if path does not exist', async function () {
         fs.existsSync.mockReturnValue(false)
@@ -314,11 +314,11 @@ describe('Unit::structs/db/Base', function () {
         const read3 = JSON.stringify({ key1: 'gh', key: '2' })
         fsPromises.readdir.mockResolvedValue(['1', '2', '3'])
         fs.existsSync.mockReturnValue(true)
-        fsPromises.readFile
-          .mockResolvedValueOnce(read1)
-          .mockResolvedValueOnce(readFail)
-          .mockResolvedValueOnce(read2)
-          .mockResolvedValueOnce(read3)
+        fs.readFileSync
+          .mockReturnValueOnce(read1)
+          .mockReturnValueOnce(readFail)
+          .mockReturnValueOnce(read2)
+          .mockReturnValueOnce(read3)
         const returned = await BasicBase.getManyByQuery({
           key1: 'gh',
           key2: 123
@@ -335,9 +335,9 @@ describe('Unit::structs/db/Base', function () {
         const read2 = JSON.stringify(read2Object)
         fsPromises.readdir.mockResolvedValue(['1', '2'])
         fs.existsSync.mockReturnValue(true)
-        fsPromises.readFile
-          .mockResolvedValueOnce(read1)
-          .mockResolvedValueOnce(read2)
+        fs.readFileSync
+          .mockReturnValueOnce(read1)
+          .mockReturnValueOnce(read2)
         const returned = await BasicBase.getManyByQuery({
           key: read1Object.key,
           fal: read1Object.fal
