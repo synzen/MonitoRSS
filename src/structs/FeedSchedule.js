@@ -7,6 +7,7 @@ const FailCounter = require('./db/FailCounter.js')
 const Subscriber = require('./db/Subscriber.js')
 const Format = require('./db/Format.js')
 const FilteredFormat = require('./db/FilteredFormat.js')
+const ShardStats = require('./db/ShardStats.js')
 const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
@@ -492,11 +493,34 @@ class FeedSchedule extends EventEmitter {
 
   _finishCycle (noFeeds) {
     process.send({ _drss: true, type: 'scheduleComplete', refreshRate: this.refreshRate })
-    const diff = (new Date() - this._startTime) / 1000
-    const timeTaken = diff.toFixed(2)
+    const cycleTime = (new Date() - this._startTime) / 1000
+    const timeTaken = cycleTime.toFixed(2)
+    ShardStats.get(this.shardID.toString())
+      .then(stats => {
+        const data = {
+          _id: this.shardID.toString(),
+          feeds: this.feedCount,
+          cycleTime,
+          cycleFails: this._cycleFailCount,
+          cycleURLs: this._cycleTotalCount,
+          lastUpdated: new Date().toISOString()
+        }
+        if (!stats) {
+          stats = new ShardStats(data)
+          return stats.save()
+        } else {
+          stats.feeds = data.feeds
+          stats.cycleTime = ((data.cycleTime + stats.cycleTime) / 2).toFixed(2)
+          stats.cycleFails = ((data.cycleFails + stats.cycleFails) / 2).toFixed(2)
+          stats.cycleURLs = data.cycleURLs
+          stats.lastUpdated = data.lastUpdated
+          return stats.save()
+        }
+      }).catch(err => log.general.warning('Unable to update statistics after cycle', err, true))
 
-    if (noFeeds) log.cycle.info(`${this.SHARD_ID}Finished ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ')' : ''}. No feeds to retrieve`)
-    else {
+    if (noFeeds) {
+      log.cycle.info(`${this.SHARD_ID}Finished ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ')' : ''}. No feeds to retrieve`)
+    } else {
       if (this._processorList.length === 0) this.inProgress = false
       this.emit('finish')
       log.cycle.info(`${this.SHARD_ID}Finished ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
