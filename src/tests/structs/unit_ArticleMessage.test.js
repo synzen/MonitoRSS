@@ -1,11 +1,9 @@
 const ArticleMessage = require('../../structs/ArticleMessage.js')
 const Article = require('../../structs/Article.js')
 const storage = require('../../util/storage.js')
-const filters = require('../../rss/translator/filters.js')
 jest.mock('discord.js')
 jest.mock('../../util/logger.js')
 jest.mock('../../structs/Article.js')
-jest.mock('../../rss/translator/filters.js')
 jest.mock('../../util/storage.js')
 storage.bot = { channels: { get: () => ({}) } }
 
@@ -16,6 +14,7 @@ describe('Unit::ArticleMessage', function () {
         source: {
           channel: 'abc',
           filters: { a: 1 },
+          rfilters: {},
           filteredFormats: []
         },
         rssName: 'asd'
@@ -25,6 +24,8 @@ describe('Unit::ArticleMessage', function () {
       _delivery: {
         source: {
           channel: 'abc',
+          filters: {},
+          rfilters: {},
           filteredFormats: []
         },
         rssName: 'asd'
@@ -33,14 +34,12 @@ describe('Unit::ArticleMessage', function () {
 
     const testDetails = 'wseirtg4yjr'
     const generatedMessage = { text: 'awszf', embeds: [1, 2] }
-    beforeAll(function () {
+    beforeEach(function () {
       jest.spyOn(ArticleMessage.prototype, '_generateMessage').mockImplementation(() => generatedMessage)
       jest.spyOn(ArticleMessage.prototype, '_generateTestMessage').mockImplementation(() => testDetails)
+      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue({ passed: true })
     })
     afterEach(function () {
-      filters.mockReset()
-    })
-    afterAll(function () {
       jest.restoreAllMocks()
     })
     it('throws an error if _delivery is missing', function () {
@@ -53,7 +52,7 @@ describe('Unit::ArticleMessage', function () {
       expect(() => new ArticleMessage({ _delivery: { rssName: 'asdasd' } })).toThrowError(expect.objectContaining({ message: expect.stringContaining('source property missing') }))
     })
     it('defines the correct properties for this.parsedArticle', function () {
-      const parsedArticle = { foo: 'bar', subscriptionIds: [1, 4, 5] }
+      const parsedArticle = { foo: 'bar', subscriptionIds: [1, 4, 5], testFilters: jest.fn() }
       Article.mockImplementationOnce(() => parsedArticle)
       const m = new ArticleMessage(rawArticleWithNoFilters)
       expect(m.parsedArticle).toEqual(parsedArticle)
@@ -72,28 +71,29 @@ describe('Unit::ArticleMessage', function () {
     })
     it('attaches filter results if passed', function () {
       const filterResults = { a: 1, passed: true }
-      filters.mockImplementationOnce(() => filterResults)
+      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
       const m = new ArticleMessage(rawArticle)
       expect(m.filterResults).toEqual(filterResults)
-      expect(m.passedFilters).toEqual(filterResults.passed)
+      expect(m.passedFilters()).toEqual(filterResults.passed)
     })
     it('attaches filter results if not passed', function () {
       const filterResults = { a: 1, passed: false }
-      filters.mockImplementationOnce(() => filterResults)
+      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
       const m = new ArticleMessage(rawArticle)
       expect(m.filterResults).toEqual(filterResults)
-      expect(m.passedFilters).toEqual(filterResults.passed)
+      expect(m.passedFilters()).toEqual(filterResults.passed)
     })
     it('passes filters if there are no filters in sources', function () {
+      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue({ passed: true })
       const m = new ArticleMessage(rawArticleWithNoFilters)
-      expect(m.passedFilters).toEqual(true)
+      expect(m.passedFilters()).toEqual(true)
     })
     it('does not attach filter results if skip filters', function () {
       const filterResults = { a: 1, passed: false }
-      filters.mockImplementationOnce(() => filterResults)
+      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
       const m = new ArticleMessage(rawArticle, false, true)
       expect(m.skipFilters).toEqual(true)
-      expect(m.passedFilters).toEqual(true)
+      expect(m.passedFilters()).toEqual(true)
     })
   })
   describe('send()', function () {
@@ -101,16 +101,18 @@ describe('Unit::ArticleMessage', function () {
       _delivery: {
         rssName: 'hel',
         source: {
+          filters: {},
+          rfilters: {},
           filteredFormats: []
         }
       }
     }
-    beforeAll(function () {
+    beforeEach(function () {
       const generatedMessage = { text: 'awszf', embeds: [1, 2] }
       jest.spyOn(ArticleMessage.prototype, '_resolveWebhook').mockImplementation()
       jest.spyOn(ArticleMessage.prototype, '_createSendOptions').mockImplementation(() => generatedMessage)
     })
-    afterAll(function () {
+    afterEach(function () {
       jest.restoreAllMocks()
     })
     it('throws an error if missing source', function () {
@@ -126,7 +128,7 @@ describe('Unit::ArticleMessage', function () {
     it('does not send the article if it did not pass filters', async function () {
       const m = new ArticleMessage(rawArticle)
       const medium = { send: jest.fn(async () => Promise.resolve()) }
-      m.passedFilters = false
+      m.passedFilters = () => false
       m.channel = medium
       await m.send()
       expect(medium.send).not.toHaveBeenCalled()
@@ -137,6 +139,7 @@ describe('Unit::ArticleMessage', function () {
       const webhook = { send: jest.fn(async () => Promise.resolve()) }
       m.channel = channel
       m.webhook = webhook
+      m.filterResults = { passed: true }
       await m.send()
       expect(webhook.send).toHaveBeenCalledTimes(1)
     })
@@ -146,6 +149,7 @@ describe('Unit::ArticleMessage', function () {
       error.code = 5555
       const channel = { send: jest.fn(async () => Promise.reject(error)) }
       m.channel = channel
+      m.filterResults = { passed: true }
       try {
         await m.send()
         throw new Error('Send promise resolved')
@@ -159,6 +163,7 @@ describe('Unit::ArticleMessage', function () {
       error.code = 50013
       const channel = { send: jest.fn(async () => Promise.reject(error)) }
       m.channel = channel
+      m.filterResults = { passed: true }
       try {
         await m.send()
         throw new Error('Send promise resolved')
@@ -168,6 +173,7 @@ describe('Unit::ArticleMessage', function () {
     })
     it('retries a maximum of 4 times with an unrecognized error', async function () {
       const m = new ArticleMessage(rawArticle)
+      m.filterResults = { passed: true }
       const error = new Error('hello world')
       const channel = { send: jest.fn(async () => Promise.reject(error)) }
       m.channel = channel
@@ -183,6 +189,7 @@ describe('Unit::ArticleMessage', function () {
       const channel = { send: jest.fn(async () => Promise.resolve()) }
       m.channel = channel
       m.isTestMessage = true
+      m.filterResults = { passed: true }
       await m.send()
       expect(m.isTestMessage).toEqual(false)
       expect(channel.send).toHaveBeenCalledTimes(2)
@@ -199,6 +206,7 @@ describe('Unit::ArticleMessage', function () {
       channel.send.mockImplementationOnce(async () => Promise.reject(error))
       m.channel = channel
       m.split = { a: 1 }
+      m.filterResults = { passed: true }
       await m.send()
       expect(channel.send).toHaveBeenCalledTimes(2)
       expect(m.split).toBeUndefined()
@@ -218,6 +226,7 @@ describe('Unit::ArticleMessage', function () {
       channel.send.mockImplementationOnce(async () => Promise.reject(error))
       m.channel = channel
       m.split = splitOptions
+      m.filterResults = { passed: true }
       await m.send()
       expect(channel.send).toHaveBeenCalledTimes(2)
       expect(m.split).toEqual(splitOptions)
@@ -230,15 +239,14 @@ describe('Unit::ArticleMessage', function () {
       _delivery: {
         rssName: 'hel',
         source: {
+          filters: {},
+          rfilters: {},
           filteredFormats: []
         }
       }
     }
-    beforeAll(function () {
+    beforeEach(function () {
       jest.spyOn(ArticleMessage.prototype, '_convertEmbeds').mockImplementation()
-    })
-    afterAll(function () {
-      jest.restoreAllMocks()
     })
     it('returns text that is the test message if it is a test message', function () {
       const testMessage = 'adzesgtwioug'
@@ -285,6 +293,7 @@ describe('Unit::ArticleMessage', function () {
       const m = new ArticleMessage(rawArticle)
       m.isTestMessage = true
       m.split = { a: 'b' }
+      m.filterResults = { passed: true }
       const data = m._createSendOptions()
       expect(data.options).toEqual(ArticleMessage.TEST_OPTIONS)
     })

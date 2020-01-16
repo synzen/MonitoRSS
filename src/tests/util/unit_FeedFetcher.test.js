@@ -2,8 +2,7 @@ const FeedFetcher = require('../../util/FeedFetcher.js')
 const fetch = require('node-fetch')
 // const DecodedFeedParser = require('../../structs/DecodedFeedParser.js')
 // const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
-// const Article = require('../../structs/Article.js')
-const testFilters = require('../../rss/translator/filters.js')
+const Article = require('../../structs/Article.js')
 const RequestError = require('../../structs/errors/RequestError.js')
 const cloudscraper = require('cloudscraper')
 const config = require('../../config.js')
@@ -14,11 +13,11 @@ jest.mock('cloudscraper')
 jest.mock('../../config.js')
 jest.mock('../../structs/ArticleIDResolver.js')
 jest.mock('../../structs/Article.js')
-jest.mock('../../rss/translator/filters.js')
 jest.mock('../../structs/DecodedFeedParser.js')
 
 describe('Unit::FeedFetcher', function () {
   afterEach(function () {
+    jest.restoreAllMocks()
     fetch.mockReset()
     config._vip = false
   })
@@ -236,10 +235,9 @@ describe('Unit::FeedFetcher', function () {
     afterEach(function () {
       FeedFetcher.fetchFeed = origFetchURL
       Math.random = origMathRand
-      testFilters.mockReset()
     })
     it('returns null if articleList length is 0', function () {
-      FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: [] })
+      FeedFetcher.fetchFeed.mockResolvedValue({ articleList: [] })
       return expect(FeedFetcher.fetchRandomArticle()).resolves.toEqual(null)
     })
     it('returns a random article with no filters', function () {
@@ -254,7 +252,8 @@ describe('Unit::FeedFetcher', function () {
     })
     it('returns null if there are no filtered articles if filters are passed in', function () {
       FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList: [1, 2, 3] })
-      testFilters.mockReturnValue({ passed: false })
+      jest.spyOn(Article.prototype, 'testFilters')
+        .mockReturnValue({ passed: false })
       return expect(FeedFetcher.fetchRandomArticle('a', { a: 'b' })).resolves.toEqual(null)
     })
     it('returns a random article within the the filtered articles if filters are passed in', function () {
@@ -262,7 +261,9 @@ describe('Unit::FeedFetcher', function () {
       FeedFetcher.fetchFeed.mockResolvedValueOnce({ articleList })
       const filterFunc = item => item >= 5
       for (let i = 0; i < articleList.length; ++i) {
-        testFilters.mockReturnValueOnce({ passed: filterFunc(articleList[i]) }) // 5 - 10 inclusive are the passed
+        jest.spyOn(Article.prototype, 'testFilters').mockReturnValueOnce({
+          passed: filterFunc(articleList[i])
+        })
       }
       const filteredArticleList = articleList.filter(filterFunc)
       const expectedIndex = Math.round(randNum * (filteredArticleList.length - 1))
