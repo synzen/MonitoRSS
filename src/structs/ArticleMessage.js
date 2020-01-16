@@ -5,7 +5,6 @@ const log = require('../util/logger.js')
 const debug = require('../util/debugFeeds.js')
 const Article = require('./Article.js')
 const deletedFeeds = storage.deletedFeeds
-const testFilters = require('../rss/translator/filters.js')
 
 /**
  * @typedef {Object} PreparedArticle
@@ -55,10 +54,10 @@ class ArticleMessage {
 
     if (Object.keys(this.source.rfilters).length > 0) {
       // Regex
-      this.filterResults = testFilters(this.source.rfilters, this.parsedArticle)
+      this.filterResults = this.parsedArticle.passesFilters(this.source.rfilters)
     } else {
       // Regular
-      this.filterResults = testFilters(this.source.filters, this.parsedArticle)
+      this.filterResults = this.parsedArticle.testFilters(this.source.filters)
     }
 
     this.subscriptionIds = this.parsedArticle.subscriptionIds
@@ -92,8 +91,10 @@ class ArticleMessage {
       let selectedFormat
       for (const filteredFormat of filteredFormats) {
         const thisPriority = filteredFormat.priority === undefined || filteredFormat.priority < 0 ? 0 : filteredFormat.priority
-        const res = testFilters(filteredFormat.filters, parsedArticle) // messageFiltered.filters must exist as an object
-        if (!res.passed) continue
+        const res = parsedArticle.testFilters(filteredFormat.filters)
+        if (!res.passed) {
+          continue
+        }
         matched[thisPriority] = matched[thisPriority] === undefined ? 1 : matched[thisPriority] + 1
         if (thisPriority >= highestPriority) {
           highestPriority = thisPriority

@@ -3,7 +3,9 @@ const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const htmlDecoder = require('html-to-text/lib/formatter.js').text
 const FlattenedJSON = require('./FlattenedJSON.js')
-const testFilters = require('../rss/translator/filters.js')
+const FilterResults = require('./FilterResults.js')
+const Filter = require('./Filter.js')
+const FilterRegex = require('./FilterRegex.js')
 const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
@@ -310,14 +312,24 @@ module.exports = class Article {
     if (subscribers) {
       for (const subscriber of subscribers) {
         const type = subscriber.type
-        if (type !== 'role' && type !== 'user') continue
+        if (type !== 'role' && type !== 'user') {
+          continue
+        }
         const mentionText = type === 'role' ? `<@&${subscriber.id}> ` : `<@${subscriber.id}> `
-        if (subscriber.filters && testFilters(subscriber.filters, this).passed) this.subscriptions += mentionText
-        else if (!subscriber.filters || Object.keys(subscriber.filters).length === 0) this.subscriptions += mentionText
-        if (type === 'role') this.subscriptionIds.push(subscriber.id) // For ArticleMessage mention toggling
+        if (subscriber.filters && this.testFilters(subscriber.filters).passed) {
+          this.subscriptions += mentionText
+        } else if (!subscriber.filters || Object.keys(subscriber.filters).length === 0) {
+          this.subscriptions += mentionText
+        }
+        if (type === 'role') {
+          // For ArticleMessage mention toggling
+          this.subscriptionIds.push(subscriber.id)
+        }
       }
     }
-    if (this.subscriptions) this.placeholders.push('subscriptions')
+    if (this.subscriptions) {
+      this.placeholders.push('subscriptions')
+    }
   }
 
   // List all {imageX} to string
@@ -502,6 +514,62 @@ module.exports = class Article {
       return vanityDate === 'Invalid Date' ? '' : vanityDate
     }
     return ''
+  }
+
+  testFilters (filters) {
+    const referenceOverrides = {
+      description: this._fullDescription,
+      summary: this._fullSummary,
+      title: this._fullTitle
+    }
+    let passed = true
+    const filterResults = new FilterResults()
+    for (const filterTypeName in filters) {
+      const userFilters = filters[filterTypeName]
+      let reference
+      if (filterTypeName.startsWith('raw:')) {
+        reference = this.getRawPlaceholderContent(filterTypeName)
+      } else {
+        reference = referenceOverrides[filterTypeName.replace('other:', '')] || this[filterTypeName.replace('other:', '')]
+      }
+      if (!reference) {
+        continue
+      }
+      const invertedMatches = []
+      const matches = []
+
+      // Filters can either be an array of words or a string (regex)
+      if (Array.isArray(userFilters)) {
+        // Array
+        for (const word of userFilters) {
+          const filter = new Filter(word)
+          passed = passed && filter.passes(reference)
+          if (filter.inverted) {
+            invertedMatches.push(word)
+          } else {
+            matches.push(word)
+          }
+        }
+      } else {
+        // String
+        const filter = new FilterRegex(userFilters)
+        const filterPassed = filter.passes(reference)
+        passed = passed && filterPassed
+        if (filterPassed) {
+          matches.push(userFilters)
+        } else {
+          invertedMatches.push(userFilters)
+        }
+      }
+      if (matches.length > 0) {
+        filterResults.add(filterTypeName, matches, false)
+      }
+      if (invertedMatches.length > 0) {
+        filterResults.add(filterTypeName, invertedMatches, true)
+      }
+    }
+    filterResults.passed = passed
+    return filterResults
   }
 
   // replace simple keywords

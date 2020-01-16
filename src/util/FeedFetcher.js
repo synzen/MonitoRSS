@@ -6,7 +6,6 @@ const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Article = require('../structs/Article.js')
-const testFilters = require('../rss/translator/filters.js')
 
 class FeedFetcher {
   constructor () {
@@ -201,7 +200,8 @@ class FeedFetcher {
     }
     const filtered = []
     for (const article of articleList) {
-      if (testFilters(filters, new Article(article, { dateSettings: {} })).passed) {
+      const parsedArticle = new Article(article, { dateSettings: {} })
+      if (parsedArticle.testFilters(filters).passed) {
         filtered.push(article)
       }
     }
