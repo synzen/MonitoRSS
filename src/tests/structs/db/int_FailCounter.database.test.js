@@ -119,7 +119,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         .resolves.toHaveProperty('reason', reason)
     })
     it('updates the reason if past threshold', async function () {
-      const url = 'instanceincrementreason'
+      const url = 'instanceincrementupdatereason'
       const reason = 'foozzz'
       const newReason = reason + 'hozz'
       await collection.insertOne({
