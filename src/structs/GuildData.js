@@ -149,11 +149,6 @@ class GuildData {
       .concat(formats)
       .concat(subscribers)
     try {
-      /**
-       * Profile must be saved first otherwise the feed saving
-       * middleware will throw an error saying the profile
-       * does not exist
-       */
       if (this.profile) {
         await data[0].save()
       }
