@@ -5,7 +5,7 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const MIN_PERMISSION_BOT = ['VIEW_CHANNEL', 'SEND_MESSAGES']
 const MIN_PERMISSION_USER = ['VIEW_CHANNEL', 'SEND_MESSAGES', 'MANAGE_CHANNELS']
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
 
 async function selectChannelFn (m, data) {
@@ -82,7 +82,7 @@ async function selectChannelFn (m, data) {
 
 module.exports = async (bot, message, command) => {
   try {
-    const profile = await GuildProfile.get(message.guild.id)
+    const profile = await Profile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     const feedSelector = new FeedSelector(message, null, { command, locale: guildLocale, multiSelect: true }, feeds)

@@ -71,7 +71,7 @@ describe('Int::structs/GuildData Database', function () {
       foundSubscriber1,
       foundSubscriber2
     ] = await Promise.all([
-      db.collection('guilds').findOne(profile),
+      db.collection('profiles').findOne(profile),
       db.collection('feeds').findOne(feeds[0]),
       db.collection('feeds').findOne(feeds[1]),
       db.collection('formats').findOne(formats[0]),
@@ -132,7 +132,7 @@ describe('Int::structs/GuildData Database', function () {
     }))
     const db = mongoose.connection.db
     await Promise.all([
-      db.collection('guilds').insertOne(profile),
+      db.collection('profiles').insertOne(profile),
       db.collection('feeds').insertMany(feeds),
       db.collection('formats').insertMany(formats),
       db.collection('subscribers').insertMany(subscribers)
@@ -189,7 +189,7 @@ describe('Int::structs/GuildData Database', function () {
     }
     const db = mongoose.connection.db
     await Promise.all([
-      db.collection('guilds').insertOne(profile),
+      db.collection('profiles').insertOne(profile),
       db.collection('feeds').insertMany(feeds)
     ])
     const guildData = new GuildData(JSON.parse(JSON.stringify(data)))

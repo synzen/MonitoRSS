@@ -4,7 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
 const Schedule = require('../structs/db/Schedule.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const FailCounter = require('../structs/db/FailCounter.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
@@ -12,7 +12,7 @@ const Feed = require('../structs/db/Feed.js')
 module.exports = async (bot, message, command) => {
   try {
     const [ profile, supporter, schedules, supporterGuilds ] = await Promise.all([
-      GuildProfile.get(message.guild.id),
+      Profile.get(message.guild.id),
       Supporter.getValidSupporterOfGuild(message.guild.id),
       Schedule.getAll(),
       Supporter.getValidGuilds()

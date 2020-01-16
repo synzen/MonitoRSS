@@ -2,7 +2,7 @@ const path = require('path')
 const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
 const Schedule = require('./db/Schedule.js')
-const GuildProfile = require('./db/GuildProfile.js')
+const Profile = require('./db/Profile.js')
 const FailCounter = require('./db/FailCounter.js')
 const Subscriber = require('./db/Subscriber.js')
 const Format = require('./db/Format.js')
@@ -268,7 +268,7 @@ class FeedSchedule extends EventEmitter {
       schedules
     ] = await Promise.all([
       FailCounter.getAll(),
-      GuildProfile.getAll(),
+      Profile.getAll(),
       Feed.getAll(),
       Format.getAll(),
       FilteredFormat.getAll(),

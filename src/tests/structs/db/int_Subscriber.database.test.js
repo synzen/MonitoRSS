@@ -3,7 +3,7 @@ const config = require('../../../config.js')
 const Subscriber = require('../../../structs/db/Subscriber.js')
 require('../../../models/Feed.js')
 const mongoose = require('mongoose')
-const dbName = 'test_int_guildprofile'
+const dbName = 'test_int_subscriber'
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -11,7 +11,7 @@ const CON_OPTIONS = {
 
 jest.mock('../../../config.js')
 
-describe('Int::structs/db/GuildProfile Database', function () {
+describe('Int::structs/db/subscriber Database', function () {
   beforeAll(async function () {
     config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)

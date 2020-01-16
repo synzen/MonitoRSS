@@ -1,4 +1,4 @@
-const GuildProfile = require('../../structs/db/GuildProfile.js')
+const Profile = require('../../structs/db/Profile.js')
 
 /**
  * Remove all guilds no longer with the bot
@@ -6,7 +6,7 @@ const GuildProfile = require('../../structs/db/GuildProfile.js')
  * @returns {number}
  */
 async function pruneGuilds (guildIdsByShard) {
-  const profiles = await GuildProfile.getAll()
+  const profiles = await Profile.getAll()
   const deletions = []
   for (const profile of profiles) {
     if (!guildIdsByShard.has(profile._id)) {

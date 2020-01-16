@@ -3,7 +3,7 @@ const initialize = require('../rss/initialize.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const FailCounter = require('../structs/db/FailCounter.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
@@ -11,7 +11,7 @@ const Feed = require('../structs/db/Feed.js')
 module.exports = async (bot, message) => {
   try {
     const [ profile, supporter ] = await Promise.all([
-      GuildProfile.get(message.guild.id),
+      Profile.get(message.guild.id),
       Supporter.getValidSupporterOfGuild(message.guild.id)
     ])
     const feeds = await Feed.getManyBy('guild', message.guild.id)

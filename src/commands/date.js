@@ -3,7 +3,7 @@ const moment = require('moment-timezone')
 const MenuUtils = require('../structs/MenuUtils.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
 
 async function selectOptionFn (m, data) {
@@ -70,7 +70,7 @@ async function setOptionFn (m, data) {
 
 module.exports = async (bot, message) => {
   try {
-    const profile = await GuildProfile.get(message.guild.id)
+    const profile = await Profile.get(message.guild.id)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)

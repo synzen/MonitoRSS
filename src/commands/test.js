@@ -4,7 +4,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const FailCounter = require('../structs/db/FailCounter.js')
 const Feed = require('../structs/db/Feed.js')
 const Format = require('../structs/db/Format.js')
@@ -15,7 +15,7 @@ const FilteredFormat = require('../structs/db/FilteredFormat.js')
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
   try {
-    const profile = await GuildProfile.get(message.guild.id)
+    const profile = await Profile.get(message.guild.id)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
 
     const guildLocale = profile ? profile.locale : undefined

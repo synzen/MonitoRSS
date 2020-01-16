@@ -1,8 +1,8 @@
 const Base = require('./Base.js')
-const GuildProfileModel = require('../../models/GuildProfile.js').model
+const ProfileModel = require('../../models/Profile.js').model
 const Feed = require('./Feed.js')
 
-class GuildProfile extends Base {
+class Profile extends Base {
   /**
    * @param {import('mongoose').Model|Object<string, any>} data - Data
    * @param {string} data._id - Guild ID
@@ -100,8 +100,8 @@ class GuildProfile extends Base {
   }
 
   static get Model () {
-    return GuildProfileModel
+    return ProfileModel
   }
 }
 
-module.exports = GuildProfile
+module.exports = Profile

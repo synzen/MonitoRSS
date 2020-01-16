@@ -1,6 +1,6 @@
 const config = require('../config.js')
 const log = require('../util/logger.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const Supporter = require('../structs/db/Supporter.js')
 const helpText = profile => {
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
@@ -26,7 +26,7 @@ async function verifyServer (bot, serverId) {
  * @param {string[]} args
  * @param {Supporter} supporter
  * @param {string[]} supportedGuilds
- * @param {GuildProfile} profile
+ * @param {Profile} profile
  */
 async function switchServerArg (bot, message, args, supporter, supportedGuilds, profile) {
   try {
@@ -87,7 +87,7 @@ async function switchServerArg (bot, message, args, supporter, supportedGuilds, 
 module.exports = async (bot, message) => {
   try {
     const [ profile, supporter, supportedGuilds ] = await Promise.all([
-      GuildProfile.get(message.guild.id),
+      Profile.get(message.guild.id),
       Supporter.get(message.author.id),
       Supporter.getValidGuilds()
     ])

@@ -2,13 +2,13 @@ const log = require('../util/logger.js')
 const channelTracker = require('../util/channelTracker.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const FailCounter = require('../structs/db/FailCounter.js')
 const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
   try {
-    const profile = await GuildProfile.get(message.guild.id)
+    const profile = await Profile.get(message.guild.id)
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     if (feeds.length === 0) {

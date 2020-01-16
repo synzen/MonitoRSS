@@ -2,11 +2,11 @@ const config = require('../config.js')
 const storage = require('./storage.js')
 const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 
 async function populatePefixes () {
-  const profiles = await GuildProfile.getAll()
+  const profiles = await Profile.getAll()
   for (const profile of profiles) {
     const guildId = profile.id
     if (profile.prefix) {

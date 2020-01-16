@@ -1,8 +1,8 @@
 process.env.TEST_ENV = true
-const GuildProfile = require('../../../structs/db/GuildProfile.js')
+const Profile = require('../../../structs/db/Profile.js')
 const mongoose = require('mongoose')
 const config = require('../../../config.js')
-const dbName = 'test_int_guildprofile'
+const dbName = 'test_int_Profile'
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -11,7 +11,7 @@ const CON_OPTIONS = {
 
 jest.mock('../../../config.js')
 
-describe('Int::structs/db/GuildProfile Database', function () {
+describe('Int::structs/db/Profile Database', function () {
   beforeAll(async function () {
     config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
@@ -27,7 +27,7 @@ describe('Int::structs/db/GuildProfile Database', function () {
         _id: 'abce4y6t',
         name: 'some name'
       }
-      const profile = new GuildProfile(guildData)
+      const profile = new Profile(guildData)
       await profile.save()
       for (const feedId of feedIds) {
         const data = {

@@ -1,7 +1,7 @@
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
 const Supporter = require('../structs/db/Supporter.js')
 const log = require('../util/logger.js')
@@ -52,7 +52,7 @@ async function collectWebhookFn (m, data) {
 module.exports = async (bot, message, command) => {
   try {
     const [ profile, validServer ] = await Promise.all([
-      GuildProfile.get(message.guild.id),
+      Profile.get(message.guild.id),
       Supporter.hasValidGuild(message.guild.id)
     ])
     const guildLocale = profile ? profile.locale : undefined

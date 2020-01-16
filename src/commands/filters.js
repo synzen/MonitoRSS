@@ -6,7 +6,7 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
 const FailCounter = require('../structs/db/FailCounter.js')
 const Format = require('../structs/db/Format.js')
@@ -66,7 +66,7 @@ async function setMessageFn (m, data) {
 
 module.exports = async (bot, message, command, role) => {
   try {
-    const profile = await GuildProfile.get(message.guild.id)
+    const profile = await Profile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(guildLocale)

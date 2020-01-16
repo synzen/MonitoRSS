@@ -1,11 +1,11 @@
 const log = require('../util/logger.js')
 const config = require('../config.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 
 module.exports = async (bot, message, automatic) => { // automatic indicates invokation by the bot
   try {
-    const profile = await GuildProfile.get(message.guild.id)
+    const profile = await Profile.get(message.guild.id)
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     if (!profile || profile.feeds.length === 0) {
       return await message.channel.send(Translator.translate('commands.alert.noFeeds'))

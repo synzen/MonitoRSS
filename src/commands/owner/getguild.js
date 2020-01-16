@@ -1,5 +1,5 @@
 const log = require('../../util/logger.js')
-const GuildProfile = require('../../structs/db/GuildProfile.js')
+const Profile = require('../../structs/db/Profile.js')
 const Feed = require('../../structs/db/Feed.js')
 
 module.exports = async (bot, message) => {
@@ -7,7 +7,7 @@ module.exports = async (bot, message) => {
   if (content.length !== 2) return
   const guildId = content[1]
   try {
-    const profile = await GuildProfile.get(guildId)
+    const profile = await Profile.get(guildId)
     console.log('Profile ', profile)
     const feeds = await Feed.getManyBy('guild', guildId)
     console.log('Feeds ', feeds)

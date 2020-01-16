@@ -1,4 +1,4 @@
-const GuildProfile = require('./db/GuildProfile.js')
+const Profile = require('./db/Profile.js')
 const Feed = require('./db/Feed.js')
 const Format = require('./db/Format.js')
 const Subscriber = require('./db/Subscriber.js')
@@ -59,7 +59,7 @@ class GuildData {
    */
   static async get (guildId) {
     const [ profile, feeds ] = await Promise.all([
-      GuildProfile.get(guildId),
+      Profile.get(guildId),
       Feed.getManyBy('guild', guildId)
     ])
     const [ formats, feedSubscribers ] = await Promise.all([
@@ -103,7 +103,7 @@ class GuildData {
   async delete () {
     const deletions = []
     if (this.profile) {
-      const profile = await GuildProfile.get(this.profile._id)
+      const profile = await Profile.get(this.profile._id)
       if (profile) {
         deletions.push(profile.delete())
       }
@@ -144,7 +144,7 @@ class GuildData {
     this.subscribers.forEach(subscriber => {
       subscribers.push(new Subscriber(subscriber))
     })
-    let data = this.profile ? [new GuildProfile(this.profile)] : []
+    let data = this.profile ? [new Profile(this.profile)] : []
     data = data.concat(feeds)
       .concat(formats)
       .concat(subscribers)

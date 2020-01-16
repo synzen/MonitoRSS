@@ -2,12 +2,12 @@ const log = require('../util/logger.js')
 const config = require('../config.js')
 const storage = require('../util/storage.js')
 const Translator = require('../structs/Translator.js')
-const GuildProfile = require('../structs/db/GuildProfile.js')
+const Profile = require('../structs/db/Profile.js')
 
 module.exports = async (bot, message) => {
   const prefix = message.content.split(' ')[1]
   try {
-    const profile = await GuildProfile.get(message.guild.id)
+    const profile = await Profile.get(message.guild.id)
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
 
     if (!prefix) {
@@ -36,7 +36,7 @@ module.exports = async (bot, message) => {
         name: message.guild.name,
         prefix
       }
-      const newProfile = new GuildProfile(data)
+      const newProfile = new Profile(data)
       await newProfile.save()
     } else {
       profile.prefix = prefix
