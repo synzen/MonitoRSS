@@ -161,6 +161,14 @@ class FilterBase extends Base {
   hasFilters () {
     return Object.keys(this.filters).length > 0
   }
+
+  /**
+   * If any regex filters exist
+   * @returns {boolean}
+   */
+  hasRFilters () {
+    return Object.keys(this.rfilters).length > 0
+  }
 }
 
 module.exports = FilterBase

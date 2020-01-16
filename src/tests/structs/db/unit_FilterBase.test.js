@@ -336,4 +336,26 @@ describe('Unit::structs/db/FilterBase', function () {
       expect(spy).toHaveBeenCalled()
     })
   })
+  describe('hasFilters', function () {
+    it('returns correctly', function () {
+      const base = new FilterClass()
+      base.filters = {}
+      expect(base.hasFilters()).toEqual(false)
+      base.filters = {
+        title: ['ha']
+      }
+      expect(base.hasFilters()).toEqual(true)
+    })
+  })
+  describe('hasRFilters', function () {
+    it('returns correctly', function () {
+      const base = new FilterClass()
+      base.rfilters = {}
+      expect(base.hasRFilters()).toEqual(false)
+      base.rfilters = {
+        title: 'halo'
+      }
+      expect(base.hasRFilters()).toEqual(true)
+    })
+  })
 })
