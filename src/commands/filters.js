@@ -9,6 +9,9 @@ const Translator = require('../structs/Translator.js')
 const GuildProfile = require('../structs/db/GuildProfile.js')
 const Feed = require('../structs/db/Feed.js')
 const FailCounter = require('../structs/db/FailCounter.js')
+const Format = require('../structs/db/Format.js')
+const Subscriber = require('../structs/db/Subscriber.js')
+const FilteredFormat = require('../structs/db/FilteredFormat.js')
 
 async function feedSelectorFn (m, data) {
   const { feed, locale } = data
@@ -117,20 +120,31 @@ module.exports = async (bot, message, command, role) => {
       if (await FailCounter.hasFailed(feed.url)) {
         return await message.channel.send(translate('commands.filters.connectionFailureLimit'))
       }
-      const article = await FeedFetcher.fetchRandomArticle(feed.url, feed.filters)
+      const filters = feed.hasRFilters() ? feed.rfilters : feed.filters
+      const article = await FeedFetcher.fetchRandomArticle(feed.url, filters)
       if (!article) {
         return await message.channel.send(translate('commands.filters.noArticlesPassed'))
       }
       log.command.info(`Sending filtered article for ${feed.url}`, message.guild)
+      const [ format, subscribers, filteredFormats ] = await Promise.all([
+        Format.getBy('feed', feed._id),
+        Subscriber.getManyBy('feed', feed._id),
+        FilteredFormat.getManyBy('feed', feed._id)
+      ])
       article._delivery = {
         rssName: feed._id,
         source: {
-          ...feed.toObject(),
-          dateSettings: {
-            timezone: feed.timezone,
-            format: feed.dateFormat,
-            language: feed.dateLanguage
-          }
+          ...feed.toJSON(),
+          format: format ? format.toJSON() : undefined,
+          filteredFormats: filteredFormats.map(f => f.toJSON()),
+          subscribers: subscribers.map(s => s.toJSON()),
+          dateSettings: profile
+            ? {
+              timezone: profile.timezone,
+              format: profile.dateFormat,
+              language: profile.dateLanguage
+            }
+            : {}
         }
       }
 
