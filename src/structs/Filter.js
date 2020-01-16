@@ -1,5 +1,3 @@
-const FilterRegex = require('./FilterRegex.js')
-
 class Filter {
   /**
    * @param {string} content
