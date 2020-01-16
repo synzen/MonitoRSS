@@ -7,6 +7,7 @@ const pruneCollections = require('./pruneCollections.js')
 const flushRedis = require('./flushRedis.js')
 const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
+const ShardStats = require('../../structs/db/ShardStats.js')
 const Supporter = require('../../structs/db/Supporter.js')
 const Patron = require('../../structs/db/Patron.js')
 const log = require('../logger.js')
@@ -17,6 +18,7 @@ const log = require('../logger.js')
  */
 async function prunePreInit (guildIdsByShard, bot) {
   await Promise.all([
+    ShardStats.deleteAll(),
     flushRedis(),
     pruneGuilds(guildIdsByShard)
   ])
