@@ -143,7 +143,7 @@ class Base {
   /**
    * Get a document
    * @param {string} id - Guild ID
-   * @returns {Base|null}
+   * @returns {Promise<Base|null>}
    */
   static async get (id) {
     if (!id) {
@@ -185,7 +185,7 @@ class Base {
    * Get by a field's value
    * @param {string} field - Field name
    * @param {any} value - Field value
-   * @returns {Base|null}
+   * @returns {Promise<Base|null>}
    */
   static async getBy (field, value) {
     return this.getByQuery({ [field]: value })
@@ -194,7 +194,7 @@ class Base {
   /**
    * Get one with a custom query
    * @param {Object<string, any>} query - MongoDB-format query
-   * @returns {Base[]}
+   * @returns {Promise<Base[]>}
    */
   static async getByQuery (query) {
     /**
@@ -216,7 +216,7 @@ class Base {
    * Get many by a field's value
    * @param {string} field - Field name
    * @param {any} value - Field value
-   * @returns {Base[]}
+   * @returns {Promise<Base[]>}
    */
   static async getManyBy (field, value) {
     return this.getManyByQuery({ [field]: value })
@@ -225,7 +225,7 @@ class Base {
   /**
    * Get many with a custom query
    * @param {Object<string, any>} query - MongoDB-format query
-   * @returns {Base[]}
+   * @returns {Promise<Base[]>}
    */
   static async getManyByQuery (query) {
     /**
@@ -273,7 +273,7 @@ class Base {
   /**
    * Get multiple documents
    * @param {string[]} ids - Array of guild IDs
-   * @returns {Base[]}
+   * @returns {Promise<Base[]>}
    */
   static async getMany (ids) {
     return Promise.all(ids.map(id => this.get(id)))
@@ -281,7 +281,7 @@ class Base {
 
   /**
    * Get all documents
-   * @returns {Base[]}
+   * @returns {Promise<Base[]>}
    */
   static async getAll () {
     /**
@@ -358,7 +358,7 @@ class Base {
   /**
    * Save the data to either the database or a file depending on whether the
    * app is databaseless.
-   * @returns {Base} - This instance
+   * @returns {Promise<Base>} - This instance
    */
   async save () {
     await this.validate()
@@ -371,7 +371,7 @@ class Base {
 
   /**
    * Save the data to the database
-   * @returns {Base}
+   * @returns {Promise<Base>}
    */
   async saveToDatabase () {
     const toSave = this.toObject()
@@ -430,7 +430,7 @@ class Base {
 
   /**
    * Saves the data to a file
-   * @returns {Base}
+   * @returns {Promise<Base>}
    */
   async saveToFile () {
     const toSave = this.toJSON()
