@@ -113,21 +113,6 @@ class FeedSchedule extends EventEmitter {
    */
   _addToSourceLists (feed) { // rssList is an object per guildRss
     const toDebug = debug.feeds.has(feed._id)
-    const hasGuild = this.bot.guilds.has(feed.guild)
-    const hasChannel = this.bot.channels.has(feed.channel)
-    if (!hasGuild || !hasChannel) {
-      if (debug.feeds.has(feed._id)) {
-        log.debug.info(`${feed._id}: Not processing feed since it has missing guild (${hasGuild}) or channel (${hasChannel}), assigned to schedule ${this.name} on ${this.SHARD_ID}`)
-      }
-      return false
-    }
-
-    // if (!this.feedIDs.has(feed._id)) {
-    //   if (debug.feeds.has(feed._id)) {
-    //     log.debug.info(`${feed._id}: Not processing feed since it is not assigned to schedule ${this.name} on ${this.SHARD_ID}`)
-    //   }
-    //   return false
-    // }
 
     const failCounter = this.failCounters[feed.url]
     if (failCounter && failCounter.hasFailed()) {
@@ -156,20 +141,6 @@ class FeedSchedule extends EventEmitter {
     if (config.dev === true) {
       return true
     }
-    // for (var channelId in status) {
-    //   let m = '**ATTENTION** - The following changes have been made due to a feed limit change for this server:\n\n'
-    //   const enabled = status[channelId].enabled
-    //   const disabled = status[channelId].disabled
-    //   if (enabled.length === 0 && disabled.length === 0) continue
-    //   for (var a = 0; a < enabled.length; ++a) m += `Feed <${enabled[a]}> has been enabled.\n`
-    //   for (var b = 0; b < disabled.length; ++b) m += `Feed <${disabled[b]}> has been disabled.\n`
-    //   const channel = this.bot.channels.get(channelId)
-    //   if (channel) {
-    //     channel.send(m)
-    //       .then(m => log.general.info(`Sent feed enable/disable notice to server`, channel.guild, channel))
-    //       .catch(err => log.general.warning('Unable to send feed enable/disable notice', channel.guild, channel, err))
-    //   }
-    // }
     return true
   }
 
@@ -276,21 +247,59 @@ class FeedSchedule extends EventEmitter {
       Supporter.getValidGuilds(),
       Schedule.getAll()
     ])
-    await maintenance.checkLimits(feeds, supporterLimits)
+    const filteredFeeds = []
+    const filteredFeedsIds = new Set()
+
+    // Get the profiles
+    profiles.forEach(profile => {
+      const hasGuild = this.bot.guilds.has(profile._id)
+      if (hasGuild) {
+        this._profilesById.set(profile.id, profile)
+      }
+    })
+
+    // Filter in feeds only this bot contains
+    for (const feed of feeds) {
+      const hasGuild = this.bot.guilds.has(feed.guild)
+      const hasChannel = this.bot.channels.has(feed.channel)
+      if (!hasGuild || !hasChannel) {
+        if (debug.feeds.has(feed._id)) {
+          log.debug.info(`${feed._id}: Not processing feed since it has missing guild (${hasGuild}) or channel (${hasChannel}), assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+        }
+      } else {
+        filteredFeeds.push(feed)
+        filteredFeedsIds.add(feed._id)
+      }
+    }
+
+    // Check the limits
+    await maintenance.checkLimits(filteredFeeds, supporterLimits)
+
+    // Get the formats
     formats.forEach(format => {
+      if (!filteredFeedsIds.has(format.feed)) {
+        return
+      }
       this._formatsByFeedId.set(format.feed, format.toJSON())
     })
+
+    // Get the filtered formats
     filteredFormats.forEach(format => {
+      if (!filteredFeedsIds.has(format.feed)) {
+        return
+      }
       if (!this._filteredFormatsByFeedId.has(format.feed)) {
         this._filteredFormatsByFeedId.set(format.feed, [format.toJSON()])
       } else {
         this._filteredFormatsByFeedId.get(format.feed).push(format.toJSON())
       }
     })
-    profiles.forEach(profile => {
-      this._profilesById.set(profile.id, profile)
-    })
+
+    // Get the subscribers
     subscribers.forEach(subscriber => {
+      if (!filteredFeedsIds.has(subscriber.feed)) {
+        return
+      }
       const feedId = subscriber.feed
       const json = subscriber.toJSON()
       if (!this._subscribersByFeedId.has(feedId)) {
@@ -299,6 +308,8 @@ class FeedSchedule extends EventEmitter {
         this._subscribersByFeedId.get(feedId).push(json)
       }
     })
+
+    // Save the fail counters
     this.failCounters = {}
     for (const counter of failCounters) {
       this.failCounters[counter.url] = counter
@@ -314,9 +325,13 @@ class FeedSchedule extends EventEmitter {
     this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
-    const determinedSchedules = await Promise.all(feeds.map(f => f.determineSchedule(schedules, supporterGuilds)))
-    for (let i = 0; i < feeds.length; ++i) {
-      const feed = feeds[i]
+    const determineSchedulePromises = []
+    filteredFeeds.forEach(feed => {
+      determineSchedulePromises.push(feed.determineSchedule(schedules, supporterGuilds))
+    })
+    const determinedSchedules = await Promise.all(determineSchedulePromises)
+    for (let i = 0; i < filteredFeeds.length; ++i) {
+      const feed = filteredFeeds[i]
       const name = determinedSchedules[i].name
       if (this.name !== name) {
         return
