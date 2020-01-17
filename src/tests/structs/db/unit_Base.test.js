@@ -15,7 +15,6 @@ const fsMkdirSync = fs.mkdirSync
 const fsUnlinkSync = fs.unlinkSync
 const fsRmdirSync = fs.rmdirSync
 const fsPromisesReaddir = fsPromises.readdir
-const fsPromisesReadFile = fsPromises.readFile
 const fsPromisesUnlink = fsPromises.unlink
 const fsPromisesRmdir = fsPromises.rmdir
 
