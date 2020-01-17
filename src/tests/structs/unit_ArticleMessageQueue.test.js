@@ -37,6 +37,9 @@ class Role {
 }
 
 describe('Unit::ArticleMessageQueue', function () {
+  beforeAll(function () {
+    config.dev = false
+  })
   describe('toggleRoleMentionability', function () {
     describe('does not changed mentionable', function () {
       it('when there are no role IDs, returns undefined', function () {

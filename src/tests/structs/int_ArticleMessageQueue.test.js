@@ -1,3 +1,4 @@
+const config = require('../../config.js')
 const ArticleMessageQueue = require('../../structs/ArticleMessageQueue.js')
 const ArticleMessage = require('../../structs/ArticleMessage.js')
 const ArticleMessageError = require('../../structs/errors/ArticleMessageError.js')
@@ -41,6 +42,9 @@ class Role {
 }
 
 describe('Int::ArticleMessageQueue', function () {
+  beforeAll(function () {
+    config.dev = false
+  })
   afterEach(function () {
     ArticleMessage.mockRestore()
   })
