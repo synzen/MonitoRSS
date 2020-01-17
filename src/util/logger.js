@@ -15,7 +15,7 @@ const TYPES = ['Command', 'Guild', 'Cycle', 'INIT', 'General', 'Debug', 'Owner',
 const LEVELS = ['Error', 'Success', 'Warning', 'Info']
 const MAXLEN = TYPES.reduce((a, b) => a.length > b.length ? a : b).length + LEVELS.reduce((a, b) => a.length > b.length ? a : b).length + 1 // Calculate uniform spacing
 let suppressedLevels = []
-let showTraceByDefault = false
+let showTraceByDefault = config.dev === true
 
 function formatConsoleDate (date) {
   // http://stackoverflow.com/questions/18814221/adding-timestamps-to-all-console-messages
