@@ -144,7 +144,7 @@ class Client extends EventEmitter {
 
   sendMessage (channel, message) {
     const fetched = this.bot.channels.get(channel)
-    if (!fetched) {
+    if (config.dev === true || !fetched) {
       return
     }
     fetched.send(message)
