@@ -141,6 +141,9 @@ class FailCounter extends Base {
    * @param {string} url
    */
   static sendFailMessage (url) {
+    if (config.dev === true) {
+      return
+    }
     Feed.getManyBy('url', url)
       .then(feeds => {
         log.general.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
