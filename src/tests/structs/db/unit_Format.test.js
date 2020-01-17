@@ -4,7 +4,8 @@ const Format = require('../../../structs/db/Format.js')
 describe('Unit::structs/db/Format', function () {
   describe('constructor', function () {
     const initData = {
-      feed: 'aqbc'
+      feed: 'aqbc',
+      text: 'aedtgr'
     }
     it('has no filters and no priority', function () {
       const format = new Format({ ...initData })
