@@ -83,6 +83,39 @@ describe('Unit::structs/db/FailCounter', function () {
         .resolves.toEqual(false)
     })
   })
+  describe('hasFailed', function () {
+    const limit = 2
+    beforeEach(function () {
+      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(limit)
+    })
+    it('returns false if limit is 0', function () {
+      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(0)
+      const data = {
+        url: 'sg'
+      }
+      const counter = new FailCounter(data)
+      counter.count = limit + 1
+      expect(counter.hasFailed()).toEqual(false)
+    })
+    it('returns false if count is below limit', function () {
+      const data = {
+        url: 'sg'
+      }
+      const counter = new FailCounter(data)
+      counter.count = limit - 1
+      expect(counter.hasFailed()).toEqual(false)
+    })
+    it('returns true if count at or above limit', function () {
+      const data = {
+        url: 'sg'
+      }
+      const counter = new FailCounter(data)
+      counter.count = limit
+      expect(counter.hasFailed()).toEqual(true)
+      counter.count = limit + 1
+      expect(counter.hasFailed()).toEqual(true)
+    })
+  })
   describe('fail', function () {
     it('sets this.reason to the new reason', async function () {
       const data = {

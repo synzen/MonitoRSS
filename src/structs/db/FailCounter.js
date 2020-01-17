@@ -96,7 +96,7 @@ class FailCounter extends Base {
    * Whether this counter has reached the failure threshold
    */
   hasFailed () {
-    return this.count >= FailCounter.limit
+    return FailCounter.limit !== 0 && this.count >= FailCounter.limit
   }
 
   /**
