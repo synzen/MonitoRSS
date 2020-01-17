@@ -147,13 +147,15 @@ describe('Unit::FeedFetcher', function () {
       cloudscraper.mockReset()
     })
     it('throws an Error if url is not defined', function () {
-      return expect(FeedFetcher.fetchCloudScraper()).rejects.toBeInstanceOf(Error)
+      return expect(FeedFetcher.fetchCloudScraper())
+        .rejects.toBeInstanceOf(Error)
     })
     it('throws a RequestError if res status code is not 200', function () {
       cloudscraper.mockResolvedValueOnce({ statusCode: 401 })
-      return expect(FeedFetcher.fetchCloudScraper('d')).rejects.toBeInstanceOf(RequestError)
+      return expect(FeedFetcher.fetchCloudScraper('d'))
+        .rejects.toBeInstanceOf(RequestError)
     })
-    it('attaches the error code tto the error if res status code is not 200', function (done) {
+    it('attaches the error code to the error if res status code is not 200', function (done) {
       cloudscraper.mockResolvedValueOnce({ statusCode: 401 })
       FeedFetcher.fetchCloudScraper('abc')
         .then(() => done(new Error('Promise resolved')))
@@ -168,6 +170,12 @@ describe('Unit::FeedFetcher', function () {
       cloudscraper.mockResolvedValueOnce(response)
       const data = await FeedFetcher.fetchCloudScraper('abc')
       expect(data.stream).toBeInstanceOf(Readable)
+    })
+    it('throws a RequestError if cloudscraper fails', async function () {
+      const error = new Error('Hello world')
+      cloudscraper.mockRejectedValueOnce(error)
+      await expect(FeedFetcher.fetchCloudScraper('asdeg'))
+        .rejects.toThrowError(new RequestError(error.message))
     })
   })
   describe('parseStream', function () {

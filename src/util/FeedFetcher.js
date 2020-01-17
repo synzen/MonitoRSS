@@ -103,7 +103,12 @@ class FeedFetcher {
     if (!uri) {
       throw new Error('No url defined')
     }
-    const res = await cloudscraper({ method: 'GET', uri, resolveWithFullResponse: true })
+    let res
+    try {
+      res = await cloudscraper({ method: 'GET', uri, resolveWithFullResponse: true })
+    } catch (err) {
+      throw new RequestError(err.message)
+    }
     if (res.statusCode !== 200) {
       throw new RequestError(this.REQUEST_ERROR_CODE, `Bad Cloudflare status code (${res.statusCode})`, true)
     }
