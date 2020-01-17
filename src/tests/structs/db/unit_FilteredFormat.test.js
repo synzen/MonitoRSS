@@ -13,17 +13,35 @@ describe('Unit::structs/db/FilteredFormat', function () {
     'timestamp'
   ]
   const initData = {
-    feed: '123b'
+    feed: '123b',
+    text: 'qawed'
   }
   describe('constructor', function () {
     it('throws for missing feed', function () {
       expect(() => new FilteredFormat({})).toThrow('feed is undefined')
     })
-    it('does not throw for appropriate data', function () {
+    it('does not throw for populated text', function () {
       const data = {
-        feed: '1234345y'
+        feed: '1234345y',
+        text: 'asedg'
       }
       expect(() => new FilteredFormat(data)).not.toThrow()
+    })
+    it('does not throw for populated embed', function () {
+      const data = {
+        feed: '1234345y',
+        embeds: [{
+          description: 'sewgt'
+        }]
+      }
+      expect(() => new FilteredFormat(data)).not.toThrow()
+    })
+    it('does not throw for unpopulated text and embed', function () {
+      const data = {
+        feed: '1234345y',
+        embeds: []
+      }
+      expect(() => new FilteredFormat(data)).toThrow('text or embeds must be populated')
     })
   })
   describe('static isPopulatedEmbedField', function () {

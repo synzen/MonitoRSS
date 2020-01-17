@@ -16,7 +16,7 @@ class FilteredFormat extends FilterBase {
      */
     this.feed = this.getField('feed')
     if (!this.feed) {
-      throw new Error('feed is undefined')
+      throw new TypeError('feed is undefined')
     }
 
     /**
@@ -30,6 +30,10 @@ class FilteredFormat extends FilterBase {
      * @type {Object<string, any>[]}
      */
     this.embeds = this.getField('embeds', [])
+
+    if (!this.text && this.embeds.length === 0) {
+      throw new Error('text or embeds must be populated')
+    }
 
     /**
      * Filters for formats
