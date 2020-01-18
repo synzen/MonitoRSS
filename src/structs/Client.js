@@ -25,7 +25,7 @@ class Client extends EventEmitter {
     this.scheduleManager = undefined
     this.STATES = STATES
     this.state = STATES.STOPPED
-    this.customSchedules = []
+    this.customSchedules = {}
   }
 
   async login (token) {
@@ -210,16 +210,11 @@ class Client extends EventEmitter {
         const refreshRates = new Set()
         refreshRates.add(config.feeds.refreshRateMinutes)
         this.scheduleManager = new ScheduleManager(this.bot, this.shardID)
-        const names = new Set()
-        for (const schedule of this.customSchedules) {
-          const name = schedule.name
+        for (const name in this.customSchedules) {
+          const schedule = this.customSchedules[name]
           if (name === 'example') {
             continue
           }
-          if (names.has(name)) {
-            throw new Error(`Schedules cannot have the same name (${name})`)
-          }
-          names.add(name)
           if (refreshRates.has(schedule.refreshRateMinutes)) {
             throw new Error('Duplicate schedule refresh rates are not allowed')
           }

@@ -14,9 +14,9 @@ let webClient
 class ClientManager extends EventEmitter {
   /**
    * @param {Object<string, any>} settings
-   * @param {Object<string, any>[]} customSchedules
+   * @param {Object<string, Object<string, any>>} customSchedules
    */
-  constructor (settings, customSchedules = []) {
+  constructor (settings, customSchedules = {}) {
     super()
     if (settings.config) {
       config._overrideWith(settings.config)

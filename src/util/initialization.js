@@ -17,10 +17,10 @@ async function populatePefixes () {
 
 /**
  * Create schedules for feeds to be assigned to
- * @param {Object<string, string|number>[]} customSchedules
+ * @param {Object<string, Object<string, any>>} customSchedules
  * @returns {Schedule[]}
  */
-async function populateSchedules (customSchedules = []) {
+async function populateSchedules (customSchedules = {}) {
   await Schedule.deleteAll()
   const schedules = []
   const defaultSchedule = new Schedule({
@@ -30,14 +30,17 @@ async function populateSchedules (customSchedules = []) {
 
   schedules.push(defaultSchedule)
 
-  for (const schedule of customSchedules) {
-    const { name, refreshRateMinutes } = schedule
+  for (const name in customSchedules) {
     if (name === 'example') {
       continue
     }
+    const schedule = customSchedules[name]
+    const { refreshRateMinutes } = schedule
     const custom = new Schedule({
       name,
-      refreshRateMinutes
+      refreshRateMinutes,
+      keywords: schedule.keywords || [],
+      feeds: schedule.feeds || []
     })
     schedules.push(custom)
   }
