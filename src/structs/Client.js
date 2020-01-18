@@ -94,7 +94,8 @@ class Client extends EventEmitter {
     process.send({
       _drss: true,
       type: 'shardReady',
-      guildIds: bot.guilds.keyArray()
+      guildIds: bot.guilds.keyArray(),
+      channelIds: bot.channels.keyArray()
     })
   }
 

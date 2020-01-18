@@ -32,6 +32,7 @@ class ClientManager extends EventEmitter {
     this.maintenance = maintenance.cycle()
     this.customSchedules = customSchedules
     this.guildIdsByShard = new Map()
+    this.channelIdsByShard = new Map()
     this.refreshRates = new Set()
     this.activeshardIds = []
     this.scheduleIntervals = [] // Array of intervals for each different refresh time
@@ -55,7 +56,7 @@ class ClientManager extends EventEmitter {
       }
       if (this.shardingManager.shards.size === 0) {
         // They may have already been spawned with a predefined ShardingManager
-        this.shardingManager.spawn(config.advanced.shards)
+        this.shardingManager.spawn(config.advanced.shards, 5500, -1)
       }
     } catch (err) {
       log.general.error(`ClientManager db connection`, err)
@@ -97,10 +98,13 @@ class ClientManager extends EventEmitter {
     message.guildIds.forEach(id => {
       this.guildIdsByShard.set(id, shard.id)
     })
+    message.channelIds.forEach(id => {
+      this.channelIdsByShard.set(id, shard.id)
+    })
     if (++this.shardsReady < totalShards) {
       return
     }
-    maintenance.prunePreInit(this.guildIdsByShard)
+    maintenance.prunePreInit(this.guildIdsByShard, this.channelIdsByShard)
       .then(() => {
         this.shardingManager.broadcast({
           _drss: true,

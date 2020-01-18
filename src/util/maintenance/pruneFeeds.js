@@ -1,4 +1,5 @@
 const Feed = require('../../structs/db/Feed.js')
+const log = require('../logger.js')
 
 /**
  * Remove all feeds whose guild doesn't exist
@@ -6,13 +7,17 @@ const Feed = require('../../structs/db/Feed.js')
  * Removing feeds will also delete their formats/subscribers
  * according to the Feed.prototype.delete implementation
  * @param {Map<string, number>} guildIdsByShard
+ * @param {Map<string, number>} channelIdsByShard
  * @returns {number}
  */
-async function pruneFeeds (guildIdsByShard) {
+async function pruneFeeds (guildIdsByShard, channelIdsByShard) {
   const feeds = await Feed.getAll()
   const deletions = []
   for (const feed of feeds) {
-    if (!guildIdsByShard.has(feed.guild)) {
+    const hasGuild = guildIdsByShard.has(feed.guild)
+    const hasChannel = channelIdsByShard.has(feed.channel)
+    if (!hasGuild || !hasChannel) {
+      log.init.success(`Removing feed ${feed._id} (hasGuild: ${hasGuild}, hasChannel: ${hasChannel})`)
       deletions.push(feed.delete())
     }
   }

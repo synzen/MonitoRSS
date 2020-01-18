@@ -14,23 +14,27 @@ const log = require('../logger.js')
 
 /**
  * @param {Map<string, number>} guildIdsByShard
+ * @param {Map<string, number>} channelIdsByShard
  * @param {import('discord.js').Client} bot
  */
-async function prunePreInit (guildIdsByShard, bot) {
+async function prunePreInit (guildIdsByShard, channelIdsByShard) {
   await Promise.all([
     ShardStats.deleteAll(),
     flushRedis(),
     pruneGuilds(guildIdsByShard)
   ])
-  await pruneFeeds(guildIdsByShard)
+  await pruneFeeds(guildIdsByShard, channelIdsByShard)
   await Promise.all([
     pruneFormats(),
     pruneFailCounters()
   ])
-  if (bot) {
-    await pruneSubscribers(bot)
-  }
-  // Prune collections should not be called here until schedules were assigned
+}
+
+/**
+ * @param {import('discord.js').Client} bot
+ */
+async function pruneWithBot (bot) {
+  await pruneSubscribers(bot)
 }
 
 /**
@@ -56,6 +60,7 @@ async function cycle () {
 
 module.exports = {
   flushRedis,
+  pruneWithBot,
   prunePreInit,
   prunePostInit,
   pruneGuilds,
