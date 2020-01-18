@@ -34,8 +34,8 @@ async function getFeed (data, callback) {
       }
       return process.send({ status: 'success', link })
     } else {
-      const lastModified = response.headers.get('Last-Modified')
-      const etag = response.headers.get('ETag')
+      const lastModified = response.headers['last-modified']
+      const etag = response.headers['etag']
 
       if (lastModified && etag) {
         process.send({ status: 'headers', link, lastModified, etag })
