@@ -1,5 +1,6 @@
 const Subscriber = require('../../structs/db/Subscriber.js')
 const Feed = require('../../structs/db/Feed.js')
+const log = require('../logger.js')
 
 /**
  * Precondition: Feeds have been pruned, and thus no feeds
@@ -34,15 +35,12 @@ async function pruneSubscribers (bot) {
     if (!guild) {
       continue
     }
-    /**
-     * In this case, the bot is unsharded and if it doesn't exist,
-     * then the subscriber should be deleted.
-     */
-    if (!guild) {
-      deletions.push(subscriber.delete())
-    } else if (subscriber.type === Subscriber.TYPES.USER && !bot.users.has(subscriber.id)) {
+
+    if (subscriber.type === Subscriber.TYPES.USER && !bot.users.has(subscriber.id)) {
+      log.general.info(`Deleting missing user subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
       deletions.push(subscriber.delete())
     } else if (subscriber.type === Subscriber.TYPES.ROLE && !guild.roles.has(subscriber.id)) {
+      log.general.info(`Deleting missing role subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
       deletions.push(subscriber.delete())
     }
   }

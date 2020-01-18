@@ -10,6 +10,7 @@ const log = require('../util/logger.js')
 const connectDb = require('../rss/db/connect.js')
 const EventEmitter = require('events')
 const ipc = require('../util/ipc.js')
+const maintenance = require('../util/maintenance/index.js')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const CLIENT_OPTIONS = { disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 }
 const STATES = {
@@ -201,12 +202,14 @@ class Client extends EventEmitter {
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     try {
       await connectDb()
-      await initialize.populateRedis(this.bot)
-
+      await Promise.all([
+        maintenance.pruneWithBot(this.bot),
+        initialize.populateRedis(this.bot)
+      ])
       if (!this.scheduleManager) {
         const refreshRates = new Set()
         refreshRates.add(config.feeds.refreshRateMinutes)
-        this.scheduleManager = new ScheduleManager(storage.bot, this.shardID)
+        this.scheduleManager = new ScheduleManager(this.bot, this.shardID)
         const names = new Set()
         for (const schedule of this.customSchedules) {
           const name = schedule.name
