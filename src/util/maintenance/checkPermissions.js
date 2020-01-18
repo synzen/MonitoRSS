@@ -1,4 +1,5 @@
 const log = require('../logger.js')
+const ipc = require('../ipc.js')
 
 /**
  * Precondition: The feed's guild belongs to the bot, or the
@@ -21,11 +22,18 @@ async function checkPermissions (feed, format, bot) {
   const allowEmbedLinks = !format || format.embeds.length === 0 ? true : permissions.has('EMBED_LINKS')
   if (!allowSendMessages || !allowEmbedLinks || !allowView) {
     let reasons = []
-    if (!allowSendMessages) reasons.push('SEND_MESSAGES')
-    if (!allowEmbedLinks) reasons.push('EMBED_LINKS')
-    if (!allowView) reasons.push('VIEW_CHANNEL')
+    if (!allowSendMessages) {
+      reasons.push('SEND_MESSAGES')
+    }
+    if (!allowEmbedLinks) {
+      reasons.push('EMBED_LINKS')
+    }
+    if (!allowView) {
+      reasons.push('VIEW_CHANNEL')
+    }
     const reason = `Missing permissions ${reasons.join(', ')}`
     if (!feed.disabled) {
+      ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been disabled in channel <#${channel.id}>: ${reason}`)
       log.general.info(`Disabling feed ${feed._id} (${reason})`, guild, channel)
       await feed.disable(reason)
     } else if (feed.disabled.startsWith('Missing permissions') && feed.disabled !== reason) {
@@ -35,6 +43,7 @@ async function checkPermissions (feed, format, bot) {
     return true
   } else if (feed.disabled && feed.disabled.startsWith('Missing permissions')) {
     log.general.info(`Enabling feed ${feed._id} for found permissions`, guild, channel)
+    ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been enabled in channel <#${channel.id}> due to found permissions.`)
     await feed.enable()
     return false
   }
