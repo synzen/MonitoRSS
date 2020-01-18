@@ -114,20 +114,10 @@ class FeedSchedule extends EventEmitter {
   _addToSourceLists (feed) { // rssList is an object per guildRss
     const toDebug = debug.feeds.has(feed._id)
     const failCounter = this.failCounters[feed.url]
-    const format = this._formatsByFeedId.get(feed._id)
 
-    const disabled = maintenance.checkPermissions(feed, format, this.bot)
-    if (disabled) {
+    if (feed.disabled) {
       if (toDebug) {
         log.debug.info(`${feed._id}: Skipping feed delegation due to disabled status`)
-      }
-      return false
-    }
-
-    const hasChannel = this.bot.channels.has(feed.channel)
-    if (!hasChannel) {
-      if (debug.feeds.has(feed._id)) {
-        log.debug.info(`${feed._id}: Not processing feed since it has missing channel (${hasChannel}), assigned to schedule ${this.name} on ${this.SHARD_ID}`)
       }
       return false
     }
@@ -265,18 +255,16 @@ class FeedSchedule extends EventEmitter {
     // Filter in feeds only this bot contains
     for (const feed of feeds) {
       const hasGuild = this.bot.guilds.has(feed.guild)
-      if (!hasGuild) {
+      const hasChannel = this.bot.channels.has(feed.channel)
+      if (!hasGuild || !hasChannel) {
         if (debug.feeds.has(feed._id)) {
-          log.debug.info(`${feed._id}: Not processing feed since it has missing guild, assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+          log.debug.info(`${feed._id}: Not processing feed - missing guild: ${!hasGuild}, missing channel: ${!hasChannel}. Assigned to schedule ${this.name} on ${this.SHARD_ID}`)
         }
       } else {
         filteredFeeds.push(feed)
         filteredFeedsIds.add(feed._id)
       }
     }
-
-    // Check the limits
-    await maintenance.checkLimits(filteredFeeds, supporterLimits)
 
     // Get the formats
     formats.forEach(format => {
@@ -317,6 +305,15 @@ class FeedSchedule extends EventEmitter {
     for (const counter of failCounters) {
       this.failCounters[counter.url] = counter
     }
+
+    // Check the permissions
+    await Promise.all(filteredFeeds.map(feed => {
+      const format = this._formatsByFeedId[feed._id]
+      return maintenance.checkPermissions(feed, format, this.bot)
+    }))
+
+    // Check the limits
+    await maintenance.checkLimits(filteredFeeds, supporterLimits)
 
     this._startTime = new Date()
     this._regBatchList = []

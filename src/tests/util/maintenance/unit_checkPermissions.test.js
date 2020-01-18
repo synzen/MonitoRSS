@@ -26,7 +26,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: []
     }
     permissionsIn.mockReturnValue(new Set(['SEND_MESSAGES', 'EMBED_LINKS']))
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith('Missing permissions VIEW_CHANNEL')
     expect(res).toEqual(true)
@@ -40,7 +40,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: []
     }
     permissionsIn.mockReturnValue(new Set(['VIEW_CHANNEL', 'EMBED_LINKS']))
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith('Missing permissions SEND_MESSAGES')
     expect(res).toEqual(true)
@@ -54,7 +54,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: [{}]
     }
     permissionsIn.mockReturnValue(new Set(['VIEW_CHANNEL', 'SEND_MESSAGES']))
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith('Missing permissions EMBED_LINKS')
     expect(res).toEqual(true)
@@ -68,7 +68,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: []
     }
     permissionsIn.mockReturnValue(new Set(['VIEW_CHANNEL', 'SEND_MESSAGES']))
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).not.toHaveBeenCalled()
     expect(res).toEqual(false)
   })
@@ -81,7 +81,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: []
     }
     permissionsIn.mockReturnValue(new Set(['EMBED_LINKS']))
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith(`Missing permissions SEND_MESSAGES, VIEW_CHANNEL`)
     expect(res).toEqual(true)
@@ -95,7 +95,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: []
     }
     permissionsIn.mockReturnValue(new Set(['EMBED_LINKS']))
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith(`Missing permissions SEND_MESSAGES, VIEW_CHANNEL`)
     expect(res).toEqual(true)
@@ -109,7 +109,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: []
     }
     permissionsIn.mockReturnValue(new Set())
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).not.toHaveBeenCalled()
     expect(res).toEqual(true)
   })
@@ -123,7 +123,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: []
     }
     permissionsIn.mockReturnValue(new Set(['EMBED_LINKS', 'VIEW_CHANNEL', 'SEND_MESSAGES']))
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).not.toHaveBeenCalled()
     expect(feed.enable).toHaveBeenCalledTimes(1)
     expect(res).toEqual(false)
@@ -138,7 +138,7 @@ describe('Unit::util/maintenance/checkPermission', function () {
       embeds: []
     }
     permissionsIn.mockReturnValue(new Set(['EMBED_LINKS', 'VIEW_CHANNEL', 'SEND_MESSAGES']))
-    const res = checkPermissions(feed, format, bot)
+    const res = await checkPermissions(feed, format, bot)
     expect(feed.disable).not.toHaveBeenCalled()
     expect(feed.enable).not.toHaveBeenCalled()
     expect(res).toEqual(true)

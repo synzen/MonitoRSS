@@ -8,7 +8,7 @@ const log = require('../logger.js')
  * @param {import('discord.js').Client} bot
  * @returns {boolean} - The feed's disabled status
  */
-function checkPermissions (feed, format, bot) {
+async function checkPermissions (feed, format, bot) {
   if (feed.disabled && !feed.disabled.startsWith('Missing permissions')) {
     // The feed is disabled for a separate reason - skip all checks
     return true
@@ -26,19 +26,16 @@ function checkPermissions (feed, format, bot) {
     if (!allowView) reasons.push('VIEW_CHANNEL')
     const reason = `Missing permissions ${reasons.join(', ')}`
     if (!feed.disabled) {
-      feed.disable(reason)
-        .then(() => log.general.info(`Disabled feed ${feed._id} (${reason})`, guild, channel))
-        .catch(err => log.general.error(`Failed to disable feed ${feed._id} (${reason})`, guild, err))
+      log.general.info(`Disabling feed ${feed._id} (${reason})`, guild, channel)
+      await feed.disable(reason)
     } else if (feed.disabled.startsWith('Missing permissions') && feed.disabled !== reason) {
-      feed.disable(reason)
-        .then(() => log.general.info(`Updated disabled feed ${feed._id} (${reason})`, guild, channel))
-        .catch(err => log.general.error(`Failed to update disabled reason for feed ${feed._id} (${reason})`, guild, err))
+      log.general.info(`Updating disabled feed ${feed._id} (${reason})`, guild, channel)
+      await feed.disable(reason)
     }
     return true
   } else if (feed.disabled && feed.disabled.startsWith('Missing permissions')) {
-    feed.enable()
-      .then(() => log.general.info(`Enabled feed ${feed._id} for found permissions`, guild, channel))
-      .catch(err => log.general.error(`Failed to enable feed ${feed._id} after channel permissions found`, guild, err))
+    log.general.info(`Enabling feed ${feed._id} for found permissions`, guild, channel)
+    await feed.enable()
     return false
   }
   return !!feed.disabled
