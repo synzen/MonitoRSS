@@ -151,7 +151,7 @@ class Client extends EventEmitter {
     }
     if (!alert) {
       return fetched.send(message)
-        .catch(err => log.general.error(`Failed to send inter-process message for channel ${channel}`, err))
+        .catch(err => log.general.warning(`Failed to send inter-process message for channel ${channel}`, err))
     }
     Profile.get(fetched.guild.id)
       .then(profile => {
@@ -166,7 +166,7 @@ class Client extends EventEmitter {
         return Promise.all(promises)
       })
       .catch(err => {
-        log.general.error(`Failed at attempt to send inter-process message to guild alert users after Profile.get`, err)
+        log.general.warning(`Failed at attempt to send inter-process message to guild alert users after Profile.get`, err)
         this.sendMessage(channel, message, false)
       })
   }
