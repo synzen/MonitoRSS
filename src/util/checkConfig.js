@@ -57,7 +57,6 @@ exports.defaultConfigs = {
   advanced: {
     shards: { type: Number, default: 1 },
     batchSize: { type: Number, default: 400 },
-    forkBatches: { type: Boolean, default: false },
     parallelBatches: { type: Number, default: 1 },
     parallelShards: { type: Number, default: 1 }
   },

@@ -54,7 +54,6 @@
   "advanced": {
     "shards": 2,
     "batchSize": 400,
-    "forkBatches": false,
     "parallelBatches": 1,
     "parallelShards": 1
   },

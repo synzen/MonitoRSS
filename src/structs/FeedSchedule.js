@@ -1,5 +1,4 @@
 const path = require('path')
-const getArticles = require('../rss/singleMethod.js')
 const config = require('../config.js')
 const Schedule = require('./db/Schedule.js')
 const Profile = require('./db/Profile.js')
@@ -44,16 +43,15 @@ class FeedSchedule extends EventEmitter {
     this._linksResponded = {}
     this._processorList = []
     this._regBatchList = []
-    this._modBatchList = [] // Batch of sources with cookies
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
     this._sourceList = new Map()
-    this._modSourceList = new Map()
     this._profilesById = new Map()
     this._formatsByFeedId = new Map()
     this._filteredFormatsByFeedId = new Map()
     this._subscribersByFeedId = new Map()
-    this.feedData = config.database.uri.startsWith('mongo') ? undefined : {} // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
+    // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
+    this.feedData = config.database.uri.startsWith('mongo') ? undefined : {}
     this.feedCount = 0 // For statistics
     this.failCounters = {}
     this.ran = 0 // # of times this schedule has ran
@@ -155,23 +153,6 @@ class FeedSchedule extends EventEmitter {
     })
 
     if (Object.keys(batch).length > 0) this._regBatchList.push(batch)
-
-    batch = {}
-
-    this._modSourceList.forEach((source, link) => { // One RSS source per link instead of an rssList
-      if (Object.keys(batch).length >= BATCH_SIZE) {
-        this._modBatchList.push(batch)
-        batch = {}
-      }
-      batch[link] = source
-      if (debug.links.has(link)) {
-        log.debug.info(`${link}: Attached URL to modded batch list for ${this.name} on ${this.SHARD_ID}`)
-      }
-      if (!this._linksResponded[link]) this._linksResponded = 1
-      else ++this._linksResponded[link]
-    })
-
-    if (Object.keys(batch).length > 0) this._modBatchList.push(batch)
   }
 
   async run () {
@@ -318,12 +299,10 @@ class FeedSchedule extends EventEmitter {
 
     this._startTime = new Date()
     this._regBatchList = []
-    this._modBatchList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
     this._linksResponded = {}
 
-    this._modSourceList.clear() // Regenerate source lists on every cycle to account for changes to guilds
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
     const determineSchedulePromises = []
@@ -349,86 +328,26 @@ class FeedSchedule extends EventEmitter {
     this.feedCount = feedCount
     this._genBatchLists()
 
-    if (this._sourceList.size + this._modSourceList.size === 0) {
+    if (this._sourceList.size === 0) {
       this.inProgress = false
       return this._finishCycle(true)
     }
 
-    if (config.advanced.forkBatches) this._getBatchParallel()
-    else this._getBatch(0, this._regBatchList, 'regular')
-  }
-
-  _getBatch (batchNumber, batchList, type) {
-    if (batchList.length === 0) return this._getBatch(0, this._modBatchList, 'modded')
-    const currentBatch = batchList[batchNumber]
-    const currentBatchLen = Object.keys(batchList[batchNumber]).length
-    let completedLinks = 0
-
-    for (var link in currentBatch) {
-      const rssList = currentBatch[link]
-      let uniqueSettings
-      for (var modRssName in rssList) {
-        if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
-          uniqueSettings = rssList[modRssName].advanced
-        }
-      }
-
-      const data = {
-        config,
-        link,
-        rssList,
-        uniqueSettings,
-        feedData: this.feedData,
-        runNum: this.ran,
-        scheduleName: this.name,
-        shardID: this.shardID
-      }
-
-      getArticles(data, (err, linkCompletion) => {
-        if (err) log.cycle.warning(`Skipping ${linkCompletion.link}`, err)
-        if (linkCompletion.status === 'article') {
-          if (debug.feeds.has(linkCompletion.article.rssName)) {
-            log.debug.info(`${linkCompletion.article.rssName}: Emitted article event.`)
-          }
-          return this.emit('article', linkCompletion.article)
-        }
-        if (linkCompletion.status === 'failed') {
-          ++this._cycleFailCount
-          FailCounter.increment(linkCompletion.link)
-            .catch(err => log.cycle.warning(`Unable to increment fail counter ${linkCompletion.link}`, err))
-        } else if (linkCompletion.status === 'success') {
-          FailCounter.reset(linkCompletion.link)
-            .catch(err => log.cycle.warning(`Unable to reset fail counter ${linkCompletion.link}`, err))
-          if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
-        }
-
-        ++this._cycleTotalCount
-        ++completedLinks
-        --this._linksResponded[linkCompletion.link]
-        if (debug.links.has(linkCompletion.link)) {
-          log.debug.info(`${linkCompletion.link} - Link finished in processor on ${this.name} for (${this.SHARD_ID})`)
-        }
-        if (completedLinks === currentBatchLen) {
-          if (batchNumber !== batchList.length - 1) setTimeout(this._getBatch.bind(this), 200, batchNumber + 1, batchList, type)
-          else if (type === 'regular' && this._modBatchList.length > 0) setTimeout(this._getBatch.bind(this), 200, 0, this._modBatchList, 'modded')
-          else return this._finishCycle()
-        }
-      })
-    }
+    this._getBatchParallel()
   }
 
   _getBatchParallel () {
-    const totalBatchLengths = this._regBatchList.length + this._modBatchList.length
+    const totalBatchLengths = this._regBatchList.length
     let completedBatches = 0
 
     let willCompleteBatch = 0
-    let regIndices = []
-    let modIndices = []
+    let regIndices = this._regBatchList.map((batch, index) => index)
 
-    const deployProcessor = (batchList, index, callback) => {
-      if (!batchList) return
+    const deployProcessor = (currentBatch, callback) => {
+      if (!currentBatch) {
+        return
+      }
       let completedLinks = 0
-      const currentBatch = batchList[index]
       const currentBatchLen = Object.keys(currentBatch).length
       this._processorList.push(childProcess.fork(path.join(__dirname, '..', 'rss', 'isolatedMethod.js')))
 
@@ -440,8 +359,13 @@ class FeedSchedule extends EventEmitter {
           this.headers[linkCompletion.link] = { lastModified: linkCompletion.lastModified, etag: linkCompletion.etag }
           return
         }
-        if (linkCompletion.status === 'article') return this.emit('article', linkCompletion.article)
-        if (linkCompletion.status === 'batch_connected' && callback) return callback() // Spawn processor for next batch
+        if (linkCompletion.status === 'article') {
+          return this.emit('article', linkCompletion.article)
+        }
+        if (linkCompletion.status === 'batch_connected' && callback) {
+          // Spawn processor for next batch
+          return callback()
+        }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
           FailCounter.increment(linkCompletion.link)
@@ -472,7 +396,10 @@ class FeedSchedule extends EventEmitter {
         config,
         currentBatch,
         debugFeeds: debug.feeds.serialize(),
-        debugLinks: [ ...debug.links.serialize(), ...this.debugFeedLinks ],
+        debugLinks: [
+          ...debug.links.serialize(),
+          ...this.debugFeedLinks
+        ],
         headers: this.headers,
         feedData: this.feedData,
         runNum: this.ran,
@@ -482,28 +409,23 @@ class FeedSchedule extends EventEmitter {
     }
 
     const spawn = (count) => {
-      for (var q = 0; q < count; ++q) {
+      for (let q = 0; q < count; ++q) {
         willCompleteBatch++
-        const batchList = regIndices.length > 0 ? this._regBatchList : modIndices.length > 0 ? this._modBatchList : undefined
-        const index = regIndices.length > 0 ? regIndices.shift() : modIndices.length > 0 ? modIndices.shift() : undefined
-        deployProcessor(batchList, index, () => {
-          if (willCompleteBatch < totalBatchLengths) spawn(1)
+        deployProcessor(this._regBatchList[regIndices.shift()], () => {
+          if (willCompleteBatch < totalBatchLengths) {
+            spawn(1)
+          }
         })
       }
     }
 
-    if (config.advanced.parallelBatches > 0) {
-      for (var g = 0; g < this._regBatchList.length; ++g) regIndices.push(g)
-      for (var h = 0; h < this._modBatchList.length; ++h) modIndices.push(h)
-      spawn(config.advanced.parallelBatches)
-    } else {
-      for (var i = 0; i < this._regBatchList.length; ++i) { deployProcessor(this._regBatchList, i) }
-      for (var y = 0; y < this._modBatchList.length; ++y) { deployProcessor(this._modBatchList, y) }
-    }
+    spawn(config.advanced.parallelBatches)
   }
 
   killChildren () {
-    for (var x of this._processorList) x.kill()
+    for (const x of this._processorList) {
+      x.kill()
+    }
     this._processorList = []
   }
 
