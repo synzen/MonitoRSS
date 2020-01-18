@@ -113,20 +113,28 @@ class FeedSchedule extends EventEmitter {
    */
   _addToSourceLists (feed) { // rssList is an object per guildRss
     const toDebug = debug.feeds.has(feed._id)
-
     const failCounter = this.failCounters[feed.url]
-    if (failCounter && failCounter.hasFailed()) {
+    const format = this._formatsByFeedId.get(feed._id)
+
+    const disabled = maintenance.checkPermissions(feed, format, this.bot)
+    if (disabled) {
       if (toDebug) {
-        log.debug.info(`${feed._id}: Skipping feed delegation due to failed status: ${failCounter.hasFailed()}`)
+        log.debug.info(`${feed._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
 
-    const format = this._formatsByFeedId.get(feed._id)
-    const disabled = maintenance.checkPermissions(feed, format, this.bot)
-    if (disabled) {
+    const hasChannel = this.bot.channels.has(feed.channel)
+    if (!hasChannel) {
+      if (debug.feeds.has(feed._id)) {
+        log.debug.info(`${feed._id}: Not processing feed since it has missing channel (${hasChannel}), assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+      }
+      return false
+    }
+
+    if (failCounter && failCounter.hasFailed()) {
       if (toDebug) {
-        log.debug.info(`${feed._id}: Skipping feed delegation due to disabled status: ${failCounter.hasFailed()}`)
+        log.debug.info(`${feed._id}: Skipping feed delegation due to failed status: ${failCounter.hasFailed()}`)
       }
       return false
     }
@@ -137,10 +145,6 @@ class FeedSchedule extends EventEmitter {
     }
 
     this._delegateFeed(feed)
-
-    if (config.dev === true) {
-      return true
-    }
     return true
   }
 
@@ -261,10 +265,9 @@ class FeedSchedule extends EventEmitter {
     // Filter in feeds only this bot contains
     for (const feed of feeds) {
       const hasGuild = this.bot.guilds.has(feed.guild)
-      const hasChannel = this.bot.channels.has(feed.channel)
-      if (!hasGuild || !hasChannel) {
+      if (!hasGuild) {
         if (debug.feeds.has(feed._id)) {
-          log.debug.info(`${feed._id}: Not processing feed since it has missing guild (${hasGuild}) or channel (${hasChannel}), assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+          log.debug.info(`${feed._id}: Not processing feed since it has missing guild, assigned to schedule ${this.name} on ${this.SHARD_ID}`)
         }
       } else {
         filteredFeeds.push(feed)
