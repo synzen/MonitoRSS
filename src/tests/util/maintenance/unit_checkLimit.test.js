@@ -41,24 +41,36 @@ describe('utils/maintenance/checkLimits', function () {
     const feeds = [{
       // Enabled
       guild: 'a',
-      disabled: undefined
+      disabled: undefined,
+      disable: jest.fn(),
+      enable: jest.fn()
     }, {
       // Enabled
       guild: 'a',
-      disabled: undefined
+      disabled: undefined,
+      disable: jest.fn(),
+      enable: jest.fn()
     }, {
       // Enabled, over limit
       guild: 'a',
       disabled: undefined,
-      disable: jest.fn()
+      disable: jest.fn(),
+      enable: jest.fn()
     }, {
       // Disabled, nothing should be called
       guild: 'a',
       disabled: 'Exceeded feed limit',
-      disable: jest.fn()
+      disable: jest.fn(),
+      enable: jest.fn()
     }]
     await checkLimits(feeds, new Map())
+    expect(feeds[0].disable).not.toHaveBeenCalled()
+    expect(feeds[0].enable).not.toHaveBeenCalled()
+    expect(feeds[1].disable).not.toHaveBeenCalled()
+    expect(feeds[1].enable).not.toHaveBeenCalled()
+    expect(feeds[2].enable).not.toHaveBeenCalled()
     expect(feeds[2].disable).toHaveBeenCalledTimes(1)
+    expect(feeds[3].enable).not.toHaveBeenCalled()
     expect(feeds[3].disable).not.toHaveBeenCalled()
   })
   it('calls enable and disable on feeds under and over limits', async function () {
@@ -151,19 +163,27 @@ describe('utils/maintenance/checkLimits', function () {
       enable: jest.fn(),
       disable: jest.fn()
     }, {
-      // Disabled, nothing should be called
+      // Disabled, enable should be called
       guild: 'a',
       disabled: 'Exceeded feed limit',
       enable: jest.fn(),
       disable: jest.fn()
+    }, {
+      // Disabled, enable should not be called for unrelated reason
+      guild: 'a',
+      disabled: 'ttt',
+      enable: jest.fn(),
+      disable: jest.fn()
     }]
     await checkLimits(feeds, new Map())
-    expect(feeds[2].enable).toHaveBeenCalledTimes(1)
-    expect(feeds[3].enable).toHaveBeenCalled()
     expect(feeds[0].disable).not.toHaveBeenCalled()
     expect(feeds[1].disable).not.toHaveBeenCalled()
+    expect(feeds[2].enable).toHaveBeenCalledTimes(1)
     expect(feeds[2].disable).not.toHaveBeenCalled()
+    expect(feeds[3].enable).toHaveBeenCalledTimes(1)
     expect(feeds[3].disable).not.toHaveBeenCalled()
+    expect(feeds[4].enable).not.toHaveBeenCalled()
+    expect(feeds[4].disable).not.toHaveBeenCalled()
     config.feeds.max = oValue
   })
   it(`only calls enable for feeds with 'Exceeded feed limit' reason`, async function () {
@@ -182,7 +202,7 @@ describe('utils/maintenance/checkLimits', function () {
       disabled: 'Exceeded feed limit',
       enable: jest.fn()
     }, {
-      // Disabled, should be enabled by limit checks
+      // Disabled, should not be enabled by limit checks
       guild: 'a',
       disabled: 'Exceeded feed limit',
       enable: jest.fn()
@@ -190,6 +210,34 @@ describe('utils/maintenance/checkLimits', function () {
     await checkLimits(feeds, new Map([['a', 3]]))
     expect(feeds[0].enable).not.toHaveBeenCalled()
     expect(feeds[2].enable).toHaveBeenCalled()
-    expect(feeds[3].enable).not.toHaveBeenCalled()
+    expect(feeds[3].enable).toHaveBeenCalled()
+  })
+  it('enables the correct ones when intertwined with unrelated disables', async function () {
+    const feeds = [{
+      // Disabled, unrelated reason - do not enable
+      guild: 'a',
+      disabled: 'Random reason',
+      enable: jest.fn()
+    }, {
+      // Disabled, unrelated reason - do not enable
+      guild: 'a',
+      disabled: 'random reasonf',
+      enable: jest.fn()
+    }, {
+      // Disabled, should be enabled by limit checks
+      guild: 'a',
+      disabled: 'Exceeded feed limit',
+      enable: jest.fn()
+    }, {
+      // Disabled, should not be enabled by limit checks
+      guild: 'a',
+      disabled: 'Exceeded feed limit',
+      enable: jest.fn()
+    }]
+    await checkLimits(feeds, new Map())
+    expect(feeds[0].enable).not.toHaveBeenCalled()
+    expect(feeds[1].enable).not.toHaveBeenCalled()
+    expect(feeds[2].enable).toHaveBeenCalled()
+    expect(feeds[3].enable).toHaveBeenCalled()
   })
 })

@@ -17,9 +17,14 @@ async function checkLimits (feeds, supporterLimits) {
     const guild = feed.guild
     const supporterLimit = supporterLimits.get(guild)
     const guildLimit = supporterLimit === undefined ? config.feeds.max : supporterLimit
-    let feedCount = feedCounts.get(guild)
+    let feedCount = feedCounts.get(guild) || 0
 
-    // If 0, enable everything
+    // Ignore all unrelated disabled feeds and don't count them
+    if (feed.disabled && feed.disabled !== 'Exceeded feed limit') {
+      continue
+    }
+
+    // If the limit is 0 and the feed exceeded limit, enable it
     if (guildLimit === 0) {
       if (feed.disabled) {
         log.general.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to no set limit`)
@@ -28,28 +33,37 @@ async function checkLimits (feeds, supporterLimits) {
       continue
     }
 
-    // Otherwise, count the feeds for each guild
-    if (feedCount === undefined) {
-      feedCounts.set(guild, 1)
-    } else {
-      ++feedCount
-      feedCounts.set(guild, feedCount)
-    }
+    /**
+     * Two cases:
+     * 1. Disabled feed whose reason is exceeded feed limit
+     * 2. Enabled feed
+     */
 
-    // And check if they should be enabled or disabled
-    if (feedCount > guildLimit) {
-      if (!feed.disabled) {
+    if (feed.disabled) {
+      if (feedCount < guildLimit) {
+        // Enable it
+        feedCount = feedCount + 1
+        feedCounts.set(guild, feedCount)
+        log.general.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
+        enabled.push(feed.enable())
+      }
+      // Otherwise, don't count it
+    } else {
+      if (feedCount + 1 > guildLimit) {
+        // Disable it if adding the current one goes over limit
         log.general.info(`Disabling enabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
         disabled.push(feed.disable('Exceeded feed limit'))
-        feedCounts.set(guild, feedCount - 1)
+      } else {
+        // Otherwise, just count it
+        feedCount = feedCount + 1
+        feedCounts.set(guild, feedCount)
       }
-    } else if (feed.disabled === 'Exceeded feed limit') {
-      log.general.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
-      enabled.push(feed.enable())
-      feedCounts.set(guild, feedCount + 1)
     }
   }
-  await Promise.all([ disabled, enabled ])
+  await Promise.all([
+    Promise.all(disabled),
+    Promise.all(enabled)
+  ])
   return {
     enabled: enabled.length,
     disabled: disabled.length
