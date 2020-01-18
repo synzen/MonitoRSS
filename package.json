@@ -25,7 +25,6 @@
     "bufferutil": "^4.0.1",
     "cloudscraper": "^4.3.0",
     "discord.js": "github:discordjs/discord.js",
-    "erlpack": "github:discordapp/erlpack",
     "feedparser": "^2.2.9",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.4.24",
