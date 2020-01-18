@@ -37,7 +37,7 @@ class IPC {
    * @param {string} channel - Channel ID
    * @param {string} message - Message to send
    */
-  static sendChannelMessage (channel, message) {
+  static sendChannelAlert (channel, message) {
     this.send(this.TYPES.SEND_CHANNEL_MESSAGE, {
       channel,
       message,
@@ -50,7 +50,7 @@ class IPC {
    * @param {string} user - User ID
    * @param {string} message - Message to send
    */
-  static sendUserMessage (user, message) {
+  static sendUserAlert (user, message) {
     this.send(this.TYPES.SEND_USER_MESSAGE, {
       user,
       message
@@ -67,8 +67,8 @@ class IPC {
       FINISHED_INIT: 'finishedInit',
       RUN_SCHEDULE: 'runSchedule',
       STOP_CLIENT: 'stopClient',
-      SEND_CHANNEL_MESSAGE: 'sendChannelMessage',
-      SEND_USER_MESSAGE: 'sendUserMessage'
+      SEND_CHANNEL_MESSAGE: 'sendChannelAlert',
+      SEND_USER_MESSAGE: 'sendUserAlert'
     }
   }
 }

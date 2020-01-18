@@ -41,12 +41,12 @@ describe('Unit::util/ipc.js', function () {
       expect(ipc.isLoopback({ _loopback: 1 })).toEqual(false)
     })
   })
-  describe('sendChannelMessage', function () {
+  describe('sendChannelAlert', function () {
     it('sends correctly', function () {
       const spy = jest.spyOn(ipc, 'send').mockReturnValue()
       const channel = '24356t'
       const message = 'wqt4e'
-      ipc.sendChannelMessage(channel, message)
+      ipc.sendChannelAlert(channel, message)
       expect(spy).toHaveBeenCalledWith(ipc.TYPES.SEND_CHANNEL_MESSAGE, {        
         channel,
         message,
@@ -54,12 +54,12 @@ describe('Unit::util/ipc.js', function () {
       }, true)
     })
   })
-  describe('sendUserMessage', function () {
+  describe('sendUserAlert', function () {
     it('sends correctly', function () {
       const spy = jest.spyOn(ipc, 'send').mockReturnValue()
       const user = 'q3'
       const message = 'azs'
-      ipc.sendUserMessage(user, message)
+      ipc.sendUserAlert(user, message)
       expect(spy).toHaveBeenCalledWith(ipc.TYPES.SEND_USER_MESSAGE, {
         user,
         message

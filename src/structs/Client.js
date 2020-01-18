@@ -141,11 +141,11 @@ class Client extends EventEmitter {
             }
             break
           case ipc.TYPES.SEND_CHANNEL_MESSAGE:
-            this.sendChannelMessage(message.data.channel, message.data.message, message.data.alert)
+            this.sendChannelAlert(message.data.channel, message.data.message, message.data.alert)
               .catch(err => log.general.warning(`Failed at attempt to send inter-process message to channel ${message.channel}`, err))
             break
           case ipc.TYPES.SEND_USER_MESSAGE:
-            this.sendUserMessage(message.data.user, message.data.message)
+            this.sendUserAlert(message.data.user, message.data.message)
               .catch(err => log.general.warning(`Failed at attempt to send inter-process message to user ${message.user}`, err))
         }
       } catch (err) {
@@ -154,7 +154,7 @@ class Client extends EventEmitter {
     })
   }
 
-  async sendChannelMessage (channel, message, alert) {
+  async sendChannelAlert (channel, message, alert) {
     const fetched = this.bot.channels.get(channel)
     if (!fetched) {
       return
@@ -163,25 +163,27 @@ class Client extends EventEmitter {
       return fetched.send(message)
     }
     try {
-      const profile = await Profile.get(fetched.guild.id)
-      if (!profile) {
-        return this.sendChannelMessage(channel, message, false)
-      }
-      const alertTo = profile.alert
-      const promises = []
-      for (const id of alertTo) {
-        promises.push(this.sendUserMessage(id, message))
-      }
-      await Promise.all(promises)
+      this.sendUserAlertFromChannel(channel, message)
     } catch (err) {
-      return this.sendChannelMessage(channel, message, false)
+      return this.sendChannelAlert(channel, message, false)
     }
   }
 
-  async sendUserMessage (userID, message) {
-    const user = this.bot.users.get(userID)
-    if (user) {
-      return user.send(message)
+  async sendUserAlert (channel, message) {
+    const fetchedChannel = this.bot.channels.get(channel)
+    if (!fetchedChannel) {
+      return
+    }
+    const profile = await Profile.get(fetchedChannel.guild.id)
+    if (!profile) {
+      return
+    }
+    const alertTo = profile.alert
+    for (const id of alertTo) {
+      const user = this.bot.users.get(id)
+      if (user) {
+        await user.send(message)
+      }
     }
   }
 
