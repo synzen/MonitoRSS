@@ -142,14 +142,11 @@ class FailCounter extends Base {
    * @param {string} url
    */
   static sendFailMessage (url) {
-    if (config.dev === true) {
-      return
-    }
     Feed.getManyBy('url', url)
       .then(feeds => {
         log.general.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
         feeds.forEach(({ channel }) => {
-          const message = `**ATTENTION** - Feed url <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use the \`list\` command in your server for more information.`
+          const message = `Feed <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
           ipc.sendChannelMessage(channel, message)
         })
       })

@@ -126,7 +126,6 @@ class Client extends EventEmitter {
               bot.user.setStatus(config.bot.status)
                 .catch(err => log.general.error('Failed to set status', err))
             }
-            console.log('23')
             this.start()
             break
           case ipc.TYPES.STOP_CLIENT:
@@ -155,12 +154,15 @@ class Client extends EventEmitter {
   }
 
   async sendChannelAlert (channel, message, alert) {
+    if (config.dev === true) {
+      return
+    }
     const fetched = this.bot.channels.get(channel)
     if (!fetched) {
       return
     }
     if (!alert) {
-      return fetched.send(message)
+      return fetched.send(`**ALERT**\n\n${message}`)
     }
     try {
       this.sendUserAlertFromChannel(channel, message)
@@ -170,6 +172,9 @@ class Client extends EventEmitter {
   }
 
   async sendUserAlert (channel, message) {
+    if (config.dev === true) {
+      return
+    }
     const fetchedChannel = this.bot.channels.get(channel)
     if (!fetchedChannel) {
       return
@@ -182,7 +187,7 @@ class Client extends EventEmitter {
     for (const id of alertTo) {
       const user = this.bot.users.get(id)
       if (user) {
-        await user.send(message)
+        await user.send(`**ALERT**\n\n${message}`)
       }
     }
   }
