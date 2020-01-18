@@ -50,7 +50,8 @@ const VALID_EVENTS = [
   'userNoteUpdate',
   'userUpdate',
   'voiceStateUpdate',
-  'warn' ]
+  'warn'
+]
 
 let cmdsExtension
 if (fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'commands.js'))) {
@@ -96,6 +97,7 @@ exports.createManagers = (bot) => {
 
 exports.enableCommands = async (bot) => {
   const blacklistCache = new BlacklistCache(await Blacklist.getAll())
+  exports.blacklistCache = blacklistCache
   eventHandlers.push({ name: 'message', func: messageHandler(bot, blacklistCache) })
   bot.on('message', eventHandlers[eventHandlers.length - 1].func)
 }

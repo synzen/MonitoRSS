@@ -1,4 +1,5 @@
 const Blacklist = require('../../structs/db/Blacklist.js')
+const listeners = require('../../util/listeners.js')
 const log = require('../../util/logger.js')
 
 module.exports = async (bot, message) => {
@@ -12,6 +13,8 @@ module.exports = async (bot, message) => {
     } else {
       await blacklisted.delete()
     }
+    listeners.blacklistCache.users.delete(id)
+    listeners.blacklistCache.guilds.delete(id)
     log.owner.success(`Removed ${id} from blacklist`)
     await message.channel.send(`Removed ${id} from blacklist.`)
   } catch (err) {
