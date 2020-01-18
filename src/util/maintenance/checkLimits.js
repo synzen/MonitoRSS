@@ -1,4 +1,5 @@
 const config = require('../../config.js')
+const log = require('../logger.js')
 
 /**
  * Enable or disable feeds for guilds past their limit
@@ -21,6 +22,7 @@ async function checkLimits (feeds, supporterLimits) {
     // If 0, enable everything
     if (guildLimit === 0) {
       if (feed.disabled) {
+        log.general.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to no set limit`)
         enabled.push(feed.enable())
       }
       continue
@@ -37,10 +39,12 @@ async function checkLimits (feeds, supporterLimits) {
     // And check if they should be enabled or disabled
     if (feedCount > guildLimit) {
       if (!feed.disabled) {
+        log.general.info(`Disabling enabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
         disabled.push(feed.disable('Exceeded feed limit'))
         feedCounts.set(guild, feedCount - 1)
       }
     } else if (feed.disabled === 'Exceeded feed limit') {
+      log.general.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
       enabled.push(feed.enable())
       feedCounts.set(guild, feedCount + 1)
     }
