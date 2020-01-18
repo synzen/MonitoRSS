@@ -13,13 +13,11 @@ let webClient
 
 class ClientManager extends EventEmitter {
   /**
-   * @param {import('discord.js').ShardingManager} shardingManager
    * @param {Object<string, any>} settings
    * @param {Object<string, any>[]} customSchedules
    */
   constructor (settings, customSchedules = []) {
     super()
-    this.shardingManager = new Discord.ShardingManager('./server-shard.js', { respawn: false })
     if (settings.config) {
       config._overrideWith(settings.config)
     }
@@ -39,6 +37,7 @@ class ClientManager extends EventEmitter {
     this.scheduleTracker = {} // Key is refresh time, value is index for this.activeshardIds
     this.shardsReady = 0 // Shards that have reported that they're ready
     this.shardsDone = 0 // Shards that have reported that they're done initializing
+    this.shardingManager = new Discord.ShardingManager('./server-shard.js', { respawn: false })
     this.shardingManager.on('shardCreate', shard => {
       shard.on('message', message => this.messageHandler(shard, message))
     })
