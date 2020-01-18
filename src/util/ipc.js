@@ -46,13 +46,13 @@ class IPC {
   }
 
   /**
-   * Send a message to a user that could be on any client
-   * @param {string} user - User ID
+   * Send a message to users of a channel that could be on any client
+   * @param {string} channel - Channel ID of the guild
    * @param {string} message - Message to send
    */
-  static sendUserAlert (user, message) {
+  static sendUserAlert (channel, message) {
     this.send(this.TYPES.SEND_USER_MESSAGE, {
-      user,
+      channel,
       message
     }, true)
   }

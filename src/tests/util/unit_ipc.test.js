@@ -57,11 +57,11 @@ describe('Unit::util/ipc.js', function () {
   describe('sendUserAlert', function () {
     it('sends correctly', function () {
       const spy = jest.spyOn(ipc, 'send').mockReturnValue()
-      const user = 'q3'
+      const channel = 'q3'
       const message = 'azs'
-      ipc.sendUserAlert(user, message)
+      ipc.sendUserAlert(channel, message)
       expect(spy).toHaveBeenCalledWith(ipc.TYPES.SEND_USER_MESSAGE, {
-        user,
+        channel,
         message
       }, true)
     })

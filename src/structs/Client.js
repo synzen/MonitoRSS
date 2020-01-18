@@ -145,7 +145,7 @@ class Client extends EventEmitter {
               .catch(err => log.general.warning(`Failed at attempt to send inter-process message to channel ${message.channel}`, err))
             break
           case ipc.TYPES.SEND_USER_MESSAGE:
-            this.sendUserAlert(message.data.user, message.data.message)
+            this.sendUserAlert(message.data.channel, message.data.message)
               .catch(err => log.general.warning(`Failed at attempt to send inter-process message to user ${message.user}`, err))
         }
       } catch (err) {
