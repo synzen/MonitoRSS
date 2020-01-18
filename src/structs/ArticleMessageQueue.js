@@ -3,12 +3,17 @@ const config = require('../config.js')
 const ArticleMessageError = require('../structs/errors/ArticleMessageError.js')
 
 class ArticleMessageQueue {
-  constructor () {
+  constructor (bot) {
     /**
      * Article objects with role subscribers by channel IDs
      * @type {object<string, import('./ArticleMessage.js')>}
      */
     this.queuesWithSubs = {}
+
+    /**
+     * @type {import('discord.js').Client}
+     */
+    this.bot = bot
   }
 
   /**
@@ -47,7 +52,7 @@ class ArticleMessageQueue {
    */
   async enqueue (article, isTestMessage, skipFilters) {
     if (config.dev === true) return
-    const articleMessage = new ArticleMessage(article, isTestMessage, skipFilters)
+    const articleMessage = new ArticleMessage(this.bot, article, isTestMessage, skipFilters)
     await this._pushNext(articleMessage)
   }
 
@@ -66,9 +71,8 @@ class ArticleMessageQueue {
 
   /**
    * Send all the enqueued articles that require role mention toggles
-   * @param {import('discord.js').Client} bot - Discord.js client
    */
-  async send (bot) {
+  async send () {
     const promises = []
     for (const channelId in this.queuesWithSubs) {
       const channelQueue = this.queuesWithSubs[channelId]
@@ -80,13 +84,13 @@ class ArticleMessageQueue {
         messageSubscriptionIds.forEach(id => roleIds.add(id))
       }
       promises.push(
-        ArticleMessageQueue.toggleRoleMentionable(true, cId, roleIds, bot)
-          .then(rolesToggled => this._sendDelayedQueue(bot, cId, channelQueue, roleIds, undefined, rolesToggled))
+        ArticleMessageQueue.toggleRoleMentionable(true, cId, roleIds, this.bot)
+          .then(rolesToggled => this._sendDelayedQueue(this.bot, cId, channelQueue, roleIds, undefined, rolesToggled))
           .catch(err => {
             if (err instanceof ArticleMessageError) { // From the _sendDelayedQueue
               throw err
             }
-            this._sendDelayedQueue(bot, cId, channelQueue, roleIds, err, 0)
+            this._sendDelayedQueue(this.bot, cId, channelQueue, roleIds, err, 0)
           })
       )
     }

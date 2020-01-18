@@ -233,19 +233,19 @@ describe('Unit::ArticleMessageQueue', function () {
       const channelOne = 'abc'
       const channelTwo = 'dcas'
       const bot = new Bot()
-      const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
       articleMessage.subscriptionIds = ['1', '2']
       const articleMessageTwo = new ArticleMessage()
       articleMessageTwo.subscriptionIds = ['3', '4', '5']
       const articleMessageThree = new ArticleMessage()
       articleMessageThree.subscriptionIds = ['6', '7', '7']
+      const queue = new ArticleMessageQueue(bot)
       queue.queuesWithSubs[channelOne] = [articleMessage, articleMessageTwo]
       queue.queuesWithSubs[channelTwo] = [articleMessageThree]
       const origFunc = ArticleMessageQueue.toggleRoleMentionable
       ArticleMessageQueue.toggleRoleMentionable = jest.fn(() => Promise.resolve())
       queue._sendDelayedQueue = jest.fn()
-      await queue.send(bot)
+      await queue.send()
       expect(ArticleMessageQueue.toggleRoleMentionable).toHaveBeenCalledWith(true, channelOne, new Set(['1', '2', '3', '4', '5']), bot)
       expect(ArticleMessageQueue.toggleRoleMentionable).toHaveBeenNthCalledWith(2, true, channelTwo, new Set(['6', '7']), bot)
       ArticleMessageQueue.toggleRoleMentionable = origFunc

@@ -1,11 +1,11 @@
 const ArticleMessage = require('../../structs/ArticleMessage.js')
 const Article = require('../../structs/Article.js')
-const storage = require('../../util/storage.js')
 jest.mock('discord.js')
 jest.mock('../../util/logger.js')
 jest.mock('../../structs/Article.js')
 jest.mock('../../util/storage.js')
-storage.bot = { channels: { get: () => ({}) } }
+
+const Bot = () => ({ channels: { get: () => ({}) } })
 
 describe('Unit::ArticleMessage', function () {
   describe('constructor', function () {
@@ -43,18 +43,18 @@ describe('Unit::ArticleMessage', function () {
       jest.restoreAllMocks()
     })
     it('throws an error if _delivery is missing', function () {
-      expect(() => new ArticleMessage({})).toThrowError(expect.objectContaining({ message: expect.stringContaining('_delivery property missing') }))
+      expect(() => new ArticleMessage(Bot(), {})).toThrowError(expect.objectContaining({ message: expect.stringContaining('_delivery property missing') }))
     })
     it('throws an error if _delivery.rssName is missing', function () {
-      expect(() => new ArticleMessage({ _delivery: { source: {} } })).toThrowError(expect.objectContaining({ message: expect.stringContaining('rssName property missing') }))
+      expect(() => new ArticleMessage(Bot(), { _delivery: { source: {} } })).toThrowError(expect.objectContaining({ message: expect.stringContaining('rssName property missing') }))
     })
     it('throws an error if _delivery.source is missing', function () {
-      expect(() => new ArticleMessage({ _delivery: { rssName: 'asdasd' } })).toThrowError(expect.objectContaining({ message: expect.stringContaining('source property missing') }))
+      expect(() => new ArticleMessage(Bot(), { _delivery: { rssName: 'asdasd' } })).toThrowError(expect.objectContaining({ message: expect.stringContaining('source property missing') }))
     })
-    it('defines the correct properties for this.parsedArticle', function () {
+    it.only('defines the correct properties for this.parsedArticle', function () {
       const parsedArticle = { foo: 'bar', subscriptionIds: [1, 4, 5], testFilters: jest.fn() }
       Article.mockImplementationOnce(() => parsedArticle)
-      const m = new ArticleMessage(rawArticleWithNoFilters)
+      const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
       expect(m.parsedArticle).toEqual(parsedArticle)
       expect(m.channelId).toEqual(rawArticle._delivery.source.channel)
       expect(m.rssName).toEqual(rawArticle._delivery.rssName)
@@ -65,33 +65,33 @@ describe('Unit::ArticleMessage', function () {
       expect(m.skipFilters).toEqual(false)
     })
     it('defines test details if is testmessage', function () {
-      const m = new ArticleMessage(rawArticle, true)
+      const m = new ArticleMessage(Bot(), rawArticle, true)
       expect(m.isTestMessage).toEqual(true)
       expect(m.testDetails).toEqual(testDetails)
     })
     it('attaches filter results if passed', function () {
       const filterResults = { a: 1, passed: true }
       jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       expect(m.filterResults).toEqual(filterResults)
       expect(m.passedFilters()).toEqual(filterResults.passed)
     })
     it('attaches filter results if not passed', function () {
       const filterResults = { a: 1, passed: false }
       jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       expect(m.filterResults).toEqual(filterResults)
       expect(m.passedFilters()).toEqual(filterResults.passed)
     })
     it('passes filters if there are no filters in sources', function () {
       jest.spyOn(Article.prototype, 'testFilters').mockReturnValue({ passed: true })
-      const m = new ArticleMessage(rawArticleWithNoFilters)
+      const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
       expect(m.passedFilters()).toEqual(true)
     })
     it('does not attach filter results if skip filters', function () {
       const filterResults = { a: 1, passed: false }
       jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
-      const m = new ArticleMessage(rawArticle, false, true)
+      const m = new ArticleMessage(Bot(), rawArticle, false, true)
       expect(m.skipFilters).toEqual(true)
       expect(m.passedFilters()).toEqual(true)
     })
@@ -116,17 +116,17 @@ describe('Unit::ArticleMessage', function () {
       jest.restoreAllMocks()
     })
     it('throws an error if missing source', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.source = undefined
       return expect(m.send()).rejects.toBeInstanceOf(Error)
     })
     it('throws an error if missing channel', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.channel = undefined
       return expect(m.send()).rejects.toBeInstanceOf(Error)
     })
     it('does not send the article if it did not pass filters', async function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       const medium = { send: jest.fn(async () => Promise.resolve()) }
       m.passedFilters = () => false
       m.channel = medium
@@ -134,7 +134,7 @@ describe('Unit::ArticleMessage', function () {
       expect(medium.send).not.toHaveBeenCalled()
     })
     it('sends via webhook if it exists', async function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       const channel = { send: jest.fn(async () => Promise.resolve()) }
       const webhook = { send: jest.fn(async () => Promise.resolve()) }
       m.channel = channel
@@ -144,7 +144,7 @@ describe('Unit::ArticleMessage', function () {
       expect(webhook.send).toHaveBeenCalledTimes(1)
     })
     it('throws the same error that channel.send throws ', async function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       const error = new Error('hello world')
       error.code = 5555
       const channel = { send: jest.fn(async () => Promise.reject(error)) }
@@ -158,7 +158,7 @@ describe('Unit::ArticleMessage', function () {
       }
     })
     it('does not retry if errorCode is 50013', async function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       const error = new Error('hello world')
       error.code = 50013
       const channel = { send: jest.fn(async () => Promise.reject(error)) }
@@ -172,7 +172,7 @@ describe('Unit::ArticleMessage', function () {
       }
     })
     it('retries a maximum of 4 times with an unrecognized error', async function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.filterResults = { passed: true }
       const error = new Error('hello world')
       const channel = { send: jest.fn(async () => Promise.reject(error)) }
@@ -185,7 +185,7 @@ describe('Unit::ArticleMessage', function () {
       }
     })
     it('sends two times and sets isTestMessage to false on second run', async function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       const channel = { send: jest.fn(async () => Promise.resolve()) }
       m.channel = channel
       m.isTestMessage = true
@@ -199,7 +199,7 @@ describe('Unit::ArticleMessage', function () {
         embeds: [1, 2, 3],
         text: 'adsefgrth'
       }
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       jest.spyOn(m, '_generateMessage').mockReturnValueOnce(generated)
       const error = new Error('2000 or fewer in length')
       const channel = { send: jest.fn(async () => Promise.resolve()) }
@@ -219,7 +219,7 @@ describe('Unit::ArticleMessage', function () {
         text: 'adsefftjgugrth'
       }
       const splitOptions = { b: 2 }
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       jest.spyOn(m, '_generateMessage').mockReturnValueOnce(generated)
       const error = new Error('no split characters')
       const channel = { send: jest.fn(async () => Promise.resolve()) }
@@ -250,14 +250,14 @@ describe('Unit::ArticleMessage', function () {
     })
     it('returns text that is the test message if it is a test message', function () {
       const testMessage = 'adzesgtwioug'
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.isTestMessage = true
       m.testDetails = testMessage
       const data = m._createSendOptions()
       expect(data.text).toEqual(testMessage)
     })
     it('returns the webhook if there is a webhook', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.webhook = { name: 'foo', avatar: 'bar' }
       m.text = 'abc'
       m.article = {}
@@ -266,14 +266,14 @@ describe('Unit::ArticleMessage', function () {
       expect(data.options.avatarURL).toEqual('bar')
     })
     it('returns the text', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.text = 'abc'
       m.article = {}
       const data = m._createSendOptions()
       expect(data.text).toEqual(m.text)
     })
     it('returns the first embed in a list of embeds if there is no webhook', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.text = 'abc'
       m.embeds = [1, 2, 3]
       const data = m._createSendOptions()
@@ -281,7 +281,7 @@ describe('Unit::ArticleMessage', function () {
       expect(data.options.embeds).toBeUndefined()
     })
     it('returns all the embeds in a list there is a webhook', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.webhook = { name: 'foo', avatar: 'bar' }
       m.text = 'abc'
       m.embeds = [1, 2, 3]
@@ -290,7 +290,7 @@ describe('Unit::ArticleMessage', function () {
       expect(data.options.embeds).toEqual(m.embeds)
     })
     it('does not attach user split options if it is a test message (it uses the static TEST_OPTIONS)', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.isTestMessage = true
       m.split = { a: 'b' }
       m.filterResults = { passed: true }
@@ -298,7 +298,7 @@ describe('Unit::ArticleMessage', function () {
       expect(data.options).toEqual(ArticleMessage.TEST_OPTIONS)
     })
     it('attaches user split options for non-test-message', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.split = { a: 'b' }
       m.article = {}
       m.text = 'aszf'
@@ -306,7 +306,7 @@ describe('Unit::ArticleMessage', function () {
       expect(data.options.split).toEqual(m.split)
     })
     it('changes the text to error if there is no split and the text exceeds 1950 length', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.article = {}
       m.text = ''
       while (m.text.length < 2000) {
@@ -316,7 +316,7 @@ describe('Unit::ArticleMessage', function () {
       expect(data.text).toEqual(expect.stringContaining('>1950'))
     })
     it('changes the text to error if there is no text and no embeds', function () {
-      const m = new ArticleMessage(rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle)
       m.article = {}
       m.text = ''
       const data = m._createSendOptions()

@@ -15,7 +15,7 @@ class ScheduleManager {
   constructor (bot, shardID) {
     this.bot = bot
     this.shardID = shardID
-    this.articleMessageQueue = new ArticleMessageQueue()
+    this.articleMessageQueue = new ArticleMessageQueue(bot)
     this.scheduleList = []
   }
 

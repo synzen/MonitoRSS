@@ -2,7 +2,6 @@ const fs = require('fs')
 const path = require('path')
 const log = require('./logger.js')
 const config = require('../config.js')
-const storage = require('./storage.js')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
 const eventHandlers = []
@@ -71,17 +70,17 @@ if (fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'commands.js'))) 
   })
 }
 
-const messageHandler = blacklistCache => message => {
+const messageHandler = (bot, blacklistCache) => message => {
   const onlyOwner = config.bot.enableCommands !== true || config.dev === true
   require('../events/message.js')(message, onlyOwner, blacklistCache)
   try {
     if (cmdsExtension) {
-      cmdsExtension(storage.bot, message)
+      cmdsExtension(bot, message)
     }
   } catch (e) {}
 }
 
-exports.createManagers = () => {
+exports.createManagers = (bot) => {
   const fileNames = fs.readdirSync(path.join(__dirname, '..', 'events'))
   for (const fileName of fileNames) {
     const eventName = fileName.replace('.js', '')
@@ -91,18 +90,18 @@ exports.createManagers = () => {
     if (eventName === 'message') continue
     const eventHandler = require(`../events/${fileName}`)
     eventHandlers.push({ name: eventName, func: eventHandler })
-    storage.bot.on(eventName, eventHandlers[eventHandlers.length - 1].func)
+    bot.on(eventName, eventHandlers[eventHandlers.length - 1].func)
   }
 }
 
-exports.enableCommands = async () => {
+exports.enableCommands = async (bot) => {
   const blacklistCache = new BlacklistCache(await Blacklist.getAll())
-  eventHandlers.push({ name: 'message', func: messageHandler(blacklistCache) })
-  storage.bot.on('message', eventHandlers[eventHandlers.length - 1].func)
+  eventHandlers.push({ name: 'message', func: messageHandler(bot, blacklistCache) })
+  bot.on('message', eventHandlers[eventHandlers.length - 1].func)
 }
 
-exports.disableAll = () => {
+exports.disableAll = (bot) => {
   for (const eventHandler of eventHandlers) {
-    storage.bot.removeListener(eventHandler.name, eventHandler.func)
+    bot.removeListener(eventHandler.name, eventHandler.func)
   }
 }

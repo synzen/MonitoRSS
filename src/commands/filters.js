@@ -148,7 +148,7 @@ module.exports = async (bot, message, command, role) => {
         }
       }
 
-      const queue = new ArticleMessageQueue()
+      const queue = new ArticleMessageQueue(message.client)
       await queue.enqueue(article, true, true)
       await queue.send(message.client)
     }

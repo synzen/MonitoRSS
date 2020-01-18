@@ -61,9 +61,9 @@ module.exports = async (bot, message, command) => {
       await profile.save()
     }
 
-    const queue = new ArticleMessageQueue()
+    const queue = new ArticleMessageQueue(bot)
     await queue.enqueue(article, !simple, true)
-    await queue.send(bot)
+    await queue.send()
     await grabMsg.delete()
   } catch (err) {
     log.command.warning(`rsstest`, message.guild, err)

@@ -39,9 +39,7 @@ class Client extends EventEmitter {
       await connectDb()
       await client.login(token)
       this.bot = client
-      /** @type {number} */
       this.shardID = client.shard.ids[0]
-      storage.bot = client
       this.listenToShardedEvents(client)
       if (!client.readyAt) {
         client.once('ready', this._setup.bind(this))
@@ -197,7 +195,7 @@ class Client extends EventEmitter {
       return log.general.warning(`SH ${this.shardID} Ignoring start command because of ${this.state} state`)
     }
     this.state = STATES.STARTING
-    await listeners.enableCommands()
+    await listeners.enableCommands(this.bot)
     log.general.info(`${'SH ' + this.shardID + ' '}Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
     const uri = config.database.uri
     log.general.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
@@ -225,12 +223,11 @@ class Client extends EventEmitter {
           refreshRates.add(schedule.refreshRateMinutes)
         }
         await this.scheduleManager._registerSchedules()
-        storage.scheduleManager = this.scheduleManager
       }
       storage.initialized = 2
       this.state = STATES.READY
       ipc.send(ipc.TYPES.INIT_COMPLETE)
-      listeners.createManagers(storage.bot)
+      listeners.createManagers(this.bot)
       this.emit('finishInit')
     } catch (err) {
       log.general.error(`Client start`, err, true)
@@ -244,7 +241,7 @@ class Client extends EventEmitter {
     log.general.warning(`SH ${this.shardID} Discord.RSS has received stop command`)
     storage.initialized = 0
     clearInterval(this.maintenance)
-    listeners.disableAll()
+    listeners.disableAll(this.bot)
     this.state = STATES.STOPPED
   }
 

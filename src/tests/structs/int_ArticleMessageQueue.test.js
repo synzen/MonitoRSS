@@ -50,12 +50,12 @@ describe('Int::ArticleMessageQueue', function () {
   })
   describe('articles with no subscriptions', function () {
     it('calls send on article after enqueue', async function () {
-      const queue = new ArticleMessageQueue()
+      const queue = new ArticleMessageQueue(new Bot())
       await queue.enqueue({})
       expect(ArticleMessage.mock.instances[0].send).toHaveBeenCalledTimes(1)
     })
     it('calls send on all articles after many enqueues', async function () {
-      const queue = new ArticleMessageQueue()
+      const queue = new ArticleMessageQueue(new Bot())
       const times = 4
       for (let i = 0; i < times; ++i) {
         await queue.enqueue({})
@@ -68,50 +68,49 @@ describe('Int::ArticleMessageQueue', function () {
 
   describe('article with subscriptions', function () {
     it('calls send on all articles', async function () {
-      const queue = new ArticleMessageQueue()
       ArticleMessage.mockImplementationOnce(function () {
         this.toggleRoleMentions = true
         this.subscriptionIds = ['a']
       })
+      const queue = new ArticleMessageQueue(new Bot())
       await queue.enqueue({})
       await queue.enqueue({})
       await queue.enqueue({})
-      await queue.send(new Bot())
+      await queue.send()
       expect(ArticleMessage.mock.instances[0].send).toHaveBeenCalledTimes(1)
       expect(ArticleMessage.mock.instances[1].send).toHaveBeenCalledTimes(1)
       expect(ArticleMessage.mock.instances[2].send).toHaveBeenCalledTimes(1)
     })
     it('only calls toggleRoleMentions twice for many articles', async function () {
-      const queue = new ArticleMessageQueue()
       const spy = jest.spyOn(ArticleMessageQueue, 'toggleRoleMentionable')
       ArticleMessage.mockImplementation(function () {
         this.toggleRoleMentions = true
         this.subscriptionIds = ['a']
         this.channelId = 'abc'
       })
+      const queue = new ArticleMessageQueue(new Bot())
       await queue.enqueue({})
       await queue.enqueue({})
       await queue.enqueue({})
       await queue.enqueue({})
-      await queue.send(new Bot())
+      await queue.send()
       expect(spy).toHaveBeenCalledTimes(2)
       spy.mockRestore()
     })
     it('clears out the queue after sending', async function () {
-      const queue = new ArticleMessageQueue()
       const channelID = 'sfxdrgtrn'
       ArticleMessage.mockImplementation(function () {
         this.toggleRoleMentions = true
         this.subscriptionIds = ['a']
         this.channelId = channelID
       })
+      const queue = new ArticleMessageQueue(new Bot())
       await queue.enqueue({})
       await queue.enqueue({})
-      await queue.send(new Bot())
+      await queue.send()
       expect(queue.queuesWithSubs[channelID]).toBeUndefined()
     })
     it('toggles role mentions for every role', async function () {
-      const queue = new ArticleMessageQueue()
       const bot = new Bot()
       const channelOneID = 'abc'
       const channelTwoID = 'def'
@@ -139,9 +138,10 @@ describe('Int::ArticleMessageQueue', function () {
         this.toggleRoleMentions = true
         this.subscriptionIds = [2]
       })
+      const queue = new ArticleMessageQueue(bot)
       await queue.enqueue({})
       await queue.enqueue({})
-      await queue.send(bot)
+      await queue.send()
       expect(roleA.setMentionable).toHaveBeenNthCalledWith(1, true)
       expect(roleA.setMentionable).toHaveBeenNthCalledWith(2, false)
       expect(roleB.setMentionable).toHaveBeenNthCalledWith(1, true)
@@ -171,7 +171,6 @@ describe('Int::ArticleMessageQueue', function () {
       await queue.send(bot)
     })
     it('throws the error that articleMessage.send throws, if it is not a non-50013-code error', function (done) {
-      const queue = new ArticleMessageQueue()
       const bot = new Bot()
       const channelOneID = 'abc'
       const channelOne = new Channel(channelOneID)
@@ -186,9 +185,10 @@ describe('Int::ArticleMessageQueue', function () {
         this.subscriptionIds = [1]
         this.send = async () => { throw error }
       })
+      const queue = new ArticleMessageQueue(bot)
       queue.enqueue({})
         .then(() => queue.enqueue({}))
-        .then(() => queue.send(bot))
+        .then(() => queue.send())
         .then(() => done(new Error('Promise resolved')))
         .catch(err => {
           expect(err).toBeInstanceOf(ArticleMessageError)

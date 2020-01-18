@@ -1,10 +1,8 @@
 const config = require('../config.js')
 const Discord = require('discord.js')
-const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const debug = require('../util/debugFeeds.js')
 const Article = require('./Article.js')
-const deletedFeeds = storage.deletedFeeds
 
 /**
  * @typedef {Object} PreparedArticle
@@ -16,11 +14,12 @@ const deletedFeeds = storage.deletedFeeds
 
 class ArticleMessage {
   /**
+   * @param {Discord.Client} bot - Discord client
    * @param {PreparedArticle} article - The article object
    * @param {boolean} isTestMessage - Whether this should skip filters AND have test details
    * @param {boolean} skipFilters - Whether this should skip filters
    */
-  constructor (article, isTestMessage = false, skipFilters = false) {
+  constructor (bot, article, isTestMessage = false, skipFilters = false) {
     if (!article._delivery) {
       throw new Error('article._delivery property missing')
     }
@@ -37,7 +36,7 @@ class ArticleMessage {
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
     this.channelId = article._delivery.source.channel
-    this.channel = storage.bot.channels.get(article._delivery.source.channel)
+    this.channel = bot.channels.get(article._delivery.source.channel)
     if (!this.channel) {
       if (this.debug) {
         log.debug.info(`Skipping article delivery due to missing channel (${article._delivery.source.channel})`)
@@ -313,9 +312,6 @@ class ArticleMessage {
         log.general.info(`'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`, this.channel)
       }
       return
-    }
-    if (deletedFeeds.includes(this.rssName)) {
-      throw new Error(`${this.rssName} for channel ${this.channel.id} was deleted during cycle`)
     }
 
     const { text, options } = this._createSendOptions()
