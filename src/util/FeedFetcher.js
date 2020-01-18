@@ -21,6 +21,57 @@ class FeedFetcher {
   }
 
   /**
+   * @typedef {Object} FormattedResponse
+   * @property {number} status
+   * @property {Object} headers
+   */
+
+  /**
+   * Responses must be uniform between cloudscraper and node-fetch
+   * @param {import('node-fetch').Response} res
+   * @returns {FormattedResponse}
+   */
+  static formatNodeFetchResponse (res) {
+    const rawHeaders = res.headers.raw()
+    const headers = {
+      ...rawHeaders
+    }
+    // Normalize the headers
+    for (const key in headers) {
+      const val = headers[key]
+      delete headers[key]
+      headers[key.toLowerCase()] = val
+    }
+    // Sometimes it's an array for some reason
+    if (headers.etag && Array.isArray(headers.etag)) {
+      headers.etag = headers.etag[0]
+    }
+    return {
+      status: res.status,
+      headers
+    }
+  }
+
+  /**
+   * Responses must be uniform between cloudscraper and node-fetch
+   * @param {import('cloudscraper').Response} res
+   * @returns {FormattedResponse}
+   */
+  static formatCloudscraperResponse (res) {
+    const headers = res.headers
+    // Normalize the headers
+    for (const key in headers) {
+      const val = headers[key]
+      delete headers[key]
+      headers[key.toLowerCase()] = val
+    }
+    return {
+      status: res.statusCode,
+      headers
+    }
+  }
+
+  /**
    * @typedef {object} FetchResults
    * @property {import('stream').Readable} stream
    * @property {import('node-fetch').Response} response
@@ -65,12 +116,18 @@ class FeedFetcher {
     if (res.status === 200 || (res.status === 304 && 'If-Modified-Since' in options.headers && 'If-None-Match' in options.headers)) {
       return {
         stream: res.body,
-        response: res
+        response: this.formatNodeFetchResponse(res)
       }
     }
     if (!retried && (res.status === 403 || res.status === 400)) {
       delete options.headers
-      const res2 = await this.fetchURL(url, { ...options, headers: { ...options.headers, 'user-agent': '' } }, true)
+      const res2 = await this.fetchURL(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          'user-agent': ''
+        }
+      }, true)
       endStatus = res2.response.status
       if (endStatus === 200) {
         return res2
@@ -89,8 +146,8 @@ class FeedFetcher {
     return this.fetchCloudScraper(url)
   }
   /**
-   * @typedef CSResults
-   * @param {import('stream').Readable} stream
+   * @typedef {Object} CSResults
+   * @property {import('stream').Readable} stream
    */
 
   /**
@@ -117,7 +174,8 @@ class FeedFetcher {
     feedStream.push(res.body)
     feedStream.push(null)
     return {
-      stream: feedStream
+      stream: feedStream,
+      response: this.formatCloudscraperResponse(res)
     }
   }
 

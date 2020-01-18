@@ -24,7 +24,95 @@ describe('Unit::FeedFetcher', function () {
   it('throws an error if it is instantiated', function () {
     expect(() => new FeedFetcher()).toThrowError()
   })
+  describe('static formatNodeFetchResponse', function () {
+    it('converts headers to lowercase', function () {
+      const headers = {
+        HELLO: 'world',
+        CAPITAL: 'punish'
+      }
+      const res = {
+        headers: {
+          raw: jest.fn(() => headers)
+        }
+      }
+      const expectedHeaders = {
+        hello: 'world',
+        capital: 'punish'
+      }
+      expect(FeedFetcher.formatNodeFetchResponse({ ...res }).headers)
+        .toEqual(expectedHeaders)
+    })
+    it('converts array etag to string', function () {
+      const headers = {
+        etag: ['world']
+      }
+      const res = {
+        headers: {
+          raw: jest.fn(() => headers)
+        }
+      }
+      const expectedHeaders = {
+        etag: headers.etag[0]
+      }
+      expect(FeedFetcher.formatNodeFetchResponse({ ...res }).headers)
+        .toEqual(expectedHeaders)
+    })
+    it('returns status and headers object', function () {
+      const headers = {
+        jack: 'h',
+        fo: 'do'
+      }
+      const res = {
+        status: 200,
+        headers: {
+          raw: jest.fn(() => ({ ...headers }))
+        }
+      }
+      const expectedReturn = {
+        status: res.status,
+        headers
+      }
+      expect(FeedFetcher.formatNodeFetchResponse({ ...res }))
+        .toEqual(expectedReturn)
+    })
+  })
+  describe('static formatCloudscraperResponse', function () {
+    it('converts headers to lowercase', function () {
+      const headers = {
+        HELLO: 'world',
+        CAPITAL: 'punish'
+      }
+      const res = {
+        headers
+      }
+      const expectedHeaders = {
+        hello: 'world',
+        capital: 'punish'
+      }
+      expect(FeedFetcher.formatCloudscraperResponse(res).headers)
+        .toEqual(expectedHeaders)
+    })
+    it('returns status and headers object', function () {
+      const headers = {
+        jack: 'h',
+        fo: 'do'
+      }
+      const res = {
+        statusCode: 200,
+        headers: { ...headers }
+      }
+      const expectedReturn = {
+        status: 200,
+        headers
+      }
+      expect(FeedFetcher.formatCloudscraperResponse({ ...res }))
+        .toEqual(expectedReturn)
+    })
+  })
   describe('fetchURL', function () {
+    beforeEach(function () {
+      jest.spyOn(FeedFetcher, 'formatNodeFetchResponse').mockReturnValue({})
+    })
     describe('retried is false', function () {
       it('throws an error if url is not defined', function () {
         return expect(FeedFetcher.fetchURL()).rejects.toBeInstanceOf(Error)
@@ -69,22 +157,28 @@ describe('Unit::FeedFetcher', function () {
       it('returns the stream and response if the response status is 200', async function () {
         const body = 'abc'
         const response = { body, status: 200 }
+        const parsedResponse = { fa: 1 }
         fetch.mockResolvedValueOnce(response)
+        jest.spyOn(FeedFetcher, 'formatNodeFetchResponse').mockReturnValue(parsedResponse)
         const data = await FeedFetcher.fetchURL('abc')
-        expect(data).toEqual({ stream: body, response })
+        expect(data).toEqual({ stream: body, response: parsedResponse })
       })
       it('returns the stream and response if the response status is 304 with If-Modified-Since and If-None-Match is in request headers', async function () {
         const headers = { 'If-Modified-Since': 1, 'If-None-Match': 1 }
         const body = 'abc'
         const response = { body, status: 304 }
+        const parsedResponse = { a: 1 }
         fetch.mockResolvedValueOnce(response)
+        jest.spyOn(FeedFetcher, 'formatNodeFetchResponse').mockReturnValue(parsedResponse)
         const data = await FeedFetcher.fetchURL('abc', { headers })
-        expect(data).toEqual({ stream: body, response })
+        expect(data).toEqual({ stream: body, response: parsedResponse })
       })
       it('recursively calls again if res status is 403/400', async function () {
         fetch
           .mockResolvedValueOnce({ status: 403 })
           .mockResolvedValueOnce({ status: 200 })
+        jest.spyOn(FeedFetcher, 'formatNodeFetchResponse')
+          .mockReturnValue({ status: 200 })
         const spy = jest.spyOn(FeedFetcher, 'fetchURL')
         await FeedFetcher.fetchURL('abc')
         expect(spy).toHaveBeenCalledTimes(2)
@@ -94,6 +188,8 @@ describe('Unit::FeedFetcher', function () {
         fetch
           .mockResolvedValueOnce({ status: 403 })
           .mockResolvedValueOnce({ status: 200 })
+        jest.spyOn(FeedFetcher, 'formatNodeFetchResponse')
+          .mockReturnValue({ status: 200 })
         await FeedFetcher.fetchURL('abc', { headers })
         expect(fetch.mock.calls[1][1].headers['user-agent']).toEqual('')
       })
