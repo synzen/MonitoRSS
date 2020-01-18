@@ -7,6 +7,7 @@ const config = require('../../../config.js')
 jest.mock('../../../config.js')
 jest.mock('../../../structs/db/Feed.js')
 jest.mock('../../../structs/db/Supporter.js')
+jest.mock('../../../util/ipc.js')
 
 config.feeds.max = 2
 
