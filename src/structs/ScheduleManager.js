@@ -1,9 +1,11 @@
 const config = require('../config.js')
 const FeedSchedule = require('./FeedSchedule.js')
-const debug = require('../util/debugFeeds.js')
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')
-const log = require('../util/logger.js')
 const Schedule = require('../structs/db/Schedule.js')
+const debug = require('../util/debugFeeds.js')
+const log = require('../util/logger.js')
+const ipc = require('../util/ipc.js')
+
 
 class ScheduleManager {
   /**
@@ -58,7 +60,9 @@ class ScheduleManager {
       }
     }
     // If there is no schedule with that refresh time
-    process.send({ _drss: true, type: 'scheduleComplete', refreshRate })
+    ipc.send(ipc.TYPES.SCHEDULE_COMPLETE, {
+      refreshRate
+    })
   }
 
   getSchedule (name) {

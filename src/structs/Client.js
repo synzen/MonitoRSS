@@ -9,6 +9,7 @@ const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
 const connectDb = require('../rss/db/connect.js')
 const EventEmitter = require('events')
+const ipc = require('../util/ipc.js')
 const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
 const CLIENT_OPTIONS = { disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 }
 const STATES = {
@@ -69,8 +70,10 @@ class Client extends EventEmitter {
             sched.killChildren()
           }
         }
-        bot.shard.send({ _drss: true, type: 'kill' })
-      } else this.stop()
+        ipc.send(ipc.TYPES.KILL)
+      } else {
+        this.stop()
+      }
     })
     bot.on('resume', () => {
       log.general.success(`SH ${this.shardID} Websocket resumed`)
@@ -92,9 +95,7 @@ class Client extends EventEmitter {
       }
     })
     log.general.success(`SH ${this.shardID} Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
-    process.send({
-      _drss: true,
-      type: 'shardReady',
+    ipc.send(ipc.TYPES.SHARD_READY, {
       guildIds: bot.guilds.keyArray(),
       channelIds: bot.channels.keyArray()
     })
@@ -102,14 +103,17 @@ class Client extends EventEmitter {
 
   listenToShardedEvents (bot) {
     process.on('message', async message => {
-      if (!message._drss) return
+      if (!ipc.isValid(message)) {
+        return
+      }
       try {
         switch (message.type) {
-          case 'startInit':
-            this.customSchedules = message.customSchedules
-            config._overrideWith(message.config)
-            log.suppressLevel(message.suppressLogLevels)
-            if (message.setPresence) {
+          case ipc.TYPES.START_INIT:
+            const data = message.data
+            this.customSchedules = data.customSchedules
+            config._overrideWith(data.config)
+            log.suppressLevel(data.suppressLogLevels)
+            if (data.setPresence) {
               if (config.bot.activityType) {
                 bot.user.setActivity(config.bot.activityName, {
                   type: config.bot.activityType,
@@ -122,25 +126,26 @@ class Client extends EventEmitter {
               bot.user.setStatus(config.bot.status)
                 .catch(err => log.general.error('Failed to set status', err))
             }
+            console.log('23')
             this.start()
             break
-          case 'stop':
+          case ipc.TYPES.STOP_CLIENT:
             this.stop()
             break
-          case 'finishedInit':
+          case ipc.TYPES.FINISHED_INIT:
             storage.initialized = 2
             break
-          case 'runSchedule':
-            if (this.shardID === message.shardId) {
-              this.scheduleManager.run(message.refreshRate)
+          case ipc.TYPES.RUN_SCHEDULE:
+            if (this.shardID === message.data.shardId) {
+              this.scheduleManager.run(message.data.refreshRate)
             }
             break
-          case 'sendChannelMessage':
-            this.sendChannelMessage(message.channel, message.message, message.alert)
+          case ipc.TYPES.SEND_CHANNEL_MESSAGE:
+            this.sendChannelMessage(message.data.channel, message.data.message, message.data.alert)
               .catch(err => log.general.warning(`Failed at attempt to send inter-process message to channel ${message.channel}`, err))
             break
-          case 'sendUserMessage':
-            this.sendUserMessage(message.user, message.message)
+          case ipc.TYPES.SEND_USER_MESSAGE:
+            this.sendUserMessage(message.data.user, message.data.message)
               .catch(err => log.general.warning(`Failed at attempt to send inter-process message to user ${message.user}`, err))
         }
       } catch (err) {
@@ -217,10 +222,7 @@ class Client extends EventEmitter {
       }
       storage.initialized = 2
       this.state = STATES.READY
-      process.send({
-        _drss: true,
-        type: 'initComplete'
-      })
+      ipc.send(ipc.TYPES.INIT_COMPLETE)
       listeners.createManagers(storage.bot)
       this.emit('finishInit')
     } catch (err) {

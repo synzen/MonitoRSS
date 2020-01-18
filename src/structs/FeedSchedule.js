@@ -15,6 +15,7 @@ const EventEmitter = require('events')
 const childProcess = require('child_process')
 const maintenance = require('../util/maintenance/index.js')
 const log = require('../util/logger.js')
+const ipc = require('../util/ipc.js')
 
 const BATCH_SIZE = config.advanced.batchSize
 
@@ -507,7 +508,9 @@ class FeedSchedule extends EventEmitter {
   }
 
   _finishCycle (noFeeds) {
-    process.send({ _drss: true, type: 'scheduleComplete', refreshRate: this.refreshRate })
+    ipc.send(ipc.TYPES.SCHEDULE_COMPLETE, {
+      refreshRate: this.refreshRate
+    })
     const cycleTime = (new Date() - this._startTime) / 1000
     const timeTaken = cycleTime.toFixed(2)
     ShardStats.get(this.shardID.toString())

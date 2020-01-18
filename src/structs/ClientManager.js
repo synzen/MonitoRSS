@@ -7,6 +7,7 @@ const log = require('../util/logger.js')
 const EventEmitter = require('events')
 const maintenance = require('../util/maintenance/index.js')
 const initialize = require('../util/initialization.js')
+const ipc = require('../util/ipc.js')
 let webClient
 
 class ClientManager extends EventEmitter {
@@ -64,19 +65,18 @@ class ClientManager extends EventEmitter {
   }
 
   messageHandler (shard, message) {
-    if (!message._drss) {
+    if (!ipc.isValid(message)) {
       return
     }
-    if (message._loopback) {
+    if (ipc.isLoopback(message)) {
       return this.shardingManager.broadcast(message)
         .catch(err => this._handleErr(err, message))
     }
     switch (message.type) {
-      case 'kill': this.kill(); break
-      case 'shardReady': this._shardReadyEvent(shard, message); break
-      case 'initComplete': this._initCompleteEvent(message); break
-      case 'scheduleComplete': this._scheduleCompleteEvent(message); break
-      case 'addCustomSchedule': this._addCustomScheduleEvent(message); break
+      case ipc.TYPES.KILL: this.kill(); break
+      case ipc.TYPES.SHARD_READY: this._shardReadyEvent(shard, message); break
+      case ipc.TYPES.INIT_COMPLETE: this._initCompleteEvent(); break
+      case ipc.TYPES.SCHEDULE_COMPLETE: this._scheduleCompleteEvent(message); break
     }
   }
 
@@ -95,10 +95,10 @@ class ClientManager extends EventEmitter {
   _shardReadyEvent (shard, message) {
     const totalShards = this.shardingManager.totalShards
     this.activeshardIds.push(shard.id)
-    message.guildIds.forEach(id => {
+    message.data.guildIds.forEach(id => {
       this.guildIdsByShard.set(id, shard.id)
     })
-    message.channelIds.forEach(id => {
+    message.data.channelIds.forEach(id => {
       this.channelIdsByShard.set(id, shard.id)
     })
     if (++this.shardsReady < totalShards) {
@@ -108,18 +108,20 @@ class ClientManager extends EventEmitter {
       .then(() => {
         this.shardingManager.broadcast({
           _drss: true,
-          type: 'startInit',
-          config: this.config || {},
-          suppressLogLevels: this.suppressLogLevels || [],
-          setPresence: this.setPresence || false,
-          customSchedules: this.customSchedules || []
+          type: ipc.TYPES.START_INIT,
+          data: {
+            config: this.config || {},
+            suppressLogLevels: this.suppressLogLevels || [],
+            setPresence: this.setPresence || false,
+            customSchedules: this.customSchedules || []
+          }
         })
       }).catch(err => {
         log.general.error('Failed to execute prune pre init in sharding manager', err)
       })
   }
 
-  _initCompleteEvent (message) {
+  _initCompleteEvent () {
     // Count all the links
     if (++this.shardsDone === this.shardingManager.totalShards) {
       log.general.info(`All shards have initialized by the Sharding Manager.`)
@@ -138,7 +140,7 @@ class ClientManager extends EventEmitter {
           }
           this.shardingManager.broadcast({
             _drss: true,
-            type: 'finishedInit'
+            type: ipc.TYPES.FINISHED_INIT
           })
           this.emit('finishInit')
         })
@@ -149,15 +151,17 @@ class ClientManager extends EventEmitter {
   }
 
   _scheduleCompleteEvent (message) {
-    const { refreshRate } = message
+    const { refreshRate } = message.data
     this.scheduleTracker[refreshRate]++ // Index for this.activeshardIds
     if (this.scheduleTracker[refreshRate] !== this.shardingManager.totalShards) {
       // Send signal for next shard to start cycle
       const broadcast = {
         _drss: true,
-        shardId: this.activeshardIds[this.scheduleTracker[refreshRate]],
-        type: 'runSchedule',
-        refreshRate
+        type: ipc.TYPES.RUN_SCHEDULE,
+        data: {
+          shardId: this.activeshardIds[this.scheduleTracker[refreshRate]],
+          refreshRate
+        }
       }
       this.shardingManager.broadcast(broadcast).catch(err => this._handleErr(err, message))
     }
@@ -168,7 +172,14 @@ class ClientManager extends EventEmitter {
       let p
       for (p = 0; p < config.advanced.parallelShards && p < this.activeshardIds.length; ++p) {
         this.scheduleTracker[refreshRate] = p // Key is the refresh time, value is the this.activeshardIds index. Set at 0 to start at the first index. Later indexes are handled by the 'scheduleComplete' message
-        this.shardingManager.broadcast({ _drss: true, type: 'runSchedule', shardId: this.activeshardIds[p], refreshRate })
+        this.shardingManager.broadcast({
+          _drss: true,
+          type: ipc.TYPES.RUN_SCHEDULE,
+          data: {
+            shardId: this.activeshardIds[p],
+            refreshRate
+          }
+        })
       }
     }
 

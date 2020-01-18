@@ -2,6 +2,7 @@ const config = require('../../config.js')
 const Base = require('./Base.js')
 const Feed = require('./Feed.js')
 const log = require('../../util/logger.js')
+const ipc = require('../../util/ipc.js')
 const FailCounterModel = require('../../models/FailCounter.js').model
 
 class FailCounter extends Base {
@@ -149,14 +150,7 @@ class FailCounter extends Base {
         log.general.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
         feeds.forEach(({ channel }) => {
           const message = `**ATTENTION** - Feed url <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by this server, or another server using this feed. Use the \`list\` command in your server for more information.`
-          process.send({
-            _drss: true,
-            _loopback: true,
-            type: 'sendChannelMessage',
-            channel,
-            message,
-            alert: true
-          })
+          ipc.sendChannelMessage(channel, message)
         })
       })
       .catch(err => {
