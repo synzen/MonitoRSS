@@ -26,10 +26,6 @@ describe('Unit::structs/db/Feed', function () {
     jest.restoreAllMocks()
   })
   describe('constructor', function () {
-    it(`throws an error when title is missing`, function () {
-      expect(() => new Feed({ channel: 1, url: 1, guild: 1 }))
-        .toThrowError(new Error('Undefined title'))
-    })
     it(`throws an error when channel is missing`, function () {
       expect(() => new Feed({ title: 1, url: 1, guild: 1 }))
         .toThrowError(new Error('Undefined channel'))

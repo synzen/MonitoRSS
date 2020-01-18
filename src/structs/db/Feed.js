@@ -5,6 +5,10 @@ const Format = require('./Format.js')
 const Subscriber = require('./Subscriber.js')
 const Schedule = require('./Schedule.js')
 const Supporter = require('./Supporter.js')
+const FeedFetcher = require('../../util/FeedFetcher.js')
+const Article = require('../../models/Article.js')
+const dbCmds = require('../../rss/db/commands.js')
+const log = require('../../util/logger.js')
 
 class Feed extends FilterBase {
   /**
@@ -34,10 +38,7 @@ class Feed extends FilterBase {
      * Feed name
      * @type {string}
      */
-    this.title = this.getField('title')
-    if (!this.title) {
-      throw new Error('Undefined title')
-    }
+    this.title = this.getField('title', 'Unknown')
 
     /**
      * Feed URL
@@ -240,9 +241,7 @@ class Feed extends FilterBase {
   /**
    * @param {Schedule[]} [schedules] - All stored schedules
    * @param {string[]} [supporterGuilds] - Array of supporter guild IDs
-   * @returns {Object} schedule
-   * @returns {string} schedule.name
-   * @returns {number} schedule.refreshRateMinutes
+   * @returns {Schedule}
    */
   async determineSchedule (schedules, supporterGuilds) {
     if (!schedules) {
@@ -284,6 +283,63 @@ class Feed extends FilterBase {
     }
 
     return schedules.find(s => s.name === 'default')
+  }
+
+  /**
+   * @param {number} shardID
+   * @param {string} scheduleName
+   * @param {Object<string, any>[]} articleList
+   */
+  async initializeCollection (shardID, scheduleName, articleList) {
+    if (!Base.isMongoDatabase) {
+      return
+    }
+    if (shardID === undefined) {
+      throw new TypeError('shardID is undefined trying to initialize collection')
+    }
+    try {
+      const Feed = Article.model(this.url, shardID, scheduleName)
+      const docs = await dbCmds.findAll(Feed)
+      if (docs.length > 0) {
+        // The collection already exists from a previous addition, no need to initialize
+        return
+      }
+      await dbCmds.bulkInsert(Feed, articleList)
+    } catch (err) {
+      log.general.warning(`Unable to initialize ${this.url}`, err, true)
+    }
+  }
+
+  /**
+   * Fetch the feed and see if it connects before actually saving
+   * @param {number} [shardID] - Used for initializing its Mongo collection
+   */
+  async testAndSave (shardID) {
+    const { articleList } = await FeedFetcher.fetchFeed(this.url)
+    const feeds = await Feed.getManyBy('guild', this.guild)
+    for (const feed of feeds) {
+      if (feed.url === this.url && feed.channel === this.channel) {
+        const err = new Error('Already exists for this channel.')
+        err.code = 40003
+        err.type = 'resolved'
+        throw err
+      }
+    }
+    if (this.title === 'Unknown' && articleList.length > 0 && articleList[0].meta.title) {
+      this.title = articleList[0].meta.title
+    }
+    if (this.title.length > 200) {
+      this.title = this.title.slice(0, 200) + '...'
+    }
+    const allArticlesHaveDates = articleList.reduce((acc, article) => acc && (!!article.pubdate), true)
+    if (!allArticlesHaveDates) {
+      this.checkDates = false
+    }
+    await this.save()
+    if (shardID !== undefined && articleList.length > 0) {
+      const schedule = this.determineSchedule()
+      await this.initializeCollection(shardID, schedule.name, articleList)
+    }
   }
 
   static get Model () {

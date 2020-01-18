@@ -1,5 +1,4 @@
 const channelTracker = require('../util/channelTracker.js')
-const initialize = require('../rss/initialize.js')
 const config = require('../config.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
@@ -65,10 +64,12 @@ module.exports = async (bot, message) => {
       linkItem.shift()
 
       try {
-        const [ addedLink ] = await initialize.addNewFeed({ channel: message.channel, link })
-        if (addedLink) {
-          link = addedLink
-        }
+        const newFeed = new Feed({
+          url: link,
+          channel: message.channel.id,
+          guild: message.guild.id
+        })
+        await newFeed.testAndSave(message.guild.shardID)
         channelTracker.remove(message.channel.id)
         log.command.info(`Added ${link}`, message.guild)
         FailCounter.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
