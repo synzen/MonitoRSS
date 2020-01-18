@@ -1,4 +1,5 @@
 process.env.DRSS = true
+const Discord = require('discord.js')
 const config = require('../config.js')
 const connectDb = require('../rss/db/connect.js')
 const Patron = require('./db/Patron.js')
@@ -16,11 +17,9 @@ class ClientManager extends EventEmitter {
    * @param {Object<string, any>} settings
    * @param {Object<string, any>[]} customSchedules
    */
-  constructor (shardingManager, settings, customSchedules = []) {
+  constructor (settings, customSchedules = []) {
     super()
-    if (shardingManager.respawn !== false) {
-      throw new Error(`Discord.RSS requires ShardingManager's respawn option to be false`)
-    }
+    this.shardingManager = new Discord.ShardingManager('./server-shard.js', { respawn: false })
     if (settings.config) {
       config._overrideWith(settings.config)
     }
@@ -40,14 +39,13 @@ class ClientManager extends EventEmitter {
     this.scheduleTracker = {} // Key is refresh time, value is index for this.activeshardIds
     this.shardsReady = 0 // Shards that have reported that they're ready
     this.shardsDone = 0 // Shards that have reported that they're done initializing
-    this.shardingManager = shardingManager
     this.shardingManager.on('shardCreate', shard => {
       shard.on('message', message => this.messageHandler(shard, message))
     })
     this.webClientInstance = undefined
   }
 
-  async run () {
+  async run (shardCount = config.advanced.shards) {
     try {
       await connectDb()
       const schedules = await initialize.populateSchedules(this.customSchedules)
@@ -55,10 +53,7 @@ class ClientManager extends EventEmitter {
       if (config.web.enabled === true && !this.webClientInstance) {
         this.webClientInstance = webClient()
       }
-      if (this.shardingManager.shards.size === 0) {
-        // They may have already been spawned with a predefined ShardingManager
-        this.shardingManager.spawn(config.advanced.shards, 5500, -1)
-      }
+      this.shardingManager.spawn(shardCount, 5500, -1)
     } catch (err) {
       log.general.error(`ClientManager db connection`, err)
     }
