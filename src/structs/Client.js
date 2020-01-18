@@ -135,8 +135,13 @@ class Client extends EventEmitter {
               this.scheduleManager.run(message.refreshRate)
             }
             break
-          case 'sendMessage':
-            this.sendMessage(message.channel, message.message, message.alert)
+          case 'sendChannelMessage':
+            this.sendChannelMessage(message.channel, message.message, message.alert)
+              .catch(err => log.general.warning(`Failed at attempt to send inter-process message to channel ${message.channel}`, err))
+            break
+          case 'sendUserMessage':
+            this.sendUserMessage(message.user, message.message)
+              .catch(err => log.general.warning(`Failed at attempt to send inter-process message to user ${message.user}`, err))
         }
       } catch (err) {
         log.general.warning('client', err, true)
@@ -144,39 +149,35 @@ class Client extends EventEmitter {
     })
   }
 
-  sendMessage (channel, message, alert) {
+  async sendChannelMessage (channel, message, alert) {
     const fetched = this.bot.channels.get(channel)
     if (!fetched) {
       return
     }
     if (!alert) {
       return fetched.send(message)
-        .catch(err => log.general.warning(`Failed to send inter-process message for channel ${channel}`, err))
     }
-    Profile.get(fetched.guild.id)
-      .then(profile => {
-        if (!profile) {
-          return this.sendMessage(channel, message, false)
-        }
-        const alertTo = profile.alert
-        const promises = []
-        for (const id of alertTo) {
-          promises.push(this.sendMessageToUser(id, message))
-        }
-        return Promise.all(promises)
-      })
-      .catch(err => {
-        log.general.warning(`Failed at attempt to send inter-process message to guild alert users after Profile.get`, err)
-        this.sendMessage(channel, message, false)
-      })
+    try {
+      const profile = await Profile.get(fetched.guild.id)
+      if (!profile) {
+        return this.sendChannelMessage(channel, message, false)
+      }
+      const alertTo = profile.alert
+      const promises = []
+      for (const id of alertTo) {
+        promises.push(this.sendUserMessage(id, message))
+      }
+      await Promise.all(promises)
+    } catch (err) {
+      return this.sendChannelMessage(channel, message, false)
+    }
   }
 
-  async sendMessageToUser (userID, message) {
+  async sendUserMessage (userID, message) {
     const user = this.bot.users.get(userID)
-    if (!user) {
-      throw new Error(`User ${userID} does not exist`)
+    if (user) {
+      return user.send(message)
     }
-    await user.send(message)
   }
 
   async start () {

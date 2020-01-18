@@ -152,7 +152,7 @@ class FailCounter extends Base {
           process.send({
             _drss: true,
             _loopback: true,
-            type: 'sendMessage',
+            type: 'sendChannelMessage',
             channel,
             message,
             alert: true
