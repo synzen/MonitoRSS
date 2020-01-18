@@ -6,7 +6,6 @@ const debug = require('../util/debugFeeds.js')
 const log = require('../util/logger.js')
 const ipc = require('../util/ipc.js')
 
-
 class ScheduleManager {
   /**
    * @param {import('discord.js').Client} bot
