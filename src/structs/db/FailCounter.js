@@ -154,7 +154,8 @@ class FailCounter extends Base {
             _loopback: true,
             type: 'sendMessage',
             channel,
-            message
+            message,
+            alert: true
           })
         })
       })

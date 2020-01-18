@@ -3,6 +3,7 @@ const Discord = require('discord.js')
 const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
 const config = require('../config.js')
+const Profile = require('./db/Profile.js')
 const ScheduleManager = require('./ScheduleManager.js')
 const storage = require('../util/storage.js')
 const log = require('../util/logger.js')
@@ -135,7 +136,7 @@ class Client extends EventEmitter {
             }
             break
           case 'sendMessage':
-            this.sendMessage(message.channel, message.message)
+            this.sendMessage(message.channel, message.message, message.alert)
         }
       } catch (err) {
         log.general.warning('client', err, true)
@@ -143,10 +144,39 @@ class Client extends EventEmitter {
     })
   }
 
-  sendMessage (channel, message) {
+  sendMessage (channel, message, alert) {
     const fetched = this.bot.channels.get(channel)
-    fetched.send(message)
-      .catch(err => log.general.error(`Failed to send global message for channel ${channel}`, err))
+    if (!fetched) {
+      return
+    }
+    if (!alert) {
+      return fetched.send(message)
+        .catch(err => log.general.error(`Failed to send inter-process message for channel ${channel}`, err))
+    }
+    Profile.get(fetched.guild.id)
+      .then(profile => {
+        if (!profile) {
+          return this.sendMessage(channel, message, false)
+        }
+        const alertTo = profile.alert
+        const promises = []
+        for (const id of alertTo) {
+          promises.push(this.sendMessageToUser(id, message))
+        }
+        return Promise.all(promises)
+      })
+      .catch(err => {
+        log.general.error(`Failed at attempt to send inter-process message to guild alert users after Profile.get`, err)
+        this.sendMessage(channel, message, false)
+      })
+  }
+
+  async sendMessageToUser (userID, message) {
+    const user = this.bot.users.get(userID)
+    if (!user) {
+      throw new Error(`User ${userID} does not exist`)
+    }
+    await user.send(message)
   }
 
   async start () {
