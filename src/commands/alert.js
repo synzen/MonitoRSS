@@ -2,18 +2,28 @@ const log = require('../util/logger.js')
 const config = require('../config.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
+const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, automatic) => { // automatic indicates invokation by the bot
   try {
-    const profile = await Profile.get(message.guild.id)
+    let [ profile, feeds ] = await Promise.all([
+      Profile.get(message.guild.id),
+      Feed.getManyBy('guild', message.guild.id)
+    ])
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
-    if (!profile || profile.feeds.length === 0) {
+    if (feeds.length === 0) {
       return await message.channel.send(Translator.translate('commands.alert.noFeeds'))
     }
     const contentArray = message.content.split(' ').map(item => item.trim())
-    const guildID = profile.id
-    const guildName = profile.name
+    const guildID = message.guild.id
+    const guildName = message.guild.name
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+    if (!profile) {
+      profile = new Profile({
+        _id: guildID,
+        name: guildName
+      })
+    }
     switch (contentArray[1]) {
       case 'add':
       case 'remove':
