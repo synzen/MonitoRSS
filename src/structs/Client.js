@@ -11,12 +11,24 @@ const connectDb = require('../rss/db/connect.js')
 const EventEmitter = require('events')
 const ipc = require('../util/ipc.js')
 const maintenance = require('../util/maintenance/index.js')
-const DISABLED_EVENTS = ['TYPING_START', 'MESSAGE_DELETE', 'MESSAGE_UPDATE', 'PRESENCE_UPDATE', 'VOICE_STATE_UPDATE', 'VOICE_SERVER_UPDATE', 'USER_NOTE_UPDATE', 'CHANNEL_PINS_UPDATE']
-const CLIENT_OPTIONS = { disabledEvents: DISABLED_EVENTS, messageCacheMaxSize: 100 }
+const DISABLED_EVENTS = [
+  'TYPING_START',
+  'MESSAGE_DELETE',
+  'MESSAGE_UPDATE',
+  'PRESENCE_UPDATE',
+  'VOICE_STATE_UPDATE',
+  'VOICE_SERVER_UPDATE',
+  'USER_NOTE_UPDATE',
+  'CHANNEL_PINS_UPDATE'
+]
 const STATES = {
   STOPPED: 'STOPPED',
   STARTING: 'STARTING',
   READY: 'READY'
+}
+const CLIENT_OPTIONS = {
+  disabledEvents: DISABLED_EVENTS,
+  messageCacheMaxSize: 100
 }
 
 class Client extends EventEmitter {
@@ -88,7 +100,7 @@ class Client extends EventEmitter {
             sched.killChildren()
           }
         }
-        bot.shard.send({ _drss: true, type: 'kill' })
+        ipc.send(ipc.TYPES.KILL)
       } else {
         this.stop()
       }
