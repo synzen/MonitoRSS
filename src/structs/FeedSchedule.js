@@ -32,13 +32,9 @@ class FeedSchedule extends EventEmitter {
       throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     }
     super()
-    this.shardID = scheduleManager.shardID
-    this.SHARD_ID = 'SH ' + this.shardID + ' '
     this.bot = bot
     this.name = schedule.name
-    this.scheduleManager = scheduleManager
-    this.keywords = schedule.keywords
-    this.rssNames = schedule.feeds
+    this.shardID = scheduleManager.shardID
     this.refreshRate = schedule.refreshRateMinutes
     this._linksResponded = {}
     this._processorList = []
@@ -50,16 +46,15 @@ class FeedSchedule extends EventEmitter {
     this._formatsByFeedId = new Map()
     this._filteredFormatsByFeedId = new Map()
     this._subscribersByFeedId = new Map()
+    this.failCounters = new Map()
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
-    this.feedData = config.database.uri.startsWith('mongo') ? undefined : {}
+    this.feedData = Feed.isMongoDatabase ? undefined : {}
     this.feedCount = 0 // For statistics
-    this.failCounters = {}
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
     this.debugFeedLinks = new Set()
 
     // For vip tracking
-    this.vipServerLimits = {}
     this.allowWebhooks = new Map()
   }
 
@@ -112,7 +107,7 @@ class FeedSchedule extends EventEmitter {
    */
   _addToSourceLists (feed) { // rssList is an object per guildRss
     const toDebug = debug.feeds.has(feed._id)
-    const failCounter = this.failCounters[feed.url]
+    const failCounter = this.failCounters.get(feed.url)
 
     if (feed.disabled) {
       if (toDebug) {
@@ -147,7 +142,7 @@ class FeedSchedule extends EventEmitter {
       }
       batch[link] = rssList
       if (debug.links.has(link)) {
-        log.debug.info(`${link}: Attached URL to regular batch list for ${this.name} on ${this.SHARD_ID}`)
+        log.debug.info(`${link}: Attached URL to regular batch list for ${this.name}`)
       }
       this._linksResponded[link] = 1
     })
@@ -157,27 +152,23 @@ class FeedSchedule extends EventEmitter {
 
   async run () {
     if (this.inProgress) {
-      if (!config.advanced.forkBatches) {
-        log.cycle.warning(`Previous ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ') ' : ''} was unable to finish, attempting to start new cycle. If repeatedly seeing this message, consider increasing your refresh time.`)
-        this.inProgress = false
-      } else {
-        let list = ''
-        let c = 0
-        for (const link in this._linksResponded) {
-          if (this._linksResponded[link] === 0) continue
-          FailCounter.increment(link, 'Failed to respond in a timely manner')
-            .catch(err => log.cycle.warning(`Unable to increment fail counter for ${link}`, err))
-          list += `${link}\n`
-          ++c
+      let list = ''
+      let c = 0
+      for (const link in this._linksResponded) {
+        if (this._linksResponded[link] === 0) {
+          continue
         }
-        if (c > 25) list = 'Greater than 25 links, skipping log'
-        log.cycle.warning(`${this.SHARD_ID}Schedule ${this.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
-        console.log(list)
-        for (var x in this._processorList) {
-          this._processorList[x].kill()
-        }
-        this._processorList = []
+        FailCounter.increment(link, 'Failed to respond in a timely manner')
+          .catch(err => log.cycle.warning(`Unable to increment fail counter for ${link}`, err))
+        list += `${link}\n`
+        ++c
       }
+      if (c > 25) {
+        list = 'Greater than 25 links, skipping log'
+      }
+      log.cycle.warning(`Schedule ${this.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
+      console.log(list)
+      this.killChildren()
     }
 
     this.debugFeedLinks.clear()
@@ -240,7 +231,7 @@ class FeedSchedule extends EventEmitter {
       const hasChannel = this.bot.channels.has(feed.channel)
       if (!hasGuild || !hasChannel) {
         if (debug.feeds.has(feed._id)) {
-          log.debug.info(`${feed._id}: Not processing feed - missing guild: ${!hasGuild}, missing channel: ${!hasChannel}. Assigned to schedule ${this.name} on ${this.SHARD_ID}`)
+          log.debug.info(`${feed._id}: Not processing feed - missing guild: ${!hasGuild}, missing channel: ${!hasChannel}. Assigned to schedule ${this.name}`)
         }
       } else {
         filteredFeeds.push(feed)
@@ -283,9 +274,9 @@ class FeedSchedule extends EventEmitter {
     })
 
     // Save the fail counters
-    this.failCounters = {}
+    this.failCounters.clear()
     for (const counter of failCounters) {
-      this.failCounters[counter.url] = counter
+      this.failCounters.set(counter.url, counter)
     }
 
     // Check the permissions
@@ -317,7 +308,7 @@ class FeedSchedule extends EventEmitter {
         return
       }
       if (debug.feeds.has(feed._id)) {
-        log.debug.info(`${feed._id}: Assigned schedule ${this.name} on shard ${this.SHARD_ID}`)
+        log.debug.info(`${feed._id}: Assigned schedule ${this.name}`)
       }
       if (this._addToSourceLists(feed)) {
         feedCount++
@@ -356,7 +347,10 @@ class FeedSchedule extends EventEmitter {
 
       processor.on('message', linkCompletion => {
         if (linkCompletion.status === 'headers') {
-          this.headers[linkCompletion.link] = { lastModified: linkCompletion.lastModified, etag: linkCompletion.etag }
+          this.headers[linkCompletion.link] = {
+            lastModified: linkCompletion.lastModified,
+            etag: linkCompletion.etag
+          }
           return
         }
         if (linkCompletion.status === 'article') {
@@ -373,14 +367,17 @@ class FeedSchedule extends EventEmitter {
         } else if (linkCompletion.status === 'success') {
           FailCounter.reset(linkCompletion.link)
             .catch(err => log.cycle.warning(`Unable to reset fail counter ${linkCompletion.link}`, err))
-          if (linkCompletion.feedCollectionId) this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection // Only if config.database.uri is a databaseless folder path
+          // Only if config.database.uri is a databaseless folder path
+          if (linkCompletion.feedCollectionId) {
+            this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection
+          }
         }
 
         ++this._cycleTotalCount
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
         if (debug.links.has(linkCompletion.link)) {
-          log.debug.info(`${linkCompletion.link}: Link responded from processor for ${this.name} on ${this.SHARD_ID}`)
+          log.debug.info(`${linkCompletion.link}: Link responded from processor for ${this.name}`)
         }
         if (completedLinks === currentBatchLen) {
           completedBatches++
@@ -458,12 +455,15 @@ class FeedSchedule extends EventEmitter {
         }
       }).catch(err => log.general.warning('Unable to update statistics after cycle', err, true))
 
+    const name = this.name === 'default' ? 'default ' : ''
+    const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     if (noFeeds) {
-      log.cycle.info(`${this.SHARD_ID}Finished ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ')' : ''}. No feeds to retrieve`)
+      log.cycle.info(`Finished ${name}feed retrieval cycle${nameParen}. No feeds to retrieve`)
     } else {
       if (this._processorList.length === 0) this.inProgress = false
       this.emit('finish')
-      log.cycle.info(`${this.SHARD_ID}Finished ${this.name === 'default' ? 'default ' : ''}feed retrieval cycle${this.name !== 'default' ? ' (' + this.name + ')' : ''}${this._cycleFailCount > 0 ? ' (' + this._cycleFailCount + '/' + this._cycleTotalCount + ' failed)' : ''}. Cycle Time: ${timeTaken}s`)
+      const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
+      log.cycle.info(`Finished ${name}feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
     }
 
     ++this.ran
