@@ -1,5 +1,6 @@
-FROM node:alpine
-RUN mkdir -p /app/node_modules && \
+FROM node:10-alpine
+RUN apk add git && \
+	mkdir -p /app/node_modules && \
     chown -R node:node /app
 WORKDIR /app
 COPY package*.json ./

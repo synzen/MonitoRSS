@@ -22,7 +22,6 @@
     "eslint": "eslint --fix ./src"
   },
   "dependencies": {
-    "bufferutil": "^4.0.1",
     "cloudscraper": "^4.3.0",
     "discord.js": "github:discordjs/discord.js",
     "feedparser": "^2.2.9",
@@ -33,9 +32,7 @@
     "mongoose": "^5.8.2",
     "node-fetch": "^2.6.0",
     "redis": "^2.8.0",
-    "request": "^2.88.0",
-    "utf-8-validate": "^5.0.2",
-    "zlib-sync": "^0.1.6"
+    "request": "^2.88.0"
   },
   "repository": {
     "type": "git",
@@ -56,5 +53,11 @@
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "jest": "^24.9.0"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.1",
+    "erlpack": "github:discordapp/erlpack",
+    "utf-8-validate": "^5.0.2",
+    "zlib-sync": "^0.1.6"
   }
 }
