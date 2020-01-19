@@ -30,8 +30,7 @@ exports.defaultConfigs = {
     uri: { type: String, default: 'mongodb://localhost/rss' },
     redis: { type: String, default: '' },
     clean: { type: Boolean, default: false },
-    articlesExpire: { type: Number, default: 14 },
-    guildBackupsExpire: { type: Number, default: 7 }
+    articlesExpire: { type: Number, default: 14 }
   },
   feeds: {
     refreshRateMinutes: { type: Number, default: 10 },
