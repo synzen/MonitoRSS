@@ -131,6 +131,12 @@ class Feed extends FilterBase {
      * @type {Object<string, string|number>}
      */
     this._split = this.getField('split')
+
+    /**
+     * RegexOps for custom placeholders
+     * @type {Object<string, Object<string, any>[]>}
+     */
+    this.regexOps = this.getField('regexOps', {})
   }
 
   static get SPLIT_KEYS () {
@@ -146,6 +152,10 @@ class Feed extends FilterBase {
      * Use this.webhook instead of this._webhook since mongoose
      * will return an empty object when we don't want it to
      */
+    const regexOpsMap = new Map()
+    for (const key in this.regexOps) {
+      regexOpsMap.set(key, this.regexOps[key])
+    }
     const data = {
       ...super.toObject(),
       title: this.title,
@@ -161,12 +171,20 @@ class Feed extends FilterBase {
       toggleRoleMentions: this.toggleRoleMentions,
       disabled: this.disabled,
       webhook: this.webhook,
-      split: this.split
+      split: this.split,
+      regexOps: regexOpsMap
     }
     if (this._id) {
       data._id = this._id
     }
     return data
+  }
+
+  toJSON () {
+    return {
+      ...this.toObject(),
+      regexOps: this.regexOps
+    }
   }
 
   /**

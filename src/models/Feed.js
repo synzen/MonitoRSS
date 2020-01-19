@@ -3,6 +3,24 @@ const middleware = require('./middleware/Feed.js')
 const FilterBase = require('./common/FilterBase.js')
 const Version = require('./common/Version.js')
 
+const regexOpSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  search: {
+    regex: {
+      type: String,
+      required: true
+    },
+    flags: String,
+    match: Number,
+    group: Number
+  },
+  replacement: String,
+  replacementDirect: String
+})
+
 const schema = new mongoose.Schema({
   title: {
     type: String,
@@ -38,7 +56,11 @@ const schema = new mongoose.Schema({
   imgPreviews: Boolean,
   imgLinksExistence: Boolean,
   formatTables: Boolean,
-  toggleRoleMentions: Boolean
+  toggleRoleMentions: Boolean,
+  regexOps: {
+    type: Map,
+    of: [regexOpSchema]
+  }
 })
 
 schema.add(Version)

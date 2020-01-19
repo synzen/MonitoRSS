@@ -82,6 +82,50 @@ describe('Unit::structs/db/Feed', function () {
       const exported = feed.toObject()
       expect(exported._id).toEqual(_id)
     })
+    it('returns returns regexOps as a map', function () {
+      const feed = new Feed({ ...necessaryInit })
+      const regexOps = {
+        description: [{
+          name: 'swrgf',
+          search: {
+            regex: 'awsf'
+          }
+        }, {
+          name: 'swrgf2',
+          search: {
+            regex: 'awsf'
+          }
+        }]
+      }
+      feed.regexOps = regexOps
+      const exported = feed.toObject()
+      const expected = new Map()
+      expected.set('description', regexOps.description)
+      expect(exported.regexOps).toBeInstanceOf(Map)
+      expect(exported.regexOps).toEqual(expected)
+    })
+  })
+  describe('toJSON', function () {
+    it('returns regexOps as plain object', function () {
+      const feed = new Feed({ ...necessaryInit })
+      const regexOps = {
+        description: [{
+          name: 'swrgf',
+          search: {
+            regex: 'awsf'
+          }
+        }, {
+          name: 'swrgf2',
+          search: {
+            regex: 'awsf'
+          }
+        }]
+      }
+      feed.regexOps = { ...regexOps }
+      const exported = feed.toJSON()
+      expect(exported.regexOps).not.toBeInstanceOf(Map)
+      expect(exported.regexOps).toEqual(regexOps)
+    })
   })
   describe('set webhook', function () {
     it('sets correctly', function () {
