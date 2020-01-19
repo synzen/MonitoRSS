@@ -111,20 +111,20 @@ class FeedSchedule extends EventEmitter {
 
     if (feed.disabled) {
       if (toDebug) {
-        log.debug.info(`${feed._id}: Skipping feed delegation due to disabled status`)
+        log.debug.info(`Shard ${this.shardID} ${feed._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
 
     if (failCounter && failCounter.hasFailed()) {
       if (toDebug) {
-        log.debug.info(`${feed._id}: Skipping feed delegation due to failed status: ${failCounter.hasFailed()}`)
+        log.debug.info(`Shard ${this.shardID} ${feed._id}: Skipping feed delegation due to failed status: ${failCounter.hasFailed()}`)
       }
       return false
     }
 
     if (toDebug) {
-      log.debug.info(`${feed._id}: Preparing for feed delegation`)
+      log.debug.info(`Shard ${this.shardID} ${feed._id}: Preparing for feed delegation`)
       this.debugFeedLinks.add(feed.url)
     }
 
@@ -142,7 +142,7 @@ class FeedSchedule extends EventEmitter {
       }
       batch[link] = rssList
       if (debug.links.has(link)) {
-        log.debug.info(`${link}: Attached URL to regular batch list for ${this.name}`)
+        log.debug.info(`Shard ${this.shardID} ${link}: Attached URL to regular batch list for ${this.name}`)
       }
       this._linksResponded[link] = 1
     })
@@ -159,14 +159,14 @@ class FeedSchedule extends EventEmitter {
           continue
         }
         FailCounter.increment(link, 'Failed to respond in a timely manner')
-          .catch(err => log.cycle.warning(`Unable to increment fail counter for ${link}`, err))
+          .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to increment fail counter for ${link}`, err))
         list += `${link}\n`
         ++c
       }
       if (c > 25) {
         list = 'Greater than 25 links, skipping log'
       }
-      log.cycle.warning(`Schedule ${this.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
+      log.cycle.warning(`Shard ${this.shardID} Schedule ${this.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
       console.log(list)
       this.killChildren()
     }
@@ -231,7 +231,7 @@ class FeedSchedule extends EventEmitter {
       const hasChannel = this.bot.channels.has(feed.channel)
       if (!hasGuild || !hasChannel) {
         if (debug.feeds.has(feed._id)) {
-          log.debug.info(`${feed._id}: Not processing feed - missing guild: ${!hasGuild}, missing channel: ${!hasChannel}. Assigned to schedule ${this.name}`)
+          log.debug.info(`Shard ${this.shardID} ${feed._id}: Not processing feed - missing guild: ${!hasGuild}, missing channel: ${!hasChannel}. Assigned to schedule ${this.name}`)
         }
       } else {
         filteredFeeds.push(feed)
@@ -308,7 +308,7 @@ class FeedSchedule extends EventEmitter {
         return
       }
       if (debug.feeds.has(feed._id)) {
-        log.debug.info(`${feed._id}: Assigned schedule ${this.name}`)
+        log.debug.info(`Shard ${this.shardID} ${feed._id}: Assigned schedule ${this.name}`)
       }
       if (this._addToSourceLists(feed)) {
         feedCount++
@@ -363,10 +363,10 @@ class FeedSchedule extends EventEmitter {
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
           FailCounter.increment(linkCompletion.link)
-            .catch(err => log.cycle.warning(`Unable to increment fail counter ${linkCompletion.link}`, err))
+            .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to increment fail counter ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
           FailCounter.reset(linkCompletion.link)
-            .catch(err => log.cycle.warning(`Unable to reset fail counter ${linkCompletion.link}`, err))
+            .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to reset fail counter ${linkCompletion.link}`, err))
           // Only if config.database.uri is a databaseless folder path
           if (linkCompletion.feedCollectionId) {
             this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection
@@ -377,7 +377,7 @@ class FeedSchedule extends EventEmitter {
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
         if (debug.links.has(linkCompletion.link)) {
-          log.debug.info(`${linkCompletion.link}: Link responded from processor for ${this.name}`)
+          log.debug.info(`Shard ${this.shardID} ${linkCompletion.link}: Link responded from processor for ${this.name}`)
         }
         if (completedLinks === currentBatchLen) {
           completedBatches++
@@ -453,17 +453,17 @@ class FeedSchedule extends EventEmitter {
           stats.lastUpdated = data.lastUpdated
           return stats.save()
         }
-      }).catch(err => log.general.warning('Unable to update statistics after cycle', err, true))
+      }).catch(err => log.general.warning(`Shard ${this.shardID} Unable to update statistics after cycle`, err, true))
 
     const name = this.name === 'default' ? 'default ' : ''
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     if (noFeeds) {
-      log.cycle.info(`Finished ${name}feed retrieval cycle${nameParen}. No feeds to retrieve`)
+      log.cycle.info(`Shard ${this.shardID} Finished ${name}feed retrieval cycle${nameParen}. No feeds to retrieve`)
     } else {
       if (this._processorList.length === 0) this.inProgress = false
       this.emit('finish')
       const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
-      log.cycle.info(`Finished ${name}feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
+      log.cycle.info(`Shard ${this.shardID} Finished ${name}feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
     }
 
     ++this.ran
