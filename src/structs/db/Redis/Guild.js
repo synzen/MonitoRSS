@@ -34,6 +34,14 @@ class Guild extends Base {
     if (fetchRoles) this.roles = roles
   }
 
+  async toJSON () {
+    return {
+      ...super.toJSON(),
+      channels: this.channels,
+      roles: this.roles
+    }
+  }
+
   static get utils () {
     return {
       REDIS_KEYS: {
