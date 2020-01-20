@@ -9,7 +9,6 @@ const EventEmitter = require('events')
 const maintenance = require('../util/maintenance/index.js')
 const initialize = require('../util/initialization.js')
 const ipc = require('../util/ipc.js')
-let webClient
 
 class ClientManager extends EventEmitter {
   /**
@@ -20,9 +19,6 @@ class ClientManager extends EventEmitter {
     super()
     if (settings.config) {
       config._overrideWith(settings.config)
-    }
-    if (config.web.enabled === true) {
-      webClient = require('../web/index.js')
     }
     this.config = settings.config
     this.suppressLogLevels = settings.suppressLogLevels
@@ -41,7 +37,6 @@ class ClientManager extends EventEmitter {
     this.shardingManager.on('shardCreate', shard => {
       shard.on('message', message => this.messageHandler(shard, message))
     })
-    this.webClientInstance = undefined
   }
 
   async run (shardCount = config.advanced.shards) {
@@ -49,8 +44,8 @@ class ClientManager extends EventEmitter {
       await connectDb()
       const schedules = await initialize.populateSchedules(this.customSchedules)
       schedules.forEach(schedule => this.refreshRates.add(schedule.refreshRateMinutes))
-      if (config.web.enabled === true && !this.webClientInstance) {
-        this.webClientInstance = webClient()
+      if (config.web.enabled === true) {
+        require('../web/index.js')()
       }
       this.shardingManager.spawn(shardCount, 5500, -1)
     } catch (err) {
@@ -128,10 +123,6 @@ class ClientManager extends EventEmitter {
         .then(() => {
           // Create feed schedule intervals
           this.createIntervals()
-          // Start the web UI
-          if (config.web.enabled === true) {
-            this.webClientInstance.enableCP()
-          }
           this.shardingManager.broadcast({
             _drss: true,
             type: ipc.TYPES.FINISHED_INIT
