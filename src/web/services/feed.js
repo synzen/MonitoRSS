@@ -32,7 +32,9 @@ async function getFailCounters (feeds) {
   const counters = await Promise.all(promises)
   const data = {}
   for (const counter of counters) {
-    data[counter.url] = counter
+    if (counter) {
+      data[counter.url] = counter
+    }
   }
   return data
 }

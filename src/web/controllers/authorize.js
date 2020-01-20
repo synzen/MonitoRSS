@@ -1,6 +1,7 @@
 const requestIp = require('request-ip')
 const authServices = require('../services/auth.js')
 const routingServices = require('../services/routing.js')
+const log = require('../../util/logger.js')
 
 /**
  * @param {import('express').Request} req

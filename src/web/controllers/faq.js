@@ -8,7 +8,7 @@ const faq = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'client', `src
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
-function faq (req, res, next) {
+function controller (req, res, next) {
   const question = decodeURI(req.path.replace('/faq/', '')).replace(/-/g, ' ')
   const item = faq.find(item => item.q.replace(/\?/, '') === question)
   if (!item) {
@@ -22,4 +22,4 @@ function faq (req, res, next) {
     .send(html)
 }
 
-module.exports = faq
+module.exports = controller

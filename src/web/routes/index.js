@@ -11,7 +11,7 @@ router.get(['/cp', '/cp/*'], require('../controllers/cp.js'))
 router.get('/', require('../controllers/root.js'))
 // Provide a custom meta title and description for FAQ
 router.get('/faq/*', require('../controllers/faq.js'))
-router.use(express.static(path.join(__dirname, 'client/build')))
+router.use(express.static(path.join(__dirname, '..', 'client/build')))
 // Redirect all other routes not handled
 router.get('*', require('../controllers/all.js'))
 

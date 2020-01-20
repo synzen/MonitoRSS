@@ -14,8 +14,8 @@ if (process.env.NODE_ENV !== 'test') {
   }))
 }
 
-api.get('/authenticated', require('../controllers/authenticated.js'))
+api.get('/authenticated', require('../../controllers/api/authenticated.js'))
 api.use(csrf())
-api.get('/cp', require('../controllers/cp.js'))
+api.get('/cp', require('../../controllers/api/cp.js'))
 
 module.exports = api

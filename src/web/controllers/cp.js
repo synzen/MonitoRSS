@@ -1,8 +1,6 @@
-const fs = require('fs')
-const path = require('path')
 const requestIp = require('request-ip')
 const routingServices = require('../services/routing.js')
-const htmlFile = fs.readFileSync(path.join(__dirname, 'client/build', 'index.html')).toString()
+const htmlConstants = require('../constants/html.js')
 
 /**
  * @param {import('express').Request} req
@@ -17,7 +15,7 @@ function cp (req, res) {
     }
   }
 
-  const html = htmlFile
+  const html = htmlConstants.indexFile
     .replace('__OG_TITLE__', 'Control Panel')
     .replace('__OG_DESCRIPTION__', `Customizing your feeds in multiple servers has never been easier!.\n\nThis site is under construction.`)
   return res

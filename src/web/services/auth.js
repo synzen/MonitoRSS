@@ -23,7 +23,7 @@ const discordAPIConstants = require('../constants/discordAPI.js')
  * @param {import('simple-oauth2').OAuthClient} oauthClient
  */
 async function createAuthToken (code, oauthClient) {
-  const result = await oauth2.authorizationCode.getToken({
+  const result = await oauthClient.authorizationCode.getToken({
     code,
     redirect_uri: config.web.redirectUri,
     scope: discordAPIConstants.scopes
@@ -33,8 +33,6 @@ async function createAuthToken (code, oauthClient) {
     token: accessTokenObject.token,
     identity: await userServices.getInfo(null, accessTokenObject.token.access_token)
   }
-  req.session.auth = accessTokenObject.token
-  req.session.identity = await fetchUser.info(req.session.identity ? req.session.identity.id : null, req.session.auth.access_token)
   return session
 }
 

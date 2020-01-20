@@ -48,7 +48,11 @@ async function getGuilds (id, accessToken, skipCache) {
     return cachedUserGuilds.data
   }
   log.web.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me/guilds`)
-  const { data } = await axios.get(`${discordAPIConstants.apiHost}/users/@me/guilds`, discordAPIHeaders.user(accessToken))
+  const res = await fetch(`${discordAPIConstants.apiHost}/users/@me/guilds`, discordAPIHeaders.user(accessToken))
+  if (res.status !== 200) {
+    throw new Error(`Non-200 status code (${res.status})`)
+  }
+  const data = await res.json()
   CACHED_USERS_GUILDS[id] = {
     data,
     lastUpdated: moment()
@@ -72,7 +76,7 @@ async function getGuildsWithPermission (userID, userAccessToken) {
     if (!isOwner && !managesChannel && !isAdministrator) {
       continue
     }
-    guildCacheApproved.push(discordGuild)
+    guildCacheApproved.push(guildInCache)
   }
   return guildCacheApproved
 }
