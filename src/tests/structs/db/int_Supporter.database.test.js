@@ -16,7 +16,9 @@ describe('Int::structs/db/Supporter Database', function () {
   /** @type {import('mongoose').Collection} */
   let collection
   beforeAll(async function () {
+    config._vip = true
     config.database.uri = 'mongodb://'
+
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
     collection = mongoose.connection.db.collection('supporters')

@@ -65,7 +65,12 @@ describe('Unit::structs/db/Supporter', function () {
     })
   })
   describe('static getValidSupporters', function () {
+    it('returns empty array if supporters not enabled', async function () {
+      jest.spyOn(Supporter, 'enabled', 'get').mockReturnValue(false)
+      expect(Supporter.getValidSupporters()).resolves.toEqual([])
+    })
     it('returns all guilds of all valid supporters in 1 array', async function () {
+      jest.spyOn(Supporter, 'enabled', 'get').mockReturnValue(true)
       const supporters = [{
         _id: 1,
         isValid: () => Promise.resolve(true)

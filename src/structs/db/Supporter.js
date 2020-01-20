@@ -74,6 +74,9 @@ class Supporter extends Base {
    * @returns {Supporter[]}
    */
   static async getValidSupporters () {
+    if (!Supporter.enabled) {
+      return []
+    }
     const supporters = await this.getAll()
     const promises = []
     for (const supporter of supporters) {
