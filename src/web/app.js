@@ -78,7 +78,6 @@ module.exports = () => {
 
   // Application-specific variables
   app.set('oauth2', oauth2)
-  app.set('attemptedPaths', attemptedPaths)
 
   // Routes
   app.use(routes)
