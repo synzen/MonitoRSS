@@ -5,18 +5,26 @@ const discordAPIConstants = require('../constants/discordAPI.js')
 /**
  * @typedef {Object} Session
  * @property {Object} token
+ * @property {Object} identity
  */
 
- /**
+/**
+ * @param {Session} session
+ */
+function isAuthenticated (session) {
+  return !!(session.identity && session.token)
+}
+
+/**
   * @param {import('simple-oauth2').OAuthClient} oauthClient
   * @returns {string}
   */
- async function getAuthorizationURL (oauthClient) {
+async function getAuthorizationURL (oauthClient) {
   return oauthClient.authorizationCode.authorizeURL({
     redirect_uri: config.web.redirectUri,
     scope: discordAPIConstants.scopes
   })
- }
+}
 
 /**
  * Attach the user's oauth2 token to req
@@ -69,6 +77,7 @@ async function logout (oauthClient, session) {
 }
 
 module.exports = {
+  isAuthenticated,
   getAuthorizationURL,
   createAuthToken,
   getAuthToken,

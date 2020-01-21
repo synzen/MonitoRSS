@@ -1,4 +1,5 @@
 const requestIp = require('request-ip')
+const authServices = require('../services/auth.js')
 const routingServices = require('../services/routing.js')
 const htmlConstants = require('../constants/html.js')
 
@@ -7,7 +8,7 @@ const htmlConstants = require('../constants/html.js')
  * @param {import('express').Response} res
  */
 function cp (req, res) {
-  if (!req.session.identity || !req.session.token) {
+  if (!authServices.isAuthenticated(req.session)) {
     // Save the path to redirect them later after they're authorized
     const ip = requestIp.getClientIp(req)
     if (ip) {

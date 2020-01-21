@@ -1,10 +1,12 @@
+const authServices = require('../../services/auth.js')
+
 /**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  */
 function getAuthenticated (req, res) {
   res.json({
-    authenticated: !!(req.session.identity && req.session.token)
+    authenticated: authServices.isAuthenticated(req.session)
   })
 }
 
