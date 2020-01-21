@@ -3,7 +3,7 @@ const formatter = require('../util/validatorFormatter.js')
 const createError = require('../util/createError.js')
 
 /**
- * @param {import('express-validator').ValidationChain[]} validations 
+ * @param {import('express-validator').ValidationChain[]} validations
  */
 function validator (validations) {
   /**
@@ -11,15 +11,19 @@ function validator (validations) {
    * @param {import('express').Response} res
    * @param {import('express').NextFunction} next
    */
-  function middleware (req, res, next) {
-    const promises = validations.map(validator => validator.run(req))
-    const result = await Promise.all(promises)
-    const errors = validationResult(result).formatWith(formatter)
-    if (errors.isEmpty()) {
-      return next()
+  async function middleware (req, res, next) {
+    try {
+      const promises = validations.map(validator => validator.run(req))
+      const result = await Promise.all(promises)
+      const errors = validationResult(result).formatWith(formatter)
+      if (errors.isEmpty()) {
+        return next()
+      }
+      const response = createError(422, 'Validation error', errors.array())
+      res.status(422).json(response)
+    } catch (err) {
+      next(err)
     }
-    const response = createError(422, 'Validation error', errors.array())
-    res.status(422).json(response)
   }
   return middleware
 }
