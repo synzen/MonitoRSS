@@ -19,7 +19,7 @@ function isAuthenticated (session) {
   * @param {import('simple-oauth2').OAuthClient} oauthClient
   * @returns {string}
   */
-async function getAuthorizationURL (oauthClient) {
+function getAuthorizationURL (oauthClient) {
   return oauthClient.authorizationCode.authorizeURL({
     redirect_uri: config.web.redirectUri,
     scope: discordAPIConstants.scopes

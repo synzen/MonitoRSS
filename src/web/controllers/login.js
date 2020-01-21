@@ -1,4 +1,3 @@
-
 const authServices = require('../services/auth.js')
 
 /**
@@ -6,14 +5,10 @@ const authServices = require('../services/auth.js')
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
-async function login (req, res, next) {
+function login (req, res, next) {
   const oauthClient = req.app.get('oauth2')
-  try {
-    const url = await authServices.getAuthorizationURL(oauthClient)
-    res.redirect(url)
-  } catch (err) {
-    next(err)
-  }
+  const url = authServices.getAuthorizationURL(oauthClient)
+  res.redirect(url)
 }
 
 module.exports = login
