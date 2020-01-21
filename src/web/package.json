@@ -38,6 +38,7 @@
   },
   "scripts": {
     "test": "jest ./tests --detectOpenHandles",
+    "test-watch": "jest ./tests --detectOpenHandles --watch",
     "eslint": "eslint --fix ."
   },
   "author": "synzen",
