@@ -180,6 +180,7 @@ module.exports = class Article {
     this.youtube = !!(raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#'])
     this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
     this.placeholdersForRegex = BASE_REGEX_PHS.slice()
+    this.privatePlaceholders = ['id', 'fullDescription', 'fullSummary', 'fullTitle', 'fullDate']
     this.placeholders = []
     this.meta = raw.meta
     this.guid = raw.guid
@@ -195,8 +196,8 @@ module.exports = class Article {
     // Title
     this.titleImages = []
     this.titleAnchors = []
-    this._fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors, this.encoding)
-    this.title = this._fullTitle.length > 150 ? `${this._fullTitle.slice(0, 150)}...` : this._fullTitle
+    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors, this.encoding)
+    this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
     if (this.title) this.placeholders.push('title')
     for (var titleImgNum in this.titleImages) {
       const term = `title:image${parseInt(titleImgNum, 10) + 1}`
@@ -216,15 +217,15 @@ module.exports = class Article {
     if (this.guid) this.placeholders.push('guid')
 
     // Date
-    this._fullDate = raw.pubdate
-    this.date = this.formatDate(this._fullDate, this.profile.timezone)
+    this.fullDate = raw.pubdate
+    this.date = this.formatDate(this.fullDate, this.profile.timezone)
     if (this.date) this.placeholders.push('date')
 
     // Description and reddit-specific placeholders
     this.descriptionImages = []
     this.descriptionAnchors = []
-    this._fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors, this.encoding) // Account for youtube's description
-    this.description = this._fullDescription
+    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors, this.encoding) // Account for youtube's description
+    this.description = this.fullDescription
     this.description = this.description.length > 800 ? `${this.description.slice(0, 790)}...` : this.description
     if (this.description) this.placeholders.push('description')
     for (var desImgNum in this.descriptionImages) {
@@ -242,15 +243,15 @@ module.exports = class Article {
 
     if (this.reddit) {
       // Truncate the useless end of reddit description after anchors are removed
-      this._fullDescription = this._fullDescription.replace('\n[link] [comments]', '')
+      this.fullDescription = this.fullDescription.replace('\n[link] [comments]', '')
       this.description = this.description.replace('\n[link] [comments]', '')
     }
 
     // Summary
     this.summaryImages = []
     this.summaryAnchors = []
-    this._fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
-    this.summary = this._fullSummary.length > 800 ? `${this._fullSummary.slice(0, 790)}...` : this._fullSummary
+    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
+    this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
     if (this.summary && raw.summary !== raw.description) this.placeholders.push('summary')
     for (var sumImgNum in this.summaryImages) {
       const term = `summary:image${+sumImgNum + 1}`
@@ -518,9 +519,9 @@ module.exports = class Article {
 
   testFilters (filters) {
     const referenceOverrides = {
-      description: this._fullDescription,
-      summary: this._fullSummary,
-      title: this._fullTitle
+      description: this.fullDescription,
+      summary: this.fullSummary,
+      title: this.fullTitle
     }
     let passed = true
     const filterResults = new FilterResults()
@@ -575,12 +576,12 @@ module.exports = class Article {
   // replace simple keywords
   convertKeywords (word = '', ignoreCharLimits) {
     if (word.length === 0) return word
-    let content = word.replace(/{title}/g, ignoreCharLimits ? this._fullTitle : this.title)
+    let content = word.replace(/{title}/g, ignoreCharLimits ? this.fullTitle : this.title)
       .replace(/{author}/g, this.author)
-      .replace(/{summary}/g, ignoreCharLimits ? this._fullSummary : this.summary)
+      .replace(/{summary}/g, ignoreCharLimits ? this.fullSummary : this.summary)
       .replace(/{subscriptions}/g, this.subscriptions)
       .replace(/{link}/g, this.link)
-      .replace(/{description}/g, ignoreCharLimits ? this._fullDescription : this.description)
+      .replace(/{description}/g, ignoreCharLimits ? this.fullDescription : this.description)
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
 
@@ -595,7 +596,7 @@ module.exports = class Article {
         // no custom timezone was defined after date within the placeholder
         convertedDate = this.date
       } else if (moment.tz.zone(zone)) {
-        convertedDate = this.formatDate(this._fullDate, zone)
+        convertedDate = this.formatDate(this.fullDate, zone)
       }
 
       content = content.substring(0, result.index) + convertedDate + content.substring(result.index + fullLength, content.length)
@@ -612,5 +613,34 @@ module.exports = class Article {
     }
 
     return this.convertRawPlaceholders(this.convertAnchors(this.convertImgs(content)))
+  }
+
+  toJSON () {
+    const data = {}
+    // Regular
+    for (const placeholder of this.placeholders) {
+      data[placeholder] = this[placeholder]
+    }
+
+    // Private
+    for (const placeholder of this.privatePlaceholders) {
+      data[`_${placeholder}`] = this[placeholder]
+    }
+
+    // Regex
+    for (const placeholder in this.regexPlaceholders) {
+      const value = this.regexPlaceholders[placeholder]
+      for (const customName in value) {
+        data[`regex:${placeholder}:${customName}`] = value[customName]
+      }
+    }
+
+    // Raw
+    const rawPlaceholders = this.getRawPlaceholders()
+    for (const rawPlaceholder in rawPlaceholders) {
+      data[`raw:${rawPlaceholder}`] = rawPlaceholders[rawPlaceholder]
+    }
+
+    return data
   }
 }
