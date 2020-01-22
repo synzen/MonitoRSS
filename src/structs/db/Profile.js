@@ -1,6 +1,5 @@
 const Base = require('./Base.js')
 const ProfileModel = require('../../models/Profile.js').model
-const Feed = require('./Feed.js')
 
 class Profile extends Base {
   /**
@@ -86,18 +85,6 @@ class Profile extends Base {
       locale: this.locale,
       alert: this.alert
     }
-  }
-
-  /**
-   * Return this guild's feeds
-   * @type {import('./Feed.js')[]}
-   * @returns {Promise<Feed[]>}
-   */
-  async getFeeds () {
-    if (!this._saved) {
-      throw new Error('Must be saved before getting feeds')
-    }
-    return Feed.getManyBy('guild', this.id)
   }
 
   static get Model () {

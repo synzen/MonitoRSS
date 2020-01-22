@@ -53,11 +53,4 @@ describe('Unit::structs/db/Profile', function () {
       }
     })
   })
-  describe('getFeeds', function () {
-    it('throws an error if unsaved', function () {
-      const profile = new Profile({ _id: 1, name: 'abc' })
-      profile._saved = false
-      return expect(profile.getFeeds()).rejects.toThrowError(new Error('Must be saved before getting feeds'))
-    })
-  })
 })
