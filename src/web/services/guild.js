@@ -25,6 +25,10 @@ async function getFeedLimit (guildID) {
   return Profile.getFeedLimit(guildID)
 }
 
+async function getProfile (guildID) {
+  return Profile.get(guildID)
+}
+
 async function fetchMember (guildID) {
 
 }
@@ -32,5 +36,6 @@ async function fetchMember (guildID) {
 module.exports = {
   getAppData,
   getGuild,
+  getProfile,
   getFeedLimit
 }
