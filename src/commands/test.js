@@ -6,17 +6,14 @@ const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailCounter = require('../structs/db/FailCounter.js')
-const Feed = require('../structs/db/Feed.js')
-const Format = require('../structs/db/Format.js')
-const Subscriber = require('../structs/db/Subscriber.js')
+const FeedData = require('../structs/db/FeedData.js')
 const Supporter = require('../structs/db/Supporter.js')
-const FilteredFormat = require('../structs/db/FilteredFormat.js')
 
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
   try {
     const profile = await Profile.get(message.guild.id)
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
+    const feeds = await FeedData.getManyBy('guild', message.guild.id)
 
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
@@ -29,11 +26,6 @@ module.exports = async (bot, message, command) => {
     if (await FailCounter.hasFailed(feed.url)) {
       return await message.channel.send(translate('commands.test.failed'))
     }
-    const [ format, subscribers, filteredFormats ] = await Promise.all([
-      Format.getBy('feed', feed._id),
-      Subscriber.getManyBy('feed', feed._id),
-      FilteredFormat.getManyBy('feed', feed._id)
-    ])
     const grabMsg = await message.channel.send(translate('commands.test.grabbingRandom'))
     const article = await FeedFetcher.fetchRandomArticle(feed.url)
     if (!article) {
@@ -41,19 +33,7 @@ module.exports = async (bot, message, command) => {
     }
     article._delivery = {
       rssName: feed._id,
-      source: {
-        ...feed.toJSON(),
-        format: format ? format.toJSON() : undefined,
-        filteredFormats: filteredFormats.map(f => f.toJSON()),
-        subscribers: subscribers.map(s => s.toJSON()),
-        dateSettings: profile
-          ? {
-            timezone: profile.timezone,
-            format: profile.dateFormat,
-            language: profile.dateLanguage
-          }
-          : {}
-      }
+      source: feed.toJSON()
     }
     if (Supporter.enabled && profile.webhook && !(await Supporter.hasValidGuild(message.guild.id))) {
       log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)

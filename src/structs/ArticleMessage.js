@@ -6,10 +6,8 @@ const Article = require('./Article.js')
 
 /**
  * @typedef {Object} PreparedArticle
- * @property {string} rssName - The feed ID where this article came from
  * @property {Object} _delivery - Delivery details
  * @property {Object} _delivery.source - The feed source where this article came from
- * @property {string} _delivery.rssName - The feed ID where this article came from
  */
 
 class ArticleMessage {
@@ -23,13 +21,10 @@ class ArticleMessage {
     if (!article._delivery) {
       throw new Error('article._delivery property missing')
     }
-    if (!article._delivery.rssName) {
-      throw new Error('article._delivery.rssName property missing')
-    }
     if (!article._delivery.source) {
       throw new Error('article._delivery.source property missing')
     }
-    this.debug = debug.feeds.has(article._delivery.rssName)
+    this.debug = debug.feeds.has(article._delivery.source._id)
     this.article = article
     this.filteredFormats = article._delivery.source.filteredFormats
     this.format = article._delivery.source.format
@@ -45,11 +40,11 @@ class ArticleMessage {
     }
     this.webhook = undefined
     this.sendFailed = 1
-    this.rssName = article._delivery.rssName
     this.source = article._delivery.source
+    this.feedID = this.source._id
     this.toggleRoleMentions = typeof this.source.toggleRoleMentions === 'boolean' ? this.source.toggleRoleMentions : config.feeds.toggleRoleMentions
     this.split = this.source.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
-    this.parsedArticle = new Article(article, this.source, this.article._delivery.source.dateSettings)
+    this.parsedArticle = new Article(article, this.source, this.source.profile ? this.source.profile : {})
 
     if (Object.keys(this.source.rfilters).length > 0) {
       // Regex
@@ -285,7 +280,7 @@ class ArticleMessage {
   }
 
   _createSendOptions () {
-    const text = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embeds ? `Unable to send empty message for feed article <${this.article.link}> (${this.rssName}).` : this.text
+    const text = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embeds ? `Unable to send empty message for feed article <${this.article.link}> (${this.feedID}).` : this.text
     const options = this.isTestMessage ? ArticleMessage.TEST_OPTIONS : {}
     if (this.webhook) {
       options.username = this.webhook.name
@@ -328,8 +323,8 @@ class ArticleMessage {
       }
     } catch (err) {
       if (err.code === 50013 || this.sendFailed++ === 4) { // 50013 = Missing Permissions
-        if (debug.feeds.has(this.rssName)) {
-          log.debug.error(`${this.rssName}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
+        if (debug.feeds.has(this.feedID)) {
+          log.debug.error(`${this.feedID}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
         }
         throw err
       }

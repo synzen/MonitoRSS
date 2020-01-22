@@ -7,11 +7,8 @@ const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const Feed = require('../structs/db/Feed.js')
+const FeedData = require('../structs/db/FeedData.js')
 const FailCounter = require('../structs/db/FailCounter.js')
-const Format = require('../structs/db/Format.js')
-const Subscriber = require('../structs/db/Subscriber.js')
-const FilteredFormat = require('../structs/db/FilteredFormat.js')
 
 async function feedSelectorFn (m, data) {
   const { feed, locale } = data
@@ -68,7 +65,7 @@ module.exports = async (bot, message, command, role) => {
   try {
     const profile = await Profile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
+    const feeds = await FeedData.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command, locale: guildLocale }, feeds)
     const setMessage = new MenuUtils.Menu(message, setMessageFn)
@@ -126,26 +123,9 @@ module.exports = async (bot, message, command, role) => {
         return await message.channel.send(translate('commands.filters.noArticlesPassed'))
       }
       log.command.info(`Sending filtered article for ${feed.url}`, message.guild)
-      const [ format, subscribers, filteredFormats ] = await Promise.all([
-        Format.getBy('feed', feed._id),
-        Subscriber.getManyBy('feed', feed._id),
-        FilteredFormat.getManyBy('feed', feed._id)
-      ])
       article._delivery = {
         rssName: feed._id,
-        source: {
-          ...feed.toJSON(),
-          format: format ? format.toJSON() : undefined,
-          filteredFormats: filteredFormats.map(f => f.toJSON()),
-          subscribers: subscribers.map(s => s.toJSON()),
-          dateSettings: profile
-            ? {
-              timezone: profile.timezone,
-              format: profile.dateFormat,
-              language: profile.dateLanguage
-            }
-            : {}
-        }
+        source: feed.toJSON()
       }
 
       const queue = new ArticleMessageQueue(message.client)

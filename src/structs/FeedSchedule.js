@@ -1,13 +1,9 @@
 const path = require('path')
 const config = require('../config.js')
 const Schedule = require('./db/Schedule.js')
-const Profile = require('./db/Profile.js')
 const FailCounter = require('./db/FailCounter.js')
-const Subscriber = require('./db/Subscriber.js')
-const Format = require('./db/Format.js')
-const FilteredFormat = require('./db/FilteredFormat.js')
 const ShardStats = require('./db/ShardStats.js')
-const Feed = require('./db/Feed.js')
+const FeedData = require('./db/FeedData.js')
 const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
@@ -42,13 +38,9 @@ class FeedSchedule extends EventEmitter {
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
     this._sourceList = new Map()
-    this._profilesById = new Map()
-    this._formatsByFeedId = new Map()
-    this._filteredFormatsByFeedId = new Map()
-    this._subscribersByFeedId = new Map()
     this.failCounters = new Map()
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
-    this.feedData = Feed.isMongoDatabase ? undefined : {}
+    this.feedData = FeedData.isMongoDatabase ? undefined : {}
     this.feedCount = 0 // For statistics
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
@@ -59,27 +51,11 @@ class FeedSchedule extends EventEmitter {
   }
 
   /**
-   * @param {Feed} feed
+   * @param {FeedData} feed
    */
   _delegateFeed (feed) {
     // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
-    const guild = this._profilesById.get(feed.guild)
-    const format = this._formatsByFeedId.get(feed._id)
-    const subscribers = this._subscribersByFeedId.get(feed._id) || []
-    const filteredFormats = this._filteredFormatsByFeedId.get(feed._id) || []
-    const data = {
-      ...feed.toJSON(),
-      subscribers,
-      format,
-      filteredFormats,
-      dateSettings: !guild
-        ? {}
-        : {
-          timezone: guild.timezone,
-          format: guild.dateFormat,
-          language: guild.dateLanguage
-        }
-    }
+    const data = feed.toJSON()
 
     if (Supporter.enabled && !this.allowWebhooks.has(feed.guild) && feed.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
@@ -192,39 +168,20 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
-    this._formatsByFeedId.clear()
-    this._filteredFormatsByFeedId.clear()
-    this._subscribersByFeedId.clear()
     const [
       failCounters,
-      profiles,
       feeds,
-      formats,
-      filteredFormats,
-      subscribers,
       supporterGuilds,
       schedules
     ] = await Promise.all([
       FailCounter.getAll(),
-      Profile.getAll(),
-      Feed.getAll(),
-      Format.getAll(),
-      FilteredFormat.getAll(),
-      Subscriber.getAll(),
+      FeedData.getAll(),
       Supporter.getValidGuilds(),
       Schedule.getAll()
     ])
     const filteredFeeds = []
     const filteredFeedsIds = new Set()
-
-    // Get the profiles
-    profiles.forEach(profile => {
-      const hasGuild = this.bot.guilds.has(profile._id)
-      if (hasGuild) {
-        this._profilesById.set(profile.id, profile)
-      }
-    })
-
+    const formatsByFeedId = new Map()
     // Filter in feeds only this bot contains
     for (const feed of feeds) {
       const hasGuild = this.bot.guilds.has(feed.guild)
@@ -236,42 +193,11 @@ class FeedSchedule extends EventEmitter {
       } else {
         filteredFeeds.push(feed)
         filteredFeedsIds.add(feed._id)
+        if (feed.format) {
+          formatsByFeedId.set(feed._id, feed.format)
+        }
       }
     }
-
-    // Get the formats
-    formats.forEach(format => {
-      if (!filteredFeedsIds.has(format.feed)) {
-        return
-      }
-      this._formatsByFeedId.set(format.feed, format.toJSON())
-    })
-
-    // Get the filtered formats
-    filteredFormats.forEach(format => {
-      if (!filteredFeedsIds.has(format.feed)) {
-        return
-      }
-      if (!this._filteredFormatsByFeedId.has(format.feed)) {
-        this._filteredFormatsByFeedId.set(format.feed, [format.toJSON()])
-      } else {
-        this._filteredFormatsByFeedId.get(format.feed).push(format.toJSON())
-      }
-    })
-
-    // Get the subscribers
-    subscribers.forEach(subscriber => {
-      if (!filteredFeedsIds.has(subscriber.feed)) {
-        return
-      }
-      const feedId = subscriber.feed
-      const json = subscriber.toJSON()
-      if (!this._subscribersByFeedId.has(feedId)) {
-        this._subscribersByFeedId.set(feedId, [json])
-      } else {
-        this._subscribersByFeedId.get(feedId).push(json)
-      }
-    })
 
     // Save the fail counters
     this.failCounters.clear()
@@ -281,7 +207,7 @@ class FeedSchedule extends EventEmitter {
 
     // Check the permissions
     await Promise.all(filteredFeeds.map(feed => {
-      const format = this._formatsByFeedId[feed._id]
+      const format = formatsByFeedId.get(feed._id)
       return maintenance.checkPermissions(feed, format, this.bot)
     }))
 

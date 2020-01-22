@@ -16,8 +16,7 @@ describe('Unit::ArticleMessage', function () {
           filters: { a: 1 },
           rfilters: {},
           filteredFormats: []
-        },
-        rssName: 'asd'
+        }
       }
     }
     const rawArticleWithNoFilters = {
@@ -27,29 +26,34 @@ describe('Unit::ArticleMessage', function () {
           filters: {},
           rfilters: {},
           filteredFormats: []
-        },
-        rssName: 'asd'
+        }
       }
     }
 
     const testDetails = 'wseirtg4yjr'
     const generatedMessage = { text: 'awszf', embeds: [1, 2] }
     beforeEach(function () {
-      jest.spyOn(ArticleMessage.prototype, '_generateMessage').mockImplementation(() => generatedMessage)
-      jest.spyOn(ArticleMessage.prototype, '_generateTestMessage').mockImplementation(() => testDetails)
-      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue({ passed: true })
+      jest.spyOn(ArticleMessage.prototype, '_generateMessage')
+        .mockImplementation(() => generatedMessage)
+      jest.spyOn(ArticleMessage.prototype, '_generateTestMessage')
+        .mockImplementation(() => testDetails)
+      jest.spyOn(Article.prototype, 'testFilters')
+        .mockReturnValue({ passed: true })
     })
     afterEach(function () {
       jest.restoreAllMocks()
     })
     it('throws an error if _delivery is missing', function () {
-      expect(() => new ArticleMessage(Bot(), {})).toThrowError(expect.objectContaining({ message: expect.stringContaining('_delivery property missing') }))
-    })
-    it('throws an error if _delivery.rssName is missing', function () {
-      expect(() => new ArticleMessage(Bot(), { _delivery: { source: {} } })).toThrowError(expect.objectContaining({ message: expect.stringContaining('rssName property missing') }))
+      expect(() => new ArticleMessage(Bot(), {}))
+        .toThrowError(expect.objectContaining({
+          message: expect.stringContaining('_delivery property missing')
+        }))
     })
     it('throws an error if _delivery.source is missing', function () {
-      expect(() => new ArticleMessage(Bot(), { _delivery: { rssName: 'asdasd' } })).toThrowError(expect.objectContaining({ message: expect.stringContaining('source property missing') }))
+      expect(() => new ArticleMessage(Bot(), { _delivery: {} }))
+        .toThrowError(expect.objectContaining({
+          message: expect.stringContaining('source property missing')
+        }))
     })
     it.only('defines the correct properties for this.parsedArticle', function () {
       const parsedArticle = { foo: 'bar', subscriptionIds: [1, 4, 5], testFilters: jest.fn() }
@@ -57,7 +61,6 @@ describe('Unit::ArticleMessage', function () {
       const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
       expect(m.parsedArticle).toEqual(parsedArticle)
       expect(m.channelId).toEqual(rawArticle._delivery.source.channel)
-      expect(m.rssName).toEqual(rawArticle._delivery.rssName)
       expect(m.text).toEqual(generatedMessage.text)
       expect(m.embeds).toEqual(generatedMessage.embeds)
       expect(m.subscriptionIds).toEqual(parsedArticle.subscriptionIds)
@@ -109,8 +112,10 @@ describe('Unit::ArticleMessage', function () {
     }
     beforeEach(function () {
       const generatedMessage = { text: 'awszf', embeds: [1, 2] }
-      jest.spyOn(ArticleMessage.prototype, '_resolveWebhook').mockImplementation()
-      jest.spyOn(ArticleMessage.prototype, '_createSendOptions').mockImplementation(() => generatedMessage)
+      jest.spyOn(ArticleMessage.prototype, '_resolveWebhook')
+        .mockImplementation()
+      jest.spyOn(ArticleMessage.prototype, '_createSendOptions')
+        .mockImplementation(() => generatedMessage)
     })
     afterEach(function () {
       jest.restoreAllMocks()

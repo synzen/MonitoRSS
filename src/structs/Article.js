@@ -170,10 +170,10 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
 }
 
 module.exports = class Article {
-  constructor (raw, source) {
+  constructor (raw, source, profile = {}) {
     this.id = raw._id || null
     this.source = source
-    this.dateSettings = source.dateSettings
+    this.profile = profile
     this.raw = raw
     this.encoding = raw.meta['#xml'].encoding ? raw.meta['#xml'].encoding.toLowerCase() : 'utf-8'
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
@@ -217,7 +217,7 @@ module.exports = class Article {
 
     // Date
     this._fullDate = raw.pubdate
-    this.date = this.formatDate(this._fullDate, this.dateSettings.timezone)
+    this.date = this.formatDate(this._fullDate, this.profile.timezone)
     if (this.date) this.placeholders.push('date')
 
     // Description and reddit-specific placeholders
@@ -471,11 +471,11 @@ module.exports = class Article {
 
       // Format the date if it is one
       if (Object.prototype.toString.call(matches[fullMatch]) === '[object Date]') {
-        const guildTimezone = this.dateSettings.timezone
+        const guildTimezone = this.profile.timezone
         const timezone = guildTimezone && moment.tz.zone(guildTimezone) ? guildTimezone : config.feeds.timezone
-        const dateFormat = this.dateSettings.format ? this.dateSettings.format : config.feeds.dateFormat
+        const dateFormat = this.profile.dateFormat ? this.profile.dateFormat : config.feeds.dateFormat
         const localMoment = moment(matches[fullMatch])
-        if (this.dateSettings.language) localMoment.locale(this.dateSettings.language)
+        if (this.profile.dateLanguage) localMoment.locale(this.profile.dateLanguage)
         const useTimeFallback = config.feeds.timeFallback === true && matches[fullMatch].toString() !== 'Invalid Date' && dateHasNoTime(matches[fullMatch])
         matches[fullMatch] = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       }
@@ -501,14 +501,14 @@ module.exports = class Article {
   formatDate (date, tz) {
     if (date && date.toString() !== 'Invalid Date') {
       const timezone = tz && moment.tz.zone(tz) ? tz : config.feeds.timezone
-      const dateFormat = this.dateSettings.format ? this.dateSettings.format : config.feeds.dateFormat
+      const dateFormat = this.profile.dateFormat ? this.profile.dateFormat : config.feeds.dateFormat
 
       const useDateFallback = config.feeds.dateFallback === true && (!date || date.toString() === 'Invalid Date')
       const useTimeFallback = config.feeds.timeFallback === true && date.toString() !== 'Invalid Date' && dateHasNoTime(date)
       const useDate = useDateFallback ? new Date() : date
       const localMoment = moment(useDate)
-      if (this.dateSettings.language) {
-        localMoment.locale(this.dateSettings.language)
+      if (this.profile.dateLanguage) {
+        localMoment.locale(this.profile.dateLanguage)
       }
       const vanityDate = useTimeFallback ? setCurrentTime(localMoment).tz(timezone).format(dateFormat) : localMoment.tz(timezone).format(dateFormat)
       return vanityDate === 'Invalid Date' ? '' : vanityDate
