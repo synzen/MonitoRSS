@@ -7,7 +7,6 @@ const schema = new mongoose.Schema({
   alert: {
     type: [String]
   },
-  sources: Object,
   dateFormat: String,
   dateLanguage: String,
   timezone: String,
