@@ -5,7 +5,11 @@ const Profile = require('../../structs/db/Profile.js')
 
 async function getAppData (guildID) {
   const data = await GuildData.get(guildID)
-  return data.toJSON()
+  if (data) {
+    return data.toJSON()
+  } else {
+    return null
+  }
 }
 
 async function getGuild (guildID) {
