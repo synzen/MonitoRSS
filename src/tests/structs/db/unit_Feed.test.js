@@ -2,7 +2,9 @@ const Feed = require('../../../structs/db/Feed.js')
 const Schedule = require('../../../structs/db/Schedule.js')
 const Supporter = require('../../../structs/db/Supporter.js')
 const Format = require('../../../structs/db/Format.js')
+const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
 
+jest.mock('../../../structs/db/FilteredFormat.js')
 jest.mock('../../../structs/db/Format.js')
 jest.mock('../../../structs/db/Schedule.js')
 jest.mock('../../../structs/db/Supporter.js')
@@ -152,12 +154,21 @@ describe('Unit::structs/db/Feed', function () {
     })
   })
   describe('getFormat', function () {
-    it('calls Feed.getBy correctly', async function () {
+    it('calls correctly', async function () {
       const _id = 'w4ytghre5ue35hu'
       const feed = new Feed({ ...necessaryInit })
       feed._id = _id
       await feed.getFormat()
       expect(Format.getBy).toHaveBeenCalledWith('feed', _id)
+    })
+  })
+  describe('getFilteredFormats', function () {
+    it('calls correctly', async function () {
+      const _id = 'q23tw45erey5h'
+      const feed = new Feed({ ...necessaryInit })
+      feed._id = _id
+      await feed.getFilteredFormats()
+      expect(FilteredFormat.getManyBy).toHaveBeenCalledWith('feed', _id)
     })
   })
   describe('enable', function () {

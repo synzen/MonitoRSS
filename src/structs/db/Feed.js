@@ -2,6 +2,7 @@ const Base = require('./Base.js')
 const FilterBase = require('./FilterBase.js')
 const FeedModel = require('../../models/Feed.js').model
 const Format = require('./Format.js')
+const FilteredFormat = require('./FilteredFormat.js')
 const Subscriber = require('./Subscriber.js')
 const Schedule = require('./Schedule.js')
 const Supporter = require('./Supporter.js')
@@ -229,6 +230,14 @@ class Feed extends FilterBase {
   }
 
   /**
+   * Returns all the filtered formats of this feed
+   * @returns {FilteredFormat[]}
+   */
+  async getFilteredFormats () {
+    return FilteredFormat.getManyBy('feed', this._id)
+  }
+
+  /**
    * Disable this feed
    * @param {string} reason
    */
@@ -248,7 +257,9 @@ class Feed extends FilterBase {
   async delete () {
     const format = await this.getFormat()
     const subscribers = await this.getSubscribers()
+    const filteredFormats = await this.getFilteredFormats()
     const toDelete = subscribers.map(sub => sub.delete())
+      .concat(filteredFormats.map(f => f.delete()))
     if (format) {
       toDelete.push(format.delete())
     }
