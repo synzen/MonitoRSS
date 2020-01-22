@@ -13,9 +13,8 @@ function validator (validations) {
    */
   async function middleware (req, res, next) {
     try {
-      const promises = validations.map(validator => validator.run(req))
-      const result = await Promise.all(promises)
-      const errors = validationResult(result).formatWith(formatter)
+      await Promise.all(validations.map(validator => validator.run(req)))
+      const errors = validationResult(req).formatWith(formatter)
       if (errors.isEmpty()) {
         return next()
       }
