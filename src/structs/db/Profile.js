@@ -91,6 +91,7 @@ class Profile extends Base {
   /**
    * Return this guild's feeds
    * @type {import('./Feed.js')[]}
+   * @returns {Promise<Feed[]>}
    */
   async getFeeds () {
     if (!this._saved) {
