@@ -15,10 +15,10 @@ async function cp (req, res, next) {
   try {
     const userID = req.session.identity.id
     const accessToken = req.session.token.access_token
-    const [ guildCacheApproved, user, bot ] = await Promise.all([
+    const [ guildsData, user, bot ] = await Promise.all([
       userServices.getGuildsWithPermission(userID, accessToken),
-      userServices.getInfo(userID, accessToken),
-      userServices.getBot()
+      userServices.getUserByAPI(userID, accessToken),
+      userServices.getUser(config.web.clientId)
     ])
 
     const data = {
@@ -32,7 +32,8 @@ async function cp (req, res, next) {
       assignedSchedules: {}
     }
 
-    for (const guild of guildCacheApproved) {
+    for (const data of guildsData) {
+      const guild = data.discord
       const [
         guildData,
         limit,

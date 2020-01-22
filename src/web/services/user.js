@@ -19,7 +19,7 @@ function timeDiffMinutes (start) {
   return duration.asMinutes()
 }
 
-async function getInfo (id, accessToken, skipCache) {
+async function getUserByAPI (id, accessToken, skipCache) {
   const cachedUser = id && !skipCache ? CACHED_USERS[id] : null
   if (cachedUser && timeDiffMinutes(cachedUser.lastUpdated) <= CACHE_TIME_MINUTES) {
     return cachedUser.data
@@ -37,12 +37,12 @@ async function getInfo (id, accessToken, skipCache) {
   return data
 }
 
-async function getBot () {
-  const bot = await RedisUser.fetch(config.web.clientId)
-  return bot.toJSON()
+async function getUser (id) {
+  const user = await RedisUser.fetch(id)
+  return user ? user.toJSON() : null
 }
 
-async function getGuilds (id, accessToken, skipCache) {
+async function getGuildsByAPI (id, accessToken, skipCache) {
   const cachedUserGuilds = id && !skipCache ? CACHED_USERS_GUILDS[id] : null
   if (cachedUserGuilds && timeDiffMinutes(cachedUserGuilds.lastUpdated) <= CACHE_TIME_MINUTES) {
     return cachedUserGuilds.data
@@ -61,7 +61,7 @@ async function getGuilds (id, accessToken, skipCache) {
 }
 
 async function getGuildsWithPermission (userID, userAccessToken) {
-  const apiGuilds = await getGuilds(userID, userAccessToken)
+  const apiGuilds = await getGuildsByAPI(userID, userAccessToken)
   const guildCache = await Promise.all(apiGuilds.map(discordGuild => guildServices.getGuild(discordGuild.id)))
   const guildCacheApproved = []
   for (let i = 0; i < apiGuilds.length; ++i) {
@@ -76,7 +76,10 @@ async function getGuildsWithPermission (userID, userAccessToken) {
     if (!isOwner && !managesChannel && !isAdministrator) {
       continue
     }
-    guildCacheApproved.push(guildInCache)
+    guildCacheApproved.push({
+      discord: discordGuild,
+      cached: guildInCache
+    })
   }
   return guildCacheApproved
 }
@@ -126,9 +129,9 @@ async function isManagerOfGuildByAPI (userID, guildID) {
 }
 
 module.exports = {
-  getInfo,
-  getBot,
-  getGuilds,
+  getUserByAPI,
+  getUser,
+  getGuildsByAPI,
   getGuildsWithPermission,
   isManagerOfGuild,
   isManagerOfGuildByAPI
