@@ -47,7 +47,7 @@ describe('Unit::util/ipc.js', function () {
       const channel = '24356t'
       const message = 'wqt4e'
       ipc.sendChannelAlert(channel, message)
-      expect(spy).toHaveBeenCalledWith(ipc.TYPES.SEND_CHANNEL_MESSAGE, {        
+      expect(spy).toHaveBeenCalledWith(ipc.TYPES.SEND_CHANNEL_MESSAGE, {
         channel,
         message,
         alert: true
