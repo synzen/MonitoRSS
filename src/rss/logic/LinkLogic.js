@@ -16,8 +16,7 @@ const log = require('../../util/logger.js')
 
 /**
  * @typedef {Object} FormattedArticle
- * @property {Object} source
- * @property {string} rssName
+ * @property {Object} _feed
  */
 
 /**
@@ -164,18 +163,13 @@ class LinkLogic extends EventEmitter {
   /**
    * @param {Object} article
    * @param {Object} source
-   * @param {string} rssName
    * @returns {FormattedArticle}
    */
-  static formatArticle (article, source, rssName) {
+  static formatArticle (article, source) {
     // For ArticleMessage to access once ScheduleManager receives this article
-
     return {
       ...article,
-      _delivery: {
-        rssName,
-        source
-      }
+      _feed: source
     }
   }
 
@@ -268,7 +262,7 @@ class LinkLogic extends EventEmitter {
 
     if (!seen) {
       if (toDebug) log.debug.info(`${rssName}: Emitting article (ID: ${article._id}, TITLE: ${article.title}) for default checks.`)
-      this.emit('article', LinkLogic.formatArticle(article, source, rssName))
+      this.emit('article', LinkLogic.formatArticle(article, source))
       return
     }
 
@@ -307,7 +301,7 @@ class LinkLogic extends EventEmitter {
       if (toDebug) {
         log.debug.info(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
       }
-      this.emit('article', LinkLogic.formatArticle(article, source, rssName))
+      this.emit('article', LinkLogic.formatArticle(article, source))
     }
   }
 

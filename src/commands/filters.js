@@ -123,10 +123,7 @@ module.exports = async (bot, message, command, role) => {
         return await message.channel.send(translate('commands.filters.noArticlesPassed'))
       }
       log.command.info(`Sending filtered article for ${feed.url}`, message.guild)
-      article._delivery = {
-        rssName: feed._id,
-        source: feed.toJSON()
-      }
+      article._feed = feed.toJSON()
 
       const queue = new ArticleMessageQueue(message.client)
       await queue.enqueue(article, true, true)

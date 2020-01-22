@@ -31,10 +31,7 @@ module.exports = async (bot, message, command) => {
     if (!article) {
       return await message.channel.send(translate('commands.test.noArticles'))
     }
-    article._delivery = {
-      rssName: feed._id,
-      source: feed.toJSON()
-    }
+    article._feed = feed.toJSON()
     if (Supporter.enabled && profile.webhook && !(await Supporter.hasValidGuild(message.guild.id))) {
       log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
       profile.webhook = undefined

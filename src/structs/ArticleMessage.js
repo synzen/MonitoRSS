@@ -6,8 +6,7 @@ const Article = require('./Article.js')
 
 /**
  * @typedef {Object} PreparedArticle
- * @property {Object} _delivery - Delivery details
- * @property {Object} _delivery.source - The feed source where this article came from
+ * @property {Object} _feed - The feed source where this article came from
  */
 
 class ArticleMessage {
@@ -18,40 +17,38 @@ class ArticleMessage {
    * @param {boolean} skipFilters - Whether this should skip filters
    */
   constructor (bot, article, isTestMessage = false, skipFilters = false) {
-    if (!article._delivery) {
-      throw new Error('article._delivery property missing')
+    if (!article._feed) {
+      throw new Error('article._feed property missing')
     }
-    if (!article._delivery.source) {
-      throw new Error('article._delivery.source property missing')
-    }
-    this.debug = debug.feeds.has(article._delivery.source._id)
+    this.debug = debug.feeds.has(article._feed._id)
     this.article = article
-    this.filteredFormats = article._delivery.source.filteredFormats
-    this.format = article._delivery.source.format
+    this.filteredFormats = article._feed.filteredFormats
+    this.format = article._feed.format
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
-    this.channelId = article._delivery.source.channel
-    this.channel = bot.channels.get(article._delivery.source.channel)
+    this.channelId = article._feed.channel
+    this.channel = bot.channels.get(article._feed.channel)
     if (!this.channel) {
       if (this.debug) {
-        log.debug.info(`Skipping article delivery due to missing channel (${article._delivery.source.channel})`)
+        log.debug.info(`Skipping article delivery due to missing channel (${article._feed.channel})`)
       }
       return
     }
     this.webhook = undefined
     this.sendFailed = 1
-    this.source = article._delivery.source
-    this.feedID = this.source._id
-    this.toggleRoleMentions = typeof this.source.toggleRoleMentions === 'boolean' ? this.source.toggleRoleMentions : config.feeds.toggleRoleMentions
-    this.split = this.source.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
-    this.parsedArticle = new Article(article, this.source, this.source.profile ? this.source.profile : {})
+    this.feed = article._feed
+    this.profile = this.feed.profile
+    this.feedID = this.feed._id
+    this.toggleRoleMentions = this.profile && typeof this.profile.toggleRoleMentions === 'boolean' ? this.profile.toggleRoleMentions : config.feeds.toggleRoleMentions
+    this.split = this.feed.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
+    this.parsedArticle = new Article(article, this.feed, this.feed.profile ? this.feed.profile : {})
 
-    if (Object.keys(this.source.rfilters).length > 0) {
+    if (Object.keys(this.feed.rfilters).length > 0) {
       // Regex
-      this.filterResults = this.parsedArticle.testFilters(this.source.rfilters)
+      this.filterResults = this.parsedArticle.testFilters(this.feed.rfilters)
     } else {
       // Regular
-      this.filterResults = this.parsedArticle.testFilters(this.source.filters)
+      this.filterResults = this.parsedArticle.testFilters(this.feed.filters)
     }
 
     this.subscriptionIds = this.parsedArticle.subscriptionIds
@@ -192,13 +189,13 @@ class ArticleMessage {
   }
 
   async _resolveWebhook () {
-    const { channel, source } = this
-    if (typeof source.webhook !== 'object' || !channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) {
+    const { channel, feed } = this
+    if (typeof feed.webhook !== 'object' || !channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) {
       return
     }
     try {
       const hooks = await channel.fetchWebhooks()
-      const hook = hooks.get(source.webhook.id)
+      const hook = hooks.get(feed.webhook.id)
       if (!hook) {
         return
       }
@@ -206,17 +203,17 @@ class ArticleMessage {
       const guildName = channel.guild.name
       this.webhook = hook
       this.webhook.guild = { id: guildId, name: guildName }
-      let name = source.webhook.name ? this.parsedArticle.convertKeywords(source.webhook.name) : undefined
+      let name = feed.webhook.name ? this.parsedArticle.convertKeywords(feed.webhook.name) : undefined
       if (name && name.length > 32) name = name.slice(0, 29) + '...'
       if (name && name.length < 2) name = undefined
       this.webhook.name = name
-      this.webhook.avatar = source.webhook.avatar ? this.parsedArticle.convertImgs(source.webhook.avatar) : undefined
+      this.webhook.avatar = feed.webhook.avatar ? this.parsedArticle.convertImgs(feed.webhook.avatar) : undefined
     } catch (err) {
       log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, channel, err, true)
     }
   }
 
-  _generateMessage (ignoreLimits = !!this.source.splitMessage) {
+  _generateMessage (ignoreLimits = !!this.feed.splitMessage) {
     const { parsedArticle } = this
     const { textFormat, embedFormat } = this._determineFormat()
 
@@ -271,7 +268,7 @@ class ArticleMessage {
     const placeholderAnchors = parsedArticle.listPlaceholderAnchors()
     if (placeholderAnchors) testDetails += `\n\n${placeholderAnchors}`
     if (parsedArticle.tags) testDetails += `\n\n[Tags]: {tags}\n${parsedArticle.tags}`
-    if (this.source.filters) {
+    if (this.feed.filters) {
       testDetails += `\n\n[Passed Filters?]: ${filterResults.passed ? 'Yes' : 'No'}${filterResults.passed ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
     }
     testDetails += '```' + footer
@@ -295,8 +292,8 @@ class ArticleMessage {
   }
 
   async send () {
-    if (!this.source) {
-      throw new Error('Missing feed source')
+    if (!this.feed) {
+      throw new Error('Missing feed')
     }
     if (!this.channel) {
       throw new Error('Missing feed channel')

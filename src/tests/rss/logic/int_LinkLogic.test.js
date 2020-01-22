@@ -30,20 +30,12 @@ describe('Int::LinkLogic', function () {
     const expectedArticle = {
       _id: '2',
       guid: '2',
-      _delivery:
-      {
-        rssName: 'feedID1',
-        source: {}
-      }
+      _feed: {}
     }
     const expectedArticle2 = {
       _id: '4',
       guid: '4',
-      _delivery:
-      {
-        rssName: 'feedID1',
-        source: {}
-      }
+      _feed: {}
     }
     const logic = new LinkLogic(data)
     const articleSpy = jest.fn()
@@ -126,20 +118,12 @@ describe('Int::LinkLogic', function () {
     const expectedArticle = {
       _id: '2',
       guid: '2',
-      _delivery:
-      {
-        rssName: 'feedID1',
-        source: {}
-      }
+      _feed: {}
     }
     const expectedArticle2 = {
       _id: '2',
       guid: '2',
-      _delivery:
-      {
-        rssName: 'feedID2',
-        source: {}
-      }
+      _feed: {}
     }
     const logic = new LinkLogic(data)
     const articleSpy = jest.fn()
@@ -171,11 +155,7 @@ describe('Int::LinkLogic', function () {
     const expectedArticle = {
       ...data.articleList[0],
       _id: '1',
-      _delivery:
-      {
-        rssName: 'feedID1',
-        source: data.rssList.feedID1
-      }
+      _feed: data.rssList.feedID1
     }
     const logic = new LinkLogic(data)
     const articleSpy = jest.fn()
@@ -222,20 +202,12 @@ describe('Int::LinkLogic', function () {
     const expectedArticle = {
       ...data.articleList[1],
       _id: '2',
-      _delivery:
-      {
-        rssName: 'feedID1',
-        source: data.rssList.feedID1
-      }
+      _feed: data.rssList.feedID1
     }
     const expectedArticle2 = {
       ...data.articleList[1],
       _id: '2',
-      _delivery:
-      {
-        rssName: 'feedID2',
-        source: data.rssList.feedID2
-      }
+      _feed: data.rssList.feedID2
     }
     const logic = new LinkLogic(data)
     const articleSpy = jest.fn()

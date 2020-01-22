@@ -10,23 +10,19 @@ const Bot = () => ({ channels: { get: () => ({}) } })
 describe('Unit::ArticleMessage', function () {
   describe('constructor', function () {
     const rawArticle = {
-      _delivery: {
-        source: {
-          channel: 'abc',
-          filters: { a: 1 },
-          rfilters: {},
-          filteredFormats: []
-        }
+      _feed: {
+        channel: 'abc',
+        filters: { a: 1 },
+        rfilters: {},
+        filteredFormats: []
       }
     }
     const rawArticleWithNoFilters = {
-      _delivery: {
-        source: {
-          channel: 'abc',
-          filters: {},
-          rfilters: {},
-          filteredFormats: []
-        }
+      _feed: {
+        channel: 'abc',
+        filters: {},
+        rfilters: {},
+        filteredFormats: []
       }
     }
 
@@ -43,24 +39,16 @@ describe('Unit::ArticleMessage', function () {
     afterEach(function () {
       jest.restoreAllMocks()
     })
-    it('throws an error if _delivery is missing', function () {
+    it('throws an error if _feed is missing', function () {
       expect(() => new ArticleMessage(Bot(), {}))
-        .toThrowError(expect.objectContaining({
-          message: expect.stringContaining('_delivery property missing')
-        }))
+        .toThrowError('article._feed property missing')
     })
-    it('throws an error if _delivery.source is missing', function () {
-      expect(() => new ArticleMessage(Bot(), { _delivery: {} }))
-        .toThrowError(expect.objectContaining({
-          message: expect.stringContaining('source property missing')
-        }))
-    })
-    it.only('defines the correct properties for this.parsedArticle', function () {
+    it('defines the correct properties for this.parsedArticle', function () {
       const parsedArticle = { foo: 'bar', subscriptionIds: [1, 4, 5], testFilters: jest.fn() }
       Article.mockImplementationOnce(() => parsedArticle)
       const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
       expect(m.parsedArticle).toEqual(parsedArticle)
-      expect(m.channelId).toEqual(rawArticle._delivery.source.channel)
+      expect(m.channelId).toEqual(rawArticle._feed.channel)
       expect(m.text).toEqual(generatedMessage.text)
       expect(m.embeds).toEqual(generatedMessage.embeds)
       expect(m.subscriptionIds).toEqual(parsedArticle.subscriptionIds)
@@ -86,7 +74,7 @@ describe('Unit::ArticleMessage', function () {
       expect(m.filterResults).toEqual(filterResults)
       expect(m.passedFilters()).toEqual(filterResults.passed)
     })
-    it('passes filters if there are no filters in sources', function () {
+    it('passes filters if there are no filters in feed', function () {
       jest.spyOn(Article.prototype, 'testFilters').mockReturnValue({ passed: true })
       const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
       expect(m.passedFilters()).toEqual(true)
@@ -101,13 +89,10 @@ describe('Unit::ArticleMessage', function () {
   })
   describe('send()', function () {
     const rawArticle = {
-      _delivery: {
-        rssName: 'hel',
-        source: {
-          filters: {},
-          rfilters: {},
-          filteredFormats: []
-        }
+      _feed: {
+        filters: {},
+        rfilters: {},
+        filteredFormats: []
       }
     }
     beforeEach(function () {
@@ -120,9 +105,9 @@ describe('Unit::ArticleMessage', function () {
     afterEach(function () {
       jest.restoreAllMocks()
     })
-    it('throws an error if missing source', function () {
+    it('throws an error if missing feed', function () {
       const m = new ArticleMessage(Bot(), rawArticle)
-      m.source = undefined
+      m.feed = undefined
       return expect(m.send()).rejects.toBeInstanceOf(Error)
     })
     it('throws an error if missing channel', function () {
@@ -241,13 +226,10 @@ describe('Unit::ArticleMessage', function () {
   })
   describe('_createSendOptions', function () {
     const rawArticle = {
-      _delivery: {
-        rssName: 'hel',
-        source: {
-          filters: {},
-          rfilters: {},
-          filteredFormats: []
-        }
+      _feed: {
+        filters: {},
+        rfilters: {},
+        filteredFormats: []
       }
     }
     beforeEach(function () {

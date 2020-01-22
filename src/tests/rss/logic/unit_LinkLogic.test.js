@@ -157,11 +157,9 @@ describe('Unit::LinkLogic', function () {
   describe('static formatArticle()', function () {
     it('attaches the rssName and source', function () {
       const article = { dink: 2 }
-      const source = { donk: 1 }
-      const rssName = 'abc!'
-      const formatted = LinkLogic.formatArticle(article, source, rssName)
-      expect(formatted._delivery.source).toEqual(source)
-      expect(formatted._delivery.rssName).toEqual(rssName)
+      const feed = { donk: 1 }
+      const formatted = LinkLogic.formatArticle(article, feed)
+      expect(formatted._feed).toEqual(feed)
     })
   })
   describe('determineArticleChecks()', function () {
