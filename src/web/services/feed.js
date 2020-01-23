@@ -3,6 +3,7 @@ const FeedFetcher = require('../../util/FeedFetcher.js')
 const Schedule = require('../../structs/db/Schedule.js')
 const Supporter = require('../../structs/db/Supporter.js')
 const FailCounter = require('../../structs/db/FailCounter.js')
+const ArticleModel = require('../../models/Article.js')
 const Feed = require('../../structs/db/Feed.js')
 const config = require('../../config.js')
 
@@ -105,6 +106,18 @@ async function deleteFeed (feedID) {
   await feed.delete()
 }
 
+/**
+ * @param {import('../../structs/db/Feed.js')} feed
+ * @param {string} feedID
+ */
+async function getDatabaseArticles (feed, shardID) {
+  // Schedule name must be determined
+  const schedule = await feed.determineSchedule()
+  const data = await ArticleModel.model(feed.url, shardID, schedule.name)
+    .find({}).lean().exec()
+  return data
+}
+
 module.exports = {
   determineSchedules,
   getFailCounters,
@@ -112,5 +125,6 @@ module.exports = {
   getFeedOfGuild,
   createFeed,
   editFeed,
-  deleteFeed
+  deleteFeed,
+  getDatabaseArticles
 }

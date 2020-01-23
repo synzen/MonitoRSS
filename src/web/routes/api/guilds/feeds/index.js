@@ -64,4 +64,7 @@ guildFeedsAPI.delete('/:feedID', controllers.api.guilds.feeds.deleteFeed)
 // Get feed placeholders
 guildFeedsAPI.get('/:feedID/placeholders', controllers.api.guilds.feeds.getFeedPlaceholders)
 
+// Get database articles for debugging
+guildFeedsAPI.get('/:feedID/database', controllers.api.guilds.feeds.getDatabaseArticles)
+
 module.exports = guildsAPI
