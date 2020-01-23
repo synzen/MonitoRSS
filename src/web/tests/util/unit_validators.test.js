@@ -1,9 +1,14 @@
-const validators = require('../../util/validators/index.js')
 const moment = require('moment-timezone')
+const validators = require('../../util/validators/index.js')
+const Translator = require('../../../structs/Translator.js')
+const config = require('../../../config.js')
 
-jest.mock('moment-timezone')
+jest.mock('../../../config.js')
 
 describe('Unit::util/validators', function () {
+  afterEach(function () {
+    jest.restoreAllMocks()
+  })
   describe('isValidTimestamp', function () {
     it('returns correctly', function () {
       const r1 = validators.isValidTimestamp('article')
@@ -15,14 +20,28 @@ describe('Unit::util/validators', function () {
     })
   })
   describe('isTimezone', function () {
-    afterEach(function () {
-      moment.tz.zone.mockReset()
-    })
     it('returns correctly', function () {
-      moment.tz.zone.mockReturnValue(true)
+      const oVal = moment.tz.zone
+      moment.tz.zone = jest.fn().mockReturnValue(true)
       expect(validators.isTimezone()).toEqual(true)
       moment.tz.zone.mockReturnValue(false)
       expect(validators.isTimezone()).toEqual(false)
+      moment.tz.zone = oVal
     })
+  })
+  describe('localeExists', function () {
+    it('returns correctly', function () {
+      jest.spyOn(Translator, 'hasLocale').mockReturnValue(true)
+      expect(validators.localeExists(3)).toEqual(true)
+      jest.spyOn(Translator, 'hasLocale').mockReturnValue(false)
+      expect(validators.localeExists(3)).toEqual(false)
+    })
+  })
+  describe('dateLanguageExists', function () {
+    const oval = config.feeds.dateLanguageList
+    config.feeds.dateLanguageList = [1, 2]
+    expect(validators.dateLanguageExists(2)).toEqual(true)
+    expect(validators.dateLanguageExists(3)).toEqual(false)
+    config.feeds.dateLanguageList = oval
   })
 })

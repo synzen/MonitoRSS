@@ -1,0 +1,8 @@
+const config = require('../../../config.js')
+
+function dateLanguageExists (val) {
+  const list = config.feeds.dateLanguageList
+  return list.includes(val)
+}
+
+module.exports = dateLanguageExists
