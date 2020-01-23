@@ -38,7 +38,7 @@ guildFeedsAPI.get('/:feedID/placeholders', controllers.api.guilds.feeds.getFeedP
 guildFeedsAPI.patch('/:feedID', [
   validate([
     body(['channel', 'title'])
-      .if(val => !!val)
+      .optional()
       .isString().withMessage('Must be a string')
       .notEmpty().withMessage('Cannot be empty'),
     body([
@@ -48,8 +48,15 @@ guildFeedsAPI.patch('/:feedID', [
       'imgLinksExistence',
       'formatTables',
       'toggleRoleMentions'
-    ]).if(val => !!val)
-      .isBoolean().withMessage('Must be a boolean')
+    ]).optional()
+      .isBoolean().withMessage('Must be a boolean'),
+  check('filters.*')
+    .isArray({
+      min: 1
+    }).withMessage('Must be a populated array'),
+  check('filters.*.*')
+    .isString().withMessage('Must be a string')
+    .notEmpty().withMessage('Cannot be empty')
   ]),
   guildHasChannelOptional
 ], controllers.api.guilds.feeds.editFeed)
