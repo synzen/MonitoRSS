@@ -84,22 +84,21 @@ async function getGuildsWithPermission (userID, userAccessToken) {
   return guildCacheApproved
 }
 
-async function isManagerOfGuild (userID, guild) {
+async function isManagerOfGuild (userID, guildID) {
   const member = await RedisGuildMember.fetch({
     id: userID,
-    guildID: guild.id
+    guildID
   })
   const isBotOwner = config.bot.ownerIDs.includes(userID)
-  const isGuildOwner = guild.ownerID === userID
   const isManager = member && member.isManager
-  if (isBotOwner || isGuildOwner || isManager) {
+  if (isBotOwner || isManager) {
     return true
   }
   if (member) {
     return false
   }
   // At this point, the member is not cached - so check the API
-  return isManagerOfGuildByAPI(userID, guild.id)
+  return isManagerOfGuildByAPI(userID, guildID)
 }
 
 async function isManagerOfGuildByAPI (userID, guildID) {

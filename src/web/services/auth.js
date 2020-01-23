@@ -39,7 +39,7 @@ async function createAuthToken (code, oauthClient) {
   const accessTokenObject = oauthClient.accessToken.create(result) // class with properties access_token, token_type = 'Bearer', expires_in, refresh_token, scope, expires_at
   const session = {
     token: accessTokenObject.token,
-    identity: await userServices.getInfo(null, accessTokenObject.token.access_token)
+    identity: await userServices.getUserByAPI(null, accessTokenObject.token.access_token)
   }
   return session
 }
@@ -50,7 +50,7 @@ async function createAuthToken (code, oauthClient) {
  * @param {Session} session
  */
 async function getAuthToken (oauthClient, session) {
-  const tokenObject = oauthClient.accessToken.create(session.auth)
+  const tokenObject = oauthClient.accessToken.create(session.token)
   if (!tokenObject.expired()) {
     return tokenObject.token
   }
@@ -64,7 +64,7 @@ async function getAuthToken (oauthClient, session) {
  * @param {Session} session
  */
 async function logout (oauthClient, session) {
-  await oauthClient.accessToken.create(session.auth).revokeAll()
+  await oauthClient.accessToken.create(session.token).revokeAll()
   return new Promise((resolve, reject) => {
     session.destroy(err => {
       if (err) {
