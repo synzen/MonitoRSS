@@ -69,8 +69,8 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         channelID: 'qw2t4erg',
         title: 'wt4erg',
         checkDates: true,
-        imgPreviews: false,
-        imgLinksExistence: true,
+        imgPreviews: '',
+        imgLinksExistence: '',
         formatTables: false,
         toggleRoleMentions: true
       }
@@ -88,8 +88,8 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         title: req.body.title,
         channel: req.body.channelID,
         checkDates: true,
-        imgPreviews: false,
-        imgLinksExistence: true,
+        imgPreviews: undefined,
+        imgLinksExistence: undefined,
         formatTables: false,
         toggleRoleMentions: true
       })

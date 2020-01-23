@@ -20,7 +20,10 @@ async function editFeed (req, res, next) {
   const feedID = req.params.feedID
   const data = {}
   for (const key of keys) {
-    if (body[key] !== undefined) {
+    const bodyValue = body[key]
+    if (bodyValue === '') {
+      data[key] = undefined
+    } else if (body[key] !== undefined) {
       data[key] = body[key]
     }
   }
