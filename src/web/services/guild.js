@@ -1,4 +1,3 @@
-const fetch = require('node-fetch')
 const RedisGuild = require('../../structs/db/Redis/Guild.js')
 const GuildData = require('../../structs/GuildData.js')
 const Profile = require('../../structs/db/Profile.js')
