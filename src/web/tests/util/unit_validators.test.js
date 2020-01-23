@@ -2,8 +2,10 @@ const moment = require('moment-timezone')
 const validators = require('../../util/validators/index.js')
 const Translator = require('../../../structs/Translator.js')
 const config = require('../../../config.js')
+const mongoose = require('mongoose')
 
 jest.mock('../../../config.js')
+jest.mock('mongoose')
 
 describe('Unit::util/validators', function () {
   afterEach(function () {
@@ -43,5 +45,14 @@ describe('Unit::util/validators', function () {
     expect(validators.dateLanguageExists(2)).toEqual(true)
     expect(validators.dateLanguageExists(3)).toEqual(false)
     config.feeds.dateLanguageList = oval
+  })
+  describe('isMongoID', function () {
+    afterEach(function () {
+      mongoose.Types.ObjectId.isValid.mockReset()
+    })
+    mongoose.Types.ObjectId.isValid.mockReturnValue(true)
+    expect(validators.isMongoID('as')).toEqual(true)
+    mongoose.Types.ObjectId.isValid.mockReturnValue(false)
+    expect(validators.isMongoID('as')).toEqual(false)
   })
 })
