@@ -30,7 +30,9 @@ async function editGuild (req, res, next) {
   const toUpdate = {}
   for (const key of keys) {
     const userValue = body[key]
-    if (userValue) {
+    if (userValue === '') {
+      toUpdate[key] = undefined
+    } else if (userValue !== undefined) {
       toUpdate[key] = userValue
     }
   }

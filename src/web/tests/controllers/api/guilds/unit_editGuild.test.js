@@ -31,9 +31,9 @@ describe('Unit::controllers/api/guilds', function () {
       body: {
         fo: 1,
         dateLanguage: 1,
-        prefix: 2,
+        prefix: '',
         alert: 3,
-        dateFormat: 4,
+        dateFormat: '',
         locale: 5,
         timezone: 6
       }
@@ -42,7 +42,9 @@ describe('Unit::controllers/api/guilds', function () {
     const next = createNext()
     await editGuild(req, res, next)
     const updatedValues = {
-      ...req.body
+      ...req.body,
+      prefix: undefined,
+      dateFormat: undefined
     }
     delete updatedValues.fo
     expect(guildServices.updateProfile)
