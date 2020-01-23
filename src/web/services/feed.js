@@ -81,10 +81,24 @@ async function createFeed (data) {
   return feed.toJSON()
 }
 
+/**
+ * @param {string} feedID 
+ * @param {Object<string, any>} data 
+ */
+async function editFeed (feedID, data) {
+  const feed = await Feed.get(feedID)
+  for (const key in data) {
+    feed[key] = data[key]
+  }
+  await feed.save()
+  return feed.toJSON()
+}
+
 module.exports = {
   determineSchedules,
   getFailCounters,
   getFeedPlaceholders,
   getFeedOfGuild,
-  createFeed
+  createFeed,
+  editFeed
 }
