@@ -1,5 +1,5 @@
 const express = require('express')
-const guildsAPI = express.Router()
+const guildsAPI = express.Router({ mergeParams: true })
 const validate = require('../../../middleware/validator.js')
 const checkUserGuildPermission = require('../../../middleware/checkUserGuildPermission.js')
 const {
@@ -37,5 +37,6 @@ guildsAPI.patch('/:guildID', validate([
     .if(val => !!val)
     .custom(dateLanguageExists).withMessage('Unsupported language')
 ]))
+guildsAPI.use('/:guildID/feeds')
 
 module.exports = guildsAPI
