@@ -15,6 +15,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 api.get('/authenticated', require('../../controllers/api/authenticated.js'))
+api.use(require('../../middleware/authenticate.js'))
 api.use(csrf())
 api.use('/feeds', require('./feeds/index.js'))
 api.use('/users', require('./users/index.js'))
