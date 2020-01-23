@@ -21,23 +21,27 @@ guildsAPI.use('/:guildID', validate([
 ]))
 guildsAPI.use('/:guildID', checkUserGuildPermission)
 guildsAPI.get('/:guildID', controllers.api.guilds.getGuild)
+
+// Empty strings will signify deletions
 guildsAPI.patch('/:guildID', validate([
   body('alert.*')
     .isString().withMessage('Must be a string')
     .notEmpty().withMessage('Cannot be empty'),
   body(['dateFormat', 'dateLanguage', 'timezone', 'prefix', 'locale'])
-    .if(val => !!val)
-    .isString().withMessage('Must be a string'),
+    .optional()
+    .isString().withMessage('Must be a string')
+    .bail(),
   body('timezone')
-    .if(val => !!val)
+    .optional()
     .custom(isTimezone).withMessage('Unknown timezone'),
   body('locale')
-    .if(val => !!val)
+    .optional()
     .custom(localeExists).withMessage('Unsupported locale'),
   body('dateLanguage')
-    .if(val => !!val)
+    .optional()
     .custom(dateLanguageExists).withMessage('Unsupported language')
-]), controllers.api.guilds.feeds.editFeed)
+]), controllers.api.guilds.editGuild)
+
 guildsAPI.use('/:guildID/feeds', require('./feeds/index.js'))
 
 module.exports = guildsAPI
