@@ -25,17 +25,27 @@ async function getFeedLimit (guildID) {
   return Profile.getFeedLimit(guildID)
 }
 
-async function getProfile (guildID) {
-  return Profile.get(guildID)
-}
-
-async function fetchMember (guildID) {
-
+async function updateProfile (guildID, guildName, data) {
+  const profile = await Profile.get(guildID)
+  if (profile) {
+    for (const key in data) {
+      profile[key] = data[key]
+    }
+    await profile.save()
+    return profile.toJSON()
+  }
+  const newProfile = new Profile({
+    ...data,
+    _id: guildID,
+    name: guildName
+  })
+  await newProfile.save()
+  return newProfile.toJSON()
 }
 
 module.exports = {
   getAppData,
   getGuild,
-  getProfile,
+  updateProfile,
   getFeedLimit
 }
