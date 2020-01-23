@@ -3,7 +3,9 @@ const FeedFetcher = require('../../util/FeedFetcher.js')
 const Schedule = require('../../structs/db/Schedule.js')
 const Supporter = require('../../structs/db/Supporter.js')
 const FailCounter = require('../../structs/db/FailCounter.js')
+const Feed = require('../../structs/db/Feed.js')
 const config = require('../../config.js')
+
 /**
  * @param {import('../../structs/db/Feed.js')[]} feeds
  * @returns {Object<string, Schedule>}
@@ -58,8 +60,31 @@ async function getFeedPlaceholders (url, profile = config.feeds) {
   return allPlaceholders
 }
 
+/**
+ * @param {string} guildID
+ * @param {string} feedID
+ * @returns {Feed|null}
+ */
+async function getFeedOfGuild (guildID, feedID) {
+  return Feed.getByQuery({
+    _id: feedID,
+    guild: guildID
+  })
+}
+
+/**
+ * @param {Object<string, any>} data 
+ */
+async function createFeed (data) {
+  const feed = new Feed(data)
+  await feed.testAndSave()
+  return feed.toJSON()
+}
+
 module.exports = {
   determineSchedules,
   getFailCounters,
-  getFeedPlaceholders
+  getFeedPlaceholders,
+  getFeedOfGuild,
+  createFeed
 }
