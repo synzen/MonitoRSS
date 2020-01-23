@@ -19,6 +19,7 @@ api.use(require('../../middleware/authenticate.js'))
 api.use(csrf())
 api.use('/feeds', require('./feeds/index.js'))
 api.use('/users', require('./users/index.js'))
+api.use('/guilds', require('./guilds/index.js'))
 api.get('/cp', require('../../controllers/api/cp.js'))
 
 module.exports = api
