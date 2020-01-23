@@ -36,14 +36,19 @@ guildFeedsAPI.get('/:feedID/placeholders', require('../../../../controllers/api/
 // Edit the feed
 guildFeedsAPI.patch('/:feedID', [
   validate([
-    body('channel')
+    body(['channel', 'title'])
       .if(val => !!val)
       .isString().withMessage('Must be a string')
       .notEmpty().withMessage('Cannot be empty'),
-    body('title')
-      .if(val => !!val)
-      .isString().withMessage('Must be a string')
-      .notEmpty().withMessage('Cannot be empty')
+    body([
+      'checkTitles',
+      'checkDates',
+      'imgPreviews',
+      'imgLinksExistence',
+      'formatTables',
+      'toggleRoleMentions'
+    ]).if(val => !!val)
+      .isBoolean().withMessage('Must be a boolean')
   ]),
   guildHasChannelOptional
 ], require('../../../../controllers/api/guilds/feeds/editFeed.js'))

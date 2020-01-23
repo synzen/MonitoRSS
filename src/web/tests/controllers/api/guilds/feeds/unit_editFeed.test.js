@@ -67,7 +67,12 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
       },
       body: {
         channelID: 'qw2t4erg',
-        title: 'wt4erg'
+        title: 'wt4erg',
+        checkDates: true,
+        imgPreviews: false,
+        imgLinksExistence: true,
+        formatTables: false,
+        toggleRoleMentions: true
       }
     }
     const res = createResponse()
@@ -81,7 +86,12 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
     expect(feedServices.editFeed)
       .toHaveBeenCalledWith(req.params.feedID, {
         title: req.body.title,
-        channel: req.body.channelID
+        channel: req.body.channelID,
+        checkDates: true,
+        imgPreviews: false,
+        imgLinksExistence: true,
+        formatTables: false,
+        toggleRoleMentions: true
       })
   })
 })
