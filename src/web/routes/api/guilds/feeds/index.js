@@ -31,9 +31,6 @@ guildFeedsAPI.use('/:feedID', validate([
 // Make sure the guild has this feed, and inject the feed into req.feed
 guildFeedsAPI.use('/:feedID', guildHasFeed)
 
-// Get feed placeholders
-guildFeedsAPI.get('/:feedID/placeholders', controllers.api.guilds.feeds.getFeedPlaceholders)
-
 // Edit the feed
 guildFeedsAPI.patch('/:feedID', [
   validate([
@@ -60,5 +57,11 @@ guildFeedsAPI.patch('/:feedID', [
   ]),
   guildHasChannelOptional
 ], controllers.api.guilds.feeds.editFeed)
+
+// Delete the feed
+guildFeedsAPI.delete('/:feedID', controllers.api.guilds.feeds.deleteFeed)
+
+// Get feed placeholders
+guildFeedsAPI.get('/:feedID/placeholders', controllers.api.guilds.feeds.getFeedPlaceholders)
 
 module.exports = guildsAPI

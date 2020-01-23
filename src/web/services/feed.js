@@ -94,11 +94,23 @@ async function editFeed (feedID, data) {
   return feed.toJSON()
 }
 
+/**
+ * @param {string} feedID 
+ */
+async function deleteFeed (feedID) {
+  const feed = await Feed.get(feedID)
+  if (!feed) {
+    return
+  }
+  await feed.delete()
+}
+
 module.exports = {
   determineSchedules,
   getFailCounters,
   getFeedPlaceholders,
   getFeedOfGuild,
   createFeed,
-  editFeed
+  editFeed,
+  deleteFeed
 }
