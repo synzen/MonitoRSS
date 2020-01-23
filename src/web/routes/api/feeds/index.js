@@ -3,6 +3,7 @@ const feedsAPI = express.Router()
 const rateLimit = require('express-rate-limit')
 const validate = require('../../../middleware/validator.js')
 const createError = require('../../../util/createError.js')
+const controllers = require('../../../controllers/index.js')
 const {
   param
 } = require('express-validator')
@@ -20,6 +21,6 @@ feedsAPI.get('/:url', validate([
     protocols: ['http', 'https'],
     require_protocol: true
   })
-]), require('../../../controllers/api/feeds/getFeed.js')())
+]), controllers.api.feeds.getFeed())
 
 module.exports = feedsAPI

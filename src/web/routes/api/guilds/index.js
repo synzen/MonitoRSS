@@ -2,6 +2,7 @@ const express = require('express')
 const guildsAPI = express.Router({ mergeParams: true })
 const validate = require('../../../middleware/validator.js')
 const checkUserGuildPermission = require('../../../middleware/checkUserGuildPermission.js')
+const controllers = require('../../../controllers/index.js')
 const {
   isTimezone,
   localeExists,
@@ -19,7 +20,7 @@ guildsAPI.use('/:guildID', validate([
   })
 ]))
 guildsAPI.use('/:guildID', checkUserGuildPermission)
-guildsAPI.get('/:guildID', require('../../../controllers/api/guilds/getGuild.js'))
+guildsAPI.get('/:guildID', controllers.api.guilds.getGuild)
 guildsAPI.patch('/:guildID', validate([
   body('alert.*')
     .isString().withMessage('Must be a string')
@@ -36,7 +37,7 @@ guildsAPI.patch('/:guildID', validate([
   body('dateLanguage')
     .if(val => !!val)
     .custom(dateLanguageExists).withMessage('Unsupported language')
-]))
-guildsAPI.use('/:guildID/feeds')
+]), controllers.api.guilds.feeds.editFeed)
+guildsAPI.use('/:guildID/feeds', require('./feeds/index.js'))
 
 module.exports = guildsAPI
