@@ -27,8 +27,11 @@ guildFeedsAPI.use('/:feedID', validate([
     .custom(isMongoID).withMessage('Invalid resource ID')
 ]))
 
-// Make sure the guild has this feed
+// Make sure the guild has this feed, and inject the feed into req.feed
 guildFeedsAPI.use('/:feedID', guildHasFeed)
+
+// Get feed placeholders
+guildFeedsAPI.get('/:feedID/placeholders', require('../../../../controllers/api/guilds/feeds/getFeedPlaceholders.js'))
 
 // Edit the feed
 guildFeedsAPI.patch('/:feedID', [
