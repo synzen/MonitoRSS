@@ -1,4 +1,5 @@
 const RedisGuild = require('../../structs/db/Redis/Guild.js')
+const RedisChannel = require('../../structs/db/Redis/Channel.js')
 const GuildData = require('../../structs/GuildData.js')
 const Profile = require('../../structs/db/Profile.js')
 
@@ -42,9 +43,22 @@ async function updateProfile (guildID, guildName, data) {
   return newProfile.toJSON()
 }
 
+/**
+ * @param {string} guildID 
+ * @param {string} channelID 
+ */
+async function guildHasChannel (guildID, channelID) {
+  const channel = await RedisChannel.fetch(channelID)
+  if (!channel) {
+    return false
+  }
+  return channel.guildID === guildID
+}
+
 module.exports = {
   getAppData,
   getGuild,
   updateProfile,
-  getFeedLimit
+  getFeedLimit,
+  guildHasChannel
 }
