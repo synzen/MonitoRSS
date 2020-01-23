@@ -20,6 +20,9 @@ describe('Unit::util/validators', function () {
       expect(r2).toEqual(true)
       expect(r3).toEqual(false)
     })
+    it('returns true for empty string', function () {
+      expect(validators.isValidTimestamp('')).toEqual(true)
+    })
   })
   describe('isTimezone', function () {
     it('returns correctly', function () {
@@ -30,6 +33,9 @@ describe('Unit::util/validators', function () {
       expect(validators.isTimezone()).toEqual(false)
       moment.tz.zone = oVal
     })
+    it('returns true for empty string', function () {
+      expect(validators.isTimezone('')).toEqual(true)
+    })
   })
   describe('localeExists', function () {
     it('returns correctly', function () {
@@ -38,13 +44,21 @@ describe('Unit::util/validators', function () {
       jest.spyOn(Translator, 'hasLocale').mockReturnValue(false)
       expect(validators.localeExists(3)).toEqual(false)
     })
+    it('returns true for empty string', function () {
+      expect(validators.localeExists('')).toEqual(true)
+    })
   })
   describe('dateLanguageExists', function () {
-    const oval = config.feeds.dateLanguageList
-    config.feeds.dateLanguageList = [1, 2]
-    expect(validators.dateLanguageExists(2)).toEqual(true)
-    expect(validators.dateLanguageExists(3)).toEqual(false)
-    config.feeds.dateLanguageList = oval
+    it('returns correctly', function () {
+      const oval = config.feeds.dateLanguageList
+      config.feeds.dateLanguageList = [1, 2]
+      expect(validators.dateLanguageExists(2)).toEqual(true)
+      expect(validators.dateLanguageExists(3)).toEqual(false)
+      config.feeds.dateLanguageList = oval
+    })
+    it('returns true for empty string', function () {
+      expect(validators.dateLanguageExists('')).toEqual(true)
+    })
   })
   describe('isMongoID', function () {
     afterEach(function () {
