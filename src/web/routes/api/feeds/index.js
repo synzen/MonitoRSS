@@ -1,9 +1,12 @@
 const express = require('express')
 const feedsAPI = express.Router()
 const rateLimit = require('express-rate-limit')
-const validate = require('../../../middleware/validator.js')
 const createError = require('../../../util/createError.js')
 const controllers = require('../../../controllers/index.js')
+const Joi = require('@hapi/joi')
+const validator = require('express-joi-validation').createValidator({
+  passError: true
+});
 const {
   param
 } = require('express-validator')
@@ -16,11 +19,10 @@ if (process.env.NODE_ENV !== 'test') {
   }))
 }
 
-feedsAPI.get('/:url', validate([
-  param('url', 'Not a valid URL').isURL({
-    protocols: ['http', 'https'],
-    require_protocol: true
-  })
-]), controllers.api.feeds.getFeed())
+const urlSchema = Joi.object({
+  url: Joi.string().uri()
+})
+
+feedsAPI.get('/:url', validator.params(urlSchema), controllers.api.feeds.getFeed())
 
 module.exports = feedsAPI
