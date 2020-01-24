@@ -8,7 +8,8 @@ const keys = [
   'formatTables',
   'toggleRoleMentions',
   'text',
-  'embeds'
+  'embeds',
+  'filters'
 ]
 
 /**

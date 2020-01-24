@@ -76,7 +76,10 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         text: 'aedgtswrf',
         embeds: [{
           title: 'hi'
-        }]
+        }],
+        filters: {
+          title: 'hal'
+        }
       }
     }
     const res = createResponse()
@@ -97,7 +100,8 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         formatTables: false,
         toggleRoleMentions: true,
         text: req.body.text,
-        embeds: req.body.embeds
+        embeds: req.body.embeds,
+        filters: req.body.filters
       })
   })
 })
