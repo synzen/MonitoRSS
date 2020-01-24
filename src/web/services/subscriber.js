@@ -29,17 +29,18 @@ async function createSubscriber (data) {
  * @param {string} id
  * @param {'role'|'user'} type 
  * @param {Object<string, any>} data 
- * @param {Object<string, string[]>} data.filters
  */
-async function editSubscriber (id, type, data) {
+async function editSubscriber (feedID, subscriberID, data) {
   const subscriber = await Subscriber.getByQuery({
-    id,
-    type
+    feed: feedID,
+    id: subscriberID
   })
   if (!subscriber) {
     throw new Error('Subscriber does not exist')
   }
-  subscriber.filters = data.filters
+  for (const key in data) {
+    subscriber[key] = data[key]
+  }
   await subscriber.save()
   return subscriber
 }
