@@ -32,7 +32,6 @@ describe('Unit::controllers/api/guilds', function () {
         fo: 1,
         dateLanguage: 1,
         prefix: '',
-        alert: 3,
         dateFormat: '',
         locale: 5,
         timezone: 6

@@ -6,8 +6,7 @@ const profileSchema = Joi.object({
   dateLanguage: profileJoi.profile().isDateLanguage(),
   timezone: profileJoi.profile().isTimezone(),
   prefix: Joi.string().trim().max(10),
-  locale: profileJoi.profile().isLocale(),
-  alert: Joi.array().items(Joi.string().trim())
+  locale: profileJoi.profile().isLocale()
 })
 
 module.exports = profileSchema

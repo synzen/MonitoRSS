@@ -1,6 +1,5 @@
 const guildServices = require('../../../services/guild.js')
 const keys = [
-  'alert',
   'dateFormat',
   'dateLanguage',
   'timezone',
