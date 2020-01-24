@@ -18,10 +18,17 @@ guildFeedSubscriberAPI.post(
   controllers.api.guilds.feeds.subscribers.createSubscriber
 )
 
+// Validate the subscriber exists for the feed in params
 guildFeedSubscriberAPI.use('/:subscriberID', [
   validator.params(subscriberIDSchema),
   feedHasSubscriber
 ])
+
+// Delete a subscriber
+guildFeedSubscriberAPI.delete(
+  '/:subscriberID',
+  controllers.api.guilds.feeds.subscribers.deleteSubscriber
+)
 
 
 module.exports = guildFeedSubscriberAPI

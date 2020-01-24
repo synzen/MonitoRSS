@@ -26,7 +26,6 @@ async function createSubscriber (data) {
 }
 
 /**
- * 
  * @param {string} id
  * @param {'role'|'user'} type 
  * @param {Object<string, any>} data 
@@ -46,14 +45,13 @@ async function editSubscriber (id, type, data) {
 }
 
 /**
- * 
  * @param {string} id
  * @param {string} type
  */
-async function deleteSubscriber (id, type) {
+async function deleteSubscriberOfFeed (feedID, subscriberID) {
   const subscriber = await Subscriber.getByQuery({
-    id,
-    type
+    feed: feedID,
+    id: subscriberID
   })
   if (!subscriber) {
     throw new Error('Subscriber does not exist')
@@ -65,5 +63,5 @@ module.exports = {
   getSubscriberOfFeed,
   createSubscriber,
   editSubscriber,
-  deleteSubscriber
+  deleteSubscriberOfFeed
 }
