@@ -1,6 +1,7 @@
 const express = require('express')
 const guildFeedSubscriberAPI = express.Router({ mergeParams: true })
 const controllers = require('../../../../../controllers/index.js')
+const feedHasSubscriber = require('../../../../../middleware/feedHasSubscriber.js')
 const Joi = require('@hapi/joi')
 const validator = require('express-joi-validation').createValidator({
   passError: true
@@ -18,7 +19,8 @@ guildFeedSubscriberAPI.post(
 )
 
 guildFeedSubscriberAPI.use('/:subscriberID', [
-  validator.params(subscriberIDSchema)
+  validator.params(subscriberIDSchema),
+  feedHasSubscriber
 ])
 
 

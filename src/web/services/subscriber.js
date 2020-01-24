@@ -1,6 +1,18 @@
 const Subscriber = require('../../structs/db/Subscriber.js')
 
 /**
+ * @param {string} feedID
+ * @param {string} subscriberID 
+ */
+async function getSubscriberOfFeed (feedID, subscriberID) {
+  const subscriber = await Subscriber.getByQuery({
+    feed: feedID,
+    id: subscriberID
+  })
+  return subscriber
+}
+
+/**
  * @param {Object<string, any>} data
  * @param {string} data.feed
  * @param {string} data.id
@@ -50,6 +62,7 @@ async function deleteSubscriber (id, type) {
 }
 
 module.exports = {
+  getSubscriberOfFeed,
   createSubscriber,
   editSubscriber,
   deleteSubscriber
