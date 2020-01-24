@@ -1,0 +1,44 @@
+const Joi = require('@hapi/joi')
+const moment = require('moment-timezone')
+const config = require('../../../../config.js')
+const Translator = require('../../../../structs/Translator.js')
+
+module.exports = Joi.extend(joi => {
+  return {
+    base: joi.string().allow('').trim(),
+    type: 'profile',
+    messages: {
+      timezone: 'needs to be a valid timezone',
+      locale: `needs to be a supported locale (${Translator.getLocales().join(',')})`,
+      dateLanguage: `needs to be a supported date language (${config.feeds.dateLanguageList.join(',')})`
+    },
+    rules: {
+      isTimezone: {
+        validate(value, helpers) {
+          
+          if (!moment.tz.zone(value)) {
+            return helpers.error('timezone')
+          }
+          return value
+        }
+      },
+      isLocale: {
+        validate(value, helpers) {
+          if (Translator.hasLocale(value)) {
+            return helpers.error('locale')
+          }
+          return value
+        }
+      },
+      isDateLanguage: {
+        validate(value, helpers) {
+          const list = config.feeds.dateLanguageList
+          if (list.includes(val)) {
+            return helpers.error('dateLanguage')
+          }
+          return value
+        }
+      }
+    }
+  }
+})
