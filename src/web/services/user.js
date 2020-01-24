@@ -84,11 +84,24 @@ async function getGuildsWithPermission (userID, userAccessToken) {
   return guildCacheApproved
 }
 
-async function isManagerOfGuild (userID, guildID) {
+/**
+ * @param {string} userID 
+ * @param {string} guildID 
+ */
+async function getMemberOfGuild (userID, guildID) {
   const member = await RedisGuildMember.fetch({
     id: userID,
     guildID
   })
+  return member
+}
+
+/**
+ * @param {string} userID 
+ * @param {string} guildID 
+ */
+async function isManagerOfGuild (userID, guildID) {
+  const member = await getMemberOfGuild(userID, guildID)
   const isBotOwner = config.bot.ownerIDs.includes(userID)
   const isManager = member && member.isManager
   if (isBotOwner || isManager) {
@@ -101,6 +114,10 @@ async function isManagerOfGuild (userID, guildID) {
   return isManagerOfGuildByAPI(userID, guildID)
 }
 
+/**
+ * @param {string} userID
+ * @param {string} guildID
+ */
 async function isManagerOfGuildByAPI (userID, guildID) {
   log.general.info(`[1 DISCORD API REQUEST] [BOT] MIDDLEWARE /api/guilds/:guildId/members/:userId`)
   const res = await fetch(`${discordAPIConstants.apiHost}/guilds/${guildID}/members/${userID}`, discordAPIHeaders.bot)
@@ -133,5 +150,6 @@ module.exports = {
   getGuildsByAPI,
   getGuildsWithPermission,
   isManagerOfGuild,
-  isManagerOfGuildByAPI
+  isManagerOfGuildByAPI,
+  getMemberOfGuild
 }
