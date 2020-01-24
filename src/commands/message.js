@@ -4,22 +4,19 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const Format = require('../structs/db/Format.js')
 const Feed = require('../structs/db/Feed.js')
 
 async function feedSelectorFn (m, data) {
   const { feed, profile, locale } = data
-  const format = await feed.getFormat()
   let currentMsg = ''
-  if (format && format.text) {
-    currentMsg = '```Markdown\n' + format.text + '```'
+  if (feed.text) {
+    currentMsg = '```Markdown\n' + feed.text + '```'
   } else {
     currentMsg = `\`\`\`Markdown\n${Translator.translate('commands.message.noSetMessage', locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultMessage + '```'
   }
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const nextData = {
     ...data,
-    format,
     next: {
       text: Translator.translate('commands.message.prompt', locale, { prefix, currentMsg, link: feed.url }) }
   }
@@ -27,7 +24,7 @@ async function feedSelectorFn (m, data) {
 }
 
 async function messagePromptFn (m, data) {
-  const { format, locale } = data
+  const { feed, locale } = data
   const input = m.content
 
   if (input.toLowerCase() === 'reset') {
@@ -35,7 +32,7 @@ async function messagePromptFn (m, data) {
       ...data,
       setting: null
     }
-  } else if (input === '{empty}' && (!format || format.embeds.length === 0)) {
+  } else if (input === '{empty}' && (feed.embeds.length === 0)) {
     // Allow empty messages only if embed is enabled
     throw new MenuUtils.MenuOptionError(Translator.translate('commands.message.noEmpty', locale))
   } else {
@@ -60,32 +57,17 @@ module.exports = async (bot, message, command) => {
     if (!data) {
       return
     }
-    const { setting, feed, format } = data
+    const { setting, feed } = data
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
     if (setting === null) {
-      if (format) {
-        format.text = undefined
-        if (format.embeds.length === 0) {
-          await format.delete()
-        } else {
-          await format.save()
-        }
-      }
+      feed.text = undefined
+      await feed.save()
       log.command.info(`Message reset for ${feed.url}`, message.guild)
       await message.channel.send(translate('commands.message.resetSuccess', { link: feed.url }) + `\n \`\`\`Markdown\n${config.feeds.defaultMessage}\`\`\``)
     } else {
-      if (format) {
-        format.text = setting
-        await format.save()
-      } else {
-        const data = {
-          feed: feed._id,
-          text: setting
-        }
-        const newFormat = new Format(data)
-        await newFormat.save()
-      }
+      feed.text = setting
+      await feed.save()
       log.command.info(`New message recorded for ${feed.url}`, message.guild)
       await message.channel.send(`${translate('commands.message.setSuccess', { link: feed.url })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.message.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.message.noSubscriptionsPlaceholder', { prefix })}` : ``}`) // Escape backticks in code blocks by inserting zero-width space before each backtick
     }

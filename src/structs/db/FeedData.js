@@ -11,11 +11,6 @@ class FeedData extends Feed {
     this.profile = undefined
 
     /**
-     * @type {import('./Format.js')}
-     */
-    this.format = undefined
-
-    /**
      * @type {import('./Subscriber.js')[]}
      */
     this.subscribers = []
@@ -29,17 +24,14 @@ class FeedData extends Feed {
   async _populate () {
     const [
       profile,
-      format,
       subscribers,
       filteredFormats
     ] = await Promise.all([
       Profile.get(this.guild),
-      this.getFormat(),
       this.getSubscribers(),
       this.getFilteredFormats()
     ])
     this.profile = profile
-    this.format = format
     this.subscribers = subscribers
     this.filteredFormats = filteredFormats
   }
@@ -48,7 +40,6 @@ class FeedData extends Feed {
     return {
       ...super.toObject(),
       profile: this.profile ? this.profile.toObject() : undefined,
-      format: this.format ? this.format.toObject() : undefined,
       subscribers: this.subscribers.map(s => s.toObject()),
       filteredFormats: this.filteredFormats.map(f => f.toObject())
     }
@@ -58,7 +49,6 @@ class FeedData extends Feed {
     return {
       ...super.toJSON(),
       profile: this.profile ? this.profile.toJSON() : undefined,
-      format: this.format ? this.format.toJSON() : undefined,
       subscribers: this.subscribers.map(s => s.toJSON()),
       filteredFormats: this.filteredFormats.map(f => f.toJSON())
     }

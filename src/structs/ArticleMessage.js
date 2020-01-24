@@ -23,7 +23,6 @@ class ArticleMessage {
     this.debug = debug.feeds.has(article._feed._id)
     this.article = article
     this.filteredFormats = article._feed.filteredFormats
-    this.format = article._feed.format
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
     this.channelId = article._feed.channel
@@ -71,9 +70,9 @@ class ArticleMessage {
   }
 
   _determineFormat () {
-    const { format, filteredFormats, parsedArticle } = this
-    let textFormat = !format || format.text === undefined ? undefined : format.text.trim()
-    let embedFormat = format ? format.embeds : undefined
+    const { feed, filteredFormats, parsedArticle } = this
+    let textFormat = feed.text ? feed.text.trim() : undefined
+    let embedFormat = feed.embeds
 
     // See if there are any filter-specific messages
     if (filteredFormats.length > 0) {
@@ -100,7 +99,7 @@ class ArticleMessage {
     }
 
     if (!textFormat) {
-      textFormat = format && format.text ? format.text : config.feeds.defaultMessage.trim()
+      textFormat = feed.text || config.feeds.defaultMessage.trim()
     }
 
     return { textFormat, embedFormat }

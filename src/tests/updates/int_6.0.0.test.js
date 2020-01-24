@@ -98,8 +98,6 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       }).toArray()
       expect(feeds).toHaveLength(2)
     })
-  })
-  describe('formats', function () {
     it('saves correctly with message', async function () {
       const guildRss = {
         id: '32qwet4ry',
@@ -120,8 +118,15 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }
       }
       await updateProfiles(guildRss)
-      const formats = await mongoose.connection.collection('formats').find({}).toArray()
-      expect(formats).toHaveLength(2)
+      const feeds = await mongoose.connection.collection('feeds').find({
+        guild: guildRss.id
+      }).toArray()
+      expect(feeds).toContainEqual(expect.objectContaining({
+        text: guildRss.sources.f1.message
+      }))
+      expect(feeds).toContainEqual(expect.objectContaining({
+        text: guildRss.sources.f2.message
+      }))
     })
     it('saves correctly with embeds', async function () {
       const guildRss = {
@@ -147,30 +152,19 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }
       }
       await updateProfiles(guildRss)
-      const formats = await mongoose.connection.collection('formats').find({}).toArray()
-      expect(formats).toHaveLength(2)
-    })
-    it('does not save for no formats', async function () {
-      const guildRss = {
-        id: '32qwet4ry',
-        name: 'azdsh',
-        sources: {
-          f1: {
-            title: 't1',
-            link: 'u1',
-            channel: 'q3wet4'
-          },
-          f2: {
-            title: 't2',
-            link: 'u2',
-            channel: 'aq3wet4',
-            embeds: []
-          }
-        }
-      }
-      await updateProfiles(guildRss)
-      const formats = await mongoose.connection.collection('formats').find({}).toArray()
-      expect(formats).toHaveLength(0)
+      const feeds = await mongoose.connection.collection('feeds').find({
+        guild: guildRss.id
+      }).toArray()
+      expect(feeds).toContainEqual(expect.objectContaining({
+        embeds: expect.arrayContaining([
+          expect.objectContaining(guildRss.sources.f1.embeds[0])
+        ])
+      }))
+      expect(feeds).toContainEqual(expect.objectContaining({
+        embeds: expect.arrayContaining([
+          expect.objectContaining(guildRss.sources.f1.embeds[0])
+        ])
+      }))
     })
   })
   describe('subscribers', function () {
@@ -203,7 +197,8 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }
       }
       await updateProfiles(guildRss)
-      const subscribers = await mongoose.connection.collection('subscribers').find({}).toArray()
+      const subscribers = await mongoose.connection
+        .collection('subscribers').find({}).toArray()
       expect(subscribers).toHaveLength(3)
     })
   })

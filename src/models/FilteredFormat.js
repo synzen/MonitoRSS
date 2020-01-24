@@ -1,13 +1,14 @@
 const mongoose = require('mongoose')
-const Format = require('./Format.js')
 const FilterBase = require('./common/FilterBase.js')
-const middleware = require('./middleware/Format.js')
+const Embed = require('./common/Embed.js')
+const middleware = require('./middleware/FilteredFormat.js')
 
 /**
  * Override the feed key, removing the unique constraint
  */
 const schema = new mongoose.Schema({
-  ...Format.schema.obj,
+  text: String,
+  embeds: [Embed],
   feed: {
     type: mongoose.Types.ObjectId,
     required: true

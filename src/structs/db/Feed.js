@@ -1,7 +1,6 @@
 const Base = require('./Base.js')
 const FilterBase = require('./FilterBase.js')
 const FeedModel = require('../../models/Feed.js').model
-const Format = require('./Format.js')
 const FilteredFormat = require('./FilteredFormat.js')
 const Subscriber = require('./Subscriber.js')
 const Schedule = require('./Schedule.js')
@@ -67,6 +66,18 @@ class Feed extends FilterBase {
     if (!this.channel) {
       throw new Error('Undefined channel')
     }
+
+    /**
+     * Feed text message
+     * @type {string}
+     */
+    this.text = this.getField('text')
+
+    /**
+     * Feed embeds
+     * @type {Object<string, any>}
+     */
+    this.embeds = this.getField('embeds', [])
 
     /**
      * Date the feed was added. No need to initialize since
@@ -163,6 +174,8 @@ class Feed extends FilterBase {
       url: this.url,
       guild: this.guild,
       channel: this.channel,
+      text: this.text,
+      embeds: this.embeds,
       addedAt: this.addedAt,
       checkTitles: this.checkTitles,
       checkDates: this.checkDates,
@@ -213,15 +226,6 @@ class Feed extends FilterBase {
   }
 
   /**
-   * Gets the message format of this feed. There is only
-   * one format per feed.
-   * @returns {Format}
-   */
-  async getFormat () {
-    return Format.getBy('feed', this._id)
-  }
-
-  /**
    * Returns both role and user subscribers of this feed.
    * @returns {Subscriber[]}
    */
@@ -255,14 +259,10 @@ class Feed extends FilterBase {
   }
 
   async delete () {
-    const format = await this.getFormat()
     const subscribers = await this.getSubscribers()
     const filteredFormats = await this.getFilteredFormats()
     const toDelete = subscribers.map(sub => sub.delete())
       .concat(filteredFormats.map(f => f.delete()))
-    if (format) {
-      toDelete.push(format.delete())
-    }
     await Promise.all(toDelete)
     return super.delete()
   }
@@ -369,6 +369,11 @@ class Feed extends FilterBase {
       const schedule = this.determineSchedule()
       await this.initializeCollection(shardID, schedule.name, articleList)
     }
+  }
+
+  validate () {
+    FilteredFormat.pruneEmbeds(this.embeds)
+    super.validate()
   }
 
   static get Model () {

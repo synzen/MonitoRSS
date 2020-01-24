@@ -4,7 +4,6 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
-const Format = require('../structs/db/Format.js')
 const Subscriber = require('../structs/db/Subscriber.js')
 
 const Translator = require('../structs/Translator.js')
@@ -107,7 +106,6 @@ module.exports = async (bot, message, command) => {
 
     log.command.info(`Properties ${data.clonedProps.join(',')} for the feed ${feed.url} cloning to to ${selectedFeeds.length} feeds`, message.guild)
 
-    const copyFromFormat = await feed.getFormat()
     const copyFromSubscribers = await feed.getSubscribers()
 
     for (const selected of selectedFeeds) {
@@ -129,22 +127,15 @@ module.exports = async (bot, message, command) => {
         updateSelected = true
       }
 
-      if (updateSelected) {
-        await selected.save()
-      }
-
       // Format
       if (cloneFormat) {
-        const format = await selected.getFormat()
-        if (format) {
-          await format.delete()
-        }
-        if (copyFromFormat) {
-          const data = copyFromFormat.toJSON()
-          data.feed = selected._id
-          const clonedFormat = new Format(data)
-          await clonedFormat.save()
-        }
+        selected.text = feed.text
+        selected.embeds = feed.embeds
+        updateSelected = true
+      }
+
+      if (updateSelected) {
+        await selected.save()
       }
 
       // Subscribers

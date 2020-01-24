@@ -4,7 +4,6 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const Format = require('../structs/db/Format.js')
 const Feed = require('../structs/db/Feed.js')
 const getEmbedProperties = translate => ({
   title: { name: translate('commands.embed.title'), description: translate('commands.embed.titleDescription') },
@@ -57,26 +56,17 @@ function validImg (input) {
 
 async function feedSelectorFn (m, data) {
   const { feed, translate } = data
-  let format = await feed.getFormat()
   // Skip embed selection if there is no webhook
-  if (!format) {
-    const formatData = {
-      feed: feed._id
-    }
-    format = new Format(formatData)
-  }
 
-  if (!format.webhook) {
+  if (!feed.webhook) {
     if (data.setFields) {
       return generateFieldsMenu(m, {
         ...data,
-        format,
         selectedEmbedIndex: 0
       })
     } else {
       return generatePropertiesMessage(m, {
         ...data,
-        format,
         selectedEmbedIndex: 0
       })
     }
@@ -85,7 +75,7 @@ async function feedSelectorFn (m, data) {
   const selectEmbed = new MenuUtils.Menu(m, selectEmbedFn)
     .setAuthor(translate('commands.embed.embedSelection'))
     .setDescription(translate('commands.embed.embedSelectionDescription'))
-  const embeds = format.embeds
+  const embeds = feed.embeds
   for (let x = 0; x < embeds.length; ++x) {
     const embed = embeds[0]
     let val = ''
@@ -97,15 +87,14 @@ async function feedSelectorFn (m, data) {
     selectEmbed.addOption(x === 0 ? translate('commands.embed.defaultEmbed') : translate('commands.embed.numberedEmbed', { number: x + 1 }), `${val}\u200b`)
   }
 
-  if (format.embeds.length < 10) {
+  if (feed.embeds.length < 10) {
     selectEmbed.addOption(translate('commands.embed.embedSelectionOptionAdd'), translate('commands.embed.embedSelectionOptionAddDescription'))
   }
-  if (format.embeds.length > 0) {
+  if (feed.embeds.length > 0) {
     selectEmbed.addOption(translate('commands.embed.embedSelectionOptionRemoveAll'), `\u200b`)
   }
   return {
     ...data,
-    format,
     next: {
       menu: selectEmbed
     }
@@ -113,12 +102,12 @@ async function feedSelectorFn (m, data) {
 }
 
 async function selectEmbedFn (m, data) {
-  const { format } = data
+  const { feed } = data
   const content = m.content
   const embedIndex = parseInt(content, 10) - 1
 
   // First condition is to add a new embed, second is to remove all embeds
-  if (embedIndex !== format.embeds.length && embedIndex !== format.embeds.length + 1 && !format.embeds[embedIndex]) {
+  if (embedIndex !== feed.embeds.length && embedIndex !== feed.embeds.length + 1 && !feed.embeds[embedIndex]) {
     throw new Error('Menu closed due to invalid embed index selected.')
   }
 
@@ -128,7 +117,7 @@ async function selectEmbedFn (m, data) {
   }
 
   // Remove Embeds
-  if (embedIndex === format.embeds.length + 1) {
+  if (embedIndex === feed.embeds.length + 1) {
     return {
       ...data,
       removeAllEmbeds: true
@@ -159,11 +148,11 @@ async function generateFieldsMenu (m, nextData) {
 }
 
 async function generatePropertiesMessage (m, nextData) {
-  const { feed, format, embedProperties, translate } = nextData
+  const { feed, embedProperties, translate } = nextData
   let currentEmbedProps = `\`\`\`Markdown\n# ${translate('commands.embed.currentProperties')} #\n\n`
   let changed = false
   const selectProp = new MenuUtils.Menu(m, selectPropFn)
-  const selectedEmbed = format.embeds[nextData.selectedEmbedIndex]
+  const selectedEmbed = feed.embeds[nextData.selectedEmbedIndex]
   if (selectedEmbed) {
     for (const property in selectedEmbed) {
       for (const p in embedProperties) {
@@ -275,16 +264,16 @@ async function setProperty (m, data) {
 
 const fieldFunctions = {
   action: async (m, data) => {
-    const { feed, format, selectedEmbedIndex, translate } = data
+    const { feed, selectedEmbedIndex, translate } = data
     const input = parseInt(m.content, 10)
     if (isNaN(input) || input < 1 || input > 5) return new MenuUtils.MenuOptionError()
 
     if (input === 5) {
       // Remove a field
-      if (!format.embeds[selectedEmbedIndex] || !format.embeds[selectedEmbedIndex].fields.length === 0) {
+      if (!feed.embeds[selectedEmbedIndex] || !feed.embeds[selectedEmbedIndex].fields.length === 0) {
         throw new Error(translate('commands.embed.embedFieldsRemoveNone'))
       }
-      const fields = format.embeds[selectedEmbedIndex].fields
+      const fields = feed.embeds[selectedEmbedIndex].fields
       const rmList = new MenuUtils.Menu(m, fieldFunctions.remove)
         .setAuthor(translate('commands.embed.embedFieldsOptionRemoveEmbedTitle'))
         .setDescription(translate('commands.embed.embedFieldsOptionRemoveEmbedDescription'))
@@ -307,16 +296,16 @@ const fieldFunctions = {
       }
     } else {
       // Add a field
-      if (format.embeds[selectedEmbedIndex] && format.embeds[selectedEmbedIndex].fields.length === 10) {
+      if (feed.embeds[selectedEmbedIndex] && feed.embeds[selectedEmbedIndex].fields.length === 10) {
         throw new Error(translate('commands.embed.embedFieldsMaximum'))
       }
 
       if (input === 3) {
         // Non-inline blank field
-        if (!format.embeds[selectedEmbedIndex]) {
-          format.embeds.push({ fields: [] })
+        if (!feed.embeds[selectedEmbedIndex]) {
+          feed.embeds.push({ fields: [] })
         }
-        format.embeds[selectedEmbedIndex].fields.push({
+        feed.embeds[selectedEmbedIndex].fields.push({
           name: '\u200b',
           value: '\u200b'
         })
@@ -326,10 +315,10 @@ const fieldFunctions = {
         }
       } else if (input === 4) {
         // Inline blank field
-        if (!format.embeds[selectedEmbedIndex]) {
-          format.embeds.push({ fields: [] })
+        if (!feed.embeds[selectedEmbedIndex]) {
+          feed.embeds.push({ fields: [] })
         }
-        format.embeds[selectedEmbedIndex].fields.push({
+        feed.embeds[selectedEmbedIndex].fields.push({
           name: '\u200b',
           value: '\u200b',
           inline: true
@@ -350,7 +339,7 @@ const fieldFunctions = {
     }
   },
   add: async (m, data) => {
-    const { feed, format, selectedOption, selectedEmbedIndex, translate } = data
+    const { feed, selectedOption, selectedEmbedIndex, translate } = data
     const arr = m.content.split('\n')
     while (!arr[0]) {
       arr.shift()
@@ -372,12 +361,12 @@ const fieldFunctions = {
     if (selectedOption === 2) {
       setting.inline = true
     }
-    if (!format.embeds[selectedEmbedIndex]) {
-      format.embeds.push({
+    if (!feed.embeds[selectedEmbedIndex]) {
+      feed.embeds.push({
         fields: []
       })
     }
-    format.embeds[selectedEmbedIndex].fields.push(setting)
+    feed.embeds[selectedEmbedIndex].fields.push(setting)
     log.command.info(`Embed field added. Title: '${name}', Value: '${val}'`, m.guild)
 
     return { ...data,
@@ -390,8 +379,8 @@ const fieldFunctions = {
     }
   },
   remove: async (m, data) => {
-    const { feed, format, selectedEmbedIndex, translate } = data
-    const fields = format.embeds[selectedEmbedIndex].fields
+    const { feed, selectedEmbedIndex, translate } = data
+    const fields = feed.embeds[selectedEmbedIndex].fields
     const inputs = m.content.split(',').map(item => item.trim()).filter((item, index, self) => {
       const num = parseInt(item, 10)
       return item && index === self.indexOf(item) && !isNaN(num) && num > 0 && num <= fields.length
@@ -432,19 +421,19 @@ module.exports = async (bot, message, command) => {
       if (!fieldsData) {
         return
       }
-      const { feed, format, successText, removeAllEmbeds } = fieldsData
+      const { feed, successText, removeAllEmbeds } = fieldsData
 
       if (removeAllEmbeds) {
-        format.embeds = []
-        if (!format.text) {
-          await format.delete()
+        feed.embeds = []
+        if (!feed.text) {
+          await feed.delete()
         } else {
-          await format.save()
+          await feed.save()
         }
         log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
         return await message.channel.send(translate('commands.embed.removedAllEmbeds'))
       } else {
-        await format.save()
+        await feed.save()
         log.command.info(`Updated embed fields for ${feed.url}`, message.guild)
         return await message.channel.send(successText)
       }
@@ -455,14 +444,14 @@ module.exports = async (bot, message, command) => {
     if (!data) {
       return
     }
-    const { feed, format, property, settings, selectedEmbedIndex, removeAllEmbeds } = data
+    const { feed, property, settings, selectedEmbedIndex, removeAllEmbeds } = data
 
     if (removeAllEmbeds) {
-      format.embeds = []
-      if (!format.text) {
-        await format.delete()
+      feed.embeds = []
+      if (!feed.text) {
+        await feed.delete()
       } else {
-        await format.save()
+        await feed.save()
       }
       log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
 
@@ -470,12 +459,12 @@ module.exports = async (bot, message, command) => {
     }
 
     if (property === 'resetAll') {
-      format.embeds.splice(selectedEmbedIndex, 1)
+      feed.embeds.splice(selectedEmbedIndex, 1)
       log.command.info(`Embed resetting for ${feed.url}`, message.guild)
-      if (format.embeds.length === 0 && !format.text) {
-        await format.delete()
+      if (feed.embeds.length === 0 && !feed.text) {
+        await feed.delete()
       } else {
-        await format.save()
+        await feed.save()
       }
       return await message.channel.send(translate('commands.embed.removedEmbed', { link: feed.url }))
     }
@@ -486,33 +475,28 @@ module.exports = async (bot, message, command) => {
       const propName = embedProperties[prop].name
       const userSetting = settings[prop]
       if (userSetting === 'reset') {
-        if (!format.embeds[selectedEmbedIndex] || !format.embeds[selectedEmbedIndex][prop]) {
+        if (!feed.embeds[selectedEmbedIndex] || !feed.embeds[selectedEmbedIndex][prop]) {
           reset += translate('commands.embed.resetNothing', { propName })
           continue
         }
-        delete format.embeds[selectedEmbedIndex][prop]
-        if (format.text === '{empty}') {
-          format.text = undefined
+        delete feed.embeds[selectedEmbedIndex][prop]
+        if (feed.text === '{empty}') {
+          feed.text = undefined
         }
 
         log.command.info(`Property '${prop}' resetting for ${feed.url}`, message.guild)
         reset += translate('commands.embed.resetSuccess', { propName })
         continue
       }
-      if (!format.embeds[selectedEmbedIndex]) {
-        format.embeds.push({})
+      if (!feed.embeds[selectedEmbedIndex]) {
+        feed.embeds.push({})
         log.command.info(`Adding new embed for ${feed.url}`, message.guild)
       }
-      format.embeds[selectedEmbedIndex][prop] = userSetting
+      feed.embeds[selectedEmbedIndex][prop] = userSetting
       log.command.info(`Embed updating for ${feed.url}. Property '${prop}' set to '${userSetting}'`, message.guild)
       updated += translate('commands.embed.updatedSuccess', { propName, userSetting })
     }
-    await format.save()
-
-    // Validation may remove empty embeds during save
-    if (!format.text && format.embeds.length === 0) {
-      await format.delete()
-    }
+    await feed.save()
 
     await message.channel.send(`${translate('commands.embed.updatedInfo', { link: feed.url, resetList: reset, updateList: updated, prefix })} ${translate('generics.backupReminder', { prefix })}`, { split: true })
   } catch (err) {

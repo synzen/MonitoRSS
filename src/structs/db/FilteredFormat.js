@@ -93,10 +93,9 @@ class FilteredFormat extends FilterBase {
     return filled
   }
 
-  pruneEmbeds () {
-    const embeds = this.embeds
+  static pruneEmbeds (embeds) {
     for (let i = embeds.length - 1; i >= 0; --i) {
-      const populated = this.constructor.isPopulatedEmbed(embeds[i], true)
+      const populated = this.isPopulatedEmbed(embeds[i], true)
       if (!populated) {
         embeds.splice(i, 1)
       }
@@ -114,7 +113,7 @@ class FilteredFormat extends FilterBase {
   }
 
   async validate () {
-    this.pruneEmbeds()
+    this.constructor.pruneEmbeds(this.embeds)
     const embeds = this.embeds
     for (const embed of embeds) {
       const timestamp = embed.timestamp

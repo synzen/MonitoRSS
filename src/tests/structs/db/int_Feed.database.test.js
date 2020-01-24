@@ -2,7 +2,7 @@ process.env.TEST_ENV = true
 const config = require('../../../config.js')
 const Feed = require('../../../structs/db/Feed.js')
 const FeedModel = require('../../../models/Feed.js').model
-const FormatModel = require('../../../models/Format.js').model
+const FilteredFormatModel = require('../../../models/FilteredFormat.js').model
 const SubscriberModel = require('../../../models/Subscriber.js').model
 const mongoose = require('mongoose')
 const dbName = 'test_int_feed'
@@ -19,29 +19,6 @@ describe('Int::structs/db/Feed Database', function () {
     config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
-  })
-  describe('getFormat', function () {
-    it('works', async function () {
-      const feedId = new mongoose.Types.ObjectId()
-      const formatData = {
-        text: 'abc',
-        feed: feedId
-      }
-      const feedData = {
-        title: 'abc',
-        url: 'asdf',
-        guild: 'asdf',
-        channel: 'sdxgdh',
-        _id: feedId
-      }
-      await mongoose.connection.db.collection('feeds').insertOne(feedData)
-      await new FormatModel(formatData).save()
-      const feed = await Feed.get(feedId.toHexString())
-      const format = await feed.getFormat()
-      expect(format).not.toBeNull()
-      expect(format.text).toEqual(formatData.text)
-      expect(format.feed).toEqual(formatData.feed.toHexString())
-    })
   })
   describe('getSubscribers', function () {
     it('works', async function () {
@@ -110,7 +87,7 @@ describe('Int::structs/db/Feed Database', function () {
       db.collection('guilds').insertOne({
         _id: guildId.toHexString()
       }),
-      db.collection('formats').insertOne({
+      db.collection('filtered_formats').insertOne({
         text: 'sde',
         feed: feedId
       }),
@@ -134,7 +111,7 @@ describe('Int::structs/db/Feed Database', function () {
     ])
 
     const doc = await FeedModel.findById(feedId).exec()
-    await expect(FormatModel.find({ feed: feedId.toHexString() }))
+    await expect(FilteredFormatModel.find({ feed: feedId.toHexString() }))
       .resolves.toHaveLength(1)
     await expect(SubscriberModel.find({ feed: feedId.toHexString() }))
       .resolves.toHaveLength(2)
@@ -143,7 +120,7 @@ describe('Int::structs/db/Feed Database', function () {
     await expect(db.collection('subscribers').find({ feed: feedId })
       .toArray())
       .resolves.toHaveLength(0)
-    await expect(db.collection('formats').find({ feed: feedId })
+    await expect(db.collection('filtered_formats').find({ feed: feedId })
       .toArray())
       .resolves.toHaveLength(0)
   })

@@ -181,7 +181,6 @@ class FeedSchedule extends EventEmitter {
     ])
     const filteredFeeds = []
     const filteredFeedsIds = new Set()
-    const formatsByFeedId = new Map()
     // Filter in feeds only this bot contains
     for (const feed of feeds) {
       const hasGuild = this.bot.guilds.has(feed.guild)
@@ -193,9 +192,6 @@ class FeedSchedule extends EventEmitter {
       } else {
         filteredFeeds.push(feed)
         filteredFeedsIds.add(feed._id)
-        if (feed.format) {
-          formatsByFeedId.set(feed._id, feed.format)
-        }
       }
     }
 
@@ -207,8 +203,7 @@ class FeedSchedule extends EventEmitter {
 
     // Check the permissions
     await Promise.all(filteredFeeds.map(feed => {
-      const format = formatsByFeedId.get(feed._id)
-      return maintenance.checkPermissions(feed, format, this.bot)
+      return maintenance.checkPermissions(feed, this.bot)
     }))
 
     // Check the limits

@@ -118,21 +118,21 @@ describe('Unit::structs/db/FilteredFormat', function () {
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(false)
-      format.pruneEmbeds()
+      FilteredFormat.pruneEmbeds(format.embeds)
       expect(format.embeds).toEqual([{ jack: 1 }])
     })
   })
   describe('validate', function () {
     it('calls pruneEmbeds', async function () {
       const format = new FilteredFormat({ ...initData })
-      jest.spyOn(format, 'pruneEmbeds').mockReturnValue()
+      const spy = jest.spyOn(FilteredFormat, 'pruneEmbeds').mockReturnValue()
       await format.validate()
-      expect(format.pruneEmbeds).toHaveBeenCalledTimes(1)
+      expect(spy).toHaveBeenCalledTimes(1)
     })
     it('throws an error for invalid timestamp in an embed', function () {
       const format = new FilteredFormat({ ...initData })
       format.embeds = [{ timestamp: 'o' }]
-      jest.spyOn(format, 'pruneEmbeds').mockReturnValue()
+      jest.spyOn(FilteredFormat, 'pruneEmbeds').mockReturnValue()
       return expect(format.validate())
         .rejects.toThrowError(new Error('Timestamp can only be article or now'))
     })

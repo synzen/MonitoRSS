@@ -25,13 +25,10 @@ async function selectChannelFn (m, data) {
     errors += translate('commands.move.youMissingPermission', { id: selected.id })
   }
 
-  const formats = await Promise.all(feeds.map(feed => feed.getFormat()))
-
   let feedSpecificErrors = ''
-  for (let x = 0; x < selectedFeeds.length; ++x) {
-    const selectedFeed = selectedFeeds[x]
+  for (const selectedFeed of selectedFeeds) {
     let curErrors = ''
-    const hasEmbed = formats[x] ? formats[x].embeds.length > 0 : false
+    const hasEmbed = selectedFeed.embeds.length > 0
     const sourceChannel = m.guild.channels.get(selectedFeed.channel)
 
     if (sourceChannel && selected.id === sourceChannel.id) {

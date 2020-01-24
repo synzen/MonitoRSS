@@ -1,6 +1,6 @@
 const Profile = require('./db/Profile.js')
 const Feed = require('./db/Feed.js')
-const Format = require('./db/Format.js')
+const FilteredFormat = require('./db/FilteredFormat.js')
 const Subscriber = require('./db/Subscriber.js')
 const log = require('../util/logger.js')
 
@@ -9,12 +9,12 @@ class GuildData {
    * @param {Object<string, any>} data
    * @param {Object<string, any>} data.profile
    * @param {Object<string, any>[]} data.feeds
-   * @param {Object<string, any>[]} data.formats
+   * @param {Object<string, any>[]} data.filteredFormats
    * @param {Object<string, any>[]} data.subscribers
    */
   constructor (data) {
     this.data = data
-    const { profile, feeds, formats, subscribers } = data
+    const { profile, feeds, filteredFormats, subscribers } = data
     if (profile && !profile._id) {
       throw new Error(`Profile missing _id`)
     }
@@ -30,9 +30,9 @@ class GuildData {
         throw new Error(`Feed ${feed._id} does not match profile`)
       }
     }
-    for (const format of formats) {
+    for (const format of filteredFormats) {
       if (!feedIDs.has(format.feed)) {
-        throw new Error(`Format ${format._id} does not match any given feeds`)
+        throw new Error(`FilteredFormat ${format._id} does not match any given feeds`)
       }
     }
     for (const subscriber of subscribers) {
@@ -48,7 +48,7 @@ class GuildData {
 
     this.profile = profile
     this.feeds = feeds
-    this.formats = formats
+    this.filteredFormats = filteredFormats
     this.subscribers = subscribers
   }
 
@@ -62,19 +62,25 @@ class GuildData {
       Profile.get(guildId),
       Feed.getManyBy('guild', guildId)
     ])
-    const [ formats, feedSubscribers ] = await Promise.all([
-      Promise.all(feeds.map(feed => feed.getFormat())),
-      Promise.all(feeds.map(feed => feed.getSubscribers()))
-    ])
+    const filteredFormats = await Promise.all(feeds.map(feed => feed.getFilteredFormats()))
+    const feedSubscribers = await Promise.all(feeds.map(feed => feed.getSubscribers()))
+    // const [ filteredFormats, feedSubscribers ] = await Promise.all([
+    //   Promise.all(feeds.map(feed => feed.getFilteredFormats())),
+    //   Promise.all(feeds.map(feed => feed.getSubscribers()))
+    // ])
     const allSubscribers = []
     feedSubscribers.forEach(subscribers => {
       subscribers.forEach(s => allSubscribers.push(s))
+    })
+    const allFilteredFormats = []
+    filteredFormats.forEach(formats => {
+      formats.forEach(f => allFilteredFormats.push(f))
     })
 
     const data = {
       profile: profile ? profile.toJSON() : null,
       feeds: feeds.map(feed => feed.toJSON()),
-      formats: formats.filter(f => f).map(f => f.toJSON()),
+      filteredFormats: allFilteredFormats.map(f => f.toJSON()),
       subscribers: allSubscribers.map(s => s.toJSON())
     }
     return new GuildData(data)
@@ -108,8 +114,8 @@ class GuildData {
         deletions.push(profile.delete())
       }
     }
-    const models = [Feed, Subscriber, Format]
-    const toLoopOver = [this.feeds, this.subscribers, this.formats]
+    const models = [Feed, Subscriber, FilteredFormat]
+    const toLoopOver = [this.feeds, this.subscribers, this.filteredFormats]
     for (let i = 0; i < toLoopOver.length; ++i) {
       const Model = models[i]
       const list = toLoopOver[i]
@@ -133,27 +139,27 @@ class GuildData {
   async restore () {
     await this.delete()
     const feeds = []
-    const formats = []
+    const filteredFormats = []
     const subscribers = []
     this.feeds.forEach(feed => {
       feeds.push(new Feed(feed))
     })
-    this.formats.forEach(format => {
-      formats.push(new Format(format))
+    this.filteredFormats.forEach(format => {
+      filteredFormats.push(new FilteredFormat(format))
     })
     this.subscribers.forEach(subscriber => {
       subscribers.push(new Subscriber(subscriber))
     })
     let data = this.profile ? [new Profile(this.profile)] : []
     data = data.concat(feeds)
-      .concat(formats)
+      .concat(filteredFormats)
       .concat(subscribers)
     try {
       if (this.profile) {
         await data[0].save()
       }
       await Promise.all(feeds.map(f => f.save()))
-      await Promise.all(formats.map(f => f.save()))
+      await Promise.all(filteredFormats.map(f => f.save()))
       await Promise.all(subscribers.map(s => s.save()))
     } catch (err) {
       Promise.all(data.map(d => d.delete()))

@@ -1,21 +1,21 @@
 process.env.TEST_ENV = true
 const Feed = require('../../../structs/db/Feed.js')
-const Format = require('../../../structs/db/Format.js')
-const pruneFormats = require('../../../util/maintenance/pruneFormats.js')
+const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
+const pruneFilteredFormats = require('../../../util/maintenance/pruneFilteredFormats.js')
 
 jest.mock('../../../structs/db/Feed.js')
-jest.mock('../../../structs/db/Format.js')
+jest.mock('../../../structs/db/FilteredFormat.js')
 
-describe('utils/maintenance/pruneFeeds', function () {
+describe('utils/maintenance/pruneFilteredFormats', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })
   afterEach(function () {
     Feed.getAll.mockReset()
-    Format.getAll.mockReset()
+    FilteredFormat.getAll.mockReset()
   })
   it('deletes the formats whose feed does not exist', async function () {
-    const formats = [{
+    const FilteredFormats = [{
       feed: 'a',
       delete: jest.fn()
     }, {
@@ -36,15 +36,15 @@ describe('utils/maintenance/pruneFeeds', function () {
       _id: 'z'
     }]
     Feed.getAll.mockResolvedValue(feeds)
-    Format.getAll.mockResolvedValue(formats)
-    await pruneFormats()
-    expect(formats[0].delete).not.toHaveBeenCalled()
-    expect(formats[1].delete).toHaveBeenCalledTimes(1)
-    expect(formats[2].delete).toHaveBeenCalledTimes(1)
-    expect(formats[3].delete).not.toHaveBeenCalled()
+    FilteredFormat.getAll.mockResolvedValue(FilteredFormats)
+    await pruneFilteredFormats()
+    expect(FilteredFormats[0].delete).not.toHaveBeenCalled()
+    expect(FilteredFormats[1].delete).toHaveBeenCalledTimes(1)
+    expect(FilteredFormats[2].delete).toHaveBeenCalledTimes(1)
+    expect(FilteredFormats[3].delete).not.toHaveBeenCalled()
   })
   it('returns the number of deleted formats', async function () {
-    const formats = [{
+    const filteredFormats = [{
       feed: 'a',
       delete: jest.fn()
     }, {
@@ -65,8 +65,8 @@ describe('utils/maintenance/pruneFeeds', function () {
       _id: 'z'
     }]
     Feed.getAll.mockResolvedValue(feeds)
-    Format.getAll.mockResolvedValue(formats)
-    const result = await pruneFormats()
+    FilteredFormat.getAll.mockResolvedValue(filteredFormats)
+    const result = await pruneFilteredFormats()
     expect(result).toEqual(2)
   })
 })

@@ -1,4 +1,4 @@
-const Format = require('../../structs/db/Format.js')
+const FilteredFormat = require('../../structs/db/FilteredFormat.js')
 const Feed = require('../../structs/db/Feed.js')
 
 /**
@@ -6,13 +6,13 @@ const Feed = require('../../structs/db/Feed.js')
  * @returns {number}
  */
 async function pruneFormats () {
-  const [ formats, feeds ] = await Promise.all([
-    Format.getAll(),
+  const [ filteredFormats, feeds ] = await Promise.all([
+    FilteredFormat.getAll(),
     Feed.getAll()
   ])
   const feedIds = new Set(feeds.map(feed => feed._id))
   const deletions = []
-  for (const format of formats) {
+  for (const format of filteredFormats) {
     if (!feedIds.has(format.feed)) {
       deletions.push(format.delete())
     }

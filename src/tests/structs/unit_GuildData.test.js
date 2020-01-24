@@ -1,18 +1,18 @@
 const GuildData = require('../../structs/GuildData.js')
 const Profile = require('../../structs/db/Profile.js')
 const Feed = require('../../structs/db/Feed.js')
-const Format = require('../../structs/db/Format.js')
+const FilteredFormat = require('../../structs/db/FilteredFormat.js')
 const Subscriber = require('../../structs/db/Subscriber.js')
 
 jest.mock('../../structs/db/Profile.js')
 jest.mock('../../structs/db/Feed.js')
-jest.mock('../../structs/db/Format.js')
 jest.mock('../../structs/db/Subscriber.js')
+jest.mock('../../structs/db/FilteredFormat.js')
 
 describe('Unit::structs/GuildData', function () {
   const initData = {
     feeds: [],
-    formats: [],
+    filteredFormats: [],
     subscribers: []
   }
   afterEach(function () {
@@ -20,7 +20,7 @@ describe('Unit::structs/GuildData', function () {
     Profile.get.mockReset()
     Feed.mockReset()
     Feed.getManyBy.mockReset()
-    Format.mockReset()
+    FilteredFormat.mockReset()
     Subscriber.mockReset()
   })
   describe('constructor', function () {
@@ -44,13 +44,13 @@ describe('Unit::structs/GuildData', function () {
         _id: 'abc',
         guild: 'id2'
       }]
-      const formats = [{
+      const filteredFormats = [{
         _id: 'whatever',
         feed: 'abh'
       }]
       const data = {
         feeds,
-        formats
+        filteredFormats
       }
       expect(() => new GuildData(data))
         .toThrow(`Format whatever does not match any given feeds`)
@@ -67,7 +67,7 @@ describe('Unit::structs/GuildData', function () {
       const data = {
         feeds,
         subscribers,
-        formats: []
+        filteredFormats: []
       }
       expect(() => new GuildData(data))
         .toThrow(`Subscriber whatever does not match any given feeds`)
@@ -81,7 +81,7 @@ describe('Unit::structs/GuildData', function () {
       const data = {
         feeds,
         subscribers: [],
-        formats: []
+        filteredFormats: []
       }
       expect(() => new GuildData(data))
         .toThrow('Mismatched guild IDs found for feeds')
@@ -98,7 +98,7 @@ describe('Unit::structs/GuildData', function () {
         _id: 'whatever',
         feed: 'abc'
       }]
-      const formats = [{
+      const filteredFormats = [{
         _id: 'formz',
         feed: 'abc'
       }]
@@ -106,14 +106,14 @@ describe('Unit::structs/GuildData', function () {
         profile,
         feeds,
         subscribers,
-        formats
+        filteredFormats
       }
       const guildData = new GuildData(data)
       expect(guildData.id).toEqual('id2')
       expect(guildData.profile).toEqual(profile)
       expect(guildData.feeds).toEqual(feeds)
       expect(guildData.subscribers).toEqual(subscribers)
-      expect(guildData.formats).toEqual(formats)
+      expect(guildData.filteredFormats).toEqual(filteredFormats)
     })
   })
   describe('toJSON', function () {
@@ -148,7 +148,7 @@ describe('Unit::structs/GuildData', function () {
       }, {
         b: 2
       }]
-      const formats = [{
+      const filteredFormats = [{
         f: 1
       }, {
         g: 2
@@ -160,12 +160,12 @@ describe('Unit::structs/GuildData', function () {
       }]
       guildData.profile = profile
       guildData.feeds = feeds
-      guildData.formats = formats
+      guildData.filteredFormats = filteredFormats
       guildData.subscribers = subscribers
       await guildData.restore()
       expect(Profile).toHaveBeenCalledWith(profile)
       feeds.forEach(f => expect(Feed).toHaveBeenCalledWith(f))
-      formats.forEach(f => expect(Format).toHaveBeenCalledWith(f))
+      filteredFormats.forEach(f => expect(FilteredFormat).toHaveBeenCalledWith(f))
       subscribers.forEach(s => expect(Subscriber).toHaveBeenCalledWith(s))
     })
     it('does not create a Profile if profile does not exist', async function () {
@@ -190,7 +190,7 @@ describe('Unit::structs/GuildData', function () {
       }, {
         b: 2
       }]
-      const formats = [{
+      const filteredFormats = [{
         f: 1
       }, {
         g: 2
@@ -202,12 +202,12 @@ describe('Unit::structs/GuildData', function () {
       }]
       guildData.profile = profile
       guildData.feeds = feeds
-      guildData.formats = formats
+      guildData.filteredFormats = filteredFormats
       guildData.subscribers = subscribers
       await guildData.restore()
       expect(Profile.mock.instances[0].save).toHaveBeenCalledTimes(1)
       feeds.forEach((f, i) => expect(Feed.mock.instances[i].save).toHaveBeenCalledTimes(1))
-      formats.forEach((f, i) => expect(Format.mock.instances[i].save).toHaveBeenCalledTimes(1))
+      filteredFormats.forEach((f, i) => expect(FilteredFormat.mock.instances[i].save).toHaveBeenCalledTimes(1))
       subscribers.forEach((s, i) => expect(Subscriber.mock.instances[i].save).toHaveBeenCalledTimes(1))
     })
     it('calls delete on all models if some saves fail', async function () {
@@ -220,7 +220,7 @@ describe('Unit::structs/GuildData', function () {
       }, {
         b: 2
       }]
-      const formats = [{
+      const filteredFormats = [{
         f: 1
       }, {
         g: 2
@@ -232,7 +232,7 @@ describe('Unit::structs/GuildData', function () {
       }]
       guildData.profile = profile
       guildData.feeds = feeds
-      guildData.formats = formats
+      guildData.filteredFormats = filteredFormats
       guildData.subscribers = subscribers
       Subscriber.prototype.save.mockRejectedValue(new Error('save error'))
       try {
@@ -240,7 +240,7 @@ describe('Unit::structs/GuildData', function () {
       } catch (err) {}
       expect(Profile.mock.instances[0].delete).toHaveBeenCalledTimes(1)
       feeds.forEach((f, i) => expect(Feed.mock.instances[i].delete).toHaveBeenCalledTimes(1))
-      formats.forEach((f, i) => expect(Format.mock.instances[i].delete).toHaveBeenCalledTimes(1))
+      filteredFormats.forEach((f, i) => expect(FilteredFormat.mock.instances[i].delete).toHaveBeenCalledTimes(1))
       subscribers.forEach((s, i) => expect(Subscriber.mock.instances[i].delete).toHaveBeenCalledTimes(1))
       Subscriber.prototype.save.mockRestore()
     })
@@ -256,7 +256,7 @@ describe('Unit::structs/GuildData', function () {
       }]
       guildData.profile = profile
       guildData.feeds = feeds
-      guildData.formats = []
+      guildData.filteredFormats = []
       guildData.subscribers = []
       const error = new Error('save error')
       Feed.prototype.save.mockRejectedValue(error)
@@ -275,7 +275,7 @@ describe('Unit::structs/GuildData', function () {
       }]
       guildData.profile = profile
       guildData.feeds = feeds
-      guildData.formats = []
+      guildData.filteredFormats = []
       guildData.subscribers = []
       const saveError = new Error('save error')
       Feed.prototype.save.mockRejectedValue(saveError)
@@ -324,7 +324,7 @@ describe('Unit::structs/GuildData', function () {
         _id: 1,
         feed: 1
       }]
-      const formats = [{
+      const filteredFormats = [{
         _id: 1,
         feed: 1
       }, {
@@ -336,8 +336,8 @@ describe('Unit::structs/GuildData', function () {
       const foundFeed2 = { delete: jest.fn() }
       const foundSubscriber1 = { delete: jest.fn() }
       const foundSubscriber2 = { delete: jest.fn() }
-      const foundFormat1 = { delete: jest.fn() }
-      const foundFormat2 = { delete: jest.fn() }
+      const foundFilteredFormat1 = { delete: jest.fn() }
+      const foundFilteredFormat2 = { delete: jest.fn() }
       Profile.get
         .mockResolvedValue(foundProfile)
       Feed.get
@@ -346,27 +346,27 @@ describe('Unit::structs/GuildData', function () {
       Subscriber.get
         .mockResolvedValueOnce(foundSubscriber1)
         .mockResolvedValueOnce(foundSubscriber2)
-      Format.get
-        .mockResolvedValueOnce(foundFormat1)
-        .mockResolvedValueOnce(foundFormat2)
+      FilteredFormat.get
+        .mockResolvedValueOnce(foundFilteredFormat1)
+        .mockResolvedValueOnce(foundFilteredFormat2)
       const guildData = new GuildData({
         profile,
         feeds,
         subscribers,
-        formats
+        filteredFormats
       })
       await guildData.delete()
       expect(foundProfile.delete).toHaveBeenCalledTimes(1)
       expect(foundFeed1.delete).toHaveBeenCalledTimes(1)
       expect(foundFeed2.delete).toHaveBeenCalledTimes(1)
-      expect(foundFormat1.delete).toHaveBeenCalledTimes(1)
-      expect(foundFormat2.delete).toHaveBeenCalledTimes(1)
+      expect(foundFilteredFormat1.delete).toHaveBeenCalledTimes(1)
+      expect(foundFilteredFormat2.delete).toHaveBeenCalledTimes(1)
       expect(foundSubscriber1.delete).toHaveBeenCalledTimes(1)
       expect(foundSubscriber2.delete).toHaveBeenCalledTimes(1)
       Profile.get.mockReset()
       Feed.get.mockReset()
       Subscriber.get.mockReset()
-      Format.get.mockReset()
+      FilteredFormat.get.mockReset()
     })
     it('calls delete on partially found data', async function () {
       const profile = {
@@ -377,7 +377,7 @@ describe('Unit::structs/GuildData', function () {
         guild: 'profile'
       }]
       const subscribers = []
-      const formats = [{
+      const filteredFormats = [{
         _id: 1,
         feed: 1
       }]
@@ -388,13 +388,13 @@ describe('Unit::structs/GuildData', function () {
         .mockResolvedValue(foundProfile)
       Feed.get
         .mockResolvedValueOnce(foundFeed1)
-      Format.get
+      FilteredFormat.get
         .mockResolvedValueOnce(foundFormat1)
       const guildData = new GuildData({
         profile,
         feeds,
         subscribers,
-        formats
+        filteredFormats
       })
       await guildData.delete()
       expect(foundProfile.delete).toHaveBeenCalledTimes(1)

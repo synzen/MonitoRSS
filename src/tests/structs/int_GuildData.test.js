@@ -29,20 +29,24 @@ describe('Int::structs/GuildData Database', function () {
       title: 'ha',
       url: 'url',
       guild: '123',
-      channel: 'abc'
+      channel: 'abc',
+      embeds: []
     }, {
       _id: feedID2,
       title: 'ha2',
       url: 'url2',
       guild: '123',
-      channel: 'abc2'
+      channel: 'abc2',
+      embeds: []
     }]
-    const formats = [{
+    const filteredFormats = [{
       feed: feedID1,
-      text: 'abc'
+      text: 'abc',
+      embeds: []
     }, {
       feed: feedID2,
-      text: 'hozz'
+      text: 'hozz',
+      embeds: []
     }]
     const subscribers = [{
       feed: feedID1,
@@ -56,7 +60,7 @@ describe('Int::structs/GuildData Database', function () {
     const data = {
       profile,
       feeds,
-      formats,
+      filteredFormats,
       subscribers
     }
     const guildData = new GuildData(JSON.parse(JSON.stringify(data)))
@@ -74,16 +78,16 @@ describe('Int::structs/GuildData Database', function () {
       db.collection('profiles').findOne(profile),
       db.collection('feeds').findOne(feeds[0]),
       db.collection('feeds').findOne(feeds[1]),
-      db.collection('formats').findOne(formats[0]),
-      db.collection('formats').findOne(formats[1]),
+      db.collection('filtered_formats').findOne(filteredFormats[0]),
+      db.collection('filtered_formats').findOne(filteredFormats[1]),
       db.collection('subscribers').findOne(subscribers[0]),
       db.collection('subscribers').findOne(subscribers[1])
     ])
     expect(foundProfile).toEqual(expect.objectContaining(profile))
     expect(foundFeed1).toEqual(expect.objectContaining(feeds[0]))
     expect(foundFeed2).toEqual(expect.objectContaining(feeds[1]))
-    expect(foundFormat1).toEqual(expect.objectContaining(formats[0]))
-    expect(foundFormat2).toEqual(expect.objectContaining(formats[1]))
+    expect(foundFormat1).toEqual(expect.objectContaining(filteredFormats[0]))
+    expect(foundFormat2).toEqual(expect.objectContaining(filteredFormats[1]))
     expect(foundSubscriber1).toEqual(expect.objectContaining(subscribers[0]))
     expect(foundSubscriber2).toEqual(expect.objectContaining(subscribers[1]))
     await mongoose.connection.db.dropDatabase()
@@ -100,20 +104,24 @@ describe('Int::structs/GuildData Database', function () {
       title: 'ha',
       url: 'url',
       guild: 'getguildid',
-      channel: 'abc'
+      channel: 'abc',
+      embeds: []
     }, {
       _id: feedID2,
       title: 'ha2',
       url: 'url2',
       guild: 'getguildid',
-      channel: 'abc2'
+      channel: 'abc2',
+      embeds: []
     }]
-    const formats = [{
+    const filteredFormats = [{
       feed: feedID1,
-      text: 'abc'
+      text: 'abc',
+      embeds: []
     }, {
       feed: feedID2,
-      text: 'hozz'
+      text: 'hozz',
+      embeds: []
     }]
     const subscribers = [{
       feed: feedID1,
@@ -127,22 +135,22 @@ describe('Int::structs/GuildData Database', function () {
     const data = JSON.parse(JSON.stringify({
       profile,
       feeds,
-      formats,
+      filteredFormats,
       subscribers
     }))
     const db = mongoose.connection.db
     await Promise.all([
       db.collection('profiles').insertOne(profile),
       db.collection('feeds').insertMany(feeds),
-      db.collection('formats').insertMany(formats),
+      db.collection('filtered_formats').insertMany(filteredFormats),
       db.collection('subscribers').insertMany(subscribers)
     ])
     const guildData = await GuildData.get(profile._id)
     expect(guildData.profile).toEqual(expect.objectContaining(data.profile))
     expect(guildData.feeds[0]).toEqual(expect.objectContaining(data.feeds[0]))
     expect(guildData.feeds[1]).toEqual(expect.objectContaining(data.feeds[1]))
-    expect(guildData.formats[0]).toEqual(expect.objectContaining(data.formats[0]))
-    expect(guildData.formats[1]).toEqual(expect.objectContaining(data.formats[1]))
+    expect(guildData.filteredFormats[0]).toEqual(expect.objectContaining(data.filteredFormats[0]))
+    expect(guildData.filteredFormats[1]).toEqual(expect.objectContaining(data.filteredFormats[1]))
     expect(guildData.subscribers[0]).toEqual(expect.objectContaining(data.subscribers[0]))
     expect(guildData.subscribers[1]).toEqual(expect.objectContaining(data.subscribers[1]))
     mongoose.connection.db.dropDatabase()
@@ -154,11 +162,12 @@ describe('Int::structs/GuildData Database', function () {
       title: 'ha',
       url: 'url',
       guild: '123',
-      channel: 'abc'
+      channel: 'abc',
+      embeds: []
     }]
     const data = {
       feeds,
-      formats: [],
+      filteredFormats: [],
       subscribers: []
     }
     const guildData = new GuildData(JSON.parse(JSON.stringify(data)))
@@ -179,12 +188,13 @@ describe('Int::structs/GuildData Database', function () {
       title: 'ha',
       url: 'url',
       guild: profile._id,
-      channel: 'abc'
+      channel: 'abc',
+      embeds: []
     }]
     const data = {
       profile,
       feeds,
-      formats: [],
+      filteredFormats: [],
       subscribers: []
     }
     const db = mongoose.connection.db

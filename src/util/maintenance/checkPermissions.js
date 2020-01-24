@@ -5,11 +5,10 @@ const ipc = require('../ipc.js')
  * Precondition: The feed's guild belongs to the bot, or the
  * shard if it is sharded.
  * @param {import('../../structs/db/Feed.js')} feed - The feed
- * @param {import('../../structs/db/Format.js')} format - The feed's format
  * @param {import('discord.js').Client} bot
  * @returns {boolean} - The feed's disabled status
  */
-async function checkPermissions (feed, format, bot) {
+async function checkPermissions (feed, bot) {
   if (feed.disabled && !feed.disabled.startsWith('Missing permissions')) {
     // The feed is disabled for a separate reason - skip all checks
     return true
@@ -19,7 +18,7 @@ async function checkPermissions (feed, format, bot) {
   const permissions = guild.me.permissionsIn(channel)
   const allowView = permissions.has('VIEW_CHANNEL')
   const allowSendMessages = permissions.has('SEND_MESSAGES')
-  const allowEmbedLinks = !format || format.embeds.length === 0 ? true : permissions.has('EMBED_LINKS')
+  const allowEmbedLinks = feed.embeds.length === 0 ? true : permissions.has('EMBED_LINKS')
   if (!allowSendMessages || !allowEmbedLinks || !allowView) {
     let reasons = []
     if (!allowSendMessages) {

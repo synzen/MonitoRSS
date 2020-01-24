@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 const Profile = require('../../src/structs/db/Profile.js')
 const Feed = require('../../src/structs/db/Feed.js')
-const Format = require('../../src/structs/db/Format.js')
+const FilteredFormat = require('../../src/structs/db/FilteredFormat.js')
 const Subscriber = require('../../src/structs/db/Subscriber.js')
 const FailCounter = require('../../src/structs/db/FailCounter.js')
 const GuildData = require('../../src/structs/GuildData.js')
@@ -36,7 +36,7 @@ async function updateFailCounters (doc) {
 async function updateProfiles (guildRss) {
   const data = {
     feeds: [],
-    formats: [],
+    filteredFormats: [],
     subscribers: []
   }
   // Profile first
@@ -77,35 +77,31 @@ async function updateProfiles (guildRss) {
       feed._id = new mongoose.Types.ObjectId().toHexString()
       // Since mongoose map keys cannot have dots, remove them
       sanitizeFilters(feed)
-      data.feeds.push(new Feed(feed).toJSON())
 
       // Format
       const text = feed.message
+      if (text) {
+        feed.text = text
+      }
       const embeds = feed.embeds
-      if (text || (embeds && embeds.length > 0)) {
-        if (embeds) {
-          for (const embed of embeds) {
-            // Convert hex strings to numbers
-            if (embed.color && isNaN(Number(embed.color))) {
-              embed.color = HEXToVBColor(embed.color)
-            }
+      if (Array.isArray(embeds) && embeds.length > 0) {
+        for (const embed of embeds) {
+          // Convert hex strings to numbers
+          if (embed.color && isNaN(Number(embed.color))) {
+            embed.color = HEXToVBColor(embed.color)
+          }
 
-            // Remove non-array fields
-            if (!Array.isArray(embed.fields)) {
-              delete embed.fields
-            }
+          // Remove non-array fields
+          if (!Array.isArray(embed.fields)) {
+            delete embed.fields
           }
         }
-        const format = new Format({
-          feed: feed._id,
-          text,
-          embeds
-        })
-        format.pruneEmbeds()
-        if (format.embeds.length > 0 || format.text) {
-          data.formats.push(format.toJSON())
-        }
+        FilteredFormat.pruneEmbeds(embeds)
+      } else {
+        delete feed.embeds
       }
+
+      data.feeds.push(new Feed(feed).toJSON())
 
       // Subscribers
       const feedSubscribers = feed.subscribers
