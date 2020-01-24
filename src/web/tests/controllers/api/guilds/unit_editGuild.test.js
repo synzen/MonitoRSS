@@ -17,13 +17,18 @@ describe('Unit::controllers/api/guilds', function () {
         id: 123,
         name: 'aedg'
       },
-      body: {}
+      body: {
+        prefix: 1
+      }
     }
     const res = createResponse()
     const next = createNext()
     await editGuild(req, res, next)
+    expect(next).not.toHaveBeenCalled()
     expect(guildServices.updateProfile)
-      .toHaveBeenCalledWith(req.guild.id, req.guild.name, {})
+      .toHaveBeenCalledWith(req.guild.id, req.guild.name, {
+        prefix: req.body.prefix
+      })
   })
   it('calls updateProfile with updated values correctly', async function () {
     const req = {
@@ -56,7 +61,9 @@ describe('Unit::controllers/api/guilds', function () {
     guildServices.updateProfile.mockResolvedValue(updatedProfile)
     const req = {
       guild: {},
-      body: {}
+      body: {
+        prefix: 1
+      }
     }
     const res = createResponse()
     const next = createNext()
@@ -68,11 +75,35 @@ describe('Unit::controllers/api/guilds', function () {
     guildServices.updateProfile.mockRejectedValue(error)
     const req = {
       guild: {},
-      body: {}
+      body: {
+        prefix: 1
+      }
     }
     const res = createResponse()
     const next = createNext()
     await editGuild(req, res, next)
     expect(next).toHaveBeenCalledWith(error)
+  })
+  it('returns 304 if nothing to update', async function () {
+    const updatedProfile = {
+      foo: 'bar'
+    }
+    guildServices.updateProfile.mockResolvedValue(updatedProfile)
+    const req = {
+      guild: {},
+      body: {
+        prefixxx: 1,
+        whatever: 2
+      }
+    }
+    const end = jest.fn()
+    const res = {
+      status: jest.fn(() => ({ end }))
+    }
+    const next = createNext()
+    await editGuild(req, res, next)
+    expect(res.status).toHaveBeenCalledWith(304)
+    expect(end).toHaveBeenCalled()
+    expect(next).not.toHaveBeenCalled()
   })
 })

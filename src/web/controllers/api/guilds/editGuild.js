@@ -14,7 +14,6 @@ const keys = [
  * @property {string} dateLanguage
  * @property {string} timezone
  * @property {string} locale
- * @property {string[]} alert
  */
 
 /**
@@ -34,6 +33,9 @@ async function editGuild (req, res, next) {
     } else if (userValue !== undefined) {
       toUpdate[key] = userValue
     }
+  }
+  if (Object.keys(toUpdate).length === 0) {
+    return res.status(304).end()
   }
   try {
     const updated = await guildServices
