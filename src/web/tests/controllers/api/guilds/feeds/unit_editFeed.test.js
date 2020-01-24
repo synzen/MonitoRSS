@@ -72,7 +72,11 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         imgPreviews: '',
         imgLinksExistence: '',
         formatTables: false,
-        toggleRoleMentions: true
+        toggleRoleMentions: true,
+        text: 'aedgtswrf',
+        embeds: [{
+          title: 'hi'
+        }]
       }
     }
     const res = createResponse()
@@ -91,7 +95,9 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         imgPreviews: undefined,
         imgLinksExistence: undefined,
         formatTables: false,
-        toggleRoleMentions: true
+        toggleRoleMentions: true,
+        text: req.body.text,
+        embeds: req.body.embeds
       })
   })
 })

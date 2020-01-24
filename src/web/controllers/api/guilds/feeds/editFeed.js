@@ -6,7 +6,9 @@ const keys = [
   'imgPreviews',
   'imgLinksExistence',
   'formatTables',
-  'toggleRoleMentions'
+  'toggleRoleMentions',
+  'text',
+  'embeds'
 ]
 
 /**

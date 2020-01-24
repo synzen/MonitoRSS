@@ -47,6 +47,15 @@ guildFeedsAPI.patch('/:feedID', [
       'toggleRoleMentions'
     ]).optional()
       .isBoolean().withMessage('Must be a boolean'),
+  body('text')
+    .optional()
+    .isString().withMessage('Must be a string')
+    .notEmpty().withMessage('Cannot be empty'),
+  body('embeds')
+    .optional()
+    .isArray({
+      min: 1
+    }).withMessage('Must be a populated array'),
   body('filters.*')
     .isArray({
       min: 1
