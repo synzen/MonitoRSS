@@ -149,6 +149,12 @@ class Feed extends FilterBase {
      * @type {Object<string, Object<string, any>[]>}
      */
     this.regexOps = this.getField('regexOps', {})
+
+    /**
+     * Custom comparisons for article logic
+     * @type {string[]}
+     */
+    this.customComparisons = this.getField('customComparisons', [])
   }
 
   static get SPLIT_KEYS () {
@@ -186,7 +192,8 @@ class Feed extends FilterBase {
       disabled: this.disabled,
       webhook: this.webhook,
       split: this.split,
-      regexOps: regexOpsMap
+      regexOps: regexOpsMap,
+      customComparisons: this.customComparisons
     }
     if (this._id) {
       data._id = this._id

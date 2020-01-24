@@ -14,7 +14,8 @@ describe('Unit::structs/db/Feed', function () {
     'formatTables',
     'imgLinksExistence',
     'imgPreviews',
-    'toggleRoleMentions'
+    'toggleRoleMentions',
+    'text'
   ]
   const necessaryInit = {
     title: 'e5rh',
@@ -53,14 +54,26 @@ describe('Unit::structs/db/Feed', function () {
         name: 'adesgrf'
       }
       init._id = 'abc'
+      init.customComparisons = ['h', 'g']
+      init.embeds = [{ a: 1, b: 2 }]
+      init.disabled = true
       const feed = new Feed({ ...init })
       for (const key in init) {
         expect(feed[key]).toEqual(init[key])
       }
       expect(feed._id).toEqual(init._id)
+      expect(feed.webhook).toEqual(init.webhook)
+      expect(feed.customComparisons).toEqual(init.customComparisons)
+      expect(feed.embeds).toEqual(init.embeds)
+      expect(feed.disabled).toEqual(init.disabled)
     })
   })
   describe('toObject', function () {
+    it('exports the _id if it exists', function () {
+      const feed = new Feed({ ...necessaryInit, _id: 123 })
+      const exported = feed.toObject()
+      expect(exported._id).toEqual(123)
+    })
     it('returns a plain with the right keys', function () {
       const feed = new Feed({ ...necessaryInit })
       const exported = feed.toObject()
@@ -106,6 +119,11 @@ describe('Unit::structs/db/Feed', function () {
     })
   })
   describe('toJSON', function () {
+    it('exports the _id if it exists', function () {
+      const feed = new Feed({ ...necessaryInit, _id: 123 })
+      const exported = feed.toJSON()
+      expect(exported._id).toEqual(123)
+    })
     it('returns regexOps as plain object', function () {
       const feed = new Feed({ ...necessaryInit })
       const regexOps = {
