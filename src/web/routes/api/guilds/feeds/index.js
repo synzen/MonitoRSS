@@ -47,11 +47,11 @@ guildFeedsAPI.patch('/:feedID', [
       'toggleRoleMentions'
     ]).optional()
       .isBoolean().withMessage('Must be a boolean'),
-  check('filters.*')
+  body('filters.*')
     .isArray({
       min: 1
     }).withMessage('Must be a populated array'),
-  check('filters.*.*')
+  body('filters.*.*')
     .isString().withMessage('Must be a string')
     .notEmpty().withMessage('Cannot be empty')
   ]),
@@ -67,4 +67,4 @@ guildFeedsAPI.get('/:feedID/placeholders', controllers.api.guilds.feeds.getFeedP
 // Get database articles for debugging
 guildFeedsAPI.get('/:feedID/database', controllers.api.guilds.feeds.getDatabaseArticles)
 
-module.exports = guildsAPI
+module.exports = guildFeedsAPI
