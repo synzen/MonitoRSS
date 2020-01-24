@@ -1,5 +1,6 @@
 const Joi = require('@hapi/joi')
 const embedSchema = require('./embedSchema.js')
+const filterSchema = require('./filterSchema.js')
 
 const feedSchema = Joi.object({
   title: Joi.string().trim().max(256),
@@ -19,7 +20,7 @@ const feedSchema = Joi.object({
     append: Joi.string().trim().max(100),
     maxLength: Joi.number().max(2048).min(500)
   }),
-  filters: Joi.object().pattern(/^/, Joi.array().items(Joi.string()))
+  filters: filterSchema
 })
 
 module.exports = feedSchema
