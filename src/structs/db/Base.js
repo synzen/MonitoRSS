@@ -194,7 +194,7 @@ class Base {
   /**
    * Get one with a custom query
    * @param {Object<string, any>} query - MongoDB-format query
-   * @returns {Promise<Base[]>}
+   * @returns {Promise<Base>}
    */
   static async getByQuery (query) {
     /**
