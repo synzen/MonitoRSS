@@ -16,7 +16,7 @@ async function createFeed (req, res, next) {
   }
   try {
     const created = await feedServices.createFeed(data)
-    res.json(created)
+    res.status(201).json(created)
   } catch (err) {
     const message = err.message
     if (message.includes('this channel')) {

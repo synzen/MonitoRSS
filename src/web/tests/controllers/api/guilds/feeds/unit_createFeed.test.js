@@ -20,7 +20,10 @@ describe('Unit::controllers/api/guilds/feeds/createFeed', function () {
       params: {},
       body: {}
     }
-    const res = createResponse()
+    const json = jest.fn()
+    const res = {
+      status: jest.fn(() => ({ json }))
+    }
     const createdFeed = {
       a: 1
     }
@@ -28,7 +31,8 @@ describe('Unit::controllers/api/guilds/feeds/createFeed', function () {
     const next = createNext()
     await createFeed(req, res, next)
     expect(next).not.toHaveBeenCalled()
-    expect(res.json).toHaveBeenCalledWith(createdFeed)
+    expect(res.status).toHaveBeenCalledWith(201)
+    expect(json).toHaveBeenCalledWith(createdFeed)
   })
   it('returns 400 if error is already exists in this channel', async function () {
     const req = {
