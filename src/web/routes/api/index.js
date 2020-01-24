@@ -23,7 +23,7 @@ api.use('/feeds', require('./feeds/index.js'))
 api.use('/users', require('./users/index.js'))
 api.use('/guilds', require('./guilds/index.js'))
 
-app.use((err, req, res, next) => {
+api.use((err, req, res, next) => {
   if (err.error && err.error.isJoi) {
     const type = err.type
     const details = err.error.details

@@ -7,9 +7,6 @@ const Joi = require('@hapi/joi')
 const validator = require('express-joi-validation').createValidator({
   passError: true
 });
-const {
-  param
-} = require('express-validator')
 
 if (process.env.NODE_ENV !== 'test') {
   feedsAPI.use(rateLimit({
