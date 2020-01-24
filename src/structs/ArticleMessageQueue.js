@@ -51,7 +51,7 @@ class ArticleMessageQueue {
    * @param {boolean} skipFilters - Whether filters should be skipped
    */
   async enqueue (article, isTestMessage, skipFilters) {
-    // if (config.dev === true) return
+    if (config.dev === true) return
     const articleMessage = new ArticleMessage(this.bot, article, isTestMessage, skipFilters)
     await this._pushNext(articleMessage)
   }

@@ -26,7 +26,8 @@ async function selectChannelFn (m, data) {
   }
 
   let feedSpecificErrors = ''
-  for (const selectedFeed of selectedFeeds) {
+  for (let i = 0; i < selectedFeeds.length; ++i) {
+    const selectedFeed = selectedFeeds[i]
     let curErrors = ''
     const hasEmbed = selectedFeed.embeds.length > 0
     const sourceChannel = m.guild.channels.get(selectedFeed.channel)
@@ -47,7 +48,7 @@ async function selectChannelFn (m, data) {
       }
     }
     if (curErrors) {
-      feedSpecificErrors += `\n__Errors for <${selectedFeed.url}>:__${curErrors}${x === selectedFeeds.length - 1 ? '' : '\n'}`
+      feedSpecificErrors += `\n__Errors for <${selectedFeed.url}>:__${curErrors}${i === selectedFeeds.length - 1 ? '' : '\n'}`
     }
   }
 
