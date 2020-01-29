@@ -1,5 +1,5 @@
 const GuildData = require('../structs/GuildData.js')
-const Attachment = require('discord.js').Attachment
+const Attachment = require('discord.js').MessageAttachment
 const Translator = require('../structs/Translator.js')
 const log = require('../util/logger.js')
 
