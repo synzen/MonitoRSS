@@ -12,7 +12,7 @@ async function getAppData (guildID) {
   }
 }
 
-async function getGuild (guildID) {
+async function getCachedGuild (guildID) {
   const guild = await RedisGuild.fetch(guildID)
   if (guild) {
     return guild.toJSON()
@@ -23,6 +23,17 @@ async function getGuild (guildID) {
 
 async function getFeedLimit (guildID) {
   return Profile.getFeedLimit(guildID)
+}
+
+async function aggregateDataOfGuild (guildID) {
+  const cached = await getCachedGuild(guildID)
+  const appData = await getAppData(guildID)
+  const limit = await getFeedLimit(guildID)
+  return {
+    ...cached,
+    data: appData,
+    limit
+  }
 }
 
 async function updateProfile (guildID, guildName, data) {
@@ -57,8 +68,9 @@ async function guildHasChannel (guildID, channelID) {
 
 module.exports = {
   getAppData,
-  getGuild,
+  getCachedGuild,
   updateProfile,
   getFeedLimit,
-  guildHasChannel
+  guildHasChannel,
+  aggregateDataOfGuild
 }
