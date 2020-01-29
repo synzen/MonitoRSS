@@ -1,4 +1,5 @@
 const userServices = require('../../../services/user.js')
+const guildServices = require('../../../services/guild.js')
 
 /**
  * @param {import('express').Request} req
@@ -8,9 +9,19 @@ const userServices = require('../../../services/user.js')
 async function getMeGuilds (req, res, next) {
   const { identity, token } = req.session
   try {
-    const guildsData = await userServices
-      .getGuildsWithPermission(identity.id, token.access_token)
-    res.json(guildsData)
+    const userGuilds = await userServices.getGuildsByAPI(identity.id, token.access_token)
+    const guilds = []
+    for (const guild of userGuilds) {
+      if (!userServices.hasGuildPermission(guild)) {
+        continue
+      }
+      const data = await guildServices.aggregateDataOfGuild(guild.id)
+      guilds.push({
+        ...guild,
+        ...data
+      })
+    }
+    res.json(guilds)
   } catch (err) {
     next(err)
   }
