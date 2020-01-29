@@ -80,8 +80,8 @@ class Profile extends Base {
    * Returns the feed limit of this server
    * @returns {number}
    */
-  async getFeedLimit () {
-    const supporter = await Supporter.getValidSupporterOfGuild(this._id)
+  static async getFeedLimit (guildID) {
+    const supporter = await Supporter.getValidSupporterOfGuild(guildID)
     if (supporter) {
       return supporter.getMaxFeeds()
     } else {

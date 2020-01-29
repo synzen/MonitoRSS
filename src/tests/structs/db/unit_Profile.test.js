@@ -60,26 +60,18 @@ describe('Unit::structs/db/Profile', function () {
   })
   describe('getFeedLimit', function () {
     it('calls supporter get max feeds if supporter', async function () {
-      const profile = new Profile({
-        _id: 'qwsetr4',
-        name: 'saetr'
-      })
       const maxFeeds = 22
       const getMaxFeeds = jest.fn(() => maxFeeds)
       Supporter.getValidSupporterOfGuild.mockResolvedValue({ getMaxFeeds })
-      const returned = await profile.getFeedLimit()
+      const returned = await Profile.getFeedLimit()
       expect(Supporter.getValidSupporterOfGuild).toHaveBeenCalledTimes(1)
       expect(returned).toEqual(maxFeeds)
     })
     it('returns config max feeds if no supporter', async function () {
-      const profile = new Profile({
-        _id: 'qwsetr4',
-        name: 'saetr'
-      })
       const oval = config.feeds.max
       config.feeds.max = 22
       Supporter.getValidSupporterOfGuild.mockResolvedValue(null)
-      const returned = await profile.getFeedLimit()
+      const returned = await Profile.getFeedLimit()
       expect(Supporter.getValidSupporterOfGuild).toHaveBeenCalledTimes(1)
       expect(returned).toEqual(config.feeds.max)
       config.feeds.max = oval
