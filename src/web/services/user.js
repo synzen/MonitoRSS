@@ -60,6 +60,20 @@ async function getGuildsByAPI (id, accessToken, skipCache) {
   return data
 }
 
+/**
+ * @param {Object<string, any>} guild - User guild data from API
+ * @returns {boolean}
+ */
+async function hasGuildPermission (guild) {
+  const isOwner = guild.owner
+  const managesChannel = (guild.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION
+  const isAdministrator = (guild.permissions & ADMINISTRATOR_PERMISSION) !== ADMINISTRATOR_PERMISSION
+  if (!isOwner && !managesChannel && !isAdministrator) {
+    return false
+  }
+  return true
+}
+
 async function getGuildsWithPermission (userID, userAccessToken) {
   const apiGuilds = await getGuildsByAPI(userID, userAccessToken)
   const guildCache = await Promise.all(apiGuilds.map(discordGuild => guildServices.getGuild(discordGuild.id)))
@@ -85,8 +99,8 @@ async function getGuildsWithPermission (userID, userAccessToken) {
 }
 
 /**
- * @param {string} userID 
- * @param {string} guildID 
+ * @param {string} userID
+ * @param {string} guildID
  */
 async function getMemberOfGuild (userID, guildID) {
   const member = await RedisGuildMember.fetch({
@@ -97,8 +111,8 @@ async function getMemberOfGuild (userID, guildID) {
 }
 
 /**
- * @param {string} userID 
- * @param {string} guildID 
+ * @param {string} userID
+ * @param {string} guildID
  */
 async function isManagerOfGuild (userID, guildID) {
   const member = await getMemberOfGuild(userID, guildID)
@@ -151,5 +165,6 @@ module.exports = {
   getGuildsWithPermission,
   isManagerOfGuild,
   isManagerOfGuildByAPI,
-  getMemberOfGuild
+  getMemberOfGuild,
+  hasGuildPermission
 }
