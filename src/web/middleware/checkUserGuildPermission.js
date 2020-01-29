@@ -7,7 +7,7 @@ async function checkUserGuildPermission (req, res, next) {
     var guildID = req.params.guildID
     var userID = req.session.identity.id
     const [ guild, guildData, isManager ] = await Promise.all([
-      guildServices.getGuild(guildID),
+      guildServices.getCachedGuild(guildID),
       guildServices.getAppData(guildID),
       userServices.isManagerOfGuild(userID, guildID)
     ])
@@ -26,6 +26,5 @@ async function checkUserGuildPermission (req, res, next) {
     next(err)
   }
 }
-
 
 module.exports = checkUserGuildPermission
