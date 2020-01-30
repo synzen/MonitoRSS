@@ -18,5 +18,6 @@ guildsAPI.get('/:guildID', controllers.api.guilds.getGuild)
 guildsAPI.patch('/:guildID', validator.body(profileSchema), controllers.api.guilds.editGuild)
 guildsAPI.use('/:guildID/feeds', require('./feeds/index.js'))
 guildsAPI.use('/:guildID/channels', require('./channels/index.js'))
+guildsAPI.use('/:guildID/roles', require('./roles/index.js'))
 
 module.exports = guildsAPI
