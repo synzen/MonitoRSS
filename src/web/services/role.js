@@ -9,7 +9,7 @@ async function getRole (roleID) {
 }
 
 /**
- * @param {Object<string, any>} roleData 
+ * @param {Object<string, any>} roleData
  */
 async function formatRole (roleData) {
   return {
@@ -32,16 +32,16 @@ async function getRoles (roleIDs) {
 }
 
 /**
- * @param {string} roleID 
- * @param {string} guildID 
+ * @param {string} roleID
+ * @param {string} guildID
  */
 async function isManagerOfGuild (roleID, guildID) {
   return RedisRole.utils.isManagerOfGuild(roleID, guildID)
 }
 
 /**
- * @param {string} roleID 
- * @param {string} guildID 
+ * @param {string} roleID
+ * @param {string} guildID
  */
 async function isRoleOfGuild (roleID, guildID) {
   const role = await getRole(roleID)
@@ -51,10 +51,20 @@ async function isRoleOfGuild (roleID, guildID) {
   return role.guildID === guildID
 }
 
+/**
+ * @param {string} guildID
+ */
+async function getRolesOfGuild (guildID) {
+  const roleIDs = await RedisRole.utils.getRolesOfGuild(guildID)
+  const roles = roleIDs.map(roleID => getRole(roleID))
+  return roles.filter(r => r)
+}
+
 module.exports = {
   getRole,
   getRoles,
   formatRole,
   isManagerOfGuild,
-  isRoleOfGuild
+  isRoleOfGuild,
+  getRolesOfGuild
 }
