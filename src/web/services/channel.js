@@ -21,8 +21,8 @@ async function getCachedChannels (channelIDs) {
  */
 async function getGuildChannels (guildID) {
   const channelIDs = await RedisChannel.utils.getChannelsOfGuild(guildID)
-  const channels = await Promise.all(channelIDs.map(id => RedisChannel.fetch(id)))
-  return channels.map(channel => channel.toJSON())
+  const channels = await Promise.all(channelIDs.map(id => getCachedChannel(id)))
+  return channels.filter(c => c)
 }
 
 module.exports = {
