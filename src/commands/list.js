@@ -5,7 +5,7 @@ const moment = require('moment')
 const Schedule = require('../structs/db/Schedule.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const FailCounter = require('../structs/db/FailCounter.js')
+const FailRecord = require('../structs/db/FailRecord.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
 
@@ -27,10 +27,10 @@ module.exports = async (bot, message, command) => {
     const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
 
     // Generate the info for each feed as an array, and push into another array
-    const failCounters = await Promise.all(feeds.map(feed => FailCounter.getBy('url', feed.url)))
+    const failRecords = await Promise.all(feeds.map(feed => FailRecord.getBy('url', feed.url)))
     const fetchedSchedules = await Promise.all(feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds)))
 
-    for (const counter of failCounters) {
+    for (const counter of failRecords) {
       if (counter) {
         failedLinks[counter.url] = counter
       }
@@ -74,11 +74,11 @@ module.exports = async (bot, message, command) => {
       let status = ''
       if (feed.disabled) {
         status = translate('commands.list.statusDisabled', { reason: feed.disabled })
-      } else if (FailCounter.limit !== 0) {
-        const failCounter = failedLinks[feed.url]
-        const count = !failCounter ? 0 : failCounter.count
-        if (!failCounter || !failCounter.hasFailed()) {
-          const failCountText = count > Math.ceil(FailCounter.limit / 5) ? `(failed ${count}/${FailCounter.limit} times` : ''
+      } else if (FailRecord.limit !== 0) {
+        const failRecord = failedLinks[feed.url]
+        const count = !failRecord ? 0 : failRecord.count
+        if (!failRecord || !failRecord.hasFailed()) {
+          const failCountText = count > Math.ceil(FailRecord.limit / 5) ? `(failed ${count}/${FailRecord.limit} times` : ''
           status = translate('commands.list.statusOk', { failCount: failCountText })
         } else {
           status = translate('commands.list.statusFailed')

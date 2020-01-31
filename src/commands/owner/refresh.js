@@ -1,6 +1,6 @@
 const FeedFetcher = require('../../util/FeedFetcher.js')
 const log = require('../../util/logger.js')
-const FailCounter = require('../../structs/db/FailCounter.js')
+const FailRecord = require('../../structs/db/FailRecord.js')
 
 module.exports = async (bot, message) => {
   const content = message.content.split(' ')
@@ -8,10 +8,10 @@ module.exports = async (bot, message) => {
   const link = content[1]
 
   try {
-    if (FailCounter.limit === 0) {
+    if (FailRecord.limit === 0) {
       return await message.channel.send(`No fail limit has been set.`)
     }
-    const counter = await FailCounter.getBy('url', link)
+    const counter = await FailRecord.getBy('url', link)
     if (!counter || !counter.hasFailed()) {
       return await message.channel.send('That is not a failed link.')
     }

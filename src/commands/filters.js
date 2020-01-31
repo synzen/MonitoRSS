@@ -8,7 +8,7 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FeedData = require('../structs/db/FeedData.js')
-const FailCounter = require('../structs/db/FailCounter.js')
+const FailRecord = require('../structs/db/FailRecord.js')
 
 async function feedSelectorFn (m, data) {
   const { feed, locale } = data
@@ -114,7 +114,7 @@ module.exports = async (bot, message, command, role) => {
       if (data.noFilters) {
         return await message.channel.send(translate('commands.filters.noFilters', { link: feed.url }))
       }
-      if (await FailCounter.hasFailed(feed.url)) {
+      if (await FailRecord.hasFailed(feed.url)) {
         return await message.channel.send(translate('commands.filters.connectionFailureLimit'))
       }
       const filters = feed.hasRFilters() ? feed.rfilters : feed.filters

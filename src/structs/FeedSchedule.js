@@ -1,7 +1,7 @@
 const path = require('path')
 const config = require('../config.js')
 const Schedule = require('./db/Schedule.js')
-const FailCounter = require('./db/FailCounter.js')
+const FailRecord = require('./db/FailRecord.js')
 const ShardStats = require('./db/ShardStats.js')
 const FeedData = require('./db/FeedData.js')
 const Supporter = require('./db/Supporter.js')
@@ -134,7 +134,7 @@ class FeedSchedule extends EventEmitter {
         if (this._linksResponded[link] === 0) {
           continue
         }
-        FailCounter.increment(link, 'Failed to respond in a timely manner')
+        FailRecord.increment(link, 'Failed to respond in a timely manner')
           .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to increment fail counter for ${link}`, err))
         list += `${link}\n`
         ++c
@@ -174,7 +174,7 @@ class FeedSchedule extends EventEmitter {
       supporterGuilds,
       schedules
     ] = await Promise.all([
-      FailCounter.getAll(),
+      FailRecord.getAll(),
       FeedData.getAll(),
       Supporter.getValidGuilds(),
       Schedule.getAll()
@@ -283,10 +283,10 @@ class FeedSchedule extends EventEmitter {
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          FailCounter.increment(linkCompletion.link)
+          FailRecord.increment(linkCompletion.link)
             .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to increment fail counter ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
-          FailCounter.reset(linkCompletion.link)
+          FailRecord.reset(linkCompletion.link)
             .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to reset fail counter ${linkCompletion.link}`, err))
           // Only if config.database.uri is a databaseless folder path
           if (linkCompletion.feedCollectionId) {

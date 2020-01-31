@@ -1,21 +1,21 @@
 process.env.TEST_ENV = true
 const Feed = require('../../../structs/db/Feed.js')
-const FailCounter = require('../../../structs/db/FailCounter.js')
-const pruneFailCounters = require('../../../util/maintenance/pruneFailCounters.js')
+const FailRecord = require('../../../structs/db/FailRecord.js')
+const pruneFailRecords = require('../../../util/maintenance/pruneFailRecords.js')
 
 jest.mock('../../../structs/db/Feed.js')
-jest.mock('../../../structs/db/FailCounter.js')
+jest.mock('../../../structs/db/FailRecord.js')
 
-describe('utils/maintenance/pruneFeeds', function () {
+describe('Unit::utils/maintenance/pruneFailRecords', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })
   afterEach(function () {
     Feed.getAll.mockReset()
-    FailCounter.getAll.mockReset()
+    FailRecord.getAll.mockReset()
   })
   it('deletes the counters whose url does not exist', async function () {
-    const failCounters = [{
+    const failRecords = [{
       url: 'a',
       delete: jest.fn()
     }, {
@@ -36,15 +36,15 @@ describe('utils/maintenance/pruneFeeds', function () {
       url: 'z'
     }]
     Feed.getAll.mockResolvedValue(feeds)
-    FailCounter.getAll.mockResolvedValue(failCounters)
-    await pruneFailCounters()
-    expect(failCounters[0].delete).not.toHaveBeenCalled()
-    expect(failCounters[1].delete).toHaveBeenCalledTimes(1)
-    expect(failCounters[2].delete).toHaveBeenCalledTimes(1)
-    expect(failCounters[3].delete).not.toHaveBeenCalled()
+    FailRecord.getAll.mockResolvedValue(failRecords)
+    await pruneFailRecords()
+    expect(failRecords[0].delete).not.toHaveBeenCalled()
+    expect(failRecords[1].delete).toHaveBeenCalledTimes(1)
+    expect(failRecords[2].delete).toHaveBeenCalledTimes(1)
+    expect(failRecords[3].delete).not.toHaveBeenCalled()
   })
-  it('returns the number of deleted failCounters', async function () {
-    const failCounters = [{
+  it('returns the number of deleted failRecords', async function () {
+    const failRecords = [{
       url: 'a',
       delete: jest.fn()
     }, {
@@ -65,8 +65,8 @@ describe('utils/maintenance/pruneFeeds', function () {
       url: 'z'
     }]
     Feed.getAll.mockResolvedValue(feeds)
-    FailCounter.getAll.mockResolvedValue(failCounters)
-    const result = await pruneFailCounters()
+    FailRecord.getAll.mockResolvedValue(failRecords)
+    const result = await pruneFailRecords()
     expect(result).toEqual(2)
   })
 })

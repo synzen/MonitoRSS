@@ -3,9 +3,9 @@ const Base = require('./Base.js')
 const Feed = require('./Feed.js')
 const log = require('../../util/logger.js')
 const ipc = require('../../util/ipc.js')
-const FailCounterModel = require('../../models/FailCounter.js').model
+const FailRecordModel = require('../../models/FailRecord.js').model
 
-class FailCounter extends Base {
+class FailRecord extends Base {
   constructor (data, _saved) {
     super(data, _saved)
 
@@ -48,7 +48,7 @@ class FailCounter extends Base {
    * @param {string} reason - Reason to provide if failed
    */
   static async increment (url, reason) {
-    const found = await FailCounter.getBy('url', url)
+    const found = await FailRecord.getBy('url', url)
     if (!found) {
       const data = {
         url
@@ -65,7 +65,7 @@ class FailCounter extends Base {
    * @param {string} url - Feed URL
    */
   static async reset (url) {
-    const found = await FailCounter.getBy('url', url)
+    const found = await FailRecord.getBy('url', url)
     if (found) {
       return found.delete()
     }
@@ -76,7 +76,7 @@ class FailCounter extends Base {
    * @param {string} url
    */
   static async hasFailed (url) {
-    const found = await FailCounter.getBy('url', url)
+    const found = await FailRecord.getBy('url', url)
     if (!found) {
       return false
     } else {
@@ -97,7 +97,7 @@ class FailCounter extends Base {
    * Whether this counter has reached the failure threshold
    */
   hasFailed () {
-    return FailCounter.limit !== 0 && this.count >= FailCounter.limit
+    return FailRecord.limit !== 0 && this.count >= FailRecord.limit
   }
 
   /**
@@ -122,11 +122,11 @@ class FailCounter extends Base {
     let save = false
     if (!this.failedAt) {
       this.failedAt = new Date().toISOString()
-      FailCounter.sendFailMessage(this.url)
+      FailRecord.sendFailMessage(this.url)
       save = true
     }
-    if (this.count !== FailCounter.limit) {
-      this.count = FailCounter.limit
+    if (this.count !== FailRecord.limit) {
+      this.count = FailRecord.limit
       save = true
     }
     if (this.reason !== reason) {
@@ -156,8 +156,8 @@ class FailCounter extends Base {
   }
 
   static get Model () {
-    return FailCounterModel
+    return FailRecordModel
   }
 }
 
-module.exports = FailCounter
+module.exports = FailRecord

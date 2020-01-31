@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const dbName = 'test_int_v6'
-const { updateProfiles, updateFailCounters } = require('../../../scripts/updates/6.0.0.js')
+const { updateProfiles, updateFailRecords } = require('../../../scripts/updates/6.0.0.js')
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -22,8 +22,8 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         count: 20,
         failed: 'huzz'
       }
-      await updateFailCounters(failedLink)
-      const counter = await mongoose.connection.collection('fail_counters').findOne({
+      await updateFailRecords(failedLink)
+      const counter = await mongoose.connection.collection('fail_records').findOne({
         link: failedLink.link
       })
       const expected = {

@@ -1,6 +1,6 @@
 const log = require('../../util/logger.js')
 const Feed = require('../../structs/db/Feed.js')
-const FailCounter = require('../../structs/db/FailCounter.js')
+const FailRecord = require('../../structs/db/FailRecord.js')
 
 module.exports = async (bot, message) => {
   try {
@@ -12,7 +12,7 @@ module.exports = async (bot, message) => {
     if (!randomFeed) {
       return await message.channel.send('No feeds found with that link.')
     }
-    const counter = await FailCounter.getBy('url', url)
+    const counter = await FailRecord.getBy('url', url)
     if (counter) {
       if (counter.hasFailed()) {
         return await message.channel.send(`This URL has already failed (dated ${counter.failedAt}).`)
@@ -22,7 +22,7 @@ module.exports = async (bot, message) => {
       const data = {
         url
       }
-      const newCounter = new FailCounter(data)
+      const newCounter = new FailRecord(data)
       await newCounter.fail(`Forced failure by owner ${message.author.id} (${message.author.username})`)
     }
     await message.channel.send('Successfully failed the link.')

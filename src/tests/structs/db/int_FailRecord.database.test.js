@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
 const config = require('../../../config.js')
 const mongoose = require('mongoose')
-const FailCounter = require('../../../structs/db/FailCounter.js')
+const FailRecord = require('../../../structs/db/FailRecord.js')
 const dbName = 'test_int_failcounter'
 const CON_OPTIONS = {
   useNewUrlParser: true,
@@ -13,19 +13,19 @@ jest.mock('../../../config.js')
 
 config.feeds.failLimit = 3
 
-describe('Int::structs/db/FailCounter Database', function () {
+describe('Int::structs/db/FailRecord Database', function () {
   /** @type {import('mongoose').Collection} */
   let collection
   beforeAll(async function () {
     config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
-    collection = mongoose.connection.db.collection('fail_counters')
+    collection = mongoose.connection.db.collection('fail_records')
   })
   describe('static increment', function () {
     it(`creates the doc if url is new`, async function () {
       const url = 'wst34eygr5ht'
-      await FailCounter.increment(url)
+      await FailRecord.increment(url)
       const result = await collection.findOne({
         url
       })
@@ -40,7 +40,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         url,
         count: 0
       })
-      await FailCounter.increment(url)
+      await FailRecord.increment(url)
       const result = await collection.findOne({
         url
       })
@@ -57,7 +57,7 @@ describe('Int::structs/db/FailCounter Database', function () {
       })
       expect(collection.findOne({ url }))
         .resolves.toBeDefined()
-      await FailCounter.reset(url)
+      await FailRecord.reset(url)
       expect(collection.findOne({ url }))
         .resolves.toBeNull()
     })
@@ -69,7 +69,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         url,
         count: config.feeds.failLimit
       })
-      await expect(FailCounter.hasFailed(url))
+      await expect(FailRecord.hasFailed(url))
         .resolves.toEqual(true)
     })
     it('returns false for not failed urls', async function () {
@@ -78,18 +78,18 @@ describe('Int::structs/db/FailCounter Database', function () {
         url,
         count: config.feeds.failLimit - 1
       })
-      await expect(FailCounter.hasFailed(url))
+      await expect(FailRecord.hasFailed(url))
         .resolves.toEqual(false)
     })
     it('returns false for nonexistent urls', async function () {
-      await expect(FailCounter.hasFailed('asd'))
+      await expect(FailRecord.hasFailed('asd'))
         .resolves.toEqual(false)
     })
   })
   describe('increment', function () {
     it('adds 1 to database for new url', async function () {
       const url = 'instanceincrementnew'
-      const counter = new FailCounter({
+      const counter = new FailRecord({
         url
       })
       await counter.increment()
@@ -98,7 +98,7 @@ describe('Int::structs/db/FailCounter Database', function () {
     })
     it('adds 1 to database for old url', async function () {
       const url = 'instanceincrentold'
-      const counter = new FailCounter({
+      const counter = new FailRecord({
         url
       })
       await counter.increment()
@@ -113,7 +113,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         url,
         count: config.feeds.failLimit
       })
-      const counter = await FailCounter.getBy('url', url)
+      const counter = await FailRecord.getBy('url', url)
       await counter.increment(reason)
       await expect(collection.findOne({ url }))
         .resolves.toHaveProperty('reason', reason)
@@ -126,7 +126,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         url,
         count: config.feeds.failLimit
       })
-      const counter = await FailCounter.getBy('url', url)
+      const counter = await FailRecord.getBy('url', url)
       await counter.increment(reason)
       await counter.increment(newReason)
       await expect(collection.findOne({ url }))
@@ -139,7 +139,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         url,
         count: config.feeds.failLimit
       })
-      const counter = await FailCounter.getBy('url', url)
+      const counter = await FailRecord.getBy('url', url)
       await counter.increment(reason)
       await expect(collection.findOne({ url }))
         .resolves.toHaveProperty('count', config.feeds.failLimit)
@@ -155,7 +155,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         count: config.feeds.failLimit,
         reason
       })
-      const counter = await FailCounter.getBy('url', url)
+      const counter = await FailRecord.getBy('url', url)
       await counter.fail(newReason)
       await expect(collection.findOne({ url }))
         .resolves.toHaveProperty('reason', newReason)
@@ -166,7 +166,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         url,
         count: 0
       })
-      const counter = await FailCounter.getBy('url', url)
+      const counter = await FailRecord.getBy('url', url)
       await counter.fail('mz')
       await expect(collection.findOne({ url }))
         .resolves.toHaveProperty('failedAt')
@@ -177,7 +177,7 @@ describe('Int::structs/db/FailCounter Database', function () {
         url,
         count: 0
       })
-      const counter = await FailCounter.getBy('url', url)
+      const counter = await FailRecord.getBy('url', url)
       await counter.fail('mz')
       await expect(collection.findOne({ url }))
         .resolves.toHaveProperty('count', config.feeds.failLimit)

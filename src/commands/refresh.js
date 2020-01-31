@@ -3,7 +3,7 @@ const channelTracker = require('../util/channelTracker.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const FailCounter = require('../structs/db/FailCounter.js')
+const FailRecord = require('../structs/db/FailRecord.js')
 const Feed = require('../structs/db/Feed.js')
 
 module.exports = async (bot, message, command) => {
@@ -15,18 +15,18 @@ module.exports = async (bot, message, command) => {
       return await message.channel.send(translate('commands.list.noFeeds'))
     }
 
-    if (FailCounter.limit === 0) {
+    if (FailRecord.limit === 0) {
       return await message.channel.send(translate('commands.refresh.noFailLimit'))
     }
 
     let counters = []
     channelTracker.add(message.channel.id)
     for (const feed of feeds) {
-      const failCounter = await FailCounter.getBy('url', feed.url)
-      if (!failCounter || !failCounter.hasFailed()) {
+      const failRecord = await FailRecord.getBy('url', feed.url)
+      if (!FailRecord || !failRecord.hasFailed()) {
         continue
       }
-      counters.push(failCounter)
+      counters.push(failRecord)
     }
     if (counters.length === 0) {
       channelTracker.remove(message.channel.id)

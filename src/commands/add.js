@@ -3,7 +3,7 @@ const config = require('../config.js')
 const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const FailCounter = require('../structs/db/FailCounter.js')
+const FailRecord = require('../structs/db/FailRecord.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
 
@@ -72,7 +72,7 @@ module.exports = async (bot, message) => {
         await newFeed.testAndSave(message.guild.shardID)
         channelTracker.remove(message.channel.id)
         log.command.info(`Added ${link}`, message.guild)
-        FailCounter.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
+        FailRecord.reset(link).catch(err => log.general.error(`Unable to reset failed status for link ${link} after rssadd`, err))
         passedAddLinks.push(link)
         ++checkedSoFar
       } catch (err) {

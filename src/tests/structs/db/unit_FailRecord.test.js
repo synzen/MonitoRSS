@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
-const FailCounter = require('../../../structs/db/FailCounter.js')
+const FailRecord = require('../../../structs/db/FailRecord.js')
 
-describe('Unit::structs/db/FailCounter', function () {
+describe('Unit::structs/db/FailRecord', function () {
   afterEach(function () {
     jest.restoreAllMocks()
   })
@@ -10,7 +10,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'aesdgdf'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       expect(counter.count).toEqual(0)
       expect(counter.reason).toBeUndefined()
     })
@@ -20,7 +20,7 @@ describe('Unit::structs/db/FailCounter', function () {
         count: 99,
         reason: 'helaz'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       expect(counter.url).toEqual(data.url)
       expect(counter.count).toEqual(data.count)
       expect(counter.reason).toEqual(data.reason)
@@ -28,46 +28,46 @@ describe('Unit::structs/db/FailCounter', function () {
   })
   describe('static increment', function () {
     it('finds the right model', async function () {
-      const spy = jest.spyOn(FailCounter, 'getBy').mockResolvedValue({
+      const spy = jest.spyOn(FailRecord, 'getBy').mockResolvedValue({
         increment: jest.fn()
       })
       const url = 'srfyhed'
-      await FailCounter.increment(url)
+      await FailRecord.increment(url)
       expect(spy).toHaveBeenCalledWith('url', url)
     })
     it('increments the model if it exists', async function () {
       const found = {
         increment: jest.fn()
       }
-      jest.spyOn(FailCounter, 'getBy').mockResolvedValue(found)
+      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
       const reason = 'ewstr4ydh'
-      await FailCounter.increment('sdfgtgh', reason)
+      await FailRecord.increment('sdfgtgh', reason)
       expect(found.increment).toHaveBeenCalledWith(reason)
     })
   })
   describe('static reset', function () {
     it('finds the right model', async function () {
-      const spy = jest.spyOn(FailCounter, 'getBy').mockResolvedValue({
+      const spy = jest.spyOn(FailRecord, 'getBy').mockResolvedValue({
         delete: jest.fn()
       })
       const url = 'srfyhed'
-      await FailCounter.reset(url)
+      await FailRecord.reset(url)
       expect(spy).toHaveBeenCalledWith('url', url)
     })
     it('deletes the found model', async function () {
       const found = {
         delete: jest.fn()
       }
-      jest.spyOn(FailCounter, 'getBy').mockResolvedValue(found)
+      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
       const url = 'srfyhed'
-      await FailCounter.reset(url)
+      await FailRecord.reset(url)
       expect(found.delete).toHaveBeenCalled()
     })
   })
   describe('static hasFailed', function () {
     it('returns false if getBy returns null', async function () {
-      jest.spyOn(FailCounter, 'getBy').mockResolvedValue(null)
-      const returned = await FailCounter.hasFailed()
+      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(null)
+      const returned = await FailRecord.hasFailed()
       expect(returned).toEqual(false)
     })
     it('return the value of protoype.hasFailed if found', async function () {
@@ -75,25 +75,25 @@ describe('Unit::structs/db/FailCounter', function () {
       const found = {
         hasFailed
       }
-      jest.spyOn(FailCounter, 'getBy').mockResolvedValue(found)
-      await expect(FailCounter.hasFailed())
+      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
+      await expect(FailRecord.hasFailed())
         .resolves.toEqual(true)
       hasFailed.mockReturnValue(false)
-      await expect(FailCounter.hasFailed())
+      await expect(FailRecord.hasFailed())
         .resolves.toEqual(false)
     })
   })
   describe('hasFailed', function () {
     const limit = 2
     beforeEach(function () {
-      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(limit)
+      jest.spyOn(FailRecord, 'limit', 'get').mockReturnValue(limit)
     })
     it('returns false if limit is 0', function () {
-      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(0)
+      jest.spyOn(FailRecord, 'limit', 'get').mockReturnValue(0)
       const data = {
         url: 'sg'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       counter.count = limit + 1
       expect(counter.hasFailed()).toEqual(false)
     })
@@ -101,7 +101,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'sg'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       counter.count = limit - 1
       expect(counter.hasFailed()).toEqual(false)
     })
@@ -109,7 +109,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'sg'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       counter.count = limit
       expect(counter.hasFailed()).toEqual(true)
       counter.count = limit + 1
@@ -121,7 +121,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'w234etr'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       jest.spyOn(counter, 'save').mockResolvedValue()
       const reason = 'wse4ry57h'
       await counter.fail(reason)
@@ -131,7 +131,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'w234etr'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       const spy = jest.spyOn(counter, 'save').mockResolvedValue()
       const reason = 'wse4ry57h'
       await counter.fail(reason)
@@ -141,7 +141,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'w234etr'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       const reason = 'wse4ry57h'
       counter.reason = reason + 'w34re56y7tuh'
       const spy = jest.spyOn(counter, 'save').mockResolvedValue()
@@ -152,7 +152,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'w234etr'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       counter.failedAt = 'w4rey'
       const reason = 'wse4ry57h'
       counter.reason = reason
@@ -164,7 +164,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'aeswtry4'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       expect(counter.failedAt).toBeUndefined()
       jest.spyOn(counter, 'save').mockResolvedValue()
       await counter.fail('my reason')
@@ -174,7 +174,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'aeswtry4'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       const reason = '3w24tery5t'
       counter.reason = reason
       expect(counter.failedAt).toBeUndefined()
@@ -186,7 +186,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'aeswtry4'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       jest.spyOn(counter, 'save').mockResolvedValue()
       await counter.fail('my reason')
       const currentFailedAt = counter.failedAt
@@ -198,8 +198,8 @@ describe('Unit::structs/db/FailCounter', function () {
         url: 'aged'
       }
       const limit = 1004
-      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(limit)
-      const counter = new FailCounter(data)
+      jest.spyOn(FailRecord, 'limit', 'get').mockReturnValue(limit)
+      const counter = new FailRecord(data)
       jest.spyOn(counter, 'save').mockResolvedValue()
       await counter.fail('my reason')
       expect(counter.count).toEqual(limit)
@@ -210,8 +210,8 @@ describe('Unit::structs/db/FailCounter', function () {
       }
       const limit = 1004
       const reason = 'qw4et6r'
-      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(limit)
-      const counter = new FailCounter(data)
+      jest.spyOn(FailRecord, 'limit', 'get').mockReturnValue(limit)
+      const counter = new FailRecord(data)
       counter.failedAt = 'w43re5yt'
       counter.reason = reason
       const spy = jest.spyOn(counter, 'save').mockResolvedValue()
@@ -224,8 +224,8 @@ describe('Unit::structs/db/FailCounter', function () {
       }
       const limit = 1004
       const reason = 'qw4et6r'
-      jest.spyOn(FailCounter, 'limit', 'get').mockReturnValue(limit)
-      const counter = new FailCounter(data)
+      jest.spyOn(FailRecord, 'limit', 'get').mockReturnValue(limit)
+      const counter = new FailRecord(data)
       counter.failedAt = 'w43re5yt'
       counter.reason = reason
       counter.count = limit
@@ -239,7 +239,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'esd'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       jest.spyOn(counter, 'hasFailed').mockReturnValue(true)
       const spy = jest.spyOn(counter, 'fail').mockResolvedValue()
       const reason = 'wset4ry5t'
@@ -250,7 +250,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'esd'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       counter.count = 0
       jest.spyOn(counter, 'hasFailed').mockReturnValue(false)
       jest.spyOn(counter, 'save').mockResolvedValue()
@@ -261,7 +261,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'esd'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       jest.spyOn(counter, 'hasFailed').mockReturnValue(false)
       const spy = jest.spyOn(counter, 'save').mockResolvedValue()
       await counter.increment()
@@ -273,7 +273,7 @@ describe('Unit::structs/db/FailCounter', function () {
       const data = {
         url: 'aetgswr'
       }
-      const counter = new FailCounter(data)
+      const counter = new FailRecord(data)
       const url = 'w49y6huie'
       const count = 1111
       const reason = 'jackzzz'

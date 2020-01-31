@@ -5,7 +5,7 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const FailCounter = require('../structs/db/FailCounter.js')
+const FailRecord = require('../structs/db/FailRecord.js')
 const FeedData = require('../structs/db/FeedData.js')
 const Supporter = require('../structs/db/Supporter.js')
 
@@ -23,7 +23,7 @@ module.exports = async (bot, message, command) => {
       return
     }
     const { feed } = data
-    if (await FailCounter.hasFailed(feed.url)) {
+    if (await FailRecord.hasFailed(feed.url)) {
       return await message.channel.send(translate('commands.test.failed'))
     }
     const grabMsg = await message.channel.send(translate('commands.test.grabbingRandom'))

@@ -3,7 +3,7 @@ const Profile = require('../../src/structs/db/Profile.js')
 const Feed = require('../../src/structs/db/Feed.js')
 const FilteredFormat = require('../../src/structs/db/FilteredFormat.js')
 const Subscriber = require('../../src/structs/db/Subscriber.js')
-const FailCounter = require('../../src/structs/db/FailCounter.js')
+const FailRecord = require('../../src/structs/db/FailRecord.js')
 const GuildData = require('../../src/structs/GuildData.js')
 
 function HEXToVBColor (rrggbb) {
@@ -22,14 +22,14 @@ function sanitizeFilters (target) {
   }
 }
 
-async function updateFailCounters (doc) {
+async function updateFailRecords (doc) {
   doc.url = doc.link
   if (doc.failed) {
     doc.reason = doc.failed
     delete doc.failed
   }
   delete doc.link
-  const counter = new FailCounter(doc)
+  const counter = new FailRecord(doc)
   await counter.save()
 }
 
@@ -138,20 +138,20 @@ async function startProfiles () {
       console.log(`Profile: ${++c}/${total}`)
       if (c === total) {
         complete(errors)
-        startFailCounters()
+        startFailRecords()
       }
     })
   }
 }
 
-async function startFailCounters () {
+async function startFailRecords () {
   console.log('Starting fail counters migration')
   const failedLinks = await mongoose.connection.collection('failed_links').find({}).toArray()
   let c = 0
   const total = failedLinks.length
   const errors = []
   for (const failedLink of failedLinks) {
-    updateFailCounters(failedLink).catch(error => {
+    updateFailRecords(failedLink).catch(error => {
       errors.push({
         error,
         data: failedLink
@@ -177,5 +177,5 @@ function complete (errors) {
 }
 
 exports.updateProfiles = updateProfiles
-exports.updateFailCounters = updateFailCounters
+exports.updateFailRecords = updateFailRecords
 exports.run = startProfiles

@@ -1,13 +1,13 @@
-const FailCounter = require('../../structs/db/FailCounter.js')
+const FailRecord = require('../../structs/db/FailRecord.js')
 const Feed = require('../../structs/db/Feed.js')
 
 /**
  * Remove all fail counters with URLS that no feed has
  * @returns {number}
  */
-async function pruneFailCounters () {
+async function pruneFailRecords () {
   const [ counters, feeds ] = await Promise.all([
-    FailCounter.getAll(),
+    FailRecord.getAll(),
     Feed.getAll()
   ])
 
@@ -22,4 +22,4 @@ async function pruneFailCounters () {
   return deletions.length
 }
 
-module.exports = pruneFailCounters
+module.exports = pruneFailRecords

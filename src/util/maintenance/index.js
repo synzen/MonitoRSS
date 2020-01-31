@@ -1,7 +1,7 @@
 const pruneGuilds = require('./pruneGuilds.js')
 const pruneFeeds = require('./pruneFeeds.js')
 const pruneFilteredFormats = require('./pruneFilteredFormats.js')
-const pruneFailCounters = require('./pruneFailCounters.js')
+const pruneFailRecords = require('./pruneFailRecords.js')
 const pruneSubscribers = require('./pruneSubscribers.js')
 const pruneCollections = require('./pruneCollections.js')
 const flushRedis = require('./flushRedis.js')
@@ -26,7 +26,7 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
   await pruneFeeds(guildIdsByShard, channelIdsByShard)
   await Promise.all([
     pruneFilteredFormats(),
-    pruneFailCounters()
+    pruneFailRecords()
   ])
 }
 
@@ -66,7 +66,7 @@ module.exports = {
   pruneGuilds,
   pruneFeeds,
   pruneFilteredFormats,
-  pruneFailCounters,
+  pruneFailRecords,
   pruneSubscribers,
   pruneCollections,
   checkLimits,

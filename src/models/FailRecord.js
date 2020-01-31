@@ -14,4 +14,4 @@ const schema = new mongoose.Schema({
 schema.add(Version)
 
 exports.schema = schema
-exports.model = mongoose.model('fail_counter', schema)
+exports.model = mongoose.model('fail_record', schema)
