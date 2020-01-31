@@ -17,31 +17,25 @@ See https://github.com/synzen/Discord.RSS/wiki/Setup
 
 ### Setting Up with Existing Client
 
-The fastest way to using Discord.RSS with an existing [discord.js](https://github.com/discordjs/discord.js) client with [npm](https://www.npmjs.com/package/discord.rss):
-
 
 ```
 npm install discord.rss
 ```
 
 ```js
-const Discord = require('discord.js')
 const DiscordRSS = require('discord.rss')
 
-const client = new Discord.Client()
-const drss = new DiscordRSS.Client({ database: { uri: './sources' } }) // File-based sources instead of Mongo
+// Optional config overrides
+const config = {
+  database: {
+    uri: './sources'
+  }
+}
 
-client.login('token')
-drss.login(client) // Can be done before or after the client is 'ready'
-```
-or create a new client:
-```js
-const DiscordRSS = require('discord.rss')
-
-const drss = new DiscordRSS.Client({ database: { uri: './sources' } }) // Optional config overrides
+const drss = new DiscordRSS.ClientManager(config)
 drss.login('token')
 ```
-There are multiple ways of integrating Discord.RSS programmatically - see [here](https://github.com/synzen/Discord.RSS/wiki/Use-with-Existing-Bot) for more information. For full features, use a mongodb database.uri instead of a directory.
+For best performance, use a mongodb database.uri instead of a directory.
 
 
 ### Web Interface
@@ -49,20 +43,6 @@ There are multiple ways of integrating Discord.RSS programmatically - see [here]
 For instructions on how to get the web interface working, see https://github.com/synzen/Discord.RSS/tree/dev/src/web
 
 ![UI Screenshot](https://i.imgur.com/CD8mbRh.png)
-
-## Built With		
-* [Node.js](https://nodejs.org/en/)		
-* [discord.js](https://www.npmjs.com/package/discord.js)
-
-#### Core Functions
- * [Feedparser](https://www.npmjs.com/package/feedparser)		
- * [node-fetch](https://www.npmjs.com/package/node-fetch)
- * [cloudscraper](https://www.npmjs.com/package/cloudscraper)
- * [Mongoose](https://www.npmjs.com/package/mongoose)
-
-#### Customization Functions
- * [html-to-text](https://www.npmjs.com/package/html-to-text) - Convert HTML content
- * [moment-timezone](https://www.npmjs.com/package/moment-timezone) - Customizable timezones
 
 ### Deploy to Heroku
 
@@ -75,6 +55,10 @@ You can deploy the bot in a simple way to Heroku using the button below. [Click 
 ### Contributing
 
 [Read the contribution guidelines](https://github.com/synzen/Discord.RSS/blob/master/CONTRIBUTING.md). All the latest updates are commited to the dev branch. 
+
+### Testing
+
+Run `npm test`
 
 #### Locales
 
