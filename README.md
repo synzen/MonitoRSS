@@ -15,7 +15,7 @@ https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot&p
 
 See https://github.com/synzen/Discord.RSS/wiki/Setup
 
-### Setting Up with Existing Client
+### Setting Up Programatically
 
 
 ```
