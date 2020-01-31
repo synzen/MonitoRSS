@@ -41,7 +41,7 @@ exports.defaultConfigs = {
     dateLanguageList: { type: Array, default: ['en'] },
     dateFallback: { type: Boolean, default: false },
     timeFallback: { type: Boolean, default: false },
-    failLimit: { type: Number, default: 0 },
+    hoursUntilFail: { type: Number, default: 0 },
     notifyFail: { type: Boolean, default: true },
     sendOldOnFirstCycle: { type: Boolean, default: true },
     cycleMaxAge: { type: Number, default: 1 },

@@ -38,7 +38,7 @@ class FeedSchedule extends EventEmitter {
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
     this._sourceList = new Map()
-    this.failCounters = new Map()
+    this.failRecords = new Map()
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.feedData = FeedData.isMongoDatabase ? undefined : {}
     this.feedCount = 0 // For statistics
@@ -83,7 +83,8 @@ class FeedSchedule extends EventEmitter {
    */
   _addToSourceLists (feed) { // rssList is an object per guildRss
     const toDebug = debug.feeds.has(feed._id)
-    const failCounter = this.failCounters.get(feed.url)
+    /** @type {FailRecord} */
+    const failRecord = this.failRecords.get(feed.url)
 
     if (feed.disabled) {
       if (toDebug) {
@@ -92,9 +93,9 @@ class FeedSchedule extends EventEmitter {
       return false
     }
 
-    if (failCounter && failCounter.hasFailed()) {
+    if (failRecord && (failRecord.hasFailed() && failRecord.alerted)) {
       if (toDebug) {
-        log.debug.info(`Shard ${this.shardID} ${feed._id}: Skipping feed delegation due to failed status: ${failCounter.hasFailed()}`)
+        log.debug.info(`Shard ${this.shardID} ${feed._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
       return false
     }
@@ -134,8 +135,8 @@ class FeedSchedule extends EventEmitter {
         if (this._linksResponded[link] === 0) {
           continue
         }
-        FailRecord.increment(link, 'Failed to respond in a timely manner')
-          .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to increment fail counter for ${link}`, err))
+        FailRecord.record(link, 'Failed to respond in a timely manner')
+          .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to record url failure ${link}`, err))
         list += `${link}\n`
         ++c
       }
@@ -169,7 +170,7 @@ class FeedSchedule extends EventEmitter {
     }
 
     const [
-      failCounters,
+      failRecords,
       feeds,
       supporterGuilds,
       schedules
@@ -195,10 +196,10 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
-    // Save the fail counters
-    this.failCounters.clear()
-    for (const counter of failCounters) {
-      this.failCounters.set(counter.url, counter)
+    // Save the fail records
+    this.failRecords.clear()
+    for (const record of failRecords) {
+      this.failRecords.set(record.url, record)
     }
 
     // Check the permissions
@@ -283,11 +284,11 @@ class FeedSchedule extends EventEmitter {
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
-          FailRecord.increment(linkCompletion.link)
-            .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to increment fail counter ${linkCompletion.link}`, err))
+          FailRecord.record(linkCompletion.link)
+            .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to record url failure ${linkCompletion.link}`, err))
         } else if (linkCompletion.status === 'success') {
           FailRecord.reset(linkCompletion.link)
-            .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to reset fail counter ${linkCompletion.link}`, err))
+            .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to reset fail record ${linkCompletion.link}`, err))
           // Only if config.database.uri is a databaseless folder path
           if (linkCompletion.feedCollectionId) {
             this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection

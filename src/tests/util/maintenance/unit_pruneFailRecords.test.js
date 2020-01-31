@@ -14,7 +14,7 @@ describe('Unit::utils/maintenance/pruneFailRecords', function () {
     Feed.getAll.mockReset()
     FailRecord.getAll.mockReset()
   })
-  it('deletes the counters whose url does not exist', async function () {
+  it('deletes the records whose url does not exist', async function () {
     const failRecords = [{
       url: 'a',
       delete: jest.fn()

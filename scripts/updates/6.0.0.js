@@ -1,3 +1,4 @@
+const config = require('../../src/config.js')
 const mongoose = require('mongoose')
 const Profile = require('../../src/structs/db/Profile.js')
 const Feed = require('../../src/structs/db/Feed.js')
@@ -22,15 +23,27 @@ function sanitizeFilters (target) {
   }
 }
 
+function getOldDate (hoursAgo) {
+  // https://stackoverflow.com/questions/1050720/adding-hours-to-javascript-date-object
+  const date = new Date()
+  date.setTime(date.getTime() - hoursAgo * 60 * 60 * 1000)
+  return date
+}
+
 async function updateFailRecords (doc) {
-  doc.url = doc.link
-  if (doc.failed) {
-    doc.reason = doc.failed
-    delete doc.failed
+  const insert = {
+    url: doc.link
   }
-  delete doc.link
-  const counter = new FailRecord(doc)
-  await counter.save()
+  if (doc.failed) {
+    insert.reason = doc.failed
+    const record = new FailRecord(insert)
+    const oldDate = getOldDate(config.feeds.hoursUntilFail + 1)
+    record.failedAt = oldDate.toISOString()
+    await record.save()
+  } else {
+    const record = new FailRecord(insert)
+    await record.save()
+  }
 }
 
 async function updateProfiles (guildRss) {

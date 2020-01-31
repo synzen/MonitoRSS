@@ -19,27 +19,27 @@ module.exports = async (bot, message, command) => {
       return await message.channel.send(translate('commands.refresh.noFailLimit'))
     }
 
-    let counters = []
+    let records = []
     channelTracker.add(message.channel.id)
     for (const feed of feeds) {
       const failRecord = await FailRecord.getBy('url', feed.url)
       if (!FailRecord || !failRecord.hasFailed()) {
         continue
       }
-      counters.push(failRecord)
+      records.push(failRecord)
     }
-    if (counters.length === 0) {
+    if (records.length === 0) {
       channelTracker.remove(message.channel.id)
       return await message.channel.send(translate('commands.refresh.noFailedFeeds'))
     }
     const processing = await message.channel.send(translate('commands.refresh.processing'))
     let failedReasons = {}
-    for (const counter of counters) {
-      const url = counter.url
+    for (const record of records) {
+      const url = record.url
       log.command.info(`Attempting to refresh ${url}`, message.guild)
       try {
         await FeedFetcher.fetchURL(url)
-        await counter.delete()
+        await record.delete()
         log.command.info(`Refreshed ${url} and is back on cycle`, message.guild)
       } catch (err) {
         failedReasons[url] = err.message
@@ -48,8 +48,8 @@ module.exports = async (bot, message, command) => {
 
     let successfulLinks = ''
     let failedLinks = ''
-    for (const counter of counters) {
-      const url = counter.url
+    for (const record of records) {
+      const url = record.url
       if (!failedReasons[url]) {
         successfulLinks += `${url}\n`
       } else {

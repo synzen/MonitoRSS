@@ -23,16 +23,16 @@ module.exports = async (bot, message, command) => {
       return await message.channel.send(translate('commands.list.noFeeds'))
     }
 
-    const failedLinks = {}
+    const failRecordsMap = {}
     const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
 
     // Generate the info for each feed as an array, and push into another array
     const failRecords = await Promise.all(feeds.map(feed => FailRecord.getBy('url', feed.url)))
     const fetchedSchedules = await Promise.all(feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds)))
 
-    for (const counter of failRecords) {
-      if (counter) {
-        failedLinks[counter.url] = counter
+    for (const record of failRecords) {
+      if (record) {
+        failRecordsMap[record.url] = record
       }
     }
     let vipDetails = ''
@@ -75,11 +75,15 @@ module.exports = async (bot, message, command) => {
       if (feed.disabled) {
         status = translate('commands.list.statusDisabled', { reason: feed.disabled })
       } else if (FailRecord.limit !== 0) {
-        const failRecord = failedLinks[feed.url]
-        const count = !failRecord ? 0 : failRecord.count
+        const failRecord = failRecordsMap[feed.url]
         if (!failRecord || !failRecord.hasFailed()) {
-          const failCountText = count > Math.ceil(FailRecord.limit / 5) ? `(failed ${count}/${FailRecord.limit} times` : ''
-          status = translate('commands.list.statusOk', { failCount: failCountText })
+          let health = '100%'
+          if (failRecord) {
+            // Determine hours between config spec and now, then calculate health
+            const hours = (new Date().getTime() - new Date(failRecord.failedAt).getTime()) / 36e5
+            health = `(${100 - Math.ceil(hours / config.feeds.hoursUntilFail * 100)}% health)`
+          }
+          status = translate('commands.list.statusOk', { failCount: `${health}` })
         } else {
           status = translate('commands.list.statusFailed')
         }

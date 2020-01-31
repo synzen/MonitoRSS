@@ -2,20 +2,20 @@ const FailRecord = require('../../structs/db/FailRecord.js')
 const Feed = require('../../structs/db/Feed.js')
 
 /**
- * Remove all fail counters with URLS that no feed has
+ * Remove all fail records with URLS that no feed has
  * @returns {number}
  */
 async function pruneFailRecords () {
-  const [ counters, feeds ] = await Promise.all([
+  const [ records, feeds ] = await Promise.all([
     FailRecord.getAll(),
     Feed.getAll()
   ])
 
   const activeUrls = new Set(feeds.map(feed => feed.url))
   const deletions = []
-  for (const counter of counters) {
-    if (!activeUrls.has(counter.url)) {
-      deletions.push(counter.delete())
+  for (const record of records) {
+    if (!activeUrls.has(record.url)) {
+      deletions.push(record.delete())
     }
   }
   await Promise.all(deletions)

@@ -11,7 +11,17 @@ const CON_OPTIONS = {
 
 jest.mock('../../../config.js')
 
-config.feeds.failLimit = 3
+config.feeds.hoursUntilFail = 24
+
+function getOldDate (hoursAgo) {
+  // https://stackoverflow.com/questions/1050720/adding-hours-to-javascript-date-object
+  const date = new Date()
+  date.setTime(date.getTime() - hoursAgo * 60 * 60 * 1000)
+  return date
+}
+
+const oldDate = getOldDate(config.feeds.hoursUntilFail + 2)
+const recentDate = getOldDate(config.feeds.hoursUntilFail - 1)
 
 describe('Int::structs/db/FailRecord Database', function () {
   /** @type {import('mongoose').Collection} */
@@ -22,29 +32,47 @@ describe('Int::structs/db/FailRecord Database', function () {
     await mongoose.connection.db.dropDatabase()
     collection = mongoose.connection.db.collection('fail_records')
   })
-  describe('static increment', function () {
+  describe('static record', function () {
     it(`creates the doc if url is new`, async function () {
       const url = 'wst34eygr5ht'
-      await FailRecord.increment(url)
+      const reason = '23twe4gr'
+      const record = await FailRecord.record(url, reason)
+      const date = record.failedAt
       const result = await collection.findOne({
         url
       })
       expect(result).toBeDefined()
-      expect(result.count).toEqual(1)
-      expect(result.reason).toBeUndefined()
+      expect(result.failedAt.toISOString()).toEqual(date)
+      expect(result.reason).toEqual(reason)
       await collection.deleteOne({ url })
     })
-    it(`increments the doc if it exists`, async function () {
+    it(`updates reason and alerted field if it exists for old date`, async function () {
       const url = 'incdocexist'
+      const reason = 'q23werf'
       await collection.insertOne({
         url,
-        count: 0
+        failedAt: oldDate
       })
-      await FailRecord.increment(url)
+      await FailRecord.record(url, reason)
       const result = await collection.findOne({
         url
       })
-      expect(result.count).toEqual(1)
+      expect(result.reason).toEqual(reason)
+      expect(result.alerted).toEqual(true)
+      await collection.deleteOne({ url })
+    })
+    it('does not change alerted status if not old date', async function () {
+      const url = 'incdocexistrecent'
+      await collection.insertOne({
+        url,
+        failedAt: recentDate,
+        alerted: false
+      })
+      await FailRecord.record(url)
+      const result = await collection.findOne({
+        url
+      })
+      expect(result.alerted).toEqual(false)
       await collection.deleteOne({ url })
     })
   })
@@ -52,8 +80,7 @@ describe('Int::structs/db/FailRecord Database', function () {
     it('deletes the url if it exists', async function () {
       const url = 'incdocreset'
       collection.insertOne({
-        url,
-        count: 5
+        url
       })
       expect(collection.findOne({ url }))
         .resolves.toBeDefined()
@@ -67,7 +94,7 @@ describe('Int::structs/db/FailRecord Database', function () {
       const url = 'hasfailed'
       await collection.insertOne({
         url,
-        count: config.feeds.failLimit
+        failedAt: oldDate
       })
       await expect(FailRecord.hasFailed(url))
         .resolves.toEqual(true)
@@ -76,7 +103,7 @@ describe('Int::structs/db/FailRecord Database', function () {
       const url = 'hasnotfailed'
       await collection.insertOne({
         url,
-        count: config.feeds.failLimit - 1
+        count: recentDate
       })
       await expect(FailRecord.hasFailed(url))
         .resolves.toEqual(false)
@@ -84,103 +111,6 @@ describe('Int::structs/db/FailRecord Database', function () {
     it('returns false for nonexistent urls', async function () {
       await expect(FailRecord.hasFailed('asd'))
         .resolves.toEqual(false)
-    })
-  })
-  describe('increment', function () {
-    it('adds 1 to database for new url', async function () {
-      const url = 'instanceincrementnew'
-      const counter = new FailRecord({
-        url
-      })
-      await counter.increment()
-      const found = await collection.findOne({ url })
-      expect(found.count).toEqual(1)
-    })
-    it('adds 1 to database for old url', async function () {
-      const url = 'instanceincrentold'
-      const counter = new FailRecord({
-        url
-      })
-      await counter.increment()
-      await counter.increment()
-      const found = await collection.findOne({ url })
-      expect(found.count).toEqual(2)
-    })
-    it('adds reason if past threshold', async function () {
-      const url = 'instanceincrementreason'
-      const reason = 'foozzz'
-      await collection.insertOne({
-        url,
-        count: config.feeds.failLimit
-      })
-      const counter = await FailRecord.getBy('url', url)
-      await counter.increment(reason)
-      await expect(collection.findOne({ url }))
-        .resolves.toHaveProperty('reason', reason)
-    })
-    it('updates the reason if past threshold', async function () {
-      const url = 'instanceincrementupdatereason'
-      const reason = 'foozzz'
-      const newReason = reason + 'hozz'
-      await collection.insertOne({
-        url,
-        count: config.feeds.failLimit
-      })
-      const counter = await FailRecord.getBy('url', url)
-      await counter.increment(reason)
-      await counter.increment(newReason)
-      await expect(collection.findOne({ url }))
-        .resolves.toHaveProperty('reason', newReason)
-    })
-    it('does not increment past threshold', async function () {
-      const url = 'instanceincrementnofail'
-      const reason = 'foozzz'
-      await collection.insertOne({
-        url,
-        count: config.feeds.failLimit
-      })
-      const counter = await FailRecord.getBy('url', url)
-      await counter.increment(reason)
-      await expect(collection.findOne({ url }))
-        .resolves.toHaveProperty('count', config.feeds.failLimit)
-    })
-  })
-  describe('fail', function () {
-    it('saves the reason', async function () {
-      const url = 'instancefail'
-      const reason = 'foozzz'
-      const newReason = '34ygh5rebt'
-      await collection.insertOne({
-        url,
-        count: config.feeds.failLimit,
-        reason
-      })
-      const counter = await FailRecord.getBy('url', url)
-      await counter.fail(newReason)
-      await expect(collection.findOne({ url }))
-        .resolves.toHaveProperty('reason', newReason)
-    })
-    it('saves the failedAt date', async function () {
-      const url = 'instancefaildate'
-      await collection.insertOne({
-        url,
-        count: 0
-      })
-      const counter = await FailRecord.getBy('url', url)
-      await counter.fail('mz')
-      await expect(collection.findOne({ url }))
-        .resolves.toHaveProperty('failedAt')
-    })
-    it('sets the count to the fail limit', async function () {
-      const url = 'instancefailsetlimit'
-      await collection.insertOne({
-        url,
-        count: 0
-      })
-      const counter = await FailRecord.getBy('url', url)
-      await counter.fail('mz')
-      await expect(collection.findOne({ url }))
-        .resolves.toHaveProperty('count', config.feeds.failLimit)
     })
   })
 

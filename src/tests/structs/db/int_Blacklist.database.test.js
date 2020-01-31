@@ -11,8 +11,6 @@ const CON_OPTIONS = {
 
 jest.mock('../../../config.js')
 
-config.feeds.failLimit = 3
-
 describe('Int::structs/db/Blacklist Database', function () {
   /** @type {import('mongoose').Collection} */
   let collection

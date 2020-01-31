@@ -6,9 +6,16 @@ const schema = new mongoose.Schema({
     type: String,
     unique: true
   },
-  count: Number,
   reason: String,
-  failedAt: Date
+  failedAt: {
+    type: Date,
+    required: true,
+    default: Date.now
+  },
+  alerted: {
+    type: Boolean,
+    default: false
+  }
 })
 
 schema.add(Version)

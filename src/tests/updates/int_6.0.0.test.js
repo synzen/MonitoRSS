@@ -1,4 +1,5 @@
 process.env.TEST_ENV = true
+const config = require('../../config.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_v6'
 const { updateProfiles, updateFailRecords } = require('../../../scripts/updates/6.0.0.js')
@@ -8,6 +9,13 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
+function getOldDate (hoursAgo) {
+  // https://stackoverflow.com/questions/1050720/adding-hours-to-javascript-date-object
+  const date = new Date()
+  date.setTime(date.getTime() - hoursAgo * 60 * 60 * 1000)
+  return date
+}
+
 describe('Int::scripts/updates/6.0.0 Database', function () {
   beforeAll(async function () {
     await mongoose.connect(`mongodb://localhost/${dbName}`, CON_OPTIONS)
@@ -15,7 +23,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
   beforeEach(async function () {
     await mongoose.connection.db.dropDatabase()
   })
-  describe('fail_counters', function () {
+  describe('fail_records', function () {
     it('restores', async function () {
       const failedLink = {
         link: 'https://www.google.com',
@@ -23,17 +31,40 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         failed: 'huzz'
       }
       await updateFailRecords(failedLink)
-      const counter = await mongoose.connection.collection('fail_records').findOne({
-        link: failedLink.link
+      const record = await mongoose.connection.collection('fail_records').findOne({
+        url: failedLink.link
       })
       const expected = {
-        ...failedLink,
         url: failedLink.link,
         reason: failedLink.failed
       }
-      delete expected.link
-      delete expected.failed
-      expect(counter).toEqual(expect.objectContaining(failedLink))
+      expect(record).toEqual(expect.objectContaining(expected))
+      expect(record.failedAt).toBeInstanceOf(Date)
+    })
+    it('sets a date before the cutoff for failed links', async function () {
+      const failedLink = {
+        link: 'https://www.google.com',
+        count: 20,
+        failed: 'huzz'
+      }
+      await updateFailRecords(failedLink)
+      const record = await mongoose.connection.collection('fail_records').findOne({
+        url: failedLink.link
+      })
+      const cutoff = getOldDate(config.feeds.hoursUntilFail)
+      expect(record.failedAt < cutoff)
+    })
+    it('sets a new date for not-yet-failed links', async function () {
+      const failedLink = {
+        link: 'https://www.google.com',
+        count: 20
+      }
+      await updateFailRecords(failedLink)
+      const record = await mongoose.connection.collection('fail_records').findOne({
+        url: failedLink.link
+      })
+      const cutoff = getOldDate(config.feeds.hoursUntilFail)
+      expect(record.failedAt > cutoff)
     })
   })
   describe('profile', function () {

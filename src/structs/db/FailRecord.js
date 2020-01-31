@@ -19,49 +19,63 @@ class FailRecord extends Base {
     }
 
     /**
-     * Number of times fetch has failed
-     * @type {number}
-     */
-    this.count = this.getField('count', 0)
-
-    /**
      * Last recorded reason of failure
      * @type {string}
      */
     this.reason = this.getField('reason')
 
     /**
-     * The date failure occurred
+     * The date the first failure occurred
      * @type {string}
      */
-    this.failedAt = this.getField('failedAt')
+    this.failedAt = this.getField('failedAt', new Date().toISOString())
+
+    /**
+     * Whether an alert has been sent out for this
+     * @type {boolean}
+     */
+    this.alerted = this.getField('alerted', false)
   }
 
-  static get limit () {
-    return config.feeds.failLimit
+  static get cutoff () {
+    return config.feeds.hoursUntilFail
   }
 
   /**
-   * Increment the fail counter, or fail it if it reached
-   * the limit
+   * Record the failure
    * @param {string} url - Feed URL
    * @param {string} reason - Reason to provide if failed
+   * @returns {FailRecord}
    */
-  static async increment (url, reason) {
-    const found = await FailRecord.getBy('url', url)
-    if (!found) {
+  static async record (url, reason) {
+    const record = await FailRecord.getBy('url', url)
+    if (!record) {
       const data = {
-        url
+        url,
+        reason
       }
-      const newCounter = new this(data)
-      return newCounter.increment()
-    } else {
-      return found.increment(reason)
+      const newRecord = new this(data)
+      await newRecord.save()
+      return newRecord
     }
+    let save = false
+    if (record.reason !== reason) {
+      record.reason = reason
+      save = true
+    }
+    if (record.pastCutoff() && !record.alerted) {
+      FailRecord.sendFailMessage(url)
+      record.alerted = true
+      save = true
+    }
+    if (save) {
+      await record.save()
+    }
+    return record
   }
 
   /**
-   * Reset the counter by deleting it
+   * Reset the record by deleting it
    * @param {string} url - Feed URL
    */
   static async reset (url) {
@@ -87,55 +101,33 @@ class FailRecord extends Base {
   toObject () {
     return {
       url: this.url,
-      count: this.count,
       reason: this.reason,
-      failedAt: this.failedAt
+      failedAt: this.failedAt,
+      alerted: this.alerted
     }
   }
 
   /**
-   * Whether this counter has reached the failure threshold
+   * If past the cutoff date, then this URL should not be fetched
+   * @returns {boolean}
+   */
+  pastCutoff () {
+    if (FailRecord.cutoff === 0) {
+      return false
+    }
+    const now = new Date()
+    const failedAt = new Date(this.failedAt)
+    const hoursDiff = (now.getTime() - failedAt.getTime()) / 36e5
+    return hoursDiff >= FailRecord.cutoff
+  }
+
+  /**
+   * If this URL should be considered failed. Determines whether
+   * a feed will be fetched in FeedSchedule
+   * @returns {boolean}
    */
   hasFailed () {
-    return FailRecord.limit !== 0 && this.count >= FailRecord.limit
-  }
-
-  /**
-   * Increment counter, or fail if it reeaches the limit
-   * or above.
-   * @param {string} reason - Why the url failed
-   */
-  async increment (reason) {
-    ++this.count
-    if (this.hasFailed()) {
-      return this.fail(reason)
-    } else {
-      return this.save()
-    }
-  }
-
-  /**
-   * Fail a link by providing a reason
-   * @param {string} reason
-   */
-  async fail (reason) {
-    let save = false
-    if (!this.failedAt) {
-      this.failedAt = new Date().toISOString()
-      FailRecord.sendFailMessage(this.url)
-      save = true
-    }
-    if (this.count !== FailRecord.limit) {
-      this.count = FailRecord.limit
-      save = true
-    }
-    if (this.reason !== reason) {
-      this.reason = reason
-      save = true
-    }
-    if (save) {
-      return this.save()
-    }
+    return this.pastCutoff()
   }
 
   /**
@@ -147,7 +139,7 @@ class FailRecord extends Base {
         log.general.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
         feeds.forEach(({ channel }) => {
           const message = `Feed <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
-          ipc.sendChannelMessage(channel, message)
+          ipc.sendChannelAlert(channel, message)
         })
       })
       .catch(err => {
