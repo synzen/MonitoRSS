@@ -59,7 +59,7 @@ async function cp (req, res, next) {
 
       // Fail counters and schedules with refresh rates
       const [ failRecords, assignedSchedules ] = await Promise.all([
-        feedServices.getFailCounters(constructedFeeds),
+        feedServices.getFailRecords(constructedFeeds),
         feedServices.determineSchedules(constructedFeeds)
       ])
 
