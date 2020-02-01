@@ -142,13 +142,13 @@ exports.guildRss = {
   restore: async guildId => {
     // Memory version
     let guildRss
+    const backupPath = path.join(config.database.uri, 'backup', `${guildId}.json`)
     if (!config.database.uri.startsWith('mongo')) {
-      const backupPath = path.join(config.database.uri, 'backup', `${guildId}.json`)
       if (!fs.existsSync(backupPath)) return
       try {
         const json = await readFilePromise(backupPath)
         const parsed = JSON.parse(json)
-        if (exports.guildRss.empty(parsed, true)) guildRss = parsed
+        guildRss = parsed
       } catch (err) {
         throw err
       }
@@ -171,7 +171,11 @@ exports.guildRss = {
         }
       }
     }
-    await models.GuildRssBackup().deleteOne({ id: guildId })
+    if (config.database.uri.startsWith('mongo')) {
+      await models.GuildRssBackup().deleteOne({ id: guildId })
+    } else {
+      fs.unlinkSync(backupPath)
+    }
     return guildRss
   },
   empty: (guildRss, skipRemoval) => { // Used on the beginning of each cycle to check for empty sources per guild
