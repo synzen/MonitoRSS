@@ -28,7 +28,7 @@ async function cp (req, res, next) {
       user,
       bot,
       guilds: {},
-      failCounters: {},
+      failRecords: {},
       assignedSchedules: {}
     }
 
@@ -58,14 +58,14 @@ async function cp (req, res, next) {
       const constructedFeeds = guildData.feeds.map(f => new Feed(f))
 
       // Fail counters and schedules with refresh rates
-      const [ failCounters, assignedSchedules ] = await Promise.all([
+      const [ failRecords, assignedSchedules ] = await Promise.all([
         feedServices.getFailCounters(constructedFeeds),
         feedServices.determineSchedules(constructedFeeds)
       ])
 
-      data.failCounters = {
-        ...data.failCounters,
-        ...failCounters
+      data.failRecords = {
+        ...data.failRecords,
+        ...failRecords
       }
 
       data.assignedSchedules = {

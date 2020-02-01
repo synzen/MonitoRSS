@@ -2,7 +2,7 @@ const Article = require('../../structs/Article.js')
 const FeedFetcher = require('../../util/FeedFetcher.js')
 const Schedule = require('../../structs/db/Schedule.js')
 const Supporter = require('../../structs/db/Supporter.js')
-const FailCounter = require('../../structs/db/FailCounter.js')
+const FailRecord = require('../../structs/db/FailRecord.js')
 const ArticleModel = require('../../models/Article.js')
 const Feed = require('../../structs/db/Feed.js')
 const config = require('../../config.js')
@@ -29,11 +29,11 @@ async function determineSchedules (feeds) {
 
 /**
  * @param {import('../../structs/db/Feed.js')[]} feeds
- * @returns {Object<string, FailCounter>}
+ * @returns {Object<string, FailRecord>}
  */
-async function getFailCounters (feeds) {
+async function getFailRecords (feeds) {
   const urls = [ ...new Set(feeds.map(feed => feed.url)) ]
-  const promises = urls.map(feed => FailCounter.getBy('url', feed.url))
+  const promises = urls.map(feed => FailRecord.getBy('url', feed.url))
   const counters = await Promise.all(promises)
   const data = {}
   for (const counter of counters) {
@@ -120,7 +120,7 @@ async function getDatabaseArticles (feed, shardID) {
 
 module.exports = {
   determineSchedules,
-  getFailCounters,
+  getFailRecords,
   getFeedPlaceholders,
   getFeedOfGuild,
   createFeed,
