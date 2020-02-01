@@ -3,7 +3,6 @@ const moment = require('moment')
 const log = require('../../util/logger.js')
 const discordAPIConstants = require('../constants/discordAPI.js')
 const discordAPIHeaders = require('../constants/discordAPIHeaders.js')
-const guildServices = require('./guild.js')
 const roleServices = require('./role.js')
 const RedisUser = require('../../structs/db/Redis/User.js')
 const RedisGuildMember = require('../../structs/db/Redis/GuildMember.js')
@@ -74,30 +73,6 @@ function hasGuildPermission (guild) {
   return true
 }
 
-async function getGuildsWithPermission (userID, userAccessToken) {
-  const apiGuilds = await getGuildsByAPI(userID, userAccessToken)
-  const guildCache = await Promise.all(apiGuilds.map(discordGuild => guildServices.getGuild(discordGuild.id)))
-  const guildCacheApproved = []
-  for (let i = 0; i < apiGuilds.length; ++i) {
-    const discordGuild = apiGuilds[i]
-    const guildInCache = guildCache[i]
-    if (!guildInCache) {
-      continue
-    }
-    const isOwner = discordGuild.owner
-    const managesChannel = (discordGuild.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION
-    const isAdministrator = (discordGuild.permissions & ADMINISTRATOR_PERMISSION) !== ADMINISTRATOR_PERMISSION
-    if (!isOwner && !managesChannel && !isAdministrator) {
-      continue
-    }
-    guildCacheApproved.push({
-      discord: discordGuild,
-      cached: guildInCache
-    })
-  }
-  return guildCacheApproved
-}
-
 /**
  * @param {string} userID
  * @param {string} guildID
@@ -162,7 +137,6 @@ module.exports = {
   getUserByAPI,
   getUser,
   getGuildsByAPI,
-  getGuildsWithPermission,
   isManagerOfGuild,
   isManagerOfGuildByAPI,
   getMemberOfGuild,

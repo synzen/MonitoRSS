@@ -1,21 +1,5 @@
 const RedisChannel = require('../../structs/db/Redis/Channel.js')
 
-async function getCachedChannel (channelID) {
-  const channel = await RedisChannel.fetch(channelID)
-  return channel ? channel.toJSON() : null
-}
-
-/**
- * @param {string[]} channelIDs
- */
-async function getCachedChannels (channelIDs) {
-  const promises = []
-  for (const id of channelIDs) {
-    promises.push(getCachedChannel(id))
-  }
-  return Promise.all(promises)
-}
-
 /**
  * @param {string} guildID
  */
@@ -26,7 +10,5 @@ async function getGuildChannels (guildID) {
 }
 
 module.exports = {
-  getCachedChannel,
-  getCachedChannels,
   getGuildChannels
 }
