@@ -41,4 +41,7 @@ guildFeedsAPI.get('/:feedID/database', controllers.api.guilds.feeds.getDatabaseA
 // Handle subscribers
 guildFeedsAPI.get(`/:feedID/subscribers`, require('./subscribers/index.js'))
 
+// Handle schedules
+guildFeedsAPI.get('/:feedID/schedules', require('./schedules/index.js'))
+
 module.exports = guildFeedsAPI
