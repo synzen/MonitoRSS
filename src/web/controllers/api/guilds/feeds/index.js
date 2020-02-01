@@ -5,6 +5,7 @@ const getFeedPlaceholders = require('./getFeedPlaceholders.js')
 const getDatabaseArticles = require('./getDatabaseArticles.js')
 const subscribers = require('./subscribers/index.js')
 const schedules = require('./schedules/index.js')
+const failrecords = require('./failrecords/index.js')
 
 module.exports = {
   createFeed,
@@ -13,5 +14,6 @@ module.exports = {
   getFeedPlaceholders,
   getDatabaseArticles,
   subscribers,
-  schedules
+  schedules,
+  failrecords
 }

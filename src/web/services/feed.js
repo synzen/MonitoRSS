@@ -118,6 +118,11 @@ async function getDatabaseArticles (feed, shardID) {
   return data
 }
 
+async function getFailRecord (url) {
+  const record = await FailRecord.getBy('url', url)
+  return record ? record.toJSON() : {}
+}
+
 module.exports = {
   determineSchedules,
   getFailRecords,
@@ -126,5 +131,6 @@ module.exports = {
   createFeed,
   editFeed,
   deleteFeed,
-  getDatabaseArticles
+  getDatabaseArticles,
+  getFailRecord
 }

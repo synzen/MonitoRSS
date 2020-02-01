@@ -44,4 +44,7 @@ guildFeedsAPI.get(`/:feedID/subscribers`, require('./subscribers/index.js'))
 // Handle schedules
 guildFeedsAPI.get('/:feedID/schedules', require('./schedules/index.js'))
 
+// Handle fail records
+guildFeedsAPI.get('/:feedID/failrecords', require('./failrecords/index.js'))
+
 module.exports = guildFeedsAPI
