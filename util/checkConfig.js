@@ -80,7 +80,7 @@ exports.check = userConfig => {
       if (userVal === undefined || userVal.constructor !== configVal.type) {
         checkIfRequired(configCategory, configName, `Expected ${configVal.type.name}, found ${userVal === undefined ? userVal : userVal.constructor.name}`)
       } else {
-        if ((userVal).constructor === Number && userVal < 0) checkIfRequired(configCategory, configName, `Cannot be less than 0`)
+        if ((userVal).constructor === Number && userVal < 0 && configName !== 'articlesExpire') checkIfRequired(configCategory, configName, `Cannot be less than 0`)
         else if (configName === 'timezone' && !moment.tz.zone(userVal)) checkIfRequired(configCategory, configName, 'Invalid timezone')
         else if (configName === 'menuColor' && userVal > 16777215) checkIfRequired(configCategory, configName, `Cannot be larger than 16777215`)
         else if (configName === 'processorMethod' && userVal !== 'concurrent' && userVal !== 'parallel-isolated') checkIfRequired(configCategory, configName, 'Must be either "concurrent", or "parallel-isolated"')
