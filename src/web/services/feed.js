@@ -79,9 +79,20 @@ async function getDatabaseArticles (feed, shardID) {
   return data
 }
 
+/**
+ * @param {string} url 
+ */
 async function getFailRecord (url) {
   const record = await FailRecord.getBy('url', url)
   return record ? record.toJSON() : {}
+}
+
+/**
+ * @param {string} guildID 
+ */
+async function getFeedsOfGuild (guildID) {
+  const feeds = await Feed.getManyBy('guild', guildID)
+  return feeds.map(f => f.toJSON())
 }
 
 module.exports = {
@@ -91,5 +102,6 @@ module.exports = {
   editFeed,
   deleteFeed,
   getDatabaseArticles,
-  getFailRecord
+  getFailRecord,
+  getFeedsOfGuild
 }

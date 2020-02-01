@@ -12,6 +12,11 @@ const feedSchema = require('../../../../util/validation/feedSchema.js')
 const feedIDSchema = Joi.object({
   feedID: Joi.string()
 })
+
+// Get guild feeds
+guildFeedsAPI.get('/', controllers.api.guilds.feeds.getFeeds)
+
+// Create a feed
 guildFeedsAPI.post('/', [
   validator.body(feedSchema),
   guildHasChannel
