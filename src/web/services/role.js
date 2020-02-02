@@ -22,11 +22,7 @@ async function formatRole (roleData) {
  * @param {string[]} roleIDs
  */
 async function getRoles (roleIDs) {
-  const promises = []
-  for (const id of roleIDs) {
-    promises.push(getRole(id))
-  }
-  const resolved = await Promise.all(promises)
+  const resolved = await Promise.all(roleIDs.map(id => getRole(id)))
   return resolved.map(formatRole)
     .sort((a, b) => b.position - a.position)
 }
@@ -56,7 +52,7 @@ async function isRoleOfGuild (roleID, guildID) {
  */
 async function getRolesOfGuild (guildID) {
   const roleIDs = await RedisRole.utils.getRolesOfGuild(guildID)
-  const roles = roleIDs.map(roleID => getRole(roleID))
+  const roles = await Promise.all(roleIDs.map(roleID => getRole(roleID)))
   return roles.filter(r => r)
 }
 
