@@ -363,6 +363,19 @@ function LeftMenu (props) {
     dispatch(changePage(page))
   }
 
+  function logoutClick () {
+    const modalProps = {
+      footer: (<LogoutModalFooter>
+        <button onClick={modal.hide}>Cancel</button>
+        <Button color='red' onClick={e => {
+          window.location.href = '/logout'
+        }}>Log Out</Button>
+      </LogoutModalFooter>),
+    }
+    const children = <h4 style={{padding: '0.5em'}}>Are you sure you want to log out?</h4>
+    modal.show(modalProps, children)
+  }
+
   return (
     <LeftMenuDiv expanded={props.expanded}>
       <Scrollbars>
@@ -386,7 +399,7 @@ function LeftMenu (props) {
             <span>{user ? user.username : undefined}</span>
           </div>
           <Popup
-            trigger={<Button basic icon='log out' color='red' onClick={() => {}} />}
+            trigger={<Button basic icon='log out' color='red' onClick={logoutClick} />}
             inverted
             position='bottom right'
             content='Log Out'

@@ -14,7 +14,7 @@ import Home from './js/components/Home/index'
 import FAQ from './js/components/FAQ/index'
 import FeedBrowser from './js/components/FeedBrowser/index'
 import ControlPanel from './js/components/ControlPanel/index'
-import { connect } from 'react-redux'
+import { connect, useSelector } from 'react-redux'
 import DiscordModal from './js/components/utils/DiscordModal'
 import modal from './js/components/utils/modal'
 import { Scrollbars } from 'react-custom-scrollbars';
@@ -51,6 +51,7 @@ const Wrapper = styled.div`
 function App (props) {
   const [ errorMessage ] = useState('')
   const [ scrollbarRef, setScrollbarRef ] = useState()
+  const reduxModal = useSelector(state => state.modal)
   if (errorMessage) {
     return (
       <EmptyBackground>
@@ -66,7 +67,7 @@ function App (props) {
 
   return (
     <div className='App'>
-      {/* <DiscordModal onClose={modal.hide} open={props.modalOpen} { ...props.modal.props }>{props.modal.children}</DiscordModal> */}
+      <DiscordModal onClose={modal.hide} open={reduxModal.open} { ...reduxModal.props }>{reduxModal.children}</DiscordModal>
       <Switch>
         <Route path={pages.DASHBOARD} component={ControlPanel} />
         <Route render={() => (
