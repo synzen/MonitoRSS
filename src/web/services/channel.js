@@ -1,6 +1,14 @@
 const RedisChannel = require('../../structs/db/Redis/Channel.js')
 
 /**
+ * @param {string} channelID 
+ */
+async function getCachedChannel (channelID) {
+  const channel = await RedisChannel.fetch(channelID)
+  return channel ? channel.toJSON() : null
+}
+
+/**
  * @param {string} guildID
  */
 async function getGuildChannels (guildID) {
@@ -10,5 +18,6 @@ async function getGuildChannels (guildID) {
 }
 
 module.exports = {
+  getCachedChannel,
   getGuildChannels
 }
