@@ -66,7 +66,7 @@ function App (props) {
 
   return (
     <div className='App'>
-      <DiscordModal onClose={modal.hide} open={props.modalOpen} { ...props.modal.props }>{props.modal.children}</DiscordModal>
+      {/* <DiscordModal onClose={modal.hide} open={props.modalOpen} { ...props.modal.props }>{props.modal.children}</DiscordModal> */}
       <Switch>
         <Route path={pages.DASHBOARD} component={ControlPanel} />
         <Route render={() => (

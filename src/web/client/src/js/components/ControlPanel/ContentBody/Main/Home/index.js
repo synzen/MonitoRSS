@@ -161,6 +161,9 @@ class Home extends Component {
     const serverButtons = []
     for (const thisGuildId in guilds) {
       const guild = guilds[thisGuildId]
+      if (!guild) {
+        continue
+      }
       serverIcons.push(<Popup key={`dashboard.icon.${thisGuildId}`} trigger={<DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='64px' onClick={e => setActiveGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />} inverted content={guild.name} />)
       serverButtons.push(
         <div key={thisGuildId}>
@@ -169,7 +172,7 @@ class Home extends Component {
             <DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='48px' onClick={e => setActiveGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />
             <div>
               <h4>{guild.name}</h4>
-              <p>{Object.keys(feeds[thisGuildId]).length} feeds</p>
+              <p>{feeds && feeds[thisGuildId] ? Object.keys(feeds[thisGuildId]).length : undefined} feeds</p>
             </div>
           </ServerButtonInner>
         </ServerButton>

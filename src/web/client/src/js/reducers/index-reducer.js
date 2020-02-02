@@ -1,188 +1,202 @@
-import { TEST_ACTION, CHANGE_PAGE, SET_ACTIVE_GUILD, SET_ACTIVE_FEED, INIT_STATE, CHANGE_FILTERS, CLEAR_GUILD, UPDATE_GUILD_AFTER_WEBSOCKET, ARTICLES_FETCHING, ARTICLES_ERROR, ARTICLES_FETCHED, UPDATE_LINK_STATUS, UPDATE_GUILD_LIMITS, SHOW_MODAL, HIDE_MODAL, UPDATE_SOURCE_SCHEDULE } from '../constants/action-types'
-import update from 'immutability-helper'
+import { combineReducers } from 'redux'
+import userReducer from './user'
+import guildsReducer from './guilds'
+import loadingReducer from './loading'
+import errorsReducer from './errors'
+import channelsReducer from './channels'
+import rolesReducer from './roles'
 
-const initialState = {
-  owner: false,
-  user: undefined,
-  defaultConfig: {},
-  guildId: '',
-  feedId: '',
-  guild: null,
-  feed: null,
-  articleList: [],
-  feeds: {},
-  roles: {},
-  subscribers: {},
-  filters: {},
-  guilds: {},
-  embeds: {},
-  messages: {},
-  channels: {},
-  linkStatuses: {},
-  guildLimits: {},
-  articlesFetching: false,
-  articlesError: '',
-  modalOpen: false,
-  csrfToken: '',
-  feedRefreshRates: {},
-  cpResponse: null,
-  modal: {
-    props: null,
-    children: null
-  }
-}
+const rootReducer = combineReducers({
+  user: userReducer,
+  guilds: guildsReducer,
+  channels: channelsReducer,
+  roles: rolesReducer,
+  loading: loadingReducer,
+  errors: errorsReducer
+})
 
-// Always use immutability-helper for updating nested objects like guildRss
+// const initialState = {
+//   owner: false,
+//   user: undefined,
+//   defaultConfig: {},
+//   guildId: '',
+//   feedId: '',
+//   guild: null,
+//   feed: null,
+//   articleList: [],
+//   feeds: {},
+//   roles: {},
+//   subscribers: {},
+//   filters: {},
+//   guilds: {},
+//   embeds: {},
+//   messages: {},
+//   channels: {},
+//   linkStatuses: {},
+//   guildLimits: {},
+//   articlesFetching: false,
+//   articlesError: '',
+//   modalOpen: false,
+//   csrfToken: '',
+//   feedRefreshRates: {},
+//   cpResponse: null,
+//   modal: {
+//     props: null,
+//     children: null
+//   }
+// }
 
-function initState (state, action) {
-  return { ...state, ...action.data }
-}
+// // Always use immutability-helper for updating nested objects like guildRss
 
-function clearGuild (state, action) {
-  const guildIdToUse = action.guildId || state.guildId
-  return update(state, {
-    feeds: { [guildIdToUse]: { $set: undefined } },
-    filters: { [guildIdToUse]: { $set: undefined } },
-    subscriptions: { [guildIdToUse]: { $set: undefined } }
-  })
-}
+// function initState (state, action) {
+//   return { ...state, ...action.data }
+// }
 
-function updateGuildAfterWebSocket (state, action) {
-  const guildId = state.guildId
+// function clearGuild (state, action) {
+//   const guildIdToUse = action.guildId || state.guildId
+//   return update(state, {
+//     feeds: { [guildIdToUse]: { $set: undefined } },
+//     filters: { [guildIdToUse]: { $set: undefined } },
+//     subscriptions: { [guildIdToUse]: { $set: undefined } }
+//   })
+// }
 
-  const newState = update(state, {
-    guilds: { [guildId]: { $set: {} } },
-    messages: { [guildId]: { $set: {} } },
-    embeds: { [guildId]: { $set: {} } },
-    filters: { [guildId]: { $set: {} } },
-    subscribers: { [guildId]: { $set: {} } },
-    feeds: { [guildId]: { $set: {} } }
-  })
+// function updateGuildAfterWebSocket (state, action) {
+//   const guildId = state.guildId
 
-  const guildRss = action.guildRss
-  for (const keyName in guildRss) {
-    const value = guildRss[keyName]
-    if (typeof value !== 'object' && value !== undefined) newState.guilds[guildId][keyName] = value
-    if (keyName !== 'sources') continue
-    const rssList = value
-    for (const rssName in rssList) {
-      const source = rssList[rssName]
-      source.rssName = rssName
-      const copy = JSON.parse(JSON.stringify(source))
-      newState.feeds[guildId][rssName] = copy
-      newState.embeds[guildId][rssName] = source.embeds
-      newState.messages[guildId][rssName] = source.message
-      // Feed Filters
-      if (source.filters) newState.filters[guildId][rssName] = source.filters
+//   const newState = update(state, {
+//     guilds: { [guildId]: { $set: {} } },
+//     messages: { [guildId]: { $set: {} } },
+//     embeds: { [guildId]: { $set: {} } },
+//     filters: { [guildId]: { $set: {} } },
+//     subscribers: { [guildId]: { $set: {} } },
+//     feeds: { [guildId]: { $set: {} } }
+//   })
 
-      // Feed Subscriptions
-      newState.subscribers[guildId][rssName] = {}
-      if (source.subscribers && source.subscribers.length > 0) {
-        for (const subscriber of source.subscribers) {
-          newState.subscribers[guildId][rssName][subscriber.id] = subscriber
-        }
-      }
-      if (state.feedId === rssName) newState.feed = source
-    }
-  }
-  return state.guildId === guildRss.id ? update(newState, { guild: { $set: newState.guilds[state.guildId] } }) : newState
-}
+//   const guildRss = action.guildRss
+//   for (const keyName in guildRss) {
+//     const value = guildRss[keyName]
+//     if (typeof value !== 'object' && value !== undefined) newState.guilds[guildId][keyName] = value
+//     if (keyName !== 'sources') continue
+//     const rssList = value
+//     for (const rssName in rssList) {
+//       const source = rssList[rssName]
+//       source.rssName = rssName
+//       const copy = JSON.parse(JSON.stringify(source))
+//       newState.feeds[guildId][rssName] = copy
+//       newState.embeds[guildId][rssName] = source.embeds
+//       newState.messages[guildId][rssName] = source.message
+//       // Feed Filters
+//       if (source.filters) newState.filters[guildId][rssName] = source.filters
 
-function changePage (state, action) {
-  return update(state, { page: { $set: action.page } })
-}
+//       // Feed Subscriptions
+//       newState.subscribers[guildId][rssName] = {}
+//       if (source.subscribers && source.subscribers.length > 0) {
+//         for (const subscriber of source.subscribers) {
+//           newState.subscribers[guildId][rssName][subscriber.id] = subscriber
+//         }
+//       }
+//       if (state.feedId === rssName) newState.feed = source
+//     }
+//   }
+//   return state.guildId === guildRss.id ? update(newState, { guild: { $set: newState.guilds[state.guildId] } }) : newState
+// }
 
-function changeFilters (state, action) {
-  const { rssName, data } = action
-  return update(state, { feeds: { [action.guildId || state.guildId]: { [rssName]: { filters: { $set: data } } } } })
-}
+// function changePage (state, action) {
+//   return update(state, { page: { $set: action.page } })
+// }
 
-function setActiveGuild (state, action) {
-  if (state.guildId === action.guildId) return state
-  return update(state, { guildId: { $set: action.guildId }, feedId: { $set: '' }, articleList: { $set: [] }, articlesError: { $set: '' }, guild: { $set: state.guilds[action.guildId] } }) // MUST be an empty string. undefined will cause some components to be unintentionally uncontrolled
-}
+// function changeFilters (state, action) {
+//   const { rssName, data } = action
+//   return update(state, { feeds: { [action.guildId || state.guildId]: { [rssName]: { filters: { $set: data } } } } })
+// }
 
-function setActiveFeed (state, action) {
-  if (state.feedId === action.rssName) return state
-  return update(state, { feedId: { $set: action.rssName }, feed: { $set: JSON.parse(JSON.stringify(state.feeds[state.guildId][action.rssName])) } })
-}
+// function setActiveGuild (state, action) {
+//   if (state.guildId === action.guildId) return state
+//   return update(state, { guildId: { $set: action.guildId }, feedId: { $set: '' }, articleList: { $set: [] }, articlesError: { $set: '' }, guild: { $set: state.guilds[action.guildId] } }) // MUST be an empty string. undefined will cause some components to be unintentionally uncontrolled
+// }
 
-function articlesFetched (state, action) {
-  return update(state, { articlesFetching: { $set: false }, articleList: { $set: action.articleList }, articlesError: { $set: '' } })
-}
+// function setActiveFeed (state, action) {
+//   if (state.feedId === action.rssName) return state
+//   return update(state, { feedId: { $set: action.rssName }, feed: { $set: JSON.parse(JSON.stringify(state.feeds[state.guildId][action.rssName])) } })
+// }
 
-function articlesFetching (state, action) {
-  return update(state, { articlesFetching: { $set: true }, articleList: { $set: [] }, articlesError: { $set: '' } })
-}
+// function articlesFetched (state, action) {
+//   return update(state, { articlesFetching: { $set: false }, articleList: { $set: action.articleList }, articlesError: { $set: '' } })
+// }
 
-function articlesError (state, action) {
-  return update(state, { articlesFetching: { $set: false }, articlesError: { $set: action.err } })
-}
+// function articlesFetching (state, action) {
+//   return update(state, { articlesFetching: { $set: true }, articleList: { $set: [] }, articlesError: { $set: '' } })
+// }
 
-function updateLinkStatus (state, action) {
-  return update(state, { linkStatuses: { [action.data.link]: { $set: action.data.status } } })
-}
+// function articlesError (state, action) {
+//   return update(state, { articlesFetching: { $set: false }, articlesError: { $set: action.err } })
+// }
 
-function updateGuildLimits (state, action) {
-  let newState = state
-  for (const guildId in action.limits) {
-    newState = update(newState, { guildLimits: { [guildId]: { $set: action.limits[guildId] } } })
-  }
-  return newState
-}
+// function updateLinkStatus (state, action) {
+//   return update(state, { linkStatuses: { [action.data.link]: { $set: action.data.status } } })
+// }
 
-function showModal (state, action) {
-  return update(state, {
-    modalOpen: { $set: true },
-    modal: { children: { $set: action.children }, props: { $set: action.props } }
-  })
-}
+// function updateGuildLimits (state, action) {
+//   let newState = state
+//   for (const guildId in action.limits) {
+//     newState = update(newState, { guildLimits: { [guildId]: { $set: action.limits[guildId] } } })
+//   }
+//   return newState
+// }
 
-function hideModal (state, action) {
-  return update(state, { modalOpen: { $set: false } })
-}
+// function showModal (state, action) {
+//   return update(state, {
+//     modalOpen: { $set: true },
+//     modal: { children: { $set: action.children }, props: { $set: action.props } }
+//   })
+// }
 
-function updateSourceSchedule (state, action) {
-  const { guildId, rssName, refreshTimeMinutes } = action.data
-  return update(state, { refreshRates: { [guildId]: { [rssName]: { $set: refreshTimeMinutes } } } })
-}
+// function hideModal (state, action) {
+//   return update(state, { modalOpen: { $set: false } })
+// }
 
-function rootReducer (state = initialState, action) {
-  if (action.type === TEST_ACTION) {
-    return update(state, { testVal: { $set: action.payload } })
-  } else if (action.type === INIT_STATE) {
-    return initState(state, action)
-  } else if (action.type === CLEAR_GUILD) {
-    return clearGuild(state, action)
-  } else if (action.type === UPDATE_GUILD_AFTER_WEBSOCKET) {
-    return updateGuildAfterWebSocket(state, action)
-  } else if (action.type === CHANGE_PAGE) {
-    return changePage(state, action)
-  } else if (action.type === CHANGE_FILTERS) {
-    return changeFilters(state, action)
-  } else if (action.type === SET_ACTIVE_GUILD) {
-    return setActiveGuild(state, action)
-  } else if (action.type === SET_ACTIVE_FEED) {
-    return setActiveFeed(state, action)
-  } else if (action.type === ARTICLES_FETCHED) {
-    return articlesFetched(state, action)
-  } else if (action.type === ARTICLES_FETCHING) {
-    return articlesFetching(state, action)
-  } else if (action.type === ARTICLES_ERROR) {
-    return articlesError(state, action)
-  } else if (action.type === UPDATE_LINK_STATUS) {
-    return updateLinkStatus(state, action)
-  } else if (action.type === UPDATE_GUILD_LIMITS) {
-    return updateGuildLimits(state, action)
-  } else if (action.type === SHOW_MODAL) {
-    return showModal(state, action)
-  } else if (action.type === HIDE_MODAL) {
-    return hideModal(state, action)
-  } else if (action.type === UPDATE_SOURCE_SCHEDULE) {
-    return updateSourceSchedule(state, action)
-  }
+// function updateSourceSchedule (state, action) {
+//   const { guildId, rssName, refreshTimeMinutes } = action.data
+//   return update(state, { refreshRates: { [guildId]: { [rssName]: { $set: refreshTimeMinutes } } } })
+// }
 
-  return state
-}
+// function rootReducer (state = initialState, action) {
+//   if (action.type === TEST_ACTION) {
+//     return update(state, { testVal: { $set: action.payload } })
+//   } else if (action.type === INIT_STATE) {
+//     return initState(state, action)
+//   } else if (action.type === CLEAR_GUILD) {
+//     return clearGuild(state, action)
+//   } else if (action.type === UPDATE_GUILD_AFTER_WEBSOCKET) {
+//     return updateGuildAfterWebSocket(state, action)
+//   } else if (action.type === CHANGE_PAGE) {
+//     return changePage(state, action)
+//   } else if (action.type === CHANGE_FILTERS) {
+//     return changeFilters(state, action)
+//   } else if (action.type === SET_ACTIVE_GUILD) {
+//     return setActiveGuild(state, action)
+//   } else if (action.type === SET_ACTIVE_FEED) {
+//     return setActiveFeed(state, action)
+//   } else if (action.type === ARTICLES_FETCHED) {
+//     return articlesFetched(state, action)
+//   } else if (action.type === ARTICLES_FETCHING) {
+//     return articlesFetching(state, action)
+//   } else if (action.type === ARTICLES_ERROR) {
+//     return articlesError(state, action)
+//   } else if (action.type === UPDATE_LINK_STATUS) {
+//     return updateLinkStatus(state, action)
+//   } else if (action.type === UPDATE_GUILD_LIMITS) {
+//     return updateGuildLimits(state, action)
+//   } else if (action.type === SHOW_MODAL) {
+//     return showModal(state, action)
+//   } else if (action.type === HIDE_MODAL) {
+//     return hideModal(state, action)
+//   } else if (action.type === UPDATE_SOURCE_SCHEDULE) {
+//     return updateSourceSchedule(state, action)
+//   }
+
+//   return state
+// }
 
 export default rootReducer

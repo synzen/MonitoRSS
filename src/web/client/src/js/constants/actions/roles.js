@@ -1,0 +1,6 @@
+export const GET_ROLES = {
+  prefix: 'GET_ROLES',
+  BEGIN: 'GET_ROLES_BEGIN',
+  SUCCESS: 'GET_ROLES_SUCCESS',
+  FAILURE: 'GET_ROLES_FAILURE'
+}
