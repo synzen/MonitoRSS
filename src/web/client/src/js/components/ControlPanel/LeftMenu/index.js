@@ -15,7 +15,10 @@ import { getActiveFeed, getActiveFeedID } from 'js/selectors/feeds'
 import { setActiveGuild } from 'js/actions/guilds'
 import { setActiveFeed } from 'js/actions/feeds'
 import { changePage } from 'js/actions/page'
-
+import {
+  articlesFetchErrored as articlesFetchErroredSelector,
+  articlesFetching as articlesFetchingSelector
+} from 'js/selectors/feeds'
 // const mapStateToProps = state => {
 //   return {
 //     feedId: state.feedId,
@@ -331,10 +334,12 @@ function LeftMenu (props) {
   const channels = useSelector(state => state.channels)
   const guildId = useSelector(state => state.activeGuildID)
   const page = useSelector(state => state.page)
+  const user = useSelector(state => state.user)
   const feedId = useSelector(getActiveFeedID)
   const feed = useSelector(getActiveFeed)
+  const articlesError = useSelector(articlesFetchErroredSelector)
+  const articlesFetching = useSelector(articlesFetchingSelector)
   const dispatch = useDispatch()
-  const { user, articlesFetching, articlesError } = props
   const feedDropdownOptions = []
   const serverDropdownOptions = []
   for (const storedFeed of feeds) {
