@@ -1,0 +1,6 @@
+export const GET_FEEDS = {
+  prefix: 'GET_FEEDS',
+  BEGIN: 'GET_FEEDS_BEGIN',
+  SUCCESS: 'GET_FEEDS_SUCCESS',
+  FAILURE: 'GET_FEEDS_FAILURE'
+}

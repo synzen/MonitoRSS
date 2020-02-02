@@ -5,6 +5,7 @@ import {
 } from '../constants/actions/guilds'
 import { fetchGuildChannels } from './channels'
 import { fetchGuildRoles } from './roles'
+import { fetchGuildFeeds } from './feeds'
 
 export function fetchGuilds () {
   return dispatch => {
@@ -45,5 +46,6 @@ export function setActiveGuild (guildID) {
     })
     dispatch(fetchGuildChannels(guildID))
     dispatch(fetchGuildRoles(guildID))
+    dispatch(fetchGuildFeeds(guildID))
   }
 }
