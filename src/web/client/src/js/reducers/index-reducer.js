@@ -5,12 +5,14 @@ import loadingReducer from './loading'
 import errorsReducer from './errors'
 import channelsReducer from './channels'
 import rolesReducer from './roles'
-import activeGuildIDReducer from './activeGuildID'
 import feedsReducer from './feeds'
+import activeGuildIDReducer from './activeGuildID'
+import activeFeedIDReducer from './activeFeedID'
 
 const rootReducer = combineReducers({
   user: userReducer,
   activeGuildID: activeGuildIDReducer,
+  activeFeedID: activeFeedIDReducer,
   guilds: guildsReducer,
   channels: channelsReducer,
   roles: rolesReducer,

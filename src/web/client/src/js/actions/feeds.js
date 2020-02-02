@@ -1,6 +1,7 @@
 import axios from 'axios'
 import {
-  GET_FEEDS
+  GET_FEEDS,
+  SET_ACTIVE_FEED
 } from '../constants/actions/feeds'
 
 export function fetchGuildFeeds (guildID) {
@@ -31,5 +32,12 @@ export function setFeedsFailure () {
 export function setFeedsBegin () {
   return {
     type: GET_FEEDS.BEGIN
+  }
+}
+
+export function setActiveFeed (feedID) {
+  return {
+    type: SET_ACTIVE_FEED,
+    payload: feedID
   }
 }
