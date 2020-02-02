@@ -2,9 +2,11 @@ import axios from 'axios'
 import {
   SET_USER
 } from '../constants/actions/user'
+import { fetchGuilds } from './guilds'
 
 export function fetchUser () {
   return dispatch => {
+    dispatch(fetchGuilds())
     dispatch(setUserBegin())
     axios.get('/api/users/@me').then(({ data, status }) => {
       dispatch(setUserSuccess(data))

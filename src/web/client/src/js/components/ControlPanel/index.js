@@ -381,7 +381,6 @@ function ControlPanel () {
 
   useEffect(() => {
     dispatch(fetchUser())
-    dispatch(fetchGuilds())
   }, [])
 
   return (
