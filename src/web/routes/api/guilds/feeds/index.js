@@ -10,6 +10,7 @@ const validator = require('express-joi-validation').createValidator({
 });
 const feedSchema = require('../../../../util/validation/feedSchema.js')
 const feedIDSchema = Joi.object({
+  guildID: Joi.string(),
   feedID: Joi.string()
 })
 
@@ -23,7 +24,7 @@ guildFeedsAPI.post('/', [
 ], controllers.api.guilds.feeds.createFeed)
 
 // Make sure feedID exists before proceeding
-guildFeedsAPI.use('/:feedID', validator.params(feedIDSchema))
+guildFeedsAPI.use('/:feedID', validator.params(feedIDSchema), guildHasFeed)
 
 // Make sure the guild has this feed, and inject the feed into req.feed
 guildFeedsAPI.use('/:feedID', guildHasFeed)
