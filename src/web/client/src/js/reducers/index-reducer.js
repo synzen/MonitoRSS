@@ -9,8 +9,10 @@ import feedsReducer from './feeds'
 import activeGuildIDReducer from './activeGuildID'
 import activeFeedIDReducer from './activeFeedID'
 import articlesReducer from './articles'
+import pageReducer from './page'
 
 const rootReducer = combineReducers({
+  page: pageReducer,
   user: userReducer,
   activeGuildID: activeGuildIDReducer,
   activeFeedID: activeFeedIDReducer,
