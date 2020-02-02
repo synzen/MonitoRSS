@@ -6,7 +6,7 @@ const initialState = ''
 
 export default function activeGuildIDReducer (state = initialState, action) {
   switch (action.type) {
-    case SET_ACTIVE_GUILD.SUCCESS:
+    case SET_ACTIVE_GUILD:
       return action.payload
     default:
       return state
