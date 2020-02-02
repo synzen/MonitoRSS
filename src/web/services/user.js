@@ -8,7 +8,6 @@ const RedisUser = require('../../structs/db/Redis/User.js')
 const RedisGuildMember = require('../../structs/db/Redis/GuildMember.js')
 const config = require('../../config.js')
 const MANAGE_CHANNEL_PERMISSION = 16
-const ADMINISTRATOR_PERMISSION = 8
 const CACHE_TIME_MINUTES = 10
 const CACHED_USERS = {}
 const CACHED_USERS_GUILDS = {}
