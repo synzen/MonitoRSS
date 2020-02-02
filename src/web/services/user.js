@@ -66,8 +66,7 @@ async function getGuildsByAPI (id, accessToken, skipCache) {
 function hasGuildPermission (guild) {
   const isOwner = guild.owner
   const managesChannel = (guild.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION
-  const isAdministrator = (guild.permissions & ADMINISTRATOR_PERMISSION) !== ADMINISTRATOR_PERMISSION
-  if (!isOwner && !managesChannel && !isAdministrator) {
+  if (!isOwner && !managesChannel) {
     return false
   }
   return true
