@@ -12,7 +12,8 @@ async function getMeGuilds (req, res, next) {
     const userGuilds = await userServices.getGuildsByAPI(identity.id, token.access_token)
     const guilds = []
     for (const guild of userGuilds) {
-      if (!userServices.hasGuildPermission(guild)) {
+      const hasPerm = await userServices.hasGuildPermission(guild)
+      if (!hasPerm) {
         continue
       }
       const data = await guildServices.aggregateDataOfGuild(guild.id)

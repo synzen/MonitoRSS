@@ -35,9 +35,9 @@ describe('Unit::controllers/api/users/getMeGuilds', function () {
     }
     userServices.getGuildsByAPI.mockResolvedValue(userGuilds)
     userServices.hasGuildPermission
-      .mockReturnValueOnce(false)
-      .mockReturnValueOnce(true)
-      .mockReturnValue(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValue(false)
     guildServices.aggregateDataOfGuild
       .mockResolvedValueOnce(guildAggregateData)
     const req = createRequest()
@@ -59,7 +59,7 @@ describe('Unit::controllers/api/users/getMeGuilds', function () {
       hello: 'world'
     }
     userServices.getGuildsByAPI.mockResolvedValue(userGuilds)
-    userServices.hasGuildPermission.mockReturnValueOnce(true)
+    userServices.hasGuildPermission.mockResolvedValueOnce(true)
     guildServices.aggregateDataOfGuild.mockResolvedValue(guildAggregateData)
     const req = createRequest()
     const res = createResponse()

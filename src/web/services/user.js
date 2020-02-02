@@ -60,12 +60,18 @@ async function getGuildsByAPI (id, accessToken, skipCache) {
 
 /**
  * @param {Object<string, any>} guild - User guild data from API
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-function hasGuildPermission (guild) {
+async function hasGuildPermission (guild) {
+  // User permission
   const isOwner = guild.owner
   const managesChannel = (guild.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION
   if (!isOwner && !managesChannel) {
+    return false
+  }
+  // Bot permission - just has to be in guild
+  const member = await getMemberOfGuild(config.web.clientId, guild.id)
+  if (!member) {
     return false
   }
   return true
