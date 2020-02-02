@@ -399,9 +399,9 @@ function ControlPanel () {
       {/* <MainContainer offsetTop={!this.state.leftMenuNotFull}>
         <LeftMenu disableMenuButtonToggle={this.state.leftMenuNotFull} toggleLeftMenu={() => { */}
       <MainContainer offsetTop={false}>
-        {/* <LeftMenu disableMenuButtonToggle={true} toggleLeftMenu={() => {
+        <LeftMenu disableMenuButtonToggle={true} toggleLeftMenu={() => {
           // this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })
-        }} socketStatus={true} expanded={true} /> */}
+        }} expanded={true} />
         <ContentBody />
       </MainContainer>
     </div>
