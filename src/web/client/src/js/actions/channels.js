@@ -22,9 +22,10 @@ export function setChannelsSuccess (channels) {
   }
 }
 
-export function setChannelsFailure () {
+export function setChannelsFailure (error) {
   return {
-    type: GET_CHANNELS.FAILURE
+    type: GET_CHANNELS.FAILURE,
+    payload: error
   }
 }
 

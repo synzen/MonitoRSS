@@ -35,9 +35,10 @@ export function setFeedsSuccess (feeds) {
   }
 }
 
-export function setFeedsFailure () {
+export function setFeedsFailure (error) {
   return {
-    type: GET_FEEDS.FAILURE
+    type: GET_FEEDS.FAILURE,
+    payload: error
   }
 }
 
@@ -66,9 +67,10 @@ export function setArticlesSuccess (articles) {
   }
 }
 
-export function setArticlesFailure () {
+export function setArticlesFailure (error) {
   return {
-    type: GET_ARTICLES.FAILURE
+    type: GET_ARTICLES.FAILURE,
+    payload: error
   }
 }
 

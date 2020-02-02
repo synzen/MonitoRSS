@@ -30,8 +30,9 @@ export function setUserBegin () {
   }
 }
 
-export function setUserFailure () {
+export function setUserFailure (error) {
   return {
-    type: SET_USER.FAILURE
+    type: SET_USER.FAILURE,
+    payload: error
   }
 }

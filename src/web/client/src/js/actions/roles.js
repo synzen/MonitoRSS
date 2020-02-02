@@ -22,9 +22,10 @@ export function setRolesSuccess (roles) {
   }
 }
 
-export function setRolesFailure () {
+export function setRolesFailure (error) {
   return {
-    type: GET_ROLES.FAILURE
+    type: GET_ROLES.FAILURE,
+    payload: error
   }
 }
 
