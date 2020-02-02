@@ -1,7 +1,7 @@
 import React from 'react'
 import store from '../../store/index-store'
-import { showModal, hideModal } from '../../actions/index-actions'
 import styled from 'styled-components'
+import { showModal, hideModal } from 'js/actions/modal'
 
 const ModalImageContainer = styled.div`
   user-select: none;

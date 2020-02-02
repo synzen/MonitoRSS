@@ -10,6 +10,7 @@ import activeGuildIDReducer from './activeGuildID'
 import activeFeedIDReducer from './activeFeedID'
 import articlesReducer from './articles'
 import pageReducer from './page'
+import modalReducer from './modal'
 
 const rootReducer = combineReducers({
   page: pageReducer,
@@ -22,7 +23,8 @@ const rootReducer = combineReducers({
   roles: rolesReducer,
   feeds: feedsReducer,
   loading: loadingReducer,
-  errors: errorsReducer
+  errors: errorsReducer,
+  modal: modalReducer
 })
 
 // const initialState = {
