@@ -3,7 +3,8 @@ import {
   GET_FEEDS,
   GET_ARTICLES,
   SET_ACTIVE_FEED,
-  DELETE_FEED
+  DELETE_FEED,
+  EDIT_FEED
 } from '../constants/actions/feeds'
 
 export function fetchGuildFeeds (guildID) {
@@ -88,6 +89,37 @@ export function deleteFeedSuccess (feedID) {
 export function deleteFeedFailure (error) {
   return {
     type: DELETE_FEED.FAILURE,
+    payload: error
+  }
+}
+
+export function fetchEditFeed (guildID, feedID, data) {
+  return dispatch => {
+    dispatch(editFeedBegin())
+    axios.patch(`/api/guilds/${guildID}/feeds/${feedID}`, data).then(({ data }) => {
+      dispatch(editFeedSuccess(data))
+    }).catch(err => {
+      dispatch(editFeedFailure(err))
+    })
+  }
+}
+
+export function editFeedBegin () {
+  return {
+    type: EDIT_FEED.BEGIN
+  }
+}
+
+export function editFeedSuccess (updatedFeed) {
+  return {
+    type: EDIT_FEED.SUCCESS,
+    payload: updatedFeed
+  }
+}
+
+export function editFeedFailure (error) {
+  return {
+    type: EDIT_FEED.FAILURE,
     payload: error
   }
 }
