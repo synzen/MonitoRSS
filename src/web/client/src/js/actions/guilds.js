@@ -1,11 +1,12 @@
 import axios from 'axios'
 import {
   GET_GUILDS,
-  SET_ACTIVE_GUILD
+  SET_ACTIVE_GUILD,
 } from '../constants/actions/guilds'
 import { fetchGuildChannels } from './channels'
 import { fetchGuildRoles } from './roles'
 import { fetchGuildFeeds } from './feeds'
+import { fetchGuildFailRecords } from './failRecords'
 import FetchStatusActions from './utils/FetchStatusActions'
 
 export const {
@@ -35,5 +36,6 @@ export function setActiveGuild (guildID) {
     await dispatch(fetchGuildChannels(guildID))
     await dispatch(fetchGuildRoles(guildID))
     await dispatch(fetchGuildFeeds(guildID))
+    await dispatch(fetchGuildFailRecords(guildID))
   }
 }

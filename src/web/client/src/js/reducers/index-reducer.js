@@ -12,6 +12,7 @@ import articlesReducer from './articles'
 import pageReducer from './page'
 import modalReducer from './modal'
 import botConfigReducer from './botConfig'
+import failRecordsReducer from './failRecords'
 
 const rootReducer = combineReducers({
   page: pageReducer,
@@ -26,7 +27,8 @@ const rootReducer = combineReducers({
   loading: loadingReducer,
   errors: errorsReducer,
   modal: modalReducer,
-  botConfig: botConfigReducer
+  botConfig: botConfigReducer,
+  failRecords: failRecordsReducer
 })
 
 // const initialState = {
