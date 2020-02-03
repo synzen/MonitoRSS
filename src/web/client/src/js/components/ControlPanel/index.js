@@ -1,6 +1,4 @@
-import React, { useEffect } from 'react'
-import axios from 'axios'
-// import { withRouter } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
 import { ToastContainer } from 'react-toastify'
 import styled from 'styled-components'
 import LeftMenu from './LeftMenu/index'
@@ -8,11 +6,10 @@ import ContentBody from './ContentBody/index'
 import { useSelector, useDispatch } from 'react-redux'
 import colors from 'js/constants/colors'
 import {
-  setUser, fetchUser
+  fetchUser
 } from 'js/actions/user'
-import { fetchGuilds } from 'js/actions/guilds'
 // import { Loader, Icon, Button } from 'semantic-ui-react'
-// import TopBar from './TopBar/index'
+import TopBar from './TopBar/index'
 
 const MainContainer = styled.div`
   width: 100vw;
@@ -378,10 +375,36 @@ function ControlPanel () {
   const user = useSelector(state => state.user)
   const guilds = useSelector(state => state.guilds)
   const dispatch = useDispatch()
+  const [ sizeInfo, setSizeInfo ] = useState({
+    leftMenuExpanded: window.innerWidth >= 910,
+    leftMenuNotFull: window.innerWidth >= 910
+  })
 
   useEffect(() => {
     dispatch(fetchUser())
   }, [])
+
+  function updateDimensions () {
+    const newState = {}
+    if (window.innerWidth < 860) {
+      // if (this.state.leftMenuExpanded) newState.leftMenuExpanded = false
+      if (sizeInfo.leftMenuNotFull) newState.leftMenuNotFull = false
+    } else {
+      if (!sizeInfo.leftMenuExpanded) newState.leftMenuExpanded = true
+      if (!sizeInfo.leftMenuNotFull) newState.leftMenuNotFull = true
+    }
+    if (Object.keys(newState).length > 0) {
+      setSizeInfo({
+        ...sizeInfo,
+        ...newState
+      })
+    }
+  }
+
+  useEffect(() => {
+    window.addEventListener('resize', updateDimensions)
+    return () => window.removeEventListener('resize', updateDimensions)
+  })
 
   return (
     <div>
@@ -390,18 +413,23 @@ function ControlPanel () {
         <h1>Disconnected from Server</h1>
         <h3>My lifeline to the server has been severed! Access will be restored once my connection has been re-established.</h3>
       </EmptyBackgroundTransparent> */}
-      {/* <DiscordModal onClose={modal.hide} open={this.props.modalOpen} { ...this.props.modal.props }>{this.props.modal.children}</DiscordModal> */}
       <ToastContainer position='top-center' />
-      {/* {this.state.leftMenuNotFull
+      {sizeInfo.leftMenuNotFull
         ? null
-        : <TopBar toggleLeftMenu={() => this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })} socketStatus={this.state.socketStatus} />
-      } */}
-      {/* <MainContainer offsetTop={!this.state.leftMenuNotFull}>
-        <LeftMenu disableMenuButtonToggle={this.state.leftMenuNotFull} toggleLeftMenu={() => { */}
-      <MainContainer offsetTop={false}>
-        <LeftMenu disableMenuButtonToggle={true} toggleLeftMenu={() => {
-          // this.setState({ leftMenuExpanded: !this.state.leftMenuExpanded })
-        }} expanded={true} />
+        : <TopBar toggleLeftMenu={() => {
+          setSizeInfo({
+            ...sizeInfo,
+            leftMenuExpanded: !sizeInfo.leftMenuExpanded
+          })
+          }} />
+      }
+      <MainContainer offsetTop={!sizeInfo.leftMenuNotFull}>
+        <LeftMenu disableMenuButtonToggle={sizeInfo.leftMenuNotFull} toggleLeftMenu={() => {
+          setSizeInfo({
+            ...sizeInfo,
+            leftMenuExpanded: !sizeInfo.leftMenuExpanded
+          })
+        }} expanded={sizeInfo.leftMenuExpanded} />
         <ContentBody />
       </MainContainer>
     </div>
@@ -409,5 +437,3 @@ function ControlPanel () {
 }
 
 export default ControlPanel
-
-// export default withRouter(connect(mapStateToProps, mapDispatchToProps)(ControlPanel))

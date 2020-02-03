@@ -364,7 +364,10 @@ function LeftMenu (props) {
     dispatch(setActiveFeed(feedID))
   }
 
-  function setPageDispatch (page) {
+  function menuButtonClick (page) {
+    if (!props.disableMenuButtonToggle) {
+      props.toggleLeftMenu()
+    }
     dispatch(changePage(page))
   }
 
@@ -415,20 +418,20 @@ function LeftMenu (props) {
         {/* <Button fluid content='Logout' basic color='red' onClick={this.logoutClick} /> */}
         <Divider />
         <MenuSectionHeader>Main</MenuSectionHeader>
-        <MenuButton to={pages.DASHBOARD} selected={page === pages.DASHBOARD} onClick={() => setPageDispatch(pages.DASHBOARD)}>Home</MenuButton>
+        <MenuButton to={pages.DASHBOARD} selected={page === pages.DASHBOARD} onClick={() => menuButtonClick(pages.DASHBOARD)}>Home</MenuButton>
         <Divider />
         <MenuSectionHeader>Server</MenuSectionHeader>
         <MyDropdown noResultsMessage='No servers found' search={!isMobile} placeholder={noServers ? 'No servers found' : 'Select a server'} options={serverDropdownOptions} disabled={noServers} value={guildId} selection onChange={(e, data) => setGuild(data.value)} />
-        <MenuButton to={pages.FEEDS} disabled={!guildId} selected={page === pages.FEEDS} onClick={() => setPageDispatch(pages.FEEDS)}>Feeds</MenuButton>
-        <MenuButton to={pages.SERVER_SETTINGS} disabled={!guildId} selected={page === pages.SERVER_SETTINGS} onClick={() => setPageDispatch(pages.SERVER_SETTINGS)}>Settings</MenuButton>
+        <MenuButton to={pages.FEEDS} disabled={!guildId} selected={page === pages.FEEDS} onClick={() => menuButtonClick(pages.FEEDS)}>Feeds</MenuButton>
+        <MenuButton to={pages.SERVER_SETTINGS} disabled={!guildId} selected={page === pages.SERVER_SETTINGS} onClick={() => menuButtonClick(pages.SERVER_SETTINGS)}>Settings</MenuButton>
         <Divider />
         <MenuSectionHeader>Feed</MenuSectionHeader>
         <MyDropdown error={!articlesFetching && !!articlesError} loading={articlesFetching} noResultsMessage='No feeds found' search={!isMobile} placeholder={articlesFetching && feed ? `Fetching articles for ${feed.title}...` : noServers ? 'No server found' : noFeeds ? 'No feeds found' : 'Select a feed'} options={feedDropdownOptions} disabled={noFeeds || articlesFetching} value={articlesFetching ? '' : feedId} selection onChange={(e, data) => setFeed(data.value)} />
-        <MenuButton to={pages.MESSAGE} disabled={!feedId} onClick={() => setPageDispatch(pages.MESSAGE)} selected={page === pages.MESSAGE}>Message</MenuButton>            
-        <MenuButton to={pages.FILTERS} disabled={!feedId} onClick={() => setPageDispatch(pages.FILTERS)} selected={page === pages.FILTERS}>Filters</MenuButton>
-        <MenuButton to={pages.SUBSCRIPTIONS} disabled={!feedId} onClick={() => setPageDispatch(pages.SUBSCRIPTIONS)} selected={page === pages.SUBSCRIPTIONS}>Subscriptions</MenuButton>
-        <MenuButton to={pages.MISC_OPTIONS} disabled={!feedId} onClick={() => setPageDispatch(pages.MISC_OPTIONS)} selected={page === pages.MISC_OPTIONS}>Misc Options</MenuButton>
-        <MenuButton to={pages.DEBUGGER} disabled={!feedId} onClick={() => setPageDispatch(pages.DEBUGGER)} selected={page === pages.DEBUGGER}>Debugger</MenuButton>
+        <MenuButton to={pages.MESSAGE} disabled={!feedId} onClick={() => menuButtonClick(pages.MESSAGE)} selected={page === pages.MESSAGE}>Message</MenuButton>            
+        <MenuButton to={pages.FILTERS} disabled={!feedId} onClick={() => menuButtonClick(pages.FILTERS)} selected={page === pages.FILTERS}>Filters</MenuButton>
+        <MenuButton to={pages.SUBSCRIPTIONS} disabled={!feedId} onClick={() => menuButtonClick(pages.SUBSCRIPTIONS)} selected={page === pages.SUBSCRIPTIONS}>Subscriptions</MenuButton>
+        <MenuButton to={pages.MISC_OPTIONS} disabled={!feedId} onClick={() => menuButtonClick(pages.MISC_OPTIONS)} selected={page === pages.MISC_OPTIONS}>Misc Options</MenuButton>
+        <MenuButton to={pages.DEBUGGER} disabled={!feedId} onClick={() => menuButtonClick(pages.DEBUGGER)} selected={page === pages.DEBUGGER}>Debugger</MenuButton>
 
         <Divider />
         
