@@ -6,6 +6,13 @@ import {
 import { fetchGuildChannels } from './channels'
 import { fetchGuildRoles } from './roles'
 import { fetchGuildFeeds } from './feeds'
+import FetchStatusActions from './utils/FetchStatusActions'
+
+export const {
+  begin: setGuildsBegin,
+  success: setGuildsSuccess,
+  failure: setGuildsFailure
+} = new FetchStatusActions(GET_GUILDS)
 
 export function fetchGuilds () {
   return async dispatch => {
@@ -16,26 +23,6 @@ export function fetchGuilds () {
     } catch (err) {
       dispatch(setGuildsFailure(err))
     }
-  }
-}
-
-export function setGuildsSuccess (guilds) {
-  return {
-    type: GET_GUILDS.SUCCESS,
-    payload: guilds
-  }
-}
-
-export function setGuildsBegin () {
-  return {
-    type: GET_GUILDS.BEGIN
-  }
-}
-
-export function setGuildsFailure (error) {
-  return {
-    type: GET_GUILDS.FAILURE,
-    payload: error
   }
 }
 

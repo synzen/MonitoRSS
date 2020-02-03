@@ -2,6 +2,13 @@ import axios from 'axios'
 import {
   GET_CHANNELS
 } from '../constants/actions/channels'
+import FetchStatusActions from './utils/FetchStatusActions'
+
+export const {
+  begin: setChannelsBegin,
+  success: setChannelsSuccess,
+  failure: setChannelsFailure
+} = new FetchStatusActions(GET_CHANNELS)
 
 export function fetchGuildChannels (guildID) {
   return async dispatch => {
@@ -12,25 +19,5 @@ export function fetchGuildChannels (guildID) {
     } catch (err) {
       dispatch(setChannelsFailure(err)) 
     }
-  }
-}
-
-export function setChannelsSuccess (channels) {
-  return {
-    type: GET_CHANNELS.SUCCESS,
-    payload: channels
-  }
-}
-
-export function setChannelsFailure (error) {
-  return {
-    type: GET_CHANNELS.FAILURE,
-    payload: error
-  }
-}
-
-export function setChannelsBegin () {
-  return {
-    type: GET_CHANNELS.BEGIN
   }
 }

@@ -4,6 +4,13 @@ import {
 } from '../constants/actions/user'
 import { fetchGuilds } from './guilds'
 import { fetchBotConfig } from './botConfig'
+import FetchStatusActions from './utils/FetchStatusActions'
+
+export const {
+  begin: setUserBegin,
+  success: setUserSuccess,
+  failure: setUserFailure
+} = new FetchStatusActions(SET_USER)
 
 export function fetchUser () {
   return dispatch => {
@@ -16,25 +23,5 @@ export function fetchUser () {
       console.log(err)
       dispatch(setUserFailure(err))
     })
-  }
-}
-
-export function setUserSuccess (user) {
-  return {
-    type: SET_USER.SUCCESS,
-    payload: user
-  }
-}
-
-export function setUserBegin () {
-  return {
-    type: SET_USER.BEGIN
-  }
-}
-
-export function setUserFailure (error) {
-  return {
-    type: SET_USER.FAILURE,
-    payload: error
   }
 }

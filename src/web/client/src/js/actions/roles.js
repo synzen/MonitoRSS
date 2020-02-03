@@ -2,6 +2,13 @@ import axios from 'axios'
 import {
   GET_ROLES
 } from '../constants/actions/roles'
+import FetchStatusActions from './utils/FetchStatusActions'
+
+export const {
+  begin: setRolesBegin,
+  success: setRolesSuccess,
+  failure: setRolesFailure
+} = new FetchStatusActions(GET_ROLES)
 
 export function fetchGuildRoles (guildID) {
   return async dispatch => {
@@ -12,25 +19,5 @@ export function fetchGuildRoles (guildID) {
     } catch (err) {
       dispatch(setRolesFailure(err))
     }
-  }
-}
-
-export function setRolesSuccess (roles) {
-  return {
-    type: GET_ROLES.SUCCESS,
-    payload: roles
-  }
-}
-
-export function setRolesFailure (error) {
-  return {
-    type: GET_ROLES.FAILURE,
-    payload: error
-  }
-}
-
-export function setRolesBegin () {
-  return {
-    type: GET_ROLES.BEGIN
   }
 }

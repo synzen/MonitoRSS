@@ -6,6 +6,31 @@ import {
   DELETE_FEED,
   EDIT_FEED
 } from '../constants/actions/feeds'
+import FetchStatusActions from './utils/FetchStatusActions'
+
+export const {
+  begin: setFeedsBegin,
+  success: setFeedsSuccess,
+  failure: setFeedsFailure
+} = new FetchStatusActions(GET_FEEDS)
+
+export const {
+  begin: deleteFeedBegin,
+  success: deleteFeedSuccess,
+  failure: deleteFeedFailure
+} = new FetchStatusActions(DELETE_FEED)
+
+export const {
+  begin: editFeedBegin,
+  success: editFeedSuccess,
+  failure: editFeedFailure
+} = new FetchStatusActions(EDIT_FEED)
+
+export const {
+  begin: setArticlesBegin,
+  success: setArticlesSuccess,
+  failure: setArticlesFailure
+} = new FetchStatusActions(GET_ARTICLES)
 
 export function fetchGuildFeeds (guildID) {
   return async dispatch => {
@@ -28,26 +53,6 @@ export function fetchGuildFeedArticles (guildID, feedID) {
     } catch (err) {
       dispatch(setArticlesFailure(err))
     }
-  }
-}
-
-export function setFeedsSuccess (feeds) {
-  return {
-    type: GET_FEEDS.SUCCESS,
-    payload: feeds
-  }
-}
-
-export function setFeedsFailure (error) {
-  return {
-    type: GET_FEEDS.FAILURE,
-    payload: error
-  }
-}
-
-export function setFeedsBegin () {
-  return {
-    type: GET_FEEDS.BEGIN
   }
 }
 
@@ -75,26 +80,6 @@ export function fetchDeleteFeed (guildID, feedID) {
   }
 }
 
-export function deleteFeedBegin () {
-  return {
-    type: DELETE_FEED.BEGIN
-  }
-}
-
-export function deleteFeedSuccess (feedID) {
-  return {
-    type: DELETE_FEED.SUCCESS,
-    payload: feedID
-  }
-}
-
-export function deleteFeedFailure (error) {
-  return {
-    type: DELETE_FEED.FAILURE,
-    payload: error
-  }
-}
-
 export function fetchEditFeed (guildID, feedID, data) {
   return async dispatch => {
     try {
@@ -104,45 +89,5 @@ export function fetchEditFeed (guildID, feedID, data) {
     } catch (err) {
       dispatch(editFeedFailure(err))
     }
-  }
-}
-
-export function editFeedBegin () {
-  return {
-    type: EDIT_FEED.BEGIN
-  }
-}
-
-export function editFeedSuccess (updatedFeed) {
-  return {
-    type: EDIT_FEED.SUCCESS,
-    payload: updatedFeed
-  }
-}
-
-export function editFeedFailure (error) {
-  return {
-    type: EDIT_FEED.FAILURE,
-    payload: error
-  }
-}
-
-export function setArticlesSuccess (articles) {
-  return {
-    type: GET_ARTICLES.SUCCESS,
-    payload: articles
-  }
-}
-
-export function setArticlesFailure (error) {
-  return {
-    type: GET_ARTICLES.FAILURE,
-    payload: error
-  }
-}
-
-export function setArticlesBegin () {
-  return {
-    type: GET_ARTICLES.BEGIN
   }
 }
