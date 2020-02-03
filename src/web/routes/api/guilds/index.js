@@ -19,5 +19,6 @@ guildsAPI.patch('/:guildID', validator.body(profileSchema), controllers.api.guil
 guildsAPI.use('/:guildID/feeds', require('./feeds/index.js'))
 guildsAPI.use('/:guildID/channels', require('./channels/index.js'))
 guildsAPI.use('/:guildID/roles', require('./roles/index.js'))
+guildsAPI.use('/:guildID/failrecords', require('./failrecords/index.js'))
 
 module.exports = guildsAPI
