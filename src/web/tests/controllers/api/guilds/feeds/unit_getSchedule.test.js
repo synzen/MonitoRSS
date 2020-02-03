@@ -1,11 +1,11 @@
-const getSchedule = require('../../../../../../controllers/api/guilds/feeds/schedules/getSchedule.js')
+const getSchedule = require('../../../../../controllers/api/guilds/feeds/getSchedule.js')
 const {
   createResponse,
   createNext
-} = require('../../../../../mocks/express.js')
+} = require('../../../../mocks/express.js')
 
 
-describe('Unit::controllers/api/guilds/feeds/schedules/getSchedule', function () {
+describe('Unit::controllers/api/guilds/feeds/getSchedule', function () {
   it('returns the determined schedule', async function () {
     const determinedSchedule = 'w234et6yr5ahutj'
     const req = {

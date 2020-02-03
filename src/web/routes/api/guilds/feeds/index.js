@@ -44,10 +44,10 @@ guildFeedsAPI.get('/:feedID/placeholders', controllers.api.guilds.feeds.getFeedP
 // Get database articles for debugging
 guildFeedsAPI.get('/:feedID/database', controllers.api.guilds.feeds.getDatabaseArticles)
 
+// Get schedule
+guildFeedsAPI.get('/:feedID/schedule', controllers.api.guilds.feeds.getSchedule)
+
 // Handle subscribers
 guildFeedsAPI.get(`/:feedID/subscribers`, require('./subscribers/index.js'))
-
-// Handle schedules
-guildFeedsAPI.get('/:feedID/schedules', require('./schedules/index.js'))
 
 module.exports = guildFeedsAPI
