@@ -2,7 +2,8 @@ import axios from 'axios'
 import {
   GET_FEEDS,
   GET_ARTICLES,
-  SET_ACTIVE_FEED
+  SET_ACTIVE_FEED,
+  DELETE_FEED
 } from '../constants/actions/feeds'
 
 export function fetchGuildFeeds (guildID) {
@@ -57,6 +58,37 @@ export function setActiveFeed (feedID) {
       payload: feedID
     })
     dispatch(fetchGuildFeedArticles(guildID, feedID))
+  }
+}
+
+export function fetchDeleteFeed (guildID, feedID) {
+  return dispatch => {
+    dispatch(deleteFeedBegin())
+    axios.delete(`/api/guilds/${guildID}/feeds/${feedID}`).then(({ data }) => {
+      dispatch(deleteFeedSuccess(feedID))
+    }).catch(err => {
+      dispatch(deleteFeedFailure(err))
+    })
+  }
+}
+
+export function deleteFeedBegin () {
+  return {
+    type: DELETE_FEED.BEGIN
+  }
+}
+
+export function deleteFeedSuccess (feedID) {
+  return {
+    type: DELETE_FEED.SUCCESS,
+    payload: feedID
+  }
+}
+
+export function deleteFeedFailure (error) {
+  return {
+    type: DELETE_FEED.FAILURE,
+    payload: error
   }
 }
 
