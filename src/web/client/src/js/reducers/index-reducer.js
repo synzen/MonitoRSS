@@ -11,6 +11,7 @@ import activeFeedIDReducer from './activeFeedID'
 import articlesReducer from './articles'
 import pageReducer from './page'
 import modalReducer from './modal'
+import botConfigReducer from './botConfig'
 
 const rootReducer = combineReducers({
   page: pageReducer,
@@ -24,7 +25,8 @@ const rootReducer = combineReducers({
   feeds: feedsReducer,
   loading: loadingReducer,
   errors: errorsReducer,
-  modal: modalReducer
+  modal: modalReducer,
+  botConfig: botConfigReducer
 })
 
 // const initialState = {
