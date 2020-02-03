@@ -4,14 +4,14 @@ import {
 } from '../constants/actions/channels'
 
 export function fetchGuildChannels (guildID) {
-  return dispatch => {
-    dispatch(setChannelsBegin())
-    axios.get(`/api/guilds/${guildID}/channels`).then(({ data }) => {
+  return async dispatch => {
+    try {
+      dispatch(setChannelsBegin())
+      const { data } = await axios.get(`/api/guilds/${guildID}/channels`)
       dispatch(setChannelsSuccess(data))
-    }).catch(err => {
-      console.log(err)
-      dispatch(setChannelsFailure(err))
-    })
+    } catch (err) {
+      dispatch(setChannelsFailure(err)) 
+    }
   }
 }
 

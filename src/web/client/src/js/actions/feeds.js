@@ -8,25 +8,26 @@ import {
 } from '../constants/actions/feeds'
 
 export function fetchGuildFeeds (guildID) {
-  return dispatch => {
-    dispatch(setFeedsBegin())
-    axios.get(`/api/guilds/${guildID}/feeds`).then(({ data }) => {
+  return async dispatch => {
+    try {
+      dispatch(setFeedsBegin())
+      const { data } = await axios.get(`/api/guilds/${guildID}/feeds`)
       dispatch(setFeedsSuccess(data))
-    }).catch(err => {
-      console.log(err)
+    } catch (err) {
       dispatch(setFeedsFailure(err))
-    })
+    }
   }
 }
 
 export function fetchGuildFeedArticles (guildID, feedID) {
-  return dispatch => {
-    dispatch(setArticlesBegin())
-    axios.get(`/api/guilds/${guildID}/feeds/${feedID}/placeholders`).then(({ data }) => {
+  return async dispatch => {
+    try {
+      dispatch(setArticlesBegin())
+      const { data } = await axios.get(`/api/guilds/${guildID}/feeds/${feedID}/placeholders`)
       dispatch(setArticlesSuccess(data))
-    }).catch(err => {
+    } catch (err) {
       dispatch(setArticlesFailure(err))
-    })
+    }
   }
 }
 
@@ -58,18 +59,19 @@ export function setActiveFeed (feedID) {
       type: SET_ACTIVE_FEED,
       payload: feedID
     })
-    dispatch(fetchGuildFeedArticles(guildID, feedID))
+    return dispatch(fetchGuildFeedArticles(guildID, feedID))
   }
 }
 
 export function fetchDeleteFeed (guildID, feedID) {
-  return dispatch => {
-    dispatch(deleteFeedBegin())
-    axios.delete(`/api/guilds/${guildID}/feeds/${feedID}`).then(({ data }) => {
+  return async dispatch => {
+    try {
+      dispatch(deleteFeedBegin())
+      await axios.delete(`/api/guilds/${guildID}/feeds/${feedID}`)
       dispatch(deleteFeedSuccess(feedID))
-    }).catch(err => {
+    } catch (err) {
       dispatch(deleteFeedFailure(err))
-    })
+    }
   }
 }
 
@@ -94,13 +96,14 @@ export function deleteFeedFailure (error) {
 }
 
 export function fetchEditFeed (guildID, feedID, data) {
-  return dispatch => {
-    dispatch(editFeedBegin())
-    axios.patch(`/api/guilds/${guildID}/feeds/${feedID}`, data).then(({ data }) => {
-      dispatch(editFeedSuccess(data))
-    }).catch(err => {
+  return async dispatch => {
+    try {
+      dispatch(editFeedBegin())
+      const { data } = await axios.patch(`/api/guilds/${guildID}/feeds/${feedID}`, data)
+      dispatch(editFeedSuccess(data))        
+    } catch (err) {
       dispatch(editFeedFailure(err))
-    })
+    }
   }
 }
 

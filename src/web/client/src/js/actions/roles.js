@@ -4,14 +4,14 @@ import {
 } from '../constants/actions/roles'
 
 export function fetchGuildRoles (guildID) {
-  return dispatch => {
-    dispatch(setRolesBegin())
-    axios.get(`/api/guilds/${guildID}/roles`).then(({ data }) => {
+  return async dispatch => {
+    try {
+      dispatch(setRolesBegin())
+      const { data } = await axios.get(`/api/guilds/${guildID}/roles`)
       dispatch(setRolesSuccess(data))
-    }).catch(err => {
-      console.log(err)
+    } catch (err) {
       dispatch(setRolesFailure(err))
-    })
+    }
   }
 }
 

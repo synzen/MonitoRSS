@@ -8,13 +8,14 @@ import { fetchGuildRoles } from './roles'
 import { fetchGuildFeeds } from './feeds'
 
 export function fetchGuilds () {
-  return dispatch => {
-    dispatch(setGuildsBegin())
-    axios.get(`/api/users/@me/guilds`).then(({ data }) => {
+  return async dispatch => {
+    try {
+      dispatch(setGuildsBegin())
+      const { data } = await axios.get(`/api/users/@me/guilds`)
       dispatch(setGuildsSuccess(data))
-    }).catch(err => {
+    } catch (err) {
       dispatch(setGuildsFailure(err))
-    })
+    }
   }
 }
 
@@ -39,13 +40,13 @@ export function setGuildsFailure (error) {
 }
 
 export function setActiveGuild (guildID) {
-  return dispatch => {
+  return async dispatch => {
     dispatch({
       type: SET_ACTIVE_GUILD,
       payload: guildID
     })
-    dispatch(fetchGuildChannels(guildID))
-    dispatch(fetchGuildRoles(guildID))
-    dispatch(fetchGuildFeeds(guildID))
+    await dispatch(fetchGuildChannels(guildID))
+    await dispatch(fetchGuildRoles(guildID))
+    await dispatch(fetchGuildFeeds(guildID))
   }
 }
