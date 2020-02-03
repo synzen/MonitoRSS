@@ -95,4 +95,24 @@ describe('Unit::controllers/api/guilds/getFailRecords', function () {
     await getFailRecords(req, res, next)
     expect(next).toHaveBeenCalledWith(error)
   })
+  it('filters out null records', async function () {
+    const req = {
+      params: {}
+    }
+    feedServices.getFeedsOfGuild.mockResolvedValue([{
+      url: 'a'
+    }, {
+      url: 'b'
+    }])
+    feedServices.getFailRecord
+      .mockResolvedValueOnce(1)
+      .mockResolvedValueOnce(null)
+    const res = createResponse()
+    const next = createNext()
+    await getFailRecords(req, res, next)
+    expect(next).not.toHaveBeenCalled()
+    expect(res.json.mock.calls[0][0]).toHaveLength(1)
+    expect(res.json.mock.calls[0][0]).not.toContain(null)
+    expect(res.json).toHaveBeenCalledWith([1])
+  })
 })

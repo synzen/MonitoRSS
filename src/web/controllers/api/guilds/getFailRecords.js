@@ -13,8 +13,9 @@ async function getFailRecords (req, res, next) {
     for (const feed of feeds) {
       urls.add(feed.url)
     }
-    const records = Array.from(urls).map(url => feedServices.getFailRecord(url))
-    res.json(await Promise.all(records))
+    const promises = Array.from(urls).map(url => feedServices.getFailRecord(url))
+    const records = await Promise.all(promises)
+    res.json(records.filter(r => r))
   } catch (err) {
     next(err)
   }
