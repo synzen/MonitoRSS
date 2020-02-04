@@ -1,4 +1,4 @@
-import { GET_ARTICLES } from "js/constants/actions/feeds"
+import { GET_ARTICLES, DELETE_FEED, EDIT_FEED } from "js/constants/actions/feeds"
 
 export function getActiveFeed (state) {
   const feeds = state.feeds
@@ -15,4 +15,12 @@ export function articlesFetching (state) {
 
 export function articlesFetchErrored (state) {
   return state.errors[GET_ARTICLES.FAILURE]
+}
+
+export function feedRemoving (state) {
+  return state.loading[DELETE_FEED.BEGIN]
+}
+
+export function feedEditing (state) {
+  return state.loading[EDIT_FEED.BEGIN]
 }

@@ -1,6 +1,6 @@
-import React, { Component } from 'react'
+import React, { Component, useState, useRef } from 'react'
 import { withRouter } from 'react-router-dom'
-import { connect } from 'react-redux'
+import { connect, useSelector } from 'react-redux'
 import { changePage, setActiveFeed } from 'js/actions/index-actions'
 import pages from 'js/constants/pages'
 import PageHeader from 'js/components/utils/PageHeader'
@@ -18,28 +18,6 @@ import axios from 'axios'
 import colors from 'js/constants/colors'
 import SectionSubtitle from 'js/components/utils/SectionSubtitle'
 import moment from 'moment-timezone'
-
-const mapStateToProps = state => {
-  return {
-    feeds: state.feeds,
-    channels: state.channels,
-    guildId: state.guildId,
-    feedId: state.feedId,
-    guildLimits: state.guildLimits,
-    linkStatuses: state.linkStatuses,
-    guild: state.guild,
-    defaultConfig: state.defaultConfig,
-    feedRefreshRates: state.feedRefreshRates,
-    csrfToken: state.csrfToken
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    setToThisPage: () => dispatch(changePage(pages.FEEDS)),
-    setActiveFeed: feedId => dispatch(setActiveFeed(feedId))
-  }
-}
 
 const MainContent = styled.div`
   padding: 20px;
@@ -107,251 +85,336 @@ const ChannelDropdown = styled(Dropdown)`
   }
 `
 
-class Feeds extends Component {
-  constructor () {
-    super()
-    this.state = {
-      selectedFeedId: '',
-      redirect: '',
-      title: '',
-      channel: '',
-      editingChannel: false,
-      editingTitle: false,
-      ignoreModal: window.innerWidth >= 1475
+// class Feeds extends Component {
+//   constructor () {
+//     super()
+//     this.state = {
+//       selectedFeedId: '',
+//       redirect: '',
+//       title: '',
+//       channel: '',
+//       editingChannel: false,
+//       editingTitle: false,
+//       ignoreModal: window.innerWidth >= 1475
+//     }
+//     this.bodyRef = React.createRef()
+//   }
+
+//   componentWillMount () {
+//     this.props.setToThisPage()
+//     window.addEventListener('resize', this.resizeListener)
+//     this.setState({ selectedFeedId: this.props.feedId })
+//   }
+
+//   componentWillUnmount () {
+//     window.removeEventListener('resize', this.resizeListener)
+//   }
+
+//   componentDidUpdate(prevProps) {
+//     if (prevProps.feedId !== this.props.feedId) this.setState({ selectedFeedId: this.props.feedId })
+//   }
+
+//   resizeListener = () => {
+//     const { ignoreModal } = this.state
+//     if (ignoreModal && window.innerWidth < 1475) this.setState({ ignoreModal: false })
+//     else if (!ignoreModal && window.innerWidth >= 1475) this.setState({ ignoreModal: true })
+//   }
+
+//   modalClose = justMadeChanges => {
+//     this.setState({ title: '', channel: '', editingChannel: false, editingTitle: false, removing: justMadeChanges ? false : this.state.removing, saving: justMadeChanges ? false : this.state.saving })
+//     modal.hide()
+//   }
+
+//   modalConfirmEdits = feedId => {
+//     const title = this.state.title.trim()
+//     const channel = this.state.channel.trim()
+//     const { csrfToken, guildId, feeds } = this.props
+//     const feed = feeds[guildId][feedId] || {}
+//     if ((title === feed.title && !this.state.channel) || (channel === feed.channel && !title) || (title === feed.title && channel === feed.channel) || (!title && !channel)) return this.modalClose()
+//     this.setState({ saving: true, title, channel })
+//     const toSend = {}
+//     if (channel) toSend.channel = channel
+//     if (title) toSend.title = title
+//     if (Object.keys(toSend).length === 0) return this.modalClose()
+//     axios.patch(`/api/guilds/${guildId}/feeds/${feedId}`, toSend, { headers: { 'CSRF-Token': csrfToken } }).then(() => {
+//       this.modalClose(true)
+//       toast.success(`Changes saved. Yay!`)
+//     }).catch(err => {
+//       console.log(err.response || err)
+//       const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
+//       this.setState({ saving: false })
+//       toast.error(<p>Failed to save<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
+//     })
+//   }
+
+//   modalRemoveFeed = feedId => {
+//     this.setState({ removing: true })
+//     axios.delete(`/api/guilds/${this.props.guildId}/feeds/${feedId}`, { headers: { 'CSRF-Token': this.props.csrfToken } }).then(() => {
+//       this.modalClose(true)
+//       toast.success(`Removed feed!`)
+//     }).catch(err => {
+//       console.log(err.response || err)
+//       const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
+//       this.setState({ saving: false })
+//       toast.error(<p>Failed to remove feed<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
+//     })
+//   }
+
+//   setActive = feedId => {
+//     const { setActiveFeed, selectedFeedId } = this.props
+//     setActiveFeed(feedId || selectedFeedId)
+//     this.modalClose()
+//   }
+
+//   onClickFeedRow = feed => {
+//     if (this.state.ignoreModal) return this.state.selectedFeedId === feed.rssName ? this.setState({ selectedFeedId : '' }) : this.setState({ selectedFeedId: feed.rssName })
+//     this.setState({ selectedFeedId: feed.rssName })
+//     const { defaultConfig, channels, guildId, guild, linkStatuses, feedRefreshRates } = this.props
+//     const cancelCondition = (this.state.title === feed.title && !this.state.channel) || (this.state.channel === feed.channel && !this.state.title) || (this.state.title === feed.title && this.state.channel === feed.channel) || (!this.state.title && !this.state.channel)
+//     const dateTimezone = guild.timezone || defaultConfig.timezone
+//     const dateFormat = guild.dateFormat || defaultConfig.dateFormat
+//     const dateLanguage = guild.dateLanguage || defaultConfig.dateLanguage
+//     const guildChannels = channels[guildId]
+//     const dropdownOptions = []
+//     if (guildChannels) {
+//       for (const channelId in guildChannels) {
+//         const channel = guildChannels[channelId]
+//         dropdownOptions.push({ text: `#${channel.name}`, value: channelId })
+//       }
+//     }
+
+//     const channelDropdownValue = feed.channel && channels[guildId][feed.channel] ? feed.channel : null // The feed channel may be deleted
+//     const refreshRate = feedRefreshRates[feed.rssName]
+//     const props = {
+//       title: feed.title,
+//       subtitle: feed.link,
+//       footer: (
+//         <FeedButtonsContainer>
+//           <Button color='red' content='Delete' onClick={e => this.modalRemoveFeed(feed.rssName)} disabled={this.state.saving || this.state.removing} />
+//           <div>
+//             <Button content='Set Active' onClick={e => this.setActive(feed.rssName)} />
+//             <Button disabled={this.state.saving} content={cancelCondition ? 'Close' : this.state.saving ? 'Saving...' : 'Save Changes'} onClick={e => this.modalConfirmEdits(feed.rssName)} />
+//           </div>
+//         </FeedButtonsContainer>
+//       )
+//     }
+//     const children = (
+//       <div>
+//         <ViewFeedContainerWithEdit>
+//           <SectionSubtitle>Status</SectionSubtitle>
+//           { Object.keys(feed).length === 0
+//               ? ''
+//               : feed.disabled
+//                 ? <span style={{ color: colors.discord.yellow }}>Disabled ({feed.disabled})</span>
+//                 :  typeof linkStatuses[feed.link] === 'string'
+//                   ? <span style={{ color: colors.discord.red }}>Failed ({moment(linkStatuses[feed.link]).format('DD MMMM Y')})</span>
+//                   : <div><span style={{ color: colors.discord.green }}>Normal</span>{defaultConfig.failLimit > 0 ? ` ${linkStatuses[feed.link] === undefined ? '100' : ((defaultConfig.failLimit - linkStatuses[feed.link]) / defaultConfig.failLimit * 100).toFixed(0)}% health` : ''}</div>
+//           }
+//           <Divider />
+//           <SectionSubtitle>Refresh Rate</SectionSubtitle>
+//           { !feed ? '\u200b' : feed.disabled || typeof linkStatuses[feed.link] === 'string' ? 'None ' : !refreshRate ? 'To be determined ' : refreshRate < 1 ? `${refreshRate * 60} seconds      ` : `${refreshRate} minutes      `}<a rel='noopener noreferrer' href='https://www.patreon.com/discordrss' target='_blank'>－</a>
+//           <Divider />
+//           <SectionSubtitle>Added On</SectionSubtitle>
+//           { !feed ? '\u200b' : !feed.addedOn ? 'Unknown' : moment(feed.addedOn).locale(dateLanguage).tz(dateTimezone).format(dateFormat)}
+//           <Divider />
+//           <SectionSubtitle>Channel</SectionSubtitle>
+//           <div>
+//             { this.state.editingChannel
+//             ? <ChannelDropdown value={this.state.channel || channelDropdownValue} disabled={this.state.saving || this.state.removing} search options={dropdownOptions} selection fluid onChange={(e, data) => this.setState({ channel: data.value }, () => this.onClickFeedRow(feed))} />
+//             : <p>{channels[guildId] && channels[guildId][feed.channel] ? `#${channels[guildId][feed.channel].name}` : feed.channelName ? `#${feed.channelName}` : feed.channel}</p>
+//             }
+//             <Button content={this.state.editingChannel ? 'Cancel' : 'Edit'} onClick={e => this.setState(this.state.editingChannel ? {editingChannel: false, channel: '' } : {editingChannel: true, channel: '' }, () => this.onClickFeedRow(feed))}/>
+//           </div>
+//         </ViewFeedContainerWithEdit>
+//         <Divider />
+//         <ViewFeedContainerWithEdit>
+//           <SectionSubtitle>Title</SectionSubtitle>
+//           <div>
+//             { this.state.editingTitle 
+//               ? <Input disabled={this.state.saving || this.state.removing} placeholder={feed.title} fluid onChange={e => this.setState({ title: e.target.value }, () => this.onClickFeedRow(feed))} value={this.state.title || feed.title} />
+//               : <p>{feed.title}</p>
+//             }
+//             <Button content={this.state.editingTitle ? 'Cancel' : 'Edit'} onClick={e => this.setState(this.state.editingTitle ? { editingTitle: false, title: '' } : { editingTitle: true, title: '' }, () => this.onClickFeedRow(feed))}/>
+//           </div>
+//         </ViewFeedContainerWithEdit>
+//         <Divider />
+//       </div>
+//     )
+
+//     modal.show(props, children)
+//     this.setState({ selectedFeedId: feed.rssName })
+//   }
+
+//   render () {
+//     const { feeds, channels, guildId, redirect, linkStatuses, guildLimits } = this.props
+//     const guildFeeds = feeds[guildId]
+//     const guildChannels = channels[guildId]
+//     const tableItems = []
+//     for (const rssName in guildFeeds) {
+//       const feed = guildFeeds[rssName]
+//       tableItems.push(feed)
+//     }
+
+//     const channelDropdownOptions = []
+//     for (const id in guildChannels) {
+//       channelDropdownOptions.push({ text: '#' + guildChannels[id].name, value: id })
+//     }
+
+//     return (
+//       <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+//         <Scrollbars>
+//           <MainContent ref={ref => this.bodyRef}>
+//             <PageHeader heading='Feed Management' subheading='Manage and edit your feeds.' />
+//             <Divider />
+//             <SectionTitle heading='Current' subheading='View and your current feeds.' sideComponent={
+//               <FeedLimitContainer>
+//                 <Popup content={<span>Need more? <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} position='left center' hideOnScroll hoverable inverted trigger={<span>{tableItems.length}/{guildLimits[guildId] === 0 ? '∞' : guildLimits[guildId]}</span>} />
+//                 <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'><Icon color='green' name='arrow circle up' /></a>
+//               </FeedLimitContainer>
+//             } />
+//             <PaginatedTable.Table
+//               basic
+//               unstackable
+//               items={tableItems}
+//               compact={tableItems.length > 5}
+//               maxPerPage={tableItems.length > 5 ? 10 : 5}
+//               headers={['Status', 'Title', 'Link', 'Channel']}
+//               itemFunc={feed => {
+//                 return (
+//                   <PaginatedTable.Row active={feed.rssName === this.state.selectedFeedId} style={{ cursor: 'pointer' }} key={feed.rssName}onClick={e => this.onClickFeedRow(feed)}>
+//                     {/* <PaginatedTable.Cell collapsing>
+//                       <CheckboxWrapper>
+//                         <Checkbox />
+//                       </CheckboxWrapper>
+//                     </PaginatedTable.Cell> */}
+//                     <PaginatedTable.Cell collapsing>
+//                       { feed.disabled
+//                         ? <Icon name='warning circle' style={{ fontSize: '18px' }} color='yellow' />
+//                         : typeof linkStatuses[feed.link] === 'string'
+//                           ? <Icon name='dont' style={{ fontSize: '18px' }} color='red' />
+//                           : <Icon name='check circle' style={{ fontSize: '18px' }} color='green' />
+//                       }
+//                     </PaginatedTable.Cell>
+//                     <PaginatedTable.Cell>{feed.title}</PaginatedTable.Cell>
+//                     <PaginatedTable.Cell>{feed.link}</PaginatedTable.Cell>
+//                     <PaginatedTable.Cell>{channels[guildId] && channels[guildId][feed.channel] ? `#${channels[guildId][feed.channel].name}` : `Unknown (${feed.channel})`}</PaginatedTable.Cell>
+//                   </PaginatedTable.Row>
+//                 )
+//               }}
+//               searchFunc={(feed, search) => {
+//                 for (const key in feed) {
+//                   if (typeof feed[key] === 'string' && feed[key].includes(search)) return true
+//                 }
+//                 return false
+//               }} />
+//             <Divider />
+//             <SectionTitle heading='Add' subheading={<span>{`Add a new feed. You may have a maximum of ${guildLimits[guildId] === 0 ? '∞' : guildLimits[guildId]} feeds. Need more? `}<a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} />
+//             <AddFeed channelDropdownOptions={channelDropdownOptions} />
+//             <Divider />
+//           </MainContent>
+//         </Scrollbars>
+//         <SideBarContainer>
+//           <SideBar selectedFeedId={this.state.selectedFeedId} channelDropdownOptions={channelDropdownOptions} onDeletedFeed={() => this.setState({ selectedFeedId: '' })} redirect={redirect} />
+//         </SideBarContainer>
+//       </div>
+//     )
+//   }
+// }
+
+function Feeds (props) {
+  // TODO: Modal must be replaced!
+  const [selectedFeedID, setSelectedFeedID] = useState()
+  const feeds = useSelector(state => state.feeds)
+  const channels = useSelector(state => state.channels)
+  const selectedGuild = useSelector(state => state.guilds.find(g => g.id === state.activeGuildID))
+  const selectedFeed = useSelector(state => state.feeds.find(f => f._id === selectedFeedID))
+  const failRecords = useSelector(state => state.failRecords)
+  const bodyRef = useRef()
+  const { redirect } = props
+  const tableItems = []
+  for (const feed of feeds) {
+    tableItems.push(feed)
+  }
+
+  const channelDropdownOptions = []
+  for (const channel of channels) {
+    channelDropdownOptions.push({ text: '#' + channel.name, value: channel.id })
+  }
+
+  const onClickFeedRow = feed => {
+    // if (this.state.ignoreModal) {
+    if (selectedFeedID === feed._id) {
+      return setSelectedFeedID('')
+    } else {
+      return setSelectedFeedID(feed._id)
     }
-    this.bodyRef = React.createRef()
+    // }
+    // setSelectedFeedID(feed._id)
   }
 
-  componentWillMount () {
-    this.props.setToThisPage()
-    window.addEventListener('resize', this.resizeListener)
-    this.setState({ selectedFeedId: this.props.feedId })
-  }
-
-  componentWillUnmount () {
-    window.removeEventListener('resize', this.resizeListener)
-  }
-
-  componentDidUpdate(prevProps) {
-    if (prevProps.feedId !== this.props.feedId) this.setState({ selectedFeedId: this.props.feedId })
-  }
-
-  resizeListener = () => {
-    const { ignoreModal } = this.state
-    if (ignoreModal && window.innerWidth < 1475) this.setState({ ignoreModal: false })
-    else if (!ignoreModal && window.innerWidth >= 1475) this.setState({ ignoreModal: true })
-  }
-
-  modalClose = justMadeChanges => {
-    this.setState({ title: '', channel: '', editingChannel: false, editingTitle: false, removing: justMadeChanges ? false : this.state.removing, saving: justMadeChanges ? false : this.state.saving })
-    modal.hide()
-  }
-
-  modalConfirmEdits = feedId => {
-    const title = this.state.title.trim()
-    const channel = this.state.channel.trim()
-    const { csrfToken, guildId, feeds } = this.props
-    const feed = feeds[guildId][feedId] || {}
-    if ((title === feed.title && !this.state.channel) || (channel === feed.channel && !title) || (title === feed.title && channel === feed.channel) || (!title && !channel)) return this.modalClose()
-    this.setState({ saving: true, title, channel })
-    const toSend = {}
-    if (channel) toSend.channel = channel
-    if (title) toSend.title = title
-    if (Object.keys(toSend).length === 0) return this.modalClose()
-    axios.patch(`/api/guilds/${guildId}/feeds/${feedId}`, toSend, { headers: { 'CSRF-Token': csrfToken } }).then(() => {
-      this.modalClose(true)
-      toast.success(`Changes saved. Yay!`)
-    }).catch(err => {
-      console.log(err.response || err)
-      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-      this.setState({ saving: false })
-      toast.error(<p>Failed to save<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
-    })
-  }
-
-  modalRemoveFeed = feedId => {
-    this.setState({ removing: true })
-    axios.delete(`/api/guilds/${this.props.guildId}/feeds/${feedId}`, { headers: { 'CSRF-Token': this.props.csrfToken } }).then(() => {
-      this.modalClose(true)
-      toast.success(`Removed feed!`)
-    }).catch(err => {
-      console.log(err.response || err)
-      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-      this.setState({ saving: false })
-      toast.error(<p>Failed to remove feed<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
-    })
-  }
-
-  setActive = feedId => {
-    const { setActiveFeed, selectedFeedId } = this.props
-    setActiveFeed(feedId || selectedFeedId)
-    this.modalClose()
-  }
-
-  onClickFeedRow = feed => {
-    if (this.state.ignoreModal) return this.state.selectedFeedId === feed.rssName ? this.setState({ selectedFeedId : '' }) : this.setState({ selectedFeedId: feed.rssName })
-    this.setState({ selectedFeedId: feed.rssName })
-    const { defaultConfig, channels, guildId, guild, linkStatuses, feedRefreshRates } = this.props
-    const cancelCondition = (this.state.title === feed.title && !this.state.channel) || (this.state.channel === feed.channel && !this.state.title) || (this.state.title === feed.title && this.state.channel === feed.channel) || (!this.state.title && !this.state.channel)
-    const dateTimezone = guild.timezone || defaultConfig.timezone
-    const dateFormat = guild.dateFormat || defaultConfig.dateFormat
-    const dateLanguage = guild.dateLanguage || defaultConfig.dateLanguage
-    const guildChannels = channels[guildId]
-    const dropdownOptions = []
-    if (guildChannels) {
-      for (const channelId in guildChannels) {
-        const channel = guildChannels[channelId]
-        dropdownOptions.push({ text: `#${channel.name}`, value: channelId })
-      }
-    }
-
-    const channelDropdownValue = feed.channel && channels[guildId][feed.channel] ? feed.channel : null // The feed channel may be deleted
-    const refreshRate = feedRefreshRates[feed.rssName]
-    const props = {
-      title: feed.title,
-      subtitle: feed.link,
-      footer: (
-        <FeedButtonsContainer>
-          <Button color='red' content='Delete' onClick={e => this.modalRemoveFeed(feed.rssName)} disabled={this.state.saving || this.state.removing} />
-          <div>
-            <Button content='Set Active' onClick={e => this.setActive(feed.rssName)} />
-            <Button disabled={this.state.saving} content={cancelCondition ? 'Close' : this.state.saving ? 'Saving...' : 'Save Changes'} onClick={e => this.modalConfirmEdits(feed.rssName)} />
-          </div>
-        </FeedButtonsContainer>
-      )
-    }
-    const children = (
-      <div>
-        <ViewFeedContainerWithEdit>
-          <SectionSubtitle>Status</SectionSubtitle>
-          { Object.keys(feed).length === 0
-              ? ''
-              : feed.disabled
-                ? <span style={{ color: colors.discord.yellow }}>Disabled ({feed.disabled})</span>
-                :  typeof linkStatuses[feed.link] === 'string'
-                  ? <span style={{ color: colors.discord.red }}>Failed ({moment(linkStatuses[feed.link]).format('DD MMMM Y')})</span>
-                  : <div><span style={{ color: colors.discord.green }}>Normal</span>{defaultConfig.failLimit > 0 ? ` ${linkStatuses[feed.link] === undefined ? '100' : ((defaultConfig.failLimit - linkStatuses[feed.link]) / defaultConfig.failLimit * 100).toFixed(0)}% health` : ''}</div>
-          }
+  return (
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      <Scrollbars>
+        <MainContent ref={bodyRef}>
+          <PageHeader heading='Feed Management' subheading='Manage and edit your feeds.' />
           <Divider />
-          <SectionSubtitle>Refresh Rate</SectionSubtitle>
-          { !feed ? '\u200b' : feed.disabled || typeof linkStatuses[feed.link] === 'string' ? 'None ' : !refreshRate ? 'To be determined ' : refreshRate < 1 ? `${refreshRate * 60} seconds      ` : `${refreshRate} minutes      `}<a rel='noopener noreferrer' href='https://www.patreon.com/discordrss' target='_blank'>－</a>
-          <Divider />
-          <SectionSubtitle>Added On</SectionSubtitle>
-          { !feed ? '\u200b' : !feed.addedOn ? 'Unknown' : moment(feed.addedOn).locale(dateLanguage).tz(dateTimezone).format(dateFormat)}
-          <Divider />
-          <SectionSubtitle>Channel</SectionSubtitle>
-          <div>
-            { this.state.editingChannel
-            ? <ChannelDropdown value={this.state.channel || channelDropdownValue} disabled={this.state.saving || this.state.removing} search options={dropdownOptions} selection fluid onChange={(e, data) => this.setState({ channel: data.value }, () => this.onClickFeedRow(feed))} />
-            : <p>{channels[guildId] && channels[guildId][feed.channel] ? `#${channels[guildId][feed.channel].name}` : feed.channelName ? `#${feed.channelName}` : feed.channel}</p>
-            }
-            <Button content={this.state.editingChannel ? 'Cancel' : 'Edit'} onClick={e => this.setState(this.state.editingChannel ? {editingChannel: false, channel: '' } : {editingChannel: true, channel: '' }, () => this.onClickFeedRow(feed))}/>
-          </div>
-        </ViewFeedContainerWithEdit>
-        <Divider />
-        <ViewFeedContainerWithEdit>
-          <SectionSubtitle>Title</SectionSubtitle>
-          <div>
-            { this.state.editingTitle 
-              ? <Input disabled={this.state.saving || this.state.removing} placeholder={feed.title} fluid onChange={e => this.setState({ title: e.target.value }, () => this.onClickFeedRow(feed))} value={this.state.title || feed.title} />
-              : <p>{feed.title}</p>
-            }
-            <Button content={this.state.editingTitle ? 'Cancel' : 'Edit'} onClick={e => this.setState(this.state.editingTitle ? { editingTitle: false, title: '' } : { editingTitle: true, title: '' }, () => this.onClickFeedRow(feed))}/>
-          </div>
-        </ViewFeedContainerWithEdit>
-        <Divider />
-      </div>
-    )
-
-    modal.show(props, children)
-    this.setState({ selectedFeedId: feed.rssName })
-  }
-
-  render () {
-    const { feeds, channels, guildId, redirect, linkStatuses, guildLimits } = this.props
-    const guildFeeds = feeds[guildId]
-    const guildChannels = channels[guildId]
-    const tableItems = []
-    for (const rssName in guildFeeds) {
-      const feed = guildFeeds[rssName]
-      tableItems.push(feed)
-    }
-
-    const channelDropdownOptions = []
-    for (const id in guildChannels) {
-      channelDropdownOptions.push({ text: '#' + guildChannels[id].name, value: id })
-    }
-
-    return (
-      <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-        <Scrollbars>
-          <MainContent ref={ref => this.bodyRef}>
-            <PageHeader heading='Feed Management' subheading='Manage and edit your feeds.' />
-            <Divider />
-            <SectionTitle heading='Current' subheading='View and your current feeds.' sideComponent={
-              <FeedLimitContainer>
-                <Popup content={<span>Need more? <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} position='left center' hideOnScroll hoverable inverted trigger={<span>{tableItems.length}/{guildLimits[guildId] === 0 ? '∞' : guildLimits[guildId]}</span>} />
-                <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'><Icon color='green' name='arrow circle up' /></a>
-              </FeedLimitContainer>
-            } />
-            <PaginatedTable.Table
-              basic
-              unstackable
-              items={tableItems}
-              compact={tableItems.length > 5}
-              maxPerPage={tableItems.length > 5 ? 10 : 5}
-              headers={['Status', 'Title', 'Link', 'Channel']}
-              itemFunc={feed => {
-                return (
-                  <PaginatedTable.Row active={feed.rssName === this.state.selectedFeedId} style={{ cursor: 'pointer' }} key={feed.rssName}onClick={e => this.onClickFeedRow(feed)}>
-                    {/* <PaginatedTable.Cell collapsing>
-                      <CheckboxWrapper>
-                        <Checkbox />
-                      </CheckboxWrapper>
-                    </PaginatedTable.Cell> */}
-                    <PaginatedTable.Cell collapsing>
-                      { feed.disabled
-                        ? <Icon name='warning circle' style={{ fontSize: '18px' }} color='yellow' />
-                        : typeof linkStatuses[feed.link] === 'string'
-                          ? <Icon name='dont' style={{ fontSize: '18px' }} color='red' />
-                          : <Icon name='check circle' style={{ fontSize: '18px' }} color='green' />
-                      }
-                    </PaginatedTable.Cell>
-                    <PaginatedTable.Cell>{feed.title}</PaginatedTable.Cell>
-                    <PaginatedTable.Cell>{feed.link}</PaginatedTable.Cell>
-                    <PaginatedTable.Cell>{channels[guildId] && channels[guildId][feed.channel] ? `#${channels[guildId][feed.channel].name}` : `Unknown (${feed.channel})`}</PaginatedTable.Cell>
-                  </PaginatedTable.Row>
-                )
-              }}
-              searchFunc={(feed, search) => {
-                for (const key in feed) {
-                  if (typeof feed[key] === 'string' && feed[key].includes(search)) return true
+          <SectionTitle heading='Current' subheading='View and your current feeds.' sideComponent={
+            <FeedLimitContainer>
+              <Popup content={<span>Need more? <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} position='left center' hideOnScroll hoverable inverted trigger={<span>{tableItems.length}/{selectedGuild.limit === 0 ? '∞' : selectedGuild.limit}</span>} />
+              <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'><Icon color='green' name='arrow circle up' /></a>
+            </FeedLimitContainer>
+          } />
+          <PaginatedTable.Table
+            basic
+            unstackable
+            items={tableItems}
+            compact={tableItems.length > 5}
+            maxPerPage={tableItems.length > 5 ? 10 : 5}
+            headers={['Status', 'Title', 'Link', 'Channel']}
+            itemFunc={feed => {
+              const channel = channels.find(c => c.id === feed.channel)
+              const record = failRecords.find(r => r.url === feed.url)
+              const failed = record && record.alerted
+              return (
+                <PaginatedTable.Row active={feed._id === selectedFeedID} style={{ cursor: 'pointer' }} key={feed._id} onClick={e => onClickFeedRow(feed)}>
+                  {/* <PaginatedTable.Cell collapsing>
+                    <CheckboxWrapper>
+                      <Checkbox />
+                    </CheckboxWrapper>
+                  </PaginatedTable.Cell> */}
+                  <PaginatedTable.Cell collapsing>
+                    { feed.disabled
+                      ? <Icon name='warning circle' style={{ fontSize: '18px' }} color='yellow' />
+                      : failed
+                        ? <Icon name='dont' style={{ fontSize: '18px' }} color='red' />
+                        : <Icon name='check circle' style={{ fontSize: '18px' }} color='green' />
+                    }
+                  </PaginatedTable.Cell>
+                  <PaginatedTable.Cell>{feed.title}</PaginatedTable.Cell>
+                  <PaginatedTable.Cell>{feed.url}</PaginatedTable.Cell>
+                  <PaginatedTable.Cell>{channel ? `#${channel.name}` : `Unknown (${feed.channel})`}</PaginatedTable.Cell>
+                </PaginatedTable.Row>
+              )
+            }}
+            searchFunc={(feed, search) => {
+              for (const key in feed) {
+                if (typeof feed[key] === 'string' && feed[key].includes(search)) {
+                  return true
                 }
-                return false
-              }} />
-            <Divider />
-            <SectionTitle heading='Add' subheading={<span>{`Add a new feed. You may have a maximum of ${guildLimits[guildId] === 0 ? '∞' : guildLimits[guildId]} feeds. Need more? `}<a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} />
-            <AddFeed channelDropdownOptions={channelDropdownOptions} />
-            <Divider />
-          </MainContent>
-        </Scrollbars>
-        <SideBarContainer>
-          <SideBar selectedFeedId={this.state.selectedFeedId} channelDropdownOptions={channelDropdownOptions} onDeletedFeed={() => this.setState({ selectedFeedId: '' })} redirect={redirect} />
-        </SideBarContainer>
-      </div>
-    )
-  }
+              }
+              return false
+            }} />
+          <Divider />
+          <SectionTitle heading='Add' subheading={<span>{`Add a new feed. You may have a maximum of ${selectedGuild.limit === 0 ? '∞' : selectedGuild.limit} feeds. Need more? `}<a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>Become a supporter!</a></span>} />
+          <AddFeed channelDropdownOptions={channelDropdownOptions} />
+          <Divider />
+        </MainContent>
+      </Scrollbars>
+      <SideBarContainer>
+        <SideBar selectedFeed={selectedFeed} channelDropdownOptions={channelDropdownOptions} onDeletedFeed={() => setSelectedFeedID('')} redirect={redirect} />
+      </SideBarContainer>
+    </div>
+  )
 }
 
-Feeds.propTypes = {
-  setToThisPage: PropTypes.func,
-  guildId: PropTypes.string,
-  feedId: PropTypes.string,
-  channels: PropTypes.object,
-  redirect: PropTypes.func,
-  linkStatuses: PropTypes.object,
-  feeds: PropTypes.object,
-  feedRefreshRates: PropTypes.object
-}
-
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Feeds))
+export default Feeds
