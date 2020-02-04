@@ -39,6 +39,10 @@ function cleanup (feed, text, encoding) {
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
 
         return image
+      },
+      blockquote: (node, fn, options) => {
+        const orig = fn(node.children, options).trim()
+        return '> ' + orig.replace(/(?:\n)/g, '\n> ') + '\n'
       }
     }
   })

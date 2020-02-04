@@ -158,6 +158,10 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
         const href = node.attribs.href ? node.attribs.href.trim() : ''
         if (anchorLinks.length < 5 && href) anchorLinks.push(href)
         return orig
+      },
+      blockquote: (node, fn, options) => {
+        const orig = fn(node.children, options).trim()
+        return '> ' + orig.replace(/(?:\n)/g, '\n> ') + '\n'
       }
     }
   })
