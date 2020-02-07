@@ -290,8 +290,8 @@ class FeedSchedule extends EventEmitter {
           FailRecord.reset(linkCompletion.link)
             .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to reset fail record ${linkCompletion.link}`, err))
           // Only if config.database.uri is a databaseless folder path
-          if (linkCompletion.feedCollectionId) {
-            this.feedData[linkCompletion.feedCollectionId] = linkCompletion.feedCollection
+          if (linkCompletion.memoryCollectionID) {
+            this.feedData[linkCompletion.memoryCollectionID] = linkCompletion.memoryCollection
           }
         }
 

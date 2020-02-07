@@ -1,5 +1,4 @@
 const { EventEmitter } = require('events')
-const ArticleModel = require('../../models/Article.js')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 const dbCmds = require('../db/commands.js')
 const log = require('../../util/logger.js')
@@ -101,13 +100,11 @@ class LinkLogic extends EventEmitter {
   }
 
   /**
-   * @param {import('mongoose').Model|Object[]} collection
-   * @param {Object} dbCustomComparisons
+   * @param {Object[]} docs
    */
-  async getDataFromDocuments (collection) {
+  async getDataFromDocuments (docs) {
     const { dbIDs, dbTitles, dbCustomComparisons } = this
 
-    const docs = await dbCmds.findAll(collection)
     for (const doc of docs) {
       // Push the main data for built in comparisons
       dbIDs.add(doc.id)
@@ -128,15 +125,7 @@ class LinkLogic extends EventEmitter {
     }
   }
 
-  /**
-   * @param {Object[]} collection
-   * @param {Set<string>} dbIDs
-   * @param {string} useIdType
-   * @param {Object[]} articleList
-   * @param {Object<string, Set<string>>} dbCustomComparisons
-   * @param {Set<string>} dbCustomComparisonsToDelete
-   */
-  async articleListTasks (collection) {
+  async getUnseenArticles () {
     const { dbIDs, useIdType, articleList, dbCustomComparisons, dbCustomComparisonsToDelete } = this
     const toInsert = []
 
@@ -157,7 +146,7 @@ class LinkLogic extends EventEmitter {
         }
       }
     }
-    await dbCmds.bulkInsert(collection, toInsert)
+    return toInsert
   }
 
   /**
@@ -327,17 +316,17 @@ class LinkLogic extends EventEmitter {
     if (!scheduleName) {
       throw new Error('Missing schedule name for shared logic')
     }
-    const collectionID = ArticleModel.getCollectionID(link, shardID, scheduleName)
-    const Feed = ArticleModel.modelByID(collectionID)
-    const feedCollectionId = feedData ? collectionID : undefined
-    const feedCollection = feedData ? (feedData[feedCollectionId] || []) : undefined
+    const memoryCollectionID = feedData ? shardID + scheduleName + link : undefined
+    const memoryCollection = feedData ? (feedData[memoryCollectionID] || []) : undefined
 
-    await this.getDataFromDocuments(feedCollection || Feed)
-    await this.articleListTasks(feedCollection || Feed)
+    const docs = await dbCmds.findAll(memoryCollection, link, shardID, scheduleName)
+    await this.getDataFromDocuments(docs)
+    const toInsert = await this.getUnseenArticles()
+    await dbCmds.bulkInsert(memoryCollection, toInsert, link, shardID, scheduleName)
 
     if (dbIDs.size === 0) {
       // Tthe database collection has not been initialized. If a feed has 100 articles, skip everything past this point so it doesn't send a crazy number of articles.
-      return { link, feedCollection, feedCollectionId }
+      return { link, memoryCollection, memoryCollectionID }
     }
 
     for (const rssName in rssList) {
@@ -360,10 +349,10 @@ class LinkLogic extends EventEmitter {
     const updates = []
     for (const id in toUpdate) {
       const article = toUpdate[id]
-      updates.push(dbCmds.update(feedCollection || Feed, article))
+      updates.push(dbCmds.update(memoryCollection, article, link, shardID, scheduleName))
     }
     await Promise.all(updates)
-    return { link, feedCollection, feedCollectionId }
+    return { link, memoryCollection, memoryCollectionID }
   }
 }
 

@@ -64,8 +64,8 @@ async function getFeed (data, callback) {
       }
       process.send({ status: 'article', article })
     })
-    const { feedCollection, feedCollectionId } = await logic.run()
-    process.send({ status: 'success', feedCollection, feedCollectionId, link })
+    const { memoryCollection, memoryCollectionID } = await logic.run()
+    process.send({ status: 'success', memoryCollection, memoryCollectionID, link })
   } catch (err) {
     if (err instanceof RequestError || err instanceof FeedParserError) {
       if (logLinkErrs || toDebug) {

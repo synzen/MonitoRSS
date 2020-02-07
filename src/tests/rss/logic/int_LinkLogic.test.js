@@ -1,6 +1,6 @@
 const LinkLogic = require('../../../rss/logic/LinkLogic.js')
 const dbCmds = require('../../../rss/db/commands.js')
-const ArticleModel = require('../../../models/Article.js')
+
 jest.mock('../../../rss/db/commands.js')
 
 describe('Int::LinkLogic', function () {
@@ -308,20 +308,18 @@ describe('Int::LinkLogic', function () {
     ])
     // logic.on('article', articleSpy)
     await logic.run()
-    const collectionID = ArticleModel.getCollectionID(data.link, -1, data.scheduleName)
-    const Feed = ArticleModel.modelByID(collectionID)
-    expect(dbCmds.update).toHaveBeenCalledWith(Feed, {
+    expect(dbCmds.update).toHaveBeenCalledWith(undefined, {
       ...data.articleList[0],
       customComparisons: {
         [comparisonName]: data.articleList[0][comparisonName]
       }
-    })
-    expect(dbCmds.update).toHaveBeenCalledWith(Feed, {
+    }, data.link, data.shardID, data.scheduleName)
+    expect(dbCmds.update).toHaveBeenCalledWith(undefined, {
       ...data.articleList[1],
       customComparisons: {
         [comparisonName]: data.articleList[1][comparisonName]
       }
-    })
+    }, data.link, data.shardID, data.scheduleName)
   })
   it('inserts unseen articles via ID into database', async function () {
     const data = {
@@ -342,9 +340,10 @@ describe('Int::LinkLogic', function () {
     const logic = new LinkLogic(data)
     dbCmds.findAll.mockResolvedValueOnce([ { id: '1' }, { id: '3' } ])
     await logic.run()
-    const collectionID = ArticleModel.getCollectionID(data.link, -1, data.scheduleName)
-    const Feed = ArticleModel.modelByID(collectionID)
-    expect(dbCmds.bulkInsert).toHaveBeenCalledWith(Feed, [{ ...data.articleList[1], _id: data.articleList[1].guid }])
+    expect(dbCmds.bulkInsert).toHaveBeenCalledWith(undefined, [{
+      ...data.articleList[1],
+      _id: data.articleList[1].guid
+    }], data.link, data.shardID, data.scheduleName)
   })
   it('does not emit article for no new articles', async function () {
     const data = {

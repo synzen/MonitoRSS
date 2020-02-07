@@ -1,5 +1,4 @@
 const LinkLogic = require('../../../rss/logic/LinkLogic.js')
-const ArticleModel = require('../../../models/Article.js')
 const ArticleIDResolver = require('../../../structs/ArticleIDResolver.js')
 const dbCmds = require('../../../rss/db/commands.js')
 
@@ -18,74 +17,119 @@ describe('Unit::LinkLogic', function () {
     })
     it('throws an error if no scheduleName is defined', function () {
       const logic = new LinkLogic(DEFAULT_DATA)
-      return expect(logic.run()).rejects.toEqual(expect.objectContaining({ message: expect.stringContaining('schedule') }))
+      const expected = expect.objectContaining({
+        message: expect.stringContaining('schedule')
+      })
+      return expect(logic.run()).rejects.toEqual(expected)
     })
     it('returns the correct object with no db IDs for non-memory database', async function () {
       const link = 'atgedi'
       const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc' })
       logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.articleListTasks = async () => Promise.resolve()
+      logic.getUnseenArticles = async () => Promise.resolve()
       const results = await logic.run()
-      expect(results).toEqual({ link, feedCollection: undefined, feedCollectionId: undefined })
+      const expected = {
+        link,
+        memoryCollection: undefined,
+        memoryCollectionID: undefined
+      }
+      expect(results).toEqual(expected)
     })
     it('returns the correct object with no db IDs for memory database', async function () {
+      const shardID = 2
+      const scheduleName = 'q3ewtsg'
       const link = 'atgedi'
-      const feedCollectionId = 'aqetwh4'
-      const feedData = { [feedCollectionId]: [ 'abc' ] }
-      const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc', feedData })
-      ArticleModel.getCollectionID.mockReturnValueOnce(feedCollectionId)
+      const memoryCollectionID = shardID + scheduleName + link
+      const feedData = {
+        [memoryCollectionID]: [ 'abc' ]
+      }
+      const logic = new LinkLogic({
+        ...DEFAULT_DATA,
+        link,
+        scheduleName,
+        feedData,
+        shardID
+      })
       logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.articleListTasks = async () => Promise.resolve()
+      logic.getUnseenArticles = async () => Promise.resolve()
       const results = await logic.run()
-      expect(results).toEqual({ link, feedCollection: feedData[feedCollectionId], feedCollectionId })
+      expect(results).toEqual({
+        link,
+        memoryCollection: feedData[memoryCollectionID],
+        memoryCollectionID
+      })
     })
     it('returns the correct object with IDs for non-memory database', async function () {
       const link = 'atgedi'
       const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc', rssList: {} })
       logic.dbIDs.add('abc')
       logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.articleListTasks = async () => Promise.resolve()
+      logic.getUnseenArticles = async () => Promise.resolve()
       logic.validateCustomComparisons = jest.fn()
       logic.checkIfNewArticle = jest.fn()
       const results = await logic.run()
-      expect(results).toEqual({ link, feedCollection: undefined, feedCollectionId: undefined })
+      expect(results).toEqual({
+        link,
+        memoryCollection: undefined,
+        memoryCollectionID: undefined
+      })
     })
     it('returns the correct object with IDs for memory database', async function () {
       const link = 'atgedi'
-      const feedCollectionId = 'aqetwh4'
-      const feedData = { [feedCollectionId]: [ 'abc' ] }
-      const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc', rssList: {}, feedData })
+      const shardID = 2
+      const scheduleName = 'qe3wt'
+      const memoryCollectionID = shardID + scheduleName + link
+      const feedData = { [memoryCollectionID]: [ 'abc' ] }
+      const logic = new LinkLogic({
+        ...DEFAULT_DATA,
+        link,
+        scheduleName,
+        rssList: {},
+        feedData,
+        shardID
+      })
       logic.dbIDs.add('abc')
       logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.articleListTasks = async () => Promise.resolve()
+      logic.getUnseenArticles = async () => Promise.resolve()
       logic.validateCustomComparisons = jest.fn()
       logic.checkIfNewArticle = jest.fn()
-      ArticleModel.getCollectionID.mockReturnValueOnce(feedCollectionId)
       const results = await logic.run()
-      expect(results).toEqual({ link, feedCollection: feedData[feedCollectionId], feedCollectionId: feedCollectionId })
+      expect(results).toEqual({
+        link,
+        memoryCollection: feedData[memoryCollectionID],
+        memoryCollectionID: memoryCollectionID
+      })
     })
     it('calls dbCmds.update for articles in toUpdate', async function () {
-      const logic = new LinkLogic({ ...DEFAULT_DATA, scheduleName: 'abc', rssList: {} })
+      const scheduleName = 'ewstg'
+      const shardID = 2
+      const link = '3ewt5'
+      const logic = new LinkLogic({
+        ...DEFAULT_DATA,
+        scheduleName,
+        shardID,
+        link,
+        rssList: {}
+      })
       logic.dbIDs.add('abc')
       const article1 = { foo: '1' }
       const article2 = { bar: '2' }
       logic.toUpdate['asd'] = article1
       logic.toUpdate['asd2'] = article2
       logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.articleListTasks = async () => Promise.resolve()
+      logic.getUnseenArticles = async () => Promise.resolve()
       logic.validateCustomComparisons = jest.fn()
       logic.checkIfNewArticle = jest.fn()
       await logic.run()
-      expect(dbCmds.update).toHaveBeenCalledWith(undefined, article1)
-      expect(dbCmds.update).toHaveBeenCalledWith(undefined, article2)
+      expect(dbCmds.update).toHaveBeenCalledWith(undefined, article1, link, shardID, scheduleName)
+      expect(dbCmds.update).toHaveBeenCalledWith(undefined, article2, link, shardID, scheduleName)
     })
   })
   describe('getDataFromDocuments()', function () {
     it('adds ids to this.dbIDs', async function () {
       const logic = new LinkLogic(DEFAULT_DATA)
       const resolvedDocuments = [{ id: 'abc' }, { id: 'def' }]
-      dbCmds.findAll.mockResolvedValueOnce(resolvedDocuments)
-      await logic.getDataFromDocuments()
+      await logic.getDataFromDocuments(resolvedDocuments)
       for (const doc of resolvedDocuments) {
         expect(logic.dbIDs.has(doc.id)).toEqual(true)
       }
@@ -93,17 +137,23 @@ describe('Unit::LinkLogic', function () {
     it('adds titles to this.dbTitles', async function () {
       const logic = new LinkLogic(DEFAULT_DATA)
       const resolvedDocuments = [{ title: 'abc' }, { title: 'def' }]
-      dbCmds.findAll.mockResolvedValueOnce(resolvedDocuments)
-      await logic.getDataFromDocuments()
+      await logic.getDataFromDocuments(resolvedDocuments)
       for (const doc of resolvedDocuments) {
         expect(logic.dbTitles.has(doc.title)).toEqual(true)
       }
     })
     it('adds the custom comparison values to this.dbCustomComparisons', async function () {
       const logic = new LinkLogic(DEFAULT_DATA)
-      const resolvedDocuments = [{ customComparisons: { placeholder: 'c' } }, { customComparisons: { title: 'a' } }]
-      dbCmds.findAll.mockResolvedValueOnce(resolvedDocuments)
-      await logic.getDataFromDocuments()
+      const resolvedDocuments = [{
+        customComparisons: {
+          placeholder: 'c'
+        }
+      }, {
+        customComparisons: {
+          title: 'a'
+        }
+      }]
+      await logic.getDataFromDocuments(resolvedDocuments)
       for (const doc of resolvedDocuments) {
         const comparisons = doc.customComparisons
         for (const comparisonName in comparisons) {
@@ -113,7 +163,7 @@ describe('Unit::LinkLogic', function () {
       }
     })
   })
-  describe('articleListTasks()', function () {
+  describe('getUnseenArticles()', function () {
     afterEach(function () {
       dbCmds.bulkInsert.mockReset()
     })
@@ -123,7 +173,7 @@ describe('Unit::LinkLogic', function () {
       ArticleIDResolver.getIDTypeValue
         .mockReturnValueOnce('a')
         .mockReturnValueOnce('b')
-      await logic.articleListTasks()
+      await logic.getUnseenArticles()
       expect(articleList[0]._id).toEqual('a')
       expect(articleList[1]._id).toEqual('b')
     })
@@ -134,24 +184,29 @@ describe('Unit::LinkLogic', function () {
       logic.dbCustomComparisons.invalid2 = new Set()
       logic.dbCustomComparisons.invalid3 = new Set()
       logic.dbCustomComparisons.valid1 = new Set()
-      await logic.articleListTasks()
+      await logic.getUnseenArticles()
       expect(logic.dbCustomComparisonsToDelete.has('invalid1')).toEqual(true)
       expect(logic.dbCustomComparisonsToDelete.has('invalid2')).toEqual(true)
       expect(logic.dbCustomComparisonsToDelete.has('invalid3')).toEqual(true)
       expect(logic.dbCustomComparisonsToDelete.has('valid1')).toEqual(false)
     })
-    it('calls bulkInsert with the new articles', async function () {
-      const articleList = [{}, {}, {}]
+    it('returns with the new articles', async function () {
+      const articleList = [{
+        _id: 1
+      }, {
+        _id: 2
+      }, {
+        _id: 3
+      }]
       const logic = new LinkLogic({ ...DEFAULT_DATA, articleList })
       ArticleIDResolver.getIDTypeValue
-        .mockReturnValueOnce(1)
-        .mockReturnValueOnce(2)
-        .mockReturnValueOnce(3)
-      logic.dbIDs.add(1)
-      logic.dbIDs.add(3)
-      const collection = { do: 'ho' }
-      await logic.articleListTasks(collection)
-      expect(dbCmds.bulkInsert).toHaveBeenCalledWith(collection, [articleList[1]])
+        .mockReturnValueOnce(articleList[0]._id)
+        .mockReturnValueOnce(articleList[1]._id)
+        .mockReturnValueOnce(articleList[2]._id)
+      logic.dbIDs.add(articleList[0]._id)
+      logic.dbIDs.add(articleList[2]._id)
+      const returned = await logic.getUnseenArticles()
+      expect(returned).toEqual([articleList[1]])
     })
   })
   describe('static formatArticle()', function () {
