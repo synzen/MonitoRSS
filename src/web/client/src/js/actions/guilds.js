@@ -34,11 +34,11 @@ export function fetchGuilds () {
   }
 }
 
-export function fetchEditGuild (guildID, data) {
+export function fetchEditGuild (guildID, edited) {
   return async dispatch => {
     try {
       dispatch(editGuildBegin())
-      const { data } = await axios.patch(`/api/guilds/${guildID}`, data)
+      const { data } = await axios.patch(`/api/guilds/${guildID}`, edited)
       dispatch(editGuildSuccess(data))
     } catch (err) {
       dispatch(editGuildFailure(err))
