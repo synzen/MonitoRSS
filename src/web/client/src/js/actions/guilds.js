@@ -9,6 +9,7 @@ import { fetchGuildRoles } from './roles'
 import { fetchGuildFeeds } from './feeds'
 import { fetchGuildFailRecords } from './failRecords'
 import FetchStatusActions from './utils/FetchStatusActions'
+import { setActiveFeed } from './index-actions'
 
 export const {
   begin: setGuildsBegin,
@@ -31,6 +32,8 @@ export function fetchGuilds () {
       dispatch(setGuildsSuccess(data))
       if (!data.find(guild => guild.id === activeGuildID)) {
         await dispatch(setActiveGuild(''))
+      } else {
+        await dispatch(setActiveGuild(activeGuildID))
       }
     } catch (err) {
       dispatch(setGuildsFailure(err))

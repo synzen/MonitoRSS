@@ -41,6 +41,8 @@ export function fetchGuildFeeds (guildID) {
       dispatch(setFeedsSuccess(data))
       if (!data.find(feed => feed._id === activeFeedID)) {
         await dispatch(setActiveFeed(''))
+      } else {
+        await dispatch(setActiveFeed(activeFeedID))
       }
     } catch (err) {
       dispatch(setFeedsFailure(err))
