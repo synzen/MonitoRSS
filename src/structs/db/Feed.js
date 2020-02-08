@@ -203,7 +203,7 @@ class Feed extends FilterBase {
 
   toJSON () {
     return {
-      ...this.toObject(),
+      ...super.toJSON(),
       regexOps: this.regexOps
     }
   }

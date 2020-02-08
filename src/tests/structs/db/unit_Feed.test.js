@@ -144,6 +144,28 @@ describe('Unit::structs/db/Feed', function () {
       expect(exported.regexOps).not.toBeInstanceOf(Map)
       expect(exported.regexOps).toEqual(regexOps)
     })
+    it('returns filters as objects', function () {
+      const feed = new Feed({ ...necessaryInit })
+      feed.filters = {
+        title: ['1']
+      }
+      feed.rfilters = {
+        description: ['erdg']
+      }
+      const exported = feed.toJSON()
+      expect(exported.filters).not.toBeInstanceOf(Map)
+      expect(exported.rfilters).not.toBeInstanceOf(Map)
+    })
+    it('returns the correct keys', function () {
+      const feed = new Feed({ ...necessaryInit })
+      for (const key of keys) {
+        feed[key] = 1
+      }
+      const exported = feed.toJSON()
+      for (const key of keys) {
+        expect(exported[key]).toEqual(feed[key])
+      }
+    })
   })
   describe('set webhook', function () {
     it('sets correctly', function () {
