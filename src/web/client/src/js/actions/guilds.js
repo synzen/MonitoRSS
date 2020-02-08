@@ -9,7 +9,6 @@ import { fetchGuildRoles } from './roles'
 import { fetchGuildFeeds } from './feeds'
 import { fetchGuildFailRecords } from './failRecords'
 import FetchStatusActions from './utils/FetchStatusActions'
-import { setActiveFeed } from './index-actions'
 
 export const {
   begin: setGuildsBegin,

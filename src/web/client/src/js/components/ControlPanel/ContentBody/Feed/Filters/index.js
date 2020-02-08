@@ -140,10 +140,10 @@ function Filters () {
       </PageHeader>
       <Divider />
       <SectionTitle heading='Current' subheading='Your current filters are listed here.' />
-      <FiltersTable filters={feedFilters} removeFilter={removeFilter} inProgress={feedEditing} />
+      <FiltersTable filters={feedFilters} removeFilter={removeFilter} inProgress={editing} />
       <Divider />
       <SectionTitle heading='Add' subheading='Type a new filter and add it. Note that all filters are automatically lowercased.' />
-      <AddFilter addFilter={addFilter} inProgress={feedEditing} />
+      <AddFilter addFilter={addFilter} inProgress={editing} />
       <Divider />
 
       <SectionTitle heading='Classifications' subheading='See what current articles gets blocked or passes your current filters. Click on a row to see more in-depth details.' />
