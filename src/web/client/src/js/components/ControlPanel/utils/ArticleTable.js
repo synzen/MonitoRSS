@@ -1,12 +1,12 @@
-import React from 'react'
-import { connect } from 'react-redux'
-import PropTypes from 'prop-types'
+import React, { useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
 import PaginatedTable from './PaginatedTable'
 import { Dropdown, Loader } from 'semantic-ui-react'
 import styled from 'styled-components'
 import colors from 'js/constants/colors'
 import SectionSubtitleDescription from 'js/components/utils/SectionSubtitleDescription'
 import { isHiddenProperty } from 'js/constants/hiddenArticleProperties'
+import feedSelectors from 'js/selectors/feeds'
 
 const mapStateToProps = state => {
   return {
@@ -42,135 +42,128 @@ const ErrorText = styled.div`
   text-align: center;
 `
 
-class ArticleBrowser extends React.PureComponent {
-  constructor () {
-    super()
-    this.state = {
-      classificationsArticleProperty: '', 
-      selectedArticleId: ''
+function ArticleTable (props) {
+  const articleList = useSelector(state => state.articles)
+  const articlesFetching = useSelector(feedSelectors.articlesFetching)
+  const articlesError = useSelector(feedSelectors.articlesFetchErrored)
+  const [articleProperty, setArticleProperty] = useState('')
+  const [selectedArticleID, setSelectedArticleID] = useState('')
+  const { addColumns, positiveNegativeRowFunc } = props
+
+  useEffect(() => {
+    if (articleProperty || articleList.length === 0) {
+      return
     }
-  }
-
-  componentWillMount () {
-    this.autosetClassificationArticleProperty()
-  }
-
-  changeClassificationsArticleProperty = value => {
-    this.setState({ classificationsArticleProperty: value })
-  }
-
-  componentDidUpdate (prevProps) {
-    if (prevProps.feedId !== this.props.feedId || (this.props.articleList.length > 0 && !this.state.classificationsArticleProperty)) this.autosetClassificationArticleProperty()
-  }
-
-  autosetClassificationArticleProperty = () => {
-    const article = this.props.articleList[0]
-    if (!article) return
-    if (article.title && this.props.articleList[1] && this.props.articleList[1].title !== article.title) return this.setState({ classificationsArticleProperty: 'title' })
+    const article = articleList[0]
+    if (article.title && articleList[1] && articleList[1].title !== article.title) {
+      setArticleProperty('title')
+      return
+    }
     for (const placeholder in article) {
-      if (!placeholder) continue
-      if (this.props.articleList[1]) {
-        if (this.props.articleList[1][placeholder] !== article[placeholder]) return this.setState({ classificationsArticleProperty: placeholder }) // Try to select a placeholder where its content is different from other articles
-      } else return this.setState({ classificationsArticleProperty: placeholder })        
-    }
-
-    this.setState({ classificationsArticleProperty: Object.keys(article)[0] }) // If the above fails, just use the duplicated property
-  }
-
-  onClickArticle = (article, id) => {
-    const { onClickArticle } = this.props
-    if (!onClickArticle) return
-    onClickArticle(article)
-    this.setState({ selectedArticleId: id })
-  }
-
-  render () {
-    const { articleList, addColumns, positiveNegativeRowFunc, articlesFetching, articlesError } = this.props
-    if (articlesError) {
-      return (
-        <LoadingBox>
-          <ErrorText>
-            <SectionSubtitleDescription style={{ color: colors.discord.red }}>Failed to Load Articles</SectionSubtitleDescription>
-            <SectionSubtitleDescription>{articlesError || 'Unknwon Error'}</SectionSubtitleDescription>
-          </ErrorText>
-        </LoadingBox>
-      )
-    }
-
-    if (articlesFetching) {
-      return (
-        <LoadingBox>
-          <Loader inverted size='big' active />
-        </LoadingBox>
-      )
-    }
-
-    let addedHeaders = []
-    let addedCellFuncs = []
-    let collapsingCells = []
-    if (addColumns) {
-      for (const data of addColumns) {
-        if (!data.headers) throw new Error('Missing added column headers')
-        if (!data.cellFuncs) throw new Error('Missing added cell functions')
-        addedHeaders = addedHeaders.concat(data.headers)
-        addedCellFuncs = addedCellFuncs.concat(data.cellFuncs)
-        collapsingCells = collapsingCells.concat(data.collapsing)
+      if (!placeholder) {
+        continue
       }
-    }
-    const classificationsItems = articleList
-    const classificationsDropdownOptions = []
-    let added = {}
-    for (const article of articleList) {
-      for (const placeholder in article) {
-        if (added[placeholder]) continue
-        const isRegexPlaceholder = placeholder.includes('regex:')
-        const prettyPlaceholderName = placeholder.replace('regex:', '')
-        if (!isHiddenProperty(placeholder)) {
-          classificationsDropdownOptions.push({ text: isRegexPlaceholder ? `${prettyPlaceholderName} (regex)` : prettyPlaceholderName, value: placeholder })
-          added[placeholder] = true
+      if (articleList[1]) {
+        if (articleList[1][placeholder] !== article[placeholder]) {
+          // Try to select a placeholder where its content is different from other articles
+          setArticleProperty(placeholder)
+          return
         }
+      } else {
+        setArticleProperty(placeholder)
+        return
       }
     }
+    // If the above fails, just use the duplicated property
+    setArticleProperty(Object.keys(article)[0])
+  }, [articleList, articleProperty])
 
-    const classificationsTableRowFunc = data => {
-      const positive = positiveNegativeRowFunc ? positiveNegativeRowFunc(data) : null
-      const id = data._id
-      return (
-      <StyledRow
-        clickable={(!!this.props.onClickArticle).toString()}
-        onClick={e => this.onClickArticle(data, id)}
-        active={this.state.selectedArticleId === id}
-        key={id}
-        positive={positive === true ? true : false}
-        negative={positive === false ? true : false}
-      >
-        { addedCellFuncs.map((func, i) => <PaginatedTable.Cell collapsing={collapsingCells[i]} key={`cfun${i}`}>{func(data)}</PaginatedTable.Cell>) }
-        <PaginatedTable.Cell>{data[this.state.classificationsArticleProperty]}</PaginatedTable.Cell>
-      </StyledRow>
-      )
-    }
-
-    const classificationsTableSearchFunc = (data, search) => data[this.state.classificationsArticleProperty] ? data[this.state.classificationsArticleProperty].toLowerCase().includes(search) : true
-
+  if (articlesError) {
     return (
-      <PaginatedTable.Table
-        compact
-        unstackable
-        maxPerPage={10}
-        items={classificationsItems}
-        allowActiveRows
-        headers={addedHeaders.concat([this.state.classificationsArticleProperty.replace('regex:', '')])}
-        itemFunc={classificationsTableRowFunc}
-        searchFunc={classificationsTableSearchFunc}
-        button={<Dropdown selection options={classificationsDropdownOptions} onChange={(e, data) => this.changeClassificationsArticleProperty(data.value)} value={this.state.classificationsArticleProperty}  />}
-      />
+      <LoadingBox>
+        <ErrorText>
+          <SectionSubtitleDescription style={{ color: colors.discord.red }}>Failed to Load Articles</SectionSubtitleDescription>
+          <SectionSubtitleDescription>{articlesError || 'Unknown Error'}</SectionSubtitleDescription>
+        </ErrorText>
+      </LoadingBox>
     )
   }
+
+  if (articlesFetching) {
+    return (
+      <LoadingBox>
+        <Loader inverted size='big' active />
+      </LoadingBox>
+    )
+  }
+
+  let addedHeaders = []
+  let addedCellFuncs = []
+  let collapsingCells = []
+  if (addColumns) {
+    for (const data of addColumns) {
+      if (!data.headers) throw new Error('Missing added column headers')
+      if (!data.cellFuncs) throw new Error('Missing added cell functions')
+      addedHeaders = addedHeaders.concat(data.headers)
+      addedCellFuncs = addedCellFuncs.concat(data.cellFuncs)
+      collapsingCells = collapsingCells.concat(data.collapsing)
+    }
+  }
+  const classificationsItems = articleList
+  const classificationsDropdownOptions = []
+  let added = {}
+  for (const article of articleList) {
+    for (const placeholder in article) {
+      if (added[placeholder]) continue
+      const isRegexPlaceholder = placeholder.includes('regex:')
+      const prettyPlaceholderName = placeholder.replace('regex:', '')
+      if (!isHiddenProperty(placeholder)) {
+        classificationsDropdownOptions.push({ text: isRegexPlaceholder ? `${prettyPlaceholderName} (regex)` : prettyPlaceholderName, value: placeholder })
+        added[placeholder] = true
+      }
+    }
+  }
+
+  const onClickArticle = (article, id) => {
+    const { onClickArticle } = props
+    if (!onClickArticle) return
+    onClickArticle(article)
+    setSelectedArticleID(id)
+  }
+
+  const classificationsTableRowFunc = data => {
+    const positive = positiveNegativeRowFunc ? positiveNegativeRowFunc(data) : null
+    const id = data._id
+    return (
+    <StyledRow
+      clickable={!!props.onClickArticle}
+      onClick={e => onClickArticle(data, id)}
+      active={selectedArticleID === id}
+      key={id}
+      positive={positive === true ? true : false}
+      negative={positive === false ? true : false}
+    >
+      { addedCellFuncs.map((func, i) => <PaginatedTable.Cell collapsing={collapsingCells[i]} key={`cfun${i}`}>{func(data)}</PaginatedTable.Cell>) }
+      <PaginatedTable.Cell>{data[articleProperty]}</PaginatedTable.Cell>
+    </StyledRow>
+    )
+  }
+
+  const classificationsTableSearchFunc = (data, search) => data[articleProperty] ? data[articleProperty].toLowerCase().includes(search) : true
+
+  return (
+    <PaginatedTable.Table
+      compact
+      unstackable
+      maxPerPage={10}
+      items={classificationsItems}
+      allowActiveRows
+      headers={addedHeaders.concat([articleProperty.replace('regex:', '')])}
+      itemFunc={classificationsTableRowFunc}
+      searchFunc={classificationsTableSearchFunc}
+      button={<Dropdown selection options={classificationsDropdownOptions} onChange={(e, data) => setArticleProperty(data.value)} value={articleProperty}  />}
+    />
+  )
 }
 
-ArticleBrowser.propTypes = {
-  setToThisPage: PropTypes.func,
-  addColumns: PropTypes.array
-}
-
-export default connect(mapStateToProps)(ArticleBrowser)
+export default ArticleTable

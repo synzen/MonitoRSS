@@ -1,16 +1,9 @@
-import React, { Component } from 'react'
-import PropTypes from 'prop-types'
+import React, { useState } from 'react'
 import styled from 'styled-components'
-import { connect } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { Button, Input, Dropdown } from 'semantic-ui-react'
-import axios from 'axios'
 import toast from './toast'
-
-const mapStateToProps = state => {
-  return {
-    csrfToken: state.csrfToken
-  }
-}
+import feedSelectors from 'js/selectors/feeds'
 
 const FlexRight = styled.div`
   display: flex;
@@ -42,55 +35,47 @@ const AddFilterContainer = styled.div`
 
 `
 
-class AddFilter extends Component {
-  constructor () {
-    super()
-    this.state = {
-      addFilterType: 'title',
-      addFilterTerm: '',
-      options: [{ text: 'Title', value: 'title' }, { text: 'Description', value: 'description' }, { text: 'Summary', value: 'summary' }, { text: 'Author', value: 'author' }, { text: 'Tags', value: 'tags' }]
+function AddFilter (props) {
+  const editing = useSelector(feedSelectors.feedEditing)
+  const [type, setType] = useState('title')
+  const [value, setValue] = useState('')
+  const [options, setOptions] = useState([{
+    text: 'Title',
+    value: 'title'
+  }, {
+    text: 'Description',
+    value: 'description'
+  }, {
+    text: 'Summary',
+    value: 'summary'
+  }, {
+    text: 'Author',
+    value: 'author'
+  }, {
+    text: 'Tags',
+    value: 'tags'
+  }])
+  const { addFilter } = props
+
+  const onCustomAddition = (e, { value }) => {
+    if (!value.startsWith('raw:')) {
+      return toast.error('Only custom filter types that begin with raw: are accepted!')
     }
+    setOptions([{
+      text: value,
+      value
+    }, ...options])
   }
 
-  addFilter = () => {
-    const { addApiUrl, csrfToken } = this.props
-    if (!this.state.addFilterType || !this.state.addFilterTerm) return
-    this.setState({ adding: true })
-    const payload = { type: this.state.addFilterType, term: this.state.addFilterTerm }
-    axios.put(addApiUrl, payload, { headers: { 'CSRF-Token': csrfToken } })
-    .then(() => {
-      toast.success(`Added new filter ${this.state.addFilterTerm} to ${this.state.addFilterType}`)
-      this.setState({ adding: false, addFilterTerm: '' })
-    }).catch(err => {
-      this.setState({ adding: false })
-      if (err.response && err.response.status === 304) return toast.success('No changes detected')
-      console.log(err.response || err.message)
-      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-      toast.error(<p>Failed to add filter<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
-    })
-  }
-
-  onCustomAddition = (e, { value }) => {
-    if (!value.startsWith('raw:')) return toast.error('Only custom filter types that begin with raw: are accepted!')
-    this.setState({ options: [{ text: value, value }, ...this.state.options] })
-  }
-
-  render () {
-
-    return (
-        <AddFilterContainer>
-          <div>
-            <Dropdown search allowAdditions selection value={this.state.addFilterType} options={this.state.options} onChange={(e, data) => this.setState({ addFilterType: data.value })} onAddItem={this.onCustomAddition} />
-            <Input placeholder='Enter a phrase' value={this.state.addFilterTerm} onChange={e => this.setState({ addFilterTerm: e.target.value })} onKeyPress={e => e.key === 'Enter' ? this.addFilter() : null} />
-          </div>
-          <FlexRight><Button disabled={this.state.adding || !this.state.addFilterType || !this.state.addFilterTerm} content='Add' color='green' onClick={this.addFilter} /></FlexRight>
-        </AddFilterContainer>
-    )
-  }
+  return (
+    <AddFilterContainer>
+      <div>
+        <Dropdown search allowAdditions selection value={type} options={options} onChange={(e, data) => setType(data.value)} onAddItem={onCustomAddition} />
+        <Input placeholder='Enter a phrase' value={value} onChange={e => setValue(e.target.value)} onKeyPress={e => e.key === 'Enter' ? addFilter(type, value) : null} />
+      </div>
+      <FlexRight><Button disabled={editing || !type || !value} content='Add' color='green' onClick={() => addFilter(type, value)} /></FlexRight>
+    </AddFilterContainer>
+  )
 }
 
-AddFilter.propTypes = {
-  addApiUrl: PropTypes.string
-}
-
-export default connect(mapStateToProps)(AddFilter)
+export default AddFilter
