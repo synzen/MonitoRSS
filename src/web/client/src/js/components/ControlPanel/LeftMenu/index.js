@@ -10,7 +10,6 @@ import MenuButton from './MenuButton'
 import { isMobile } from "react-device-detect"
 import { Scrollbars } from 'react-custom-scrollbars'
 import modal from '../../utils/modal'
-import { getActiveFeed, getActiveFeedID } from 'js/selectors/feeds'
 import { setActiveGuild } from 'js/actions/guilds'
 import { setActiveFeed } from 'js/actions/feeds'
 import { changePage } from 'js/actions/page'
@@ -192,6 +191,8 @@ function LeftMenu (props) {
     modal.show(modalProps, children)
   }
 
+  const disableFeedButtons = !feedId || feedsFetchError || feedsFetching || articlesFetching || articlesFetchError
+
   return (
     <LeftMenuDiv expanded={props.expanded}>
       <Scrollbars>
@@ -245,11 +246,11 @@ function LeftMenu (props) {
           value={articlesFetching ? '' : feedId}
           selection
           onChange={(e, data) => setFeed(data.value)} />
-        <MenuButton to={pages.MESSAGE} disabled={!feedId} onClick={() => menuButtonClick(pages.MESSAGE)} selected={page === pages.MESSAGE}>Message</MenuButton>            
-        <MenuButton to={pages.FILTERS} disabled={!feedId} onClick={() => menuButtonClick(pages.FILTERS)} selected={page === pages.FILTERS}>Filters</MenuButton>
-        <MenuButton to={pages.SUBSCRIPTIONS} disabled={!feedId} onClick={() => menuButtonClick(pages.SUBSCRIPTIONS)} selected={page === pages.SUBSCRIPTIONS}>Subscriptions</MenuButton>
-        <MenuButton to={pages.MISC_OPTIONS} disabled={!feedId} onClick={() => menuButtonClick(pages.MISC_OPTIONS)} selected={page === pages.MISC_OPTIONS}>Misc Options</MenuButton>
-        <MenuButton to={pages.DEBUGGER} disabled={!feedId} onClick={() => menuButtonClick(pages.DEBUGGER)} selected={page === pages.DEBUGGER}>Debugger</MenuButton>
+        <MenuButton to={pages.MESSAGE} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.MESSAGE)} selected={page === pages.MESSAGE}>Message</MenuButton>            
+        <MenuButton to={pages.FILTERS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.FILTERS)} selected={page === pages.FILTERS}>Filters</MenuButton>
+        <MenuButton to={pages.SUBSCRIPTIONS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.SUBSCRIPTIONS)} selected={page === pages.SUBSCRIPTIONS}>Subscriptions</MenuButton>
+        <MenuButton to={pages.MISC_OPTIONS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.MISC_OPTIONS)} selected={page === pages.MISC_OPTIONS}>Misc Options</MenuButton>
+        <MenuButton to={pages.DEBUGGER} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.DEBUGGER)} selected={page === pages.DEBUGGER}>Debugger</MenuButton>
         <Divider />
       </div>
       <div>
