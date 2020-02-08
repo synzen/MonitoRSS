@@ -9,6 +9,8 @@ const validator = require('express-joi-validation').createValidator({
 const filterSchema = require('../../../../../util/validation/filterSchema.js')
 const subscriberSchema = require('../../../../../util/validation/subscriberSchema.js')
 const subscriberIDSchema = Joi.object({
+  guildID: Joi.string(),
+  feedID: Joi.string(),
   subscriberID: Joi.string()
 })
 
