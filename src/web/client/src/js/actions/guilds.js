@@ -23,11 +23,15 @@ export const {
 } = new FetchStatusActions(EDIT_GUILD)
 
 export function fetchGuilds () {
-  return async dispatch => {
+  return async (dispatch, getState) => {
+    const { activeGuildID } = getState()
     try {
       dispatch(setGuildsBegin())
       const { data } = await axios.get(`/api/users/@me/guilds`)
       dispatch(setGuildsSuccess(data))
+      if (!data.find(guild => guild.id === activeGuildID)) {
+        await dispatch(setActiveGuild(''))
+      }
     } catch (err) {
       dispatch(setGuildsFailure(err))
     }
@@ -52,6 +56,9 @@ export function setActiveGuild (guildID) {
       type: SET_ACTIVE_GUILD,
       payload: guildID
     })
+    if (!guildID) {
+      return
+    }
     await Promise.all([
       dispatch(fetchGuildChannels(guildID)),
       dispatch(fetchGuildRoles(guildID)),

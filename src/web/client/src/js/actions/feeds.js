@@ -33,11 +33,15 @@ export const {
 } = new FetchStatusActions(GET_ARTICLES)
 
 export function fetchGuildFeeds (guildID) {
-  return async dispatch => {
+  return async (dispatch, getState) => {
     try {
+      const { activeFeedID } = getState()
       dispatch(setFeedsBegin())
       const { data } = await axios.get(`/api/guilds/${guildID}/feeds`)
       dispatch(setFeedsSuccess(data))
+      if (!data.find(feed => feed._id === activeFeedID)) {
+        await dispatch(setActiveFeed(''))
+      }
     } catch (err) {
       dispatch(setFeedsFailure(err))
     }
@@ -57,14 +61,17 @@ export function fetchGuildFeedArticles (guildID, feedID) {
 }
 
 export function setActiveFeed (feedID) {
-  return (dispatch, getState) => {
-    const state = getState()
-    const guildID = state.activeGuildID
+  return async (dispatch, getState) => {
+    const { activeGuildID } = getState()
     dispatch({
       type: SET_ACTIVE_FEED,
       payload: feedID
     })
-    return dispatch(fetchGuildFeedArticles(guildID, feedID))
+    if (!feedID) {
+      dispatch(setArticlesSuccess([]))
+      return
+    }
+    await dispatch(fetchGuildFeedArticles(activeGuildID, feedID))
   }
 }
 
