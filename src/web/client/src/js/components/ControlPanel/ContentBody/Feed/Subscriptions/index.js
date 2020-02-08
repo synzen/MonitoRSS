@@ -1,41 +1,24 @@
-import React, { Component } from 'react'
-import { withRouter, Redirect } from 'react-router-dom'
-import { connect } from 'react-redux'
+import React, { useState } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import { changePage } from 'js/actions/index-actions'
 import pages from 'js/constants/pages'
-import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import PageHeader from 'js/components/utils/PageHeader'
 import SectionTitle from 'js/components/utils/SectionTitle'
 import FiltersTable from '../../..//utils/FiltersTable'
 import AddFilter from '../../../utils/AddFilter'
 import SectionSubtitle from 'js/components/utils/SectionSubtitle'
-import testFilters from '../Filters/util/filters'
+import testFilters from 'js/utils/testFilters'
 import { Divider, Input, Button, Popup, Dropdown } from 'semantic-ui-react'
 import ArticleTable from '../../../utils/ArticleTable'
 import { transparentize } from 'polished'
 import colors from 'js/constants/colors'
-import toast from '../../../utils/toast'
 import posed, { PoseGroup } from 'react-pose';
 import PopInButton from '../../../utils/PopInButton'
-import axios from 'axios'
 import Wrapper from 'js/components/utils/Wrapper'
-const mapStateToProps = state => {
-  return {
-    guildId: state.guildId,
-    feedId: state.feedId,
-    roles: state.roles,
-    subscribers: state.subscribers,
-    csrfToken: state.csrfToken
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    setToThisPage: () => dispatch(changePage(pages.SUBSCRIPTIONS)),
-    toDashboard: () => dispatch(changePage(pages.DASHBOARD))
-  }
-}
+import feedSelector from 'js/selectors/feeds'
+import subscriberSelector from 'js/selectors/subscribers'
+import { fetchAddSubscriber, fetchDeleteSubscriber, fetchEditSubscriber } from 'js/actions/subscribers'
 
 const Container = styled.div`
   padding: 20px;
@@ -50,31 +33,7 @@ const SubscriberSearchWrapper = styled.div`
   margin-bottom: 1em;
 `
 
-// const SubscriberListWrapper = styled.div`
-//   background-color: rgba(32,34,37,0.6);
-//   /* border-bottom-left-radius: 3px; */
-//   border-radius: 3px;
-//   /* border-bottom-right-radius: 3px; */
-//   /* padding-left: 0.25em; */
-//   margin-bottom: 1em;
-//   padding-left: 1em;
-//   padding-right: 1em;
-//   min-height: 250px;
-//   height: 250px;
-//   resize: vertical;
-//   overflow-y: auto;
-//   scrollbar-width: thin;
-//   .ui.input {
-//     margin-bottom: 1em;
-//   }
-// `
-
 const SubscriberListWrapper = styled(Wrapper)`
-  /* background-color: rgba(32,34,37,0.6); */
-  /* border-bottom-left-radius: 3px; */
-  /* border-radius: 3px; */
-  /* border-bottom-right-radius: 3px; */
-  /* padding-left: 0.25em; */
   padding-top: 0;
   margin-bottom: 1em;
   padding-left: 1em;
@@ -172,39 +131,8 @@ const SubscriberListItem = styled.li`
       margin-bottom: 0.5em;
     }
 `
-// const SubscriberBox = styled.div`
-//   background-color: rgba(32,34,37,0.6);
-//   height: 55px;
-//   display: flex;
-//   justify-content: space-between;
-//   align-items: center;
-//   margin-bottom: 10px;
-//   padding: 10px;
-//   border-radius: 3px;
-//   > div {
-//     > div {
-//       display: inline-block;
-//     }
-//   }
-//   span {
-//       overflow: hidden;
-//       text-overflow: ellipsis;
-//       white-space: nowrap;
-//       max-width: calc(100% - 180px);
-//       color: ${props => props.color || colors.discord.text};
-//     }
-//     .ui.button {
-//       &:first-child {
-//         margin-left: 5px;
-//       }
-//       &:last-child {
-//         margin-left: 5px;
-//       }
-//     }
-// `
 
 const SubscriberBox = styled(Wrapper)`
-  /* background-color: rgba(32,34,37,0.6); */
   height: 55px;
   display: flex;
   justify-content: space-between;
@@ -234,16 +162,7 @@ const SubscriberBox = styled(Wrapper)`
     }
 `
 
-
-// const SubscriberInfoStyled = styled.div`
-//   background-color: rgba(32,34,37,0.6);
-//   box-shadow: 0 2px 0px 0 rgba(0,0,0,0.2) !important;
-//   padding: 15px 20px;
-//   border-radius: 3px;
-// `
-
 const SubscriberInfoStyled = styled(Wrapper)`
-  /* background-color: rgba(32,34,37,0.6); */
   box-shadow: 0 2px 0px 0 rgba(0,0,0,0.2) !important;
   padding: 15px 20px;
   border-radius: 3px;
@@ -333,234 +252,264 @@ const SubscriberTag = posed(SubscriberTagStyled)({
   exit: { scale: 0, opacity: 0 }
 })
 
+function Subscribers (props) {
+  const roles = useSelector(state => state.roles)
+  const subscribers = useSelector(state => state.subscribers)
+  const feed = useSelector(feedSelector.activeFeed)
+  const editing = useSelector(subscriberSelector.editing)
+  const adding = useSelector(subscriberSelector.adding)
+  const deleting = useSelector(subscriberSelector.deleting)
+  const [search, setSearch] = useState('')
+  const [selectedSubscriberID, setSelectedSubscriberID] = useState()
+  const [subscribersMentioned, setSubscribersMentioned] = useState([])
+  const [showSubscriberFilters, setShowSubscriberFilters] = useState(false)
+  const [addType, setAddType] = useState('role')
+  const [addInput, setAddInput] = useState('')
+  const dispatch = useDispatch()
+  const feedSubscribers = subscribers.filter(s => s.feed === feed._id)
+  const subscribersArr = []
+  let selectedSubscriber = {}
+  let selectedSubscriberFilterItems = []
 
-class Subscriptions extends Component {
-  constructor () {
-    super()
-    this.state = {
-      search: '',
-      selectedSubscriber: '',
-      openFiltersModal: false,
-      showSubscriberFilters: false,
-      articleSubscribersMentioned: [],
-      addSubscriberType: 'role',
-      addSubscriberId: '',
-      addingSubscriber: false,
-      deletingSubscriber: false
-    }
-  }
-
-  componentWillMount () {
-    this.props.setToThisPage()
-  }
-
-  addSubscriber = () => {
-    const type = this.state.addSubscriberType
-    const id = this.state.addSubscriberId
-    if (!type || !id) return
-    const { guildId, feedId, csrfToken } = this.props
-    this.setState({ addingSubscriber: true })
-    const payload = { type, id }
-    axios.put(`/api/guilds/${guildId}/feeds/${feedId}/subscribers`, payload, { headers: { 'CSRF-Token': csrfToken } }).then(() => {
-      toast.success(`Added a new subscriber!`)
-      this.setState({ addingSubscriber: false, addSubscriberId: '', selectedSubscriber: id })
-    }).catch(err => {
-      this.setState({ addingSubscriber: false })
-      if (err.response && err.response.status === 304) return toast.success('No changes detected')
-      if (err.response && err.response.status === 404 && this.state.addSubscriberType === 'user') return toast.error('That user was not found for this server.')
-      console.log(err.response || err.message)
-      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-      toast.error(<p>Failed to add subscriber<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
-    })
-  }
-
-  removeSubscriber = () => {
-    const id = this.state.selectedSubscriber
-    if (!id) return
-    const { guildId, feedId, csrfToken } = this.props
-    this.setState({ deletingSubscriber: true })
-    axios.delete(`/api/guilds/${guildId}/feeds/${feedId}/subscribers/${id}`, { headers: { 'CSRF-Token': csrfToken } }).then(() => {
-      toast.success('Removed subscriber')
-      this.setState({ deletingSubscriber: false })
-    }).catch(err => {
-      this.setState({ deletingSubscriber: false })
-      if (err.response && err.response.status === 304) return toast.success('No changes detected')
-      console.log(err.response || err.message)
-      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-      toast.error(<p>Failed to remove subscriber<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
-    })
-  }
-
-  render () {
-    const { guildId, feedId, roles, subscribers } = this.props
-    if (!feedId) {
-      this.props.toDashboard()
-      return <Redirect to='/' />
-    }
-    console.log(roles)
-    const rolesById = roles[guildId]
-    const subscribersArr = []
-    // const subscribers = (subscriptions[guildId] && subscriptions[guildId][feedId] ? subscriptions[guildId][feedId] : []).map(subscriber => {
-    //   if (subscriber.type !== 'role') return { ...subscriber, hexColor: colors.discord.text }
-    //   return { ...subscriber, ...rolesById[subscriber.id] }
-    // })
-    let selectedSubscriber = {}
-    let selectedSubscriberFilterItems = []
-
-    const existingSubscribers = {}
-    if (subscribers[guildId] && subscribers[guildId][feedId]) {
-      const feedSubscribers = subscribers[guildId][feedId]
-      for (const subscriberId in feedSubscribers) {
-        const subscriber = feedSubscribers[subscriberId]
-        if (subscriber.type === 'role') subscribersArr.push({ ...subscriber, ...rolesById[subscriber.id] })
-        else subscribersArr.push({ ...subscriber, hexColor: '' })
-        existingSubscribers[subscriberId] = true
+  const existingSubscribers = new Set()
+  if (feedSubscribers.length > 0) {
+    for (const subscriber of feedSubscribers) {
+      if (subscriber.type === 'role') {
+        const role = roles.find(r => r.id === subscriber.id) || {}
+        subscribersArr.push({ ...subscriber, ...role })
+      } else {
+        subscribersArr.push({ ...subscriber, hexColor: '' })
       }
-      const currentSubscriber = feedSubscribers[this.state.selectedSubscriber]
-      if (currentSubscriber) {
-        selectedSubscriber = { ...currentSubscriber, hexColor: currentSubscriber.type === 'role' ? rolesById[this.state.selectedSubscriber].hexColor : colors.discord.text }
-        const subscriberFilters = currentSubscriber.filters
-        if (subscriberFilters) {
-          for (const filterType in subscriberFilters) {
-            for (const value of subscriberFilters[filterType]) selectedSubscriberFilterItems.push({ type: filterType, value })
+      existingSubscribers.add(subscriber.id)
+    }
+    const currentSubscriber = feedSubscribers.find(s => s.id === selectedSubscriberID)
+    if (currentSubscriber) {
+      const role = roles.find(r => r.id === selectedSubscriberID) || {}
+      selectedSubscriber = {
+        ...currentSubscriber,
+        hexColor: currentSubscriber.type === 'role' ? role.hexColor : colors.discord.text
+      }
+      const subscriberFilters = currentSubscriber.filters
+      if (subscriberFilters) {
+        for (const filterType in subscriberFilters) {
+          for (const value of subscriberFilters[filterType]) {
+            selectedSubscriberFilterItems.push({ type: filterType, value })
           }
         }
       }
     }
+  }
 
-    const addSubscriberList = guildId && roles[guildId] ? Object.keys(roles[guildId]).filter(id => !existingSubscribers[id] && rolesById[id].name !== '@everyone').map(id => rolesById[id]) : []
-    const selectedSubscriberChosen = Object.keys(selectedSubscriber).length > 0
-    const selectedArticleSubscribers = this.state.articleSubscribersMentioned.map(subscriber => <SubscriberTag onClick={e => this.setState({ selectedSubscriber: subscriber.id })} key={subscriber.id} color={subscriber.hexColor}>{subscriber.name}</SubscriberTag>)
-    return (
-      <Container>
-        <PageHeader>
-          <h2>Subscriptions</h2>
-          <p>Set up subscriptions for your feed to notify roles or users when an article is delivered.</p>
-        </PageHeader>
-        <Divider />
-        <SectionTitle heading='Current' subheading='See the current users and roles that have subscriptions.' />
-        <SubscriberSearchWrapper>
-          <Input fluid icon='search' iconPosition='left' placeholder='Search...' onChange={e => this.setState({ search: e.target.value })} />
-        </SubscriberSearchWrapper>
-        <SubscriberListWrapper>
-          <SubscriberList>
-            {
-              subscribersArr.map(subscriber => {
-                if (this.state.search && !subscriber.name.toLowerCase().includes(this.state.search)) return null
-                return (
-                  <SubscriberListItem key={subscriber.id} color={subscriber.hexColor} selected={subscriber.id === this.state.selectedSubscriber}>
-                    <button onClick={e => this.setState({ selectedSubscriber: subscriber.id })}>
-                      {subscriber.name}
-                    </button>
-                    <Popup
-                      hideOnScroll
-                      trigger={<div>
-                        <SectionSubtitle>
-                          {subscriber.filters && Object.keys(subscriber.filters).length > 0 ? 'Filtered' : 'Global'}
-                        </SectionSubtitle>
-                        <SectionSubtitle>
-                          {subscriber.type}
-                        </SectionSubtitle>
-                      </div>}
-                      inverted
-                      position='top right'
-                      content='A subscriber is filtered if they have filters applied to them'
-                    />
-                  </SubscriberListItem>
-                )
-              })
-            }
-          </SubscriberList>
-        </SubscriberListWrapper>
-        <SectionSubtitle>Subscriber Details</SectionSubtitle>
-        <SubscriberBox color={selectedSubscriber.hexColor}>
-          {selectedSubscriberChosen ? <span>{selectedSubscriber.name}</span> : 'None selected'}
-          <div>
-            <PopInButton pose={selectedSubscriberChosen ? 'enter' : 'exit'} content={this.state.showSubscriberFilters ? 'Hide Filters' : 'Show Filters'} onClick={e => this.setState({ showSubscriberFilters: !this.state.showSubscriberFilters })} />
-            <PopInButton pose={selectedSubscriberChosen ? 'enter' : 'exit'} icon='trash' color='red' onClick={this.removeSubscriber} disabled={this.state.deletingSubscriber} />
-          </div>
-        </SubscriberBox>
-        <SubscriberInfo pose={this.state.showSubscriberFilters && selectedSubscriberChosen ? 'enter' : 'exit'} color={selectedSubscriber.hexColor}>
-          <SubscriberFilterTable pose={selectedSubscriberFilterItems.length > 0 ? 'enter' : 'exit'}>
-            <SectionSubtitle>Current Filters</SectionSubtitle>
-            <FiltersTable removeApiUrl={`/api/guilds/${guildId}/feeds/${feedId}/subscribers/${selectedSubscriber.id}/filters`} filters={selectedSubscriber.filters} />
-            <Divider />
-          </SubscriberFilterTable>
-          <SectionSubtitle>Add filter</SectionSubtitle>
-          <AddFilter addApiUrl={`/api/guilds/${guildId}/feeds/${feedId}/subscribers/${selectedSubscriber.id}/filters`} />
-        </SubscriberInfo>
-        <Divider />
-        <SectionTitle heading='Add' subheading='Add a new subscriber! You may add filters to a subscriber only after they are added here.' />
-        <AddSubscribersInputs>
-          <Dropdown
-          selection
-            options={[{ text: 'Role', value: 'role' }, { text: 'User', value: 'user' }]}
-            value={this.state.addSubscriberType}
-            onChange={(e, data) => this.state.addSubscriberType === data.value ? null : this.setState({ addSubscriberType: data.value, addSubscriberId: '' })}
-          />
-          {this.state.addSubscriberType === 'role'
-          ? <Dropdown
-              selection
-              search={(options, query) => options.filter((option) => option.subname.includes(query.toLowerCase()))}
-              placeholder='Select a Role'
-              options={addSubscriberList.map(subscriber => ({
-                subname: subscriber.name,
-                text: <span style={{ color: subscriber.hexColor }}>{subscriber.name}</span>,
-                value: subscriber.id }))
-              }
-              onChange={(e, data) => this.setState({ addSubscriberId: data.value })} value={this.state.addSubscriberId}
-            />
-          : <Input value={this.state.addSubscriberId} disabled placeholder='Currently unsupported on this interface' onChange={e => isNaN(e.target.value) ? null : this.setState({ addSubscriberId: e.target.value })} onKeyPress={e => e.key === 'Enter' ? this.addSubscriber() : null} />
+  const addSubscriberList = roles.filter(r => r.guildID === feed.guild && r.name !== '@everyone' && !existingSubscribers.has(r.id))
+  const selectedSubscriberChosen = Object.keys(selectedSubscriber).length > 0
+  const selectedArticleSubscribers = subscribersMentioned.map(subscriber => (
+    <SubscriberTag
+      onClick={e => setSelectedSubscriberID(subscriber.id)}
+      key={subscriber.id}
+      color={subscriber.hexColor}>
+        {subscriber.name}
+    </SubscriberTag>))
+
+    const addSubscriber = async () => {
+      if (!addType || !addInput) {
+        return
+      }
+      await dispatch(fetchAddSubscriber(feed.guild, feed._id, {
+        feed: feed._id,
+        type: addType,
+        id: addInput
+      }))
+    }
+
+    const deleteSubscriber = async () => {
+      if (!selectedSubscriberID) {
+        return
+      }
+      await dispatch(fetchDeleteSubscriber(feed.guild, feed._id, selectedSubscriberID))
+    }
+
+    const addFiltersToSubscriber = async (type, value) => {
+      const filterValues = selectedSubscriber.filters[type] || []
+      filterValues.push(value)
+      const data = {
+        filters: {
+          [type]: filterValues
+        }
+      }
+      await dispatch(fetchEditSubscriber(feed.guild, feed._id, selectedSubscriber.id, data))
+    }
+
+    const deleteFiltersFromSubscriber = async (type, value) => {
+      let filterValues = selectedSubscriber.filters[type]
+      filterValues.splice(filterValues.indexOf(value), 1)
+      if (filterValues.length === 0) {
+        filterValues = ''
+      }
+      const data = {
+        filters: {
+          [type]: filterValues
+        }
+      }
+      await dispatch(fetchEditSubscriber(feed.guild, feed._id, selectedSubscriber.id, data))
+    }
+
+  return (
+    <Container>
+      <PageHeader>
+        <h2>Subscriptions</h2>
+        <p>Set up subscriptions for your feed to notify roles or users when an article is delivered.</p>
+      </PageHeader>
+      <Divider />
+      <SectionTitle heading='Current' subheading='See the current users and roles that have subscriptions.' />
+      <SubscriberSearchWrapper>
+        <Input fluid icon='search' iconPosition='left' placeholder='Search...' onChange={e => setSearch(e.target.value)} />
+      </SubscriberSearchWrapper>
+      <SubscriberListWrapper>
+        <SubscriberList>
+          {
+            subscribersArr.map(subscriber => {
+              if (search && !subscriber.name.toLowerCase().includes(search)) return null
+              return (
+                <SubscriberListItem key={subscriber.id} color={subscriber.hexColor} selected={subscriber.id === selectedSubscriberID}>
+                  <button onClick={e => setSelectedSubscriberID(subscriber.id)}>
+                    {subscriber.name}
+                  </button>
+                  <Popup
+                    hideOnScroll
+                    trigger={<div>
+                      <SectionSubtitle>
+                        {subscriber.filters && Object.keys(subscriber.filters).length > 0 ? 'Filtered' : 'Global'}
+                      </SectionSubtitle>
+                      <SectionSubtitle>
+                        {subscriber.type}
+                      </SectionSubtitle>
+                    </div>}
+                    inverted
+                    position='top right'
+                    content='A subscriber is filtered if they have filters applied to them'
+                  />
+                </SubscriberListItem>
+              )
+            })
           }
-        </AddSubscribersInputs>
-        <AddSubscriberButtonContainer>
-          <Button color='green' content='Add' disabled={!this.state.addSubscriberId || !this.state.addSubscriberType || this.state.addingSubscriber} onClick={this.addSubscriber} />
-        </AddSubscriberButtonContainer>
-        <Divider />
-        <SectionTitle heading='Preview' subheading='See what users or roles will get mentioned for all current articles. Click an article to see exactly who will get mentioned.' />
-        <ArticleTable
-          onClickArticle={article => {
-            const matched = []
-            for (const subscriber of subscribersArr) {
-              if (!subscriber.filters) matched.push(subscriber)
-              else if (testFilters(subscriber.filters, article).passed) matched.push(subscriber)
+        </SubscriberList>
+      </SubscriberListWrapper>
+      <SectionSubtitle>Subscriber Details</SectionSubtitle>
+      <SubscriberBox color={selectedSubscriber.hexColor}>
+        {selectedSubscriberChosen ? <span>{selectedSubscriber.name}</span> : 'None selected'}
+        <div>
+          <PopInButton
+            pose={selectedSubscriberChosen ? 'enter' : 'exit'}
+            content={showSubscriberFilters ? 'Hide Filters' : 'Show Filters'}
+            onClick={e => setShowSubscriberFilters(!showSubscriberFilters)} />
+          <PopInButton
+            pose={selectedSubscriberChosen ? 'enter' : 'exit'}
+            icon='trash'
+            color='red'
+            onClick={deleteSubscriber}
+            disabled={deleting} />
+        </div>
+      </SubscriberBox>
+      <SubscriberInfo pose={showSubscriberFilters && selectedSubscriberChosen ? 'enter' : 'exit'} color={selectedSubscriber.hexColor}>
+        <SubscriberFilterTable pose={selectedSubscriberFilterItems.length > 0 ? 'enter' : 'exit'}>
+          <SectionSubtitle>Current Filters</SectionSubtitle>
+          <FiltersTable removeFilter={deleteFiltersFromSubscriber} inProgress={editing} filters={selectedSubscriber.filters} />
+          <Divider />
+        </SubscriberFilterTable>
+        <SectionSubtitle>Add filter</SectionSubtitle>
+        <AddFilter addFilter={addFiltersToSubscriber} inProgress={editing} />
+      </SubscriberInfo>
+      <Divider />
+      <SectionTitle heading='Add' subheading='Add a new subscriber! You may add filters to a subscriber only after they are added here.' />
+      <AddSubscribersInputs>
+        <Dropdown
+        selection
+          options={[{ text: 'Role', value: 'role' }, { text: 'User', value: 'user' }]}
+          value={addType}
+          onChange={(e, data) => {
+            if (addType !== data.value) {
+              setAddType(data.value)
+              setAddInput('')
             }
-            this.setState({ articleSubscribersMentioned: matched })
           }}
-          addColumns={[
-            {
-              collapsing: true,
-              headers: ['Subscribers'],
-              cellFuncs: [
-                article => {
-                  let subscribersPassed = 0
-                  for (const subscriber of subscribersArr) {
-                    if (!subscriber.filters) subscribersPassed++
-                    else if (testFilters(subscriber.filters, article).passed) ++subscribersPassed
-                  }
-                  return subscribersPassed
-                }
-              ]
-            }
-          ]}
         />
-        {selectedArticleSubscribers.length > 0
-        ? <ArticleSubscribers>
-          <SectionSubtitle>Subscribers Mentioned</SectionSubtitle>
-          <PoseGroup animateOnMount>
-            {selectedArticleSubscribers}
-          </PoseGroup>
-        </ArticleSubscribers>
-        : null
+        {addType === 'role'
+        ? <Dropdown
+            selection
+            search={(options, query) => options.filter((option) => option.subname.includes(query.toLowerCase()))}
+            placeholder='Select a Role'
+            options={addSubscriberList.map(subscriber => ({
+              subname: subscriber.name,
+              text: <span style={{ color: subscriber.hexColor }}>{subscriber.name}</span>,
+              value: subscriber.id }))
+            }
+            onChange={(e, data) => setAddInput(data.value)} value={addInput}
+          />
+        : <Input
+            value={addInput}
+            disabled
+            placeholder='Currently unsupported on this interface'
+            onChange={e => isNaN(e.target.value) ? null : setAddInput(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' ? addSubscriber() : null} />
         }
-        <Divider />
-      </Container>
-    )
-  }
+      </AddSubscribersInputs>
+      <AddSubscriberButtonContainer>
+        <Button
+          color='green'
+          content='Add'
+          disabled={!addInput || !addType || adding}
+          onClick={addSubscriber} />
+      </AddSubscriberButtonContainer>
+      <Divider />
+      <SectionTitle
+        heading='Preview'
+        subheading='See what users or roles will get mentioned for all current articles. Click an article to see exactly who will get mentioned.' />
+      <ArticleTable
+        onClickArticle={article => {
+          const matched = []
+          for (const subscriber of subscribersArr) {
+            if (!subscriber.filters) {
+              matched.push(subscriber)
+            } else if (testFilters(subscriber.filters, article).passed) {
+              matched.push(subscriber)
+            }
+          }
+          setSubscribersMentioned(matched)
+        }}
+        addColumns={[
+          {
+            collapsing: true,
+            headers: ['Subscribers'],
+            cellFuncs: [
+              article => {
+                let subscribersPassed = 0
+                for (const subscriber of subscribersArr) {
+                  if (!subscriber.filters) {
+                    subscribersPassed++
+                  } else if (testFilters(subscriber.filters, article).passed) {
+                    ++subscribersPassed
+                  }
+                }
+                return subscribersPassed
+              }
+            ]
+          }
+        ]}
+      />
+      {selectedArticleSubscribers.length > 0
+      ? <ArticleSubscribers>
+        <SectionSubtitle>Subscribers Mentioned</SectionSubtitle>
+        <PoseGroup animateOnMount>
+          {selectedArticleSubscribers}
+        </PoseGroup>
+      </ArticleSubscribers>
+      : null
+      }
+      <Divider />
+    </Container>
+  )
 }
 
-Subscriptions.propTypes = {
-  setToThisPage: PropTypes.func
-}
+export default Subscribers
 
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Subscriptions))
+// export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Subscriptions))
