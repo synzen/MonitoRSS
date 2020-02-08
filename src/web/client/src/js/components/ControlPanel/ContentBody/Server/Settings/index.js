@@ -58,7 +58,8 @@ function ServerSettings () {
   const unsaved = Object.keys(updatedValues).length > 0
   const profile = guild ? guild.profile : null
   const downloadBackup = () => {
-    fileDownload(JSON.stringify(profile, null, 2), `${profile.id}.json`)
+    // TODO: Determine what should be backed up
+    // fileDownload(JSON.stringify(profile, null, 2), `${profile.id}.json`)
   }
 
   useEffect(() => {
@@ -71,7 +72,7 @@ function ServerSettings () {
   }, [updatedValues.timezone])
 
   const getOriginalPropertyValue = (property) => {
-    if (profile[property] === undefined) {
+    if (!profile || profile[property] === undefined) {
       return botConfig[property]
     } else {
       return profile[property]
@@ -80,7 +81,7 @@ function ServerSettings () {
 
   const matchesOriginalProperty = (property, value) => {
     if (value === '') {
-      if (profile[property] === undefined) {
+      if (!profile || profile[property] === undefined) {
         return true
       } else {
         return false
@@ -148,7 +149,7 @@ function ServerSettings () {
       <LargeDivider />
       <SectionTitle heading='Backup' subheading='Download a copy of all your server feeds and settings for safekeeping. This is highly, HIGHLY recommended in case there is data loss, or if you wish to import/overwrite your settings at a later point. Restorations can only be done by requesting through the support server.' />
       <BackupButtonContainer>
-        <Button basic content='Download Backup' onClick={downloadBackup} />
+        <Button basic content='Download Backup' onClick={downloadBackup} disabled/>
         <Button basic content='Send Backup to Discord' disabled onClick={downloadBackup} />
       </BackupButtonContainer>
       <LargeDivider />

@@ -13,11 +13,7 @@ import pages from 'js/constants/pages'
 import colors from 'js/constants/colors';
 import moment from 'moment-timezone'
 import { Scrollbars } from 'react-custom-scrollbars';
-import {
-  articlesFetching as articlesFetchingSelector,
-  feedRemoving as feedRemovingSelector,
-  feedEditing as feedEditingSelector
-} from 'js/selectors/feeds'
+import feedSelectors from 'js/selectors/feeds'
 import { setActiveFeed, fetchDeleteFeed, fetchEditFeed } from 'js/actions/feeds'
 
 const Container = styled.div`
@@ -56,9 +52,9 @@ function SideBar (props) {
   const [inputTitle, setInputTitle] = useState('')
   const [inputChannel, setInputChannel] = useState('')
   const [refreshRate, setRefreshRate] = useState()
-  const articlesFetching = useSelector(articlesFetchingSelector)
-  const feedRemoving = useSelector(feedRemovingSelector)
-  const feedEditing = useSelector(feedEditingSelector)
+  const articlesFetching = useSelector(feedSelectors.articlesFetching)
+  const feedRemoving = useSelector(feedSelectors.feedRemoving)
+  const feedEditing = useSelector(feedSelectors.feedEditing)
   const failRecords = useSelector(state => state.failRecords)
   const guildID = useSelector(state => state.activeGuildID)
   const activeGuild = useSelector(state => state.guilds.find(g => g.id === state.activeGuildID))

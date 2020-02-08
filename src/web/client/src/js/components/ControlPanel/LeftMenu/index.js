@@ -14,10 +14,7 @@ import { getActiveFeed, getActiveFeedID } from 'js/selectors/feeds'
 import { setActiveGuild } from 'js/actions/guilds'
 import { setActiveFeed } from 'js/actions/feeds'
 import { changePage } from 'js/actions/page'
-import {
-  articlesFetchErrored as articlesFetchErroredSelector,
-  articlesFetching as articlesFetchingSelector
-} from 'js/selectors/feeds'
+import feedSelectors from 'js/selectors/feeds'
 
 const LeftMenuDiv = styled.div`
   display: flex;
@@ -144,10 +141,12 @@ function LeftMenu (props) {
   const guildId = useSelector(state => state.activeGuildID)
   const page = useSelector(state => state.page)
   const user = useSelector(state => state.user)
-  const feedId = useSelector(getActiveFeedID)
-  const feed = useSelector(getActiveFeed)
-  const articlesError = useSelector(articlesFetchErroredSelector)
-  const articlesFetching = useSelector(articlesFetchingSelector)
+  const feedId = useSelector(feedSelectors.activeFeedID)
+  const feed = useSelector(feedSelectors.activeFeed)
+  const feedsFetchError = useSelector(feedSelectors.feedsFetchError)
+  const articlesFetchError = useSelector(feedSelectors.articlesFetchErrored)
+  const feedsFetching = useSelector(feedSelectors.feedsFetching)
+  const articlesFetching = useSelector(feedSelectors.articlesFetching)
   const dispatch = useDispatch()
   const feedDropdownOptions = []
   const serverDropdownOptions = []
@@ -235,7 +234,17 @@ function LeftMenu (props) {
         <MenuButton to={pages.SERVER_SETTINGS} disabled={!guildId} selected={page === pages.SERVER_SETTINGS} onClick={() => menuButtonClick(pages.SERVER_SETTINGS)}>Settings</MenuButton>
         <Divider />
         <MenuSectionHeader>Feed</MenuSectionHeader>
-        <MyDropdown error={!articlesFetching && !!articlesError} loading={articlesFetching} noResultsMessage='No feeds found' search={!isMobile} placeholder={articlesFetching && feed ? `Fetching articles for ${feed.title}...` : noServers ? 'No server found' : noFeeds ? 'No feeds found' : 'Select a feed'} options={feedDropdownOptions} disabled={noFeeds || articlesFetching} value={articlesFetching ? '' : feedId} selection onChange={(e, data) => setFeed(data.value)} />
+        <MyDropdown
+          error={!feedsFetching && !articlesFetching && (!!articlesFetchError || feedsFetchError)}
+          loading={feedsFetching || articlesFetching}
+          noResultsMessage='No feeds found'
+          search={!isMobile}
+          placeholder={articlesFetching && feed ? `Fetching articles for ${feed.title}...` : noServers ? 'No server found' : noFeeds ? 'No feeds found' : 'Select a feed'}
+          options={feedDropdownOptions}
+          disabled={noFeeds || articlesFetching}
+          value={articlesFetching ? '' : feedId}
+          selection
+          onChange={(e, data) => setFeed(data.value)} />
         <MenuButton to={pages.MESSAGE} disabled={!feedId} onClick={() => menuButtonClick(pages.MESSAGE)} selected={page === pages.MESSAGE}>Message</MenuButton>            
         <MenuButton to={pages.FILTERS} disabled={!feedId} onClick={() => menuButtonClick(pages.FILTERS)} selected={page === pages.FILTERS}>Filters</MenuButton>
         <MenuButton to={pages.SUBSCRIPTIONS} disabled={!feedId} onClick={() => menuButtonClick(pages.SUBSCRIPTIONS)} selected={page === pages.SUBSCRIPTIONS}>Subscriptions</MenuButton>

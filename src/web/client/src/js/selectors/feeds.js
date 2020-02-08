@@ -1,26 +1,45 @@
-import { GET_ARTICLES, DELETE_FEED, EDIT_FEED } from "js/constants/actions/feeds"
+import { GET_ARTICLES, DELETE_FEED, EDIT_FEED, GET_FEEDS } from "js/constants/actions/feeds"
 
-export function getActiveFeed (state) {
+function activeFeed (state) {
   const feeds = state.feeds
   return feeds.find(feed => feed._id === state.activeFeedID)
 }
 
-export function getActiveFeedID (state) {
+function activeFeedID (state) {
   return state.activeFeedID
 }
 
-export function articlesFetching (state) {
+function articlesFetching (state) {
   return state.loading[GET_ARTICLES.BEGIN]
 }
 
-export function articlesFetchErrored (state) {
+function articlesFetchErrored (state) {
   return state.errors[GET_ARTICLES.FAILURE]
 }
 
-export function feedRemoving (state) {
+function feedRemoving (state) {
   return state.loading[DELETE_FEED.BEGIN]
 }
 
-export function feedEditing (state) {
+function feedEditing (state) {
   return state.loading[EDIT_FEED.BEGIN]
+}
+
+function feedsFetching (state) {
+  return state.loading[GET_FEEDS.BEGIN]
+}
+
+function feedsFetchError (state) {
+  return state.errors[GET_FEEDS.FAILURE]
+}
+
+export default {
+  activeFeed,
+  activeFeedID,
+  articlesFetching,
+  articlesFetchErrored,
+  feedRemoving,
+  feedEditing,
+  feedsFetching,
+  feedsFetchError
 }
