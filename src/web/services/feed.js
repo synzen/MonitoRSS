@@ -1,7 +1,7 @@
 const Article = require('../../structs/Article.js')
 const FeedFetcher = require('../../util/FeedFetcher.js')
 const FailRecord = require('../../structs/db/FailRecord.js')
-const ArticleModel = require('../../models/Article.js')
+const ArticleModel = require('../../models/Article.js').model
 const Feed = require('../../structs/db/Feed.js')
 const config = require('../../config.js')
 
@@ -74,8 +74,11 @@ async function deleteFeed (feedID) {
 async function getDatabaseArticles (feed, shardID) {
   // Schedule name must be determined
   const schedule = await feed.determineSchedule()
-  const data = await ArticleModel.model(feed.url, shardID, schedule.name)
-    .find({}).lean().exec()
+  const data = await ArticleModel.find({
+    scheduleName: schedule.name,
+    feedURL: feed.url,
+    shardID
+  }).find({}).lean().exec()
   return data
 }
 
