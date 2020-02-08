@@ -4,7 +4,8 @@ import {
   GET_ARTICLES,
   SET_ACTIVE_FEED,
   DELETE_FEED,
-  EDIT_FEED
+  EDIT_FEED,
+  ADD_FEED
 } from '../constants/actions/feeds'
 import FetchStatusActions from './utils/FetchStatusActions'
 import { fetchGuildFeedSubscribers } from './subscribers'
@@ -14,6 +15,12 @@ export const {
   success: setFeedsSuccess,
   failure: setFeedsFailure
 } = new FetchStatusActions(GET_FEEDS)
+
+export const {
+  begin: addFeedBegin,
+  success: addFeedSuccess,
+  failure: addFeedFailure
+} = new FetchStatusActions(ADD_FEED)
 
 export const {
   begin: deleteFeedBegin,
@@ -32,6 +39,18 @@ export const {
   success: setArticlesSuccess,
   failure: setArticlesFailure
 } = new FetchStatusActions(GET_ARTICLES)
+
+export function addGuildFeed (guildID) {
+  return async dispatch => {
+    try {
+      dispatch(addFeedBegin())
+      const { data } = await axios.post(`/api/guilds/${guildID}/feeds`)
+      dispatch(addFeedSuccess(data))
+    } catch (err) {
+      dispatch(addFeedFailure(err))
+    }
+  }
+}
 
 export function fetchGuildFeeds (guildID) {
   return async (dispatch, getState) => {
