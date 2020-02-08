@@ -13,15 +13,13 @@ function feedsReducer (state = initialState, action) {
       return state.filter(feed => feed._id !== feedID)
     case EDIT_FEED.SUCCESS:
       const clone = [...state]
-      const updatedFeed = action.payload
-      for (let i = 0; i < clone.length; ++i) {
-        const feed = clone[i]
-        if (feed._id !== updatedFeed._id) {
-          continue
+      const updated = action.payload
+      clone.forEach((feed, index) => {
+        if (feed._id === updated._id) {
+          clone[index] = updated
         }
-        clone[i] = updatedFeed
-        return clone
-      }
+      })
+      return clone
     default:
       return state
   }
