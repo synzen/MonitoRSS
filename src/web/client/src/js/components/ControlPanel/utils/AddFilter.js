@@ -1,9 +1,7 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { useSelector } from 'react-redux'
 import { Button, Input, Dropdown } from 'semantic-ui-react'
 import toast from './toast'
-import feedSelectors from 'js/selectors/feeds'
 
 const FlexRight = styled.div`
   display: flex;
@@ -36,7 +34,6 @@ const AddFilterContainer = styled.div`
 `
 
 function AddFilter (props) {
-  const editing = useSelector(feedSelectors.feedEditing)
   const [type, setType] = useState('title')
   const [value, setValue] = useState('')
   const [options, setOptions] = useState([{
@@ -55,7 +52,7 @@ function AddFilter (props) {
     text: 'Tags',
     value: 'tags'
   }])
-  const { addFilter } = props
+  const { addFilter, inProgress } = props
 
   const onCustomAddition = (e, { value }) => {
     if (!value.startsWith('raw:')) {
@@ -73,7 +70,7 @@ function AddFilter (props) {
         <Dropdown search allowAdditions selection value={type} options={options} onChange={(e, data) => setType(data.value)} onAddItem={onCustomAddition} />
         <Input placeholder='Enter a phrase' value={value} onChange={e => setValue(e.target.value)} onKeyPress={e => e.key === 'Enter' ? addFilter(type, value) : null} />
       </div>
-      <FlexRight><Button disabled={editing || !type || !value} content='Add' color='green' onClick={() => addFilter(type, value)} /></FlexRight>
+      <FlexRight><Button disabled={inProgress || !type || !value} content='Add' color='green' onClick={() => addFilter(type, value)} /></FlexRight>
     </AddFilterContainer>
   )
 }

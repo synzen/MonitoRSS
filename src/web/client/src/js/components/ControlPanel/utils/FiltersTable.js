@@ -1,14 +1,11 @@
 import React from 'react'
-import { useSelector } from 'react-redux'
 import PaginatedTable from './PaginatedTable'
 import { Button, Icon } from 'semantic-ui-react'
-import feedSelectors from 'js/selectors/feeds'
 
 const filtersTableSearchFunc = (data, search) => data.type.toLowerCase().includes(search) || data.term.toLowerCase().includes(search)
 
 function FiltersTable (props) {
-  const editing = useSelector(feedSelectors.feedEditing)
-  const { filters, removeFilter } = props
+  const { filters, removeFilter, inProgress } = props
   const filtersArray = []
   for (const filterType in filters) {
     const filterTerms = filters[filterType]
@@ -29,7 +26,7 @@ function FiltersTable (props) {
       <PaginatedTable.Cell collapsing>{data.term.startsWith('!') ? <Icon name='check' color='green' /> : null}</PaginatedTable.Cell>
       <PaginatedTable.Cell collapsing>{data.term.startsWith('!~') || data.term.startsWith('~') ? <Icon name='check' color='green' /> : null}</PaginatedTable.Cell>
       <PaginatedTable.Cell collapsing>
-        <Button fluid icon='trash' basic color='red' disabled={editing} onClick={e => removeFilter(data.type, data.term)} />
+        <Button fluid icon='trash' basic color='red' disabled={inProgress} onClick={e => removeFilter(data.type, data.term)} />
       </PaginatedTable.Cell>
     </PaginatedTable.Row>
   )

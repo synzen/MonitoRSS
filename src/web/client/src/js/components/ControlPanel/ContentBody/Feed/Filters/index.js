@@ -63,6 +63,7 @@ const FilterTag = styled.a`
 
 function Filters () {
   const feed = useSelector(feedSelectors.activeFeed)
+  const editing = useSelector(feedSelectors.feedEditing)
   const [selectedArticle, setArticle] = useState()
   const dispatch = useDispatch()
   const feedFilters = feed.filters
@@ -139,10 +140,10 @@ function Filters () {
       </PageHeader>
       <Divider />
       <SectionTitle heading='Current' subheading='Your current filters are listed here.' />
-      <FiltersTable filters={feedFilters} removeFilter={removeFilter} />
+      <FiltersTable filters={feedFilters} removeFilter={removeFilter} inProgress={feedEditing} />
       <Divider />
       <SectionTitle heading='Add' subheading='Type a new filter and add it. Note that all filters are automatically lowercased.' />
-      <AddFilter addFilter={addFilter} />
+      <AddFilter addFilter={addFilter} inProgress={feedEditing} />
       <Divider />
 
       <SectionTitle heading='Classifications' subheading='See what current articles gets blocked or passes your current filters. Click on a row to see more in-depth details.' />
