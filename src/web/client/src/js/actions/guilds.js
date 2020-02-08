@@ -2,6 +2,7 @@ import axios from 'axios'
 import {
   GET_GUILDS,
   SET_ACTIVE_GUILD,
+  EDIT_GUILD,
 } from '../constants/actions/guilds'
 import { fetchGuildChannels } from './channels'
 import { fetchGuildRoles } from './roles'
@@ -15,6 +16,12 @@ export const {
   failure: setGuildsFailure
 } = new FetchStatusActions(GET_GUILDS)
 
+export const {
+  begin: editGuildBegin,
+  success: editGuildSuccess,
+  failure: editGuildFailure
+} = new FetchStatusActions(EDIT_GUILD)
+
 export function fetchGuilds () {
   return async dispatch => {
     try {
@@ -23,6 +30,18 @@ export function fetchGuilds () {
       dispatch(setGuildsSuccess(data))
     } catch (err) {
       dispatch(setGuildsFailure(err))
+    }
+  }
+}
+
+export function fetchEditGuild (guildID, data) {
+  return async dispatch => {
+    try {
+      dispatch(editGuildBegin())
+      const { data } = await axios.patch(`/api/guilds/${guildID}`, data)
+      dispatch(editGuildSuccess(data))
+    } catch (err) {
+      dispatch(editGuildFailure(err))
     }
   }
 }
