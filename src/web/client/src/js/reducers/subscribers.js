@@ -9,7 +9,7 @@ function subscribersReducer (state = initialState, action) {
     case ADD_SUBSCRIBER.SUCCESS:
       return [...state, action.payload]
     case DELETE_SUBSCRIBER.SUCCESS:
-      return state.filter(s => s.id !== deletedID)
+      return state.filter(s => s.id !== action.payload)
     case EDIT_SUBSCRIBER.SUCCESS:
       const clone = [...state]
       const updated = action.payload
