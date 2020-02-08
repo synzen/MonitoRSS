@@ -7,6 +7,7 @@ import {
   EDIT_FEED
 } from '../constants/actions/feeds'
 import FetchStatusActions from './utils/FetchStatusActions'
+import { fetchGuildFeedSubscribers } from './subscribers'
 
 export const {
   begin: setFeedsBegin,
@@ -73,7 +74,10 @@ export function setActiveFeed (feedID) {
       dispatch(setArticlesSuccess([]))
       return
     }
-    await dispatch(fetchGuildFeedArticles(activeGuildID, feedID))
+    await Promise.all([
+      dispatch(fetchGuildFeedArticles(activeGuildID, feedID)),
+      dispatch(fetchGuildFeedSubscribers(activeGuildID, feedID))
+    ])
   }
 }
 
