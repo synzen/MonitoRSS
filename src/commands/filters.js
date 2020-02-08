@@ -7,7 +7,7 @@ const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const FeedData = require('../structs/db/FeedData.js')
+const Feed = require('../structs/db/Feed.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 
 async function feedSelectorFn (m, data) {
@@ -65,7 +65,7 @@ module.exports = async (bot, message, command, role) => {
   try {
     const profile = await Profile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
-    const feeds = await FeedData.getManyBy('guild', message.guild.id)
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command, locale: guildLocale }, feeds)
     const setMessage = new MenuUtils.Menu(message, setMessageFn)

@@ -3,7 +3,7 @@ const config = require('../config.js')
 const Schedule = require('./db/Schedule.js')
 const FailRecord = require('./db/FailRecord.js')
 const ShardStats = require('./db/ShardStats.js')
-const FeedData = require('./db/FeedData.js')
+const FeedData = require('./FeedData.js')
 const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
@@ -53,59 +53,56 @@ class FeedSchedule extends EventEmitter {
   /**
    * @param {FeedData} feed
    */
-  _delegateFeed (feed) {
-    // The guild id and date settings are needed after it is sent to the child process, and sent back for any ArticleMessages to access
-    const data = feed.toJSON()
-
-    if (Supporter.enabled && !this.allowWebhooks.has(feed.guild) && feed.webhook) {
+  _delegateFeed (feedData) {
+    if (Supporter.enabled && !this.allowWebhooks.has(feedData.guild) && feedData.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
-      feed.webhook = undefined
+      feedData.webhook = undefined
     }
 
-    if (this._sourceList.has(feed.url)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
-      let linkList = this._sourceList.get(feed.url)
-      linkList[feed._id] = data
-      if (debug.feeds.has(feed._id)) {
-        log.debug.info(`${feed._id}: Adding to pre-existing source list`)
+    if (this._sourceList.has(feedData.url)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
+      let linkList = this._sourceList.get(feedData.url)
+      linkList[feedData._id] = feedData
+      if (debug.feeds.has(feedData._id)) {
+        log.debug.info(`${feedData._id}: Adding to pre-existing source list`)
       }
     } else {
       let linkList = {}
-      linkList[feed._id] = data
-      this._sourceList.set(feed.url, linkList)
-      if (debug.feeds.has(feed._id)) {
-        log.debug.info(`${feed._id}: Creating new source list`)
+      linkList[feedData._id] = feedData
+      this._sourceList.set(feedData.url, linkList)
+      if (debug.feeds.has(feedData._id)) {
+        log.debug.info(`${feedData._id}: Creating new source list`)
       }
     }
   }
 
   /**
-   * @param {Feed} feed
+   * @param {Object<string, any>} feedData
    */
-  _addToSourceLists (feed) { // rssList is an object per guildRss
-    const toDebug = debug.feeds.has(feed._id)
+  _addToSourceLists (feedData) { // rssList is an object per guildRss
+    const toDebug = debug.feeds.has(feedData._id)
     /** @type {FailRecord} */
-    const failRecord = this.failRecords.get(feed.url)
+    const failRecord = this.failRecords.get(feedData.url)
 
-    if (feed.disabled) {
+    if (feedData.disabled) {
       if (toDebug) {
-        log.debug.info(`Shard ${this.shardID} ${feed._id}: Skipping feed delegation due to disabled status`)
+        log.debug.info(`Shard ${this.shardID} ${feedData._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
 
     if (failRecord && (failRecord.hasFailed() && failRecord.alerted)) {
       if (toDebug) {
-        log.debug.info(`Shard ${this.shardID} ${feed._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
+        log.debug.info(`Shard ${this.shardID} ${feedData._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
       return false
     }
 
     if (toDebug) {
-      log.debug.info(`Shard ${this.shardID} ${feed._id}: Preparing for feed delegation`)
-      this.debugFeedLinks.add(feed.url)
+      log.debug.info(`Shard ${this.shardID} ${feedData._id}: Preparing for feed delegation`)
+      this.debugFeedLinks.add(feedData.url)
     }
 
-    this._delegateFeed(feed)
+    this._delegateFeed(feedData)
     return true
   }
 
@@ -171,7 +168,7 @@ class FeedSchedule extends EventEmitter {
 
     const [
       failRecords,
-      feeds,
+      feedDatas,
       supporterGuilds,
       schedules
     ] = await Promise.all([
@@ -180,6 +177,8 @@ class FeedSchedule extends EventEmitter {
       Supporter.getValidGuilds(),
       Schedule.getAll()
     ])
+    const feeds = feedDatas.map(data => data.feed)
+    const feedDataJSONs = feedDatas.map(data => data.toJSON())
     const filteredFeeds = []
     const filteredFeedsIds = new Set()
     // Filter in feeds only this bot contains
@@ -224,15 +223,15 @@ class FeedSchedule extends EventEmitter {
     })
     const determinedSchedules = await Promise.all(determineSchedulePromises)
     for (let i = 0; i < filteredFeeds.length; ++i) {
-      const feed = filteredFeeds[i]
+      const feedData = feedDataJSONs[i]
       const name = determinedSchedules[i].name
       if (this.name !== name) {
         return
       }
-      if (debug.feeds.has(feed._id)) {
-        log.debug.info(`Shard ${this.shardID} ${feed._id}: Assigned schedule ${this.name}`)
+      if (debug.feeds.has(feedData._id)) {
+        log.debug.info(`Shard ${this.shardID} ${feedData._id}: Assigned schedule ${this.name}`)
       }
-      if (this._addToSourceLists(feed)) {
+      if (this._addToSourceLists(feedData)) {
         feedCount++
       }
     }

@@ -6,15 +6,15 @@ const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
-const FeedData = require('../structs/db/FeedData.js')
+const FeedData = require('../structs/FeedData.js')
 const Supporter = require('../structs/db/Supporter.js')
 
 module.exports = async (bot, message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
   try {
     const profile = await Profile.get(message.guild.id)
-    const feeds = await FeedData.getManyBy('guild', message.guild.id)
-
+    const feedDatas = await FeedData.getManyBy('guild', message.guild.id)
+    const feeds = feedDatas.map(data => data.feed)
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, null, { command: command }, feeds)
@@ -22,6 +22,7 @@ module.exports = async (bot, message, command) => {
     if (!data) {
       return
     }
+    // This is the feed data
     const { feed } = data
     if (await FailRecord.hasFailed(feed.url)) {
       return await message.channel.send(translate('commands.test.failed'))
@@ -31,7 +32,7 @@ module.exports = async (bot, message, command) => {
     if (!article) {
       return await message.channel.send(translate('commands.test.noArticles'))
     }
-    article._feed = feed.toJSON()
+    article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
     if (Supporter.enabled && profile.webhook && !(await Supporter.hasValidGuild(message.guild.id))) {
       log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
       profile.webhook = undefined
