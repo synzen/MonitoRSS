@@ -13,6 +13,14 @@ async function getSubscriberOfFeed (feedID, subscriberID) {
 }
 
 /**
+ * @param {string} feedID 
+ */
+async function getSubscribersOfFeed (feedID) {
+  const subscribers = await Subscriber.getManyBy('feed', feedID)
+  return subscribers.map(s => s.toJSON())
+}
+
+/**
  * @param {Object<string, any>} data
  * @param {string} data.feed
  * @param {string} data.id
@@ -62,6 +70,7 @@ async function deleteSubscriberOfFeed (feedID, subscriberID) {
 
 module.exports = {
   getSubscriberOfFeed,
+  getSubscribersOfFeed,
   createSubscriber,
   editSubscriber,
   deleteSubscriberOfFeed

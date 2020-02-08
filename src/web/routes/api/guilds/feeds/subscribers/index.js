@@ -8,11 +8,22 @@ const validator = require('express-joi-validation').createValidator({
 });
 const filterSchema = require('../../../../../util/validation/filterSchema.js')
 const subscriberSchema = require('../../../../../util/validation/subscriberSchema.js')
-const subscriberIDSchema = Joi.object({
+const subscriberGetSchema = Joi.object({
+  guildID: Joi.string(),
+  feedID: Joi.string()
+})
+const subscriberWithIDSchema = Joi.object({
   guildID: Joi.string(),
   feedID: Joi.string(),
   subscriberID: Joi.string()
 })
+
+// Get subscribers of a feed
+guildFeedSubscriberAPI.get(
+  '/',
+  validator.params(subscriberGetSchema),
+  controllers.api.guilds.feeds.subscribers.getSubscribers
+)
 
 // Create a subscriber
 guildFeedSubscriberAPI.post(
@@ -24,7 +35,7 @@ guildFeedSubscriberAPI.post(
 // Validate the subscriber exists for the feed in params
 guildFeedSubscriberAPI.use(
   '/:subscriberID',
-  validator.params(subscriberIDSchema),
+  validator.params(subscriberWithIDSchema),
   feedHasSubscriber
 )
 
