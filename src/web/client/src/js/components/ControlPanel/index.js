@@ -8,7 +8,7 @@ import colors from 'js/constants/colors'
 import {
   fetchUser
 } from 'js/actions/user'
-// import { Loader, Icon, Button } from 'semantic-ui-react'
+import { Loader, Icon, Button } from 'semantic-ui-react'
 import TopBar from './TopBar/index'
 
 const MainContainer = styled.div`
@@ -372,16 +372,16 @@ const EmptyBackgroundTransparent = styled(EmptyBackground)`
 // }
 
 function ControlPanel () {
-  const user = useSelector(state => state.user)
-  const guilds = useSelector(state => state.guilds)
+  const [loaded, setLoaded] = useState(false)
   const dispatch = useDispatch()
   const [ sizeInfo, setSizeInfo ] = useState({
     leftMenuExpanded: window.innerWidth >= 910,
     leftMenuNotFull: window.innerWidth >= 910
   })
 
-  useEffect(() => {
-    dispatch(fetchUser())
+  useEffect(async () => {
+    await dispatch(fetchUser())
+    setLoaded(true)
   }, [])
 
   function updateDimensions () {
@@ -405,7 +405,14 @@ function ControlPanel () {
     window.addEventListener('resize', updateDimensions)
     return () => window.removeEventListener('resize', updateDimensions)
   })
-
+  
+  if (!loaded) {
+    return (
+      <EmptyBackground>
+        <Loader inverted active={true} size='massive'>Loading</Loader>
+      </EmptyBackground>
+    )
+  }
   return (
     <div>
       {/* <EmptyBackgroundTransparent visible={this.state.socketStatus === socketStatus.DISCONNECTED}>

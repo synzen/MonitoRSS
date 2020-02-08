@@ -1,14 +1,26 @@
 import { createStore, applyMiddleware } from 'redux'
 import thunk from 'redux-thunk'
 import rootReducer from '../reducers/index-reducer.js'
-const store = createStore(rootReducer, applyMiddleware(thunk))
+
+const activeFeedID = window.localStorage.getItem('activeFeedID')
+const activeGuildID = window.localStorage.getItem('activeGuildID')
+const initialState = {
+  activeFeedID,
+  activeGuildID
+}
+
+const store = createStore(rootReducer, initialState, applyMiddleware(thunk))
 
 store.subscribe(() => {
-  const { guildId, feedId } = store.getState()
-  const storedFeedId = window.localStorage.getItem('feedId')
-  const storedGuildId = window.localStorage.getItem('guildId')
-  if (feedId && storedFeedId !== feedId) window.localStorage.setItem('feedId', feedId)
-  if (guildId && storedGuildId !== guildId) window.localStorage.setItem('guildId', guildId)
+  const { activeGuildID, activeFeedID } = store.getState()
+  const storedFeedID = window.localStorage.getItem('activeFeedID')
+  const storedGuildID = window.localStorage.getItem('activeGuildID')
+  if (activeFeedID && storedFeedID !== activeFeedID) {
+    window.localStorage.setItem('activeFeedID', activeFeedID)
+  }
+  if (activeGuildID && storedGuildID !== activeGuildID) {
+    window.localStorage.setItem('activeGuildID', activeGuildID)
+  }
 })
 
 export default store
