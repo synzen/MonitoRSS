@@ -13,15 +13,17 @@ export const {
 } = new FetchStatusActions(SET_USER)
 
 export function fetchUser () {
-  return dispatch => {
-    dispatch(fetchGuilds())
-    dispatch(setUserBegin())
-    dispatch(fetchBotConfig())
-    axios.get('/api/users/@me').then(({ data, status }) => {
-      dispatch(setUserSuccess(data))
-    }).catch(err => {
-      console.log(err)
-      dispatch(setUserFailure(err))
-    })
+  return async dispatch => {
+    await Promise.all([
+      dispatch(fetchGuilds()),
+      dispatch(setUserBegin()),
+      dispatch(fetchBotConfig()),
+      axios.get('/api/users/@me').then(({ data, status }) => {
+        dispatch(setUserSuccess(data))
+      }).catch(err => {
+        console.log(err)
+        dispatch(setUserFailure(err))
+      })
+    ])
   }
 }

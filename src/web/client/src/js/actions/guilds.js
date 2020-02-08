@@ -52,9 +52,11 @@ export function setActiveGuild (guildID) {
       type: SET_ACTIVE_GUILD,
       payload: guildID
     })
-    await dispatch(fetchGuildChannels(guildID))
-    await dispatch(fetchGuildRoles(guildID))
-    await dispatch(fetchGuildFeeds(guildID))
-    await dispatch(fetchGuildFailRecords(guildID))
+    await Promise.all([
+      dispatch(fetchGuildChannels(guildID)),
+      dispatch(fetchGuildRoles(guildID)),
+      dispatch(fetchGuildFeeds(guildID)),
+      dispatch(fetchGuildFailRecords(guildID))
+    ])
   }
 }
