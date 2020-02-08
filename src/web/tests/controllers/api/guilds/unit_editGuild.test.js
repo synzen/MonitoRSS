@@ -10,6 +10,7 @@ jest.mock('../../../../services/guild.js')
 describe('Unit::controllers/api/guilds', function () {
   afterEach(function () {
     guildServices.updateProfile.mockReset()
+    guildServices.getGuild.mockReset()
   })
   it('calls updateProfile', async function () {
     const req = {
@@ -54,11 +55,12 @@ describe('Unit::controllers/api/guilds', function () {
     expect(guildServices.updateProfile)
       .toHaveBeenCalledWith(req.guild.id, req.guild.name, updatedValues)
   })
-  it('returns the updated profile', async function () {
+  it('returns the updated guild data', async function () {
     const updatedProfile = {
       foo: 'bar'
     }
-    guildServices.updateProfile.mockResolvedValue(updatedProfile)
+    guildServices.updateProfile.mockResolvedValue()
+    guildServices.getGuild.mockResolvedValue(updatedProfile)
     const req = {
       guild: {},
       body: {
@@ -73,6 +75,22 @@ describe('Unit::controllers/api/guilds', function () {
   it('calls next if update fails', async function () {
     const error = new Error('heloz')
     guildServices.updateProfile.mockRejectedValue(error)
+    guildServices.getGuild.mockResolvedValue()
+    const req = {
+      guild: {},
+      body: {
+        prefix: 1
+      }
+    }
+    const res = createResponse()
+    const next = createNext()
+    await editGuild(req, res, next)
+    expect(next).toHaveBeenCalledWith(error)
+  })
+  it('calls next ig getGuild fails', async function () {
+    const error = new Error('heloz')
+    guildServices.updateProfile.mockResolvedValue()
+    guildServices.getGuild.mockRejectedValue(error)
     const req = {
       guild: {},
       body: {
@@ -85,10 +103,7 @@ describe('Unit::controllers/api/guilds', function () {
     expect(next).toHaveBeenCalledWith(error)
   })
   it('returns 304 if nothing to update', async function () {
-    const updatedProfile = {
-      foo: 'bar'
-    }
-    guildServices.updateProfile.mockResolvedValue(updatedProfile)
+    guildServices.updateProfile.mockResolvedValue()
     const req = {
       guild: {},
       body: {

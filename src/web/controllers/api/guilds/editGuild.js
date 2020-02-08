@@ -38,9 +38,10 @@ async function editGuild (req, res, next) {
     return res.status(304).end()
   }
   try {
-    const updated = await guildServices
+    await guildServices
       .updateProfile(guild.id, guild.name, toUpdate)
-    res.json(updated)
+    const updatedData = await guildServices.getGuild(guild.id)
+    res.json(updatedData)
   } catch (err) {
     next(err)
   }
