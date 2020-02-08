@@ -59,7 +59,7 @@ class Filter {
    */
   foundIn (string) {
     if (this.broad) {
-      return string.includes(this.searchTerm)
+      return string.toLowerCase().includes(this.searchTerm)
     } else {
       const regex = new RegExp(`(\\s|^)${Filter.escapeRegex(this.searchTerm)}(\\s|$)`, 'i')
       return string.search(regex) !== -1

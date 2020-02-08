@@ -37,4 +37,21 @@ describe('Int::structs/Filter', function () {
     const string = 'hello WoRlD'
     expect(filter.passes(string)).toEqual(true)
   })
+  it('does not care about case for broad', function () {
+    const filter = new Filter('~world')
+    const string = 'hello WoRlD'
+    expect(filter.passes(string)).toEqual(true)
+  })
+  it('does not care about case for negated', function () {
+    const filter = new Filter('!world')
+    const string = 'hello WoRlD'
+    expect(filter.passes(string)).toEqual(false)
+  })
+  it('does not care about case for broad and negated', function () {
+    const filter = new Filter('!~rld')
+    const filter2 = new Filter('~!rld')
+    const string = 'hello WoRlD'
+    expect(filter.passes(string)).toEqual(false)
+    expect(filter2.passes(string)).toEqual(false)
+  })
 })

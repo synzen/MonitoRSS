@@ -94,6 +94,19 @@ describe('Unit::structs/Filter', function () {
       expect(filter.foundIn('asdsgfoobaradfsgl')).toEqual(false)
       expect(filter.foundIn('foh foobar faz')).toEqual(true)
     })
+    it('does not care about case for broad', function () {
+      const filter = new Filter('')
+      jest.spyOn(filter, 'broad', 'get').mockReturnValue(true)
+      filter.searchTerm = 'foobar'
+      expect(filter.foundIn('Foobar')).toEqual(true)
+    })
+    it('does not care about case for non-broad', function () {
+      const filter = new Filter('')
+      jest.spyOn(filter, 'broad', 'get').mockReturnValue(false)
+      filter.searchTerm = 'foobar'
+      jest.spyOn(Filter, 'escapeRegex').mockReturnValue(filter.searchTerm)
+      expect(filter.foundIn('Foobar')).toEqual(true)
+    })
   })
   describe('passes', function () {
     it('returns not found if inverted', function () {
