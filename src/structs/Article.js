@@ -527,7 +527,7 @@ module.exports = class Article {
       summary: this.fullSummary,
       title: this.fullTitle
     }
-    let passed = true
+    let passed = false
     const filterResults = new FilterResults()
     for (const filterTypeName in filters) {
       const userFilters = filters[filterTypeName]
@@ -548,7 +548,7 @@ module.exports = class Article {
         // Array
         for (const word of userFilters) {
           const filter = new Filter(word)
-          passed = passed && filter.passes(reference)
+          passed = passed || filter.passes(reference)
           if (filter.inverted) {
             invertedMatches.push(word)
           } else {
@@ -559,7 +559,7 @@ module.exports = class Article {
         // String
         const filter = new FilterRegex(userFilters)
         const filterPassed = filter.passes(reference)
-        passed = passed && filterPassed
+        passed = passed || filterPassed
         if (filterPassed) {
           matches.push(userFilters)
         } else {
