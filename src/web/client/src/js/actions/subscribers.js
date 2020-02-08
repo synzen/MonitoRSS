@@ -55,7 +55,7 @@ export function fetchDeleteSubscriber (guildID, feedID, subscriberID) {
     try {
       dispatch(deleteSubscriberBegin())
       await axios.delete(`/api/guilds/${guildID}/feeds/${feedID}/subscribers/${subscriberID}`)
-      dispatch(deleteSubscriberSuccess())
+      dispatch(deleteSubscriberSuccess(subscriberID))
     } catch (err) {
       dispatch(deleteSubscriberFailure(err))
     }
