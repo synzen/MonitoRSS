@@ -16,11 +16,8 @@ async function getMeGuilds (req, res, next) {
       if (!hasPerm) {
         continue
       }
-      const data = await guildServices.aggregateDataOfGuild(guild.id)
-      guilds.push({
-        ...guild,
-        ...data
-      })
+      const guildData = await guildServices.getGuild(guild.id)
+      guilds.push(guildData)
     }
     res.json(guilds)
   } catch (err) {

@@ -25,13 +25,19 @@ async function getFeedLimit (guildID) {
   return Profile.getFeedLimit(guildID)
 }
 
-async function aggregateDataOfGuild (guildID) {
-  const cached = await getCachedGuild(guildID)
-  const appData = await getAppData(guildID)
-  const limit = await getFeedLimit(guildID)
+async function getGuild (guildID) {
+  const [
+    cached,
+    profile,
+    limit
+  ] = await Promise.all([
+    getCachedGuild(guildID),
+    Profile.get(guildID),
+    getFeedLimit(guildID)
+  ])
   return {
     ...cached,
-    data: appData,
+    profile,
     limit
   }
 }
@@ -72,5 +78,5 @@ module.exports = {
   updateProfile,
   getFeedLimit,
   guildHasChannel,
-  aggregateDataOfGuild
+  getGuild
 }

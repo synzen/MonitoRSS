@@ -24,13 +24,13 @@ describe('Unit::controllers/api/users/getMeGuilds', function () {
   afterEach(function () {
     userServices.getGuildsByAPI.mockReset()
     userServices.hasGuildPermission.mockReset()
-    guildServices.aggregateDataOfGuild.mockReset()
+    guildServices.getGuild.mockReset()
   })
   it('only returns guilds with permission', async function () {
     const userGuilds = [{}, {
       joe: 'ho'
     }, {}, {}]
-    const guildAggregateData = {
+    const guildData = {
       hello: 'world'
     }
     userServices.getGuildsByAPI.mockResolvedValue(userGuilds)
@@ -38,29 +38,26 @@ describe('Unit::controllers/api/users/getMeGuilds', function () {
       .mockResolvedValueOnce(false)
       .mockResolvedValueOnce(true)
       .mockResolvedValue(false)
-    guildServices.aggregateDataOfGuild
-      .mockResolvedValueOnce(guildAggregateData)
+    guildServices.getGuild
+      .mockResolvedValueOnce(guildData)
     const req = createRequest()
     const res = createResponse()
     const next = createNext()
     await getMeGuilds(req, res, next)
     expect(next).not.toHaveBeenCalled()
-    expect(res.json).toHaveBeenCalledWith([{
-      ...userGuilds[1],
-      ...guildAggregateData
-    }])
+    expect(res.json).toHaveBeenCalledWith([guildData])
   })
   it('calls services with the right args', async function () {
     const userGuilds = [{
       id: '2w3t4e',
       joe: 'ho'
     }]
-    const guildAggregateData = {
+    const guildData = {
       hello: 'world'
     }
     userServices.getGuildsByAPI.mockResolvedValue(userGuilds)
     userServices.hasGuildPermission.mockResolvedValueOnce(true)
-    guildServices.aggregateDataOfGuild.mockResolvedValue(guildAggregateData)
+    guildServices.getGuild.mockResolvedValue(guildData)
     const req = createRequest()
     const res = createResponse()
     const next = createNext()
@@ -70,7 +67,7 @@ describe('Unit::controllers/api/users/getMeGuilds', function () {
       .toHaveBeenCalledWith(123, 'aesgr')
     expect(userServices.hasGuildPermission)
       .toHaveBeenCalledWith(userGuilds[0])
-    expect(guildServices.aggregateDataOfGuild)
+    expect(guildServices.getGuild)
       .toHaveBeenCalledWith(userGuilds[0].id)
   })
 })
