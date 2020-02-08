@@ -87,11 +87,11 @@ export function fetchDeleteFeed (guildID, feedID) {
   }
 }
 
-export function fetchEditFeed (guildID, feedID, data) {
+export function fetchEditFeed (guildID, feedID, newData) {
   return async dispatch => {
     try {
       dispatch(editFeedBegin())
-      const { data } = await axios.patch(`/api/guilds/${guildID}/feeds/${feedID}`, data)
+      const { data } = await axios.patch(`/api/guilds/${guildID}/feeds/${feedID}`, newData)
       dispatch(editFeedSuccess(data))        
     } catch (err) {
       dispatch(editFeedFailure(err))
