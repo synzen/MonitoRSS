@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useSelector, useDispatch, shallowEqual } from 'react-redux'
-import { changePage } from 'js/actions/index-actions'
+import { useSelector } from 'react-redux'
 import pages from 'js/constants/pages'
 import PropTypes from 'prop-types'
 import styled from 'styled-components'
@@ -12,11 +11,12 @@ import { Divider, Button, Loader, Icon, Popup } from 'semantic-ui-react'
 import SectionSubtitle from 'js/components/utils/SectionSubtitle'
 import axios from 'axios'
 import moment from 'moment-timezone'
-import filters from '../Filters/util/filters'
+import filters from 'js/utils/testFilters'
 import { hiddenProperties } from 'js/constants/hiddenArticleProperties'
 import DetailButton from './DetailButton'
 import modal from 'js/components/utils/modal'
 import hljs from 'highlight.js'
+import feedSelector from 'js/selectors/feeds'
 
 const Container = styled.div`
   padding: 20px;
@@ -106,24 +106,28 @@ const jsonViewModalProps = {
 const autoFetch = 0
 
 function Debugger (props) {
-  const { feed, guildId, feedId, articleList, articlesError, articlesFetching, defaultConfig: config, channels, feedRefreshRates, owner } = useSelector(state => ({
-    feed: state.feed, guildId: state.guildId, feedId: state.feedId, articleList: state.articleList, articlesError: state.articlesError, articlesFetching: state.articlesFetching, defaultConfig: state.defaultConfig, channels: state.channels, feedRefreshRates: state.feedRefreshRates, owner: state.owner
-  }), shallowEqual)
-  const dispatch = useDispatch()
-  const [ feedData, setFeedData ] = useState()
+  const feed = useSelector(feedSelector.activeFeed)
+  const channels = useSelector(state => state.channels)
+  const channel = channels.find(c => c.id === feed.channel)
+  const articleList = useSelector(state => state.articles)
+  const articlesError = useSelector(feedSelector.articlesFetchErrored)
+  const articlesFetching = useSelector(feedSelector.articlesFetching)
+  const botConfig = useSelector(state => state.botConfig)
   const [ loadingState, setLoadingState ] = useState(autoFetch) // 0 = await user start, 1 = waiting for request and article fetch, 2 = fetched feed data OR articles, 3 = fetched all data
   const [ loadError, setLoadError ] = useState()
+  const [ feedData, setFeedData ] = useState()
   const articleListById = {}
   for (const article of articleList) {
     articleListById[article._id] = article
   }
-  const refreshRate = feedRefreshRates[feedId]
+  // TODO: Refresh rate
+  const refreshRate = -99
   const waitDuration = !feed
     ? 'unknown'
     : !refreshRate
-      ? config.refreshTimeMinutes < 1
-        ? `${config.refreshTimeMinutes * 60} second(s)`
-        : `${config.refreshTimeMinutes} minute(s)`
+      ? botConfig.refreshTimeMinutes < 1
+        ? `${botConfig.refreshTimeMinutes * 60} second(s)`
+        : `${botConfig.refreshTimeMinutes} minute(s)`
       : refreshRate < 1 ? `${refreshRate * 60} second(s)` : `${refreshRate} minute(s)`
 
   useEffect(() => {
@@ -136,7 +140,7 @@ function Debugger (props) {
     if (loadingState !== 1) return
     setFeedData()
     setLoadError()
-    axios.get(`/api/guilds/${guildId}/feeds/${feedId}/debug`)
+    axios.get(`/api/guilds/${feed.guild}/feeds/${feed._id}/database`)
       .then(res => {
         setFeedData(res.data)
         setLoadingState(loadingState + 1)
@@ -146,26 +150,14 @@ function Debugger (props) {
         console.log(errMessage)
         setLoadError(errMessage)
       })
-  }, [ loadingState, guildId, feedId ])
-
-  // useEffect(() => {
-  //   if (!articlesFetching && loadingData && feedData) setLoadingData(false)
-  // }, [ articlesFetching, loadingData, feedData ])
-
-  useEffect(() => {
-    if (!feedId) {
-      dispatch(changePage(pages.DASHBOARD))
-      props.history.push('/')
-    } else {
-      dispatch(changePage(pages.DEBUGGER))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [ loadingState, feed ])
 
   // When the feed changes and articles are being fetched, set loading state to 1 to fetch feed data again
   useEffect(() => {
-    if (feedId && articlesFetching && loadingState >= 3) setLoadingState(1)
-  }, [ feedId, articlesFetching, loadingState ])
+    if (feed && articlesFetching && loadingState >= 3) {
+      setLoadingState(1)
+    }
+  }, [ feed, articlesFetching, loadingState ])
 
   const customComparisonsEnabled = feed && Array.isArray(feed.customComparisons) && feed.customComparisons.length > 0
 
@@ -178,20 +170,20 @@ function Debugger (props) {
   const blockedByFilters = []
   const passedCustomComparisons = []
 
-  const maxAge = config.cycleMaxAge
+  const maxAge = botConfig.cycleMaxAge
   const cutoffDay = moment().subtract(maxAge, 'days')
 
-  const globalDateCheck = config.checkDates
+  const globalDateCheck = botConfig.checkDates
   const localDateCheck = feed ? feed.checkDates : globalDateCheck
   const checkDate = typeof localDateCheck !== 'boolean' ? globalDateCheck : localDateCheck
 
-  const globalTitleCheck = config.checkTitles
+  const globalTitleCheck = botConfig.checkTitles
   const localTitleCheck = feed ? feed.checkTitles : globalTitleCheck
   const checkTitle = typeof globalTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
 
   let allArticlesHaveDates = true
 
-  if (feedData && articleList.length > 0 && config) {
+  if (feedData && articleList.length > 0 && botConfig) {
     const customComparisons = feed.customComparisons // array of names
     const dbIds = new Set()
     const dbTitles = new Set()
@@ -235,22 +227,22 @@ function Debugger (props) {
     }
 
     // Now deal with custom comparisons
-    if (customComparisonsEnabled) {
-      const blockedArticles = [ ...oldArticles, ...blockedByDateChecks, ...blockedByFilters, ...blockedByTitleChecks ]
-      for (const articleID of blockedArticles) {
-        const article = articleListById[articleID]
-        for (var z = 0; z < customComparisons.length; ++z) {
-          const comparisonName = customComparisons[z]
-          const dbCustomComparisonValues = dbCustomComparisons[comparisonName] // Might be an array of descriptions, authors, etc.
-          const articleCustomComparisonValue = article[comparisonName]
-          if (!dbCustomComparisonValues || dbCustomComparisonValues.includes(articleCustomComparisonValue) || !articleCustomComparisonValue) {
-            continue // The comparison must either be uninitialized or invalid (no such comparison exists in any articles from the request), handled by a previous function. OR it exists in the db
-          }
-          passedCustomComparisons.push(articleID)
-          break
-        }
-      }
-    }
+    // if (customComparisonsEnabled) {
+    //   const blockedArticles = [ ...oldArticles, ...blockedByDateChecks, ...blockedByFilters, ...blockedByTitleChecks ]
+    //   for (const articleID of blockedArticles) {
+    //     const article = articleListById[articleID]
+    //     for (var z = 0; z < customComparisons.length; ++z) {
+    //       const comparisonName = customComparisons[z]
+    //       const dbCustomComparisonValues = dbCustomComparisons[comparisonName] // Might be an array of descriptions, authors, etc.
+    //       const articleCustomComparisonValue = article[comparisonName]
+    //       if (!dbCustomComparisonValues || dbCustomComparisonValues.includes(articleCustomComparisonValue) || !articleCustomComparisonValue) {
+    //         continue // The comparison must either be uninitialized or invalid (no such comparison exists in any articles from the request), handled by a previous function. OR it exists in the db
+    //       }
+    //       passedCustomComparisons.push(articleID)
+    //       break
+    //     }
+    //   }
+    // }
   }
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -288,7 +280,7 @@ function Debugger (props) {
     }
     if (!earliestArticleMoment) etaAvailable = 'Unresolvable'
     else {
-      const toAdd = feed.lastRefreshRateMin || config.refreshTimeMinutes
+      const toAdd = feed.lastRefreshRateMin || botConfig.refreshTimeMinutes
       earliestArticleMoment.add(toAdd, 'minutes')
       etaAvailable = `${earliestArticleMoment.diff(moment(), 'minutes')} minutes`
     }
@@ -350,7 +342,7 @@ function Debugger (props) {
       <InfoRowBox>
         <div>
           <SectionSubtitle>Channel</SectionSubtitle>
-          <span>{ feed && channels[guildId] && channels[guildId][feed.channel] ? `#${channels[guildId][feed.channel].name}` : <span style={{ color: colors.discord.red }}>Missing</span> }</span>
+          <span>{ channel ? `#${channel.name}` : <span style={{ color: colors.discord.red }}>Missing</span> }</span>
         </div>
         <div>
           <SectionSubtitle>Refresh Rate</SectionSubtitle>
