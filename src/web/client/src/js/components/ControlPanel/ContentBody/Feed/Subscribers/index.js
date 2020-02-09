@@ -1,7 +1,5 @@
 import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { changePage } from 'js/actions/index-actions'
-import pages from 'js/constants/pages'
 import styled from 'styled-components'
 import PageHeader from 'js/components/utils/PageHeader'
 import SectionTitle from 'js/components/utils/SectionTitle'

@@ -8,15 +8,6 @@ import SectionSubtitleDescription from 'js/components/utils/SectionSubtitleDescr
 import { isHiddenProperty } from 'js/constants/hiddenArticleProperties'
 import feedSelectors from 'js/selectors/feeds'
 
-const mapStateToProps = state => {
-  return {
-    feedId: state.feedId,
-    articleList: state.articleList,
-    articlesFetching: state.articlesFetching,
-    articlesError: state.articlesError
-  }
-}
-
 const StyledRow = styled(PaginatedTable.Row)`
   cursor: ${props => !props.clickable ? '' : 'pointer'};
   &:hover {

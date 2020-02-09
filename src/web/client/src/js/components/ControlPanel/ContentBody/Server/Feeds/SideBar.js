@@ -1,4 +1,4 @@
-import React, { Component, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import PageHeader from 'js/components/utils/PageHeader'
 import SectionTitle from 'js/components/utils/SectionTitle'
@@ -69,13 +69,12 @@ function SideBar (props) {
     if (!selectedFeed || hasFailed) {
       return
     }
-    console.log('fetching')
     axios.get(`/api/guilds/${guildID}/feeds/${selectedFeed._id}/schedule`)
       .then(({ data }) => {
         setRefreshRate(data.refreshRateMinutes)
       })
       .catch(console.error)
-  }, [selectedFeed, hasFailed])
+  }, [selectedFeed, hasFailed, guildID])
 
   if (!activeGuild || !selectedFeed) {
     return <div />

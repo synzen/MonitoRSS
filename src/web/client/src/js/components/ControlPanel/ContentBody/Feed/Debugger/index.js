@@ -184,7 +184,7 @@ function Debugger (props) {
   let allArticlesHaveDates = true
 
   if (feedData && articleList.length > 0 && botConfig) {
-    const customComparisons = feed.customComparisons // array of names
+    // const customComparisons = feed.customComparisons // array of names
     const dbIds = new Set()
     const dbTitles = new Set()
     const dbCustomComparisons = {}
