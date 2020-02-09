@@ -6,7 +6,6 @@ const Subscriber = require('./Subscriber.js')
 const Schedule = require('./Schedule.js')
 const Supporter = require('./Supporter.js')
 const FeedFetcher = require('../../util/FeedFetcher.js')
-const Article = require('../../models/Article.js')
 const dbCmds = require('../../rss/db/commands.js')
 const log = require('../../util/logger.js')
 
