@@ -106,6 +106,7 @@ const jsonViewModalProps = {
 const autoFetch = 0
 
 function Debugger (props) {
+  const schedules = useSelector(state => state.schedules)
   const feed = useSelector(feedSelector.activeFeed)
   const channels = useSelector(state => state.channels)
   const channel = channels.find(c => c.id === feed.channel)
@@ -120,14 +121,13 @@ function Debugger (props) {
   for (const article of articleList) {
     articleListById[article._id] = article
   }
-  // TODO: Refresh rate
-  const refreshRate = -99
+  const refreshRate = schedules[feed._id] ? schedules[feed._id].refreshRateMinutes : null
   const waitDuration = !feed
     ? 'unknown'
     : !refreshRate
-      ? botConfig.refreshTimeMinutes < 1
-        ? `${botConfig.refreshTimeMinutes * 60} second(s)`
-        : `${botConfig.refreshTimeMinutes} minute(s)`
+      ? botConfig.refreshRateMinutes < 1
+        ? `${botConfig.refreshRateMinutes * 60} second(s)`
+        : `${botConfig.refreshRateMinutes} minute(s)`
       : refreshRate < 1 ? `${refreshRate * 60} second(s)` : `${refreshRate} minute(s)`
 
   useEffect(() => {
@@ -280,7 +280,7 @@ function Debugger (props) {
     }
     if (!earliestArticleMoment) etaAvailable = 'Unresolvable'
     else {
-      const toAdd = feed.lastRefreshRateMin || botConfig.refreshTimeMinutes
+      const toAdd = refreshRate || botConfig.refreshRateMinutes
       earliestArticleMoment.add(toAdd, 'minutes')
       etaAvailable = `${earliestArticleMoment.diff(moment(), 'minutes')} minutes`
     }
@@ -298,12 +298,11 @@ function Debugger (props) {
     }
 
     for (const item of feedData) {
-      if (!item.expiresAt || noDatabaseDate) {
+      if (!item.date || noDatabaseDate) {
         noDatabaseDate = true
         continue
       }
-      // console.log(item.date)
-      const mom = moment(item.expiresAt)
+      const mom = moment(item.date)
       if (!latestDatabaseMoment) {
         latestDatabaseMoment = mom
         referenceDatabaseMoment = mom
