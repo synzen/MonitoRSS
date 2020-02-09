@@ -4,9 +4,9 @@ import FilterResults from './FilterResults'
 
 export default function testFilters (filters, article) {
   const referenceOverrides = {
-    description: article.fullDescription,
-    summary: article.fullSummary,
-    title: article.fullTitle
+    description: article._fullDescription,
+    summary: article._fullSummary,
+    title: article._fullTitle
   }
   let passed = false
   const filterResults = new FilterResults()
