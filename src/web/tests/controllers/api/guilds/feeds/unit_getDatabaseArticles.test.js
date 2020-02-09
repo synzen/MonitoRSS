@@ -55,6 +55,6 @@ describe('Unit::controllers/api/guilds/feeds/getDatabaseArticles', function () {
     feedServices.getDatabaseArticles.mockResolvedValue(data)
     await getDatabaseArticles(req, res, next)
     expect(feedServices.getDatabaseArticles)
-      .toHaveBeenCalledWith(req.feed.url, req.guild.shard)
+      .toHaveBeenCalledWith(req.feed, req.guild.shard)
   })
 })

@@ -10,7 +10,7 @@ async function getDatabaseArticles (req, res, next) {
   const feed = req.feed
   const shardID = req.guild.shard
   try {
-    const data = await feedServices.getDatabaseArticles(feed.url, shardID)
+    const data = await feedServices.getDatabaseArticles(feed, shardID)
     res.json(data)
   } catch (err) {
     next(err)
