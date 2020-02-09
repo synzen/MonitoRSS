@@ -59,7 +59,7 @@ class Guild extends Base {
         this.utils.JSON_KEYS.forEach(key => {
           // MUST be a flat structure
           if (key === 'shard') {
-            toStore[key] = guild.shardID || ''
+            toStore[key] = guild.shardID === undefined ? '' : guild.shardID
           } else if (key === 'iconURL') {
             toStore[key] = guild.iconURL() || ''
           } else {
