@@ -51,7 +51,7 @@ const PosedDiv = posed.div({
 function SideBar (props) {
   const [inputTitle, setInputTitle] = useState('')
   const [inputChannel, setInputChannel] = useState('')
-  const [refreshRate, setRefreshRate] = useState()
+  const schedules = useSelector(state => state.schedules)
   const articlesFetching = useSelector(feedSelectors.articlesFetching)
   const feedRemoving = useSelector(feedSelectors.feedRemoving)
   const feedEditing = useSelector(feedSelectors.feedEditing)
@@ -59,26 +59,17 @@ function SideBar (props) {
   const guildID = useSelector(state => state.activeGuildID)
   const activeGuild = useSelector(state => state.guilds.find(g => g.id === state.activeGuildID))
   const dispatch = useDispatch()
-  // TODO: Do health, refresh rates
+  // TODO: Do health
   const defaultConfig = useSelector(state => state.botConfig)
   const { selectedFeed, channelDropdownOptions } = props
   const selectedFailRecord = selectedFeed ? failRecords.find(r => r.url === selectedFeed.url) : null
-  const hasFailed = !selectedFailRecord ? false : selectedFailRecord.alerted
-
-  useEffect(() => {
-    if (!selectedFeed || hasFailed) {
-      return
-    }
-    axios.get(`/api/guilds/${guildID}/feeds/${selectedFeed._id}/schedule`)
-      .then(({ data }) => {
-        setRefreshRate(data.refreshRateMinutes)
-      })
-      .catch(console.error)
-  }, [selectedFeed, hasFailed, guildID])
+  const hasFailed = !selectedFailRecord ? false : !!selectedFailRecord.alerted
 
   if (!activeGuild || !selectedFeed) {
     return <div />
   }
+
+  const refreshRate = schedules[selectedFeed._id] ? schedules[selectedFeed._id].refreshRateMinutes : null
 
   let differentFromDefault = false
   if (selectedFeed) {
@@ -133,13 +124,13 @@ function SideBar (props) {
             ? '\u200b'
             : disabled
               ? <span style={{ color: colors.discord.yellow }}>Disabled ({selectedFeed.disabled})</span>
-              : selectedFailRecord
+              : hasFailed
                 ? <span style={{ color: colors.discord.red }}>Failed ({moment(selectedFailRecord.failedAt).format('DD MMMM Y')})</span>
                 : <div><span style={{ color: colors.discord.green }}>Normal</span></div>
         }
         <EditField>
           <SectionSubtitle>Refresh Rate</SectionSubtitle>
-      { selectedFailRecord || disabled ? 'None ' : !selectedFeed ? '\u200b' : !refreshRate ? 'Determining... ' : refreshRate < 1 ? `${refreshRate * 60} seconds      ` : `${refreshRate} minutes      `}{ selectedFailRecord ? null : <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>－</a> }
+      { hasFailed || disabled ? 'None ' : !selectedFeed ? '\u200b' : !refreshRate ? 'Determining... ' : refreshRate < 1 ? `${refreshRate * 60} seconds      ` : `${refreshRate} minutes      `}{ selectedFailRecord ? null : <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>－</a> }
         </EditField>
         <EditField>
           <SectionSubtitle>Added On</SectionSubtitle>
