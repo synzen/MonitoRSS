@@ -5,7 +5,7 @@ const RedisRole = require('../../structs/db/Redis/Role.js')
  */
 async function getRole (roleID) {
   const role = await RedisRole.fetch(roleID)
-  return role ? role.toJSON() : null
+  return role ? formatRole(role.toJSON()) : null
 }
 
 /**
