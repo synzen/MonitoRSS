@@ -8,7 +8,8 @@ import {
   ADD_FEED
 } from '../constants/actions/feeds'
 import FetchStatusActions from './utils/FetchStatusActions'
-import { fetchGuildFeedSubscribers } from './subscribers'
+import { fetchGuildFeedSubscribers, getSubscribersSuccess } from './subscribers'
+import { fetchGuildFeedSchedule } from './schedules'
 
 export const {
   begin: setFeedsBegin,
@@ -59,6 +60,10 @@ export function fetchGuildFeeds (guildID) {
       dispatch(setFeedsBegin())
       const { data } = await axios.get(`/api/guilds/${guildID}/feeds`)
       dispatch(setFeedsSuccess(data))
+      for (const feed of data) {
+        // No need to explicitly wait for schedules to be fetched
+        dispatch(fetchGuildFeedSchedule(guildID, feed._id))
+      }
       if (!data.find(feed => feed._id === activeFeedID)) {
         await dispatch(setActiveFeed(''))
       } else {
@@ -91,6 +96,7 @@ export function setActiveFeed (feedID) {
     })
     if (!feedID) {
       dispatch(setArticlesSuccess([]))
+      dispatch(getSubscribersSuccess([]))
       return
     }
     await Promise.all([
