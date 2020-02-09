@@ -379,9 +379,11 @@ function ControlPanel () {
     leftMenuNotFull: window.innerWidth >= 910
   })
 
-  useEffect(async () => {
-    await dispatch(fetchUser())
-    setLoaded(true)
+  useEffect(() => {
+    dispatch(fetchUser()).then(() => {
+      setLoaded(true)
+    })
+    
   }, [])
 
   function updateDimensions () {
