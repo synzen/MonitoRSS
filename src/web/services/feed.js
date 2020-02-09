@@ -78,7 +78,7 @@ async function getDatabaseArticles (feed, shardID) {
     scheduleName: schedule.name,
     feedURL: feed.url,
     shardID
-  }).find({}).lean().exec()
+  }).lean().exec()
   return data
 }
 
