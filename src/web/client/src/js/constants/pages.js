@@ -2,7 +2,7 @@ export default {
   DASHBOARD: '/cp',
   MESSAGE: '/cp/message',
   FILTERS: '/cp/filters',
-  SUBSCRIPTIONS: '/cp/subscriptions',
+  SUBSCRIBERS: '/cp/subscribers',
   MISC_OPTIONS: '/cp/miscoptions',
   FEEDS: '/cp/feeds',
   SERVER_SETTINGS: '/cp/settings',

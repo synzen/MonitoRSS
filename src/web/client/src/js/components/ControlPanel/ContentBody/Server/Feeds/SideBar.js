@@ -176,7 +176,7 @@ function SideBar (props) {
           <Button fluid content='Filters' icon='angle right' labelPosition='right' onClick={e => redirect(pages.FILTERS)} loading={articlesFetching} disabled={articlesFetching} />
         </EditField>
         <EditField>
-          <Button fluid content='Subscriptions' icon='angle right' labelPosition='right' onClick={e => redirect(pages.SUBSCRIPTIONS)} loading={articlesFetching} disabled={articlesFetching} />
+          <Button fluid content='Subscribers' icon='angle right' labelPosition='right' onClick={e => redirect(pages.SUBSCRIBERS)} loading={articlesFetching} disabled={articlesFetching} />
         </EditField>
         <EditField>
           <Button fluid content='Misc Options' icon='angle right' labelPosition='right' onClick={e => redirect(pages.MISC_OPTIONS)} loading={articlesFetching} disabled={articlesFetching} />

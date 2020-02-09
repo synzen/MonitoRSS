@@ -356,8 +356,8 @@ function Subscribers (props) {
   return (
     <Container>
       <PageHeader>
-        <h2>Subscriptions</h2>
-        <p>Set up subscriptions for your feed to notify roles or users when an article is delivered.</p>
+        <h2>Subscribers</h2>
+        <p>Set up user or role subscribers for your feed to notify them when an article is delivered.</p>
       </PageHeader>
       <Divider />
       <SectionTitle heading='Current' subheading='See the current users and roles that have subscriptions.' />
@@ -511,5 +511,3 @@ function Subscribers (props) {
 }
 
 export default Subscribers
-
-// export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Subscriptions))

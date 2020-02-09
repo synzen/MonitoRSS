@@ -6,7 +6,7 @@ import Feeds from './Server/Feeds/index'
 import Settings from './Server/Settings/index'
 import Message from './Feed/Message/index'
 import Filters from './Feed/Filters/index'
-import Subscriptions from './Feed/Subscriptions/index'
+import Subscribers from './Feed/Subscribers/index'
 import MiscOptions from './Feed/MiscOptions/index'
 import Debugger from './Feed/Debugger/index'
 import { Switch, Route } from 'react-router-dom'
@@ -44,7 +44,7 @@ function ContentBody () {
           <Route exact path={pages.SERVER_SETTINGS} render={routerProps => <Settings {...routerProps} />} />
           <Route exact path={pages.MESSAGE} render={routerProps => <Message {...routerProps} />} />
           <Route exact path={pages.FILTERS} render={routerProps => <Filters {...routerProps} />} />
-          <Route exact path={pages.SUBSCRIPTIONS} render={routerProps => <Subscriptions {...routerProps} />} />
+          <Route exact path={pages.SUBSCRIBERS} render={routerProps => <Subscribers {...routerProps} />} />
           <Route exact path={pages.MISC_OPTIONS} render={routerProps => <MiscOptions {...routerProps} />} />
           <Route exact path={pages.DEBUGGER} component={routerProps => <Debugger {...routerProps} />} />
           <Route render={routerProps => <Home {...routerProps} />} />
