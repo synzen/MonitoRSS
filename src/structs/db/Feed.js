@@ -326,7 +326,7 @@ class Feed extends FilterBase {
    * @param {string} scheduleName
    * @param {Object<string, any>[]} articleList
    */
-  async initializeCollection (shardID, scheduleName, articleList) {
+  async initializeArticles (shardID, scheduleName, articleList) {
     if (!Base.isMongoDatabase) {
       return
     }
@@ -334,12 +334,12 @@ class Feed extends FilterBase {
       throw new TypeError('shardID is undefined trying to initialize collection')
     }
     try {
-      const Feed = Article.model(this.url, shardID, scheduleName)
-      const docs = await dbCmds.findAll(Feed)
+      const docs = await dbCmds.findAll(null, this.url, shardID, scheduleName)
       if (docs.length > 0) {
         // The collection already exists from a previous addition, no need to initialize
         return
       }
+      dbCmds.bulkInsert(null, articleList, this.url, shardID, scheduleName)
       await dbCmds.bulkInsert(Feed, articleList)
     } catch (err) {
       log.general.warning(`Unable to initialize ${this.url}`, err, true)
@@ -374,7 +374,7 @@ class Feed extends FilterBase {
     await this.save()
     if (shardID !== undefined && articleList.length > 0) {
       const schedule = this.determineSchedule()
-      await this.initializeCollection(shardID, schedule.name, articleList)
+      await this.initializeArticles(shardID, schedule.name, articleList)
     }
   }
 
