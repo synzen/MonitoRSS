@@ -10,44 +10,48 @@ export default function testFilters (filters, article) {
   }
   let passed = false
   const filterResults = new FilterResults()
-  for (const filterTypeName in filters) {
-    const userFilters = filters[filterTypeName]
-    const trimmedName = filterTypeName.replace('other:', '')
-    const reference = referenceOverrides[trimmedName] || article[trimmedName]
-    if (!reference) {
-      continue
-    }
-    const invertedMatches = []
-    const matches = []
+  if (Object.keys(filters).length === 0) {
+    passed = true
+  } else {
+    for (const filterTypeName in filters) {
+      const userFilters = filters[filterTypeName]
+      const trimmedName = filterTypeName.replace('other:', '')
+      const reference = referenceOverrides[trimmedName] || article[trimmedName]
+      if (!reference) {
+        continue
+      }
+      const invertedMatches = []
+      const matches = []
 
-    // Filters can either be an array of words or a string (regex)
-    if (Array.isArray(userFilters)) {
-      // Array
-      for (const word of userFilters) {
-        const filter = new Filter(word)
-        passed = passed || filter.passes(reference)
-        if (filter.inverted) {
-          invertedMatches.push(word)
+      // Filters can either be an array of words or a string (regex)
+      if (Array.isArray(userFilters)) {
+        // Array
+        for (const word of userFilters) {
+          const filter = new Filter(word)
+          passed = passed || filter.passes(reference)
+          if (filter.inverted) {
+            invertedMatches.push(word)
+          } else {
+            matches.push(word)
+          }
+        }
+      } else {
+        // String
+        const filter = new FilterRegex(userFilters)
+        const filterPassed = filter.passes(reference)
+        passed = passed || filterPassed
+        if (filterPassed) {
+          matches.push(userFilters)
         } else {
-          matches.push(word)
+          invertedMatches.push(userFilters)
         }
       }
-    } else {
-      // String
-      const filter = new FilterRegex(userFilters)
-      const filterPassed = filter.passes(reference)
-      passed = passed || filterPassed
-      if (filterPassed) {
-        matches.push(userFilters)
-      } else {
-        invertedMatches.push(userFilters)
+      if (matches.length > 0) {
+        filterResults.add(filterTypeName, matches, false)
       }
-    }
-    if (matches.length > 0) {
-      filterResults.add(filterTypeName, matches, false)
-    }
-    if (invertedMatches.length > 0) {
-      filterResults.add(filterTypeName, invertedMatches, true)
+      if (invertedMatches.length > 0) {
+        filterResults.add(filterTypeName, invertedMatches, true)
+      }
     }
   }
   filterResults.passed = passed
