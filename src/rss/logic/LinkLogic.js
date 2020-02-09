@@ -70,26 +70,6 @@ class LinkLogic extends EventEmitter {
     this.dbIDs = new Set()
 
     /**
-     * @type {Object<string, Set<string>>}
-     * */
-    this.dbCustomComparisons = {}
-
-    /**
-     * @type {Set<string>}
-     */
-    this.customComparisonsToUpdate = new Set()
-
-    /**
-     * @type {Set<string>}
-     */
-    this.dbCustomComparisonsToDelete = new Set()
-
-    /**
-     * @type {Object<string, Object>}
-     */
-    this.toUpdate = {} // Article's resolved IDs as key and the article as value
-
-    /**
      * @type {Object<string, SourceSettings>}
      */
     this.memoizedSourceSettings = {}
@@ -103,47 +83,23 @@ class LinkLogic extends EventEmitter {
    * @param {Object[]} docs
    */
   async getDataFromDocuments (docs) {
-    const { dbIDs, dbTitles, dbCustomComparisons } = this
+    const { dbIDs, dbTitles } = this
 
     for (const doc of docs) {
       // Push the main data for built in comparisons
       dbIDs.add(doc.id)
       dbTitles.add(doc.title)
-
-      // Now deal with custom comparisons
-      const docCustomComparisons = doc.customComparisons
-      if (docCustomComparisons !== undefined && Object.keys(docCustomComparisons).length > 0) {
-        for (const articleProperty in docCustomComparisons) { // articleProperty = customComparison's name (such as description, author, etc.)
-          const articleValue = docCustomComparisons[articleProperty]
-          if (!dbCustomComparisons[articleProperty]) {
-            dbCustomComparisons[articleProperty] = new Set([articleValue])
-          } else {
-            dbCustomComparisons[articleProperty].add(articleValue)
-          }
-        }
-      }
     }
   }
 
   async getUnseenArticles () {
-    const { dbIDs, useIdType, articleList, dbCustomComparisons, dbCustomComparisonsToDelete } = this
+    const { dbIDs, useIdType, articleList } = this
     const toInsert = []
 
-    const checkCustomComparisons = Object.keys(dbCustomComparisons).length > 0
     for (const article of articleList) {
       article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
       if (!dbIDs.has(article._id)) {
         toInsert.push(article)
-      }
-      if (!checkCustomComparisons) {
-        continue
-      }
-      // Iterate over the values stored in the db, and see if the custom comparison names in the db exist in any of the articles. If they do, then it is marked valid
-      for (const compName in dbCustomComparisons) {
-        const validValue = article[compName] !== undefined && (typeof article[compName] !== 'object' && article[compName] !== null)
-        if (!validValue) {
-          dbCustomComparisonsToDelete.add(compName)
-        }
       }
     }
     return toInsert
@@ -185,27 +141,6 @@ class LinkLogic extends EventEmitter {
     this.memoizedSourceSettings[rssName] = { checkDates, checkTitles }
 
     return this.memoizedSourceSettings[rssName]
-  }
-
-  /**
-   * @param {Object} source - Feed object
-   */
-  validateCustomComparisons (source) {
-    const { dbCustomComparisons, dbCustomComparisonsToDelete, customComparisonsToUpdate } = this
-    const { customComparisons } = source // Array of names
-    if (!Array.isArray(customComparisons)) {
-      return
-    }
-    for (let n = customComparisons.length - 1; n >= 0; --n) {
-      const name = customComparisons[n]
-      if (name === 'title' || name === 'guid' || name === 'pubdate') { // Forbidden custom comparisons since these are already used by the bot
-        customComparisons.splice(n, 1)
-        continue
-      }
-      if (!dbCustomComparisons[name] && !dbCustomComparisonsToDelete.has(name) && !customComparisonsToUpdate.has(name)) {
-        customComparisonsToUpdate.add(name) // Since this custom comparison wasn't found in the db, it might be uninitialized or not found in any articles (as checked previously)
-      }
-    }
   }
 
   /**
@@ -254,65 +189,10 @@ class LinkLogic extends EventEmitter {
       this.emit('article', LinkLogic.formatArticle(article, source))
       return
     }
-
-    this.checkIfNewArticleByCC(rssName, source, article, toDebug)
-  }
-
-  /**
-   * @param {string} rssName
-   * @param {Object} source
-   * @param {FeedArticle} article
-   * @param {boolean} toDebug - Whether to log progress
-   */
-  checkIfNewArticleByCC (rssName, source, article, toDebug) {
-    const { dbCustomComparisons, dbCustomComparisonsToDelete } = this
-    const { customComparisons } = source
-    if (!Array.isArray(customComparisons)) {
-      return
-    }
-    for (const comparisonName of customComparisons) {
-      const dbCustomComparisonValues = dbCustomComparisons[comparisonName] // Might be an set of description, author or etc. values
-      const articleCustomComparisonValue = article[comparisonName]
-
-      const noComparisonsAvailable = !dbCustomComparisonValues
-      const articleValueStored = dbCustomComparisonValues && dbCustomComparisonValues.has(articleCustomComparisonValue)
-      const comparisonToBeDeleted = dbCustomComparisonsToDelete.has(comparisonName)
-
-      this.updateArticleCCValues(article, comparisonName)
-
-      if (noComparisonsAvailable || articleValueStored || comparisonToBeDeleted) {
-        if (toDebug) {
-          log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}. noComparisonsAvailable: ${noComparisonsAvailable}, articleValueStored: ${articleValueStored}, comparisonToBeDeleted: ${comparisonToBeDeleted}.\ndbCustomComparisonValues:\n${dbCustomComparisonValues ? JSON.stringify(dbCustomComparisonValues, null, 2) : undefined}`)
-        }
-        return
-      }
-
-      if (toDebug) {
-        log.debug.info(`${rssName}: Sending article (ID: ${article._id}, TITLE: ${article.title}) due to custom comparison check for ${comparisonName}`)
-      }
-      this.emit('article', LinkLogic.formatArticle(article, source))
-    }
-  }
-
-  /**
-   * @param {FeedArticle} article
-   * @param {string} comparisonName
-   */
-  updateArticleCCValues (article, comparisonName) {
-    const { toUpdate, customComparisonsToUpdate } = this
-    // Prepare it for update in the database
-    if (customComparisonsToUpdate.has(comparisonName)) {
-      toUpdate[article._id] = {
-        ...article,
-        customComparisons: {
-          [comparisonName]: article[comparisonName]
-        }
-      }
-    }
   }
 
   async run () {
-    const { scheduleName, link, shardID, feedData, rssList, toUpdate, dbIDs, articleList, dbTitles, debug } = this
+    const { scheduleName, link, shardID, feedData, rssList, dbIDs, articleList, dbTitles, debug } = this
     if (!scheduleName) {
       throw new Error('Missing schedule name for shared logic')
     }
@@ -334,8 +214,6 @@ class LinkLogic extends EventEmitter {
       const totalArticles = articleList.length
       const toDebug = debug.has(rssName)
 
-      this.validateCustomComparisons(source)
-
       if (toDebug) {
         log.debug.info(`${rssName}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIDs), null, 2)}\nDatabase Titles:\n${JSON.stringify(Array.from(dbTitles), null, 2)}`)
       }
@@ -345,13 +223,6 @@ class LinkLogic extends EventEmitter {
       }
     }
 
-    // Update anything if necessary
-    const updates = []
-    for (const id in toUpdate) {
-      const article = toUpdate[id]
-      updates.push(dbCmds.update(memoryCollection, article, link, shardID, scheduleName))
-    }
-    await Promise.all(updates)
     return { link, memoryCollection, memoryCollectionID }
   }
 }

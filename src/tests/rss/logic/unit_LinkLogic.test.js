@@ -65,7 +65,6 @@ describe('Unit::LinkLogic', function () {
       logic.dbIDs.add('abc')
       logic.getDataFromDocuments = async () => Promise.resolve()
       logic.getUnseenArticles = async () => Promise.resolve()
-      logic.validateCustomComparisons = jest.fn()
       logic.checkIfNewArticle = jest.fn()
       const results = await logic.run()
       expect(results).toEqual({
@@ -91,7 +90,6 @@ describe('Unit::LinkLogic', function () {
       logic.dbIDs.add('abc')
       logic.getDataFromDocuments = async () => Promise.resolve()
       logic.getUnseenArticles = async () => Promise.resolve()
-      logic.validateCustomComparisons = jest.fn()
       logic.checkIfNewArticle = jest.fn()
       const results = await logic.run()
       expect(results).toEqual({
@@ -99,30 +97,6 @@ describe('Unit::LinkLogic', function () {
         memoryCollection: feedData[memoryCollectionID],
         memoryCollectionID: memoryCollectionID
       })
-    })
-    it('calls dbCmds.update for articles in toUpdate', async function () {
-      const scheduleName = 'ewstg'
-      const shardID = 2
-      const link = '3ewt5'
-      const logic = new LinkLogic({
-        ...DEFAULT_DATA,
-        scheduleName,
-        shardID,
-        link,
-        rssList: {}
-      })
-      logic.dbIDs.add('abc')
-      const article1 = { foo: '1' }
-      const article2 = { bar: '2' }
-      logic.toUpdate['asd'] = article1
-      logic.toUpdate['asd2'] = article2
-      logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.getUnseenArticles = async () => Promise.resolve()
-      logic.validateCustomComparisons = jest.fn()
-      logic.checkIfNewArticle = jest.fn()
-      await logic.run()
-      expect(dbCmds.update).toHaveBeenCalledWith(undefined, article1, link, shardID, scheduleName)
-      expect(dbCmds.update).toHaveBeenCalledWith(undefined, article2, link, shardID, scheduleName)
     })
   })
   describe('getDataFromDocuments()', function () {
@@ -142,26 +116,6 @@ describe('Unit::LinkLogic', function () {
         expect(logic.dbTitles.has(doc.title)).toEqual(true)
       }
     })
-    it('adds the custom comparison values to this.dbCustomComparisons', async function () {
-      const logic = new LinkLogic(DEFAULT_DATA)
-      const resolvedDocuments = [{
-        customComparisons: {
-          placeholder: 'c'
-        }
-      }, {
-        customComparisons: {
-          title: 'a'
-        }
-      }]
-      await logic.getDataFromDocuments(resolvedDocuments)
-      for (const doc of resolvedDocuments) {
-        const comparisons = doc.customComparisons
-        for (const comparisonName in comparisons) {
-          const articleValue = comparisons[comparisonName]
-          expect(logic.dbCustomComparisons[comparisonName].has(articleValue)).toEqual(true)
-        }
-      }
-    })
   })
   describe('getUnseenArticles()', function () {
     afterEach(function () {
@@ -176,19 +130,6 @@ describe('Unit::LinkLogic', function () {
       await logic.getUnseenArticles()
       expect(articleList[0]._id).toEqual('a')
       expect(articleList[1]._id).toEqual('b')
-    })
-    it('adds invalid comparisons to this.dbCustomComparisonsToDelete', async function () {
-      const articleList = [{ invalid1: new Date(), invalid2: null, valid1: 'hello' }, { invalid1: 1, invalid2: 'aha', invalid3: 'hello world', valid1: 'world' }]
-      const logic = new LinkLogic({ ...DEFAULT_DATA, articleList })
-      logic.dbCustomComparisons.invalid1 = new Set()
-      logic.dbCustomComparisons.invalid2 = new Set()
-      logic.dbCustomComparisons.invalid3 = new Set()
-      logic.dbCustomComparisons.valid1 = new Set()
-      await logic.getUnseenArticles()
-      expect(logic.dbCustomComparisonsToDelete.has('invalid1')).toEqual(true)
-      expect(logic.dbCustomComparisonsToDelete.has('invalid2')).toEqual(true)
-      expect(logic.dbCustomComparisonsToDelete.has('invalid3')).toEqual(true)
-      expect(logic.dbCustomComparisonsToDelete.has('valid1')).toEqual(false)
     })
     it('returns with the new articles', async function () {
       const articleList = [{
@@ -285,36 +226,7 @@ describe('Unit::LinkLogic', function () {
       expect(logic1.memoizedSourceSettings[rssName].checkDates).toEqual(source1.checkDates)
     })
   })
-  describe('validateCustomComparisons()', function () {
-    it('removes invalid custom comparison types from source.customComparisons', function () {
-      const source = { customComparisons: ['title', 'guid', 'valid1', 'pubdate', 'valid2'] }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.validateCustomComparisons(source)
-      expect(source.customComparisons).not.toContain('title')
-      expect(source.customComparisons).not.toContain('guid')
-      expect(source.customComparisons).not.toContain('pubdate')
-      expect(source.customComparisons).toContain('valid1')
-      expect(source.customComparisons).toContain('valid2')
-    })
-    it('adds to this.customComparisonsToUpdate if the comparison was not found in db', function () {
-      const source = { customComparisons: ['valid1', 'valid2', 'valid3'] }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.dbCustomComparisonsToDelete.add(source.customComparisons[1])
-      logic.validateCustomComparisons(source)
-      expect(logic.customComparisonsToUpdate).toContain(source.customComparisons[0])
-      expect(logic.customComparisonsToUpdate).toContain(source.customComparisons[2])
-    })
-  })
   describe('checkIfNewArticle()', function () {
-    it('calls this.checkIfNewArticleByCC if article is not emitted', function () {
-      const article = { _id: 1 }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.dbIDs.add(article._id)
-      jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
-      const emitSpy = jest.spyOn(logic, 'checkIfNewArticleByCC')
-      logic.checkIfNewArticle('', {}, article)
-      expect(emitSpy).toHaveBeenCalled()
-    })
     it('emits the formatted article', function () {
       const formattedArticle = { dingus: 'berry' }
       const logic = new LinkLogic(DEFAULT_DATA)
@@ -447,107 +359,6 @@ describe('Unit::LinkLogic', function () {
         logic.checkIfNewArticle('', {}, article)
         expect(emitSpy).not.toHaveBeenCalled()
       })
-    })
-  })
-  describe('checkIfNewArticleByCC()', function () {
-    const mockArticle = { hello: 'world' }
-    const spy = jest.spyOn(LinkLogic, 'formatArticle')
-    beforeEach(function () {
-      spy.mockReturnValueOnce(mockArticle)
-    })
-    it('emits an article if custom comparison is a key in this.dbCustomComparisons and article value was not found', function () {
-      const comparisonName = 'ooo'
-      const source = { customComparisons: [comparisonName] }
-      const article = { [comparisonName]: 'value' }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.updateArticleCCValues = jest.fn()
-      logic.dbCustomComparisons[comparisonName] = new Set()
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticleByCC('', source, article)
-      expect(emitSpy).toHaveBeenCalled()
-    })
-    it('emits a formatted article', function () {
-      const comparisonName = 'ooo'
-      const source = { customComparisons: [comparisonName] }
-      const article = { [comparisonName]: 'value' }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.updateArticleCCValues = jest.fn()
-      logic.dbCustomComparisons[comparisonName] = new Set()
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticleByCC('', source, article)
-      expect(emitSpy).toHaveBeenCalledWith('article', mockArticle)
-    })
-    it('does not emit article if the source has no customComparisons', function () {
-      const article = {}
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.updateArticleCCValues = jest.fn()
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticleByCC('', {}, article)
-      expect(emitSpy).not.toHaveBeenCalled()
-    })
-    it('does not emit article if the source has non-Array customComparisons', function () {
-      const source = { customComparisons: {} }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.updateArticleCCValues = jest.fn()
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticleByCC('', source, {})
-      expect(emitSpy).not.toHaveBeenCalled()
-    })
-    it('does not emit article if the custom comparison is not a key in this.dbCustomComparisons', function () {
-      const comparisonName = 'oo'
-      const source = { customComparisons: [comparisonName] }
-      const article = { [comparisonName]: '123' }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.updateArticleCCValues = jest.fn()
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticleByCC('', source, article)
-      expect(emitSpy).not.toHaveBeenCalled()
-    })
-    it('does not emit article if the custom comparison is a key in this.dbCustomComparisons and article value was found', function () {
-      const comparisonName = 'aijf'
-      const source = { customComparisons: [comparisonName] }
-      const article = { [comparisonName]: 'value' }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.updateArticleCCValues = jest.fn()
-      logic.dbCustomComparisons[comparisonName] = new Set([article[comparisonName]])
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticleByCC('', source, article)
-      expect(emitSpy).not.toHaveBeenCalled()
-    })
-    it('does not emit article if the custom comparison is in this.dbCustomComparisonsToDelete', function () {
-      const comparisonName = 'aijf'
-      const source = { customComparisons: [comparisonName] }
-      const article = { [comparisonName]: 'value' }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.updateArticleCCValues = jest.fn()
-      logic.dbCustomComparisonsToDelete.add(comparisonName)
-      logic.dbCustomComparisons[comparisonName] = new Set()
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticleByCC('', source, article)
-      expect(emitSpy).not.toHaveBeenCalled()
-    })
-  })
-  describe('updateArticleCCValues()', function () {
-    it('adds the article comparison value to article.customComparisons if article.customComparisons does not exist', function () {
-      const comparisonName = 'abc'
-      const articleID = 'aedf'
-      const article = { foo: 'bar', [comparisonName]: 'hodunk', _id: articleID }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.customComparisonsToUpdate.add(comparisonName)
-      logic.updateArticleCCValues(article, comparisonName)
-      expect(logic.toUpdate[articleID].customComparisons).toBeDefined()
-      expect(logic.toUpdate[articleID].customComparisons).toHaveProperty(comparisonName)
-      expect(logic.toUpdate[articleID].customComparisons[comparisonName]).toEqual(article[comparisonName])
-    })
-    it('adds the article to this.toUpdate', function () {
-      const comparisonName = 'abc'
-      const articleID = 'aedgtjr'
-      const article = { foo: 'bar', [comparisonName]: 'hodunk', _id: articleID }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.customComparisonsToUpdate.add(comparisonName)
-      logic.updateArticleCCValues(article, comparisonName)
-      expect(logic.toUpdate).toHaveProperty(articleID)
-      expect(logic.toUpdate[articleID]).toEqual({ ...article, customComparisons: { [comparisonName]: article[comparisonName] } })
     })
   })
 })
