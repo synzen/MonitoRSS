@@ -40,7 +40,7 @@ class FeedSchedule extends EventEmitter {
     this._sourceList = new Map()
     this.failRecords = new Map()
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
-    this.feedData = FeedData.isMongoDatabase ? undefined : {}
+    this.feedData = Schedule.isMongoDatabase ? undefined : {}
     this.feedCount = 0 // For statistics
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
