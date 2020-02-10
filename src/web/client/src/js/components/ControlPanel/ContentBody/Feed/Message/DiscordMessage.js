@@ -1,32 +1,12 @@
-import React, { Component } from 'react'
-import { withRouter } from 'react-router-dom'
-import { connect } from 'react-redux'
-import { changePage } from 'js/actions/index-actions'
-import styled from 'styled-components'
-import pages from 'js/constants/pages'
+import React from 'react'
+import { useSelector } from 'react-redux'
 import colors from 'js/constants/colors'
+import styled from 'styled-components'
 import embedProperties from 'js/constants/embed'
-import PropTypes from 'prop-types'
 import parser from '../../../utils/textParser'
 import testFilters from '../Filters/util/filters'
 import { isHiddenProperty } from 'js/constants/hiddenArticleProperties'
-
-const mapStateToProps = state => {
-  return {
-    defaultConfig: state.defaultConfig,
-    articleList: state.articleList,
-    guildId: state.guildId,
-    feedId: state.feedId,
-    subscribers: state.subscribers,
-    bot: state.bot
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    setToThisPage: () => dispatch(changePage(pages.MESSAGE))
-  }
-}
+import feedSelectors from 'js/selectors/feeds'
 
 function numberToColour (number) {
   const r = (number & 0xff0000) >> 16
@@ -249,9 +229,14 @@ const EmbedFieldValue = styled.div`
   font-size: 14px;
 `
 
-class Message extends Component {
-  convertKeywords (word) {
-    const { articleId, articleList, guildId, feedId, subscribers } = this.props
+function Preview (props) {
+  const feed = useSelector(feedSelectors.activeFeed)
+  const subscribers = useSelector(state => state.subscribers)
+  const articleList = useSelector(state => state.articles)
+  const botConfig = useSelector(state => state.botConfig)
+  const { embeds, message, articleId, bot } = props
+
+  const convertKeywords = (word) => {
     const article = articleList[articleId]
 
     if (word.length === 0) return word
@@ -264,150 +249,138 @@ class Message extends Component {
       content = content.replace(sanitizedPlaceholderName, article[placeholderName])
     }
     // Do not replace it with article.subscriptions since it may be outdated after updating subscriptions from the subscriptions page. It will not be updated until another article fetch has occurred.
-    if (content.includes('{subscriptions}') && feedId && guildId) {
+    if (content.includes('{subscriptions}')) {
       const feedSubscribers = []
-      const thisSubscribers = subscribers[guildId][feedId]
+      const thisSubscribers = subscribers.filter(s => s.feed === feed._id)
       for (const id in thisSubscribers) {
         const subscriber = thisSubscribers[id]
-        const hasFilters = subscriber.filters && typeof subscriber.filters === 'object' && Object.keys(subscriber.filters).length > 0
-        if (!hasFilters) feedSubscribers.push(`<@${id}> `)
-        else if (article && testFilters(subscriber.filters, article).passed) feedSubscribers.push(`<@${id}>`)
+        const hasFilters = Object.keys(subscriber.filters).length > 0
+        if (!hasFilters) {
+          feedSubscribers.push(`<@${id}> `)
+        } else if (article && testFilters(subscriber.filters, article).passed) {
+          feedSubscribers.push(`<@${id}>`)
+        }
       }
       content = content.replace('{subscriptions}', feedSubscribers.length > 0 ? feedSubscribers.join(' ') : '')
     }
     return content
   }
 
-  render () {
-    const { embeds, message, articleId, articleList, bot, defaultConfig } = this.props
-    const embedElements = []
-    const article = articleList[articleId]
-    let hasEmbeds = false
+  const embedElements = []
+  const article = articleList[articleId]
+  let hasEmbeds = false
 
-    for (let i = 0; i < embeds.length; ++i) {
-      const properties = embeds[i]
-      const parsedProperties = {}
-      let populatedEmbed = false
-      for (const propertyName in embedProperties) {
-        const propName = embedProperties[propertyName]
-        if (properties[propName] === undefined) continue
-        parsedProperties[propName] = article && propName !== 'color' ? this.convertKeywords(properties[propName]) : properties[propName] // color is a number
-        populatedEmbed = populatedEmbed || !!properties[propName]
-      }
-      const fields = properties.fields
-      const fieldElements = []
-      if (fields) {
-        const validFields = fields.filter(field => field.title && field.value)
-        const lookedAt = new Set()
-        const gridColumnValues = []
-        for (let i = 0; i < validFields.length; ++i) {
-          const field = validFields[i]
-          if (!populatedEmbed) {
-            populatedEmbed = true
-          }
-          const nextFieldInline = validFields[i + 1] && validFields[i + 1].inline
-          const nextNextFieldInline = validFields[i + 2] && validFields[i + 2].inline
-          if (!lookedAt.has(i)) {
-            if (field.inline && nextFieldInline) {
-              lookedAt.add(i).add(i + 1)
-              if (nextNextFieldInline) {
-                lookedAt.add(i + 2)
-                gridColumnValues.push('1/5', '5/9', '9/13')
-              } else {
-                gridColumnValues.push('1/7', '7/13')
-              }
-            } else {
-              lookedAt.add(i)
-              gridColumnValues.push('1/13')
-            }
-          }
-          fieldElements.push(
-            <EmbedField key={`field${i}`} gridColumns={gridColumnValues[i]}>
-              <EmbedFieldTitle>{parser.parseEmbedTitle(this.convertKeywords(field.title))}</EmbedFieldTitle>
-              <EmbedFieldValue>{parser.parseAllowLinks(this.convertKeywords(field.value))}</EmbedFieldValue>
-            </EmbedField>
-          )
+  for (let i = 0; i < embeds.length; ++i) {
+    const properties = embeds[i]
+    const parsedProperties = {}
+    let populatedEmbed = false
+    for (const propertyName in embedProperties) {
+      const propName = embedProperties[propertyName]
+      if (properties[propName] === undefined) continue
+      parsedProperties[propName] = article && propName !== 'color' ? convertKeywords(properties[propName]) : properties[propName] // color is a number
+      populatedEmbed = populatedEmbed || !!properties[propName]
+    }
+    const fields = properties.fields
+    const fieldElements = []
+    if (fields) {
+      const validFields = fields.filter(field => field.name && field.value)
+      const lookedAt = new Set()
+      const gridColumnValues = []
+      for (let i = 0; i < validFields.length; ++i) {
+        const field = validFields[i]
+        if (!populatedEmbed) {
+          populatedEmbed = true
         }
-      }
-      if (populatedEmbed) {
-        if (!hasEmbeds) hasEmbeds = true
-        embedElements.push(
-          <Embed key={`embed_preview${i}`}>
-            <Pill color={properties[embedProperties.color]} />
-            <NonPill>
-              { properties[embedProperties.authorName] || properties[embedProperties.authorNameCamelCase]
-                ? <Author>
-                  { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconUrlCamelCase] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconUrl] || parsedProperties[embedProperties.authorIconUrlCamelCase]} /> : null }
-                  { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase]}>{parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase]}</a> : parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase] }
-                </Author>
-                : undefined }
-
-              {parsedProperties[embedProperties.title]
-                ? <Title as={properties[embedProperties.url] ? 'a' : 'span'} href={parsedProperties[embedProperties.url]} target='_blank' >
-                  {parser.parseEmbedTitle(parsedProperties[embedProperties.title])}
-                </Title>
-                : null
-              }
-              {parsedProperties[embedProperties.description]
-                ? <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
-                : null
-              }
-              { fieldElements.length > 0
-                ? <EmbedFields>{fieldElements}</EmbedFields>
-                : [] }
-              { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailUrlCamelCase]
-                ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} target='_blank'>
-                  <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} alt='Embed Thumbnail' />
-                </Thumbnail>
-                : undefined }
-              {/* </BodyWrapper> */}
-              { properties[embedProperties.imageUrl] || properties[embedProperties.imageUrlCamelCase]
-                ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} target='_blank' >
-                  <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} alt='Embed MainImage' />
-                </Image>
-                : undefined }
-
-              { properties[embedProperties.footerText] || properties[embedProperties.footerTextCamelCase] || (parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none')
-                ? <Footer>
-                  { parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconUrlCamelCase] ? <img src={parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconUrlCamelCase]} alt='Embed Footer Icon' /> : null }
-                  {properties[embedProperties.footerText] || properties[embedProperties.footerTextCamelCase]}{(parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none') ? `${parsedProperties[embedProperties.footerText] || parsedProperties[embedProperties.footerTextCamelCase] ? ' • ' : ''}[${parsedProperties[embedProperties.timestamp] === 'article' ? 'ARTICLE TIMESTAMP' : 'NOW TIMESTAMP'}]` : '' }
-                </Footer>
-                : undefined }
-            </NonPill>
-          </Embed>
+        const nextFieldInline = validFields[i + 1] && validFields[i + 1].inline
+        const nextNextFieldInline = validFields[i + 2] && validFields[i + 2].inline
+        if (!lookedAt.has(i)) {
+          if (field.inline && nextFieldInline) {
+            lookedAt.add(i).add(i + 1)
+            if (nextNextFieldInline) {
+              lookedAt.add(i + 2)
+              gridColumnValues.push('1/5', '5/9', '9/13')
+            } else {
+              gridColumnValues.push('1/7', '7/13')
+            }
+          } else {
+            lookedAt.add(i)
+            gridColumnValues.push('1/13')
+          }
+        }
+        fieldElements.push(
+          <EmbedField key={`field${i}`} gridColumns={gridColumnValues[i]}>
+            <EmbedFieldTitle>{parser.parseEmbedTitle(convertKeywords(field.name))}</EmbedFieldTitle>
+            <EmbedFieldValue>{parser.parseAllowLinks(convertKeywords(field.value))}</EmbedFieldValue>
+          </EmbedField>
         )
       }
     }
+    if (populatedEmbed) {
+      if (!hasEmbeds) hasEmbeds = true
+      embedElements.push(
+        <Embed key={`embed_preview${i}`}>
+          <Pill color={properties[embedProperties.color]} />
+          <NonPill>
+            { properties[embedProperties.authorName] || properties[embedProperties.authorNameCamelCase]
+              ? <Author>
+                { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconUrlCamelCase] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconUrl] || parsedProperties[embedProperties.authorIconUrlCamelCase]} /> : null }
+                { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase]}>{parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase]}</a> : parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase] }
+              </Author>
+              : undefined }
 
-    return (
-      <Wrapper>
-        <UserInfo avatar={bot ? bot.displayAvatarURL : ''} >
-          <div />
-          <h2>
-            <Username>{bot ? bot.username : 'Unknown'}</Username>
-            <BotTag>BOT</BotTag>
-            <TimeTag>Today at 12:00 AM</TimeTag>
-          </h2>
-        </UserInfo>
-        <Content>
-          { (message || defaultConfig.defaultMessage) === '{empty}' && hasEmbeds ? '' : article ? parser.parse(this.convertKeywords(message || defaultConfig.defaultMessage || ''), true, {}, parser.jumboify) : parser.parse(message || defaultConfig.defaultMessage || '', true, {}, parser.jumboify) }
-          {embedElements}
-        </Content>
-      </Wrapper>
-    )
+            {parsedProperties[embedProperties.title]
+              ? <Title as={properties[embedProperties.url] ? 'a' : 'span'} href={parsedProperties[embedProperties.url]} target='_blank' >
+                {parser.parseEmbedTitle(parsedProperties[embedProperties.title])}
+              </Title>
+              : null
+            }
+            {parsedProperties[embedProperties.description]
+              ? <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
+              : null
+            }
+            { fieldElements.length > 0
+              ? <EmbedFields>{fieldElements}</EmbedFields>
+              : [] }
+            { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailUrlCamelCase]
+              ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} target='_blank'>
+                <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} alt='Embed Thumbnail' />
+              </Thumbnail>
+              : undefined }
+            {/* </BodyWrapper> */}
+            { properties[embedProperties.imageUrl] || properties[embedProperties.imageUrlCamelCase]
+              ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} target='_blank' >
+                <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} alt='Embed MainImage' />
+              </Image>
+              : undefined }
+
+            { properties[embedProperties.footerText] || properties[embedProperties.footerTextCamelCase] || (parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none')
+              ? <Footer>
+                { parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconUrlCamelCase] ? <img src={parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconUrlCamelCase]} alt='Embed Footer Icon' /> : null }
+                {properties[embedProperties.footerText] || properties[embedProperties.footerTextCamelCase]}{(parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none') ? `${parsedProperties[embedProperties.footerText] || parsedProperties[embedProperties.footerTextCamelCase] ? ' • ' : ''}[${parsedProperties[embedProperties.timestamp] === 'article' ? 'ARTICLE TIMESTAMP' : 'NOW TIMESTAMP'}]` : '' }
+              </Footer>
+              : undefined }
+          </NonPill>
+        </Embed>
+      )
+    }
   }
+
+  return (
+    <Wrapper>
+      <UserInfo avatar={bot ? bot.displayAvatarURL : ''} >
+        <div />
+        <h2>
+          <Username>{bot ? bot.username : 'Unknown'}</Username>
+          <BotTag>BOT</BotTag>
+          <TimeTag>Today at 12:00 AM</TimeTag>
+        </h2>
+      </UserInfo>
+      <Content>
+        { (message || botConfig.defaultMessage) === '{empty}' && hasEmbeds ? '' : article ? parser.parse(convertKeywords(message || botConfig.defaultMessage || ''), true, {}, parser.jumboify) : parser.parse(message || botConfig.defaultMessage || '', true, {}, parser.jumboify) }
+        {embedElements}
+      </Content>
+    </Wrapper>
+  )
 }
 
-Message.propTypes = {
-  embeds: PropTypes.array,
-  message: PropTypes.string,
-  articleId: PropTypes.number,
-  articleList: PropTypes.array,
-  guildId: PropTypes.string,
-  feedId: PropTypes.string,
-  subscribers: PropTypes.object,
-  bot: PropTypes.object,
-  defaultConfig: PropTypes.object
-}
-
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Message))
+export default Preview

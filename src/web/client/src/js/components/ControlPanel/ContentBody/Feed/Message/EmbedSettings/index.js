@@ -1,42 +1,22 @@
-import React from 'react'
-import { withRouter } from 'react-router-dom'
-import { connect } from 'react-redux'
-import { changePage } from 'js/actions/index-actions'
+import React, { useState, useEffect, useReducer } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import { Input, Popup, Button, Divider, Checkbox, Icon } from 'semantic-ui-react'
 import styled from 'styled-components'
-import pages from 'js/constants/pages'
 import toast from '../../../../utils/toast'
 import SectionTitle from 'js/components/utils/SectionTitle'
 import SectionItemTitle from 'js/components/utils/SectionItemTitle'
 import PopInButton from '../../../../utils/PopInButton'
 import TextArea from 'js/components/utils/TextArea'
 import Wrapper from 'js/components/utils/Wrapper'
-import PropTypes from 'prop-types'
 import embedPropertiesNames from 'js/constants/embed.js'
 import posed, { PoseGroup } from 'react-pose'
-import axios from 'axios'
 import { Scrollbars } from 'react-custom-scrollbars'
 import Section from './Section'
-
-const EMBED_FIELD_LIMITS = {
-  name: 256,
-  value: 1024
-}
-
-const mapStateToProps = state => {
-  return {
-    guildId: state.guildId,
-    feedId: state.feedId,
-    feeds: state.feeds,
-    csrfToken: state.csrfToken
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    setToThisPage: () => dispatch(changePage(pages.MESSAGE))
-  }
-}
+import feedSelectors from 'js/selectors/feeds'
+import { fetchEditFeed } from 'js/actions/feeds'
+import fastEqual from 'fast-deep-equal'
+import embedsReducer from './embedsReducer'
+import { setProperty, setFieldProperty, addField, setEmbeds, removeField } from './embedsActions'
 
 const ActionButtons = styled.div`
   display: flex;
@@ -90,413 +70,281 @@ const AddEmbedFieldBox = styled(EmbedFieldBoxStyles)`
   height: 100%;
 `
 
-const EMBED_FIELD_KEYS = ['title', 'value', 'inline']
-
-class EmbedSettings extends React.Component {
-  constructor () {
-    super()
-
-    this.state = {
-      index: 0,
-      unsaved: false,
-      saving: false,
-      embeds: [],
-      showAuthorSection: false
+function pruneFields (fields) {
+  const fieldsCopy = [...fields]
+  for (let i = fieldsCopy.length - 1; i >= 0; --i) {
+    const fieldCopy = {...fieldsCopy[i]}
+    if (!fieldCopy.name || !fieldCopy.value) {
+      fieldsCopy.splice(i, 1)
     }
-
+    fieldsCopy[i] = fieldCopy
   }
+  return fieldsCopy
+}
 
-  componentDidMount () {
-    this.setState({ embeds: JSON.parse(JSON.stringify(this.props.embedsOriginal)) })
-  }
-
-  componentDidUpdate (prevProps) {
-    const { embedsOriginal } = this.props
-    // Compare the original embeds
-    if (prevProps.embedsOriginal.length > 0 && embedsOriginal.length === 0) return this.setState({ index: 0, embeds: [], unsaved: false })
-    else if (prevProps.embedsOriginal.length === 0 && embedsOriginal.length > 0) return this.setState({ index: 0, embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-    else {
-      const lenToLoop = embedsOriginal.length > prevProps.embedsOriginal.length ? embedsOriginal.length : prevProps.embedsOriginal.length
-      for (let i = 0; i < lenToLoop; ++i) {
-        const prevOriginalEmbed = prevProps.embedsOriginal[i]
-        const thisOriginalEmbed = embedsOriginal[i]
-        if (!prevOriginalEmbed && !thisOriginalEmbed) continue // This is a new embed the user wants to add but hasn't applied - it's only available in this state
-        else if ((!prevOriginalEmbed && thisOriginalEmbed) || (prevOriginalEmbed && !thisOriginalEmbed)) {
-          // This is a new embed that the user has applied and is in effect, OR an embed that was just deleted
-          const newState = { embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false }
-          if (this.state.index > embedsOriginal.length) newState.index = 0
-          return this.setState(newState)
-        }
-
-        // String properties
-        for (const property in embedPropertiesNames) {
-          const propertyName = embedPropertiesNames[property]
-          // Check if they exist first since this may be a new embed that doesn't exist in either of them
-          if (prevOriginalEmbed[propertyName] !== thisOriginalEmbed[propertyName]) return this.setState({ embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-        }
-
-        // Fields
-        if (!prevOriginalEmbed.fields && thisOriginalEmbed.fields) return this.setState({ embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-        else if (prevOriginalEmbed.fields && !thisOriginalEmbed.fields) return this.setState({ embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-        else if (prevOriginalEmbed.fields && thisOriginalEmbed.fields) {
-          const prevOriginalEmbedFields = prevOriginalEmbed.fields
-          const thisOriginalEmbedFields = thisOriginalEmbed.fields
-          if ((!prevOriginalEmbedFields && thisOriginalEmbedFields) || (prevOriginalEmbedFields && !thisOriginalEmbedFields)) return this.setState({ embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-          else if (prevOriginalEmbedFields && thisOriginalEmbedFields) {
-            if (prevOriginalEmbedFields.length !== thisOriginalEmbedFields.length) return this.setState({ embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-            else {
-              for (let j = 0; j < prevOriginalEmbedFields.length; ++j) {
-                const prevOriginalEmbedField = prevOriginalEmbedFields[j]
-                const thisOriginalEmbedField = thisOriginalEmbedFields[j]
-                for (const key of EMBED_FIELD_KEYS) {
-                  if (prevOriginalEmbedField && thisOriginalEmbedField && prevOriginalEmbedField[key] !== thisOriginalEmbedField[key]) return this.setState({ embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-                  else if ((!prevOriginalEmbedField && thisOriginalEmbedField) || (prevOriginalEmbedField && !thisOriginalEmbedField)) return this.setState({ embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // Now check and update unsaved if necessary
-      if (this.state.unsaved) return
-
-      const originalEmbed = embedsOriginal[this.state.index]
-      const thisEmbed = this.state.embeds[this.state.index]
-
-      // String properties
-      if (thisEmbed) {
-        for (const property in embedPropertiesNames) {
-          const propertyName = embedPropertiesNames[property]
-          if (!originalEmbed) {
-            if (thisEmbed[propertyName]) return this.setState({ unsaved: true }) // Check if any values exist to qualify it for unsaved as a new embed
-          } else {
-            if ((originalEmbed[propertyName] != null && thisEmbed[propertyName] != null && originalEmbed[propertyName] !== thisEmbed[propertyName])) return this.setState({ unsaved: true })
-            else if (originalEmbed[propertyName] == null && thisEmbed[propertyName] != null) return this.setState({ unsaved: true })
-            else if (originalEmbed[propertyName] != null && thisEmbed[propertyName] == null) return this.setState({ unsaved: true })
-          }
-        }
-      }
-
-      // Check the fields as well
-      const originalEmbedFields = originalEmbed ? originalEmbed.fields : null
-      const thisEmbedFields = thisEmbed ? thisEmbed.fields : null
-      if (originalEmbedFields && !thisEmbedFields) return this.setState({ unsaved: true })
-      else if (!originalEmbedFields && thisEmbedFields) {
-        for (const field of thisEmbedFields) {
-          if (field.title && field.value) return this.setState({ unsaved: true })
-        }
-      } else if (originalEmbedFields && thisEmbedFields) {
-        for (let i = 0; i < originalEmbedFields.length; ++i) {
-          const originalField = originalEmbedFields[i]
-          const thisField = thisEmbedFields[i]
-          for (const key of EMBED_FIELD_KEYS) {
-            // Check if thisField exists since it may be deleted
-            if (thisField && originalField[key] && thisField[key] && originalField[key] !== thisField[key]) return this.setState({ unsaved: true })
-            else if (thisField && !originalField[key] && thisField[key]) return this.setState({ unsaved: true })
-            else if (thisField && originalField[key] && !thisField[key]) return this.setState({ unsaved: true })
-          }
-        }
-        if (originalEmbedFields.length !== thisEmbedFields.length) {
-          // First condition checks if the user has deleted embeds here
-          if (originalEmbedFields.length > thisEmbedFields.length) return this.setState({ unsaved: true })
-          else {
-            // Now the shorter one is original, so there must be added embed fields to thisEmbedFields. They may have be empty, so manual checks are required below.
-            for (let i = originalEmbedFields.length; i < thisEmbedFields.length; ++i) {
-              const thisField = thisEmbedFields[i]
-              if (thisField.title && thisField.value) return this.setState({ unsaved: true })
-            }
-          }
-          return
-        }
-      }
+function pruneEmbed (embed) {
+  const embedCopy = {...embed}
+  for (const key in embedCopy) {
+    const embedValue = embedCopy[key]
+    if (!embedValue) {
+      delete embedCopy[key]
     }
-  }
-
-  prevIndex = () => {
-    if (this.state.index <= 0 || this.state.unsaved) return
-    this.setState({ index: this.state.index - 1 })
-  }
-
-  nextIndex = () => {
-    if (this.state.index >= 8 || this.state.unsaved) return
-    this.setState({ index: this.state.index + 1 })
-  }
-
-  onUpdate = (property, value) => {
-    const { embedsOriginal } = this.props
-    const embeds = [ ...this.state.embeds ]
-    let currentEmbed = embeds[this.state.index] ? { ...embeds[this.state.index] } : null
-    if (!currentEmbed) {
-      embeds.push({ [property]: value })
-      currentEmbed = embeds[embeds.length - 1]
-    } else {
-      currentEmbed[property] = value
-      embeds[this.state.index] = currentEmbed
-    }
-
-    if (property === embedPropertiesNames.timestamp && value === 'none') {
-      if ((!this.state.embeds[this.state.index] || !this.state.embeds[this.state.index][property]) && (!embedsOriginal[this.state.index] || !embedsOriginal[this.state.index][property])) return this.state.unsaved === true ? this.setState({ unsaved: false }) : null // No change
-      else if (currentEmbed[property] && (!embedsOriginal[this.state.index] || !embedsOriginal[this.state.index][property])) { // 'none' matches a undefined value for timestamp in the embed
-        delete embeds[this.state.index][property]
-        this.setState({ embeds, unsaved: false })
+    // Fields is an array
+    if (key === 'fields') {
+      const prunedFields = pruneFields(embedValue)
+      if (prunedFields.length === 0) {
+        delete embedCopy[key]
       } else {
-        embeds[this.state.index][property] = value
-        this.setState({ embeds, unsaved: true })
-      }
-    } else {
-      const same = (embedsOriginal[this.state.index] && ((embedsOriginal[this.state.index][property] === value) || (!embedsOriginal[this.state.index][property] && !value))) || (!embedsOriginal[this.state.index] && !value)
-      this.setState({ embeds, unsaved: !same })
-    }
-    this.props.onUpdate(this.state.index, property, value)
-  }
-
-  onUpdateField = (fieldIndex, property, value) => {
-    if (EMBED_FIELD_LIMITS[property] && value.length > EMBED_FIELD_LIMITS[property]) return
-    const { embedsOriginal } = this.props
-    const embeds = [ ...this.state.embeds ]
-    let currentEmbed = embeds[this.state.index] ? { ...embeds[this.state.index] } : null
-    if (!currentEmbed) {
-      if (fieldIndex !== 0) throw new Error(`Cannot edit none-zero field index ${fieldIndex} for an embed that does not exist`)
-      embeds.push({ fields: [{ [property]: value }] })
-      currentEmbed = embeds[embeds.length - 1]
-    } else {
-      const fields = currentEmbed.fields
-      if (fieldIndex > fields.length) throw new Error(`Cannot edit field index ${fieldIndex} that is greater than fields.length`)
-      if (!fields[fieldIndex]) fields.push({ [property]: value })
-      else fields[fieldIndex][property] = value
-      embeds[this.state.index] = currentEmbed
-    }
-    let same = true
-    if (embedsOriginal[this.state.index] && embedsOriginal[this.state.index].fields && embedsOriginal[this.state.index].fields[fieldIndex]) {
-      // If the original field exists
-      const originalField = embedsOriginal[this.state.index].fields[fieldIndex]
-      if (property === 'inline') {
-        if ((!originalField[property] && !value) || (originalField[property] && value)) same = true
-        else same = false
-      } else {
-        if (originalField[property] && value && originalField[property] !== value) same = false
-        else if ((!originalField[property] && value) || (originalField[property] && !value)) {
-          same = false
-        }
-      }
-    } else {
-      if (value && (!embedsOriginal[this.state.index] || !embedsOriginal[this.state.index].fields || !embedsOriginal[this.state.index].fields[fieldIndex])) same = false // This must be a new field
-    }
-
-    this.setState({ embeds, unsaved: !same })
-    this.props.onUpdate(this.state.index, 'fields', currentEmbed.fields)
-  }
-
-  addEmbedField = () => {
-    const embeds = [ ...this.state.embeds ]
-    let currentEmbed = embeds[this.state.index] ? { ...embeds[this.state.index] } : null
-    if (!currentEmbed) {
-      // Pushing a new embed
-      embeds.push({ fields: [{}] })
-      currentEmbed = embeds[embeds.length - 1]
-    } else {
-      if (currentEmbed.fields && currentEmbed.fields.length >= 25) return
-      if (!currentEmbed.fields) currentEmbed.fields = []
-      currentEmbed.fields.push({})
-      embeds[this.state.index] = currentEmbed
-    }
-
-    this.setState({ embeds })
-    this.props.onUpdate(this.state.index, 'fields', currentEmbed.fields)
-  }
-
-  removeEmbedField = fieldIndex => {
-    const embeds = [ ...this.state.embeds ]
-    const currentEmbed = embeds[this.state.index] // The currentEmbed must exist if removeEmbedField is called
-    currentEmbed.fields.splice(fieldIndex, 1)
-    this.setState({ embeds })
-    this.props.onUpdate(this.state.index, 'fields', currentEmbed.fields)
-  }
-
-  discardChanges = () => {
-    const { embedsOriginal, resetEmbedProperties } = this.props
-    resetEmbedProperties() // Use the prop function since calling all props.onUpdate multiple times is unnecessary
-    this.setState({ embeds: JSON.parse(JSON.stringify(embedsOriginal)), unsaved: false })
-  }
-
-  apply = () => {
-    if (!this.state.unsaved) return
-    const { csrfToken, guildId, feedId } = this.props
-    const payload = { ...this.state.embeds[this.state.index] }
-    // Convert color to int - manually check null/undefined since it may be 0
-    if (payload.color !== null && payload.color !== undefined) payload.color = +payload.color
-    // Fix the timestamp from the none value
-    if (payload.timestamp === 'none') payload.timestamp = ''
-    // Take care of fields
-    if (payload.fields) {
-      if (payload.fields.length === 0) payload.fields = ''
-      else {
-        const fields = [ ...payload.fields ]
-        for (let i = fields.length - 1; i >= 0; --i) {
-          const field = fields[i]
-          if (!field.title || !field.value) return toast.error(`Each embed field must have the title and value specified!`)
-          else if (field.title && field.value && fields[i].inline === false) {
-            // Embed fields are false by default, so delete the key
-            const field = { ...fields[i] }
-            delete field.inline
-            fields[i] = field
-          }
-        }
-        payload.fields = fields
+        embedCopy[key] = prunedFields
       }
     }
-    this.setState({ saving: true })
-    axios.patch(`/api/guilds/${guildId}/feeds/${feedId}/embeds/${this.state.index}`, payload, { headers: { 'CSRF-Token': csrfToken } }).then(() => {
-      toast.success('Saved embed changes, woohoo!')
-      this.setState({ saving: false, unsaved: false })
-    }).catch(err => {
-      if (err.response && err.response.status === 304) {
-        this.setState({ saving: false})
-        return toast.success('No changes detected')
-      } else this.setState({ saving: false })
-      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-      toast.error(<p>Failed to update feed embed<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
-      console.log(err.response || err.message)
-    })
+  }
+  return embedCopy
+}
+
+function pruneEmbeds (embeds) {
+  const embedsCopy = [...embeds]
+  for (let i = embedsCopy.length - 1; i >= 0; --i) {
+    const embedCopy = {...embedsCopy[i]}
+    const prunedEmbed = pruneEmbed(embedCopy)
+    embedsCopy[i] = prunedEmbed
+    if (Object.keys(prunedEmbed).length === 0) {
+      embedsCopy.splice(i, 1)
+    }
+  }
+  return embedsCopy
+}
+
+function convertEmbedToPayload (payload) {
+  if (payload.color !== null && payload.color !== undefined) {
+    payload.color = +payload.color
+  }
+  // Fix the timestamp from the none value
+  if (payload.timestamp === 'none') {
+    payload.timestamp = ''
+  }
+  // Take care of fields
+  if (payload.fields) {
+    const fields = [ ...payload.fields ]
+    for (let i = fields.length - 1; i >= 0; --i) {
+      const field = fields[i]
+      if (!field.name || !field.value) {
+        toast.error(`Each embed field must have the name and value specified!`)
+        return null
+      } else if (field.name && field.value && fields[i].inline === false) {
+        // Embed fields are false by default, so delete the key
+        const newField = { ...field }
+        delete newField.inline
+        fields[i] = newField
+      }
+    }
+    payload.fields = fields
+  }
+  return payload
+}
+
+function EmbedSettings (props) {
+  const feed = useSelector(feedSelectors.activeFeed)
+  const editing = useSelector(feedSelectors.feedEditing)
+  
+  // const [embeds, setEmbeds] = useState([])
+  const [index, setIndex] = useState(0)
+  const [unsaved, setUnsaved] = useState(false)
+  const dispatch = useDispatch()
+  const originalEmbeds = feed.embeds
+  const [embeds, embedsDispatch] = useReducer(embedsReducer, originalEmbeds)
+
+  useEffect(() => {
+    const prunedEmbeds = pruneEmbeds(embeds)
+    const prunedOriginalEmbeds = pruneEmbeds(feed.embeds)
+    if (!fastEqual(prunedEmbeds, prunedOriginalEmbeds)) {
+      if (!unsaved) {
+        setUnsaved(true)
+      }
+    } else {
+      if (unsaved) {
+        setUnsaved(false)
+      }
+    }
+  }, [embeds, unsaved, feed.embeds])
+
+  useEffect(() => {
+    props.onUpdate(embeds)
+  }, [embeds])
+
+  const prevIndex = () => {
+    if (index <= 0 || unsaved) return
+    setIndex(index - 1)
   }
 
-  render () {
-    const onUpdate = this.onUpdate
-    const { embedsOriginal, feeds, guildId, feedId } = this.props
-    const hasWebhooks = feeds[guildId] && feeds[guildId][feedId] ? !!feeds[guildId][feedId].webhook : false
-    const originalValues = embedsOriginal[this.state.index] || {}
-    const valuesToUse = {}
-    for (const key in embedPropertiesNames) {
-      const propertyName = embedPropertiesNames[key]
-      const thisEmbed = this.state.embeds[this.state.index]
-      valuesToUse[propertyName] = thisEmbed && thisEmbed[propertyName] === '' ? '' : thisEmbed && propertyName === 'color' && thisEmbed[propertyName] === 0 ? '0' : thisEmbed ? (thisEmbed[propertyName] || originalValues[propertyName] || '') : ''
+  const nextIndex = () => {
+    if (index >= 8 || unsaved) return
+    setIndex(index + 1)
+  }
+
+  const onUpdate = (property, value) => {
+    embedsDispatch(setProperty(index, property, value))
+  }
+
+  const onUpdateField = (fieldIndex, property, value) => {
+    embedsDispatch(setFieldProperty(index, fieldIndex, property, value))
+  }
+
+  const removeEmbedField = (fieldIndex) => {
+    embedsDispatch(removeField(index, fieldIndex))
+  }
+
+  const addEmbedField = () => {
+    embedsDispatch(addField(index))
+  }
+
+  const discardChanges = () => {
+    setIndex(0)
+    embedsDispatch(setEmbeds(feed.embeds))
+  }
+
+  const apply = async () => {
+    if (!unsaved) {
+      return
     }
+    const prunedEmbeds = pruneEmbeds(embeds)
+    for (let i = 0; i < prunedEmbeds.length; ++i) {
+      const cleansed = convertEmbedToPayload({ ...prunedEmbeds[i] })
+      if (!cleansed) {
+        return
+      }
+      prunedEmbeds[i] = cleansed
+    }
+    await dispatch(fetchEditFeed(feed.guild, feed._id, {
+      embeds: prunedEmbeds
+    }))
+    setUnsaved(false)
+  }
 
 
-    const unsaved = this.state.unsaved
+  const hasWebhooks = !!feed.webhook
+  const originalValues = originalEmbeds[index] || {}
+  const valuesToUse = {}
+  for (const key in embedPropertiesNames) {
+    const propertyName = embedPropertiesNames[key]
+    const thisEmbed = embeds[index]
+    valuesToUse[propertyName] = thisEmbed && thisEmbed[propertyName] === '' ? '' : thisEmbed && propertyName === 'color' && thisEmbed[propertyName] === 0 ? '0' : thisEmbed ? (thisEmbed[propertyName] || originalValues[propertyName] || '') : ''
+  }
 
-    const fieldElements = []
-    const thisEmbed = this.state.embeds[this.state.index]
-    if (thisEmbed && thisEmbed.fields) {
-      for (let i = 0; i < thisEmbed.fields.length; ++i) {
-        const field = thisEmbed.fields[i]
-        fieldElements.push(
-          <EmbedFieldBox key={i}>
-            <div>
-              <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                Field {i + 1}
-                <Button basic content='Remove' onClick={e => this.removeEmbedField(i)} />
-              </div>
-              <Divider />
-              <SectionItemTitle style={{display: 'block'}}>Title</SectionItemTitle>
-              <Input fluid value={field.title || ''} style={{marginBottom: '1em', marginTop: '1em'}} onChange={e => this.onUpdateField(i, 'title', e.target.value)} />
-              <SectionItemTitle style={{display: 'block'}}>Value</SectionItemTitle>
-              <TextArea value={field.value || ''} style={{marginTop: '1em'}} onChange={e => this.onUpdateField(i, 'value', e.target.value)} />
-              <div style={{ marginTop: '1em' }}>
-                <Checkbox label='Inline' checked={field.inline || false} onChange={(e, data) => this.onUpdateField(i, 'inline', data.checked)} />
-              </div>
+  const fieldElements = []
+  const thisEmbed = embeds[index]
+  if (thisEmbed && thisEmbed.fields) {
+    for (let i = 0; i < thisEmbed.fields.length; ++i) {
+      const field = thisEmbed.fields[i]
+      fieldElements.push(
+        <EmbedFieldBox key={i}>
+          <div>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              Field {i + 1}
+              <Button basic content='Remove' onClick={e => removeEmbedField(i)} />
             </div>
-          </EmbedFieldBox>
-        )
-      }
+            <Divider />
+            <SectionItemTitle style={{display: 'block'}}>Title</SectionItemTitle>
+            <Input fluid value={field.name || ''} style={{marginBottom: '1em', marginTop: '1em'}} onChange={e => onUpdateField(i, 'name', e.target.value)} />
+            <SectionItemTitle style={{display: 'block'}}>Value</SectionItemTitle>
+            <TextArea value={field.value || ''} style={{marginTop: '1em'}} onChange={e => onUpdateField(i, 'value', e.target.value)} />
+            <div style={{ marginTop: '1em' }}>
+              <Checkbox label='Inline' checked={field.inline || false} onChange={(e, data) => onUpdateField(i, 'inline', data.checked)} />
+            </div>
+          </div>
+        </EmbedFieldBox>
+      )
     }
-
-    // Author Section
-
-    return (
-      <div>
-        <SectionTitle heading='Embeds' subheading='Embeds are fancy boxes that can be shown under your message. Placeholders may also be used here.' sideComponent={          <Button.Group>
-            <Button disabled={this.state.index === 0 || unsaved} icon='chevron left' onClick={this.prevIndex} size='large' />
-            <Button.Or text={`${this.state.index + 1}/${this.state.index >= embedsOriginal.length - 1 ? embedsOriginal.length : this.state.index + 2}`} />
-            {!hasWebhooks
-          ? <Popup
-              inverted
-              content='Only feeds with webhooks attached may use more embeds'
-              trigger={<span><Button disabled icon='add' circular size='large' /></span>}
-            />
-          : <Button disabled={this.state.index >= 8 || this.state.index >= embedsOriginal.length} icon={this.state.index >= embedsOriginal.length - 1 ? 'add' : 'chevron right'} onClick={this.nextIndex} size='large' />
-          }
-          </Button.Group>} />
-        <Section
-          name='Author'
-          inputs={[
-            { label: 'Text', variable: embedPropertiesNames.authorName, value: valuesToUse[embedPropertiesNames.authorName] },
-            { label: 'Icon URL', variable: embedPropertiesNames.authorIconUrl, value: valuesToUse[embedPropertiesNames.authorIconUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] },
-            { label: 'URL', variable: embedPropertiesNames.authorUrl, value: valuesToUse[embedPropertiesNames.authorUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] }
-          ]}
-          onUpdate={onUpdate}
-        />
-        <Section
-          name='Title'
-          inputs={[
-            { label: 'Text', variable: embedPropertiesNames.title, value: valuesToUse[embedPropertiesNames.title] },
-            { label: 'URL', variable: embedPropertiesNames.url, value: valuesToUse[embedPropertiesNames.url], condition: !!valuesToUse[embedPropertiesNames.title] }
-          ]}
-          onUpdate={onUpdate}
-        />
-        <Section
-          name='Description'
-          inputs={[
-            { label: 'Text', variable: embedPropertiesNames.description, textarea: true, value: valuesToUse[embedPropertiesNames.description] },
-          ]}
-          onUpdate={onUpdate}
-        />
-        <Section
-          name='Images'
-          inputs={[
-            { label: 'Image URL', variable: embedPropertiesNames.imageUrl, value: valuesToUse[embedPropertiesNames.imageUrl] },
-            { label: 'Thumbnail URL', variable: embedPropertiesNames.thumbnailUrl, value: valuesToUse[embedPropertiesNames.thumbnailUrl] }
-          ]}
-          onUpdate={onUpdate}
-        />
-        <Section
-          name='Footer'
-          inputs={[
-            { label: 'Text', variable: embedPropertiesNames.footerText, value: valuesToUse[embedPropertiesNames.footerText] },
-            { label: 'Icon URL', variable: embedPropertiesNames.footerIconUrl, values: valuesToUse[embedPropertiesNames.footerIconUrl], condition: !!valuesToUse[embedPropertiesNames.footerText] },
-            { label: 'Timestamp', variable: embedPropertiesNames.timestamp, dropdown: true, options: [{ text: 'None', value: 'none' }, { text: 'article', value: 'article' }, { text: 'now', value: 'now' }], value: valuesToUse[embedPropertiesNames.timestamp] }
-          ]}
-          onUpdate={onUpdate}
-        />
-        <Section
-          name='Color'
-          inputs={[
-            { label: 'Number', variable: embedPropertiesNames.color, color: true, value: valuesToUse[embedPropertiesNames.color] }
-          ]}
-          onUpdate={onUpdate}
-        />
-        <Section
-          name='Fields'
-          body={
-            <EmbedFieldsWrapper>
-              <Scrollbars>
-                <EmbedFieldsWrapperInner>
-                  <PoseGroup>
-                    {fieldElements}
-                  </PoseGroup>
-                  <div>
-                    <AddEmbedFieldBox key={thisEmbed && thisEmbed.fields ? thisEmbed.fields.length : 0} onClick={this.addEmbedField}>
-                      <Icon name='add' size='big' />
-                    </AddEmbedFieldBox>
-                  </div>
-                </EmbedFieldsWrapperInner>
-              </Scrollbars>
-            </EmbedFieldsWrapper>
-          }
-        />
-        <ActionButtons>
-          <PopInButton key='discard-changes-embed' content='Reset' basic inverted onClick={this.discardChanges} pose={this.state.saving ? 'exit' : unsaved ? 'enter' : 'exit'} />
-          <Button disabled={this.state.saving || !unsaved} content='Save' color='green' onClick={this.apply} />
-        </ActionButtons>
-      </div>
-    )
   }
+
+  return (
+    <div>
+      <SectionTitle heading='Embeds' subheading='Embeds are fancy boxes that can be shown under your message. Placeholders may also be used here.' sideComponent={
+        <Button.Group>
+          <Button disabled={index === 0 || unsaved} icon='chevron left' onClick={prevIndex} size='large' />
+          <Button.Or text={`${index + 1}/${index >= originalEmbeds.length - 1 ? originalEmbeds.length : index + 2}`} />
+          {!hasWebhooks
+            ? <Popup
+                inverted
+                content='Only feeds with webhooks attached may use more embeds'
+                trigger={<span><Button disabled icon='add' circular size='large' /></span>}
+              />
+            : <Button disabled={index >= 8 || index >= originalEmbeds.length} icon={index >= originalEmbeds.length - 1 ? 'add' : 'chevron right'} onClick={nextIndex} size='large' />
+        }
+        </Button.Group>} />
+      <Section
+        name='Author'
+        inputs={[
+          { label: 'Text', variable: embedPropertiesNames.authorName, value: valuesToUse[embedPropertiesNames.authorName] },
+          { label: 'Icon URL', variable: embedPropertiesNames.authorIconUrl, value: valuesToUse[embedPropertiesNames.authorIconUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] },
+          { label: 'URL', variable: embedPropertiesNames.authorUrl, value: valuesToUse[embedPropertiesNames.authorUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] }
+        ]}
+        onUpdate={onUpdate}
+      />
+      <Section
+        name='Title'
+        inputs={[
+          { label: 'Text', variable: embedPropertiesNames.title, value: valuesToUse[embedPropertiesNames.title] },
+          { label: 'URL', variable: embedPropertiesNames.url, value: valuesToUse[embedPropertiesNames.url], condition: !!valuesToUse[embedPropertiesNames.title] }
+        ]}
+        onUpdate={onUpdate}
+      />
+      <Section
+        name='Description'
+        inputs={[
+          { label: 'Text', variable: embedPropertiesNames.description, textarea: true, value: valuesToUse[embedPropertiesNames.description] },
+        ]}
+        onUpdate={onUpdate}
+      />
+      <Section
+        name='Images'
+        inputs={[
+          { label: 'Image URL', variable: embedPropertiesNames.imageUrl, value: valuesToUse[embedPropertiesNames.imageUrl] },
+          { label: 'Thumbnail URL', variable: embedPropertiesNames.thumbnailUrl, value: valuesToUse[embedPropertiesNames.thumbnailUrl] }
+        ]}
+        onUpdate={onUpdate}
+      />
+      <Section
+        name='Footer'
+        inputs={[
+          { label: 'Text', variable: embedPropertiesNames.footerText, value: valuesToUse[embedPropertiesNames.footerText] },
+          { label: 'Icon URL', variable: embedPropertiesNames.footerIconUrl, values: valuesToUse[embedPropertiesNames.footerIconUrl], condition: !!valuesToUse[embedPropertiesNames.footerText] },
+          { label: 'Timestamp', variable: embedPropertiesNames.timestamp, dropdown: true, options: [{ text: 'None', value: 'none' }, { text: 'article', value: 'article' }, { text: 'now', value: 'now' }], value: valuesToUse[embedPropertiesNames.timestamp] }
+        ]}
+        onUpdate={onUpdate}
+      />
+      <Section
+        name='Color'
+        inputs={[
+          { label: 'Number', variable: embedPropertiesNames.color, color: true, value: valuesToUse[embedPropertiesNames.color] }
+        ]}
+        onUpdate={onUpdate}
+      />
+      <Section
+        name='Fields'
+        body={
+          <EmbedFieldsWrapper>
+            <Scrollbars>
+              <EmbedFieldsWrapperInner>
+                <PoseGroup>
+                  {fieldElements}
+                </PoseGroup>
+                <div>
+                  <AddEmbedFieldBox key={thisEmbed && thisEmbed.fields ? thisEmbed.fields.length : 0} onClick={addEmbedField}>
+                    <Icon name='add' size='big' />
+                  </AddEmbedFieldBox>
+                </div>
+              </EmbedFieldsWrapperInner>
+            </Scrollbars>
+          </EmbedFieldsWrapper>
+        }
+      />
+      <ActionButtons>
+        <PopInButton key='discard-changes-embed' content='Reset' basic inverted onClick={discardChanges} pose={editing ? 'exit' : unsaved ? 'enter' : 'exit'} />
+        <Button disabled={editing || !unsaved} content='Save' color='green' onClick={apply} />
+      </ActionButtons>
+    </div>
+  )
 }
 
-EmbedSettings.propTypes = {
-  embeds: PropTypes.array,
-  onUpdate: PropTypes.func
-}
-
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(EmbedSettings))
+export default EmbedSettings

@@ -1,21 +1,11 @@
-import React from 'react'
-import { withRouter } from 'react-router-dom'
-import { connect } from 'react-redux'
+import React, { useState } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import { Button } from 'semantic-ui-react'
 import styled from 'styled-components'
 import TextArea from 'js/components/utils/TextArea'
 import PopInButton from '../../../utils/PopInButton'
-import toast from '../../../utils/toast'
-import PropTypes from 'prop-types'
-import axios from 'axios';
-
-const mapStateToProps = state => {
-  return {
-    guildId: state.guildId,
-    feedId: state.feedId,
-    csrfToken: state.csrfToken
-  }
-}
+import feedSelectors from 'js/selectors/feeds'
+import { fetchEditFeed } from 'js/actions/feeds'
 
 const MessageArea = styled.div`
   margin-bottom: 1.5em;
@@ -30,63 +20,42 @@ const ActionButtons = styled.div`
   }
 `
 
-class MessageSettings extends React.PureComponent {
-  constructor () {
-    super()
-    this.state = {
-      value: null,
-      saving: false
+function TextSetting (props) {
+  const { originalMessage } = props
+  const [value, setValue] = useState(null)
+  const feed = useSelector(feedSelectors.activeFeed)
+  const editing = useSelector(feedSelectors.feedEditing)
+  const dispatch = useDispatch()
+  const noChanges = value === null || value === originalMessage || (!feed.text && !value)
+  const textAreaVal = value || value === '' ? value : ''
+
+  const save = () => {
+    if (value === null || value === originalMessage) {
+      return
     }
+    const data = {
+      text: value
+    }
+    dispatch(fetchEditFeed(feed.guild, feed._id, data))
   }
 
-  componentDidUpdate (prevProps) {
-    if (prevProps.messageOriginal !== this.props.messageOriginal) this.setState({ value: null }) // Reset the value
+  const onUpdate = (newValue) => {
+    if (newValue && newValue.length > 1950) {
+      return
+    }
+    setValue(newValue)
+    props.onUpdate(newValue)
   }
 
-  apply = () => {
-    const { csrfToken, guildId, feedId, messageOriginal } = this.props
-    if (this.state.value === null || this.state.value === messageOriginal) return
-    this.setState({ saving: true })
-    const payload = { message: this.state.value }
-    const toSend = !this.state.value ? axios.delete(`/api/guilds/${guildId}/feeds/${feedId}/message`, { headers: { 'CSRF-Token': csrfToken } }) : axios.patch(`/api/guilds/${guildId}/feeds/${feedId}/message`, payload, { headers: { 'CSRF-Token': csrfToken } })
-    toSend
-    .then(() => {
-      toast.success('Saved new message, woohoo!')
-      this.setState({ saving: false, value: null })
-    }).catch(err => {
-      this.setState({ saving: false })
-      if (err.response && err.response.status === 304) return toast.success('No changes detected')
-      const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-      toast.error(<p>Failed to update feed message<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
-      console.log(err.response || err.message)
-    })
-  }
-
-  onUpdate = value => {
-    if (value && value.length > 1950) return
-    this.setState({ value })
-    this.props.onUpdate(value)
-  }
-
-  render () {
-    const { messageOriginal } = this.props
-    const noChanges = this.state.value === null || this.state.value === messageOriginal
-    const textAreaVal = this.state.value || this.state.value === '' ? this.state.value : messageOriginal
-
-    return (
-      <MessageArea>
-        <TextArea onChange={e => this.onUpdate(e.target.value)} placeholder={'Using default message'} value={textAreaVal} lineCount={textAreaVal ? textAreaVal.split('\n').length : 0} />
-        <ActionButtons>
-          <PopInButton content='Reset' basic inverted onClick={e => this.onUpdate(null)} pose={this.state.saving ? 'exit' : noChanges ? 'exit' : 'enter'} />
-          <Button disabled={this.state.saving || noChanges} content='Save' color='green' onClick={this.apply.bind(this)} />
-        </ActionButtons>
-      </MessageArea>
-    )
-  }
+  return (
+    <MessageArea>
+      <TextArea onChange={e => onUpdate(e.target.value)} placeholder={originalMessage} value={textAreaVal} lineCount={textAreaVal ? textAreaVal.split('\n').length : 0} />
+      <ActionButtons>
+        <PopInButton content='Reset' basic inverted onClick={e => onUpdate(null)} pose={editing ? 'exit' : noChanges ? 'exit' : 'enter'} />
+        <Button disabled={editing || noChanges} content='Save' color='green' onClick={save} />
+      </ActionButtons>
+    </MessageArea>
+  )
 }
 
-MessageSettings.propTypes = {
-  setToThisPage: PropTypes.func
-}
-
-export default withRouter(connect(mapStateToProps)(MessageSettings))
+export default TextSetting
