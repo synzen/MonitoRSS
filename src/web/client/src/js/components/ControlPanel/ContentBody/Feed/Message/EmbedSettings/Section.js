@@ -1,6 +1,4 @@
-import React from 'react'
-import { withRouter } from 'react-router-dom'
-import { connect } from 'react-redux'
+import React, { useState } from 'react'
 import { changePage } from 'js/actions/index-actions'
 import { Input, Button, Dropdown, Form, Popup } from 'semantic-ui-react'
 import styled from 'styled-components'
@@ -9,21 +7,6 @@ import SectionItemTitle from 'js/components/utils/SectionItemTitle'
 import posed from 'react-pose'
 import PropTypes from 'prop-types'
 import { SketchPicker } from 'react-color'
-
-const mapStateToProps = state => {
-  return {
-    guildId: state.guildId,
-    feedId: state.feedId,
-    feeds: state.feeds,
-    csrfToken: state.csrfToken
-  }
-}
-
-const mapDispatchToProps = dispatch => {
-  return {
-    setToThisPage: () => dispatch(changePage(pages.MESSAGE))
-  }
-}
 
 const SettingSectionHead = styled.div`
   align-items: center;
@@ -123,50 +106,44 @@ function ColorPicker (props) {
   )
 }
 
-class Section extends React.Component {
-  constructor () {
-    super()
-
-    this.state = {
-      visible: false,
-      overflow: 'hidden'
+function Section (props) {
+  const [visible, setVisible] = useState(false)
+  const [overflow, setOverflow] = useState('hidden')
+  const { inputs, onUpdate, name, body: nodeBody } = props
+  const body = []
+  if (inputs) {
+    for (let i = 0; i < inputs.length; ++i) {
+      const input = inputs[i]
+      const disabled = input.condition === undefined ? false : !input.condition
+      body.push(
+        <Form.Field key={i}>
+          <label>{input.label}</label>
+          { input.textarea
+            ? <textarea value={input.value} onChange={e => onUpdate(input.variable, e.target.value)} disabled={disabled} />
+            : input.dropdown
+              ? <Dropdown selection fluid options={input.options} onChange={(e, data) => onUpdate(input.variable, data.value)} value={input.value || 'none'} disabled={disabled} />
+              : input.color
+                ? <ColorPicker value={input.value} onUpdate={onUpdate} variable={input.variable} />
+                : <input value={input.value} onChange={e => onUpdate(input.variable, e.target.value)} disabled={disabled} />
+          }
+        </Form.Field>
+      )
     }
   }
-
-  render () {
-    const { inputs, onUpdate, name } = this.props
-    const body = []
-    if (inputs) {
-      for (let i = 0; i < inputs.length; ++i) {
-        const input = inputs[i]
-        const disabled = input.condition === undefined ? false : !input.condition
-        body.push(
-          <Form.Field key={i}>
-            <label>{input.label}</label>
-            { input.textarea
-              ? <textarea value={input.value} onChange={e => onUpdate(input.variable, e.target.value)} disabled={disabled} />
-              : input.dropdown
-                ? <Dropdown selection fluid options={input.options} onChange={(e, data) => onUpdate(input.variable, data.value)} value={input.value || 'none'} disabled={disabled} />
-                : input.color
-                  ? <ColorPicker value={input.value} onUpdate={onUpdate} variable={input.variable} />
-                  : <input value={input.value} onChange={e => onUpdate(input.variable, e.target.value)} disabled={disabled} />
-            }
-          </Form.Field>
-        )
-      }
-    }
-    return (
-      <div>
-        <SettingSectionHead onClick={e => this.setState({ visible: !this.state.visible, overflow: 'hidden' })}>
-          <Button size='mini' icon={this.state.visible ? 'caret up' : 'caret down'} />
-          <SectionItemTitle>{name}</SectionItemTitle>
-        </SettingSectionHead>
-        <SettingSectionBody pose={this.state.visible ? 'enter' : 'exit'} style={{ overflow: this.state.overflow }} onPoseComplete={() => this.state.visible ? this.setState({ overflow: 'visible' }) : null}>
-          {this.props.body || <Form>{body}</Form>}
-        </SettingSectionBody>
-      </div>
-    )
-  }
+  return (
+    <div>
+      <SettingSectionHead onClick={e => {
+        setOverflow('hidden')
+        setVisible(!visible)
+      }}>
+        <Button size='mini' icon={visible ? 'caret up' : 'caret down'} />
+        <SectionItemTitle>{name}</SectionItemTitle>
+      </SettingSectionHead>
+      <SettingSectionBody pose={visible ? 'enter' : 'exit'} style={{ overflow: overflow }} onPoseComplete={() => visible ? setOverflow('visible') : null}>
+        {nodeBody || <Form>{body}</Form>}
+      </SettingSectionBody>
+    </div>
+  )
 }
 
 Section.propTypes = {
@@ -185,4 +162,4 @@ ColorPicker.propTypes = {
   variable: PropTypes.string,
 }
 
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(Section))
+export default Section
