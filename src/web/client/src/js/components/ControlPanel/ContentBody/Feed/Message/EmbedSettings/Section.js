@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
-import { changePage } from 'js/actions/index-actions'
 import { Input, Button, Dropdown, Form, Popup } from 'semantic-ui-react'
 import styled from 'styled-components'
-import pages from 'js/constants/pages'
 import SectionItemTitle from 'js/components/utils/SectionItemTitle'
 import posed from 'react-pose'
 import PropTypes from 'prop-types'

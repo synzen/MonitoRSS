@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import PageHeader from 'js/components/utils/PageHeader'
 import SectionTitle from 'js/components/utils/SectionTitle'
@@ -6,7 +6,6 @@ import SectionSubtitle from 'js/components/utils/SectionSubtitle'
 import PopInButton from '../../../utils/PopInButton'
 import styled from 'styled-components'
 import { Button, Dropdown, Input, Divider } from 'semantic-ui-react';
-import axios from 'axios'
 import { isMobile } from 'react-device-detect'
 import posed from 'react-pose'
 import pages from 'js/constants/pages'

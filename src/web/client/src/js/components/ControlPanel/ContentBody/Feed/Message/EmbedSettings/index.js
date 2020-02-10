@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useReducer } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Input, Popup, Button, Divider, Checkbox, Icon } from 'semantic-ui-react'
+import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import toast from '../../../../utils/toast'
 import SectionTitle from 'js/components/utils/SectionTitle'
@@ -73,7 +74,7 @@ const AddEmbedFieldBox = styled(EmbedFieldBoxStyles)`
 function pruneFields (fields) {
   const fieldsCopy = [...fields]
   for (let i = fieldsCopy.length - 1; i >= 0; --i) {
-    const fieldCopy = {...fieldsCopy[i]}
+    const fieldCopy = { ...fieldsCopy[i] }
     if (!fieldCopy.name || !fieldCopy.value) {
       fieldsCopy.splice(i, 1)
     }
@@ -83,7 +84,7 @@ function pruneFields (fields) {
 }
 
 function pruneEmbed (embed) {
-  const embedCopy = {...embed}
+  const embedCopy = { ...embed }
   for (const key in embedCopy) {
     const embedValue = embedCopy[key]
     if (!embedValue) {
@@ -105,7 +106,7 @@ function pruneEmbed (embed) {
 function pruneEmbeds (embeds) {
   const embedsCopy = [...embeds]
   for (let i = embedsCopy.length - 1; i >= 0; --i) {
-    const embedCopy = {...embedsCopy[i]}
+    const embedCopy = { ...embedsCopy[i] }
     const prunedEmbed = pruneEmbed(embedCopy)
     embedsCopy[i] = prunedEmbed
     if (Object.keys(prunedEmbed).length === 0) {
@@ -144,10 +145,9 @@ function convertEmbedToPayload (payload) {
 }
 
 function EmbedSettings (props) {
+  const { onUpdate } = props
   const feed = useSelector(feedSelectors.activeFeed)
   const editing = useSelector(feedSelectors.feedEditing)
-  
-  // const [embeds, setEmbeds] = useState([])
   const [index, setIndex] = useState(0)
   const [unsaved, setUnsaved] = useState(false)
   const dispatch = useDispatch()
@@ -169,8 +169,8 @@ function EmbedSettings (props) {
   }, [embeds, unsaved, feed.embeds])
 
   useEffect(() => {
-    props.onUpdate(embeds)
-  }, [embeds])
+    onUpdate(embeds)
+  }, [embeds, onUpdate])
 
   const prevIndex = () => {
     if (index <= 0 || unsaved) return
@@ -182,7 +182,7 @@ function EmbedSettings (props) {
     setIndex(index + 1)
   }
 
-  const onUpdate = (property, value) => {
+  const onPropertyUpdate = (property, value) => {
     embedsDispatch(setProperty(index, property, value))
   }
 
@@ -221,7 +221,6 @@ function EmbedSettings (props) {
     setUnsaved(false)
   }
 
-
   const hasWebhooks = !!feed.webhook
   const originalValues = originalEmbeds[index] || {}
   const valuesToUse = {}
@@ -239,15 +238,15 @@ function EmbedSettings (props) {
       fieldElements.push(
         <EmbedFieldBox key={i}>
           <div>
-            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               Field {i + 1}
               <Button basic content='Remove' onClick={e => removeEmbedField(i)} />
             </div>
             <Divider />
-            <SectionItemTitle style={{display: 'block'}}>Title</SectionItemTitle>
-            <Input fluid value={field.name || ''} style={{marginBottom: '1em', marginTop: '1em'}} onChange={e => onUpdateField(i, 'name', e.target.value)} />
-            <SectionItemTitle style={{display: 'block'}}>Value</SectionItemTitle>
-            <TextArea value={field.value || ''} style={{marginTop: '1em'}} onChange={e => onUpdateField(i, 'value', e.target.value)} />
+            <SectionItemTitle style={{ display: 'block' }}>Title</SectionItemTitle>
+            <Input fluid value={field.name || ''} style={{ marginBottom: '1em', marginTop: '1em' }} onChange={e => onUpdateField(i, 'name', e.target.value)} />
+            <SectionItemTitle style={{ display: 'block' }}>Value</SectionItemTitle>
+            <TextArea value={field.value || ''} style={{ marginTop: '1em' }} onChange={e => onUpdateField(i, 'value', e.target.value)} />
             <div style={{ marginTop: '1em' }}>
               <Checkbox label='Inline' checked={field.inline || false} onChange={(e, data) => onUpdateField(i, 'inline', data.checked)} />
             </div>
@@ -265,12 +264,12 @@ function EmbedSettings (props) {
           <Button.Or text={`${index + 1}/${index >= originalEmbeds.length - 1 ? originalEmbeds.length : index + 2}`} />
           {!hasWebhooks
             ? <Popup
-                inverted
-                content='Only feeds with webhooks attached may use more embeds'
-                trigger={<span><Button disabled icon='add' circular size='large' /></span>}
-              />
+              inverted
+              content='Only feeds with webhooks attached may use more embeds'
+              trigger={<span><Button disabled icon='add' circular size='large' /></span>}
+            />
             : <Button disabled={index >= 8 || index >= originalEmbeds.length} icon={index >= originalEmbeds.length - 1 ? 'add' : 'chevron right'} onClick={nextIndex} size='large' />
-        }
+          }
         </Button.Group>} />
       <Section
         name='Author'
@@ -279,7 +278,7 @@ function EmbedSettings (props) {
           { label: 'Icon URL', variable: embedPropertiesNames.authorIconUrl, value: valuesToUse[embedPropertiesNames.authorIconUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] },
           { label: 'URL', variable: embedPropertiesNames.authorUrl, value: valuesToUse[embedPropertiesNames.authorUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] }
         ]}
-        onUpdate={onUpdate}
+        onUpdate={onPropertyUpdate}
       />
       <Section
         name='Title'
@@ -287,14 +286,14 @@ function EmbedSettings (props) {
           { label: 'Text', variable: embedPropertiesNames.title, value: valuesToUse[embedPropertiesNames.title] },
           { label: 'URL', variable: embedPropertiesNames.url, value: valuesToUse[embedPropertiesNames.url], condition: !!valuesToUse[embedPropertiesNames.title] }
         ]}
-        onUpdate={onUpdate}
+        onUpdate={onPropertyUpdate}
       />
       <Section
         name='Description'
         inputs={[
-          { label: 'Text', variable: embedPropertiesNames.description, textarea: true, value: valuesToUse[embedPropertiesNames.description] },
+          { label: 'Text', variable: embedPropertiesNames.description, textarea: true, value: valuesToUse[embedPropertiesNames.description] }
         ]}
-        onUpdate={onUpdate}
+        onUpdate={onPropertyUpdate}
       />
       <Section
         name='Images'
@@ -302,7 +301,7 @@ function EmbedSettings (props) {
           { label: 'Image URL', variable: embedPropertiesNames.imageUrl, value: valuesToUse[embedPropertiesNames.imageUrl] },
           { label: 'Thumbnail URL', variable: embedPropertiesNames.thumbnailUrl, value: valuesToUse[embedPropertiesNames.thumbnailUrl] }
         ]}
-        onUpdate={onUpdate}
+        onUpdate={onPropertyUpdate}
       />
       <Section
         name='Footer'
@@ -311,14 +310,14 @@ function EmbedSettings (props) {
           { label: 'Icon URL', variable: embedPropertiesNames.footerIconUrl, values: valuesToUse[embedPropertiesNames.footerIconUrl], condition: !!valuesToUse[embedPropertiesNames.footerText] },
           { label: 'Timestamp', variable: embedPropertiesNames.timestamp, dropdown: true, options: [{ text: 'None', value: 'none' }, { text: 'article', value: 'article' }, { text: 'now', value: 'now' }], value: valuesToUse[embedPropertiesNames.timestamp] }
         ]}
-        onUpdate={onUpdate}
+        onUpdate={onPropertyUpdate}
       />
       <Section
         name='Color'
         inputs={[
           { label: 'Number', variable: embedPropertiesNames.color, color: true, value: valuesToUse[embedPropertiesNames.color] }
         ]}
-        onUpdate={onUpdate}
+        onUpdate={onPropertyUpdate}
       />
       <Section
         name='Fields'
@@ -345,6 +344,10 @@ function EmbedSettings (props) {
       </ActionButtons>
     </div>
   )
+}
+
+EmbedSettings.propTypes = {
+  onUpdate: PropTypes.func
 }
 
 export default EmbedSettings

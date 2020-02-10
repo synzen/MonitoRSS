@@ -127,7 +127,7 @@ function ArticleTable (props) {
     const id = data._id
     return (
     <StyledRow
-      clickable={!!props.onClickArticle}
+      clickable={(!!props.onClickArticle).toString()}
       onClick={e => onClickArticle(data, id)}
       active={selectedArticleID === id}
       key={id}
