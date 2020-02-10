@@ -315,7 +315,6 @@ function Debugger (props) {
         if (dataseArticlesWithin5s && diff > 3) {
           dataseArticlesWithin5s = false
         }
-        
       }
     }
   }
@@ -333,8 +332,8 @@ function Debugger (props) {
           <span>{ feed ? <a href={feed.link} target='_blank' rel='noopener noreferrer'>{feed.link}</a> : null }</span>
         </div>
         <div>
-          <SectionSubtitle>Added On</SectionSubtitle>
-          <span>{ feed && feed.addedOn ? moment(feed.addedOn).tz(tz).format('ddd, D MMMM YYYY, h:mm A z') : null }</span>
+          <SectionSubtitle>Added At</SectionSubtitle>
+          <span>{ feed && feed.addedAt ? moment(feed.addedAt).tz(tz).format('ddd, D MMMM YYYY, h:mm A z') : null }</span>
         </div>
       </InfoRowBox>
       <br />
