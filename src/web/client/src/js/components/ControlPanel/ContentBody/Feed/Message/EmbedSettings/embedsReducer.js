@@ -20,7 +20,7 @@ export default function reducer (embeds, action) {
   } else if (action.type === SET_PROPERTY) {
     // SET PROPERTY
     const { embedIndex, property, value } = action.payload
-    if (!EMBED_PROPERTY_LENGTHS[property] || (EMBED_PROPERTY_LENGTHS[property] && value < EMBED_PROPERTY_LENGTHS[property])) {
+    if (!EMBED_PROPERTY_LENGTHS[property] || (EMBED_PROPERTY_LENGTHS[property] && value.length < EMBED_PROPERTY_LENGTHS[property])) {
       let currentEmbed = newState[embedIndex] ? { ...newState[embedIndex] } : null
       if (!currentEmbed) {
         newState.push({ [property]: value })
