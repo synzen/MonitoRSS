@@ -1,21 +1,20 @@
-import React, { Component } from 'react'
+import React, { useState } from 'react'
 import styled from 'styled-components'
 import { Divider, Button, Popup, Form } from 'semantic-ui-react'
 import DiscordAvatar from '../../../utils/DiscordAvatar'
-import { connect, useSelector, useDispatch } from 'react-redux'
-import PropTypes from 'prop-types'
+import { useSelector, useDispatch } from 'react-redux'
 import pages from 'js/constants/pages'
 import SectionTitle from 'js/components/utils/SectionTitle'
 import PageHeader from 'js/components/utils/PageHeader'
 import AlertBox from 'js/components/utils/AlertBox'
 import Wrapper from 'js/components/utils/Wrapper'
-import toast from '../../../utils/toast'
-import axios from 'axios'
-import modal from 'js/components/utils/modal'
 import MenuButton from '../../../LeftMenu/MenuButton'
 import posed from 'react-pose'
 import colors from 'js/constants/colors'
 import { setActiveGuild } from 'js/actions/guilds'
+import feedbackSelector from 'js/selectors/feedback'
+import { fetchCreateFeedback } from 'js/actions/feedback'
+import toast from 'js/components/ControlPanel/utils/toast'
 
 // const mapStateToProps = state => {
 //   return {
@@ -76,9 +75,9 @@ const ServerButton = styled(MenuButton)`
   margin-bottom: 0;
   margin-top: 0;
   ${props => props.selected
-  ? `border-bottom-left-radius: 0;
+    ? `border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;`
-  : ''};
+    : ''};
 `
 
 const FeedbackForm = styled(Form)`
@@ -184,7 +183,6 @@ const NoServers = styled.div`
 //       )
 //     }
 
-
 //     return (
 //       <Container>
 //         <PageHeader heading={`Hi there, ${user ? user.username : '(no name found)'}!`} subheading='Make your life immensely easier by using this web interface! (though excuse my appearance while I am still under construction)' />
@@ -256,8 +254,10 @@ function Home () {
   const user = useSelector(state => state.user)
   const guildId = useSelector(state => state.activeGuildID)
   const feeds = useSelector(state => state.feeds)
+  const [feedback, setFeedback] = useState('')
+  const savingFeedback = useSelector(feedbackSelector.feedbackSaving)
   const dispatch = useDispatch()
-  
+
   function setGuild (guildID) {
     dispatch(setActiveGuild(guildID))
   }
@@ -272,23 +272,28 @@ function Home () {
     serverIcons.push(<Popup key={`dashboard.icon.${thisGuildId}`} trigger={<DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='64px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />} inverted content={guild.name} />)
     serverButtons.push(
       <div key={thisGuildId}>
-      <ServerButton nonmenu padding='15px' selected={guildId === thisGuildId} onClick={e => setGuild(thisGuildId)} >
-        <ServerButtonInner>
-          <DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='48px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />
-          <div>
-            <h4>{guild.name}</h4>
-            <p>{feeds && feeds[thisGuildId] ? Object.keys(feeds[thisGuildId]).length : undefined} feeds</p>
-          </div>
-        </ServerButtonInner>
-      </ServerButton>
-      <ServerEditButtons pose={guildId === thisGuildId ? 'enter' : 'exit'}>
-        <Button content='Feeds' onClick={e => redirect(pages.FEEDS)} />
-        <Button content='Settings' onClick={e => redirect(pages.SERVER_SETTINGS)} />
-      </ServerEditButtons>
+        <ServerButton nonmenu padding='15px' selected={guildId === thisGuildId} onClick={e => setGuild(thisGuildId)} >
+          <ServerButtonInner>
+            <DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='48px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />
+            <div>
+              <h4>{guild.name}</h4>
+              <p>{feeds && feeds[thisGuildId] ? Object.keys(feeds[thisGuildId]).length : undefined} feeds</p>
+            </div>
+          </ServerButtonInner>
+        </ServerButton>
+        <ServerEditButtons pose={guildId === thisGuildId ? 'enter' : 'exit'}>
+          <Button content='Feeds' onClick={e => redirect(pages.FEEDS)} />
+          <Button content='Settings' onClick={e => redirect(pages.SERVER_SETTINGS)} />
+        </ServerEditButtons>
       </div>
     )
   }
 
+  const submitFeedback = async () => {
+    await dispatch(fetchCreateFeedback(feedback))
+    toast.success(`Thanks for your feedback! I will carefully review it.`)
+    setFeedback('')
+  }
 
   return (
     <Container>
@@ -317,8 +322,8 @@ function Home () {
       <Divider />
       <SectionTitle heading='Servers' subheading='Select a server to start seeing its feeds. Only servers where you have Manage Channel permissions, and the bot is a member will be shown. You can also change your active server in the left menu.' />
       { serverButtons.length > 0
-      ? serverButtons
-      : <NoServers>
+        ? serverButtons
+        : <NoServers>
           <h4>NO ELIGIBLE SERVERS</h4>
           <span>Make sure Discord.RSS is in the right servers where you have MANAGE CHANNEL permissions</span>
         </NoServers>
@@ -331,24 +336,22 @@ function Home () {
       <SectionTitle heading='Feedback' subheading={
         <span>
           Help make this a better experience for all and provide some feedback! ;) Any and all comments, suggestions, critiques and opinions are welcome. Bug reports are also welcome.
-          <br/>
-          <br/>
-          <span style={{color: colors.discord.red}}>Please note that this is not for submitting requests for support.</span> See the home page for a link to the discord support server.
+          <br />
+          <br />
+          <span style={{ color: colors.discord.red }}>Please note that this is not for submitting requests for support.</span> See the home page for a link to the discord support server.
         </span>} />
-
-      {/* <FeedbackForm>
+      <FeedbackForm>
         <Form.Field>
           <label>Feedback</label>
-          <textarea onChange={e => this.setState({ feedbackContent: e.target.value })} value={this.state.feedbackContent} />
+          <textarea onChange={e => setFeedback(e.target.value)} value={feedback} />
         </Form.Field>
         <Form.Field>
-          <Button content='Submit' type='submit' disabled={this.state.disabledFeedback || !this.state.feedbackContent.trim() || this.state.saving} loading={this.state.saving} onClick={this.submitFeedback} />
+          <Button content='Submit' type='submit' disabled={!feedback.trim() || savingFeedback} loading={savingFeedback} onClick={submitFeedback} />
         </Form.Field>
-      </FeedbackForm> */}
+      </FeedbackForm>
       <Divider />
     </Container>
   )
 }
 
-// export default connect(mapStateToProps, mapDispatchToProps)(Home)
 export default Home
