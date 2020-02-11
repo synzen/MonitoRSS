@@ -28,6 +28,7 @@
     "react-router-dom": "^5.1.2",
     "react-scripts": "^3.3.1",
     "react-scrollbars-custom": "^4.0.5",
+    "react-sidebar": "^3.0.2",
     "react-toastify": "^4.5.2",
     "react-twemoji": "^0.1.0",
     "redux": "^4.0.5",
