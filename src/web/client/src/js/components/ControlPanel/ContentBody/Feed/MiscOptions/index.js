@@ -9,6 +9,9 @@ import { Divider, Checkbox, Button } from 'semantic-ui-react'
 import SectionSubtitle from 'js/components/utils/SectionSubtitle'
 import feedSelectors from 'js/selectors/feeds'
 import { fetchEditFeed } from 'js/actions/feeds'
+import { changePage } from 'js/actions/page'
+import pages from 'js/constants/pages'
+import { Redirect } from 'react-router-dom'
 
 const Container = styled.div`
   padding: 20px;
@@ -66,6 +69,11 @@ function MiscOptions () {
   const [userValues, setUserValues] = useState({})
   const dispatch = useDispatch()
   const unsaved = Object.keys(userValues).length > 0
+
+  if (!feed) {
+    dispatch(changePage(pages.DASHBOARD))
+    return <Redirect to={pages.DASHBOARD} />
+  }
 
   const getOriginalPropertyValue = (property) => {
     if (!feed || feed[property] === undefined) {
@@ -185,7 +193,7 @@ function MiscOptions () {
         </div>
       </Categories>
       <SaveButtonContainer>
-        <PopInButton pose={editing ? 'exit' : unsaved ? 'enter' : 'exit'} basic inverted content='Reset' onClick={reset}></PopInButton>
+        <PopInButton pose={editing ? 'exit' : unsaved ? 'enter' : 'exit'} basic inverted content='Reset' onClick={reset} />
         <Button disabled={!unsaved || editing} content='Save' color='green' onClick={apply} />
       </SaveButtonContainer>
     </Container>

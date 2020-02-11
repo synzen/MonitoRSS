@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import pages from 'js/constants/pages'
 import PropTypes from 'prop-types'
 import styled from 'styled-components'
@@ -17,6 +17,8 @@ import DetailButton from './DetailButton'
 import modal from 'js/components/utils/modal'
 import hljs from 'highlight.js'
 import feedSelector from 'js/selectors/feeds'
+import { changePage } from 'js/actions/page'
+import { Redirect } from 'react-router-dom'
 
 const Container = styled.div`
   padding: 20px;
@@ -114,6 +116,7 @@ function Debugger (props) {
   const articlesError = useSelector(feedSelector.articlesFetchErrored)
   const articlesFetching = useSelector(feedSelector.articlesFetching)
   const botConfig = useSelector(state => state.botConfig)
+  const dispatch = useDispatch()
   const [ loadingState, setLoadingState ] = useState(autoFetch) // 0 = await user start, 1 = waiting for request and article fetch, 2 = fetched feed data OR articles, 3 = fetched all data
   const [ loadError, setLoadError ] = useState()
   const [ feedData, setFeedData ] = useState()
@@ -121,7 +124,7 @@ function Debugger (props) {
   for (const article of articleList) {
     articleListById[article._id] = article
   }
-  const refreshRate = schedules[feed._id] ? schedules[feed._id].refreshRateMinutes : null
+  const refreshRate = feed && schedules[feed._id] ? schedules[feed._id].refreshRateMinutes : null
   const waitDuration = !feed
     ? 'unknown'
     : !refreshRate
@@ -131,13 +134,16 @@ function Debugger (props) {
       : refreshRate < 1 ? `${refreshRate * 60} second(s)` : `${refreshRate} minute(s)`
 
   useEffect(() => {
+    if (!feed) {
+      return
+    }
     if (!articlesFetching && (loadingState === 2 || loadingState === 3)) {
       setLoadingState(loadingState + 1)
     }
-  }, [ articlesFetching, loadingState ])
+  }, [ feed, articlesFetching, loadingState ])
 
   useEffect(() => {
-    if (loadingState !== 1) return
+    if (loadingState !== 1 || !feed) return
     setFeedData()
     setLoadError()
     axios.get(`/api/guilds/${feed.guild}/feeds/${feed._id}/database`)
@@ -158,6 +164,11 @@ function Debugger (props) {
       setLoadingState(1)
     }
   }, [ feed, articlesFetching, loadingState ])
+
+  if (!feed) {
+    dispatch(changePage(pages.DASHBOARD))
+    return <Redirect to={pages.DASHBOARD} />
+  }
 
   const customComparisonsEnabled = feed && Array.isArray(feed.customComparisons) && feed.customComparisons.length > 0
 

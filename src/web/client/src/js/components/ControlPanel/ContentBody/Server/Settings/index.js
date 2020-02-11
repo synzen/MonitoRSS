@@ -12,6 +12,9 @@ import moment from 'moment-timezone'
 import Date from './Date'
 import guildSelectors from 'js/selectors/guilds'
 import { fetchEditGuild } from 'js/actions/guilds'
+import { Redirect } from 'react-router-dom'
+import pages from 'js/constants/pages'
+import { changePage } from 'js/actions/page'
 
 const Container = styled.div`
   padding: 20px;
@@ -50,7 +53,7 @@ const BackupButtonContainer = styled.div`
 function ServerSettings () {
   const [invalidTimezone, setInvalidTimezone] = useState(false)
   const [updatedValues, setUpdatedValues] = useState({})
-  const guild = useSelector(state => state.guilds.find(g => g.id === state.activeGuildID))
+  const guild = useSelector(guildSelectors.activeGuild)
   const botConfig = useSelector(state => state.botConfig)
   const editing = useSelector(guildSelectors.editing)
   const dispatch = useDispatch()
@@ -69,6 +72,11 @@ function ServerSettings () {
     }
     setInvalidTimezone(!moment.tz.zone(tz))
   }, [updatedValues.timezone])
+
+  if (!guild) {
+    dispatch(changePage(pages.DASHBOARD))
+    return <Redirect to={pages.DASHBOARD} />
+  }
 
   const getOriginalPropertyValue = (property) => {
     if (!profile || profile[property] === undefined) {
@@ -120,12 +128,11 @@ function ServerSettings () {
   const dateFormatValue = updatedValues.dateFormat === undefined ? getOriginalPropertyValue('dateFormat') : updatedValues.dateFormat
   const dateLanguageValue = updatedValues.dateLanguage === undefined ? getOriginalPropertyValue('dateLanguage') : updatedValues.dateLanguage
 
-
   return (
     <Container>
       <PageHeader heading='Server Settings' subheading='These settings will apply to all the feeds in this server.' />
       <Divider />
-      <SectionTitle heading='Dates' subheading='These settings will all apply to the {date} placeholder. If no {date} placeholders are used in any feeds, these settings will have no effect.'/>
+      <SectionTitle heading='Dates' subheading='These settings will all apply to the {date} placeholder. If no {date} placeholders are used in any feeds, these settings will have no effect.' />
       <SectionSubtitle>Preview</SectionSubtitle>
       <Date botConfig={botConfig} timezone={timezoneValue} dateFormat={dateFormatValue} invalidTimezone={invalidTimezone} />
       <Divider />
@@ -148,7 +155,7 @@ function ServerSettings () {
       <LargeDivider />
       <SectionTitle heading='Backup' subheading='Download a copy of all your server feeds and settings for safekeeping. This is highly, HIGHLY recommended in case there is data loss, or if you wish to import/overwrite your settings at a later point. Restorations can only be done by requesting through the support server.' />
       <BackupButtonContainer>
-        <Button basic content='Download Backup' onClick={downloadBackup} disabled/>
+        <Button basic content='Download Backup' onClick={downloadBackup} disabled />
         <Button basic content='Send Backup to Discord' disabled onClick={downloadBackup} />
       </BackupButtonContainer>
       <LargeDivider />

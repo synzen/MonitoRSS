@@ -11,12 +11,15 @@ import { Divider, Input, Button, Popup, Dropdown } from 'semantic-ui-react'
 import ArticleTable from '../../../utils/ArticleTable'
 import { transparentize } from 'polished'
 import colors from 'js/constants/colors'
-import posed, { PoseGroup } from 'react-pose';
+import posed, { PoseGroup } from 'react-pose'
 import PopInButton from '../../../utils/PopInButton'
 import Wrapper from 'js/components/utils/Wrapper'
 import feedSelector from 'js/selectors/feeds'
 import subscriberSelector from 'js/selectors/subscribers'
 import { fetchAddSubscriber, fetchDeleteSubscriber, fetchEditSubscriber } from 'js/actions/subscribers'
+import { changePage } from 'js/actions/page'
+import pages from 'js/constants/pages'
+import { Redirect } from 'react-router-dom'
 
 const Container = styled.div`
   padding: 20px;
@@ -264,6 +267,12 @@ function Subscribers (props) {
   const [addType, setAddType] = useState('role')
   const [addInput, setAddInput] = useState('')
   const dispatch = useDispatch()
+
+  if (!feed) {
+    dispatch(changePage(pages.DASHBOARD))
+    return <Redirect to={pages.DASHBOARD} />
+  }
+
   const feedSubscribers = subscribers.filter(s => s.feed === feed._id)
   const subscribersArr = []
   let selectedSubscriber = {}
@@ -305,51 +314,51 @@ function Subscribers (props) {
       onClick={e => setSelectedSubscriberID(subscriber.id)}
       key={subscriber.id}
       color={subscriber.hexColor}>
-        {subscriber.name}
+      {subscriber.name}
     </SubscriberTag>))
 
-    const addSubscriber = async () => {
-      if (!addType || !addInput) {
-        return
-      }
-      await dispatch(fetchAddSubscriber(feed.guild, feed._id, {
-        feed: feed._id,
-        type: addType,
-        id: addInput
-      }))
+  const addSubscriber = async () => {
+    if (!addType || !addInput) {
+      return
     }
+    await dispatch(fetchAddSubscriber(feed.guild, feed._id, {
+      feed: feed._id,
+      type: addType,
+      id: addInput
+    }))
+  }
 
-    const deleteSubscriber = async () => {
-      if (!selectedSubscriberID) {
-        return
-      }
-      await dispatch(fetchDeleteSubscriber(feed.guild, feed._id, selectedSubscriberID))
+  const deleteSubscriber = async () => {
+    if (!selectedSubscriberID) {
+      return
     }
+    await dispatch(fetchDeleteSubscriber(feed.guild, feed._id, selectedSubscriberID))
+  }
 
-    const addFiltersToSubscriber = async (type, value) => {
-      const filterValues = selectedSubscriber.filters[type] || []
-      filterValues.push(value)
-      const data = {
-        filters: {
-          [type]: filterValues
-        }
+  const addFiltersToSubscriber = async (type, value) => {
+    const filterValues = selectedSubscriber.filters[type] || []
+    filterValues.push(value)
+    const data = {
+      filters: {
+        [type]: filterValues
       }
-      await dispatch(fetchEditSubscriber(feed.guild, feed._id, selectedSubscriber.id, data))
     }
+    await dispatch(fetchEditSubscriber(feed.guild, feed._id, selectedSubscriber.id, data))
+  }
 
-    const deleteFiltersFromSubscriber = async (type, value) => {
-      let filterValues = selectedSubscriber.filters[type]
-      filterValues.splice(filterValues.indexOf(value), 1)
-      if (filterValues.length === 0) {
-        filterValues = ''
-      }
-      const data = {
-        filters: {
-          [type]: filterValues
-        }
-      }
-      await dispatch(fetchEditSubscriber(feed.guild, feed._id, selectedSubscriber.id, data))
+  const deleteFiltersFromSubscriber = async (type, value) => {
+    let filterValues = selectedSubscriber.filters[type]
+    filterValues.splice(filterValues.indexOf(value), 1)
+    if (filterValues.length === 0) {
+      filterValues = ''
     }
+    const data = {
+      filters: {
+        [type]: filterValues
+      }
+    }
+    await dispatch(fetchEditSubscriber(feed.guild, feed._id, selectedSubscriber.id, data))
+  }
 
   return (
     <Container>
@@ -421,7 +430,7 @@ function Subscribers (props) {
       <SectionTitle heading='Add' subheading='Add a new subscriber! You may add filters to a subscriber only after they are added here.' />
       <AddSubscribersInputs>
         <Dropdown
-        selection
+          selection
           options={[{ text: 'Role', value: 'role' }, { text: 'User', value: 'user' }]}
           value={addType}
           onChange={(e, data) => {
@@ -432,7 +441,7 @@ function Subscribers (props) {
           }}
         />
         {addType === 'role'
-        ? <Dropdown
+          ? <Dropdown
             selection
             search={(options, query) => options.filter((option) => option.subname.includes(query.toLowerCase()))}
             placeholder='Select a Role'
@@ -443,7 +452,7 @@ function Subscribers (props) {
             }
             onChange={(e, data) => setAddInput(data.value)} value={addInput}
           />
-        : <Input
+          : <Input
             value={addInput}
             disabled
             placeholder='Currently unsupported on this interface'
@@ -495,13 +504,13 @@ function Subscribers (props) {
         ]}
       />
       {selectedArticleSubscribers.length > 0
-      ? <ArticleSubscribers>
-        <SectionSubtitle>Subscribers Mentioned</SectionSubtitle>
-        <PoseGroup animateOnMount>
-          {selectedArticleSubscribers}
-        </PoseGroup>
-      </ArticleSubscribers>
-      : null
+        ? <ArticleSubscribers>
+          <SectionSubtitle>Subscribers Mentioned</SectionSubtitle>
+          <PoseGroup animateOnMount>
+            {selectedArticleSubscribers}
+          </PoseGroup>
+        </ArticleSubscribers>
+        : null
       }
       <Divider />
     </Container>

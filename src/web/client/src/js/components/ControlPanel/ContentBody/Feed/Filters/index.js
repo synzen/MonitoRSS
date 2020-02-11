@@ -11,6 +11,9 @@ import testFilters from 'js/utils/testFilters'
 import { Button, Divider, Icon, Popup } from 'semantic-ui-react'
 import feedSelectors from 'js/selectors/feeds'
 import { fetchEditFeed } from 'js/actions/feeds'
+import { changePage } from 'js/actions/page'
+import pages from 'js/constants/pages'
+import { Redirect } from 'react-router-dom'
 
 const Container = styled.div`
   padding: 20px;
@@ -66,6 +69,12 @@ function Filters () {
   const editing = useSelector(feedSelectors.feedEditing)
   const [selectedArticle, setArticle] = useState()
   const dispatch = useDispatch()
+
+  if (!feed) {
+    dispatch(changePage(pages.DASHBOARD))
+    return <Redirect to={pages.DASHBOARD} />
+  }
+
   const feedFilters = feed.filters
 
   const removeFilter = async (filterType, filterWord) => {
@@ -163,23 +172,23 @@ function Filters () {
           }
         ]}
       />
-        {
-          !selectedArticleFilterResults
-            ? null
-            : <FilterDetails>
-              <SectionSubtitle>Filter Result Explanation</SectionSubtitle>
-                <FilterExplanation>
-                  {!selectedArticleFilterResults.passed
-                    ? Object.keys(selectedArticleFilterResults.invertedMatches).length === 0
-                      ? <p>This article would not have been sent to Discord because there were no matching filters.</p>
-                      : <p>This article would not have been sent to Discord because the following negated filters blocked it: {<FilterTagContainer>{invertedFilterTags}</FilterTagContainer>}</p>
-                    : Object.keys(selectedArticleFilterResults.matches).length === 0
-                      ? <p>This article would have been sent because there are no filters to negate it.</p>
-                      : <p>This article would have been sent because the following filters were matched, with no negated filters: {<FilterTagContainer>{regularFilterTags}</FilterTagContainer>}</p>
-                  }
-                </FilterExplanation>
-              </FilterDetails>
-        }
+      {
+        !selectedArticleFilterResults
+          ? null
+          : <FilterDetails>
+            <SectionSubtitle>Filter Result Explanation</SectionSubtitle>
+            <FilterExplanation>
+              {!selectedArticleFilterResults.passed
+                ? Object.keys(selectedArticleFilterResults.invertedMatches).length === 0
+                  ? <p>This article would not have been sent to Discord because there were no matching filters.</p>
+                  : <p>This article would not have been sent to Discord because the following negated filters blocked it: {<FilterTagContainer>{invertedFilterTags}</FilterTagContainer>}</p>
+                : Object.keys(selectedArticleFilterResults.matches).length === 0
+                  ? <p>This article would have been sent because there are no filters to negate it.</p>
+                  : <p>This article would have been sent because the following filters were matched, with no negated filters: {<FilterTagContainer>{regularFilterTags}</FilterTagContainer>}</p>
+              }
+            </FilterExplanation>
+          </FilterDetails>
+      }
       <Divider />
     </Container>
   )

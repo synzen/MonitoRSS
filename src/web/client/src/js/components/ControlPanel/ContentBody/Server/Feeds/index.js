@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import PageHeader from 'js/components/utils/PageHeader'
 import SidebarContent from './SidebarContent'
 import SectionTitle from 'js/components/utils/SectionTitle'
@@ -10,6 +10,10 @@ import styled from 'styled-components'
 import { Divider, Icon, Popup } from 'semantic-ui-react'
 import { Scrollbars } from 'react-custom-scrollbars'
 import Sidebar from 'react-sidebar'
+import guildSelectors from 'js/selectors/guilds'
+import { Redirect } from 'react-router-dom'
+import pages from 'js/constants/pages'
+import { changePage } from 'js/actions/page'
 
 const mql = window.matchMedia(`(min-width: 1475px)`)
 
@@ -39,9 +43,10 @@ function Feeds (props) {
   const [selectedFeedID, setSelectedFeedID] = useState()
   const feeds = useSelector(state => state.feeds)
   const channels = useSelector(state => state.channels)
-  const selectedGuild = useSelector(state => state.guilds.find(g => g.id === state.activeGuildID))
+  const activeGuild = useSelector(guildSelectors.activeGuild)
   const selectedFeed = useSelector(state => state.feeds.find(f => f._id === selectedFeedID))
   const failRecords = useSelector(state => state.failRecords)
+  const dispatch = useDispatch()
   const bodyRef = useRef()
   const { redirect } = props
 
@@ -49,6 +54,11 @@ function Feeds (props) {
     mql.addListener(mediaQueryChanged)
     return () => mql.removeListener(mediaQueryChanged)
   })
+
+  if (!activeGuild) {
+    dispatch(changePage(pages.DASHBOARD))
+    return <Redirect to={pages.DASHBOARD} />
+  }
 
   const mediaQueryChanged = () => {
     setKeepSidebar(mql.matches)
@@ -65,14 +75,11 @@ function Feeds (props) {
   }
 
   const onClickFeedRow = feed => {
-    // if (this.state.ignoreModal) {
     if (selectedFeedID === feed._id) {
       return setSelectedFeedID('')
     } else {
       return setSelectedFeedID(feed._id)
     }
-    // }
-    // setSelectedFeedID(feed._id)
   }
 
   const onSetOpen = op => {
@@ -114,7 +121,7 @@ function Feeds (props) {
                   hideOnScroll
                   hoverable
                   inverted
-                  trigger={<span>{tableItems.length}/{selectedGuild.limit === 0 ? '∞' : selectedGuild.limit}</span>} />
+                  trigger={<span>{tableItems.length}/{activeGuild.limit === 0 ? '∞' : activeGuild.limit}</span>} />
                 <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'><Icon color='green' name='arrow circle up' /></a>
               </FeedLimitContainer>
             } />
@@ -167,7 +174,7 @@ function Feeds (props) {
               heading='Add'
               subheading={
                 <span>
-                  {`Add a new feed. You may have a maximum of ${selectedGuild.limit === 0 ? '∞' : selectedGuild.limit} feeds. Need more? `}
+                  {`Add a new feed. You may have a maximum of ${activeGuild.limit === 0 ? '∞' : activeGuild.limit} feeds. Need more? `}
                   <a href='https://www.patreon.com/discordrss' target='_blank' rel='noopener noreferrer'>
                     Become a supporter!
                   </a></span>} />

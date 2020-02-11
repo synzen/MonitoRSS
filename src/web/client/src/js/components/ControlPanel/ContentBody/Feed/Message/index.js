@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { Button, Divider, Sticky, ButtonGroup } from 'semantic-ui-react'
 import styled from 'styled-components'
 import MessageSettings from './TextSettings'
@@ -11,6 +11,9 @@ import Placeholders from './Placeholders'
 import colors from 'js/constants/colors'
 import { Scrollbars } from 'react-custom-scrollbars'
 import feedSelectors from 'js/selectors/feeds'
+import { Redirect } from 'react-router-dom'
+import pages from 'js/constants/pages'
+import { changePage } from 'js/actions/page'
 
 const MAX_VIEWPORT_WIDTH_STICKY = 1850
 
@@ -57,23 +60,29 @@ function Message () {
   const [inputMessage, setInputMessage] = useState('')
   const [inputEmbeds, setInputEmbeds] = useState([])
   const [previewNew, setPreviewNew] = useState(true)
+  const dispatch = useDispatch()
   const scrollReference = useRef()
-  const hasSubscribers = subscribers.find(s => s.feed === feed._id)
-
-  const originalMessage = feed.text || botConfig.defaultMessage
-  const messageToDisplay = inputMessage || originalMessage
-  
-  const updateWindowDimensions = () => {
-    setWindowWidth(window.innerWidth)
-    setWindowHeight(window.innerHeight)
-  }
-
   useEffect(() => {
     window.addEventListener('resize', updateWindowDimensions)
     return () => window.removeEventListener('resize', updateWindowDimensions)
   })
 
-  
+  if (!feed) {
+    dispatch(changePage(pages.DASHBOARD))
+    return <Redirect to={pages.DASHBOARD} />
+  }
+
+  const hasSubscribers = subscribers.find(s => s.feed === feed._id)
+  const originalMessage = feed.text || botConfig.defaultMessage
+  const messageToDisplay = inputMessage || originalMessage
+
+  const updateWindowDimensions = () => {
+    setWindowWidth(window.innerWidth)
+    setWindowHeight(window.innerHeight)
+  }
+
+
+
   const onMessageUpdate = (text) => {
     setInputMessage(text)
   }
@@ -101,14 +110,14 @@ function Message () {
               : messageToDisplay === '' || messageToDisplay.includes('{subscriptions}') ? '' : <span style={{ color: colors.discord.yellow }}> Note that because the placeholder {`{subscriptions}`} is not in your message, feed subscribers will not be mentioned.</span> }
           </span>
 
-          } />
+        } />
         <MessageSettings originalMessage={originalMessage} onUpdate={onMessageUpdate} />
         <Divider />
         <EmbedSettings onUpdate={onEmbedsUpdate} embeds={inputEmbeds} embedsOriginal={feed.embeds} />
         <Divider />
         {windowWidth >= MAX_VIEWPORT_WIDTH_STICKY
-        ? null
-        : <div>
+          ? null
+          : <div>
             <div>
               <SectionTitle heading='Preview' subheading='I can preview my settings right here?! Wow!' />
             </div>
@@ -123,20 +132,19 @@ function Message () {
           </div>
         }
       </SettingsArea>
-
       {windowWidth < MAX_VIEWPORT_WIDTH_STICKY
-      ? null
-      : <Sticky context={scrollReference} offset={55}>
+        ? null
+        : <Sticky context={scrollReference} offset={55}>
           <PreviewArea stickied>
             <PreviewHeader>
               <PageHeader heading='Preview' />
             </PreviewHeader>
-            <div  style={{ marginTop: '1em' }}>
+            <div style={{ marginTop: '1em' }}>
               <ButtonGroup fluid>
                 <Button content='Old' onClick={e => setPreviewNew(false)} disabled={!previewNew} />
                 <Button content='New' onClick={e => setPreviewNew(true)} disabled={previewNew} />
               </ButtonGroup>
-              </div>
+            </div>
             <div style={{ height: windowHeight - 55 - 70 - 150, marginTop: '20px' }}> { /* 55 is the topbar, 70 is the margin/padding, 150 is the rest of the space to leave */ }
               <Scrollbars>
                 <DiscordMessage embeds={previewNew ? inputEmbeds : feed.embeds} message={previewNew ? messageToDisplay : originalMessage} articleId={articleID} />
