@@ -4,6 +4,11 @@ const csrf = require('csurf')
 const rateLimit = require('express-rate-limit')
 const controllers = require('../../controllers/index.js')
 const createError = require('../../util/createError.js')
+const Joi = require('@hapi/joi')
+const validator = require('express-joi-validation').createValidator({
+  passError: true
+});
+
 if (process.env.NODE_ENV !== 'test') {
   api.use(rateLimit({
     windowMs: 60 * 1000, // 1 minute
@@ -18,6 +23,11 @@ if (process.env.NODE_ENV !== 'test') {
 api.get('/authenticated', controllers.api.authenticated)
 api.get('/config', controllers.api.config)
 api.use(require('../../middleware/authenticate.js'))
+
+const feedbackSchema = Joi.object({
+  content: Joi.string().required()
+})
+api.post('/feedback', validator.body(feedbackSchema), controllers.api.createFeedback)
 // api.use(csrf())
 api.use('/feeds', require('./feeds/index.js'))
 api.use('/users', require('./users/index.js'))

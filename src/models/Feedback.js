@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 
 const schema = mongoose.Schema({
   type: String,
-  userId: String,
+  userID: String,
   username: String,
   content: String,
   date: {
@@ -12,4 +12,4 @@ const schema = mongoose.Schema({
 })
 
 exports.schema = schema
-exports.model = () => mongoose.model('feedbacks', schema)
+exports.model = mongoose.model('Feedback', schema)
