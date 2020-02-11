@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import React from 'react'
+import PropTypes from 'prop-types'
 import colors from '../../../constants/colors'
 import pages from '../../../constants/pages'
 import { Divider, Dropdown, Button, Popup } from 'semantic-ui-react'
 import styled from 'styled-components'
 import DiscordAvatar from '../utils/DiscordAvatar'
 import MenuButton from './MenuButton'
-import { isMobile } from "react-device-detect"
+import { isMobile } from 'react-device-detect'
 import { Scrollbars } from 'react-custom-scrollbars'
 import modal from '../../utils/modal'
 import { setActiveGuild } from 'js/actions/guilds'
@@ -162,7 +163,7 @@ function LeftMenu (props) {
   const userAvatar = user ? (user.displayAvatarURL || `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`) : undefined
   const noServers = serverDropdownOptions.length === 0
   const noFeeds = feedDropdownOptions.length === 0
-  
+
   function setGuild (guildID) {
     dispatch(setActiveGuild(guildID))
   }
@@ -185,9 +186,9 @@ function LeftMenu (props) {
         <Button color='red' onClick={e => {
           window.location.href = '/logout'
         }}>Log Out</Button>
-      </LogoutModalFooter>),
+      </LogoutModalFooter>)
     }
-    const children = <h4 style={{padding: '0.5em'}}>Are you sure you want to log out?</h4>
+    const children = <h4 style={{ padding: '0.5em' }}>Are you sure you want to log out?</h4>
     modal.show(modalProps, children)
   }
 
@@ -197,68 +198,72 @@ function LeftMenu (props) {
     <LeftMenuDiv expanded={props.expanded}>
       <Scrollbars>
         <Content expanded={props.expanded}>
-      <div>
+          <div>
+            {props.disableMenuButtonToggle
+              ? <Header to='/'>
+                <div>
+                  <img alt='Discord RSS logo' src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='30px' />
+                  <h3 style={{ margin: '0 10px' }}>Discord.RSS</h3>
+                  <h4 style={{ margin: 0 }}>Control Panel</h4>
+                </div>
+              </Header>
+              : null
+            }
+            {/* <Divider /> */}
+            <UserContainer>
+              <div>
+                <DiscordAvatar src={userAvatar} width='30px' />
+                <span>{user ? user.username : undefined}</span>
+              </div>
+              <Popup
+                trigger={<Button basic icon='log out' color='red' onClick={logoutClick} />}
+                inverted
+                position='bottom right'
+                content='Log Out'
+              />
 
-      {props.disableMenuButtonToggle 
-        ? <Header to='/'>
-          <div>
-            <img alt='Discord RSS logo' src='https://discordapp.com/assets/d36b33903dafb0107bb067b55bdd9cbc.svg' width='30px' />
-            <h3 style={{margin: '0 10px'}}>Discord.RSS</h3>
-            <h4 style={{margin: 0}}>Control Panel</h4>
+            </UserContainer>
+
+            {/* <Button fluid content='Logout' basic color='red' onClick={this.logoutClick} /> */}
+            <Divider />
+            <MenuSectionHeader>Main</MenuSectionHeader>
+            <MenuButton to={pages.DASHBOARD} selected={page === pages.DASHBOARD} onClick={() => menuButtonClick(pages.DASHBOARD)}>Home</MenuButton>
+            <Divider />
+            <MenuSectionHeader>Server</MenuSectionHeader>
+            <MyDropdown noResultsMessage='No servers found' search={!isMobile} placeholder={noServers ? 'No servers found' : 'Select a server'} options={serverDropdownOptions} disabled={noServers} value={guildId} selection onChange={(e, data) => setGuild(data.value)} />
+            <MenuButton to={pages.FEEDS} disabled={!guildId} selected={page === pages.FEEDS} onClick={() => menuButtonClick(pages.FEEDS)}>Feeds</MenuButton>
+            <MenuButton to={pages.SERVER_SETTINGS} disabled={!guildId} selected={page === pages.SERVER_SETTINGS} onClick={() => menuButtonClick(pages.SERVER_SETTINGS)}>Settings</MenuButton>
+            <Divider />
+            <MenuSectionHeader>Feed</MenuSectionHeader>
+            <MyDropdown
+              error={!feedsFetching && !articlesFetching && (!!articlesFetchError || feedsFetchError)}
+              loading={feedsFetching || articlesFetching}
+              noResultsMessage='No feeds found'
+              search={!isMobile}
+              placeholder={articlesFetching && feed ? `Fetching articles for ${feed.title}...` : noServers ? 'No server found' : noFeeds ? 'No feeds found' : 'Select a feed'}
+              options={feedDropdownOptions}
+              disabled={noFeeds || articlesFetching}
+              value={articlesFetching ? '' : feedId}
+              selection
+              onChange={(e, data) => setFeed(data.value)} />
+            <MenuButton to={pages.MESSAGE} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.MESSAGE)} selected={page === pages.MESSAGE}>Message</MenuButton>
+            <MenuButton to={pages.FILTERS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.FILTERS)} selected={page === pages.FILTERS}>Filters</MenuButton>
+            <MenuButton to={pages.SUBSCRIBERS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.SUBSCRIBERS)} selected={page === pages.SUBSCRIBERS}>Subscribers</MenuButton>
+            <MenuButton to={pages.MISC_OPTIONS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.MISC_OPTIONS)} selected={page === pages.MISC_OPTIONS}>Misc Options</MenuButton>
+            <MenuButton to={pages.DEBUGGER} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.DEBUGGER)} selected={page === pages.DEBUGGER}>Debugger</MenuButton>
+            <Divider />
           </div>
-        </Header>
-        : null
-      }
-      {/* <Divider /> */}
-        <UserContainer>
-          <div>
-            <DiscordAvatar src={userAvatar} width='30px' />
-            <span>{user ? user.username : undefined}</span>
-          </div>
-          <Popup
-            trigger={<Button basic icon='log out' color='red' onClick={logoutClick} />}
-            inverted
-            position='bottom right'
-            content='Log Out'
-          />
-          
-        </UserContainer>
-        
-        {/* <Button fluid content='Logout' basic color='red' onClick={this.logoutClick} /> */}
-        <Divider />
-        <MenuSectionHeader>Main</MenuSectionHeader>
-        <MenuButton to={pages.DASHBOARD} selected={page === pages.DASHBOARD} onClick={() => menuButtonClick(pages.DASHBOARD)}>Home</MenuButton>
-        <Divider />
-        <MenuSectionHeader>Server</MenuSectionHeader>
-        <MyDropdown noResultsMessage='No servers found' search={!isMobile} placeholder={noServers ? 'No servers found' : 'Select a server'} options={serverDropdownOptions} disabled={noServers} value={guildId} selection onChange={(e, data) => setGuild(data.value)} />
-        <MenuButton to={pages.FEEDS} disabled={!guildId} selected={page === pages.FEEDS} onClick={() => menuButtonClick(pages.FEEDS)}>Feeds</MenuButton>
-        <MenuButton to={pages.SERVER_SETTINGS} disabled={!guildId} selected={page === pages.SERVER_SETTINGS} onClick={() => menuButtonClick(pages.SERVER_SETTINGS)}>Settings</MenuButton>
-        <Divider />
-        <MenuSectionHeader>Feed</MenuSectionHeader>
-        <MyDropdown
-          error={!feedsFetching && !articlesFetching && (!!articlesFetchError || feedsFetchError)}
-          loading={feedsFetching || articlesFetching}
-          noResultsMessage='No feeds found'
-          search={!isMobile}
-          placeholder={articlesFetching && feed ? `Fetching articles for ${feed.title}...` : noServers ? 'No server found' : noFeeds ? 'No feeds found' : 'Select a feed'}
-          options={feedDropdownOptions}
-          disabled={noFeeds || articlesFetching}
-          value={articlesFetching ? '' : feedId}
-          selection
-          onChange={(e, data) => setFeed(data.value)} />
-        <MenuButton to={pages.MESSAGE} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.MESSAGE)} selected={page === pages.MESSAGE}>Message</MenuButton>            
-        <MenuButton to={pages.FILTERS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.FILTERS)} selected={page === pages.FILTERS}>Filters</MenuButton>
-        <MenuButton to={pages.SUBSCRIBERS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.SUBSCRIBERS)} selected={page === pages.SUBSCRIBERS}>Subscribers</MenuButton>
-        <MenuButton to={pages.MISC_OPTIONS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.MISC_OPTIONS)} selected={page === pages.MISC_OPTIONS}>Misc Options</MenuButton>
-        <MenuButton to={pages.DEBUGGER} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.DEBUGGER)} selected={page === pages.DEBUGGER}>Debugger</MenuButton>
-        <Divider />
-      </div>
-      <div>
-      </div>
-      </Content>
+          <div />
+        </Content>
       </Scrollbars>
     </LeftMenuDiv>
   )
+}
+
+LeftMenu.propTypes = {
+  disableMenuButtonToggle: PropTypes.bool,
+  expanded: PropTypes.bool,
+  toggleLeftMenu: PropTypes.func
 }
 
 export default LeftMenu
