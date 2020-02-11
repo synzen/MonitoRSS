@@ -85,7 +85,7 @@ function Feeds (props) {
         styles={{
           sidebar: {
             backgroundColor: '#2f3136',
-            width: keepSidebar ? '425px' : '75%'
+            width: keepSidebar ? '425px' : 'min(75%, 425px)'
           }
         }}
         sidebar={
