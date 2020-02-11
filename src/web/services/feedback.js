@@ -2,6 +2,7 @@ const Feedback = require('../../models/Feedback.js').model
 
 async function createFeedback (userID, username, content) {
   const feedback = new Feedback({
+    type: 'web',
     userID,
     username,
     content
