@@ -201,7 +201,7 @@ const EmptyBackgroundTransparent = styled(EmptyBackground)`
 //         state.filters[guildId] = {}
 //         state.refreshRates[guildId] = {}
 //         state.guildLimits[guildId] = maxFeeds
-        
+
 //         for (const key in profile) {
 //           if (typeof profile[key] !== 'object') {
 //             state.guilds[guildId][key] = profile[key]
@@ -372,7 +372,9 @@ const EmptyBackgroundTransparent = styled(EmptyBackground)`
 // }
 
 function ControlPanel () {
+  const authenticated = useSelector(state => state.authenticated)
   const [loaded, setLoaded] = useState(false)
+  const [ready, setReady] = useState(false)
   const dispatch = useDispatch()
   const [ sizeInfo, setSizeInfo ] = useState({
     leftMenuExpanded: window.innerWidth >= 910,
@@ -380,10 +382,15 @@ function ControlPanel () {
   })
 
   useEffect(() => {
+    if (loaded === true && authenticated === true && !ready) {
+      setReady(true)
+    }
+  }, [loaded, authenticated, ready])
+
+  useEffect(() => {
     dispatch(fetchUser()).then(() => {
       setLoaded(true)
     })
-    
   }, [])
 
   function updateDimensions () {
@@ -407,11 +414,15 @@ function ControlPanel () {
     window.addEventListener('resize', updateDimensions)
     return () => window.removeEventListener('resize', updateDimensions)
   })
-  
-  if (!loaded) {
+
+  if (authenticated === false) {
+    window.location.href = '/login'
+  }
+
+  if (!ready) {
     return (
       <EmptyBackground>
-        <Loader inverted active={true} size='massive'>Loading</Loader>
+        <Loader inverted active size='massive'>Loading</Loader>
       </EmptyBackground>
     )
   }
@@ -430,7 +441,7 @@ function ControlPanel () {
             ...sizeInfo,
             leftMenuExpanded: !sizeInfo.leftMenuExpanded
           })
-          }} />
+        }} />
       }
       <MainContainer offsetTop={!sizeInfo.leftMenuNotFull}>
         <LeftMenu disableMenuButtonToggle={sizeInfo.leftMenuNotFull} toggleLeftMenu={() => {

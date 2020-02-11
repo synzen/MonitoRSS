@@ -4,6 +4,7 @@ import {
 } from '../constants/actions/user'
 import { fetchGuilds } from './guilds'
 import { fetchBotConfig } from './botConfig'
+import { fetchAuthentication } from './auth'
 import FetchStatusActions from './utils/FetchStatusActions'
 
 export const {
@@ -15,6 +16,7 @@ export const {
 export function fetchUser () {
   return async dispatch => {
     await Promise.all([
+      dispatch(fetchAuthentication()),
       dispatch(fetchGuilds()),
       dispatch(setUserBegin()),
       dispatch(fetchBotConfig()),
