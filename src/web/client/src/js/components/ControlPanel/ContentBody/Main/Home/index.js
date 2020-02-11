@@ -269,12 +269,13 @@ function Home () {
   const serverButtons = []
   for (const guild of guilds) {
     const thisGuildId = guild.id
-    serverIcons.push(<Popup key={`dashboard.icon.${thisGuildId}`} trigger={<DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='64px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />} inverted content={guild.name} />)
+    const iconURL = guild.iconURL ? `${guild.iconURL}?size=256` : ''
+    serverIcons.push(<Popup key={`dashboard.icon.${thisGuildId}`} trigger={<DiscordAvatar src={iconURL} width='64px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />} inverted content={guild.name} />)
     serverButtons.push(
       <div key={thisGuildId}>
         <ServerButton nonmenu padding='15px' selected={guildId === thisGuildId} onClick={e => setGuild(thisGuildId)} >
           <ServerButtonInner>
-            <DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='48px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />
+            <DiscordAvatar src={iconURL} width='48px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />
             <div>
               <h4>{guild.name}</h4>
               <p>{feeds && feeds[thisGuildId] ? Object.keys(feeds[thisGuildId]).length : undefined} feeds</p>
