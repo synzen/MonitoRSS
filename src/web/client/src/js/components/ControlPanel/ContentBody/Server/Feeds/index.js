@@ -55,6 +55,10 @@ function Feeds (props) {
     return () => mql.removeListener(mediaQueryChanged)
   })
 
+  useEffect(() => {
+    dispatch(changePage(pages.FEEDS))
+  }, [dispatch])
+
   if (!activeGuild) {
     dispatch(changePage(pages.DASHBOARD))
     return <Redirect to={pages.DASHBOARD} />

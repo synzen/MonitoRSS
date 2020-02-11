@@ -56,20 +56,15 @@ function ServerSettings () {
   const guild = useSelector(guildSelectors.activeGuild)
   const botConfig = useSelector(state => state.botConfig)
   const editing = useSelector(guildSelectors.editing)
+  const subscribers = useSelector(state => state.subscribers)
+  const feeds = useSelector(state => state.feeds)
   const dispatch = useDispatch()
   const unsaved = Object.keys(updatedValues).length > 0
   const profile = guild ? guild.profile : null
 
-  const subscribers = useSelector(state => state.subscribers)
-  const feeds = useSelector(state => state.feeds)
-  const downloadBackup = () => {
-    const data = {
-      profile,
-      feeds,
-      subscribers
-    }
-    fileDownload(JSON.stringify(data, null, 2), `${guild.id}.json`)
-  }
+  useEffect(() => {
+    dispatch(changePage(pages.SERVER_SETTINGS))
+  }, [dispatch])
 
   useEffect(() => {
     const tz = updatedValues.timezone
@@ -83,6 +78,15 @@ function ServerSettings () {
   if (!guild) {
     dispatch(changePage(pages.DASHBOARD))
     return <Redirect to={pages.DASHBOARD} />
+  }
+
+  const downloadBackup = () => {
+    const data = {
+      profile,
+      feeds,
+      subscribers
+    }
+    fileDownload(JSON.stringify(data, null, 2), `${guild.id}.json`)
   }
 
   const getOriginalPropertyValue = (property) => {

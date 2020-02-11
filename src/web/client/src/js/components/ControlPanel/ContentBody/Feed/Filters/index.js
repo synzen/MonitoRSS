@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import styled from 'styled-components'
 import PageHeader from 'js/components/utils/PageHeader'
@@ -69,6 +69,10 @@ function Filters () {
   const editing = useSelector(feedSelectors.feedEditing)
   const [selectedArticle, setArticle] = useState()
   const dispatch = useDispatch()
+
+  useEffect(() => {
+    dispatch(changePage(pages.FILTERS))
+  }, [dispatch])
 
   if (!feed) {
     dispatch(changePage(pages.DASHBOARD))

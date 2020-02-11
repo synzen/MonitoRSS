@@ -134,6 +134,10 @@ function Debugger (props) {
       : refreshRate < 1 ? `${refreshRate * 60} second(s)` : `${refreshRate} minute(s)`
 
   useEffect(() => {
+    dispatch(changePage(pages.DEBUGGER))
+  }, [dispatch])
+
+  useEffect(() => {
     if (!feed) {
       return
     }

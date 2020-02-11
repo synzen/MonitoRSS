@@ -62,6 +62,11 @@ function Message () {
   const [previewNew, setPreviewNew] = useState(true)
   const dispatch = useDispatch()
   const scrollReference = useRef()
+
+  useEffect(() => {
+    dispatch(changePage(pages.MESSAGE))
+  }, [dispatch])
+
   useEffect(() => {
     window.addEventListener('resize', updateWindowDimensions)
     return () => window.removeEventListener('resize', updateWindowDimensions)
@@ -80,8 +85,6 @@ function Message () {
     setWindowWidth(window.innerWidth)
     setWindowHeight(window.innerHeight)
   }
-
-
 
   const onMessageUpdate = (text) => {
     setInputMessage(text)

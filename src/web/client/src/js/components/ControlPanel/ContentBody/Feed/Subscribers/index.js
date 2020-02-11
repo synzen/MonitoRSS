@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import styled from 'styled-components'
 import PageHeader from 'js/components/utils/PageHeader'
@@ -253,7 +253,7 @@ const SubscriberTag = posed(SubscriberTagStyled)({
   exit: { scale: 0, opacity: 0 }
 })
 
-function Subscribers (props) {
+function Subscribers () {
   const roles = useSelector(state => state.roles)
   const subscribers = useSelector(state => state.subscribers)
   const feed = useSelector(feedSelector.activeFeed)
@@ -267,6 +267,10 @@ function Subscribers (props) {
   const [addType, setAddType] = useState('role')
   const [addInput, setAddInput] = useState('')
   const dispatch = useDispatch()
+
+  useEffect(() => {
+    dispatch(changePage(pages.SUBSCRIBERS))
+  }, [dispatch])
 
   if (!feed) {
     dispatch(changePage(pages.DASHBOARD))

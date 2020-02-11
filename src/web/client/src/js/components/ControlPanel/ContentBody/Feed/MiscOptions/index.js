@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import styled from 'styled-components'
 import PopInButton from '../../../utils/PopInButton'
@@ -69,6 +69,10 @@ function MiscOptions () {
   const [userValues, setUserValues] = useState({})
   const dispatch = useDispatch()
   const unsaved = Object.keys(userValues).length > 0
+
+  useEffect(() => {
+    dispatch(changePage(pages.MISC_OPTIONS))
+  }, [dispatch])
 
   if (!feed) {
     dispatch(changePage(pages.DASHBOARD))

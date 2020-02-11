@@ -38,7 +38,6 @@ function ContentBody () {
       {/* <Notice>Hello!</Notice> */}
       <Scrollbars>
         <Switch>
-          
           <Route exact path={pages.DASHBOARD} render={routerProps => <Home redirect={redirect} {...routerProps} />}/>
           <Route exact path={pages.FEEDS} render={routerProps => <Feeds redirect={redirect} {...routerProps} />} />
           <Route exact path={pages.SERVER_SETTINGS} render={routerProps => <Settings {...routerProps} />} />
