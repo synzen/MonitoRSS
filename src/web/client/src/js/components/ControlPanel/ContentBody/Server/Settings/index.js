@@ -8,7 +8,7 @@ import SectionTitle from 'js/components/utils/SectionTitle'
 import { Dropdown, Input, Divider, Button } from 'semantic-ui-react'
 import styled from 'styled-components'
 import moment from 'moment-timezone'
-// import fileDownload from 'js-file-download'
+import fileDownload from 'js-file-download'
 import Date from './Date'
 import guildSelectors from 'js/selectors/guilds'
 import { fetchEditGuild } from 'js/actions/guilds'
@@ -59,9 +59,16 @@ function ServerSettings () {
   const dispatch = useDispatch()
   const unsaved = Object.keys(updatedValues).length > 0
   const profile = guild ? guild.profile : null
+
+  const subscribers = useSelector(state => state.subscribers)
+  const feeds = useSelector(state => state.feeds)
   const downloadBackup = () => {
-    // TODO: Determine what should be backed up
-    // fileDownload(JSON.stringify(profile, null, 2), `${profile.id}.json`)
+    const data = {
+      profile,
+      feeds,
+      subscribers
+    }
+    fileDownload(JSON.stringify(data, null, 2), `${guild.id}.json`)
   }
 
   useEffect(() => {
@@ -155,7 +162,7 @@ function ServerSettings () {
       <LargeDivider />
       <SectionTitle heading='Backup' subheading='Download a copy of all your server feeds and settings for safekeeping. This is highly, HIGHLY recommended in case there is data loss, or if you wish to import/overwrite your settings at a later point. Restorations can only be done by requesting through the support server.' />
       <BackupButtonContainer>
-        <Button basic content='Download Backup' onClick={downloadBackup} disabled />
+        <Button basic content='Download Backup' onClick={downloadBackup} />
         <Button basic content='Send Backup to Discord' disabled onClick={downloadBackup} />
       </BackupButtonContainer>
       <LargeDivider />
