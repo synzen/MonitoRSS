@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   CLEAR_ALL_ERRORS
 } from '../actions/errors'
@@ -52,7 +53,14 @@ export default function errorReducer (state = initialState, action) {
       if (error.response.status === 304) {
         toast.success('No changes detected')
       } else if (error.response.data.message) {
-        toast.error(error.response.data.message)
+        const details = error.response.data.errors
+        details.join(<br />)
+        toast.error(
+          <div>
+            {error.response.data.message}
+            <br /><br />
+            {details}
+          </div>)
       } else {
         toast.error('Unknown error')
       }
