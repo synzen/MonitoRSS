@@ -91,14 +91,12 @@ export function fetchGuildFeedArticles (guildID, feedID) {
 
 export function setActiveFeed (feedID) {
   return async (dispatch, getState) => {
-    const { activeGuildID, activeFeedID } = getState()
+    const { activeGuildID } = getState()
     dispatch({
       type: SET_ACTIVE_FEED,
       payload: feedID
     })
-    if (activeFeedID === feedID) {
-      return
-    } else if (!feedID) {
+    if (!feedID) {
       dispatch(setArticlesSuccess([]))
       dispatch(getSubscribersSuccess([]))
       return
