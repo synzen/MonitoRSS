@@ -49,7 +49,9 @@ export default function errorReducer (state = initialState, action) {
       console.log(error.response.data)
       console.log(error.response.status)
       console.log(error.response.headers)
-      if (error.response.data.message) {
+      if (error.response.status === 304) {
+        toast.success('No changes detected')
+      } else if (error.response.data.message) {
         toast.error(error.response.data.message)
       } else {
         toast.error('Unknown error')
