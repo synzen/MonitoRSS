@@ -1,4 +1,5 @@
 const userServices = require('../../../../services/user.js')
+const config = require('../../../../../config.js')
 const getBot = require('../../../../controllers/api/users/getBot.js')
 const createError = require('../../../../util/createError.js')
 const {
@@ -6,10 +7,11 @@ const {
   createNext
 } = require('../../../mocks/express.js')
 
+jest.mock('../../../../../config.js')
 jest.mock('../../../../util/createError.js')
 jest.mock('../../../../services/user.js')
 
-process.env.DRSS_CLIENT_ID = 'abc123'
+config.web.clientId = 'abc123'
 
 describe('Unit::controllers/api/users/getBot', function () {
   afterEach(function () {
@@ -32,7 +34,7 @@ describe('Unit::controllers/api/users/getBot', function () {
     expect(userServices.getUser)
       .toHaveBeenCalledTimes(1)
     expect(userServices.getUser)
-      .toHaveBeenCalledWith(process.env.DRSS_CLIENT_ID)
+      .toHaveBeenCalledWith(config.web.clientId)
   })
   it('sends the right response if bot not found', async function () {
     userServices.getUser.mockResolvedValue(null)

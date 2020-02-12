@@ -1,3 +1,4 @@
+const config = require('../../../../config.js')
 const userServices = require('../../../services/user.js')
 const createError = require('../../../util/createError.js')
 
@@ -8,7 +9,7 @@ const createError = require('../../../util/createError.js')
  */
 async function getBot (req, res, next) {
   try {
-    const userCached = await userServices.getUser(process.env.DRSS_CLIENT_ID)
+    const userCached = await userServices.getUser(config.web.clientId)
     if (userCached) {
       return res.json(userCached)
     }
