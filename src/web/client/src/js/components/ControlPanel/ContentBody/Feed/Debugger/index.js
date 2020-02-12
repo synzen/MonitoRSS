@@ -344,7 +344,7 @@ function Debugger (props) {
       <InfoRowBox>
         <div>
           <SectionSubtitle>URL</SectionSubtitle>
-          <span>{ feed ? <a href={feed.link} target='_blank' rel='noopener noreferrer'>{feed.link}</a> : null }</span>
+          <span>{ feed ? <a href={feed.link} target='_blank' rel='noopener noreferrer'>{feed.url}</a> : null }</span>
         </div>
         <div>
           <SectionSubtitle>Added At</SectionSubtitle>
