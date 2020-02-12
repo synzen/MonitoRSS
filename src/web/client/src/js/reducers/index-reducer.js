@@ -16,10 +16,12 @@ import failRecordsReducer from './failRecords'
 import subscribersReducer from './subscribers'
 import schedulesReducer from './schedules'
 import authenticatedReducer from './authenticated'
+import botUserReducer from './botUser'
 
 const rootReducer = combineReducers({
   authenticated: authenticatedReducer,
   page: pageReducer,
+  botUser: botUserReducer,
   user: userReducer,
   activeGuildID: activeGuildIDReducer,
   activeFeedID: activeFeedIDReducer,

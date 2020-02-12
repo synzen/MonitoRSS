@@ -1,5 +1,6 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
+import PropTypes from 'prop-types'
 import colors from 'js/constants/colors'
 import styled from 'styled-components'
 import embedProperties from 'js/constants/embed'
@@ -231,10 +232,11 @@ const EmbedFieldValue = styled.div`
 
 function Preview (props) {
   const feed = useSelector(feedSelectors.activeFeed)
+  const bot = useSelector(state => state.botUser)
   const subscribers = useSelector(state => state.subscribers)
   const articleList = useSelector(state => state.articles)
   const botConfig = useSelector(state => state.botConfig)
-  const { embeds, message, articleId, bot } = props
+  const { embeds, message, articleId } = props
 
   const convertKeywords = (word) => {
     const article = articleList[articleId]
@@ -381,6 +383,12 @@ function Preview (props) {
       </Content>
     </Wrapper>
   )
+}
+
+Preview.propTypes = {
+  embeds: PropTypes.array,
+  message: PropTypes.string,
+  articleId: PropTypes.string
 }
 
 export default Preview
