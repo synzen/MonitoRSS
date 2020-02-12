@@ -66,7 +66,7 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         feedID: 'q3ert'
       },
       body: {
-        channelID: 'qw2t4erg',
+        channel: 'qw2t4erg',
         title: 'wt4erg',
         checkDates: true,
         imgPreviews: '',
@@ -93,7 +93,7 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
     expect(feedServices.editFeed)
       .toHaveBeenCalledWith(req.params.feedID, {
         title: req.body.title,
-        channel: req.body.channelID,
+        channel: req.body.channel,
         checkDates: true,
         imgPreviews: undefined,
         imgLinksExistence: undefined,

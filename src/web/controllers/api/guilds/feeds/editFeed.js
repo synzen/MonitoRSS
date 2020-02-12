@@ -18,7 +18,6 @@ const keys = [
  * @param {import('express').NextFunction} next
  */
 async function editFeed (req, res, next) {
-  /** @type {import('../../../../../structs/db/Feed.js')} */  
   const body = req.body
   const feedID = req.params.feedID
   const data = {}
@@ -30,8 +29,8 @@ async function editFeed (req, res, next) {
       data[key] = body[key]
     }
   }
-  if (body.channelID) {
-    data.channel = body.channelID
+  if (body.channel) {
+    data.channel = body.channel
   }
   if (Object.keys(data).length === 0) {
     return res.status(304).end()
