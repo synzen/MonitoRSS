@@ -10,6 +10,7 @@ import {
 import FetchStatusActions from './utils/FetchStatusActions'
 import { fetchGuildFeedSubscribers, getSubscribersSuccess } from './subscribers'
 import { fetchGuildFeedSchedule } from './schedules'
+import toast from 'js/components/ControlPanel/utils/toast'
 
 export const {
   begin: setFeedsBegin,
@@ -41,11 +42,11 @@ export const {
   failure: setArticlesFailure
 } = new FetchStatusActions(GET_ARTICLES)
 
-export function addGuildFeed (guildID) {
+export function addGuildFeed (guildID, feedData) {
   return async dispatch => {
     try {
       dispatch(addFeedBegin())
-      const { data } = await axios.post(`/api/guilds/${guildID}/feeds`)
+      const { data } = await axios.post(`/api/guilds/${guildID}/feeds`, feedData)
       dispatch(addFeedSuccess(data))
     } catch (err) {
       dispatch(addFeedFailure(err))
