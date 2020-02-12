@@ -1,16 +1,17 @@
 import {
   CLEAR_ALL_ERRORS
 } from '../actions/errors'
+import toast from 'js/components/ControlPanel/utils/toast'
 
-const initialState = {};
+const initialState = {}
 
 /**
- * @param {Object} state 
+ * @param {Object} state
  * @param {Object} action
  * @param {string} action.type
  * @param {*} action.payload
  */
-export default function(state = initialState, action) {
+export default function errorReducer (state = initialState, action) {
   if (!action.type) {
     return state
   }
@@ -25,7 +26,7 @@ export default function(state = initialState, action) {
   if (!isFailure && !isSuccess) {
     return state
   }
-  
+
   if (isSuccess) {
     /**
      * Remove the error object if this is a _SUCCESS action
@@ -39,6 +40,26 @@ export default function(state = initialState, action) {
       return newState
     }, {})
   } else {
+    const error = action.payload
+    if (error.response) {
+      /*
+       * The request was made and the server responded with a
+       * status code that falls out of the range of 2xx
+       */
+      console.log(error.response.data)
+      console.log(error.response.status)
+      console.log(error.response.headers)
+      if (error.response.data.message) {
+        toast.error(error.response.data.message)
+      } else {
+        toast.error('Unknown error')
+      }
+    } else {
+      // Something happened in setting up the request and triggered an Error
+      toast.error(error.message)
+      console.log('Error', error.message)
+    }
+
     /**
      * Set the error object if this is a _FAILURE action
      */

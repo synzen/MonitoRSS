@@ -14,7 +14,6 @@ import colors from 'js/constants/colors'
 import { setActiveGuild } from 'js/actions/guilds'
 import feedbackSelector from 'js/selectors/feedback'
 import { fetchCreateFeedback } from 'js/actions/feedback'
-import toast from 'js/components/ControlPanel/utils/toast'
 
 // const mapStateToProps = state => {
 //   return {
@@ -292,7 +291,6 @@ function Home () {
 
   const submitFeedback = async () => {
     await dispatch(fetchCreateFeedback(feedback))
-    toast.success(`Thanks for your feedback! I will carefully review it.`)
     setFeedback('')
   }
 

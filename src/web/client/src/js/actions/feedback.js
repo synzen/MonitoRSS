@@ -1,6 +1,7 @@
 import axios from 'axios'
 import FetchStatusActions from './utils/FetchStatusActions'
 import { CREATE_FEEDBACK } from 'js/constants/actions/feedback'
+import toast from 'js/components/ControlPanel/utils/toast'
 
 export const {
   begin: createFeedbackBegin,
@@ -15,6 +16,7 @@ export function fetchCreateFeedback (content) {
       const { data } = await axios.post(`/api/feedback`, {
         content
       })
+      toast.success('Thank you, your feedback will be carefully reviewed!')
       dispatch(createFeedbackSuccess(data))
     } catch (err) {
       dispatch(createFeedbackFailure(err))

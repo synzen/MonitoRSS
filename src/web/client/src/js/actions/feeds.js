@@ -47,6 +47,7 @@ export function addGuildFeed (guildID, feedData) {
     try {
       dispatch(addFeedBegin())
       const { data } = await axios.post(`/api/guilds/${guildID}/feeds`, feedData)
+      toast.success(`Successfully added feed!`)
       dispatch(addFeedSuccess(data))
     } catch (err) {
       dispatch(addFeedFailure(err))
@@ -112,6 +113,7 @@ export function fetchDeleteFeed (guildID, feedID) {
     try {
       dispatch(deleteFeedBegin())
       await axios.delete(`/api/guilds/${guildID}/feeds/${feedID}`)
+      toast.success(`Successfully deleted feed!`)
       dispatch(deleteFeedSuccess(feedID))
     } catch (err) {
       dispatch(deleteFeedFailure(err))
@@ -124,7 +126,8 @@ export function fetchEditFeed (guildID, feedID, newData) {
     try {
       dispatch(editFeedBegin())
       const { data } = await axios.patch(`/api/guilds/${guildID}/feeds/${feedID}`, newData)
-      dispatch(editFeedSuccess(data))        
+      toast.success(`Your changes have been saved`)
+      dispatch(editFeedSuccess(data))
     } catch (err) {
       dispatch(editFeedFailure(err))
     }

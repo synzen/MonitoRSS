@@ -9,6 +9,7 @@ import { fetchGuildRoles } from './roles'
 import { fetchGuildFeeds } from './feeds'
 import { fetchGuildFailRecords } from './failRecords'
 import FetchStatusActions from './utils/FetchStatusActions'
+import toast from 'js/components/ControlPanel/utils/toast'
 
 export const {
   begin: setGuildsBegin,
@@ -45,6 +46,7 @@ export function fetchEditGuild (guildID, edited) {
     try {
       dispatch(editGuildBegin())
       const { data } = await axios.patch(`/api/guilds/${guildID}`, edited)
+      toast.success(`Your changes have been saved`)
       dispatch(editGuildSuccess(data))
     } catch (err) {
       dispatch(editGuildFailure(err))

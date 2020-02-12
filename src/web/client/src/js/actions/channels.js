@@ -17,7 +17,7 @@ export function fetchGuildChannels (guildID) {
       const { data } = await axios.get(`/api/guilds/${guildID}/channels`)
       dispatch(setChannelsSuccess(data))
     } catch (err) {
-      dispatch(setChannelsFailure(err)) 
+      dispatch(setChannelsFailure(err))
     }
   }
 }
