@@ -378,7 +378,12 @@ function Preview (props) {
         </h2>
       </UserInfo>
       <Content>
-        { (message || botConfig.defaultMessage) === '{empty}' && hasEmbeds ? '' : article ? parser.parse(convertKeywords(message || botConfig.defaultMessage || ''), true, {}, parser.jumboify) : parser.parse(message || botConfig.defaultMessage || '', true, {}, parser.jumboify) }
+        { (message || botConfig.defaultMessage) === '{empty}' && hasEmbeds
+          ? ''
+          : article
+            ? parser.parse(convertKeywords(message || botConfig.defaultMessage || '').trim(), true, {}, parser.jumboify)
+            : parser.parse((message || botConfig.defaultMessage || '').trim(), true, {}, parser.jumboify)
+        }
         {embedElements}
       </Content>
     </Wrapper>
