@@ -9,16 +9,16 @@ const validator = require('express-joi-validation').createValidator({
   passError: true
 });
 
-if (process.env.NODE_ENV !== 'test') {
-  api.use(rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 30, // 30 requests per 1 minute
-    message: {
-      code: 429,
-      message: 'Too many requests'
-    }
-  }))
-}
+// if (process.env.NODE_ENV !== 'test') {
+//   api.use(rateLimit({
+//     windowMs: 60 * 1000, // 1 minute
+//     max: 30, // 30 requests per 1 minute
+//     message: {
+//       code: 429,
+//       message: 'Too many requests'
+//     }
+//   }))
+// }
 
 api.get('/authenticated', controllers.api.authenticated)
 api.get('/config', controllers.api.config)
