@@ -11,7 +11,7 @@ const RequestError = require('../../../../../structs/errors/RequestError.js')
 async function createFeed (req, res, next) {
   const data = {
     guild: req.params.guildID,
-    channel: req.body.channelID,
+    channel: req.body.channel,
     url: req.body.url
   }
   try {
