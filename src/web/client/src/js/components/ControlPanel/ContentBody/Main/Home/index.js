@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import styled from 'styled-components'
-import { Divider, Button, Popup, Form } from 'semantic-ui-react'
+import { Divider, Button, Form } from 'semantic-ui-react'
+import PropTypes from 'prop-types'
 import DiscordAvatar from '../../../utils/DiscordAvatar'
 import { useSelector, useDispatch } from 'react-redux'
 import pages from 'js/constants/pages'
@@ -14,24 +15,6 @@ import colors from 'js/constants/colors'
 import { setActiveGuild } from 'js/actions/guilds'
 import feedbackSelector from 'js/selectors/feedback'
 import { fetchCreateFeedback } from 'js/actions/feedback'
-
-// const mapStateToProps = state => {
-//   return {
-//     guildId: state.guildId,
-//     user: state.user,
-//     guilds: state.guilds,
-//     feeds: state.feeds,
-//     channels: state.channels,
-//     csrfToken: state.csrfToken
-//   }
-// }
-
-// const mapDispatchToProps = dispatch => {
-//   return {
-//     setToThisPage: () => dispatch(changePage(pages.DASHBOARD)),
-//     setActiveGuild: guildId => dispatch(setActiveGuild(guildId))
-//   }
-// }
 
 const Container = styled.div`
   padding: 20px;
@@ -99,191 +82,47 @@ const NoServers = styled.div`
   }
 `
 
-// class Home extends Component {
-//   constructor () {
-//     super()
-//     this.state = {
-//       feedbackContent: '',
-//       saving: false,
-//       disabledFeedback: false
-//     }
-//   }
-
-//   componentWillMount () {
-//     this.props.setToThisPage()
-//     window.addEventListener("resize", this.updateDimensions);
-//   }
-
-//   updateDimensions = () => {
-//     const newState = {}
-//     if (window.innerWidth >= 1000) {
-//       if (this.state.avatarSize !== '14em') newState.avatarSize = '14em'
-//     } else if (window.innerWidth < 1000) {
-//       if (this.state.avatarSize !== '9em') newState.avatarSize = '9em'
-//     }
-//     if (Object.keys(newState).length > 0) this.setState(newState)
-//   }
-
-//   componentWillUnmount () {
-//       window.removeEventListener("resize", this.updateDimensions);
-//   }
-
-//   submitFeedback = () => {
-//     const content = this.state.feedbackContent.trim()
-//     if (!content) return
-//     this.setState({ saving: true })
-//     axios.post(`/api/feedback`, { message: content }, { headers: { 'CSRF-Token': this.props.csrfToken } }).then(() => {
-//       this.setState({ saving: false, feedbackContent: '' })
-//       toast.success(`Thanks for your feedback! I will carefully review it.`)
-//     }).catch(err => {
-//       console.log(err.response || err)
-//       const errMessage = err.response && err.response.data && err.response.data.message ? err.response.data.message : err.response && err.response.data ? err.response.data : err.message
-//       this.setState({ saving: false, disabledFeedback: errMessage === 'Too many requests' ? true : false })
-//       toast.error(<p>Failed to send feedback<br/><br/>{errMessage ? typeof errMessage === 'object' ? JSON.stringify(errMessage, null, 2) : errMessage : 'No details available'}</p>)
-//     })
-//   }
-
-//   onClickServer = id => {
-//     this.props.setActiveGuild(id)
-//   }
-
-//   showImage = () => {
-//     modal.showImage('https://upload.wikimedia.org/wikipedia/commons/c/cc/ESC_large_ISS022_ISS022-E-11387-edit_01.JPG', 'alt')
-
-//   }
-
-//   render () {
-//     const { guilds, guildId, setActiveGuild, user, feeds, redirect } = this.props
-//     const selectedGuildIconStyle = { transform: 'scale(1.1)', opacity: 1 }
-//     const serverIcons = []
-//     const serverButtons = []
-//     for (const thisGuildId in guilds) {
-//       const guild = guilds[thisGuildId]
-//       if (!guild) {
-//         continue
-//       }
-//       serverIcons.push(<Popup key={`dashboard.icon.${thisGuildId}`} trigger={<DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='64px' onClick={e => setActiveGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />} inverted content={guild.name} />)
-//       serverButtons.push(
-//         <div key={thisGuildId}>
-//         <ServerButton nonmenu padding='15px' selected={guildId === thisGuildId} onClick={e => this.onClickServer(thisGuildId)} >
-//           <ServerButtonInner>
-//             <DiscordAvatar src={!guild.icon ? '' : `https://cdn.discordapp.com/icons/${thisGuildId}/${guild.icon}?size=256`} width='48px' onClick={e => setActiveGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />
-//             <div>
-//               <h4>{guild.name}</h4>
-//               <p>{feeds && feeds[thisGuildId] ? Object.keys(feeds[thisGuildId]).length : undefined} feeds</p>
-//             </div>
-//           </ServerButtonInner>
-//         </ServerButton>
-//         <ServerEditButtons pose={guildId === thisGuildId ? 'enter' : 'exit'}>
-//           <Button content='Feeds' onClick={e => redirect(pages.FEEDS)} />
-//           <Button content='Settings' onClick={e => redirect(pages.SERVER_SETTINGS)} />
-//         </ServerEditButtons>
-//         </div>
-//       )
-//     }
-
-//     return (
-//       <Container>
-//         <PageHeader heading={`Hi there, ${user ? user.username : '(no name found)'}!`} subheading='Make your life immensely easier by using this web interface! (though excuse my appearance while I am still under construction)' />
-//         <AlertBox>
-//           This UI is still under development! Occasional issues are expected - please report them if you encounter any!
-//         </AlertBox>
-//         {/* <Divider />
-//         <h2>What is Discord.RSS?</h2>
-//         <ParagraphText>
-//           Discord.RSS is an RSS bot.
-//         </ParagraphText>
-//         <Divider />
-//         <SectionTitle>
-//           <h3>Servers</h3>
-//           <p>Select a server to see its feeds. All your changes will be reflected for this feed in this server. You may also change your active server in the left menu. Only servers where you have Manage Channel permissions, and the bot is a member will be shown.</p>
-//         </SectionTitle>
-//         <SelectedGuildContainer>
-//           <h4>SELECTED</h4>
-//           <p>{guilds[guildId] ? `${guilds[guildId].name} (${guildId})` : Object.keys(guilds).length === 0 ? 'No servers found' : 'None selected'}</p>
-//         </SelectedGuildContainer>
-//         <ServerIconsWrapper>
-//           {serverIcons}
-//         </ServerIconsWrapper> */}
-
-//         <Divider />
-//         <SectionTitle heading='Servers' subheading='Select a server to start seeing its feeds. Only servers where you have Manage Channel permissions, and the bot is a member will be shown. You can also change your active server in the left menu.' />
-//         { serverButtons.length > 0
-//         ? serverButtons
-//         : <NoServers>
-//             <h4>NO ELIGIBLE SERVERS</h4>
-//             <span>Make sure Discord.RSS is in the right servers where you have MANAGE CHANNEL permissions</span>
-//           </NoServers>
-//         }
-
-//         <Divider />
-//         {/* <SectionTitle heading='Rating'/>
-//         <Rating size='massive' maxRating={5} />
-//         <Divider /> */}
-//         <SectionTitle heading='Feedback' subheading={
-//           <span>
-//             Help make this a better experience for all and provide some feedback! ;) Any and all comments, suggestions, critiques and opinions are welcome. Bug reports are also welcome.
-//             <br/>
-//             <br/>
-//             <span style={{color: colors.discord.red}}>Please note that this is not for submitting requests for support.</span> See the home page for a link to the discord support server.
-//           </span>} />
-
-//         <FeedbackForm>
-//           <Form.Field>
-//             <label>Feedback</label>
-//             <textarea onChange={e => this.setState({ feedbackContent: e.target.value })} value={this.state.feedbackContent} />
-//           </Form.Field>
-//           <Form.Field>
-//             <Button content='Submit' type='submit' disabled={this.state.disabledFeedback || !this.state.feedbackContent.trim() || this.state.saving} loading={this.state.saving} onClick={this.submitFeedback} />
-//           </Form.Field>
-//         </FeedbackForm>
-//         <Divider />
-//       </Container>
-//     )
-//   }
-// }
-
-// Home.propTypes = {
-//   guildId: PropTypes.string,
-//   guilds: PropTypes.object
-// }
-
-function Home () {
+function Home (props) {
+  const [selectedGuildID, setSelectedGuildID] = useState('')
   const guilds = useSelector(state => state.guilds)
   const user = useSelector(state => state.user)
-  const guildId = useSelector(state => state.activeGuildID)
-  const feeds = useSelector(state => state.feeds)
   const [feedback, setFeedback] = useState('')
   const savingFeedback = useSelector(feedbackSelector.feedbackSaving)
   const dispatch = useDispatch()
+  const { redirect } = props
 
   function setGuild (guildID) {
     dispatch(setActiveGuild(guildID))
   }
 
-  // const { guilds, guildId, setActiveGuild, user, feeds, redirect } = this.props
-  const redirect = () => {}
-  const selectedGuildIconStyle = { transform: 'scale(1.1)', opacity: 1 }
-  const serverIcons = []
+  async function onClickFeeds (guildID) {
+    await setGuild(guildID)
+    redirect(pages.FEEDS)
+  }
+
+  async function onClickSettings (guildID) {
+    await setGuild(guildID)
+    redirect(pages.SERVER_SETTINGS)
+  }
+
   const serverButtons = []
   for (const guild of guilds) {
     const thisGuildId = guild.id
     const iconURL = guild.iconURL ? `${guild.iconURL}?size=256` : ''
-    serverIcons.push(<Popup key={`dashboard.icon.${thisGuildId}`} trigger={<DiscordAvatar src={iconURL} width='64px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />} inverted content={guild.name} />)
     serverButtons.push(
       <div key={thisGuildId}>
-        <ServerButton nonmenu padding='15px' selected={guildId === thisGuildId} onClick={e => setGuild(thisGuildId)} >
+        <ServerButton nonmenu padding='15px' selected={selectedGuildID === thisGuildId} onClick={e => setSelectedGuildID(thisGuildId)} >
           <ServerButtonInner>
-            <DiscordAvatar src={iconURL} width='48px' onClick={e => setGuild(thisGuildId)} style={guildId === thisGuildId ? selectedGuildIconStyle : {}} />
+            <DiscordAvatar src={iconURL} width='48px' onClick={e => setSelectedGuildID(thisGuildId)} />
             <div>
               <h4>{guild.name}</h4>
-              <p>{feeds && feeds[thisGuildId] ? Object.keys(feeds[thisGuildId]).length : undefined} feeds</p>
+              {/* <p>{feeds && feeds[thisGuildId] ? Object.keys(feeds[thisGuildId]).length : undefined} feeds</p> */}
             </div>
           </ServerButtonInner>
         </ServerButton>
-        <ServerEditButtons pose={guildId === thisGuildId ? 'enter' : 'exit'}>
-          <Button content='Feeds' onClick={e => redirect(pages.FEEDS)} />
-          <Button content='Settings' onClick={e => redirect(pages.SERVER_SETTINGS)} />
+        <ServerEditButtons pose={selectedGuildID === thisGuildId ? 'enter' : 'exit'}>
+          <Button content='Feeds' onClick={e => onClickFeeds(thisGuildId)} />
+          <Button content='Settings' onClick={e => onClickSettings(thisGuildId)} />
         </ServerEditButtons>
       </div>
     )
@@ -351,6 +190,10 @@ function Home () {
       <Divider />
     </Container>
   )
+}
+
+Home.propTypes = {
+  redirect: PropTypes.func
 }
 
 export default Home
