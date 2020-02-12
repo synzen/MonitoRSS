@@ -14,7 +14,7 @@ const createRequest = () => ({
     guildID: '1243qr5'
   },
   body: {
-    channelID: '2346'
+    channel: '2346'
   }
 })
 
