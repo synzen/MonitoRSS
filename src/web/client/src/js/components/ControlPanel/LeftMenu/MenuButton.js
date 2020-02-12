@@ -52,7 +52,7 @@ function MenuButton (props) {
       ? <ButtonBlank {...props} to={props.to} onClick={props.onClick} as={RouterLink} padding={props.padding}>
         {props.children}
       </ButtonBlank>
-      : <Popup content={props.disabled ? 'You must select a feed first!' : 'Not yet implemented, sorry!'} inverted position='right center' trigger={
+      : <Popup content={props.disabled ? 'You must select a feed first!' : 'Not yet implemented, sorry!'} inverted position='top left' trigger={
         <ButtonBlank {...props} onClick={props.onClick} padding={props.padding}>
           {props.children}
         </ButtonBlank>} />
