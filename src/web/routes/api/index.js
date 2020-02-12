@@ -47,7 +47,9 @@ api.use(function errorHandler(err, req, res, next) {
     res.status(400).json(createdError);
   } else {
     // pass on to another error handler
-    next(err);
+    console.log(err)
+    const createdError = createError(500, 'Internal Server Error')
+    res.status(500).json(createdError)
   }
 });
 
