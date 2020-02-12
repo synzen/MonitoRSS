@@ -22,6 +22,7 @@ const validator = require('express-joi-validation').createValidator({
 
 api.get('/authenticated', controllers.api.authenticated)
 api.get('/config', controllers.api.config)
+api.use('/feeds', require('./feeds/index.js'))
 api.use(require('../../middleware/authenticate.js'))
 
 const feedbackSchema = Joi.object({
@@ -29,7 +30,7 @@ const feedbackSchema = Joi.object({
 })
 api.post('/feedback', validator.body(feedbackSchema), controllers.api.createFeedback)
 // api.use(csrf())
-api.use('/feeds', require('./feeds/index.js'))
+
 api.use('/users', require('./users/index.js'))
 api.use('/guilds', require('./guilds/index.js'))
 
