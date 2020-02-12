@@ -109,7 +109,7 @@ describe('Unit::controllers/api/guilds/feeds/createFeed', function () {
         guildID: 123
       },
       body: {
-        channelID: 'aqewtr',
+        channel: 'aqewtr',
         url: 'q3e2trg'
       }
     }
@@ -123,7 +123,7 @@ describe('Unit::controllers/api/guilds/feeds/createFeed', function () {
     expect(feedServices.createFeed)
       .toHaveBeenCalledWith({
         guild: req.params.guildID,
-        channel: req.body.channelID,
+        channel: req.body.channel,
         url: req.body.url
       })
   })
