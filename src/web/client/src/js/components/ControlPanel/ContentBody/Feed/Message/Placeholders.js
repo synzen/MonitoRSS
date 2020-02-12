@@ -7,9 +7,9 @@ import { useSelector } from 'react-redux'
 import parser from '../../../utils/textParser'
 import modal from 'js/components/utils/modal'
 import SectionSubtitleDescription from 'js/components/utils/SectionSubtitleDescription'
-import posed from 'react-pose';
+import posed from 'react-pose'
 import SectionSubtitle from 'js/components/utils/SectionSubtitle'
-import { Scrollbars } from 'react-custom-scrollbars';
+import { Scrollbars } from 'react-custom-scrollbars'
 import { isHiddenProperty } from 'js/constants/hiddenArticleProperties'
 import feedSelectors from 'js/selectors/feeds'
 
@@ -93,6 +93,7 @@ const PlaceholderImage = styled.div`
       width: 100%;
       height: auto;
       margin-top: 1em;
+      max-width: 450px;
     }
     @media only screen and (min-width: 450px) {
       display: flex;
@@ -209,7 +210,7 @@ function Placeholders () {
               {/* { phname === 'link' || phname.includes('image') || phname.includes('anchor')
                 ? <a href={content} target='_blank' rel='noopener noreferrer'><p>{content}</p></a>
                 :  */}
-                <p>{parser.parse(content)}</p>
+              <p>{parser.parse(content)}</p>
               {/* } */}
             </div>
             { phname.includes('image') ? <div><img onClick={e => modal.showImage(content, phname)} alt={phname} src={content} /></div> : null }
@@ -236,23 +237,22 @@ function Placeholders () {
         </DropdownWithButtons>
       </ArticleBox>
       <SectionSubtitle>Placeholders</SectionSubtitle>
-      
       <Input fluid icon='search' iconPosition='left' placeholder='Placeholder name' onChange={e => setSearchPlaceholder(e.target.value)} value={searchPlaceholder} />
       <PlaceholdersContainer pose={smallPlaceholderContainer ? 'small' : 'big'}>
-      <Scrollbars>
-        <PlaceholdersContainerInner small={smallPlaceholderContainer}>
-        {articlesFetching
-          ? <Loader inverted size='big' active />
-          : articlesError
-            ? <div>
-              <SectionSubtitleDescription style={{ color: colors.discord.red }}>Failed to Load Articles</SectionSubtitleDescription>
-              <SectionSubtitleDescription>{articlesError || 'Unknown Error'}</SectionSubtitleDescription>
-            </div>
-            : placeholderElements.length === 0
-              ? <SectionSubtitleDescription>No articles in feed</SectionSubtitleDescription>
-              : placeholderElements}
-            </PlaceholdersContainerInner>
-      </Scrollbars>
+        <Scrollbars>
+          <PlaceholdersContainerInner small={smallPlaceholderContainer}>
+            {articlesFetching
+              ? <Loader inverted size='big' active />
+              : articlesError
+                ? <div>
+                  <SectionSubtitleDescription style={{ color: colors.discord.red }}>Failed to Load Articles</SectionSubtitleDescription>
+                  <SectionSubtitleDescription>{articlesError || 'Unknown Error'}</SectionSubtitleDescription>
+                </div>
+                : placeholderElements.length === 0
+                  ? <SectionSubtitleDescription>No articles in feed</SectionSubtitleDescription>
+                  : placeholderElements}
+          </PlaceholdersContainerInner>
+        </Scrollbars>
       </PlaceholdersContainer>
 
     </div>
