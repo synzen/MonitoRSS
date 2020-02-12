@@ -10,12 +10,12 @@ jest.mock('../../../structs/db/Supporter.js')
 describe('Unit::structs/db/Feed', function () {
   const keys = [
     'checkDates',
-    'checkTitles',
     'formatTables',
     'imgLinksExistence',
     'imgPreviews',
     'toggleRoleMentions',
-    'text'
+    'text',
+    'checkProperties'
   ]
   const necessaryInit = {
     title: 'e5rh',
@@ -54,7 +54,7 @@ describe('Unit::structs/db/Feed', function () {
         name: 'adesgrf'
       }
       init._id = 'abc'
-      init.customComparisons = ['h', 'g']
+      init.checkProperties = ['h', 'g']
       init.embeds = [{ a: 1, b: 2 }]
       init.disabled = true
       const feed = new Feed({ ...init })
@@ -63,7 +63,7 @@ describe('Unit::structs/db/Feed', function () {
       }
       expect(feed._id).toEqual(init._id)
       expect(feed.webhook).toEqual(init.webhook)
-      expect(feed.customComparisons).toEqual(init.customComparisons)
+      expect(feed.checkProperties).toEqual(init.checkProperties)
       expect(feed.embeds).toEqual(init.embeds)
       expect(feed.disabled).toEqual(init.disabled)
     })

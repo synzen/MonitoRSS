@@ -17,12 +17,12 @@ class Feed extends FilterBase {
    * @param {string} data.guild - Guild ID
    * @param {string} data.channel - Channel ID
    * @param {Date} data.addedAt - Date the feed was added
-   * @param {boolean} data.checkTitles - Check titles for determining article newness
    * @param {boolean} data.imgPreviews - Have Discord automatically show embeds for image links
    * @param {boolean} data.imgLinksExistence - Show image links in messages
    * @param {boolean} data.checkDates - Check dates for determining article newness
    * @param {boolean} data.formatTables - Format messages as if they're tables
    * @param {boolean} data.toggleRoleMentions - Toggle role mentions for subscribers when messages are sent
+   * @param {string[]} data.checkProperties - Properties to check to decide if articles are new
    */
   constructor (data, _saved) {
     super(data, _saved)
@@ -86,12 +86,6 @@ class Feed extends FilterBase {
     this.addedAt = this.getField('addedAt')
 
     /**
-     * Check titles for determining article newness
-     * @type {boolean}
-     */
-    this.checkTitles = this.getField('checkTitles')
-
-    /**
      * Have Discord automatically show embeds for image links
      * @type {boolean}
      */
@@ -150,10 +144,10 @@ class Feed extends FilterBase {
     this.regexOps = this.getField('regexOps', {})
 
     /**
-     * Custom comparisons for article logic
+     * Properties for article comparisons
      * @type {string[]}
      */
-    this.customComparisons = this.getField('customComparisons', [])
+    this.checkProperties = this.getField('checkProperties', [])
   }
 
   static get SPLIT_KEYS () {
@@ -182,7 +176,6 @@ class Feed extends FilterBase {
       text: this.text,
       embeds: this.embeds,
       addedAt: this.addedAt,
-      checkTitles: this.checkTitles,
       checkDates: this.checkDates,
       imgPreviews: this.imgPreviews,
       imgLinksExistence: this.imgLinksExistence,
@@ -191,8 +184,8 @@ class Feed extends FilterBase {
       disabled: this.disabled,
       webhook: this.webhook,
       split: this.split,
-      regexOps: regexOpsMap,
-      customComparisons: this.customComparisons
+      checkProperties: this.checkProperties,
+      regexOps: regexOpsMap
     }
     if (this._id) {
       data._id = this._id
