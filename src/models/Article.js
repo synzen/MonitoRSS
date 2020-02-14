@@ -11,6 +11,7 @@ function expireDate () {
 }
 
 const schema = new mongoose.Schema({
+  _id: String,
   feedURL: {
     required: true,
     type: String
@@ -23,13 +24,14 @@ const schema = new mongoose.Schema({
     required: true,
     type: String
   },
-  id: String,
-  title: String,
   date: {
     type: Date,
     default: Date.now
   },
-  customComparisons: Object,
+  properties: {
+    type: Map,
+    of: String
+  },
   ...articlesExpire > 0 ? { expiresAt: {
     type: Date,
     default: expireDate(),

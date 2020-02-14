@@ -1,184 +1,520 @@
+const mongoose = require('mongoose')
 const LinkLogic = require('../../../rss/logic/LinkLogic.js')
-const dbCmds = require('../../../rss/db/commands.js')
+const dbName = 'test_int_linklogic'
+const CON_OPTIONS = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useCreateIndex: true
+}
 
-jest.mock('../../../rss/db/commands.js')
-
-describe('Int::LinkLogic', function () {
-  afterEach(function () {
-    dbCmds.bulkInsert.mockReset()
-    dbCmds.findAll.mockReset()
-    dbCmds.update.mockReset()
+describe('Int::structs/db/Blacklist Database', function () {
+  beforeAll(async function () {
+    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
   })
-  it('emits article for new articles via ID', async function () {
-    const data = {
-      shardID: -1,
-      link: 'https://www.rt.com/rss',
-      rssList: {
-        feedID1: {}
-      },
-      articleList: [
-        { guid: '1' },
-        { guid: '2' },
-        { guid: '3' },
-        { guid: '4' }
-      ],
-      runNum: 1,
-      scheduleName: 'default',
-      useIdType: 'guid',
-      config: { feeds: {} }
-    }
-    const expectedArticle = {
-      _id: '2',
-      guid: '2',
-      _feed: {}
-    }
-    const expectedArticle2 = {
-      _id: '4',
-      guid: '4',
-      _feed: {}
-    }
-    const logic = new LinkLogic(data)
-    const articleSpy = jest.fn()
-    dbCmds.findAll.mockResolvedValueOnce([ { id: '1' }, { id: '3' } ])
-    logic.on('article', articleSpy)
-    await logic.run()
-    expect(articleSpy).toHaveBeenCalledWith(expectedArticle)
-    expect(articleSpy).toHaveBeenCalledWith(expectedArticle2)
+  beforeEach(async function () {
+    await mongoose.connection.db.dropDatabase()
   })
-  it('does not emits new article for a new articles with seen title', async function () {
-    const data = {
-      shardID: -1,
-      link: 'https://www.rt.com/rss',
-      rssList: {
-        feedID1: {
-          checkTitles: true
-        }
-      },
-      articleList: [
-        { guid: '1', title: 'a' },
-        { guid: '2', title: 'b' }
-      ],
-      runNum: 1,
-      scheduleName: 'default',
-      useIdType: 'guid',
-      config: { feeds: {} }
+  it('updates properties', async function () {
+    const articleList = [{
+      guid: 'a',
+      title: 't1',
+      description: 'd1'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: ['title'],
+        ncomparisons: ['description']
+      }
     }
-    const logic = new LinkLogic(data)
-    const articleSpy = jest.fn()
-    dbCmds.findAll.mockResolvedValueOnce([ { id: '1', title: 'a' }, { id: '2', title: 'b' }, { id: '3', title: 'b' } ])
-    logic.on('article', articleSpy)
-    await logic.run()
-    expect(articleSpy).not.toHaveBeenCalled()
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertOne({
+      _id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {}
+    })
+    const logic = new LinkLogic(logicData)
+    await logic.runFromMongo()
+    const doc = await mongoose.connection.collection('articles').findOne({
+      _id: 'a'
+    })
+    expect(doc.properties).toEqual({
+      title: articleList[0].title,
+      description: articleList[0].description
+    })
   })
-  it('does not emits new article for an article with old pubdate with checKDates true', async function () {
-    const twoDaysAgo = new Date()
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
-    const data = {
-      shardID: -1,
-      link: 'https://www.rt.com/rss',
-      rssList: {
-        feedID1: {
-          checkDates: true
-        }
-      },
-      articleList: [
-        { guid: '1' },
-        { guid: '2', pubdate: twoDaysAgo }
-      ],
-      runNum: 1,
-      scheduleName: 'default',
-      useIdType: 'guid',
-      config: { feeds: { cycleMaxAge: 1 } }
+  it('sends new articles if new ID', async function () {
+    const articleList = [{
+      guid: 'a',
+      title: 't1'
+    }, {
+      guid: 'b'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: [],
+        ncomparisons: []
+      }
     }
-    const logic = new LinkLogic(data)
-    const articleSpy = jest.fn()
-    dbCmds.findAll.mockResolvedValueOnce([ { id: '1', title: 'a' } ])
-    logic.on('article', articleSpy)
-    await logic.run()
-    expect(articleSpy).not.toHaveBeenCalled()
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertOne({
+      _id: 'b',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {}
+    })
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(1)
+    expect(newArticles[0]).toEqual({
+      ...articleList[0],
+      _feed: rssList.feedid1
+    })
   })
-  it('emits article for new articles for multiple sources', async function () {
-    const data = {
-      shardID: -1,
-      link: 'https://www.rt.com/rss',
-      rssList: {
-        feedID1: {},
-        feedID2: {}
-      },
-      articleList: [
-        { guid: '1' },
-        { guid: '2' },
-        { guid: '3' }
-      ],
-      runNum: 1,
+  it('does not send new articles if old ID', async function () {
+    const articleList = [{
+      guid: 'b'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: [],
+        ncomparisons: []
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
       scheduleName: 'default',
-      useIdType: 'guid',
-      config: { feeds: {} }
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
     }
-    const expectedArticle = {
-      _id: '2',
-      guid: '2',
-      _feed: {}
-    }
-    const expectedArticle2 = {
-      _id: '2',
-      guid: '2',
-      _feed: {}
-    }
-    const logic = new LinkLogic(data)
-    const articleSpy = jest.fn()
-    dbCmds.findAll.mockResolvedValueOnce([ { id: '1' }, { id: '3' } ])
-    logic.on('article', articleSpy)
-    await logic.run()
-    expect(articleSpy).toHaveBeenCalledWith(expectedArticle)
-    expect(articleSpy).toHaveBeenCalledWith(expectedArticle2)
+    await mongoose.connection.collection('articles').insertOne({
+      _id: 'b',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {}
+    })
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(0)
   })
-  it('inserts unseen articles via ID into database', async function () {
-    const data = {
-      shardID: -1,
-      link: 'https://www.rt.com/rss',
-      rssList: {
-        feedID1: {}
-      },
-      articleList: [
-        { guid: '1' },
-        { guid: '2' }
-      ],
-      runNum: 1,
-      scheduleName: 'default',
-      useIdType: 'guid',
-      config: { feeds: {} }
+  it('sends new articles when id exists in DB but pass pcomparison', async function () {
+    const articleList = [{
+      guid: 'a',
+      title: 't1'
+    }, {
+      guid: 'b',
+      title: 't2'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: ['title'],
+        ncomparisons: []
+      }
     }
-    const logic = new LinkLogic(data)
-    dbCmds.findAll.mockResolvedValueOnce([ { id: '1' }, { id: '3' } ])
-    await logic.run()
-    expect(dbCmds.bulkInsert).toHaveBeenCalledWith(undefined, [{
-      ...data.articleList[1],
-      _id: data.articleList[1].guid
-    }], data.link, data.shardID, data.scheduleName)
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertOne({
+      _id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        title: 't1'
+      }
+    })
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(1)
+    expect(newArticles[0]).toEqual({
+      ...articleList[1],
+      _feed: rssList.feedid1
+    })
   })
-  it('does not emit article for no new articles', async function () {
-    const data = {
-      shardID: -1,
-      link: 'https://www.rt.com/rss',
-      rssList: {
-        feedID1: {}
-      },
-      articleList: [
-        { guid: '1' },
-        { guid: '2' },
-        { guid: '3' }
-      ],
-      runNum: 1,
-      scheduleName: 'default',
-      useIdType: 'guid',
-      config: { feeds: {} }
+  it('does not send articles when id is new but ncomparison blocks', async function () {
+    const articleList = [{
+      guid: 'a',
+      title: 't1'
+    }, {
+      guid: 'b',
+      title: 't2'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: [],
+        ncomparisons: ['title']
+      }
     }
-    const logic = new LinkLogic(data)
-    const articleSpy = jest.fn()
-    dbCmds.findAll.mockResolvedValueOnce([ { id: '1' }, { id: '2' }, { id: '3' } ])
-    logic.on('article', articleSpy)
-    await logic.run()
-    expect(articleSpy).not.toHaveBeenCalled()
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertOne({
+      _id: 'b',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        title: 't1'
+      }
+    })
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(0)
+  })
+  it('does not send new articles when no articles have been stored', async function () {
+    const articleList = [{
+      guid: 'a',
+      title: 't1'
+    }, {
+      guid: 'b',
+      title: 't2'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: [],
+        ncomparisons: []
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(0)
+  })
+  it('inserts new articles to database', async function () {
+    const articleList = [{
+      guid: 'a',
+      title: 't1',
+      summary: 's1'
+    }, {
+      guid: 'b',
+      title: 't2',
+      summary: 's2'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: [],
+        ncomparisons: ['title']
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    const logic = new LinkLogic(logicData)
+    await logic.runFromMongo()
+    const docs = await mongoose.connection.collection('articles').find().toArray()
+    expect(docs).toHaveLength(2)
+    expect(docs).toContainEqual(expect.objectContaining({
+      _id: 'a',
+      feedURL: logicData.link,
+      scheduleName: logicData.scheduleName,
+      shardID: logicData.shardID,
+      properties: {
+        title: 't1'
+      }
+    }))
+    expect(docs).toContainEqual(expect.objectContaining({
+      _id: 'b',
+      feedURL: logicData.link,
+      scheduleName: logicData.scheduleName,
+      shardID: logicData.shardID,
+      properties: {
+        title: 't2'
+      }
+    }))
+  })
+  it('does not send new article with old ID but contains a pcomparison value of recently sent article', async function () {
+    /**
+     * This is when the IDs are within the database. This
+     * case is whewn IDs are sen in DB.
+     */
+    const articleList = [{
+      /**
+       * This one should not send since the previous
+       * article (index 1) already has this title
+       */
+      guid: 'a',
+      title: 't2'
+    }, {
+      guid: 'b',
+      title: 't2'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: ['title'],
+        ncomparisons: []
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertMany([{
+      _id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        title: 'shffgh'
+      }
+    }, {
+      _id: 'b',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {}
+    }])
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(1)
+    expect(newArticles[0]).toEqual(expect.objectContaining(articleList[1]))
+  })
+  it('does not send new article with new IDs when ncomparison blocked a recent new article', async function () {
+    /**
+     * The article list is handled in *reverse*. This case
+     * is when IDs are not seen in DB
+     */
+    const articleList = [{
+      /**
+       * This one should not send, despite the new
+       * guid since the previous article (index 1) has same title
+       */
+      guid: 'aa',
+      title: 'ta'
+    }, {
+      guid: 'bb',
+      title: 'ta'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: [],
+        ncomparisons: ['title']
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertOne({
+      _id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        title: 't'
+      }
+    })
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(1)
+    expect(newArticles[0]).toEqual(expect.objectContaining(articleList[1]))
+  })
+  it('sends when at least 1 pcomparison passes if others do not pass', async function () {
+    const articleList = [{
+      guid: 'aa',
+      title: 't',
+      description: 'hola'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: ['title', 'description'],
+        ncomparisons: []
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertOne({
+      _id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        title: 't',
+        description: 'holano'
+      }
+    })
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(1)
+    expect(newArticles[0]).toEqual(expect.objectContaining(articleList[0]))
+  })
+  it('blocks when at least 1 ncomparison blocks if others pass', async function () {
+    const articleList = [{
+      guid: 'aa',
+      title: 't',
+      description: 'hola'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: [],
+        ncomparisons: ['title', 'description']
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertOne({
+      _id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        title: 't',
+        description: 'holano'
+      }
+    })
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(0)
+  })
+  it('does not send articles with old guids that pass pcomparisons if property is uninitialized', async function () {
+    const articleList = [{
+      guid: 'a',
+      title: 't1'
+    }, {
+      guid: 'b',
+      title: 't2'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: ['title'],
+        ncomparisons: []
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertMany([{
+      _id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {}
+    }, {
+      _id: 'b',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {}
+    }])
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.runFromMongo()
+    expect(newArticles).toHaveLength(0)
+  })
+  afterAll(async function () {
+    await mongoose.connection.db.dropDatabase()
+    await mongoose.connection.close()
   })
 })

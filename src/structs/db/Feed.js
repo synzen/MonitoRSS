@@ -8,6 +8,7 @@ const Supporter = require('./Supporter.js')
 const FeedFetcher = require('../../util/FeedFetcher.js')
 const dbCmds = require('../../rss/db/commands.js')
 const log = require('../../util/logger.js')
+const LinkLogic = require('../../rss/logic/LinkLogic.js')
 
 class Feed extends FilterBase {
   /**
@@ -144,10 +145,20 @@ class Feed extends FilterBase {
     this.regexOps = this.getField('regexOps', {})
 
     /**
-     * Properties for article comparisons
+     * Additional negative-comparisons if default checks mark
+     * an article as new. They'll mark an article ineligible
+     * to be sent.
      * @type {string[]}
      */
-    this.checkProperties = this.getField('checkProperties', [])
+    this.ncomparisons = this.getField('ncomparisons', [])
+
+    /**
+     * Additional positive-comparisons if default checks mark
+     * an article as old. They'll mark an article eligible to
+     * be sent.
+     * @type {string[]}
+     */
+    this.pcomparisons = this.getField('pcomparisons', [])
   }
 
   static get SPLIT_KEYS () {
@@ -184,7 +195,8 @@ class Feed extends FilterBase {
       disabled: this.disabled,
       webhook: this.webhook,
       split: this.split,
-      checkProperties: this.checkProperties,
+      ncomparisons: this.ncomparisons,
+      pcomparisons: this.pcomparisons,
       regexOps: regexOpsMap
     }
     if (this._id) {
@@ -318,7 +330,7 @@ class Feed extends FilterBase {
    * @param {string} scheduleName
    * @param {Object<string, any>[]} articleList
    */
-  async initializeArticles (shardID, scheduleName, articleList) {
+  async initializeArticles (shardID, scheduleName, articleList, idType) {
     if (!Base.isMongoDatabase) {
       return
     }
@@ -326,13 +338,22 @@ class Feed extends FilterBase {
       throw new TypeError('shardID is undefined trying to initialize collection')
     }
     try {
-      const docs = await dbCmds.findAll(null, this.url, shardID, scheduleName)
+      const docs = await dbCmds.findAll(this.url, shardID, scheduleName)
       if (docs.length > 0) {
         // The collection already exists from a previous addition, no need to initialize
         return
       }
-      dbCmds.bulkInsert(null, articleList, this.url, shardID, scheduleName)
-      await dbCmds.bulkInsert(Feed, articleList)
+      const comparisons = [...this.ncomparisons, ...this.pcomparisons]
+      const insert = []
+      const meta = {
+        shardID,
+        scheduleName,
+        feedURL: this.url
+      }
+      for (const article of articleList) {
+        insert.push(LinkLogic.formatArticleForDatabase(article, comparisons, idType, meta))
+      }
+      await dbCmds.bulkInsert(insert)
     } catch (err) {
       log.general.warning(`Unable to initialize ${this.url}`, err, true)
     }
@@ -343,7 +364,7 @@ class Feed extends FilterBase {
    * @param {number} [shardID] - Used for initializing its Mongo collection
    */
   async testAndSave (shardID) {
-    const { articleList } = await FeedFetcher.fetchFeed(this.url)
+    const { articleList, idType } = await FeedFetcher.fetchFeed(this.url)
     const feeds = await Feed.getManyBy('guild', this.guild)
     for (const feed of feeds) {
       if (feed.url === this.url && feed.channel === this.channel) {
@@ -366,7 +387,7 @@ class Feed extends FilterBase {
     await this.save()
     if (shardID !== undefined && articleList.length > 0) {
       const schedule = this.determineSchedule()
-      await this.initializeArticles(shardID, schedule.name, articleList)
+      await this.initializeArticles(shardID, schedule.name, articleList, idType)
     }
   }
 

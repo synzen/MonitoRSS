@@ -11,354 +11,531 @@ jest.mock('../../../structs/ArticleIDResolver.js')
 jest.mock('../../../models/Article.js')
 
 describe('Unit::LinkLogic', function () {
-  describe('run()', function () {
+  beforeEach(function () {
+    jest.restoreAllMocks()
+  })
+  describe('getComparisonReferences', function () {
+    it('returns a map', function () {
+      const result = LinkLogic.getComparisonReferences([])
+      expect(result).toBeInstanceOf(Map)
+    })
+    it('returns all stored properties', function () {
+      const docs = [{
+        properties: {
+          title: 't1',
+          description: 'd1'
+        }
+      }, {
+        properties: {
+          title: 't2'
+        }
+      }]
+      const result = LinkLogic.getComparisonReferences(docs)
+      expect(result.get('title')).toEqual(new Set(['t1', 't2']))
+      expect(result.get('description')).toEqual(new Set(['d1']))
+    })
+  })
+  describe('formatArticle', function () {
+    it('returns correctly', function () {
+      const article = {
+        a: 1,
+        b: 2
+      }
+      const feed = {
+        a: 6
+      }
+      expect(LinkLogic.formatArticle(article, feed)).toEqual({
+        ...article,
+        _feed: feed
+      })
+    })
+  })
+  describe('positiveComparisonPasses', function () {
+    it('returns false for no comparisons', function () {
+      const result = LinkLogic.positiveComparisonPasses({}, [], new Map(), new Map())
+      expect(result).toEqual(false)
+    })
+    it('returns true for unstored property', function () {
+      const dbReferences = new Map()
+      dbReferences.set('title', new Set(['t1']))
+      dbReferences.set('description', new Set(['d1']))
+      const article = {
+        title: 't1',
+        description: 'd2'
+      }
+      const result = LinkLogic.positiveComparisonPasses(
+        article,
+        ['title', 'description'],
+        dbReferences,
+        new Map())
+      expect(result).toEqual(true)
+    })
+    it('returns false for all stored properties', function () {
+      const dbReferences = new Map()
+      dbReferences.set('title', new Set(['t1']))
+      dbReferences.set('description', new Set(['d1']))
+      const article = {
+        title: 't1',
+        description: 'd1'
+      }
+      const result = LinkLogic.positiveComparisonPasses(
+        article,
+        ['title', 'description'],
+        dbReferences,
+        new Map())
+      expect(result).toEqual(false)
+    })
+    it('returns false for uninitialized properties', function () {
+      /**
+       * Returns false because other title values must be
+       * stored to show this was initialized. Uninitialized
+       * pcomparison properties will cause every article in
+       * the feed to be sent since every value would technically
+       * be new for a newly added pcomparison.
+       */
+      const article = {
+        title: 't1'
+      }
+      const result = LinkLogic.positiveComparisonPasses(
+        article,
+        ['title'],
+        new Map(),
+        new Map())
+      expect(result).toEqual(false)
+    })
+    it('returns false for cached property', function () {
+      const sentRefs = new Map()
+      sentRefs.set('title', new Set(['t1']))
+      sentRefs.set('description', new Set(['d1']))
+      const dbReferences = new Map()
+      dbReferences.set('title', new Set(['srfdht']))
+      dbReferences.set('description', new Set(['srfdhredht']))
+      const article = {
+        title: 't1',
+        description: 'd1'
+      }
+      const result = LinkLogic.positiveComparisonPasses(
+        article,
+        ['title', 'description'],
+        dbReferences,
+        sentRefs)
+      expect(result).toEqual(false)
+    })
+  })
+  describe('negativeComparisonBlocks', function () {
+    it('returns false for no comparisons', function () {
+      const result = LinkLogic.negativeComparisonBlocks({}, [], new Map(), new Map())
+      expect(result).toEqual(false)
+    })
+    it('returns true for unstored property', function () {
+      const dbReferences = new Map()
+      dbReferences.set('description', new Set(['d1']))
+      const article = {
+        description: 'd2'
+      }
+      const result = LinkLogic.negativeComparisonBlocks(
+        article,
+        ['title', 'description'],
+        dbReferences,
+        new Map())
+      expect(result).toEqual(false)
+    })
+    it('returns true for one stored properties', function () {
+      const dbReferences = new Map()
+      dbReferences.set('description', new Set(['d1']))
+      const article = {
+        title: 't1',
+        description: 'd1'
+      }
+      const result = LinkLogic.negativeComparisonBlocks(
+        article,
+        ['title', 'description'],
+        dbReferences,
+        new Map())
+      expect(result).toEqual(true)
+    })
+    it('returns true for a cached property', function () {
+      const sentRefs = new Map()
+      sentRefs.set('title', new Set(['t1']))
+      const article = {
+        title: 't1',
+        description: 'd1'
+      }
+      const result = LinkLogic.negativeComparisonBlocks(
+        article,
+        ['title', 'description'],
+        new Map(),
+        sentRefs)
+      expect(result).toEqual(true)
+    })
+  })
+  describe('isNewArticle', function () {
+    beforeEach(function () {
+      jest.spyOn(LinkLogic.prototype, 'storePropertiesToBuffer')
+        .mockReturnValue()
+    })
+    describe('id is not in database', function () {
+      const dbIDs = new Set(['b'])
+      const article = {
+        _id: 'a'
+      }
+      it('returns true with no blocked comparisons', function () {
+        jest.spyOn(LinkLogic, 'negativeComparisonBlocks')
+          .mockReturnValue(false)
+        const logic = new LinkLogic({ ...DEFAULT_DATA })
+        expect(logic.isNewArticle(dbIDs, article, {}, false, new Map()))
+          .toEqual(true)
+      })
+      it('returns false with blocked comaprisons', function () {
+        jest.spyOn(LinkLogic, 'negativeComparisonBlocks')
+          .mockReturnValue(true)
+        const logic = new LinkLogic({ ...DEFAULT_DATA })
+        expect(logic.isNewArticle(dbIDs, article, {}, false, new Map()))
+          .toEqual(false)
+      })
+    })
+    describe('id is in database', function () {
+      const dbIDs = new Set(['a'])
+      const article = {
+        _id: 'a'
+      }
+      it('returns false with no passed comparisons', function () {
+        jest.spyOn(LinkLogic, 'positiveComparisonPasses')
+          .mockReturnValue(false)
+        const logic = new LinkLogic({ ...DEFAULT_DATA })
+        expect(logic.isNewArticle(dbIDs, article, {}, false, new Map()))
+          .toEqual(false)
+      })
+      it('returns true with passed comparisons', function () {
+        jest.spyOn(LinkLogic, 'positiveComparisonPasses')
+          .mockReturnValue(true)
+        const logic = new LinkLogic({ ...DEFAULT_DATA })
+        expect(logic.isNewArticle(dbIDs, article, {}, false, new Map()))
+          .toEqual(true)
+      })
+    })
+    describe('date checks for any article that sends', function () {
+      const dbIDs = new Set(['b'])
+      const article = {
+        _id: 'a'
+      }
+      beforeEach(function () {
+        jest.spyOn(LinkLogic, 'negativeComparisonBlocks')
+          .mockReturnValue(false)
+      })
+      it('does not send if no article date', function () {
+        const logic = new LinkLogic({ ...DEFAULT_DATA })
+        expect(logic.isNewArticle(dbIDs, article, {}, true, new Map()))
+          .toEqual(false)
+      })
+      it('does not send if article has invalid date', function () {
+        const invalidDateArticle = {
+          ...article,
+          pubdate: new Date('invalid date')
+        }
+        const logic = new LinkLogic({ ...DEFAULT_DATA })
+        expect(logic.isNewArticle(dbIDs, invalidDateArticle, {}, true, new Map()))
+          .toEqual(false)
+      })
+      it('sends for recent article with valid date', function () {
+        const validDateArticle = {
+          ...article,
+          pubdate: new Date()
+        }
+        const logic = new LinkLogic({ ...DEFAULT_DATA })
+        expect(logic.isNewArticle(dbIDs, validDateArticle, {}, true, new Map()))
+          .toEqual(true)
+      })
+      it('does not send for old date', function () {
+        const logicData = {
+          config: {
+            feeds: {
+              cycleMaxAge: 2
+            }
+          }
+        }
+        const oldDate = new Date()
+        oldDate.setDate(oldDate.getDate() - 10)
+        const oldArticle = {
+          ...article,
+          pubdate: oldDate
+        }
+        const logic = new LinkLogic({ ...logicData })
+        expect(logic.isNewArticle(dbIDs, oldArticle, {}, true, new Map()))
+          .toEqual(false)
+      })
+    })
+  })
+  describe('static formatArticleForDatabase', function () {
+    afterEach(function () {
+      ArticleIDResolver.getIDTypeValue.mockRestore()
+    })
+    it('attaches the critical values', function () {
+      const resolvedID = 'qe3wtsrg'
+      ArticleIDResolver.getIDTypeValue
+        .mockReturnValue(resolvedID)
+      const meta = {
+        feedURL: 'abc',
+        shardID: 2,
+        scheduleName: 'ewstg'
+      }
+      const formatted = LinkLogic.formatArticleForDatabase({}, [], '', meta)
+      expect(formatted).toEqual(expect.objectContaining({
+        _id: resolvedID,
+        ...meta
+      }))
+    })
+    it('attaches properties', function () {
+      const article = {
+        title: 't1',
+        description: 'd1',
+        summary: 'abc',
+        date: new Date(),
+        author: null
+      }
+      const properties = ['title', 'description', 'date', 'author']
+      const formatted = LinkLogic.formatArticleForDatabase(article, properties, '', {})
+      expect(formatted.properties).toEqual({
+        title: article.title,
+        description: article.description
+      })
+    })
+  })
+  describe('updatedArticleForDatabase', function () {
+    it('adds new properties when applicable', function () {
+      const article = {
+        title: 't1',
+        description: 'd1',
+        summary: 's1',
+        date: new Date(),
+        author: null
+      }
+      const document = {
+        properties: {
+          title: 't1'
+        }
+      }
+      const properties = ['title', 'description', 'date', 'author']
+      LinkLogic.updatedArticleForDatabase(article, document, properties)
+      expect(document).toEqual({
+        properties: {
+          title: 't1',
+          description: 'd1'
+        }
+      })
+    })
+    it('updates properties', function () {
+      const article = {
+        link: 'a',
+        date: new Date(),
+        author: null
+      }
+      const document = {
+        properties: {
+          link: 'b'
+        }
+      }
+      const properties = ['link']
+      LinkLogic.updatedArticleForDatabase(article, document, properties)
+      expect(document).toEqual({
+        properties: {
+          link: 'a'
+        }
+      })
+    })
+    it('returns false for no changes', function () {
+      const article = {
+        title: 't1'
+      }
+      const document = {
+        properties: {
+          title: 't1'
+        }
+      }
+      const properties = ['title']
+      const changed = LinkLogic.updatedArticleForDatabase(article, document, properties)
+      expect(changed).toEqual(false)
+    })
+    it('true false for changes', function () {
+      const article = {
+        title: 't1'
+      }
+      const document = {
+        properties: {}
+      }
+      const properties = ['title']
+      const changed = LinkLogic.updatedArticleForDatabase(article, document, properties)
+      expect(changed).toEqual(true)
+    })
+  })
+  describe('getInsertsAndUpdates', function () {
+    it('returns the formatted articles for new insertions', function () {
+      const articleList = [{
+        _id: 'foo'
+      }, {
+        _id: 'bar'
+      }]
+      const dbDocs = [{
+        _id: 'foo'
+      }]
+      const spy = jest.spyOn(LinkLogic, 'formatArticleForDatabase')
+        .mockReturnValueOnce('abc')
+      const logic = new LinkLogic({ ...DEFAULT_DATA, useIdType: 1 })
+      const returned = logic.getInsertsAndUpdates(articleList, dbDocs, [])
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(spy.mock.calls[0][0]).toEqual(articleList[1])
+      expect(returned.toInsert).toContain('abc')
+    })
+    it('returns the updated articles for existing insertions', function () {
+      const articleList = [{
+        _id: 'foo'
+      }, {
+        _id: 'bar'
+      }]
+      const dbDocs = [{
+        _id: 'foo'
+      }, {
+        _id: 'bar'
+      }]
+      const spy = jest.spyOn(LinkLogic, 'updatedArticleForDatabase')
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true)
+      const logic = new LinkLogic({ ...DEFAULT_DATA })
+      const returned = logic.getInsertsAndUpdates(articleList, dbDocs, [])
+      expect(spy).toHaveBeenCalledTimes(2)
+      expect(spy.mock.calls[0][0]).toEqual(articleList[0])
+      expect(spy.mock.calls[1][0]).toEqual(articleList[1])
+      expect(returned.toUpdate).toHaveLength(1)
+      expect(returned.toUpdate).toContain(dbDocs[1])
+    })
+  })
+  describe('insertDocuments', function () {
+    afterEach(function () {
+      dbCmds.bulkInsert.mockRestore()
+    })
+    it('adds documents to memoryCollection if databaseless', async function () {
+      const memoryCollection = [{
+        foo: 1
+      }]
+      const documents = [{
+        a: 1
+      }, {
+        b: 2
+      }]
+      await LinkLogic.insertDocuments(documents, memoryCollection)
+      expect(memoryCollection).toEqual([{
+        foo: 1
+      }, {
+        a: 1
+      }, {
+        b: 2
+      }])
+    })
+    it('calls dbCmds bulk insert', async function () {
+      const documents = [{
+        a: 1
+      }, {
+        b: 2
+      }]
+      await LinkLogic.insertDocuments(documents)
+      expect(dbCmds.bulkInsert).toHaveBeenCalledWith(documents)
+    })
+  })
+  describe('updateDocuments', function () {
     afterEach(function () {
       dbCmds.update.mockReset()
     })
-    it('throws an error if no scheduleName is defined', function () {
-      const logic = new LinkLogic(DEFAULT_DATA)
-      const expected = expect.objectContaining({
-        message: expect.stringContaining('schedule')
-      })
-      return expect(logic.run()).rejects.toEqual(expected)
-    })
-    it('returns the correct object with no db IDs for non-memory database', async function () {
-      const link = 'atgedi'
-      const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc' })
-      logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.getUnseenArticles = async () => Promise.resolve()
-      const results = await logic.run()
-      const expected = {
-        link,
-        memoryCollection: undefined,
-        memoryCollectionID: undefined
-      }
-      expect(results).toEqual(expected)
-    })
-    it('returns the correct object with no db IDs for memory database', async function () {
-      const shardID = 2
-      const scheduleName = 'q3ewtsg'
-      const link = 'atgedi'
-      const memoryCollectionID = shardID + scheduleName + link
-      const feedData = {
-        [memoryCollectionID]: [ 'abc' ]
-      }
-      const logic = new LinkLogic({
-        ...DEFAULT_DATA,
-        link,
-        scheduleName,
-        feedData,
-        shardID
-      })
-      logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.getUnseenArticles = async () => Promise.resolve()
-      const results = await logic.run()
-      expect(results).toEqual({
-        link,
-        memoryCollection: feedData[memoryCollectionID],
-        memoryCollectionID
-      })
-    })
-    it('returns the correct object with IDs for non-memory database', async function () {
-      const link = 'atgedi'
-      const logic = new LinkLogic({ ...DEFAULT_DATA, link, scheduleName: 'abc', rssList: {} })
-      logic.dbIDs.add('abc')
-      logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.getUnseenArticles = async () => Promise.resolve()
-      logic.checkIfNewArticle = jest.fn()
-      const results = await logic.run()
-      expect(results).toEqual({
-        link,
-        memoryCollection: undefined,
-        memoryCollectionID: undefined
-      })
-    })
-    it('returns the correct object with IDs for memory database', async function () {
-      const link = 'atgedi'
-      const shardID = 2
-      const scheduleName = 'qe3wt'
-      const memoryCollectionID = shardID + scheduleName + link
-      const feedData = { [memoryCollectionID]: [ 'abc' ] }
-      const logic = new LinkLogic({
-        ...DEFAULT_DATA,
-        link,
-        scheduleName,
-        rssList: {},
-        feedData,
-        shardID
-      })
-      logic.dbIDs.add('abc')
-      logic.getDataFromDocuments = async () => Promise.resolve()
-      logic.getUnseenArticles = async () => Promise.resolve()
-      logic.checkIfNewArticle = jest.fn()
-      const results = await logic.run()
-      expect(results).toEqual({
-        link,
-        memoryCollection: feedData[memoryCollectionID],
-        memoryCollectionID: memoryCollectionID
-      })
-    })
-  })
-  describe('getDataFromDocuments()', function () {
-    it('adds ids to this.dbIDs', async function () {
-      const logic = new LinkLogic(DEFAULT_DATA)
-      const resolvedDocuments = [{ id: 'abc' }, { id: 'def' }]
-      await logic.getDataFromDocuments(resolvedDocuments)
-      for (const doc of resolvedDocuments) {
-        expect(logic.dbIDs.has(doc.id)).toEqual(true)
-      }
-    })
-    it('adds titles to this.dbTitles', async function () {
-      const logic = new LinkLogic(DEFAULT_DATA)
-      const resolvedDocuments = [{ title: 'abc' }, { title: 'def' }]
-      await logic.getDataFromDocuments(resolvedDocuments)
-      for (const doc of resolvedDocuments) {
-        expect(logic.dbTitles.has(doc.title)).toEqual(true)
-      }
-    })
-  })
-  describe('getUnseenArticles()', function () {
-    afterEach(function () {
-      dbCmds.bulkInsert.mockReset()
-    })
-    it('attaches the _id property to all articles', async function () {
-      const articleList = [{}, {}]
-      const logic = new LinkLogic({ ...DEFAULT_DATA, articleList })
-      ArticleIDResolver.getIDTypeValue
-        .mockReturnValueOnce('a')
-        .mockReturnValueOnce('b')
-      await logic.getUnseenArticles()
-      expect(articleList[0]._id).toEqual('a')
-      expect(articleList[1]._id).toEqual('b')
-    })
-    it('returns with the new articles', async function () {
-      const articleList = [{
-        _id: 1
+    it('calls db update with every document if mongodb', async function () {
+      const documents = [{
+        a: 1
       }, {
-        _id: 2
-      }, {
-        _id: 3
+        b: 2
       }]
-      const logic = new LinkLogic({ ...DEFAULT_DATA, articleList })
+      await LinkLogic.updateDocuments(documents)
+      expect(dbCmds.update).toHaveBeenCalledWith(documents[0])
+      expect(dbCmds.update).toHaveBeenCalledWith(documents[1])
+    })
+    it('replaces data in memory collection if databaseless', async function () {
+      const memoryCollection = [{
+        _id: '1',
+        foo: 'foo1'
+      }, {
+        _id: '2',
+        foo: 'foo2'
+      }]
+      const documents = [{
+        _id: '1',
+        jack: 'pot'
+      }]
+      await LinkLogic.updateDocuments(documents, memoryCollection)
+      expect(memoryCollection).toEqual([{
+        _id: '1',
+        jack: 'pot'
+      }, {
+        _id: '2',
+        foo: 'foo2'
+      }])
+    })
+  })
+  describe('static shouldCheckDates', function () {
+    it('should return config val if feed setting is not there', function () {
+      const config = {
+        feeds: {
+          checkDates: true
+        }
+      }
+      const feed = {}
+      expect(LinkLogic.shouldCheckDates(config, feed))
+        .toEqual(true)
+    })
+    it('should return feed val if it exists', function () {
+      const config = {
+        feeds: {
+          checkDates: false
+        }
+      }
+      const feed = {
+        checkDates: true
+      }
+      expect(LinkLogic.shouldCheckDates(config, feed))
+        .toEqual(true)
+    })
+  })
+  describe('getNewArticlesOfFeed', function () {
+    afterEach(function () {
+      ArticleIDResolver.getIDTypeValue.mockReset()
+    })
+    it('returns the new articles', function () {
+      const articleList = [{}, {}, {}]
+      const logic = new LinkLogic({ ...DEFAULT_DATA })
+      const formatted = {
+        foo: 'baz'
+      }
+      jest.spyOn(logic, 'isNewArticle')
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+      jest.spyOn(LinkLogic, 'formatArticle')
+        .mockReturnValue(formatted)
+      const newArticles = logic.getNewArticlesOfFeed(new Set(), {}, articleList, new Map())
+      expect(newArticles).toHaveLength(1)
+      expect(newArticles[0]).toEqual(formatted)
+    })
+    it('attaches _id to all articles', function () {
+      const articleList = [{}, {}, {}]
+      const logic = new LinkLogic({ ...DEFAULT_DATA })
       ArticleIDResolver.getIDTypeValue
-        .mockReturnValueOnce(articleList[0]._id)
-        .mockReturnValueOnce(articleList[1]._id)
-        .mockReturnValueOnce(articleList[2]._id)
-      logic.dbIDs.add(articleList[0]._id)
-      logic.dbIDs.add(articleList[2]._id)
-      const returned = await logic.getUnseenArticles()
-      expect(returned).toEqual([articleList[1]])
-    })
-  })
-  describe('static formatArticle()', function () {
-    it('attaches the rssName and source', function () {
-      const article = { dink: 2 }
-      const feed = { donk: 1 }
-      const formatted = LinkLogic.formatArticle(article, feed)
-      expect(formatted._feed).toEqual(feed)
-    })
-  })
-  describe('determineArticleChecks()', function () {
-    it('returns memoized settings if they exist', function () {
-      const rssName = 'aedkglnhrfjnb'
-      const memoized = { ho: 1, dunk: 2 }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.memoizedSourceSettings[rssName] = memoized
-      expect(logic.determineArticleChecks({}, rssName)).toEqual(memoized)
-    })
-    it('adds to memoized settings if they don\'t exist', function () {
-      const rssName = 'aedkglnhrfjnb'
-      const logic = new LinkLogic(DEFAULT_DATA)
-      logic.determineArticleChecks({}, rssName)
-      expect(logic.memoizedSourceSettings).toHaveProperty(rssName)
-    })
-    it('returns the source date check settings if they exist', function () {
-      const rssName1 = 'aegkjt'
-      const rssName2 = rssName1 + 1
-      const logic = new LinkLogic(DEFAULT_DATA)
-      const source1 = { checkDates: true }
-      const source2 = { checkDates: false }
-      expect(logic.determineArticleChecks(source1, rssName1).checkDates).toEqual(source1.checkDates)
-      expect(logic.determineArticleChecks(source2, rssName2).checkDates).toEqual(source2.checkDates)
-    })
-    it('returns the source date check settings if they exist', function () {
-      const rssName1 = 'aegkjt'
-      const rssName2 = rssName1 + 1
-      const logic = new LinkLogic(DEFAULT_DATA)
-      const source1 = { checkDates: true }
-      const source2 = { checkDates: false }
-      expect(logic.determineArticleChecks(source1, rssName1).checkDates).toEqual(source1.checkDates)
-      expect(logic.determineArticleChecks(source2, rssName2).checkDates).toEqual(source2.checkDates)
-    })
-    it('returns the default date check settings if source setting does\'t exist', function () {
-      const data1 = { config: { feeds: { checkDates: true } } }
-      const data2 = { config: { feeds: { checkDates: false } } }
-      const logic1 = new LinkLogic(data1)
-      const logic2 = new LinkLogic(data2)
-      expect(logic1.determineArticleChecks({}, 'rssName1').checkDates).toEqual(data1.config.feeds.checkDates)
-      expect(logic2.determineArticleChecks({}, 'rssName1').checkDates).toEqual(data2.config.feeds.checkDates)
-    })
-    it('returns the source title check settings if they exist', function () {
-      const rssName1 = 'aegkjt'
-      const rssName2 = rssName1 + 1
-      const logic = new LinkLogic(DEFAULT_DATA)
-      const source1 = { checkDates: true }
-      const source2 = { checkDates: false }
-      expect(logic.determineArticleChecks(source1, rssName1).checkDates).toEqual(source1.checkDates)
-      expect(logic.determineArticleChecks(source2, rssName2).checkDates).toEqual(source2.checkDates)
-    })
-    it('returns the default title check settings if source setting does\'t exist', function () {
-      const data1 = { config: { feeds: { checkTitles: true } } }
-      const data2 = { config: { feeds: { checkTitles: false } } }
-      const logic1 = new LinkLogic(data1)
-      const logic2 = new LinkLogic(data2)
-      expect(logic1.determineArticleChecks({}, 'rssName1').checkTitles).toEqual(data1.config.feeds.checkTitles)
-      expect(logic2.determineArticleChecks({}, 'rssName1').checkTitles).toEqual(data2.config.feeds.checkTitles)
-    })
-    it('memoizes the calculated values', function () {
-      const rssName = 'rssNameqew'
-      const data1 = { config: { feeds: { checkTitles: true } } }
-      const source1 = { checkDates: false }
-      const logic1 = new LinkLogic(data1)
-      logic1.determineArticleChecks(source1, rssName)
-      expect(logic1.memoizedSourceSettings).toHaveProperty(rssName)
-      expect(logic1.memoizedSourceSettings[rssName].checkTitles).toEqual(data1.config.feeds.checkTitles)
-      expect(logic1.memoizedSourceSettings[rssName].checkDates).toEqual(source1.checkDates)
-    })
-  })
-  describe('checkIfNewArticle()', function () {
-    it('emits the formatted article', function () {
-      const formattedArticle = { dingus: 'berry' }
-      const logic = new LinkLogic(DEFAULT_DATA)
-      jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
-      jest.spyOn(LinkLogic, 'formatArticle').mockReturnValueOnce(formattedArticle)
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticle('', {}, {})
-      expect(emitSpy).toHaveBeenCalledWith('article', formattedArticle)
-    })
-    it('calls emit when this.runNum is 0 and config.feeds.sendOldOnFirstCycle is true', function () {
-      const logic = new LinkLogic({ ...DEFAULT_DATA, config: { feeds: { sendOldOnFirstCycle: true } }, runNum: 0 })
-      jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticle('', {}, {})
-      expect(emitSpy).toHaveBeenCalled()
-    })
-    it('does not call emit when this.runNum is 0 and config.feeds.sendOldOnFirstCycle is false', function () {
-      const logic = new LinkLogic({ ...DEFAULT_DATA, config: { feeds: { sendOldOnFirstCycle: false } }, runNum: 0 })
-      jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
-      const emitSpy = jest.spyOn(logic, 'emit')
-      logic.checkIfNewArticle('', {}, {})
-      expect(emitSpy).not.toHaveBeenCalled()
-    })
-    describe('id', function () {
-      it('emits article when id was not found in this.dbIDs', function () {
-        const article = { _id: 1 }
-        const formattedArticle = { dingus: 'berry' }
-        const logic = new LinkLogic(DEFAULT_DATA)
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
-        jest.spyOn(LinkLogic, 'formatArticle').mockReturnValueOnce(formattedArticle)
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).toHaveBeenCalled()
-      })
-      it('does not emit article if id was found in this.dbIDs', function () {
-        const article = { _id: 1 }
-        const logic = new LinkLogic(DEFAULT_DATA)
-        logic.dbIDs.add(article._id)
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: false })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).not.toHaveBeenCalled()
-      })
-    })
-    describe('title checks', function () {
-      it('emits article when check titles is true, titles is not in this.dbTitles, and article.title exists', function () {
-        const article = { title: 'abc' }
-        const logic = new LinkLogic(DEFAULT_DATA)
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).toHaveBeenCalled()
-      })
-      it('does not emit article when check titles is true, titles is in this.dbTitles, and article.title exists', function () {
-        const article = { title: 'abc' }
-        const logic = new LinkLogic(DEFAULT_DATA)
-        logic.dbTitles.add(article.title)
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).not.toHaveBeenCalled()
-      })
-      it('does not emit article when check titles is true, titles is not in this.dbTitles, and article.title does exists', function () {
-        const article = { }
-        const logic = new LinkLogic(DEFAULT_DATA)
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).not.toHaveBeenCalled()
-      })
-      it('adds the article title to this.sentTitlesByFeedID[rssName] when check titles is true and titles is not in this.dbTitles', function () {
-        const article = { title: 'abc' }
-        const rssName = 'adeglk'
-        const logic = new LinkLogic(DEFAULT_DATA)
-        expect(logic.sentTitlesByFeedID[rssName]).toBeUndefined()
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
-        logic.checkIfNewArticle(rssName, {}, article)
-        expect(logic.sentTitlesByFeedID[rssName]).toContain(article.title)
-      })
-      it('does not emit article when the article title is in this.sentTitlesByFeedID[rssName] when check titles is true', function () {
-        const article = { title: 'abc' }
-        const rssName = 'adeglk'
-        const logic = new LinkLogic(DEFAULT_DATA)
-        logic.sentTitlesByFeedID[rssName] = new Set([ article.title ])
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: false, checkTitles: true })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle(rssName, {}, article)
-        expect(emitSpy).not.toHaveBeenCalled()
-      })
-    })
-    describe('date checks', function () {
-      const invalidDate = new Date('foobar')
-      const twoDaysAgo = new Date()
-      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
-      const oneDayAgo = new Date()
-      oneDayAgo.setDate(oneDayAgo.getDate() - 1)
-      it('emits article when check dates is true, article date is newer the cutoff date, and article date is valid', function () {
-        const article = { pubdate: oneDayAgo }
-        const logic = new LinkLogic(DEFAULT_DATA)
-        logic.cutoffDay = twoDaysAgo
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: true, checkTitles: false })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).toHaveBeenCalled()
-      })
-      it('does not emit article when check dates is true, article date is older the cutoff day, and article date is valid', function () {
-        const article = { pubdate: twoDaysAgo }
-        const logic = new LinkLogic(DEFAULT_DATA)
-        logic.cutoffDay = oneDayAgo
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: true, checkTitles: false })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).not.toHaveBeenCalled()
-      })
-      it('does not emit article when check dates is true and article date is invalid', function () {
-        const article = { pubdate: invalidDate }
-        const logic = new LinkLogic(DEFAULT_DATA)
-        logic.cutoffDay = oneDayAgo
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: true, checkTitles: false })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).not.toHaveBeenCalled()
-      })
-      it('does not emit article when there is no article date', function () {
-        const article = {}
-        const logic = new LinkLogic(DEFAULT_DATA)
-        logic.cutoffDay = oneDayAgo
-        jest.spyOn(logic, 'determineArticleChecks').mockReturnValueOnce({ checkDates: true, checkTitles: false })
-        const emitSpy = jest.spyOn(logic, 'emit')
-        logic.checkIfNewArticle('', {}, article)
-        expect(emitSpy).not.toHaveBeenCalled()
-      })
+        .mockReturnValueOnce(1)
+        .mockReturnValueOnce(2)
+        .mockReturnValueOnce(3)
+      jest.spyOn(logic, 'isNewArticle')
+        .mockReturnValue(false)
+      jest.spyOn(LinkLogic, 'formatArticle')
+        .mockReturnValue({})
+      logic.getNewArticlesOfFeed(new Set(), {}, articleList, new Map())
+      expect(articleList[0]._id).toEqual(3)
+      expect(articleList[1]._id).toEqual(2)
+      expect(articleList[2]._id).toEqual(1)
     })
   })
 })

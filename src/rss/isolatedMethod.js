@@ -58,14 +58,19 @@ async function getFeed (data, callback) {
       return process.send({ status: 'success', link: link })
     }
     const logic = new LinkLogic({ articleList, useIdType: idType, ...data })
-    logic.on('article', article => {
+    const result = data.feedData ? await logic.runFromMemory() : await logic.runFromMongo()
+    result.newArticles.forEach(article => {
       if (toDebug) {
         log.debug.info(`${link}: Sending article status`)
       }
       process.send({ status: 'article', article })
     })
-    const { memoryCollection, memoryCollectionID } = await logic.run()
-    process.send({ status: 'success', memoryCollection, memoryCollectionID, link })
+    process.send({
+      status: 'success',
+      link: result.link,
+      memoryCollection: data.memoryCollection,
+      memoryCollectionID: data.memoryCollectionID
+    })
   } catch (err) {
     if (err instanceof RequestError || err instanceof FeedParserError) {
       if (logLinkErrs || toDebug) {

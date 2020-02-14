@@ -15,7 +15,8 @@ describe('Unit::structs/db/Feed', function () {
     'imgPreviews',
     'toggleRoleMentions',
     'text',
-    'checkProperties'
+    'ncomparisons',
+    'pcomparisons'
   ]
   const necessaryInit = {
     title: 'e5rh',
@@ -54,18 +55,20 @@ describe('Unit::structs/db/Feed', function () {
         name: 'adesgrf'
       }
       init._id = 'abc'
-      init.checkProperties = ['h', 'g']
       init.embeds = [{ a: 1, b: 2 }]
       init.disabled = true
+      init.ncomparisons = ['a', 'b']
+      init.pcomparisons = ['c', 'd']
       const feed = new Feed({ ...init })
       for (const key in init) {
         expect(feed[key]).toEqual(init[key])
       }
       expect(feed._id).toEqual(init._id)
       expect(feed.webhook).toEqual(init.webhook)
-      expect(feed.checkProperties).toEqual(init.checkProperties)
       expect(feed.embeds).toEqual(init.embeds)
       expect(feed.disabled).toEqual(init.disabled)
+      expect(feed.ncomparisons).toEqual(init.ncomparisons)
+      expect(feed.pcomparisons).toEqual(init.pcomparisons)
     })
   })
   describe('toObject', function () {

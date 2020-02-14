@@ -55,24 +55,10 @@ class LinkLogic extends EventEmitter {
     this.debug = new Set(debugFeeds || [])
 
     /**
-     * @type {Set<string>}
+     * dbReferences structure for each feed ID
+     * @type {Map<string, Map<string, Set<string>>>}
      */
-    this.dbTitles = new Set()
-
-    /**
-     * @type {Object<string, Set<string>>}
-     */
-    this.sentTitlesByFeedID = {}
-
-    /**
-     * @type {Set<string>}
-     */
-    this.dbIDs = new Set()
-
-    /**
-     * @type {Object<string, SourceSettings>}
-     */
-    this.memoizedSourceSettings = {}
+    this.sentReferences = new Map()
 
     const cutoffDay = new Date()
     cutoffDay.setDate(cutoffDay.getDate() - config.feeds.cycleMaxAge)
@@ -82,148 +68,402 @@ class LinkLogic extends EventEmitter {
   /**
    * @param {Object[]} docs
    */
-  async getDataFromDocuments (docs) {
-    const { dbIDs, dbTitles } = this
-
+  static getComparisonReferences (docs) {
+    /** @type {Map<string, Set<string>>} */
+    const dbReferences = new Map()
     for (const doc of docs) {
-      // Push the main data for built in comparisons
-      dbIDs.add(doc.id)
-      dbTitles.add(doc.title)
-    }
-  }
+      // Add the ID
 
-  async getUnseenArticles () {
-    const { dbIDs, useIdType, articleList } = this
-    const toInsert = []
+      // Deal with article-specific properties
+      const properties = doc.properties
+      for (const property in properties) {
+        /** @type {string[]} */
+        const propertyValue = properties[property]
 
-    for (const article of articleList) {
-      article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
-      if (!dbIDs.has(article._id)) {
-        toInsert.push(article)
+        // Create or add to the property sets
+        if (!dbReferences.has(property)) {
+          dbReferences.set(property, new Set([propertyValue]))
+        } else {
+          dbReferences.get(property).add(propertyValue)
+        }
       }
     }
-    return toInsert
+    return dbReferences
   }
 
   /**
    * @param {Object} article
-   * @param {Object} source
+   * @param {Object} feed
    * @returns {FormattedArticle}
    */
-  static formatArticle (article, source) {
+  static formatArticle (article, feed) {
     // For ArticleMessage to access once ScheduleManager receives this article
     return {
       ...article,
-      _feed: source
+      _feed: feed
     }
   }
 
   /**
-   * @param {Object} source - User's source config
-   * @param {string} rssName - Feed ID
-   * @returns {SourceSettings}
+   * Negative comparisons block articles from passing if ID was not seen
+   * @param {Object<string, any>[]} articleList
+   * @param {string[]} comparisons
+   * @param {Map<string, Set<string>>} dbReferences
+   * @param {Map<string, Set<string>>} sentReferencesOfFeed - Specifically for a particular feed ID
    */
-  determineArticleChecks (source, rssName) {
-    const { config } = this
-    const memoized = this.memoizedSourceSettings[rssName]
-    if (memoized) {
-      return this.memoizedSourceSettings[rssName]
+  static negativeComparisonBlocks (article, comparisons, dbReferences, sentReferencesOfFeed) {
+    if (comparisons.length === 0) {
+      return false
     }
-
-    const globalDateCheck = config.feeds.checkDates
-    const localDateCheck = source.checkDates
-    const checkDates = typeof localDateCheck !== 'boolean' ? globalDateCheck : localDateCheck
-
-    const globalTitleCheck = config.feeds.checkTitles
-    const localTitleCheck = source.checkTitles
-    const checkTitles = typeof localTitleCheck !== 'boolean' ? globalTitleCheck : localTitleCheck
-
-    this.memoizedSourceSettings[rssName] = { checkDates, checkTitles }
-
-    return this.memoizedSourceSettings[rssName]
+    for (const property of comparisons) {
+      const value = article[property]
+      if (!value || typeof value !== 'string') {
+        continue
+      }
+      const propertyValues = dbReferences.get(property)
+      if (propertyValues && propertyValues.has(value)) {
+        return true
+      }
+      const tempPropertyValues = sentReferencesOfFeed ? sentReferencesOfFeed.get(property) : null
+      if (tempPropertyValues && tempPropertyValues.has(value)) {
+        return true
+      }
+      // At this point, the property is not stored
+    }
+    return false
   }
 
   /**
-   * @event LinkLogic#article
-   * @type {FormattedArticle}
+   * Positive comparisons sends articles through if ID was seen
+   * @param {Object<string, any>[]} articleList
+   * @param {string[]} comparisons
+   * @param {Map<string, Set<string>>} dbReferences
+   * @param {Map<string, Set<string>>} sentReferencesOfFeed
    */
+  static positiveComparisonPasses (article, comparisons, dbReferences, sentReferencesOfFeed) {
+    if (comparisons.length === 0) {
+      return false
+    }
+    for (const property of comparisons) {
+      const value = article[property]
+      if (!value || typeof value !== 'string') {
+        continue
+      }
+      const propertyValues = dbReferences.get(property)
+      if (!propertyValues) {
+        /**
+         * Property is uninitialized in database. Without
+         * this check, all articles would send when a
+         * pcomparison is added.
+         */
+        continue
+      }
+      if (propertyValues && propertyValues.has(value)) {
+        continue
+      }
+      const tempPropertyValues = sentReferencesOfFeed ? sentReferencesOfFeed.get(property) : null
+      if (tempPropertyValues && tempPropertyValues.has(value)) {
+        continue
+      }
+      // At this point, the property is not stored
+      return true
+    }
+    return false
+  }
 
   /**
-   * @param {string} rssName
-   * @param {Object} source
-   * @param {FeedArticle} article
-   * @param {boolean} toDebug - Whether to log progress
-   * @fires LinkLogic#article
+   * @param {Set<string>} dbIDs
+   * @param {Object<string, any>} article
+   * @param {boolean} checkDates
+   * @param {Map<string, Set<string>>} comparisonReferences
+   * @param {Object<string, any>} feed
    */
-  checkIfNewArticle (rssName, source, article, toDebug) {
-    const { config, dbIDs, dbTitles, runNum, cutoffDay, sentTitlesByFeedID } = this
-    const { checkDates, checkTitles } = this.determineArticleChecks(source, rssName)
+  isNewArticle (dbIDs, article, feed, checkDates, comparisonReferences, debug) {
+    const { sentReferences, cutoffDay } = this
+    const sentReferencesOfFeed = sentReferences.get(feed._id)
+    const articleID = article._id
+    const { ncomparisons, pcomparisons } = feed
+    if (!dbIDs.has(articleID)) {
+      // Normally passes since ID is unseen, unless negative comparisons blocks
+      const blocked = LinkLogic.negativeComparisonBlocks(article, ncomparisons, comparisonReferences, sentReferencesOfFeed)
+      if (blocked) {
+        return false
+      }
+    } else {
+      // Normally blocked since the ID is seen, unless positive comparisons passes
+      const passed = LinkLogic.positiveComparisonPasses(article, pcomparisons, comparisonReferences, sentReferencesOfFeed)
+      if (!passed) {
+        return false
+      }
+    }
+    // At this point, the article should send.
+    if (checkDates) {
+      const block = !article.pubdate || article.pubdate.toString() === 'Invalid Date' || article.pubdate < cutoffDay
+      if (block) {
+        return false
+      }
+    }
+    // Store the property value into buffers
+    this.storePropertiesToBuffer(feed, article)
+    return true
+  }
 
-    const matchedID = dbIDs.has(article._id)
-    const matchedTitle = checkTitles && (dbTitles.has(article.title) || (sentTitlesByFeedID[rssName] && sentTitlesByFeedID[rssName].has(article.title)))
-    const matchedDate = checkDates && (!article.pubdate || article.pubdate.toString() === 'Invalid Date' || article.pubdate < cutoffDay)
-    let seen = false
-    if (matchedID || matchedTitle || matchedDate) {
-      if (toDebug) log.debug.info(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}) Matched ${matchedID ? 'ID' : matchedTitle ? 'title' : matchedDate ? 'date' : 'UNKNOWN CASE'}.`)
-      seen = true
-    } else if (checkTitles) {
-      if (article.title) {
-        if (!sentTitlesByFeedID[rssName]) {
-          sentTitlesByFeedID[rssName] = new Set()
-        }
-        sentTitlesByFeedID[rssName].add(article.title)
+  /**
+   * @param {Object<string, any>} feed
+   * @param {Object<string, any>} article
+   */
+  storePropertiesToBuffer (feed, article) {
+    const { sentReferences } = this
+    const feedID = feed._id
+    const properties = [...feed.ncomparisons, ...feed.pcomparisons]
+    for (const property of properties) {
+      const value = article[property]
+      if (!value || typeof value !== 'string') {
+        continue
+      }
+      if (!sentReferences.has(feedID)) {
+        sentReferences.set(feedID, new Map([[property, new Set([value])]]))
+      } else if (!sentReferences.get(feedID).has(property)) {
+        sentReferences.get(feedID).set(property, new Set([value]))
       } else {
-        seen = true // Don't send an article with no title if title checks are on
+        sentReferences.get(feedID).get(property).add(value)
       }
-    }
-
-    if (runNum === 0 && config.feeds.sendOldOnFirstCycle === false) {
-      if (toDebug) {
-        log.debug.warning(`${rssName}: Not sending article (ID: ${article._id}, TITLE: ${article.title}), config.feeds.sendOldOnFirstCycle is false`)
-      }
-      return
-    }
-
-    if (!seen) {
-      if (toDebug) log.debug.info(`${rssName}: Emitting article (ID: ${article._id}, TITLE: ${article.title}) for default checks.`)
-      this.emit('article', LinkLogic.formatArticle(article, source))
-      return
     }
   }
 
-  async run () {
-    const { scheduleName, link, shardID, feedData, rssList, dbIDs, articleList, dbTitles, debug } = this
+  /**
+   * @param {Object<string, any>} article
+   * @param {string[]} properties
+   * @param {string} useIDType
+   * @param {Object<string, string|number>} meta
+   */
+  static formatArticleForDatabase (article, properties, useIDType, meta) {
+    let propertyValues = {}
+    for (const property of properties) {
+      const value = article[property]
+      if (value && typeof value === 'string') {
+        propertyValues[property] = value
+      }
+    }
+    return {
+      _id: ArticleIDResolver.getIDTypeValue(article, useIDType),
+      feedURL: meta.feedURL,
+      shardID: meta.shardID,
+      scheduleName: meta.scheduleName,
+      properties: propertyValues
+    }
+  }
+
+  /**
+   * @param {Object<string, any>} article
+   * @param {Object<string, any>} document
+   * @param {string[]} properties - Feed properties
+   */
+  static updatedArticleForDatabase (article, document, properties) {
+    const docProperties = document.properties
+    let updated = false
+    for (const property of properties) {
+      const articleValue = article[property]
+      if (!articleValue || typeof articleValue !== 'string') {
+        continue
+      }
+      const docValue = docProperties[property]
+      if (!docValue || docValue !== articleValue) {
+        docProperties[property] = articleValue
+        updated = true
+      }
+    }
+    return updated
+  }
+
+  /**
+   * @param {Object<string, any>[]} articleList
+   * @param {Object<string, any>[]} dbDocs
+   * @param {string[]} properties
+   */
+  getInsertsAndUpdates (articleList, dbDocs, properties) {
+    const { useIdType } = this
+    const dbIDs = new Set(dbDocs.map(d => d._id))
+    const toInsert = []
+    const toUpdate = []
+    const meta = {
+      feedURL: this.link,
+      shardID: this.shardID,
+      scheduleName: this.scheduleName
+    }
+    for (const article of articleList) {
+      const articleID = article._id
+      if (!dbIDs.has(articleID)) {
+        // Insert
+        toInsert.push(LinkLogic.formatArticleForDatabase(article, properties, useIdType, meta))
+      } else {
+        // Update
+        const doc = dbDocs.find(doc => doc._id === articleID)
+        const updated = LinkLogic.updatedArticleForDatabase(article, doc, properties)
+        if (updated) {
+          toUpdate.push(doc)
+        }
+      }
+    }
+    return {
+      toInsert,
+      toUpdate
+    }
+  }
+
+  /**
+   * @param {Object<string, any>[]} documents
+   * @param {Object<string, any>[]} memoryCollection
+   */
+  static async insertDocuments (documents, memoryCollection) {
+    if (documents.length === 0) {
+      return
+    }
+    if (memoryCollection) {
+      documents.forEach(doc => memoryCollection.push({ ...doc }))
+    } else {
+      await dbCmds.bulkInsert(documents)
+    }
+  }
+
+  /**
+   * @param {Object<string, any>[]} documents
+   * @param {Object<string, any>[]} memoryCollection
+   */
+  static async updateDocuments (documents, memoryCollection) {
+    if (documents.length === 0) {
+      return
+    }
+    if (memoryCollection) {
+      const updatedDocsByID = {}
+      for (const doc of documents) {
+        updatedDocsByID[doc._id] = doc
+      }
+      for (let i = 0; i < memoryCollection.length; ++i) {
+        const id = memoryCollection[i]._id
+        const updatedDoc = updatedDocsByID[id]
+        if (updatedDoc) {
+          memoryCollection[i] = updatedDoc
+        }
+      }
+    } else {
+      await Promise.all(documents.map(doc => dbCmds.update(doc)))
+    }
+  }
+
+  static shouldCheckDates (config, feed) {
+    const globalDateCheck = config.feeds.checkDates
+    const localDateCheck = feed.checkDates
+    const checkDates = typeof localDateCheck !== 'boolean' ? globalDateCheck : localDateCheck
+    return checkDates
+  }
+
+  /**
+   * @param {Set<string>} dbIDs
+   * @param {Object<string, any>} feed
+   * @param {Object<string, any>[]} articleList
+   * @param {Map<string, Set<string>>} comparisonReferences
+   */
+  getNewArticlesOfFeed (dbIDs, feed, articleList, comparisonReferences) {
+    const { debug, useIdType, config } = this
+    const feedID = feed._id
+    const totalArticles = articleList.length
+    const checkDates = LinkLogic.shouldCheckDates(config, feed)
+    const toDebug = debug.has(feedID)
+
+    if (toDebug) {
+      log.debug.info(`${feedID}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIDs), null, 2)}}`)
+    }
+
+    const newArticles = []
+    // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
+    for (let a = totalArticles - 1; a >= 0; --a) {
+      const article = articleList[a]
+      article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
+      const isNew = this.isNewArticle(dbIDs, article, feed, checkDates, comparisonReferences, toDebug)
+      // const isNew = this.checkIfNewArticle(feedID, feed, article, toDebug)
+      if (isNew) {
+        newArticles.push(LinkLogic.formatArticle(article, feed))
+      }
+    }
+    return newArticles
+  }
+
+  async runFromMemory () {
+    const { scheduleName, link, shardID, feedData, rssList, articleList } = this
     if (!scheduleName) {
       throw new Error('Missing schedule name for shared logic')
     }
-    const memoryCollectionID = feedData ? shardID + scheduleName + link : undefined
-    const memoryCollection = feedData ? (feedData[memoryCollectionID] || []) : undefined
+    const memoryCollectionID = shardID + scheduleName + link
+    const memoryCollection = feedData[memoryCollectionID] || []
+    const newArticles = []
 
-    const docs = await dbCmds.findAll(memoryCollection, link, shardID, scheduleName)
-    await this.getDataFromDocuments(docs)
-    const toInsert = await this.getUnseenArticles()
-    await dbCmds.bulkInsert(memoryCollection, toInsert, link, shardID, scheduleName)
+    const docs = memoryCollection
+    const dbIDs = new Set(docs.map(doc => doc._id))
+    const comparisonReferences = LinkLogic.getComparisonReferences(docs)
 
-    if (dbIDs.size === 0) {
-      // Tthe database collection has not been initialized. If a feed has 100 articles, skip everything past this point so it doesn't send a crazy number of articles.
-      return { link, memoryCollection, memoryCollectionID }
+    const allComparisons = []
+    for (const feedID in rssList) {
+      const feed = rssList[feedID]
+      feed.ncomparisons.forEach(v => allComparisons.push(v))
+      feed.pcomparisons.forEach(v => allComparisons.push(v))
+      // Database collection is uninitialized if no db IDs. Don't send any articles, just store.
+      if (dbIDs.size === 0) {
+        continue
+      }
+      const articlesToSend = this.getNewArticlesOfFeed(dbIDs, feed, articleList, comparisonReferences)
+      articlesToSend.forEach(a => newArticles.push(a))
     }
 
-    for (const rssName in rssList) {
-      const source = rssList[rssName]
-      const totalArticles = articleList.length
-      const toDebug = debug.has(rssName)
+    const {
+      toUpdate,
+      toInsert
+    } = this.getInsertsAndUpdates(articleList, memoryCollection, allComparisons)
+    await LinkLogic.insertDocuments(toInsert)
+    await LinkLogic.updateDocuments(toUpdate)
 
-      if (toDebug) {
-        log.debug.info(`${rssName}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIDs), null, 2)}\nDatabase Titles:\n${JSON.stringify(Array.from(dbTitles), null, 2)}`)
-      }
-
-      for (let a = totalArticles - 1; a >= 0; --a) { // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
-        this.checkIfNewArticle(rssName, source, articleList[a], toDebug)
-      }
+    return {
+      link,
+      newArticles,
+      memoryCollection,
+      memoryCollectionID
     }
+  }
 
-    return { link, memoryCollection, memoryCollectionID }
+  async runFromMongo () {
+    const { scheduleName, link, shardID, rssList, articleList } = this
+    if (!scheduleName) {
+      throw new Error('Missing schedule name for shared logic')
+    }
+    const newArticles = []
+
+    const docs = await dbCmds.findAll(link, shardID, scheduleName)
+    const dbIDs = new Set(docs.map(doc => doc._id))
+    const comparisonReferences = await LinkLogic.getComparisonReferences(docs)
+
+    const allComparisons = []
+    for (const feedID in rssList) {
+      const feed = rssList[feedID]
+      feed.ncomparisons.forEach(v => allComparisons.push(v))
+      feed.pcomparisons.forEach(v => allComparisons.push(v))
+      // Database collection is uninitialized if no db IDs. Don't send any articles, just store.
+      if (dbIDs.size === 0) {
+        continue
+      }
+      const articlesToSend = this.getNewArticlesOfFeed(dbIDs, feed, articleList, comparisonReferences)
+      articlesToSend.forEach(a => newArticles.push(a))
+    }
+    const {
+      toUpdate,
+      toInsert
+    } = this.getInsertsAndUpdates(articleList, docs, allComparisons)
+    await LinkLogic.insertDocuments(toInsert)
+    await LinkLogic.updateDocuments(toUpdate)
+
+    return {
+      link,
+      newArticles
+    }
   }
 }
 

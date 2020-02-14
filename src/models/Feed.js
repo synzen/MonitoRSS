@@ -60,7 +60,8 @@ const schema = new mongoose.Schema({
   imgLinksExistence: Boolean,
   formatTables: Boolean,
   toggleRoleMentions: Boolean,
-  checkProperties: [String],
+  ncomparisons: [String],
+  pcomparisons: [String],
   regexOps: {
     type: Map,
     of: [regexOpSchema]
