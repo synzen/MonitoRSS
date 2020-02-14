@@ -16,10 +16,6 @@ const getOptionTexts = translate => ({
     status: `${translate('commands.options.imageLinksExistence')}: `,
     toggle: translate('commands.options.imageLinksExistenceToggle')
   },
-  checkTitles: {
-    status: `${translate('commands.options.titleChecks')}: `,
-    toggle: translate('commands.options.titleChecksToggle')
-  },
   checkDates: {
     status: `${translate('commands.options.dateChecks')}: `,
     toggle: translate('commands.options.dateChecksToggle')

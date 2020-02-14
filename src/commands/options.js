@@ -11,48 +11,42 @@ const getProperties = translate => {
   const DISABLED_TRANSLATED = translate('generics.disabledLower')
 
   return {
-    checkTitles: {
-      title: translate('commands.options.titleChecksToggle'),
-      description: `**${translate('commands.options.onlyIfNecessary')}** ${translate('generics.defaultSetting', { value: config.feeds.checkTitles === true ? ENABLED_TRANSLATED : DISABLED_TRANSLATED })} ${translate('commands.options.titleChecksDescription')}`,
-      display: translate('commands.options.titleChecks'),
-      num: 1
-    },
     imgPreviews: {
       title: translate('commands.options.imagePreviewsToggle'),
       description: `${translate('generics.defaultSetting', { value: config.feeds.imgPreviews === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.imagePreviewsDescription')}`,
       display: translate('commands.options.imagePreviews'),
-      num: 2
+      num: 1
     },
     imgLinksExistence: {
       title: translate('commands.options.imageLinksExistenceToggle'),
       description: `${translate('generics.defaultSetting', { value: config.feeds.imgLinksExistence === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.imageLinksExistenceDescription')}`,
       display: translate('commands.options.imageLinksExistence'),
-      num: 3
+      num: 2
     },
     checkDates: {
       title: translate('commands.options.dateChecksToggle'),
       description: `${translate('generics.defaultSetting', { value: config.feeds.checkDates === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.dateChecksDescription', { cycleMaxAge: config.feeds.cycleMaxAge })}`,
       display: translate('commands.options.dateChecks'),
-      num: 4
+      num: 3
     },
     formatTables: {
       title: translate('commands.options.tableFormattingToggle'),
       description: `${translate('generics.defaultSetting', { value: config.feeds.formatTables === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.tableFormattingDescription')}`,
       display: translate('commands.options.tableFormatting'),
-      num: 5
+      num: 4
     },
     toggleRoleMentions: {
       title: translate('commands.options.roleMentioningToggle'),
       description: `${translate('generics.defaultSetting', { value: config.feeds.toggleRoleMentions === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.roleMentioningDescription')}`,
       display: translate('commands.options.roleMentioning'),
-      num: 6
+      num: 5
     }
   }
 }
 
 async function selectOption (m, data) {
   const input = m.content
-  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5' && input !== '6') {
+  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5') {
     throw new MenuUtils.MenuOptionError()
   }
   const num = parseInt(input, 10)
