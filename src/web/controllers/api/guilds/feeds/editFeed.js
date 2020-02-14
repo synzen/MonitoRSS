@@ -1,7 +1,6 @@
 const feedServices = require('../../../../services/feed.js')
 const keys = [
   'title',
-  'checkTitles',
   'checkDates',
   'imgPreviews',
   'imgLinksExistence',

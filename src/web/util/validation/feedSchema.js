@@ -6,7 +6,6 @@ const feedSchema = Joi.object({
   title: Joi.string().trim().max(256),
   channel: Joi.string().trim(),
   url: Joi.string().uri().trim(),
-  checkTitles: Joi.boolean(),
   checkDates: Joi.boolean(),
   imgPreviews: Joi.boolean(),
   imgLinksExistence: Joi.boolean(),

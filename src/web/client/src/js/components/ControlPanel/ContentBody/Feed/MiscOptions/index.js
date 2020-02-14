@@ -54,7 +54,6 @@ const Description = styled.p`
 
 const boolToText = bool => bool ? 'Enabled' : 'Disabled'
 const configKeyNames = {
-  checkTitles: 'checkTitles',
   checkDates: 'checkDates',
   imgPreviews: 'imgPreviews',
   imgLinksExistence: 'imgLinksExistence',
@@ -116,7 +115,6 @@ function MiscOptions () {
     setUserValues({})
   }
 
-  const checkTitles = userValues.checkTitles === undefined ? getOriginalPropertyValue('checkTitles') : userValues.checkTitles
   const checkDates = userValues.checkDates === undefined ? getOriginalPropertyValue('checkDates') : userValues.checkDates
   const imgPreviews = userValues.imgPreviews === undefined ? getOriginalPropertyValue('imgPreviews') : userValues.imgPreviews
   const imgLinksExistence = userValues.imgLinksExistence === undefined ? getOriginalPropertyValue('imgLinksExistence') : userValues.imgLinksExistence
@@ -132,15 +130,6 @@ function MiscOptions () {
       <Categories>
         <div>
           <SectionSubtitle>Algorithms</SectionSubtitle>
-          <MiscOptionContainer>
-            <div>
-              <SectionItemTitle>Title Checks</SectionItemTitle>
-              <Description>ONLY ENABLE THIS IF NECESSARY! Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.</Description>
-              <Description>Default: {boolToText(botConfig.checkTitles)}</Description>
-            </div>
-            <Checkbox checked={checkTitles} toggle onChange={(e, data) => updateProperty(configKeyNames.checkTitles, data.checked)} />
-          </MiscOptionContainer>
-          <Divider />
           <MiscOptionContainer>
             <div>
               <SectionItemTitle>Date Checks</SectionItemTitle>
