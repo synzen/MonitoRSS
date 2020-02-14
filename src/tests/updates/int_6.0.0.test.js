@@ -129,6 +129,26 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       }).toArray()
       expect(feeds).toHaveLength(2)
     })
+    it('converts checkTitles to ncomparison', async function () {
+      const guildRss = {
+        id: '32qwet4ry',
+        name: 'azdsh',
+        sources: {
+          f1: {
+            title: 't1',
+            link: 'u1',
+            channel: 'q3wet4',
+            checkTitles: true
+          }
+        }
+      }
+      await updateProfiles(guildRss)
+      const feeds = await mongoose.connection.collection('feeds').find({
+        guild: guildRss.id
+      }).toArray()
+      expect(feeds).toHaveLength(1)
+      expect(feeds[0].ncomparisons).toEqual(['title'])
+    })
     it('saves correctly with message', async function () {
       const guildRss = {
         id: '32qwet4ry',

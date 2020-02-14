@@ -114,6 +114,11 @@ async function updateProfiles (guildRss) {
         delete feed.embeds
       }
 
+      // Check titles
+      if (feed.checkTitles) {
+        feed.ncomparisons = ['title']
+      }
+
       data.feeds.push(new Feed(feed).toJSON())
 
       // Subscribers
