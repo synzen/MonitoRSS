@@ -65,9 +65,9 @@ function MiscOptions () {
   const botConfig = useSelector(state => state.botConfig)
   const editing = useSelector(feedSelectors.feedEditing)
   const feed = useSelector(feedSelectors.activeFeed)
+  const [userCheckTitles, setUserCheckTitles] = useState(feed && feed.ncomparisons.includes('title'))
   const [userValues, setUserValues] = useState({})
   const dispatch = useDispatch()
-  const unsaved = Object.keys(userValues).length > 0
 
   useEffect(() => {
     dispatch(changePage(pages.MISC_OPTIONS))
@@ -77,6 +77,9 @@ function MiscOptions () {
     dispatch(changePage(pages.DASHBOARD))
     return <Redirect to={pages.DASHBOARD} />
   }
+
+  const originalCheckTitles = feed.ncomparisons.includes('title')
+  const unsaved = Object.keys(userValues).length > 0 || userCheckTitles !== originalCheckTitles
 
   const getOriginalPropertyValue = (property) => {
     if (!feed || feed[property] === undefined) {
@@ -107,7 +110,13 @@ function MiscOptions () {
     if (!unsaved) {
       return
     }
-    await dispatch(fetchEditFeed(feed.guild, feed._id, userValues))
+    const vals = { ...userValues }
+    if (userCheckTitles) {
+      vals.ncomparisons = ['title']
+    } else {
+      vals.ncomparisons = []
+    }
+    await dispatch(fetchEditFeed(feed.guild, feed._id, vals))
     reset()
   }
 
@@ -130,6 +139,15 @@ function MiscOptions () {
       <Categories>
         <div>
           <SectionSubtitle>Algorithms</SectionSubtitle>
+          <MiscOptionContainer>
+            <div>
+              <SectionItemTitle>Title Checks</SectionItemTitle>
+              <Description>ONLY ENABLE THIS IF NECESSARY! Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.</Description>
+              <Description>Default: {boolToText(originalCheckTitles)}</Description>
+            </div>
+            <Checkbox checked={userCheckTitles} toggle onChange={(e, data) => setUserCheckTitles(!userCheckTitles)} />
+          </MiscOptionContainer>
+          <Divider />
           <MiscOptionContainer>
             <div>
               <SectionItemTitle>Date Checks</SectionItemTitle>
