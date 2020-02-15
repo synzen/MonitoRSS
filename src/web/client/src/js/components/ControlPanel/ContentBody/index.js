@@ -1,5 +1,5 @@
 import React from 'react'
-import { useHistory } from 'react-router-dom'
+import { Switch, Route, useHistory } from 'react-router-dom'
 import styled from 'styled-components'
 import Home from './Main/Home/index'
 import Feeds from './Server/Feeds/index'
@@ -8,8 +8,7 @@ import Message from './Feed/Message/index'
 import Filters from './Feed/Filters/index'
 import Subscribers from './Feed/Subscribers/index'
 import MiscOptions from './Feed/MiscOptions/index'
-import Debugger from './Feed/Debugger/index'
-import { Switch, Route } from 'react-router-dom'
+// import Debugger from './Feed/Debugger/index'
 import { useDispatch } from 'react-redux'
 import pages from '../../../constants/pages';
 import { Scrollbars } from 'react-custom-scrollbars';
@@ -45,7 +44,7 @@ function ContentBody () {
           <Route exact path={pages.FILTERS} render={routerProps => <Filters {...routerProps} />} />
           <Route exact path={pages.SUBSCRIBERS} render={routerProps => <Subscribers {...routerProps} />} />
           <Route exact path={pages.MISC_OPTIONS} render={routerProps => <MiscOptions {...routerProps} />} />
-          <Route exact path={pages.DEBUGGER} component={routerProps => <Debugger {...routerProps} />} />
+          {/* <Route exact path={pages.DEBUGGER} component={routerProps => <Debugger {...routerProps} />} /> */}
           <Route render={routerProps => <Home {...routerProps} />} />
         </Switch>
       </Scrollbars>

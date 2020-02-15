@@ -250,7 +250,7 @@ function LeftMenu (props) {
             <MenuButton to={pages.FILTERS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.FILTERS)} selected={page === pages.FILTERS}>Filters</MenuButton>
             <MenuButton to={pages.SUBSCRIBERS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.SUBSCRIBERS)} selected={page === pages.SUBSCRIBERS}>Subscribers</MenuButton>
             <MenuButton to={pages.MISC_OPTIONS} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.MISC_OPTIONS)} selected={page === pages.MISC_OPTIONS}>Misc Options</MenuButton>
-            <MenuButton to={pages.DEBUGGER} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.DEBUGGER)} selected={page === pages.DEBUGGER}>Debugger</MenuButton>
+            {/* <MenuButton to={pages.DEBUGGER} disabled={disableFeedButtons} onClick={() => menuButtonClick(pages.DEBUGGER)} selected={page === pages.DEBUGGER}>Debugger</MenuButton> */}
             <Divider />
           </div>
           <div />
