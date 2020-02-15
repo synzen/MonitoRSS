@@ -1,14 +1,5 @@
 const mongoose = require('mongoose')
-const dbSettings = require('../config.js').database
-const articlesExpire = dbSettings.clean === true && (dbSettings.articlesExpire > 0 || dbSettings.articlesExpire === -1) ? dbSettings.articlesExpire : 14
-
-function expireDate () {
-  return () => {
-    const date = new Date()
-    date.setDate(date.getDate() + articlesExpire) // Add days
-    return date
-  }
-}
+const Version = require('./common/Version.js')
 
 const schema = new mongoose.Schema({
   _id: String,
@@ -31,13 +22,10 @@ const schema = new mongoose.Schema({
   properties: {
     type: Map,
     of: String
-  },
-  ...articlesExpire > 0 ? { expiresAt: {
-    type: Date,
-    default: expireDate(),
-    index: { expires: 0 }
-  } } : {}
+  }
 })
+
+schema.add(Version)
 
 schema.index({
   url: 1,

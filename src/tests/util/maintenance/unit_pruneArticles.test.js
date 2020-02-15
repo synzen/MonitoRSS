@@ -1,5 +1,4 @@
 process.env.TEST_ENV = true
-const config = require('../../../config.js')
 const Feed = require('../../../structs/db/Feed.js')
 const Article = require('../../../models/Article.js')
 const pruneArticles = require('../../../util/maintenance/pruneArticles.js')
@@ -10,9 +9,6 @@ jest.mock('../../../structs/db/Supporter.js')
 jest.mock('../../../structs/db/Schedule.js')
 jest.mock('../../../models/Article.js', () => ({
   model: {
-    collection: {
-      dropIndex: jest.fn()
-    },
     find: jest.fn(() => ({
       exec: jest.fn(() => [])
     }))
@@ -29,29 +25,13 @@ describe('utils/maintenance/pruneArticles', function () {
   })
   describe('pruneArticles', function () {
     beforeEach(function () {
-      config.database.clean = true
       Feed.isMongoDatabase = true
       jest.spyOn(pruneArticles, 'getCompoundIDs')
         .mockReturnValue()
     })
     it('returns -1 if not mongo database or config clean is false', async function () {
       Feed.isMongoDatabase = false
-      config.database.clean = true
       await expect(pruneArticles.pruneArticles()).resolves.toEqual(-1)
-      Feed.isMongoDatabase = true
-      config.database.clean = false
-      await expect(pruneArticles.pruneArticles()).resolves.toEqual(-1)
-      config.database.clean = true
-    })
-    it('drops expires index if articlesExpire is 0', async function () {
-      const oval = config.database.articlesExpire
-      config.database.articlesExpire = 0
-      jest.spyOn(pruneArticles, 'getCompoundIDs')
-        .mockResolvedValue(new Set())
-      await pruneArticles.pruneArticles()
-      expect(Article.model.collection.dropIndex)
-        .toHaveBeenCalledWith('expiresAt_1')
-      config.database.articlesExpire = oval
     })
     it('removes the right articles with compound IDs', async function () {
       const articles = [{

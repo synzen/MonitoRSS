@@ -29,7 +29,6 @@ exports.defaultConfigs = {
   database: {
     uri: { type: String, default: 'mongodb://localhost/rss' },
     redis: { type: String, default: '' },
-    clean: { type: Boolean, default: false },
     articlesExpire: { type: Number, default: 14 }
   },
   feeds: {

@@ -25,7 +25,6 @@
     "uri": "mongodb://localhost:27017/rss",
     "redis": "",
     "connection": {},
-    "clean": true,
     "articlesExpire": 14
   },
   "feeds": {

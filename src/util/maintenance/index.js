@@ -8,9 +8,11 @@ const pruneSubscribers = require('./pruneSubscribers.js')
 const flushRedis = require('./flushRedis.js')
 const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
+const checkArticleIndexes = require('./checkArticleIndexes.js')
 const ShardStats = require('../../structs/db/ShardStats.js')
 const Supporter = require('../../structs/db/Supporter.js')
 const Patron = require('../../structs/db/Patron.js')
+const config = require('../../config.js')
 const log = require('../logger.js')
 
 /**
@@ -20,6 +22,7 @@ const log = require('../logger.js')
  */
 async function prunePreInit (guildIdsByShard, channelIdsByShard) {
   await Promise.all([
+    checkArticleIndexes(config.feeds.articlesExpire),
     ShardStats.deleteAll(),
     flushRedis(),
     pruneProfiles(guildIdsByShard)
@@ -74,5 +77,6 @@ module.exports = {
   pruneSubscribers,
   checkLimits,
   checkPermissions,
+  checkArticleIndexes,
   cycle
 }

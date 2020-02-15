@@ -1,4 +1,3 @@
-const config = require('../../config.js')
 const Feed = require('../../structs/db/Feed.js')
 const Article = require('../../models/Article.js')
 const Schedule = require('../../structs/db/Schedule.js')
@@ -37,16 +36,10 @@ async function getCompoundIDs (guildIdsByShard) {
  * @param {Map<string, number>} guildIdsByShard
  */
 async function pruneArticles (guildIdsByShard) {
-  if (config.database.clean !== true || !Feed.isMongoDatabase) {
+  if (!Feed.isMongoDatabase) {
     return -1
   }
-  if (config.database.articlesExpire === 0) {
-    // These indexes allow articles to auto-expire - if it is 0, remove such indexes
-    await Article.model.collection.dropIndex('expiresAt_1')
-  }
-
   const compoundIDs = await exports.getCompoundIDs(guildIdsByShard)
-
   const articles = await Article.model.find({}).exec()
   const removals = []
   for (const article of articles) {
