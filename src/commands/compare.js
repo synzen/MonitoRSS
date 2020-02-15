@@ -7,7 +7,7 @@ const Feed = require('../structs/db/Feed.js')
 const config = require('../config.js')
 
 /**
- * @param {string} str 
+ * @param {string} str
  */
 function getValidInputs (str) {
   const parts = str.split(' ')
@@ -33,7 +33,6 @@ function getInvalidInputs (str) {
 
 module.exports = async (bot, message, command) => {
   try {
-    
     const profile = await Profile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
@@ -51,7 +50,7 @@ module.exports = async (bot, message, command) => {
         const stringified = `\`${invalids.join('`,`')}\``
         return await message.channel.send(translate('commands.compare.invalid', { errors: stringified }))
       }
-      // Temporary check 
+      // Temporary check
       if (validProperties.length !== 1 || validProperties[0] !== '-title') {
         return await message.channel.send(translate('commands.compare.onlyTitle'))
       }
