@@ -12,6 +12,7 @@ const embedSchema = {
   url: String,
   color: Number,
   footerText: String,
+  footerIconURL: String,
   authorName: String,
   authorIconURL: String,
   authorURL: String,
