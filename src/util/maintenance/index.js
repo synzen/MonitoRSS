@@ -1,4 +1,5 @@
 const pruneProfiles = require('./pruneProfiles.js')
+const pruneProfileAlerts = require('./pruneProfileAlerts.js')
 const pruneFeeds = require('./pruneFeeds.js')
 const pruneArticles = require('./pruneArticles.js')
 const pruneFilteredFormats = require('./pruneFilteredFormats.js')
@@ -35,6 +36,7 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
  */
 async function pruneWithBot (bot) {
   await pruneSubscribers(bot)
+  await pruneProfileAlerts(bot)
 }
 
 /**
@@ -64,6 +66,7 @@ module.exports = {
   prunePreInit,
   prunePostInit,
   pruneProfiles,
+  pruneProfileAlerts,
   pruneFeeds,
   pruneArticles,
   pruneFilteredFormats,
