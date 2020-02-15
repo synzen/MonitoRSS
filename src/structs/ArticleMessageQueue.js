@@ -28,17 +28,17 @@ class ArticleMessageQueue {
     const channel = bot.channels.get(channelID)
     if (!channel) return
     const guild = channel.guild
-    const promises = []
-    roleIDs.forEach(roleID => {
-      const role = guild.roles.get(roleID)
-      // Other checks may include guild.me.roles.highest.comparePositionTo(role) <= 0, and whether the bot has manage roles permission, but don't check them and let the error show in the message
-      if (role && role.mentionable !== mentionable) {
-        promises.push(role.setMentionable(mentionable))
-      }
-    })
+    let updated = 0
     try {
-      await Promise.all(promises)
-      return promises.length
+      for (const roleID of roleIDs) {
+        const role = guild.roles.get(roleID)
+        // Other checks may include guild.me.roles.highest.comparePositionTo(role) <= 0, and whether the bot has manage roles permission, but don't check them and let the error show in the message
+        if (role && role.mentionable !== mentionable) {
+          await role.setMentionable(mentionable)
+          ++updated
+        }
+      }
+      return updated
     } catch (err) {
       throw err.code === 50013 ? new Error(`Unable to toggle role permissions because one or more roles are above my role, or I don't have Manage Roles permission.`) : err
     }
@@ -73,7 +73,6 @@ class ArticleMessageQueue {
    * Send all the enqueued articles that require role mention toggles
    */
   async send () {
-    const promises = []
     for (const channelId in this.queuesWithSubs) {
       const channelQueue = this.queuesWithSubs[channelId]
       if (channelQueue.length === 0) continue
@@ -83,18 +82,17 @@ class ArticleMessageQueue {
         const messageSubscriptionIds = articleMessage.subscriptionIds
         messageSubscriptionIds.forEach(id => roleIds.add(id))
       }
-      promises.push(
-        ArticleMessageQueue.toggleRoleMentionable(true, cId, roleIds, this.bot)
-          .then(rolesToggled => this._sendDelayedQueue(this.bot, cId, channelQueue, roleIds, undefined, rolesToggled))
-          .catch(err => {
-            if (err instanceof ArticleMessageError) { // From the _sendDelayedQueue
-              throw err
-            }
-            this._sendDelayedQueue(this.bot, cId, channelQueue, roleIds, err, 0)
-          })
-      )
+      try {
+        const rolesToggled = await ArticleMessageQueue.toggleRoleMentionable(true, cId, roleIds, this.bot)
+        await this._sendDelayedQueue(this.bot, cId, channelQueue, roleIds, undefined, rolesToggled)
+      } catch (err) {
+        if (err instanceof ArticleMessageError) { // From the _sendDelayedQueue
+          await ArticleMessageQueue.toggleRoleMentionable(false, cId, roleIds, this.bot)
+          throw err
+        }
+        await this._sendDelayedQueue(this.bot, cId, channelQueue, roleIds, err, 0)
+      }
     }
-    await Promise.all(promises)
   }
 
   async _sendDelayedQueue (bot, channelId, channelQueue, roleIds, err, rolesToggled) {

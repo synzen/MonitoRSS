@@ -38,7 +38,7 @@ class ArticleMessage {
     this.feed = article._feed
     this.profile = this.feed.profile
     this.feedID = this.feed._id
-    this.toggleRoleMentions = this.profile && typeof this.profile.toggleRoleMentions === 'boolean' ? this.profile.toggleRoleMentions : config.feeds.toggleRoleMentions
+    this.toggleRoleMentions = typeof this.feed.toggleRoleMentions === 'boolean' ? this.feed.toggleRoleMentions : config.feeds.toggleRoleMentions
     this.split = this.feed.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
     this.parsedArticle = new Article(article, this.feed, this.feed.profile ? this.feed.profile : {})
 

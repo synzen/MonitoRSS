@@ -124,8 +124,8 @@ describe('Int::ArticleMessageQueue', function () {
       channelTwo.guild = guildTwo
       bot.channels.get
         .mockReturnValueOnce(channelOne)
-        .mockReturnValueOnce(channelTwo)
         .mockReturnValueOnce(channelOne)
+        .mockReturnValueOnce(channelTwo)
         .mockReturnValueOnce(channelTwo)
       guildOne.roles.get.mockReturnValue(roleA)
       guildTwo.roles.get.mockReturnValue(roleB)
@@ -148,24 +148,27 @@ describe('Int::ArticleMessageQueue', function () {
       expect(roleB.setMentionable).toHaveBeenNthCalledWith(2, false)
     })
     it('does not throw an error if role.setMentionable throws a code-50013 error', async function () {
-      const queue = new ArticleMessageQueue()
       const bot = new Bot()
+      const queue = new ArticleMessageQueue(bot)
       const channelOneID = 'abc'
       const channelOne = new Channel(channelOneID)
       const guildOne = new Guild()
       const roleA = new Role()
       const error = new Error('perm error')
       error.code = 50013
-      roleA.setMentionable.mockRejectedValue(error)
       channelOne.guild = guildOne
+      roleA.setMentionable
+        .mockRejectedValue(error)
       bot.channels.get
         .mockReturnValue(channelOne)
-      guildOne.roles.get.mockReturnValue(roleA)
-      ArticleMessage.mockImplementationOnce(function () {
-        this.channelId = channelOneID
-        this.toggleRoleMentions = true
-        this.subscriptionIds = [1]
-      })
+      guildOne.roles.get
+        .mockReturnValue(roleA)
+      ArticleMessage
+        .mockImplementationOnce(function () {
+          this.channelId = channelOneID
+          this.toggleRoleMentions = true
+          this.subscriptionIds = [1]
+        })
       await queue.enqueue({})
       await queue.enqueue({})
       await queue.send(bot)
@@ -196,6 +199,31 @@ describe('Int::ArticleMessageQueue', function () {
           done()
         })
         .catch(done)
+    })
+    it('throws the error and turns off mentionable if delivery fails', async function () {
+      const bot = new Bot()
+      const queue = new ArticleMessageQueue(bot)
+      const channelOneID = 'abc'
+      const channelOne = new Channel(channelOneID)
+      const guildOne = new Guild()
+      const roleA = new Role()
+      const error = new Error('format error')
+      channelOne.guild = guildOne
+      bot.channels.get
+        .mockReturnValue(channelOne)
+      guildOne.roles.get
+        .mockReturnValue(roleA)
+      ArticleMessage
+        .mockImplementationOnce(function () {
+          this.channelId = channelOneID
+          this.toggleRoleMentions = true
+          this.subscriptionIds = [1]
+          this.send = jest.fn().mockRejectedValue(error)
+        })
+      await queue.enqueue({})
+      await expect(queue.send(bot)).rejects.toThrow(error)
+      expect(roleA.setMentionable).toHaveBeenNthCalledWith(1, true)
+      expect(roleA.setMentionable).toHaveBeenNthCalledWith(2, false)
     })
   })
 })
