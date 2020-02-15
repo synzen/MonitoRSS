@@ -154,7 +154,7 @@ class FeedSelector extends Menu {
     }
 
     // Actions text
-    if (command === 'rssoptions') {
+    if (command === 'options') {
       desc += optionTexts[miscOption].toggle
     } else {
       desc += this.translate(`commandDescriptions.${command}.action`)
