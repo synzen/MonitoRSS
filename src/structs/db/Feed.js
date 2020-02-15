@@ -386,7 +386,7 @@ class Feed extends FilterBase {
     }
     await this.save()
     if (shardID !== undefined && articleList.length > 0) {
-      const schedule = this.determineSchedule()
+      const schedule = await this.determineSchedule()
       await this.initializeArticles(shardID, schedule.name, articleList, idType)
     }
   }
