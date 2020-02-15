@@ -259,7 +259,7 @@ class LinkLogic extends EventEmitter {
    * @param {Object<string, any>} document
    * @param {string[]} properties - Feed properties
    */
-  static updatedArticleForDatabase (article, document, properties) {
+  static updatedDocumentForDatabase (article, document, properties) {
     const docProperties = document.properties
     let updated = false
     for (const property of properties) {
@@ -270,6 +270,23 @@ class LinkLogic extends EventEmitter {
       const docValue = docProperties[property]
       if (!docValue || docValue !== articleValue) {
         docProperties[property] = articleValue
+        updated = true
+      }
+    }
+    const pruned = this.prunedDocumentForDatabase(document, properties)
+    return updated || pruned
+  }
+
+  /**
+   * @param {Object<string, any>} document
+   * @param {string[]} properties
+   */
+  static prunedDocumentForDatabase (document, properties) {
+    let updated = false
+    const docProperties = document.properties
+    for (const property in docProperties) {
+      if (!properties.includes(property)) {
+        delete docProperties[property]
         updated = true
       }
     }
@@ -291,18 +308,24 @@ class LinkLogic extends EventEmitter {
       shardID: this.shardID,
       scheduleName: this.scheduleName
     }
+    // Insert
     for (const article of articleList) {
       const articleID = article._id
       if (!dbIDs.has(articleID)) {
-        // Insert
         toInsert.push(LinkLogic.formatArticleForDatabase(article, properties, useIdType, meta))
+      }
+    }
+    // Update
+    for (const doc of dbDocs) {
+      const article = articleList.find(a => a._id === doc._id)
+      let updated = false
+      if (article) {
+        updated = LinkLogic.updatedDocumentForDatabase(article, doc, properties)
       } else {
-        // Update
-        const doc = dbDocs.find(doc => doc._id === articleID)
-        const updated = LinkLogic.updatedArticleForDatabase(article, doc, properties)
-        if (updated) {
-          toUpdate.push(doc)
-        }
+        updated = LinkLogic.prunedDocumentForDatabase(doc, properties)
+      }
+      if (updated) {
+        toUpdate.push(doc)
       }
     }
     return {

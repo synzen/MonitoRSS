@@ -513,6 +513,56 @@ describe('Int::structs/db/Blacklist Database', function () {
     const { newArticles } = await logic.runFromMongo()
     expect(newArticles).toHaveLength(0)
   })
+  it('deletes irrelevant stored properties', async function () {
+    const articleList = [{
+      guid: 'a',
+      title: 't1'
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: [],
+        ncomparisons: []
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    await mongoose.connection.collection('articles').insertMany([{
+      _id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        useless1: 'a',
+        useless2: 'b'
+      }
+    }, {
+      _id: 'b',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        useless1: 'a'
+      }
+    }])
+    const logic = new LinkLogic(logicData)
+    await logic.runFromMongo()
+    const all = await mongoose.connection.collection('articles').find().toArray()
+    for (const item of all) {
+      expect(item).toEqual(expect.objectContaining({
+        properties: {}
+      }))
+    }
+  })
   afterAll(async function () {
     await mongoose.connection.db.dropDatabase()
     await mongoose.connection.close()

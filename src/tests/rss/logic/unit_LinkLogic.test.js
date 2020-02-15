@@ -301,7 +301,11 @@ describe('Unit::LinkLogic', function () {
       })
     })
   })
-  describe('updatedArticleForDatabase', function () {
+  describe('updatedDocumentForDatabase', function () {
+    beforeEach(function () {
+      jest.spyOn(LinkLogic, 'prunedDocumentForDatabase')
+        .mockReturnValue(false)
+    })
     it('adds new properties when applicable', function () {
       const article = {
         title: 't1',
@@ -316,7 +320,7 @@ describe('Unit::LinkLogic', function () {
         }
       }
       const properties = ['title', 'description', 'date', 'author']
-      LinkLogic.updatedArticleForDatabase(article, document, properties)
+      LinkLogic.updatedDocumentForDatabase(article, document, properties)
       expect(document).toEqual({
         properties: {
           title: 't1',
@@ -336,7 +340,7 @@ describe('Unit::LinkLogic', function () {
         }
       }
       const properties = ['link']
-      LinkLogic.updatedArticleForDatabase(article, document, properties)
+      LinkLogic.updatedDocumentForDatabase(article, document, properties)
       expect(document).toEqual({
         properties: {
           link: 'a'
@@ -353,10 +357,10 @@ describe('Unit::LinkLogic', function () {
         }
       }
       const properties = ['title']
-      const changed = LinkLogic.updatedArticleForDatabase(article, document, properties)
+      const changed = LinkLogic.updatedDocumentForDatabase(article, document, properties)
       expect(changed).toEqual(false)
     })
-    it('true false for changes', function () {
+    it('returns true for changes', function () {
       const article = {
         title: 't1'
       }
@@ -364,8 +368,60 @@ describe('Unit::LinkLogic', function () {
         properties: {}
       }
       const properties = ['title']
-      const changed = LinkLogic.updatedArticleForDatabase(article, document, properties)
+      const changed = LinkLogic.updatedDocumentForDatabase(article, document, properties)
       expect(changed).toEqual(true)
+    })
+    it('returns true if pruned', function () {
+      const article = {}
+      const document = {
+        properties: {
+          title: 't1',
+          holla: 'there',
+          bo: 'gh'
+        }
+      }
+      jest.spyOn(LinkLogic, 'prunedDocumentForDatabase')
+        .mockReturnValue(true)
+      const properties = []
+      const changed = LinkLogic.updatedDocumentForDatabase(article, document, properties)
+      expect(changed).toEqual(true)
+    })
+  })
+  describe('prunedDocumentForDatabase', function () {
+    it('deletes all irrelevant keys', function () {
+      const document = {
+        properties: {
+          a: '1',
+          b: '2',
+          title: 'hi'
+        }
+      }
+      const properties = ['title']
+      LinkLogic.prunedDocumentForDatabase(document, properties)
+      expect(document.a).toBeUndefined()
+      expect(document.b).toBeUndefined()
+    })
+    it('returns true if deleted keys', function () {
+      const document = {
+        properties: {
+          a: '1',
+          b: '2',
+          title: 'hi'
+        }
+      }
+      const properties = ['title']
+      const pruned = LinkLogic.prunedDocumentForDatabase(document, properties)
+      expect(pruned).toEqual(true)
+    })
+    it('returns true if no deleted keys', function () {
+      const document = {
+        properties: {
+          title: 'hi'
+        }
+      }
+      const properties = ['title']
+      const pruned = LinkLogic.prunedDocumentForDatabase(document, properties)
+      expect(pruned).toEqual(false)
     })
   })
   describe('getInsertsAndUpdates', function () {
@@ -397,7 +453,7 @@ describe('Unit::LinkLogic', function () {
       }, {
         _id: 'bar'
       }]
-      const spy = jest.spyOn(LinkLogic, 'updatedArticleForDatabase')
+      const spy = jest.spyOn(LinkLogic, 'updatedDocumentForDatabase')
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(true)
       const logic = new LinkLogic({ ...DEFAULT_DATA })
