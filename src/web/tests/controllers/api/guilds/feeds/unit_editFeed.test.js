@@ -73,6 +73,7 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         imgLinksExistence: '',
         formatTables: false,
         toggleRoleMentions: true,
+        ncomparisons: ['hello', 'world'],
         text: 'aedgtswrf',
         embeds: [{
           title: 'hi'
@@ -101,7 +102,8 @@ describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
         toggleRoleMentions: true,
         text: req.body.text,
         embeds: req.body.embeds,
-        filters: req.body.filters
+        filters: req.body.filters,
+        ncomparisons: req.body.ncomparisons
       })
   })
 })

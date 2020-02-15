@@ -19,7 +19,8 @@ const feedSchema = Joi.object({
     append: Joi.string().trim().max(100),
     maxLength: Joi.number().max(2048).min(500)
   }),
-  filters: filterSchema
+  filters: filterSchema,
+  ncomparisons: Joi.array().max(1).items(Joi.string().valid('title'))
 })
 
 module.exports = feedSchema

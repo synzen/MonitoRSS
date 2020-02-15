@@ -8,7 +8,8 @@ const keys = [
   'toggleRoleMentions',
   'text',
   'embeds',
-  'filters'
+  'filters',
+  'ncomparisons'
 ]
 
 /**
