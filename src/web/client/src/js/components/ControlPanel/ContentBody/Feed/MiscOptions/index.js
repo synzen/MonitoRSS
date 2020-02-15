@@ -122,6 +122,7 @@ function MiscOptions () {
 
   const reset = () => {
     setUserValues({})
+    setUserCheckTitles(originalCheckTitles)
   }
 
   const checkDates = userValues.checkDates === undefined ? getOriginalPropertyValue('checkDates') : userValues.checkDates
