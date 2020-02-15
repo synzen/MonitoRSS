@@ -129,6 +129,14 @@
     },
     "rssversion": {
       "description": "Show version of the bot."
+    },
+    "compare": {
+      "action": "Set comparisons to article checks",
+      "description": "Add additional positive/negative comparisons on articles for greater control over which articles get sent to your server.",
+      "args": {
+        "list": "List the current comparisons.",
+        "(+|-)<property>": "The positive or negative article properties to add for comparison. More than one can be added."
+      }
     }
   },
   "commands": {
@@ -169,6 +177,15 @@
       "confirm": "The following settings for the feed <{{link}}>\n\n`{{cloning}}`\n\nare about to be cloned into the following feeds:\n```{{destinations}}```\nNote that if a property does not exist in the source feed, the same property in the destination feed(s) will be **deleted**.To confirm this, type `yes`. Otherwise, type `exit` to cancel.",
       "confirmError": "You must confirm by typing `yes`, or cancel by typing `exit`. Try again.",
       "success": "The following settings\n\n`{{cloned}}`\n\nfor the feed <{{link}}> have been successfully cloned into {{destinationCount}} feed(s)."
+    },
+    "compare": {
+      "info": "For greater control over what articles get sent to your server, you can add additional comparisons on article properties. There are \"positive\" and \"negative\" comparisons. Each property must be prepended with `+` for positive or `-` for negative.\n\nAn example would be `{{prefix}}compare -title`. **This overwrites the current comparison settings.** For more information on what these comparisons mean, please refer to {{infoURL}}.",
+      "list": "The current comparisons are currently set for the feed <{{url}}>:\n\n{{values}}",
+      "listNone": "There are no comparisons set for the feed <{{url}}>.",
+      "invalid": "Invalid inputs were found. All comparisons must be prepended with `+` or `-`. The invalid inputs were:\n\n{{errors}}",
+      "onlyTitle": "Only the negative comparison `-title` is supported at this time.",
+      "reset": "Comparisons have been successfully reset for the feed <{{url}}>.",
+      "success": "The following comparisons have been set for the feed <{{url}}>:\n\n{{added}}"
     },
     "date": {
       "dateLanguage": "Date language",

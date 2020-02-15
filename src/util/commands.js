@@ -160,6 +160,10 @@ const list = {
   patron: {
     initLevel: 2,
     userPerm: MANAGE_CHANNELS_PERM
+  },
+  compare: {
+    initLevel: 2,
+    userPerm: MANAGE_CHANNELS_PERM
   }
 }
 // Check for aliases
