@@ -13,10 +13,10 @@ const embedSchema = {
   color: Number,
   footerText: String,
   authorName: String,
-  authorIconUrl: String,
-  authorUrl: String,
-  thumbnailUrl: String,
-  imageUrl: String,
+  authorIconURL: String,
+  authorURL: String,
+  thumbnailURL: String,
+  imageURL: String,
   timestamp: String,
   fields: [fieldSchema]
 }

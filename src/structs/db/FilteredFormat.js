@@ -1,5 +1,6 @@
 const FilterBase = require('./FilterBase.js')
 const FilteredFormatModel = require('../../models/FilteredFormat.js').model
+const embedSchema = require('../../models/common/Embed.js')
 
 class FilteredFormat extends FilterBase {
   /**
@@ -63,16 +64,10 @@ class FilteredFormat extends FilterBase {
     if (!embed) {
       return false
     }
-    const keys = [
-      'title',
-      'description',
-      'color',
-      'footerText',
-      'authorName',
-      'thumbnailUrl',
-      'imageUrl',
-      'timestamp'
-    ]
+    const keys = Object.keys(embedSchema)
+    keys.splice(keys.indexOf('_id'), 1)
+    keys.splice(keys.indexOf('fields'), 1)
+
     let filled = false
     for (const key of keys) {
       filled = filled || !!embed[key]

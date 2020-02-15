@@ -134,25 +134,25 @@ class ArticleMessage {
         richEmbed.setColor(color)
       }
 
-      const footerText = convert(objectEmbed.footer_text || objectEmbed.footerText)
-      const footerIconURL = convert(objectEmbed.footer_icon_url || objectEmbed.footerIconUrl)
+      const footerText = convert(objectEmbed.footerText)
+      const footerIconURL = convert(objectEmbed.footerIconURL)
       if (footerText) {
         richEmbed.setFooter(footerText, footerIconURL)
       }
 
-      const authorName = convert(objectEmbed.author_name || objectEmbed.authorName)
-      const authorIconURL = convert(objectEmbed.author_icon_url || objectEmbed.authorIconUrl)
-      const authorURL = convert(objectEmbed.author_url || objectEmbed.authorUrl)
+      const authorName = convert(objectEmbed.authorName)
+      const authorIconURL = convert(objectEmbed.authorIconURL)
+      const authorURL = convert(objectEmbed.authorURL)
       if (authorName) {
         richEmbed.setAuthor(authorName, authorIconURL, authorURL)
       }
 
-      const thumbnailURL = convert(objectEmbed.thumbnail_url || objectEmbed.thumbnailUrl)
+      const thumbnailURL = convert(objectEmbed.thumbnailURL)
       if (thumbnailURL) {
         richEmbed.setThumbnail(thumbnailURL)
       }
 
-      const imageURL = convert(objectEmbed.image_url || objectEmbed.imageUrl)
+      const imageURL = convert(objectEmbed.imageURL)
       if (imageURL) {
         richEmbed.setImage(imageURL)
       }

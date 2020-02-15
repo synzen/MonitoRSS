@@ -275,8 +275,8 @@ function EmbedSettings (props) {
         name='Author'
         inputs={[
           { label: 'Text', variable: embedPropertiesNames.authorName, value: valuesToUse[embedPropertiesNames.authorName] },
-          { label: 'Icon URL', variable: embedPropertiesNames.authorIconUrl, value: valuesToUse[embedPropertiesNames.authorIconUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] },
-          { label: 'URL', variable: embedPropertiesNames.authorUrl, value: valuesToUse[embedPropertiesNames.authorUrl], condition: !!valuesToUse[embedPropertiesNames.authorName] }
+          { label: 'Icon URL', variable: embedPropertiesNames.authorIconURL, value: valuesToUse[embedPropertiesNames.authorIconURL], condition: !!valuesToUse[embedPropertiesNames.authorName] },
+          { label: 'URL', variable: embedPropertiesNames.authorURL, value: valuesToUse[embedPropertiesNames.authorURL], condition: !!valuesToUse[embedPropertiesNames.authorName] }
         ]}
         onUpdate={onPropertyUpdate}
       />
@@ -298,8 +298,8 @@ function EmbedSettings (props) {
       <Section
         name='Images'
         inputs={[
-          { label: 'Image URL', variable: embedPropertiesNames.imageUrl, value: valuesToUse[embedPropertiesNames.imageUrl] },
-          { label: 'Thumbnail URL', variable: embedPropertiesNames.thumbnailUrl, value: valuesToUse[embedPropertiesNames.thumbnailUrl] }
+          { label: 'Image URL', variable: embedPropertiesNames.imageURL, value: valuesToUse[embedPropertiesNames.imageURL] },
+          { label: 'Thumbnail URL', variable: embedPropertiesNames.thumbnailURL, value: valuesToUse[embedPropertiesNames.thumbnailURL] }
         ]}
         onUpdate={onPropertyUpdate}
       />
@@ -307,7 +307,7 @@ function EmbedSettings (props) {
         name='Footer'
         inputs={[
           { label: 'Text', variable: embedPropertiesNames.footerText, value: valuesToUse[embedPropertiesNames.footerText] },
-          { label: 'Icon URL', variable: embedPropertiesNames.footerIconUrl, values: valuesToUse[embedPropertiesNames.footerIconUrl], condition: !!valuesToUse[embedPropertiesNames.footerText] },
+          { label: 'Icon URL', variable: embedPropertiesNames.footerIconURL, values: valuesToUse[embedPropertiesNames.footerIconURL], condition: !!valuesToUse[embedPropertiesNames.footerText] },
           { label: 'Timestamp', variable: embedPropertiesNames.timestamp, dropdown: true, options: [{ text: 'None', value: 'none' }, { text: 'article', value: 'article' }, { text: 'now', value: 'now' }], value: valuesToUse[embedPropertiesNames.timestamp] }
         ]}
         onUpdate={onPropertyUpdate}

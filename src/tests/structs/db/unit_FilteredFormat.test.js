@@ -1,17 +1,11 @@
 const FilteredFormatModel = require('../../../models/FilteredFormat.js').model
 const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
+const embedSchema = require('../../../models/common/Embed.js')
 
 describe('Unit::structs/db/FilteredFormat', function () {
-  const keys = [
-    'title',
-    'description',
-    'color',
-    'footerText',
-    'authorName',
-    'thumbnailUrl',
-    'imageUrl',
-    'timestamp'
-  ]
+  const keys = Object.keys(embedSchema)
+  keys.splice(keys.indexOf('_id'), 1)
+  keys.splice(keys.indexOf('fields'), 1)
   const initData = {
     feed: '123b',
     text: 'qawed'

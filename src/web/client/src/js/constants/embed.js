@@ -4,11 +4,11 @@ export default {
   url: 'url',
   color: 'color',
   timestamp: 'timestamp',
-  footerIconUrl: 'footerIconUrl',
+  footerIconURL: 'footerIconURL',
   footerText: 'footerText',
-  authorIconUrl: 'authorIconUrl',
+  authorIconURL: 'authorIconURL',
   authorName: 'authorName',
-  authorUrl: 'authorUrl',
-  thumbnailUrl: 'thumbnailUrl',
-  imageUrl: 'imageUrl'
+  authorURL: 'authorURL',
+  thumbnailURL: 'thumbnailURL',
+  imageURL: 'imageURL'
 }
