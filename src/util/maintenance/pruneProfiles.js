@@ -5,7 +5,7 @@ const Profile = require('../../structs/db/Profile.js')
  * @param {Map<string, number>} guildIdsByShard
  * @returns {number}
  */
-async function pruneGuilds (guildIdsByShard) {
+async function pruneProfiles (guildIdsByShard) {
   const profiles = await Profile.getAll()
   const deletions = []
   for (const profile of profiles) {
@@ -17,4 +17,4 @@ async function pruneGuilds (guildIdsByShard) {
   return deletions.length
 }
 
-module.exports = pruneGuilds
+module.exports = pruneProfiles

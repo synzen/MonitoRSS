@@ -1,4 +1,4 @@
-const pruneGuilds = require('./pruneGuilds.js')
+const pruneProfiles = require('./pruneProfiles.js')
 const pruneFeeds = require('./pruneFeeds.js')
 const pruneArticles = require('./pruneArticles.js')
 const pruneFilteredFormats = require('./pruneFilteredFormats.js')
@@ -21,7 +21,7 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
   await Promise.all([
     ShardStats.deleteAll(),
     flushRedis(),
-    pruneGuilds(guildIdsByShard)
+    pruneProfiles(guildIdsByShard)
   ])
   await pruneFeeds(guildIdsByShard, channelIdsByShard)
   await Promise.all([
@@ -63,7 +63,7 @@ module.exports = {
   pruneWithBot,
   prunePreInit,
   prunePostInit,
-  pruneGuilds,
+  pruneProfiles,
   pruneFeeds,
   pruneArticles,
   pruneFilteredFormats,

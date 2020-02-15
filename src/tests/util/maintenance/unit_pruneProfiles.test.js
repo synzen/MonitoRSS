@@ -1,10 +1,10 @@
 process.env.TEST_ENV = true
 const Profile = require('../../../structs/db/Profile.js')
-const pruneGuilds = require('../../../util/maintenance/pruneGuilds.js')
+const pruneProfiles = require('../../../util/maintenance/pruneProfiles.js')
 
 jest.mock('../../../structs/db/Profile.js')
 
-describe('utils/maintenance/pruneGuilds', function () {
+describe('utils/maintenance/pruneProfiles', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })
@@ -24,7 +24,7 @@ describe('utils/maintenance/pruneGuilds', function () {
     }]
     const guildIds = new Map([['a', 0], ['c', 2], ['z', 1]])
     Profile.getAll.mockResolvedValue(profiles)
-    await pruneGuilds(guildIds)
+    await pruneProfiles(guildIds)
     expect(profiles[0].delete).not.toHaveBeenCalled()
     expect(profiles[1].delete).toHaveBeenCalledTimes(1)
     expect(profiles[2].delete).toHaveBeenCalledTimes(1)
@@ -46,7 +46,7 @@ describe('utils/maintenance/pruneGuilds', function () {
     }]
     const guildIds = new Map([['a', 0], ['c', 1], ['f', 2]])
     Profile.getAll.mockResolvedValue(profiles)
-    const result = await pruneGuilds(guildIds)
+    const result = await pruneProfiles(guildIds)
     expect(result).toEqual(2)
   })
 })
