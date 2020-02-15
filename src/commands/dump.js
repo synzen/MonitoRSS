@@ -12,7 +12,7 @@ module.exports = async (bot, message, command) => {
   try {
     const profile = await Profile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
-    const feeds = await Feed.getBy('guild', message.guild.id)
+    const feeds = await Feed.getManyBy('guild', message.guild.id)
     const feedSelector = new FeedSelector(message, undefined, { command: command }, feeds)
     const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
     if (!data) return
@@ -30,7 +30,8 @@ module.exports = async (bot, message, command) => {
     }
     textOutput = textOutput.trim()
     await wait.edit(translate('commands.dump.generatedDump'))
-    await message.channel.send('', new Discord.Attachment(Buffer.from(raw ? JSON.stringify(objOutput, null, 2) : textOutput), raw ? `${url}.json` : `${url}.txt`))
+    const data = Buffer.from(raw ? JSON.stringify(objOutput, null, 2) : textOutput)
+    await message.channel.send('', new Discord.MessageAttachment(data, raw ? `${url}.json` : `${url}.txt`))
   } catch (err) {
     log.command.warning(`rssdump`, message.guild, err)
     if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssdump 1', message.guild, err))
