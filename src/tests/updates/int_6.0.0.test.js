@@ -129,6 +129,43 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       }).toArray()
       expect(feeds).toHaveLength(2)
     })
+    it('replaces old embed keys with new ones', async function () {
+      const embeds = [{
+        thumbnail_url: '1',
+        authorUrl: '2',
+        footer_text: '3',
+        imageUrl: '4',
+        author_name: '5',
+        authorIconURL: '6',
+        authorIconUrl: '7'
+      }]
+      const guildRss = {
+        id: '32qwet4ry',
+        name: 'azdsh',
+        sources: {
+          f1: {
+            title: 't1',
+            link: 'u1',
+            channel: 'q3wet4',
+            embeds
+          }
+        }
+      }
+      const expectedEmbeds = [{
+        thumbnailURL: '1',
+        authorURL: '2',
+        footerText: '3',
+        imageURL: '4',
+        authorName: '5',
+        authorIconURL: '6',
+        fields: []
+      }]
+      await updateProfiles(guildRss)
+      const feed = await mongoose.connection.collection('feeds').findOne({
+        guild: guildRss.id
+      })
+      expect(feed.embeds).toEqual(expectedEmbeds)
+    })
     it('converts checkTitles to ncomparison', async function () {
       const guildRss = {
         id: '32qwet4ry',

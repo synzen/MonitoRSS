@@ -6,6 +6,20 @@ const FilteredFormat = require('../../src/structs/db/FilteredFormat.js')
 const Subscriber = require('../../src/structs/db/Subscriber.js')
 const FailRecord = require('../../src/structs/db/FailRecord.js')
 const GuildData = require('../../src/structs/GuildData.js')
+const oldEmbedKeys = {
+  footer_text: 'footerText',
+  footerIconUrl: 'footerIconURL',
+  footer_icon_url: 'footerIconURL',
+  author_name: 'authorName',
+  authorIconUrl: 'authorIconURL',
+  author_icon_url: 'authorIconURL',
+  author_url: 'authorURL',
+  authorUrl: 'authorURL',
+  thumbnailUrl: 'thumbnailURL',
+  thumbnail_url: 'thumbnailURL',
+  imageUrl: 'imageURL',
+  image_url: 'imageURL'
+}
 
 function HEXToVBColor (rrggbb) {
   const bbggrr = rrggbb.substr(4, 2) + rrggbb.substr(2, 2) + rrggbb.substr(0, 2)
@@ -99,6 +113,18 @@ async function updateProfiles (guildRss) {
       const embeds = feed.embeds
       if (Array.isArray(embeds) && embeds.length > 0) {
         for (const embed of embeds) {
+          // Replace old keys
+          for (const key in oldEmbedKeys) {
+            const newKey = oldEmbedKeys[key]
+            const value = embed[key]
+            if (value) {
+              if (!embed[newKey]) {
+                embed[newKey] = value
+              }
+              delete embed[key]
+            }
+          }
+
           // Convert hex strings to numbers
           if (embed.color && isNaN(Number(embed.color))) {
             embed.color = HEXToVBColor(embed.color)
