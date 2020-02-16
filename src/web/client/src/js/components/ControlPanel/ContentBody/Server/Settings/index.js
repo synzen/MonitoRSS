@@ -158,7 +158,7 @@ function ServerSettings () {
       <br />
       <br />
       <SectionSubtitle>Timezone</SectionSubtitle>
-      <Input fluid onChange={e => setValue('timezone', e.target.value)} error={invalidTimezone} value={timezoneValue} placeholder={botConfig.timezone} />
+      <Input fluid onChange={e => setValue('timezone', e.target.value)} error={invalidTimezone} value={timezoneValue} placeholder={getOriginalPropertyValue('timezone')} />
       <InputDescription>This will change the timezone of the {`{date}`} placeholder to the one you specify. <a href='https://en.wikipedia.org/wiki/List_of_tz_database_time_zones' target='_blank' rel='noopener noreferrer'>See here for a list of valid timezones under the "TZ database name" column.</a></InputDescription>
       <br />
       <SectionSubtitle>Date Language</SectionSubtitle>
@@ -166,7 +166,7 @@ function ServerSettings () {
       <InputDescription>Only a certain number of languages are manually supported for dates. To request your language to be supported, please contact the developer on the support server.</InputDescription>
       <br />
       <SectionSubtitle>Date Format</SectionSubtitle>
-      <Input fluid value={dateFormatValue} onChange={e => setValue('dateFormat', e.target.value)} placeholder={botConfig.dateFormat} />
+      <Input fluid value={dateFormatValue} onChange={e => setValue('dateFormat', e.target.value)} placeholder={getOriginalPropertyValue('dateFormat')} />
       <InputDescription>This will dictate how the {`{date}`} placeholder will be formatted. <a href='https://momentjs.com/docs/#/displaying/' target='_blank' rel='noopener noreferrer'>See here on how to customize your date formats.</a>.</InputDescription>
       <LargeDivider />
       <SectionTitle heading='Command Prefix' subheading='If specified, this prefix will replace the default prefix used before all commands. This setting can only be configured through Discord commands at this time.' />
