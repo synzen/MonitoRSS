@@ -57,7 +57,7 @@ module.exports = async (bot, message, command) => {
     ])
     const guildLocale = profile ? profile.locale : undefined
     const translate = Translator.createLocaleTranslator(guildLocale)
-    if (!validServer) {
+    if (Supporter.enabled && !validServer) {
       log.command.info(`Unauthorized attempt to access webhooks`, message.guild, message.author)
       return await message.channel.send(`Only servers with patron backing have access to webhooks.`)
     }
