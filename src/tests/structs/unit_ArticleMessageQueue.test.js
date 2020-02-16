@@ -9,7 +9,9 @@ jest.mock('../../config.js')
 class Bot {
   constructor () {
     this.channels = {
-      get: jest.fn((id) => new Channel(id))
+      cache: {
+        get: jest.fn((id) => new Channel(id))
+      }
     }
   }
 }
@@ -17,7 +19,9 @@ class Bot {
 class Guild {
   constructor () {
     this.roles = {
-      get: jest.fn()
+      cache: {
+        get: jest.fn()
+      }
     }
   }
 }
@@ -48,7 +52,7 @@ describe('Unit::ArticleMessageQueue', function () {
 
       it('when the channel cannot be fetched, returns undefined', function () {
         const bot = new Bot()
-        bot.channels.get.mockResolvedValueOnce(undefined)
+        bot.channels.cache.get.mockResolvedValueOnce(undefined)
         return expect(ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(), bot)).resolves.toEqual(undefined)
       })
 
@@ -63,13 +67,13 @@ describe('Unit::ArticleMessageQueue', function () {
         const guild = new Guild()
         const role1 = new Role(true)
         const role2 = new Role(true)
-        guild.roles.get
+        guild.roles.cache.get
           .mockReturnValueOnce(role1)
           .mockReturnValueOnce(role2)
         channel.guild = guild
-        bot.channels.get.mockReturnValueOnce(channel)
+        bot.channels.cache.get.mockReturnValueOnce(channel)
         expect(await ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['a', 'b']), bot)).toEqual(0)
-        expect(guild.roles.get).toHaveBeenCalledTimes(2)
+        expect(guild.roles.cache.get).toHaveBeenCalledTimes(2)
       })
     })
 
@@ -79,13 +83,13 @@ describe('Unit::ArticleMessageQueue', function () {
       const guild = new Guild()
       const role1 = new Role(true)
       const role2 = new Role(false)
-      guild.roles.get
+      guild.roles.cache.get
         .mockReturnValueOnce(role1)
         .mockReturnValueOnce(role2)
       channel.guild = guild
-      bot.channels.get.mockReturnValueOnce(channel)
+      bot.channels.cache.get.mockReturnValueOnce(channel)
       expect(await ArticleMessageQueue.toggleRoleMentionable(true, '123', new Set(['a', 'b']), bot)).toEqual(1)
-      expect(guild.roles.get).toHaveBeenCalledTimes(2)
+      expect(guild.roles.cache.get).toHaveBeenCalledTimes(2)
     })
 
     it('calls setMentionable for roles', async function () {
@@ -95,10 +99,10 @@ describe('Unit::ArticleMessageQueue', function () {
       const role1 = new Role(true)
       const role2 = new Role(true)
       channel.guild = guild
-      guild.roles.get
+      guild.roles.cache.get
         .mockReturnValueOnce(role1)
         .mockReturnValueOnce(role2)
-      bot.channels.get.mockReturnValueOnce(channel)
+      bot.channels.cache.get.mockReturnValueOnce(channel)
       await ArticleMessageQueue.toggleRoleMentionable(false, '123', new Set(['a', 'b']), bot)
       expect(role1.setMentionable).toHaveBeenCalledTimes(1)
       expect(role2.setMentionable).toHaveBeenCalledTimes(1)
@@ -113,10 +117,10 @@ describe('Unit::ArticleMessageQueue', function () {
       const error = new Error('asdas')
       role1.setMentionable.mockRejectedValueOnce(error)
       channel.guild = guild
-      guild.roles.get
+      guild.roles.cache.get
         .mockReturnValueOnce(role1)
         .mockReturnValueOnce(role2)
-      bot.channels.get.mockReturnValueOnce(channel)
+      bot.channels.cache.get.mockReturnValueOnce(channel)
       try {
         await ArticleMessageQueue.toggleRoleMentionable(false, '123', new Set(['a', 'b']), bot)
       } catch (err) {
@@ -134,10 +138,10 @@ describe('Unit::ArticleMessageQueue', function () {
       error.code = 50013
       role1.setMentionable.mockRejectedValueOnce(error)
       channel.guild = guild
-      guild.roles.get
+      guild.roles.cache.get
         .mockReturnValueOnce(role1)
         .mockReturnValueOnce(role2)
-      bot.channels.get.mockReturnValueOnce(channel)
+      bot.channels.cache.get.mockReturnValueOnce(channel)
       try {
         await ArticleMessageQueue.toggleRoleMentionable(false, '123', new Set(['a', 'b']), bot)
       } catch (err) {

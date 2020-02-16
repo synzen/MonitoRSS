@@ -216,7 +216,7 @@ class FeedSelector extends Menu {
       let channelText = ''
       if (this.globalSelect) {
         if (message.client.channels.has(feed.channel)) {
-          channelText = `${this.translate('generics.channelUpper')}: #${message.client.channels.get(feed.channel).name}\n`
+          channelText = `${this.translate('generics.channelUpper')}: #${message.client.channels.cache.get(feed.channel).name}\n`
         } else {
           channelText = `${this.translate('generics.channelUpper')}: Unknown\n`
         }

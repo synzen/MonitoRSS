@@ -9,7 +9,9 @@ jest.mock('../../config.js')
 class Bot {
   constructor () {
     this.channels = {
-      get: jest.fn((id) => new Channel(id))
+      cache: {
+        get: jest.fn((id) => new Channel(id))
+      }
     }
   }
 }
@@ -17,7 +19,9 @@ class Bot {
 class Guild {
   constructor () {
     this.roles = {
-      get: jest.fn(() => new Role())
+      cache: {
+        get: jest.fn(() => new Role())
+      }
     }
   }
 }
@@ -122,13 +126,13 @@ describe('Int::ArticleMessageQueue', function () {
       const roleB = new Role()
       channelOne.guild = guildOne
       channelTwo.guild = guildTwo
-      bot.channels.get
+      bot.channels.cache.get
         .mockReturnValueOnce(channelOne)
         .mockReturnValueOnce(channelOne)
         .mockReturnValueOnce(channelTwo)
         .mockReturnValueOnce(channelTwo)
-      guildOne.roles.get.mockReturnValue(roleA)
-      guildTwo.roles.get.mockReturnValue(roleB)
+      guildOne.roles.cache.get.mockReturnValue(roleA)
+      guildTwo.roles.cache.get.mockReturnValue(roleB)
       ArticleMessage.mockImplementationOnce(function () {
         this.channelId = channelOneID
         this.toggleRoleMentions = true
@@ -159,9 +163,9 @@ describe('Int::ArticleMessageQueue', function () {
       channelOne.guild = guildOne
       roleA.setMentionable
         .mockRejectedValue(error)
-      bot.channels.get
+      bot.channels.cache.get
         .mockReturnValue(channelOne)
-      guildOne.roles.get
+      guildOne.roles.cache.get
         .mockReturnValue(roleA)
       ArticleMessage
         .mockImplementationOnce(function () {
@@ -180,7 +184,7 @@ describe('Int::ArticleMessageQueue', function () {
       const guildOne = new Guild()
       const error = new Error('abc')
       channelOne.guild = guildOne
-      bot.channels.get
+      bot.channels.cache.get
         .mockReturnValue(channelOne)
       ArticleMessage.mockImplementation(function () {
         this.channelId = channelOneID
@@ -209,9 +213,9 @@ describe('Int::ArticleMessageQueue', function () {
       const roleA = new Role()
       const error = new Error('format error')
       channelOne.guild = guildOne
-      bot.channels.get
+      bot.channels.cache.get
         .mockReturnValue(channelOne)
-      guildOne.roles.get
+      guildOne.roles.cache.get
         .mockReturnValue(roleA)
       ArticleMessage
         .mockImplementationOnce(function () {

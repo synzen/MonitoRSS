@@ -13,7 +13,7 @@ const helpText = profile => {
 
 async function verifyServer (bot, serverId) {
   const results = (await bot.shard.broadcastEval(`
-    const guild = this.guilds.get('${serverId}')
+    const guild = this.guilds.cache.get('${serverId}')
     guild ? { name: guild.name, id: guild.id } : null
   `)).filter(item => item)
 

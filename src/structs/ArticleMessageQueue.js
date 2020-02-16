@@ -25,13 +25,13 @@ class ArticleMessageQueue {
    */
   static async toggleRoleMentionable (mentionable, channelID, roleIDs, bot) {
     if (roleIDs.size === 0) return
-    const channel = bot.channels.get(channelID)
+    const channel = bot.channels.cache.get(channelID)
     if (!channel) return
     const guild = channel.guild
     let updated = 0
     try {
       for (const roleID of roleIDs) {
-        const role = guild.roles.get(roleID)
+        const role = guild.roles.cache.get(roleID)
         // Other checks may include guild.me.roles.highest.comparePositionTo(role) <= 0, and whether the bot has manage roles permission, but don't check them and let the error show in the message
         if (role && role.mentionable !== mentionable) {
           await role.setMentionable(mentionable)

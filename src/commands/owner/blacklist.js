@@ -12,8 +12,8 @@ module.exports = async (bot, message, Manager) => {
       return await message.channel.send(`Target is already blacklisted.`)
     }
     const results = await bot.shard.broadcastEval(`
-      const guild = this.guilds.get('${id}');
-      const user = this.users.get('${id}');
+      const guild = this.guilds.cache.get('${id}');
+      const user = this.users.cache.get('${id}');
       // guild ? guild.leave() : null;
       guild ? '_guild ' + guild.name : user ? '_user ' + user.username : null
     `)
