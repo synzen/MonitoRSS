@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import PropTypes from 'prop-types'
 import PageHeader from 'js/components/utils/PageHeader'
@@ -65,6 +65,11 @@ function SideBar (props) {
   const { selectedFeed, channelDropdownOptions } = props
   const selectedFailRecord = selectedFeed ? failRecords.find(r => r.url === selectedFeed.url) : null
   const hasFailed = !selectedFailRecord ? false : !!selectedFailRecord.alerted
+
+  useEffect(() => {
+    setInputChannel('')
+    setInputTitle('')
+  }, [selectedFeed])
 
   if (!activeGuild || !selectedFeed) {
     return <div />
