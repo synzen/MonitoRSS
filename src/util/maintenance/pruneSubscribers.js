@@ -28,7 +28,8 @@ async function pruneSubscribers (bot) {
       deletions.push(subscriber.delete())
       continue
     }
-    const guild = bot.guilds.get(feed.guild)
+    /** @type {import('discord.js').Guild} */
+    const guild = bot.guilds.cache.get(feed.guild)
     /**
      * If sharded, skip if this bot does not have this guild
      */
@@ -36,12 +37,24 @@ async function pruneSubscribers (bot) {
       continue
     }
 
-    if (subscriber.type === Subscriber.TYPES.USER && !bot.users.has(subscriber.id)) {
-      log.general.info(`Deleting missing user subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
-      deletions.push(subscriber.delete())
-    } else if (subscriber.type === Subscriber.TYPES.ROLE && !guild.roles.has(subscriber.id)) {
-      log.general.info(`Deleting missing role subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
-      deletions.push(subscriber.delete())
+    if (subscriber.type === Subscriber.TYPES.USER) {
+      try {
+        await guild.members.fetch(subscriber.id)
+      } catch (err) {
+        if (err.code === 10013 || err.code === 10007) {
+          log.general.info(`Deleting missing user subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
+          deletions.push(subscriber.delete())
+        }
+      }
+    } else if (subscriber.type === Subscriber.TYPES.ROLE) {
+      try {
+        await guild.roles.fetch(subscriber.id)
+      } catch (err) {
+        if (err.code === 10011) {
+          log.general.info(`Deleting missing role subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
+          deletions.push(subscriber.delete())
+        }
+      }
     }
   }
   await Promise.all(deletions)

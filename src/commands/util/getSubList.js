@@ -5,7 +5,7 @@
 
 module.exports = async (guild, feeds) => {
   let finalList = []
-  const botRole = guild.members.get(guild.client.user.id).roles.highest
+  const botRole = guild.members.cache.get(guild.client.user.id).roles.highest
   const subscribers = await Promise.all(feeds.map(feed => feed.getSubscribers()))
 
   subscribers.forEach((feedSubscribers, index) => {
@@ -16,7 +16,7 @@ module.exports = async (guild, feeds) => {
     const subscribersFound = []
     for (const subscriber of feedSubscribers) {
       if (subscriber.type === 'role') {
-        const role = guild.roles.get(subscriber.id)
+        const role = guild.roles.cache.get(subscriber.id)
         if (role && role.comparePositionTo(botRole) < 0) {
           subscribersFound.push(role.id)
         }

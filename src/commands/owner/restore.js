@@ -27,7 +27,7 @@ module.exports = async (bot, message) => {
     const guildData = new GuildData(file)
     const id = guildData.id
     const res = await bot.shard.broadcastEval(`
-      const guild = this.guilds.get('${id}');
+      const guild = this.guilds.cache.get('${id}');
       guild ? guild.name : null
     `)
     for (var i = 0; i < res.length; ++i) {

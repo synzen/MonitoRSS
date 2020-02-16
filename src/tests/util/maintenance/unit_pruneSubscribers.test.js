@@ -11,12 +11,6 @@ Subscriber.TYPES = {
   ROLE: 'role'
 }
 
-class Guild {
-  constructor () {
-    this.roles = new Set()
-  }
-}
-
 describe('utils/maintenance/pruneSubscribers', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
@@ -47,9 +41,11 @@ describe('utils/maintenance/pruneSubscribers', function () {
       guild: 'guildA'
     }]
     const bot = {
-      guilds: new Map([['guildA', {}]]),
+      guilds: {
+        cache: new Map([['guildA', {}]])
+      },
       users: {
-        has: () => true
+        fetch: async () => true
       }
     }
     Subscriber.getAll.mockResolvedValue(subscribers)
@@ -76,7 +72,9 @@ describe('utils/maintenance/pruneSubscribers', function () {
           guild: 'guildA'
         }]
         const bot = {
-          guilds: new Map([['guildB']])
+          guilds: {
+            cache: new Map([['guildB']])
+          }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
         Feed.getAll.mockResolvedValue(feeds)
@@ -100,11 +98,20 @@ describe('utils/maintenance/pruneSubscribers', function () {
           _id: 'feedA',
           guild: 'guildA'
         }]
-        const users = new Set()
-        users.add(subscribers[1].id)
+        const fetchError = {
+          code: 10013
+        }
         const bot = {
-          guilds: new Map([['guildA', {}]]),
-          users
+          guilds: {
+            cache: new Map([['guildA', {
+              members: {
+                fetch: jest.fn()
+                  .mockRejectedValueOnce(fetchError)
+                  .mockResolvedValueOnce()
+              }
+            }]])
+
+          }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
         Feed.getAll.mockResolvedValue(feeds)
@@ -112,7 +119,7 @@ describe('utils/maintenance/pruneSubscribers', function () {
         expect(subscribers[1].delete).not.toHaveBeenCalled()
         expect(subscribers[0].delete).toHaveBeenCalled()
       })
-      it('prunes roles if they is not in guild that exists in bot', async function () {
+      it('prunes roles if they are not in guild that exists in bot', async function () {
         const subscribers = [{
           id: 'rsub1',
           type: 'role',
@@ -128,10 +135,20 @@ describe('utils/maintenance/pruneSubscribers', function () {
           _id: 'feedA',
           guild: 'guildA'
         }]
-        const guildA = new Guild()
-        guildA.roles.add(subscribers[1].id)
+        const fetchError = {
+          code: 10011
+        }
+        const guildA = {
+          roles: {
+            fetch: jest.fn()
+              .mockRejectedValueOnce(fetchError)
+              .mockResolvedValueOnce()
+          }
+        }
         const bot = {
-          guilds: new Map([['guildA', guildA]])
+          guilds: {
+            cache: new Map([['guildA', guildA]])
+          }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
         Feed.getAll.mockResolvedValue(feeds)
@@ -139,7 +156,7 @@ describe('utils/maintenance/pruneSubscribers', function () {
         expect(subscribers[1].delete).not.toHaveBeenCalled()
         expect(subscribers[0].delete).toHaveBeenCalled()
       })
-      it('prunes roles and useres if they both do not exist', async function () {
+      it('prunes roles and users if they both do not exist', async function () {
         const subscribers = [{
           id: 'rsub1',
           type: 'role',
@@ -155,11 +172,66 @@ describe('utils/maintenance/pruneSubscribers', function () {
           _id: 'feedA',
           guild: 'guildA'
         }]
-        const guildA = new Guild()
-        const users = new Set()
+        const memberFetchError = {
+          code: 10013
+        }
+        const roleFetchError = {
+          code: 10011
+        }
+        const guildA = {
+          members: {
+            fetch: jest.fn()
+              .mockRejectedValue(memberFetchError)
+          },
+          roles: {
+            fetch: jest.fn()
+              .mockRejectedValue(roleFetchError)
+          }
+        }
         const bot = {
-          guilds: new Map([['guildA', guildA]]),
-          users
+          guilds: {
+            cache: new Map([['guildA', guildA]])
+          }
+        }
+        Subscriber.getAll.mockResolvedValue(subscribers)
+        Feed.getAll.mockResolvedValue(feeds)
+        await pruneSubscribers(bot)
+        expect(subscribers[1].delete).toHaveBeenCalled()
+        expect(subscribers[0].delete).toHaveBeenCalled()
+      })
+      it('handles member error codes correctly', async function () {
+        const subscribers = [{
+          id: 'u1',
+          type: 'user',
+          feed: 'feedA',
+          delete: jest.fn()
+        }, {
+          id: 'u2',
+          type: 'user',
+          feed: 'feedA',
+          delete: jest.fn()
+        }]
+        const feeds = [{
+          _id: 'feedA',
+          guild: 'guildA'
+        }]
+        const fetchErrorOne = {
+          code: 10013
+        }
+        const fetchErrorTwo = {
+          code: 10007
+        }
+        const bot = {
+          guilds: {
+            cache: new Map([['guildA', {
+              members: {
+                fetch: jest.fn()
+                  .mockRejectedValueOnce(fetchErrorOne)
+                  .mockRejectedValueOnce(fetchErrorTwo)
+              }
+            }]])
+
+          }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
         Feed.getAll.mockResolvedValue(feeds)

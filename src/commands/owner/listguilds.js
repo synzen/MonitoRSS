@@ -5,7 +5,7 @@ module.exports = async (bot, message) => {
     const m = await message.channel.send('Generating...')
     const results = await bot.shard.broadcastEval(`
             const guilds = []
-            this.guilds.forEach(guild => {
+            this.guilds.cache.forEach(guild => {
                 guilds.push({
                     id: guild.id,
                     name: guild.name,

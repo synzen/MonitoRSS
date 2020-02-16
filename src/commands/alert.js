@@ -31,7 +31,7 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
           return await message.channel.send(translate('commands.alert.info', { prefix }))
         }
         const userMention = message.mentions.users.first()
-        const member = userMention || await message.guild.members.get(contentArray[2] === 'me' ? message.author.id : contentArray[2])
+        const member = userMention || await message.guild.members.cache.get(contentArray[2] === 'me' ? message.author.id : contentArray[2])
         if (!member) return await message.channel.send(translate('commands.alert.notFound', { user: userMention || `\`${contentArray[2]}\`` }))
         if (contentArray[1] === 'add') {
           if (profile.alert.includes(member.id)) {
@@ -59,7 +59,7 @@ module.exports = async (bot, message, automatic) => { // automatic indicates inv
         }
         let msg = translate('commands.alert.list')
         for (const id of profile.alert) {
-          msg += `${await message.guild.members.get(id)}\n`
+          msg += `${await message.guild.members.cache.get(id)}\n`
         }
         await message.channel.send(msg)
         break

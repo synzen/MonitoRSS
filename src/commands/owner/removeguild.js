@@ -5,7 +5,7 @@ module.exports = async (bot, message) => {
   try {
     if (content.length !== 2) return await message.channel.send('You must specify the guild ID as the first argument.')
     const results = await bot.shard.broadcastEval(`
-    const guild = this.guilds.get('${content[1]}')
+    const guild = this.guilds.cache.get('${content[1]}')
     const obj = {}
     if (guild) {
       guild.leave().catch(console.log)

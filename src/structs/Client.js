@@ -107,8 +107,8 @@ class Client extends EventEmitter {
     })
     log.general.success(`SH ${this.shardID} Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
     ipc.send(ipc.TYPES.SHARD_READY, {
-      guildIds: bot.guilds.keyArray(),
-      channelIds: bot.channels.keyArray()
+      guildIds: bot.guilds.cache.keyArray(),
+      channelIds: bot.channels.cache.keyArray()
     })
   }
 
@@ -168,7 +168,7 @@ class Client extends EventEmitter {
     if (config.dev === true) {
       return
     }
-    const fetched = this.bot.channels.get(channel)
+    const fetched = this.bot.channels.cache.get(channel)
     if (!fetched) {
       return
     }
@@ -186,7 +186,7 @@ class Client extends EventEmitter {
     if (config.dev === true) {
       return
     }
-    const fetchedChannel = this.bot.channels.get(channel)
+    const fetchedChannel = this.bot.channels.cache.get(channel)
     if (!fetchedChannel) {
       return
     }
@@ -196,7 +196,7 @@ class Client extends EventEmitter {
     }
     const alertTo = profile.alert
     for (const id of alertTo) {
-      const user = this.bot.users.get(id)
+      const user = this.bot.users.cache.get(id)
       if (user) {
         await user.send(`**ALERT**\n\n${message}`)
       }

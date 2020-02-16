@@ -11,6 +11,7 @@ const Feed = require('../structs/db/Feed.js')
 const VALID_OPTIONS = ['1', '2', '3', '4']
 
 async function printSubscriptions (message, feeds, translate) {
+  /** @type {Discord.Guild} */
   const guild = message.guild
   const subList = {}
   const msg = new Discord.MessageEmbed()
@@ -33,13 +34,13 @@ async function printSubscriptions (message, feeds, translate) {
         subList[feed.title][embedReferenceTitle] = []
       }
       if (type === 'user') {
-        const resolvedUser = guild.members.get(id)
+        const resolvedUser = guild.members.cache.get(id)
         const toInsert = resolvedUser ? `${resolvedUser.user.username}#${resolvedUser.user.discriminator}` : ''
         if (resolvedUser && !subList[feed.title][embedReferenceTitle].includes(toInsert)) {
           subList[feed.title][embedReferenceTitle].push(toInsert)
         }
       } else if (type === 'role') {
-        const resolvedRole = guild.roles.get(id)
+        const resolvedRole = guild.roles.cache.get(id)
         const toInsert = resolvedRole ? resolvedRole.name : ''
         if (resolvedRole && !subList[feed.title][embedReferenceTitle].includes(toInsert)) {
           subList[feed.title][embedReferenceTitle].push(toInsert)
@@ -222,11 +223,11 @@ async function getUserOrRoleFn (m, data) {
       role: mention
     }
   }
-  const role = m.guild.roles.find(r => r.name === input)
-  const member = m.guild.members.get(input) || m.mentions.members.first()
+  const role = m.guild.roles.cache.find(r => r.name === input)
+  const member = m.guild.members.cache.get(input) || m.mentions.members.first()
   if (input === '@everyone') {
     throw new MenuUtils.MenuOptionError(translate('commands.mention.invalidRoleOrUser'))
-  } else if (m.guild.roles.filter(r => r.name === input).length > 1) {
+  } else if (m.guild.roles.cache.filter(r => r.name === input).length > 1) {
     throw new MenuUtils.MenuOptionError(translate('commands.mention.multipleRoles'))
   } else if (!role && !member) {
     throw new MenuUtils.MenuOptionError(translate('commands.mention.invalidRoleOrUser'))

@@ -1,43 +1,17 @@
 const fs = require('fs')
 const path = require('path')
 const log = require('./logger.js')
+const Discord = require('discord.js')
 const loadCCommand = name => require(`../commands/owner/${name}.js`)
 const loadCommand = file => require(`../commands/${file}.js`)
 const config = require('../config.js')
 const storage = require('./storage.js')
-const MANAGE_CHANNELS_PERM = 'MANAGE_CHANNELS'
-const EMBED_LINKS_PERM = 'EMBED_LINKS'
-const MANAGE_ROLES_OR_PERMISSIONS_PERM = 'MANAGE_ROLES_OR_PERMISSIONS'
+const MANAGE_CHANNELS_PERM = Discord.Permissions.FLAGS.MANAGE_CHANNELS
+const EMBED_LINKS_PERM =  Discord.Permissions.FLAGS.EMBED_LINKS
+const MANAGE_ROLES_OR_PERMISSIONS_PERM = Discord.Permissions.FLAGS.MANAGE_ROLES
 
-const PERMISSIONS = [
-  'CREATE_INSTANT_INVITE',
-  'KICK_MEMBERS',
-  'BAN_MEMBERS',
-  'ADMINISTRATOR',
-  MANAGE_CHANNELS_PERM,
-  'MANAGE_GUILD',
-  'ADD_REACTIONS', // add reactions to messages
-  'VIEW_CHANNEL',
-  'SEND_MESSAGES',
-  'SEND_TTS_MESSAGES',
-  'MANAGE_MESSAGES',
-  EMBED_LINKS_PERM,
-  'ATTACH_FILES',
-  'READ_MESSAGE_HISTORY',
-  'MENTION_EVERYONE',
-  'EXTERNAL_EMOJIS', // use external emojis
-  'CONNECT', // connect to voice
-  'SPEAK', // speak on voice
-  'MUTE_MEMBERS', // globally mute members on voice
-  'DEAFEN_MEMBERS', // globally deafen members on voice
-  'MOVE_MEMBERS', // move member's voice channels
-  'USE_VAD', // use voice activity detection
-  'CHANGE_NICKNAME',
-  'MANAGE_NICKNAMES', // change nicknames of others
-  MANAGE_ROLES_OR_PERMISSIONS_PERM,
-  'MANAGE_WEBHOOKS',
-  'MANAGE_EMOJIS'
-]
+const PERMISSIONS = Object.keys(Discord.Permissions.FLAGS)
+
 const list = {
   help: {
     initLevel: 0,
@@ -191,7 +165,7 @@ exports.run = async message => {
 
   const cmdInfo = list[name]
   const channel = message.channel
-  const guild = bot.guilds.get(channel.guild.id)
+  const guild = bot.guilds.cache.get(channel.guild.id)
   if (cmdInfo && cmdInfo.aliasFor) name = cmdInfo.aliasFor
   if (!cmdInfo) return log.command.warning(`Could not run command "${name}" because command data does not exist`, guild)
   const botPerm = cmdInfo.botPerm
@@ -210,10 +184,10 @@ exports.run = async message => {
 
     // Check bot perm
     let botPermitted
-    if (typeof botPerm === 'string') botPermitted = PERMISSIONS.includes(botPerm) && !guild.members.get(bot.user.id).permissionsIn(channel).has(botPerm)
+    if (typeof botPerm === 'string') botPermitted = PERMISSIONS.includes(botPerm) && !guild.members.cache.get(bot.user.id).permissionsIn(channel).has(botPerm)
     else if (Array.isArray(botPerm)) {
       for (var i = 0; i < botPerm.length; ++i) {
-        const thisPerm = PERMISSIONS.includes(botPerm) && !guild.members.get(bot.user.id).permissionsIn(channel).has(botPerm)
+        const thisPerm = PERMISSIONS.includes(botPerm) && !guild.members.cache.get(bot.user.id).permissionsIn(channel).has(botPerm)
         botPermitted = botPermitted === undefined ? thisPerm : botPermitted && thisPerm
       }
     }
@@ -235,7 +209,7 @@ exports.run = async message => {
     log.command.warning(`Missing user permissions for blocked ${message.content}`, message.guild, message.author)
     await message.channel.send(`You do not have the permission \`${userPerm}\` to use this command.`)
   } catch (err) {
-    log.command.warning('command.run', guild, err)
+    log.command.warning('command.run', guild, err, true)
   }
 }
 

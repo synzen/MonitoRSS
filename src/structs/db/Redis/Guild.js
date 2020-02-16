@@ -67,9 +67,9 @@ class Guild extends Base {
           }
         })
         multi.hmset(this.utils.REDIS_KEYS.guilds(guild.id), toStore)
-        guild.members.forEach(member => GuildMember.utils.recognizeTransaction(multi, member))
-        guild.channels.forEach(channel => Channel.utils.recognizeTransaction(multi, channel))
-        guild.roles.forEach(role => Role.utils.recognizeTransaction(multi, role))
+        guild.members.cache.forEach(member => GuildMember.utils.recognizeTransaction(multi, member))
+        guild.channels.cache.forEach(channel => Channel.utils.recognizeTransaction(multi, channel))
+        guild.roles.cache.forEach(role => Role.utils.recognizeTransaction(multi, role))
         return new Promise((resolve, reject) => multi.exec((err, res) => err ? reject(err) : resolve(res)))
       },
       update: async (oldGuild, newGuild) => {
@@ -93,9 +93,9 @@ class Guild extends Base {
         if (!(guild instanceof Discord.Guild)) throw new TypeError('Guild is not instance of Discord.Guild')
         const multi = this.client.multi()
         multi.del(this.utils.REDIS_KEYS.guilds(guild.id))
-        guild.members.forEach(member => GuildMember.utils.forgetTransaction(multi, member))
-        guild.channels.forEach(channel => Channel.utils.forgetTransaction(multi, channel))
-        guild.roles.forEach(role => Role.utils.forgetTransaction(multi, role))
+        guild.members.cache.forEach(member => GuildMember.utils.forgetTransaction(multi, member))
+        guild.channels.cache.forEach(channel => Channel.utils.forgetTransaction(multi, channel))
+        guild.roles.cache.forEach(role => Role.utils.forgetTransaction(multi, role))
         return new Promise((resolve, reject) => multi.exec((err, res) => err ? reject(err) : resolve(res)))
       },
       get: async guildID => {

@@ -5,7 +5,13 @@ jest.mock('../../util/logger.js')
 jest.mock('../../structs/Article.js')
 jest.mock('../../util/storage.js')
 
-const Bot = () => ({ channels: { get: () => ({}) } })
+const Bot = () => ({
+  channels: {
+    cache: {
+      get: () => ({})
+    }
+  }
+})
 
 describe('Unit::ArticleMessage', function () {
   describe('constructor', function () {

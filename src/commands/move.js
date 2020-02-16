@@ -1,12 +1,20 @@
 const config = require('../config.js')
+const FLAGS = require('discord.js').Permissions.FLAGS
 const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
-const MIN_PERMISSION_BOT = ['VIEW_CHANNEL', 'SEND_MESSAGES']
-const MIN_PERMISSION_USER = ['VIEW_CHANNEL', 'SEND_MESSAGES', 'MANAGE_CHANNELS']
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const MIN_PERMISSION_BOT = [
+  FLAGS.VIEW_CHANNEL,
+  FLAGS.SEND_MESSAGES
+]
+const MIN_PERMISSION_USER = [
+  FLAGS.VIEW_CHANNEL,
+  FLAGS.SEND_MESSAGES,
+  FLAGS.MANAGE_CHANNELS
+]
 
 async function selectChannelFn (m, data) {
   const { feeds, selectedFeeds, locale, profile } = data
@@ -30,7 +38,7 @@ async function selectChannelFn (m, data) {
     const selectedFeed = selectedFeeds[i]
     let curErrors = ''
     const hasEmbed = selectedFeed.embeds.length > 0
-    const sourceChannel = m.guild.channels.get(selectedFeed.channel)
+    const sourceChannel = m.guild.channels.cache.get(selectedFeed.channel)
 
     if (sourceChannel && selected.id === sourceChannel.id) {
       curErrors += translate('commands.move.alreadyInChannel')

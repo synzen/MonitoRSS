@@ -35,7 +35,7 @@ module.exports = async (bot, message, command) => {
     msgArr.shift()
     const predeclared = msgArr.join(' ').trim()
     if (predeclared) {
-      const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase()) || message.mentions.roles.first()
+      const role = message.guild.roles.cache.find(r => r.name.toLowerCase() === predeclared.toLowerCase()) || message.mentions.roles.first()
       const links = []
       if (role) {
         for (const subscriptionData of options) {
@@ -54,9 +54,11 @@ module.exports = async (bot, message, command) => {
     for (const subscriptionData of options) {
       // const roleData = options[option]
       const temp = []
-      for (const roleID of subscriptionData.roleList) temp.push(message.guild.roles.get(roleID).name)
+      for (const roleID of subscriptionData.roleList) {
+        temp.push(message.guild.roles.cache.get(roleID).name)
+      }
       temp.sort()
-      const channelName = message.guild.channels.get(subscriptionData.source.channel).name
+      const channelName = message.guild.channels.cache.get(subscriptionData.source.channel).name
       const title = subscriptionData.source.title + (temp.length > 0 ? ` (${temp.length})` : '')
       let desc = `**${translate('commands.sub.link')}**: ${subscriptionData.source.url}\n**${translate('commands.sub.channel')}**: #${channelName}\n**${translate('commands.sub.roles')}**:\n`
       for (var x = 0; x < temp.length; ++x) {
@@ -74,7 +76,7 @@ module.exports = async (bot, message, command) => {
 
     await ask.send()
   } catch (err) {
-    log.command.warning(`subme`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('subme 1', message.guild, err))
+    log.command.warning(`sub`, message.guild, err, true)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('sub 1', message.guild, err))
   }
 }

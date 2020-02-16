@@ -13,7 +13,7 @@ async function pruneProfileAlerts (bot) {
   const promises = profiles.map(profile => (async () => {
     let updated = false
     const guildID = profile._id
-    const guild = bot.guilds.get(guildID)
+    const guild = bot.guilds.cache.get(guildID)
     if (!guild) {
       return
     }

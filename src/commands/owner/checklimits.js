@@ -16,7 +16,7 @@ module.exports = async (bot, message) => {
     }
 
     const illegals = []
-    const guildIds = bot.guilds.keyArray()
+    const guildIds = bot.guilds.cache.keyArray()
     const promises = []
     for (const id of guildIds) {
       promises.push(Feed.getBy('guild', id))

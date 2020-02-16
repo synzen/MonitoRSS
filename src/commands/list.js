@@ -68,7 +68,7 @@ module.exports = async (bot, message, command) => {
       const title = feed.title
 
       // Channel
-      const channelName = bot.channels.get(feed.channel) ? bot.channels.get(feed.channel).name : 'Unknown'
+      const channelName = bot.channels.cache.get(feed.channel) ? bot.channels.cache.get(feed.channel).name : 'Unknown'
 
       // Status
       let status = ''

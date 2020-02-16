@@ -1,4 +1,5 @@
 process.env.TEST_ENV = true
+const FLAGS = require('discord.js').Permissions.FLAGS
 const checkPermissions = require('../../../util/maintenance/checkPermissions.js')
 
 jest.mock('../../../util/ipc.js')
@@ -7,13 +8,15 @@ describe('Unit::util/maintenance/checkPermission', function () {
   const permissionsIn = jest.fn()
   const bot = {
     channels: {
-      get: () => ({
-        guild: {
-          me: {
-            permissionsIn
+      cache: {
+        get: () => ({
+          guild: {
+            me: {
+              permissionsIn
+            }
           }
-        }
-      })
+        })
+      }
     }
   }
   beforeEach(function () {
@@ -25,7 +28,10 @@ describe('Unit::util/maintenance/checkPermission', function () {
       disable: jest.fn(() => Promise.resolve()),
       embeds: []
     }
-    permissionsIn.mockReturnValue(new Set(['SEND_MESSAGES', 'EMBED_LINKS']))
+    permissionsIn.mockReturnValue(new Set([
+      FLAGS.SEND_MESSAGES,
+      FLAGS.EMBED_LINKS
+    ]))
     const res = await checkPermissions(feed, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith('Missing permissions VIEW_CHANNEL')
@@ -37,7 +43,10 @@ describe('Unit::util/maintenance/checkPermission', function () {
       disable: jest.fn(() => Promise.resolve()),
       embeds: []
     }
-    permissionsIn.mockReturnValue(new Set(['VIEW_CHANNEL', 'EMBED_LINKS']))
+    permissionsIn.mockReturnValue(new Set([
+      FLAGS.VIEW_CHANNEL,
+      FLAGS.EMBED_LINKS
+    ]))
     const res = await checkPermissions(feed, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith('Missing permissions SEND_MESSAGES')
@@ -49,7 +58,10 @@ describe('Unit::util/maintenance/checkPermission', function () {
       disable: jest.fn(() => Promise.resolve()),
       embeds: [{}]
     }
-    permissionsIn.mockReturnValue(new Set(['VIEW_CHANNEL', 'SEND_MESSAGES']))
+    permissionsIn.mockReturnValue(new Set([
+      FLAGS.VIEW_CHANNEL,
+      FLAGS.SEND_MESSAGES
+    ]))
     const res = await checkPermissions(feed, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith('Missing permissions EMBED_LINKS')
@@ -61,7 +73,10 @@ describe('Unit::util/maintenance/checkPermission', function () {
       disable: jest.fn(() => Promise.resolve()),
       embeds: []
     }
-    permissionsIn.mockReturnValue(new Set(['VIEW_CHANNEL', 'SEND_MESSAGES']))
+    permissionsIn.mockReturnValue(new Set([
+      FLAGS.VIEW_CHANNEL,
+      FLAGS.SEND_MESSAGES
+    ]))
     const res = await checkPermissions(feed, bot)
     expect(feed.disable).not.toHaveBeenCalled()
     expect(res).toEqual(false)
@@ -72,7 +87,9 @@ describe('Unit::util/maintenance/checkPermission', function () {
       disable: jest.fn(() => Promise.resolve()),
       embeds: []
     }
-    permissionsIn.mockReturnValue(new Set(['EMBED_LINKS']))
+    permissionsIn.mockReturnValue(new Set([
+      FLAGS.EMBED_LINKS
+    ]))
     const res = await checkPermissions(feed, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith(`Missing permissions SEND_MESSAGES, VIEW_CHANNEL`)
@@ -84,7 +101,9 @@ describe('Unit::util/maintenance/checkPermission', function () {
       disable: jest.fn(() => Promise.resolve()),
       embeds: []
     }
-    permissionsIn.mockReturnValue(new Set(['EMBED_LINKS']))
+    permissionsIn.mockReturnValue(new Set([
+      FLAGS.EMBED_LINKS
+    ]))
     const res = await checkPermissions(feed, bot)
     expect(feed.disable).toHaveBeenCalledTimes(1)
     expect(feed.disable).toHaveBeenCalledWith(`Missing permissions SEND_MESSAGES, VIEW_CHANNEL`)
@@ -108,7 +127,11 @@ describe('Unit::util/maintenance/checkPermission', function () {
       enable: jest.fn(() => Promise.resolve()),
       embeds: []
     }
-    permissionsIn.mockReturnValue(new Set(['EMBED_LINKS', 'VIEW_CHANNEL', 'SEND_MESSAGES']))
+    permissionsIn.mockReturnValue(new Set([
+      FLAGS.EMBED_LINKS,
+      FLAGS.VIEW_CHANNEL,
+      FLAGS.SEND_MESSAGES
+    ]))
     const res = await checkPermissions(feed, bot)
     expect(feed.disable).not.toHaveBeenCalled()
     expect(feed.enable).toHaveBeenCalledTimes(1)
@@ -121,7 +144,11 @@ describe('Unit::util/maintenance/checkPermission', function () {
       enable: jest.fn(() => Promise.resolve()),
       embeds: []
     }
-    permissionsIn.mockReturnValue(new Set(['EMBED_LINKS', 'VIEW_CHANNEL', 'SEND_MESSAGES']))
+    permissionsIn.mockReturnValue(new Set([
+      FLAGS.EMBED_LINKS,
+      FLAGS.VIEW_CHANNEL,
+      FLAGS.SEND_MESSAGES
+    ]))
     const res = await checkPermissions(feed, bot)
     expect(feed.disable).not.toHaveBeenCalled()
     expect(feed.enable).not.toHaveBeenCalled()

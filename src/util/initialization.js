@@ -69,12 +69,12 @@ async function populateRedis (bot) {
     return
   }
   const promises = []
-  bot.guilds.forEach((guild, guildId) => {
+  bot.guilds.cache.forEach((guild, guildId) => {
     // This will recognize all guild info, members, channels and roles
     promises.push(redisIndex.Guild.utils.recognize(guild))
   })
 
-  bot.users.forEach(user => promises.push(redisIndex.User.utils.recognize(user)))
+  bot.users.cache.forEach(user => promises.push(redisIndex.User.utils.recognize(user)))
 
   await Promise.all(promises)
 }

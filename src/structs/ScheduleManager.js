@@ -26,7 +26,7 @@ class ScheduleManager {
       await this.articleMessageQueue.enqueue(article)
     } catch (err) {
       if (config.log.linkErrs === true) {
-        const channel = this.bot.channels.get(article._feed.channel)
+        const channel = this.bot.channels.cache.get(article._feed.channel)
         log.general.warning(`Failed to send article ${article.link}`, channel.guild, channel, err)
         if (err.code === 50035) {
           channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)

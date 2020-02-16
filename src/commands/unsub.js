@@ -24,8 +24,8 @@ module.exports = async (bot, message, command) => {
     const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
     const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
     const feeds = await Feed.getManyBy('guild', message.guild.id)
-    const botRole = message.guild.members.get(bot.user.id).roles.highest
-    const memberRoles = message.member.roles
+    const botRole = message.guild.members.cache.get(bot.user.id).roles.highest
+    const memberRoles = message.member.roles.cache
 
     // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
     const filteredMemberRoles = Array.from(memberRoles.filter(role => role.comparePositionTo(botRole) < 0 && role.name !== '@everyone').values())
@@ -44,7 +44,7 @@ module.exports = async (bot, message, command) => {
     const mention = message.mentions.roles.first()
     const predeclared = msgArr.join(' ').trim()
     if (predeclared) {
-      const role = message.guild.roles.find(r => r.name.toLowerCase() === predeclared.toLowerCase())
+      const role = message.guild.roles.cache.find(r => r.name.toLowerCase() === predeclared.toLowerCase())
       if (role && eligibleRoles.includes(predeclared.toLowerCase())) {
         return removeRole(message, role, translate)
       } else if (mention && eligibleRoles.includes(mention.name.toLowerCase())) {
@@ -78,7 +78,7 @@ module.exports = async (bot, message, command) => {
         continue
       }
       const title = subscriptionData.source.title + ` (${temp.length})`
-      let channelName = message.guild.channels.get(subscriptionData.source.channel).name
+      let channelName = message.guild.channels.cache.get(subscriptionData.source.channel).name
       let desc = `**${translate('commands.sub.link')}**: ${subscriptionData.source.url}\n**${translate('commands.sub.channel')}**: #${channelName}\n**${translate('commands.sub.roles')}**:\n`
       for (var x = 0; x < temp.length; ++x) {
         const cur = temp[x]
@@ -123,7 +123,7 @@ module.exports = async (bot, message, command) => {
 
     await ask.send()
   } catch (err) {
-    log.command.warning('unsubme', message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('unsubme 1', message.guild, err))
+    log.command.warning('unsub', message.guild, err)
+    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('unsub 1', message.guild, err))
   }
 }

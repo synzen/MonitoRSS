@@ -1,3 +1,4 @@
+const FLAGS = require('discord.js').Permissions.FLAGS
 const log = require('../logger.js')
 const ipc = require('../ipc.js')
 
@@ -13,12 +14,12 @@ async function checkPermissions (feed, bot) {
     // The feed is disabled for a separate reason - skip all checks
     return true
   }
-  const channel = bot.channels.get(feed.channel)
+  const channel = bot.channels.cache.get(feed.channel)
   const guild = channel.guild
   const permissions = guild.me.permissionsIn(channel)
-  const allowView = permissions.has('VIEW_CHANNEL')
-  const allowSendMessages = permissions.has('SEND_MESSAGES')
-  const allowEmbedLinks = feed.embeds.length === 0 ? true : permissions.has('EMBED_LINKS')
+  const allowView = permissions.has(FLAGS.VIEW_CHANNEL)
+  const allowSendMessages = permissions.has(FLAGS.SEND_MESSAGES)
+  const allowEmbedLinks = feed.embeds.length === 0 ? true : permissions.has(FLAGS.EMBED_LINKS)
   if (!allowSendMessages || !allowEmbedLinks || !allowView) {
     let reasons = []
     if (!allowSendMessages) {

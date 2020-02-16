@@ -26,7 +26,7 @@ class ArticleMessage {
     this.isTestMessage = isTestMessage
     this.skipFilters = skipFilters || isTestMessage
     this.channelId = article._feed.channel
-    this.channel = bot.channels.get(article._feed.channel)
+    this.channel = bot.channels.cache.get(article._feed.channel)
     if (!this.channel) {
       if (this.debug) {
         log.debug.info(`Skipping article delivery due to missing channel (${article._feed.channel})`)
