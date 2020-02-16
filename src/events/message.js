@@ -31,7 +31,10 @@ function handler (message, limited, blacklistCache) {
 
   // Regular commands
   if ((!limited && commands.has(message)) || (limited && ownerIDs.has(message.author.id) && commands.has(message))) {
-    if (storage.initialized < 2) return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
+    if (storage.initialized < 2) {
+      return message.channel.send(`This command is disabled while booting up, please wait.`)
+        .then(m => m.delete({ timeout: 4000 }))
+    }
     return commands.run(message)
   }
 

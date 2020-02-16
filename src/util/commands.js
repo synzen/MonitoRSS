@@ -179,7 +179,7 @@ exports.run = async message => {
     log.command.info(`Used ${message.content}`, guild)
     if (cmdInfo.initLevel !== undefined && cmdInfo.initLevel > storage.initialized) {
       const m = await message.channel.send(`This command is disabled while booting up, please wait.`)
-      await m.delete(4000)
+      await m.delete({ timeout: 4000 })
     }
 
     // Check bot perm

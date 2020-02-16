@@ -291,7 +291,7 @@ class FeedSelector extends Menu {
         channelTracker.remove(this.channel.id)
         if (reason === 'user') return
         if (reason === 'time') this.channel.send(this.translate('structs.MenuUtils.closedInactivity')).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
-        else this.channel.send(reason).then(m => m.delete(6000))
+        else this.channel.send(reason).then(m => m.delete({ timeout: 6000 }))
       })
     })
   }

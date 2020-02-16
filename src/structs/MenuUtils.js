@@ -245,9 +245,17 @@ class Menu {
       collector.on('end', (collected, reason) => { // Reason is the parameter inside collector.stop(reason)
         // Remove the channel tracker to allow commands in this channel again
         channelTracker.remove(this.channel.id)
-        if (reason === 'user') return
-        if (reason === 'time') this.channel.send(this.translate('structs.MenuUtils.closedInactivity')).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
-        else this.channel.send(reason).then(m => m.delete(6000)).catch(err => log.command.warning(`Menu collector on end message.send`, this.channel.guild, err))
+        if (reason === 'user') {
+          return
+        }
+        if (reason === 'time') {
+          this.channel.send(this.translate('structs.MenuUtils.closedInactivity'))
+            .catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
+        } else {
+          this.channel.send(reason)
+            .then(m => m.delete({ timeout: 6000 }))
+            .catch(err => log.command.warning(`Menu collector on end message.send`, this.channel.guild, err))
+        }
       })
     })
   }
