@@ -2,7 +2,10 @@ const mongoose = require('mongoose')
 const Version = require('./common/Version.js')
 
 const schema = new mongoose.Schema({
-  _id: String,
+  id: {
+    type: String,
+    required: true
+  },
   feedURL: {
     required: true,
     type: String

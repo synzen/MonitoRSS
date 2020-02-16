@@ -281,7 +281,7 @@ describe('Unit::LinkLogic', function () {
       }
       const formatted = LinkLogic.formatArticleForDatabase({}, [], '', meta)
       expect(formatted).toEqual(expect.objectContaining({
-        _id: resolvedID,
+        id: resolvedID,
         ...meta
       }))
     })
@@ -432,7 +432,7 @@ describe('Unit::LinkLogic', function () {
         _id: 'bar'
       }]
       const dbDocs = [{
-        _id: 'foo'
+        id: 'foo'
       }]
       const spy = jest.spyOn(LinkLogic, 'formatArticleForDatabase')
         .mockReturnValueOnce('abc')
@@ -449,9 +449,9 @@ describe('Unit::LinkLogic', function () {
         _id: 'bar'
       }]
       const dbDocs = [{
-        _id: 'foo'
+        id: 'foo'
       }, {
-        _id: 'bar'
+        id: 'bar'
       }]
       const spy = jest.spyOn(LinkLogic, 'updatedDocumentForDatabase')
         .mockReturnValueOnce(false)
@@ -513,22 +513,22 @@ describe('Unit::LinkLogic', function () {
     })
     it('replaces data in memory collection if databaseless', async function () {
       const memoryCollection = [{
-        _id: '1',
+        id: '1',
         foo: 'foo1'
       }, {
-        _id: '2',
+        id: '2',
         foo: 'foo2'
       }]
       const documents = [{
-        _id: '1',
+        id: '1',
         jack: 'pot'
       }]
       await LinkLogic.updateDocuments(documents, memoryCollection)
       expect(memoryCollection).toEqual([{
-        _id: '1',
+        id: '1',
         jack: 'pot'
       }, {
-        _id: '2',
+        id: '2',
         foo: 'foo2'
       }])
     })

@@ -39,7 +39,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       useIdType: 'guid'
     }
     await mongoose.connection.collection('articles').insertOne({
-      _id: 'a',
+      id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -48,7 +48,7 @@ describe('Int::structs/db/Blacklist Database', function () {
     const logic = new LinkLogic(logicData)
     await logic.runFromMongo()
     const doc = await mongoose.connection.collection('articles').findOne({
-      _id: 'a'
+      id: 'a'
     })
     expect(doc.properties).toEqual({
       title: articleList[0].title,
@@ -81,7 +81,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       useIdType: 'guid'
     }
     await mongoose.connection.collection('articles').insertOne({
-      _id: 'b',
+      id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -118,7 +118,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       useIdType: 'guid'
     }
     await mongoose.connection.collection('articles').insertOne({
-      _id: 'b',
+      id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -155,7 +155,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       useIdType: 'guid'
     }
     await mongoose.connection.collection('articles').insertOne({
-      _id: 'a',
+      id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -198,7 +198,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       useIdType: 'guid'
     }
     await mongoose.connection.collection('articles').insertOne({
-      _id: 'b',
+      id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -273,7 +273,7 @@ describe('Int::structs/db/Blacklist Database', function () {
     const docs = await mongoose.connection.collection('articles').find().toArray()
     expect(docs).toHaveLength(2)
     expect(docs).toContainEqual(expect.objectContaining({
-      _id: 'a',
+      id: 'a',
       feedURL: logicData.link,
       scheduleName: logicData.scheduleName,
       shardID: logicData.shardID,
@@ -282,7 +282,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       }
     }))
     expect(docs).toContainEqual(expect.objectContaining({
-      _id: 'b',
+      id: 'b',
       feedURL: logicData.link,
       scheduleName: logicData.scheduleName,
       shardID: logicData.shardID,
@@ -326,7 +326,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       useIdType: 'guid'
     }
     await mongoose.connection.collection('articles').insertMany([{
-      _id: 'a',
+      id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -334,7 +334,7 @@ describe('Int::structs/db/Blacklist Database', function () {
         title: 'shffgh'
       }
     }, {
-      _id: 'b',
+      id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -497,13 +497,13 @@ describe('Int::structs/db/Blacklist Database', function () {
       useIdType: 'guid'
     }
     await mongoose.connection.collection('articles').insertMany([{
-      _id: 'a',
+      id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
       properties: {}
     }, {
-      _id: 'b',
+      id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -537,7 +537,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       useIdType: 'guid'
     }
     await mongoose.connection.collection('articles').insertMany([{
-      _id: 'a',
+      id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
@@ -546,7 +546,7 @@ describe('Int::structs/db/Blacklist Database', function () {
         useless2: 'b'
       }
     }, {
-      _id: 'b',
+      id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,

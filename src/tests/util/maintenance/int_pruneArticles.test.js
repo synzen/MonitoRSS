@@ -23,19 +23,19 @@ describe('Int::util/maintenance/pruneArticles', function () {
     const db = mongoose.connection.db
     const articles = [{
       // This should be removed since no feeds match this
-      _id: '1',
+      id: '1',
       feedURL: 'url1',
       shardID: 8,
       scheduleName: 'default'
     }, {
       // This should not be removed
-      _id: '2',
+      id: '2',
       feedURL: 'url2',
       shardID: 8,
       scheduleName: 'default'
     }, {
       // This should be removed since no feeds match this
-      _id: '3',
+      id: '3',
       feedURL: 'url3',
       shardID: 9,
       scheduleName: 'default'
@@ -62,13 +62,13 @@ describe('Int::util/maintenance/pruneArticles', function () {
     const db = mongoose.connection.db
     const articles = [{
       // This should be removed since no schedules exist for this
-      _id: '1',
+      id: '1',
       feedURL: 'url2',
       shardID: 8,
       scheduleName: 'vip'
     }, {
       // Thus should not be removed since a schedule matches
-      _id: '2',
+      id: '2',
       feedURL: 'url3',
       shardID: 8,
       scheduleName: 'vip'

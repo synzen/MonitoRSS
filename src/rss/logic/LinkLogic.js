@@ -246,7 +246,7 @@ class LinkLogic extends EventEmitter {
       }
     }
     return {
-      _id: ArticleIDResolver.getIDTypeValue(article, useIDType),
+      id: ArticleIDResolver.getIDTypeValue(article, useIDType),
       feedURL: meta.feedURL,
       shardID: meta.shardID,
       scheduleName: meta.scheduleName,
@@ -300,7 +300,7 @@ class LinkLogic extends EventEmitter {
    */
   getInsertsAndUpdates (articleList, dbDocs, properties) {
     const { useIdType } = this
-    const dbIDs = new Set(dbDocs.map(d => d._id))
+    const dbIDs = new Set(dbDocs.map(d => d.id))
     const toInsert = []
     const toUpdate = []
     const meta = {
@@ -317,7 +317,7 @@ class LinkLogic extends EventEmitter {
     }
     // Update
     for (const doc of dbDocs) {
-      const article = articleList.find(a => a._id === doc._id)
+      const article = articleList.find(a => a._id === doc.id)
       let updated = false
       if (article) {
         updated = LinkLogic.updatedDocumentForDatabase(article, doc, properties)
@@ -360,10 +360,10 @@ class LinkLogic extends EventEmitter {
     if (memoryCollection) {
       const updatedDocsByID = {}
       for (const doc of documents) {
-        updatedDocsByID[doc._id] = doc
+        updatedDocsByID[doc.id] = doc
       }
       for (let i = 0; i < memoryCollection.length; ++i) {
-        const id = memoryCollection[i]._id
+        const id = memoryCollection[i].id
         const updatedDoc = updatedDocsByID[id]
         if (updatedDoc) {
           memoryCollection[i] = updatedDoc
@@ -422,7 +422,7 @@ class LinkLogic extends EventEmitter {
     const newArticles = []
 
     const docs = memoryCollection
-    const dbIDs = new Set(docs.map(doc => doc._id))
+    const dbIDs = new Set(docs.map(doc => doc.id))
     const comparisonReferences = LinkLogic.getComparisonReferences(docs)
 
     const allComparisons = []
@@ -461,7 +461,7 @@ class LinkLogic extends EventEmitter {
     const newArticles = []
 
     const docs = await dbCmds.findAll(link, shardID, scheduleName)
-    const dbIDs = new Set(docs.map(doc => doc._id))
+    const dbIDs = new Set(docs.map(doc => doc.id))
     const comparisonReferences = await LinkLogic.getComparisonReferences(docs)
 
     const allComparisons = []
