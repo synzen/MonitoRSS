@@ -20,6 +20,7 @@ import { fetchAddSubscriber, fetchDeleteSubscriber, fetchEditSubscriber } from '
 import { changePage } from 'js/actions/page'
 import pages from 'js/constants/pages'
 import { Redirect } from 'react-router-dom'
+import toast from 'js/components/ControlPanel/utils/toast'
 
 const Container = styled.div`
   padding: 20px;
@@ -340,7 +341,10 @@ function Subscribers () {
   }
 
   const addFiltersToSubscriber = async (type, value) => {
-    const filterValues = selectedSubscriber.filters[type] || []
+    const filterValues = selectedSubscriber.filters[type] ? [...selectedSubscriber.filters[type]] : []
+    if (filterValues.includes(value)) {
+      return toast.error(`The ${type} filter "${value}" already exists!`)
+    }
     filterValues.push(value)
     const data = {
       filters: {

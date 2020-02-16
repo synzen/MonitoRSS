@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import { Button, Input, Dropdown } from 'semantic-ui-react'
 import toast from './toast'
@@ -30,7 +31,6 @@ const AddFilterContainer = styled.div`
   .ui.button {
     margin-top: 1.5em;
   }
-
 `
 
 function AddFilter (props) {
@@ -64,15 +64,25 @@ function AddFilter (props) {
     }, ...options])
   }
 
+  async function callAdd (type, value) {
+    await addFilter(type, value)
+    setValue('')
+  }
+
   return (
     <AddFilterContainer>
       <div>
         <Dropdown search allowAdditions selection value={type} options={options} onChange={(e, data) => setType(data.value)} onAddItem={onCustomAddition} />
-        <Input placeholder='Enter a phrase' value={value} onChange={e => setValue(e.target.value)} onKeyPress={e => e.key === 'Enter' ? addFilter(type, value) : null} />
+        <Input placeholder='Enter a phrase' value={value} onChange={e => setValue(e.target.value)} onKeyPress={e => e.key === 'Enter' ? callAdd(type, value) : null} />
       </div>
-      <FlexRight><Button disabled={inProgress || !type || !value} content='Add' color='green' onClick={() => addFilter(type, value)} /></FlexRight>
+      <FlexRight><Button disabled={inProgress || !type || !value} content='Add' color='green' onClick={() => callAdd(type, value)} /></FlexRight>
     </AddFilterContainer>
   )
+}
+
+AddFilter.propTypes = {
+  addFilter: PropTypes.func,
+  inProgress: PropTypes.bool
 }
 
 export default AddFilter

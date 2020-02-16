@@ -14,6 +14,7 @@ import { fetchEditFeed } from 'js/actions/feeds'
 import { changePage } from 'js/actions/page'
 import pages from 'js/constants/pages'
 import { Redirect } from 'react-router-dom'
+import toast from 'js/components/ControlPanel/utils/toast'
 
 const Container = styled.div`
   padding: 20px;
@@ -97,6 +98,9 @@ function Filters () {
 
   const addFilter = async (filterType, filterWord) => {
     const filters = feedFilters[filterType] ? [ ...feedFilters[filterType] ] : []
+    if (filters.includes(filterWord)) {
+      return toast.error(`The ${filterType} filter "${filterWord}" already exists!`)
+    }
     filters.push(filterWord)
     await dispatch(fetchEditFeed(feed.guild, feed._id, {
       filters: {
