@@ -54,12 +54,15 @@ export default function errorReducer (state = initialState, action) {
         toast.success('No changes detected')
       } else if (error.response.data.message) {
         const details = error.response.data.errors
-        details.join(<br />)
+        if (details) {
+          details.join(<br />)
+        }
         toast.error(
           <div>
             {error.response.data.message}
-            <br /><br />
-            {details}
+            {details
+              ? <div><br />{details}</div>
+              : null}
           </div>)
       } else {
         toast.error('Unknown error')
