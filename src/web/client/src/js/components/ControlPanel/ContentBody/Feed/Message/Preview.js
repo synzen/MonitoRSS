@@ -138,7 +138,7 @@ const Description = styled.div`
 const Image = styled.a`
   display: block;
   margin-top: 16px;
-  grid-column: 1/1;
+  grid-column: 1/3;
   border-radius: 4px;
   img {
     max-width: 400px;
@@ -150,7 +150,9 @@ const Thumbnail = styled.a`
   margin-left: 16px;
   grid-row: 1/8;
   grid-column: 2/2;
+  justify-self: end;
   margin-top: 8px;
+  flex-shrink: 0;
   img {
     max-width: 80px;
     border-radius: 4px;
@@ -336,23 +338,26 @@ function Preview (props) {
               </Title>
               : null
             }
+
             {parsedProperties[embedProperties.description]
               ? <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
               : null
             }
+
             { fieldElements.length > 0
               ? <EmbedFields>{fieldElements}</EmbedFields>
               : [] }
-            { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailURL]
-              ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailURL]} target='_blank'>
-                <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailURL]} alt='Embed Thumbnail' />
-              </Thumbnail>
-              : undefined }
-            {/* </BodyWrapper> */}
+
             { properties[embedProperties.imageUrl] || properties[embedProperties.imageURL]
               ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageURL]} target='_blank' >
                 <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageURL]} alt='Embed MainImage' />
               </Image>
+              : undefined }
+
+            { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailURL]
+              ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailURL]} target='_blank'>
+                <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailURL]} alt='Embed Thumbnail' />
+              </Thumbnail>
               : undefined }
 
             { properties[embedProperties.footerText] || properties[embedProperties.footerText] || (parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none')
