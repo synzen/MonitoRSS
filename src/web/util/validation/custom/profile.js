@@ -33,7 +33,7 @@ module.exports = Joi.extend(joi => {
       isDateLanguage: {
         validate(value, helpers) {
           const list = config.feeds.dateLanguageList
-          if (list.includes(val)) {
+          if (!list.includes(value)) {
             return helpers.error('dateLanguage')
           }
           return value

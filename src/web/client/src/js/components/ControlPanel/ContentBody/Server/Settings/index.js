@@ -126,7 +126,16 @@ function ServerSettings () {
     if (!unsaved) {
       return
     }
-    await dispatch(fetchEditGuild(guild.id, updatedValues))
+    const toSend = {
+      ...updatedValues
+    }
+    for (const property in updatedValues) {
+      const userVal = updatedValues[property]
+      if (userVal === botConfig[property]) {
+        toSend[property] = ''
+      }
+    }
+    await dispatch(fetchEditGuild(guild.id, toSend))
     resetValues()
   }
 
