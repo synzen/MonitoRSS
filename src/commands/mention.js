@@ -150,7 +150,7 @@ async function addGlobalSub (message, profile, feed, role, user, translate) {
     await subscriber.save()
   }
 
-  const prefix = profile.prefix || config.bot.prefix
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   log.command.info(`Added global subscriber to feed ${feed.url}`, message.guild, role || user)
   await message.channel.send(`${translate('commands.mention.addSubscriberGlobalSuccess', {
     link: feed.url,
@@ -165,7 +165,7 @@ async function removeGlobalSub (message, profile, feed, role, user, translate) {
   if (subscribers.length === 0) {
     return message.channel.send(translate('commands.mention.removeAnySubscriberNone', { link: feed.url }))
   }
-  const prefix = profile.prefix || config.bot.prefix
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const matchID = role ? role.id : user.id
   const found = subscribers.find(sub => sub.id === matchID && !sub.hasFilters())
   if (found) {
