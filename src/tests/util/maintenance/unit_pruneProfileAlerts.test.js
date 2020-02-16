@@ -19,11 +19,13 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
     }]
     const bot = {
       guilds: {
-        get: jest.fn(() => ({
-          members: {
-            fetch: jest.fn(() => ({}))
-          }
-        }))
+        cache: {
+          get: jest.fn(() => ({
+            members: {
+              fetch: jest.fn(() => ({}))
+            }
+          }))
+        }
       }
     }
     Profile.getAll.mockResolvedValue(profiles)
@@ -43,11 +45,13 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
     }]
     const bot = {
       guilds: {
-        get: jest.fn(() => ({
-          members: {
-            fetch: jest.fn(() => ({}))
-          }
-        }))
+        cache: {
+          get: jest.fn(() => ({
+            members: {
+              fetch: jest.fn(() => ({}))
+            }
+          }))
+        }
       }
     }
     Profile.getAll.mockResolvedValue(profiles)
@@ -65,21 +69,23 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
     }]
     const bot = {
       guilds: {
-        get: jest.fn()
-          .mockReturnValueOnce({
-            members: {
-              fetch: jest.fn()
-                .mockResolvedValueOnce({})
-                .mockResolvedValueOnce({})
-                .mockRejectedValueOnce({ code: 10007 })
-            }
-          })
-          .mockReturnValueOnce({
-            members: {
-              fetch: jest.fn()
-                .mockRejectedValueOnce({ code: 10007 })
-            }
-          })
+        cache: {
+          get: jest.fn()
+            .mockReturnValueOnce({
+              members: {
+                fetch: jest.fn()
+                  .mockResolvedValueOnce({})
+                  .mockResolvedValueOnce({})
+                  .mockRejectedValueOnce({ code: 10007 })
+              }
+            })
+            .mockReturnValueOnce({
+              members: {
+                fetch: jest.fn()
+                  .mockRejectedValueOnce({ code: 10007 })
+              }
+            })
+        }
       }
     }
     Profile.getAll.mockResolvedValue(profiles)
@@ -95,15 +101,17 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
     }]
     const bot = {
       guilds: {
-        get: jest.fn()
-          .mockReturnValueOnce({
-            members: {
-              fetch: jest.fn()
-                .mockRejectedValueOnce({ code: 50035 })
-                .mockRejectedValueOnce({ code: 10013 })
-                .mockRejectedValueOnce({ code: 10007 })
-            }
-          })
+        cache: {
+          get: jest.fn()
+            .mockReturnValueOnce({
+              members: {
+                fetch: jest.fn()
+                  .mockRejectedValueOnce({ code: 50035 })
+                  .mockRejectedValueOnce({ code: 10013 })
+                  .mockRejectedValueOnce({ code: 10007 })
+              }
+            })
+        }
       }
     }
     Profile.getAll.mockResolvedValue(profiles)
@@ -119,13 +127,15 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
     const error = new Error('hsedg')
     const bot = {
       guilds: {
-        get: jest.fn()
-          .mockReturnValueOnce({
-            members: {
-              fetch: jest.fn()
-                .mockRejectedValue(error)
-            }
-          })
+        cache: {
+          get: jest.fn()
+            .mockReturnValueOnce({
+              members: {
+                fetch: jest.fn()
+                  .mockRejectedValue(error)
+              }
+            })
+        }
       }
     }
     Profile.getAll.mockResolvedValue(profiles)
