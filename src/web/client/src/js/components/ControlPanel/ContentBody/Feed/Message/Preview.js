@@ -323,10 +323,10 @@ function Preview (props) {
         <Embed key={`embed_preview${i}`}>
           <Pill color={properties[embedProperties.color]} />
           <NonPill>
-            { properties[embedProperties.authorName] || properties[embedProperties.authorNameCamelCase]
+            { properties[embedProperties.authorName] || properties[embedProperties.authorName]
               ? <Author>
-                { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconUrlCamelCase] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconUrl] || parsedProperties[embedProperties.authorIconUrlCamelCase]} /> : null }
-                { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorUrlCamelCase]}>{parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase]}</a> : parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorNameCamelCase] }
+                { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconURL] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconUrl] || parsedProperties[embedProperties.authorIconURL]} /> : null }
+                { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorURL] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorURL]}>{parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorName]}</a> : parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorName] }
               </Author>
               : undefined }
 
@@ -343,22 +343,22 @@ function Preview (props) {
             { fieldElements.length > 0
               ? <EmbedFields>{fieldElements}</EmbedFields>
               : [] }
-            { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailUrlCamelCase]
-              ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} target='_blank'>
-                <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailUrlCamelCase]} alt='Embed Thumbnail' />
+            { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailURL]
+              ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailURL]} target='_blank'>
+                <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailURL]} alt='Embed Thumbnail' />
               </Thumbnail>
               : undefined }
             {/* </BodyWrapper> */}
-            { properties[embedProperties.imageUrl] || properties[embedProperties.imageUrlCamelCase]
-              ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} target='_blank' >
-                <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageUrlCamelCase]} alt='Embed MainImage' />
+            { properties[embedProperties.imageUrl] || properties[embedProperties.imageURL]
+              ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageURL]} target='_blank' >
+                <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageURL]} alt='Embed MainImage' />
               </Image>
               : undefined }
 
-            { properties[embedProperties.footerText] || properties[embedProperties.footerTextCamelCase] || (parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none')
+            { properties[embedProperties.footerText] || properties[embedProperties.footerText] || (parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none')
               ? <Footer>
-                { parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconUrlCamelCase] ? <img src={parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconUrlCamelCase]} alt='Embed Footer Icon' /> : null }
-                {properties[embedProperties.footerText] || properties[embedProperties.footerTextCamelCase]}{(parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none') ? `${parsedProperties[embedProperties.footerText] || parsedProperties[embedProperties.footerTextCamelCase] ? ' • ' : ''}[${parsedProperties[embedProperties.timestamp] === 'article' ? 'ARTICLE TIMESTAMP' : 'NOW TIMESTAMP'}]` : '' }
+                { parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconURL] ? <img src={parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconURL]} alt='Embed Footer Icon' /> : null }
+                {properties[embedProperties.footerText] || properties[embedProperties.footerText]}{(parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none') ? `${parsedProperties[embedProperties.footerText] || parsedProperties[embedProperties.footerText] ? ' • ' : ''}[${parsedProperties[embedProperties.timestamp] === 'article' ? 'ARTICLE TIMESTAMP' : 'NOW TIMESTAMP'}]` : '' }
               </Footer>
               : undefined }
           </NonPill>
