@@ -117,13 +117,6 @@ function pruneEmbeds (embeds) {
 }
 
 function convertEmbedToPayload (payload) {
-  if (payload.color !== null && payload.color !== undefined) {
-    payload.color = +payload.color
-  }
-  // Fix the timestamp from the none value
-  if (payload.timestamp === 'none') {
-    payload.timestamp = ''
-  }
   // Take care of fields
   if (payload.fields) {
     const fields = [ ...payload.fields ]

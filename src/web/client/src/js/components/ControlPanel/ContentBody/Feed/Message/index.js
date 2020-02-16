@@ -116,7 +116,7 @@ function Message () {
         } />
         <MessageSettings originalMessage={originalMessage} onUpdate={onMessageUpdate} />
         <Divider />
-        <EmbedSettings onUpdate={onEmbedsUpdate} embeds={inputEmbeds} embedsOriginal={feed.embeds} />
+        <EmbedSettings onUpdate={onEmbedsUpdate} />
         <Divider />
         {windowWidth >= MAX_VIEWPORT_WIDTH_STICKY
           ? null

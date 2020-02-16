@@ -29,7 +29,9 @@ export default function reducer (embeds, action) {
         newState[embedIndex] = currentEmbed
       }
       if (property === 'timestamp' && value === 'none') {
-        delete newState[embedIndex].timestamp
+        newState[embedIndex].timestamp = ''
+      } else if (property === 'color') {
+        newState[embedIndex].color = +value
       }
     }
   } else if (action.type === ADD_FIELD) {
@@ -58,7 +60,7 @@ export default function reducer (embeds, action) {
   } else if (action.type === SET_FIELD_PROPERTY) {
     // SET FIELD PROPERTY
     const { embedIndex, fieldIndex, property, value } = action.payload
-    if (EMBED_FIELD_LIMITS[property] && value.length < EMBED_FIELD_LIMITS[property]) {
+    if (!EMBED_FIELD_LIMITS[property] || (EMBED_FIELD_LIMITS[property] && value.length < EMBED_FIELD_LIMITS[property])) {
       let currentEmbed = { ...newState[embedIndex] }
       currentEmbed.fields = [ ...currentEmbed.fields ]
       currentEmbed.fields[fieldIndex] = {
