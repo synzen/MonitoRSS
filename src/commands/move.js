@@ -50,7 +50,7 @@ async function selectChannelFn (m, data) {
         curErrors += translate('commands.move.meMissingEmbedLinks', { id: selected.id })
       }
       for (const feed of feeds) {
-        if (feed.channel === selected.id && feed.link === selectedFeed.link && feed._id !== selectedFeed.id) {
+        if (feed.channel === selected.id && feed.url === selectedFeed.url && feed._id !== selectedFeed._id) {
           errors += translate('commands.move.linkAlreadyExists')
         }
       }
