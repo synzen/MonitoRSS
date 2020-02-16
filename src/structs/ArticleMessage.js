@@ -164,8 +164,7 @@ class ArticleMessage {
 
       const fields = objectEmbed.fields
       if (Array.isArray(fields)) {
-        for (var x = 0; x < fields.length; ++x) {
-          const field = fields[x]
+        for (const field of fields) {
           const inline = field.inline === true
 
           let name = convert(field.name)
@@ -177,7 +176,7 @@ class ArticleMessage {
           if (typeof name === 'string' && !name) {
             richEmbed.addBlankField(inline)
           } else if (richEmbed.fields.length < 10) {
-            richEmbed.addField(title, value, inline)
+            richEmbed.addField(name, value, inline)
           }
         }
       }
