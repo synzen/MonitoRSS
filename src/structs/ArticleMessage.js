@@ -168,13 +168,13 @@ class ArticleMessage {
           const field = fields[x]
           const inline = field.inline === true
 
-          let title = convert(field.title)
-          title = title.length > 256 ? title.slice(0, 250) + '...' : title
+          let name = convert(field.name)
+          name = name.length > 256 ? name.slice(0, 250) + '...' : name
 
           let value = convert(field.value ? field.value : '')
           value = value.length > 1024 ? value.slice(0, 1020) + '...' : value.length > 0 ? value : '\u200b'
 
-          if (typeof title === 'string' && !title) {
+          if (typeof name === 'string' && !name) {
             richEmbed.addBlankField(inline)
           } else if (richEmbed.fields.length < 10) {
             richEmbed.addField(title, value, inline)
