@@ -17,7 +17,8 @@ async function selectCategoryFn (m, data) {
   let chosenFilterType = ''
   const { profile } = data
   const input = m.content
-  const translator = new Translator(profile.locale)
+  const locale = profile ? profile.locale : undefined
+  const translator = new Translator(locale)
   const translate = translator.translate.bind(translator)
 
   // Validate the chosen filter category
@@ -51,7 +52,8 @@ async function inputFilterFn (m, data) {
   const { profile, feed, role, user, target, chosenFilterType } = data
   const input = m.content
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
-  const translator = new Translator(profile.locale)
+  const locale = profile ? profile.locale : undefined
+  const translator = new Translator(locale)
   const translate = translator.translate.bind(translator)
 
   const addList = input.trim().split('\n').map(item => item.trim().toLowerCase()).filter((item, index, self) => item && index === self.indexOf(item)) // Valid items to be added, trimmed and lowercased
@@ -103,9 +105,10 @@ async function inputFilterFn (m, data) {
 }
 
 exports.add = async (message, profile, feed, role, user) => {
+  const locale = profile ? profile.locale : undefined
   const selectCategory = new MenuUtils.Menu(message, selectCategoryFn, { numbered: false })
   const inputFilter = new MenuUtils.Menu(message, inputFilterFn)
-  const translator = new Translator(profile.locale)
+  const translator = new Translator(locale)
   const translate = translator.translate.bind(translator)
 
   const targetId = role ? role.id : user ? user.id : undefined
@@ -155,7 +158,8 @@ async function filterRemoveCategory (m, data, callback) {
   // Select filter category here
   const input = m.content
   const { profile } = data
-  const translator = new Translator(profile.locale)
+  const locale = profile ? profile.locale : undefined
+  const translator = new Translator(locale)
   const translate = translator.translate.bind(translator)
   let chosenFilterType = ''
 
@@ -188,7 +192,8 @@ async function filterRemoveCategory (m, data, callback) {
 
 async function removeFilterFn (m, data) {
   const { profile, feed, role, user, chosenFilterType, target } = data
-  const translator = new Translator(profile.locale)
+  const locale = profile ? profile.locale : undefined
+  const translator = new Translator(locale)
   const translate = translator.translate.bind(translator)
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   // Select the word/phrase filter here from that filter category
@@ -228,7 +233,8 @@ async function removeFilterFn (m, data) {
 }
 
 exports.remove = async (message, profile, feed, role, user) => {
-  const translator = new Translator(profile.locale)
+  const locale = profile ? profile.locale : undefined
+  const translator = new Translator(locale)
   const translate = translator.translate.bind(translator)
   let target
   const targetId = role ? role.id : user ? user.id : undefined
