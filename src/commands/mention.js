@@ -102,7 +102,8 @@ async function deleteSubscription (message, profile, feeds, role, user) {
   const userID = user ? user.id : undefined
   const matchID = roleID || userID
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
-  const translate = Translator.createLocaleTranslator(profile.locale)
+  const locale = profile ? profile.locale : undefined
+  const translate = Translator.createLocaleTranslator(locale)
 
   const allSubscribers = await Promise.all(feeds.map(feed => feed.getSubscribers()))
 
@@ -241,7 +242,8 @@ async function getUserOrRoleFn (m, data) {
 
 async function feedSelectorFn (m, data) {
   const { profile, feed, role, user } = data
-  const translate = Translator.createLocaleTranslator(profile.locale)
+  const locale = profile ? profile.locale : undefined
+  const translate = Translator.createLocaleTranslator(locale)
   return {
     ...data,
     next: {
