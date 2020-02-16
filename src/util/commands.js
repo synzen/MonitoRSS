@@ -7,7 +7,7 @@ const loadCommand = file => require(`../commands/${file}.js`)
 const config = require('../config.js')
 const storage = require('./storage.js')
 const MANAGE_CHANNELS_PERM = Discord.Permissions.FLAGS.MANAGE_CHANNELS
-const EMBED_LINKS_PERM =  Discord.Permissions.FLAGS.EMBED_LINKS
+const EMBED_LINKS_PERM = Discord.Permissions.FLAGS.EMBED_LINKS
 const MANAGE_ROLES_OR_PERMISSIONS_PERM = Discord.Permissions.FLAGS.MANAGE_ROLES
 
 const PERMISSIONS = Object.keys(Discord.Permissions.FLAGS)
