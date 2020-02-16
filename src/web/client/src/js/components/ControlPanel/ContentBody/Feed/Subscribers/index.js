@@ -7,7 +7,7 @@ import FiltersTable from '../../..//utils/FiltersTable'
 import AddFilter from '../../../utils/AddFilter'
 import SectionSubtitle from 'js/components/utils/SectionSubtitle'
 import testFilters from 'js/utils/testFilters'
-import { Divider, Input, Button, Popup, Dropdown } from 'semantic-ui-react'
+import { Divider, Input, Button, Dropdown } from 'semantic-ui-react'
 import ArticleTable from '../../../utils/ArticleTable'
 import { transparentize } from 'polished'
 import colors from 'js/constants/colors'
@@ -389,20 +389,14 @@ function Subscribers () {
                   <button onClick={e => setSelectedSubscriberID(subscriber.id)}>
                     {subscriber.name}
                   </button>
-                  <Popup
-                    hideOnScroll
-                    trigger={<div>
-                      <SectionSubtitle>
-                        {subscriber.filters && Object.keys(subscriber.filters).length > 0 ? 'Filtered' : 'Global'}
-                      </SectionSubtitle>
-                      <SectionSubtitle>
-                        {subscriber.type}
-                      </SectionSubtitle>
-                    </div>}
-                    inverted
-                    position='top right'
-                    content='A subscriber is filtered if they have filters applied to them'
-                  />
+                  <div>
+                    <SectionSubtitle>
+                      {subscriber.filters && Object.keys(subscriber.filters).length > 0 ? 'Filtered' : ''}
+                    </SectionSubtitle>
+                    <SectionSubtitle>
+                      {subscriber.type}
+                    </SectionSubtitle>
+                  </div>
                 </SubscriberListItem>
               )
             })
@@ -459,6 +453,7 @@ function Subscribers () {
               value: subscriber.id }))
             }
             onChange={(e, data) => setAddInput(data.value)} value={addInput}
+            onKeyPress={e => e.key === 'Enter' ? addSubscriber() : null}
           />
           : <Input
             value={addInput}
