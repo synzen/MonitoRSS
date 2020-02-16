@@ -408,7 +408,7 @@ module.exports = async (bot, message, command) => {
   // Fields
   try {
     const profile = await Profile.get(message.guild.id)
-    const guildLocale = profile ? profile.locale : null
+    const guildLocale = profile ? profile.locale : undefined
     const feeds = await Feed.getManyBy('guild', message.guild.id)
     const translate = Translator.createLocaleTranslator(guildLocale)
     const embedProperties = getEmbedProperties(translate)
