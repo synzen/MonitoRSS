@@ -25,7 +25,7 @@ async function getUserByAPI (id, accessToken, skipCache) {
   log.web.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me`)
   const results = await fetch(`${discordAPIConstants.apiHost}/users/@me`, discordAPIHeaders.user(accessToken))
   if (results.status !== 200) {
-    throw new Error('Non-200 status code')
+    throw new Error(`Bad Discord status code (${results.status})`)
   }
   const data = await results.json()
   CACHED_USERS[id] = {
@@ -48,7 +48,7 @@ async function getGuildsByAPI (id, accessToken, skipCache) {
   log.web.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me/guilds`)
   const res = await fetch(`${discordAPIConstants.apiHost}/users/@me/guilds`, discordAPIHeaders.user(accessToken))
   if (res.status !== 200) {
-    throw new Error(`Non-200 status code (${res.status})`)
+    throw new Error(`Bad Discord status code (${res.status})`)
   }
   const data = await res.json()
   CACHED_USERS_GUILDS[id] = {
@@ -134,7 +134,7 @@ async function isManagerOfGuildByAPI (userID, guildID) {
     await RedisGuildMember.utils.recognizeNonMember(userID, guildID)
     return false
   }
-  throw new Error(`Bad status code (${res.status})`)
+  throw new Error(`Bad Discord status code (${results.status})`)
 }
 
 module.exports = {
