@@ -1,9 +1,9 @@
 const config = require('../../config.js')
-const package = require('../../../package.json')
+const packageJSON = require('../../../package.json')
 
 exports.common = {
   headers: {
-    'User-Agent': `DiscordBot (${package.name}, ${package.version}) Node.js/${process.version}`
+    'User-Agent': `DiscordBot (${packageJSON.name}, ${packageJSON.version}) Node.js/${process.version}`
   }
 }
 
