@@ -461,11 +461,7 @@ module.exports = async (bot, message, command) => {
     if (property === 'resetAll') {
       feed.embeds.splice(selectedEmbedIndex, 1)
       log.command.info(`Embed resetting for ${feed.url}`, message.guild)
-      if (feed.embeds.length === 0 && !feed.text) {
-        await feed.delete()
-      } else {
-        await feed.save()
-      }
+      await feed.save()
       return await message.channel.send(translate('commands.embed.removedEmbed', { link: feed.url }))
     }
 
