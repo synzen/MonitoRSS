@@ -421,7 +421,9 @@ module.exports = async (bot, message, command) => {
       if (!fieldsData) {
         return
       }
-      const { feed, successText, removeAllEmbeds } = fieldsData
+      const { successText, removeAllEmbeds } = fieldsData
+      /** @type {Feed} */
+      const feed = fieldsData.feed
 
       if (removeAllEmbeds) {
         feed.embeds = []
@@ -440,7 +442,9 @@ module.exports = async (bot, message, command) => {
     if (!data) {
       return
     }
-    const { feed, property, settings, selectedEmbedIndex, removeAllEmbeds } = data
+    const { property, settings, selectedEmbedIndex, removeAllEmbeds } = data
+    /** @type {Feed} */
+    const feed = data.feed
 
     if (removeAllEmbeds) {
       feed.embeds = []
@@ -472,7 +476,8 @@ module.exports = async (bot, message, command) => {
           continue
         }
         delete feed.embeds[selectedEmbedIndex][prop]
-        if (feed.text === '{empty}') {
+        feed.validate()
+        if (feed.embeds.length === 0 && feed.text === '{empty}') {
           feed.text = undefined
         }
 
