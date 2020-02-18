@@ -7,7 +7,7 @@ const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const Feed = require('../structs/db/Feed.js')
+const FeedData = require('../structs/FeedData.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 
 async function feedSelectorFn (m, data) {
@@ -65,7 +65,8 @@ module.exports = async (bot, message, command, role) => {
   try {
     const profile = await Profile.get(message.guild.id)
     const guildLocale = profile ? profile.locale : undefined
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
+    const feedDatas = await FeedData.getManyBy('guild', message.guild.id)
+    const feeds = feedDatas.map(data => data.feed)
     const translate = Translator.createLocaleTranslator(guildLocale)
     const feedSelector = new FeedSelector(message, feedSelectorFn, { command, locale: guildLocale }, feeds)
     const setMessage = new MenuUtils.Menu(message, setMessageFn)
@@ -123,7 +124,7 @@ module.exports = async (bot, message, command, role) => {
         return await message.channel.send(translate('commands.filters.noArticlesPassed'))
       }
       log.command.info(`Sending filtered article for ${feed.url}`, message.guild)
-      article._feed = feed.toJSON()
+      article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
 
       const queue = new ArticleMessageQueue(message.client)
       await queue.enqueue(article, true, true)
