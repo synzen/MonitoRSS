@@ -425,11 +425,7 @@ module.exports = async (bot, message, command) => {
 
       if (removeAllEmbeds) {
         feed.embeds = []
-        if (!feed.text) {
-          await feed.delete()
-        } else {
-          await feed.save()
-        }
+        await feed.save()
         log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
         return await message.channel.send(translate('commands.embed.removedAllEmbeds'))
       } else {
