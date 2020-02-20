@@ -52,6 +52,16 @@ You can deploy the bot in a simple way to Heroku using the button below. [Click 
 
 *If you want to deploy manually you can [follow this guide](https://github.com/synzen/Discord.RSS/issues/95).*
 
+### Hosting on Glitch
+
+Click the button below to import the code to Glitch. Wait for the importing process to complete, make your project private and fill in the [Configuration](https://github.com/synzen/Discord.RSS/wiki/Configuration). Use a tool like [Uptime Robot](https://uptimerobot.com/) to prevent the bot from going offline.
+
+[![Remix on Glitch](https://cdn.glitch.com/2703baf2-b643-4da7-ab91-7ee2a2d00b5b%2Fremix-button.svg)](https://glitch.com/edit/#!/import/github/synzen/Discord.RSS)
+
+You can use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) for the MongoDB database and [Redis Labs](https://redislabs.com/) for the Redis database.
+
+The web port for Glitch is 3000.
+
 ### Contributing
 
 [Read the contribution guidelines](https://github.com/synzen/Discord.RSS/blob/master/CONTRIBUTING.md). All the latest updates are commited to the dev branch. 
