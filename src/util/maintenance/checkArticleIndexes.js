@@ -1,7 +1,11 @@
+const config = require('../../config.js')
 const { model, schema } = require('../../models/Article.js')
 const INDEX_NAME = 'addedAt_1'
 
 async function checkIndexes (articlesExpire) {
+  if (!config.database.uri.startsWith('mongo')) {
+    return
+  }
   const indexes = await model.collection.indexes()
   const foundIndex = indexes.find(idx => idx.name === INDEX_NAME)
   if (articlesExpire <= 0) {
