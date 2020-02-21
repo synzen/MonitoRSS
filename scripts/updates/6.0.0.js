@@ -130,9 +130,17 @@ async function updateProfiles (guildRss) {
             embed.color = HEXToVBColor(embed.color)
           }
 
+          const fields = embed.fields
           // Remove non-array fields
-          if (!Array.isArray(embed.fields)) {
+          if (!Array.isArray(fields)) {
             delete embed.fields
+          } else {
+            for (const field of fields) {
+              if (field.title) {
+                field.name = field.title
+                delete field.title
+              }
+            }
           }
         }
         FilteredFormat.pruneEmbeds(embeds)

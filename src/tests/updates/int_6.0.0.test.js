@@ -137,7 +137,11 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         imageUrl: '4',
         author_name: '5',
         authorIconURL: '6',
-        authorIconUrl: '7'
+        authorIconUrl: '7',
+        fields: [{
+          title: 'hello',
+          value: 'world'
+        }]
       }]
       const guildRss = {
         id: '32qwet4ry',
@@ -158,7 +162,10 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         imageURL: '4',
         authorName: '5',
         authorIconURL: '6',
-        fields: []
+        fields: [{
+          name: 'hello',
+          value: 'world'
+        }]
       }]
       await updateProfiles(guildRss)
       const feed = await mongoose.connection.collection('feeds').findOne({
