@@ -51,7 +51,7 @@ async function updateFailRecords (doc) {
   if (doc.failed) {
     insert.reason = doc.failed
     const record = new FailRecord(insert)
-    const oldDate = getOldDate(config.feeds.hoursUntilFail + 1)
+    const oldDate = getOldDate(config.feeds.hoursUntilFail + 10)
     record.failedAt = oldDate.toISOString()
     await record.save()
   } else {
@@ -180,6 +180,10 @@ async function startProfiles () {
   let c = 0
   const total = guildRssList.length
   const errors = []
+  if (total === 0) {
+    console.log('No profiles found')
+    startFailRecords()
+  }
   for (const guildRss of guildRssList) {
     updateProfiles(guildRss).catch(error => {
       errors.push({
