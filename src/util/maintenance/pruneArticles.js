@@ -42,7 +42,8 @@ async function pruneArticles (guildIdsByShard) {
   const compoundIDs = await exports.getCompoundIDs(guildIdsByShard)
   const articles = await Article.model.find({}).exec()
   const removals = []
-  for (const article of articles) {
+  for (var i = articles.length - 1; i >= 0; --i) {
+    const article = articles[i]
     const url = article.feedURL
     const shard = article.shardID
     const schedule = article.scheduleName
