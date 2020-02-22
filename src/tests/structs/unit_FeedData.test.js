@@ -191,7 +191,7 @@ describe('Unit::structs/FeedData', function () {
       expect(returned).toEqual([])
     })
   })
-  describe('static getManyBy', function () {
+  describe('static getAll', function () {
     it('returns FeedData', async function () {
       const feeds = [1, 2, 3]
       Feed.getAll.mockResolvedValue(feeds)

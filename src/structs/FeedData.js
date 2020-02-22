@@ -98,6 +98,17 @@ class FeedData {
     }))
   }
 
+  static async getManyByQuery (query) {
+    const feeds = await Feed.getManyByQuery(query)
+    const associations = await Promise.all(feeds.map(this.getFeedAssociations))
+    return feeds.map((feed, i) => new FeedData({
+      feed,
+      profile: associations[i].profile,
+      subscribers: associations[i].subscribers,
+      filteredFormats: associations[i].filteredFormats
+    }))
+  }
+
   /**
    * Get all feed datas
    */
