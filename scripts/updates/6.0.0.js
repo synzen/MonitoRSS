@@ -5,6 +5,7 @@ const Feed = require('../../src/structs/db/Feed.js')
 const FilteredFormat = require('../../src/structs/db/FilteredFormat.js')
 const Subscriber = require('../../src/structs/db/Subscriber.js')
 const FailRecord = require('../../src/structs/db/FailRecord.js')
+const Supporter = require('../../src/structs/db/Supporter.js')
 const GuildData = require('../../src/structs/GuildData.js')
 const oldEmbedKeys = {
   footer_text: 'footerText',
@@ -42,6 +43,30 @@ function getOldDate (hoursAgo) {
   const date = new Date()
   date.setTime(date.getTime() - hoursAgo * 60 * 60 * 1000)
   return date
+}
+
+async function updateVIP (vip) {
+  const patreon = !vip.expireAt
+  const toStore = {
+    _id: vip.id
+  }
+  if (patreon && !vip.override) {
+    toStore.patron = true
+    toStore.guilds = vip.servers || []
+  } else {
+    toStore.webhook = vip.allowWebhooks
+    toStore.guilds = vip.servers || []
+    toStore.maxGuilds = vip.maxServers || 1
+    toStore.maxFeeds = vip.maxFeeds
+    if (vip.comment) {
+      toStore.comment = vip.comment
+    }
+    if (vip.expireAt) {
+      toStore.expireAt = vip.expireAt
+    }
+  }
+  const supporter = new Supporter(toStore)
+  await supporter.save()
 }
 
 async function updateFailRecords (doc) {
@@ -183,7 +208,7 @@ async function startProfiles () {
   const errors = []
   if (total === 0) {
     console.log('No profiles found')
-    startFailRecords()
+    return startFailRecords(errors)
   }
   for (const guildRss of guildRssList) {
     updateProfiles(guildRss).catch(error => {
@@ -207,11 +232,39 @@ async function startFailRecords () {
   let c = 0
   const total = failedLinks.length
   const errors = []
+  if (total === 0) {
+    console.log('No failed links found')
+    return startVIPs(errors)
+  }
   for (const failedLink of failedLinks) {
     updateFailRecords(failedLink).catch(error => {
       errors.push({
         error,
         data: failedLink
+      })
+    }).finally(() => {
+      console.log(`Counter ${++c}/${total}`)
+      if (c === total) {
+        complete(errors)
+        startVIPs()
+      }
+    })
+  }
+}
+
+async function startVIPs () {
+  const vips = await mongoose.connection.collection('vips').find({}).toArray()
+  let c = 0
+  const total = vips.length
+  const errors = []
+  if (total === 0) {
+    return complete(errors)
+  }
+  for (const vip of vips) {
+    updateVIP(vip).catch(error => {
+      errors.push({
+        error,
+        data: vip
       })
     }).finally(() => {
       console.log(`Counter ${++c}/${total}`)
@@ -235,4 +288,5 @@ function complete (errors) {
 
 exports.updateProfiles = updateProfiles
 exports.updateFailRecords = updateFailRecords
+exports.updateVIP = updateVIP
 exports.run = startProfiles
