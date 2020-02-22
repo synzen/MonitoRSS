@@ -36,7 +36,8 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       })
       const expected = {
         url: failedLink.link,
-        reason: failedLink.failed
+        reason: failedLink.failed,
+        alerted: true
       }
       expect(record).toEqual(expect.objectContaining(expected))
       expect(record.failedAt).toBeInstanceOf(Date)

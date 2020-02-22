@@ -50,6 +50,7 @@ async function updateFailRecords (doc) {
   }
   if (doc.failed) {
     insert.reason = doc.failed
+    insert.alerted = true
     const record = new FailRecord(insert)
     const oldDate = getOldDate(config.feeds.hoursUntilFail + 10)
     record.failedAt = oldDate.toISOString()
