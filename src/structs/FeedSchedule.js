@@ -230,7 +230,7 @@ class FeedSchedule extends EventEmitter {
       const feedData = feedDataJSONs[i]
       const name = determinedSchedules[i].name
       if (this.name !== name) {
-        return
+        continue
       }
       if (debug.feeds.has(feedData._id)) {
         log.debug.info(`Shard ${this.shardID} ${feedData._id}: Assigned schedule ${this.name}`)
