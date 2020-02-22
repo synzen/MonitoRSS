@@ -267,7 +267,7 @@ async function startVIPs () {
         data: vip
       })
     }).finally(() => {
-      console.log(`Counter ${++c}/${total}`)
+      console.log(`Supporter ${++c}/${total}`)
       if (c === total) {
         complete(errors)
         mongoose.connection.close()
