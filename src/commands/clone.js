@@ -7,7 +7,14 @@ const Feed = require('../structs/db/Feed.js')
 const Subscriber = require('../structs/db/Subscriber.js')
 
 const Translator = require('../structs/Translator.js')
-const properties = [`format`, `filters`, `misc-options`, `subscribers`, 'all']
+const properties = [
+  `format`,
+  `filters`,
+  `misc-options`,
+  `subscribers`,
+  'comparisons',
+  'all'
+]
 
 async function destSelectorFn (m, data) {
   const { feed, selectedFeeds, locale } = data
@@ -16,6 +23,7 @@ async function destSelectorFn (m, data) {
   if (data.cloneFilters) cloned.push('filters')
   if (data.cloneMiscOptions) cloned.push('misc-options')
   if (data.cloneSubscribers) cloned.push('subscribers')
+  if (data.cloneComparisons) cloned.push('comparisons')
 
   return {
     ...data,
@@ -88,12 +96,14 @@ module.exports = async (bot, message, command) => {
     const cloneMiscOptions = cloneAll || args.includes('misc-options')
     const cloneFormat = cloneAll || args.includes('format')
     const cloneSubscribers = cloneAll || args.includes('subscribers')
+    const cloneComparisons = cloneAll || args.includes('comparisons')
 
     const data = await new MenuUtils.MenuSeries(message, [sourceSelector, destSelector, confirm], {
       cloneFormat,
       cloneFilters,
       cloneMiscOptions,
       cloneSubscribers,
+      cloneComparisons,
       locale: guildLocale
     }).start()
 
@@ -118,7 +128,6 @@ module.exports = async (bot, message, command) => {
 
       // Misc Options
       if (cloneMiscOptions) {
-        selected.checkTitles = feed.checkTitles
         selected.checkDates = feed.checkDates
         selected.formatTables = feed.formatTables
         selected.imgLinksExistence = feed.imgLinksExistence
@@ -131,6 +140,13 @@ module.exports = async (bot, message, command) => {
       if (cloneFormat) {
         selected.text = feed.text
         selected.embeds = feed.embeds
+        updateSelected = true
+      }
+
+      // Comparisons
+      if (cloneComparisons) {
+        selected.ncomparisons = feed.ncomparisons
+        selected.pcomparisons = feed.pcomparisons
         updateSelected = true
       }
 
