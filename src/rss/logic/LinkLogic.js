@@ -1,7 +1,7 @@
 const { EventEmitter } = require('events')
 const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 const dbCmds = require('../db/commands.js')
-const log = require('../../util/logger.js')
+// const log = require('../../util/logger.js')
 
 /**
  * @typedef {Object} FeedArticle
@@ -394,9 +394,9 @@ class LinkLogic extends EventEmitter {
     const checkDates = LinkLogic.shouldCheckDates(config, feed)
     const toDebug = debug.has(feedID)
 
-    if (toDebug) {
-      log.debug.info(`${feedID}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIDs), null, 2)}}`)
-    }
+    // if (toDebug) {
+    //   log.debug.info(`${feedID}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIDs), null, 2)}}`)
+    // }
 
     const newArticles = []
     // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
