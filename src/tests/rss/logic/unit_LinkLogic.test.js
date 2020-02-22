@@ -174,6 +174,20 @@ describe('Unit::LinkLogic', function () {
       jest.spyOn(LinkLogic.prototype, 'storePropertiesToBuffer')
         .mockReturnValue()
     })
+    describe('id is undefined', function () {
+      it('returns false', function () {
+        const logic = new LinkLogic({ ...DEFAULT_DATA })
+        const article = {
+          _id: undefined
+        }
+        const feed = {
+          pcomparisons: [],
+          ncomparisons: []
+        }
+        expect(logic.isNewArticle(new Set(), article, feed, false, new Map()))
+          .toEqual(false)
+      })
+    })
     describe('id is not in database', function () {
       const dbIDs = new Set(['b'])
       const article = {

@@ -36,15 +36,18 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
-    await mongoose.connection.collection('articles').insertOne({
+    logicData.docs.push({
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
       properties: {}
     })
+    await mongoose.connection.collection('articles')
+      .insertOne(logicData.docs[0])
     const logic = new LinkLogic(logicData)
     await logic.runFromMongo()
     const doc = await mongoose.connection.collection('articles').findOne({
@@ -78,9 +81,10 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
-    await mongoose.connection.collection('articles').insertOne({
+    logicData.docs.push({
       id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -115,9 +119,10 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
-    await mongoose.connection.collection('articles').insertOne({
+    logicData.docs.push({
       id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -152,9 +157,10 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
-    await mongoose.connection.collection('articles').insertOne({
+    logicData.docs.push({
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -195,9 +201,10 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
-    await mongoose.connection.collection('articles').insertOne({
+    logicData.docs.push({
       id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -234,7 +241,8 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
     const logic = new LinkLogic(logicData)
     const { newArticles } = await logic.runFromMongo()
@@ -266,7 +274,8 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
     const logic = new LinkLogic(logicData)
     await logic.runFromMongo()
@@ -325,7 +334,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       rssList,
       useIdType: 'guid'
     }
-    await mongoose.connection.collection('articles').insertMany([{
+    logicData.docs = [{
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -339,7 +348,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
       properties: {}
-    }])
+    }]
     const logic = new LinkLogic(logicData)
     const { newArticles } = await logic.runFromMongo()
     expect(newArticles).toHaveLength(1)
@@ -377,9 +386,10 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
-    await mongoose.connection.collection('articles').insertOne({
+    logicData.docs.push({
       _id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -415,9 +425,10 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
-    await mongoose.connection.collection('articles').insertOne({
+    logicData.docs.push({
       _id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -454,9 +465,10 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid'
+      useIdType: 'guid',
+      docs: []
     }
-    await mongoose.connection.collection('articles').insertOne({
+    logicData.docs.push({
       _id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -496,7 +508,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       rssList,
       useIdType: 'guid'
     }
-    await mongoose.connection.collection('articles').insertMany([{
+    logicData.docs = [{
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -508,7 +520,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
       properties: {}
-    }])
+    }]
     const logic = new LinkLogic(logicData)
     const { newArticles } = await logic.runFromMongo()
     expect(newArticles).toHaveLength(0)
@@ -536,7 +548,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       rssList,
       useIdType: 'guid'
     }
-    await mongoose.connection.collection('articles').insertMany([{
+    logicData.docs = [{
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -553,7 +565,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       properties: {
         useless1: 'a'
       }
-    }])
+    }]
     const logic = new LinkLogic(logicData)
     await logic.runFromMongo()
     const all = await mongoose.connection.collection('articles').find().toArray()

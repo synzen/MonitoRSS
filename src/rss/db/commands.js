@@ -1,8 +1,7 @@
 const Article = require('../../models/Article.js').model
 
-exports.findAll = async (feedURL, shardID, scheduleName) => {
+exports.findAll = async (shardID, scheduleName) => {
   return Article.find({
-    feedURL,
     shardID,
     scheduleName
   }).lean().exec()

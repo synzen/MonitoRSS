@@ -7,6 +7,7 @@ const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('./logic/LinkLogic.js')
 const debug = require('../util/debugFeeds.js')
 const DataDebugger = require('../structs/DataDebugger.js')
+const dbCmds = require('./db/commands.js')
 
 async function getFeed (data, callback) {
   const { link, rssList, headers, toDebug } = data
@@ -90,29 +91,49 @@ async function getFeed (data, callback) {
   }
 }
 
+function mapArticleDocumentsByURL (articles) {
+  /** @type {Map<string, Object<string, any>[]} */
+  const map = new Map()
+  for (const article of articles) {
+    const feedURL = article.feedURL
+    if (!map.has(feedURL)) {
+      map.set(feedURL, [article])
+    } else {
+      map.get(feedURL).push(article)
+    }
+  }
+  return map
+}
+
 process.on('message', m => {
   const currentBatch = m.currentBatch
-  const { debugFeeds, debugLinks } = m
+  const { debugFeeds, debugLinks, scheduleName, shardID } = m
   debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
   debug.links = new DataDebugger(debugLinks || [], 'links-processor')
-  connectDb(true).then(() => {
-    const len = Object.keys(currentBatch).length
-    let c = 0
-    for (const link in currentBatch) {
-      const toDebug = debug.links.has(link)
-      if (toDebug) {
-        log.debug.info(`${link}: Isolated processor received link in batch`)
-      }
-      const rssList = currentBatch[link]
-      let uniqueSettings
-      for (const modRssName in rssList) {
-        if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
-          uniqueSettings = rssList[modRssName].advanced
+  dbCmds.findAll(shardID, scheduleName)
+  connectDb(true)
+    .then(() => dbCmds.findAll(shardID, scheduleName))
+    .then(articles => {
+      const docsByURL = mapArticleDocumentsByURL(articles)
+      const len = Object.keys(currentBatch).length
+      let c = 0
+      for (const link in currentBatch) {
+        const docs = docsByURL.get(link) || []
+        const toDebug = debug.links.has(link)
+        if (toDebug) {
+          log.debug.info(`${link}: Isolated processor received link in batch`)
         }
+        const rssList = currentBatch[link]
+        let uniqueSettings
+        for (const modRssName in rssList) {
+          if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
+            uniqueSettings = rssList[modRssName].advanced
+          }
+        }
+        getFeed({ ...m, link, rssList, uniqueSettings, toDebug, docs }, () => {
+          if (++c === len) process.send({ status: 'batch_connected' })
+        })
       }
-      getFeed({ ...m, link, rssList, uniqueSettings, toDebug }, () => {
-        if (++c === len) process.send({ status: 'batch_connected' })
-      })
-    }
-  }).catch(err => log.general.error(`isolatedMethod db connection`, err))
+    })
+    .catch(err => log.general.error(`isolatedMethod db connection`, err))
 })

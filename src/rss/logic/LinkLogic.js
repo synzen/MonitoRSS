@@ -29,6 +29,7 @@ const dbCmds = require('../db/commands.js')
  * @property {string} scheduleName - The calling process's schedule name
  * @property {number} runNum - Number of times this schedule has run so far
  * @property {string} useIdType - The ID type that should be used for article differentiation
+ * @property {Map<string, Object<string, any>[]>} docs
  * @property {Object<string, Object[]>} [feedData] - Databaseless in-memory collection of all stored articles
  */
 
@@ -48,6 +49,8 @@ class LinkLogic extends EventEmitter {
     this.scheduleName = scheduleName
     this.runNum = runNum
     this.useIdType = useIdType
+
+    this.docs = data.docs
 
     /**
      * @type {Set<string>}
@@ -183,6 +186,9 @@ class LinkLogic extends EventEmitter {
     const sentReferencesOfFeed = sentReferences.get(feed._id)
     const articleID = article._id
     const { ncomparisons, pcomparisons } = feed
+    if (!articleID) {
+      return false
+    }
     if (!dbIDs.has(articleID)) {
       // Normally passes since ID is unseen, unless negative comparisons blocks
       const blocked = LinkLogic.negativeComparisonBlocks(article, ncomparisons, comparisonReferences, sentReferencesOfFeed)
@@ -454,13 +460,12 @@ class LinkLogic extends EventEmitter {
   }
 
   async runFromMongo () {
-    const { scheduleName, link, shardID, rssList, articleList } = this
+    const { scheduleName, link, rssList, articleList, docs } = this
     if (!scheduleName) {
       throw new Error('Missing schedule name for shared logic')
     }
     const newArticles = []
 
-    const docs = await dbCmds.findAll(link, shardID, scheduleName)
     const dbIDs = new Set(docs.map(doc => doc.id))
     const comparisonReferences = await LinkLogic.getComparisonReferences(docs)
 
