@@ -16,7 +16,7 @@ class MessageCleaner {
     this._messageList = []
     this._allowed = false
     if (!guildBot) {
-      message.guild.members.fetch(message.client.user).then(m => {
+      message.guild.members.cache.fetch(message.client.user).then(m => {
         this._allowed = m.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true
       }).catch(err => log.general.warning('Unable to fetch client as member to determine message deletion permissions', err))
     } else this._allowed = !guildBot.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true
@@ -29,7 +29,9 @@ class MessageCleaner {
      * @memberof MessageCleaner
      */
   add (message) {
-    if (this._allowed) this._messageList.push(message)
+    if (this._allowed) {
+      this._messageList.push(message)
+    }
   }
 
   /**
