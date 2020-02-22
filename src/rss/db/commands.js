@@ -10,9 +10,6 @@ exports.findAll = async (feedURL, shardID, scheduleName) => {
 }
 
 exports.update = async (article) => {
-  if (config.dev === true) {
-    return
-  }
   await Article.updateOne({
     _id: article._id
   }, {
@@ -21,7 +18,7 @@ exports.update = async (article) => {
 }
 
 exports.bulkInsert = async (articles) => {
-  if (articles.length === 0 || config.dev === true) {
+  if (articles.length === 0) {
     return
   }
   const insert = articles.map(article => new Article(article))
