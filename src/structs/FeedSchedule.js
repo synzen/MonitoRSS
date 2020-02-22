@@ -166,6 +166,11 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
+    const feedDataQuery = {
+      guild: {
+        $in: this.bot.guilds.cache.keyArray()
+      }
+    }
     const [
       failRecords,
       feedDatas,
@@ -173,7 +178,7 @@ class FeedSchedule extends EventEmitter {
       schedules
     ] = await Promise.all([
       FailRecord.getAll(),
-      FeedData.getAll(),
+      FeedData.getManyByQuery(feedDataQuery),
       Supporter.getValidGuilds(),
       Schedule.getAll()
     ])
@@ -183,11 +188,10 @@ class FeedSchedule extends EventEmitter {
     const filteredFeedsIds = new Set()
     // Filter in feeds only this bot contains
     for (const feed of feeds) {
-      const hasGuild = this.bot.guilds.cache.has(feed.guild)
       const hasChannel = this.bot.channels.cache.has(feed.channel)
-      if (!hasGuild || !hasChannel) {
+      if (!hasChannel) {
         if (debug.feeds.has(feed._id)) {
-          log.debug.info(`Shard ${this.shardID} ${feed._id}: Not processing feed - missing guild: ${!hasGuild}, missing channel: ${!hasChannel}. Assigned to schedule ${this.name}`)
+          log.debug.info(`Shard ${this.shardID} ${feed._id}: Not processing feed - missing channel: ${!hasChannel}. Assigned to schedule ${this.name}`)
         }
       } else {
         filteredFeeds.push(feed)
