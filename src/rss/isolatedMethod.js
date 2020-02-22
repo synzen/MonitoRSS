@@ -51,14 +51,14 @@ async function getFeed (data, callback) {
     if (toDebug) {
       log.debug.info(`${link}: Parsing stream`)
     }
-    const { articleList, idType } = await FeedFetcher.parseStream(stream, link)
+    const { articleList } = await FeedFetcher.parseStream(stream, link)
     if (articleList.length === 0) {
       if (toDebug) {
         log.debug.info(`${link}: No articles found, sending success status`)
       }
       return process.send({ status: 'success', link: link })
     }
-    const logic = new LinkLogic({ articleList, useIdType: idType, ...data })
+    const logic = new LinkLogic({ articleList, ...data })
     const result = data.feedData ? await logic.runFromMemory() : await logic.runFromMongo()
     result.newArticles.forEach(article => {
       if (toDebug) {

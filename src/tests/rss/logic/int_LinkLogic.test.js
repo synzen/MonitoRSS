@@ -16,6 +16,7 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('updates properties', async function () {
     const articleList = [{
+      _id: 'a',
       guid: 'a',
       title: 't1',
       description: 'd1'
@@ -60,9 +61,11 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('sends new articles if new ID', async function () {
     const articleList = [{
+      _id: 'a',
       guid: 'a',
       title: 't1'
     }, {
+      _id: 'b',
       guid: 'b'
     }]
     const rssList = {
@@ -101,6 +104,7 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('does not send new articles if old ID', async function () {
     const articleList = [{
+      _id: 'b',
       guid: 'b'
     }]
     const rssList = {
@@ -135,9 +139,11 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('sends new articles when id exists in DB but pass pcomparison', async function () {
     const articleList = [{
+      _id: 'a',
       guid: 'a',
       title: 't1'
     }, {
+      _id: 'b',
       guid: 'b',
       title: 't2'
     }]
@@ -179,9 +185,11 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('does not send articles when id is new but ncomparison blocks', async function () {
     const articleList = [{
+      _id: 'a',
       guid: 'a',
       title: 't1'
     }, {
+      _id: 'b',
       guid: 'b',
       title: 't2'
     }]
@@ -219,9 +227,11 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('does not send new articles when no articles have been stored', async function () {
     const articleList = [{
+      _id: 'a',
       guid: 'a',
       title: 't1'
     }, {
+      _id: 'b',
       guid: 'b',
       title: 't2'
     }]
@@ -250,10 +260,12 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('inserts new articles to database', async function () {
     const articleList = [{
+      _id: 'a',
       guid: 'a',
       title: 't1',
       summary: 's1'
     }, {
+      _id: 'b',
       guid: 'b',
       title: 't2',
       summary: 's2'
@@ -310,9 +322,11 @@ describe('Int::structs/db/Blacklist Database', function () {
        * This one should not send since the previous
        * article (index 1) already has this title
        */
+      _id: 'a',
       guid: 'a',
       title: 't2'
     }, {
+      _id: 'b',
       guid: 'b',
       title: 't2'
     }]
@@ -364,9 +378,11 @@ describe('Int::structs/db/Blacklist Database', function () {
        * This one should not send, despite the new
        * guid since the previous article (index 1) has same title
        */
+      _id: 'aa',
       guid: 'aa',
       title: 'ta'
     }, {
+      _id: 'bb',
       guid: 'bb',
       title: 'ta'
     }]
@@ -405,6 +421,7 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('sends when at least 1 pcomparison passes if others do not pass', async function () {
     const articleList = [{
+      _id: 'aa',
       guid: 'aa',
       title: 't',
       description: 'hola'
@@ -445,6 +462,7 @@ describe('Int::structs/db/Blacklist Database', function () {
   })
   it('blocks when at least 1 ncomparison blocks if others pass', async function () {
     const articleList = [{
+      _id: 'aa',
       guid: 'aa',
       title: 't',
       description: 'hola'

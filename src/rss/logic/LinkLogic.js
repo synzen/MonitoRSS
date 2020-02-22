@@ -1,5 +1,4 @@
 const { EventEmitter } = require('events')
-const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 const dbCmds = require('../db/commands.js')
 // const log = require('../../util/logger.js')
 
@@ -28,7 +27,6 @@ const dbCmds = require('../db/commands.js')
  * @property {Object} config - config.js values
  * @property {string} scheduleName - The calling process's schedule name
  * @property {number} runNum - Number of times this schedule has run so far
- * @property {string} useIdType - The ID type that should be used for article differentiation
  * @property {Map<string, Object<string, any>[]>} docs
  * @property {Object<string, Object[]>} [feedData] - Databaseless in-memory collection of all stored articles
  */
@@ -39,7 +37,7 @@ class LinkLogic extends EventEmitter {
    */
   constructor (data) {
     super()
-    const { rssList, articleList, debugFeeds, link, shardID, config, feedData, scheduleName, runNum, useIdType } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+    const { rssList, articleList, debugFeeds, link, shardID, config, feedData, scheduleName, runNum } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
     this.rssList = rssList
     this.articleList = articleList
     this.link = link
@@ -48,7 +46,6 @@ class LinkLogic extends EventEmitter {
     this.feedData = feedData
     this.scheduleName = scheduleName
     this.runNum = runNum
-    this.useIdType = useIdType
 
     this.docs = data.docs
 
@@ -243,7 +240,7 @@ class LinkLogic extends EventEmitter {
    * @param {string} useIDType
    * @param {Object<string, string|number>} meta
    */
-  static formatArticleForDatabase (article, properties, useIDType, meta) {
+  static formatArticleForDatabase (article, properties, meta) {
     let propertyValues = {}
     for (const property of properties) {
       const value = article[property]
@@ -252,7 +249,7 @@ class LinkLogic extends EventEmitter {
       }
     }
     return {
-      id: ArticleIDResolver.getIDTypeValue(article, useIDType),
+      id: article._id,
       feedURL: meta.feedURL,
       shardID: meta.shardID,
       scheduleName: meta.scheduleName,
@@ -305,7 +302,6 @@ class LinkLogic extends EventEmitter {
    * @param {string[]} properties
    */
   getInsertsAndUpdates (articleList, dbDocs, properties) {
-    const { useIdType } = this
     const dbIDs = new Set(dbDocs.map(d => d.id))
     const toInsert = []
     const toUpdate = []
@@ -317,8 +313,11 @@ class LinkLogic extends EventEmitter {
     // Insert
     for (const article of articleList) {
       const articleID = article._id
+      if (!articleID) {
+        continue
+      }
       if (!dbIDs.has(articleID)) {
-        toInsert.push(LinkLogic.formatArticleForDatabase(article, properties, useIdType, meta))
+        toInsert.push(LinkLogic.formatArticleForDatabase(article, properties, meta))
       }
     }
     // Update
@@ -394,7 +393,7 @@ class LinkLogic extends EventEmitter {
    * @param {Map<string, Set<string>>} comparisonReferences
    */
   getNewArticlesOfFeed (dbIDs, feed, articleList, comparisonReferences) {
-    const { debug, useIdType, config } = this
+    const { debug, config } = this
     const feedID = feed._id
     const totalArticles = articleList.length
     const checkDates = LinkLogic.shouldCheckDates(config, feed)
@@ -408,7 +407,6 @@ class LinkLogic extends EventEmitter {
     // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
     for (let a = totalArticles - 1; a >= 0; --a) {
       const article = articleList[a]
-      article._id = ArticleIDResolver.getIDTypeValue(article, useIdType)
       const isNew = this.isNewArticle(dbIDs, article, feed, checkDates, comparisonReferences, toDebug)
       // const isNew = this.checkIfNewArticle(feedID, feed, article, toDebug)
       if (isNew) {

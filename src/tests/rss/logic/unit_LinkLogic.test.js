@@ -1,5 +1,4 @@
 const LinkLogic = require('../../../rss/logic/LinkLogic.js')
-const ArticleIDResolver = require('../../../structs/ArticleIDResolver.js')
 const dbCmds = require('../../../rss/db/commands.js')
 
 const DEFAULT_DATA = { config: { feeds: {} } }
@@ -7,7 +6,6 @@ const DEFAULT_DATA = { config: { feeds: {} } }
 jest.mock('../../../rss/db/commands.js')
 jest.mock('../../../util/logger.js')
 jest.mock('../../../config.js')
-jest.mock('../../../structs/ArticleIDResolver.js')
 jest.mock('../../../models/Article.js')
 
 describe('Unit::LinkLogic', function () {
@@ -281,21 +279,18 @@ describe('Unit::LinkLogic', function () {
     })
   })
   describe('static formatArticleForDatabase', function () {
-    afterEach(function () {
-      ArticleIDResolver.getIDTypeValue.mockRestore()
-    })
     it('attaches the critical values', function () {
-      const resolvedID = 'qe3wtsrg'
-      ArticleIDResolver.getIDTypeValue
-        .mockReturnValue(resolvedID)
       const meta = {
         feedURL: 'abc',
         shardID: 2,
         scheduleName: 'ewstg'
       }
-      const formatted = LinkLogic.formatArticleForDatabase({}, [], '', meta)
+      const article = {
+        _id: 'abc'
+      }
+      const formatted = LinkLogic.formatArticleForDatabase(article, [], meta)
       expect(formatted).toEqual(expect.objectContaining({
-        id: resolvedID,
+        id: article._id,
         ...meta
       }))
     })
@@ -308,7 +303,7 @@ describe('Unit::LinkLogic', function () {
         author: null
       }
       const properties = ['title', 'description', 'date', 'author']
-      const formatted = LinkLogic.formatArticleForDatabase(article, properties, '', {})
+      const formatted = LinkLogic.formatArticleForDatabase(article, properties, {})
       expect(formatted.properties).toEqual({
         title: article.title,
         description: article.description
@@ -456,6 +451,17 @@ describe('Unit::LinkLogic', function () {
       expect(spy.mock.calls[0][0]).toEqual(articleList[1])
       expect(returned.toInsert).toContain('abc')
     })
+    it('ignores articles with invalid IDs', function () {
+      const articleList = [{
+        _id: null
+      }]
+      const dbDocs = []
+      const spy = jest.spyOn(LinkLogic, 'formatArticleForDatabase')
+      const logic = new LinkLogic({ ...DEFAULT_DATA, useIdType: 1 })
+      const returned = logic.getInsertsAndUpdates(articleList, dbDocs, [])
+      expect(spy).toHaveBeenCalledTimes(0)
+      expect(returned.toInsert).toEqual([])
+    })
     it('returns the updated articles for existing insertions', function () {
       const articleList = [{
         _id: 'foo'
@@ -572,11 +578,14 @@ describe('Unit::LinkLogic', function () {
     })
   })
   describe('getNewArticlesOfFeed', function () {
-    afterEach(function () {
-      ArticleIDResolver.getIDTypeValue.mockReset()
-    })
     it('returns the new articles', function () {
-      const articleList = [{}, {}, {}]
+      const articleList = [{
+        _id: 'a'
+      }, {
+        _id: 'b'
+      }, {
+        _id: 'c'
+      }]
       const logic = new LinkLogic({ ...DEFAULT_DATA })
       const formatted = {
         foo: 'baz'
@@ -590,22 +599,6 @@ describe('Unit::LinkLogic', function () {
       const newArticles = logic.getNewArticlesOfFeed(new Set(), {}, articleList, new Map())
       expect(newArticles).toHaveLength(1)
       expect(newArticles[0]).toEqual(formatted)
-    })
-    it('attaches _id to all articles', function () {
-      const articleList = [{}, {}, {}]
-      const logic = new LinkLogic({ ...DEFAULT_DATA })
-      ArticleIDResolver.getIDTypeValue
-        .mockReturnValueOnce(1)
-        .mockReturnValueOnce(2)
-        .mockReturnValueOnce(3)
-      jest.spyOn(logic, 'isNewArticle')
-        .mockReturnValue(false)
-      jest.spyOn(LinkLogic, 'formatArticle')
-        .mockReturnValue({})
-      logic.getNewArticlesOfFeed(new Set(), {}, articleList, new Map())
-      expect(articleList[0]._id).toEqual(3)
-      expect(articleList[1]._id).toEqual(2)
-      expect(articleList[2]._id).toEqual(1)
     })
   })
 })
