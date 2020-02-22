@@ -1,4 +1,3 @@
-const config = require('../../config.js')
 const Article = require('../../models/Article.js').model
 
 exports.findAll = async (feedURL, shardID, scheduleName) => {
