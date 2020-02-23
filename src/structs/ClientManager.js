@@ -1,7 +1,7 @@
 process.env.DRSS = true
 const Discord = require('discord.js')
 const config = require('../config.js')
-const connectDb = require('../rss/db/connect.js')
+const connectDb = require('../util/connectDatabase.js')
 const Patron = require('./db/Patron.js')
 const Supporter = require('./db/Supporter.js')
 const log = require('../util/logger.js')

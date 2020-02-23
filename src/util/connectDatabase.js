@@ -1,10 +1,10 @@
 const fs = require('fs')
-const config = require('../../config.js')
+const config = require('../config.js')
 const mongoose = require('mongoose')
 mongoose.set('useCreateIndex', true)
-const log = require('../../util/logger.js')
+const log = require('./logger.js')
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
-const storage = require('../../util/storage.js')
+const storage = require('./storage.js')
 const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
 
 module.exports = async skipRedis => {

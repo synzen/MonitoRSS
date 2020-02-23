@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const connectDb = require('../src/rss/db/connect.js')
+const connectDb = require('../src/util/connectDatabase.js')
 const v6 = require('./updates/6.0.0.js')
 
 connectDb(true).then(async () => {

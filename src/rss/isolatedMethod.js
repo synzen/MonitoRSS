@@ -1,5 +1,5 @@
 const logLinkErrs = require('../config.js').log.linkErrs
-const connectDb = require('./db/connect.js')
+const connectDb = require('../util/connectDatabase.js')
 const log = require('../util/logger.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const RequestError = require('../structs/errors/RequestError.js')
