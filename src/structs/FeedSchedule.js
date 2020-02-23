@@ -281,10 +281,6 @@ class FeedSchedule extends EventEmitter {
         if (linkCompletion.status === 'article') {
           return this.emit('article', linkCompletion.article)
         }
-        if (linkCompletion.status === 'batch_connected' && callback) {
-          // Spawn processor for next batch
-          return callback()
-        }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
           FailRecord.record(linkCompletion.link)
@@ -292,9 +288,8 @@ class FeedSchedule extends EventEmitter {
         } else if (linkCompletion.status === 'success') {
           FailRecord.reset(linkCompletion.link)
             .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to reset fail record ${linkCompletion.link}`, err))
-          // Only if config.database.uri is a databaseless folder path
-          if (linkCompletion.memoryCollectionID) {
-            this.feedData[linkCompletion.memoryCollectionID] = linkCompletion.memoryCollection
+          if (linkCompletion.memoryCollection) {
+            this.feedData[linkCompletion.link] = linkCompletion.memoryCollection
           }
         }
 
@@ -305,6 +300,9 @@ class FeedSchedule extends EventEmitter {
           log.debug.info(`Shard ${this.shardID} ${linkCompletion.link}: Link responded from processor for ${this.name}`)
         }
         if (completedLinks === currentBatchLen) {
+          if (callback) {
+            callback()
+          }
           completedBatches++
           processor.kill()
           if (completedBatches === totalBatchLengths) {

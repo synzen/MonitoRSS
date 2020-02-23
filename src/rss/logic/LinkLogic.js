@@ -1,6 +1,4 @@
 const { EventEmitter } = require('events')
-const dbCmds = require('../db/commands.js')
-// const log = require('../../util/logger.js')
 
 /**
  * @typedef {Object} FeedArticle
@@ -23,12 +21,8 @@ const dbCmds = require('../db/commands.js')
  * @property {FeedArticle[]} articleList - Feed articles
  * @property {string[]} debugFeeds - Array of feed IDs to show debug info for
  * @property {string} link - The feed URL
- * @property {number} shardID - The shard ID of the parent process, if the bot is sharded
  * @property {Object} config - config.js values
- * @property {string} scheduleName - The calling process's schedule name
  * @property {number} runNum - Number of times this schedule has run so far
- * @property {Map<string, Object<string, any>[]>} docs
- * @property {Object<string, Object[]>} [feedData] - Databaseless in-memory collection of all stored articles
  */
 
 class LinkLogic extends EventEmitter {
@@ -37,17 +31,12 @@ class LinkLogic extends EventEmitter {
    */
   constructor (data) {
     super()
-    const { rssList, articleList, debugFeeds, link, shardID, config, feedData, scheduleName, runNum } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+    const { rssList, articleList, debugFeeds, link, config, runNum } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
     this.rssList = rssList
     this.articleList = articleList
     this.link = link
-    this.shardID = shardID
     this.config = config
-    this.feedData = feedData
-    this.scheduleName = scheduleName
     this.runNum = runNum
-
-    this.docs = data.docs
 
     /**
      * @type {Set<string>}
@@ -234,151 +223,6 @@ class LinkLogic extends EventEmitter {
     }
   }
 
-  /**
-   * @param {Object<string, any>} article
-   * @param {string[]} properties
-   * @param {string} useIDType
-   * @param {Object<string, string|number>} meta
-   */
-  static formatArticleForDatabase (article, properties, meta) {
-    let propertyValues = {}
-    for (const property of properties) {
-      const value = article[property]
-      if (value && typeof value === 'string') {
-        propertyValues[property] = value
-      }
-    }
-    return {
-      id: article._id,
-      feedURL: meta.feedURL,
-      shardID: meta.shardID,
-      scheduleName: meta.scheduleName,
-      properties: propertyValues
-    }
-  }
-
-  /**
-   * @param {Object<string, any>} article
-   * @param {Object<string, any>} document
-   * @param {string[]} properties - Feed properties
-   */
-  static updatedDocumentForDatabase (article, document, properties) {
-    const docProperties = document.properties
-    let updated = false
-    for (const property of properties) {
-      const articleValue = article[property]
-      if (!articleValue || typeof articleValue !== 'string') {
-        continue
-      }
-      const docValue = docProperties[property]
-      if (!docValue || docValue !== articleValue) {
-        docProperties[property] = articleValue
-        updated = true
-      }
-    }
-    const pruned = this.prunedDocumentForDatabase(document, properties)
-    return updated || pruned
-  }
-
-  /**
-   * @param {Object<string, any>} document
-   * @param {string[]} properties
-   */
-  static prunedDocumentForDatabase (document, properties) {
-    let updated = false
-    const docProperties = document.properties
-    for (const property in docProperties) {
-      if (!properties.includes(property)) {
-        delete docProperties[property]
-        updated = true
-      }
-    }
-    return updated
-  }
-
-  /**
-   * @param {Object<string, any>[]} articleList
-   * @param {Object<string, any>[]} dbDocs
-   * @param {string[]} properties
-   */
-  getInsertsAndUpdates (articleList, dbDocs, properties) {
-    const dbIDs = new Set(dbDocs.map(d => d.id))
-    const toInsert = []
-    const toUpdate = []
-    const meta = {
-      feedURL: this.link,
-      shardID: this.shardID,
-      scheduleName: this.scheduleName
-    }
-    // Insert
-    for (const article of articleList) {
-      const articleID = article._id
-      if (!articleID) {
-        continue
-      }
-      if (!dbIDs.has(articleID)) {
-        toInsert.push(LinkLogic.formatArticleForDatabase(article, properties, meta))
-      }
-    }
-    // Update
-    for (const doc of dbDocs) {
-      const article = articleList.find(a => a._id === doc.id)
-      let updated = false
-      if (article) {
-        updated = LinkLogic.updatedDocumentForDatabase(article, doc, properties)
-      } else {
-        updated = LinkLogic.prunedDocumentForDatabase(doc, properties)
-      }
-      if (updated) {
-        toUpdate.push(doc)
-      }
-    }
-    return {
-      toInsert,
-      toUpdate
-    }
-  }
-
-  /**
-   * @param {Object<string, any>[]} documents
-   * @param {Object<string, any>[]} memoryCollection
-   */
-  static async insertDocuments (documents, memoryCollection) {
-    if (documents.length === 0) {
-      return
-    }
-    if (memoryCollection) {
-      documents.forEach(doc => memoryCollection.push({ ...doc }))
-    } else {
-      await dbCmds.bulkInsert(documents)
-    }
-  }
-
-  /**
-   * @param {Object<string, any>[]} documents
-   * @param {Object<string, any>[]} memoryCollection
-   */
-  static async updateDocuments (documents, memoryCollection) {
-    if (documents.length === 0) {
-      return
-    }
-    if (memoryCollection) {
-      const updatedDocsByID = {}
-      for (const doc of documents) {
-        updatedDocsByID[doc.id] = doc
-      }
-      for (let i = 0; i < memoryCollection.length; ++i) {
-        const id = memoryCollection[i].id
-        const updatedDoc = updatedDocsByID[id]
-        if (updatedDoc) {
-          memoryCollection[i] = updatedDoc
-        }
-      }
-    } else {
-      await Promise.all(documents.map(doc => dbCmds.update(doc)))
-    }
-  }
-
   static shouldCheckDates (config, feed) {
     const globalDateCheck = config.feeds.checkDates
     const localDateCheck = feed.checkDates
@@ -416,62 +260,13 @@ class LinkLogic extends EventEmitter {
     return newArticles
   }
 
-  async runFromMemory () {
-    const { scheduleName, link, shardID, feedData, rssList, articleList } = this
-    if (!scheduleName) {
-      throw new Error('Missing schedule name for shared logic')
-    }
-    const memoryCollectionID = shardID + scheduleName + link
-    const memoryCollection = feedData[memoryCollectionID] || []
+  async run (docs) {
+    const { link, rssList, articleList } = this
     const newArticles = []
-
-    const docs = memoryCollection
-    const dbIDs = new Set(docs.map(doc => doc.id))
-    const comparisonReferences = LinkLogic.getComparisonReferences(docs)
-
-    const allComparisons = []
-    for (const feedID in rssList) {
-      const feed = rssList[feedID]
-      feed.ncomparisons.forEach(v => allComparisons.push(v))
-      feed.pcomparisons.forEach(v => allComparisons.push(v))
-      // Database collection is uninitialized if no db IDs. Don't send any articles, just store.
-      if (dbIDs.size === 0) {
-        continue
-      }
-      const articlesToSend = this.getNewArticlesOfFeed(dbIDs, feed, articleList, comparisonReferences)
-      articlesToSend.forEach(a => newArticles.push(a))
-    }
-
-    const {
-      toUpdate,
-      toInsert
-    } = this.getInsertsAndUpdates(articleList, memoryCollection, allComparisons)
-    await LinkLogic.insertDocuments(toInsert)
-    await LinkLogic.updateDocuments(toUpdate)
-
-    return {
-      link,
-      newArticles,
-      memoryCollection,
-      memoryCollectionID
-    }
-  }
-
-  async runFromMongo () {
-    const { scheduleName, link, rssList, articleList, docs } = this
-    if (!scheduleName) {
-      throw new Error('Missing schedule name for shared logic')
-    }
-    const newArticles = []
-
     const dbIDs = new Set(docs.map(doc => doc.id))
     const comparisonReferences = await LinkLogic.getComparisonReferences(docs)
-
-    const allComparisons = []
     for (const feedID in rssList) {
       const feed = rssList[feedID]
-      feed.ncomparisons.forEach(v => allComparisons.push(v))
-      feed.pcomparisons.forEach(v => allComparisons.push(v))
       // Database collection is uninitialized if no db IDs. Don't send any articles, just store.
       if (dbIDs.size === 0) {
         continue
@@ -479,13 +274,6 @@ class LinkLogic extends EventEmitter {
       const articlesToSend = this.getNewArticlesOfFeed(dbIDs, feed, articleList, comparisonReferences)
       articlesToSend.forEach(a => newArticles.push(a))
     }
-    const {
-      toUpdate,
-      toInsert
-    } = this.getInsertsAndUpdates(articleList, docs, allComparisons)
-    await LinkLogic.insertDocuments(toInsert)
-    await LinkLogic.updateDocuments(toUpdate)
-
     return {
       link,
       newArticles

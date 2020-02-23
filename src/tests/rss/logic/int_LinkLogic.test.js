@@ -7,57 +7,12 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-describe('Int::structs/db/Blacklist Database', function () {
+describe('Int::rss/logic/LinkLogic Database', function () {
   beforeAll(async function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
   })
   beforeEach(async function () {
     await mongoose.connection.db.dropDatabase()
-  })
-  it('updates properties', async function () {
-    const articleList = [{
-      _id: 'a',
-      guid: 'a',
-      title: 't1',
-      description: 'd1'
-    }]
-    const rssList = {
-      feedid1: {
-        _id: 'feedid1',
-        pcomparisons: ['title'],
-        ncomparisons: ['description']
-      }
-    }
-    const logicData = {
-      link: 'https://www.example.com',
-      shardID: 1,
-      scheduleName: 'default',
-      config: {
-        feeds: {}
-      },
-      articleList,
-      rssList,
-      useIdType: 'guid',
-      docs: []
-    }
-    logicData.docs.push({
-      id: 'a',
-      feedURL: logicData.link,
-      shardID: logicData.shardID,
-      scheduleName: logicData.scheduleName,
-      properties: {}
-    })
-    await mongoose.connection.collection('articles')
-      .insertOne(logicData.docs[0])
-    const logic = new LinkLogic(logicData)
-    await logic.runFromMongo()
-    const doc = await mongoose.connection.collection('articles').findOne({
-      id: 'a'
-    })
-    expect(doc.properties).toEqual({
-      title: articleList[0].title,
-      description: articleList[0].description
-    })
   })
   it('sends new articles if new ID', async function () {
     const articleList = [{
@@ -84,18 +39,17 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid',
-      docs: []
+      useIdType: 'guid'
     }
-    logicData.docs.push({
+    const docs = [{
       id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
       properties: {}
-    })
+    }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
     expect(newArticles[0]).toEqual({
       ...articleList[0],
@@ -123,18 +77,17 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid',
-      docs: []
+      useIdType: 'guid'
     }
-    logicData.docs.push({
+    const docs = [{
       id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
       scheduleName: logicData.scheduleName,
       properties: {}
-    })
+    }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(0)
   })
   it('sends new articles when id exists in DB but pass pcomparison', async function () {
@@ -163,10 +116,9 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid',
-      docs: []
+      useIdType: 'guid'
     }
-    logicData.docs.push({
+    const docs = [{
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -174,9 +126,9 @@ describe('Int::structs/db/Blacklist Database', function () {
       properties: {
         title: 't1'
       }
-    })
+    }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
     expect(newArticles[0]).toEqual({
       ...articleList[1],
@@ -209,10 +161,9 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid',
-      docs: []
+      useIdType: 'guid'
     }
-    logicData.docs.push({
+    const docs = [{
       id: 'b',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -220,9 +171,9 @@ describe('Int::structs/db/Blacklist Database', function () {
       properties: {
         title: 't1'
       }
-    })
+    }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(0)
   })
   it('does not send new articles when no articles have been stored', async function () {
@@ -251,66 +202,11 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid',
-      docs: []
+      useIdType: 'guid'
     }
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run([])
     expect(newArticles).toHaveLength(0)
-  })
-  it('inserts new articles to database', async function () {
-    const articleList = [{
-      _id: 'a',
-      guid: 'a',
-      title: 't1',
-      summary: 's1'
-    }, {
-      _id: 'b',
-      guid: 'b',
-      title: 't2',
-      summary: 's2'
-    }]
-    const rssList = {
-      feedid1: {
-        _id: 'feedid1',
-        pcomparisons: [],
-        ncomparisons: ['title']
-      }
-    }
-    const logicData = {
-      link: 'https://www.example.com',
-      shardID: 1,
-      scheduleName: 'default',
-      config: {
-        feeds: {}
-      },
-      articleList,
-      rssList,
-      useIdType: 'guid',
-      docs: []
-    }
-    const logic = new LinkLogic(logicData)
-    await logic.runFromMongo()
-    const docs = await mongoose.connection.collection('articles').find().toArray()
-    expect(docs).toHaveLength(2)
-    expect(docs).toContainEqual(expect.objectContaining({
-      id: 'a',
-      feedURL: logicData.link,
-      scheduleName: logicData.scheduleName,
-      shardID: logicData.shardID,
-      properties: {
-        title: 't1'
-      }
-    }))
-    expect(docs).toContainEqual(expect.objectContaining({
-      id: 'b',
-      feedURL: logicData.link,
-      scheduleName: logicData.scheduleName,
-      shardID: logicData.shardID,
-      properties: {
-        title: 't2'
-      }
-    }))
   })
   it('does not send new article with old ID but contains a pcomparison value of recently sent article', async function () {
     /**
@@ -348,7 +244,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       rssList,
       useIdType: 'guid'
     }
-    logicData.docs = [{
+    const docs = [{
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -364,7 +260,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       properties: {}
     }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
     expect(newArticles[0]).toEqual(expect.objectContaining(articleList[1]))
   })
@@ -402,10 +298,9 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid',
-      docs: []
+      useIdType: 'guid'
     }
-    logicData.docs.push({
+    const docs = [{
       _id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -413,9 +308,9 @@ describe('Int::structs/db/Blacklist Database', function () {
       properties: {
         title: 't'
       }
-    })
+    }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
     expect(newArticles[0]).toEqual(expect.objectContaining(articleList[1]))
   })
@@ -442,10 +337,9 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid',
-      docs: []
+      useIdType: 'guid'
     }
-    logicData.docs.push({
+    const docs = [{
       _id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -454,9 +348,9 @@ describe('Int::structs/db/Blacklist Database', function () {
         title: 't',
         description: 'holano'
       }
-    })
+    }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
     expect(newArticles[0]).toEqual(expect.objectContaining(articleList[0]))
   })
@@ -483,10 +377,9 @@ describe('Int::structs/db/Blacklist Database', function () {
       },
       articleList,
       rssList,
-      useIdType: 'guid',
-      docs: []
+      useIdType: 'guid'
     }
-    logicData.docs.push({
+    const docs = [{
       _id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -495,9 +388,9 @@ describe('Int::structs/db/Blacklist Database', function () {
         title: 't',
         description: 'holano'
       }
-    })
+    }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(0)
   })
   it('does not send articles with old guids that pass pcomparisons if property is uninitialized', async function () {
@@ -526,7 +419,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       rssList,
       useIdType: 'guid'
     }
-    logicData.docs = [{
+    const docs = [{
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -540,7 +433,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       properties: {}
     }]
     const logic = new LinkLogic(logicData)
-    const { newArticles } = await logic.runFromMongo()
+    const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(0)
   })
   it('deletes irrelevant stored properties', async function () {
@@ -566,7 +459,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       rssList,
       useIdType: 'guid'
     }
-    logicData.docs = [{
+    const docs = [{
       id: 'a',
       feedURL: logicData.link,
       shardID: logicData.shardID,
@@ -585,7 +478,7 @@ describe('Int::structs/db/Blacklist Database', function () {
       }
     }]
     const logic = new LinkLogic(logicData)
-    await logic.runFromMongo()
+    await logic.run(docs)
     const all = await mongoose.connection.collection('articles').find().toArray()
     for (const item of all) {
       expect(item).toEqual(expect.objectContaining({

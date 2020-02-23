@@ -7,72 +7,127 @@ const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('./logic/LinkLogic.js')
 const debug = require('../util/debugFeeds.js')
 const DataDebugger = require('../structs/DataDebugger.js')
-const dbCmds = require('./db/commands.js')
+const databaseFuncs = require('./database.js')
 
-async function getFeed (data, callback) {
-  const { link, rssList, headers, toDebug } = data
-  const linkHeaders = headers[link]
+async function fetchFeed (headers, url, debug) {
+  if (debug) {
+    log.debug.info(`${url}: Fetching URL`)
+  }
   const fetchOptions = {}
-  if (linkHeaders) {
-    if (!linkHeaders.lastModified || !linkHeaders.etag) {
-      throw new Error(`Headers exist for a link, but missing lastModified and etag (${link})`)
+  if (headers) {
+    if (!headers.lastModified || !headers.etag) {
+      throw new Error(`Headers exist for a link, but missing lastModified and etag (${url})`)
     }
     fetchOptions.headers = {
-      'If-Modified-Since': linkHeaders.lastModified,
-      'If-None-Match': linkHeaders.etag
+      'If-Modified-Since': headers.lastModified,
+      'If-None-Match': headers.etag
     }
   }
-  let calledbacked = false
+  const { stream, response } = await FeedFetcher.fetchURL(url, fetchOptions)
+  if (response.status === 304) {
+    if (debug) {
+      log.debug.info(`${url}: 304 response, sending success status`)
+    }
+    return null
+  } else {
+    const lastModified = response.headers['last-modified']
+    const etag = response.headers['etag']
+
+    if (lastModified && etag) {
+      process.send({
+        status: 'headers',
+        link: url,
+        lastModified,
+        etag
+      })
+      if (debug) {
+        log.debug.info(`${url}: Sending back headers`)
+      }
+    }
+    return stream
+  }
+}
+
+async function parseStream (stream, url, debug) {
+  if (debug) {
+    log.debug.info(`${url}: Parsing stream`)
+  }
+  const { articleList } = await FeedFetcher.parseStream(stream, url)
+  if (articleList.length === 0) {
+    if (debug) {
+      log.debug.info(`${url}: No articles found, sending success status`)
+    }
+    return null
+  }
+  return articleList
+}
+
+async function syncDatabase (articleList, databaseDocs, feeds, meta, memoryCollection) {
+  const allComparisons = new Set()
+  for (const feedID in feeds) {
+    const feed = feeds[feedID]
+    feed.ncomparisons.forEach(v => allComparisons.add(v))
+    feed.pcomparisons.forEach(v => allComparisons.add(v))
+  }
+  const {
+    toInsert,
+    toUpdate
+  } = await databaseFuncs.getInsertsAndUpdates(
+    articleList,
+    databaseDocs,
+    Array.from(allComparisons),
+    meta
+  )
+
+  await databaseFuncs.insertDocuments(toInsert, memoryCollection)
+  await databaseFuncs.updateDocuments(toUpdate, memoryCollection)
+}
+
+async function getFeed (data) {
+  const { link, rssList, headers, toDebug, docs, feedData, shardID, scheduleName } = data
   try {
-    if (toDebug) {
-      log.debug.info(`${link}: Fetching URL`)
+    const stream = await fetchFeed(headers[link], link, toDebug)
+    if (!stream) {
+      process.send({ status: 'success', link })
+      return
     }
-    const { stream, response } = await FeedFetcher.fetchURL(link, fetchOptions)
-    if (response.status === 304) {
-      callback()
-      if (toDebug) {
-        log.debug.info(`${link}: 304 response, sending success status`)
-      }
-      return process.send({ status: 'success', link })
-    } else {
-      const lastModified = response.headers['last-modified']
-      const etag = response.headers['etag']
+    const articleList = await parseStream(stream, link, toDebug)
+    if (!articleList) {
+      process.send({ status: 'success', link })
+      return
+    }
+    // Sync first
+    const meta = {
+      feedURL: link,
+      shardID,
+      scheduleName
+    }
+    await syncDatabase(articleList, docs, rssList, meta, feedData)
 
-      if (lastModified && etag) {
-        process.send({ status: 'headers', link, lastModified, etag })
-        if (toDebug) {
-          log.debug.info(`${link}: Sending back headers`)
-        }
-      }
-    }
-
-    callback()
-    calledbacked = true
-    if (toDebug) {
-      log.debug.info(`${link}: Parsing stream`)
-    }
-    const { articleList } = await FeedFetcher.parseStream(stream, link)
-    if (articleList.length === 0) {
-      if (toDebug) {
-        log.debug.info(`${link}: No articles found, sending success status`)
-      }
-      return process.send({ status: 'success', link: link })
-    }
+    // Then send to prevent new article spam if sync fails
     const logic = new LinkLogic({ articleList, ...data })
-    const result = data.feedData ? await logic.runFromMemory() : await logic.runFromMongo()
-    result.newArticles.forEach(article => {
+    const result = await logic.run(docs)
+    const newArticles = result.newArticles
+    const length = newArticles.length
+    for (let i = 0; i < length; ++i) {
       if (toDebug) {
         log.debug.info(`${link}: Sending article status`)
       }
-      process.send({ status: 'article', article })
-    })
+      process.send({
+        status: 'article',
+        article: newArticles[i]
+      })
+    }
     process.send({
       status: 'success',
-      link: result.link,
-      memoryCollection: data.memoryCollection,
-      memoryCollectionID: data.memoryCollectionID
+      link,
+      memoryCollection: feedData
     })
   } catch (err) {
+    if (toDebug) {
+      log.debug.info(`${link}: Sending failed status`)
+    }
+    process.send({ status: 'failed', link, rssList })
     if (err instanceof RequestError || err instanceof FeedParserError) {
       if (logLinkErrs || toDebug) {
         log.cycle.warning(`Skipping ${link}`, err)
@@ -80,60 +135,29 @@ async function getFeed (data, callback) {
     } else {
       log.cycle.error(`Cycle logic (${link})`, err, true)
     }
-    if (toDebug) {
-      log.debug.info(`${link}: Sending failed status`)
-    }
-    process.send({ status: 'failed', link: link, rssList: rssList })
-    if (!calledbacked) {
-      callback()
-    }
-    calledbacked = true
   }
 }
 
-function mapArticleDocumentsByURL (articles) {
-  /** @type {Map<string, Object<string, any>[]} */
-  const map = new Map()
-  for (const article of articles) {
-    const feedURL = article.feedURL
-    if (!map.has(feedURL)) {
-      map.set(feedURL, [article])
-    } else {
-      map.get(feedURL).push(article)
-    }
-  }
-  return map
-}
-
-process.on('message', m => {
+process.on('message', async m => {
   const currentBatch = m.currentBatch
-  const { debugFeeds, debugLinks, scheduleName, shardID } = m
+  const { debugFeeds, debugLinks, scheduleName, shardID, feedData } = m
   debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
   debug.links = new DataDebugger(debugLinks || [], 'links-processor')
-  dbCmds.findAll(shardID, scheduleName)
-  connectDb(true)
-    .then(() => dbCmds.findAll(shardID, scheduleName))
-    .then(articles => {
-      const docsByURL = mapArticleDocumentsByURL(articles)
-      const len = Object.keys(currentBatch).length
-      let c = 0
-      for (const link in currentBatch) {
-        const docs = docsByURL.get(link) || []
-        const toDebug = debug.links.has(link)
-        if (toDebug) {
-          log.debug.info(`${link}: Isolated processor received link in batch`)
-        }
-        const rssList = currentBatch[link]
-        let uniqueSettings
-        for (const modRssName in rssList) {
-          if (rssList[modRssName].advanced && Object.keys(rssList[modRssName].advanced).length > 0) {
-            uniqueSettings = rssList[modRssName].advanced
-          }
-        }
-        getFeed({ ...m, link, rssList, uniqueSettings, toDebug, docs }, () => {
-          if (++c === len) process.send({ status: 'batch_connected' })
-        })
+  try {
+    await connectDb(true)
+    const articleDocuments = await databaseFuncs.getAllDocuments(shardID, scheduleName, feedData)
+    const promises = []
+    for (const link in currentBatch) {
+      const docs = articleDocuments[link] || []
+      const toDebug = debug.links.has(link)
+      if (toDebug) {
+        log.debug.info(`${link}: Isolated processor received link in batch`)
       }
-    })
-    .catch(err => log.general.error(`isolatedMethod db connection`, err))
+      const rssList = currentBatch[link]
+      promises.push(getFeed({ ...m, link, rssList, toDebug, docs }))
+    }
+    await Promise.all(promises)
+  } catch (err) {
+    log.general.error(`isolatedMethod`, err)
+  }
 })
