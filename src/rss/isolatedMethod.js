@@ -7,7 +7,7 @@ const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('./logic/LinkLogic.js')
 const debug = require('../util/debugFeeds.js')
 const DataDebugger = require('../structs/DataDebugger.js')
-const databaseFuncs = require('./database.js')
+const databaseFuncs = require('../util/database.js')
 
 async function fetchFeed (headers, url, debug) {
   if (debug) {

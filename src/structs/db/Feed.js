@@ -6,7 +6,7 @@ const Subscriber = require('./Subscriber.js')
 const Schedule = require('./Schedule.js')
 const Supporter = require('./Supporter.js')
 const FeedFetcher = require('../../util/FeedFetcher.js')
-const databaseFuncs = require('../../rss/database.js')
+const databaseFuncs = require('../../util/database.js')
 const log = require('../../util/logger.js')
 
 class Feed extends FilterBase {

@@ -1,4 +1,4 @@
-const databaseFuncs = require('../../rss/database.js')
+const databaseFuncs = require('../../util/database.js')
 const Article = require('../../models/Article')
 
 jest.mock('../../models/Article', () => ({
