@@ -1,10 +1,10 @@
 process.env.TEST_ENV = true
-const Feed = require('../../../structs/db/Feed.js')
-const Subscriber = require('../../../structs/db/Subscriber.js')
-const pruneSubscribers = require('../../../util/maintenance/pruneSubscribers.js')
+const Feed = require('../../structs/db/Feed.js')
+const Subscriber = require('../../structs/db/Subscriber.js')
+const pruneSubscribers = require('../../maintenance/pruneSubscribers.js')
 
-jest.mock('../../../structs/db/Feed.js')
-jest.mock('../../../structs/db/Subscriber.js')
+jest.mock('../../structs/db/Feed.js')
+jest.mock('../../structs/db/Subscriber.js')
 
 Subscriber.TYPES = {
   USER: 'user',

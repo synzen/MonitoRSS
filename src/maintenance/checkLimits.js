@@ -1,6 +1,6 @@
-const config = require('../../config.js')
-const log = require('../logger.js')
-const ipc = require('../ipc.js')
+const config = require('../config.js')
+const log = require('../util/logger.js')
+const ipc = require('../util/ipc.js')
 /**
  * Enable or disable feeds for guilds past their limit
  * @param {import('../../structs/db/Feed.js')[]} feeds

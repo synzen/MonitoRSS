@@ -1,5 +1,5 @@
-const FilteredFormat = require('../../structs/db/FilteredFormat.js')
-const Feed = require('../../structs/db/Feed.js')
+const FilteredFormat = require('../structs/db/FilteredFormat.js')
+const Feed = require('../structs/db/Feed.js')
 
 /**
  * Remove all formats with missing feeds

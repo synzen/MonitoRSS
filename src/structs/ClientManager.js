@@ -6,7 +6,7 @@ const Patron = require('./db/Patron.js')
 const Supporter = require('./db/Supporter.js')
 const log = require('../util/logger.js')
 const EventEmitter = require('events')
-const maintenance = require('../util/maintenance/index.js')
+const maintenance = require('../maintenance/index.js')
 const initialize = require('../util/initialization.js')
 const ipc = require('../util/ipc.js')
 

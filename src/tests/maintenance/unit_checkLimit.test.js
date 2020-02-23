@@ -1,13 +1,13 @@
 process.env.TEST_ENV = true
-const Feed = require('../../../structs/db/Feed.js')
-const Supporter = require('../../../structs/db/Supporter.js')
-const checkLimits = require('../../../util/maintenance/checkLimits.js')
-const config = require('../../../config.js')
+const Feed = require('../../structs/db/Feed.js')
+const Supporter = require('../../structs/db/Supporter.js')
+const checkLimits = require('../../maintenance/checkLimits.js')
+const config = require('../../config.js')
 
-jest.mock('../../../config.js')
-jest.mock('../../../structs/db/Feed.js')
-jest.mock('../../../structs/db/Supporter.js')
-jest.mock('../../../util/ipc.js')
+jest.mock('../../config.js')
+jest.mock('../../structs/db/Feed.js')
+jest.mock('../../structs/db/Supporter.js')
+jest.mock('../../util/ipc.js')
 
 config.feeds.max = 2
 

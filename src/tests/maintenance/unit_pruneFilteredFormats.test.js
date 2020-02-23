@@ -1,10 +1,10 @@
 process.env.TEST_ENV = true
-const Feed = require('../../../structs/db/Feed.js')
-const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
-const pruneFilteredFormats = require('../../../util/maintenance/pruneFilteredFormats.js')
+const Feed = require('../../structs/db/Feed.js')
+const FilteredFormat = require('../../structs/db/FilteredFormat.js')
+const pruneFilteredFormats = require('../../maintenance/pruneFilteredFormats.js')
 
-jest.mock('../../../structs/db/Feed.js')
-jest.mock('../../../structs/db/FilteredFormat.js')
+jest.mock('../../structs/db/Feed.js')
+jest.mock('../../structs/db/FilteredFormat.js')
 
 describe('utils/maintenance/pruneFilteredFormats', function () {
   beforeEach(function () {

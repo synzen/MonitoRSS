@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const dbName = 'test_int_checkIndexes'
-const checkArticleIndexes = require('../../../util/maintenance/checkArticleIndexes.js')
+const checkArticleIndexes = require('../../maintenance/checkArticleIndexes.js')
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,

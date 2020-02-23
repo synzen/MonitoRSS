@@ -1,10 +1,10 @@
 process.env.TEST_ENV = true
-const Feed = require('../../../structs/db/Feed.js')
-const FailRecord = require('../../../structs/db/FailRecord.js')
-const pruneFailRecords = require('../../../util/maintenance/pruneFailRecords.js')
+const Feed = require('../../structs/db/Feed.js')
+const FailRecord = require('../../structs/db/FailRecord.js')
+const pruneFailRecords = require('../../maintenance/pruneFailRecords.js')
 
-jest.mock('../../../structs/db/Feed.js')
-jest.mock('../../../structs/db/FailRecord.js')
+jest.mock('../../structs/db/Feed.js')
+jest.mock('../../structs/db/FailRecord.js')
 
 describe('Unit::utils/maintenance/pruneFailRecords', function () {
   beforeEach(function () {

@@ -8,7 +8,7 @@ const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
-const maintenance = require('../util/maintenance/index.js')
+const maintenance = require('../maintenance/index.js')
 const log = require('../util/logger.js')
 const ipc = require('../util/ipc.js')
 

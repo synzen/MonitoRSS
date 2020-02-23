@@ -1,6 +1,6 @@
-const Subscriber = require('../../structs/db/Subscriber.js')
-const Feed = require('../../structs/db/Feed.js')
-const log = require('../logger.js')
+const Subscriber = require('../structs/db/Subscriber.js')
+const Feed = require('../structs/db/Feed.js')
+const log = require('../util/logger.js')
 
 /**
  * Precondition: Feeds have been pruned, and thus no feeds

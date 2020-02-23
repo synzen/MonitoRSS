@@ -1,13 +1,13 @@
 process.env.TEST_ENV = true
-const Feed = require('../../../structs/db/Feed.js')
-const Article = require('../../../models/Article.js')
-const pruneArticles = require('../../../util/maintenance/pruneArticles.js')
+const Feed = require('../../structs/db/Feed.js')
+const Article = require('../../models/Article.js')
+const pruneArticles = require('../../maintenance/pruneArticles.js')
 
-jest.mock('../../../config.json')
-jest.mock('../../../structs/db/Feed.js')
-jest.mock('../../../structs/db/Supporter.js')
-jest.mock('../../../structs/db/Schedule.js')
-jest.mock('../../../models/Article.js', () => ({
+jest.mock('../../config.json')
+jest.mock('../../structs/db/Feed.js')
+jest.mock('../../structs/db/Supporter.js')
+jest.mock('../../structs/db/Schedule.js')
+jest.mock('../../models/Article.js', () => ({
   model: {
     find: jest.fn(() => ({
       exec: jest.fn(() => [])

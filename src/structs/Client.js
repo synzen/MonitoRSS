@@ -10,7 +10,7 @@ const log = require('../util/logger.js')
 const connectDb = require('../util/connectDatabase.js')
 const EventEmitter = require('events')
 const ipc = require('../util/ipc.js')
-const maintenance = require('../util/maintenance/index.js')
+const maintenance = require('../maintenance/index.js')
 const DISABLED_EVENTS = [
   'TYPING_START',
   'MESSAGE_DELETE',

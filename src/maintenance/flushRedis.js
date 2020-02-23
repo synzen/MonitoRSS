@@ -1,4 +1,4 @@
-const RedisBase = require('../../structs/db/Redis/Base.js')
+const RedisBase = require('../structs/db/Redis/Base.js')
 const promisify = require('util').promisify
 
 async function flushRedis () {

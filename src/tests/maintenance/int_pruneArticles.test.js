@@ -1,15 +1,15 @@
 process.env.TEST_ENV = true
-const config = require('../../../config.js')
+const config = require('../../config.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_pruneArticles'
-const pruneArticles = require('../../../util/maintenance/pruneArticles.js')
+const pruneArticles = require('../../maintenance/pruneArticles.js')
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useCreateIndex: true
 }
 
-jest.mock('../../../config.js')
+jest.mock('../../config.js')
 
 describe('Int::util/maintenance/pruneArticles', function () {
   beforeAll(async function () {

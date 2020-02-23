@@ -1,8 +1,8 @@
 process.env.TEST_ENV = true
 const FLAGS = require('discord.js').Permissions.FLAGS
-const checkPermissions = require('../../../util/maintenance/checkPermissions.js')
+const checkPermissions = require('../../maintenance/checkPermissions.js')
 
-jest.mock('../../../util/ipc.js')
+jest.mock('../../util/ipc.js')
 
 describe('Unit::util/maintenance/checkPermission', function () {
   const permissionsIn = jest.fn()

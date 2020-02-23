@@ -1,6 +1,6 @@
 const FLAGS = require('discord.js').Permissions.FLAGS
-const log = require('../logger.js')
-const ipc = require('../ipc.js')
+const log = require('../util/logger.js')
+const ipc = require('../util/ipc.js')
 
 /**
  * Precondition: The feed's guild belongs to the bot, or the

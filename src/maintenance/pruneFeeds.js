@@ -1,5 +1,5 @@
-const Feed = require('../../structs/db/Feed.js')
-const log = require('../logger.js')
+const Feed = require('../structs/db/Feed.js')
+const log = require('../util/logger.js')
 
 /**
  * Remove all feeds whose guild doesn't exist

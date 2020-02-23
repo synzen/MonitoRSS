@@ -1,8 +1,8 @@
 process.env.TEST_ENV = true
-const Profile = require('../../../structs/db/Profile.js')
-const pruneProfileAlerts = require('../../../util/maintenance/pruneProfileAlerts.js')
+const Profile = require('../../structs/db/Profile.js')
+const pruneProfileAlerts = require('../../maintenance/pruneProfileAlerts.js')
 
-jest.mock('../../../structs/db/Profile.js')
+jest.mock('../../structs/db/Profile.js')
 
 describe('utils/maintenance/pruneProfileAlerts', function () {
   beforeEach(function () {

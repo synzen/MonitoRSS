@@ -2,10 +2,6 @@ const LinkLogic = require('../../structs/LinkLogic.js')
 
 const DEFAULT_DATA = { config: { feeds: {} } }
 
-jest.mock('../../../util/logger.js')
-jest.mock('../../../config.js')
-jest.mock('../../../models/Article.js')
-
 describe('Unit::LinkLogic', function () {
   beforeEach(function () {
     jest.restoreAllMocks()

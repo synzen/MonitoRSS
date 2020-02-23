@@ -9,11 +9,11 @@ const flushRedis = require('./flushRedis.js')
 const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
 const checkArticleIndexes = require('./checkArticleIndexes.js')
-const ShardStats = require('../../structs/db/ShardStats.js')
-const Supporter = require('../../structs/db/Supporter.js')
-const Patron = require('../../structs/db/Patron.js')
-const config = require('../../config.js')
-const log = require('../logger.js')
+const ShardStats = require('../structs/db/ShardStats.js')
+const Supporter = require('../structs/db/Supporter.js')
+const Patron = require('../structs/db/Patron.js')
+const config = require('../config.js')
+const log = require('../util/logger.js')
 
 /**
  * @param {Map<string, number>} guildIdsByShard

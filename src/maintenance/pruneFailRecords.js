@@ -1,5 +1,5 @@
-const FailRecord = require('../../structs/db/FailRecord.js')
-const Feed = require('../../structs/db/Feed.js')
+const FailRecord = require('../structs/db/FailRecord.js')
+const Feed = require('../structs/db/Feed.js')
 
 /**
  * Remove all fail records with URLS that no feed has

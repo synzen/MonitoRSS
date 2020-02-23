@@ -1,4 +1,4 @@
-const Profile = require('../../structs/db/Profile.js')
+const Profile = require('../structs/db/Profile.js')
 
 /**
  * Remove all guilds no longer with the bot

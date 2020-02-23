@@ -1,8 +1,8 @@
 process.env.TEST_ENV = true
-const Feed = require('../../../structs/db/Feed.js')
-const pruneFeeds = require('../../../util/maintenance/pruneFeeds.js')
+const Feed = require('../../structs/db/Feed.js')
+const pruneFeeds = require('../../maintenance/pruneFeeds.js')
 
-jest.mock('../../../structs/db/Feed.js')
+jest.mock('../../structs/db/Feed.js')
 
 describe('utils/maintenance/pruneFeeds', function () {
   beforeEach(function () {

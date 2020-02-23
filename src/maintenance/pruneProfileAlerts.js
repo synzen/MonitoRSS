@@ -1,5 +1,5 @@
-const Profile = require('../../structs/db/Profile.js')
-const log = require('../logger.js')
+const Profile = require('../structs/db/Profile.js')
+const log = require('../util/logger.js')
 // https://discordapp.com/developers/docs/topics/opcodes-and-status-codes
 const DELETE_CODES = new Set([10007, 10013, 50035])
 
