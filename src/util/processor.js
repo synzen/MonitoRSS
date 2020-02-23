@@ -8,6 +8,7 @@ const LinkLogic = require('../structs/LinkLogic.js')
 const debug = require('../util/debugFeeds.js')
 const DataDebugger = require('../structs/DataDebugger.js')
 const databaseFuncs = require('../util/database.js')
+const config = require('../config.js')
 
 async function fetchFeed (headers, url, debug) {
   if (debug) {
@@ -84,7 +85,7 @@ async function syncDatabase (articleList, databaseDocs, feeds, meta, memoryColle
 }
 
 async function getFeed (data) {
-  const { link, rssList, headers, toDebug, docs, feedData, shardID, scheduleName } = data
+  const { link, rssList, headers, toDebug, docs, feedData, shardID, scheduleName, runNum } = data
   try {
     const stream = await fetchFeed(headers[link], link, toDebug)
     if (!stream) {
@@ -104,20 +105,23 @@ async function getFeed (data) {
     }
     await syncDatabase(articleList, docs, rssList, meta, feedData)
 
-    // Then send to prevent new article spam if sync fails
-    const logic = new LinkLogic({ articleList, ...data })
-    const result = await logic.run(docs)
-    const newArticles = result.newArticles
-    const length = newArticles.length
-    for (let i = 0; i < length; ++i) {
-      if (toDebug) {
-        log.debug.info(`${link}: Sending article status`)
+    if (runNum !== 0 || config.feeds.sendOldOnFirstCycle === true) {
+      // Then send to prevent new article spam if sync fails
+      const logic = new LinkLogic({ articleList, ...data })
+      const result = await logic.run(docs)
+      const newArticles = result.newArticles
+      const length = newArticles.length
+      for (let i = 0; i < length; ++i) {
+        if (toDebug) {
+          log.debug.info(`${link}: Sending article status`)
+        }
+        process.send({
+          status: 'article',
+          article: newArticles[i]
+        })
       }
-      process.send({
-        status: 'article',
-        article: newArticles[i]
-      })
     }
+
     process.send({
       status: 'success',
       link,
