@@ -157,6 +157,7 @@ process.on('message', async m => {
       promises.push(getFeed({ ...m, link, rssList, toDebug, docs }))
     }
     await Promise.all(promises)
+    process.exit()
   } catch (err) {
     log.general.error(`isolatedMethod`, err)
   }

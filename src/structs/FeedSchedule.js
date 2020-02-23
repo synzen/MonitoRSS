@@ -304,7 +304,6 @@ class FeedSchedule extends EventEmitter {
             callback()
           }
           completedBatches++
-          processor.kill()
           if (completedBatches === totalBatchLengths) {
             this._processorList.length = 0
             this._finishCycle()
