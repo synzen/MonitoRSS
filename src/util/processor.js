@@ -159,6 +159,6 @@ process.on('message', async m => {
     await Promise.all(promises)
     process.exit()
   } catch (err) {
-    log.general.error(`isolatedMethod`, err)
+    log.general.error(`processor`, err)
   }
 })

@@ -265,7 +265,7 @@ class FeedSchedule extends EventEmitter {
       }
       let completedLinks = 0
       const currentBatchLen = Object.keys(currentBatch).length
-      this._processorList.push(childProcess.fork(path.join(__dirname, '..', 'rss', 'isolatedMethod.js')))
+      this._processorList.push(childProcess.fork(path.join(__dirname, '..', 'util', 'processor.js')))
 
       const processorIndex = this._processorList.length - 1
       const processor = this._processorList[processorIndex]
