@@ -24,7 +24,7 @@
 			"description": "The prefix of your RSS feed bot. E.g. summoning the bot is done via ~rsshelp.",
 			"value": "~"
 		},
-		"DRSS_BOT_CONTROLLERIDS": {
+		"DRSS_BOT_OWNERIDS": {
 			"description": "Owner ID(s), separate multiple with a comma.",
 			"required": false
 		},
