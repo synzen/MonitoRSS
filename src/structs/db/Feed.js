@@ -6,9 +6,8 @@ const Subscriber = require('./Subscriber.js')
 const Schedule = require('./Schedule.js')
 const Supporter = require('./Supporter.js')
 const FeedFetcher = require('../../util/FeedFetcher.js')
-const dbCmds = require('../../rss/db/commands.js')
+const databaseFuncs = require('../../rss/database.js')
 const log = require('../../util/logger.js')
-const LinkLogic = require('../../rss/logic/LinkLogic.js')
 
 class Feed extends FilterBase {
   /**
@@ -330,7 +329,7 @@ class Feed extends FilterBase {
    * @param {string} scheduleName
    * @param {Object<string, any>[]} articleList
    */
-  async initializeArticles (shardID, scheduleName, articleList, idType) {
+  async initializeArticles (shardID, scheduleName, articleList) {
     if (!Base.isMongoDatabase) {
       return
     }
@@ -338,7 +337,8 @@ class Feed extends FilterBase {
       throw new TypeError('shardID is undefined trying to initialize collection')
     }
     try {
-      const docs = await dbCmds.findAll(this.url, shardID, scheduleName)
+      const docsByURL = await databaseFuncs.getAllDocuments(shardID, scheduleName)
+      const docs = docsByURL[this.url] || []
       if (docs.length > 0) {
         // The collection already exists from a previous addition, no need to initialize
         return
@@ -351,9 +351,10 @@ class Feed extends FilterBase {
         feedURL: this.url
       }
       for (const article of articleList) {
-        insert.push(LinkLogic.formatArticleForDatabase(article, comparisons, idType, meta))
+        const formatted = databaseFuncs.formatArticleForDatabase(article, comparisons, meta)
+        insert.push(formatted)
       }
-      await dbCmds.bulkInsert(insert)
+      await databaseFuncs.insertDocuments(insert)
     } catch (err) {
       log.general.warning(`Unable to initialize ${this.url}`, err, true)
     }
@@ -364,7 +365,7 @@ class Feed extends FilterBase {
    * @param {number} [shardID] - Used for initializing its Mongo collection
    */
   async testAndSave (shardID) {
-    const { articleList, idType } = await FeedFetcher.fetchFeed(this.url)
+    const { articleList } = await FeedFetcher.fetchFeed(this.url)
     const feeds = await Feed.getManyBy('guild', this.guild)
     for (const feed of feeds) {
       if (feed.url === this.url && feed.channel === this.channel) {
@@ -387,7 +388,7 @@ class Feed extends FilterBase {
     await this.save()
     if (shardID !== undefined && articleList.length > 0) {
       const schedule = await this.determineSchedule()
-      await this.initializeArticles(shardID, schedule.name, articleList, idType)
+      await this.initializeArticles(shardID, schedule.name, articleList)
     }
   }
 
