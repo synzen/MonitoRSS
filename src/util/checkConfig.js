@@ -33,7 +33,6 @@ exports.defaultConfigs = {
   },
   feeds: {
     refreshRateMinutes: { type: Number, default: 10 },
-    checkTitles: { type: Boolean, default: false },
     timezone: { type: String, default: 'America/New_York' },
     dateFormat: { type: String, default: 'ddd, D MMMM YYYY, h:mm A z' },
     dateLanguage: { type: String, default: moment.locales()[0] },
