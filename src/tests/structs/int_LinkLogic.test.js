@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const LinkLogic = require('../../../rss/logic/LinkLogic.js')
+const LinkLogic = require('../../structs/LinkLogic.JS')
 const dbName = 'test_int_linklogic'
 const CON_OPTIONS = {
   useNewUrlParser: true,

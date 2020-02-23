@@ -1,4 +1,4 @@
-const LinkLogic = require('../../../rss/logic/LinkLogic.js')
+const LinkLogic = require('../../structs/LinkLogic.js')
 
 const DEFAULT_DATA = { config: { feeds: {} } }
 
