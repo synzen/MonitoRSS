@@ -93,8 +93,9 @@ class ArticleMessage {
       }
       // Only formats with 1 match will get the filtered format
       if (highestPriority > -1 && matched[highestPriority] === 1) {
-        textFormat = selectedFormat.text === true ? textFormat : selectedFormat.text // If it's true, then it will use the feed's (or the config default, if applicable) message
-        embedFormat = selectedFormat.embeds === true ? embedFormat : selectedFormat.embeds
+        // If it's undefined, then it will use the feed's (or the config default, if applicable) message
+        textFormat = selectedFormat.text === undefined ? textFormat : selectedFormat.text
+        embedFormat = selectedFormat.embeds === undefined ? embedFormat : selectedFormat.embeds
       }
     }
 
