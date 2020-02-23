@@ -1,13 +1,21 @@
 const databaseFuncs = require('../../rss/database.js')
-const dbCmds = require('../../rss/db/commands.js')
+const Article = require('../../models/Article')
 
-jest.mock('../../rss/db/commands.js')
+jest.mock('../../models/Article', () => ({
+  model: {
+    updateOne: jest.fn(() => ({
+      exec: jest.fn()
+    })),
+    find: jest.fn(() => ({
+      lean: jest.fn(() => ({
+        exec: jest.fn()
+      }))
+    }))
+  }
+}))
 
 describe('Unit::rss/database', function () {
   afterEach(function () {
-    dbCmds.findAll.mockReset()
-    dbCmds.update.mockReset()
-    dbCmds.bulkInsert.mockReset()
     jest.restoreAllMocks()
   })
   describe('formatArticleForDatabase', function () {
@@ -183,9 +191,6 @@ describe('Unit::rss/database', function () {
     })
   })
   describe('insertDocuments', function () {
-    afterEach(function () {
-      dbCmds.bulkInsert.mockRestore()
-    })
     it('adds documents to memoryCollection if databaseless', async function () {
       const memoryCollection = [{
         foo: 1
@@ -204,29 +209,28 @@ describe('Unit::rss/database', function () {
         b: 2
       }])
     })
-    it('calls dbCmds bulk insert', async function () {
-      const documents = [{
-        a: 1
-      }, {
-        b: 2
-      }]
-      await databaseFuncs.insertDocuments(documents)
-      expect(dbCmds.bulkInsert).toHaveBeenCalledWith(documents)
-    })
   })
   describe('updateDocuments', function () {
-    afterEach(function () {
-      dbCmds.update.mockReset()
-    })
     it('calls db update with every document if mongodb', async function () {
       const documents = [{
-        a: 1
+        _id: 'a',
+        whatever: 'asd'
       }, {
-        b: 2
+        _id: 'b',
+        whatever: 'aszdc'
       }]
       await databaseFuncs.updateDocuments(documents)
-      expect(dbCmds.update).toHaveBeenCalledWith(documents[0])
-      expect(dbCmds.update).toHaveBeenCalledWith(documents[1])
+      expect(Article.model.updateOne).toHaveBeenCalledTimes(2)
+      expect(Article.model.updateOne).toHaveBeenCalledWith({
+        _id: documents[0]._id
+      }, {
+        $set: documents[0]
+      })
+      expect(Article.model.updateOne).toHaveBeenCalledWith({
+        _id: documents[1]._id
+      }, {
+        $set: documents[1]
+      })
     })
     it('replaces data in memory collection if databaseless', async function () {
       const memoryCollection = [{
@@ -303,8 +307,16 @@ describe('Unit::rss/database', function () {
       }
       const spy = jest.spyOn(databaseFuncs, 'mapArticleDocumentsToURL')
         .mockReturnValue(mappedResult)
+      const documents = [{
+        a: 1
+      }]
+      Article.model.find.mockReturnValue({
+        lean: jest.fn(() => ({
+          exec: jest.fn(() => documents)
+        }))
+      })
       const returned = await databaseFuncs.getAllDocuments(shardID, scheduleName)
-      expect(spy).toHaveBeenCalledWith(shardID, scheduleName)
+      expect(spy).toHaveBeenCalledWith(documents)
       expect(returned).toEqual(mappedResult)
     })
   })
@@ -320,8 +332,7 @@ describe('Unit::rss/database', function () {
         feedURL: '1',
         id: 3
       }]
-      dbCmds.findAll.mockResolvedValue(articles)
-      const result = await databaseFuncs.mapArticleDocumentsToURL(1, '')
+      const result = await databaseFuncs.mapArticleDocumentsToURL(articles)
       expect(result).toEqual({
         '1': [{
           ...articles[0]

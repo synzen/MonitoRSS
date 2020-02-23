@@ -1,4 +1,4 @@
-const dbCmds = require('./db/commands.js')
+const Article = require('../models/Article.js')
 
 /**
  * @param {Object<string, any>} article
@@ -120,7 +120,9 @@ async function insertDocuments (documents, memoryCollection) {
   if (memoryCollection) {
     documents.forEach(doc => memoryCollection.push({ ...doc }))
   } else {
-    await dbCmds.bulkInsert(documents)
+    const Model = Article.model
+    const insert = documents.map(article => new Model(article))
+    await Model.insertMany(insert)
   }
 }
 
@@ -145,19 +147,22 @@ async function updateDocuments (documents, memoryCollection) {
       }
     }
   } else {
-    await Promise.all(documents.map(doc => dbCmds.update(doc)))
+    const promises = documents.map(doc => Article.model.updateOne({
+      _id: doc._id
+    }, {
+      $set: doc
+    }).exec())
+    await Promise.all(promises)
   }
 }
 
 /**
- * @param {number} shardID
- * @param {string} scheduleName
+ * @param {Object<string, any>[]} documents
  */
-async function mapArticleDocumentsToURL (shardID, scheduleName) {
-  const articles = await dbCmds.findAll(shardID, scheduleName)
+async function mapArticleDocumentsToURL (documents) {
   /** @type {Object<string, Object<string, any>[]>} */
   const map = {}
-  for (const article of articles) {
+  for (const article of documents) {
     const feedURL = article.feedURL
     if (!map[feedURL]) {
       map[feedURL] = [article]
@@ -177,7 +182,11 @@ async function getAllDocuments (shardID, scheduleName, memoryCollection) {
   if (memoryCollection) {
     return memoryCollection
   } else {
-    return module.exports.mapArticleDocumentsToURL(shardID, scheduleName)
+    const documents = await Article.model.find({
+      shardID,
+      scheduleName
+    }).lean().exec()
+    return module.exports.mapArticleDocumentsToURL(documents)
   }
 }
 
