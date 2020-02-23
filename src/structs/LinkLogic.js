@@ -22,7 +22,6 @@ const { EventEmitter } = require('events')
  * @property {string[]} debugFeeds - Array of feed IDs to show debug info for
  * @property {string} link - The feed URL
  * @property {Object} config - config.js values
- * @property {number} runNum - Number of times this schedule has run so far
  */
 
 class LinkLogic extends EventEmitter {
@@ -31,12 +30,11 @@ class LinkLogic extends EventEmitter {
    */
   constructor (data) {
     super()
-    const { rssList, articleList, debugFeeds, link, config, runNum } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+    const { rssList, articleList, debugFeeds, link, config } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
     this.rssList = rssList
     this.articleList = articleList
     this.link = link
     this.config = config
-    this.runNum = runNum
 
     /**
      * @type {Set<string>}
