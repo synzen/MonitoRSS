@@ -31,7 +31,7 @@ const list = {
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM
   },
-  message: {
+  text: {
     initLevel: 1,
     botPerm: EMBED_LINKS_PERM,
     userPerm: MANAGE_CHANNELS_PERM

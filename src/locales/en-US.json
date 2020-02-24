@@ -23,8 +23,8 @@
     "list": {
       "description": "List all active feeds in server."
     },
-    "message": {
-      "action": "Message Customization",
+    "text": {
+      "action": "Text Customization",
       "description": "Open a menu to customize a feed's text message."
     },
     "embed": {
@@ -387,14 +387,14 @@
       "globalSubscribers": "**Global Subscribers:**\n",
       "filteredSubscribers": "**Filtered Subscribers:**\n"
     },
-    "message": {
-      "prompt": "The current message for {{link}} is: \n{{currentMsg}}\nType your new customized message now, type `reset` to use the default message, or type `exit` to cancel. \n\nRemember that you can use the placeholders `{title}`, `{description}`, `{link}`, and etc. `{empty}` will create an empty message, but only if an embed is used. Regular formatting such as **bold** and etc. is also available. To find other placeholders, type `exit` then `{{prefix}}test`.\n\n",
-      "noEmpty": "You cannot have an empty message if there is no embed used for this feed. Try again.",
-      "noSetMessage": "None has been set. Currently using default message below:",
-      "resetSuccess": "Message has been reset and using default message for feed {{link}}:",
-      "setSuccess": "Message recorded for feed <{{link}}>:",
-      "noSubscriptionsPlaceholder": "Note that because there is no `{subscriptions}`, whatever subscriptions you add through {{prefix}}mention will *not* appear in this feed's article messages.",
-      "reminder": "You may use `{{prefix}}test` to see your new message format."
+    "text": {
+      "prompt": "The current text for {{link}} is: \n{{currentMsg}}\nType your new customized text now, type `reset` to use the default text, or type `exit` to cancel. \n\nRemember that you can use the placeholders `{title}`, `{description}`, `{link}`, and etc. `{empty}` will create an empty message, but only if an embed is used. Regular formatting such as **bold** and etc. is also available. To find other placeholders, type `exit` then `{{prefix}}test`.\n\n",
+      "noEmpty": "You cannot have empty text if there is no embed used for this feed. Try again.",
+      "noSetText": "None has been set. Currently using default text below:",
+      "resetSuccess": "Text has been reset and using default text for feed {{link}}:",
+      "setSuccess": "Text recorded for feed <{{link}}>:",
+      "noSubscriptionsPlaceholder": "Note that because there is no `{subscriptions}`, whatever subscriptions you add through {{prefix}}mention will *not* appear in this feed's article text.",
+      "reminder": "You may use `{{prefix}}test` to see your new text format."
     },
     "move": {
       "prompt": "Mention the channel to move the feed(s) to, or type `this` for this channel.",

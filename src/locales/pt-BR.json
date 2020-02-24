@@ -23,9 +23,9 @@
     "list": {
       "description": "Mostrar todos os feeds ativos neste servidor."
     },
-    "message": {
-      "action": "Customizar mensagem",
-      "description": "Abre um menu para customizar a mensagem do feed."
+    "text": {
+      "action": "Customizar texto",
+      "description": "Abre um menu para customizar a texto do feed."
     },
     "embed": {
       "args": {
@@ -370,14 +370,14 @@
       "globalSubscribers": "**Inscrições Globais:**\n",
       "filteredSubscribers": "**Inscrições filtrada:**\n"
     },
-    "message": {
-      "prompt": "A mensagem atual para {{link}} é: \n{{currentMsg}}\nDigite sua nova mensagem personalizada agora, digite `reset` para usar a mensagem padrão, ou digite` exit` para cancelar. \n\nLembre-se que você pode usar campos como `{title}`, `{description}`, `{link}`, e etc. `{empty}` irá criar uma mensagem vazia, but apenas se uma embed for usada. formato regular como **negrito** e etc. também está disponível. para encontrar outros campos, digite `exit` e então `{{prefix}}test`.\n\n",
-      "noEmpty": "Você não pode ter uma mensagem vazia se não houver uma embed sendo usada para este feed. Tente novamente.",
-      "noSetMessage": "Nenhuma mensagem foi definida. Atualmente usando a mensagem padrão abaixo:",
-      "resetSuccess": "A mensagem foi redefinida e usando a mensagem padrão para o feed {{link}}:",
-      "setSuccess": "Mensagem registrada para o feed <{{link}}>:",
-      "noSubscriptionsPlaceholder": "Note que se não houver `{subscriptions}`, ou qualquer inscrição que você adicionou pelo {{prefix}}mention *não* irá aparecer na mensagem dos artigos deste feed.",
-      "reminder": "Você pode usar o `{{prefix}}test` para ver seu novo formato de mensagem."
+    "text": {
+      "prompt": "A texto atual para {{link}} é: \n{{currentMsg}}\nDigite sua nova texto personalizada agora, digite `reset` para usar a texto padrão, ou digite` exit` para cancelar. \n\nLembre-se que você pode usar campos como `{title}`, `{description}`, `{link}`, e etc. `{empty}` irá criar uma mensagem vazia, but apenas se uma embed for usada. formato regular como **negrito** e etc. também está disponível. para encontrar outros campos, digite `exit` e então `{{prefix}}test`.\n\n",
+      "noEmpty": "Você não pode ter uma texto vazia se não houver uma embed sendo usada para este feed. Tente novamente.",
+      "noSetText": "Nenhuma texto foi definida. Atualmente usando a texto padrão abaixo:",
+      "resetSuccess": "A texto foi redefinida e usando a texto padrão para o feed {{link}}:",
+      "setSuccess": "Texto registrada para o feed <{{link}}>:",
+      "noSubscriptionsPlaceholder": "Note que se não houver `{subscriptions}`, ou qualquer inscrição que você adicionou pelo {{prefix}}mention *não* irá aparecer na texto dos artigos deste feed.",
+      "reminder": "Você pode usar o `{{prefix}}test` para ver seu novo formato de texto."
     },
     "move": {
       "prompt": "Mencione o canal para mover o(s) feed(s) para, ou digite `this` para este canal.",
