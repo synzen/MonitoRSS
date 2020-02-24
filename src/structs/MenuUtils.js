@@ -173,7 +173,11 @@ class Menu {
     else {
       if (title === undefined) throw new Error('Menu Title must be defined')
       if (desc === undefined) throw new Error('Menu Description must be defined')
-      this._curPage.addField(`${this._numbered ? (this.pages.length - 1) * this.maxPerPage + (this._curPage.fields.length + 1) + ') ' : ''}${title}`, desc.length > 1024 ? desc.slice(0, 1000) + '...' : desc, inline)
+      this._curPage.addFields({
+        name: `${this._numbered ? (this.pages.length - 1) * this.maxPerPage + (this._curPage.fields.length + 1) + ') ' : ''}${title}`,
+        value: desc.length > 1024 ? desc.slice(0, 1000) + '...' : desc,
+        inline
+      })
     }
 
     return this

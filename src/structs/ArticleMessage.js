@@ -177,7 +177,11 @@ class ArticleMessage {
           if (typeof name === 'string' && !name) {
             richEmbed.addBlankField(inline)
           } else if (richEmbed.fields.length < 10) {
-            richEmbed.addField(name, value, inline)
+            richEmbed.addFields({
+              name,
+              value,
+              inline
+            })
           }
         }
       }
