@@ -27,8 +27,8 @@
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.4.24",
     "moment": "^2.24.0",
-    "moment-timezone": "^0.5.27",
-    "mongoose": "^5.9.1",
+    "moment-timezone": "^0.5.28",
+    "mongoose": "^5.9.2",
     "node-fetch": "^2.6.0",
     "redis": "^2.8.0",
     "request": "^2.88.2"
