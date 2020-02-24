@@ -78,7 +78,7 @@ function Message () {
   }
 
   const hasSubscribers = subscribers.find(s => s.feed === feed._id)
-  const originalMessage = feed.text || botConfig.defaultMessage
+  const originalMessage = feed.text || botConfig.defaultText
   const messageToDisplay = inputMessage || originalMessage
 
   const updateWindowDimensions = () => {

@@ -100,7 +100,7 @@ class ArticleMessage {
     }
 
     if (!textFormat) {
-      textFormat = feed.text || config.feeds.defaultMessage.trim()
+      textFormat = feed.text || config.feeds.defaultText.trim()
     }
 
     return { textFormat, embedFormat }
@@ -222,7 +222,7 @@ class ArticleMessage {
       const text = textFormat === '{empty}' ? '' : parsedArticle.convertKeywords(textFormat, ignoreLimits)
       return { embeds, text }
     } else {
-      const text = parsedArticle.convertKeywords(textFormat === '{empty}' ? config.feeds.defaultMessage : textFormat, ignoreLimits)
+      const text = parsedArticle.convertKeywords(textFormat === '{empty}' ? config.feeds.defaultText : textFormat, ignoreLimits)
       return { text }
     }
   }

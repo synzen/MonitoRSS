@@ -12,7 +12,7 @@ async function feedSelectorFn (m, data) {
   if (feed.text) {
     currentMsg = '```Markdown\n' + feed.text + '```'
   } else {
-    currentMsg = `\`\`\`Markdown\n${Translator.translate('commands.text.noSetText', locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultMessage + '```'
+    currentMsg = `\`\`\`Markdown\n${Translator.translate('commands.text.noSetText', locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultText + '```'
   }
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const nextData = {
@@ -64,7 +64,7 @@ module.exports = async (bot, message, command) => {
       feed.text = undefined
       await feed.save()
       log.command.info(`Text reset for ${feed.url}`, message.guild)
-      await message.channel.send(translate('commands.text.resetSuccess', { link: feed.url }) + `\n \`\`\`Markdown\n${config.feeds.defaultMessage}\`\`\``)
+      await message.channel.send(translate('commands.text.resetSuccess', { link: feed.url }) + `\n \`\`\`Markdown\n${config.feeds.defaultText}\`\`\``)
     } else {
       feed.text = setting
       await feed.save()

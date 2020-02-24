@@ -383,11 +383,11 @@ function Preview (props) {
         </h2>
       </UserInfo>
       <Content>
-        { (message || botConfig.defaultMessage) === '{empty}' && hasEmbeds
+        { (message || botConfig.defaultText) === '{empty}' && hasEmbeds
           ? ''
           : article
-            ? parser.parse(convertKeywords(message || botConfig.defaultMessage || '').trim(), true, {}, parser.jumboify)
-            : parser.parse((message || botConfig.defaultMessage || '').trim(), true, {}, parser.jumboify)
+            ? parser.parse(convertKeywords(message || botConfig.defaultText || '').trim(), true, {}, parser.jumboify)
+            : parser.parse((message || botConfig.defaultText || '').trim(), true, {}, parser.jumboify)
         }
         {embedElements}
       </Content>
