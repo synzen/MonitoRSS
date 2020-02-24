@@ -174,9 +174,7 @@ class ArticleMessage {
           let value = convert(field.value ? field.value : '')
           value = value.length > 1024 ? value.slice(0, 1020) + '...' : value.length > 0 ? value : '\u200b'
 
-          if (typeof name === 'string' && !name) {
-            richEmbed.addBlankField(inline)
-          } else if (richEmbed.fields.length < 10) {
+          if (richEmbed.fields.length < 10) {
             richEmbed.addFields({
               name,
               value,
