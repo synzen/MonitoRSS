@@ -204,7 +204,7 @@ function Home (props) {
       </SampleContainer> */}
       <Section>
         <h2>Get Started!</h2>
-        <p>Getting automatic delivery of your desired news can be done in 3 simple steps.<br />For the full list of commands, use the ~rsshelp command.</p>
+        <p>Getting automatic delivery of your desired news can be done in 3 simple steps.<br />For the full list of commands, use the rss.help command.</p>
         {/* <p style={{ fontSize: 16 }}>In just 3 easy steps.</p> */}
         <Cards>
           <Card>
