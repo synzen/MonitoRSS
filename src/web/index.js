@@ -1,9 +1,9 @@
 const fs = require('fs')
 const config = require('../config.js')
-process.env.NODE_ENV = 'production'
 const storage = require('../util/storage.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 const expressApp = require('./app.js')
+const log = createLogger('W')
 
 module.exports = () => {
   // Check variables
@@ -20,7 +20,7 @@ module.exports = () => {
   // Create HTTP Server
   const http = require('http').Server(app)
   http.listen(httpPort, () => {
-    log.web.success(`HTTP UI listening on port ${httpPort}!`)
+    log.info(`HTTP UI listening on port ${httpPort}!`)
   })
 
   // Create HTTPS Server
@@ -43,7 +43,7 @@ module.exports = () => {
       ca
     }, app)
     https.listen(httpsPort, () => {
-      log.web.success(`HTTPS UI listening on port ${httpsPort}!`)
+      log.info(`HTTPS UI listening on port ${httpsPort}!`)
     })
   }
 }

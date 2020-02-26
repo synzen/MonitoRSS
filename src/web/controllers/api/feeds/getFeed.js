@@ -1,7 +1,6 @@
 const fetch = require('node-fetch')
 const feedServices = require('../../../services/feed.js')
 const createError = require('../../../util/createError.js')
-const log = require('../../../../util/logger.js')
 
 function getFeed (profile) {
   /**
@@ -32,7 +31,6 @@ function getFeed (profile) {
       }
       xmlStr = await res.text()
     } catch (err) {
-      log.web.warning('Failed to get feed XML - ' + err.message)
       const resError = createError(500, err.message)
       return res.status(500).json(resError)
     }

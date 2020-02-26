@@ -1,4 +1,3 @@
-const log = require('../../util/logger.js')
 const authServices = require('../services/auth.js')
 const createError = require('../util/createError.js')
 
@@ -8,11 +7,8 @@ const createError = require('../util/createError.js')
  * @param {import('express').NextFunction} next
  */
 async function authenticate (req, res, next) {
-  const { token, identity } = req.session
+  const { token } = req.session
   if (!token) {
-    if (identity) {
-      log.web.warning(`(${identity.id}, ${identity.username}) Failed Discord Authorization`)
-    }
     const error = createError(401, 'Failed discord authorization')
     return res.status(401).json(error)
   }

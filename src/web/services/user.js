@@ -1,12 +1,13 @@
 const fetch = require('node-fetch')
 const moment = require('moment')
-const log = require('../../util/logger.js')
 const discordAPIConstants = require('../constants/discordAPI.js')
 const discordAPIHeaders = require('../constants/discordAPIHeaders.js')
 const roleServices = require('./role.js')
 const RedisUser = require('../../structs/db/Redis/User.js')
 const RedisGuildMember = require('../../structs/db/Redis/GuildMember.js')
+const createLogger = require('../../util/logger/create.js')
 const config = require('../../config.js')
+const log = createLogger('W')
 const MANAGE_CHANNEL_PERMISSION = 16
 const CACHE_TIME_MINUTES = 10
 const CACHED_USERS = {}
@@ -22,7 +23,7 @@ async function getUserByAPI (id, accessToken, skipCache) {
   if (cachedUser && timeDiffMinutes(cachedUser.lastUpdated) <= CACHE_TIME_MINUTES) {
     return cachedUser.data
   }
-  log.web.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me`)
+  log.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me`)
   const results = await fetch(`${discordAPIConstants.apiHost}/users/@me`, discordAPIHeaders.user(accessToken))
   if (results.status !== 200) {
     throw new Error(`Bad Discord status code (${results.status})`)
@@ -45,7 +46,7 @@ async function getGuildsByAPI (id, accessToken, skipCache) {
   if (cachedUserGuilds && timeDiffMinutes(cachedUserGuilds.lastUpdated) <= CACHE_TIME_MINUTES) {
     return cachedUserGuilds.data
   }
-  log.web.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me/guilds`)
+  log.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me/guilds`)
   const res = await fetch(`${discordAPIConstants.apiHost}/users/@me/guilds`, discordAPIHeaders.user(accessToken))
   if (res.status !== 200) {
     throw new Error(`Bad Discord status code (${res.status})`)

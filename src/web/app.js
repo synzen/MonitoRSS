@@ -9,10 +9,7 @@ const RedisStore = require('connect-redis')(session)
 const discordAPIConstants = require('./constants/discordAPI.js')
 const routes = require('./routes/index.js')
 const storage = require('../util/storage.js')
-const log = require('../util/logger.js')
 const requestIp = require('request-ip')
-const AuthPathAttempts = require('./util/AuthPathAttempts.js')
-const attemptedPaths = new AuthPathAttempts()
 
 const app = express()
 const credentials = {
@@ -60,10 +57,14 @@ module.exports = () => {
     // Logging
     app.use(morgan(function (tokens, req, res) {
       const custom = []
-      if (req.session && req.session.identity) custom.push(`(U: ${req.session.identity.id}, ${req.session.identity.username})`)
-      if (req.guildRss) custom.push(`(G: ${req.guildRss.id}, ${req.guildRss.name})`)
+      if (req.session && req.session.identity) {
+        custom.push(`(U: ${req.session.identity.id}, ${req.session.identity.username})`)
+      }
+      if (req.guildRss) {
+        custom.push(`(G: ${req.guildRss.id}, ${req.guildRss.name})`)
+      }
       const arr = [
-        log.formatConsoleDate(new Date()).slice(0, -1), // Remove extra white space at the end
+        tokens.date(req, res, 'clf'),
         requestIp.getClientIp(req),
         ...custom,
         tokens.method(req, res),
