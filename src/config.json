@@ -1,5 +1,6 @@
 {
   "log": {
+    "pretty": true,
     "dates": true,
     "linkErrs": true,
     "unfiltered": true,

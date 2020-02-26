@@ -6,6 +6,7 @@ const STATUS_TYPES = ['online', 'idle', 'dnd', 'invisible']
 
 exports.defaultConfigs = {
   log: {
+    pretty: { type: Boolean, default: true },
     dates: { type: Boolean, default: true },
     linkErrs: { type: Boolean, default: true },
     unfiltered: { type: Boolean, default: true },
