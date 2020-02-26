@@ -6,6 +6,9 @@ function createLogger (shardID) {
     base: {
       shardID: String(shardID)
     },
+    customLevels: {
+      owner: 35
+    },
     prettyPrint: {
       translateTime: 'yyyy-mm-dd HH:MM:ss',
       messageFormat: `[{shardID}] \x1b[0m{msg}`,
