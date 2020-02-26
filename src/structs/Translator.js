@@ -1,7 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const config = require('../config.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
+const log = createLogger()
 const defaultLocale = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', config.bot.locale + '.json')))
 const localesData = new Map()
 const fileList = fs.readdirSync(path.join(__dirname, '..', 'locales'))
@@ -108,16 +109,16 @@ class Translator {
       accessedSoFar = accessedSoFar[property]
       reference = reference[property]
       if (accessedSoFar === undefined) {
-        log.general.error(`Invalid locale accessor ("${string}" stopped at "${property}") for locale ${locale}`)
+        log.error(`Invalid locale accessor ("${string}" stopped at "${property}") for locale ${locale}`)
         throw new Error(`Invalid locale accessor (stopped at "${property}") for locale ${locale}`)
       }
       if (!reference) {
-        log.general.error(`Invalid locale accessor (no en-US locale reference of "${string}" at "${property}") for locale ${locale}`)
+        log.error(`Invalid locale accessor (no en-US locale reference of "${string}" at "${property}") for locale ${locale}`)
         throw new Error(`Invalid locale accessor (no en-US locale reference at "${property}") for locale ${locale}`)
       }
     }
     if (typeof accessedSoFar !== 'string') {
-      log.general.error(`Invalid locale accessor that stopped with a non-string value ("${string}") for locale ${locale}`)
+      log.error(`Invalid locale accessor that stopped with a non-string value ("${string}") for locale ${locale}`)
       throw new Error(`Invalid locale accessor that stopped with a non-string value for locale ${locale}`)
     }
     if (accessedSoFar.length === 0) {

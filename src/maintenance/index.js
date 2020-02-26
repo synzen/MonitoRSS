@@ -13,7 +13,8 @@ const ShardStats = require('../structs/db/ShardStats.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Patron = require('../structs/db/Patron.js')
 const config = require('../config.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
+const log = createLogger()
 
 /**
  * @param {Map<string, number>} guildIdsByShard
@@ -52,8 +53,8 @@ async function prunePostInit (guildIdsByShard) {
 function cycleFunctions () {
   if (Supporter.enabled) {
     Patron.refresh()
-      .then(() => log.general.info(`Patron check finished`))
-      .catch(err => log.general.error(`Failed to refresh patrons on timer`, err))
+      .then(() => log.info(`Patron check finished`))
+      .catch(err => log.error(err, `Failed to refresh patrons on timer`))
   }
 }
 

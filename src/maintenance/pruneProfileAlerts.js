@@ -1,5 +1,5 @@
 const Profile = require('../structs/db/Profile.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 // https://discordapp.com/developers/docs/topics/opcodes-and-status-codes
 const DELETE_CODES = new Set([10007, 10013, 50035])
 
@@ -8,6 +8,7 @@ const DELETE_CODES = new Set([10007, 10013, 50035])
  * @returns {number}
  */
 async function pruneProfileAlerts (bot) {
+  const log = createLogger(bot.shard.ids[0])
   /** @type {Profile[]} */
   const profiles = await Profile.getAll()
   const promises = profiles.map(profile => (async () => {
@@ -22,7 +23,7 @@ async function pruneProfileAlerts (bot) {
       const memberID = userAlerts[i]
       if (!(/^\d+$/.test(memberID))) {
         // Has non-digits
-        log.general.info(`Deleting invalid alert user "${memberID}"`, guild)
+        log.info(`Deleting invalid alert user "${memberID}"`, guild)
         userAlerts.splice(i, 1)
         updated = true
         continue
@@ -32,7 +33,7 @@ async function pruneProfileAlerts (bot) {
       } catch (err) {
         // Either unknown member, user, or invalid ID
         if (DELETE_CODES.has(err.code)) {
-          log.general.info(`Deleting missing alert user "${memberID}"`, guild)
+          log.info(`Deleting missing alert user "${memberID}"`, guild)
           userAlerts.splice(i, 1)
           updated = true
         } else {

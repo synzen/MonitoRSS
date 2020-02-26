@@ -1,4 +1,5 @@
-const log = require('./logger.js')
+const createLogger = require('./logger/create.js')
+const log = createLogger()
 
 class PageContainer {
   constructor () {
@@ -17,7 +18,7 @@ class PageContainer {
       const m = await message.channel.messages.fetch(message.id)
       await m.edit({ embed: pageMsg.pages[pageMsg.currentPage] })
     } catch (err) {
-      log.command.warning('pageControls nextPage', err, message.channel)
+      log.error(err, 'pageControls nextPage')
     }
   }
 
@@ -33,7 +34,7 @@ class PageContainer {
       const m = await message.channel.messages.fetch(message.id)
       await m.edit({ embed: pageMsg.pages[pageMsg.currentPage] })
     } catch (err) {
-      log.command.warning('pageControls prevpage', err, message.channel)
+      log.error(err, 'pageControls prevpage')
     }
   }
 }

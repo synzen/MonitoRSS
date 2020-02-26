@@ -1,5 +1,5 @@
 const Feed = require('../structs/db/Feed.js')
-const log = require('../util/logger.js')
+const log = require('../util/logger/create.js')()
 
 /**
  * Remove all feeds whose guild doesn't exist
@@ -17,7 +17,7 @@ async function pruneFeeds (guildIdsByShard, channelIdsByShard) {
     const hasGuild = guildIdsByShard.has(feed.guild)
     const hasChannel = channelIdsByShard.has(feed.channel)
     if (!hasGuild || !hasChannel) {
-      log.init.success(`Removing feed ${feed._id} (hasGuild: ${hasGuild}, hasChannel: ${hasChannel})`)
+      log.info(`Removing feed ${feed._id} (hasGuild: ${hasGuild}, hasChannel: ${hasChannel})`)
       deletions.push(feed.delete())
     }
   }

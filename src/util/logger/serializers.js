@@ -13,7 +13,7 @@ function textChannel (channel) {
 }
 
 /**
-* @param {import('discord.js').User} user 
+* @param {import('discord.js').User} user
 */
 function user (user) {
   return `${user.id}, ${user.username}`

@@ -1,8 +1,8 @@
 const config = require('../../config.js')
 const Base = require('./Base.js')
 const Feed = require('./Feed.js')
-const log = require('../../util/logger.js')
 const ipc = require('../../util/ipc.js')
+const createLogger = require('../../util/logger/create.js')
 const FailRecordModel = require('../../models/FailRecord.js').model
 
 class FailRecord extends Base {
@@ -134,16 +134,17 @@ class FailRecord extends Base {
    * @param {string} url
    */
   static sendFailMessage (url) {
+    const log = createLogger()
     Feed.getManyBy('url', url)
       .then(feeds => {
-        log.general.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
+        log.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
         feeds.forEach(({ channel }) => {
           const message = `Feed <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
           ipc.sendChannelAlert(channel, message)
         })
       })
       .catch(err => {
-        log.general.error(`Failed to get many feeds for sendFailMessage of ${url}`, err, true)
+        log.error(err, `Failed to get many feeds for sendFailMessage of ${url}`)
       })
   }
 

@@ -2,7 +2,7 @@ const Profile = require('./db/Profile.js')
 const Feed = require('./db/Feed.js')
 const FilteredFormat = require('./db/FilteredFormat.js')
 const Subscriber = require('./db/Subscriber.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 
 class GuildData {
   /**
@@ -163,7 +163,10 @@ class GuildData {
       await Promise.all(subscribers.map(s => s.save()))
     } catch (err) {
       Promise.all(data.map(d => d.delete()))
-        .catch(err => log.general.error('Failed to rollback saves after GuildData restore', err))
+        .catch(err => {
+          const log = createLogger()
+          log.error(err, 'Failed to rollback saves after GuildData restore')
+        })
       throw err
     }
   }

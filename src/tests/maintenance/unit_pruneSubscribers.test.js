@@ -41,6 +41,9 @@ describe('utils/maintenance/pruneSubscribers', function () {
       guild: 'guildA'
     }]
     const bot = {
+      shard: {
+        ids: []
+      },
       guilds: {
         cache: new Map([['guildA', {}]])
       },
@@ -72,6 +75,9 @@ describe('utils/maintenance/pruneSubscribers', function () {
           guild: 'guildA'
         }]
         const bot = {
+          shard: {
+            ids: []
+          },
           guilds: {
             cache: new Map([['guildB']])
           }
@@ -102,6 +108,9 @@ describe('utils/maintenance/pruneSubscribers', function () {
           code: 10013
         }
         const bot = {
+          shard: {
+            ids: []
+          },
           guilds: {
             cache: new Map([['guildA', {
               members: {
@@ -146,6 +155,9 @@ describe('utils/maintenance/pruneSubscribers', function () {
           }
         }
         const bot = {
+          shard: {
+            ids: []
+          },
           guilds: {
             cache: new Map([['guildA', guildA]])
           }
@@ -189,6 +201,9 @@ describe('utils/maintenance/pruneSubscribers', function () {
           }
         }
         const bot = {
+          shard: {
+            ids: []
+          },
           guilds: {
             cache: new Map([['guildA', guildA]])
           }
@@ -222,6 +237,9 @@ describe('utils/maintenance/pruneSubscribers', function () {
           code: 10007
         }
         const bot = {
+          shard: {
+            ids: []
+          },
           guilds: {
             cache: new Map([['guildA', {
               members: {

@@ -1,11 +1,13 @@
 const ArticleMessage = require('../../structs/ArticleMessage.js')
 const Article = require('../../structs/Article.js')
 jest.mock('discord.js')
-jest.mock('../../util/logger.js')
 jest.mock('../../structs/Article.js')
 jest.mock('../../util/storage.js')
 
 const Bot = () => ({
+  shard: {
+    ids: []
+  },
   channels: {
     cache: {
       get: () => ({})

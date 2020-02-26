@@ -1,9 +1,10 @@
 const fs = require('fs')
 const path = require('path')
-const log = require('./logger.js')
+const createLogger = require('./logger/create.js')
 const config = require('../config.js')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
+const log = createLogger()
 const eventHandlers = []
 const VALID_EVENTS = [
   'channelCreate',
@@ -58,15 +59,15 @@ if (fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'commands.js'))) 
   try {
     cmdsExtension = require('../../settings/commands.js')
   } catch (e) {
-    log.general.error(`Unable to load commands extension file`, e)
+    log.error(e, `Unable to load commands extension file`)
   }
   fs.watchFile(path.join(__dirname, '..', '..', 'settings', 'commands.js'), (cur, prev) => {
     delete require.cache[require.resolve('../../settings/commands.js')]
     try {
       cmdsExtension = require('../../settings/commands.js')
-      log.general.success(`Commands extension file has been updated`)
+      log.info(`Commands extension file has been updated`)
     } catch (e) {
-      log.general.error(`Commands extension file was changed, but could not be updated`, e)
+      log.error(e, `Commands extension file was changed, but could not be updated`)
     }
   })
 }

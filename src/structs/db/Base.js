@@ -3,7 +3,8 @@ const config = require('../../config.js')
 const fs = require('fs')
 const fsPromises = fs.promises
 const path = require('path')
-const log = require('../../util/logger.js')
+const createLogger = require('../../util/logger/create.js')
+const log = createLogger()
 
 /**
  * @typedef {import('mongoose').Model<import('mongoose').Document, {}>} MongooseModel
@@ -176,7 +177,7 @@ class Base {
       const readContent = fs.readFileSync(filePath)
       return new this(JSON.parse(readContent), true)
     } catch (err) {
-      log.general.warning(`Could not parse ${DatabaseModel.collection.collectionName} JSON from file ${id}`, err)
+      log.warn(err, `Could not parse ${DatabaseModel.collection.collectionName} JSON from file ${id}`)
       return null
     }
   }
@@ -252,7 +253,7 @@ class Base {
       try {
         return JSON.parse(contents)
       } catch (err) {
-        log.general.error(`Failed to parse json at ${folderPath} ${fileNames[index]}`, err)
+        log.warn(err, `Failed to parse json at ${folderPath} ${fileNames[index]}`)
       }
     })
     return jsons
@@ -348,7 +349,7 @@ class Base {
     const folderPath = paths[paths.length - 1]
     const filePath = path.join(folderPath, `${this._id}.json`)
     if (!fs.existsSync(filePath)) {
-      log.general.warning(`Unable to delete ${Model.collection.collectionName} ${this._id} at ${filePath} since its nonexistent`)
+      log.warn(`Unable to delete ${Model.collection.collectionName} ${this._id} at ${filePath} since its nonexistent`)
     } else {
       fs.unlinkSync(filePath)
     }

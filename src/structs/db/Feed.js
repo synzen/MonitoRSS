@@ -7,7 +7,7 @@ const Schedule = require('./Schedule.js')
 const Supporter = require('./Supporter.js')
 const FeedFetcher = require('../../util/FeedFetcher.js')
 const databaseFuncs = require('../../util/database.js')
-const log = require('../../util/logger.js')
+const createLogger = require('../../util/logger/create.js')
 
 class Feed extends FilterBase {
   /**
@@ -356,7 +356,8 @@ class Feed extends FilterBase {
       }
       await databaseFuncs.insertDocuments(insert)
     } catch (err) {
-      log.general.warning(`Unable to initialize ${this.url}`, err, true)
+      const log = createLogger()
+      log.error(err, `Unable to initialize ${this.url}`)
     }
   }
 

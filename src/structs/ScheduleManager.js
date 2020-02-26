@@ -3,7 +3,7 @@ const FeedSchedule = require('./FeedSchedule.js')
 const ArticleMessageQueue = require('./ArticleMessageQueue.js')
 const Schedule = require('../structs/db/Schedule.js')
 const debug = require('../util/debugFeeds.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
 
 class ScheduleManager {
@@ -14,23 +14,24 @@ class ScheduleManager {
   constructor (bot, shardID) {
     this.bot = bot
     this.shardID = shardID
+    this.log = createLogger(this.shardID)
     this.articleMessageQueue = new ArticleMessageQueue(bot)
     this.scheduleList = []
   }
 
   async _queueArticle (article) {
     if (debug.feeds.has(article._feed._id)) {
-      log.debug.info(`${article._feed._id} ScheduleManager queueing article ${article.link} to send`)
+      this.log.debug(`${article._feed._id} ScheduleManager queueing article ${article.link} to send`)
     }
     try {
       await this.articleMessageQueue.enqueue(article)
     } catch (err) {
       if (config.log.linkErrs === true) {
         const channel = this.bot.channels.cache.get(article._feed.channel)
-        log.general.warning(`Failed to send article ${article.link}`, channel.guild, channel, err)
+        this.log.warn(`Failed to send article ${article.link}`, channel.guild, channel, err)
         if (err.code === 50035) {
           channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
-            .catch(err => log.general.warning(`Unable to send failed-to-send message for article`, err))
+            .catch(err => this.log.warn(err, `Unable to send failed-to-send message for article`))
         }
       }
     }
@@ -38,7 +39,7 @@ class ScheduleManager {
 
   _finishSchedule () {
     this.articleMessageQueue.send(this.bot)
-      .catch(err => log.general.error('Failed to send a delayed articleMessage', err, err.guild, true))
+      .catch(err => this.log.error(err, 'Failed to send a delayed articleMessage'))
   }
 
   async _registerSchedules () {
@@ -55,7 +56,7 @@ class ScheduleManager {
     for (var feedSchedule of this.scheduleList) {
       if (feedSchedule.refreshRate === refreshRate) {
         return feedSchedule.run()
-          .catch(err => log.cycle.error(`SH ${this.shardID} Schedule ${this.name} failed to run cycle`, err))
+          .catch(err => this.log.error(err, `Schedule ${this.name} failed to run cycle`))
       }
     }
     // If there is no schedule with that refresh time

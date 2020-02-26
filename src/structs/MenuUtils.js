@@ -5,7 +5,7 @@ const MessageCleaner = require('./MessageCleaner.js')
 const pageControls = require('../util/pageControls.js')
 const MenuOptionError = require('./errors/MenuOptionError.js')
 const Translator = require('./Translator.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 
 /**
  * A model that automatically handles pagination via reactions for multiple embeds and able to be used in series with data passed in a sequence.
@@ -254,11 +254,17 @@ class Menu {
         }
         if (reason === 'time') {
           this.channel.send(this.translate('structs.MenuUtils.closedInactivity'))
-            .catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
+            .catch(err => {
+              const log = createLogger(this.channel.guild.shard.id)
+              log.warn(err, `Unable to send expired menu message`)
+            })
         } else {
           this.channel.send(reason)
             .then(m => m.delete({ timeout: 6000 }))
-            .catch(err => log.command.warning(`Menu collector on end message.send`, this.channel.guild, err))
+            .catch(err => {
+              const log = createLogger(this.channel.guild.shard.id)
+              log.warn(err, `Menu collector on end message.send`)
+            })
         }
       })
     })
@@ -347,7 +353,8 @@ class MenuSeries {
     if (err) {
       err.message = `[MenuSeries Error] ` + err.message
       if (err.code !== 50013) {
-        log.command.info(`MenuSeries command history: ${this._commandHistory.toString()}`)
+        const log = createLogger()
+        log.info(`MenuSeries command history: ${this._commandHistory.toString()}`)
       }
       throw err
     } else return data

@@ -1,8 +1,8 @@
 const config = require('../config.js')
 const Discord = require('discord.js')
-const log = require('../util/logger.js')
 const debug = require('../util/debugFeeds.js')
 const Article = require('./Article.js')
+const createLogger = require('../util/logger/create.js')
 
 /**
  * @typedef {Object} PreparedArticle
@@ -20,6 +20,7 @@ class ArticleMessage {
     if (!article._feed) {
       throw new Error('article._feed property missing')
     }
+    this.log = createLogger(bot.shard.ids[0])
     this.debug = debug.feeds.has(article._feed._id)
     this.article = article
     this.filteredFormats = article._feed.filteredFormats
@@ -29,7 +30,7 @@ class ArticleMessage {
     this.channel = bot.channels.cache.get(article._feed.channel)
     if (!this.channel) {
       if (this.debug) {
-        log.debug.info(`Skipping article delivery due to missing channel (${article._feed.channel})`)
+        this.log.info(`Skipping article delivery due to missing channel (${article._feed.channel})`)
       }
       return
     }
@@ -210,7 +211,7 @@ class ArticleMessage {
       this.webhook.name = name
       this.webhook.avatar = feed.webhook.avatar ? this.parsedArticle.convertImgs(feed.webhook.avatar) : undefined
     } catch (err) {
-      log.general.warning(`Cannot fetch webhooks for ArticleMessage webhook initialization to send message`, channel, err, true)
+      this.log.warn(err, `Cannot fetch webhooks for ArticleMessage webhook initialization to send message`)
     }
   }
 
@@ -302,7 +303,9 @@ class ArticleMessage {
     await this._resolveWebhook()
     if (!this.passedFilters()) {
       if (config.log.unfiltered === true || this.debug) {
-        log.general.info(`'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`, this.channel)
+        this.log.info({
+          channel: this.channel
+        }, `'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`)
       }
       return
     }
@@ -322,7 +325,7 @@ class ArticleMessage {
     } catch (err) {
       if (err.code === 50013 || this.sendFailed++ === 4) { // 50013 = Missing Permissions
         if (debug.feeds.has(this.feedID)) {
-          log.debug.error(`${this.feedID}: Message has been translated but could not be sent (TITLE: ${this.article.title})`, err)
+          this.log.info(err, `${this.feedID}: Message has been translated but could not be sent (TITLE: ${this.article.title})`)
         }
         throw err
       }

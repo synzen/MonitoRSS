@@ -1,5 +1,5 @@
 const FLAGS = require('discord.js').Permissions.FLAGS
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
 
 /**
@@ -10,6 +10,7 @@ const ipc = require('../util/ipc.js')
  * @returns {boolean} - The feed's disabled status
  */
 async function checkPermissions (feed, bot) {
+  const log = createLogger(bot.shard.ids[0])
   if (feed.disabled && !feed.disabled.startsWith('Missing permissions')) {
     // The feed is disabled for a separate reason - skip all checks
     return true
@@ -34,15 +35,15 @@ async function checkPermissions (feed, bot) {
     const reason = `Missing permissions ${reasons.join(', ')}`
     if (!feed.disabled) {
       ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been disabled in channel <#${channel.id}>: ${reason}`)
-      log.general.info(`Disabling feed ${feed._id} (${reason})`, guild, channel)
+      log.info(`Disabling feed ${feed._id} (${reason})`, guild, channel)
       await feed.disable(reason)
     } else if (feed.disabled.startsWith('Missing permissions') && feed.disabled !== reason) {
-      log.general.info(`Updating disabled feed ${feed._id} (${reason})`, guild, channel)
+      log.info(`Updating disabled feed ${feed._id} (${reason})`, guild, channel)
       await feed.disable(reason)
     }
     return true
   } else if (feed.disabled && feed.disabled.startsWith('Missing permissions')) {
-    log.general.info(`Enabling feed ${feed._id} for found permissions`, guild, channel)
+    log.info(`Enabling feed ${feed._id} for found permissions`, guild, channel)
     ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been enabled in channel <#${channel.id}> due to found permissions.`)
     await feed.enable()
     return false

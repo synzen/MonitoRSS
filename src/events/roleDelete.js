@@ -1,17 +1,22 @@
 const Subscriber = require('../structs/db/Subscriber.js')
-const log = require('../util/logger.js')
 const RedisRole = require('../structs/db/Redis/Role.js')
 const RedisGuildMember = require('../structs/db/Redis/GuildMember.js')
+const createLogger = require('../util/logger/create.js')
 const MANAGE_CHANNELS_PERM = 'MANAGE_CHANNELS'
 
 module.exports = async role => {
+  const log = createLogger(role.guild.shard.id)
   if (RedisRole.clientExists) {
     RedisRole.utils.forget(role)
-      .catch(err => log.general.error(`Redis failed to forget after roleDelete event`, role.guild, role, err))
+      .catch(err => {
+        log.error(err, `Redis failed to forget after roleDelete event`)
+      })
     if (role.permissions.has(MANAGE_CHANNELS_PERM)) {
       role.members.forEach(member => {
         RedisGuildMember.utils.forgetManager(member)
-          .catch(err => log.general.error(`Redis failed to forgetManager after roleDelete event`, member.guild, member, err))
+          .catch(err => {
+            log.error(err, `Redis failed to forgetManager after roleDelete event`)
+          })
       })
     }
   }
@@ -20,9 +25,11 @@ module.exports = async role => {
     const subscribers = await Subscriber.getManyBy('id', role.id)
     subscribers.forEach(subscriber => {
       subscriber.delete()
-        .catch(err => log.general.error('Failed to delete subscriber after role deletion', role.guild, role, err))
+        .catch(err => {
+          log.error(err, 'Failed to delete subscriber after role deletion')
+        })
     })
   } catch (err) {
-    log.guild.warning(`Role could not be removed from config by guild role deletion`, role.guild, role, err)
+    log.error(err, `Role could not be removed from config by guild role deletion`)
   }
 }

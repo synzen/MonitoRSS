@@ -18,6 +18,9 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
       save: jest.fn()
     }]
     const bot = {
+      shard: {
+        ids: []
+      },
       guilds: {
         cache: {
           get: jest.fn(() => ({
@@ -44,6 +47,9 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
       save: jest.fn()
     }]
     const bot = {
+      shard: {
+        ids: []
+      },
       guilds: {
         cache: {
           get: jest.fn(() => ({
@@ -68,6 +74,9 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
       save: jest.fn()
     }]
     const bot = {
+      shard: {
+        ids: []
+      },
       guilds: {
         cache: {
           get: jest.fn()
@@ -100,6 +109,9 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
       save: jest.fn()
     }]
     const bot = {
+      shard: {
+        ids: []
+      },
       guilds: {
         cache: {
           get: jest.fn()
@@ -126,6 +138,9 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
     }]
     const error = new Error('hsedg')
     const bot = {
+      shard: {
+        ids: []
+      },
       guilds: {
         cache: {
           get: jest.fn()
@@ -147,7 +162,12 @@ describe('utils/maintenance/pruneProfileAlerts', function () {
   it('rejects when profile get all fails', async function () {
     const error = new Error('wsetg')
     Profile.getAll.mockRejectedValue(error)
-    await expect(pruneProfileAlerts({}))
+    const bot = {
+      shard: {
+        ids: []
+      }
+    }
+    await expect(pruneProfileAlerts(bot))
       .rejects.toThrow(error)
   })
 })

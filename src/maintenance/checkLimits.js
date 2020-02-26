@@ -1,6 +1,8 @@
 const config = require('../config.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
+const log = createLogger()
+
 /**
  * Enable or disable feeds for guilds past their limit
  * @param {import('../../structs/db/Feed.js')[]} feeds
@@ -27,7 +29,7 @@ async function checkLimits (feeds, supporterLimits) {
     // If the limit is 0 and the feed exceeded limit, enable it
     if (guildLimit === 0) {
       if (feed.disabled) {
-        log.general.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to no set limit`)
+        log.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to no set limit`)
         enabled.push(feed.enable())
       }
       continue
@@ -44,7 +46,7 @@ async function checkLimits (feeds, supporterLimits) {
         // Enable it
         feedCount = feedCount + 1
         feedCounts.set(guild, feedCount)
-        log.general.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
+        log.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
         ipc.sendUserAlert(feed.channel, `Feed <${feed.url}> has been enabled in <#${feed.channel}> to due limit changes.`)
         enabled.push(feed.enable())
       }
@@ -52,7 +54,7 @@ async function checkLimits (feeds, supporterLimits) {
     } else {
       if (feedCount + 1 > guildLimit) {
         // Disable it if adding the current one goes over limit
-        log.general.info(`Disabling enabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
+        log.info(`Disabling enabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
         ipc.sendUserAlert(feed.channel, `Feed <${feed.url}> has been disabled in <#${feed.channel}> to due limit changes.`)
         disabled.push(feed.disable('Exceeded feed limit'))
       } else {

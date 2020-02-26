@@ -1,9 +1,9 @@
 const config = require('../config.js')
 const channelTracker = require('../util/channelTracker.js')
 const pageControls = require('../util/pageControls.js')
-const log = require('../util/logger.js')
 const { Menu, MenuOptionError } = require('./MenuUtils.js')
 const Translator = require('./Translator.js')
+const createLogger = require('../util/logger/create.js')
 const MULTI_SELECT = ['rssremove', 'rssmove']
 const GLOBAL_SELECT = ['rssmove']
 const SINGLE_NUMBER_REGEX = /^\d+$/
@@ -289,9 +289,18 @@ class FeedSelector extends Menu {
 
       collector.on('end', (collected, reason) => {
         channelTracker.remove(this.channel.id)
-        if (reason === 'user') return
-        if (reason === 'time') this.channel.send(this.translate('structs.MenuUtils.closedInactivity')).catch(err => log.command.warning(`Unable to send expired menu message`, this.channel.guild, err))
-        else this.channel.send(reason).then(m => m.delete({ timeout: 6000 }))
+        if (reason === 'user') {
+          return
+        }
+        if (reason === 'time') {
+          this.channel.send(this.translate('structs.MenuUtils.closedInactivity'))
+            .catch(err => {
+              const log = createLogger(this.channel.guild.shard.id)
+              log.warn(err, `Unable to send expired menu message`)
+            })
+        } else {
+          this.channel.send(reason).then(m => m.delete({ timeout: 6000 }))
+        }
       })
     })
   }

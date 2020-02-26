@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
-const log = require('./logger.js')
 const Discord = require('discord.js')
+const createLogger = require('./logger/create.js')
 const loadCCommand = name => require(`../commands/owner/${name}.js`)
 const loadCommand = file => require(`../commands/${file}.js`)
 const config = require('../config.js')
@@ -156,27 +156,42 @@ exports.has = message => {
   return list.hasOwnProperty(first.substr(prefix.length))
 }
 exports.run = async message => {
+  const log = createLogger(message.guild.shard.id)
   const bot = message.client
   const first = message.content.split(' ')[0]
   const guildPrefix = storage.prefixes[message.guild.id]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   let name = first.substr(prefix.length)
-  if (!list.hasOwnProperty(name)) return log.general.warning(`Failed to run ${name} - nonexistent command`, message.guild)
+  if (!list.hasOwnProperty(name)) {
+    return log.error({
+      guild: message.guild
+    }, `Failed to run ${name} - nonexistent command`)
+  }
 
   const cmdInfo = list[name]
   const channel = message.channel
   const guild = bot.guilds.cache.get(channel.guild.id)
   if (cmdInfo && cmdInfo.aliasFor) name = cmdInfo.aliasFor
-  if (!cmdInfo) return log.command.warning(`Could not run command "${name}" because command data does not exist`, guild)
+  if (!cmdInfo) {
+    return log.error({
+      guild: message.guild
+    }, `Could not run command "${name}" because command data does not exist`)
+  }
   const botPerm = cmdInfo.botPerm
   const userPerm = cmdInfo.userPerm
 
   try {
     if (guildPrefix && !message.content.startsWith(guildPrefix)) {
       await message.channel.send(`Invalid command prefix. You are not using the prefix you set for your server (${guildPrefix}).`)
-      return log.command.warning(`Ignoring command ${name} due to incorrect prefix (${prefix})`, guild)
-    } else if (!guildPrefix && !message.content.startsWith(config.bot.prefix)) return
-    log.command.info(`Used ${message.content}`, guild)
+      return log.info({
+        guild: message.guild
+      }, `Ignoring command ${name} due to incorrect prefix (${prefix})`)
+    } else if (!guildPrefix && !message.content.startsWith(config.bot.prefix)) {
+      return
+    }
+    log.info({
+      guild: message.guild
+    }, `Used ${message.content}`)
     if (cmdInfo.initLevel !== undefined && cmdInfo.initLevel > storage.initialized) {
       const m = await message.channel.send(`This command is disabled while booting up, please wait.`)
       await m.delete({ timeout: 4000 })
@@ -184,8 +199,9 @@ exports.run = async message => {
 
     // Check bot perm
     let botPermitted
-    if (typeof botPerm === 'string') botPermitted = PERMISSIONS.includes(botPerm) && !guild.members.cache.get(bot.user.id).permissionsIn(channel).has(botPerm)
-    else if (Array.isArray(botPerm)) {
+    if (typeof botPerm === 'string') {
+      botPermitted = PERMISSIONS.includes(botPerm) && !guild.members.cache.get(bot.user.id).permissionsIn(channel).has(botPerm)
+    } else if (Array.isArray(botPerm)) {
       for (var i = 0; i < botPerm.length; ++i) {
         const thisPerm = PERMISSIONS.includes(botPerm) && !guild.members.cache.get(bot.user.id).permissionsIn(channel).has(botPerm)
         botPermitted = botPermitted === undefined ? thisPerm : botPermitted && thisPerm
@@ -193,7 +209,9 @@ exports.run = async message => {
     }
 
     if (botPermitted) {
-      log.command.warning(`Missing bot permission ${botPerm} for bot, blocked ${message.content}`, guild)
+      log.info({
+        guild: message.guild
+      }, `Missing bot permission ${botPerm} for bot, blocked ${message.content}`)
       return await message.channel.send(`This command has been disabled due to missing bot permission \`${botPerm}\`.`)
     }
 
@@ -201,15 +219,20 @@ exports.run = async message => {
     const member = await message.guild.members.fetch(message.author)
     if (!message.member) message.member = member
 
-    if (!userPerm || !PERMISSIONS.includes(userPerm) || config.bot.ownerIDs.includes(message.author.id)) return loadCommand(name)(bot, message, name)
+    if (!userPerm || !PERMISSIONS.includes(userPerm) || config.bot.ownerIDs.includes(message.author.id)) {
+      return loadCommand(name)(bot, message, name)
+    }
     const serverPerm = member.permissions.has(userPerm)
     const channelPerm = member.permissionsIn(channel).has(userPerm)
 
     if (serverPerm || channelPerm) return loadCommand(name)(bot, message, name)
-    log.command.warning(`Missing user permissions for blocked ${message.content}`, message.guild, message.author)
+    log.info({
+      user: message.author,
+      guild: message.guild
+    }, `Missing user permissions for blocked ${message.content}`)
     await message.channel.send(`You do not have the permission \`${userPerm}\` to use this command.`)
   } catch (err) {
-    log.command.warning('command.run', guild, err, true)
+    log.error(err, 'command.run')
   }
 }
 

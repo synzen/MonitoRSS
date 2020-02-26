@@ -1,6 +1,6 @@
 const logLinkErrs = require('../config.js').log.linkErrs
 const connectDb = require('../util/connectDatabase.js')
-const log = require('../util/logger.js')
+const createLogger = require('./logger/create.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
@@ -10,9 +10,9 @@ const DataDebugger = require('../structs/DataDebugger.js')
 const databaseFuncs = require('../util/database.js')
 const config = require('../config.js')
 
-async function fetchFeed (headers, url, debug) {
-  if (debug) {
-    log.debug.info(`${url}: Fetching URL`)
+async function fetchFeed (headers, url, log) {
+  if (log) {
+    log.info(`Fetching URL`)
   }
   const fetchOptions = {}
   if (headers) {
@@ -26,8 +26,8 @@ async function fetchFeed (headers, url, debug) {
   }
   const { stream, response } = await FeedFetcher.fetchURL(url, fetchOptions)
   if (response.status === 304) {
-    if (debug) {
-      log.debug.info(`${url}: 304 response, sending success status`)
+    if (log) {
+      log.info(`304 response, sending success status`)
     }
     return null
   } else {
@@ -41,22 +41,22 @@ async function fetchFeed (headers, url, debug) {
         lastModified,
         etag
       })
-      if (debug) {
-        log.debug.info(`${url}: Sending back headers`)
+      if (log) {
+        log.info(`Sending back headers`)
       }
     }
     return stream
   }
 }
 
-async function parseStream (stream, url, debug) {
-  if (debug) {
-    log.debug.info(`${url}: Parsing stream`)
+async function parseStream (stream, url, log) {
+  if (log) {
+    log.info(`Parsing stream`)
   }
   const { articleList } = await FeedFetcher.parseStream(stream, url)
   if (articleList.length === 0) {
-    if (debug) {
-      log.debug.info(`${url}: No articles found, sending success status`)
+    if (log) {
+      log.info(`No articles found, sending success status`)
     }
     return null
   }
@@ -84,15 +84,21 @@ async function syncDatabase (articleList, databaseDocs, feeds, meta, memoryColle
   await databaseFuncs.updateDocuments(toUpdate, memoryCollection)
 }
 
-async function getFeed (data) {
+async function getFeed (data, log) {
   const { link, rssList, headers, toDebug, docs, feedData, shardID, scheduleName, runNum } = data
+  const urlLog = toDebug ? log.child({
+    url: link
+  }) : null
+  if (urlLog) {
+    urlLog.info(`Isolated processor received in batch`)
+  }
   try {
-    const stream = await fetchFeed(headers[link], link, toDebug)
+    const stream = await fetchFeed(headers[link], link, urlLog)
     if (!stream) {
       process.send({ status: 'success', link })
       return
     }
-    const articleList = await parseStream(stream, link, toDebug)
+    const articleList = await parseStream(stream, link, urlLog)
     if (!articleList) {
       process.send({ status: 'success', link })
       return
@@ -112,8 +118,8 @@ async function getFeed (data) {
       const newArticles = result.newArticles
       const length = newArticles.length
       for (let i = 0; i < length; ++i) {
-        if (toDebug) {
-          log.debug.info(`${link}: Sending article status`)
+        if (urlLog) {
+          urlLog.info(`Sending article status`)
         }
         process.send({
           status: 'article',
@@ -128,16 +134,16 @@ async function getFeed (data) {
       memoryCollection: feedData
     })
   } catch (err) {
-    if (toDebug) {
-      log.debug.info(`${link}: Sending failed status`)
+    if (urlLog) {
+      urlLog.info(`Sending failed status`)
     }
     process.send({ status: 'failed', link, rssList })
     if (err instanceof RequestError || err instanceof FeedParserError) {
-      if (logLinkErrs || toDebug) {
-        log.cycle.warning(`Skipping ${link}`, err)
+      if (logLinkErrs || urlLog) {
+        urlLog.warn(err, `Skipping`)
       }
     } else {
-      log.cycle.error(`Cycle logic (${link})`, err, true)
+      log.error(err, `Cycle logic`)
     }
   }
 }
@@ -147,22 +153,21 @@ process.on('message', async m => {
   const { debugFeeds, debugLinks, scheduleName, shardID, feedData } = m
   debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
   debug.links = new DataDebugger(debugLinks || [], 'links-processor')
+  const logMarker = `${shardID}C, ${scheduleName}`
+  const log = createLogger(logMarker)
   try {
-    await connectDb('CHILD', true)
+    await connectDb(logMarker, true)
     const articleDocuments = await databaseFuncs.getAllDocuments(shardID, scheduleName, feedData)
     const promises = []
     for (const link in currentBatch) {
       const docs = articleDocuments[link] || []
-      const toDebug = debug.links.has(link)
-      if (toDebug) {
-        log.debug.info(`${link}: Isolated processor received link in batch`)
-      }
       const rssList = currentBatch[link]
-      promises.push(getFeed({ ...m, link, rssList, toDebug, docs }))
+      const toDebug = debug.links.has(link)
+      promises.push(getFeed({ ...m, link, toDebug, rssList, docs }, log))
     }
     await Promise.all(promises)
     process.exit()
   } catch (err) {
-    log.general.error(`processor`, err)
+    log.error(err, `processor`)
   }
 })

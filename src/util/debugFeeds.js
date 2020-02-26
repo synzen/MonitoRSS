@@ -1,7 +1,8 @@
 const fs = require('fs')
 const path = require('path')
-const log = require('./logger.js')
 const DataDebugger = require('../structs/DataDebugger.js')
+const createLogger = require('./logger/create.js')
+const log = createLogger()
 const debugPath = path.join(__dirname, '..', '..', 'settings', 'debug.json')
 
 /**
@@ -14,7 +15,7 @@ const debugPath = path.join(__dirname, '..', '..', 'settings', 'debug.json')
 let debugData
 
 if (fs.existsSync(debugPath)) {
-  log.debug.info('Preloaded debug data from settings/debug.json')
+  log.info('Preloaded debug data from settings/debug.json')
   debugData = JSON.parse(fs.readFileSync(debugPath))
 }
 

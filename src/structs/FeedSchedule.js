@@ -9,7 +9,7 @@ const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
 const maintenance = require('../maintenance/index.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
 
 const BATCH_SIZE = config.advanced.batchSize
@@ -31,6 +31,7 @@ class FeedSchedule extends EventEmitter {
     this.bot = bot
     this.name = schedule.name
     this.shardID = scheduleManager.shardID
+    this.log = createLogger(`${this.shardID}, ${this.name}`)
     this.refreshRate = schedule.refreshRateMinutes
     this._linksResponded = {}
     this._processorList = []
@@ -63,14 +64,14 @@ class FeedSchedule extends EventEmitter {
       let linkList = this._sourceList.get(feedData.url)
       linkList[feedData._id] = feedData
       if (debug.feeds.has(feedData._id)) {
-        log.debug.info(`${feedData._id}: Adding to pre-existing source list`)
+        this.log.debug(`${feedData._id}: Adding to pre-existing source list`)
       }
     } else {
       let linkList = {}
       linkList[feedData._id] = feedData
       this._sourceList.set(feedData.url, linkList)
       if (debug.feeds.has(feedData._id)) {
-        log.debug.info(`${feedData._id}: Creating new source list`)
+        this.log.debug(`${feedData._id}: Creating new source list`)
       }
     }
   }
@@ -85,20 +86,20 @@ class FeedSchedule extends EventEmitter {
 
     if (feedData.disabled) {
       if (toDebug) {
-        log.debug.info(`Shard ${this.shardID} ${feedData._id}: Skipping feed delegation due to disabled status`)
+        this.log.debug(`${feedData._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
 
     if (failRecord && (failRecord.hasFailed() && failRecord.alerted)) {
       if (toDebug) {
-        log.debug.info(`Shard ${this.shardID} ${feedData._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
+        this.log.debug(`${feedData._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
       return false
     }
 
     if (toDebug) {
-      log.debug.info(`Shard ${this.shardID} ${feedData._id}: Preparing for feed delegation`)
+      this.log.debug(`Shard ${this.shardID} ${feedData._id}: Preparing for feed delegation`)
       this.debugFeedLinks.add(feedData.url)
     }
 
@@ -116,7 +117,7 @@ class FeedSchedule extends EventEmitter {
       }
       batch[link] = rssList
       if (debug.links.has(link)) {
-        log.debug.info(`Shard ${this.shardID} ${link}: Attached URL to regular batch list for ${this.name}`)
+        this.log.debug(`${link}: Attached URL to regular batch list for ${this.name}`)
       }
       this._linksResponded[link] = 1
     })
@@ -133,14 +134,14 @@ class FeedSchedule extends EventEmitter {
           continue
         }
         FailRecord.record(link, 'Failed to respond in a timely manner')
-          .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to record url failure ${link}`, err))
+          .catch(err => this.log.error(err, `Unable to record url failure ${link}`))
         list += `${link}\n`
         ++c
       }
       if (c > 25) {
         list = 'Greater than 25 links, skipping log'
       }
-      log.cycle.warning(`Shard ${this.shardID} Schedule ${this.name} - Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
+      this.log.warn(`Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
       console.log(list)
       this.killChildren()
     }
@@ -191,7 +192,7 @@ class FeedSchedule extends EventEmitter {
       const hasChannel = this.bot.channels.cache.has(feed.channel)
       if (!hasChannel) {
         if (debug.feeds.has(feed._id)) {
-          log.debug.info(`Shard ${this.shardID} ${feed._id}: Not processing feed - missing channel: ${!hasChannel}. Assigned to schedule ${this.name}`)
+          this.log.debug(`${feed._id}: Not processing feed - missing channel: ${!hasChannel}`)
         }
       } else {
         filteredFeeds.push(feed)
@@ -233,7 +234,7 @@ class FeedSchedule extends EventEmitter {
         continue
       }
       if (debug.feeds.has(feedData._id)) {
-        log.debug.info(`Shard ${this.shardID} ${feedData._id}: Assigned schedule ${this.name}`)
+        this.log.debug(`${feedData._id}: Assigned schedule`)
       }
       if (this._addToSourceLists(feedData)) {
         feedCount++
@@ -284,10 +285,10 @@ class FeedSchedule extends EventEmitter {
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
           FailRecord.record(linkCompletion.link)
-            .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to record url failure ${linkCompletion.link}`, err))
+            .catch(err => this.log.error(err, `Unable to record url failure ${linkCompletion.link}`))
         } else if (linkCompletion.status === 'success') {
           FailRecord.reset(linkCompletion.link)
-            .catch(err => log.cycle.warning(`Shard ${this.shardID} Unable to reset fail record ${linkCompletion.link}`, err))
+            .catch(err => this.log.error(err, `Unable to reset fail record ${linkCompletion.link}`))
           if (linkCompletion.memoryCollection) {
             this.feedData[linkCompletion.link] = linkCompletion.memoryCollection
           }
@@ -297,7 +298,7 @@ class FeedSchedule extends EventEmitter {
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
         if (debug.links.has(linkCompletion.link)) {
-          log.debug.info(`Shard ${this.shardID} ${linkCompletion.link}: Link responded from processor for ${this.name}`)
+          this.log.debug(`${linkCompletion.link}: Link responded from processor`)
         }
         if (completedLinks === currentBatchLen) {
           if (callback) {
@@ -375,17 +376,16 @@ class FeedSchedule extends EventEmitter {
           stats.lastUpdated = data.lastUpdated
           return stats.save()
         }
-      }).catch(err => log.general.warning(`Shard ${this.shardID} Unable to update statistics after cycle`, err, true))
+      }).catch(err => this.log.error(err, `Unable to update statistics after cycle`, err))
 
-    const name = this.name === 'default' ? 'default ' : ''
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     if (noFeeds) {
-      log.cycle.info(`Shard ${this.shardID} Finished ${name}feed retrieval cycle${nameParen}. No feeds to retrieve`)
+      this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)
     } else {
       if (this._processorList.length === 0) this.inProgress = false
       this.emit('finish')
       const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
-      log.cycle.info(`Shard ${this.shardID} Finished ${name}feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
+      this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
     }
 
     ++this.ran

@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const GuildData = require('../../structs/GuildData.js')
 const Profile = require('../../structs/db/Profile.js')
 const Feed = require('../../structs/db/Feed.js')

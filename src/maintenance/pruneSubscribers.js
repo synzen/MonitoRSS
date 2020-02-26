@@ -1,6 +1,6 @@
 const Subscriber = require('../structs/db/Subscriber.js')
 const Feed = require('../structs/db/Feed.js')
-const log = require('../util/logger.js')
+const createLogger = require('../util/logger/create.js')
 
 /**
  * Precondition: Feeds have been pruned, and thus no feeds
@@ -12,6 +12,7 @@ const log = require('../util/logger.js')
  * @returns {number}
  */
 async function pruneSubscribers (bot) {
+  const log = createLogger(bot.shard.ids[0])
   const [ subscribers, feeds ] = await Promise.all([
     Subscriber.getAll(),
     Feed.getAll()
@@ -42,7 +43,7 @@ async function pruneSubscribers (bot) {
         await guild.members.fetch(subscriber.id)
       } catch (err) {
         if (err.code === 10013 || err.code === 10007) {
-          log.general.info(`Deleting missing user subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
+          log.info(`Deleting missing user subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
           deletions.push(subscriber.delete())
         }
       }
@@ -51,7 +52,7 @@ async function pruneSubscribers (bot) {
         await guild.roles.fetch(subscriber.id)
       } catch (err) {
         if (err.code === 10011) {
-          log.general.info(`Deleting missing role subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
+          log.info(`Deleting missing role subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
           deletions.push(subscriber.delete())
         }
       }

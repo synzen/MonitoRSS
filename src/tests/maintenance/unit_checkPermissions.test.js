@@ -7,6 +7,9 @@ jest.mock('../../util/ipc.js')
 describe('Unit::util/maintenance/checkPermission', function () {
   const permissionsIn = jest.fn()
   const bot = {
+    shard: {
+      ids: []
+    },
     channels: {
       cache: {
         get: () => ({

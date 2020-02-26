@@ -1,5 +1,3 @@
-const log = require('../util/logger.js')
-
 /** @template T */
 class DebugData {
   /**
@@ -19,7 +17,6 @@ class DebugData {
    * @param {T} value
    */
   add (value) {
-    log.debug.info(`DataDebugger ${this.name} - Added ${value}`)
     this.data.add(value)
   }
 
@@ -27,7 +24,6 @@ class DebugData {
    * @param {T} value
    */
   remove (value) {
-    log.debug.info(`DataDebugger ${this.name} - Removed ${value}`)
     this.data.delete(value)
   }
 
