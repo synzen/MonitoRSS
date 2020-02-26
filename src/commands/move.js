@@ -1,11 +1,11 @@
 const config = require('../config.js')
 const FLAGS = require('discord.js').Permissions.FLAGS
-const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const createLogger = require('../util/logger/create.js')
 const MIN_PERMISSION_BOT = [
   FLAGS.VIEW_CHANNEL,
   FLAGS.SEND_MESSAGES
@@ -80,7 +80,11 @@ async function selectChannelFn (m, data) {
   }
 
   await Promise.all(promises)
-  log.command.info(`Channel for feeds ${summary.join(',')} moved to ${selected.id} (${selected.name})`, m.guild, m.channel)
+  const log = createLogger(m.guild.shard.id)
+  log.info({
+    guild: m.guild,
+    channel: m.channel
+  }, `Channel for feeds ${summary.join(',')} moved to ${selected.id} (${selected.name})`)
   m.channel.send(`${translate('commands.move.moveSuccess', { summary: summary.join('\n'), id: selected.id })} ${translate('generics.backupReminder', { prefix })}`)
     .catch(err => log.command.warning('rssmove 1', err))
   return data
@@ -90,7 +94,16 @@ module.exports = async (message, command) => {
   const profile = await Profile.get(message.guild.id)
   const guildLocale = profile ? profile.locale : undefined
   const feeds = await Feed.getManyBy('guild', message.guild.id)
-  const feedSelector = new FeedSelector(message, null, { command, locale: guildLocale, multiSelect: true }, feeds)
-  const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: Translator.translate('commands.move.prompt', guildLocale) })
-  await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel], { locale: guildLocale, profile }).start()
+  const feedSelector = new FeedSelector(message, null, {
+    command,
+    locale: guildLocale,
+    multiSelect: true
+  }, feeds)
+  const selectChannel = new MenuUtils.Menu(message, selectChannelFn, {
+    text: Translator.translate('commands.move.prompt', guildLocale)
+  })
+  await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel], {
+    locale: guildLocale,
+    profile
+  }).start()
 }

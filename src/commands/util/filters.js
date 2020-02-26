@@ -9,7 +9,7 @@ const filterTypes = [
 const MenuUtils = require('../../structs/MenuUtils.js')
 const Translator = require('../../structs/Translator.js')
 const Subscriber = require('../../structs/db/Subscriber.js')
-const log = require('../../util/logger.js')
+const createLogger = require('../../util/logger/create.js')
 
 // BEGIN ADD FUNCTIONS
 
@@ -74,8 +74,12 @@ async function inputFilterFn (m, data) {
     await target.addFilters(chosenFilterType, add)
   }
 
+  const log = createLogger(m.guild.shard.id)
+  const logBindings = {
+    guild: m.guild
+  }
   if (!user && !role) {
-    log.command.info(`New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${feed.url}`, m.guild)
+    log.info(logBindings, `New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${feed.url}`)
     let msg = ''
     if (addedList) {
       msg = `${translate('commands.utils.filters.addSuccess')} \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
@@ -88,7 +92,12 @@ async function inputFilterFn (m, data) {
     }
     await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`)
   } else {
-    log.command.info(`New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${feed.url}.`, m.guild, user || role)
+    if (role) {
+      logBindings.role = role
+    } else {
+      logBindings.user = user
+    }
+    log.info(logBindings, `New filter(s) [${addedList.trim().split('\n')}] added to '${chosenFilterType}' for ${feed.url}.`)
     let msg = `${translate('commands.utils.filters.updatedFor', {
       name: user ? `${user.username}#${user.discriminator}` : role.name
     })} ${translate('commands.utils.filters.addSuccess')} \`${chosenFilterType}\`:\n\`\`\`\n\n${addedList}\`\`\``
@@ -214,19 +223,28 @@ async function removeFilterFn (m, data) {
 
   await target.removeFilters(chosenFilterType, remove)
 
+  const log = createLogger(m.guild.shard.id)
+  const logBindings = {
+    guild: m.guild
+  }
   if (!user && !role) {
     let msg = `${translate('commands.utils.filters.removeSuccess')} \`${chosenFilterType}\`:\`\`\`\n\n${validItems}\`\`\``
     if (invalidItems) {
       msg += `\n\n${translate('commands.utils.filters.removeFailedNoExist')}:\n\`\`\`\n\n${invalidItems}\`\`\``
     }
-    log.command.info(`Removed filter(s) [${validItems.trim().split('\n')}] from '${chosenFilterType}' for ${feed.url}`, m.guild)
+    log.info(logBindings, `Removed filter(s) [${validItems.trim().split('\n')}] from '${chosenFilterType}' for ${feed.url}`)
     await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`)
   } else {
     let msg = `${translate('commands.utils.filters.removeSuccessSubscriber', { name: user ? `${user.username}#${user.discriminator}` : role.name })} \`${chosenFilterType}\`:\`\`\`\n\n${validItems}\`\`\``
     if (invalidItems) {
       msg += `\n\n${translate('commands.utils.filters.removeFailedNoExist')}:\n\`\`\`\n\n${invalidItems}\`\`\``
     }
-    log.command.info(`Removed ${user ? 'user' : 'role'} filter(s) [${validItems.trim().split('\n')}] from '${chosenFilterType}' for ${feed.url}`, m.guild, user || role)
+    if (role) {
+      logBindings.role = role
+    } else {
+      logBindings.user = user
+    }
+    log.info(logBindings, `Removed ${user ? 'user' : 'role'} filter(s) [${validItems.trim().split('\n')}] from '${chosenFilterType}' for ${feed.url}`)
     await m.channel.send(`${msg}\n\n${translate('generics.backupReminder', { prefix })}`)
   }
   return { __end: true }
@@ -251,7 +269,6 @@ exports.remove = async (message, profile, feed, role, user) => {
 
   if (!target || !target.hasFilters()) {
     return message.channel.send(translate('commands.utils.filters.removeNone', { link: feed.url }))
-      .catch(err => log.command.warning(`filterRemove 1`, message.guild, err))
   }
 
   const options = []
