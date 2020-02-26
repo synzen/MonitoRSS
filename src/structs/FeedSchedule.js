@@ -141,8 +141,9 @@ class FeedSchedule extends EventEmitter {
       if (c > 25) {
         list = 'Greater than 25 links, skipping log'
       }
-      this.log.warn(`Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
-      console.log(list)
+      this.log.warn({
+        failedURLs: list
+      }, `Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
       this.killChildren()
     }
 
