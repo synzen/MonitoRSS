@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const FilterBase = require('./common/FilterBase.js')
 const Embed = require('./common/Embed.js')
+const Version = require('./common/Version.js')
 const middleware = require('./middleware/FilteredFormat.js')
 
 /**
@@ -16,6 +17,7 @@ const schema = new mongoose.Schema({
   priority: Number
 })
 
+schema.add(Version)
 schema.add(FilterBase)
 
 schema.pre('validate', middleware.validate)

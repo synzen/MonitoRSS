@@ -1,15 +1,14 @@
 const mongoose = require('mongoose')
+const Version = require('./common/Version.js')
 
-const schema = mongoose.Schema({
+const schema = new mongoose.Schema({
   type: String,
   userID: String,
   username: String,
-  content: String,
-  date: {
-    type: Date,
-    default: Date.now
-  }
+  content: String
 })
+
+schema.add(Version)
 
 exports.schema = schema
 exports.model = mongoose.model('Feedback', schema)
