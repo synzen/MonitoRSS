@@ -1,25 +1,27 @@
-const log = require('../../util/logger.js')
+const createLogger = require('../../util/logger/create.js')
 
-module.exports = async (bot, message) => {
+module.exports = async (message) => {
   const content = message.content.split(' ')
-  try {
-    if (content.length !== 2) return await message.channel.send('You must specify the guild ID as the first argument.')
-    const results = await bot.shard.broadcastEval(`
-    const guild = this.guilds.cache.get('${content[1]}')
-    const obj = {}
-    if (guild) {
-      guild.leave().catch(console.log)
-      obj.name = guild.name
-      obj.id = guild.id
-      obj
-    }
-    `)
-    const removed = results.filter(kicked => kicked)
-    if (removed.length === 0) return await message.channel.send('No such guild found.')
-    log.owner.success(`Guild ${content[1]} (${removed[0].name}) has been removed`, message.author)
-    return await message.channel.send(`Guild ${content[1]} (${removed[0].name}) was found - see console for whether the removal was successful.`)
-  } catch (err) {
-    log.owner.warning('leaveguild', message.author, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('leaveguild 1b', message.guild, err))
+  if (content.length !== 2) {
+    return message.channel.send('You must specify the guild ID as the first argument.')
   }
+  const results = await message.client.shard.broadcastEval(`
+  const guild = this.guilds.cache.get('${content[1]}')
+  const obj = {}
+  if (guild) {
+    guild.leave().catch(console.log)
+    obj.name = guild.name
+    obj.id = guild.id
+    obj
+  }
+  `)
+  const removed = results.filter(kicked => kicked)
+  if (removed.length === 0) {
+    return message.channel.send('No such guild found.')
+  }
+  const log = createLogger(message.guild.shard.id)
+  log.owner({
+    user: message.author
+  }, `Guild ${content[1]} (${removed[0].name}) has been removed`)
+  return message.channel.send(`Guild ${content[1]} (${removed[0].name}) was found - see console for whether the removal was successful.`)
 }

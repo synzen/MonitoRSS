@@ -1,15 +1,13 @@
-const log = require('../../util/logger.js')
+const createLogger = require('../../util/logger/create.js')
 
-module.exports = async (bot, message) => {
+module.exports = async (message) => {
   const content = message.content.split(' ')
   if (content.length === 1) return
   content.shift()
-  try {
-    await bot.user.setAvatar(content[0])
-    log.owner.success(`Changed avatar `)
-    await message.channel.send('Successfully changed avatar.')
-  } catch (err) {
-    log.owner.warning('setavatar', err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('setavatar 1a', message.guild, err))
-  }
+  await message.client.user.setAvatar(content[0])
+  const log = createLogger(message.guild.shard.id)
+  log.owner({
+    user: message.author
+  }, `Changed avatar to ${content[0]}`)
+  await message.channel.send('Successfully changed avatar.')
 }

@@ -1,10 +1,9 @@
 const Discord = require('discord.js')
-const log = require('../../util/logger.js')
 
-module.exports = function (bot, message) {
+module.exports = async (message) => {
   const pong = new Discord.MessageEmbed()
     .setTitle('Sending')
     .setDescription('pong!')
 
-  message.channel.send({ embed: pong }).catch(err => log.owner.warning(`Could not send the pong embed`, err))
+  await message.channel.send({ embed: pong })
 }

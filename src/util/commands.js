@@ -2,7 +2,6 @@ const fs = require('fs')
 const path = require('path')
 const Discord = require('discord.js')
 const createLogger = require('./logger/create.js')
-const loadCCommand = name => require(`../commands/owner/${name}.js`)
 const channelTracker = require('../util/channelTracker.js')
 const config = require('../config.js')
 const storage = require('./storage.js')
@@ -11,6 +10,11 @@ const EMBED_LINKS_PERM = Discord.Permissions.FLAGS.EMBED_LINKS
 const MANAGE_ROLES_OR_PERMISSIONS_PERM = Discord.Permissions.FLAGS.MANAGE_ROLES
 
 const PERMISSIONS = Object.keys(Discord.Permissions.FLAGS)
+
+const loadOwnerCommand = async (file, message) => {
+  const func = require(`../commands/owner/${file}.js`)
+  await func(message)
+}
 
 const loadCommand = async (file, message, name) => {
   const func = require(`../commands/${file}.js`)
@@ -244,17 +248,32 @@ exports.run = async message => {
       log.error(err, `Command ${name}`)
       message.channel.send(err.message)
         .catch(err => log.error(err, `Failed to send error message to channel for command ${name}`))
+    } else {
+      log.warn(err, `Command ${name} (non-50013 error)`)
     }
   }
 }
 
-exports.runOwner = message => {
-  const bot = message.client
+exports.runOwner = async message => {
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   const command = first.substr(prefix.length)
-  if (fs.existsSync(path.join(__dirname, '..', 'commands', 'owner', `${command}.js`))) {
-    if (storage.initialized < 2) return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
-    loadCCommand(command)(bot, message)
+  if (!fs.existsSync(path.join(__dirname, '..', 'commands', 'owner', `${command}.js`))) {
+    return
+  }
+  if (storage.initialized < 2) {
+    return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
+  }
+  try {
+    await loadOwnerCommand(command, message)
+  } catch (err) {
+    const log = createLogger(message.guild.shard.id)
+    if (err.code !== 50013) {
+      log.error(err, `Owner Command ${command}`)
+      message.channel.send(err.message)
+        .catch(err => log.error(err, `Failed to send error message to channel for command ${command}`))
+    } else {
+      log.warn(err, `Owner Command ${command} (non-50013 error)`)
+    }
   }
 }

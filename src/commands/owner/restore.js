@@ -1,6 +1,6 @@
 const fetch = require('node-fetch')
 const GuildData = require('../../structs/GuildData.js')
-const log = require('../../util/logger.js')
+const createLogger = require('../../util/logger/create.js')
 
 async function getID (message) {
   const arr = message.content.split(' ')
@@ -21,24 +21,22 @@ async function getID (message) {
   return file
 }
 
-module.exports = async (bot, message) => {
-  try {
-    const file = await getID(message)
-    const guildData = new GuildData(file)
-    const id = guildData.id
-    const res = await bot.shard.broadcastEval(`
-      const guild = this.guilds.cache.get('${id}');
-      guild ? guild.name : null
-    `)
-    for (var i = 0; i < res.length; ++i) {
-      if (!res[i]) continue
-      await guildData.restore()
-      log.owner.success(`Server (ID: ${id}, Name: ${res[i]}) has been restored`, message.author)
-      await message.channel.send(`Server (ID: ${id}, Name: ${res[i]}) has been restored.`)
-    }
-    await message.chanel.send(`Unable to restore server, guild ${id} was not found in cache.`)
-  } catch (err) {
-    log.owner.warning(`restore`, message.author, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.owner.warning('restore 1b', message.guild, err))
+module.exports = async (message) => {
+  const file = await getID(message)
+  const guildData = new GuildData(file)
+  const id = guildData.id
+  const res = await message.client.shard.broadcastEval(`
+    const guild = this.guilds.cache.get('${id}');
+    guild ? guild.name : null
+  `)
+  const log = createLogger(message.guild.shard.id)
+  for (var i = 0; i < res.length; ++i) {
+    if (!res[i]) continue
+    await guildData.restore()
+    log.owner({
+      user: message.author
+    }, `Server (ID: ${id}, Name: ${res[i]}) has been restored`)
+    await message.channel.send(`Server (ID: ${id}, Name: ${res[i]}) has been restored.`)
   }
+  await message.chanel.send(`Unable to restore server, guild ${id} was not found in cache.`)
 }
