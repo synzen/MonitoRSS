@@ -1,13 +1,13 @@
 const Discord = require('discord.js')
 const filters = require('./util/filters.js')
 const config = require('../config.js')
-const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Subscriber = require('../structs/db/Subscriber.js')
 const Feed = require('../structs/db/Feed.js')
+const createLogger = require('../util/logger/create.js')
 const VALID_OPTIONS = ['1', '2', '3', '4']
 
 async function printSubscriptions (message, feeds, translate) {
@@ -115,7 +115,16 @@ async function deleteSubscription (message, profile, feeds, role, user) {
     const subscriber = subscribers.find(subscriber => subscriber.id === matchID)
     if (subscriber) {
       await subscriber.delete()
-      log.command.info(`Deleted all subscriptions`, message.guild, user || role)
+      const log = createLogger(message.guild.shard.id)
+      const logBindings = {
+        guild: message
+      }
+      if (user) {
+        logBindings.user = user
+      } else {
+        logBindings.role = role
+      }
+      log.info(logBindings, `Deleted all subscriptions`)
       await message.channel.send(`${translate('commands.mention.removeSubscriptionsSuccess', {
         name: role ? role.name : user.username,
         type: role ? translate('commands.mention.role') : translate('commands.mention.user')
@@ -151,7 +160,16 @@ async function addGlobalSub (message, profile, feed, role, user, translate) {
   }
 
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
-  log.command.info(`Added global subscriber to feed ${feed.url}`, message.guild, role || user)
+  const log = createLogger(message.guild.shard.id)
+  const logBindings = {
+    guild: message.guild
+  }
+  if (user) {
+    logBindings.user = user
+  } else {
+    logBindings.role = role
+  }
+  log.info(logBindings, `Added global subscriber to feed ${feed.url}`)
   await message.channel.send(`${translate('commands.mention.addSubscriberGlobalSuccess', {
     link: feed.url,
     name,
@@ -170,7 +188,16 @@ async function removeGlobalSub (message, profile, feed, role, user, translate) {
   const found = subscribers.find(sub => sub.id === matchID && !sub.hasFilters())
   if (found) {
     await found.delete()
-    log.command.info(`Removed global subscription for feed ${feed.url}`, message.guild, role || user)
+    const log = createLogger(message.guild.shard.id)
+    const logBindings = {
+      guild: message.guild
+    }
+    if (user) {
+      logBindings.user = user
+    } else {
+      logBindings.role = role
+    }
+    log.info(logBindings, `Removed global subscription for feed ${feed.url}`)
     return message.channel.send(`${translate('commands.mention.removeGlobalSubscriberSuccess', {
       type: role ? translate('commands.mention.role') : translate('commands.mention.user'),
       name: role ? role.name : `${user.username}#${user.discriminator}`,
@@ -299,39 +326,34 @@ async function selectOptionFn (m, data) {
   }
 }
 
-module.exports = async (bot, message, command) => {
-  try {
-    const profile = await Profile.get(message.guild.id)
-    const guildLocale = profile ? profile.locale : undefined
-    const translate = Translator.createLocaleTranslator(guildLocale)
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
-    if (feeds.length === 0) {
-      return await message.channel.send(translate('commands.mention.noFeeds'))
-    }
-    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
-
-    const selectOption = new MenuUtils.Menu(message, selectOptionFn)
-      .setDescription(translate('commands.mention.description', { prefix, channel: message.channel.name }))
-      .setAuthor(translate('commands.mention.subscriptionOptions'))
-      .addOption(translate('commands.mention.optionSubscriberFeed'), translate('commands.mention.optionSubscriberFeedDescription'))
-      .addOption(translate('commands.mention.optionFilteredSubscriberFeed'), translate('commands.mention.optionFilteredSubscriberFeedDescription'))
-      .addOption(translate('commands.mention.optionRemoveSubscriptions'), translate('commands.mention.optionRemoveSubscriptionsDescription'))
-      .addOption(translate('commands.mention.optionListSubscriptions'), translate('commands.mention.optionListSubscriptionsDescription'))
-
-    const data = await new MenuUtils.MenuSeries(message, [selectOption], { command, feeds, profile, translate, locale: guildLocale }).start()
-    if (!data) {
-      return
-    }
-    const { optionSelected, role, user } = data
-    if (optionSelected === '4') {
-      return await printSubscriptions(message, feeds, translate)
-    }
-    if (optionSelected === '3') {
-      return await deleteSubscription(message, profile, feeds, role, user)
-    }
-    // 2 and 1 are handled within the Menu functions due to their complexity
-  } catch (err) {
-    log.command.warning(`rssmention`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssmention 1', message.guild, err))
+module.exports = async (message, command) => {
+  const profile = await Profile.get(message.guild.id)
+  const guildLocale = profile ? profile.locale : undefined
+  const translate = Translator.createLocaleTranslator(guildLocale)
+  const feeds = await Feed.getManyBy('guild', message.guild.id)
+  if (feeds.length === 0) {
+    return message.channel.send(translate('commands.mention.noFeeds'))
   }
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+
+  const selectOption = new MenuUtils.Menu(message, selectOptionFn)
+    .setDescription(translate('commands.mention.description', { prefix, channel: message.channel.name }))
+    .setAuthor(translate('commands.mention.subscriptionOptions'))
+    .addOption(translate('commands.mention.optionSubscriberFeed'), translate('commands.mention.optionSubscriberFeedDescription'))
+    .addOption(translate('commands.mention.optionFilteredSubscriberFeed'), translate('commands.mention.optionFilteredSubscriberFeedDescription'))
+    .addOption(translate('commands.mention.optionRemoveSubscriptions'), translate('commands.mention.optionRemoveSubscriptionsDescription'))
+    .addOption(translate('commands.mention.optionListSubscriptions'), translate('commands.mention.optionListSubscriptionsDescription'))
+
+  const data = await new MenuUtils.MenuSeries(message, [selectOption], { command, feeds, profile, translate, locale: guildLocale }).start()
+  if (!data) {
+    return
+  }
+  const { optionSelected, role, user } = data
+  if (optionSelected === '4') {
+    return printSubscriptions(message, feeds, translate)
+  }
+  if (optionSelected === '3') {
+    return deleteSubscription(message, profile, feeds, role, user)
+  }
+  // 2 and 1 are handled within the Menu functions due to their complexity
 }

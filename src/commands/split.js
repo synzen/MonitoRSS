@@ -1,10 +1,10 @@
 const config = require('../config.js')
-const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const createLogger = require('../util/logger/create.js')
 function escapeBackticks (str) {
   return str.replace('`', '​`') // Replace backticks with zero-width space and backtick to escape
 }
@@ -66,7 +66,10 @@ async function enable (m, data) {
   }
 
   await feed.save()
-  log.command.info(`Enabled message splitting for ${feed.url}`, m.channel.guild)
+  const log = createLogger(m.guild.shard.id)
+  log.info({
+    guild: m.guild
+  }, `Enabled message splitting for ${feed.url}`)
 
   const nextMenu = new MenuUtils.Menu(m, selectSetting)
     .setAuthor(translate('commands.split.messageSplittingOptions'))
@@ -86,11 +89,14 @@ async function enable (m, data) {
 async function selectSetting (m, data) {
   const { feed, translate } = data
   const selected = m.content
+  const log = createLogger(m.guild.shard.id)
 
   if (selected === '5') {
     feed.split = undefined
     await feed.save()
-    log.command.info(`Disabled message splitting for ${feed.url}`, m.channel.guild)
+    log.info({
+      guild: m.guild
+    }, `Disabled message splitting for ${feed.url}`)
     await m.channel.send(translate('commands.split.disabledSuccess', { link: feed.url }))
     return data
   }
@@ -122,49 +128,66 @@ async function setSetting (m, data) {
   let successText = ''
 
   const translateArg = { link: feed.url }
+  const log = createLogger(m.guild.shard.id)
   if (selected === '1') {
     if (m.content === 'reset') {
       delete feed.split.char
       successText = translate('commands.split.resetSplitChar', translateArg)
-      log.command.info(`Message splitting split character for ${feed.url} resetting`, m.channel.guild)
+      log.info({
+        guild: m.guild
+      }, `Message splitting split character for ${feed.url} resetting`)
     } else if (m.content === '\\n' && feed.split.char === undefined) throw new MenuUtils.MenuOptionError(translate('commands.split.setSplitCharDefault'))
     else {
       feed.split.char = m.content
       successText = translate('commands.split.setSplitChar', { link: feed.url, content: m.content })
-      log.command.info(`Message splitting split character for ${feed.url} setting to ${m.content}`, m.channel.guild)
+      log.info({
+        guild: m.guild
+      }, `Message splitting split character for ${feed.url} setting to ${m.content}`, m.channel.guild)
     }
   } else if (selected === '2') {
     if (m.content === 'reset') {
       delete feed.split.prepend
       successText = translate('commands.split.resetPrependChar', translateArg)
-      log.command.info(`Message splitting prepend character for ${feed.url} has been reset`, m.channel.guild)
+      log.info({
+        guild: m.guild
+      }, `Message splitting prepend character for ${feed.url} has been reset`)
     } else {
       feed.split.prepend = m.content
       successText = translate('commands.split.setPrependChar', { link: feed.url, content: escapeBackticks(m.content) })
-      log.command.info(`Message splitting prepend character for ${feed.url} setting to ${m.content}`, m.channel.guild)
+      log.info({
+        guild: m.guild
+      }, `Message splitting prepend character for ${feed.url} setting to ${m.content}`)
     }
   } else if (selected === '3') {
     if (m.content === 'reset') {
       delete feed.split.append
       successText = translate('commands.split.resetAppendChar', translateArg)
-      log.command.info(`Message splitting append character for ${feed.url} resetting`, m.channel.guild)
+      log.info({
+        guild: m.guild
+      }, `Message splitting append character for ${feed.url} resetting`)
     } else {
       feed.split.append = m.content
       successText = translate('commands.split.setAppendChar', { link: feed.url, content: escapeBackticks(m.content) })
-      log.command.info(`Message splitting append character for ${feed.url} setting to ${m.content}`, m.channel.guild)
+      log.info({
+        guild: m.guild
+      }, `Message splitting append character for ${feed.url} setting to ${m.content}`)
     }
   } else if (selected === '4') {
     const num = parseInt(m.content, 10)
     if (m.content === 'reset') {
       delete feed.split.maxLength
       successText = translate('commands.split.resetMaxLen', translateArg)
-      log.command.info(`Message splitting max length for ${feed.url} resetting`, m.channel.guild)
+      log.info({
+        guild: m.guild
+      }, `Message splitting max length for ${feed.url} resetting`)
     } else if (!/^\d+$/.test(m.content) || num < 500 || num > 1950) {
       throw new MenuUtils.MenuOptionError(translate('commands.split.setInvalidMaxLen'))
     } else {
       feed.split.maxLength = num
       successText = translate('commands.split.setMaxLen', { link: feed.url, num })
-      log.command.info(`Message splitting max length for ${feed.url} setting to ${m.content}`, m.channel.guild)
+      log.info({
+        guild: m.guild
+      }, `Message splitting max length for ${feed.url} setting to ${m.content}`)
     }
   }
 
@@ -173,15 +196,14 @@ async function setSetting (m, data) {
   return data
 }
 
-module.exports = async (bot, message, command) => {
-  try {
-    const profile = await Profile.get(message.guild.id)
-    const guildLocale = profile ? profile.locale : undefined
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
-    const feedSelector = new FeedSelector(message, feedSelectorFn, { command }, feeds)
-    await new MenuUtils.MenuSeries(message, [feedSelector], { profile, locale: guildLocale, translate: Translator.createLocaleTranslator(guildLocale) }).start()
-  } catch (err) {
-    log.command.warning(`rsssplit`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsssplit 1', message.guild, err))
-  }
+module.exports = async (message, command) => {
+  const profile = await Profile.get(message.guild.id)
+  const guildLocale = profile ? profile.locale : undefined
+  const feeds = await Feed.getManyBy('guild', message.guild.id)
+  const feedSelector = new FeedSelector(message, feedSelectorFn, { command }, feeds)
+  await new MenuUtils.MenuSeries(message, [feedSelector], {
+    profile,
+    locale: guildLocale,
+    translate: Translator.createLocaleTranslator(guildLocale)
+  }).start()
 }

@@ -86,16 +86,11 @@ async function selectChannelFn (m, data) {
   return data
 }
 
-module.exports = async (bot, message, command) => {
-  try {
-    const profile = await Profile.get(message.guild.id)
-    const guildLocale = profile ? profile.locale : undefined
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
-    const feedSelector = new FeedSelector(message, null, { command, locale: guildLocale, multiSelect: true }, feeds)
-    const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: Translator.translate('commands.move.prompt', guildLocale) })
-    await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel], { locale: guildLocale, profile }).start()
-  } catch (err) {
-    log.command.warning(`rssmove`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssmove 1', message.guild, err))
-  }
+module.exports = async (message, command) => {
+  const profile = await Profile.get(message.guild.id)
+  const guildLocale = profile ? profile.locale : undefined
+  const feeds = await Feed.getManyBy('guild', message.guild.id)
+  const feedSelector = new FeedSelector(message, null, { command, locale: guildLocale, multiSelect: true }, feeds)
+  const selectChannel = new MenuUtils.Menu(message, selectChannelFn, { text: Translator.translate('commands.move.prompt', guildLocale) })
+  await new MenuUtils.MenuSeries(message, [feedSelector, selectChannel], { locale: guildLocale, profile }).start()
 }

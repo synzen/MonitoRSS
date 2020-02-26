@@ -1,10 +1,10 @@
 const config = require('../config.js')
-const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const createLogger = require('../util/logger/create.js')
 
 async function feedSelectorFn (m, data) {
   const { feed, profile, locale } = data
@@ -43,37 +43,37 @@ async function messagePromptFn (m, data) {
   }
 }
 
-module.exports = async (bot, message, command) => {
-  try {
-    const profile = await Profile.get(message.guild.id)
-    const guildLocale = profile ? profile.locale : undefined
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
+module.exports = async (message, command) => {
+  const profile = await Profile.get(message.guild.id)
+  const guildLocale = profile ? profile.locale : undefined
+  const feeds = await Feed.getManyBy('guild', message.guild.id)
 
-    const translate = Translator.createLocaleTranslator(guildLocale)
-    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command, locale: guildLocale }, feeds)
-    const messagePrompt = new MenuUtils.Menu(message, messagePromptFn)
+  const translate = Translator.createLocaleTranslator(guildLocale)
+  const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command, locale: guildLocale }, feeds)
+  const messagePrompt = new MenuUtils.Menu(message, messagePromptFn)
 
-    const data = await new MenuUtils.MenuSeries(message, [feedSelector, messagePrompt], { locale: guildLocale, profile }).start()
-    if (!data) {
-      return
-    }
-    const { setting, feed } = data
-    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+  const data = await new MenuUtils.MenuSeries(message, [feedSelector, messagePrompt], { locale: guildLocale, profile }).start()
+  if (!data) {
+    return
+  }
+  const { setting, feed } = data
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
-    if (setting === null) {
-      feed.text = undefined
-      await feed.save()
-      log.command.info(`Text reset for ${feed.url}`, message.guild)
-      await message.channel.send(translate('commands.text.resetSuccess', { link: feed.url }) + `\n \`\`\`Markdown\n${config.feeds.defaultText}\`\`\``)
-    } else {
-      feed.text = setting
-      await feed.save()
-      log.command.info(`New text recorded for ${feed.url}`, message.guild)
-      // Escape backticks in code blocks by inserting zero-width space before each backtick
-      await message.channel.send(`${translate('commands.text.setSuccess', { link: feed.url })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.text.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.text.noSubscriptionsPlaceholder', { prefix })}` : ``}`)
-    }
-  } catch (err) {
-    log.command.warning(`text`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('text 1', message.guild, err))
+  const log = createLogger(message.guild.shard.id)
+  if (setting === null) {
+    feed.text = undefined
+    await feed.save()
+    log.info({
+      guild: message.guild
+    }, `Text reset for ${feed.url}`)
+    await message.channel.send(translate('commands.text.resetSuccess', { link: feed.url }) + `\n \`\`\`Markdown\n${config.feeds.defaultText}\`\`\``)
+  } else {
+    feed.text = setting
+    await feed.save()
+    log.info({
+      guild: message.guild
+    }, `New text recorded for ${feed.url}`)
+    // Escape backticks in code blocks by inserting zero-width space before each backtick
+    await message.channel.send(`${translate('commands.text.setSuccess', { link: feed.url })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.text.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.text.noSubscriptionsPlaceholder', { prefix })}` : ``}`)
   }
 }

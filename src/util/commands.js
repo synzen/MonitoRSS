@@ -3,7 +3,7 @@ const path = require('path')
 const Discord = require('discord.js')
 const createLogger = require('./logger/create.js')
 const loadCCommand = name => require(`../commands/owner/${name}.js`)
-const loadCommand = file => require(`../commands/${file}.js`)
+const channelTracker = require('../util/channelTracker.js')
 const config = require('../config.js')
 const storage = require('./storage.js')
 const MANAGE_CHANNELS_PERM = Discord.Permissions.FLAGS.MANAGE_CHANNELS
@@ -11,6 +11,11 @@ const EMBED_LINKS_PERM = Discord.Permissions.FLAGS.EMBED_LINKS
 const MANAGE_ROLES_OR_PERMISSIONS_PERM = Discord.Permissions.FLAGS.MANAGE_ROLES
 
 const PERMISSIONS = Object.keys(Discord.Permissions.FLAGS)
+
+const loadCommand = async (file, message, name) => {
+  const func = require(`../commands/${file}.js`)
+  await func(message, name)
+}
 
 const list = {
   help: {
@@ -220,19 +225,26 @@ exports.run = async message => {
     if (!message.member) message.member = member
 
     if (!userPerm || !PERMISSIONS.includes(userPerm) || config.bot.ownerIDs.includes(message.author.id)) {
-      return loadCommand(name)(bot, message, name)
+      return loadCommand(name, message, name)
     }
     const serverPerm = member.permissions.has(userPerm)
     const channelPerm = member.permissionsIn(channel).has(userPerm)
 
-    if (serverPerm || channelPerm) return loadCommand(name)(bot, message, name)
+    if (serverPerm || channelPerm) {
+      return loadCommand(name, message, name)
+    }
     log.info({
       user: message.author,
       guild: message.guild
     }, `Missing user permissions for blocked ${message.content}`)
     await message.channel.send(`You do not have the permission \`${userPerm}\` to use this command.`)
   } catch (err) {
-    log.error(err, 'command.run')
+    channelTracker.remove(message.channel.id)
+    if (err.code !== 50013) {
+      log.error(err, `Command ${name}`)
+      message.channel.send(err.message)
+        .catch(err => log.error(err, `Failed to send error message to channel for command ${name}`))
+    }
   }
 }
 

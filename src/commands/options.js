@@ -1,10 +1,10 @@
 const config = require('../config.js')
-const log = require('../util/logger.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const createLogger = require('../util/logger/create.js')
 
 const getProperties = translate => {
   const ENABLED_TRANSLATED = translate('generics.enabledLower')
@@ -68,56 +68,54 @@ async function selectOption (m, data) {
     } }
 }
 
-module.exports = async (bot, message, command) => {
-  try {
-    const profile = await Profile.get(message.guild.id)
-    const guildLocale = profile ? profile.locale : undefined
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
-    const translate = Translator.createLocaleTranslator(guildLocale)
-    const select = new MenuUtils.Menu(message, selectOption)
-      .setAuthor(translate('commands.options.miscFeedOptions'))
-      .setDescription(translate('commands.options.selectOption'))
+module.exports = async (message, command) => {
+  const profile = await Profile.get(message.guild.id)
+  const guildLocale = profile ? profile.locale : undefined
+  const feeds = await Feed.getManyBy('guild', message.guild.id)
+  const translate = Translator.createLocaleTranslator(guildLocale)
+  const select = new MenuUtils.Menu(message, selectOption)
+    .setAuthor(translate('commands.options.miscFeedOptions'))
+    .setDescription(translate('commands.options.selectOption'))
 
-    const properties = getProperties(translate)
-    for (const propRef in properties) {
-      const data = properties[propRef]
-      select.addOption(data.title, data.description)
-    }
-    const data = await new MenuUtils.MenuSeries(message, [select], {
-      command,
-      profile,
-      feeds,
-      locale: guildLocale
-    }).start()
-
-    if (!data) return
-    const { feed, chosenProp } = data
-    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
-
-    const globalSetting = config.feeds[chosenProp]
-    const specificSetting = feed[chosenProp]
-
-    feed[chosenProp] = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
-
-    const finalSetting = feed[chosenProp]
-
-    if (feed[chosenProp] === globalSetting) {
-      // undefined marks it for deletion
-      feed[chosenProp] = undefined
-    }
-
-    const prettyPropName = properties[chosenProp].display
-
-    await feed.save()
-    log.command.info(`${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${feed.url}. ${feed[chosenProp] === undefined ? 'Now following global settings.' : ''}`, message.guild)
-    await message.channel.send(`${translate('commands.options.settingChanged', {
-      propName: prettyPropName,
-      isDefault: feed[chosenProp] === undefined ? ` (${translate('commands.options.defaultSetting')})` : '',
-      link: feed.url,
-      finalSetting: finalSetting ? translate('generics.enabledLower') : translate('generics.disabledLower')
-    })} ${translate('generics.backupReminder', { prefix })}`)
-  } catch (err) {
-    log.command.warning(`rssoptions`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssoptions 1', message.guild, err))
+  const properties = getProperties(translate)
+  for (const propRef in properties) {
+    const data = properties[propRef]
+    select.addOption(data.title, data.description)
   }
+  const data = await new MenuUtils.MenuSeries(message, [select], {
+    command,
+    profile,
+    feeds,
+    locale: guildLocale
+  }).start()
+
+  if (!data) return
+  const { feed, chosenProp } = data
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+
+  const globalSetting = config.feeds[chosenProp]
+  const specificSetting = feed[chosenProp]
+
+  feed[chosenProp] = typeof specificSetting === 'boolean' ? !specificSetting : !globalSetting
+
+  const finalSetting = feed[chosenProp]
+
+  if (feed[chosenProp] === globalSetting) {
+    // undefined marks it for deletion
+    feed[chosenProp] = undefined
+  }
+
+  const prettyPropName = properties[chosenProp].display
+
+  await feed.save()
+  const log = createLogger(message.guild.shard.id)
+  log.info({
+    guild: message.guild
+  }, `${prettyPropName} ${finalSetting ? 'enabled' : 'disabled'} for feed linked ${feed.url}. ${feed[chosenProp] === undefined ? 'Now following global settings.' : ''}`)
+  await message.channel.send(`${translate('commands.options.settingChanged', {
+    propName: prettyPropName,
+    isDefault: feed[chosenProp] === undefined ? ` (${translate('commands.options.defaultSetting')})` : '',
+    link: feed.url,
+    finalSetting: finalSetting ? translate('generics.enabledLower') : translate('generics.disabledLower')
+  })} ${translate('generics.backupReminder', { prefix })}`)
 }

@@ -1,4 +1,3 @@
-const log = require('../util/logger.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
@@ -9,42 +8,36 @@ const FailRecord = require('../structs/db/FailRecord.js')
 const FeedData = require('../structs/FeedData.js')
 const Supporter = require('../structs/db/Supporter.js')
 
-module.exports = async (bot, message, command) => {
+module.exports = async (message, command) => {
   const simple = MenuUtils.extractArgsAfterCommand(message.content).includes('simple')
-  try {
-    const profile = await Profile.get(message.guild.id)
-    const feedDatas = await FeedData.getManyBy('guild', message.guild.id)
-    const feeds = feedDatas.map(data => data.feed)
-    const guildLocale = profile ? profile.locale : undefined
-    const translate = Translator.createLocaleTranslator(guildLocale)
-    const feedSelector = new FeedSelector(message, null, { command: command }, feeds)
-    const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
-    if (!data) {
-      return
-    }
-    // This is the feed data
-    const { feed } = data
-    if (await FailRecord.hasFailed(feed.url)) {
-      return await message.channel.send(translate('commands.test.failed'))
-    }
-    const grabMsg = await message.channel.send(translate('commands.test.grabbingRandom'))
-    const article = await FeedFetcher.fetchRandomArticle(feed.url)
-    if (!article) {
-      return await message.channel.send(translate('commands.test.noArticles'))
-    }
-    article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
-    if (Supporter.enabled && profile.webhook && !(await Supporter.hasValidGuild(message.guild.id))) {
-      log.command.warning('Illegal webhook detected for non-vip user', message.guild, message.author)
-      profile.webhook = undefined
-      await profile.save()
-    }
-
-    const queue = new ArticleMessageQueue(bot)
-    await queue.enqueue(article, !simple, true)
-    await queue.send()
-    await grabMsg.delete()
-  } catch (err) {
-    log.command.warning(`rsstest`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rsstest 1', message.guild, err))
+  const profile = await Profile.get(message.guild.id)
+  const feedDatas = await FeedData.getManyBy('guild', message.guild.id)
+  const feeds = feedDatas.map(data => data.feed)
+  const guildLocale = profile ? profile.locale : undefined
+  const translate = Translator.createLocaleTranslator(guildLocale)
+  const feedSelector = new FeedSelector(message, null, { command: command }, feeds)
+  const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
+  if (!data) {
+    return
   }
+  // This is the feed data
+  const { feed } = data
+  if (await FailRecord.hasFailed(feed.url)) {
+    return message.channel.send(translate('commands.test.failed'))
+  }
+  const grabMsg = await message.channel.send(translate('commands.test.grabbingRandom'))
+  const article = await FeedFetcher.fetchRandomArticle(feed.url)
+  if (!article) {
+    return message.channel.send(translate('commands.test.noArticles'))
+  }
+  article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
+  if (Supporter.enabled && profile.webhook && !(await Supporter.hasValidGuild(message.guild.id))) {
+    profile.webhook = undefined
+    await profile.save()
+  }
+
+  const queue = new ArticleMessageQueue(message.client)
+  await queue.enqueue(article, !simple, true)
+  await queue.send()
+  await grabMsg.delete()
 }

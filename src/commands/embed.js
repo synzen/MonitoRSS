@@ -1,10 +1,10 @@
 const config = require('../config.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
-const log = require('../util/logger.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const createLogger = require('../util/logger/create.js')
 const getEmbedProperties = translate => ({
   title: { name: translate('commands.embed.title'), description: translate('commands.embed.titleDescription') },
   description: { name: translate('commands.embed.description'), description: translate('commands.embed.descriptionDescription') },
@@ -367,7 +367,10 @@ const fieldFunctions = {
       })
     }
     feed.embeds[selectedEmbedIndex].fields.push(setting)
-    log.command.info(`Embed field added. Title: '${name}', Value: '${val}'`, m.guild)
+    const log = createLogger(m.guild.shard.id)
+    log.info({
+      guild: m.guild
+    }, `Embed field added. Title: '${name}', Value: '${val}'`)
 
     return { ...data,
       successText: translate('commands.embed.embedFieldsAdded', {
@@ -388,10 +391,13 @@ const fieldFunctions = {
     if (inputs.length === 0) {
       throw new MenuUtils.MenuOptionError()
     }
+    const log = createLogger(m.guild.shard.id)
 
     for (let x = inputs.length - 1; x >= 0; --x) {
       fields.splice(inputs[x] - 1, 1)
-      log.command.info(`Embed field index ${inputs[x] - 1} removed`, m.guild)
+      log.info({
+        guild: m.guild
+      }, `Embed field index ${inputs[x] - 1} removed`)
     }
 
     return {
@@ -404,100 +410,115 @@ const fieldFunctions = {
   }
 }
 
-module.exports = async (bot, message, command) => {
+module.exports = async (message, command) => {
   // Fields
-  try {
-    const profile = await Profile.get(message.guild.id)
-    const guildLocale = profile ? profile.locale : undefined
-    const feeds = await Feed.getManyBy('guild', message.guild.id)
-    const translate = Translator.createLocaleTranslator(guildLocale)
-    const embedProperties = getEmbedProperties(translate)
-    const setFields = message.content.split(' ')[1] === 'fields'
-    const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command, locale: guildLocale }, feeds)
-    const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+  const profile = await Profile.get(message.guild.id)
+  const guildLocale = profile ? profile.locale : undefined
+  const feeds = await Feed.getManyBy('guild', message.guild.id)
+  const translate = Translator.createLocaleTranslator(guildLocale)
+  const embedProperties = getEmbedProperties(translate)
+  const setFields = message.content.split(' ')[1] === 'fields'
+  const feedSelector = new FeedSelector(message, feedSelectorFn, { command, locale: guildLocale }, feeds)
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+  const log = createLogger(message.guild.shard.id)
 
-    if (setFields) {
-      const fieldsData = await new MenuUtils.MenuSeries(message, [feedSelector], { setFields, embedProperties, translate }).start()
-      if (!fieldsData) {
-        return
-      }
-      const { successText, removeAllEmbeds } = fieldsData
-      /** @type {Feed} */
-      const feed = fieldsData.feed
-
-      if (removeAllEmbeds) {
-        feed.embeds = []
-        await feed.save()
-        log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
-        return await message.channel.send(translate('commands.embed.removedAllEmbeds'))
-      } else {
-        await feed.save()
-        log.command.info(`Updated embed fields for ${feed.url}`, message.guild)
-        return await message.channel.send(successText)
-      }
-    }
-
-    // Regular properties
-    const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale, embedProperties, translate }).start()
-    if (!data) {
+  if (setFields) {
+    const fieldsData = await new MenuUtils.MenuSeries(message, [feedSelector], { setFields, embedProperties, translate }).start()
+    if (!fieldsData) {
       return
     }
-    const { property, settings, selectedEmbedIndex, removeAllEmbeds } = data
+    const { successText, removeAllEmbeds } = fieldsData
     /** @type {Feed} */
-    const feed = data.feed
+    const feed = fieldsData.feed
 
     if (removeAllEmbeds) {
       feed.embeds = []
-      if (!feed.text) {
-        await feed.delete()
-      } else {
-        await feed.save()
-      }
-      log.command.info(`Removing all embeds for ${feed.url}`, message.guild)
-
-      return await message.channel.send(translate('commands.embed.removedAllEmbeds'))
-    }
-
-    if (property === 'resetAll') {
-      feed.embeds.splice(selectedEmbedIndex, 1)
-      log.command.info(`Embed resetting for ${feed.url}`, message.guild)
       await feed.save()
-      return await message.channel.send(translate('commands.embed.removedEmbed', { link: feed.url }))
+      log.info({
+        guild: message.guild
+      }, `Removing all embeds for ${feed.url}`)
+      return message.channel.send(translate('commands.embed.removedAllEmbeds'))
+    } else {
+      await feed.save()
+      log.info({
+        guild: message.guild
+      }, `Updated embed fields for ${feed.url}`)
+      return message.channel.send(successText)
     }
+  }
 
-    let updated = ''
-    let reset = ''
-    for (const prop in settings) {
-      const propName = embedProperties[prop].name
-      const userSetting = settings[prop]
-      if (userSetting === 'reset') {
-        if (!feed.embeds[selectedEmbedIndex] || !feed.embeds[selectedEmbedIndex][prop]) {
-          reset += translate('commands.embed.resetNothing', { propName })
-          continue
-        }
-        delete feed.embeds[selectedEmbedIndex][prop]
-        feed.validate()
-        if (feed.embeds.length === 0 && feed.text === '{empty}') {
-          feed.text = undefined
-        }
+  // Regular properties
+  const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale, embedProperties, translate }).start()
+  if (!data) {
+    return
+  }
+  const { property, settings, selectedEmbedIndex, removeAllEmbeds } = data
+  /** @type {Feed} */
+  const feed = data.feed
 
-        log.command.info(`Property '${prop}' resetting for ${feed.url}`, message.guild)
-        reset += translate('commands.embed.resetSuccess', { propName })
+  if (removeAllEmbeds) {
+    feed.embeds = []
+    if (!feed.text) {
+      await feed.delete()
+    } else {
+      await feed.save()
+    }
+    log.info({
+      guild: message.guild
+    }, `Removing all embeds for ${feed.url}`)
+
+    return message.channel.send(translate('commands.embed.removedAllEmbeds'))
+  }
+
+  if (property === 'resetAll') {
+    feed.embeds.splice(selectedEmbedIndex, 1)
+    log.info({
+      guild: message.guild
+    }, `Embed resetting for ${feed.url}`)
+    await feed.save()
+    return message.channel.send(translate('commands.embed.removedEmbed', { link: feed.url }))
+  }
+
+  let updated = ''
+  let reset = ''
+  for (const prop in settings) {
+    const propName = embedProperties[prop].name
+    const userSetting = settings[prop]
+    if (userSetting === 'reset') {
+      if (!feed.embeds[selectedEmbedIndex] || !feed.embeds[selectedEmbedIndex][prop]) {
+        reset += translate('commands.embed.resetNothing', { propName })
         continue
       }
-      if (!feed.embeds[selectedEmbedIndex]) {
-        feed.embeds.push({})
-        log.command.info(`Adding new embed for ${feed.url}`, message.guild)
+      delete feed.embeds[selectedEmbedIndex][prop]
+      feed.validate()
+      if (feed.embeds.length === 0 && feed.text === '{empty}') {
+        feed.text = undefined
       }
-      feed.embeds[selectedEmbedIndex][prop] = userSetting
-      log.command.info(`Embed updating for ${feed.url}. Property '${prop}' set to '${userSetting}'`, message.guild)
-      updated += translate('commands.embed.updatedSuccess', { propName, userSetting })
-    }
-    await feed.save()
 
-    await message.channel.send(`${translate('commands.embed.updatedInfo', { link: feed.url, resetList: reset, updateList: updated, prefix })} ${translate('generics.backupReminder', { prefix })}`, { split: true })
-  } catch (err) {
-    log.command.warning(`rssembed`, message.guild, err)
-    if (err.code !== 50013) message.channel.send(err.message).catch(err => log.command.warning('rssembed 1', message.guild, err))
+      log.info({
+        guild: message.guild
+      }, `Property '${prop}' resetting for ${feed.url}`)
+      reset += translate('commands.embed.resetSuccess', { propName })
+      continue
+    }
+    if (!feed.embeds[selectedEmbedIndex]) {
+      feed.embeds.push({})
+      log.info({
+        guild: message.guild
+      }, `Adding new embed for ${feed.url}`)
+    }
+    feed.embeds[selectedEmbedIndex][prop] = userSetting
+    log.info({
+      guild: message.guild
+    }, `Embed updating for ${feed.url}. Property '${prop}' set to '${userSetting}'`)
+    updated += translate('commands.embed.updatedSuccess', { propName, userSetting })
   }
+  await feed.save()
+
+  await message.channel.send(`${translate('commands.embed.updatedInfo', {
+    link: feed.url,
+    resetList: reset,
+    updateList: updated,
+    prefix
+  })} ${translate('generics.backupReminder', { prefix })}`, { split: true })
 }
