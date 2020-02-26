@@ -10,6 +10,8 @@ const discordAPIConstants = require('./constants/discordAPI.js')
 const routes = require('./routes/index.js')
 const storage = require('../util/storage.js')
 const requestIp = require('request-ip')
+const createLogger = require('../util/logger/create.js')
+const log = createLogger('W')
 
 const app = express()
 const credentials = {
@@ -64,7 +66,6 @@ module.exports = () => {
         custom.push(`(G: ${req.guildRss.id}, ${req.guildRss.name})`)
       }
       const arr = [
-        tokens.date(req, res, 'clf'),
         requestIp.getClientIp(req),
         ...custom,
         tokens.method(req, res),
@@ -74,6 +75,10 @@ module.exports = () => {
         tokens['response-time'](req, res), 'ms'
       ]
       return arr.join(' ')
+    }, {
+      stream: {
+        write: message => log.info(message.trim())
+      }
     }))
   }
 
