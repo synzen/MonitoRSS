@@ -4,10 +4,10 @@ const config = require('../config.js')
 const connectDb = require('../util/connectDatabase.js')
 const Patron = require('./db/Patron.js')
 const Supporter = require('./db/Supporter.js')
-const log = require('../util/logger.js')
 const EventEmitter = require('events')
 const maintenance = require('../maintenance/index.js')
 const initialize = require('../util/initialization.js')
+const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
 
 class ClientManager extends EventEmitter {
@@ -20,6 +20,7 @@ class ClientManager extends EventEmitter {
     if (settings.config) {
       config._overrideWith(settings.config)
     }
+    this.log = createLogger('M')
     this.config = settings.config
     this.suppressLogLevels = settings.suppressLogLevels
     this.setPresence = settings.setPresence
@@ -41,7 +42,7 @@ class ClientManager extends EventEmitter {
 
   async run (shardCount = config.advanced.shards) {
     try {
-      await connectDb()
+      await connectDb('M')
       const schedules = await initialize.populateSchedules(this.customSchedules)
       schedules.forEach(schedule => this.refreshRates.add(schedule.refreshRateMinutes))
       if (config.web.enabled === true) {
@@ -49,7 +50,7 @@ class ClientManager extends EventEmitter {
       }
       this.shardingManager.spawn(shardCount, 5500, -1)
     } catch (err) {
-      log.general.error(`ClientManager db connection`, err)
+      this.log.error(err, `ClientManager db connection`)
     }
   }
 
@@ -77,7 +78,7 @@ class ClientManager extends EventEmitter {
   }
 
   _handleErr (err, message) {
-    log.general.error(`Sharding Manager broadcast message handling error for message type ${message.type}`, err, true)
+    this.log.error(err, `Sharding Manager broadcast message handling error for message type ${message.type}`)
     this.kill()
   }
 
@@ -106,14 +107,14 @@ class ClientManager extends EventEmitter {
           }
         })
       }).catch(err => {
-        log.general.error('Failed to execute prune pre init in sharding manager', err)
+        this.log.fatal(err, 'Failed to execute prune pre init in sharding manager')
       })
   }
 
   _initCompleteEvent () {
     // Count all the links
     if (++this.shardsDone === this.shardingManager.totalShards) {
-      log.general.info(`All shards have initialized by the Sharding Manager.`)
+      this.log.info(`All shards have initialized by the Sharding Manager.`)
       maintenance.prunePostInit(this.guildIdsByShard)
         .then(() => {
           if (Supporter.enabled) {
@@ -130,7 +131,7 @@ class ClientManager extends EventEmitter {
           this.emit('finishInit')
         })
         .catch(err => {
-          log.general.error(`Post-initialization failed in sharding manager`, err, true)
+          this.log.fatal(err, `Post-initialization failed in sharding manager`)
         })
     }
   }

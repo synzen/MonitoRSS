@@ -2,16 +2,17 @@ const fs = require('fs')
 const config = require('../config.js')
 const mongoose = require('mongoose')
 mongoose.set('useCreateIndex', true)
-const log = require('./logger.js')
+const createLogger = require('./logger/create.js')
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
 const storage = require('./storage.js')
 const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
 
-module.exports = async skipRedis => {
+module.exports = async (shardID, skipRedis) => {
+  const log = createLogger(shardID)
   const uri = config.database.uri
   if (!uri.startsWith('mongo')) { // Databaseless configuration
     if (config.web.enabled === true && !skipRedis && !storage.redisClient) {
-      return connectRedis().then(() => log.general.success(`Redis connection ready`))
+      return connectRedis().then(() => log.info(`Redis connection ready`))
     } else return
   }
 
@@ -36,7 +37,7 @@ module.exports = async skipRedis => {
       }
       mongoose.connect(uri, options) // Environment variable in Docker container if available
         .catch(err => {
-          log.general.error('Failed to connect to database, retrying in 30 seconds...', err)
+          log.fatal(err, 'Failed to connect to database, retrying in 30 seconds...')
           setTimeout(connect, 30000)
         })
 
@@ -46,7 +47,7 @@ module.exports = async skipRedis => {
     if (config.web.enabled === true && !skipRedis && !storage.redisClient) {
       connectRedis()
         .then(() => {
-          log.general.success(`Redis connection ready`)
+          log.info(`Redis connection ready`)
           return mongoose.connection.readyState === 1 ? resolve() : connect()
         }).catch(reject)
     } else if (mongoose.connection.readyState === 1) return resolve()

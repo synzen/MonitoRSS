@@ -8,7 +8,7 @@ function createLogger (shardID) {
     },
     prettyPrint: {
       translateTime: 'yyyy-mm-dd HH:MM:ss',
-      messageFormat: `[{shardID}] {msg}`,
+      messageFormat: `[{shardID}] \x1b[0m{msg}`,
       ignore: 'hostname,shardID'
     },
     serializers: {

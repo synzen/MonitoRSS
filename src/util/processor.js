@@ -148,7 +148,7 @@ process.on('message', async m => {
   debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
   debug.links = new DataDebugger(debugLinks || [], 'links-processor')
   try {
-    await connectDb(true)
+    await connectDb('CHILD', true)
     const articleDocuments = await databaseFuncs.getAllDocuments(shardID, scheduleName, feedData)
     const promises = []
     for (const link in currentBatch) {
