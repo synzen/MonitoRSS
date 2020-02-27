@@ -12,7 +12,7 @@ jest.mock('../../../../../config.js')
 jest.mock('../../../../util/createError.js')
 jest.mock('../../../../services/user.js')
 
-config.web.clientId = 'abc123'
+config.web.clientID = 'abc123'
 
 describe('Unit::controllers/api/users/getBot', function () {
   afterEach(function () {
@@ -35,7 +35,7 @@ describe('Unit::controllers/api/users/getBot', function () {
     expect(userServices.getUser)
       .toHaveBeenCalledTimes(1)
     expect(userServices.getUser)
-      .toHaveBeenCalledWith(config.web.clientId)
+      .toHaveBeenCalledWith(config.web.clientID)
   })
   it('sends the right response if bot not found', async function () {
     userServices.getUser.mockResolvedValue(null)

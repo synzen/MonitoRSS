@@ -69,7 +69,7 @@ const schema = Joi.object({
     sessionSecret: Joi.string().required(),
     port: Joi.number().strict().required(),
     redirectUri: Joi.string().allow('').required(),
-    clientId: Joi.string().allow('').required(),
+    clientID: Joi.string().allow('').required(),
     clientSecret: Joi.string().allow('').required(),
     https: Joi.object({
       enabled: Joi.bool().strict().required(),
@@ -175,7 +175,7 @@ web.trustProxy = Boolean(process.env.DRSS_WEB_TRUSTPROXY) || webOverride.trustPr
 web.sessionSecret = process.env.DRSS_WEB_SESSIONSECRET || webOverride.sessionSecret || web.sessionSecret
 web.port = Number(process.env.PORT) || Number(process.env.DRSS_WEB_PORT) || webOverride.port || web.port
 web.redirectUri = process.env.DRSS_WEB_REDIRECTURI || webOverride.redirectUri || web.redirectUri
-web.clientId = process.env.DRSS_WEB_CLIENTID || webOverride.clientId || web.clientId
+web.clientID = process.env.DRSS_WEB_CLIENTID || webOverride.clientID || web.clientID
 web.clientSecret = process.env.DRSS_WEB_CLIENTSECRET || webOverride.clientSecret || web.clientSecret
 
 // WEB HTTPS

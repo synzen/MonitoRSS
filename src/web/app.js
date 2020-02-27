@@ -16,7 +16,7 @@ const log = createLogger('W')
 const app = express()
 const credentials = {
   client: {
-    id: config.web.clientId,
+    id: config.web.clientID,
     secret: config.web.clientSecret
   },
   auth: discordAPIConstants.auth

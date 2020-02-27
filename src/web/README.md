@@ -12,7 +12,7 @@ Mobile responsive UI, built according to Discord's theme with Discord's blessing
 
 1. `npm install` in this directory to install backend requisites
 2. Set up variables under web configuration in config.json
-   - `config.web.clientId` (Bot Client ID)
+   - `config.web.clientID` (Bot Client ID)
    - `config.web.clientSecret` (Bot Client Secret)
    - `config.web.sessionSecret` (Set to some random string)
    - `config.web.redirectUri` (Discord OAuth2 Redirect URI - set to http://domain.xyz/authorize - replace domain what whatever yours is)

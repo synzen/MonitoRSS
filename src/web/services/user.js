@@ -71,7 +71,7 @@ async function hasGuildPermission (guild) {
     return false
   }
   // Bot permission - just has to be in guild
-  const member = await getMemberOfGuild(config.web.clientId, guild.id)
+  const member = await getMemberOfGuild(config.web.clientID, guild.id)
   if (!member) {
     return false
   }

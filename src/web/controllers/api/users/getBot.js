@@ -9,7 +9,7 @@ const createError = require('../../../util/createError.js')
  */
 async function getBot (req, res, next) {
   try {
-    const userCached = await userServices.getUser(config.web.clientId)
+    const userCached = await userServices.getUser(config.web.clientID)
     if (userCached) {
       return res.json(userCached)
     }

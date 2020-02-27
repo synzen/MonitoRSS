@@ -59,7 +59,7 @@
     "sessionSecret": "keyboard cat",
     "port": 8081,
     "redirectUri": "",
-    "clientId": "",
+    "clientID": "",
     "clientSecret": "",
     "https": {
       "enabled": false,

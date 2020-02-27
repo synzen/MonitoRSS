@@ -7,9 +7,9 @@ const log = createLogger('W')
 
 module.exports = () => {
   // Check variables
-  const { clientId, clientSecret, port: httpPort } = config.web
-  if (!clientId || !clientSecret || !httpPort) {
-    throw new Error(`Missing required info for web (Client ID Exists: ${!!clientId}, Client Secret Exists: ${!!clientSecret}, Web Port Exists: ${!!httpPort})`)
+  const { clientID, clientSecret, port: httpPort } = config.web
+  if (!clientID || !clientSecret || !httpPort) {
+    throw new Error(`Missing required info for web (Client ID Exists: ${!!clientID}, Client Secret Exists: ${!!clientSecret}, Web Port Exists: ${!!httpPort})`)
   }
   if (!storage.redisClient) {
     throw new Error('Redis is not connected for Web UI')
