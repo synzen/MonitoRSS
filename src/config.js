@@ -67,16 +67,37 @@ const schema = Joi.object({
   web: Joi.object({
     enabled: Joi.bool().strict().required(),
     trustProxy: Joi.bool().strict().required(),
-    sessionSecret: Joi.string().required(),
     port: Joi.number().strict().required(),
-    redirectURI: Joi.string().allow('').required(),
-    clientID: Joi.string().allow('').required(),
-    clientSecret: Joi.string().allow('').required(),
+    sessionSecret: Joi.string().allow('').required().when('enabled', {
+      is: true,
+      then: Joi.string().disallow('').required()
+    }),
+    redirectURI: Joi.string().allow('').required().when('enabled', {
+      is: true,
+      then: Joi.string().disallow('').required()
+    }),
+    clientID: Joi.string().allow('').required().when('enabled', {
+      is: true,
+      then: Joi.string().disallow('').required()
+    }),
+    clientSecret: Joi.string().allow('').required().when('enabled', {
+      is: true,
+      then: Joi.string().disallow('').required()
+    }),
     https: Joi.object({
       enabled: Joi.bool().strict().required(),
-      privateKey: Joi.string().allow('').required(),
-      certificate: Joi.string().allow('').required(),
-      chain: Joi.string().allow('').required(),
+      privateKey: Joi.string().allow('').required().when('enabled', {
+        is: true,
+        then: Joi.string().disallow('').required()
+      }),
+      certificate: Joi.string().allow('').required().when('enabled', {
+        is: true,
+        then: Joi.string().disallow('').required()
+      }),
+      chain: Joi.string().allow('').required().when('enabled', {
+        is: true,
+        then: Joi.string().disallow('').required()
+      }),
       port: Joi.number().strict().required()
     }).required()
   }).required()

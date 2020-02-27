@@ -7,10 +7,7 @@ const log = createLogger('W')
 
 module.exports = () => {
   // Check variables
-  const { clientID, clientSecret, port: httpPort } = config.web
-  if (!clientID || !clientSecret || !httpPort) {
-    throw new Error(`Missing required info for web (Client ID Exists: ${!!clientID}, Client Secret Exists: ${!!clientSecret}, Web Port Exists: ${!!httpPort})`)
-  }
+  const { port: httpPort } = config.web
   if (!storage.redisClient) {
     throw new Error('Redis is not connected for Web UI')
   }
@@ -31,9 +28,6 @@ module.exports = () => {
       chain,
       port: httpsPort
     } = config.web.https
-    if (!privateKey || !certificate || !chain) {
-      throw new Error('Missing private key, certificate, or chain file path for enabled https')
-    }
     const key = fs.readFileSync(privateKey, 'utf8')
     const cert = fs.readFileSync(certificate, 'utf8')
     const ca = fs.readFileSync(chain, 'utf8')
