@@ -8,8 +8,8 @@ module.exports = async (message, command) => {
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const localeToUse = profile ? profile.locale : config.bot.locale
   const translate = Translator.createLocaleTranslator(localeToUse)
-  const webInfo = config.web.enabled && config.web.redirectUri ? ` ${translate('commands.help.controlPanelLink', {
-    url: config.web.redirectUri.replace('/authorize', '')
+  const webInfo = config.web.enabled && config.web.redirectURI ? ` ${translate('commands.help.controlPanelLink', {
+    url: config.web.redirectURI.replace('/authorize', '')
   })}` : ''
   let msg = `${translate('commands.help.description', { prefix: config.bot.prefix })}${webInfo}\n\n`
   const commandDescriptions = Translator.getCommandDescriptions(localeToUse)

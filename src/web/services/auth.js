@@ -21,7 +21,7 @@ function isAuthenticated (session) {
   */
 function getAuthorizationURL (oauthClient) {
   return oauthClient.authorizationCode.authorizeURL({
-    redirect_uri: config.web.redirectUri,
+    redirect_uri: config.web.redirectURI,
     scope: discordAPIConstants.scopes
   })
 }
@@ -33,7 +33,7 @@ function getAuthorizationURL (oauthClient) {
 async function createAuthToken (code, oauthClient) {
   const result = await oauthClient.authorizationCode.getToken({
     code,
-    redirect_uri: config.web.redirectUri,
+    redirect_uri: config.web.redirectURI,
     scope: discordAPIConstants.scopes
   })
   const accessTokenObject = oauthClient.accessToken.create(result) // class with properties access_token, token_type = 'Bearer', expires_in, refresh_token, scope, expires_at

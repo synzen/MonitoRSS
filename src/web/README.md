@@ -15,7 +15,7 @@ Mobile responsive UI, built according to Discord's theme with Discord's blessing
    - `config.web.clientID` (Bot Client ID)
    - `config.web.clientSecret` (Bot Client Secret)
    - `config.web.sessionSecret` (Set to some random string)
-   - `config.web.redirectUri` (Discord OAuth2 Redirect URI - set to http://domain.xyz/authorize - replace domain what whatever yours is)
+   - `config.web.redirectURI` (Discord OAuth2 Redirect URI - set to http://domain.xyz/authorize - replace domain what whatever yours is)
 3. Start the bot normally (`node server`)
 
 ### Frontend

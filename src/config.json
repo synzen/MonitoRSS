@@ -58,7 +58,7 @@
     "trustProxy": false,
     "sessionSecret": "keyboard cat",
     "port": 8081,
-    "redirectUri": "",
+    "redirectURI": "",
     "clientID": "",
     "clientSecret": "",
     "https": {
