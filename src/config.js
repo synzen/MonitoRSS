@@ -173,7 +173,7 @@ const webOverride = fileOverride.web
 web.enabled = Boolean(process.env.DRSS_WEB_ENABLED) || webOverride.enabled === undefined ? web.enabled : webOverride.enabled
 web.trustProxy = Boolean(process.env.DRSS_WEB_TRUSTPROXY) || webOverride.trustProxy === undefined ? web.trustProxy : webOverride.trustProxy
 web.sessionSecret = process.env.DRSS_WEB_SESSIONSECRET || webOverride.sessionSecret || web.sessionSecret
-web.port = Number(process.env.DRSS_WEB_PORT) || webOverride.port || web.port
+web.port = Number(process.env.PORT) || Number(process.env.DRSS_WEB_PORT) || webOverride.port || web.port
 web.redirectUri = process.env.DRSS_WEB_REDIRECTURI || webOverride.redirectUri || web.redirectUri
 web.clientId = process.env.DRSS_WEB_CLIENTID || webOverride.clientId || web.clientId
 web.clientSecret = process.env.DRSS_WEB_CLIENTSECRET || webOverride.clientSecret || web.clientSecret
