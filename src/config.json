@@ -1,7 +1,6 @@
 {
   "log": {
     "pretty": true,
-    "dates": true,
     "linkErrs": true,
     "unfiltered": true,
     "failedFeeds": true
@@ -19,7 +18,6 @@
     "menuColor": 5285609,
     "deleteMenus": true,
     "exitOnSocketIssues": true,
-    "deleteInvalidGuildLocales": false,
     "commandAliases": {}
   },
   "database": {

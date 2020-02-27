@@ -1,3 +1,5 @@
+const fs = require('fs')
+const path = require('path')
 const config = require('../config.js')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
@@ -6,7 +8,7 @@ const FlattenedJSON = require('./FlattenedJSON.js')
 const FilterResults = require('./FilterResults.js')
 const Filter = require('./Filter.js')
 const FilterRegex = require('./FilterRegex.js')
-const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
+const defaultConfigs = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config.json')))
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date', 'link']

@@ -1,7 +1,8 @@
+const fs = require('fs')
+const path = require('path')
 const htmlConvert = require('html-to-text')
-// const iconv = require('iconv-lite')
-const defaultConfigs = require('../util/checkConfig.js').defaultConfigs
 const config = require('../config.js')
+const defaultConfigs = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config.json')))
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'pubDate', 'pubdate', 'date']
 
 function cleanup (feed, text, encoding) {
