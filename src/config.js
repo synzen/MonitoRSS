@@ -47,7 +47,7 @@ const schema = Joi.object({
     max: Joi.number().strict().greater(-1).required(),
     hoursUntilFail: Joi.number().strict().required(),
     notifyFail: Joi.bool().strict().required(),
-    sendOldOnFirstCycle: Joi.bool().strict().required(),
+    sendFirstCycle: Joi.bool().strict().required(),
     cycleMaxAge: Joi.number().strict().required(),
     defaultText: Joi.string().required(),
     imgPreviews: Joi.bool().strict().required(),
@@ -144,7 +144,7 @@ feeds.timeFallback = Boolean(process.env.DRSS_FEEDS_TIMEFALLBACK) || feedsOverri
 feeds.max = Number(process.env.DRSS_FEEDS_MAX) || feedsOverride.max === undefined ? feeds.max : feedsOverride.max
 feeds.hoursUntilFail = Number(process.env.DRSS_FEEDS_HOURSUNTILFAIL) || feedsOverride.hoursUntilFail === undefined ? feeds.hoursUntilFail : feedsOverride.hoursUntilFail
 feeds.notifyFail = Boolean(process.env.DRSS_FEEDS_NOTIFYFAIL) || feedsOverride.notifyFail === undefined ? feeds.notifyFail : feedsOverride.notifyFail
-feeds.sendOldOnFirstCycle = Boolean(process.env.DRSS_FEEDS_SENDOLDONFIRSTCYCLE) || feedsOverride.sendOldOnFirstCycle === undefined ? feeds.sendOldOnFirstCycle : feedsOverride.sendOldOnFirstCycle
+feeds.sendFirstCycle = Boolean(process.env.DRSS_FEEDS_SENDFIRSTCYCLE) || feedsOverride.sendFirstCycle === undefined ? feeds.sendFirstCycle : feedsOverride.sendFirstCycle
 feeds.cycleMaxAge = Number(process.env.DRSS_FEEDS_CYCLEMAXAGE) || feedsOverride.cycleMaxAge === undefined ? feeds.cycleMaxAge : feedsOverride.cycleMaxAge
 feeds.defaultText = process.env.DRSS_FEEDS_DEFAULTTEXT || feedsOverride.defaultText || feeds.defaultText
 feeds.imgPreviews = Boolean(process.env.DRSS_FEEDS_IMGPREVIEWS) || feedsOverride.imgPreviews === undefined ? feeds.imgPreviews : feedsOverride.imgPreviews

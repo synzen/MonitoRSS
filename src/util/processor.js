@@ -111,7 +111,7 @@ async function getFeed (data, log) {
     }
     await syncDatabase(articleList, docs, rssList, meta, feedData)
 
-    if (runNum !== 0 || config.feeds.sendOldOnFirstCycle === true) {
+    if (runNum !== 0 || config.feeds.sendFirstCycle === true) {
       // Then send to prevent new article spam if sync fails
       const logic = new LinkLogic({ articleList, ...data })
       const result = await logic.run(docs)

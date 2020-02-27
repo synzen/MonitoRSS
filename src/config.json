@@ -37,7 +37,7 @@
     "max": 0,
     "hoursUntilFail": 0,
     "notifyFail": true,
-    "sendOldOnFirstCycle": true,
+    "sendFirstCycle": true,
     "cycleMaxAge": 1,
     "defaultText": ":newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}",
     "imgPreviews": true,
