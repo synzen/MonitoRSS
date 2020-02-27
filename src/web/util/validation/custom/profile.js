@@ -14,8 +14,7 @@ module.exports = Joi.extend(joi => {
     },
     rules: {
       isTimezone: {
-        validate(value, helpers) {
-          
+        validate (value, helpers) {
           if (!moment.tz.zone(value)) {
             return helpers.error('timezone')
           }
@@ -23,7 +22,7 @@ module.exports = Joi.extend(joi => {
         }
       },
       isLocale: {
-        validate(value, helpers) {
+        validate (value, helpers) {
           if (Translator.hasLocale(value)) {
             return helpers.error('locale')
           }
@@ -31,7 +30,7 @@ module.exports = Joi.extend(joi => {
         }
       },
       isDateLanguage: {
-        validate(value, helpers) {
+        validate (value, helpers) {
           const list = config.feeds.dateLanguageList
           if (!list.includes(value)) {
             return helpers.error('dateLanguage')
