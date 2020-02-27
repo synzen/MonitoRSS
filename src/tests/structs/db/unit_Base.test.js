@@ -19,7 +19,10 @@ const fsPromisesUnlink = fsPromises.unlink
 const fsPromisesRmdir = fsPromises.rmdir
 
 jest.mock('mongoose')
-jest.mock('../../../config.js')
+jest.mock('../../../config.js', () => ({
+  database: {},
+  log: {}
+}))
 
 describe('Unit::structs/db/Base', function () {
   afterEach(function () {

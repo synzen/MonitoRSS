@@ -190,15 +190,17 @@ https.certificate = process.env.DRSS_WEB_HTTPS_CERTIFICATE || httpsOverride.cert
 https.chain = process.env.DRSS_WEB_HTTPS_CHAIN || httpsOverride.chain || https.chain
 https.port = Number(process.env.DRSS_WEB_HTTPS_PORT) || httpsOverride.port || https.port
 
-const results = schema.validate(config, {
-  abortEarly: false
-})
+if (!process.env.TEST_ENV) {
+  const results = schema.validate(config, {
+    abortEarly: false
+  })
 
-if (results.error) {
-  const output = results.error.details
-    .map(d => d.message)
-    .join('\n')
-  throw new TypeError(`Config validation failed\n${output}\n`)
+  if (results.error) {
+    const output = results.error.details
+      .map(d => d.message)
+      .join('\n')
+    throw new TypeError(`Config validation failed\n${output}\n`)
+  }
 }
 
 module.exports = config
