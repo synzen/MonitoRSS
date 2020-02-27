@@ -1,9 +1,11 @@
+process.env.TEST_ENV = true
 const FeedData = require('../../structs/FeedData.js')
 const Profile = require('../../structs/db/Profile.js')
 const Feed = require('../../structs/db/Feed.js')
 
 jest.mock('../../structs/db/Profile.js')
 jest.mock('../../structs/db/Feed.js')
+jest.mock('../../config.js')
 
 const INIT_DATA = {
   feed: 1

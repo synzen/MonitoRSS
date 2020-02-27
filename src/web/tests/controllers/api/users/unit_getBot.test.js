@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const userServices = require('../../../../services/user.js')
 const config = require('../../../../../config.js')
 const getBot = require('../../../../controllers/api/users/getBot.js')

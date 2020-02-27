@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const userServices = require('../../../../services/user.js')
 const guildServices = require('../../../../services/guild.js')
 const getMeGuilds = require('../../../../controllers/api/users/getMeGuilds.js')
@@ -8,6 +9,7 @@ const {
 
 jest.mock('../../../../services/user.js')
 jest.mock('../../../../services/guild.js')
+jest.mock('../../../../../config.js')
 
 const createRequest = () => ({
   session: {

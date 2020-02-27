@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const authenticate = require('../../middleware/authenticate.js')
 const authServices = require('../../services/auth.js')
 const createError = require('../../util/createError.js')
@@ -8,6 +9,7 @@ const {
 
 jest.mock('../../services/auth.js')
 jest.mock('../../util/createError.js')
+jest.mock('../../../config.js')
 
 describe('Unit::middleware/authenticate', function () {
   it('returns a 401 with the error if no token on session', async function () {

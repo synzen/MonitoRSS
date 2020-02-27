@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const controller = require('../../controllers/logout.js')
 const authServices = require('../../services/auth.js')
 const {
@@ -6,6 +7,7 @@ const {
 } = require('../mocks/express.js')
 
 jest.mock('../../services/auth.js')
+jest.mock('../../../config.js')
 
 describe('Unit::controllers/logout', function () {
   beforeEach(function () {

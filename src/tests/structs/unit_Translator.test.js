@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const Translator = require('../../structs/Translator.js')
 
 jest.mock('../../config.js')

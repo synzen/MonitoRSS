@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const getSubscribers = require('../../../../../../controllers/api/guilds/feeds/subscribers/getSubscribers.js')
 const subscriberServices = require('../../../../../../services/subscriber.js')
 const {
@@ -6,6 +7,7 @@ const {
 } = require('../../../../../mocks/express.js')
 
 jest.mock('../../../../../../services/subscriber.js')
+jest.mock('../../../../../../../config.js')
 
 describe('Unit::controllers/api/guilds/feeds/subscribers/getSubscribers', function () {
   afterEach(function () {

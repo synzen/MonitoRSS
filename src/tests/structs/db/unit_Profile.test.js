@@ -1,8 +1,10 @@
+process.env.TEST_ENV = true
 const config = require('../../../config.js')
 const Profile = require('../../../structs/db/Profile.js')
 const Supporter = require('../../../structs/db/Supporter.js')
 
 jest.mock('../../../structs/db/Supporter.js')
+jest.mock('../../../config.js')
 
 describe('Unit::structs/db/Profile', function () {
   afterEach(function () {

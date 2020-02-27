@@ -1,4 +1,7 @@
+process.env.TEST_ENV = true
 const Subscriber = require('../../../structs/db/Subscriber.js')
+
+jest.mock('../../../config.js')
 
 describe('Unit::structs/db/Subscriber', function () {
   const initData = {

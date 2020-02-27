@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const ArticleMessageQueue = require('../../structs/ArticleMessageQueue.js')
 const ArticleMessage = require('../../structs/ArticleMessage.js')
 const ArticleMessageError = require('../../structs/errors/ArticleMessageError.js')

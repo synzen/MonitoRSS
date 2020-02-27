@@ -1,4 +1,7 @@
+process.env.TEST_ENV = true
 const Schedule = require('../../../structs/db/Schedule.js')
+
+jest.mock('../../../config.js')
 
 describe('Unit::structs/db/Schedule', function () {
   describe('constructor', function () {

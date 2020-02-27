@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const editGuild = require('../../../../controllers/api/guilds/editGuild.js')
 const guildServices = require('../../../../services/guild.js')
 const {
@@ -6,6 +7,7 @@ const {
 } = require('../../../mocks/express.js')
 
 jest.mock('../../../../services/guild.js')
+jest.mock('../../../../../config.js')
 
 describe('Unit::controllers/api/guilds', function () {
   afterEach(function () {

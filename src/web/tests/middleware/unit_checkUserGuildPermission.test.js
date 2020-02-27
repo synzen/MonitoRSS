@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const checkUserGuildPermission = require('../../middleware/checkUserGuildPermission.js')
 const guildServices = require('../../services/guild.js')
 const userServices = require('../../services/user.js')
@@ -9,6 +10,7 @@ const {
 jest.mock('../../services/guild.js')
 jest.mock('../../services/user.js')
 jest.mock('../../util/createError.js')
+jest.mock('../../../config.js')
 
 const createRequest = () => ({
   params: {

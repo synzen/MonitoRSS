@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const guildHasChannel = require('../../middleware/guildHasChannel.js')
 const guildServices = require('../../services/guild.js')
 const createError = require('../../util/createError.js')
@@ -8,6 +9,7 @@ const {
 
 jest.mock('../../services/guild.js')
 jest.mock('../../util/createError.js')
+jest.mock('../../../config.js')
 
 const createRequest = () => ({
   params: {

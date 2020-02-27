@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const deleteFeed = require('../../../../../controllers/api/guilds/feeds/deleteFeed.js')
 const feedServices = require('../../../../../services/feed.js')
 const {
@@ -5,6 +6,7 @@ const {
 } = require('../../../../mocks/express.js')
 
 jest.mock('../../../../../services/feed.js')
+jest.mock('../../../../../../config.js')
 
 describe('Unit::controllers/api/guilds/feeds/deleteFeed', function () {
   afterEach(function () {

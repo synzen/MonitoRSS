@@ -1,4 +1,7 @@
+process.env.TEST_ENV = true
 const Blacklist = require('../../../structs/db/Blacklist.js')
+
+jest.mock('../../../config.js')
 
 describe('Unit::structs/db/Blacklist', function () {
   describe('constructor', function () {

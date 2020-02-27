@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const createFeed = require('../../../../../controllers/api/guilds/feeds/createFeed.js')
 const FeedParserError = require('../../../../../../structs/errors/FeedParserError.js')
 const RequestError = require('../../../../../../structs/errors/RequestError.js')
@@ -10,6 +11,7 @@ const {
 
 jest.mock('../../../../../services/feed.js')
 jest.mock('../../../../../util/createError.js')
+jest.mock('../../../../../../config.js')
 
 describe('Unit::controllers/api/guilds/feeds/createFeed', function () {
   afterEach(function () {

@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const deleteSubscriber = require('../../../../../../controllers/api/guilds/feeds/subscribers/deleteSubscriber.js')
 const subscriberServices = require('../../../../../../services/subscriber.js')
 const {
@@ -5,6 +6,7 @@ const {
 } = require('../../../../../mocks/express.js')
 
 jest.mock('../../../../../../services/subscriber.js')
+jest.mock('../../../../../../../config.js')
 
 describe('Unit::controllers/api/guilds/feeds/subscribers/deleteSubscriber', function () {
   afterEach(function () {

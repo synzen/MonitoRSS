@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const getDatabaseArticles = require('../../../../../controllers/api/guilds/feeds/getDatabaseArticles.js')
 const feedServices = require('../../../../../services/feed.js')
 const {
@@ -6,6 +7,7 @@ const {
 } = require('../../../../mocks/express.js')
 
 jest.mock('../../../../../services/feed.js')
+jest.mock('../../../../../../config.js')
 
 describe('Unit::controllers/api/guilds/feeds/getDatabaseArticles', function () {
   afterEach(function () {

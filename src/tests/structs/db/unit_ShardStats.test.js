@@ -1,4 +1,7 @@
+process.env.TEST_ENV = true
 const ShardStats = require('../../../structs/db/ShardStats.js')
+
+jest.mock('../../../config.js')
 
 describe('Unit::structs/db/ShardStats', function () {
   describe('constructor', function () {

@@ -1,7 +1,6 @@
+process.env.TEST_ENV = true
 const FeedFetcher = require('../../util/FeedFetcher.js')
 const fetch = require('node-fetch')
-// const DecodedFeedParser = require('../../structs/DecodedFeedParser.js')
-// const ArticleIDResolver = require('../../structs/ArticleIDResolver.js')
 const Article = require('../../structs/Article.js')
 const RequestError = require('../../structs/errors/RequestError.js')
 const cloudscraper = require('cloudscraper')

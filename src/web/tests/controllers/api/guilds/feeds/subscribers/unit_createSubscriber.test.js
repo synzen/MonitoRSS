@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const createSubscriber = require('../../../../../../controllers/api/guilds/feeds/subscribers/createSubscriber.js')
 const roleServices = require('../../../../../../services/role.js')
 const userServices = require('../../../../../../services/user.js')
@@ -12,6 +13,7 @@ jest.mock('../../../../../../services/role.js')
 jest.mock('../../../../../../services/user.js')
 jest.mock('../../../../../../services/subscriber.js')
 jest.mock('../../../../../../util/createError.js')
+jest.mock('../../../../../../../config.js')
 
 describe('Unit::controllers/api/guilds/feeds/subscribers/createSubscriber', function () {
   afterEach(function () {

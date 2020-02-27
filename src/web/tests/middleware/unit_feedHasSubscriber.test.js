@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const feedHasSubscriber = require('../../middleware/feedHasSubscriber.js')
 const subscriberServices = require('../../services/subscriber.js')
 const createError = require('../../util/createError.js')
@@ -8,6 +9,7 @@ const {
 
 jest.mock('../../services/subscriber.js')
 jest.mock('../../util/createError.js')
+jest.mock('../../../config.js')
 
 const createRequest = () => ({
   params: {

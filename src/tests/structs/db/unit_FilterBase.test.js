@@ -1,4 +1,7 @@
+process.env.TEST_ENV = true
 const FilterBase = require('../../../structs/db/FilterBase.js')
+
+jest.mock('../../../config.js')
 
 class FilterClass extends FilterBase {
   static get Model () {

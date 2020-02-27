@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const getFailRecords = require('../../../../controllers/api/guilds/getFailRecords.js')
 const feedServices = require('../../../../services/feed.js')
 const {
@@ -6,6 +7,7 @@ const {
 } = require('../../../mocks/express.js')
 
 jest.mock('../../../../services/feed.js')
+jest.mock('../../../../../config.js')
 
 describe('Unit::controllers/api/guilds/getFailRecords', function () {
   it('returns the fail records of urls', async function () {

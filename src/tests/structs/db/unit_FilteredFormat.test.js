@@ -1,6 +1,9 @@
+process.env.TEST_ENV = true
 const FilteredFormatModel = require('../../../models/FilteredFormat.js').model
 const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
 const embedSchema = require('../../../models/common/Embed.js')
+
+jest.mock('../../../config.js')
 
 describe('Unit::structs/db/FilteredFormat', function () {
   const keys = Object.keys(embedSchema)

@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const config = require('../../config.js')
 const ArticleMessageQueue = require('../../structs/ArticleMessageQueue.js')
 const ArticleMessage = require('../../structs/ArticleMessage.js')

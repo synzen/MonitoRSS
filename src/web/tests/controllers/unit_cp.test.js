@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const requestIp = require('request-ip')
 const controller = require('../../controllers/cp.js')
 const authServices = require('../../services/auth.js')
@@ -11,6 +12,7 @@ jest.mock('request-ip')
 jest.mock('../../services/auth.js')
 jest.mock('../../services/routing.js')
 jest.mock('../../constants/html.js')
+jest.mock('../../../config.js')
 
 describe('Unit::controllers/cp', function () {
   afterEach(function () {

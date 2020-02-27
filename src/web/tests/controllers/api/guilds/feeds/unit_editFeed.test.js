@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const editFeed = require('../../../../../controllers/api/guilds/feeds/editFeed.js')
 const feedServices = require('../../../../../services/feed.js')
 const {
@@ -7,6 +8,7 @@ const {
 
 jest.mock('../../../../../services/feed.js')
 jest.mock('../../../../../util/createError.js')
+jest.mock('../../../../../../config.js')
 
 describe('Unit::controllers/api/guilds/feeds/editFeed', function () {
   afterEach(function () {
