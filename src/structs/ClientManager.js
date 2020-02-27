@@ -17,11 +17,7 @@ class ClientManager extends EventEmitter {
    */
   constructor (settings, customSchedules = {}) {
     super()
-    if (settings.config) {
-      config._overrideWith(settings.config)
-    }
     this.log = createLogger('M')
-    this.config = settings.config
     this.suppressLogLevels = settings.suppressLogLevels
     this.setPresence = settings.setPresence
     this.maintenance = maintenance.cycle()
@@ -100,7 +96,6 @@ class ClientManager extends EventEmitter {
           _drss: true,
           type: ipc.TYPES.START_INIT,
           data: {
-            config: this.config || {},
             suppressLogLevels: this.suppressLogLevels || [],
             setPresence: this.setPresence || false,
             customSchedules: this.customSchedules || []

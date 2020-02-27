@@ -21,6 +21,7 @@
     "eslint": "eslint --fix ./src"
   },
   "dependencies": {
+    "@hapi/joi": "^17.1.0",
     "cloudscraper": "^4.6.0",
     "discord.js": "github:discordjs/discord.js",
     "feedparser": "^2.2.9",

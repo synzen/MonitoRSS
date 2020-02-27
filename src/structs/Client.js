@@ -124,7 +124,6 @@ class Client extends EventEmitter {
           case ipc.TYPES.START_INIT:
             const data = message.data
             this.customSchedules = data.customSchedules
-            config._overrideWith(data.config)
             if (data.setPresence) {
               if (config.bot.activityType) {
                 bot.user.setActivity(config.bot.activityName, {
