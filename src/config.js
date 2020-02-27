@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const moment = require('moment-timezone')
 const configPath = path.join(__dirname, 'config.json')
 const config = JSON.parse(fs.readFileSync(configPath))
 const overridePath = path.join(__dirname, '..', 'settings', 'config.json')
@@ -41,7 +42,7 @@ const schema = Joi.object({
     timezone: Joi.string().required(),
     dateFormat: Joi.string().required(),
     dateLanguage: Joi.string().required(),
-    dateLanguageList: Joi.array().items(Joi.string()).required(),
+    dateLanguageList: Joi.array().items(Joi.string()).min(1).required(),
     dateFallback: Joi.bool().strict().required(),
     timeFallback: Joi.bool().strict().required(),
     max: Joi.number().strict().greater(-1).required(),
@@ -191,6 +192,7 @@ https.chain = process.env.DRSS_WEB_HTTPS_CHAIN || httpsOverride.chain || https.c
 https.port = Number(process.env.DRSS_WEB_HTTPS_PORT) || httpsOverride.port || https.port
 
 if (!process.env.TEST_ENV) {
+  moment.locale(config.feeds.dateLanguage)
   const results = schema.validate(config, {
     abortEarly: false
   })
