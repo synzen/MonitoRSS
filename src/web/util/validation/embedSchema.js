@@ -1,18 +1,19 @@
 const Joi = require('@hapi/joi')
 const embedJoi = require('./custom/embed.js')
+const urlJoi = require('./custom/url.js')
 
 const embedSchema = Joi.object({
   title: Joi.string().allow('').trim().max(256),
   description: Joi.string().allow('').trim().max(2048),
-  url: Joi.string().allow('').trim().uri(),
+  url: urlJoi.url(),
   color: Joi.number().allow('').max(16777215).min(0),
-  footerIconURL: Joi.string().allow('').trim().uri(),
+  footerIconURL: urlJoi.url(),
   footerText: Joi.string().allow('').trim().max(2048),
-  authorIconURL: Joi.string().allow('').trim().uri(),
+  authorIconURL: urlJoi.url(),
   authorName: Joi.string().allow('').trim().max(256),
-  authorURL: Joi.string().allow('').trim().uri(),
-  thumbnailURL: Joi.string().allow('').trim().uri(),
-  imageURL: Joi.string().allow('').trim().uri(),
+  authorURL: urlJoi.url(),
+  thumbnailURL: urlJoi.url(),
+  imageURL: urlJoi.url(),
   timestamp: embedJoi.embed().isTimestamp(),
   fields: Joi.array().items(Joi.object({
     name: Joi.string().trim().max(256).required(),
