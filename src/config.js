@@ -5,103 +5,7 @@ const configPath = path.join(__dirname, 'config.json')
 const config = JSON.parse(fs.readFileSync(configPath))
 const overridePath = path.join(__dirname, '..', 'settings', 'config.json')
 const fileOverride = fs.existsSync(overridePath) ? JSON.parse(fs.readFileSync(overridePath)) : {}
-const Joi = require('@hapi/joi')
-
-const schema = Joi.object({
-  dev: Joi.bool().strict(),
-  _vip: Joi.bool().strict(),
-  log: Joi.object({
-    pretty: Joi.bool().strict().required(),
-    linkErrs: Joi.bool().strict().required(),
-    unfiltered: Joi.bool().strict().required(),
-    failedFeeds: Joi.bool().strict().required()
-  }).required(),
-  bot: Joi.object({
-    token: Joi.string().required(),
-    locale: Joi.string().required(),
-    enableCommands: Joi.bool().strict().required(),
-    prefix: Joi.string().required(),
-    status: Joi.string().valid('online', 'dnd', 'invisible', 'idle').required(),
-    activityType: Joi.string().valid('', 'PLAYING', 'STREAMING', 'LISTENING', 'WATCHING').required(),
-    activityName: Joi.string().allow('').required(),
-    streamActivityURL: Joi.string().allow('').required(),
-    ownerIDs: Joi.array().items(Joi.string()).required(),
-    menuColor: Joi.number().strict().greater(0).required(),
-    deleteMenus: Joi.bool().strict().required(),
-    exitOnSocketIssues: Joi.bool().strict().required(),
-    commandAliases: Joi.object().pattern(/^/, Joi.string().required())
-  }).required(),
-  database: Joi.object({
-    uri: Joi.string().required(),
-    redis: Joi.string().allow('').required(),
-    connection: Joi.object().required(),
-    articlesExpire: Joi.number().strict().greater(-1).required()
-  }),
-  feeds: Joi.object({
-    refreshRateMinutes: Joi.number().strict().greater(0).required(),
-    timezone: Joi.string().required(),
-    dateFormat: Joi.string().required(),
-    dateLanguage: Joi.string().required(),
-    dateLanguageList: Joi.array().items(Joi.string()).min(1).required(),
-    dateFallback: Joi.bool().strict().required(),
-    timeFallback: Joi.bool().strict().required(),
-    max: Joi.number().strict().greater(-1).required(),
-    hoursUntilFail: Joi.number().strict().required(),
-    notifyFail: Joi.bool().strict().required(),
-    sendFirstCycle: Joi.bool().strict().required(),
-    cycleMaxAge: Joi.number().strict().required(),
-    defaultText: Joi.string().required(),
-    imgPreviews: Joi.bool().strict().required(),
-    imgLinksExistence: Joi.bool().strict().required(),
-    checkDates: Joi.bool().strict().required(),
-    formatTables: Joi.bool().strict().required(),
-    toggleRoleMentions: Joi.bool().strict().required(),
-    decode: Joi.object().pattern(/^/, Joi.string().uri()).required()
-  }).required(),
-  advanced: Joi.object({
-    shards: Joi.number().greater(0).strict().required(),
-    batchSize: Joi.number().greater(0).strict().required(),
-    parallelBatches: Joi.number().greater(0).strict().required(),
-    parallelShards: Joi.number().greater(0).strict().required()
-  }).required(),
-  web: Joi.object({
-    enabled: Joi.bool().strict().required(),
-    trustProxy: Joi.bool().strict().required(),
-    port: Joi.number().strict().required(),
-    sessionSecret: Joi.string().allow('').required().when('enabled', {
-      is: true,
-      then: Joi.string().disallow('').required()
-    }),
-    redirectURI: Joi.string().allow('').required().when('enabled', {
-      is: true,
-      then: Joi.string().disallow('').required()
-    }),
-    clientID: Joi.string().allow('').required().when('enabled', {
-      is: true,
-      then: Joi.string().disallow('').required()
-    }),
-    clientSecret: Joi.string().allow('').required().when('enabled', {
-      is: true,
-      then: Joi.string().disallow('').required()
-    }),
-    https: Joi.object({
-      enabled: Joi.bool().strict().required(),
-      privateKey: Joi.string().allow('').required().when('enabled', {
-        is: true,
-        then: Joi.string().disallow('').required()
-      }),
-      certificate: Joi.string().allow('').required().when('enabled', {
-        is: true,
-        then: Joi.string().disallow('').required()
-      }),
-      chain: Joi.string().allow('').required().when('enabled', {
-        is: true,
-        then: Joi.string().disallow('').required()
-      }),
-      port: Joi.number().strict().required()
-    }).required()
-  }).required()
-})
+const schema = require('./util/config/schema.js')
 
 function envArray (name) {
   const value = process.env[name]
@@ -174,6 +78,7 @@ feeds.imgLinksExistence = Boolean(process.env.DRSS_FEEDS_IMGLINKSEXISTENCE) || f
 feeds.checkDates = Boolean(process.env.DRSS_FEEDS_CHECKDATES) || feedsOverride.checkDates === undefined ? feeds.checkDates : feedsOverride.checkDates
 feeds.formatTables = Boolean(process.env.DRSS_FEEDS_FORMATTABLES) || feedsOverride.formatTables === undefined ? feeds.formatTables : feedsOverride.formatTables
 feeds.toggleRoleMentions = Boolean(process.env.DRSS_FEEDS_TOGGLEROLEMENTIONS) || feedsOverride.toggleRoleMentions === undefined ? feeds.toggleRoleMentions : feedsOverride.toggleRoleMentions
+feeds.decode = feedsOverride.decode || feeds.decode
 
 // ADVANCED
 if (!fileOverride.advanced) {
@@ -214,16 +119,8 @@ https.port = Number(process.env.DRSS_WEB_HTTPS_PORT) || httpsOverride.port || ht
 
 if (!process.env.TEST_ENV) {
   moment.locale(config.feeds.dateLanguage)
-  const results = schema.validate(config, {
-    abortEarly: false
-  })
-
-  if (results.error) {
-    const output = results.error.details
-      .map(d => d.message)
-      .join('\n')
-    throw new TypeError(`Config validation failed\n${output}\n`)
-  }
+  // .validate can throw a TypeError
+  schema.validate(config)
 }
 
 module.exports = config
