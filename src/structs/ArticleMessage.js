@@ -176,11 +176,7 @@ class ArticleMessage {
           value = value.length > 1024 ? value.slice(0, 1020) + '...' : value.length > 0 ? value : '\u200b'
 
           if (richEmbed.fields.length < 10) {
-            richEmbed.addFields({
-              name,
-              value,
-              inline
-            })
+            richEmbed.addField(name, value, inline)
           }
         }
       }
