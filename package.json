@@ -31,7 +31,7 @@
     "moment-timezone": "^0.5.28",
     "mongoose": "^5.9.2",
     "node-fetch": "^2.6.0",
-    "pino": "^5.16.0",
+    "pino": "^5.17.0",
     "pino-pretty": "^3.6.0",
     "redis": "^2.8.0"
   },
