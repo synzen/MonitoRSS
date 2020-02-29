@@ -10,22 +10,26 @@ const initialize = require('../util/initialization.js')
 const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
 
+/**
+ * @typedef {Object} ClientManagerOptions
+ * @property {Object<string, Object<string, any>>} schedules
+ * @property {boolean} setPresence
+ * @property {string} logFile
+ */
+
 class ClientManager extends EventEmitter {
   /**
-   * @param {Object<string, any>} settings
-   * @param {Object<string, Object<string, any>>} customSchedules
-   * @param {string} logFileName
+   * @param {ClientManagerOptions} options
    */
-  constructor (settings, customSchedules = {}, logFileName) {
+  constructor (options) {
     super()
-    if (logFileName && typeof logFileName === 'string') {
-      process.env.DRSS_LOG_DESTINATION = logFileName
+    if (options.logFile && typeof options.logFile === 'string') {
+      process.env.DRSS_LOG_DESTINATION = options.logFile
     }
     this.log = createLogger('M')
-    this.suppressLogLevels = settings.suppressLogLevels
-    this.setPresence = settings.setPresence
-    this.maintenance = maintenance.cycle()
-    this.customSchedules = customSchedules
+    this.setPresence = options.setPresence
+    this.customSchedules = options.schedules
+    this.maintenance = maintenance.cycle()   
     this.guildIdsByShard = new Map()
     this.channelIdsByShard = new Map()
     this.refreshRates = new Set()
