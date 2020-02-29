@@ -90,13 +90,15 @@ function Feeds (props) {
     setSelectedFeedID()
   }
 
+  const sidebarWidth = bodyRef.current ? Math.min(0.75 * bodyRef.current.offsetWidth, 425) : 425
+
   return (
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       <Sidebar
         styles={{
           sidebar: {
             backgroundColor: '#2f3136',
-            width: keepSidebar ? '425px' : 'min(75%, 425px)'
+            width: keepSidebar ? '425px' : `${sidebarWidth}px`
           }
         }}
         sidebar={
