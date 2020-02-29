@@ -13,6 +13,10 @@ function createLogger (shardID) {
     prettyPrint = false
   }
 
+  const destination = process.env.DRSS_LOG_DESTINATION
+    ? pino.destination(process.env.DRSS_LOG_DESTINATION)
+    : undefined
+
   return pino({
     base: {
       shardID: String(shardID)
@@ -29,7 +33,7 @@ function createLogger (shardID) {
       error: pino.stdSerializers.err
     },
     enabled: !process.env.TEST_ENV
-  })
+  }, destination)
 }
 
 module.exports = createLogger

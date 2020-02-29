@@ -14,9 +14,13 @@ class ClientManager extends EventEmitter {
   /**
    * @param {Object<string, any>} settings
    * @param {Object<string, Object<string, any>>} customSchedules
+   * @param {string} logFileName
    */
-  constructor (settings, customSchedules = {}) {
+  constructor (settings, customSchedules = {}, logFileName) {
     super()
+    if (logFileName && typeof logFileName === 'string') {
+      process.env.DRSS_LOG_DESTINATION = logFileName
+    }
     this.log = createLogger('M')
     this.suppressLogLevels = settings.suppressLogLevels
     this.setPresence = settings.setPresence
