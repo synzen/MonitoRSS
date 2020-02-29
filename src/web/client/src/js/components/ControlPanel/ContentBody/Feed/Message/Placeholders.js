@@ -132,6 +132,7 @@ const DropdownWithButtons = styled.div`
   display: flex;
 `
 function Placeholders (props) {
+  const { updateArticleID } = props
   const [articleID, setArticleID] = useState(0)
   const [showArticleBy, setShowArticleBy] = useState()
   const [searchPlaceholder, setSearchPlaceholder] = useState('')
@@ -157,8 +158,8 @@ function Placeholders (props) {
   }
 
   useEffect(() => {
-    props.updateArticleID(articleID)
-  }, [articleID])
+    updateArticleID(articleID)
+  }, [articleID, updateArticleID])
 
   useEffect(() => {
     const seen = new Set()
