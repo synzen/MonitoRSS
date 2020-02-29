@@ -23,12 +23,12 @@ class ClientManager extends EventEmitter {
    */
   constructor (options) {
     super()
-    if (options.logFile && typeof options.logFile === 'string') {
+    if (options && options.logFile && typeof options.logFile === 'string') {
       process.env.DRSS_LOG_DESTINATION = options.logFile
     }
     this.log = createLogger('M')
-    this.setPresence = options.setPresence
-    this.customSchedules = options.schedules
+    this.setPresence = options ? options.setPresence : false
+    this.customSchedules = options ? options.schedules : {}
     this.maintenance = maintenance.cycle()   
     this.guildIdsByShard = new Map()
     this.channelIdsByShard = new Map()
