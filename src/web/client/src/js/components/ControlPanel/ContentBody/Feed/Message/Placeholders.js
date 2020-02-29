@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Divider, Loader, Dropdown, ButtonGroup, Button, Input } from 'semantic-ui-react'
 import styled from 'styled-components'
 import colors from 'js/constants/colors'
+import PropTypes from 'prop-types'
 import Wrapper from 'js/components/utils/Wrapper'
 import { useSelector } from 'react-redux'
 import parser from '../../../utils/textParser'
@@ -130,7 +131,7 @@ const RegexTag = styled.span`
 const DropdownWithButtons = styled.div`
   display: flex;
 `
-function Placeholders () {
+function Placeholders (props) {
   const [articleID, setArticleID] = useState(0)
   const [showArticleBy, setShowArticleBy] = useState()
   const [searchPlaceholder, setSearchPlaceholder] = useState('')
@@ -154,6 +155,10 @@ function Placeholders () {
     }
     setArticleID(articleID - 1)
   }
+
+  useEffect(() => {
+    props.updateArticleID(articleID)
+  }, [articleID])
 
   useEffect(() => {
     const seen = new Set()
@@ -257,6 +262,10 @@ function Placeholders () {
 
     </div>
   )
+}
+
+Placeholders.propTypes = {
+  updateArticleID: PropTypes.func
 }
 
 export default Placeholders

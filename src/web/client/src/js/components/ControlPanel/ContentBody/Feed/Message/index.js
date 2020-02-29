@@ -4,7 +4,7 @@ import { Button, Divider, Sticky, ButtonGroup } from 'semantic-ui-react'
 import styled from 'styled-components'
 import MessageSettings from './TextSettings'
 import EmbedSettings from './EmbedSettings/index'
-import DiscordMessage from './Preview'
+import Preview from './Preview'
 import SectionTitle from 'js/components/utils/SectionTitle'
 import PageHeader from 'js/components/utils/PageHeader'
 import Placeholders from './Placeholders'
@@ -103,7 +103,7 @@ function Message () {
         </PageHeader>
         <Divider />
         <SectionTitle heading='Placeholders' subheading='Below are the available placeholders for the selected article.' />
-        <Placeholders updateArticleId={articleID => setArticleID(articleID)} />
+        <Placeholders updateArticleID={articleID => setArticleID(articleID)} />
         <Divider />
         <SectionTitle heading='Message' subheading={
           <span>
@@ -129,7 +129,7 @@ function Message () {
               <Button content='New' onClick={e => setPreviewNew(true)} disabled={previewNew} />
             </ButtonGroup>
             <div style={{ marginTop: '20px' }}>
-              <DiscordMessage embeds={previewNew ? inputEmbeds : feed.embeds} message={previewNew ? messageToDisplay : originalMessage} articleId={articleID} />
+              <Preview embeds={previewNew ? inputEmbeds : feed.embeds} message={previewNew ? messageToDisplay : originalMessage} articleID={articleID} />
             </div>
             <Divider />
           </div>
@@ -150,7 +150,7 @@ function Message () {
             </div>
             <div style={{ height: windowHeight - 55 - 70 - 150, marginTop: '20px' }}> { /* 55 is the topbar, 70 is the margin/padding, 150 is the rest of the space to leave */ }
               <Scrollbars>
-                <DiscordMessage embeds={previewNew ? inputEmbeds : feed.embeds} message={previewNew ? messageToDisplay : originalMessage} articleId={articleID} />
+                <Preview embeds={previewNew ? inputEmbeds : feed.embeds} message={previewNew ? messageToDisplay : originalMessage} articleID={articleID} />
               </Scrollbars>
             </div>
           </PreviewArea>

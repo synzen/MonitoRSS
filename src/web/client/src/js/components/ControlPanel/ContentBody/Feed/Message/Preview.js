@@ -238,12 +238,13 @@ function Preview (props) {
   const subscribers = useSelector(state => state.subscribers)
   const articleList = useSelector(state => state.articles)
   const botConfig = useSelector(state => state.botConfig)
-  const { embeds, message, articleId } = props
+  const { embeds, message, articleID } = props
+  const article = articleList[articleID]
 
   const convertKeywords = (word) => {
-    const article = articleList[articleId]
-
-    if (word.length === 0) return word
+    if (word.length === 0) {
+      return word
+    }
     let content = word
     for (const placeholderName in article) {
       if (isHiddenProperty(placeholderName)) continue
@@ -271,7 +272,6 @@ function Preview (props) {
   }
 
   const embedElements = []
-  const article = articleList[articleId]
   let hasEmbeds = false
 
   for (let i = 0; i < embeds.length; ++i) {
@@ -398,7 +398,7 @@ function Preview (props) {
 Preview.propTypes = {
   embeds: PropTypes.array,
   message: PropTypes.string,
-  articleId: PropTypes.string
+  articleID: PropTypes.number
 }
 
 export default Preview
