@@ -2,6 +2,7 @@ const Feed = require('../structs/db/Feed.js')
 const Article = require('../models/Article.js')
 const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
+const createLogger = require('../util/logger/create.js')
 
 /**
  * @param {Map<string, number>} guildIdsByShard
@@ -39,6 +40,7 @@ async function pruneArticles (guildIdsByShard) {
   if (!Feed.isMongoDatabase) {
     return -1
   }
+  const log = createLogger()
   const compoundIDs = await exports.getCompoundIDs(guildIdsByShard)
   const articles = await Article.model.find({}).exec()
   const removals = []
@@ -54,7 +56,11 @@ async function pruneArticles (guildIdsByShard) {
     }
   }
   await Promise.all(removals)
-  return removals.length
+  const count = removals.length
+  if (count > 0) {
+    log.info(`Pruned ${count} articles`)
+  }
+  return count
 }
 
 exports.pruneArticles = pruneArticles

@@ -3,7 +3,7 @@ const Feed = require('../../structs/db/Feed.js')
 const Article = require('../../models/Article.js')
 const pruneArticles = require('../../maintenance/pruneArticles.js')
 
-jest.mock('../../config.json')
+jest.mock('../../config.js')
 jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/db/Supporter.js')
 jest.mock('../../structs/db/Schedule.js')
