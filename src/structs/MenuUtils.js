@@ -169,7 +169,7 @@ class Menu {
   addOption (title, desc, inline) {
     this._embedExists()
     if (this._curPage && this._curPage.fields.length >= this.maxPerPage) this.addPage()
-    if (!title && !desc) this._curPage.addBlankField(inline)
+    if (!title && !desc) this._curPage.addField('\u200b', '\u200b')
     else {
       if (title === undefined) throw new Error('Menu Title must be defined')
       if (desc === undefined) throw new Error('Menu Description must be defined')
