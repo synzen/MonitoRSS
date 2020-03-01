@@ -28,7 +28,11 @@ class ScheduleManager {
     } catch (err) {
       if (config.log.linkErrs === true) {
         const channel = this.bot.channels.cache.get(article._feed.channel)
-        this.log.warn(`Failed to send article ${article.link}`, channel.guild, channel, err)
+        this.log.warn({
+          error: err,
+          guild: channel.guild,
+          channel
+        }, `Failed to send article ${article.link}`)
         if (err.code === 50035) {
           channel.send(`Failed to send formatted article for article <${article.link}> due to misformation.\`\`\`${err.message}\`\`\``)
             .catch(err => this.log.warn(err, `Unable to send failed-to-send message for article`))
