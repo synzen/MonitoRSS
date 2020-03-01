@@ -35,13 +35,10 @@ describe('Unit::ArticleMessage', function () {
       }
     }
 
-    const testDetails = 'wseirtg4yjr'
     const generatedMessage = { text: 'awszf', embeds: [1, 2] }
     beforeEach(function () {
       jest.spyOn(ArticleMessage.prototype, '_generateMessage')
         .mockImplementation(() => generatedMessage)
-      jest.spyOn(ArticleMessage.prototype, '_generateTestMessage')
-        .mockImplementation(() => testDetails)
       jest.spyOn(Article.prototype, 'testFilters')
         .mockReturnValue({ passed: true })
     })
@@ -57,17 +54,11 @@ describe('Unit::ArticleMessage', function () {
       Article.mockImplementationOnce(() => parsedArticle)
       const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
       expect(m.parsedArticle).toEqual(parsedArticle)
-      expect(m.channelId).toEqual(rawArticle._feed.channel)
+      expect(m.channelID).toEqual(rawArticle._feed.channel)
       expect(m.text).toEqual(generatedMessage.text)
       expect(m.embeds).toEqual(generatedMessage.embeds)
       expect(m.subscriptionIds).toEqual(parsedArticle.subscriptionIds)
-      expect(m.isTestMessage).toEqual(false)
       expect(m.skipFilters).toEqual(false)
-    })
-    it('defines test details if is testmessage', function () {
-      const m = new ArticleMessage(Bot(), rawArticle, true)
-      expect(m.isTestMessage).toEqual(true)
-      expect(m.testDetails).toEqual(testDetails)
     })
     it('attaches filter results if passed', function () {
       const filterResults = { a: 1, passed: true }
@@ -91,7 +82,7 @@ describe('Unit::ArticleMessage', function () {
     it('does not attach filter results if skip filters', function () {
       const filterResults = { a: 1, passed: false }
       jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
-      const m = new ArticleMessage(Bot(), rawArticle, false, true)
+      const m = new ArticleMessage(Bot(), rawArticle, true)
       expect(m.skipFilters).toEqual(true)
       expect(m.passedFilters()).toEqual(true)
     })
@@ -101,7 +92,8 @@ describe('Unit::ArticleMessage', function () {
       _feed: {
         filters: {},
         rfilters: {},
-        filteredFormats: []
+        filteredFormats: [],
+        embeds: []
       }
     }
     beforeEach(function () {
@@ -183,16 +175,6 @@ describe('Unit::ArticleMessage', function () {
         expect(channel.send).toHaveBeenCalledTimes(4)
       }
     })
-    it('sends two times and sets isTestMessage to false on second run', async function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      const channel = { send: jest.fn(async () => Promise.resolve()) }
-      m.channel = channel
-      m.isTestMessage = true
-      m.filterResults = { passed: true }
-      await m.send()
-      expect(m.isTestMessage).toEqual(false)
-      expect(channel.send).toHaveBeenCalledTimes(2)
-    })
     it('regenerates message with character limits if this.split is true and error is about message with >2000 chars', async function () {
       const generated = {
         embeds: [1, 2, 3],
@@ -238,19 +220,12 @@ describe('Unit::ArticleMessage', function () {
       _feed: {
         filters: {},
         rfilters: {},
-        filteredFormats: []
+        filteredFormats: [],
+        embeds: []
       }
     }
     beforeEach(function () {
       jest.spyOn(ArticleMessage.prototype, '_convertEmbeds').mockImplementation()
-    })
-    it('returns text that is the test message if it is a test message', function () {
-      const testMessage = 'adzesgtwioug'
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.isTestMessage = true
-      m.testDetails = testMessage
-      const data = m._createSendOptions()
-      expect(data.text).toEqual(testMessage)
     })
     it('returns the webhook if there is a webhook', function () {
       const m = new ArticleMessage(Bot(), rawArticle)
@@ -284,14 +259,6 @@ describe('Unit::ArticleMessage', function () {
       const data = m._createSendOptions()
       expect(data.options.embed).toBeUndefined()
       expect(data.options.embeds).toEqual(m.embeds)
-    })
-    it('does not attach user split options if it is a test message (it uses the static TEST_OPTIONS)', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.isTestMessage = true
-      m.split = { a: 'b' }
-      m.filterResults = { passed: true }
-      const data = m._createSendOptions()
-      expect(data.options).toEqual(ArticleMessage.TEST_OPTIONS)
     })
     it('attaches user split options for non-test-message', function () {
       const m = new ArticleMessage(Bot(), rawArticle)

@@ -47,12 +47,11 @@ class ArticleMessageQueue {
   /**
    * Queues up and sends an article to be sent, or if they have role subscriptions, just enqueue instead
    * @param {object} article - Article object
-   * @param {boolean} isTestMessage - Whether the calling function is from rsstest
    * @param {boolean} skipFilters - Whether filters should be skipped
    */
-  async enqueue (article, isTestMessage, skipFilters) {
+  async enqueue (article, skipFilters) {
     if (config.dev === true) return
-    const articleMessage = new ArticleMessage(this.bot, article, isTestMessage, skipFilters)
+    const articleMessage = new ArticleMessage(this.bot, article, skipFilters)
     await this._pushNext(articleMessage)
   }
 

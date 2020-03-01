@@ -13,53 +13,52 @@ class ArticleMessage {
   /**
    * @param {Discord.Client} bot - Discord client
    * @param {PreparedArticle} article - The article object
-   * @param {boolean} isTestMessage - Whether this should skip filters AND have test details
    * @param {boolean} skipFilters - Whether this should skip filters
    */
-  constructor (bot, article, isTestMessage = false, skipFilters = false) {
+  constructor (bot, article, skipFilters = false) {
     if (!article._feed) {
       throw new Error('article._feed property missing')
     }
     this.log = createLogger(bot.shard.ids[0])
-    this.debug = debug.feeds.has(article._feed._id)
+    this.debug = debug.feeds.has(this.feedID)
+    this.skipFilters = skipFilters
     this.article = article
-    this.filteredFormats = article._feed.filteredFormats
-    this.isTestMessage = isTestMessage
-    this.skipFilters = skipFilters || isTestMessage
-    this.channelId = article._feed.channel
-    this.channel = bot.channels.cache.get(article._feed.channel)
+    this.feed = article._feed
+    this.feedID = this.feed._id
+    this.profile = this.feed.profile || {}
+    this.split = this.feed.split
+    this.filters = this.feed.filters
+    this.rfilters = this.feed.rfilters
+    this.filteredFormats = this.feed.filteredFormats
+    this.toggleRoleMentions = config.feeds.toggleRoleMentions
+    if (typeof this.feed.toggleRoleMentions === 'boolean') {
+      this.toggleRoleMentions = this.feed.toggleRoleMentions
+    }
+    /** @type {Discord.TextChannel} */
+    this.channelID = this.feed.channel
+    this.channel = bot.channels.cache.get(this.channelID)
     if (!this.channel) {
       if (this.debug) {
-        this.log.info(`Skipping article delivery due to missing channel (${article._feed.channel})`)
+        this.log.info(`Skipping article delivery due to missing channel (${this.channelID})`)
       }
       return
     }
+    this.sendFailed = 0
     this.webhook = undefined
-    this.sendFailed = 1
-    this.feed = article._feed
-    this.profile = this.feed.profile
-    this.feedID = this.feed._id
-    this.toggleRoleMentions = typeof this.feed.toggleRoleMentions === 'boolean' ? this.feed.toggleRoleMentions : config.feeds.toggleRoleMentions
-    this.split = this.feed.splitMessage // The split options if the message exceeds the character limit. If undefined, do not split, otherwise it is an object with keys char, prepend, append
-    this.parsedArticle = new Article(article, this.feed, this.feed.profile ? this.feed.profile : {})
+    this.parsedArticle = new Article(article, this.feed, this.profile)
 
     if (Object.keys(this.feed.rfilters).length > 0) {
       // Regex
-      this.filterResults = this.parsedArticle.testFilters(this.feed.rfilters)
+      this.filterResults = this.parsedArticle.testFilters(this.rfilters)
     } else {
       // Regular
-      this.filterResults = this.parsedArticle.testFilters(this.feed.filters)
+      this.filterResults = this.parsedArticle.testFilters(this.filters)
     }
 
     this.subscriptionIds = this.parsedArticle.subscriptionIds
     const { embeds, text } = this._generateMessage()
     this.text = text
     this.embeds = embeds
-    this.testDetails = isTestMessage ? this._generateTestMessage() : ''
-  }
-
-  static get TEST_OPTIONS () {
-    return { split: { prepend: '```md\n', append: '```' } }
   }
 
   passedFilters () {
@@ -72,8 +71,8 @@ class ArticleMessage {
 
   _determineFormat () {
     const { feed, filteredFormats, parsedArticle } = this
-    let textFormat = feed.text ? feed.text.trim() : undefined
-    let embedFormat = feed.embeds
+    let text = feed.text || config.feeds.defaultText
+    let embeds = feed.embeds
 
     // See if there are any filter-specific messages
     if (filteredFormats.length > 0) {
@@ -81,12 +80,19 @@ class ArticleMessage {
       let highestPriority = -1
       let selectedFormat
       for (const filteredFormat of filteredFormats) {
-        const thisPriority = filteredFormat.priority === undefined || filteredFormat.priority < 0 ? 0 : filteredFormat.priority
+        let thisPriority = filteredFormat.priority
+        if (thisPriority === undefined || thisPriority < 0) {
+          thisPriority = 0
+        }
         const res = parsedArticle.testFilters(filteredFormat.filters)
         if (!res.passed) {
           continue
         }
-        matched[thisPriority] = matched[thisPriority] === undefined ? 1 : matched[thisPriority] + 1
+        if (matched[thisPriority] === undefined) {
+          matched[thisPriority] = 1
+        } else {
+          ++matched[thisPriority]
+        }
         if (thisPriority >= highestPriority) {
           highestPriority = thisPriority
           selectedFormat = filteredFormat
@@ -95,16 +101,16 @@ class ArticleMessage {
       // Only formats with 1 match will get the filtered format
       if (highestPriority > -1 && matched[highestPriority] === 1) {
         // If it's undefined, then it will use the feed's (or the config default, if applicable) message
-        textFormat = selectedFormat.text === undefined ? textFormat : selectedFormat.text
-        embedFormat = selectedFormat.embeds === undefined ? embedFormat : selectedFormat.embeds
+        if (selectedFormat.text) {
+          text = selectedFormat.text
+        }
+        if (selectedFormat.embeds) {
+          embeds = selectedFormat.embeds
+        }
       }
     }
 
-    if (!textFormat) {
-      textFormat = feed.text || config.feeds.defaultText.trim()
-    }
-
-    return { textFormat, embedFormat }
+    return { text, embeds }
   }
 
   _convertEmbeds (embeds) {
@@ -130,22 +136,20 @@ class ArticleMessage {
       }
 
       const color = objectEmbed.color
-      if (color !== null && color !== undefined && !isNaN(color) && color <= 16777215 && color >= 0) {
+      if (color !== null && color !== undefined && color <= 16777215 && color >= 0) {
         richEmbed.setColor(parseInt(color, 10))
-      } else if (color && color.startsWith('#') && color.length === 7) {
-        richEmbed.setColor(color)
       }
 
       const footerText = convert(objectEmbed.footerText)
-      const footerIconURL = convert(objectEmbed.footerIconURL)
       if (footerText) {
+        const footerIconURL = convert(objectEmbed.footerIconURL)
         richEmbed.setFooter(footerText, footerIconURL)
       }
 
       const authorName = convert(objectEmbed.authorName)
-      const authorIconURL = convert(objectEmbed.authorIconURL)
-      const authorURL = convert(objectEmbed.authorURL)
       if (authorName) {
+        const authorIconURL = convert(objectEmbed.authorIconURL)
+        const authorURL = convert(objectEmbed.authorURL)
         richEmbed.setAuthor(authorName, authorIconURL, authorURL)
       }
 
@@ -160,8 +164,10 @@ class ArticleMessage {
       }
 
       const timestamp = objectEmbed.timestamp
-      if (timestamp) {
-        richEmbed.setTimestamp(timestamp === 'article' ? new Date(parsedArticle._fullDate) : timestamp === 'now' ? new Date() : new Date(timestamp)) // No need to check for invalid date since discord.js does it
+      if (timestamp === 'article') {
+        richEmbed.setTimestamp(new Date(parsedArticle._fullDate))
+      } else if (timestamp === 'now') {
+        richEmbed.setTimestamp(new Date())
       }
 
       const fields = objectEmbed.fields
@@ -170,10 +176,14 @@ class ArticleMessage {
           const inline = field.inline === true
 
           let name = convert(field.name)
-          name = name.length > 256 ? name.slice(0, 250) + '...' : name
+          if (name.length > 256) {
+            name = name.slice(0, 250) + '...'
+          }
 
-          let value = convert(field.value ? field.value : '')
-          value = value.length > 1024 ? value.slice(0, 1020) + '...' : value.length > 0 ? value : '\u200b'
+          let value = convert(field.value)
+          if (value.length > 1024) {
+            value = value.slice(0, 1020) + '...'
+          }
 
           if (richEmbed.fields.length < 10) {
             richEmbed.addField(name, value, inline)
@@ -188,7 +198,8 @@ class ArticleMessage {
 
   async _resolveWebhook () {
     const { channel, feed } = this
-    if (typeof feed.webhook !== 'object' || !channel.guild.me.permissionsIn(channel).has('MANAGE_WEBHOOKS')) {
+    const permission = Discord.Permissions.FLAGS.MANAGE_WEBHOOKS
+    if (!feed.webhook || !channel.guild.me.permissionsIn(channel).has(permission)) {
       return
     }
     try {
@@ -197,95 +208,79 @@ class ArticleMessage {
       if (!hook) {
         return
       }
-      const guildId = channel.guild.id
+      const guildID = channel.guild.id
       const guildName = channel.guild.name
       this.webhook = hook
-      this.webhook.guild = { id: guildId, name: guildName }
-      let name = feed.webhook.name ? this.parsedArticle.convertKeywords(feed.webhook.name) : undefined
-      if (name && name.length > 32) name = name.slice(0, 29) + '...'
-      if (name && name.length < 2) name = undefined
+      this.webhook.guild = { id: guildID, name: guildName }
+      let name
+      if (feed.webhook.name) {
+        name = this.parsedArticle.convertKeywords(feed.webhook.name)
+      }
+      if (name) {
+        if (name.length > 32) {
+          name = name.slice(0, 29) + '...'
+        } else if (name.length < 2) {
+          name = undefined
+        }
+      }
       this.webhook.name = name
-      this.webhook.avatar = feed.webhook.avatar ? this.parsedArticle.convertImgs(feed.webhook.avatar) : undefined
+      this.webhook.avatar = undefined
+      if (feed.webhook.avatar) {
+        this.webhook.avatar = this.parsedArticle.convertImgs(feed.webhook.avatar)
+      }
     } catch (err) {
-      this.log.warn(err, `Cannot fetch webhooks for ArticleMessage webhook initialization to send message`)
+      this.log.warn({
+        channel: this.channel,
+        error: err
+      }, `Cannot fetch webhooks for ArticleMessage webhook initialization to send message`)
     }
   }
 
-  _generateMessage (ignoreLimits = !!this.feed.splitMessage) {
+  _generateMessage (ignoreLimits = !!this.split) {
     const { parsedArticle } = this
-    const { textFormat, embedFormat } = this._determineFormat()
+    const { text, embeds } = this._determineFormat()
 
-    // Determine what the text is, based on whether an embed exists
-    if (Array.isArray(embedFormat) && embedFormat.length > 0) {
-      const embeds = this._convertEmbeds(embedFormat)
-      const text = textFormat === '{empty}' ? '' : parsedArticle.convertKeywords(textFormat, ignoreLimits)
-      return { embeds, text }
+    // Determine what the text/sembed are, based on whether an embed exists
+    let useEmbeds = embeds
+    let useText = text
+    if (embeds.length > 0) {
+      useEmbeds = this._convertEmbeds(embeds)
+      let convert = text
+      if (text === '{empty}') {
+        convert = ''
+      }
+      useText = parsedArticle.convertKeywords(convert, ignoreLimits)
     } else {
-      const text = parsedArticle.convertKeywords(textFormat === '{empty}' ? config.feeds.defaultText : textFormat, ignoreLimits)
-      return { text }
-    }
-  }
-
-  _generateTestMessage () {
-    const { parsedArticle, filterResults } = this
-    let testDetails = ''
-    const footer = '\nBelow is the configured message to be sent for this feed:\n\n--'
-    testDetails += `\`\`\`Markdown\n# BEGIN TEST DETAILS #\`\`\`\`\`\`Markdown`
-
-    if (parsedArticle.title) {
-      testDetails += `\n\n[Title]: {title}\n${parsedArticle.title}`
-    }
-
-    if (parsedArticle.summary && parsedArticle.summary !== parsedArticle.description) { // Do not add summary if summary === description
-      let testSummary
-      if (parsedArticle.description && parsedArticle.description.length > 500) {
-        testSummary = (parsedArticle.summary.length > 500) ? `${parsedArticle.summary.slice(0, 490)} [...]\n\n**(Truncated summary for shorter rsstest)**` : parsedArticle.summary // If description is long, truncate summary.
-      } else {
-        testSummary = parsedArticle.summary
+      let convert = text
+      if (text === '{empty}') {
+        convert = config.feeds.defaultText
       }
-      testDetails += `\n\n[Summary]: {summary}\n${testSummary}`
+      useText = parsedArticle.convertKeywords(convert, ignoreLimits)
     }
-
-    if (parsedArticle.description) {
-      let testDescrip
-      if (parsedArticle.summary && parsedArticle.summary.length > 500) {
-        testDescrip = (parsedArticle.description.length > 500) ? `${parsedArticle.description.slice(0, 490)} [...]\n\n**(Truncated description for shorter rsstest)**` : parsedArticle.description // If summary is long, truncate description.
-      } else {
-        testDescrip = parsedArticle.description
-      }
-      testDetails += `\n\n[Description]: {description}\n${testDescrip}`
+    return {
+      embeds: useEmbeds,
+      text: useText
     }
-
-    if (parsedArticle.date) testDetails += `\n\n[Published Date]: {date}\n${parsedArticle.date}`
-    if (parsedArticle.author) testDetails += `\n\n[Author]: {author}\n${parsedArticle.author}`
-    if (parsedArticle.link) testDetails += `\n\n[Link]: {link}\n${parsedArticle.link}`
-    if (parsedArticle.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${parsedArticle.subscriptions.split(' ').length - 1} subscriber(s)`
-    if (parsedArticle.images) testDetails += `\n\n${parsedArticle.listImages()}`
-    const placeholderImgs = parsedArticle.listPlaceholderImages()
-    if (placeholderImgs) testDetails += `\n\n${placeholderImgs}`
-    const placeholderAnchors = parsedArticle.listPlaceholderAnchors()
-    if (placeholderAnchors) testDetails += `\n\n${placeholderAnchors}`
-    if (parsedArticle.tags) testDetails += `\n\n[Tags]: {tags}\n${parsedArticle.tags}`
-    if (this.feed.filters) {
-      testDetails += `\n\n[Passed Filters?]: ${filterResults.passed ? 'Yes' : 'No'}${filterResults.passed ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
-    }
-    testDetails += '```' + footer
-
-    return testDetails
   }
 
   _createSendOptions () {
-    const text = this.isTestMessage ? this.testDetails : this.text.length > 1950 && !this.split ? `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.` : this.text.length === 0 && !this.embeds ? `Unable to send empty message for feed article <${this.article.link}> (${this.feedID}).` : this.text
-    const options = this.isTestMessage ? ArticleMessage.TEST_OPTIONS : {}
+    let text = this.text
+    if (this.text.length > 1950 && !this.split) {
+      text = `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.`
+    } else if (this.text.length === 0 && this.embeds.length === 0) {
+      text = `Unable to send empty message for feed article <${this.article.link}> (${this.feedID}).`
+    }
+    const options = {}
     if (this.webhook) {
       options.username = this.webhook.name
       options.avatarURL = this.webhook.avatar
     }
-    if (!this.isTestMessage && this.embeds) {
-      if (this.webhook) options.embeds = this.embeds
-      else options.embed = this.embeds[0]
+    if (this.webhook) {
+      options.embeds = this.embeds
+    } else {
+      options.embed = this.embeds[0]
     }
-    if (!this.isTestMessage) options.split = this.split
+    options.split = this.split
     return { text, options }
   }
 
@@ -311,17 +306,14 @@ class ArticleMessage {
     // Send the message, and repeat attempt if failed
     const medium = this.webhook ? this.webhook : this.channel
     try {
-      const m = await medium.send(text, options)
-      if (this.isTestMessage) {
-        this.isTestMessage = false
-        return this.send()
-      } else {
-        return m
-      }
+      return await medium.send(text, options)
     } catch (err) {
-      if (err.code === 50013 || this.sendFailed++ === 4) { // 50013 = Missing Permissions
+      // 50013 = Missing Permissions
+      if (err.code === 50013 || this.sendFailed++ === 3) {
         if (debug.feeds.has(this.feedID)) {
-          this.log.info(err, `${this.feedID}: Message has been translated but could not be sent (TITLE: ${this.article.title})`)
+          this.log.info({
+            error: err
+          }, `${this.feedID}: Message has been translated but could not be sent (TITLE: ${this.article.title})`)
         }
         throw err
       }
@@ -332,9 +324,10 @@ class ArticleMessage {
           delete this.split
         }
         if (tooLong || noSplitChar) {
-          const messageWithCharacterLimits = this._generateMessage(false) // Regenerate with the character limits for individual placeholders again
-          this.embeds = messageWithCharacterLimits.embeds
-          this.text = messageWithCharacterLimits.text
+          // Regenerate with the character limits for individual placeholders again
+          const { embeds, text } = this._generateMessage(false)
+          this.embeds = embeds
+          this.text = text
         }
       }
       return this.send()

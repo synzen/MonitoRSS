@@ -523,6 +523,57 @@ module.exports = class Article {
     return ''
   }
 
+  createTestText () {
+    const filterResults = this.testFilters(this.source.filters)
+    let testDetails = ''
+    const footer = '\nBelow is the configured message to be sent for this feed:\n\n--'
+    testDetails += `\`\`\`Markdown\n# BEGIN TEST DETAILS #\`\`\`\`\`\`Markdown`
+
+    if (this.title) {
+      testDetails += `\n\n[Title]: {title}\n${this.title}`
+    }
+
+    // Do not add summary if summary === description
+    if (this.summary && this.summary !== this.description) {
+      let testSummary
+      if (this.description && this.description.length > 500) {
+        // If description is long, truncate summary.
+        testSummary = (this.summary.length > 500) ? `${this.summary.slice(0, 490)} [...]\n\n**(Truncated summary for shorter rsstest)**` : this.summary
+      } else {
+        testSummary = this.summary
+      }
+      testDetails += `\n\n[Summary]: {summary}\n${testSummary}`
+    }
+
+    if (this.description) {
+      let testDescrip
+      if (this.summary && this.summary.length > 500) {
+        // If summary is long, truncate description.
+        testDescrip = (this.description.length > 500) ? `${this.description.slice(0, 490)} [...]\n\n**(Truncated description for shorter rsstest)**` : this.description
+      } else {
+        testDescrip = this.description
+      }
+      testDetails += `\n\n[Description]: {description}\n${testDescrip}`
+    }
+
+    if (this.date) testDetails += `\n\n[Published Date]: {date}\n${this.date}`
+    if (this.author) testDetails += `\n\n[Author]: {author}\n${this.author}`
+    if (this.link) testDetails += `\n\n[Link]: {link}\n${this.link}`
+    if (this.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${this.subscriptions.split(' ').length - 1} subscriber(s)`
+    if (this.images) testDetails += `\n\n${this.listImages()}`
+    const placeholderImgs = this.listPlaceholderImages()
+    if (placeholderImgs) testDetails += `\n\n${placeholderImgs}`
+    const placeholderAnchors = this.listPlaceholderAnchors()
+    if (placeholderAnchors) testDetails += `\n\n${placeholderAnchors}`
+    if (this.tags) testDetails += `\n\n[Tags]: {tags}\n${this.tags}`
+    if (this.source.filters) {
+      testDetails += `\n\n[Passed Filters?]: ${filterResults.passed ? 'Yes' : 'No'}${filterResults.passed ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
+    }
+    testDetails += '```' + footer
+
+    return testDetails
+  }
+
   testFilters (filters) {
     const referenceOverrides = {
       description: this.fullDescription,

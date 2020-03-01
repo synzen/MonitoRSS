@@ -1,4 +1,5 @@
 const FeedSelector = require('../structs/FeedSelector.js')
+const Article = require('../structs/Article.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
@@ -36,8 +37,19 @@ module.exports = async (message, command) => {
     await profile.save()
   }
 
+  if (!simple) {
+    const parsedArticle = new Article(article, feed, profile || {})
+    const testText = parsedArticle.createTestText()
+    await message.channel.send(testText, {
+      split: {
+        prepend: '```md\n',
+        append: '```'
+      }
+    })
+  }
+
   const queue = new ArticleMessageQueue(message.client)
-  await queue.enqueue(article, !simple, true)
+  await queue.enqueue(article, true)
   await queue.send()
   await grabMsg.delete()
 }

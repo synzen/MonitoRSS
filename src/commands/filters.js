@@ -132,7 +132,7 @@ module.exports = async (message, command, role) => {
     article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
 
     const queue = new ArticleMessageQueue(message.client)
-    await queue.enqueue(article, true, true)
+    await queue.enqueue(article, true)
     await queue.send(message.client)
   }
 }
