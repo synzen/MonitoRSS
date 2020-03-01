@@ -8,7 +8,7 @@ const ipc = require('../util/ipc.js')
  * shard if it is sharded.
  * @param {import('../../structs/db/Feed.js')} feed - The feed
  * @param {import('discord.js').Client} bot
- * @returns {boolean} - The feed's disabled status
+ * @returns {Promise<boolean>} - The feed's disabled status
  */
 async function feed (feed, bot) {
   const log = createLogger(bot.shard.ids[0])
