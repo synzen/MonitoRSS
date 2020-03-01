@@ -34,14 +34,14 @@ class ClientManager extends EventEmitter {
     this.maintenance = maintenance.cycle()
     this.guildIdsByShard = new Map()
     this.channelIdsByShard = new Map()
-    this.activeshardIds = []
-    this.scheduleIntervals = [] // Array of intervals for each different refresh time
-    this.scheduleTracker = {} // Key is refresh time, value is index for this.activeshardIds
+    this.queuedArticles = new Map() // Articles that are not sent due to Clients with stop status
     this.shardsReady = 0 // Shards that have reported that they're ready
     this.shardsDone = 0 // Shards that have reported that they're done initializing
+    this.shardsStopped = new Set()
     this.scheduleManager = new ScheduleManager()
     this.scheduleManager.on('article', article => {
-      this.broadcastArticle(article)
+      this.log.debug(`ScheduleManager emitted article ${article._id}`)
+      this.handleNewArticle(article)
     })
     this.shardingManager = new Discord.ShardingManager('./server-shard.js', { respawn: false })
     this.shardingManager.on('shardCreate', shard => {
@@ -57,8 +57,53 @@ class ClientManager extends EventEmitter {
     })
   }
 
+  send (type, data, shard) {
+    shard.send({
+      _drss: true,
+      type,
+      data
+    })
+  }
+
   broadcastArticle (article) {
     this.broadcast(ipc.TYPES.NEW_ARTICLE, article)
+  }
+
+  sendArticle (article, shard) {
+    this.send(ipc.TYPES.NEW_ARTICLE, article, shard)
+  }
+
+  handleNewArticle (article) {
+    const feed = article._feed
+    this.log.debug(`Got new feed $${feed._id} article ${article._id}`)
+    if (this.shardsStopped.size > 0) {
+      this.shardingManager.shards.forEach(shard => {
+        const shardID = shard.id
+        if (this.shardsStopped.has(shardID)) {
+          this.log.debug(`Queueing feed ${feed._id} article ${article._id} for shard ${shardID} with some stopped shards`)
+          this.queuedArticles.get(shardID).push(article)
+        } else {
+          this.log.debug(`Sending feed ${feed._id} article ${article._id} for shard ${shardID} with some stopped shards`)
+          this.sendArticle(article, shard)
+        }
+      })
+    } else {
+      this.log.debug(`Broadcasting feed ${feed._id} article ${article._id}`)
+      this.broadcastArticle(article)
+    }
+  }
+
+  sendQueuedArticles (shard) {
+    this.log.debug(`About to send queued articles for ${shard.id}`)
+    /** @type {Object<string, any>[]} */
+    const queue = this.queuedArticles.get(shard.id)
+    const length = queue.length
+    for (var i = 0; i < length; ++i) {
+      const article = queue[i]
+      this.log.debug(`Sending queued article ${article._id} to shard ${shard.id}`)
+      this.sendArticle(article, shard)
+    }
+    queue.length = 0
   }
 
   static validateCustomSchedules (customSchedules) {
@@ -101,7 +146,8 @@ class ClientManager extends EventEmitter {
     switch (message.type) {
       case ipc.TYPES.KILL: this.kill(); break
       case ipc.TYPES.SHARD_READY: this._shardReadyEvent(shard, message); break
-      case ipc.TYPES.INIT_COMPLETE: this._initCompleteEvent(); break
+      case ipc.TYPES.INIT_COMPLETE: this._initCompleteEvent(shard); break
+      case ipc.TYPES.SHARD_STOPPED: this._shardStoppedEvent(shard); break
     }
   }
 
@@ -118,36 +164,42 @@ class ClientManager extends EventEmitter {
   }
 
   async _shardReadyEvent (shard, message) {
-    const totalShards = this.shardingManager.totalShards
-    this.activeshardIds.push(shard.id)
+    this.log.debug(`Shard ${shard.id} is ready`)
+    this.shardsStopped.delete(shard.id)
     message.data.guildIds.forEach(id => {
       this.guildIdsByShard.set(id, shard.id)
     })
     message.data.channelIds.forEach(id => {
       this.channelIdsByShard.set(id, shard.id)
     })
-    if (++this.shardsReady < totalShards) {
+    if (++this.shardsReady < this.shardingManager.totalShards) {
       return
     }
+    // Only after all shards are ready do we broadcast start init
     try {
       await maintenance.prunePreInit(this.guildIdsByShard, this.channelIdsByShard)
       const data = {
         setPresence: this.setPresence || false,
         customSchedules: this.customSchedules || []
       }
-      this.broadcast(ipc.TYPES.START_INIT, data)
+      if (this.shardsReady === this.shardingManager.totalShards) {
+        this.broadcast(ipc.TYPES.START_INIT, data)
+      }
     } catch (err) {
       this.log.fatal(err, 'Failed to execute prune pre init in sharding manager')
     }
   }
 
-  async _initCompleteEvent () {
-    // Count all the links
+  async _initCompleteEvent (shard) {
+    if (!this.queuedArticles.has(shard.id)) {
+      this.queuedArticles.set(shard.id, [])
+    }
     if (++this.shardsDone < this.shardingManager.totalShards) {
       return
     }
     try {
       this.log.info(`All shards have initialized by the Sharding Manager.`)
+      this.sendQueuedArticles(shard)
       await maintenance.prunePostInit(this.guildIdsByShard)
       if (Supporter.enabled) {
         await Patron.refresh()
@@ -158,6 +210,11 @@ class ClientManager extends EventEmitter {
     } catch (err) {
       this.log.fatal(err, `Post-initialization failed in sharding manager`)
     }
+  }
+
+  _shardStoppedEvent (shard) {
+    this.log.debug(`Added shard ${shard.id} to shards stopped`)
+    this.shardsStopped.add(shard.id)
   }
 }
 

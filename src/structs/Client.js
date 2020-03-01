@@ -126,9 +126,6 @@ class Client extends EventEmitter {
             }
             this.start()
             break
-          case ipc.TYPES.STOP_CLIENT:
-            this.stop()
-            break
           case ipc.TYPES.NEW_ARTICLE:
             this.onNewArticle(message.data)
             break
@@ -232,6 +229,15 @@ class Client extends EventEmitter {
       ipc.send(ipc.TYPES.INIT_COMPLETE)
       listeners.createManagers(this.bot)
       this.emit('finishInit')
+      if (this.bot.shard.ids[0] === 0 && !this.DEBUGRUN) {
+        this.DEBUGRUN = true
+        setTimeout(() => {
+          this.stop()
+          setTimeout(() => {
+            this.start()
+          }, 30000)
+        }, 30000)
+      }
     } catch (err) {
       this.log.error(err, `Client start`)
     }
@@ -246,6 +252,7 @@ class Client extends EventEmitter {
     clearInterval(this.maintenance)
     listeners.disableAll(this.bot)
     this.state = STATES.STOPPED
+    ipc.send(ipc.TYPES.SHARD_STOPPED)
   }
 
   async restart () {

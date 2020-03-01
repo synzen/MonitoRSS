@@ -66,7 +66,7 @@ class IPC {
       START_INIT: 'startInit',
       FINISHED_INIT: 'finishedInit',
       RUN_SCHEDULE: 'runSchedule',
-      STOP_CLIENT: 'stopClient',
+      SHARD_STOPPED: 'shardStopped',
       SEND_CHANNEL_MESSAGE: 'sendChannelAlert',
       SEND_USER_MESSAGE: 'sendUserAlert',
       NEW_ARTICLE: 'newArticle'
