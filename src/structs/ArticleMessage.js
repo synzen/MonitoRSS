@@ -55,7 +55,7 @@ class ArticleMessage {
       this.filterResults = this.parsedArticle.testFilters(this.filters)
     }
 
-    this.subscriptionIds = this.parsedArticle.subscriptionIds
+    this.subscriptionIDs = this.parsedArticle.subscriptionIds
     const { embeds, text } = this._generateMessage()
     this.text = text
     this.embeds = embeds

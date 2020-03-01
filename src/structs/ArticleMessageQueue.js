@@ -56,15 +56,15 @@ class ArticleMessageQueue {
   }
 
   async _pushNext (articleMessage) {
-    const delayArticleMessage = articleMessage.toggleRoleMentions && articleMessage.subscriptionIds.length > 0
-    const channelId = articleMessage.channelId
+    const delayArticleMessage = articleMessage.toggleRoleMentions && articleMessage.subscriptionIDs.length > 0
+    const channelID = articleMessage.channelID
     if (!delayArticleMessage) {
       return articleMessage.send()
     }
-    if (!this.queuesWithSubs[channelId]) {
-      this.queuesWithSubs[channelId] = [articleMessage]
+    if (!this.queuesWithSubs[channelID]) {
+      this.queuesWithSubs[channelID] = [articleMessage]
     } else {
-      this.queuesWithSubs[channelId].push(articleMessage)
+      this.queuesWithSubs[channelID].push(articleMessage)
     }
   }
 
@@ -72,14 +72,14 @@ class ArticleMessageQueue {
    * Send all the enqueued articles that require role mention toggles
    */
   async send () {
-    for (const channelId in this.queuesWithSubs) {
-      const channelQueue = this.queuesWithSubs[channelId]
+    for (const channelID in this.queuesWithSubs) {
+      const channelQueue = this.queuesWithSubs[channelID]
       if (channelQueue.length === 0) continue
-      const cId = channelId
+      const cId = channelID
       let roleIds = new Set()
       for (const articleMessage of channelQueue) {
-        const messageSubscriptionIds = articleMessage.subscriptionIds
-        messageSubscriptionIds.forEach(id => roleIds.add(id))
+        const messageSubscriptionIDs = articleMessage.subscriptionIDs
+        messageSubscriptionIDs.forEach(id => roleIds.add(id))
       }
       try {
         const rolesToggled = await ArticleMessageQueue.toggleRoleMentionable(true, cId, roleIds, this.bot)
@@ -94,7 +94,7 @@ class ArticleMessageQueue {
     }
   }
 
-  async _sendDelayedQueue (bot, channelId, channelQueue, roleIds, err, rolesToggled) {
+  async _sendDelayedQueue (bot, channelID, channelQueue, roleIds, err, rolesToggled) {
     const articleMessage = channelQueue[0]
     try {
       if (err) {
@@ -102,15 +102,15 @@ class ArticleMessageQueue {
       }
       await articleMessage.send()
       if (channelQueue.length - 1 === 0) {
-        delete this.queuesWithSubs[channelId]
+        delete this.queuesWithSubs[channelID]
         if (!err && rolesToggled > 0) {
-          await ArticleMessageQueue.toggleRoleMentionable(false, channelId, roleIds, bot)
+          await ArticleMessageQueue.toggleRoleMentionable(false, channelID, roleIds, bot)
         }
       } else {
-        await this._sendDelayedQueue(bot, channelId, channelQueue.slice(1, channelQueue.length), roleIds, err, rolesToggled)
+        await this._sendDelayedQueue(bot, channelID, channelQueue.slice(1, channelQueue.length), roleIds, err, rolesToggled)
       }
     } catch (err) {
-      delete this.queuesWithSubs[channelId]
+      delete this.queuesWithSubs[channelID]
       throw new ArticleMessageError(articleMessage.channel ? articleMessage.channel.guild : undefined, err.message)
     }
   }
