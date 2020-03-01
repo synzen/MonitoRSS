@@ -198,17 +198,17 @@ describe('Unit::ArticleMessageQueue', function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
       const channelID = '1asdw46'
-      articleMessage.channelId = channelID
+      articleMessage.channelID = channelID
       await queue._pushNext(articleMessage)
       expect(articleMessage.send).toHaveBeenCalledTimes(1)
     })
     it('adds to queue with subs for article with subscriptions and toggleRoleMentions is true', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
-      articleMessage.subscriptionIds = ['a', 'b']
+      articleMessage.subscriptionIDs = ['a', 'b']
       articleMessage.toggleRoleMentions = true
       const channelID = '1asdw46'
-      articleMessage.channelId = channelID
+      articleMessage.channelID = channelID
       await queue._pushNext(articleMessage)
       expect(Array.isArray(queue.queuesWithSubs[channelID])).toEqual(true)
       expect(queue.queuesWithSubs[channelID]).toHaveLength(1)
@@ -220,11 +220,11 @@ describe('Unit::ArticleMessageQueue', function () {
     it('calls toggleRoleMentionable the correct number of times', async function () {
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
-      articleMessage.subscriptionIds = ['1', '2']
+      articleMessage.subscriptionIDs = ['1', '2']
       const articleMessageTwo = new ArticleMessage()
-      articleMessageTwo.subscriptionIds = ['3', '4', '5']
+      articleMessageTwo.subscriptionIDs = ['3', '4', '5']
       const articleMessageThree = new ArticleMessage()
-      articleMessageThree.subscriptionIds = ['6', '7', '7']
+      articleMessageThree.subscriptionIDs = ['6', '7', '7']
       queue.queuesWithSubs['abc'] = [articleMessage, articleMessageTwo]
       queue.queuesWithSubs['d'] = [articleMessageThree]
       const origFunc = ArticleMessageQueue.toggleRoleMentionable
@@ -239,11 +239,11 @@ describe('Unit::ArticleMessageQueue', function () {
       const channelTwo = 'dcas'
       const bot = new Bot()
       const articleMessage = new ArticleMessage()
-      articleMessage.subscriptionIds = ['1', '2']
+      articleMessage.subscriptionIDs = ['1', '2']
       const articleMessageTwo = new ArticleMessage()
-      articleMessageTwo.subscriptionIds = ['3', '4', '5']
+      articleMessageTwo.subscriptionIDs = ['3', '4', '5']
       const articleMessageThree = new ArticleMessage()
-      articleMessageThree.subscriptionIds = ['6', '7', '7']
+      articleMessageThree.subscriptionIDs = ['6', '7', '7']
       const queue = new ArticleMessageQueue(bot)
       queue.queuesWithSubs[channelOne] = [articleMessage, articleMessageTwo]
       queue.queuesWithSubs[channelTwo] = [articleMessageThree]
@@ -261,11 +261,11 @@ describe('Unit::ArticleMessageQueue', function () {
       const bot = new Bot()
       const queue = new ArticleMessageQueue()
       const articleMessage = new ArticleMessage()
-      articleMessage.subscriptionIds = ['1', '2']
+      articleMessage.subscriptionIDs = ['1', '2']
       const articleMessageTwo = new ArticleMessage()
-      articleMessageTwo.subscriptionIds = ['3', '4', '5']
+      articleMessageTwo.subscriptionIDs = ['3', '4', '5']
       const articleMessageThree = new ArticleMessage()
-      articleMessageThree.subscriptionIds = ['6', '7', '7']
+      articleMessageThree.subscriptionIDs = ['6', '7', '7']
       queue.queuesWithSubs[channelOne] = [articleMessage, articleMessageTwo]
       queue.queuesWithSubs[channelTwo] = [articleMessageThree]
       const origFunc = ArticleMessageQueue.toggleRoleMentionable

@@ -50,14 +50,14 @@ describe('Unit::ArticleMessage', function () {
         .toThrowError('article._feed property missing')
     })
     it('defines the correct properties for this.parsedArticle', function () {
-      const parsedArticle = { foo: 'bar', subscriptionIds: [1, 4, 5], testFilters: jest.fn() }
+      const parsedArticle = { foo: 'bar', subscriptionIDs: [1, 4, 5], testFilters: jest.fn() }
       Article.mockImplementationOnce(() => parsedArticle)
       const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
       expect(m.parsedArticle).toEqual(parsedArticle)
       expect(m.channelID).toEqual(rawArticle._feed.channel)
       expect(m.text).toEqual(generatedMessage.text)
       expect(m.embeds).toEqual(generatedMessage.embeds)
-      expect(m.subscriptionIds).toEqual(parsedArticle.subscriptionIds)
+      expect(m.subscriptionIDs).toEqual(parsedArticle.subscriptionIds)
       expect(m.skipFilters).toEqual(false)
     })
     it('attaches filter results if passed', function () {

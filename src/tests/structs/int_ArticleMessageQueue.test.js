@@ -75,7 +75,7 @@ describe('Int::ArticleMessageQueue', function () {
     it('calls send on all articles', async function () {
       ArticleMessage.mockImplementationOnce(function () {
         this.toggleRoleMentions = true
-        this.subscriptionIds = ['a']
+        this.subscriptionIDs = ['a']
       })
       const queue = new ArticleMessageQueue(new Bot())
       await queue.enqueue({})
@@ -90,8 +90,8 @@ describe('Int::ArticleMessageQueue', function () {
       const spy = jest.spyOn(ArticleMessageQueue, 'toggleRoleMentionable')
       ArticleMessage.mockImplementation(function () {
         this.toggleRoleMentions = true
-        this.subscriptionIds = ['a']
-        this.channelId = 'abc'
+        this.subscriptionIDs = ['a']
+        this.channelID = 'abc'
       })
       const queue = new ArticleMessageQueue(new Bot())
       await queue.enqueue({})
@@ -106,8 +106,8 @@ describe('Int::ArticleMessageQueue', function () {
       const channelID = 'sfxdrgtrn'
       ArticleMessage.mockImplementation(function () {
         this.toggleRoleMentions = true
-        this.subscriptionIds = ['a']
-        this.channelId = channelID
+        this.subscriptionIDs = ['a']
+        this.channelID = channelID
       })
       const queue = new ArticleMessageQueue(new Bot())
       await queue.enqueue({})
@@ -135,13 +135,13 @@ describe('Int::ArticleMessageQueue', function () {
       guildOne.roles.cache.get.mockReturnValue(roleA)
       guildTwo.roles.cache.get.mockReturnValue(roleB)
       ArticleMessage.mockImplementationOnce(function () {
-        this.channelId = channelOneID
+        this.channelID = channelOneID
         this.toggleRoleMentions = true
-        this.subscriptionIds = [1]
+        this.subscriptionIDs = [1]
       }).mockImplementationOnce(function () {
-        this.channelId = channelTwoID
+        this.channelID = channelTwoID
         this.toggleRoleMentions = true
-        this.subscriptionIds = [2]
+        this.subscriptionIDs = [2]
       })
       const queue = new ArticleMessageQueue(bot)
       await queue.enqueue({})
@@ -170,9 +170,9 @@ describe('Int::ArticleMessageQueue', function () {
         .mockReturnValue(roleA)
       ArticleMessage
         .mockImplementationOnce(function () {
-          this.channelId = channelOneID
+          this.channelID = channelOneID
           this.toggleRoleMentions = true
-          this.subscriptionIds = [1]
+          this.subscriptionIDs = [1]
         })
       await queue.enqueue({})
       await queue.enqueue({})
@@ -188,9 +188,9 @@ describe('Int::ArticleMessageQueue', function () {
       bot.channels.cache.get
         .mockReturnValue(channelOne)
       ArticleMessage.mockImplementation(function () {
-        this.channelId = channelOneID
+        this.channelID = channelOneID
         this.toggleRoleMentions = true
-        this.subscriptionIds = [1]
+        this.subscriptionIDs = [1]
         this.send = async () => { throw error }
       })
       const queue = new ArticleMessageQueue(bot)
@@ -220,9 +220,9 @@ describe('Int::ArticleMessageQueue', function () {
         .mockReturnValue(roleA)
       ArticleMessage
         .mockImplementationOnce(function () {
-          this.channelId = channelOneID
+          this.channelID = channelOneID
           this.toggleRoleMentions = true
-          this.subscriptionIds = [1]
+          this.subscriptionIDs = [1]
           this.send = jest.fn().mockRejectedValue(error)
         })
       await queue.enqueue({})
