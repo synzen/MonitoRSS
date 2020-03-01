@@ -2,7 +2,6 @@ const path = require('path')
 const config = require('../config.js')
 const Schedule = require('./db/Schedule.js')
 const FailRecord = require('./db/FailRecord.js')
-const ShardStats = require('./db/ShardStats.js')
 const FeedData = require('./FeedData.js')
 const Supporter = require('./db/Supporter.js')
 const debug = require('../util/debugFeeds.js')
@@ -10,17 +9,14 @@ const EventEmitter = require('events')
 const childProcess = require('child_process')
 const maintenance = require('../maintenance/index.js')
 const createLogger = require('../util/logger/create.js')
-const ipc = require('../util/ipc.js')
 
 const BATCH_SIZE = config.advanced.batchSize
 
 class FeedSchedule extends EventEmitter {
   /**
-   * @param {import('discord.js').Client} bot
    * @param {Object<string, any>} schedule
-   * @param {import('./ScheduleManager.js')} scheduleManager
    */
-  constructor (bot, schedule, scheduleManager) {
+  constructor (schedule) {
     if (!schedule.refreshRateMinutes) {
       throw new Error('No refreshRateMinutes has been declared for a schedule')
     }
@@ -28,10 +24,8 @@ class FeedSchedule extends EventEmitter {
       throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     }
     super()
-    this.bot = bot
     this.name = schedule.name
-    this.shardID = scheduleManager.shardID
-    this.log = createLogger(`${this.shardID}, ${this.name}`)
+    this.log = createLogger(`M`)
     this.refreshRate = schedule.refreshRateMinutes
     this._linksResponded = {}
     this._processorList = []
@@ -64,14 +58,14 @@ class FeedSchedule extends EventEmitter {
       let linkList = this._sourceList.get(feedData.url)
       linkList[feedData._id] = feedData
       if (debug.feeds.has(feedData._id)) {
-        this.log.debug(`${feedData._id}: Adding to pre-existing source list`)
+        this.log.info(`${feedData._id}: Adding to pre-existing source list`)
       }
     } else {
       let linkList = {}
       linkList[feedData._id] = feedData
       this._sourceList.set(feedData.url, linkList)
       if (debug.feeds.has(feedData._id)) {
-        this.log.debug(`${feedData._id}: Creating new source list`)
+        this.log.info(`${feedData._id}: Creating new source list`)
       }
     }
   }
@@ -86,20 +80,20 @@ class FeedSchedule extends EventEmitter {
 
     if (feedData.disabled) {
       if (toDebug) {
-        this.log.debug(`${feedData._id}: Skipping feed delegation due to disabled status`)
+        this.log.info(`${feedData._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
 
     if (failRecord && (failRecord.hasFailed() && failRecord.alerted)) {
       if (toDebug) {
-        this.log.debug(`${feedData._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
+        this.log.info(`${feedData._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
       return false
     }
 
     if (toDebug) {
-      this.log.debug(`Shard ${this.shardID} ${feedData._id}: Preparing for feed delegation`)
+      this.log.info(`${feedData._id}: Preparing for feed delegation`)
       this.debugFeedLinks.add(feedData.url)
     }
 
@@ -117,7 +111,7 @@ class FeedSchedule extends EventEmitter {
       }
       batch[link] = rssList
       if (debug.links.has(link)) {
-        this.log.debug(`${link}: Attached URL to regular batch list for ${this.name}`)
+        this.log.info(`${link}: Attached URL to regular batch list for ${this.name}`)
       }
       this._linksResponded[link] = 1
     })
@@ -168,11 +162,6 @@ class FeedSchedule extends EventEmitter {
       }
     }
 
-    const feedDataQuery = {
-      guild: {
-        $in: this.bot.guilds.cache.keyArray()
-      }
-    }
     const [
       failRecords,
       feedDatas,
@@ -180,26 +169,12 @@ class FeedSchedule extends EventEmitter {
       schedules
     ] = await Promise.all([
       FailRecord.getAll(),
-      FeedData.getManyByQuery(feedDataQuery),
+      FeedData.getAll(),
       Supporter.getValidGuilds(),
       Schedule.getAll()
     ])
     const feeds = feedDatas.map(data => data.feed)
     const feedDataJSONs = feedDatas.map(data => data.toJSON())
-    const filteredFeeds = []
-    const filteredFeedsIds = new Set()
-    // Filter in feeds only this bot contains
-    for (const feed of feeds) {
-      const hasChannel = this.bot.channels.cache.has(feed.channel)
-      if (!hasChannel) {
-        if (debug.feeds.has(feed._id)) {
-          this.log.debug(`${feed._id}: Not processing feed - missing channel: ${!hasChannel}`)
-        }
-      } else {
-        filteredFeeds.push(feed)
-        filteredFeedsIds.add(feed._id)
-      }
-    }
 
     // Save the fail records
     this.failRecords.clear()
@@ -207,13 +182,8 @@ class FeedSchedule extends EventEmitter {
       this.failRecords.set(record.url, record)
     }
 
-    // Check the permissions
-    await Promise.all(filteredFeeds.map(feed => {
-      return maintenance.checkPermissions(feed, this.bot)
-    }))
-
     // Check the limits
-    await maintenance.checkLimits(filteredFeeds, supporterLimits)
+    await maintenance.checkLimits(feeds, supporterLimits)
 
     this._startTime = new Date()
     this._regBatchList = []
@@ -223,19 +193,17 @@ class FeedSchedule extends EventEmitter {
 
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
-    const determineSchedulePromises = []
-    filteredFeeds.forEach(feed => {
-      determineSchedulePromises.push(feed.determineSchedule(schedules, supporterGuilds))
-    })
-    const determinedSchedules = await Promise.all(determineSchedulePromises)
-    for (let i = 0; i < filteredFeeds.length; ++i) {
+    const determinedSchedules = await Promise.all(
+      feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds))
+    )
+    for (let i = 0; i < feeds.length; ++i) {
       const feedData = feedDataJSONs[i]
       const name = determinedSchedules[i].name
       if (this.name !== name) {
         continue
       }
       if (debug.feeds.has(feedData._id)) {
-        this.log.debug(`${feedData._id}: Assigned schedule`)
+        this.log.info(`${feedData._id}: Assigned schedule`)
       }
       if (this._addToSourceLists(feedData)) {
         feedCount++
@@ -299,7 +267,7 @@ class FeedSchedule extends EventEmitter {
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
         if (debug.links.has(linkCompletion.link)) {
-          this.log.debug(`${linkCompletion.link}: Link responded from processor`)
+          this.log.info(`${linkCompletion.link}: Link responded from processor`)
         }
         if (completedLinks === currentBatchLen) {
           if (callback) {
@@ -324,8 +292,7 @@ class FeedSchedule extends EventEmitter {
         headers: this.headers,
         feedData: this.feedData,
         runNum: this.ran,
-        scheduleName: this.name,
-        shardID: this.shardID
+        scheduleName: this.name
       })
     }
 
@@ -351,34 +318,8 @@ class FeedSchedule extends EventEmitter {
   }
 
   _finishCycle (noFeeds) {
-    ipc.send(ipc.TYPES.SCHEDULE_COMPLETE, {
-      refreshRate: this.refreshRate
-    })
     const cycleTime = (new Date() - this._startTime) / 1000
     const timeTaken = cycleTime.toFixed(2)
-    ShardStats.get(this.shardID.toString())
-      .then(stats => {
-        const data = {
-          _id: this.shardID.toString(),
-          feeds: this.feedCount,
-          cycleTime,
-          cycleFails: this._cycleFailCount,
-          cycleURLs: this._cycleTotalCount,
-          lastUpdated: new Date().toISOString()
-        }
-        if (!stats) {
-          stats = new ShardStats(data)
-          return stats.save()
-        } else {
-          stats.feeds = data.feeds
-          stats.cycleTime = ((data.cycleTime + stats.cycleTime) / 2).toFixed(2)
-          stats.cycleFails = ((data.cycleFails + stats.cycleFails) / 2).toFixed(2)
-          stats.cycleURLs = data.cycleURLs
-          stats.lastUpdated = data.lastUpdated
-          return stats.save()
-        }
-      }).catch(err => this.log.error(err, `Unable to update statistics after cycle`, err))
-
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     if (noFeeds) {
       this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)

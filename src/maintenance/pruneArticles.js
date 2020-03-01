@@ -4,10 +4,7 @@ const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
 const createLogger = require('../util/logger/create.js')
 
-/**
- * @param {Map<string, number>} guildIdsByShard
- */
-async function getCompoundIDs (guildIdsByShard) {
+async function getCompoundIDs () {
   const feeds = await Feed.getAll()
   const supporterGuilds = await Supporter.getValidGuilds()
   const schedules = await Schedule.getAll()
@@ -18,13 +15,10 @@ async function getCompoundIDs (guildIdsByShard) {
   for (let i = 0; i < feeds.length; ++i) {
     const feed = feeds[i]
     const url = feed.url
-    const shard = guildIdsByShard.get(feed.guild)
     const schedule = assignedSchedules[i].name
 
-    if (shard !== undefined) {
-      const compoundID = shard + schedule + url
-      compoundIDs.add(compoundID)
-    }
+    const compoundID = schedule + url
+    compoundIDs.add(compoundID)
   }
   return compoundIDs
 }
@@ -33,24 +27,22 @@ async function getCompoundIDs (guildIdsByShard) {
  * Precondition: Schedules have already been created in DB,
  * feeds, and guilds have been pruned
  *
- * Prune article collections that are no longer used
- * @param {Map<string, number>} guildIdsByShard
+ * Prune articles that are no longer used
  */
-async function pruneArticles (guildIdsByShard) {
+async function pruneArticles () {
   if (!Feed.isMongoDatabase) {
     return -1
   }
-  const log = createLogger()
-  const compoundIDs = await exports.getCompoundIDs(guildIdsByShard)
+  const log = createLogger('M')
+  const compoundIDs = await exports.getCompoundIDs()
   const articles = await Article.model.find({}).exec()
   const removals = []
   for (var i = articles.length - 1; i >= 0; --i) {
     const article = articles[i]
     const url = article.feedURL
-    const shard = article.shardID
     const schedule = article.scheduleName
 
-    const compoundID = shard + schedule + url
+    const compoundID = schedule + url
     if (!compoundIDs.has(compoundID)) {
       removals.push(article.remove())
     }

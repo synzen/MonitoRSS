@@ -85,7 +85,7 @@ async function syncDatabase (articleList, databaseDocs, feeds, meta, memoryColle
 }
 
 async function getFeed (data, log) {
-  const { link, rssList, headers, toDebug, docs, feedData, shardID, scheduleName, runNum } = data
+  const { link, rssList, headers, toDebug, docs, feedData, scheduleName, runNum } = data
   const urlLog = toDebug ? log.child({
     url: link
   }) : null
@@ -106,7 +106,6 @@ async function getFeed (data, log) {
     // Sync first
     const meta = {
       feedURL: link,
-      shardID,
       scheduleName
     }
     await syncDatabase(articleList, docs, rssList, meta, feedData)
@@ -139,8 +138,10 @@ async function getFeed (data, log) {
     }
     process.send({ status: 'failed', link, rssList })
     if (err instanceof RequestError || err instanceof FeedParserError) {
-      if (logLinkErrs || urlLog) {
-        urlLog.warn(err, `Skipping`)
+      if (logLinkErrs) {
+        log.warn({
+          error: err
+        }, `Skipping ${link}`)
       }
     } else {
       log.error(err, `Cycle logic`)
@@ -150,14 +151,14 @@ async function getFeed (data, log) {
 
 process.on('message', async m => {
   const currentBatch = m.currentBatch
-  const { debugFeeds, debugLinks, scheduleName, shardID, feedData } = m
+  const { debugFeeds, debugLinks, scheduleName, feedData } = m
   debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
   debug.links = new DataDebugger(debugLinks || [], 'links-processor')
-  const logMarker = `${shardID}C, ${scheduleName}`
+  const logMarker = `$${scheduleName}`
   const log = createLogger(logMarker)
   try {
     await connectDb(logMarker, true)
-    const articleDocuments = await databaseFuncs.getAllDocuments(shardID, scheduleName, feedData)
+    const articleDocuments = await databaseFuncs.getAllDocuments(scheduleName, feedData)
     const promises = []
     for (const link in currentBatch) {
       const docs = articleDocuments[link] || []

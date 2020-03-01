@@ -10,10 +10,6 @@ const schema = new mongoose.Schema({
     required: true,
     type: String
   },
-  shardID: {
-    required: true,
-    type: Number
-  },
   scheduleName: {
     required: true,
     type: String
@@ -31,9 +27,8 @@ const schema = new mongoose.Schema({
 schema.add(Version)
 
 schema.index({
-  url: 1,
-  scheduleName: 1,
-  shardID: 1
+  feedURL: 1,
+  scheduleName: 1
 })
 
 exports.schema = schema

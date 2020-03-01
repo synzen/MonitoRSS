@@ -4,7 +4,7 @@ const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
 const config = require('../config.js')
 const Profile = require('./db/Profile.js')
-const ScheduleManager = require('./ScheduleManager.js')
+const ArticleMessageQueue = require('./ArticleMessageQueue.js')
 const storage = require('../util/storage.js')
 const createLogger = require('../util/logger/create.js')
 const connectDb = require('../util/connectDatabase.js')
@@ -34,10 +34,9 @@ const CLIENT_OPTIONS = {
 class Client extends EventEmitter {
   constructor () {
     super()
-    this.scheduleManager = undefined
     this.STATES = STATES
     this.state = STATES.STOPPED
-    this.customSchedules = {}
+    this.articleMessageQueue = undefined
     this.log = undefined
   }
 
@@ -54,6 +53,7 @@ class Client extends EventEmitter {
       await client.login(token)
       this.log = createLogger(client.shard.ids[0].toString())
       this.bot = client
+      this.articleMessageQueue = new ArticleMessageQueue(this.bot)
       this.shardID = client.shard.ids[0]
       this.listenToShardedEvents(client)
       if (!client.readyAt) {
@@ -77,12 +77,6 @@ class Client extends EventEmitter {
       this.log.warn(`Websocket error`, err)
       if (config.bot.exitOnSocketIssues === true) {
         this.log.warn('Stopping all processes due to config.bot.exitOnSocketIssues')
-        if (this.scheduleManager) {
-          // Check if it exists first since it may disconnect before it's even initialized
-          for (const sched of this.scheduleManager.scheduleList) {
-            sched.killChildren()
-          }
-        }
         ipc.send(ipc.TYPES.KILL)
       } else {
         this.stop()
@@ -96,12 +90,6 @@ class Client extends EventEmitter {
       this.log.warn(`SH ${this.shardID} Websocket disconnected`)
       if (config.bot.exitOnSocketIssues === true) {
         this.log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
-        if (this.scheduleManager) {
-          // Check if it exists first since it may disconnect before it's even initialized
-          for (const sched of this.scheduleManager.scheduleList) {
-            sched.killChildren()
-          }
-        }
         ipc.send(ipc.TYPES.KILL)
       } else {
         this.stop()
@@ -123,7 +111,6 @@ class Client extends EventEmitter {
         switch (message.type) {
           case ipc.TYPES.START_INIT:
             const data = message.data
-            this.customSchedules = data.customSchedules
             if (data.setPresence) {
               if (config.bot.activityType) {
                 bot.user.setActivity(config.bot.activityName, {
@@ -142,13 +129,11 @@ class Client extends EventEmitter {
           case ipc.TYPES.STOP_CLIENT:
             this.stop()
             break
+          case ipc.TYPES.NEW_ARTICLE:
+            this.onNewArticle(message.data)
+            break
           case ipc.TYPES.FINISHED_INIT:
             storage.initialized = 2
-            break
-          case ipc.TYPES.RUN_SCHEDULE:
-            if (this.shardID === message.data.shardId) {
-              this.scheduleManager.run(message.data.refreshRate)
-            }
             break
           case ipc.TYPES.SEND_CHANNEL_MESSAGE:
             this.sendChannelAlert(message.data.channel, message.data.message, message.data.alert)
@@ -162,6 +147,30 @@ class Client extends EventEmitter {
         this.log.error(err, 'client')
       }
     })
+  }
+
+  async onNewArticle (article) {
+    const feed = article._feed
+    const channel = this.bot.channels.cache.get(feed.channel)
+    if (!channel) {
+      return
+    }
+    try {
+      await this.articleMessageQueue.enqueue(article)
+      await this.articleMessageQueue.send()
+    } catch (err) {
+      this.log.warn({
+        error: err,
+        guild: channel.guild,
+        channel
+      }, `Failed to send article ${article.link}`)
+      if (err.code === 50035) {
+        channel.send(`Failed to send formatted article for article <${article.link}>.\`\`\`${err.message}\`\`\``)
+          .catch(err => this.log.warn({
+            error: err
+          }, `Unable to send failed-to-send message for article`))
+      }
+    }
   }
 
   async sendChannelAlert (channel, message, alert) {
@@ -218,22 +227,6 @@ class Client extends EventEmitter {
         maintenance.pruneWithBot(this.bot),
         initialize.populateRedis(this.bot)
       ])
-      if (!this.scheduleManager) {
-        const refreshRates = new Set()
-        refreshRates.add(config.feeds.refreshRateMinutes)
-        this.scheduleManager = new ScheduleManager(this.bot, this.shardID)
-        for (const name in this.customSchedules) {
-          const schedule = this.customSchedules[name]
-          if (name === 'example') {
-            continue
-          }
-          if (refreshRates.has(schedule.refreshRateMinutes)) {
-            throw new Error('Duplicate schedule refresh rates are not allowed')
-          }
-          refreshRates.add(schedule.refreshRateMinutes)
-        }
-        await this.scheduleManager._registerSchedules()
-      }
       storage.initialized = 2
       this.state = STATES.READY
       ipc.send(ipc.TYPES.INIT_COMPLETE)

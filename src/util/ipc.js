@@ -68,7 +68,8 @@ class IPC {
       RUN_SCHEDULE: 'runSchedule',
       STOP_CLIENT: 'stopClient',
       SEND_CHANNEL_MESSAGE: 'sendChannelAlert',
-      SEND_USER_MESSAGE: 'sendUserAlert'
+      SEND_USER_MESSAGE: 'sendUserAlert',
+      NEW_ARTICLE: 'newArticle'
     }
   }
 }

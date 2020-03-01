@@ -16,10 +16,10 @@ jest.mock('../../models/Article.js', () => ({
 }))
 
 const createCompoundID = (article) => {
-  return article.shardID + article.scheduleName + article.feedURL
+  return article.scheduleName + article.feedURL
 }
 
-describe('utils/maintenance/pruneArticles', function () {
+describe('maintenance/pruneArticles', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })
@@ -35,17 +35,14 @@ describe('utils/maintenance/pruneArticles', function () {
     })
     it('removes the right articles with compound IDs', async function () {
       const articles = [{
-        shardID: 1,
         scheduleName: 'default',
         feedURL: 'url1',
         remove: jest.fn()
       }, {
-        shardID: 0,
         scheduleName: 'vip',
         feedURL: 'url1',
         remove: jest.fn()
       }, {
-        shardID: 1,
         scheduleName: 'default',
         feedURL: 'url2',
         remove: jest.fn()
@@ -86,46 +83,11 @@ describe('utils/maintenance/pruneArticles', function () {
         determineSchedule: jest.fn(() => assignedSchedules[2])
       }]
       Feed.getAll.mockResolvedValue(feeds)
-      const guildIdsByShard = new Map([
-        ['1', 5],
-        ['2', 7],
-        ['3', 9]
-      ])
-      const ids = await pruneArticles.getCompoundIDs(guildIdsByShard)
-      expect(ids).toContain('5defaultfeedurl1')
-      expect(ids).toContain('7feed43feedurl2')
-      expect(ids).toContain('5defaultfeedurl3')
+      const ids = await pruneArticles.getCompoundIDs()
+      expect(ids).toContain('defaultfeedurl1')
+      expect(ids).toContain('feed43feedurl2')
+      expect(ids).toContain('defaultfeedurl3')
       expect(ids.size).toEqual(3)
-    })
-    it('does not add ids for unknown guilds', async function () {
-      const assignedSchedules = [{
-        name: 'default'
-      }, {
-        name: 'feed43'
-      }, {
-        name: 'default'
-      }]
-      const feeds = [{
-        url: 'feedurl1',
-        guild: '1', // This guild is unknown
-        determineSchedule: jest.fn(() => assignedSchedules[0])
-      }, {
-        url: 'feedurl2',
-        guild: '2',
-        determineSchedule: jest.fn(() => assignedSchedules[1])
-      }, {
-        url: 'feedurl3',
-        guild: '1', // This guild is unknown
-        determineSchedule: jest.fn(() => assignedSchedules[2])
-      }]
-      Feed.getAll.mockResolvedValue(feeds)
-      const guildIdsByShard = new Map([
-        ['2', 7],
-        ['3', 9]
-      ])
-      const ids = await pruneArticles.getCompoundIDs(guildIdsByShard)
-      expect(ids).toContain('7feed43feedurl2')
-      expect(ids.size).toEqual(1)
     })
   })
 })

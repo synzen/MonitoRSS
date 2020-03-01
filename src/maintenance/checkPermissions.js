@@ -1,4 +1,5 @@
 const FLAGS = require('discord.js').Permissions.FLAGS
+const Feed = require('../structs/db/Feed.js')
 const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
 
@@ -9,7 +10,7 @@ const ipc = require('../util/ipc.js')
  * @param {import('discord.js').Client} bot
  * @returns {boolean} - The feed's disabled status
  */
-async function checkPermissions (feed, bot) {
+async function feed (feed, bot) {
   const log = createLogger(bot.shard.ids[0])
   if (feed.disabled && !feed.disabled.startsWith('Missing permissions')) {
     // The feed is disabled for a separate reason - skip all checks
@@ -35,15 +36,24 @@ async function checkPermissions (feed, bot) {
     const reason = `Missing permissions ${reasons.join(', ')}`
     if (!feed.disabled) {
       ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been disabled in channel <#${channel.id}>: ${reason}`)
-      log.info(`Disabling feed ${feed._id} (${reason})`, guild, channel)
+      log.info({
+        guild,
+        channel
+      }, `Disabling feed ${feed._id} (${reason})`)
       await feed.disable(reason)
     } else if (feed.disabled.startsWith('Missing permissions') && feed.disabled !== reason) {
-      log.info(`Updating disabled feed ${feed._id} (${reason})`, guild, channel)
+      log.info({
+        guild,
+        channel
+      }, `Updating disabled feed ${feed._id} (${reason})`)
       await feed.disable(reason)
     }
     return true
   } else if (feed.disabled && feed.disabled.startsWith('Missing permissions')) {
-    log.info(`Enabling feed ${feed._id} for found permissions`, guild, channel)
+    log.info({
+      guild,
+      channel
+    }, `Enabling feed ${feed._id} for found permissions`)
     ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been enabled in channel <#${channel.id}> due to found permissions.`)
     await feed.enable()
     return false
@@ -51,4 +61,28 @@ async function checkPermissions (feed, bot) {
   return !!feed.disabled
 }
 
-module.exports = checkPermissions
+/**
+ * Checks the permissions of all feeds.
+ * @param {import('discord.js').Client} bot
+ */
+async function feeds (bot) {
+  const feeds = await Feed.getAll()
+  const length = feeds.length
+  const promises = []
+  for (var i = 0; i < length; ++i) {
+    const feed = feeds[i]
+    const channelID = feed.channel
+    const hasChannel = bot.channels.cache.has(channelID)
+
+    // Skip channels that don't belong to this shard
+    if (!hasChannel) {
+      continue
+    }
+
+    promises.push(exports.feed(feed, bot))
+  }
+  await Promise.all(promises)
+}
+
+exports.feed = feed
+exports.feeds = feeds

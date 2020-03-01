@@ -14,7 +14,7 @@ jest.mock('../../models/Article', () => ({
   }
 }))
 
-describe('Unit::rss/database', function () {
+describe('Unit::util/database', function () {
   afterEach(function () {
     jest.restoreAllMocks()
   })
@@ -22,7 +22,6 @@ describe('Unit::rss/database', function () {
     it('attaches the critical values', function () {
       const meta = {
         feedURL: 'abc',
-        shardID: 2,
         scheduleName: 'ewstg'
       }
       const article = {
@@ -296,11 +295,10 @@ describe('Unit::rss/database', function () {
       const memoryCollection = {
         foo: 'bar'
       }
-      const returned = await databaseFuncs.getAllDocuments(1, 'sa', memoryCollection)
+      const returned = await databaseFuncs.getAllDocuments('sa', memoryCollection)
       expect(returned).toEqual(memoryCollection)
     })
     it('calls other function correctly', async function () {
-      const shardID = 33
       const scheduleName = 'aqwrsefd'
       const mappedResult = {
         foo: 'aa'
@@ -315,7 +313,7 @@ describe('Unit::rss/database', function () {
           exec: jest.fn(() => documents)
         }))
       })
-      const returned = await databaseFuncs.getAllDocuments(shardID, scheduleName)
+      const returned = await databaseFuncs.getAllDocuments(scheduleName)
       expect(spy).toHaveBeenCalledWith(documents)
       expect(returned).toEqual(mappedResult)
     })

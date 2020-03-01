@@ -17,7 +17,6 @@ function formatArticleForDatabase (article, properties, meta) {
   return {
     id: article._id,
     feedURL: meta.feedURL,
-    shardID: meta.shardID,
     scheduleName: meta.scheduleName,
     properties: propertyValues
   }
@@ -70,9 +69,6 @@ function prunedDocumentForDatabase (document, properties) {
 function getInsertsAndUpdates (articleList, dbDocs, properties, meta) {
   if (!meta.feedURL) {
     throw new Error('Missing feedURL for database insert/update')
-  }
-  if (meta.shardID === undefined) {
-    throw new Error('Missing shardID for database insert/update')
   }
   if (!meta.scheduleName) {
     throw new Error('Missing scheduleName for database insert/update')
@@ -174,16 +170,14 @@ async function mapArticleDocumentsToURL (documents) {
 }
 
 /**
- * @param {number} shardID
  * @param {string} scheduleName
  * @param {Object<string, Object<string, any>[]>} memoryCollection
  */
-async function getAllDocuments (shardID, scheduleName, memoryCollection) {
+async function getAllDocuments (scheduleName, memoryCollection) {
   if (memoryCollection) {
     return memoryCollection
   } else {
     const documents = await Article.model.find({
-      shardID,
       scheduleName
     }).lean().exec()
     return module.exports.mapArticleDocumentsToURL(documents)
