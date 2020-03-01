@@ -11,7 +11,7 @@ const CON_OPTIONS = {
 
 jest.mock('../../config.js')
 
-describe('Int::util/maintenance/pruneArticles', function () {
+describe('Int::maintenance/pruneArticles', function () {
   beforeAll(async function () {
     config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)

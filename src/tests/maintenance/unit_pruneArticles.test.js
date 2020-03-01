@@ -19,7 +19,7 @@ const createCompoundID = (article) => {
   return article.scheduleName + article.feedURL
 }
 
-describe('maintenance/pruneArticles', function () {
+describe('Unit::maintenance/pruneArticles', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })

@@ -4,7 +4,7 @@ const pruneFeeds = require('../../maintenance/pruneFeeds.js')
 
 jest.mock('../../structs/db/Feed.js')
 
-describe('utils/maintenance/pruneFeeds', function () {
+describe('Unit::maintenance/pruneFeeds', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })

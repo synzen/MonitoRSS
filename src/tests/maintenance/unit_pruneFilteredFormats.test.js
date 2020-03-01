@@ -6,7 +6,7 @@ const pruneFilteredFormats = require('../../maintenance/pruneFilteredFormats.js'
 jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/db/FilteredFormat.js')
 
-describe('utils/maintenance/pruneFilteredFormats', function () {
+describe('Unit::maintenance/pruneFilteredFormats', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })

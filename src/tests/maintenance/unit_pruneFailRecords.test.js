@@ -6,7 +6,7 @@ const pruneFailRecords = require('../../maintenance/pruneFailRecords.js')
 jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/db/FailRecord.js')
 
-describe('Unit::utils/maintenance/pruneFailRecords', function () {
+describe('Unit::maintenance/pruneFailRecords', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })

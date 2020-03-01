@@ -8,7 +8,7 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-describe('Int::util/maintenance/checkArticleIndexes', function () {
+describe('Int::maintenance/checkArticleIndexes', function () {
   beforeAll(async function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
   })

@@ -11,7 +11,7 @@ jest.mock('../../util/ipc.js')
 
 config.feeds.max = 2
 
-describe('utils/maintenance/checkLimits', function () {
+describe('Unit::maintenance/checkLimits', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
     Feed.getAll.mockResolvedValue([])

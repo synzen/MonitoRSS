@@ -4,7 +4,7 @@ const pruneProfiles = require('../../maintenance/pruneProfiles.js')
 
 jest.mock('../../structs/db/Profile.js')
 
-describe('utils/maintenance/pruneProfiles', function () {
+describe('Unit::maintenance/pruneProfiles', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })

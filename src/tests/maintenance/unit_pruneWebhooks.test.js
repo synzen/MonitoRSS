@@ -4,7 +4,7 @@ const pruneWebhooks = require('../../maintenance/pruneWebhooks')
 
 jest.mock('../../structs/db/Feed.js')
 
-describe('maintenance/pruneWebhooks', function () {
+describe('Unit::maintenance/pruneWebhooks', function () {
   const bot = {
     shard: {
       ids: []

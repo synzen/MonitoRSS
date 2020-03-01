@@ -4,7 +4,7 @@ const pruneProfileAlerts = require('../../maintenance/pruneProfileAlerts.js')
 
 jest.mock('../../structs/db/Profile.js')
 
-describe('utils/maintenance/pruneProfileAlerts', function () {
+describe('Unit::maintenance/pruneProfileAlerts', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
     Profile.mockReset()

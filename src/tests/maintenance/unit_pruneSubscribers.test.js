@@ -11,7 +11,7 @@ Subscriber.TYPES = {
   ROLE: 'role'
 }
 
-describe('utils/maintenance/pruneSubscribers', function () {
+describe('Unit::maintenance/pruneSubscribers', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
   })
