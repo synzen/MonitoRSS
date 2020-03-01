@@ -229,15 +229,6 @@ class Client extends EventEmitter {
       ipc.send(ipc.TYPES.INIT_COMPLETE)
       listeners.createManagers(this.bot)
       this.emit('finishInit')
-      if (this.bot.shard.ids[0] === 0 && !this.DEBUGRUN) {
-        this.DEBUGRUN = true
-        setTimeout(() => {
-          this.stop()
-          setTimeout(() => {
-            this.start()
-          }, 30000)
-        }, 30000)
-      }
     } catch (err) {
       this.log.error(err, `Client start`)
     }
