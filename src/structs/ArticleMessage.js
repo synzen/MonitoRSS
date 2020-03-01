@@ -30,6 +30,10 @@ class ArticleMessage {
     this.filters = this.feed.filters
     this.rfilters = this.feed.rfilters
     this.filteredFormats = this.feed.filteredFormats
+    this.toggleRoleMentions = config.feeds.toggleRoleMentions
+    if (typeof this.feed.toggleRoleMentions === 'boolean') {
+      this.toggleRoleMentions = this.feed.toggleRoleMentions
+    }
     /** @type {Discord.TextChannel} */
     this.channelID = this.feed.channel
     this.channel = bot.channels.cache.get(this.channelID)
