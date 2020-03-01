@@ -4,6 +4,7 @@ const api = express.Router()
 const rateLimit = require('express-rate-limit')
 const controllers = require('../../controllers/index.js')
 const createError = require('../../util/createError.js')
+const createLogger = require('../../../util/logger/create.js')
 const Joi = require('@hapi/joi')
 const validator = require('express-joi-validation').createValidator({
   passError: true
@@ -47,8 +48,8 @@ api.use(function errorHandler(err, req, res, next) {
     const createdError = createError(400, 'Validation error', strings)
     res.status(400).json(createdError);
   } else {
-    // pass on to another error handler
-    console.log(err)
+    const log = createLogger('W')
+    log.error(err)
     const createdError = createError(500, 'Internal Server Error')
     res.status(500).json(createdError)
   }
