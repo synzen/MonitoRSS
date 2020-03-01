@@ -33,7 +33,7 @@
     "node-fetch": "^2.6.0",
     "pino": "^5.17.0",
     "pino-pretty": "^3.6.0",
-    "redis": "^2.8.0"
+    "redis": "^3.0.2"
   },
   "repository": {
     "type": "git",
