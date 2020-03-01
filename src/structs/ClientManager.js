@@ -29,7 +29,7 @@ class ClientManager extends EventEmitter {
     this.log = createLogger('M')
     this.setPresence = options ? options.setPresence : false
     this.customSchedules = options ? options.schedules : {}
-    this.maintenance = maintenance.cycle()   
+    this.maintenance = maintenance.cycle()
     this.guildIdsByShard = new Map()
     this.channelIdsByShard = new Map()
     this.refreshRates = new Set()
