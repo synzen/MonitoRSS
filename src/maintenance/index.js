@@ -5,6 +5,7 @@ const pruneArticles = require('./pruneArticles.js')
 const pruneFilteredFormats = require('./pruneFilteredFormats.js')
 const pruneFailRecords = require('./pruneFailRecords.js')
 const pruneSubscribers = require('./pruneSubscribers.js')
+const pruneWebhooks = require('./pruneWebhooks.js')
 const flushRedis = require('./flushRedis.js')
 const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
@@ -39,8 +40,11 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
  * @param {import('discord.js').Client} bot
  */
 async function pruneWithBot (bot) {
-  await pruneSubscribers(bot)
-  await pruneProfileAlerts(bot)
+  await Promise.all([
+    pruneSubscribers(bot),
+    pruneProfileAlerts(bot),
+    pruneWebhooks(bot)
+  ])
 }
 
 /**
