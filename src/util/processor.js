@@ -154,7 +154,7 @@ process.on('message', async m => {
   const { debugFeeds, debugLinks, scheduleName, feedData } = m
   debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
   debug.links = new DataDebugger(debugLinks || [], 'links-processor')
-  const logMarker = `$${scheduleName}`
+  const logMarker = scheduleName
   const log = createLogger(logMarker)
   try {
     await connectDb(logMarker, true)
