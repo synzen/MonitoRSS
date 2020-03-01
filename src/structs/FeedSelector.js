@@ -128,7 +128,11 @@ class FeedSelector extends Menu {
       this.text = Translator.translate('structs.FeedSelector.noFeeds', this.locale)
       return
     }
-    this.filteredFeeds = feeds.filter(feed => feed.channel === message.channel.id)
+    const { command, miscOption, multiSelect, prependDescription, globalSelect } = cmdInfo
+    this.filteredFeeds = feeds
+    if (!globalSelect) {
+      this.filteredFeeds = feeds.filter(feed => feed.channel === message.channel.id)
+    }
     if (this.filteredFeeds.length === 0) {
       this.text = Translator.translate('structs.FeedSelector.noFeedsInChannel', this.locale)
       return
@@ -137,7 +141,6 @@ class FeedSelector extends Menu {
     if (cmdInfo.locale) {
       this.locale = cmdInfo.locale
     }
-    const { command, miscOption, multiSelect, prependDescription, globalSelect } = cmdInfo
     this.command = command
     this.miscOption = miscOption
     this.multiSelect = MULTI_SELECT.includes(command) || multiSelect

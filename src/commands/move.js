@@ -97,7 +97,8 @@ module.exports = async (message, command) => {
   const feedSelector = new FeedSelector(message, null, {
     command,
     locale: guildLocale,
-    multiSelect: true
+    multiSelect: true,
+    globalSelect: true
   }, feeds)
   const selectChannel = new MenuUtils.Menu(message, selectChannelFn, {
     text: Translator.translate('commands.move.prompt', guildLocale)
