@@ -76,6 +76,7 @@ const Embed = styled.div`
   /* max-width: 426px; */
   margin-top: 8px;
   margin-bottom: 5px;
+  max-width: 520px;
 `
 // ${props => props.appeaseImage ? '426px' : '520px'};
 const Pill = styled.div`
@@ -105,6 +106,7 @@ const Author = styled.div`
   margin-top: 8px;
   word-break: break-all;
   font-weight: 600;
+  font-size: 14px;
   line-height: 1.375;
   img {
     width: 20px;
