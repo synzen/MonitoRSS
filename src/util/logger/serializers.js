@@ -9,7 +9,7 @@ function guild (guild) {
 * @param {import('discord.js').TextChannel} channel
 */
 function channel (channel) {
-  return `(${channel.guild.id}) ${channel.id}, ${channel.name}`
+  return `${channel.id}, ${channel.name}`
 }
 
 /**
