@@ -46,7 +46,7 @@ class User extends Base {
       update: async (oldUser, newUser) => {
         if (!this.clientExists) return
         if (!(oldUser instanceof Discord.User) || !(newUser instanceof Discord.User)) throw new TypeError('User is not instance of Discord.User')
-        const exists = await promisify(this.client.exists).bind(this)(this.utils.REDIS_KEYS.user(newUser.id))
+        const exists = await promisify(this.client.exists).bind(this.client)(this.utils.REDIS_KEYS.user(newUser.id))
         if (!exists) return exports.guilds.recognize(newUser)
         const toStore = {}
         let u = 0
