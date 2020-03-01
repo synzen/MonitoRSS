@@ -10,7 +10,7 @@ const flushRedis = require('./flushRedis.js')
 const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
 const checkArticleIndexes = require('./checkArticleIndexes.js')
-const ShardStats = require('../structs/db/ShardStats.js')
+const ScheduleStats = require('../structs/db/ScheduleStats.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Patron = require('../structs/db/Patron.js')
 const config = require('../config.js')
@@ -25,7 +25,7 @@ const log = createLogger()
 async function prunePreInit (guildIdsByShard, channelIdsByShard) {
   await Promise.all([
     checkArticleIndexes(config.feeds.articlesExpire),
-    ShardStats.deleteAll(),
+    ScheduleStats.deleteAll(),
     flushRedis(),
     pruneProfiles(guildIdsByShard)
   ])

@@ -1,63 +1,49 @@
 const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
-const ShardStats = require('../structs/db/ShardStats.js')
+const ScheduleStats = require('../structs/db/ScheduleStats.js')
 
 module.exports = async (message) => {
-  const results = await ShardStats.getAll()
+  const results = await ScheduleStats.getAll()
   const bot = message.client
-  if (bot.shard.count > results.length) {
+  const scheduleStats = results.find(r => r._id === 'default')
+  if (!scheduleStats) {
     return message.channel.send('More time is needed to gather enough information. Try again later.')
+  }
+  if (scheduleStats.feeds === 0) {
+    return message.channel.send('No feeds found for any data.')
   }
   const sizeFetches = await bot.shard.fetchClientValues('guilds.size')
 
-  let shardCount = results.length
   const aggregated = {
     guilds: sizeFetches.reduce((prev, val) => prev + val, 0),
-    feeds: 0,
-    cycleTime: 0,
-    cycleFails: 0,
-    cycleURLs: 0
-  }
-
-  for (const shardStats of results) {
-    if (shardStats.feeds === 0) {
-      continue
-    }
-    aggregated.feeds += shardStats.feeds
-    aggregated.cycleTime += shardStats.cycleTime
-    aggregated.cycleFails += shardStats.cycleFails
-    aggregated.cycleURLs += shardStats.cycleURLs
-
-    const lastUpdated = new Date(shardStats.lastUpdated)
-    aggregated.lastUpdated = !aggregated.lastUpdated ? lastUpdated : lastUpdated > aggregated.lastUpdated ? lastUpdated : aggregated.lastUpdated
-  }
-
-  const averaged = {
-    guilds: (aggregated.guilds / shardCount).toFixed(2),
-    feeds: (aggregated.feeds / shardCount).toFixed(2),
-    cycleTime: (aggregated.cycleTime / shardCount).toFixed(2),
-    cycleFails: (aggregated.cycleFails / shardCount).toFixed(2),
-    cycleURLs: (aggregated.cycleURLs / shardCount).toFixed(2)
+    feeds: scheduleStats.feeds,
+    cycleTime: scheduleStats.cycleTime,
+    cycleFails: scheduleStats.cycleFails,
+    cycleURLs: scheduleStats.cycleURLs,
+    lastUpdated: new Date(scheduleStats.lastUpdated)
   }
 
   const visual = new MenuUtils.Menu(message, null, { numbered: false, maxPerPage: 9 })
     .setAuthor('Basic Performance Stats')
-    .setDescription(`${bot.shard && bot.shard.count > 0 ? 'Note that Per Shard values are averaged\n' : ''} 
+    .setDescription(`
 **Unique Feeds** - Number of unique feed links (duplicate links are not counted).
 **Total Feeds** - Number of total feeds.
 **Cycle Duration** - The time it takes to process all the unique feed links.
 **Cycle Failures** - The number of failures out of the number of unique feeds per cycle. 
 **Success Rate** - The rate at which unique links connect successfully per cycle. A high rate is necessary to ensure that all feeds are fetched.\n\u200b`)
 
-  const guilds = `Per Shard: ${averaged.guilds}\nGlobal: ${aggregated.guilds}`
-  const feeds = `Per Shard: ${averaged.feeds}\nGlobal: ${aggregated.feeds}`
-  const cycleURLs = averaged.cycleTime ? `Per Shard: ${averaged.cycleURLs}\nGlobal: ${aggregated.cycleURLs.toFixed(2)}` : 'No data available yet.'
-  const cycleFails = averaged.cycleTime ? `Per Shard: ${averaged.cycleFails}\nGlobal: ${aggregated.cycleFails.toFixed(2)}` : 'No data available yet.'
-  const cycleTime = averaged.cycleTime ? `Per Shard: ${averaged.cycleTime}s\nGlobal: ${aggregated.cycleTime.toFixed(2)}s` : 'No data available yet.'
-  const successRate = averaged.cycleTime ? `Per Shard: ${((1 - averaged.cycleFails / averaged.cycleURLs) * 100).toFixed(2)}%\nGlobal: ${((1 - aggregated.cycleFails / aggregated.cycleURLs) * 100).toFixed(2)}%` : 'No data available yet.'
+  const guilds = `${aggregated.guilds}`
+  const feeds = `${aggregated.feeds}`
+  const cycleURLs = `${aggregated.cycleURLs.toFixed(2)}`
+  const cycleFails = `${aggregated.cycleFails.toFixed(2)}`
+  const cycleTime = `${aggregated.cycleTime.toFixed(2)}s`
+  const successRate = `${((1 - aggregated.cycleFails / aggregated.cycleURLs) * 100).toFixed(2)}%`
 
-  visual.addOption('Servers', guilds, true)
-  visual.addOption('Shard Count', bot.shard.count, true).addOption(null, null, true)
+  visual
+    .addOption('Servers', guilds, true)
+    .addOption('Shard Count', bot.shard.count, true)
+    .addOption('\u200b', '\u200b', true)
+
   let diff = moment.duration(moment().diff(moment(aggregated.lastUpdated)))
   if (diff.asMinutes() < 1) {
     diff = `Updated ${diff.asSeconds().toFixed(2)} seconds ago`
@@ -71,9 +57,8 @@ module.exports = async (message) => {
     .addOption('Cycle Duration', cycleTime, true)
     .addOption('Cycle Failures', cycleFails, true)
     .addOption('Success Rate', successRate, true)
+    .addOption('\u200b', '\u200b', true)
     .setFooter(diff)
-
-  visual.addOption(null, null, true)
 
   await visual.send()
 }

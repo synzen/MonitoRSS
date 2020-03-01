@@ -9,6 +9,7 @@ const EventEmitter = require('events')
 const childProcess = require('child_process')
 const maintenance = require('../maintenance/index.js')
 const createLogger = require('../util/logger/create.js')
+const ScheduleStats = require('../structs/db/ScheduleStats.js')
 
 const BATCH_SIZE = config.advanced.batchSize
 
@@ -319,6 +320,7 @@ class FeedSchedule extends EventEmitter {
 
   _finishCycle (noFeeds) {
     const cycleTime = (new Date() - this._startTime) / 1000
+    this.updateStats(cycleTime)
     const timeTaken = cycleTime.toFixed(2)
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     if (noFeeds) {
@@ -329,8 +331,32 @@ class FeedSchedule extends EventEmitter {
       const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
       this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
     }
-
     ++this.ran
+  }
+
+  updateStats (cycleTime) {
+    ScheduleStats.get(this.name)
+      .then(stats => {
+        const data = {
+          _id: this.name,
+          feeds: this.feedCount,
+          cycleTime,
+          cycleFails: this._cycleFailCount,
+          cycleURLs: this._cycleTotalCount,
+          lastUpdated: new Date().toISOString()
+        }
+        if (!stats) {
+          stats = new ScheduleStats(data)
+          return stats.save()
+        } else {
+          stats.feeds = data.feeds
+          stats.cycleTime = ((data.cycleTime + stats.cycleTime) / 2).toFixed(2)
+          stats.cycleFails = ((data.cycleFails + stats.cycleFails) / 2).toFixed(2)
+          stats.cycleURLs = data.cycleURLs
+          stats.lastUpdated = data.lastUpdated
+          return stats.save()
+        }
+      }).catch(err => this.log.error(err, `Unable to update statistics after cycle`, err))
   }
 }
 

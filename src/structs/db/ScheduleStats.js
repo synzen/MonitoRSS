@@ -1,7 +1,7 @@
 const Base = require('./Base.js')
-const ShardStatsModel = require('../../models/ShardStats.js').model
+const ScheduleStatsModel = require('../../models/ScheduleStats').model
 
-class ShardStats extends Base {
+class ScheduleStats extends Base {
   constructor (data, _saved) {
     super(data, _saved)
 
@@ -52,8 +52,8 @@ class ShardStats extends Base {
   }
 
   static get Model () {
-    return ShardStatsModel
+    return ScheduleStatsModel
   }
 }
 
-module.exports = ShardStats
+module.exports = ScheduleStats

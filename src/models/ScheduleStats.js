@@ -13,4 +13,4 @@ const schema = new mongoose.Schema({
 })
 
 exports.schema = schema
-exports.model = mongoose.model('Shard_Stats', schema)
+exports.model = mongoose.model('Schedule_Stats', schema)
