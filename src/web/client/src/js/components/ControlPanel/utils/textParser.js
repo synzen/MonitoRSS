@@ -215,20 +215,15 @@ const baseRules = {
       }
     },
     react: function (node, recurseOutput, state) {
+      const id = node.content
       const reduxState = store.getState()
-      const subscribers = reduxState.roles
-      let found = null
-      for (const guildId in subscribers) {
-        const guildSubscribers = subscribers[guildId]
-        for (const subscriberId in guildSubscribers) {
-          if (subscriberId === node.content) {
-            found = guildSubscribers[subscriberId]
-            break
-          }
+      const roles = reduxState.roles
+      for (const role of roles) {
+        if (role.id === id) {
+          return <Mention color={role.hexColor} key={state.key}>@{role.name}</Mention>
         }
-        if (found) break
       }
-      return <Mention color={found ? found.hexColor : ''} key={state.key}>@{found ? found.name : node.content}</Mention>
+      return <Mention color={''} key={state.key}>@{node.content}</Mention>
     }
   },
   codeBlock: {

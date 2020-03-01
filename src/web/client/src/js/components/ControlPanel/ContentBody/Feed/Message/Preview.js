@@ -257,8 +257,8 @@ function Preview (props) {
     if (content.includes('{subscriptions}')) {
       const feedSubscribers = []
       const thisSubscribers = subscribers.filter(s => s.feed === feed._id)
-      for (const id in thisSubscribers) {
-        const subscriber = thisSubscribers[id]
+      for (const subscriber of thisSubscribers) {
+        const id = subscriber.id
         const hasFilters = Object.keys(subscriber.filters).length > 0
         if (!hasFilters) {
           feedSubscribers.push(`<@${id}> `)
