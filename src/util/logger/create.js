@@ -27,8 +27,8 @@ function createLogger (shardID) {
     prettyPrint,
     serializers: {
       guild: serializers.guild,
-      textChannel: serializers.textChannel,
-      role: serializers.textChannel,
+      channel: serializers.channel,
+      role: serializers.channel,
       user: serializers.user,
       error: pino.stdSerializers.err
     },

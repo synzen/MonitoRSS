@@ -8,7 +8,7 @@ function guild (guild) {
 /**
 * @param {import('discord.js').TextChannel} channel
 */
-function textChannel (channel) {
+function channel (channel) {
   return `(${channel.guild.id}) ${channel.id}, ${channel.name}`
 }
 
@@ -21,6 +21,6 @@ function user (user) {
 
 module.exports = {
   guild,
-  textChannel,
+  channel,
   user
 }
