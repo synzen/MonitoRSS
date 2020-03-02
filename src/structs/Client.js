@@ -4,7 +4,7 @@ const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
 const config = require('../config.js')
 const Profile = require('./db/Profile.js')
-const ArticleMessageQueue = require('./ArticleMessageQueue.js')
+const ArticleMessage = require('./ArticleMessage.js')
 const storage = require('../util/storage.js')
 const createLogger = require('../util/logger/create.js')
 const connectDb = require('../util/connectDatabase.js')
@@ -36,7 +36,6 @@ class Client extends EventEmitter {
     super()
     this.STATES = STATES
     this.state = STATES.STOPPED
-    this.articleMessageQueue = undefined
     this.log = undefined
   }
 
@@ -53,7 +52,6 @@ class Client extends EventEmitter {
       await client.login(token)
       this.log = createLogger(client.shard.ids[0].toString())
       this.bot = client
-      this.articleMessageQueue = new ArticleMessageQueue(this.bot)
       this.shardID = client.shard.ids[0]
       this.listenToShardedEvents(client)
       if (!client.readyAt) {
@@ -159,8 +157,8 @@ class Client extends EventEmitter {
       return
     }
     try {
-      await this.articleMessageQueue.enqueue(article, false, debug)
-      await this.articleMessageQueue.send()
+      const articleMessage = new ArticleMessage(this.bot, article, false, debug)
+      await articleMessage.send()
     } catch (err) {
       this.log.warn({
         error: err,

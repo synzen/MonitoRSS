@@ -2,7 +2,7 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const Article = require('../structs/Article.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
-const ArticleMessageQueue = require('../structs/ArticleMessageQueue.js')
+const ArticleMessage = require('../structs/ArticleMessage.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
@@ -48,8 +48,7 @@ module.exports = async (message, command) => {
     })
   }
 
-  const queue = new ArticleMessageQueue(message.client)
-  await queue.enqueue(article, true)
-  await queue.send()
+  const articleMessage = new ArticleMessage(message.client, article, true)
+  await articleMessage.send()
   await grabMsg.delete()
 }
