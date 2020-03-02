@@ -350,8 +350,8 @@ class FeedSchedule extends EventEmitter {
           return stats.save()
         } else {
           stats.feeds = data.feeds
-          stats.cycleTime = ((data.cycleTime + stats.cycleTime) / 2).toFixed(2)
-          stats.cycleFails = ((data.cycleFails + stats.cycleFails) / 2).toFixed(2)
+          stats.cycleTime = Math.round((data.cycleTime + stats.cycleTime) / 2)
+          stats.cycleFails = Math.round((data.cycleFails + stats.cycleFails) / 2)
           stats.cycleURLs = data.cycleURLs
           stats.lastUpdated = data.lastUpdated
           return stats.save()
