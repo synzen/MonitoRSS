@@ -1,5 +1,6 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
+const config = require('../../config.js')
 const dbName = 'test_int_checkIndexes'
 const checkArticleIndexes = require('../../maintenance/checkArticleIndexes.js')
 const CON_OPTIONS = {
@@ -8,8 +9,11 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
+jest.mock('../../config.js')
+
 describe('Int::maintenance/checkArticleIndexes', function () {
   beforeAll(async function () {
+    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
   })
   beforeEach(async function () {

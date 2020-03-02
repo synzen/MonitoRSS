@@ -9,6 +9,8 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
+jest.mock('../../config.js')
+
 function getOldDate (hoursAgo) {
   // https://stackoverflow.com/questions/1050720/adding-hours-to-javascript-date-object
   const date = new Date()
@@ -18,6 +20,7 @@ function getOldDate (hoursAgo) {
 
 describe('Int::scripts/updates/6.0.0 Database', function () {
   beforeAll(async function () {
+    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost/${dbName}`, CON_OPTIONS)
   })
   beforeEach(async function () {
