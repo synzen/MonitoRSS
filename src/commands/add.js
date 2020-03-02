@@ -21,7 +21,7 @@ module.exports = async (message) => {
     return message.channel.send(translate('commands.add.correctSyntax', { prefix }))
   }
 
-  const log = createLogger(message)
+  const log = createLogger(message.guild.shard.id)
   let linkList = message.content.split(' ')
   linkList.shift()
   linkList = linkList.map(item => item.trim()).filter(item => item).join(' ').split('>')
