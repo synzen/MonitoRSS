@@ -9,10 +9,12 @@ class DecodedFeedParser extends FeedParser {
   }
 
   _transform (chunk, encoding, done) {
-    if (!config.feeds.decode || !config.feeds.decode[this.url]) this.stream.write(chunk)
-    else {
-      const encoding = config.feeds.decode[this.url]
-      this.stream.write(iconv.decode(chunk, encoding === 'auto' ? require('chardet').detect(chunk) : encoding)) // Assumes that the encoding specified is valid, and will not check via iconv.encodingExists()
+    if (!config.feeds.decode || !config.feeds.decode[this.url]) {
+      this.stream.write(chunk)
+    } else {
+      const userEncoding = config.feeds.decode[this.url]
+      // Assumes that the encoding specified is valid, and will not check via iconv.encodingExists()
+      this.stream.write(iconv.decode(chunk, userEncoding))
     }
     done()
   }
