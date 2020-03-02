@@ -203,6 +203,9 @@ class FeedSchedule extends EventEmitter {
       if (this.name !== name) {
         continue
       }
+      if (!this.feedData[feedData.url]) {
+        this.feedData[feedData.url] = []
+      }
       if (debug.feeds.has(feedData._id)) {
         this.log.info(`${feedData._id}: Assigned schedule`)
       }

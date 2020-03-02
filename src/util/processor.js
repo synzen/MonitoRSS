@@ -108,7 +108,8 @@ async function getFeed (data, log) {
       feedURL: link,
       scheduleName
     }
-    await syncDatabase(articleList, docs, rssList, meta, feedData)
+    const memoryCollection = feedData[link]
+    await syncDatabase(articleList, docs, rssList, meta, memoryCollection)
 
     if (runNum !== 0 || config.feeds.sendFirstCycle === true) {
       // Then send to prevent new article spam if sync fails
