@@ -116,9 +116,14 @@ button, input, optgroup, select, textarea {
 }
 
 body {
+  font-size: 100%;
   font-family: Whitney, sans-serif !important;
   color: #b9bbbe;
   background-color: #282b30;
+}
+
+html {
+  font-size: 100%;
 }
 
 h1 {

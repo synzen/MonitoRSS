@@ -5,6 +5,7 @@ import colors from 'js/constants/colors'
 import styled from 'styled-components'
 import embedProperties from 'js/constants/embed'
 import parser from '../../../utils/textParser'
+import BoundedImage from 'js/components/utils/BoundedImage'
 import testFilters from '../Filters/util/filters'
 import { isHiddenProperty } from 'js/constants/hiddenArticleProperties'
 import feedSelectors from 'js/selectors/feeds'
@@ -70,111 +71,139 @@ const Content = styled.div`
   font-size: 16px;
 `
 
-const Embed = styled.div`
-  display: flex;
-  flex-direction: row;
-  /* max-width: 426px; */
-  margin-top: 8px;
-  margin-bottom: 5px;
-  max-width: 520px;
+const EmbedContainer = styled.div`
+  display: grid;
+  grid-auto-flow: row;
+  grid-row-gap: .25rem;
+  text-indent: 0;
+  min-height: 0;
+  min-width: 0;
+  padding-top: .125rem;
+  padding-bottom: .125rem;
 `
-// ${props => props.appeaseImage ? '426px' : '520px'};
-const Pill = styled.div`
-  display: block;
-  border-top-left-radius: 3px;
-  border-bottom-left-radius: 3px;
-  width: 4px;
-  background-color: ${props => props.color != null ? numberToColour(props.color) : '#4f545c'};
+
+const EmbedWrapper = styled.div`
+  border-left: 4px solid ${props => props.pillColor != null ? numberToColour(props.pillColor) : '#4f545c'};
+  border-radius: 4px;
+  /* max-width: ${props => props.hasThumbnail ? '432px' : '520px'}; */
+  max-width: 432px;
+  display: grid;
+  position: relative;
+  box-sizing: border-box;
+  white-space: break-spaces;
+  word-wrap: break-word;
+  user-select: text;
+  font-weight: 400;
+  color: white;
+  background: rgb(47, 49, 54);
 `
-const NonPill = styled.div`
-  padding: 8px 16px 16px;
-  padding-bottom: 16px;
-  background-color: rgba(46,48,54,.3);
-  border-bottom-right-radius: 3px;
-  border-top-right-radius: 3px;
-  display: inline-grid;
-  grid-template-columns: auto;
+
+const EmbedGrid = styled.div`
+  grid-template-columns: ${props => props.hasThumbnail ? 'auto min-content' : 'auto'};
   grid-template-rows: auto;
+  display: inline-grid;
+  padding: .5rem 1rem 1rem .75rem;
 `
 
 const Author = styled.div`
-  grid-column: 1/1;
+  min-width: 0;
   display: flex;
+  box-align: center;
   align-items: center;
-  color: white;
-  margin-bottom: 4px;
+  grid-column: 1/1;
   margin-top: 8px;
-  word-break: break-all;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 1.375;
-  img {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
+  > img {
+    text-indent: -9999px;
     margin-right: 8px;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    border-radius: 50%;
   }
-  a {
+  > span, a {
+    font-size: 0.875rem;
+    font-weight: 600;
     color: white;
-    &:hover {
-      color: white;
-    }
   }
 `
 
 const Title = styled.a`
-  font-weight: 700;
-  font-size: 16px;
-  word-break: break-all;
-  margin-top: 8px;
-  line-height: 1.375;
+  min-width: 0;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  display: inline-block;
   grid-column: 1/1;
+  margin-top: 8px;
 `
 
 const Description = styled.div`
-  margin-top: 8px;
-  color: hsla(0,0%,100%,.6);
+  font-size: .875rem;
+  line-height: 1.125rem;
+  font-weight: 400;
+  white-space: pre-line;
   grid-column: 1/1;
+  margin-top: 8px;
+  color: ${colors.discord.text};
 `
 
 const Image = styled.a`
-  display: block;
+  grid-column: ${props => props.hasThumbnail ? '1/3' : '1/1'};
   margin-top: 16px;
-  grid-column: 1/3;
   border-radius: 4px;
-  img {
-    max-width: 400px;
+  contain: paint;
+  cursor: pointer;
+  width: 100%;
+  height: auto;
+  max-width: 400px;
+  max-height: 300px;
+  > img {
+    border-radius: 4px;
+    /* position: absolute; */
+    text-indent: -9999px;
   }
 `
 
 const Thumbnail = styled.a`
-  display: block;
-  margin-left: 16px;
+  max-width: 80px;
+  max-height: 80px;
   grid-row: 1/8;
   grid-column: 2/2;
-  justify-self: end;
+  margin-left: 16px;
   margin-top: 8px;
   flex-shrink: 0;
-  img {
-    max-width: 80px;
+  justify-self: end;
+  display: block;
+  user-select: text;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 3px;
+  > img {
     border-radius: 4px;
+    text-indent: -9999px;
   }
 `
 
 const Footer = styled.div`
+  min-width: 0;
   display: flex;
-  margin-top: 8px;
-  font-size: 12px;
   align-items: center;
-  color: ${colors.discord.subtext};
-  font-weight: 500;
-  word-break: break-all;
-  grid-column: 1/1;
-  img {
+  grid-row: auto/auto;
+  grid-column: ${props => props.hasThumbnail ? '1/3' : '1/1'};
+  margin-top: 8px;
+  > img {
+    text-indent: -9999px;
+    margin-right: 8px;
     width: 20px;
     height: 20px;
-    margin-right: 8px;
+    object-fit: contain;
     border-radius: 50%;
+  }
+  > span {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 400;
+    color: ${colors.discord.subtext}
   }
 `
 
@@ -199,39 +228,38 @@ const TimeTag = styled.span`
 
 const EmbedFields = styled.div`
   margin-top: 8px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  /* display: flex; */
+  /* flex-direction: row; */
+  /* flex-wrap: wrap; */
   grid-column: 1/1;
   display: grid;
   grid-gap: 8px;
-  line-height: 18px;
+  /* line-height: 18px; */
 `
 
 const EmbedField = styled.div`
-  /* margin-top: 6px; */
-  margin-right: 6px;
-  /* flex: ${props => props.inline ? 1 : 0}; */
-  /* min-width: ${props => props.inline ? '150px' : '100%'}; */
-  /* ${props => props.inline ? 'flex-basis: auto' : ''}; */
-
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  min-width: 0;
   grid-column: ${props => props.gridColumns};
 `
 
 const EmbedFieldTitle = styled.div`
   color: ${colors.discord.subtext};
-  /* font-size: 0.875rem; */
   font-weight: 500;
   margin-bottom: 2px;
-  font-size: 14px;
+  font-size: 0.875rem;
+  line-height: 1.125rem;
+  min-width: 0;
 `
 
 const EmbedFieldValue = styled.div`
-  color: hsla(0, 0%, 100%, .6);
-  /* font-size: 0.875rem; */
+  line-height: 1.125rem;
+  color: ${colors.discord.text};
   font-weight: 400;
   white-space: pre-line;
-  font-size: 14px;
+  font-size: 0.875rem;
+  min-width: 0;
 `
 
 function Preview (props) {
@@ -322,54 +350,58 @@ function Preview (props) {
       }
     }
     if (populatedEmbed) {
-      if (!hasEmbeds) hasEmbeds = true
+      const hasThumbnail = !!properties[embedProperties.thumbnailURL]
+      if (!hasEmbeds) {
+        hasEmbeds = true
+      }
       embedElements.push(
-        <Embed key={`embed_preview${i}`}>
-          <Pill color={properties[embedProperties.color]} />
-          <NonPill>
-            { properties[embedProperties.authorName] || properties[embedProperties.authorName]
-              ? <Author>
-                { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconURL] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconUrl] || parsedProperties[embedProperties.authorIconURL]} /> : null }
-                { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorURL] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorURL]}>{parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorName]}</a> : parsedProperties[embedProperties.authorName] || parsedProperties[embedProperties.authorName] }
-              </Author>
-              : undefined }
+        <EmbedContainer key={`embed_preview${i}`}>
+          <EmbedWrapper pillColor={properties[embedProperties.color]} hasThumbnail={hasThumbnail}>
+            <EmbedGrid hasThumbnail={hasThumbnail}>
+              { properties[embedProperties.authorName]
+                ? <Author>
+                  { properties[embedProperties.authorIconUrl] || properties[embedProperties.authorIconURL] ? <img alt='Embed Author Icon' src={parsedProperties[embedProperties.authorIconURL]} /> : null }
+                  { parsedProperties[embedProperties.authorUrl] || parsedProperties[embedProperties.authorURL] ? <a target='_blank' rel='noopener noreferrer' href={parsedProperties[embedProperties.authorURL]}>{parsedProperties[embedProperties.authorName]}</a> : <span>{parsedProperties[embedProperties.authorName]}</span> }
+                </Author>
+                : undefined }
 
-            {parsedProperties[embedProperties.title]
-              ? <Title as={properties[embedProperties.url] ? 'a' : 'span'} href={parsedProperties[embedProperties.url]} target='_blank' >
-                {parser.parseEmbedTitle(parsedProperties[embedProperties.title])}
-              </Title>
-              : null
-            }
+              {parsedProperties[embedProperties.title]
+                ? <Title as={properties[embedProperties.url] ? 'a' : 'div'} href={parsedProperties[embedProperties.url]} target='_blank' >
+                  {parser.parseEmbedTitle(parsedProperties[embedProperties.title])}
+                </Title>
+                : null
+              }
 
-            {parsedProperties[embedProperties.description]
-              ? <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
-              : null
-            }
+              {parsedProperties[embedProperties.description]
+                ? <Description>{parser.parseAllowLinks(parsedProperties[embedProperties.description])}</Description>
+                : null
+              }
 
-            { fieldElements.length > 0
-              ? <EmbedFields>{fieldElements}</EmbedFields>
-              : [] }
+              { fieldElements.length > 0
+                ? <EmbedFields>{fieldElements}</EmbedFields>
+                : [] }
 
-            { properties[embedProperties.imageUrl] || properties[embedProperties.imageURL]
-              ? <Image href={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageURL]} target='_blank' >
-                <img src={parsedProperties[embedProperties.imageUrl] || parsedProperties[embedProperties.imageURL]} alt='Embed MainImage' />
-              </Image>
-              : undefined }
+              { properties[embedProperties.imageURL]
+                ? <Image href={parsedProperties[embedProperties.imageURL]} target='_blank' hasThumbnail={hasThumbnail} >
+                  <BoundedImage width={400} height={300} src={parsedProperties[embedProperties.imageURL]} alt='Embed MainImage' />
+                </Image>
+                : undefined }
 
-            { properties[embedProperties.thumbnailUrl] || properties[embedProperties.thumbnailURL]
-              ? <Thumbnail href={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailURL]} target='_blank'>
-                <img src={parsedProperties[embedProperties.thumbnailUrl] || parsedProperties[embedProperties.thumbnailURL]} alt='Embed Thumbnail' />
-              </Thumbnail>
-              : undefined }
+              { properties[embedProperties.thumbnailURL]
+                ? <Thumbnail href={parsedProperties[embedProperties.thumbnailURL]} target='_blank'>
+                  <BoundedImage width={80} height={80} src={parsedProperties[embedProperties.thumbnailURL]} alt='Embed Thumbnail' />
+                </Thumbnail>
+                : undefined }
 
-            { properties[embedProperties.footerText] || properties[embedProperties.footerText] || (parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none')
-              ? <Footer>
-                { parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconURL] ? <img src={parsedProperties[embedProperties.footerIconUrl] || parsedProperties[embedProperties.footerIconURL]} alt='Embed Footer Icon' /> : null }
-                {properties[embedProperties.footerText] || properties[embedProperties.footerText]}{(parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none') ? `${parsedProperties[embedProperties.footerText] || parsedProperties[embedProperties.footerText] ? ' • ' : ''}[${parsedProperties[embedProperties.timestamp] === 'article' ? 'ARTICLE TIMESTAMP' : 'NOW TIMESTAMP'}]` : '' }
-              </Footer>
-              : undefined }
-          </NonPill>
-        </Embed>
+              { properties[embedProperties.footerText] || (parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none')
+                ? <Footer hasThumbnail={hasThumbnail}>
+                  { parsedProperties[embedProperties.footerIconURL] ? <img src={parsedProperties[embedProperties.footerIconURL]} alt='Embed Footer Icon' /> : null }
+                  <span>{properties[embedProperties.footerText] || properties[embedProperties.footerText]}{(parsedProperties[embedProperties.timestamp] && parsedProperties[embedProperties.timestamp] !== 'none') ? `${parsedProperties[embedProperties.footerText] ? ' • ' : ''}[${parsedProperties[embedProperties.timestamp] === 'article' ? 'ARTICLE TIMESTAMP' : 'NOW TIMESTAMP'}]` : '' }</span>
+                </Footer>
+                : undefined }
+            </EmbedGrid>
+          </EmbedWrapper>
+        </EmbedContainer>
       )
     }
   }
