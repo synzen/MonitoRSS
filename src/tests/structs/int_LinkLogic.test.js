@@ -1,3 +1,4 @@
+process.env.TEST_ENV = true
 const config = require('../../config.js')
 const mongoose = require('mongoose')
 const LinkLogic = require('../../structs/LinkLogic.js')
@@ -10,7 +11,7 @@ const CON_OPTIONS = {
 
 jest.mock('../../config.js')
 
-describe('Int::rss/logic/LinkLogic Database', function () {
+describe('Int::structs/LinkLogic Database', function () {
   beforeAll(async function () {
     config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
