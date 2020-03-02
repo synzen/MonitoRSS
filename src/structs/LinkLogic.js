@@ -214,8 +214,8 @@ class LinkLogic extends EventEmitter {
       if (block) {
         this._logDebug(feedID, `Article ID ${articleID} not found in DB, but check comparisons blocked article. Blocked.`, {
           noPubdate: !article.pubdate,
-          invalidDateString: article.pubdate.toString() === 'Invalid Date',
-          beforeCutoffDate: article.pubdate < cutoffDay
+          invalidDateString: !article.pubdate ? false : article.pubdate.toString() === 'Invalid Date',
+          beforeCutoffDate: !article.pubdate ? false : article.pubdate < cutoffDay
         })
         return false
       }

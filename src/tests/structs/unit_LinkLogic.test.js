@@ -1,4 +1,7 @@
+process.env.TEST_ENV = true
 const LinkLogic = require('../../structs/LinkLogic.js')
+
+jest.mock('../../config.js')
 
 const DEFAULT_DATA = { config: { feeds: {} } }
 
