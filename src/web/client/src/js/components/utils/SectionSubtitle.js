@@ -5,7 +5,7 @@ export default styled.label`
   user-select: none;
   letter-spacing: .5px;
   margin-bottom: 8px;
-  font-weight: 700;
+  font-weight: 600;
   color: #b9bbbe;
   text-transform: uppercase;
   line-height: 16px;

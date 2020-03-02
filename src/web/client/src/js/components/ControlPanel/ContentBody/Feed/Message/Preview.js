@@ -27,6 +27,7 @@ const Wrapper = styled.div`
   border-width: 1px;
   border-color: ${colors.discord.darkButNotBlack};
   padding: 20px 0;
+  font-size: 16px;
 `
 const Username = styled.span`
   font-weight: 600;
@@ -74,12 +75,12 @@ const Content = styled.div`
 const EmbedContainer = styled.div`
   display: grid;
   grid-auto-flow: row;
-  grid-row-gap: .25rem;
+  grid-row-gap: .25em;
   text-indent: 0;
   min-height: 0;
   min-width: 0;
-  padding-top: .125rem;
-  padding-bottom: .125rem;
+  padding-top: .125em;
+  padding-bottom: .125em;
 `
 
 const EmbedWrapper = styled.div`
@@ -102,7 +103,7 @@ const EmbedGrid = styled.div`
   grid-template-columns: ${props => props.hasThumbnail ? 'auto min-content' : 'auto'};
   grid-template-rows: auto;
   display: inline-grid;
-  padding: .5rem 1rem 1rem .75rem;
+  padding: .5rem 1rem 1rem .75em;
 `
 
 const Author = styled.div`
@@ -121,8 +122,8 @@ const Author = styled.div`
     border-radius: 50%;
   }
   > span, a {
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 0.875em;
+    font-weight: 500;
     color: white;
   }
 `
@@ -130,7 +131,7 @@ const Author = styled.div`
 const Title = styled.a`
   min-width: 0;
   color: white;
-  font-size: 1rem;
+  font-size: 1em;
   font-weight: 600;
   display: inline-block;
   grid-column: 1/1;
@@ -138,8 +139,8 @@ const Title = styled.a`
 `
 
 const Description = styled.div`
-  font-size: .875rem;
-  line-height: 1.125rem;
+  font-size: .875em;
+  line-height: 1.125em;
   font-weight: 400;
   white-space: pre-line;
   grid-column: 1/1;
@@ -200,8 +201,8 @@ const Footer = styled.div`
     border-radius: 50%;
   }
   > span {
-    font-size: 0.75rem;
-    line-height: 1rem;
+    font-size: 0.75em;
+    line-height: 1em;
     font-weight: 400;
     color: ${colors.discord.subtext}
   }
@@ -223,7 +224,7 @@ const TimeTag = styled.span`
   color: hsla(0,0%,100%,0.2);
   font-size: 12px;
   font-weight: 400;
-  margin-left: 0.3rem;
+  margin-left: 0.3em;
 `
 
 const EmbedFields = styled.div`
@@ -238,8 +239,8 @@ const EmbedFields = styled.div`
 `
 
 const EmbedField = styled.div`
-  font-size: 0.875rem;
-  line-height: 1.125rem;
+  font-size: 0.875em;
+  line-height: 1.125em;
   min-width: 0;
   grid-column: ${props => props.gridColumns};
 `
@@ -248,17 +249,17 @@ const EmbedFieldTitle = styled.div`
   color: ${colors.discord.subtext};
   font-weight: 500;
   margin-bottom: 2px;
-  font-size: 0.875rem;
-  line-height: 1.125rem;
+  font-size: 0.875em;
+  line-height: 1.125em;
   min-width: 0;
 `
 
 const EmbedFieldValue = styled.div`
-  line-height: 1.125rem;
+  line-height: 1.125em;
   color: ${colors.discord.text};
   font-weight: 400;
   white-space: pre-line;
-  font-size: 0.875rem;
+  font-size: 0.875em;
   min-width: 0;
 `
 
