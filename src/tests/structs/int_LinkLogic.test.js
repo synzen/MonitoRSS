@@ -1,3 +1,4 @@
+const config = require('../../config.js')
 const mongoose = require('mongoose')
 const LinkLogic = require('../../structs/LinkLogic.js')
 const dbName = 'test_int_linklogic'
@@ -7,8 +8,11 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
+jest.mock('../../config.js')
+
 describe('Int::rss/logic/LinkLogic Database', function () {
   beforeAll(async function () {
+    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
   })
   beforeEach(async function () {
