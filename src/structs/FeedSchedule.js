@@ -96,7 +96,6 @@ class FeedSchedule extends EventEmitter {
 
     if (toDebug) {
       this.log.info(`${feedData._id}: Preparing for feed delegation`)
-      this.debugFeedLinks.add(feedData.url)
     }
 
     this._delegateFeed(feedData, debugFeedIDs)
@@ -232,7 +231,6 @@ class FeedSchedule extends EventEmitter {
     this.inProgress = true
     this.feedCount = feedCount
     this._genBatchLists(debugFeedURLs)
-
     if (this._sourceList.size === 0) {
       this.inProgress = false
       return this._finishCycle(true)
