@@ -4,7 +4,7 @@ const fs = require('fs')
 const fsPromises = fs.promises
 const path = require('path')
 const createLogger = require('../../util/logger/create.js')
-const log = createLogger()
+const log = createLogger('-')
 
 /**
  * @typedef {import('mongoose').Model<import('mongoose').Document, {}>} MongooseModel
