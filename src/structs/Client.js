@@ -116,13 +116,19 @@ class Client extends EventEmitter {
                 bot.user.setActivity(config.bot.activityName, {
                   type: config.bot.activityType,
                   url: config.bot.streamActivityURL || undefined
-                }).catch(err => this.log.warn('Failed to set activity', err))
+                }).catch(err => this.log.warn({
+                  error: err
+                }, 'Failed to set activity'))
               } else {
                 bot.user.setActivity(null)
-                  .catch(err => this.log.warn('Failed to set null activity', err))
+                  .catch(err => this.log.warn({
+                    error: err
+                  }, 'Failed to set null activity'))
               }
               bot.user.setStatus(config.bot.status)
-                .catch(err => this.log.warn('Failed to set status', err))
+                .catch(err => this.log.warn({
+                  error: err
+                }, 'Failed to set status'))
             }
             this.start()
             break
