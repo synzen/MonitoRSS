@@ -40,7 +40,7 @@
     "url": "git+https://github.com/synzen/Discord.RSS.git"
   },
   "engines": {
-    "node": "11.x",
+    "node": "12.x",
     "npm": "6.x"
   },
   "devDependencies": {
