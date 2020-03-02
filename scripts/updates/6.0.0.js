@@ -1,3 +1,5 @@
+const fs = require('fs')
+const path = require('path')
 const config = require('../../src/config.js')
 const mongoose = require('mongoose')
 const Profile = require('../../src/structs/db/Profile.js')
@@ -200,15 +202,32 @@ async function updateProfiles (guildRss) {
   await guildData.restore()
 }
 
-async function startProfiles () {
+async function getProfiles (databaseless) {
+  if (databaseless) {
+    const folder = config.database.uri
+    const names = fs.readdirSync(folder)
+    return names.map(n => {
+      const json = JSON.parse(fs.readFileSync(path.join(folder, n)))
+      json._id = json.id
+      return json
+    })
+  } else {
+    return mongoose.connection.collection('guilds').find({}).toArray()
+  }
+}
+
+async function startProfiles (databaseless) {
   console.log('Starting profile migration')
-  const guildRssList = await mongoose.connection.collection('guilds').find({}).toArray()
+  const guildRssList = await getProfiles(databaseless)
   let c = 0
   const total = guildRssList.length
   const errors = []
   if (total === 0) {
     console.log('No profiles found')
-    return startFailRecords(errors)
+    if (!databaseless) {
+      startFailRecords(errors)
+    }
+    return
   }
   for (const guildRss of guildRssList) {
     updateProfiles(guildRss).catch(error => {
@@ -220,7 +239,9 @@ async function startProfiles () {
       console.log(`Profile: ${++c}/${total}`)
       if (c === total) {
         complete(errors)
-        startFailRecords()
+        if (!databaseless) {
+          startFailRecords()
+        }
       }
     })
   }
