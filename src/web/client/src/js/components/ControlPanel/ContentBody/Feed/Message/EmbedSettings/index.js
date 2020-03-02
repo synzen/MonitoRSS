@@ -148,6 +148,10 @@ function EmbedSettings (props) {
   const [embeds, embedsDispatch] = useReducer(embedsReducer, originalEmbeds)
 
   useEffect(() => {
+    discardChanges()
+  }, [feed, originalEmbeds])
+
+  useEffect(() => {
     const prunedEmbeds = pruneEmbeds(embeds)
     const prunedOriginalEmbeds = pruneEmbeds(feed.embeds)
     if (!fastEqual(prunedEmbeds, prunedOriginalEmbeds)) {
@@ -211,7 +215,6 @@ function EmbedSettings (props) {
     await dispatch(fetchEditFeed(feed.guild, feed._id, {
       embeds: prunedEmbeds
     }))
-    setUnsaved(false)
   }
 
   const hasWebhooks = !!feed.webhook
