@@ -21,7 +21,6 @@ class Feed extends FilterBase {
    * @param {boolean} data.imgLinksExistence - Show image links in messages
    * @param {boolean} data.checkDates - Check dates for determining article newness
    * @param {boolean} data.formatTables - Format messages as if they're tables
-   * @param {boolean} data.toggleRoleMentions - Toggle role mentions for subscribers when messages are sent
    * @param {string[]} data.checkProperties - Properties to check to decide if articles are new
    */
   constructor (data, _saved) {
@@ -110,13 +109,6 @@ class Feed extends FilterBase {
     this.formatTables = this.getField('formatTables')
 
     /**
-     * Toggle role mentions for subscribers when messages
-     * are sent
-     * @type {boolean}
-     */
-    this.toggleRoleMentions = this.getField('toggleRoleMentions')
-
-    /**
      * Disabled status. Either undefined if enabled, or
      * a string stating the reason why.
      * @type {string}
@@ -190,7 +182,6 @@ class Feed extends FilterBase {
       imgPreviews: this.imgPreviews,
       imgLinksExistence: this.imgLinksExistence,
       formatTables: this.formatTables,
-      toggleRoleMentions: this.toggleRoleMentions,
       disabled: this.disabled,
       webhook: this.webhook,
       split: this.split,

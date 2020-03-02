@@ -51,7 +51,6 @@ const schema = Joi.object({
     imgLinksExistence: Joi.bool().strict().required(),
     checkDates: Joi.bool().strict().required(),
     formatTables: Joi.bool().strict().required(),
-    toggleRoleMentions: Joi.bool().strict().required(),
     decode: decodeValidator.config().encoding()
   }).required(),
   advanced: Joi.object({

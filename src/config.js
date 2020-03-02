@@ -77,7 +77,6 @@ feeds.imgPreviews = Boolean(process.env.DRSS_FEEDS_IMGPREVIEWS) || feedsOverride
 feeds.imgLinksExistence = Boolean(process.env.DRSS_FEEDS_IMGLINKSEXISTENCE) || feedsOverride.imgLinksExistence === undefined ? feeds.imgLinksExistence : feedsOverride.imgLinksExistence
 feeds.checkDates = Boolean(process.env.DRSS_FEEDS_CHECKDATES) || feedsOverride.checkDates === undefined ? feeds.checkDates : feedsOverride.checkDates
 feeds.formatTables = Boolean(process.env.DRSS_FEEDS_FORMATTABLES) || feedsOverride.formatTables === undefined ? feeds.formatTables : feedsOverride.formatTables
-feeds.toggleRoleMentions = Boolean(process.env.DRSS_FEEDS_TOGGLEROLEMENTIONS) || feedsOverride.toggleRoleMentions === undefined ? feeds.toggleRoleMentions : feedsOverride.toggleRoleMentions
 feeds.decode = feedsOverride.decode || feeds.decode
 
 // ADVANCED

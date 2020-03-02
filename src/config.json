@@ -44,7 +44,6 @@
     "imgLinksExistence": true,
     "checkDates": true,
     "formatTables": false,
-    "toggleRoleMentions": false,
     "decode": {}
   },
   "advanced": {

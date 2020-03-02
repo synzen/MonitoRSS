@@ -57,8 +57,7 @@ const configKeyNames = {
   checkDates: 'checkDates',
   imgPreviews: 'imgPreviews',
   imgLinksExistence: 'imgLinksExistence',
-  formatTables: 'formatTables',
-  toggleRoleMentions: 'toggleRoleMentions'
+  formatTables: 'formatTables'
 }
 
 function MiscOptions () {
@@ -129,7 +128,6 @@ function MiscOptions () {
   const imgPreviews = userValues.imgPreviews === undefined ? getOriginalPropertyValue('imgPreviews') : userValues.imgPreviews
   const imgLinksExistence = userValues.imgLinksExistence === undefined ? getOriginalPropertyValue('imgLinksExistence') : userValues.imgLinksExistence
   const formatTables = userValues.formatTables === undefined ? getOriginalPropertyValue('formatTables') : userValues.formatTables
-  const toggleRoleMentions = userValues.toggleRoleMentions === undefined ? getOriginalPropertyValue('toggleRoleMentions') : userValues.toggleRoleMentions
 
   return (
     <Container>
@@ -187,19 +185,6 @@ function MiscOptions () {
               <Description>Default: {boolToText(botConfig.formatTables)}</Description>
             </div>
             <Checkbox checked={formatTables} toggle onChange={(e, data) => updateProperty(configKeyNames.formatTables, data.checked)} />
-          </MiscOptionContainer>
-          <Divider />
-        </div>
-
-        <div>
-          <SectionSubtitle>Other</SectionSubtitle>
-          <MiscOptionContainer>
-            <div>
-              <SectionItemTitle>Role Mentioning</SectionItemTitle>
-              <Description>Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent.</Description>
-              <Description>Default: {boolToText(botConfig.toggleRoleMentions)}</Description>
-            </div>
-            <Checkbox checked={toggleRoleMentions} toggle onChange={(e, data) => updateProperty(configKeyNames.toggleRoleMentions, data.checked)} />
           </MiscOptionContainer>
           <Divider />
         </div>

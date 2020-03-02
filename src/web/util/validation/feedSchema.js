@@ -10,7 +10,6 @@ const feedSchema = Joi.object({
   imgPreviews: Joi.boolean(),
   imgLinksExistence: Joi.boolean(),
   formatTables: Joi.boolean(),
-  toggleRoleMentions: Joi.boolean(),
   text: Joi.string().allow('').trim().max(2048),
   embeds: Joi.array().items(embedSchema),
   split: Joi.object({

@@ -34,19 +34,13 @@ const getProperties = translate => {
       description: `${translate('generics.defaultSetting', { value: config.feeds.formatTables === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.tableFormattingDescription')}`,
       display: translate('commands.options.tableFormatting'),
       num: 4
-    },
-    toggleRoleMentions: {
-      title: translate('commands.options.roleMentioningToggle'),
-      description: `${translate('generics.defaultSetting', { value: config.feeds.toggleRoleMentions === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED })} ${translate('commands.options.roleMentioningDescription')}`,
-      display: translate('commands.options.roleMentioning'),
-      num: 5
     }
   }
 }
 
 async function selectOption (m, data) {
   const input = m.content
-  if (input !== '1' && input !== '2' && input !== '3' && input !== '4' && input !== '5') {
+  if (input !== '1' && input !== '2' && input !== '3' && input !== '4') {
     throw new MenuUtils.MenuOptionError()
   }
   const num = parseInt(input, 10)

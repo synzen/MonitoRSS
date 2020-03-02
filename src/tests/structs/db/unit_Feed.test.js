@@ -15,7 +15,6 @@ describe('Unit::structs/db/Feed', function () {
     'formatTables',
     'imgLinksExistence',
     'imgPreviews',
-    'toggleRoleMentions',
     'text',
     'ncomparisons',
     'pcomparisons'

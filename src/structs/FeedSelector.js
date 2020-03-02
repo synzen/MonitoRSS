@@ -23,10 +23,6 @@ const getOptionTexts = translate => ({
   formatTables: {
     status: `${translate('commands.options.tableFormatting')}: `,
     toggle: translate('commands.options.tableFormattingToggle')
-  },
-  toggleRoleMentions: {
-    status: `${translate('commands.options.roleMentioning')}: `,
-    toggle: translate('commands.options.roleMentioningToggle')
   }
 })
 
