@@ -36,7 +36,7 @@ class FeedSchedule extends EventEmitter {
     this._sourceList = new Map()
     this.failRecords = new Map()
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
-    this.feedData = Schedule.isMongoDatabase ? undefined : {}
+    this.memoryCollections = Schedule.isMongoDatabase ? undefined : {}
     this.feedCount = 0 // For statistics
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
@@ -203,8 +203,8 @@ class FeedSchedule extends EventEmitter {
       if (this.name !== name) {
         continue
       }
-      if (!this.feedData[feedData.url]) {
-        this.feedData[feedData.url] = []
+      if (!this.memoryCollections[feedData.url]) {
+        this.memoryCollections[feedData.url] = []
       }
       if (debug.feeds.has(feedData._id)) {
         this.log.info(`${feedData._id}: Assigned schedule`)
@@ -263,7 +263,7 @@ class FeedSchedule extends EventEmitter {
           FailRecord.reset(linkCompletion.link)
             .catch(err => this.log.error(err, `Unable to reset fail record ${linkCompletion.link}`))
           if (linkCompletion.memoryCollection) {
-            this.feedData[linkCompletion.link] = linkCompletion.memoryCollection
+            this.memoryCollections[linkCompletion.link] = linkCompletion.memoryCollection
           }
         }
 
@@ -294,7 +294,7 @@ class FeedSchedule extends EventEmitter {
           ...this.debugFeedLinks
         ],
         headers: this.headers,
-        feedData: this.feedData,
+        memoryCollections: this.memoryCollections,
         runNum: this.ran,
         scheduleName: this.name
       })

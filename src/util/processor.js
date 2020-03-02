@@ -63,7 +63,7 @@ async function parseStream (stream, url, log) {
   return articleList
 }
 
-async function syncDatabase (articleList, databaseDocs, feeds, meta, memoryCollection) {
+async function syncDatabase (articleList, databaseDocs, feeds, meta, isDatabaseless) {
   const allComparisons = new Set()
   for (const feedID in feeds) {
     const feed = feeds[feedID]
@@ -80,12 +80,14 @@ async function syncDatabase (articleList, databaseDocs, feeds, meta, memoryColle
     meta
   )
 
+  const memoryCollection = isDatabaseless ? databaseDocs : undefined
   await databaseFuncs.insertDocuments(toInsert, memoryCollection)
   await databaseFuncs.updateDocuments(toUpdate, memoryCollection)
 }
 
 async function getFeed (data, log) {
-  const { link, rssList, headers, toDebug, docs, feedData, scheduleName, runNum } = data
+  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum } = data
+  const isDatabaseless = !!memoryCollections
   const urlLog = toDebug ? log.child({
     url: link
   }) : null
@@ -103,19 +105,28 @@ async function getFeed (data, log) {
       process.send({ status: 'success', link })
       return
     }
-    // Sync first
+
+    /**
+     * Run the logic to get any new articles before syncDatabase modifies
+     * databaseless memory collections in-place
+     */
+    const logic = new LinkLogic({ articleList, ...data })
+    const result = await logic.run(docs)
+    const newArticles = result.newArticles
+
+    /**
+     * Then sync the database
+     */
     const meta = {
       feedURL: link,
       scheduleName
     }
-    const memoryCollection = feedData[link]
-    await syncDatabase(articleList, docs, rssList, meta, memoryCollection)
+    await syncDatabase(articleList, docs, rssList, meta, isDatabaseless)
 
+    /**
+     * Then finally send new articles to prevent spam if sync fails
+     */
     if (runNum !== 0 || config.feeds.sendFirstCycle === true) {
-      // Then send to prevent new article spam if sync fails
-      const logic = new LinkLogic({ articleList, ...data })
-      const result = await logic.run(docs)
-      const newArticles = result.newArticles
       const length = newArticles.length
       for (let i = 0; i < length; ++i) {
         if (urlLog) {
@@ -131,7 +142,7 @@ async function getFeed (data, log) {
     process.send({
       status: 'success',
       link,
-      memoryCollection: feedData
+      memoryCollection: isDatabaseless ? docs : undefined
     })
   } catch (err) {
     if (urlLog) {
@@ -152,14 +163,14 @@ async function getFeed (data, log) {
 
 process.on('message', async m => {
   const currentBatch = m.currentBatch
-  const { debugFeeds, debugLinks, scheduleName, feedData } = m
+  const { debugFeeds, debugLinks, scheduleName, memoryCollections } = m
   debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
   debug.links = new DataDebugger(debugLinks || [], 'links-processor')
   const logMarker = scheduleName
   const log = createLogger(logMarker)
   try {
     await connectDb(logMarker, true)
-    const articleDocuments = await databaseFuncs.getAllDocuments(scheduleName, feedData)
+    const articleDocuments = await databaseFuncs.getAllDocuments(scheduleName, memoryCollections)
     const promises = []
     for (const link in currentBatch) {
       const docs = articleDocuments[link] || []
