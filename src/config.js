@@ -89,7 +89,6 @@ const advancedOverride = fileOverride.advanced
 advanced.shards = Number(process.env.DRSS_ADVANCED_SHARDS) || advancedOverride.shards || advanced.shards
 advanced.batchSize = Number(process.env.DRSS_ADVANCED_BATCHSIZE) || advancedOverride.batchSize || advanced.batchSize
 advanced.parallelBatches = Number(process.env.DRSS_ADVANCED_PARALLELBATCHES) || advancedOverride.parallelBatches || advanced.parallelBatches
-advanced.parallelShards = Number(process.env.DRSS_ADVANCED_PARALLELSHARDS) || advancedOverride.parallelShards || advanced.parallelShards
 
 // WEB
 if (!fileOverride.web) {

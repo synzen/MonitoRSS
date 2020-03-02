@@ -58,7 +58,6 @@ const schema = Joi.object({
     shards: Joi.number().greater(0).strict().required(),
     batchSize: Joi.number().greater(0).strict().required(),
     parallelBatches: Joi.number().greater(0).strict().required(),
-    parallelShards: Joi.number().greater(0).strict().required()
   }).required(),
   web: Joi.object({
     enabled: Joi.bool().strict().required(),

@@ -50,8 +50,7 @@
   "advanced": {
     "shards": 2,
     "batchSize": 400,
-    "parallelBatches": 1,
-    "parallelShards": 1
+    "parallelBatches": 1
   },
   "web": {
     "enabled": false,
