@@ -5,7 +5,7 @@ const EventEmitter = require('events').EventEmitter
 class ScheduleManager extends EventEmitter {
   constructor () {
     super()
-    this.log = createLogger()
+    this.log = createLogger('M')
     this.schedules = []
     this.timers = []
     this.debugFeedIDs = new Set()

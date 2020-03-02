@@ -151,7 +151,6 @@ class FeedSchedule extends EventEmitter {
       this.killChildren()
     }
 
-    this.debugFeedLinks.clear()
     this.allowWebhooks.clear()
     const supporterLimits = new Map()
 

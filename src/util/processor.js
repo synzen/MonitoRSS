@@ -174,7 +174,7 @@ process.on('message', async m => {
     for (const link in currentBatch) {
       const docs = articleDocuments[link] || []
       const rssList = currentBatch[link]
-      const toDebug = debugURLs.contains(link)
+      const toDebug = debugURLs.includes(link)
       promises.push(getFeed({ ...m, link, toDebug, rssList, docs }, log))
     }
     await Promise.all(promises)
