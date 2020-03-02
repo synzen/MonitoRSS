@@ -5,6 +5,7 @@ const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const checkPermissions = require('../maintenance/checkPermissions')
 const createLogger = require('../util/logger/create.js')
 const MIN_PERMISSION_BOT = [
   FLAGS.VIEW_CHANNEL,
@@ -85,8 +86,15 @@ async function selectChannelFn (m, data) {
     guild: m.guild,
     channel: m.channel
   }, `Channel for feeds ${summary.join(',')} moved to ${selected.id} (${selected.name})`)
+
   m.channel.send(`${translate('commands.move.moveSuccess', { summary: summary.join('\n'), id: selected.id })} ${translate('generics.backupReminder', { prefix })}`)
     .catch(err => log.command.warning('rssmove 1', err))
+
+  for (const feed of selectedFeeds) {
+    checkPermissions.feed(feed, m.client).catch(err => {
+      log.error(err, 'Failed to check permissions of feeds after move')
+    })
+  }
   return data
 }
 
