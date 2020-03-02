@@ -203,7 +203,7 @@ class FeedSchedule extends EventEmitter {
       if (this.name !== name) {
         continue
       }
-      if (!this.memoryCollections[feedData.url]) {
+      if (this.memoryCollections && !this.memoryCollections[feedData.url]) {
         this.memoryCollections[feedData.url] = []
       }
       if (debug.feeds.has(feedData._id)) {
