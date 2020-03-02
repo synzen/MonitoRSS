@@ -69,7 +69,9 @@ class IPC {
       SHARD_STOPPED: 'shardStopped',
       SEND_CHANNEL_MESSAGE: 'sendChannelAlert',
       SEND_USER_MESSAGE: 'sendUserAlert',
-      NEW_ARTICLE: 'newArticle'
+      NEW_ARTICLE: 'newArticle',
+      ADD_DEBUG_FEEDID: 'addDebugFeedID',
+      REMOVE_DEBUG_FEEDID: 'removeDebugFeedID'
     }
   }
 }

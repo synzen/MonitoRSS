@@ -66,11 +66,21 @@ class ClientManager extends EventEmitter {
   }
 
   broadcastArticle (article) {
-    this.broadcast(ipc.TYPES.NEW_ARTICLE, article)
+    const feed = article._feed
+    const debug = this.scheduleManager.isDebugging(feed._id)
+    this.broadcast(ipc.TYPES.NEW_ARTICLE, {
+      debug,
+      article
+    })
   }
 
   sendArticle (article, shard) {
-    this.send(ipc.TYPES.NEW_ARTICLE, article, shard)
+    const feed = article._feed
+    const debug = this.scheduleManager.isDebugging(feed._id)
+    this.send(ipc.TYPES.NEW_ARTICLE, {
+      debug,
+      article
+    }, shard)
   }
 
   handleNewArticle (article) {
@@ -148,6 +158,8 @@ class ClientManager extends EventEmitter {
       case ipc.TYPES.SHARD_READY: this._shardReadyEvent(shard, message); break
       case ipc.TYPES.INIT_COMPLETE: this._initCompleteEvent(shard); break
       case ipc.TYPES.SHARD_STOPPED: this._shardStoppedEvent(shard); break
+      case ipc.TYPES.ADD_DEBUG_FEEDID: this._addDebugFeedIDEvent(message.data); break
+      case ipc.TYPES.REMOVE_DEBUG_FEEDID: this._removeDebugFeedIDEvent(message.data); break
     }
   }
 
@@ -215,6 +227,16 @@ class ClientManager extends EventEmitter {
   _shardStoppedEvent (shard) {
     this.log.debug(`Added shard ${shard.id} to shards stopped`)
     this.shardsStopped.add(shard.id)
+  }
+
+  _addDebugFeedIDEvent (feedID) {
+    this.log.info(`Adding ${feedID} to schedule manager debug`)
+    this.scheduleManager.addDebugFeedID(feedID)
+  }
+
+  _removeDebugFeedIDEvent (feedID) {
+    this.log.info(`Removing ${feedID} to schedule manager debug`)
+    this.scheduleManager.removeDebugFeedID(feedID)
   }
 }
 

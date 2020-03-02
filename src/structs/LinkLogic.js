@@ -1,4 +1,5 @@
 const { EventEmitter } = require('events')
+const createLogger = require('../util/logger/create.js')
 
 /**
  * @typedef {Object} FeedArticle
@@ -30,11 +31,12 @@ class LinkLogic extends EventEmitter {
    */
   constructor (data) {
     super()
-    const { rssList, articleList, debugFeeds, link, config } = data // feedData is only defined when config.database.uri is set to a databaseless folder path
+    const { rssList, articleList, debugFeeds, link, config } = data
     this.rssList = rssList
     this.articleList = articleList
     this.link = link
     this.config = config
+    this.log = createLogger('LL')
 
     /**
      * @type {Set<string>}
@@ -52,6 +54,16 @@ class LinkLogic extends EventEmitter {
     this.cutoffDay = cutoffDay
   }
 
+  _logDebug (feedID, message, object) {
+    if (this.debug.has(feedID)) {
+      if (object) {
+        this.log.info(object, message)
+      } else {
+        this.log.info(message)
+      }
+    }
+  }
+
   /**
    * @param {Object[]} docs
    */
@@ -59,8 +71,6 @@ class LinkLogic extends EventEmitter {
     /** @type {Map<string, Set<string>>} */
     const dbReferences = new Map()
     for (const doc of docs) {
-      // Add the ID
-
       // Deal with article-specific properties
       const properties = doc.properties
       for (const property in properties) {
@@ -115,8 +125,8 @@ class LinkLogic extends EventEmitter {
       if (tempPropertyValues && tempPropertyValues.has(value)) {
         return true
       }
-      // At this point, the property is not stored
     }
+    // At this point, the property is not stored
     return false
   }
 
@@ -165,24 +175,36 @@ class LinkLogic extends EventEmitter {
    * @param {Map<string, Set<string>>} comparisonReferences
    * @param {Object<string, any>} feed
    */
-  isNewArticle (dbIDs, article, feed, checkDates, comparisonReferences, debug) {
+  isNewArticle (dbIDs, article, feed, checkDates, comparisonReferences) {
     const { sentReferences, cutoffDay } = this
+    const feedID = feed._id
     const sentReferencesOfFeed = sentReferences.get(feed._id)
     const articleID = article._id
     const { ncomparisons, pcomparisons } = feed
     if (!articleID) {
+      this._logDebug(feedID, `No article ID found for article. Blocked.`, {
+        article
+      })
       return false
     }
     if (!dbIDs.has(articleID)) {
       // Normally passes since ID is unseen, unless negative comparisons blocks
       const blocked = LinkLogic.negativeComparisonBlocks(article, ncomparisons, comparisonReferences, sentReferencesOfFeed)
       if (blocked) {
+        this._logDebug(feedID, `Article ID ${articleID} not found in DB, but blocked by N-Comparisons. Blocked.`, {
+          ncomparisons,
+          sentReferencesOfFeed
+        })
         return false
       }
     } else {
       // Normally blocked since the ID is seen, unless positive comparisons passes
       const passed = LinkLogic.positiveComparisonPasses(article, pcomparisons, comparisonReferences, sentReferencesOfFeed)
       if (!passed) {
+        this._logDebug(feedID, `Article ID ${articleID} found in DB, but P-Comparisons made no difference. Blocked.`, {
+          pcomparisons,
+          sentReferencesOfFeed
+        })
         return false
       }
     }
@@ -190,9 +212,16 @@ class LinkLogic extends EventEmitter {
     if (checkDates) {
       const block = !article.pubdate || article.pubdate.toString() === 'Invalid Date' || article.pubdate < cutoffDay
       if (block) {
+        this._logDebug(feedID, `Article ID ${articleID} not found in DB, but check comparisons blocked article. Blocked.`, {
+          noPubdate: !article.pubdate,
+          invalidDateString: article.pubdate.toString() === 'Invalid Date',
+          beforeCutoffDate: article.pubdate < cutoffDay
+        })
         return false
       }
     }
+
+    this._logDebug(feedID, `Article ID ${articleID} not found in DB, marking new. Pass.`)
     // Store the property value into buffers
     this.storePropertiesToBuffer(feed, article)
     return true
@@ -235,22 +264,21 @@ class LinkLogic extends EventEmitter {
    * @param {Map<string, Set<string>>} comparisonReferences
    */
   getNewArticlesOfFeed (dbIDs, feed, articleList, comparisonReferences) {
-    const { debug, config } = this
+    const { config } = this
     const feedID = feed._id
     const totalArticles = articleList.length
     const checkDates = LinkLogic.shouldCheckDates(config, feed)
-    const toDebug = debug.has(feedID)
 
-    // if (toDebug) {
-    //   log.debug.info(`${feedID}: Processing collection. Total article list length: ${totalArticles}.\nDatabase IDs:\n${JSON.stringify(Array.from(dbIDs), null, 2)}}`)
-    // }
+    this._logDebug(feedID, `Processing collection. Total article list length: ${totalArticles}`, {
+      comparisonReferences,
+      dbIDs
+    })
 
     const newArticles = []
     // Loop from oldest to newest so the queue that sends articleMessages work properly, sending the older ones first
     for (let a = totalArticles - 1; a >= 0; --a) {
       const article = articleList[a]
-      const isNew = this.isNewArticle(dbIDs, article, feed, checkDates, comparisonReferences, toDebug)
-      // const isNew = this.checkIfNewArticle(feedID, feed, article, toDebug)
+      const isNew = this.isNewArticle(dbIDs, article, feed, checkDates, comparisonReferences)
       if (isNew) {
         newArticles.push(LinkLogic.formatArticle(article, feed))
       }

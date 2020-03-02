@@ -4,7 +4,6 @@ const Schedule = require('./db/Schedule.js')
 const FailRecord = require('./db/FailRecord.js')
 const FeedData = require('./FeedData.js')
 const Supporter = require('./db/Supporter.js')
-const debug = require('../util/debugFeeds.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
 const maintenance = require('../maintenance/index.js')
@@ -40,7 +39,6 @@ class FeedSchedule extends EventEmitter {
     this.feedCount = 0 // For statistics
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
-    this.debugFeedLinks = new Set()
 
     // For vip tracking
     this.allowWebhooks = new Map()
@@ -48,8 +46,10 @@ class FeedSchedule extends EventEmitter {
 
   /**
    * @param {FeedData} feed
+   * @param {Set<string>} debugFeedIDs
    */
-  _delegateFeed (feedData) {
+  _delegateFeed (feedData, debugFeedIDs) {
+    const debug = debugFeedIDs.has(feedData._id)
     if (Supporter.enabled && !this.allowWebhooks.has(feedData.guild) && feedData.webhook) {
       // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
       feedData.webhook = undefined
@@ -58,14 +58,14 @@ class FeedSchedule extends EventEmitter {
     if (this._sourceList.has(feedData.url)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
       let linkList = this._sourceList.get(feedData.url)
       linkList[feedData._id] = feedData
-      if (debug.feeds.has(feedData._id)) {
+      if (debug) {
         this.log.info(`${feedData._id}: Adding to pre-existing source list`)
       }
     } else {
       let linkList = {}
       linkList[feedData._id] = feedData
       this._sourceList.set(feedData.url, linkList)
-      if (debug.feeds.has(feedData._id)) {
+      if (debug) {
         this.log.info(`${feedData._id}: Creating new source list`)
       }
     }
@@ -73,9 +73,10 @@ class FeedSchedule extends EventEmitter {
 
   /**
    * @param {Object<string, any>} feedData
+   * @param {Set<string>} debugFeedIDs
    */
-  _addToSourceLists (feedData) { // rssList is an object per guildRss
-    const toDebug = debug.feeds.has(feedData._id)
+  _addToSourceLists (feedData, debugFeedIDs) { // rssList is an object per guildRss
+    const toDebug = debugFeedIDs.has(feedData._id)
     /** @type {FailRecord} */
     const failRecord = this.failRecords.get(feedData.url)
 
@@ -98,29 +99,37 @@ class FeedSchedule extends EventEmitter {
       this.debugFeedLinks.add(feedData.url)
     }
 
-    this._delegateFeed(feedData)
+    this._delegateFeed(feedData, debugFeedIDs)
     return true
   }
 
-  _genBatchLists () {
+  /**
+   * @param {Set<string>} debugFeedURLs
+   */
+  _genBatchLists (debugFeedURLs) {
     let batch = {}
 
-    this._sourceList.forEach((rssList, link) => { // rssList per link
+    this._sourceList.forEach((rssList, url) => { // rssList per url
       if (Object.keys(batch).length >= BATCH_SIZE) {
         this._regBatchList.push(batch)
         batch = {}
       }
-      batch[link] = rssList
-      if (debug.links.has(link)) {
-        this.log.info(`${link}: Attached URL to regular batch list for ${this.name}`)
+      batch[url] = rssList
+      if (debugFeedURLs.has(url)) {
+        this.log.info(`${url}: Attached URL to regular batch list for ${this.name}`)
       }
-      this._linksResponded[link] = 1
+      this._linksResponded[url] = 1
     })
 
-    if (Object.keys(batch).length > 0) this._regBatchList.push(batch)
+    if (Object.keys(batch).length > 0) {
+      this._regBatchList.push(batch)
+    }
   }
 
-  async run () {
+  /**
+   * @param {Set<string>} debugFeedIDs
+   */
+  async run (debugFeedIDs) {
     if (this.inProgress) {
       let list = ''
       let c = 0
@@ -194,6 +203,7 @@ class FeedSchedule extends EventEmitter {
 
     this._sourceList.clear()
     let feedCount = 0 // For statistics in storage
+    const debugFeedURLs = new Set()
     const determinedSchedules = await Promise.all(
       feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds))
     )
@@ -203,30 +213,40 @@ class FeedSchedule extends EventEmitter {
       if (this.name !== name) {
         continue
       }
+
+      // Initialize memory collections
       if (this.memoryCollections && !this.memoryCollections[feedData.url]) {
         this.memoryCollections[feedData.url] = []
       }
-      if (debug.feeds.has(feedData._id)) {
+
+      if (debugFeedIDs.has(feedData._id)) {
+        debugFeedURLs.add(feedData.url)
         this.log.info(`${feedData._id}: Assigned schedule`)
       }
-      if (this._addToSourceLists(feedData)) {
+
+      // Add to source lists
+      if (this._addToSourceLists(feedData, debugFeedIDs)) {
         feedCount++
       }
     }
 
     this.inProgress = true
     this.feedCount = feedCount
-    this._genBatchLists()
+    this._genBatchLists(debugFeedURLs)
 
     if (this._sourceList.size === 0) {
       this.inProgress = false
       return this._finishCycle(true)
     }
 
-    this._getBatchParallel()
+    this._getBatchParallel(debugFeedIDs, debugFeedURLs)
   }
 
-  _getBatchParallel () {
+  /**
+   * @param {Set<string>} debugFeedIDs
+   * @param {Set<string>} debugFeedURLs
+   */
+  _getBatchParallel (debugFeedIDs, debugFeedURLs) {
     const totalBatchLengths = this._regBatchList.length
     let completedBatches = 0
 
@@ -270,7 +290,7 @@ class FeedSchedule extends EventEmitter {
         ++this._cycleTotalCount
         ++completedLinks
         --this._linksResponded[linkCompletion.link]
-        if (debug.links.has(linkCompletion.link)) {
+        if (debugFeedURLs.has(linkCompletion.link)) {
           this.log.info(`${linkCompletion.link}: Link responded from processor`)
         }
         if (completedLinks === currentBatchLen) {
@@ -288,11 +308,8 @@ class FeedSchedule extends EventEmitter {
       processor.send({
         config,
         currentBatch,
-        debugFeeds: debug.feeds.serialize(),
-        debugLinks: [
-          ...debug.links.serialize(),
-          ...this.debugFeedLinks
-        ],
+        debugFeeds: Array.from(debugFeedIDs),
+        debugURLs: Array.from(debugFeedURLs),
         headers: this.headers,
         memoryCollections: this.memoryCollections,
         runNum: this.ran,

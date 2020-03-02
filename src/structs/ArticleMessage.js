@@ -1,6 +1,5 @@
 const config = require('../config.js')
 const Discord = require('discord.js')
-const debug = require('../util/debugFeeds.js')
 const Article = require('./Article.js')
 const createLogger = require('../util/logger/create.js')
 
@@ -14,13 +13,14 @@ class ArticleMessage {
    * @param {Discord.Client} bot - Discord client
    * @param {PreparedArticle} article - The article object
    * @param {boolean} skipFilters - Whether this should skip filters
+   * @param {boolean} debug
    */
-  constructor (bot, article, skipFilters = false) {
+  constructor (bot, article, skipFilters = false, debug = false) {
     if (!article._feed) {
       throw new Error('article._feed property missing')
     }
     this.log = createLogger(bot.shard.ids[0])
-    this.debug = debug.feeds.has(this.feedID)
+    this.debug = debug
     this.skipFilters = skipFilters
     this.article = article
     this.feed = article._feed
@@ -310,7 +310,7 @@ class ArticleMessage {
     } catch (err) {
       // 50013 = Missing Permissions
       if (err.code === 50013 || this.sendFailed++ === 3) {
-        if (debug.feeds.has(this.feedID)) {
+        if (this.debug) {
           this.log.info({
             error: err
           }, `${this.feedID}: Message has been translated but could not be sent (TITLE: ${this.article.title})`)

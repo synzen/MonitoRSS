@@ -133,7 +133,7 @@ class Client extends EventEmitter {
             this.start()
             break
           case ipc.TYPES.NEW_ARTICLE:
-            this.onNewArticle(message.data)
+            this.onNewArticle(message.data.article, message.data.debug)
             break
           case ipc.TYPES.FINISHED_INIT:
             storage.initialized = 2
@@ -152,14 +152,14 @@ class Client extends EventEmitter {
     })
   }
 
-  async onNewArticle (article) {
+  async onNewArticle (article, debug) {
     const feed = article._feed
     const channel = this.bot.channels.cache.get(feed.channel)
     if (!channel) {
       return
     }
     try {
-      await this.articleMessageQueue.enqueue(article)
+      await this.articleMessageQueue.enqueue(article, debug)
       await this.articleMessageQueue.send()
     } catch (err) {
       this.log.warn({

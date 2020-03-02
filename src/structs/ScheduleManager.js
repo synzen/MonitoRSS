@@ -1,5 +1,4 @@
 const FeedSchedule = require('./FeedSchedule.js')
-const debug = require('../util/debugFeeds.js')
 const createLogger = require('../util/logger/create.js')
 const EventEmitter = require('events').EventEmitter
 
@@ -9,10 +8,11 @@ class ScheduleManager extends EventEmitter {
     this.log = createLogger()
     this.schedules = []
     this.timers = []
+    this.debugFeedIDs = new Set()
   }
 
   async _onArticle (article) {
-    if (debug.feeds.has(article._feed._id)) {
+    if (this.debugFeedIDs.has(article._feed._id)) {
       this.log.debug(`${article._feed._id} ScheduleManager queueing article ${article.link} to send`)
     }
     this.emit('article', article)
@@ -33,7 +33,7 @@ class ScheduleManager extends EventEmitter {
   run (refreshRate) { // Run schedules with respect to their refresh times
     for (var feedSchedule of this.schedules) {
       if (feedSchedule.refreshRate === refreshRate) {
-        return feedSchedule.run()
+        return feedSchedule.run(this.debugFeedIDs)
           .catch(err => this.log.error(err, `Schedule ${this.name} failed to run cycle`))
       }
     }
@@ -73,6 +73,18 @@ class ScheduleManager extends EventEmitter {
         this.run(rate)
       }, rate * 60000))
     })
+  }
+
+  addDebugFeedID (feedID) {
+    this.debugFeedIDs.add(feedID)
+  }
+
+  removeDebugFeedID (feedID) {
+    this.debugFeedIDs.delete(feedID)
+  }
+
+  isDebugging (feedID) {
+    return this.debugFeedIDs.has(feedID)
   }
 }
 

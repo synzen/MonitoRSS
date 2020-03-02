@@ -5,8 +5,6 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('../structs/LinkLogic.js')
-const debug = require('../util/debugFeeds.js')
-const DataDebugger = require('../structs/DataDebugger.js')
 const databaseFuncs = require('../util/database.js')
 const config = require('../config.js')
 
@@ -109,6 +107,9 @@ async function getFeed (data, log) {
     /**
      * Run the logic to get any new articles before syncDatabase modifies
      * databaseless memory collections in-place
+     *
+     * Any new n/p comparisons are also delayed by 1 cycle since docs
+     * are fetched before getFeed (before they're updated below this)
      */
     const logic = new LinkLogic({ articleList, ...data })
     const result = await logic.run(docs)
@@ -163,9 +164,7 @@ async function getFeed (data, log) {
 
 process.on('message', async m => {
   const currentBatch = m.currentBatch
-  const { debugFeeds, debugLinks, scheduleName, memoryCollections } = m
-  debug.feeds = new DataDebugger(debugFeeds || [], 'feeds-processor')
-  debug.links = new DataDebugger(debugLinks || [], 'links-processor')
+  const { debugURLs, scheduleName, memoryCollections } = m
   const logMarker = scheduleName
   const log = createLogger(logMarker)
   try {
@@ -175,7 +174,7 @@ process.on('message', async m => {
     for (const link in currentBatch) {
       const docs = articleDocuments[link] || []
       const rssList = currentBatch[link]
-      const toDebug = debug.links.has(link)
+      const toDebug = debugURLs.contains(link)
       promises.push(getFeed({ ...m, link, toDebug, rssList, docs }, log))
     }
     await Promise.all(promises)
