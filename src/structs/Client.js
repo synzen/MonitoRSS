@@ -159,7 +159,7 @@ class Client extends EventEmitter {
       return
     }
     try {
-      await this.articleMessageQueue.enqueue(article, debug)
+      await this.articleMessageQueue.enqueue(article, false, debug)
       await this.articleMessageQueue.send()
     } catch (err) {
       this.log.warn({
