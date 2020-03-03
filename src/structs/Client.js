@@ -110,23 +110,16 @@ class Client extends EventEmitter {
           case ipc.TYPES.START_INIT:
             const data = message.data
             if (data.setPresence) {
-              if (config.bot.activityType) {
-                bot.user.setActivity(config.bot.activityName, {
+              bot.user.setPresence({
+                status: config.bot.status,
+                activity: {
+                  name: config.bot.activityName,
                   type: config.bot.activityType,
                   url: config.bot.streamActivityURL || undefined
-                }).catch(err => this.log.warn({
-                  error: err
-                }, 'Failed to set activity'))
-              } else {
-                bot.user.setActivity(null)
-                  .catch(err => this.log.warn({
-                    error: err
-                  }, 'Failed to set null activity'))
-              }
-              bot.user.setStatus(config.bot.status)
-                .catch(err => this.log.warn({
-                  error: err
-                }, 'Failed to set status'))
+                }
+              }).catch(err => this.log.warn({
+                error: err
+              }, 'Failed to set presence'))
             }
             this.start()
             break
