@@ -71,8 +71,7 @@ module.exports = async (message) => {
     const path = require('path');
     const appDir = path.dirname(require.main.filename);
     const config = require(appDir + '/src/config.js');
-    config.bot = \`${JSON.stringify(config.bot)}\`
-    console.log(config.bot)
+    config.bot = JSON.parse(\`${JSON.stringify(config.bot)}\`)
   `)
   const log = createLogger(message.guild.shard.id)
   log.owner({
