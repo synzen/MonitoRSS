@@ -16,8 +16,8 @@ const schema = Joi.object({
 function getPresenceFromArgs (args) {
   const status = args[0]
   const activityType = args[1]
-  const activityName = args[2]
-  const activityURL = args[3]
+  const activityName = args[1] === 'STREAMING' ? args.slice(2, args.length - 1).join(' ') : args.slice(2).join(' ')
+  const activityURL = args[1] === 'STREAMING' ? args[args.length - 1] : ''
   const presenceData = {}
   if (status) {
     presenceData.status = status
@@ -78,5 +78,5 @@ module.exports = async (message) => {
     user: message.author,
     presenceData
   }, `Set presence`)
-  await message.channel.send(`Successfully changed presence.`)
+  await message.channel.send(`Successfully changed presence. It may be some time until it shows due to rate limiting.`)
 }
