@@ -37,6 +37,7 @@ module.exports = async (message) => {
       user: message.author
     }, `Server (ID: ${id}, Name: ${res[i]}) has been restored`)
     await message.channel.send(`Server (ID: ${id}, Name: ${res[i]}) has been restored.`)
+    return
   }
-  await message.chanel.send(`Unable to restore server, guild ${id} was not found in cache.`)
+  await message.channel.send(`Unable to restore server, guild ${id} was not found in cache.`)
 }
