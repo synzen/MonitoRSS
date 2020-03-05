@@ -25,14 +25,12 @@ npm install discord.rss
 ```js
 const DiscordRSS = require('discord.rss')
 
-// Optional config overrides
-const config = {
-  database: {
-    uri: './sources'
-  }
+// Optional settings
+const settings = {
+  setPresence: true
 }
 
-const drss = new DiscordRSS.ClientManager(config)
+const drss = new DiscordRSS.ClientManager(settings)
 drss.login('token')
 ```
 For best performance, use a mongodb database.uri instead of a directory.
