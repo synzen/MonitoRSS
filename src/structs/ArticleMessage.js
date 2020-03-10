@@ -165,7 +165,7 @@ class ArticleMessage {
 
       const timestamp = objectEmbed.timestamp
       if (timestamp === 'article') {
-        richEmbed.setTimestamp(new Date(parsedArticle._fullDate))
+        richEmbed.setTimestamp(new Date(parsedArticle.fullDate))
       } else if (timestamp === 'now') {
         richEmbed.setTimestamp(new Date())
       }
