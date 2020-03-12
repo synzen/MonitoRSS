@@ -1,6 +1,6 @@
 {
   "log": {
-    "pretty": true,
+    "destination": "",
     "linkErrs": true,
     "unfiltered": true,
     "failedFeeds": true

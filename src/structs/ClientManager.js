@@ -24,9 +24,6 @@ class ClientManager extends EventEmitter {
    */
   constructor (options) {
     super()
-    if (options && options.logFile && typeof options.logFile === 'string') {
-      process.env.DRSS_LOG_DESTINATION = options.logFile
-    }
     this.log = createLogger('M')
     this.setPresence = options ? options.setPresence : false
     this.customSchedules = options ? options.schedules : {}

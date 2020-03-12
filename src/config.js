@@ -21,7 +21,7 @@ if (!fileOverride.log) {
 }
 const log = config.log
 const logOverride = fileOverride.log
-log.pretty = Boolean(process.env.DRSS_LOG_PRETTY) || logOverride.pretty || log.pretty
+log.destination = process.env.DRSS_LOG_DESTINATION || logOverride.destination || log.destination
 log.linkErrs = Boolean(process.env.DRSS_LOG_LINKERRS) || logOverride.linkErrs || log.linkErrs
 log.unfiltered = Boolean(process.env.DRSS_LOG_UNFILTERED) || logOverride.unfiltered || log.unfiltered
 log.failedFeeds = Boolean(process.env.DRSS_LOG_FAILEDFEEDS) || logOverride.failedFeeds || log.failedFeeds

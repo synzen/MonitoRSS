@@ -9,13 +9,12 @@ function createLogger (shardID) {
     ignore: 'hostname,shardID'
   }
 
-  if (!config.log.pretty) {
+  let destination
+
+  if (config.log.destination) {
+    destination = pino.destination(config.log.destination)
     prettyPrint = false
   }
-
-  const destination = process.env.DRSS_LOG_DESTINATION
-    ? pino.destination(process.env.DRSS_LOG_DESTINATION)
-    : undefined
 
   return pino({
     base: {

@@ -7,7 +7,7 @@ const schema = Joi.object({
   dev: Joi.bool().strict(),
   _vip: Joi.bool().strict(),
   log: Joi.object({
-    pretty: Joi.bool().strict().required(),
+    destination: Joi.string().allow('').strict().required(),
     linkErrs: Joi.bool().strict().required(),
     unfiltered: Joi.bool().strict().required(),
     failedFeeds: Joi.bool().strict().required()
