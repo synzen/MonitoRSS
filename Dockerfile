@@ -1,4 +1,4 @@
-FROM node:10-alpine
+FROM node:12-alpine
 RUN apk add git && \
 	mkdir -p /app/node_modules && \
     chown -R node:node /app
