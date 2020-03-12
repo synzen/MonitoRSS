@@ -48,6 +48,7 @@ class Client extends EventEmitter {
     }
     const client = new Discord.Client(CLIENT_OPTIONS)
     try {
+      this.log = createLogger('-')
       await connectDb('-')
       await client.login(token)
       this.log = createLogger(client.shard.ids[0].toString())
