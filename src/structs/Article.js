@@ -1,5 +1,3 @@
-const fs = require('fs')
-const path = require('path')
 const config = require('../config.js')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
