@@ -1,5 +1,3 @@
-const fs = require('fs')
-const path = require('path')
 const htmlConvert = require('html-to-text')
 const config = require('../config.js')
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'pubDate', 'pubdate', 'date']
