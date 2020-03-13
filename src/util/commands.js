@@ -149,14 +149,6 @@ const list = {
     userPerm: MANAGE_CHANNELS_PERM
   }
 }
-// Check for aliases
-if (typeof config.bot.commandAliases === 'object') {
-  const aliases = config.bot.commandAliases
-  for (var alias in aliases) {
-    const cmd = aliases[alias]
-    if (cmd && list[cmd] && !list[alias]) list[alias] = { ...list[cmd], aliasFor: cmd }
-  }
-}
 
 exports.list = list
 exports.has = message => {

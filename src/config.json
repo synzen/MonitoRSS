@@ -17,8 +17,7 @@
     "ownerIDs": [],
     "menuColor": 5285609,
     "deleteMenus": true,
-    "exitOnSocketIssues": true,
-    "commandAliases": {}
+    "exitOnSocketIssues": true
   },
   "database": {
     "uri": "mongodb://localhost:27017/rss",

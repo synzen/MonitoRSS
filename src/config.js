@@ -44,7 +44,6 @@ bot.ownerIDs = envArray('DRSS_BOT_OWNERIDS') || botOverride.ownerIDs || bot.owne
 bot.menuColor = Number(process.env.DRSS_BOT_MENUCOLOR) || botOverride.menuColor || bot.menuColor
 bot.deleteMenus = Boolean(process.env.DRSS_BOT_DELETEMENUS) || botOverride.deleteMenus || bot.deleteMenus
 bot.exitOnSocketIssues = Boolean(process.env.DRSS_EXITONSOCKETISSUES) || botOverride.exitOnSocketIssues || bot.exitOnSocketIssues
-bot.commandAliases = botOverride.commandAliases || bot.commandAliases
 
 // DATABASE
 if (!fileOverride.database) {

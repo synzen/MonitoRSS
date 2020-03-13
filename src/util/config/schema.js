@@ -24,8 +24,7 @@ const schema = Joi.object({
     ownerIDs: Joi.array().items(Joi.string()).required(),
     menuColor: Joi.number().strict().greater(0).required(),
     deleteMenus: Joi.bool().strict().required(),
-    exitOnSocketIssues: Joi.bool().strict().required(),
-    commandAliases: Joi.object().pattern(/^/, Joi.string().required())
+    exitOnSocketIssues: Joi.bool().strict().required()
   }).required(),
   database: Joi.object({
     uri: Joi.string().required(),
