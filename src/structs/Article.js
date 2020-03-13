@@ -8,7 +8,6 @@ const FlattenedJSON = require('./FlattenedJSON.js')
 const FilterResults = require('./FilterResults.js')
 const Filter = require('./Filter.js')
 const FilterRegex = require('./FilterRegex.js')
-const defaultConfigs = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config.json')))
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date', 'link']
@@ -140,14 +139,14 @@ function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
         }
 
         let exist = true
-        const globalExistOption = config.feeds.imgLinksExistence != null ? config.feeds.imgLinksExistence : defaultConfigs.feeds.imgLinksExistence.default // Always a boolean via startup checks
+        const globalExistOption = config.feeds.imgLinksExistence
         exist = globalExistOption
         const specificExistOption = source.imgLinksExistence
         exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
         if (!exist) return ''
 
         let image = ''
-        const globalPreviewOption = config.feeds.imgPreviews != null ? config.feeds.imgPreviews : defaultConfigs.feeds.imgPreviews.default // Always a boolean via startup checks
+        const globalPreviewOption = config.feeds.imgPreviews
         image = globalPreviewOption ? link : `<${link}>`
         const specificPreviewOption = source.imgPreviews
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`

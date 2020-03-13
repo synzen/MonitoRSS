@@ -2,7 +2,6 @@ const fs = require('fs')
 const path = require('path')
 const htmlConvert = require('html-to-text')
 const config = require('../config.js')
-const defaultConfigs = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config.json')))
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'pubDate', 'pubdate', 'date']
 
 function cleanup (feed, text, encoding) {
@@ -27,14 +26,14 @@ function cleanup (feed, text, encoding) {
         else if (isStr && !link.startsWith('http://') && !link.startsWith('https://')) link = 'http://' + link
 
         let exist = true
-        const globalExistOption = config.feeds.imgLinksExistence != null ? config.feeds.imgLinksExistence : defaultConfigs.feeds.imgLinksExistence.default // Always a boolean via startup checks
+        const globalExistOption = config.feeds.imgLinksExistence
         exist = globalExistOption
         const specificExistOption = feed.imgLinksExistence
         exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
         if (!exist) return ''
 
         let image = ''
-        const globalPreviewOption = config.feeds.imgPreviews != null ? config.feeds.imgPreviews : defaultConfigs.feeds.imgPreviews.default // Always a boolean via startup checks
+        const globalPreviewOption = config.feeds.imgPreviews
         image = globalPreviewOption ? link : `<${link}>`
         const specificPreviewOption = feed.imgPreviews
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
