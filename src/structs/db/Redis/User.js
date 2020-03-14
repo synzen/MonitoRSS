@@ -51,7 +51,14 @@ class User extends Base {
         const toStore = {}
         let u = 0
         this.utils.JSON_KEYS.forEach(key => {
-          if (newUser[key] !== oldUser[key]) {
+          if (key === 'displayAvatarURL') {
+            const oldAvatar = oldUser[key]()
+            const newAvatar = newUser[key]()
+            if (oldAvatar !== newAvatar) {
+              toStore[key] = newAvatar
+              ++u
+            }
+          } else if (newUser[key] !== oldUser[key]) {
             toStore[key] = newUser[key]
             ++u
           }
