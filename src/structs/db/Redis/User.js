@@ -49,22 +49,26 @@ class User extends Base {
         const exists = await promisify(this.client.exists).bind(this.client)(this.utils.REDIS_KEYS.user(newUser.id))
         if (!exists) return exports.guilds.recognize(newUser)
         const toStore = {}
-        let u = 0
         this.utils.JSON_KEYS.forEach(key => {
           if (key === 'displayAvatarURL') {
             const oldAvatar = oldUser[key]()
             const newAvatar = newUser[key]()
             if (oldAvatar !== newAvatar) {
               toStore[key] = newAvatar
-              ++u
             }
           } else if (newUser[key] !== oldUser[key]) {
             toStore[key] = newUser[key]
-            ++u
           }
         })
-        if (u === 0) return 0
-        return promisify(this.client.hset).bind(this.client)(this.utils.REDIS_KEYS.user(newUser.id), toStore)
+        if (Object.keys(toStore).length === 0) {
+          return 0
+        }
+        const promises = []
+        for (const key in toStore) {
+          const val = toStore[key]
+          promises.push(promisify(this.client.hset).bind(this.client)(this.utils.REDIS_KEYS.user(newUser.id), key, val))
+        }
+        await Promise.all(promises)
       },
       get: async userId => {
         if (!this.clientExists) return
