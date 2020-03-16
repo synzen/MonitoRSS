@@ -143,15 +143,11 @@ describe('Unit::FeedFetcher', function () {
           })
           .catch(done)
       })
-      it('throws a RequestError if fetch throws an error', function (done) {
-        fetch.mockRejectedValueOnce(new Error('abc'))
-        FeedFetcher.fetchURL('abc')
-          .then(() => done(new Error('Promise resolved')))
-          .catch(err => {
-            expect(err).toBeInstanceOf(RequestError)
-            done()
-          })
-          .catch(done)
+      it('throws a RequestError if fetch throws an error', async function () {
+        const error = new Error('abc')
+        fetch.mockRejectedValueOnce(error)
+        await expect(FeedFetcher.fetchURL('abc'))
+          .rejects.toThrow(new RequestError(null, error.message))
       })
       it('returns the stream and response if the response status is 200', async function () {
         const body = 'abc'
@@ -270,7 +266,14 @@ describe('Unit::FeedFetcher', function () {
       const error = new Error('Hello world')
       cloudscraper.mockRejectedValueOnce(error)
       await expect(FeedFetcher.fetchCloudScraper('asdeg'))
-        .rejects.toThrowError(new RequestError(error.message))
+        .rejects.toThrowError(new RequestError(null, error.message))
+    })
+    it('throws a RequestError if error has bad status code', async function () {
+      const error = new Error('Hello world')
+      error.statusCode = 500
+      cloudscraper.mockRejectedValueOnce(error)
+      await expect(FeedFetcher.fetchCloudScraper('asdeg'))
+        .rejects.toThrowError(new RequestError(error.statusCode, `Bad Cloudflare status code (${error.statusCode})`))
     })
   })
   describe('parseStream', function () {
