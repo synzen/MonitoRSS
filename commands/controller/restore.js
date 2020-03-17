@@ -30,7 +30,7 @@ exports.normal = async (bot, message) => {
     const file = await getID(message)
     const id = file.id
     const guild = bot.guilds.get(id)
-    if (!guild) return await message.chanel.send(`Unable to restore server, ID ${id} was not found in cache.`)
+    if (!guild) return await message.channel.send(`Unable to restore server, ID ${id} was not found in cache.`)
     await dbOps.guildRss.update(file)
     log.controller.success(`Server (ID: ${id}, Name: ${guild.name}) has been restored`, message.author)
     await message.channel.send(`Server (ID: ${id}, Name: ${guild.name}) has been restored.`)
