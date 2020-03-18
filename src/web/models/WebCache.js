@@ -1,7 +1,14 @@
 const mongoose = require('mongoose')
 
 const schema = new mongoose.Schema({
-  _id: String,
+  id: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    required: true
+  },
   data: mongoose.Schema.Types.Mixed,
   createdAt: {
     type: Date,
@@ -10,7 +17,7 @@ const schema = new mongoose.Schema({
   }
 })
 
-const model = mongoose.model('Web User', schema)
+const model = mongoose.model('Web Cache', schema)
 
 exports.schema = schema
 exports.model = model
