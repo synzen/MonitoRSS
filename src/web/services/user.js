@@ -7,20 +7,47 @@ const RedisUser = require('../../structs/db/Redis/User.js')
 const RedisGuildMember = require('../../structs/db/Redis/GuildMember.js')
 const createLogger = require('../../util/logger/create.js')
 const config = require('../../config.js')
+const WebCache = require('../models/WebCache.js').model
 const log = createLogger('W')
 const MANAGE_CHANNEL_PERMISSION = 16
-const CACHE_TIME_MINUTES = 10
-const CACHED_USERS = {}
-const CACHED_USERS_GUILDS = {}
 
-function timeDiffMinutes (start) {
-  const duration = moment.duration(moment().diff(start))
-  return duration.asMinutes()
+async function getCachedUser (id) {
+  return WebCache.findOne({
+    id,
+    type: 'user'
+  }).lean().exec()
+}
+
+async function getCachedUserGuilds (id) {
+  return WebCache.findOne({
+    id,
+    type: 'guilds'
+  }).lean().exec()
+}
+
+async function storeCachedUser (id, data) {
+  const cached = new WebCache({
+    id,
+    type: 'user',
+    data
+  })
+  await cached.save()
+  return cached
+}
+
+async function storeCachedUserGuilds (id, data) {
+  const cached = new WebCache({
+    id,
+    type: 'guilds',
+    data
+  })
+  await cached.save()
+  return cached
 }
 
 async function getUserByAPI (id, accessToken, skipCache) {
-  const cachedUser = id && !skipCache ? CACHED_USERS[id] : null
-  if (cachedUser && timeDiffMinutes(cachedUser.lastUpdated) <= CACHE_TIME_MINUTES) {
+  const cachedUser = id && !skipCache ? await getCachedUser(id) : null
+  if (cachedUser) {
     return cachedUser.data
   }
   log.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me`)
@@ -29,10 +56,7 @@ async function getUserByAPI (id, accessToken, skipCache) {
     throw new Error(`Bad Discord status code (${results.status})`)
   }
   const data = await results.json()
-  CACHED_USERS[id] = {
-    data,
-    lastUpdated: moment()
-  }
+  await storeCachedUser(data.id, data)
   return data
 }
 
@@ -42,8 +66,8 @@ async function getUser (id) {
 }
 
 async function getGuildsByAPI (id, accessToken, skipCache) {
-  const cachedUserGuilds = id && !skipCache ? CACHED_USERS_GUILDS[id] : null
-  if (cachedUserGuilds && timeDiffMinutes(cachedUserGuilds.lastUpdated) <= CACHE_TIME_MINUTES) {
+  const cachedUserGuilds = !skipCache ? await getCachedUserGuilds(id) : null
+  if (cachedUserGuilds) {
     return cachedUserGuilds.data
   }
   log.info(`[1 DISCORD API REQUEST] [USER] GET /api/users/@me/guilds`)
@@ -52,10 +76,7 @@ async function getGuildsByAPI (id, accessToken, skipCache) {
     throw new Error(`Bad Discord status code (${res.status})`)
   }
   const data = await res.json()
-  CACHED_USERS_GUILDS[id] = {
-    data,
-    lastUpdated: moment()
-  }
+  await storeCachedUserGuilds(id, data)
   return data
 }
 
