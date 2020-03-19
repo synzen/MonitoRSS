@@ -225,7 +225,7 @@ async function startProfiles (databaseless) {
   if (total === 0) {
     console.log('No profiles found')
     if (!databaseless) {
-      startFailRecords(errors)
+      startFailRecords()
     }
     return
   }
