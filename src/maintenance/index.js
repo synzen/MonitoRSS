@@ -13,7 +13,7 @@ const checkArticleIndexes = require('./checkArticleIndexes.js')
 const ScheduleStats = require('../structs/db/ScheduleStats.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Patron = require('../structs/db/Patron.js')
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const log = createLogger()
 
@@ -23,6 +23,7 @@ const log = createLogger()
  * @param {import('discord.js').Client} bot
  */
 async function prunePreInit (guildIdsByShard, channelIdsByShard) {
+  const config = getConfig()
   await Promise.all([
     checkArticleIndexes(config.feeds.articlesExpire),
     ScheduleStats.deleteAll(),

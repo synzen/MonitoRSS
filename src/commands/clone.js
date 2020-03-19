@@ -1,4 +1,4 @@
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Profile = require('../structs/db/Profile.js')
@@ -71,6 +71,7 @@ module.exports = async (message, command) => {
       append: '```'
     }
   })
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const args = MenuUtils.extractArgsAfterCommand(message.content)
   if (args.length === 0) {

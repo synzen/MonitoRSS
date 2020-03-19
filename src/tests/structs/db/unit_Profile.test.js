@@ -4,7 +4,13 @@ const Profile = require('../../../structs/db/Profile.js')
 const Supporter = require('../../../structs/db/Supporter.js')
 
 jest.mock('../../../structs/db/Supporter.js')
-jest.mock('../../../config.js')
+jest.mock('../../../config.js', () => ({
+  get: () => ({
+    feeds: {
+      max: 22
+    }
+  })
+}))
 
 describe('Unit::structs/db/Profile', function () {
   afterEach(function () {
@@ -70,13 +76,10 @@ describe('Unit::structs/db/Profile', function () {
       expect(returned).toEqual(maxFeeds)
     })
     it('returns config max feeds if no supporter', async function () {
-      const oval = config.feeds.max
-      config.feeds.max = 22
       Supporter.getValidSupporterOfGuild.mockResolvedValue(null)
       const returned = await Profile.getFeedLimit()
       expect(Supporter.getValidSupporterOfGuild).toHaveBeenCalledTimes(1)
-      expect(returned).toEqual(config.feeds.max)
-      config.feeds.max = oval
+      expect(returned).toEqual(config.get().feeds.max)
     })
   })
 })

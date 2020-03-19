@@ -1,9 +1,9 @@
 const fs = require('fs')
 const path = require('path')
 const createLogger = require('./logger/create.js')
-const config = require('../config.js')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
+const getConfig = require('../config.js').get
 const log = createLogger()
 const eventHandlers = []
 const VALID_EVENTS = [
@@ -73,6 +73,7 @@ if (fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'commands.js'))) 
 }
 
 const messageHandler = (bot, blacklistCache) => message => {
+  const config = getConfig()
   const onlyOwner = config.bot.enableCommands !== true || config.dev === true
   require('../events/message.js')(message, onlyOwner, blacklistCache)
   try {

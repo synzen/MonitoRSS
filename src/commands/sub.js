@@ -1,9 +1,9 @@
-const config = require('../config.js')
 const getSubList = require('./util/getSubList.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 function addRole (message, role, links, translate) {
@@ -34,6 +34,7 @@ module.exports = async (message, command) => {
   if (feeds.length === 0) {
     return message.channel.send(translate('commands.sub.noFeeds'))
   }
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const options = await getSubList(message.guild, feeds)
   if (!options) {

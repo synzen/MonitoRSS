@@ -11,12 +11,18 @@ const fsRmdir = util.promisify(fs.rmdir)
 const FoobarClass = require('./__mocks__/FoobarClass.js')
 const Foobar = require('./__mocks__/Foobar.js')
 
+jest.mock('../../../config.js', () => ({
+  get: () => ({
+    database: {
+      uri: '___intbase_tests_'
+    }
+  })
+}))
+
 describe('Int::structs/db/Base Databaseless', function () {
-  const originalDatabaseUri = config.database.uri
   let folderPath = ''
   beforeAll(async function () {
-    config.database.uri = '___intbase_tests_'
-    folderPath = path.join(config.database.uri, Foobar.collection.collectionName)
+    folderPath = path.join(config.get().database.uri, Foobar.collection.collectionName)
   })
   it('saves', async function () {
     const data = { foo: 'zz', baz: 99 }
@@ -120,6 +126,5 @@ describe('Int::structs/db/Base Databaseless', function () {
     }
     await fsRmdir(folderPath)
     await fsRmdir(config.database.uri)
-    config.database.uri = originalDatabaseUri
   })
 })

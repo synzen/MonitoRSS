@@ -1,9 +1,9 @@
-const config = require('../config.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message, command) => {
@@ -35,6 +35,7 @@ module.exports = async (message, command) => {
       errors.push(err)
     }
   }
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   if (errors.length > 0) {
     await removing.edit(translate('commands.remove.internalError'))

@@ -1,4 +1,3 @@
-const config = require('../config.js')
 const moment = require('moment-timezone')
 const htmlConvert = require('html-to-text')
 const htmlDecoder = require('html-to-text/lib/formatter.js').text
@@ -6,6 +5,7 @@ const FlattenedJSON = require('./FlattenedJSON.js')
 const FilterResults = require('./FilterResults.js')
 const Filter = require('./Filter.js')
 const FilterRegex = require('./FilterRegex.js')
+const getConfig = require('../config.js').get
 const VALID_PH_IMGS = ['title', 'description', 'summary']
 const VALID_PH_ANCHORS = ['title', 'description', 'summary']
 const BASE_REGEX_PHS = ['title', 'author', 'summary', 'description', 'guid', 'date', 'link']
@@ -114,7 +114,7 @@ function evalRegexConfig (source, text, placeholderName) {
 
 function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
   if (!text) return ''
-
+  const config = getConfig()
   text = htmlDecoder({ data: text }, {}).replace(/\*/gi, '')
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown
     .replace(/<(em|i)>(.*?)<(\/(em|i))>/gi, '*$2*') // Italicized markdown
@@ -465,6 +465,7 @@ module.exports = class Article {
   convertRawPlaceholders (content) {
     let result
     const matches = {}
+    const config = getConfig()
     do {
       result = RAW_REGEX_FINDER.exec(content)
       if (!result) continue
@@ -503,6 +504,7 @@ module.exports = class Article {
   }
 
   formatDate (date, tz) {
+    const config = getConfig()
     if (date && date.toString() !== 'Invalid Date') {
       const timezone = tz && moment.tz.zone(tz) ? tz : config.feeds.timezone
       const dateFormat = this.profile.dateFormat ? this.profile.dateFormat : config.feeds.dateFormat

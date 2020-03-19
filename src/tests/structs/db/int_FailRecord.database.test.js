@@ -9,9 +9,16 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-jest.mock('../../../config.js')
-
-config.feeds.hoursUntilFail = 24
+jest.mock('../../../config.js', () => ({
+  get: () => ({
+    database: {
+      uri: 'mongodb://'
+    },
+    feeds: {
+      hoursUntilFail: 24
+    }
+  })
+}))
 
 function getOldDate (hoursAgo) {
   // https://stackoverflow.com/questions/1050720/adding-hours-to-javascript-date-object
@@ -20,14 +27,13 @@ function getOldDate (hoursAgo) {
   return date
 }
 
-const oldDate = getOldDate(config.feeds.hoursUntilFail + 2)
-const recentDate = getOldDate(config.feeds.hoursUntilFail - 1)
+const oldDate = getOldDate(config.get().feeds.hoursUntilFail + 2)
+const recentDate = getOldDate(config.get().feeds.hoursUntilFail - 1)
 
 describe('Int::structs/db/FailRecord Database', function () {
   /** @type {import('mongoose').Collection} */
   let collection
   beforeAll(async function () {
-    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
     collection = mongoose.connection.db.collection('fail_records')

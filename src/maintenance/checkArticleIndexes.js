@@ -1,8 +1,9 @@
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const { model, schema } = require('../models/Article.js')
 const INDEX_NAME = 'addedAt_1'
 
 async function checkIndexes (articlesExpire) {
+  const config = getConfig()
   if (!config.database.uri.startsWith('mongo')) {
     return
   }

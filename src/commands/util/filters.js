@@ -1,4 +1,9 @@
-const config = require('../../config.js')
+
+const MenuUtils = require('../../structs/MenuUtils.js')
+const Translator = require('../../structs/Translator.js')
+const Subscriber = require('../../structs/db/Subscriber.js')
+const getConfig = require('../../config.js').get
+const createLogger = require('../../util/logger/create.js')
 const filterTypes = [
   { show: 'Title', use: 'title' },
   { show: 'Description', use: 'description' },
@@ -6,10 +11,6 @@ const filterTypes = [
   { show: 'Author', use: 'author' },
   { show: 'Tags', use: 'tags' }
 ]
-const MenuUtils = require('../../structs/MenuUtils.js')
-const Translator = require('../../structs/Translator.js')
-const Subscriber = require('../../structs/db/Subscriber.js')
-const createLogger = require('../../util/logger/create.js')
 
 // BEGIN ADD FUNCTIONS
 
@@ -51,6 +52,7 @@ async function selectCategoryFn (m, data) {
 async function inputFilterFn (m, data) {
   const { profile, feed, role, user, target, chosenFilterType } = data
   const input = m.content
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const locale = profile ? profile.locale : undefined
   const translator = new Translator(locale)
@@ -204,6 +206,7 @@ async function removeFilterFn (m, data) {
   const locale = profile ? profile.locale : undefined
   const translator = new Translator(locale)
   const translate = translator.translate.bind(translator)
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   // Select the word/phrase filter here from that filter category
   const removeList = m.content.trim().split('\n').map(item => item.trim()).filter((item, index, self) => item && index === self.indexOf(item)) // Items to be removed

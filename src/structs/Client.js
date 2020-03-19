@@ -1,16 +1,17 @@
 process.env.DRSS = true
 const Discord = require('discord.js')
+const EventEmitter = require('events')
 const listeners = require('../util/listeners.js')
 const initialize = require('../util/initialization.js')
-const config = require('../config.js')
+const maintenance = require('../maintenance/index.js')
+const ipc = require('../util/ipc.js')
 const Profile = require('./db/Profile.js')
 const ArticleMessage = require('./ArticleMessage.js')
 const storage = require('../util/storage.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const connectDb = require('../util/connectDatabase.js')
-const EventEmitter = require('events')
-const ipc = require('../util/ipc.js')
-const maintenance = require('../maintenance/index.js')
+
 const DISABLED_EVENTS = [
   'TYPING_START',
   'MESSAGE_DELETE',
@@ -74,6 +75,7 @@ class Client extends EventEmitter {
     const bot = this.bot
     bot.on('error', err => {
       this.log.warn(`Websocket error`, err)
+      const config = getConfig()
       if (config.bot.exitOnSocketIssues === true) {
         this.log.warn('Stopping all processes due to config.bot.exitOnSocketIssues')
         ipc.send(ipc.TYPES.KILL)
@@ -87,6 +89,7 @@ class Client extends EventEmitter {
     })
     bot.on('disconnect', () => {
       this.log.warn(`SH ${this.shardID} Websocket disconnected`)
+      const config = getConfig()
       if (config.bot.exitOnSocketIssues === true) {
         this.log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
         ipc.send(ipc.TYPES.KILL)
@@ -111,6 +114,7 @@ class Client extends EventEmitter {
           case ipc.TYPES.START_INIT:
             const data = message.data
             if (data.setPresence) {
+              const config = getConfig()
               bot.user.setPresence({
                 status: config.bot.status,
                 activity: {
@@ -169,6 +173,7 @@ class Client extends EventEmitter {
   }
 
   async sendChannelAlert (channel, message, alert) {
+    const config = getConfig()
     if (config.dev === true) {
       return
     }
@@ -187,6 +192,7 @@ class Client extends EventEmitter {
   }
 
   async sendUserAlert (channel, message) {
+    const config = getConfig()
     if (config.dev === true) {
       return
     }
@@ -211,6 +217,7 @@ class Client extends EventEmitter {
     if (this.state === STATES.STARTING || this.state === STATES.READY) {
       return this.log.warn(`Ignoring start command because of ${this.state} state`)
     }
+    const config = getConfig()
     this.state = STATES.STARTING
     await listeners.enableCommands(this.bot)
     this.log.info(`Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)

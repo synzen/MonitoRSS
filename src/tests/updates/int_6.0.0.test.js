@@ -9,7 +9,16 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-jest.mock('../../config.js')
+jest.mock('../../config.js', () => ({
+  get: () => ({
+    database: {
+      uri: 'mongodb://'
+    },
+    feeds: {
+      hoursUntilFail: 24
+    }
+  })
+}))
 
 function getOldDate (hoursAgo) {
   // https://stackoverflow.com/questions/1050720/adding-hours-to-javascript-date-object
@@ -19,9 +28,10 @@ function getOldDate (hoursAgo) {
 }
 
 describe('Int::scripts/updates/6.0.0 Database', function () {
+  const uri = `mongodb://localhost/${dbName}`
   beforeAll(async function () {
-    config.database.uri = 'mongodb://'
-    await mongoose.connect(`mongodb://localhost/${dbName}`, CON_OPTIONS)
+    process.env.DRSS_DATABASE_URI = uri
+    await mongoose.connect(uri, CON_OPTIONS)
   })
   beforeEach(async function () {
     await mongoose.connection.db.dropDatabase()
@@ -55,7 +65,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       const record = await mongoose.connection.collection('fail_records').findOne({
         url: failedLink.link
       })
-      const cutoff = getOldDate(config.feeds.hoursUntilFail)
+      const cutoff = getOldDate(config.get().feeds.hoursUntilFail)
       expect(record.failedAt < cutoff)
     })
     it('sets a new date for not-yet-failed links', async function () {
@@ -67,7 +77,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       const record = await mongoose.connection.collection('fail_records').findOne({
         url: failedLink.link
       })
-      const cutoff = getOldDate(config.feeds.hoursUntilFail)
+      const cutoff = getOldDate(config.get().feeds.hoursUntilFail)
       expect(record.failedAt > cutoff)
     })
   })

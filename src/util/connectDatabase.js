@@ -1,13 +1,14 @@
 const fs = require('fs')
-const config = require('../config.js')
 const mongoose = require('mongoose')
 mongoose.set('useCreateIndex', true)
 const createLogger = require('./logger/create.js')
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
 const storage = require('./storage.js')
-const CON_SETTINGS = typeof config.database.connection === 'object' ? config.database.connection : {}
+const getConfig = require('../config.js').get
 
 module.exports = async (shardID, skipRedis) => {
+  const config = getConfig()
+  const connectionSettings = config.database.connection || {}
   const log = createLogger(shardID)
   const uri = config.database.uri
   if (!uri.startsWith('mongo')) { // Databaseless configuration
@@ -18,10 +19,10 @@ module.exports = async (shardID, skipRedis) => {
 
   return new Promise((resolve, reject) => {
     const buffers = {}
-    if (Object.keys(CON_SETTINGS).length > 0) {
+    if (Object.keys(connectionSettings).length > 0) {
       for (var x = 0; x < BUFFER_CONFIGS.length; ++x) {
         const name = BUFFER_CONFIGS[x]
-        if (CON_SETTINGS[name]) buffers[name] = fs.readFileSync(CON_SETTINGS[name])
+        if (connectionSettings[name]) buffers[name] = fs.readFileSync(connectionSettings[name])
       }
     }
 
@@ -32,7 +33,7 @@ module.exports = async (shardID, skipRedis) => {
         useFindAndModify: false,
         useUnifiedTopology: true,
         useNewUrlParser: true,
-        ...CON_SETTINGS,
+        ...connectionSettings,
         ...buffers
       }
       mongoose.connect(uri, options) // Environment variable in Docker container if available
@@ -56,6 +57,7 @@ module.exports = async (shardID, skipRedis) => {
 }
 
 function connectRedis () {
+  const config = getConfig()
   return new Promise((resolve, reject) => {
     storage.redisClient = require('redis').createClient(config.database.redis)
     storage.redisClient.once('ready', resolve)

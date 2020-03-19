@@ -1,13 +1,14 @@
-const config = require('../config.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 async function feedSelectorFn (m, data) {
   const { feed, profile, locale } = data
+  const config = getConfig()
   let currentMsg = ''
   if (feed.text) {
     currentMsg = '```Markdown\n' + feed.text + '```'
@@ -57,6 +58,7 @@ module.exports = async (message, command) => {
     return
   }
   const { setting, feed } = data
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
   const log = createLogger(message.guild.shard.id)

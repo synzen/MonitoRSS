@@ -1,4 +1,3 @@
-const logLinkErrs = require('../config.js').log.linkErrs
 const connectDb = require('../util/connectDatabase.js')
 const createLogger = require('./logger/create.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
@@ -6,7 +5,6 @@ const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('../structs/LinkLogic.js')
 const databaseFuncs = require('../util/database.js')
-const config = require('../config.js')
 
 async function fetchFeed (headers, url, log) {
   if (log) {
@@ -84,7 +82,7 @@ async function syncDatabase (articleList, databaseDocs, feeds, meta, isDatabasel
 }
 
 async function getFeed (data, log) {
-  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum } = data
+  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config } = data
   const isDatabaseless = !!memoryCollections
   const urlLog = toDebug ? log.child({
     url: link
@@ -151,7 +149,7 @@ async function getFeed (data, log) {
     }
     process.send({ status: 'failed', link, rssList })
     if (err instanceof RequestError || err instanceof FeedParserError) {
-      if (logLinkErrs) {
+      if (config.log.linkErrs) {
         log.warn({
           error: err
         }, `Skipping ${link}`)

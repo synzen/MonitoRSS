@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const config = require('../../src/config.js')
+const getConfig = require('../../src/config.js').get
 const mongoose = require('mongoose')
 const Profile = require('../../src/structs/db/Profile.js')
 const Feed = require('../../src/structs/db/Feed.js')
@@ -72,6 +72,7 @@ async function updateVIP (vip) {
 }
 
 async function updateFailRecords (doc) {
+  const config = getConfig()
   const insert = {
     url: doc.link
   }
@@ -202,12 +203,11 @@ async function updateProfiles (guildRss) {
   await guildData.restore()
 }
 
-async function getProfiles (databaseless) {
+async function getProfiles (databaseless, uri) {
   if (databaseless) {
-    const folder = config.database.uri
-    const names = fs.readdirSync(folder)
+    const names = fs.readdirSync(uri)
     return names.map(n => {
-      const json = JSON.parse(fs.readFileSync(path.join(folder, n)))
+      const json = JSON.parse(fs.readFileSync(path.join(uri, n)))
       json._id = json.id
       return json
     })
@@ -216,7 +216,7 @@ async function getProfiles (databaseless) {
   }
 }
 
-async function startProfiles (databaseless) {
+async function startProfiles (databaseless, uri) {
   console.log('Starting profile migration')
   const guildRssList = await getProfiles(databaseless)
   let c = 0

@@ -1,5 +1,4 @@
 process.env.TEST_ENV = true
-const config = require('../../config.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_pruneArticles'
 const pruneArticles = require('../../maintenance/pruneArticles.js')
@@ -9,11 +8,16 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-jest.mock('../../config.js')
+jest.mock('../../config.js', () => ({
+  get: () => ({
+    database: {
+      uri: 'mongodb://'
+    }
+  })
+}))
 
 describe('Int::maintenance/pruneArticles', function () {
   beforeAll(async function () {
-    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
   })
   beforeEach(async function () {

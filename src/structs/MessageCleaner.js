@@ -1,4 +1,4 @@
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -11,6 +11,7 @@ class MessageCleaner {
      * @memberof MessageCleaner
      */
   constructor (message) {
+    const config = getConfig()
     const guildBot = message.guild.me
     this.channel = message.channel
     this._messageList = []

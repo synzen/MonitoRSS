@@ -1,7 +1,7 @@
-const config = require('../../config.js')
 const Base = require('./Base.js')
 const Supporter = require('./Supporter.js')
 const ProfileModel = require('../../models/Profile.js').model
+const getConfig = require('../../config.js').get
 
 class Profile extends Base {
   /**
@@ -82,6 +82,7 @@ class Profile extends Base {
    */
   static async getFeedLimit (guildID) {
     const supporter = await Supporter.getValidSupporterOfGuild(guildID)
+    const config = getConfig()
     if (supporter) {
       return supporter.getMaxFeeds()
     } else {

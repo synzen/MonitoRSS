@@ -1,9 +1,10 @@
 const Joi = require('@hapi/joi')
 const moment = require('moment-timezone')
-const config = require('../../../../config.js')
 const Translator = require('../../../../structs/Translator.js')
+const getConfig = require('../../../../config.js').get
 
 module.exports = Joi.extend(joi => {
+  const config = getConfig()
   return {
     base: joi.string().allow('').trim(),
     type: 'profile',

@@ -1,6 +1,6 @@
-const config = require('../config.js')
 const Discord = require('discord.js')
 const Article = require('./Article.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -19,6 +19,7 @@ class ArticleMessage {
     if (!article._feed) {
       throw new Error('article._feed property missing')
     }
+    this.config = getConfig()
     this.log = createLogger(bot.shard.ids[0])
     this.debug = debug
     this.skipFilters = skipFilters
@@ -30,7 +31,7 @@ class ArticleMessage {
     this.filters = this.feed.filters
     this.rfilters = this.feed.rfilters
     this.filteredFormats = this.feed.filteredFormats
-    this.toggleRoleMentions = config.feeds.toggleRoleMentions
+    this.toggleRoleMentions = this.config.feeds.toggleRoleMentions
     if (typeof this.feed.toggleRoleMentions === 'boolean') {
       this.toggleRoleMentions = this.feed.toggleRoleMentions
     }
@@ -71,7 +72,7 @@ class ArticleMessage {
 
   _determineFormat () {
     const { feed, filteredFormats, parsedArticle } = this
-    let text = feed.text || config.feeds.defaultText
+    let text = feed.text || this.config.feeds.defaultText
     let embeds = feed.embeds
 
     // See if there are any filter-specific messages
@@ -253,7 +254,7 @@ class ArticleMessage {
     } else {
       let convert = text
       if (text === '{empty}') {
-        convert = config.feeds.defaultText
+        convert = this.config.feeds.defaultText
       }
       useText = parsedArticle.convertKeywords(convert, ignoreLimits)
     }
@@ -293,7 +294,7 @@ class ArticleMessage {
     }
     await this._resolveWebhook()
     if (!this.passedFilters()) {
-      if (config.log.unfiltered === true || this.debug) {
+      if (this.config.log.unfiltered === true || this.debug) {
         this.log.info({
           channel: this.channel
         }, `'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`)

@@ -1,9 +1,9 @@
-const config = require('../config.js')
 const moment = require('moment-timezone')
 const MenuUtils = require('../structs/MenuUtils.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 async function selectOptionFn (m, data) {
@@ -77,7 +77,7 @@ module.exports = async (message) => {
   if (feeds.length === 0) {
     await message.channel.send(translate('commands.date.noFeeds'))
   }
-
+  const config = getConfig()
   const selectOption = new MenuUtils.Menu(message, selectOptionFn).setAuthor('Date Customizations')
     .setDescription(translate('commands.date.description'))
     .addOption(translate('commands.date.optionChangeTimezone'), `${translate('generics.defaultSetting', { value: config.feeds.timezone })} ${profile.timezone ? translate('commands.date.optionCurrentSetting', { value: profile.timezone }) : ''}`)

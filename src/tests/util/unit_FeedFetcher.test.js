@@ -9,7 +9,11 @@ const Readable = require('stream').Readable
 
 jest.mock('node-fetch')
 jest.mock('cloudscraper')
-jest.mock('../../config.js')
+jest.mock('../../config.js', () => ({
+  get: jest.fn(() => ({
+    _vip: false
+  }))
+}))
 jest.mock('../../structs/ArticleIDResolver.js')
 jest.mock('../../structs/Article.js')
 jest.mock('../../structs/DecodedFeedParser.js')
@@ -18,7 +22,9 @@ describe('Unit::FeedFetcher', function () {
   afterEach(function () {
     jest.restoreAllMocks()
     fetch.mockReset()
-    config._vip = false
+    config.get.mockReturnValue({
+      _vip: false
+    })
   })
   it('throws an error if it is instantiated', function () {
     expect(() => new FeedFetcher()).toThrowError()
@@ -195,29 +201,29 @@ describe('Unit::FeedFetcher', function () {
         return expect(FeedFetcher.fetchURL('abc', {}, true)).rejects.toBeInstanceOf(RequestError)
       })
       it('throws a RequestError with an unsupported Cloudflare message if cloudflare and config._vip is true', function (done) {
-        const origVal = config._vip
-        config._vip = true
+        config.get.mockReturnValue({
+          _vip: true
+        })
         fetch
           .mockResolvedValueOnce({ status: 403, headers: { get: () => ['cloudflare'] } })
         FeedFetcher.fetchURL('abc', {}, true)
           .then(() => done(new Error('Promise resolved')))
           .catch(err => {
             expect(err).toBeInstanceOf(RequestError)
-            config._vip = origVal
             done()
           })
           .catch(done)
       })
       it('attaches the error code to the error thrown if cloudflare and config._vip is true', function (done) {
-        const origVal = config._vip
-        config._vip = true
+        config.get.mockReturnValue({
+          _vip: true
+        })
         fetch
           .mockResolvedValueOnce({ status: 403, headers: { get: () => ['cloudflare'] } })
         FeedFetcher.fetchURL('abc', {}, true)
           .then(() => done(new Error('Promise resolved')))
           .catch(err => {
             expect(err.code).toEqual(FeedFetcher.REQUEST_ERROR_CODE)
-            config._vip = origVal
             done()
           })
           .catch(done)

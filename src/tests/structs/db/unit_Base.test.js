@@ -20,11 +20,15 @@ const fsPromisesRmdir = fsPromises.rmdir
 
 jest.mock('mongoose')
 jest.mock('../../../config.js', () => ({
-  database: {},
-  log: {}
+  get: jest.fn()
 }))
 
 describe('Unit::structs/db/Base', function () {
+  beforeEach(function () {
+    config.get.mockReturnValue({
+      database: {}
+    })
+  })
   afterEach(function () {
     jest.restoreAllMocks()
     MockModel.mockClear()
@@ -61,17 +65,26 @@ describe('Unit::structs/db/Base', function () {
   })
   describe('static get isMongoDatabase', function () {
     it('calls startsWith', function () {
-      const original = config.database.uri
-      config.database.uri = { startsWith: jest.fn() }
+      const startsWith = jest.fn()
+      config.get.mockReturnValue({
+        database: {
+          uri: {
+            startsWith
+          }
+        }
+      })
       void BasicBase.isMongoDatabase
-      expect(config.database.uri.startsWith).toHaveBeenCalled()
-      config.database.uri = original
+      expect(startsWith).toHaveBeenCalled()
     })
   })
   describe('static getFolderPaths', function () {
     it('returns correctly', function () {
-      const original = config.database.uri
-      config.database.uri = 'abc'
+      const databaseURI = 'abc'
+      config.get.mockReturnValue({
+        database: {
+          uri: databaseURI
+        }
+      })
       const collectionName = 'def'
       const spy = jest.spyOn(BasicBase, 'Model', 'get').mockReturnValue({
         collection: {
@@ -80,11 +93,10 @@ describe('Unit::structs/db/Base', function () {
       })
       const result = BasicBase.getFolderPaths()
       expect(result).toEqual([
-        config.database.uri,
-        path.join(config.database.uri, collectionName)
+        databaseURI,
+        path.join(databaseURI, collectionName)
       ])
       spy.mockRestore()
-      config.database.uri = original
     })
   })
   describe('static getField', function () {

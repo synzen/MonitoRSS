@@ -1,9 +1,9 @@
 const fs = require('fs')
 const path = require('path')
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const log = createLogger()
-const defaultLocale = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', config.bot.locale + '.json')))
+const defaultLocale = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'locales', 'en-US.json')))
 const localesData = new Map()
 const fileList = fs.readdirSync(path.join(__dirname, '..', 'locales'))
 for (const file of fileList) {
@@ -16,7 +16,11 @@ function escapeRegExp (str) {
 }
 
 class Translator {
-  constructor (locale = config.bot.locale) {
+  constructor (locale) {
+    const config = getConfig()
+    if (!locale) {
+      locale = config.bot.locale
+    }
     /**
      * Locale string
      * @type {string}
@@ -81,7 +85,11 @@ class Translator {
    * @param {string} locale
    * @returns {Object.<string, object>}
    */
-  static getCommandDescriptions (locale = config.bot.locale) {
+  static getCommandDescriptions (locale) {
+    const config = getConfig()
+    if (!locale) {
+      locale = config.bot.locale
+    }
     return this.LOCALES_DATA.get(locale).commandDescriptions
   }
 
@@ -92,7 +100,11 @@ class Translator {
    * @param {Object.<string, number|string>} [params] - Keys to replace in the string
    * @returns {string}
    */
-  static translate (string, locale = config.bot.locale, params) {
+  static translate (string, locale, params) {
+    const config = getConfig()
+    if (!locale) {
+      locale = config.bot.locale
+    }
     if (typeof string !== 'string') {
       throw new TypeError('string is not a string')
     }

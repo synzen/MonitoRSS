@@ -3,8 +3,8 @@ const path = require('path')
 const Discord = require('discord.js')
 const createLogger = require('./logger/create.js')
 const channelTracker = require('../util/channelTracker.js')
-const config = require('../config.js')
 const storage = require('./storage.js')
+const getConfig = require('../config.js').get
 const MANAGE_CHANNELS_PERM = Discord.Permissions.FLAGS.MANAGE_CHANNELS
 const EMBED_LINKS_PERM = Discord.Permissions.FLAGS.EMBED_LINKS
 const MANAGE_ROLES_OR_PERMISSIONS_PERM = Discord.Permissions.FLAGS.MANAGE_ROLES
@@ -152,11 +152,13 @@ const list = {
 
 exports.list = list
 exports.has = message => {
+  const config = getConfig()
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   return list.hasOwnProperty(first.substr(prefix.length))
 }
 exports.run = async message => {
+  const config = getConfig()
   const log = createLogger(message.guild.shard.id)
   const bot = message.client
   const first = message.content.split(' ')[0]
@@ -247,6 +249,7 @@ exports.run = async message => {
 }
 
 exports.runOwner = async message => {
+  const config = getConfig()
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   const command = first.substr(prefix.length)

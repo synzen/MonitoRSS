@@ -8,11 +8,15 @@ const {
   createNext
 } = require('../../../mocks/express.js')
 
-jest.mock('../../../../../config.js')
+jest.mock('../../../../../config.js', () => ({
+  get: () => ({
+    web: {
+      clientID: 'abc123'
+    }
+  })
+}))
 jest.mock('../../../../util/createError.js')
 jest.mock('../../../../services/user.js')
-
-config.web.clientID = 'abc123'
 
 describe('Unit::controllers/api/users/getBot', function () {
   afterEach(function () {
@@ -31,15 +35,16 @@ describe('Unit::controllers/api/users/getBot', function () {
     userServices.getUser.mockResolvedValue()
     const res = createResponse()
     const next = createNext()
+    const clientID = config.get().web.clientID
     await getBot({}, res, next)
     expect(userServices.getUser)
       .toHaveBeenCalledTimes(1)
     expect(userServices.getUser)
-      .toHaveBeenCalledWith(config.web.clientID)
+      .toHaveBeenCalledWith(clientID)
   })
   it('sends the right response if bot not found', async function () {
     userServices.getUser.mockResolvedValue(null)
-    const createdError = {s: 1}
+    const createdError = { s: 1 }
     createError.mockReturnValue(createdError)
     const json = jest.fn()
     const res = {

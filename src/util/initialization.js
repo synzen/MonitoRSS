@@ -1,9 +1,9 @@
-const config = require('../config.js')
 const storage = require('./storage.js')
 const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Profile = require('../structs/db/Profile.js')
 const redisIndex = require('../structs/db/Redis/index.js')
+const getConfig = require('../config.js').get
 
 async function populatePefixes () {
   const profiles = await Profile.getAll()
@@ -21,6 +21,7 @@ async function populatePefixes () {
  * @returns {Schedule[]}
  */
 async function populateSchedules (customSchedules = {}) {
+  const config = getConfig()
   await Schedule.deleteAll()
   const schedules = []
   const defaultSchedule = new Schedule({

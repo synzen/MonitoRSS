@@ -2,7 +2,13 @@ process.env.TEST_ENV = true
 const Patron = require('../../../structs/db/Patron.js')
 const config = require('../../../config.js')
 
-jest.mock('../../../config.js')
+jest.mock('../../../config.js', () => ({
+  get: () => ({
+    feeds: {
+      max: 3.5
+    }
+  })
+}))
 
 describe('Unit::structs/db/Patron', function () {
   afterEach(function () {
@@ -69,18 +75,11 @@ describe('Unit::structs/db/Patron', function () {
     })
   })
   describe('determineMaxFeeds', function () {
-    let oMax = config.feeds.max
-    let max = 3.5
-    beforeAll(function () {
-      config.feeds.max = max
-    })
-    afterAll(function () {
-      config.feeds.max = oMax
-    })
     describe('inactive patron', function () {
       it('returns config.feeds.max', function () {
         jest.spyOn(Patron.prototype, 'isActive').mockReturnValue(false)
         const patron = new Patron({ ...initData })
+        const max = config.get().feeds.max
         expect(patron.determineMaxFeeds()).toEqual(max)
       })
     })
@@ -119,6 +118,7 @@ describe('Unit::structs/db/Patron', function () {
       it('returns default for < 250 for pledge', function () {
         const patron = new Patron({ ...initData })
         patron.pledge = 249
+        const max = config.get().feeds.max
         expect(patron.determineMaxFeeds()).toEqual(max)
       })
     })

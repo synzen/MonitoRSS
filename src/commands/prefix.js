@@ -1,7 +1,7 @@
-const config = require('../config.js')
 const storage = require('../util/storage.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message) => {
@@ -12,7 +12,9 @@ module.exports = async (message) => {
   if (!prefix) {
     return message.channel.send(translate('commands.prefix.helpText'))
   }
+
   // Reset
+  const config = getConfig()
   if (prefix === 'reset') {
     if (!profile || !profile.prefix) {
       return message.channel.send(translate('commands.prefix.resetNone'))

@@ -1,8 +1,7 @@
-// Create a single client
-
 const DiscordRSS = require('./src/index.js')
-const path = require('path')
+const passedConfig = JSON.parse(process.env.DRSS_CONFIG)
+const config = require('./src/config.js').set(passedConfig)
 
 const drss = new DiscordRSS.Client()
 
-drss.login(require(path.join(__dirname, 'src', 'config.js')).bot.token)
+drss.login(config.bot.token)

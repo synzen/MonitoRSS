@@ -1,4 +1,4 @@
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const TEST_ENV = process.env.NODE_ENV === 'test'
 if (!TEST_ENV) process.env.NODE_ENV = 'production'
 const morgan = require('morgan')
@@ -12,18 +12,19 @@ const storage = require('../util/storage.js')
 const requestIp = require('request-ip')
 const createLogger = require('../util/logger/create.js')
 const log = createLogger('W')
-
 const app = express()
-const credentials = {
-  client: {
-    id: config.web.clientID,
-    secret: config.web.clientSecret
-  },
-  auth: discordAPIConstants.auth
-}
-const oauth2 = require('simple-oauth2').create(credentials)
 
 module.exports = () => {
+  const config = getConfig()
+  const credentials = {
+    client: {
+      id: config.web.clientID,
+      secret: config.web.clientSecret
+    },
+    auth: discordAPIConstants.auth
+  }
+  const oauth2 = require('simple-oauth2').create(credentials)
+
   if (config.web.trustProxy) {
     app.enable('trust proxy')
   }

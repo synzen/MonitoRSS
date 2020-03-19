@@ -1,4 +1,4 @@
-const config = require('../../config.js')
+const getConfig = require('../../config.js').get
 const packageJSON = require('../../../package.json')
 
 exports.common = {
@@ -16,9 +16,12 @@ exports.user = accessToken => {
   }
 }
 
-exports.bot = {
-  headers: {
-    ...exports.common.headers,
-    'Authorization': `Bot ${config.bot.token}`
+exports.bot = () => {
+  const config = getConfig()
+  return {
+    headers: {
+      ...exports.common.headers,
+      'Authorization': `Bot ${config.bot.token}`
+    }
   }
 }

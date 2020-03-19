@@ -1,8 +1,8 @@
-const config = require('../config.js')
 const channelTracker = require('../util/channelTracker.js')
 const pageControls = require('../util/pageControls.js')
 const { Menu, MenuOptionError } = require('./MenuUtils.js')
 const Translator = require('./Translator.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const MULTI_SELECT = ['rssremove', 'rssmove']
 const GLOBAL_SELECT = ['rssmove']
@@ -193,6 +193,7 @@ class FeedSelector extends Menu {
         let decision = ''
 
         // Global setting
+        const config = getConfig()
         if (config.feeds[miscOption]) {
           decision = `${statusText} ${this.translate('generics.enabledUpper')}\n`
         } else {

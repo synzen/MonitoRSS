@@ -1,13 +1,12 @@
 const fetch = require('node-fetch')
-const moment = require('moment')
 const discordAPIConstants = require('../constants/discordAPI.js')
 const discordAPIHeaders = require('../constants/discordAPIHeaders.js')
 const roleServices = require('./role.js')
 const RedisUser = require('../../structs/db/Redis/User.js')
 const RedisGuildMember = require('../../structs/db/Redis/GuildMember.js')
 const createLogger = require('../../util/logger/create.js')
-const config = require('../../config.js')
 const WebCache = require('../models/WebCache.js').model
+const getConfig = require('../../config.js').get
 const log = createLogger('W')
 const MANAGE_CHANNEL_PERMISSION = 16
 
@@ -85,6 +84,7 @@ async function getGuildsByAPI (id, accessToken, skipCache) {
  * @returns {Promise<boolean>}
  */
 async function hasGuildPermission (guild) {
+  const config = getConfig()
   // User permission
   const isOwner = guild.owner
   const managesChannel = (guild.permissions & MANAGE_CHANNEL_PERMISSION) === MANAGE_CHANNEL_PERMISSION
@@ -117,6 +117,7 @@ async function getMemberOfGuild (userID, guildID) {
  */
 async function isManagerOfGuild (userID, guildID) {
   const member = await getMemberOfGuild(userID, guildID)
+  const config = getConfig()
   const isBotOwner = config.bot.ownerIDs.includes(userID)
   const isManager = member && member.isManager
   if (isBotOwner || isManager) {
@@ -135,7 +136,7 @@ async function isManagerOfGuild (userID, guildID) {
  */
 async function isManagerOfGuildByAPI (userID, guildID) {
   log.general.info(`[1 DISCORD API REQUEST] [BOT] MIDDLEWARE /api/guilds/:guildId/members/:userId`)
-  const res = await fetch(`${discordAPIConstants.apiHost}/guilds/${guildID}/members/${userID}`, discordAPIHeaders.bot)
+  const res = await fetch(`${discordAPIConstants.apiHost}/guilds/${guildID}/members/${userID}`, discordAPIHeaders.bot())
   if (res.status === 200) {
     const user = await res.json()
     const roles = user.roles

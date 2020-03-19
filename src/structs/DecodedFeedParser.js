@@ -1,6 +1,6 @@
 const FeedParser = require('feedparser')
 const iconv = require('iconv-lite')
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 
 class DecodedFeedParser extends FeedParser {
   constructor (options, url) {
@@ -9,6 +9,7 @@ class DecodedFeedParser extends FeedParser {
   }
 
   _transform (chunk, encoding, done) {
+    const config = getConfig()
     if (!config.feeds.decode || !config.feeds.decode[this.url]) {
       this.stream.write(chunk)
     } else {

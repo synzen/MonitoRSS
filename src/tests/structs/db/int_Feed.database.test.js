@@ -1,5 +1,4 @@
 process.env.TEST_ENV = true
-const config = require('../../../config.js')
 const Feed = require('../../../structs/db/Feed.js')
 const FeedModel = require('../../../models/Feed.js').model
 const FilteredFormatModel = require('../../../models/FilteredFormat.js').model
@@ -12,11 +11,16 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-jest.mock('../../../config.js')
+jest.mock('../../../config.js', () => ({
+  get: () => ({
+    database: {
+      uri: 'mongodb://'
+    }
+  })
+}))
 
 describe('Int::structs/db/Feed Database', function () {
   beforeAll(async function () {
-    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
   })

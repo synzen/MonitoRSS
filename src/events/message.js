@@ -1,13 +1,7 @@
-const config = require('../config.js')
 const commands = require('../util/commands.js')
 const channelTracker = require('../util/channelTracker.js')
 const storage = require('../util/storage.js')
-
-const ownerIDs = new Set()
-
-for (const id of config.bot.ownerIDs) {
-  ownerIDs.add(id)
-}
+const getConfig = require('../config.js').get
 
 /**
  * Handle discord messages from ws
@@ -20,6 +14,7 @@ function handler (message, limited, blacklistCache) {
     return
   }
 
+  const config = getConfig()
   const command = message.content.split(' ')[0].substr(config.bot.prefix.length)
   if (command === 'forceexit') {
     return require(`../commands/forceexit.js`)(message.client, message) // To forcibly clear a channel of active menus
@@ -30,7 +25,8 @@ function handler (message, limited, blacklistCache) {
   }
 
   // Regular commands
-  if ((!limited && commands.has(message)) || (limited && ownerIDs.has(message.author.id) && commands.has(message))) {
+  const ownerIDs = config.bot.ownerIDs
+  if ((!limited && commands.has(message)) || (limited && ownerIDs.includes(message.author.id) && commands.has(message))) {
     if (storage.initialized < 2) {
       return message.channel.send(`This command is disabled while booting up, please wait.`)
         .then(m => m.delete({ timeout: 4000 }))
@@ -39,7 +35,7 @@ function handler (message, limited, blacklistCache) {
   }
 
   // Bot owner commands
-  if (ownerIDs.has(message.author.id)) {
+  if (ownerIDs.includes(message.author.id)) {
     commands.runOwner(message)
   }
 }

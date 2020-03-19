@@ -1,11 +1,12 @@
 const fs = require('fs')
-const config = require('../config.js')
 const storage = require('../util/storage.js')
 const createLogger = require('../util/logger/create.js')
 const expressApp = require('./app.js')
+const getConfig = require('../config.js').get
 const log = createLogger('W')
 
 module.exports = () => {
+  const config = getConfig()
   // Check variables
   const { port: httpPort } = config.web
   if (!storage.redisClient) {

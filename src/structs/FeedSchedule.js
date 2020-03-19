@@ -1,5 +1,4 @@
 const path = require('path')
-const config = require('../config.js')
 const Schedule = require('./db/Schedule.js')
 const FailRecord = require('./db/FailRecord.js')
 const FeedData = require('./FeedData.js')
@@ -9,8 +8,7 @@ const childProcess = require('child_process')
 const maintenance = require('../maintenance/index.js')
 const createLogger = require('../util/logger/create.js')
 const ScheduleStats = require('../structs/db/ScheduleStats.js')
-
-const BATCH_SIZE = config.advanced.batchSize
+const getConfig = require('../config.js').get
 
 class FeedSchedule extends EventEmitter {
   /**
@@ -107,9 +105,10 @@ class FeedSchedule extends EventEmitter {
    */
   _genBatchLists (debugFeedURLs) {
     let batch = {}
-
+    const config = getConfig()
+    const batchSize = config.advanced.batchSize
     this._sourceList.forEach((rssList, url) => { // rssList per url
-      if (Object.keys(batch).length >= BATCH_SIZE) {
+      if (Object.keys(batch).length >= batchSize) {
         this._regBatchList.push(batch)
         batch = {}
       }
@@ -244,9 +243,9 @@ class FeedSchedule extends EventEmitter {
    * @param {Set<string>} debugFeedURLs
    */
   _getBatchParallel (debugFeedIDs, debugFeedURLs) {
+    const config = getConfig()
     const totalBatchLengths = this._regBatchList.length
     let completedBatches = 0
-
     let willCompleteBatch = 0
     let regIndices = this._regBatchList.map((batch, index) => index)
 

@@ -1,6 +1,6 @@
-const config = require('../config.js')
 const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
+const getConfig = require('../config.js').get
 const log = createLogger()
 
 /**
@@ -12,6 +12,7 @@ const log = createLogger()
  * @returns {number} object.disabled - Number of disabled feeds
  */
 async function checkLimits (feeds, supporterLimits) {
+  const config = getConfig()
   const feedCounts = new Map()
   const enabled = []
   const disabled = []

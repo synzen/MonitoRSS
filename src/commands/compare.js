@@ -3,7 +3,7 @@ const MenuUtils = require('../structs/MenuUtils.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -34,6 +34,7 @@ function getInvalidInputs (str) {
 module.exports = async (message, command) => {
   const profile = await Profile.get(message.guild.id)
   const guildLocale = profile ? profile.locale : undefined
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const translate = Translator.createLocaleTranslator(guildLocale)
   const arr = message.content.split(' ')

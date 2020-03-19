@@ -1,12 +1,12 @@
 const Discord = require('discord.js')
 const filters = require('./util/filters.js')
-const config = require('../config.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Subscriber = require('../structs/db/Subscriber.js')
 const Feed = require('../structs/db/Feed.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const VALID_OPTIONS = ['1', '2', '3', '4']
 
@@ -14,6 +14,7 @@ async function printSubscriptions (message, feeds, translate) {
   /** @type {Discord.Guild} */
   const guild = message.guild
   const subList = {}
+  const config = getConfig()
   const msg = new Discord.MessageEmbed()
     .setColor(config.bot.menuColor)
     .setDescription(translate('commands.mention.listSubscriptionsDescription'))
@@ -101,6 +102,7 @@ async function deleteSubscription (message, profile, feeds, role, user) {
   const roleID = role ? role.id : undefined
   const userID = user ? user.id : undefined
   const matchID = roleID || userID
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const locale = profile ? profile.locale : undefined
   const translate = Translator.createLocaleTranslator(locale)
@@ -159,6 +161,7 @@ async function addGlobalSub (message, profile, feed, role, user, translate) {
     await subscriber.save()
   }
 
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const log = createLogger(message.guild.shard.id)
   const logBindings = {
@@ -183,6 +186,7 @@ async function removeGlobalSub (message, profile, feed, role, user, translate) {
   if (subscribers.length === 0) {
     return message.channel.send(translate('commands.mention.removeAnySubscriberNone', { link: feed.url }))
   }
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const matchID = role ? role.id : user.id
   const found = subscribers.find(sub => sub.id === matchID && !sub.hasFilters())
@@ -334,6 +338,7 @@ module.exports = async (message, command) => {
   if (feeds.length === 0) {
     return message.channel.send(translate('commands.mention.noFeeds'))
   }
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
   const selectOption = new MenuUtils.Menu(message, selectOptionFn)

@@ -1,5 +1,4 @@
 process.env.TEST_ENV = true
-const config = require('../../../config.js')
 const mongoose = require('mongoose')
 const Blacklist = require('../../../structs/db/Blacklist.js')
 const dbName = 'test_int_blacklists'
@@ -9,13 +8,18 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-jest.mock('../../../config.js')
+jest.mock('../../../config.js', () => ({
+  get: () => ({
+    database: {
+      uri: 'mongodb://'
+    }
+  })
+}))
 
 describe('Int::structs/db/Blacklist Database', function () {
   /** @type {import('mongoose').Collection} */
   let collection
   beforeAll(async function () {
-    config.database.uri = 'mongodb://'
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
     collection = mongoose.connection.db.collection('blacklists')

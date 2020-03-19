@@ -1,7 +1,7 @@
 const Base = require('./Base')
-const config = require('../../config.js')
 const Patron = require('./Patron.js')
 const SupporterModel = require('../../models/Supporter.js').model
+const getConfig = require('../../config.js').get
 
 class Supporter extends Base {
   constructor (data, _saved) {
@@ -57,6 +57,7 @@ class Supporter extends Base {
   }
 
   static get schedule () {
+    const config = getConfig()
     return {
       name: 'supporter',
       refreshRateMinutes: config._vipRefreshRateMinutes
@@ -67,6 +68,7 @@ class Supporter extends Base {
    * @returns {boolean}
    */
   static get enabled () {
+    const config = getConfig()
     return config._vip === true
   }
 
@@ -159,6 +161,7 @@ class Supporter extends Base {
    * @returns {number}
    */
   async getMaxFeeds () {
+    const config = getConfig()
     let patron
     if (this.patron) {
       patron = await Patron.getBy('discord', this._id)

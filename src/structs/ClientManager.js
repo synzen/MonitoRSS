@@ -1,6 +1,5 @@
 process.env.DRSS = true
 const Discord = require('discord.js')
-const config = require('../config.js')
 const connectDb = require('../util/connectDatabase.js')
 const Patron = require('./db/Patron.js')
 const Supporter = require('./db/Supporter.js')
@@ -10,20 +9,25 @@ const maintenance = require('../maintenance/index.js')
 const initialize = require('../util/initialization.js')
 const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
+const configuration = require('../config.js')
+const setConfig = configuration.set
+const getConfig = configuration.get
 
 /**
  * @typedef {Object} ClientManagerOptions
  * @property {Object<string, Object<string, any>>} schedules
  * @property {boolean} setPresence
- * @property {string} logFile
+ * @property {string} config
  */
 
 class ClientManager extends EventEmitter {
   /**
    * @param {ClientManagerOptions} options
    */
-  constructor (options) {
+  constructor (options = {}) {
     super()
+    this.config = setConfig(options.config)
+    process.env.DRSS_CONFIG = JSON.stringify(this.config)
     this.log = createLogger('M')
     this.setPresence = options ? options.setPresence : false
     this.customSchedules = options ? options.schedules : {}
@@ -114,6 +118,7 @@ class ClientManager extends EventEmitter {
   }
 
   static validateCustomSchedules (customSchedules) {
+    const config = getConfig()
     const addedRates = new Set()
     addedRates.add(config.feeds.refreshRateMinutes)
     for (const name in customSchedules) {
@@ -128,12 +133,15 @@ class ClientManager extends EventEmitter {
     }
   }
 
-  async run (shardCount = config.advanced.shards) {
+  async run (shardCount = 1) {
+    if (!shardCount) {
+      shardCount = this.config.advanced.shards
+    }
     try {
       await connectDb('M')
       const schedules = await initialize.populateSchedules(this.customSchedules)
       this.scheduleManager.addSchedules(schedules)
-      if (config.web.enabled === true && config.database.redis && Supporter.isMongoDatabase) {
+      if (this.config.web.enabled === true && this.config.database.redis && Supporter.isMongoDatabase) {
         require('../web/index.js')()
       }
       this.shardingManager.spawn(shardCount, 5500, -1)

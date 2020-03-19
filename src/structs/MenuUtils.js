@@ -1,10 +1,10 @@
 const MessageEmbed = require('discord.js').MessageEmbed
-const config = require('../config.js')
 const channelTracker = require('../util/channelTracker.js')
 const MessageCleaner = require('./MessageCleaner.js')
 const pageControls = require('../util/pageControls.js')
 const MenuOptionError = require('./errors/MenuOptionError.js')
 const Translator = require('./Translator.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -25,6 +25,7 @@ class Menu {
    * @memberof Menu
    */
   constructor (message, fn, settings) {
+    const config = getConfig()
     this.maxPerPage = settings && typeof settings.maxPerPage === 'number' && settings.maxPerPage > 0 && settings.maxPerPage <= 10 ? settings.maxPerPage : 7
     this.message = message
     this.channel = message.channel
@@ -53,6 +54,7 @@ class Menu {
    * @memberof Menu
    */
   _embedExists () {
+    const config = getConfig()
     if (this._pageNum === 0 && !this._curPage) {
       this.pages[0] = new MessageEmbed().setColor(config.bot.menuColor)
       this._curPage = this.pages[0]

@@ -1,9 +1,9 @@
 const mongoose = require('mongoose')
-const config = require('../../config.js')
 const fs = require('fs')
 const fsPromises = fs.promises
 const path = require('path')
 const createLogger = require('../../util/logger/create.js')
+const getConfig = require('../../config.js').get
 const log = createLogger('-')
 
 /**
@@ -79,6 +79,7 @@ class Base {
    * @returns {boolean}
    */
   static get isMongoDatabase () {
+    const config = getConfig()
     return config.database.uri.startsWith('mongo')
   }
 
@@ -88,6 +89,7 @@ class Base {
    * @returns {string[]}
    */
   static getFolderPaths () {
+    const config = getConfig()
     const folderPath = config.database.uri
     const subfolderPath = path.join(folderPath, this.Model.collection.collectionName)
     return [ folderPath, subfolderPath ]

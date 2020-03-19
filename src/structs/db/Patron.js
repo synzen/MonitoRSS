@@ -1,6 +1,6 @@
 const Base = require('./Base.js')
-const config = require('../../config.js')
 const PatronModel = require('../../models/Patron.js').model
+const getConfig = require('../../config.js').get
 
 class Patron extends Base {
   constructor (data, _saved) {
@@ -93,6 +93,7 @@ class Patron extends Base {
    * @returns {number}
    */
   determineMaxFeeds () {
+    const config = getConfig()
     if (!this.isActive()) {
       return config.feeds.max
     }

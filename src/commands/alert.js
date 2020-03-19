@@ -1,4 +1,4 @@
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
@@ -16,6 +16,7 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
   const contentArray = message.content.split(' ').map(item => item.trim())
   const guildID = message.guild.id
   const guildName = message.guild.name
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   if (!profile) {
     profile = new Profile({

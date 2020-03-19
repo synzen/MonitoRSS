@@ -1,10 +1,11 @@
-const config = require('../config.js')
 const Profile = require('../structs/db/Profile.js')
 const Translator = require('../structs/Translator.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message, command) => {
   const profile = await Profile.get(message.guild.id)
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const localeToUse = profile ? profile.locale : config.bot.locale
   const translate = Translator.createLocaleTranslator(localeToUse)

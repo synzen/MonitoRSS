@@ -1,4 +1,4 @@
-const config = require('../../config.js')
+const getConfig = require('../../config.js').get
 const userServices = require('../services/user.js')
 const discordAPIConstants = require('../constants/discordAPI.js')
 
@@ -20,6 +20,7 @@ function isAuthenticated (session) {
   * @returns {string}
   */
 function getAuthorizationURL (oauthClient) {
+  const config = getConfig()
   return oauthClient.authorizationCode.authorizeURL({
     redirect_uri: config.web.redirectURI,
     scope: discordAPIConstants.scopes
@@ -31,6 +32,7 @@ function getAuthorizationURL (oauthClient) {
  * @param {import('simple-oauth2').OAuthClient} oauthClient
  */
 async function createAuthToken (code, oauthClient) {
+  const config = getConfig()
   const result = await oauthClient.authorizationCode.getToken({
     code,
     redirect_uri: config.web.redirectURI,

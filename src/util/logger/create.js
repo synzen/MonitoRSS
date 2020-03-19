@@ -1,8 +1,9 @@
 const pino = require('pino')
-const config = require('../../config.js')
 const serializers = require('./serializers.js')
+const getConfig = require('../../config.js').get
 
 function createLogger (shardID) {
+  const config = getConfig()
   let prettyPrint = {
     translateTime: 'yyyy-mm-dd HH:MM:ss',
     messageFormat: `[{shardID}] \x1b[0m{msg}`,
@@ -11,7 +12,7 @@ function createLogger (shardID) {
 
   let destination
 
-  if (config.log.destination) {
+  if (process.env.NODE_ENV !== 'test' && config.log.destination) {
     destination = pino.destination(config.log.destination)
     prettyPrint = false
   }

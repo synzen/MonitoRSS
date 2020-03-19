@@ -1,9 +1,9 @@
-const config = require('../../config.js')
 const Base = require('./Base.js')
 const Feed = require('./Feed.js')
 const ipc = require('../../util/ipc.js')
-const createLogger = require('../../util/logger/create.js')
 const FailRecordModel = require('../../models/FailRecord.js').model
+const getConfig = require('../../config.js').get
+const createLogger = require('../../util/logger/create.js')
 
 class FailRecord extends Base {
   constructor (data, _saved) {
@@ -38,6 +38,7 @@ class FailRecord extends Base {
   }
 
   static get cutoff () {
+    const config = getConfig()
     return config.feeds.hoursUntilFail
   }
 

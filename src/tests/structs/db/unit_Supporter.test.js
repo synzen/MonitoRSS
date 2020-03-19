@@ -3,9 +3,14 @@ const Supporter = require('../../../structs/db/Supporter.js')
 const Patron = require('../../../structs/db/Patron.js')
 const config = require('../../../config.js')
 
-jest.mock('../../../config.js')
-
-config.feeds.max = 444
+jest.mock('../../../config.js', () => ({
+  get: jest.fn(() => ({
+    _vipRefreshRateMinutes: 1234,
+    feeds: {
+      max: 444
+    }
+  }))
+}))
 
 describe('Unit::structs/db/Supporter', function () {
   const initData = {
@@ -43,25 +48,28 @@ describe('Unit::structs/db/Supporter', function () {
   })
   describe('static get schedule', function () {
     it('returns the right object', function () {
-      const oValue = config._vipRefreshRateMinutes
-      config._vipRefreshRateMinutes = 1234
       expect(Supporter.schedule).toEqual({
         name: 'supporter',
         refreshRateMinutes: 1234
       })
-      config._vipRefreshRateMinutes = oValue
     })
   })
   describe('static get enabled', function () {
     it('returns if config._vip is true', function () {
-      const oValue = config._vip
-      config._vip = true
+      const oValue = config.get()
+      config.get.mockReturnValue({
+        _vip: true
+      })
       expect(Supporter.enabled).toEqual(true)
-      config._vip = false
+      config.get.mockReturnValue({
+        _vip: false
+      })
       expect(Supporter.enabled).toEqual(false)
-      config._vip = 'abcdf'
+      config.get.mockReturnValue({
+        _vip: 'abcdf'
+      })
       expect(Supporter.enabled).toEqual(false)
-      config._vip = oValue
+      config.get.mockReturnValue(oValue)
     })
   })
   describe('static getValidSupporters', function () {
@@ -178,19 +186,19 @@ describe('Unit::structs/db/Supporter', function () {
         supporter.patron = false
         supporter.maxFeeds = undefined
         await expect(supporter.getMaxFeeds())
-          .resolves.toEqual(config.feeds.max)
+          .resolves.toEqual(config.get().feeds.max)
       })
       it('returns the default config max feeds if it is bigger than maxFeeds', async function () {
         const supporter = new Supporter({ ...initData })
         supporter.patron = false
-        supporter.maxFeeds = config.feeds.max - 1
+        supporter.maxFeeds = config.get().feeds.max - 1
         await expect(supporter.getMaxFeeds())
-          .resolves.toEqual(config.feeds.max)
+          .resolves.toEqual(config.get().feeds.max)
       })
       it('returns maxFeeds if bigger than default config max feeds', async function () {
         const supporter = new Supporter({ ...initData })
         supporter.patron = false
-        supporter.maxFeeds = config.feeds.max + 1
+        supporter.maxFeeds = config.get().feeds.max + 1
         await expect(supporter.getMaxFeeds())
           .resolves.toEqual(supporter.maxFeeds)
       })

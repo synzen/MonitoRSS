@@ -1,5 +1,5 @@
 const channelTracker = require('../util/channelTracker.js')
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
@@ -13,6 +13,7 @@ module.exports = async (message) => {
     Supporter.getValidSupporterOfGuild(message.guild.id)
   ])
   const feeds = await Feed.getManyBy('guild', message.guild.id)
+  const config = getConfig()
   const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)

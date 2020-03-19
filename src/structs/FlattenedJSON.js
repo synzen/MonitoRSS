@@ -1,10 +1,11 @@
 const htmlConvert = require('html-to-text')
-const config = require('../config.js')
+const getConfig = require('../config.js').get
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'pubDate', 'pubdate', 'date']
 
 function cleanup (feed, text, encoding) {
   if (!text) return ''
 
+  const config = getConfig()
   let newText = text
   newText = newText.replace(/\*/gi, '')
     .replace(/<(strong|b)>(.*?)<\/(strong|b)>/gi, '**$2**') // Bolded markdown

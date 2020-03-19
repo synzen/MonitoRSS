@@ -3,13 +3,17 @@ const FeedFetcher = require('../../util/FeedFetcher.js')
 const FailRecord = require('../../structs/db/FailRecord.js')
 const ArticleModel = require('../../models/Article.js').model
 const Feed = require('../../structs/db/Feed.js')
-const config = require('../../config.js')
+const getConfig = require('../../config.js').get
 
 /**
  * @param {string} url
  * @param {Object<string, any>} profile
  */
-async function getFeedPlaceholders (url, profile = config.feeds) {
+async function getFeedPlaceholders (url, profile) {
+  if (!profile) {
+    const config = getConfig()
+    profile = config.feeds
+  }
   const { articleList } = await FeedFetcher.fetchFeed(url)
   const allPlaceholders = []
   if (articleList.length === 0) {
@@ -35,7 +39,7 @@ async function getFeedOfGuild (guildID, feedID) {
 }
 
 /**
- * @param {Object<string, any>} data 
+ * @param {Object<string, any>} data
  */
 async function createFeed (data) {
   const feed = new Feed(data)
@@ -44,8 +48,8 @@ async function createFeed (data) {
 }
 
 /**
- * @param {string} feedID 
- * @param {Object<string, any>} data 
+ * @param {string} feedID
+ * @param {Object<string, any>} data
  */
 async function editFeed (feedID, data) {
   const feed = await Feed.get(feedID)
@@ -57,7 +61,7 @@ async function editFeed (feedID, data) {
 }
 
 /**
- * @param {string} feedID 
+ * @param {string} feedID
  */
 async function deleteFeed (feedID) {
   const feed = await Feed.get(feedID)
@@ -83,7 +87,7 @@ async function getDatabaseArticles (feed, shardID) {
 }
 
 /**
- * @param {string} url 
+ * @param {string} url
  */
 async function getFailRecord (url) {
   const record = await FailRecord.getBy('url', url)
@@ -91,7 +95,7 @@ async function getFailRecord (url) {
 }
 
 /**
- * @param {string} guildID 
+ * @param {string} guildID
  */
 async function getFeedsOfGuild (guildID) {
   const feeds = await Feed.getManyBy('guild', guildID)

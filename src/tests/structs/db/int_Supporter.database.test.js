@@ -10,15 +10,22 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-jest.mock('../../../config.js')
+jest.mock('../../../config.js', () => ({
+  get: () => ({
+    _vip: true,
+    database: {
+      uri: 'mongodb://'
+    },
+    feeds: {
+      max: 5
+    }
+  })
+}))
 
 describe('Int::structs/db/Supporter Database', function () {
   /** @type {import('mongoose').Collection} */
   let collection
   beforeAll(async function () {
-    config._vip = true
-    config.database.uri = 'mongodb://'
-
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await mongoose.connection.db.dropDatabase()
     collection = mongoose.connection.db.collection('supporters')
@@ -182,7 +189,7 @@ describe('Int::structs/db/Supporter Database', function () {
       }
       await mongoose.connection.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
-      await expect(supporter.getMaxFeeds()).resolves.toEqual(config.feeds.max)
+      await expect(supporter.getMaxFeeds()).resolves.toEqual(config.get().feeds.max)
     })
   })
   describe('getMaxGuilds', function () {

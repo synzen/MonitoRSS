@@ -1,9 +1,10 @@
-const config = require('../config.js')
 const Profile = require('../structs/db/Profile.js')
 const Supporter = require('../structs/db/Supporter.js')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 const helpText = profile => {
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   return `Proper usage:
 \`${prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server

@@ -4,12 +4,16 @@ const Supporter = require('../../structs/db/Supporter.js')
 const checkLimits = require('../../maintenance/checkLimits.js')
 const config = require('../../config.js')
 
-jest.mock('../../config.js')
+jest.mock('../../config.js', () => ({
+  get: jest.fn(() => ({
+    feeds: {
+      max: 2
+    }
+  }))
+}))
 jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/db/Supporter.js')
 jest.mock('../../util/ipc.js')
-
-config.feeds.max = 2
 
 describe('Unit::maintenance/checkLimits', function () {
   beforeEach(function () {
@@ -17,6 +21,13 @@ describe('Unit::maintenance/checkLimits', function () {
     Feed.getAll.mockResolvedValue([])
     Supporter.getFeedLimitsOfGuilds
       .mockResolvedValue(new Map())
+  })
+  afterEach(function () {
+    config.get.mockReturnValue({
+      feeds: {
+        max: 2
+      }
+    })
   })
   it('calls enable on disabled feeds for feeds under limit', async function () {
     const feeds = [{
@@ -145,8 +156,11 @@ describe('Unit::maintenance/checkLimits', function () {
     expect(feeds[3].disable).not.toHaveBeenCalled()
   })
   it(`enables all and disables none if limit is 0`, async function () {
-    const oValue = config.feeds.max
-    config.feeds.max = 0
+    config.get.mockReturnValue({
+      feeds: {
+        max: 0
+      }
+    })
     const feeds = [{
       // Enabled
       guild: 'a',
@@ -185,7 +199,6 @@ describe('Unit::maintenance/checkLimits', function () {
     expect(feeds[3].disable).not.toHaveBeenCalled()
     expect(feeds[4].enable).not.toHaveBeenCalled()
     expect(feeds[4].disable).not.toHaveBeenCalled()
-    config.feeds.max = oValue
   })
   it(`only calls enable for feeds with 'Exceeded feed limit' reason`, async function () {
     const feeds = [{

@@ -1,25 +1,56 @@
-const config = require('../src/config.js')
+const fs = require('fs')
+const configuration = require('../src/config.js')
 const mongoose = require('mongoose')
-const connectDb = require('../src/util/connectDatabase.js')
 const v6 = require('./updates/6.0.0.js')
 
-if (config.database.uri.startsWith('mongo')) {
-  connectDb(true).then(async () => {
-    try {
-      const toCheck = ['profiles', 'feeds', 'subscribers', 'filtered_formats', 'fail_records', 'supporters']
-      const collections = (await mongoose.connection.db
-        .listCollections().toArray()).map(c => c.name)
-      for (const name of toCheck) {
-        if (collections.includes(name)) {
-          console.log(`Dropping ${name} collection`)
-          await mongoose.connection.collection(name).drop()
-        }
+const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
+
+function readFileData (config = {}) {
+  const buffers = {}
+  if (Object.keys(config).length > 0) {
+    for (let x = 0; x < BUFFER_CONFIGS.length; ++x) {
+      const name = BUFFER_CONFIGS[x]
+      if (config[name]) {
+        buffers[name] = fs.readFileSync(config[name])
       }
-      await v6.run()
-    } catch (err) {
-      throw err
     }
-  })
-} else {
-  v6.run(true).catch(console.error)
+  }
+  return buffers
 }
+
+async function dumpCollections () {
+  const toCheck = ['profiles', 'feeds', 'subscribers', 'filtered_formats', 'fail_records', 'supporters']
+  const collections = (await mongoose.connection.db
+    .listCollections().toArray()).map(c => c.name)
+  for (const name of toCheck) {
+    if (collections.includes(name)) {
+      console.log(`Dropping ${name} collection`)
+      await mongoose.connection.collection(name).drop()
+    }
+  }
+}
+
+/**
+ * @param {string} uri
+ * @param {Object<string, any>} options
+ */
+async function run (config) {
+  const uri = config.database.uri
+  const options = config.database.connectionOptions
+  configuration.set(config)
+  if (uri.startsWith('mongo')) {
+    const parsedOptions = readFileData(options)
+    await mongoose.connect(uri, {
+      useCreateIndex: true,
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      ...parsedOptions
+    })
+    await dumpCollections()
+    await v6.run(false, uri)
+  } else {
+    await v6.run(true, uri)
+  }
+}
+
+module.exports = run

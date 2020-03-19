@@ -1,5 +1,5 @@
-const config = require('../../config.js')
 const Joi = require('@hapi/joi')
+const getConfig = require('../../config.js').get
 const createLogger = require('../../util/logger/create.js')
 const schema = Joi.object({
   status: Joi.string().valid('online', 'idle', 'invisible', 'dnd'),
@@ -37,6 +37,7 @@ function getPresenceFromArgs (args) {
 }
 
 function setConfig (presenceData) {
+  const config = getConfig()
   if (presenceData.status) {
     config.bot.status = presenceData.status
   }
@@ -66,11 +67,12 @@ module.exports = async (message) => {
     return message.channel.send(`Invalid format. Errors:\n\n${str}`)
   }
   setConfig(presenceData)
+  const config = getConfig()
   await message.client.user.setPresence(presenceData)
   await message.client.shard.broadcastEval(`
     const path = require('path');
     const appDir = path.dirname(require.main.filename);
-    const config = require(appDir + '/src/config.js');
+    const config = require(appDir + '/src/config.js').get();
     config.bot = JSON.parse(\`${JSON.stringify(config.bot)}\`)
   `)
   const log = createLogger(message.guild.shard.id)

@@ -1,4 +1,3 @@
-const config = require('../config.js')
 const MenuUtils = require('../structs/MenuUtils.js')
 const moment = require('moment')
 const Schedule = require('../structs/db/Schedule.js')
@@ -7,6 +6,7 @@ const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Feed = require('../structs/db/Feed.js')
+const getConfig = require('../config.js').get
 
 module.exports = async (message, command) => {
   const [ profile, supporter, schedules, supporterGuilds ] = await Promise.all([
@@ -22,6 +22,7 @@ module.exports = async (message, command) => {
     return message.channel.send(translate('commands.list.noFeeds'))
   }
 
+  const config = getConfig()
   const failRecordsMap = {}
   const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
 

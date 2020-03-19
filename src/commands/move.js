@@ -1,4 +1,3 @@
-const config = require('../config.js')
 const FLAGS = require('discord.js').Permissions.FLAGS
 const MenuUtils = require('../structs/MenuUtils.js')
 const FeedSelector = require('../structs/FeedSelector.js')
@@ -6,6 +5,7 @@ const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
 const checkPermissions = require('../maintenance/checkPermissions')
+const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const MIN_PERMISSION_BOT = [
   FLAGS.VIEW_CHANNEL,
@@ -19,6 +19,7 @@ const MIN_PERMISSION_USER = [
 
 async function selectChannelFn (m, data) {
   const { feeds, selectedFeeds, locale, profile } = data
+  const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const translate = Translator.createLocaleTranslator(locale)
 
