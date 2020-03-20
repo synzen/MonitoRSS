@@ -61,8 +61,8 @@ Run `npm test`
 
 To add or contribute to menu translations (locales):
 
-1. If the locale JSON doesn't exist in src/locales, create one by running `node scripts/locales/create.js`
+1. If the locale JSON doesn't exist in src/locales, create one by running `npm run locale-create`
 2. Open the relevant locale file in src/locales
 3. Add your translations (use the en-US.json locale as reference)
-4. Verify your file(s) by running `node scripts/locales/verify.js` and make appropriate fixes
+4. Verify your file(s) by running `npm run locale-verify` and make appropriate fixes
 4. Make a pull request for your changes!
