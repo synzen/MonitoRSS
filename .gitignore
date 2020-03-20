@@ -135,8 +135,3 @@ __pycache__
 
 # dotenv environment variables file
 .env
-
-# bot specific
-settings/config.json
-settings/vips.js
-settings/api.js
