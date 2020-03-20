@@ -21,6 +21,7 @@ exports.Article = require('./src/structs/Article.js')
 exports.Client = require('./src/structs/Client.js')
 exports.ClientManager = require('./src/structs/ClientManager.js')
 exports.FeedData = require('./src/structs/FeedData.js')
+exports.GuildData = require('./src/structs/GuildData.js')
 
 // Database Structures
 exports.Blacklist = require('./src/structs/db/Blacklist.js')
