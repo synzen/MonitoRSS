@@ -46,7 +46,6 @@
   "devDependencies": {
     "@shelf/jest-mongodb": "^1.1.3",
     "@types/jest": "^24.9.1",
-    "dotenv": "^8.2.0",
     "eslint": "^5.16.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.20.1",
