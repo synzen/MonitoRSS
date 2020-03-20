@@ -65,7 +65,9 @@ class Client extends EventEmitter {
       if (err.message.includes('too many guilds')) {
         throw err
       } else {
-        this.log.warn(`Discord.RSS unable to login, retrying in 10 minutes`, err)
+        this.log.warn({
+          error: err
+        }, `Discord.RSS unable to login, retrying in 10 minutes`)
         setTimeout(() => this.login.bind(this)(token), 600000)
       }
     }
