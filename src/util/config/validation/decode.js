@@ -3,7 +3,7 @@ const iconv = require('iconv-lite')
 
 const custom = Joi.extend(joi => {
   return {
-    base: joi.object().pattern(/^/, joi.string()).required(),
+    base: joi.object().pattern(/^/, joi.string()).default({}),
     type: 'config',
     messages: {
       encoding: `{{#label}} has items with invalid encodings: {{#invalid}}`

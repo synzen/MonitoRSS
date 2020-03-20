@@ -1,9 +1,6 @@
-const fs = require('fs')
-const path = require('path')
 const moment = require('moment-timezone')
-const configPath = path.join(__dirname, 'config.json')
-const config = JSON.parse(fs.readFileSync(configPath))
 const schema = require('./util/config/schema.js')
+const config = schema.defaults
 
 function envArray (name) {
   const value = process.env[name]

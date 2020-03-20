@@ -3,7 +3,7 @@ const moment = require('moment-timezone')
 
 const custom = Joi.extend(joi => {
   return {
-    base: joi.string().required(),
+    base: joi.string().strict().default('UTC'),
     type: 'config',
     messages: {
       timezone: '{{#label}} needs to be a valid timezone'

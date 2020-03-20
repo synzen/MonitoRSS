@@ -3,100 +3,115 @@ const decodeValidator = require('./validation/decode.js')
 const timezoneValidator = require('./validation/timezone.js')
 const localeValidator = require('./validation/locale.js')
 
+const logSchema = Joi.object({
+  destination: Joi.string().allow('').default(''),
+  linkErrs: Joi.bool().strict().default(true),
+  unfiltered: Joi.bool().strict().default(true),
+  failedFeeds: Joi.bool().strict().default(true)
+})
+
+const botSchema = Joi.object({
+  token: Joi.string().strict().default(''),
+  locale: localeValidator.config().locale(),
+  enableCommands: Joi.bool().strict().default(true),
+  prefix: Joi.string().strict().default('rss.'),
+  status: Joi.string().valid('online', 'dnd', 'invisible', 'idle').default('online'),
+  activityType: Joi.string().valid('', 'PLAYING', 'STREAMING', 'LISTENING', 'WATCHING').default(''),
+  activityName: Joi.string().strict().allow('').default(''),
+  streamActivityURL: Joi.string().strict().allow('').default(''),
+  ownerIDs: Joi.array().items(Joi.string().strict()).default([]),
+  menuColor: Joi.number().strict().greater(0).default(5285609),
+  deleteMenus: Joi.bool().strict().default(true),
+  exitOnSocketIssues: Joi.bool().strict().default(true)
+})
+
+const databaseSchema = Joi.object({
+  uri: Joi.string().strict().default('mongodb://localhost:27017/rss'),
+  redis: Joi.string().strict().allow('').default(''),
+  connection: Joi.object().default({}),
+  articlesExpire: Joi.number().strict().greater(-1).default(14)
+})
+
+const feedsSchema = Joi.object({
+  refreshRateMinutes: Joi.number().strict().greater(0).default(10),
+  timezone: timezoneValidator.config().timezone(),
+  dateFormat: Joi.string().strict().default('ddd, D MMMM YYYY, h:mm A z'),
+  dateLanguage: Joi.string().strict().default('en'),
+  dateLanguageList: Joi.array().items(Joi.string().strict()).min(1).default(['en']),
+  dateFallback: Joi.bool().strict().default(false),
+  timeFallback: Joi.bool().strict().default(false),
+  max: Joi.number().strict().greater(-1).default(0),
+  hoursUntilFail: Joi.number().strict().default(0),
+  notifyFail: Joi.bool().strict().default(true),
+  sendFirstCycle: Joi.bool().strict().default(true),
+  cycleMaxAge: Joi.number().strict().default(1),
+  defaultText: Joi.string().default(':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'),
+  imgPreviews: Joi.bool().strict().default(true),
+  imgLinksExistence: Joi.bool().strict().default(true),
+  checkDates: Joi.bool().strict().default(true),
+  formatTables: Joi.bool().strict().default(false),
+  decode: decodeValidator.config().encoding()
+})
+
+const advancedSchema = Joi.object({
+  shards: Joi.number().greater(0).strict().default(1),
+  batchSize: Joi.number().greater(0).strict().default(400),
+  parallelBatches: Joi.number().greater(0).strict().default(1)
+})
+
+const httpsSchema = Joi.object({
+  enabled: Joi.bool().strict().default(false),
+  privateKey: Joi.string().allow('').default('').when('enabled', {
+    is: true,
+    then: Joi.string().disallow('').required()
+  }),
+  certificate: Joi.string().allow('').default('').when('enabled', {
+    is: true,
+    then: Joi.string().disallow('').required()
+  }),
+  chain: Joi.string().allow('').default('').when('enabled', {
+    is: true,
+    then: Joi.string().disallow('').required()
+  }),
+  port: Joi.number().strict().default(443)
+})
+
+const webSchema = Joi.object({
+  enabled: Joi.bool().strict().default(false),
+  trustProxy: Joi.bool().strict().default(false),
+  port: Joi.number().strict().default(8081),
+  sessionSecret: Joi.string().allow('').default('').when('enabled', {
+    is: true,
+    then: Joi.string().disallow('').required()
+  }),
+  redirectURI: Joi.string().allow('').default('').when('enabled', {
+    is: true,
+    then: Joi.string().disallow('').required()
+  }),
+  clientID: Joi.string().allow('').default('').when('enabled', {
+    is: true,
+    then: Joi.string().disallow('').required()
+  }),
+  clientSecret: Joi.string().allow('').default('').when('enabled', {
+    is: true,
+    then: Joi.string().disallow('').required()
+  }),
+  https: httpsSchema.default(httpsSchema.validate({}).value)
+})
+
 const schema = Joi.object({
   dev: Joi.bool().strict(),
   _vip: Joi.bool().strict(),
-  log: Joi.object({
-    destination: Joi.string().allow('').strict().required(),
-    linkErrs: Joi.bool().strict().required(),
-    unfiltered: Joi.bool().strict().required(),
-    failedFeeds: Joi.bool().strict().required()
-  }).required(),
-  bot: Joi.object({
-    token: Joi.string().required(),
-    locale: localeValidator.config().locale(),
-    enableCommands: Joi.bool().strict().required(),
-    prefix: Joi.string().required(),
-    status: Joi.string().valid('online', 'dnd', 'invisible', 'idle').required(),
-    activityType: Joi.string().valid('', 'PLAYING', 'STREAMING', 'LISTENING', 'WATCHING').required(),
-    activityName: Joi.string().allow('').required(),
-    streamActivityURL: Joi.string().allow('').required(),
-    ownerIDs: Joi.array().items(Joi.string()).required(),
-    menuColor: Joi.number().strict().greater(0).required(),
-    deleteMenus: Joi.bool().strict().required(),
-    exitOnSocketIssues: Joi.bool().strict().required()
-  }).required(),
-  database: Joi.object({
-    uri: Joi.string().required(),
-    redis: Joi.string().allow('').required(),
-    connection: Joi.object().required(),
-    articlesExpire: Joi.number().strict().greater(-1).required()
-  }),
-  feeds: Joi.object({
-    refreshRateMinutes: Joi.number().strict().greater(0).required(),
-    timezone: timezoneValidator.config().timezone(),
-    dateFormat: Joi.string().required(),
-    dateLanguage: Joi.string().required(),
-    dateLanguageList: Joi.array().items(Joi.string()).min(1).required(),
-    dateFallback: Joi.bool().strict().required(),
-    timeFallback: Joi.bool().strict().required(),
-    max: Joi.number().strict().greater(-1).required(),
-    hoursUntilFail: Joi.number().strict().required(),
-    notifyFail: Joi.bool().strict().required(),
-    sendFirstCycle: Joi.bool().strict().required(),
-    cycleMaxAge: Joi.number().strict().required(),
-    defaultText: Joi.string().required(),
-    imgPreviews: Joi.bool().strict().required(),
-    imgLinksExistence: Joi.bool().strict().required(),
-    checkDates: Joi.bool().strict().required(),
-    formatTables: Joi.bool().strict().required(),
-    decode: decodeValidator.config().encoding()
-  }).required(),
-  advanced: Joi.object({
-    shards: Joi.number().greater(0).strict().required(),
-    batchSize: Joi.number().greater(0).strict().required(),
-    parallelBatches: Joi.number().greater(0).strict().required()
-  }).required(),
-  web: Joi.object({
-    enabled: Joi.bool().strict().required(),
-    trustProxy: Joi.bool().strict().required(),
-    port: Joi.number().strict().required(),
-    sessionSecret: Joi.string().allow('').required().when('enabled', {
-      is: true,
-      then: Joi.string().disallow('').required()
-    }),
-    redirectURI: Joi.string().allow('').required().when('enabled', {
-      is: true,
-      then: Joi.string().disallow('').required()
-    }),
-    clientID: Joi.string().allow('').required().when('enabled', {
-      is: true,
-      then: Joi.string().disallow('').required()
-    }),
-    clientSecret: Joi.string().allow('').required().when('enabled', {
-      is: true,
-      then: Joi.string().disallow('').required()
-    }),
-    https: Joi.object({
-      enabled: Joi.bool().strict().required(),
-      privateKey: Joi.string().allow('').required().when('enabled', {
-        is: true,
-        then: Joi.string().disallow('').required()
-      }),
-      certificate: Joi.string().allow('').required().when('enabled', {
-        is: true,
-        then: Joi.string().disallow('').required()
-      }),
-      chain: Joi.string().allow('').required().when('enabled', {
-        is: true,
-        then: Joi.string().disallow('').required()
-      }),
-      port: Joi.number().strict().required()
-    }).required()
-  }).required()
+  log: logSchema.default(logSchema.validate({}).value),
+  bot: botSchema.default(botSchema.validate({}).value),
+  database: databaseSchema.default(databaseSchema.validate({}).value),
+  feeds: feedsSchema.default(feedsSchema.validate({}).value),
+  advanced: advancedSchema.default(advancedSchema.validate({}).value),
+  web: webSchema.default(webSchema.validate({}).value)
 })
 
 module.exports = {
+  defaults: schema.validate({}).value,
   validate: config => {
     const results = schema.validate(config, {
       abortEarly: false
@@ -106,7 +121,7 @@ module.exports = {
         .map(d => d.message)
         .join('\n')
 
-      throw new TypeError(`Config validation failed\n${str}\n`)
+      throw new TypeError(`Config validation failed\n\n${str}\n`)
     }
   }
 }

@@ -10,7 +10,7 @@ for (const file of fileList) {
 
 const custom = Joi.extend(joi => {
   return {
-    base: joi.string().required(),
+    base: joi.string().strict().default('en-US'),
     type: 'config',
     messages: {
       locale: '{{#label}} needs to be a supported locale'
