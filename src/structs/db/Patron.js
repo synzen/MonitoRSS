@@ -1,3 +1,4 @@
+const path = require('path')
 const Base = require('./Base.js')
 const PatronModel = require('../../models/Patron.js').model
 const getConfig = require('../../config.js').get
@@ -54,7 +55,9 @@ class Patron extends Base {
   }
 
   static async refresh () {
-    return require('../../../settings/api.js')()
+    const userDirectory = path.dirname(require.main.filename)
+    const filePath = path.join(userDirectory, 'settings', 'api.js')
+    return require(filePath)()
   }
 
   toObject () {

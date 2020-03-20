@@ -1,10 +1,8 @@
 const fs = require('fs')
 const path = require('path')
-const createLogger = require('./logger/create.js')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
 const getConfig = require('../config.js').get
-const log = createLogger()
 const eventHandlers = []
 const VALID_EVENTS = [
   'channelCreate',
@@ -54,33 +52,10 @@ const VALID_EVENTS = [
   'warn'
 ]
 
-let cmdsExtension
-if (fs.existsSync(path.join(__dirname, '..', '..', 'settings', 'commands.js'))) {
-  try {
-    cmdsExtension = require('../../settings/commands.js')
-  } catch (e) {
-    log.error(e, `Unable to load commands extension file`)
-  }
-  fs.watchFile(path.join(__dirname, '..', '..', 'settings', 'commands.js'), (cur, prev) => {
-    delete require.cache[require.resolve('../../settings/commands.js')]
-    try {
-      cmdsExtension = require('../../settings/commands.js')
-      log.info(`Commands extension file has been updated`)
-    } catch (e) {
-      log.error(e, `Commands extension file was changed, but could not be updated`)
-    }
-  })
-}
-
-const messageHandler = (bot, blacklistCache) => message => {
+const messageHandler = (blacklistCache) => message => {
   const config = getConfig()
   const onlyOwner = config.bot.enableCommands !== true || config.dev === true
   require('../events/message.js')(message, onlyOwner, blacklistCache)
-  try {
-    if (cmdsExtension) {
-      cmdsExtension(bot, message)
-    }
-  } catch (e) {}
 }
 
 exports.createManagers = (bot) => {
@@ -100,7 +75,7 @@ exports.createManagers = (bot) => {
 exports.enableCommands = async (bot) => {
   const blacklistCache = new BlacklistCache(await Blacklist.getAll())
   exports.blacklistCache = blacklistCache
-  eventHandlers.push({ name: 'message', func: messageHandler(bot, blacklistCache) })
+  eventHandlers.push({ name: 'message', func: messageHandler(blacklistCache) })
   bot.on('message', eventHandlers[eventHandlers.length - 1].func)
 }
 
