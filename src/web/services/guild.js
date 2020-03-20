@@ -61,8 +61,8 @@ async function updateProfile (guildID, guildName, data) {
 }
 
 /**
- * @param {string} guildID 
- * @param {string} channelID 
+ * @param {string} guildID
+ * @param {string} channelID
  */
 async function guildHasChannel (guildID, channelID) {
   const channel = await RedisChannel.fetch(channelID)

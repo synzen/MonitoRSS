@@ -10,7 +10,7 @@ async function feedHasSubscriber (req, res, next) {
   try {
     const feedID = req.params.feedID
     const subscriberID = req.params.subscriberID
-    const subscriber = await subscriberServices.getSubscriberOfFeed(feedID,  subscriberID)
+    const subscriber = await subscriberServices.getSubscriberOfFeed(feedID, subscriberID)
     if (!subscriber) {
       const error = createError(404, 'Unknown subscriber')
       res.status(404).json(error)

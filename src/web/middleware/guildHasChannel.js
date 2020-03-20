@@ -9,7 +9,7 @@ const createError = require('../util/createError.js')
 async function guildHasChannel (req, res, next) {
   const guildID = req.params.guildID
   const channelID = req.body.channel
-  
+
   try {
     const has = await guildServices.guildHasChannel(guildID, channelID)
     if (!has) {

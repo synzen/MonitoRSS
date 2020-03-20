@@ -9,7 +9,7 @@ module.exports = Joi.extend(joi => {
     },
     rules: {
       isTimestamp: {
-        validate(value, helpers, args, options) {
+        validate (value, helpers, args, options) {
           if (value !== 'now' && value !== 'article') {
             return helpers.error('timestamp')
           }

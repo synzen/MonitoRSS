@@ -2,7 +2,7 @@ const feedServices = require('../services/feed.js')
 const createError = require('../util/createError.js')
 
 /**
- * 
+ *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next

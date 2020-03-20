@@ -4,7 +4,6 @@ const {
   createNext
 } = require('../../../../mocks/express.js')
 
-
 describe('Unit::controllers/api/guilds/feeds/getSchedule', function () {
   it('returns the determined schedule', async function () {
     const determinedSchedule = 'w234et6yr5ahutj'

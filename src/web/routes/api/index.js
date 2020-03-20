@@ -8,7 +8,7 @@ const createLogger = require('../../../util/logger/create.js')
 const Joi = require('@hapi/joi')
 const validator = require('express-joi-validation').createValidator({
   passError: true
-});
+})
 
 if (process.env.NODE_ENV !== 'test') {
   api.use(rateLimit({
@@ -35,24 +35,24 @@ api.post('/feedback', validator.body(feedbackSchema), controllers.api.createFeed
 api.use('/users', require('./users/index.js'))
 api.use('/guilds', require('./guilds/index.js'))
 
-api.use(function errorHandler(err, req, res, next) {
+api.use(function errorHandler (err, req, res, next) {
   if (err.error && err.error.isJoi) {
     const type = err.type
     const details = err.error.details
     // we had a joi error, let's return a custom 400 json response
     const strings = []
     for (const detail of details) {
-      strings.push(`${detail.message} in ${err.type}`)
+      strings.push(`${detail.message} in ${type}`)
     }
-    
+
     const createdError = createError(400, 'Validation error', strings)
-    res.status(400).json(createdError);
+    res.status(400).json(createdError)
   } else {
     const log = createLogger('W')
     log.error(err)
     const createdError = createError(500, 'Internal Server Error')
     res.status(500).json(createdError)
   }
-});
+})
 
 module.exports = api

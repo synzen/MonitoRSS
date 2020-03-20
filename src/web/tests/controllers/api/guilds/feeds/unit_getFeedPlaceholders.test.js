@@ -39,9 +39,6 @@ describe('Unit::controllers/api/guilds/feeds/getFeedPlaceholders', function () {
     const res = {
       status: jest.fn(() => ({ json }))
     }
-    const data = {
-      a: 1
-    }
     const error = new Error('w4ersyg')
     const createdError = 'q3ew2t4r'
     feedServices.getFeedPlaceholders.mockRejectedValue(error)

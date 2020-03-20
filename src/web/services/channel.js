@@ -1,7 +1,7 @@
 const RedisChannel = require('../../structs/db/Redis/Channel.js')
 
 /**
- * @param {string} channelID 
+ * @param {string} channelID
  */
 async function getCachedChannel (channelID) {
   const channel = await RedisChannel.fetch(channelID)

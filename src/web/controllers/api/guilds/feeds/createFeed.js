@@ -4,9 +4,9 @@ const FeedParserError = require('../../../../../structs/errors/FeedParserError.j
 const RequestError = require('../../../../../structs/errors/RequestError.js')
 
 /**
- * @param {import('express').Request} req 
- * @param {import('express').Response} res 
- * @param {import('express').NextFunction} next 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
 async function createFeed (req, res, next) {
   const data = {

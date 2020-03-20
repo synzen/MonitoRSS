@@ -7,7 +7,7 @@ const controllers = require('../../../../controllers/index.js')
 const Joi = require('@hapi/joi')
 const validator = require('express-joi-validation').createValidator({
   passError: true
-});
+})
 const feedSchema = require('../../../../util/validation/feedSchema.js')
 const feedIDSchema = Joi.object({
   guildID: Joi.string(),

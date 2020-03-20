@@ -4,9 +4,9 @@ const userServices = require('../../../../../services/user.js')
 const createError = require('../../../../../util/createError.js')
 
 /**
- * @param {import('express').Request} req 
- * @param {import('express').Response} res 
- * @param {import('express').NextFunction} next 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
 async function createSubscriber (req, res, next) {
   const guildID = req.params.guildID

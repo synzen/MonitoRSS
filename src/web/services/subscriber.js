@@ -2,7 +2,7 @@ const Subscriber = require('../../structs/db/Subscriber.js')
 
 /**
  * @param {string} feedID
- * @param {string} subscriberID 
+ * @param {string} subscriberID
  */
 async function getSubscriberOfFeed (feedID, subscriberID) {
   const subscriber = await Subscriber.getByQuery({
@@ -13,7 +13,7 @@ async function getSubscriberOfFeed (feedID, subscriberID) {
 }
 
 /**
- * @param {string} feedID 
+ * @param {string} feedID
  */
 async function getSubscribersOfFeed (feedID) {
   const subscribers = await Subscriber.getManyBy('feed', feedID)
@@ -35,8 +35,8 @@ async function createSubscriber (data) {
 
 /**
  * @param {string} id
- * @param {'role'|'user'} type 
- * @param {Object<string, any>} data 
+ * @param {'role'|'user'} type
+ * @param {Object<string, any>} data
  */
 async function editSubscriber (feedID, subscriberID, data) {
   const subscriber = await Subscriber.getByQuery({

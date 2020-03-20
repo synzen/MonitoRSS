@@ -6,7 +6,7 @@ const feedServices = require('../../../../services/feed.js')
  * @param {import('express').NextFunction} next
  */
 async function editFeed (req, res, next) {
-  /** @type {import('../../../../../structs/db/Feed.js')} */  
+  /** @type {import('../../../../../structs/db/Feed.js')} */
   const feedID = req.params.feedID
   try {
     await feedServices.deleteFeed(feedID)

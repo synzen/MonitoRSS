@@ -5,7 +5,7 @@ const feedHasSubscriber = require('../../../../../middleware/feedHasSubscriber.j
 const Joi = require('@hapi/joi')
 const validator = require('express-joi-validation').createValidator({
   passError: true
-});
+})
 const filterSchema = require('../../../../../util/validation/filterSchema.js')
 const subscriberSchema = require('../../../../../util/validation/subscriberSchema.js')
 

@@ -1,9 +1,9 @@
 const subscriberServices = require('../../../../../services/subscriber.js')
 
 /**
- * @param {import('express').Request} req 
- * @param {import('express').Response} res 
- * @param {import('express').NextFunction} next 
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
 async function deleteSubscriber (req, res, next) {
   const feedID = req.params.feedID

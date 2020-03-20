@@ -6,7 +6,7 @@ const controllers = require('../../../controllers/index.js')
 const Joi = require('@hapi/joi')
 const validator = require('express-joi-validation').createValidator({
   passError: true
-});
+})
 
 if (process.env.NODE_ENV !== 'test') {
   feedsAPI.use(rateLimit({

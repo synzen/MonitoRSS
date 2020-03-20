@@ -157,7 +157,7 @@ async function isManagerOfGuildByAPI (userID, guildID) {
     await RedisGuildMember.utils.recognizeNonMember(userID, guildID)
     return false
   }
-  throw new Error(`Bad Discord status code (${results.status})`)
+  throw new Error(`Bad Discord status code (${res.status})`)
 }
 
 module.exports = {

@@ -1,7 +1,6 @@
 const createFeedback = require('../../../controllers/api/createFeedback.js')
 const feedbackServices = require('../../../services/feedback.js')
 const {
-  createRequest,
   createResponse,
   createNext
 } = require('../../mocks/express.js')
