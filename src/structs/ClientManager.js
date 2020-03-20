@@ -1,4 +1,5 @@
 process.env.DRSS = true
+const path = require('path')
 const Discord = require('discord.js')
 const connectDb = require('../util/connectDatabase.js')
 const Patron = require('./db/Patron.js')
@@ -44,7 +45,9 @@ class ClientManager extends EventEmitter {
       this.log.debug(`ScheduleManager emitted article ${article._id}`)
       this.handleNewArticle(article)
     })
-    this.shardingManager = new Discord.ShardingManager('./server-shard.js', { respawn: false })
+    this.shardingManager = new Discord.ShardingManager(path.join(__dirname, '..', '..', 'server-shard.js'), {
+      respawn: false
+    })
     this.shardingManager.on('shardCreate', shard => {
       shard.on('message', message => this.messageHandler(shard, message))
     })
