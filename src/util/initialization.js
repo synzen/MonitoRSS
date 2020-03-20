@@ -1,9 +1,25 @@
 const storage = require('./storage.js')
+const KeyValue = require('../structs/db/KeyValue.js')
 const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Profile = require('../structs/db/Profile.js')
 const redisIndex = require('../structs/db/Redis/index.js')
 const getConfig = require('../config.js').get
+
+/**
+ * Stores the feeds config for use by the control panel
+ * that is an external process
+ */
+async function populateKeyValues () {
+  const config = getConfig()
+  await KeyValue.deleteAll()
+  const data = {
+    _id: 'feedConfig',
+    value: config.feeds
+  }
+  const feedsConfig = new KeyValue(data)
+  await feedsConfig.save()
+}
 
 async function populatePefixes () {
   const profiles = await Profile.getAll()
@@ -83,5 +99,6 @@ async function populateRedis (bot) {
 module.exports = {
   populateRedis,
   populateSchedules,
-  populatePefixes
+  populatePefixes,
+  populateKeyValues
 }
