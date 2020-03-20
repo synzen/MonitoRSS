@@ -125,6 +125,6 @@ describe('Int::structs/db/Base Databaseless', function () {
       await Promise.all(files.map(fileName => fsUnlink(path.join(folderPath, fileName))))
     }
     await fsRmdir(folderPath)
-    await fsRmdir(config.database.uri)
+    await fsRmdir(config.get().database.uri)
   })
 })
