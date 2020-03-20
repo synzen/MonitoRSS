@@ -6,6 +6,7 @@ exports.models = {
   Feed: require('./src/models/Feed.js'),
   Feedback: require('./src/models/Feedback.js'),
   FilteredFormat: require('./src/models/FilteredFormat.js'),
+  KeyValue: require('./src/models/KeyValue.js'),
   Patron: require('./src/models/Patron.js'),
   Profile: require('./src/models/Profile.js'),
   Rating: require('./src/models/Rating.js'),
@@ -26,6 +27,7 @@ exports.Blacklist = require('./src/structs/db/Blacklist.js')
 exports.FailRecord = require('./src/structs/db/FailRecord.js')
 exports.Feed = require('./src/structs/db/Feed.js')
 exports.FilteredFormat = require('./src/structs/db/FilteredFormat.js')
+exports.KeyValue = require('./src/structs/db/KeyValue.js')
 exports.Patron = require('./src/structs/db/Patron.js')
 exports.Profile = require('./src/structs/db/Profile.js')
 exports.Schedule = require('./src/structs/db/Schedule.js')
