@@ -36,7 +36,7 @@ async function dumpCollections () {
  */
 async function run (config) {
   const uri = config.database.uri
-  const options = config.database.connectionOptions
+  const options = config.database.connection
   configuration.set(config)
   if (uri.startsWith('mongo')) {
     const parsedOptions = readFileData(options)
