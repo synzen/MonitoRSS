@@ -1,8 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const readline = require('readline')
-const defaultLocale = require('../../src/config.js').bot.locale
-const localeData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `${defaultLocale}.json`)))
+const localeData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `en-US.json`)))
 
 const obj = {}
 
@@ -21,7 +20,7 @@ function traverse (object, reference) {
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
-});
+})
 
 console.log('The locale name should by in the format of \x1b[1mlanguage-region\x1b[0m.')
 

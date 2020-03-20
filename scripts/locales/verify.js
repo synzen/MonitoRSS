@@ -1,6 +1,5 @@
 const fs = require('fs')
 const path = require('path')
-const defaultLocale = require('../../src/config.js').bot.locale
 const COLORS = {
   BRIGHT: '\x1b[1m',
   RESET: '\x1b[0m',
@@ -9,7 +8,7 @@ const COLORS = {
   CYAN: '\x1b[36m'
 }
 const CONSTANT_CHARACTERS = ['"', '\n', '`', '\u200b']
-const referenceLocaleData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `${defaultLocale}.json`)))
+const referenceLocaleData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `en-US.json`)))
 const fileNames = fs.readdirSync(path.join(__dirname, '..', '..', 'src', 'locales'))
 
 const stringCountsByLocale = {}

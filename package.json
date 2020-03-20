@@ -16,7 +16,9 @@
     "test-int": "jest ./src/tests --detectOpenHandles --testRegex=int_ --testTimeout=10000",
     "test-watch-int": "jest ./src/tests --detectOpenHandles --testRegex=int_ --testTimeout=10000 --watchAll",
     "test-watch": "jest ./src/tests --detectOpenHandles --watchAll",
-    "eslint": "eslint --fix ./src"
+    "eslint": "eslint --fix ./src",
+    "locale-verify": "node scripts/locales/verify.js",
+    "locale-create": "node scripts/locales/create.js"
   },
   "dependencies": {
     "@hapi/joi": "^17.1.0",
