@@ -45,7 +45,7 @@ class ClientManager extends EventEmitter {
       this.log.debug(`ScheduleManager emitted article ${article._id}`)
       this.handleNewArticle(article)
     })
-    this.shardingManager = new Discord.ShardingManager(path.join(__dirname, '..', '..', 'server-shard.js'), {
+    this.shardingManager = new Discord.ShardingManager(path.join(__dirname, '..', '..', 'shard.js'), {
       respawn: false
     })
     this.shardingManager.on('shardCreate', shard => {
