@@ -203,6 +203,20 @@ async function updateProfiles (guildRss) {
   await guildData.restore()
 }
 
+function formatRejections (results, dataList) {
+  const errors = []
+  for (let i = 0; i < results.length; ++i) {
+    const result = results[i]
+    if (result.status === 'rejected') {
+      errors.push({
+        error: result.reason.message,
+        data: dataList[i]
+      })
+    }
+  }
+  return errors
+}
+
 async function getProfiles (databaseless, uri) {
   if (databaseless) {
     const names = fs.readdirSync(uri)
@@ -217,94 +231,46 @@ async function getProfiles (databaseless, uri) {
 }
 
 async function startProfiles (databaseless, uri) {
-  console.log('Starting profile migration')
-  const guildRssList = await getProfiles(databaseless)
-  let c = 0
-  const total = guildRssList.length
-  const errors = []
-  if (total === 0) {
-    console.log('No profiles found')
-    if (!databaseless) {
-      startFailRecords()
-    }
-    return
+  console.log('Running profile migration')
+  const guildRssList = await getProfiles(databaseless, uri)
+  if (guildRssList.length === 0) {
+    console.log('No guilds found')
+    return startFailRecords(databaseless)
   }
-  for (const guildRss of guildRssList) {
-    updateProfiles(guildRss).catch(error => {
-      errors.push({
-        error,
-        data: guildRss
-      })
-    }).finally(() => {
-      console.log(`Profile: ${++c}/${total}`)
-      if (c === total) {
-        complete(errors)
-        if (!databaseless) {
-          startFailRecords()
-        }
-      }
-    })
-  }
+  const promises = guildRssList.map(guildRss => updateProfiles(guildRss))
+  const results = await Promise.allSettled(promises)
+  const rejects = formatRejections(results, guildRssList)
+  console.log(`Completed ${results.length} profiles`)
+  return rejects.concat(await startFailRecords(databaseless))
 }
 
-async function startFailRecords () {
-  console.log('Starting fail counters migration')
+async function startFailRecords (databaseless) {
+  if (databaseless) {
+    console.log('Skipping fail records migration due to databaseless')
+    return []
+  }
+  console.log('Running fail records migration')
   const failedLinks = await mongoose.connection.collection('failed_links').find({}).toArray()
-  let c = 0
-  const total = failedLinks.length
-  const errors = []
-  if (total === 0) {
+  if (failedLinks.length === 0) {
     console.log('No failed links found')
-    return startVIPs(errors)
+    return startVIPs()
   }
-  for (const failedLink of failedLinks) {
-    updateFailRecords(failedLink).catch(error => {
-      errors.push({
-        error,
-        data: failedLink
-      })
-    }).finally(() => {
-      console.log(`Counter ${++c}/${total}`)
-      if (c === total) {
-        complete(errors)
-        startVIPs()
-      }
-    })
-  }
+  const promises = failedLinks.map(failedLink => updateFailRecords(failedLink))
+  const results = await Promise.allSettled(promises)
+  const rejects = formatRejections(results, failedLinks)
+  console.log(`Completed ${results.length} fail records`)
+  return rejects.concat(await startVIPs())
 }
 
 async function startVIPs () {
   const vips = await mongoose.connection.collection('vips').find({}).toArray()
-  let c = 0
-  const total = vips.length
-  const errors = []
-  if (total === 0) {
-    return complete(errors)
+  if (vips.length === 0) {
+    return []
   }
-  for (const vip of vips) {
-    updateVIP(vip).catch(error => {
-      errors.push({
-        error,
-        data: vip
-      })
-    }).finally(() => {
-      console.log(`Supporter ${++c}/${total}`)
-      if (c === total) {
-        complete(errors)
-        mongoose.connection.close()
-      }
-    })
-  }
-}
-
-function complete (errors) {
-  console.log(`Complete with ${errors.length} errors`)
-  if (errors.length > 0) {
-    for (const item of errors) {
-      console.log(item.error)
-      console.log(JSON.stringify(item.data, null, 2))
-    }
-  }
+  const promises = vips.map(vip => updateVIP(vip))
+  const results = await Promise.allSettled(promises)
+  const rejects = formatRejections(results, vips)
+  return rejects
 }
 
 exports.updateProfiles = updateProfiles

@@ -47,9 +47,9 @@ async function run (config) {
       ...parsedOptions
     })
     await dumpCollections()
-    await v6.run(false, uri)
+    return v6.run(false, uri)
   } else {
-    await v6.run(true, uri)
+    return v6.run(true, uri)
   }
 }
 
