@@ -47,7 +47,9 @@ async function run (config) {
       ...parsedOptions
     })
     await dumpCollections()
-    return v6.run(false, uri)
+    const failures = await v6.run(false, uri)
+    await mongoose.connection.close()
+    return failures
   } else {
     return v6.run(true, uri)
   }
