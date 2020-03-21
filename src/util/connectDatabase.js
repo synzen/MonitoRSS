@@ -1,9 +1,7 @@
 const fs = require('fs')
 const mongoose = require('mongoose')
-mongoose.set('useCreateIndex', true)
 const createLogger = require('./logger/create.js')
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
-const storage = require('./storage.js')
 const getConfig = require('../config.js').get
 
 module.exports = async (shardID, skipRedis) => {
@@ -12,9 +10,7 @@ module.exports = async (shardID, skipRedis) => {
   const log = createLogger(shardID)
   const uri = config.database.uri
   if (!uri.startsWith('mongo')) { // Databaseless configuration
-    if (config.web.enabled === true && !skipRedis && !storage.redisClient) {
-      return connectRedis().then(() => log.info(`Redis connection ready`))
-    } else return
+    return
   }
 
   return new Promise((resolve, reject) => {
@@ -30,6 +26,7 @@ module.exports = async (shardID, skipRedis) => {
       // Do not use .then here since the promise never gets resolved for some reason
       const options = {
         keepAlive: 120,
+        useCreateIndex: true,
         useFindAndModify: false,
         useUnifiedTopology: true,
         useNewUrlParser: true,
@@ -45,22 +42,7 @@ module.exports = async (shardID, skipRedis) => {
       mongoose.connection.once('open', resolve)
     }
 
-    if (config.web.enabled === true && !skipRedis && !storage.redisClient) {
-      connectRedis()
-        .then(() => {
-          log.info(`Redis connection ready`)
-          return mongoose.connection.readyState === 1 ? resolve() : connect()
-        }).catch(reject)
-    } else if (mongoose.connection.readyState === 1) return resolve()
+    if (mongoose.connection.readyState === 1) return resolve()
     else connect()
-  })
-}
-
-function connectRedis () {
-  const config = getConfig()
-  return new Promise((resolve, reject) => {
-    storage.redisClient = require('redis').createClient(config.database.redis)
-    storage.redisClient.once('ready', resolve)
-    storage.redisClient.on('error', reject)
   })
 }

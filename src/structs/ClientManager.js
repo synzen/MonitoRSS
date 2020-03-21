@@ -145,9 +145,6 @@ class ClientManager extends EventEmitter {
       await initialize.populateKeyValues()
       const schedules = await initialize.populateSchedules(this.customSchedules)
       this.scheduleManager.addSchedules(schedules)
-      if (this.config.web.enabled === true && this.config.database.redis && Supporter.isMongoDatabase) {
-        require('../web/index.js')()
-      }
       this.shardingManager.spawn(shardCount, 5500, -1)
     } catch (err) {
       this.log.error(err, `ClientManager db connection`)

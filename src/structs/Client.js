@@ -227,10 +227,7 @@ class Client extends EventEmitter {
     this.log.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     try {
       await connectDb()
-      await Promise.all([
-        maintenance.pruneWithBot(this.bot),
-        initialize.populateRedis(this.bot)
-      ])
+      maintenance.pruneWithBot(this.bot)
       storage.initialized = 2
       this.state = STATES.READY
       ipc.send(ipc.TYPES.INIT_COMPLETE)

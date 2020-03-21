@@ -6,7 +6,6 @@ const pruneFilteredFormats = require('./pruneFilteredFormats.js')
 const pruneFailRecords = require('./pruneFailRecords.js')
 const pruneSubscribers = require('./pruneSubscribers.js')
 const pruneWebhooks = require('./pruneWebhooks.js')
-const flushRedis = require('./flushRedis.js')
 const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
 const checkArticleIndexes = require('./checkArticleIndexes.js')
@@ -27,7 +26,6 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
   await Promise.all([
     checkArticleIndexes(config.feeds.articlesExpire),
     ScheduleStats.deleteAll(),
-    flushRedis(),
     pruneProfiles(guildIdsByShard)
   ])
   await pruneFeeds(guildIdsByShard, channelIdsByShard)
@@ -71,7 +69,6 @@ async function cycle () {
 }
 
 module.exports = {
-  flushRedis,
   pruneWithBot,
   prunePreInit,
   prunePostInit,

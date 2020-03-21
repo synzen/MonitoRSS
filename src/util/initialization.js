@@ -3,7 +3,6 @@ const KeyValue = require('../structs/db/KeyValue.js')
 const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Profile = require('../structs/db/Profile.js')
-const redisIndex = require('../structs/db/Redis/index.js')
 const getConfig = require('../config.js').get
 
 /**
@@ -77,27 +76,7 @@ async function populateSchedules (customSchedules = {}) {
   return schedules
 }
 
-/**
- * Redis is only for UI use
- * @param {import('discord.js').Client} bot
- */
-async function populateRedis (bot) {
-  if (!redisIndex.Base.clientExists) {
-    return
-  }
-  const promises = []
-  bot.guilds.cache.forEach((guild, guildId) => {
-    // This will recognize all guild info, members, channels and roles
-    promises.push(redisIndex.Guild.utils.recognize(guild))
-  })
-
-  bot.users.cache.forEach(user => promises.push(redisIndex.User.utils.recognize(user)))
-
-  await Promise.all(promises)
-}
-
 module.exports = {
-  populateRedis,
   populateSchedules,
   populatePefixes,
   populateKeyValues

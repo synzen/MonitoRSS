@@ -9,7 +9,6 @@
     "url": "https://github.com/synzen/Discord.RSS/issues"
   },
   "scripts": {
-    "postinstall": "cd src && cd web && npm install",
     "test": "jest ./src/tests --detectOpenHandles --testTimeout=10000",
     "test-unit": "jest ./src/tests --detectOpenHandles --testRegex=unit_",
     "test-watch-unit": "jest ./src/tests --detectOpenHandles --testRegex=unit_ --watchAll",

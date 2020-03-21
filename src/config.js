@@ -87,31 +87,8 @@ exports.set = (override) => {
   advanced.batchSize = Number(process.env.DRSS_ADVANCED_BATCHSIZE) || advancedOverride.batchSize || advanced.batchSize
   advanced.parallelBatches = Number(process.env.DRSS_ADVANCED_PARALLELBATCHES) || advancedOverride.parallelBatches || advanced.parallelBatches
 
-  // WEB
-  if (!override.web) {
-    override.web = {}
-  }
-  const web = config.web
-  const webOverride = override.web
-  web.enabled = Boolean(process.env.DRSS_WEB_ENABLED) || webOverride.enabled === undefined ? web.enabled : webOverride.enabled
-  web.trustProxy = Boolean(process.env.DRSS_WEB_TRUSTPROXY) || webOverride.trustProxy === undefined ? web.trustProxy : webOverride.trustProxy
-  web.sessionSecret = process.env.DRSS_WEB_SESSIONSECRET || webOverride.sessionSecret || web.sessionSecret
-  web.port = Number(process.env.PORT) || Number(process.env.DRSS_WEB_PORT) || webOverride.port || web.port
-  web.redirectURI = process.env.DRSS_WEB_REDIRECTURI || webOverride.redirectURI || web.redirectURI
-  web.clientID = process.env.DRSS_WEB_CLIENTID || webOverride.clientID || web.clientID
-  web.clientSecret = process.env.DRSS_WEB_CLIENTSECRET || webOverride.clientSecret || web.clientSecret
-
-  // WEB HTTPS
-  if (!override.web.https) {
-    override.web.https = {}
-  }
-  const https = config.web.https
-  const httpsOverride = override.web.https
-  https.enabled = Boolean(process.env.DRSS_WEB_HTTPS_ENABLED) || httpsOverride.enabled === undefined ? https.enabled : httpsOverride.enabled
-  https.privateKey = process.env.DRSS_WEB_HTTPS_PRIVATEKEY || httpsOverride.privateKey || https.privateKey
-  https.certificate = process.env.DRSS_WEB_HTTPS_CERTIFICATE || httpsOverride.certificate || https.certificate
-  https.chain = process.env.DRSS_WEB_HTTPS_CHAIN || httpsOverride.chain || https.chain
-  https.port = Number(process.env.DRSS_WEB_HTTPS_PORT) || httpsOverride.port || https.port
+  // Web URL
+  config.webURL = process.env.DRSS_HELPURL || override.webURL || config.webURL
 
   if (process.env.NODE_ENV !== 'test') {
     moment.locale(config.feeds.dateLanguage)
