@@ -45,9 +45,12 @@ exports.set = (override) => {
   if (!override.database) {
     override.database = {}
   }
-  config.database.uri = process.env.MONGODB_URI || process.env.DRSS_DATABASE_URI || override.database.uri || config.database.uri
-  config.database.redis = process.env.REDIS_URL || process.env.DRSS_DATABASE_REDIS || override.database.redis || config.database.redis
-  config.database.articlesExpire = Number(process.env.DRSS_DATABASE_ARTICLESEXPIRE) || override.database.articlesExpire || config.database.articlesExpire
+  const database = config.database
+  const databaseOverride = override.database
+  config.database.uri = process.env.MONGODB_URI || process.env.DRSS_DATABASE_URI || databaseOverride.uri || database.uri
+  config.database.redis = process.env.REDIS_URL || process.env.DRSS_DATABASE_REDIS || databaseOverride.redis || database.redis
+  config.database.connection = databaseOverride.connection || database.connection
+  config.database.articlesExpire = Number(process.env.DRSS_DATABASE_ARTICLESEXPIRE) || databaseOverride.articlesExpire || database.articlesExpire
 
   // FEEDS
   if (!override.feeds) {
