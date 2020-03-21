@@ -8,7 +8,7 @@ For the web interface, see https://github.com/synzen/Discord.RSS-Web.
 
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
 
-All documentation can be found at https://github.com/synzen/Discord.RSS/wiki.
+All documentation can be found at https://docs.discordrss.xyz.
 
 Looking for a non-Discord version of this bot? See https://github.com/synzen/feedtracker
 
