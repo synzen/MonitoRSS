@@ -2,6 +2,8 @@
 
 This is the core repository of Discord.RSS. For users who want to clone this repository for personal use, see https://github.com/synzen/Discord.RSS-Clone.
 
+For the web interface, see https://github.com/synzen/Discord.RSS-Web.
+
 ***
 
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
@@ -13,6 +15,12 @@ Looking for a non-Discord version of this bot? See https://github.com/synzen/fee
 ### Publicly Hosted Instance
 
 Don't want to bother hosting your own instance? Use the publicly hosted one!
+
+#### Website:
+
+https://discordrss.xyz
+
+#### Bot Invite:
 
 https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot&permissions=19456
 
