@@ -2,7 +2,6 @@ process.env.DRSS = true
 const Discord = require('discord.js')
 const EventEmitter = require('events')
 const listeners = require('../util/listeners.js')
-const initialize = require('../util/initialization.js')
 const maintenance = require('../maintenance/index.js')
 const ipc = require('../util/ipc.js')
 const Profile = require('./db/Profile.js')
