@@ -21,7 +21,7 @@ services:
     image: synzen/discord.rss-clone
     restart: on-failure:10
     environment:
-      - DRSS_BOT_TOKEN=MjYzMzAzMjc0MzYxMjU3OTg1.XnQi5g.YULGVhmH5qw8SsobFY_I7gkYxtI
+      - DRSS_BOT_TOKEN=
       - DRSS_DATABASE_URI=mongodb://drss-mongo:27017/rss
   drss-web:
     container_name: drss-web-container
