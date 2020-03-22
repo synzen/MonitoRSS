@@ -26,9 +26,10 @@ https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot&p
 
 ### Quick Start
 
+Please note that this is for dev branch. For a stable experience, switch to master branch instead.
 
 ```
-npm install discord.rss
+npm install synzen/discord.rss#dev
 ```
 
 ```js
