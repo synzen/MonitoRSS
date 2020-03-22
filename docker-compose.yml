@@ -1,0 +1,41 @@
+version: "3.5"
+services:
+  drss-redis:
+    container_name: drss-redis-container
+    image: redis:alpine
+    # Uncomment below to hide redis logs
+    logging:
+      driver: none
+  drss-mongo:
+    container_name: drss-mongo-container
+    restart: on-failure:5
+    command: mongod --port 27017
+    # Uncomment below to hide mongo logs
+    logging:
+      driver: none
+    image: mongo:latest
+    volumes:
+      - 'db-data:/data/db'
+  drss-bot:
+    container_name: drss-bot-container
+    image: synzen/discord.rss-clone
+    restart: on-failure:10
+    environment:
+      - DRSS_BOT_TOKEN=MjYzMzAzMjc0MzYxMjU3OTg1.XnQi5g.YULGVhmH5qw8SsobFY_I7gkYxtI
+      - DRSS_DATABASE_URI=mongodb://drss-mongo:27017/rss
+  drss-web:
+    container_name: drss-web-container
+    image: synzen/discord.rss-web
+    restart: on-failure:10
+    ports:
+      - "8081:8081"
+    environment:
+      - DRSS_DATABASE_URI=mongodb://drss-mongo:27017/rss
+      - DRSS_DATABASE_REDIS=
+      - DRSS_BOT_TOKEN=
+      - DRSS_BOT_REDIRECTURI=
+      - DRSS_BOT_CLIENTID=
+      - DRSS_BOT_CLIENTSECRET=
+
+volumes:
+  db-data:
