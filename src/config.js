@@ -88,7 +88,7 @@ exports.set = (override) => {
   advanced.parallelBatches = Number(process.env.DRSS_ADVANCED_PARALLELBATCHES) || advancedOverride.parallelBatches || advanced.parallelBatches
 
   // Web URL
-  config.webURL = process.env.DRSS_HELPURL || override.webURL || config.webURL
+  config.webURL = process.env.DRSS_WEBURL || override.webURL || config.webURL
 
   if (process.env.NODE_ENV !== 'test') {
     moment.locale(config.feeds.dateLanguage)

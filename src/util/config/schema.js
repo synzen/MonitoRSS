@@ -108,7 +108,7 @@ const schema = Joi.object({
   feeds: feedsSchema.default(feedsSchema.validate({}).value),
   advanced: advancedSchema.default(advancedSchema.validate({}).value),
   web: webSchema.default(webSchema.validate({}).value),
-  webURL: Joi.string().strict().default('')
+  webURL: Joi.string().strict().allow('').default('')
 })
 
 module.exports = {
