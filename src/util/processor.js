@@ -160,13 +160,17 @@ async function getFeed (data, log) {
   }
 }
 
+async function connectToDatabase (config) {
+  await connectDb(config.database.uri, config.database.connection)
+}
+
 process.on('message', async m => {
   const currentBatch = m.currentBatch
-  const { debugURLs, scheduleName, memoryCollections } = m
+  const { debugURLs, scheduleName, memoryCollections, config } = m
   const logMarker = scheduleName
   const log = createLogger(logMarker)
   try {
-    await connectDb(logMarker, true)
+    await connectToDatabase(config)
     const articleDocuments = await databaseFuncs.getAllDocuments(scheduleName, memoryCollections)
     const promises = []
     for (const link in currentBatch) {

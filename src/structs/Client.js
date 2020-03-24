@@ -49,7 +49,7 @@ class Client extends EventEmitter {
     const client = new Discord.Client(CLIENT_OPTIONS)
     try {
       this.log = createLogger('-')
-      await connectDb('-')
+      await this.connectToDatabase()
       await client.login(token)
       this.log = createLogger(client.shard.ids[0].toString())
       this.bot = client
@@ -66,10 +66,15 @@ class Client extends EventEmitter {
       } else {
         this.log.warn({
           error: err
-        }, `Discord.RSS unable to login, retrying in 10 minutes`)
+        }, `Discord.RSS failed to start, retrying in 10 minutes`)
         setTimeout(() => this.login.bind(this)(token), 600000)
       }
     }
+  }
+
+  async connectToDatabase () {
+    const config = getConfig()
+    await connectDb(config.database.uri, config.database.connection)
   }
 
   _setup () {

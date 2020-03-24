@@ -141,14 +141,18 @@ class ClientManager extends EventEmitter {
       shardCount = this.config.advanced.shards
     }
     try {
-      await connectDb('M')
+      await this.connectToDatabase()
       await initialize.populateKeyValues()
       const schedules = await initialize.populateSchedules(this.customSchedules)
       this.scheduleManager.addSchedules(schedules)
       this.shardingManager.spawn(shardCount, 5500, -1)
     } catch (err) {
-      this.log.error(err, `ClientManager db connection`)
+      this.log.error(err, `ClientManager failed to start`)
     }
+  }
+
+  async connectToDatabase () {
+    await connectDb(this.config.database.uri, this.config.database.connection)
   }
 
   messageHandler (shard, message) {
