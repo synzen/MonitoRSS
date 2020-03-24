@@ -1,3 +1,5 @@
+const connectDb = require('./src/util/connectDatabase.js')
+
 // Models
 exports.models = {
   Article: require('./src/models/Article.js'),
@@ -49,3 +51,9 @@ exports.errors = {
   FeedParserError: require('./src/structs/errors/FeedParserError.js'),
   RequestError: require('./src/structs/errors/RequestError.js')
 }
+
+/**
+ * This is sometimes necessary for npm modules to use Discord.RSS
+ * models that depends on the database being connected
+*/
+exports.ensureDatabaseConnection = connectDb

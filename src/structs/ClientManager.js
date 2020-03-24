@@ -155,14 +155,6 @@ class ClientManager extends EventEmitter {
     await connectDb(this.config.database.uri, this.config.database.connection)
   }
 
-  /**
-   * This is sometimes necessary for npm modules to use Discord.RSS
-   * models that depends on the database being connected
-   */
-  static async ensureDatabaseConnection (uri, options) {
-    await connectDb(uri, options)
-  }
-
   messageHandler (shard, message) {
     if (!ipc.isValid(message)) {
       return
