@@ -27,6 +27,10 @@ class ClientManager extends EventEmitter {
    */
   constructor (options = {}) {
     super()
+    const nodeMajorVersion = Number(process.version.split('.')[0].replace('v', ''))
+    if (nodeMajorVersion < 12) {
+      throw new Error('Discord.RSS requires Node.js v12 or higher')
+    }
     this.config = setConfig(options.config)
     process.env.DRSS_CONFIG = JSON.stringify(this.config)
     this.log = createLogger('M')
