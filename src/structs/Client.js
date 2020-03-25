@@ -228,9 +228,9 @@ class Client extends EventEmitter {
     await listeners.enableCommands(this.bot)
     this.log.info(`Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
     const uri = config.database.uri
-    this.log.info(`Database URI ${uri} detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
+    this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     try {
-      await connectDb()
+      await connectDb(uri, config.database.connection)
       maintenance.pruneWithBot(this.bot)
       storage.initialized = 2
       this.state = STATES.READY
