@@ -76,29 +76,6 @@ const httpsSchema = Joi.object({
   port: Joi.number().strict().default(443)
 })
 
-const webSchema = Joi.object({
-  enabled: Joi.bool().strict().default(false),
-  trustProxy: Joi.bool().strict().default(false),
-  port: Joi.number().strict().default(8081),
-  sessionSecret: Joi.string().allow('').default('').when('enabled', {
-    is: true,
-    then: Joi.string().disallow('').required()
-  }),
-  redirectURI: Joi.string().allow('').default('').when('enabled', {
-    is: true,
-    then: Joi.string().disallow('').required()
-  }),
-  clientID: Joi.string().allow('').default('').when('enabled', {
-    is: true,
-    then: Joi.string().disallow('').required()
-  }),
-  clientSecret: Joi.string().allow('').default('').when('enabled', {
-    is: true,
-    then: Joi.string().disallow('').required()
-  }),
-  https: httpsSchema.default(httpsSchema.validate({}).value)
-})
-
 const schema = Joi.object({
   dev: Joi.bool().strict(),
   _vip: Joi.bool().strict(),
@@ -107,11 +84,18 @@ const schema = Joi.object({
   database: databaseSchema.default(databaseSchema.validate({}).value),
   feeds: feedsSchema.default(feedsSchema.validate({}).value),
   advanced: advancedSchema.default(advancedSchema.validate({}).value),
-  web: webSchema.default(webSchema.validate({}).value),
   webURL: Joi.string().strict().allow('').default('')
 })
 
 module.exports = {
+  schemas: {
+    log: logSchema,
+    bot: botSchema,
+    database: databaseSchema,
+    feeds: feedsSchema,
+    advanced: advancedSchema,
+    config: schema
+  },
   defaults: schema.validate({}).value,
   validate: config => {
     const results = schema.validate(config, {

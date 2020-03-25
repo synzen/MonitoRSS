@@ -42,6 +42,7 @@ exports.Supporter = require('./src/structs/db/Supporter.js')
 // Utils
 exports.FeedFetcher = require('./src/util/FeedFetcher.js')
 exports.validateConfig = require('./src/util/config/schema').validate
+exports.schemas = require('./src/util/config/schema.js').schemas
 exports.migrations = {
   v6: require('./scripts/pre_v6.js')
 }
