@@ -59,23 +59,6 @@ const advancedSchema = Joi.object({
   parallelBatches: Joi.number().greater(0).strict().default(1)
 })
 
-const httpsSchema = Joi.object({
-  enabled: Joi.bool().strict().default(false),
-  privateKey: Joi.string().allow('').default('').when('enabled', {
-    is: true,
-    then: Joi.string().disallow('').required()
-  }),
-  certificate: Joi.string().allow('').default('').when('enabled', {
-    is: true,
-    then: Joi.string().disallow('').required()
-  }),
-  chain: Joi.string().allow('').default('').when('enabled', {
-    is: true,
-    then: Joi.string().disallow('').required()
-  }),
-  port: Joi.number().strict().default(443)
-})
-
 const schema = Joi.object({
   dev: Joi.bool().strict(),
   _vip: Joi.bool().strict(),
