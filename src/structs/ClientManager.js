@@ -140,7 +140,7 @@ class ClientManager extends EventEmitter {
     }
   }
 
-  async run (shardCount = 1) {
+  async start (shardCount = 1) {
     if (!shardCount) {
       shardCount = this.config.advanced.shards
     }
