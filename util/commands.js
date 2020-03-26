@@ -301,6 +301,11 @@ exports.runController = message => {
   const bot = message.client
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
+  if (!message.content.startsWith(prefix)) {
+    return
+  }
   const command = first.substr(prefix.length)
-  if (fs.existsSync(path.join(__dirname, '..', 'commands', 'controller', `${command}.js`))) loadCCommand(command)[bot.shard && bot.shard.count > 0 ? 'sharded' : 'normal'](bot, message)
+  if (fs.existsSync(path.join(__dirname, '..', 'commands', 'controller', `${command}.js`))) {
+    loadCCommand(command)[bot.shard && bot.shard.count > 0 ? 'sharded' : 'normal'](bot, message)
+  }
 }
