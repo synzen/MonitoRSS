@@ -1,4 +1,5 @@
 const connectDb = require('./src/util/connectDatabase.js')
+const initialize = require('./src/util/initialization.js')
 
 // Models
 exports.models = {
@@ -54,7 +55,13 @@ exports.errors = {
 }
 
 /**
- * This is sometimes necessary for npm modules to use Discord.RSS
- * models that depends on the database being connected
+ * Necessary for npm modules to use Discord.RSS models that
+ * depends on the database being connected
+ *
+ * @param {string} uri
+ * @param {Object<string, any>} options
 */
-exports.ensureDatabaseConnection = connectDb
+exports.ensureDatabaseConnection = async (uri, options) => {
+  const connection = await connectDb(uri, options)
+  await initialize.setupModels(connection)
+}
