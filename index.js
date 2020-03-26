@@ -61,7 +61,7 @@ exports.errors = {
  * @param {string} uri
  * @param {Object<string, any>} options
 */
-exports.ensureDatabaseConnection = async (uri, options) => {
+exports.setupModels = async (uri, options) => {
   const connection = await connectDb(uri, options)
   await initialize.setupModels(connection)
 }
