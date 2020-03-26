@@ -26,7 +26,13 @@ module.exports = async skipRedis => {
 
     function connect () {
       // Do not use .then here since the promise never gets resolved for some reason
-      mongoose.connect(uri, { keepAlive: 120, useNewUrlParser: true, ...CON_SETTINGS, ...buffers }) // Environment variable in Docker container if available
+      mongoose.connect(uri, {
+        useUnifiedTopology: true,
+        keepAlive: 120,
+        useNewUrlParser: true,
+        ...CON_SETTINGS,
+        ...buffers
+      })
         .catch(err => {
           log.general.error('Failed to connect to database, retrying in 30 seconds...', err)
           setTimeout(connect, 30000)
