@@ -1,4 +1,4 @@
-const BlacklistModel = require('../../models/Blacklist.js').model
+const BlacklistModel = require('../../models/Blacklist.js')
 const Base = require('./Base.js')
 
 class Blacklist extends Base {
@@ -52,7 +52,7 @@ class Blacklist extends Base {
   }
 
   static get Model () {
-    return BlacklistModel
+    return BlacklistModel.Model
   }
 }
 

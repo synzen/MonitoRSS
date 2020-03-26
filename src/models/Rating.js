@@ -12,4 +12,5 @@ const schema = mongoose.Schema({
 })
 
 exports.schema = schema
-exports.model = () => mongoose.model('ratings', schema)
+/** @type {import('mongoose').Model} */
+exports.Model = null

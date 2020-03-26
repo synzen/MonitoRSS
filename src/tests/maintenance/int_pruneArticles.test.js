@@ -2,6 +2,7 @@ process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const dbName = 'test_int_pruneArticles'
 const pruneArticles = require('../../maintenance/pruneArticles.js')
+const initialize = require('../../util/initialization.js')
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -17,14 +18,17 @@ jest.mock('../../config.js', () => ({
 }))
 
 describe('Int::maintenance/pruneArticles', function () {
+  /** @type {import('mongoose').Connection} */
+  let con
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await initialize.setupModels(con)
   })
   beforeEach(async function () {
-    await mongoose.connection.db.dropDatabase()
+    await con.db.dropDatabase()
   })
   it('removes irrelevant articles for default schedule', async function () {
-    const db = mongoose.connection.db
+    const db = con.db
     const articles = [{
       // This should be removed since no feeds match this
       id: '1',
@@ -63,7 +67,7 @@ describe('Int::maintenance/pruneArticles', function () {
     expect(all[0]).toEqual(expect.objectContaining(articles[1]))
   })
   it('removes irrelevant articles including other schedules', async function () {
-    const db = mongoose.connection.db
+    const db = con.db
     const articles = [{
       // This should be removed since no schedules exist for this
       id: '1',
@@ -108,7 +112,7 @@ describe('Int::maintenance/pruneArticles', function () {
     // expect(all).toHaveLength(0)
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

@@ -1,7 +1,8 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
-const dbName = 'test_int_checkIndexes'
+const initialize = require('../../util/initialization.js')
 const checkArticleIndexes = require('../../maintenance/checkArticleIndexes.js')
+const dbName = 'test_int_checkIndexes'
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -17,25 +18,28 @@ jest.mock('../../config.js', () => ({
 }))
 
 describe('Int::maintenance/checkArticleIndexes', function () {
+  /** @type {import('mongoose').Connection} */
+  let con
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await initialize.setupModels(con)
   })
   beforeEach(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.collection('articles').insertOne({
+    await con.db.dropDatabase()
+    await con.collection('articles').insertOne({
       addedAt: new Date()
     })
   })
   it('drops the the index if articles expire is 0', async function () {
-    await mongoose.connection.collection('articles').createIndex({
+    await con.collection('articles').createIndex({
       addedAt: 1
     }, {
       expireAfterSeconds: 86400 * 1 // 1 day
     })
-    await expect(mongoose.connection.collection('articles')
+    await expect(con.collection('articles')
       .indexExists('addedAt_1')).resolves.toEqual(true)
     await checkArticleIndexes(0)
-    await expect(mongoose.connection.collection('articles')
+    await expect(con.collection('articles')
       .indexExists('addedAt_1')).resolves.toEqual(false)
   })
   it('changes the index if config changed', async function () {
@@ -45,21 +49,21 @@ describe('Int::maintenance/checkArticleIndexes', function () {
     const indexOptions = {
       expireAfterSeconds: 86400 * 3 // 3 days
     }
-    await mongoose.connection.collection('articles')
+    await con.collection('articles')
       .createIndex(index, indexOptions)
     await checkArticleIndexes(10)
-    const newIndexes = await mongoose.connection.collection('articles').indexes()
+    const newIndexes = await con.collection('articles').indexes()
     expect(newIndexes.find(idx => idx.name === 'addedAt_1').expireAfterSeconds)
       .toEqual(86400 * 10)
   })
   it('creates the index if articles expire is greater than 0', async function () {
     await checkArticleIndexes(9)
-    await expect(mongoose.connection.collection('articles')
+    await expect(con.collection('articles')
       .indexExists('addedAt_1')).resolves.toEqual(true)
-    await mongoose.connection.collection('articles').dropIndexes()
+    await con.collection('articles').dropIndexes()
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

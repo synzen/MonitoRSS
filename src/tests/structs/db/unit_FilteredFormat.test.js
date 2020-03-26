@@ -1,5 +1,5 @@
 process.env.TEST_ENV = true
-const FilteredFormatModel = require('../../../models/FilteredFormat.js').model
+const FilteredFormatModel = require('../../../models/FilteredFormat.js')
 const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
 const embedSchema = require('../../../models/common/Embed.js')
 
@@ -136,7 +136,7 @@ describe('Unit::structs/db/FilteredFormat', function () {
   })
   describe('static get Model', function () {
     it('returns the right model', function () {
-      expect(FilteredFormat.Model).toEqual(FilteredFormatModel)
+      expect(FilteredFormat.Model).toEqual(FilteredFormatModel.Model)
     })
   })
 })

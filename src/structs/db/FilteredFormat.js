@@ -1,5 +1,5 @@
 const FilterBase = require('./FilterBase.js')
-const FilteredFormatModel = require('../../models/FilteredFormat.js').model
+const FilteredFormatModel = require('../../models/FilteredFormat.js')
 const embedSchema = require('../../models/common/Embed.js')
 
 class FilteredFormat extends FilterBase {
@@ -119,7 +119,7 @@ class FilteredFormat extends FilterBase {
   }
 
   static get Model () {
-    return FilteredFormatModel
+    return FilteredFormatModel.Model
   }
 }
 

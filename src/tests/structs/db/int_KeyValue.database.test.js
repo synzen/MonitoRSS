@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const KeyValue = require('../../../structs/db/KeyValue.js')
-const collectionName = require('../../../models/KeyValue').model.collection.collectionName
+const initialize = require('../../../util/initialization.js')
 const dbName = 'test_int_keyvalue'
 const CON_OPTIONS = {
   useNewUrlParser: true,
@@ -18,14 +18,19 @@ jest.mock('../../../config.js', () => ({
 }))
 
 describe('Int::structs/db/KeyValue Database', function () {
+  /** @type {import('mongoose').Connection} */
+  let con
   /** @type {import('mongoose').Collection} */
   let collection
+  let collectionName
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
-    collection = mongoose.connection.db.collection(collectionName)
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await initialize.setupModels(con)
+    collectionName = KeyValue.Model.collection.collectionName
+    collection = con.db.collection(collectionName)
   })
   beforeEach(async function () {
-    await mongoose.connection.db.dropDatabase()
+    await con.db.dropDatabase()
   })
   it('saves correctly', async function () {
     const data = {
@@ -69,7 +74,7 @@ describe('Int::structs/db/KeyValue Database', function () {
     }
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

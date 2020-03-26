@@ -2,7 +2,7 @@ const databaseFuncs = require('../../util/database.js')
 const Article = require('../../models/Article')
 
 jest.mock('../../models/Article', () => ({
-  model: {
+  Model: {
     updateOne: jest.fn(() => ({
       exec: jest.fn()
     })),
@@ -219,13 +219,13 @@ describe('Unit::util/database', function () {
         whatever: 'aszdc'
       }]
       await databaseFuncs.updateDocuments(documents)
-      expect(Article.model.updateOne).toHaveBeenCalledTimes(2)
-      expect(Article.model.updateOne).toHaveBeenCalledWith({
+      expect(Article.Model.updateOne).toHaveBeenCalledTimes(2)
+      expect(Article.Model.updateOne).toHaveBeenCalledWith({
         _id: documents[0]._id
       }, {
         $set: documents[0]
       })
-      expect(Article.model.updateOne).toHaveBeenCalledWith({
+      expect(Article.Model.updateOne).toHaveBeenCalledWith({
         _id: documents[1]._id
       }, {
         $set: documents[1]
@@ -308,7 +308,7 @@ describe('Unit::util/database', function () {
       const documents = [{
         a: 1
       }]
-      Article.model.find.mockReturnValue({
+      Article.Model.find.mockReturnValue({
         lean: jest.fn(() => ({
           exec: jest.fn(() => documents)
         }))

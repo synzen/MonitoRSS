@@ -1,6 +1,6 @@
 const path = require('path')
 const Base = require('./Base.js')
-const PatronModel = require('../../models/Patron.js').model
+const PatronModel = require('../../models/Patron.js')
 const getConfig = require('../../config.js').get
 
 class Patron extends Base {
@@ -154,7 +154,7 @@ class Patron extends Base {
   }
 
   static get Model () {
-    return PatronModel
+    return PatronModel.Model
   }
 }
 

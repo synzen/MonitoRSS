@@ -6,11 +6,8 @@ describe('Unit::models/middleware/Feed', function () {
       const model = jest.fn(() => ({
         findById: () => ({ exec: jest.fn(() => 1) })
       }))
-      const Doc = {
-        model
-      }
-      await middleware.validate.bind(Doc)()
-      expect(model).toHaveBeenCalledWith('Feed')
+      await middleware.validate({ model })()
+      expect(model).toHaveBeenCalledWith('feed')
     })
     it('throws an error if guild tries to change', async function () {
       const guild = 'wte4ry'
@@ -19,10 +16,9 @@ describe('Unit::models/middleware/Feed', function () {
         findById: () => ({ exec })
       }))
       const Doc = {
-        model,
         guild: guild + 1
       }
-      await expect(middleware.validate.bind(Doc)())
+      await expect(middleware.validate({ model }).bind(Doc)())
         .rejects.toThrowError('Guild cannot be changed')
     })
     it('does not throw an error for all correct conditions', async function () {
@@ -32,10 +28,9 @@ describe('Unit::models/middleware/Feed', function () {
         findById: () => ({ exec })
       }))
       const Doc = {
-        model,
         guild
       }
-      await expect(middleware.validate.bind(Doc)())
+      await expect(middleware.validate({ model }).bind(Doc)())
         .resolves.toBeUndefined()
     })
   })

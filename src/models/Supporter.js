@@ -13,4 +13,5 @@ const schema = new mongoose.Schema({
 })
 
 exports.schema = schema
-exports.model = mongoose.model('Supporter', schema)
+/** @type {import('mongoose').Model} */
+exports.Model = null

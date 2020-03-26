@@ -35,7 +35,7 @@ async function pruneArticles () {
   }
   const log = createLogger('M')
   const compoundIDs = await exports.getCompoundIDs()
-  const articles = await Article.model.find({}).exec()
+  const articles = await Article.Model.find({}).exec()
   const removals = []
   for (var i = articles.length - 1; i >= 0; --i) {
     const article = articles[i]

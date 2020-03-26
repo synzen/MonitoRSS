@@ -1,4 +1,4 @@
-const KeyValueModel = require('../../models/KeyValue.js').model
+const KeyValueModel = require('../../models/KeyValue.js')
 const Base = require('./Base.js')
 
 class KeyValue extends Base {
@@ -27,7 +27,7 @@ class KeyValue extends Base {
   }
 
   static get Model () {
-    return KeyValueModel
+    return KeyValueModel.Model
   }
 }
 

@@ -116,7 +116,7 @@ async function insertDocuments (documents, memoryCollection) {
   if (memoryCollection) {
     documents.forEach(doc => memoryCollection.push({ ...doc }))
   } else {
-    const Model = Article.model
+    const Model = Article.Model
     const insert = documents.map(article => new Model(article))
     await Model.insertMany(insert)
   }
@@ -143,7 +143,7 @@ async function updateDocuments (documents, memoryCollection) {
       }
     }
   } else {
-    const promises = documents.map(doc => Article.model.updateOne({
+    const promises = documents.map(doc => Article.Model.updateOne({
       _id: doc._id
     }, {
       $set: doc
@@ -177,7 +177,7 @@ async function getAllDocuments (scheduleName, memoryCollection) {
   if (memoryCollection) {
     return memoryCollection
   } else {
-    const documents = await Article.model.find({
+    const documents = await Article.Model.find({
       scheduleName
     }).lean().exec()
     return module.exports.mapArticleDocumentsToURL(documents)

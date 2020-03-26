@@ -1,5 +1,5 @@
 const FilterBase = require('./FilterBase.js')
-const SubscriberModel = require('../../models/Subscriber.js').model
+const SubscriberModel = require('../../models/Subscriber.js')
 
 class Subscriber extends FilterBase {
   constructor (data, _saved) {
@@ -57,7 +57,7 @@ class Subscriber extends FilterBase {
   }
 
   static get Model () {
-    return SubscriberModel
+    return SubscriberModel.Model
   }
 }
 

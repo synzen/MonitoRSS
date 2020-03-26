@@ -9,12 +9,9 @@ describe('Unit::models/middleware/Subscriber', function () {
       const model = jest.fn(() => ({
         findById: () => ({ exec: jest.fn(() => ({ feed })) })
       }))
-      const Doc = {
-        model
-      }
-      await middleware.validate.bind(Doc)()
-      expect(model).toHaveBeenCalledWith('Feed')
-      expect(model).toHaveBeenCalledWith('Subscriber')
+      await middleware.validate({ model })()
+      expect(model).toHaveBeenCalledWith('feed')
+      expect(model).toHaveBeenCalledWith('subscriber')
     })
     it('throws an error if profile not found', function () {
       const model = jest.fn(() => ({
@@ -22,10 +19,9 @@ describe('Unit::models/middleware/Subscriber', function () {
       }))
       const Doc = {
         _id: 123,
-        model,
         feed: 'abc'
       }
-      return expect(middleware.validate.bind(Doc)())
+      return expect(middleware.validate({ model }).bind(Doc)())
         .rejects.toThrowError(new Error(`Subscriber's specified feed ${Doc.feed} was not found`))
     })
     it('throws an error if feed tries to change', async function () {
@@ -37,10 +33,9 @@ describe('Unit::models/middleware/Subscriber', function () {
         findById: () => ({ exec })
       }))
       const Doc = {
-        model,
         feed: 'irrelevant'
       }
-      await expect(middleware.validate.bind(Doc)())
+      await expect(middleware.validate({ model }).bind(Doc)())
         .rejects.toThrowError('Feed cannot be changed')
     })
     it('does not throw an error for all correct conditions', async function () {
@@ -52,10 +47,9 @@ describe('Unit::models/middleware/Subscriber', function () {
         findById: () => ({ exec })
       }))
       const Doc = {
-        model,
         feed: 'irrelevant'
       }
-      await expect(middleware.validate.bind(Doc)())
+      await expect(middleware.validate({ model }).bind(Doc)())
         .resolves.toBeUndefined()
     })
   })

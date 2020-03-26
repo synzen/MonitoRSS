@@ -1,9 +1,45 @@
+const fs = require('fs')
+const path = require('path')
+const mongoose = require('mongoose')
 const storage = require('./storage.js')
 const KeyValue = require('../structs/db/KeyValue.js')
 const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Profile = require('../structs/db/Profile.js')
 const getConfig = require('../config.js').get
+
+/**
+ * @param {string} pascal
+ */
+function pascalToSnake (pascal) {
+  const replaced = pascal.replace(/[A-Z]/g, substr => {
+    return `_${substr.toLowerCase()}`
+  })
+  // Remove the underscore at the beginning of the string
+  return replaced.slice(1, replaced.length)
+}
+
+/**
+ * Sets up all the mongoose models
+ *
+ * @param {import('mongoose').Connection} connection
+ */
+async function setupModels (connection) {
+  if (!connection) {
+    connection = mongoose
+  }
+  const modelsPath = path.join(__dirname, '..', 'models')
+  const contents = await fs.promises.readdir(modelsPath, 'utf-8')
+  const files = contents.filter(name => name.endsWith('.js'))
+  for (const name of files) {
+    const required = require(`../models/${name}`)
+    const modelName = pascalToSnake(name).replace('.js', '')
+    if (required.setupHooks) {
+      required.setupHooks(connection)
+    }
+    required.Model = connection.model(modelName, required.schema)
+  }
+}
 
 /**
  * Stores the feeds config for use by the control panel
@@ -77,6 +113,7 @@ async function populateSchedules (customSchedules = {}) {
 }
 
 module.exports = {
+  setupModels,
   populateSchedules,
   populatePefixes,
   populateKeyValues

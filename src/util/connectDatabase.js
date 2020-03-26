@@ -14,12 +14,6 @@ function readBuffers (connectionSettings) {
 
 module.exports = async (uri, userOptions) => {
   const connectionSettings = userOptions || {}
-  if (!uri.startsWith('mongo')) { // Databaseless configuration
-    return
-  }
-  if (mongoose.connection.readyState === 1) {
-    return
-  }
   let buffers = {}
   if (Object.keys(connectionSettings).length > 0) {
     buffers = readBuffers(connectionSettings)
@@ -33,6 +27,5 @@ module.exports = async (uri, userOptions) => {
     ...connectionSettings,
     ...buffers
   }
-
-  await mongoose.connect(uri, options)
+  return mongoose.createConnection(uri, options)
 }

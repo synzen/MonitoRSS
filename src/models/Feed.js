@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const middleware = require('./middleware/Feed.js')
+const feedMiddleware = require('./middleware/Feed.js')
 const FilterBase = require('./common/FilterBase.js')
 const Version = require('./common/Version.js')
 const Embed = require('./common/Embed.js')
@@ -70,7 +70,9 @@ const schema = new mongoose.Schema({
 schema.add(Version)
 schema.add(FilterBase)
 
-schema.pre('validate', middleware.validate)
-
 exports.schema = schema
-exports.model = mongoose.model('Feed', schema)
+/** @type {import('mongoose').Model} */
+exports.Model = null
+exports.setupHooks = (connection) => {
+  schema.pre('validate', feedMiddleware.validate(connection))
+}

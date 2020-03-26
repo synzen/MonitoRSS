@@ -1,6 +1,7 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const GuildData = require('../../structs/GuildData.js')
+const initialize = require('../../util/initialization.js')
 const dbName = 'test_int_guilddata'
 const CON_OPTIONS = {
   useNewUrlParser: true,
@@ -17,9 +18,14 @@ jest.mock('../../config.js', () => ({
 }))
 
 describe('Int::structs/GuildData Database', function () {
+  /** @type {import('mongoose').Connection} */
+  let con
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
-    await mongoose.connection.db.dropDatabase()
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await initialize.setupModels(con)
+  })
+  beforeEach(async function () {
+    await con.db.dropDatabase()
   })
   it('restores properly', async function () {
     const feedID1 = new mongoose.Types.ObjectId()
@@ -69,7 +75,7 @@ describe('Int::structs/GuildData Database', function () {
     }
     const guildData = new GuildData(JSON.parse(JSON.stringify(data)))
     await guildData.restore()
-    const db = mongoose.connection.db
+    const db = con.db
     const [
       foundProfile,
       foundFeed1,
@@ -94,7 +100,7 @@ describe('Int::structs/GuildData Database', function () {
     expect(foundFormat2).toEqual(expect.objectContaining(filteredFormats[1]))
     expect(foundSubscriber1).toEqual(expect.objectContaining(subscribers[0]))
     expect(foundSubscriber2).toEqual(expect.objectContaining(subscribers[1]))
-    await mongoose.connection.db.dropDatabase()
+    await con.db.dropDatabase()
   })
   it('gets', async function () {
     const feedID1 = new mongoose.Types.ObjectId()
@@ -142,7 +148,7 @@ describe('Int::structs/GuildData Database', function () {
       filteredFormats,
       subscribers
     }))
-    const db = mongoose.connection.db
+    const db = con.db
     await Promise.all([
       db.collection('profiles').insertOne(profile),
       db.collection('feeds').insertMany(feeds),
@@ -157,7 +163,7 @@ describe('Int::structs/GuildData Database', function () {
     expect(guildData.filteredFormats[1]).toEqual(expect.objectContaining(data.filteredFormats[1]))
     expect(guildData.subscribers[0]).toEqual(expect.objectContaining(data.subscribers[0]))
     expect(guildData.subscribers[1]).toEqual(expect.objectContaining(data.subscribers[1]))
-    mongoose.connection.db.dropDatabase()
+    con.db.dropDatabase()
   })
   it('restores without profile correctly', async function () {
     const feedID1 = new mongoose.Types.ObjectId()
@@ -176,10 +182,10 @@ describe('Int::structs/GuildData Database', function () {
     }
     const guildData = new GuildData(JSON.parse(JSON.stringify(data)))
     await guildData.restore()
-    const db = mongoose.connection.db
+    const db = con.db
     const foundFeed1 = await db.collection('feeds').findOne(feeds[0])
     expect(foundFeed1).toEqual(expect.objectContaining(feeds[0]))
-    await mongoose.connection.db.dropDatabase()
+    await con.db.dropDatabase()
   })
   it('restores with conflicting _ids in database', async function () {
     const feedID = new mongoose.Types.ObjectId()
@@ -201,7 +207,7 @@ describe('Int::structs/GuildData Database', function () {
       filteredFormats: [],
       subscribers: []
     }
-    const db = mongoose.connection.db
+    const db = con.db
     await Promise.all([
       db.collection('profiles').insertOne(profile),
       db.collection('feeds').insertMany(feeds)
@@ -210,7 +216,7 @@ describe('Int::structs/GuildData Database', function () {
     await guildData.restore()
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

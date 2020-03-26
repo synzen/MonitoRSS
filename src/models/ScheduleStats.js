@@ -13,4 +13,5 @@ const schema = new mongoose.Schema({
 })
 
 exports.schema = schema
-exports.model = mongoose.model('Schedule_Stats', schema)
+/** @type {import('mongoose').Model} */
+exports.Model = null

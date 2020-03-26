@@ -7,6 +7,7 @@ const ipc = require('../util/ipc.js')
 const Profile = require('./db/Profile.js')
 const ArticleMessage = require('./ArticleMessage.js')
 const storage = require('../util/storage.js')
+const intiialize = require('../util/initialization.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const connectDb = require('../util/connectDatabase.js')
@@ -49,7 +50,6 @@ class Client extends EventEmitter {
     const client = new Discord.Client(CLIENT_OPTIONS)
     try {
       this.log = createLogger('-')
-      await this.connectToDatabase()
       await client.login(token)
       this.log = createLogger(client.shard.ids[0].toString())
       this.bot = client
@@ -74,7 +74,7 @@ class Client extends EventEmitter {
 
   async connectToDatabase () {
     const config = getConfig()
-    await connectDb(config.database.uri, config.database.connection)
+    return connectDb(config.database.uri, config.database.connection)
   }
 
   _setup () {
@@ -225,13 +225,16 @@ class Client extends EventEmitter {
     }
     const config = getConfig()
     this.state = STATES.STARTING
-    await listeners.enableCommands(this.bot)
-    this.log.info(`Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
-    const uri = config.database.uri
-    this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
     try {
-      await connectDb(uri, config.database.connection)
-      maintenance.pruneWithBot(this.bot)
+      if ((this.mongo && this.mongo.readyState !== 1) || Profile.isMongoDatabase) {
+        this.mongo = await this.connectToDatabase()
+      }
+      await intiialize.setupModels(this.mongo)
+      await listeners.enableCommands(this.bot)
+      this.log.info(`Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
+      const uri = config.database.uri
+      this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
+      await maintenance.pruneWithBot(this.bot)
       storage.initialized = 2
       this.state = STATES.READY
       ipc.send(ipc.TYPES.INIT_COMPLETE)

@@ -1,12 +1,19 @@
 process.env.TEST_ENV = true
 const config = require('../../config.js')
 const mongoose = require('mongoose')
-const dbName = 'test_int_v6'
+const initialize = require('../../util/initialization.js')
 const { updateProfiles, updateFailRecords } = require('../../../scripts/updates/6.0.0.js')
+const dbName = 'test_int_v6_migrate'
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  useCreateIndex: true
+  useCreateIndex: true,
+  /**
+   * This is needed to prevent the tests from running while
+   * the database has not finished building indexes. Only happens
+   * in this test suite for some reason.
+   */
+  autoIndex: false
 }
 
 jest.mock('../../config.js', () => ({
@@ -28,23 +35,26 @@ function getOldDate (hoursAgo) {
 }
 
 describe('Int::scripts/updates/6.0.0 Database', function () {
+  /** @type {import('mongoose').Connection} */
+  let con
   const uri = `mongodb://localhost/${dbName}`
   beforeAll(async function () {
     process.env.DRSS_DATABASE_URI = uri
-    await mongoose.connect(uri, CON_OPTIONS)
+    con = await mongoose.createConnection(uri, CON_OPTIONS)
+    await initialize.setupModels(con)
   })
   beforeEach(async function () {
-    await mongoose.connection.db.dropDatabase()
+    await con.db.dropDatabase()
   })
   describe('fail_records', function () {
     it('restores', async function () {
       const failedLink = {
-        link: 'https://www.google.com',
+        link: 'https://www.google1.com',
         count: 20,
         failed: 'huzz'
       }
       await updateFailRecords(failedLink)
-      const record = await mongoose.connection.collection('fail_records').findOne({
+      const record = await con.collection('fail_records').findOne({
         url: failedLink.link
       })
       const expected = {
@@ -57,12 +67,12 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
     })
     it('sets a date before the cutoff for failed links', async function () {
       const failedLink = {
-        link: 'https://www.google.com',
+        link: 'https://www.google2.com',
         count: 20,
         failed: 'huzz'
       }
       await updateFailRecords(failedLink)
-      const record = await mongoose.connection.collection('fail_records').findOne({
+      const record = await con.collection('fail_records').findOne({
         url: failedLink.link
       })
       const cutoff = getOldDate(config.get().feeds.hoursUntilFail)
@@ -70,11 +80,11 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
     })
     it('sets a new date for not-yet-failed links', async function () {
       const failedLink = {
-        link: 'https://www.google.com',
+        link: 'https://www.google3.com',
         count: 20
       }
       await updateFailRecords(failedLink)
-      const record = await mongoose.connection.collection('fail_records').findOne({
+      const record = await con.collection('fail_records').findOne({
         url: failedLink.link
       })
       const cutoff = getOldDate(config.get().feeds.hoursUntilFail)
@@ -89,7 +99,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         prefix: '22'
       }
       await updateProfiles(guildRss)
-      const profile = await mongoose.connection.collection('profiles').findOne({
+      const profile = await con.collection('profiles').findOne({
         _id: guildRss.id
       })
       expect(profile).toBeDefined()
@@ -101,7 +111,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         sendAlertsTo: ['22']
       }
       await updateProfiles(guildRss)
-      const profile = await mongoose.connection.collection('profiles').findOne({
+      const profile = await con.collection('profiles').findOne({
         _id: guildRss.id
       })
       expect(profile).toBeDefined()
@@ -113,7 +123,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         sendAlertsTo: []
       }
       await updateProfiles(guildRss)
-      const profile = await mongoose.connection.collection('profiles').findOne({
+      const profile = await con.collection('profiles').findOne({
         _id: guildRss.id
       })
       expect(profile).toBeNull()
@@ -138,7 +148,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }
       }
       await updateProfiles(guildRss)
-      const feeds = await mongoose.connection.collection('feeds').find({
+      const feeds = await con.collection('feeds').find({
         guild: guildRss.id
       }).toArray()
       expect(feeds).toHaveLength(2)
@@ -182,7 +192,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }]
       }]
       await updateProfiles(guildRss)
-      const feed = await mongoose.connection.collection('feeds').findOne({
+      const feed = await con.collection('feeds').findOne({
         guild: guildRss.id
       })
       expect(feed.embeds).toEqual(expectedEmbeds)
@@ -201,7 +211,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }
       }
       await updateProfiles(guildRss)
-      const feeds = await mongoose.connection.collection('feeds').find({
+      const feeds = await con.collection('feeds').find({
         guild: guildRss.id
       }).toArray()
       expect(feeds).toHaveLength(1)
@@ -227,7 +237,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }
       }
       await updateProfiles(guildRss)
-      const feeds = await mongoose.connection.collection('feeds').find({
+      const feeds = await con.collection('feeds').find({
         guild: guildRss.id
       }).toArray()
       expect(feeds).toContainEqual(expect.objectContaining({
@@ -261,7 +271,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }
       }
       await updateProfiles(guildRss)
-      const feeds = await mongoose.connection.collection('feeds').find({
+      const feeds = await con.collection('feeds').find({
         guild: guildRss.id
       }).toArray()
       expect(feeds).toContainEqual(expect.objectContaining({
@@ -306,13 +316,13 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         }
       }
       await updateProfiles(guildRss)
-      const subscribers = await mongoose.connection
+      const subscribers = await con
         .collection('subscribers').find({}).toArray()
       expect(subscribers).toHaveLength(3)
     })
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

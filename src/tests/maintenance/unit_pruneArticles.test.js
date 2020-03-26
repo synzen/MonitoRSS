@@ -8,7 +8,7 @@ jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/db/Supporter.js')
 jest.mock('../../structs/db/Schedule.js')
 jest.mock('../../models/Article.js', () => ({
-  model: {
+  Model: {
     find: jest.fn(() => ({
       exec: jest.fn(() => [])
     }))
@@ -50,7 +50,7 @@ describe('Unit::maintenance/pruneArticles', function () {
       const compoundIDs = new Set([createCompoundID(articles[1])])
       jest.spyOn(pruneArticles, 'getCompoundIDs')
         .mockResolvedValue(compoundIDs)
-      Article.model.find.mockReturnValue({
+      Article.Model.find.mockReturnValue({
         exec: jest.fn(() => articles)
       })
       await pruneArticles.pruneArticles()

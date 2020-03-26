@@ -1,7 +1,6 @@
-const FilteredFormatModel = require('../../../models/FilteredFormat.js').model
+const FilteredFormatModel = require('../../../models/FilteredFormat.js')
+const initialize = require('../../../util/initialization.js')
 const mongoose = require('mongoose')
-// Require to register the model for middleware
-require('../../../models/Feed.js')
 
 const dbName = 'test_int_middleware_format'
 const CON_OPTIONS = {
@@ -11,12 +10,14 @@ const CON_OPTIONS = {
 }
 
 describe('Int::models/middleware/FilteredFormat', function () {
+  let con
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
-    await mongoose.connection.db.dropDatabase()
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await con.db.dropDatabase()
+    await initialize.setupModels(con)
   })
   it(`throws an error if the feed does not exist`, async function () {
-    const format = new FilteredFormatModel({
+    const format = new FilteredFormatModel.Model({
       text: 'ase',
       feed: new mongoose.Types.ObjectId().toHexString()
     })
@@ -29,27 +30,27 @@ describe('Int::models/middleware/FilteredFormat', function () {
     const feedId = new mongoose.Types.ObjectId()
     const newFeedId = new mongoose.Types.ObjectId()
     await Promise.all([
-      mongoose.connection.db.collection('filtered_formats').insertOne({
+      con.db.collection('filtered_formats').insertOne({
         _id: filteredFormatID,
         text: 'abc',
         feed: feedId
       }),
-      mongoose.connection.db.collection('feeds').insertOne({
+      con.db.collection('feeds').insertOne({
         _id: feedId
       }),
-      mongoose.connection.db.collection('feeds').insertOne({
+      con.db.collection('feeds').insertOne({
         _id: newFeedId
       })
     ])
 
-    const doc = await FilteredFormatModel.findOne({ _id: filteredFormatID })
-    const format = new FilteredFormatModel(doc, true)
+    const doc = await FilteredFormatModel.Model.findOne({ _id: filteredFormatID })
+    const format = new FilteredFormatModel.Model(doc, true)
     format.feed = newFeedId.toHexString()
     await expect(format.save())
       .rejects.toThrow('Feed cannot be changed')
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

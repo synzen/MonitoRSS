@@ -1,6 +1,6 @@
 const Base = require('./Base')
 const Patron = require('./Patron.js')
-const SupporterModel = require('../../models/Supporter.js').model
+const SupporterModel = require('../../models/Supporter.js')
 const getConfig = require('../../config.js').get
 
 class Supporter extends Base {
@@ -233,7 +233,7 @@ class Supporter extends Base {
   }
 
   static get Model () {
-    return SupporterModel
+    return SupporterModel.Model
   }
 }
 

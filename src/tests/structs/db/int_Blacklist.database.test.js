@@ -1,6 +1,7 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const Blacklist = require('../../../structs/db/Blacklist.js')
+const initialize = require('../../../util/initialization.js')
 const dbName = 'test_int_blacklists'
 const CON_OPTIONS = {
   useNewUrlParser: true,
@@ -17,12 +18,15 @@ jest.mock('../../../config.js', () => ({
 }))
 
 describe('Int::structs/db/Blacklist Database', function () {
+  /** @type {import('mongoose').Connection} */
+  let con
   /** @type {import('mongoose').Collection} */
   let collection
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
-    await mongoose.connection.db.dropDatabase()
-    collection = mongoose.connection.db.collection('blacklists')
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await con.db.dropDatabase()
+    await initialize.setupModels(con)
+    collection = con.db.collection('blacklists')
   })
   it('saves correctly', async function () {
     const data = {
@@ -52,7 +56,7 @@ describe('Int::structs/db/Blacklist Database', function () {
     }
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

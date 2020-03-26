@@ -32,4 +32,5 @@ schema.index({
 })
 
 exports.schema = schema
-exports.model = mongoose.model('Article', schema)
+/** @type {import('mongoose').Model} */
+exports.Model = null

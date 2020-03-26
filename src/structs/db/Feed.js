@@ -1,6 +1,6 @@
 const Base = require('./Base.js')
 const FilterBase = require('./FilterBase.js')
-const FeedModel = require('../../models/Feed.js').model
+const FeedModel = require('../../models/Feed.js')
 const FilteredFormat = require('./FilteredFormat.js')
 const Subscriber = require('./Subscriber.js')
 const Schedule = require('./Schedule.js')
@@ -390,7 +390,7 @@ class Feed extends FilterBase {
   }
 
   static get Model () {
-    return FeedModel
+    return FeedModel.Model
   }
 }
 

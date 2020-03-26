@@ -1,5 +1,5 @@
 const Base = require('./Base.js')
-const ScheduleStatsModel = require('../../models/ScheduleStats').model
+const ScheduleStatsModel = require('../../models/ScheduleStats')
 
 class ScheduleStats extends Base {
   constructor (data, _saved) {
@@ -52,7 +52,7 @@ class ScheduleStats extends Base {
   }
 
   static get Model () {
-    return ScheduleStatsModel
+    return ScheduleStatsModel.Model
   }
 }
 

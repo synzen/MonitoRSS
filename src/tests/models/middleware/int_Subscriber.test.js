@@ -1,7 +1,6 @@
-const SubscriberModel = require('../../../models/Subscriber.js').model
+const SubscriberModel = require('../../../models/Subscriber.js')
+const initialize = require('../../../util/initialization.js')
 const mongoose = require('mongoose')
-// Require to register the model for middleware
-require('../../../models/Feed.js')
 
 const dbName = 'test_int_middleware_subscriber'
 const CON_OPTIONS = {
@@ -11,12 +10,14 @@ const CON_OPTIONS = {
 }
 
 describe('Int::models/middleware/Subscriber', function () {
+  let con
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
-    await mongoose.connection.db.dropDatabase()
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await con.db.dropDatabase()
+    await initialize.setupModels(con)
   })
   it(`throws an error if the feed does not exist`, async function () {
-    const subscriber = new SubscriberModel({
+    const subscriber = new SubscriberModel.Model({
       id: 'asd',
       type: 'role',
       feed: new mongoose.Types.ObjectId().toHexString()
@@ -30,27 +31,27 @@ describe('Int::models/middleware/Subscriber', function () {
     const feedId = new mongoose.Types.ObjectId()
     const newFeedId = new mongoose.Types.ObjectId()
     await Promise.all([
-      mongoose.connection.db.collection('subscribers').insertOne({
+      con.db.collection('subscribers').insertOne({
         id,
         type: 'role',
         feed: feedId
       }),
-      mongoose.connection.db.collection('feeds').insertOne({
+      con.db.collection('feeds').insertOne({
         _id: feedId
       }),
-      mongoose.connection.db.collection('feeds').insertOne({
+      con.db.collection('feeds').insertOne({
         _id: newFeedId
       })
     ])
 
-    const doc = await SubscriberModel.findOne({ id })
-    const subscriber = new SubscriberModel(doc, true)
+    const doc = await SubscriberModel.Model.findOne({ id })
+    const subscriber = new SubscriberModel.Model(doc, true)
     subscriber.feed = newFeedId.toHexString()
     await expect(subscriber.save())
       .rejects.toThrow('Feed cannot be changed')
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

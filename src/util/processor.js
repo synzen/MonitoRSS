@@ -4,6 +4,7 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('../structs/LinkLogic.js')
+const initialize = require('./initialization.js')
 const databaseFuncs = require('../util/database.js')
 
 async function fetchFeed (headers, url, log) {
@@ -161,7 +162,8 @@ async function getFeed (data, log) {
 }
 
 async function connectToDatabase (config) {
-  await connectDb(config.database.uri, config.database.connection)
+  const connection = await connectDb(config.database.uri, config.database.connection)
+  await initialize.setupModels(connection)
 }
 
 process.on('message', async m => {

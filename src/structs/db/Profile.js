@@ -1,6 +1,6 @@
 const Base = require('./Base.js')
 const Supporter = require('./Supporter.js')
-const ProfileModel = require('../../models/Profile.js').model
+const ProfileModel = require('../../models/Profile.js')
 const getConfig = require('../../config.js').get
 
 class Profile extends Base {
@@ -104,7 +104,7 @@ class Profile extends Base {
   }
 
   static get Model () {
-    return ProfileModel
+    return ProfileModel.Model
   }
 }
 

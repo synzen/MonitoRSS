@@ -145,7 +145,10 @@ class ClientManager extends EventEmitter {
       shardCount = this.config.advanced.shards
     }
     try {
-      await this.connectToDatabase()
+      if (Supporter.isMongoDatabase) {
+        this.mongo = await this.connectToDatabase()
+      }
+      await initialize.setupModels(this.mongo)
       await initialize.populateKeyValues()
       const schedules = await initialize.populateSchedules(this.customSchedules)
       this.scheduleManager.addSchedules(schedules)
@@ -156,7 +159,7 @@ class ClientManager extends EventEmitter {
   }
 
   async connectToDatabase () {
-    await connectDb(this.config.database.uri, this.config.database.connection)
+    return connectDb(this.config.database.uri, this.config.database.connection)
   }
 
   messageHandler (shard, message) {

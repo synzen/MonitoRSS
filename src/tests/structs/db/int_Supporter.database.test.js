@@ -3,6 +3,7 @@ const config = require('../../../config.js')
 const mongoose = require('mongoose')
 const Supporter = require('../../../structs/db/Supporter.js')
 const Patron = require('../../../structs/db/Patron.js')
+const initialize = require('../../../util/initialization.js')
 const dbName = 'test_int_patrons'
 const CON_OPTIONS = {
   useNewUrlParser: true,
@@ -23,12 +24,17 @@ jest.mock('../../../config.js', () => ({
 }))
 
 describe('Int::structs/db/Supporter Database', function () {
+  /** @type {import('mongoose').Connection} */
+  let con
   /** @type {import('mongoose').Collection} */
   let collection
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
-    await mongoose.connection.db.dropDatabase()
-    collection = mongoose.connection.db.collection('supporters')
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await initialize.setupModels(con)
+    collection = con.db.collection('supporters')
+  })
+  beforeEach(async function () {
+    await con.db.dropDatabase()
   })
   describe('static getGuilds', function () {
     it('returns guilds of all valid supporters', async function () {
@@ -76,7 +82,7 @@ describe('Int::structs/db/Supporter Database', function () {
         supporter3,
         supporter4
       ])
-      await mongoose.connection.db.collection('patrons').insertMany([
+      await con.db.collection('patrons').insertMany([
         patron2,
         patron3
       ])
@@ -133,7 +139,7 @@ describe('Int::structs/db/Supporter Database', function () {
           pledgeLifetime: 11,
           pledge: 45
         }
-        await mongoose.connection.db.collection('patrons').insertOne(patronData)
+        await con.db.collection('patrons').insertOne(patronData)
         const supporter = await Supporter.get(data._id)
         await expect(supporter.isValid()).resolves.toEqual(true)
       })
@@ -150,7 +156,7 @@ describe('Int::structs/db/Supporter Database', function () {
           pledgeLifetime: 11,
           pledge: 45
         }
-        await mongoose.connection.db.collection('patrons').insertOne(patronData)
+        await con.db.collection('patrons').insertOne(patronData)
         const supporter = await Supporter.get(data._id)
         await expect(supporter.isValid()).resolves.toEqual(false)
       })
@@ -170,7 +176,7 @@ describe('Int::structs/db/Supporter Database', function () {
         pledge: 1250,
         pledgeLifetime: 10000
       }
-      await mongoose.connection.db.collection('patrons').insertOne(patronData)
+      await con.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
       await expect(supporter.getMaxFeeds()).resolves.toEqual(70)
     })
@@ -187,7 +193,7 @@ describe('Int::structs/db/Supporter Database', function () {
         pledge: 1250,
         pledgeLifetime: 10000
       }
-      await mongoose.connection.db.collection('patrons').insertOne(patronData)
+      await con.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
       await expect(supporter.getMaxFeeds()).resolves.toEqual(config.get().feeds.max)
     })
@@ -206,7 +212,7 @@ describe('Int::structs/db/Supporter Database', function () {
         pledge: 1,
         pledgeLifetime: 1600
       }
-      await mongoose.connection.db.collection('patrons').insertOne(patronData)
+      await con.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
       await expect(supporter.getMaxGuilds()).resolves.toEqual(3)
     })
@@ -223,7 +229,7 @@ describe('Int::structs/db/Supporter Database', function () {
         pledge: 1,
         pledgeLifetime: 1600
       }
-      await mongoose.connection.db.collection('patrons').insertOne(patronData)
+      await con.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
       await expect(supporter.getMaxGuilds()).resolves.toEqual(1)
     })
@@ -242,7 +248,7 @@ describe('Int::structs/db/Supporter Database', function () {
         pledge: 1,
         pledgeLifetime: 1600
       }
-      await mongoose.connection.db.collection('patrons').insertOne(patronData)
+      await con.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
       await expect(supporter.getWebhookAccess()).resolves.toEqual(false)
     })
@@ -259,13 +265,13 @@ describe('Int::structs/db/Supporter Database', function () {
         pledge: 1001,
         pledgeLifetime: 1600
       }
-      await mongoose.connection.db.collection('patrons').insertOne(patronData)
+      await con.db.collection('patrons').insertOne(patronData)
       const supporter = await Supporter.get(data._id)
       await expect(supporter.getWebhookAccess()).resolves.toEqual(true)
     })
   })
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })

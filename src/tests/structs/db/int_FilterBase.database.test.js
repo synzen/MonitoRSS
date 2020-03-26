@@ -20,6 +20,8 @@ jest.mock('../../../config.js', () => ({
 describe('Int::structs/db/FilterBase Database', function () {
   beforeAll(async function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+  })
+  beforeEach(async function () {
     await mongoose.connection.db.dropDatabase()
   })
   describe('constructor', function () {

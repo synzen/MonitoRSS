@@ -9,4 +9,5 @@ const schema = new mongoose.Schema({
 schema.add(Version)
 
 exports.schema = schema
-exports.model = mongoose.model('key_values', schema)
+/** @type {import('mongoose').Model} */
+exports.Model = null

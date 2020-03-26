@@ -2,6 +2,7 @@ process.env.TEST_ENV = true
 const config = require('../../../config.js')
 const mongoose = require('mongoose')
 const FailRecord = require('../../../structs/db/FailRecord.js')
+const initialize = require('../../../util/initialization.js')
 const dbName = 'test_int_failcounter'
 const CON_OPTIONS = {
   useNewUrlParser: true,
@@ -31,12 +32,15 @@ const oldDate = getOldDate(config.get().feeds.hoursUntilFail + 2)
 const recentDate = getOldDate(config.get().feeds.hoursUntilFail - 1)
 
 describe('Int::structs/db/FailRecord Database', function () {
+  /** @type {import('mongoose').Connection} */
+  let con
   /** @type {import('mongoose').Collection} */
   let collection
   beforeAll(async function () {
-    await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
-    await mongoose.connection.db.dropDatabase()
-    collection = mongoose.connection.db.collection('fail_records')
+    con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+    await con.db.dropDatabase()
+    await initialize.setupModels(con)
+    collection = con.db.collection('fail_records')
   })
   describe('static record', function () {
     it(`creates the doc if url is new`, async function () {
@@ -121,7 +125,7 @@ describe('Int::structs/db/FailRecord Database', function () {
   })
 
   afterAll(async function () {
-    await mongoose.connection.db.dropDatabase()
-    await mongoose.connection.close()
+    await con.db.dropDatabase()
+    await con.close()
   })
 })
