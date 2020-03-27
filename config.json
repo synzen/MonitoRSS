@@ -6,9 +6,9 @@
     "failedFeeds": true
   },
   "bot": {
-    "token": "",
+    "token": "MzM2ODgxMDgwODAyMjEzODk4.Xn4Agg.ySMxTLdbjv9u4WoLeWHrJbDQGIg",
     "enableCommands": true,
-    "prefix": "~",
+    "prefix": "|",
     "status": "online",
     "activityType": "",
     "activityName": "",
@@ -18,9 +18,12 @@
     "deleteMenus": true,
     "exitOnSocketIssues": true,
     "commandAliases": {}
+    "redirectURI": "https://kdsrss.herokuapp.com/authorize",
+    "clientID": "336881080802213898",
+    "clientSecret": "zkzjIPOT2PEyG9jM9bBQFblFcY1qyl2W",
   },
   "database": {
-    "uri": "mongodb://localhost:27017/rss",
+    "uri": "mongodb://hedorah:<m1ntypoo>@cluster0-shard-00-00-e3ymj.mongodb.net:27017,cluster0-shard-00-01-e3ymj.mongodb.net:27017,cluster0-shard-00-02-e3ymj.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true&w=majority",
     "redis": "",
     "connection": {},
     "clean": true,
@@ -56,7 +59,7 @@
     "parallelShards": 1
   },
   "web": {
-    "enabled": false,
+    "enabled": true,
     "trustProxy": false,
     "sessionSecret": "keyboard cat",
     "port": 8080,
