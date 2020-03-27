@@ -6,7 +6,7 @@
     "failedFeeds": true
   },
   "bot": {
-    "token": "MzM2ODgxMDgwODAyMjEzODk4.Xn4Agg.ySMxTLdbjv9u4WoLeWHrJbDQGIg",
+    "token": "",
     "enableCommands": true,
     "prefix": "|",
     "status": "online",
@@ -23,7 +23,7 @@
     "clientSecret": "zkzjIPOT2PEyG9jM9bBQFblFcY1qyl2W",
   },
   "database": {
-    "uri": "mongodb://hedorah:<m1ntypoo>@cluster0-shard-00-00-e3ymj.mongodb.net:27017,cluster0-shard-00-01-e3ymj.mongodb.net:27017,cluster0-shard-00-02-e3ymj.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true&w=majority",
+    "uri": "",
     "redis": "",
     "connection": {},
     "clean": true,
