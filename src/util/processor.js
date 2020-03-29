@@ -162,6 +162,9 @@ async function getFeed (data, log) {
 }
 
 async function connectToDatabase (config) {
+  if (!config.database.uri.startsWith('mongo')) {
+    return
+  }
   const connection = await connectDb(config.database.uri, config.database.connection)
   await initialize.setupModels(connection)
 }
