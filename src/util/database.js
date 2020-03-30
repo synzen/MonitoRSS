@@ -1,4 +1,5 @@
 const Article = require('../models/Article.js')
+const PendingArticle = require('../structs/db/PendingArticle.js')
 
 /**
  * @param {Object<string, any>} article
@@ -184,6 +185,21 @@ async function getAllDocuments (scheduleName, memoryCollection) {
   }
 }
 
+/**
+ * Store a pending article for persistence if the bot shuts
+ * down before articles could be sent after IPC
+ *
+ * @param {Object<string, any>} article
+ * @returns {string} - The mongoDB generated ID
+ */
+async function storePendingArticle (article) {
+  const pending = new PendingArticle({
+    article
+  })
+  const saved = await pending.save()
+  return saved._id
+}
+
 module.exports = {
   mapArticleDocumentsToURL,
   updatedDocumentForDatabase,
@@ -192,5 +208,6 @@ module.exports = {
   getAllDocuments,
   getInsertsAndUpdates,
   insertDocuments,
-  updateDocuments
+  updateDocuments,
+  storePendingArticle
 }

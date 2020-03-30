@@ -6,6 +6,7 @@ const maintenance = require('../maintenance/index.js')
 const ipc = require('../util/ipc.js')
 const Profile = require('./db/Profile.js')
 const ArticleMessage = require('./ArticleMessage.js')
+const PendingArticle = require('./db/PendingArticle.js')
 const storage = require('../util/storage.js')
 const intiialize = require('../util/initialization.js')
 const getConfig = require('../config.js').get
@@ -156,12 +157,14 @@ class Client extends EventEmitter {
 
   async onNewArticle (article, debug) {
     const feed = article._feed
+    const pendingArticleID = article._pendingArticleID
     const channel = this.bot.channels.cache.get(feed.channel)
     if (!channel) {
       return
     }
     try {
       const articleMessage = new ArticleMessage(this.bot, article, false, debug)
+      await PendingArticle.deleteID(pendingArticleID)
       await articleMessage.send()
     } catch (err) {
       this.log.warn({
@@ -219,6 +222,14 @@ class Client extends EventEmitter {
     }
   }
 
+  async sendPendingArticles () {
+    const pendingArticles = await PendingArticle.getAll()
+    for (const pendingArticle of pendingArticles) {
+      const article = pendingArticle.article
+      await this.onNewArticle(article)
+    }
+  }
+
   async start () {
     if (this.state === STATES.STARTING || this.state === STATES.READY) {
       return this.log.warn(`Ignoring start command because of ${this.state} state`)
@@ -237,6 +248,7 @@ class Client extends EventEmitter {
       await maintenance.pruneWithBot(this.bot)
       storage.initialized = 2
       this.state = STATES.READY
+      await this.sendPendingArticles()
       ipc.send(ipc.TYPES.INIT_COMPLETE)
       listeners.createManagers(this.bot)
       this.emit('finishInit')

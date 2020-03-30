@@ -82,6 +82,32 @@ async function syncDatabase (articleList, databaseDocs, feeds, meta, isDatabasel
   await databaseFuncs.updateDocuments(toUpdate, memoryCollection)
 }
 
+async function sendArticles (articles, log) {
+  /**
+   * Articles should be stored as pending first so that in
+   * case the bot shuts down while sending articles,
+   * they can still be retrieved from the database.
+   */
+  const promises = articles.map(article => {
+    return databaseFuncs.storePendingArticle(article)
+  })
+  const results = await Promise.allSettled(promises)
+  const len = results.length
+  for (var i = 0; i < len; ++i) {
+    const result = results[i]
+    const article = articles[i]
+    if (result.status === 'rejected') {
+      log.error(result.reason, `Failed to store pending article before process.send`)
+    } else {
+      article._pendingArticleID = result.value
+    }
+    process.send({
+      status: 'article',
+      article
+    })
+  }
+}
+
 async function getFeed (data, log) {
   const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config } = data
   const isDatabaseless = !!memoryCollections
@@ -127,16 +153,10 @@ async function getFeed (data, log) {
      * Then finally send new articles to prevent spam if sync fails
      */
     if (runNum !== 0 || config.feeds.sendFirstCycle === true) {
-      const length = newArticles.length
-      for (let i = 0; i < length; ++i) {
-        if (urlLog) {
-          urlLog.info(`Sending article status`)
-        }
-        process.send({
-          status: 'article',
-          article: newArticles[i]
-        })
+      if (urlLog) {
+        urlLog.info(`Sending article status for ${newArticles.length} articles`)
       }
+      await sendArticles(newArticles, log)
     }
 
     process.send({
