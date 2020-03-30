@@ -62,6 +62,7 @@ const advancedSchema = Joi.object({
 const schema = Joi.object({
   dev: Joi.bool().strict(),
   _vip: Joi.bool().strict(),
+  _vipRefreshRateMinutes: Joi.number().strict(),
   log: logSchema.default(logSchema.validate({}).value),
   bot: botSchema.default(botSchema.validate({}).value),
   database: databaseSchema.default(databaseSchema.validate({}).value),

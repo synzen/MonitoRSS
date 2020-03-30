@@ -90,6 +90,10 @@ exports.set = (override) => {
   // Web URL
   config.webURL = process.env.DRSS_WEBURL || override.webURL || config.webURL
 
+  // Other private ones
+  config._vip = override._vip || config._vip
+  config._vipRefreshRateMinutes = override._vipRefreshRateMinutes || config._vipRefreshRateMinutes
+
   if (process.env.NODE_ENV !== 'test') {
     moment.locale(config.feeds.dateLanguage)
     // .validate can throw a TypeError
