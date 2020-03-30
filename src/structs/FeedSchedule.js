@@ -73,7 +73,7 @@ class FeedSchedule extends EventEmitter {
    * @param {Object<string, any>} feedData
    * @param {Set<string>} debugFeedIDs
    */
-  _addToSourceLists (feedData, debugFeedIDs) { // rssList is an object per guildRss
+  _shouldDelegateFeed (feedData, debugFeedIDs) {
     const toDebug = debugFeedIDs.has(feedData._id)
     /** @type {FailRecord} */
     const failRecord = this.failRecords.get(feedData.url)
@@ -95,8 +95,6 @@ class FeedSchedule extends EventEmitter {
     if (toDebug) {
       this.log.info(`${feedData._id}: Preparing for feed delegation`)
     }
-
-    this._delegateFeed(feedData, debugFeedIDs)
     return true
   }
 
@@ -207,7 +205,13 @@ class FeedSchedule extends EventEmitter {
     for (let i = 0; i < feeds.length; ++i) {
       const feedData = feedDataJSONs[i]
       const name = determinedSchedules[i].name
+      // Match schedule
       if (this.name !== name) {
+        continue
+      }
+
+      // Delegate feed
+      if (!this._shouldDelegateFeed(feedData, debugFeedIDs)) {
         continue
       }
 
@@ -221,10 +225,8 @@ class FeedSchedule extends EventEmitter {
         this.log.info(`${feedData._id}: Assigned schedule`)
       }
 
-      // Add to source lists
-      if (this._addToSourceLists(feedData, debugFeedIDs)) {
-        feedCount++
-      }
+      this._delegateFeed(feedData, debugFeedIDs)
+      feedCount++
     }
 
     this.inProgress = true
