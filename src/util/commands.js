@@ -253,6 +253,9 @@ exports.runOwner = async message => {
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   const command = first.substr(prefix.length)
+  if (!message.content.startsWith(prefix)) {
+    return
+  }
   if (!fs.existsSync(path.join(__dirname, '..', 'commands', 'owner', `${command}.js`))) {
     return
   }
