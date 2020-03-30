@@ -47,4 +47,7 @@ describe('Int::structs/db/PendingArticle Database', function () {
     const docs = await collection.find({}).toArray()
     expect(docs[0].article).toEqual(expect.objectContaining(data.article))
   })
+  afterAll(async function () {
+    await con.close()
+  })
 })
