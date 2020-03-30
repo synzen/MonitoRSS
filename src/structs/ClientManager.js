@@ -50,7 +50,8 @@ class ClientManager extends EventEmitter {
       this.handleNewArticle(article)
     })
     this.shardingManager = new Discord.ShardingManager(path.join(__dirname, '..', '..', 'shard.js'), {
-      respawn: false
+      respawn: false,
+      token: this.config.bot.token
     })
     this.shardingManager.on('shardCreate', shard => {
       shard.on('message', message => this.messageHandler(shard, message))
@@ -140,10 +141,8 @@ class ClientManager extends EventEmitter {
     }
   }
 
-  async start (shardCount = 1) {
-    if (!shardCount) {
-      shardCount = this.config.advanced.shards
-    }
+  async start () {
+    const shardCount = this.config.advanced.shards
     try {
       if (Supporter.isMongoDatabase) {
         this.mongo = await this.connectToDatabase()
@@ -152,9 +151,10 @@ class ClientManager extends EventEmitter {
       await initialize.populateKeyValues()
       const schedules = await initialize.populateSchedules(this.customSchedules)
       this.scheduleManager.addSchedules(schedules)
-      this.shardingManager.spawn(shardCount, 5500, -1)
+      this.shardingManager.spawn(shardCount || undefined)
     } catch (err) {
       this.log.error(err, `ClientManager failed to start`)
+      process.exit(1)
     }
   }
 
