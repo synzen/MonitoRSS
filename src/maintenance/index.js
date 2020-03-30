@@ -14,7 +14,6 @@ const Supporter = require('../structs/db/Supporter.js')
 const Patron = require('../structs/db/Patron.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
-const log = createLogger()
 
 /**
  * @param {Map<string, number>} guildIdsByShard
@@ -55,6 +54,7 @@ async function prunePostInit (guildIdsByShard) {
 }
 
 function cycleFunctions () {
+  const log = createLogger('M')
   if (Supporter.enabled) {
     Patron.refresh()
       .then(() => log.info(`Patron check finished`))
