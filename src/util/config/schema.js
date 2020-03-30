@@ -54,7 +54,7 @@ const feedsSchema = Joi.object({
 })
 
 const advancedSchema = Joi.object({
-  shards: Joi.number().greater(0).strict().default(1),
+  shards: Joi.number().greater(-1).strict().default(0),
   batchSize: Joi.number().greater(0).strict().default(400),
   parallelBatches: Joi.number().greater(0).strict().default(1)
 })
