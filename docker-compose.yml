@@ -30,12 +30,12 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - DRSS_DATABASE_URI=mongodb://drss-mongo:27017/rss
-      - DRSS_DATABASE_REDIS=
-      - DRSS_BOT_TOKEN=
-      - DRSS_BOT_REDIRECTURI=
-      - DRSS_BOT_CLIENTID=
-      - DRSS_BOT_CLIENTSECRET=
+      - DRSSWEB_DATABASE_URI=mongodb://drss-mongo:27017/rss
+      - DRSSWEB_DATABASE_REDIS=
+      - DRSSWEB_BOT_TOKEN=
+      - DRSSWEB_BOT_REDIRECTURI=
+      - DRSSWEB_BOT_CLIENTID=
+      - DRSSWEB_BOT_CLIENTSECRET=
 
 volumes:
   db-data:
