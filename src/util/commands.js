@@ -223,13 +223,13 @@ exports.run = async message => {
     if (!message.member) message.member = member
 
     if (!userPerm || !PERMISSIONS.includes(userPerm) || config.bot.ownerIDs.includes(message.author.id)) {
-      return loadCommand(name, message, name)
+      return await loadCommand(name, message, name)
     }
     const serverPerm = member.permissions.has(userPerm)
     const channelPerm = member.permissionsIn(channel).has(userPerm)
 
     if (serverPerm || channelPerm) {
-      return loadCommand(name, message, name)
+      return await loadCommand(name, message, name)
     }
     log.info({
       user: message.author,
