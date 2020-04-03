@@ -17,6 +17,7 @@ exports.set = (override) => {
   }
   const log = config.log
   const logOverride = override.log
+  log.level = process.env.DRSS_LOG_LEVEL || logOverride.level || log.level
   log.destination = process.env.DRSS_LOG_DESTINATION || logOverride.destination || log.destination
   log.linkErrs = Boolean(process.env.DRSS_LOG_LINKERRS) || logOverride.linkErrs || log.linkErrs
   log.unfiltered = Boolean(process.env.DRSS_LOG_UNFILTERED) || logOverride.unfiltered || log.unfiltered

@@ -10,14 +10,7 @@ function createLogger (shardID) {
     ignore: 'hostname,shardID'
   }
 
-  let destination
-
-  if (process.env.NODE_ENV !== 'test' && config.log.destination) {
-    destination = pino.destination(config.log.destination)
-    prettyPrint = false
-  }
-
-  return pino({
+  const pinoConfig = {
     base: {
       shardID: String(shardID)
     },
@@ -33,8 +26,17 @@ function createLogger (shardID) {
       message: serializers.message,
       error: pino.stdSerializers.err
     },
-    enabled: !process.env.TEST_ENV
-  }, destination)
+    enabled: process.env.NODE_ENV !== 'test'
+  }
+
+  let destination
+  if (pinoConfig.enabled) {
+    destination = config.log.destination || undefined
+    pinoConfig.level = config.log.level
+    pinoConfig.prettyPrint = !destination
+  }
+
+  return pino(pinoConfig, pino.destination(destination))
 }
 
 module.exports = createLogger

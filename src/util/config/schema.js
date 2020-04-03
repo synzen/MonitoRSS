@@ -4,6 +4,7 @@ const timezoneValidator = require('./validation/timezone.js')
 const localeValidator = require('./validation/locale.js')
 
 const logSchema = Joi.object({
+  level: Joi.string().strict().valid('silent', 'trace', 'debug', 'info', 'owner', 'warn', 'error', 'fatal').default('info'),
   destination: Joi.string().allow('').default(''),
   linkErrs: Joi.bool().strict().default(true),
   unfiltered: Joi.bool().strict().default(true),
