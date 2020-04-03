@@ -151,9 +151,9 @@ class ClientManager extends EventEmitter {
       await initialize.populateKeyValues()
       const schedules = await initialize.populateSchedules(this.customSchedules)
       this.scheduleManager.addSchedules(schedules)
-      this.shardingManager.spawn(shardCount || undefined)
+      await this.shardingManager.spawn(shardCount || undefined)
     } catch (err) {
-      this.log.error(err, `ClientManager failed to start`)
+      this.log.error(err, `ClientManager failed to start. Verify the correctness of your token.`)
       process.exit(1)
     }
   }
