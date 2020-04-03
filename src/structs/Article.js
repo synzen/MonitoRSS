@@ -308,7 +308,6 @@ module.exports = class Article {
 
     // Finally subscriptions - this MUST be done last after all variables have been defined for filter testing
     this.subscriptions = ''
-    this.subscriptionIds = [] // Used for role mention toggling
 
     // Get filtered subscriptions
     const subscribers = source.subscribers
@@ -323,10 +322,6 @@ module.exports = class Article {
           this.subscriptions += mentionText
         } else if (!subscriber.filters || Object.keys(subscriber.filters).length === 0) {
           this.subscriptions += mentionText
-        }
-        if (type === 'role') {
-          // For ArticleMessage mention toggling
-          this.subscriptionIds.push(subscriber.id)
         }
       }
     }

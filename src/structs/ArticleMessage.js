@@ -31,10 +31,6 @@ class ArticleMessage {
     this.filters = this.feed.filters
     this.rfilters = this.feed.rfilters
     this.filteredFormats = this.feed.filteredFormats
-    this.toggleRoleMentions = this.config.feeds.toggleRoleMentions
-    if (typeof this.feed.toggleRoleMentions === 'boolean') {
-      this.toggleRoleMentions = this.feed.toggleRoleMentions
-    }
     /** @type {Discord.TextChannel} */
     this.channelID = this.feed.channel
     this.channel = bot.channels.cache.get(this.channelID)
@@ -271,7 +267,11 @@ class ArticleMessage {
     } else if (this.text.length === 0 && this.embeds.length === 0) {
       text = `Unable to send empty message for feed article <${this.article.link}> (${this.feedID}).`
     }
-    const options = {}
+    const options = {
+      allowedMentions: {
+        parse: ['roles', 'users', 'everyone']
+      }
+    }
     if (this.webhook) {
       options.username = this.webhook.name
       options.avatarURL = this.webhook.avatar
@@ -309,8 +309,8 @@ class ArticleMessage {
     try {
       return await medium.send(text, options)
     } catch (err) {
-      // 50013 = Missing Permissions
-      if (err.code === 50013 || this.sendFailed++ === 3) {
+      // 50013 = Missing Permissions, 50035 = Invalid form
+      if (err.code === 50013 || err.code === 50035 || this.sendFailed++ === 3) {
         if (this.debug) {
           this.log.info({
             error: err
