@@ -30,6 +30,7 @@ function createLogger (shardID) {
       channel: serializers.channel,
       role: serializers.channel,
       user: serializers.user,
+      message: serializers.message,
       error: pino.stdSerializers.err
     },
     enabled: !process.env.TEST_ENV

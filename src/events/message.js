@@ -6,37 +6,53 @@ const getConfig = require('../config.js').get
 /**
  * Handle discord messages from ws
  * @param {import('discord.js').Message} message - Discord message
- * @param {boolean} limited - Limit the listener to owners only
  * @param {import('../structs/BlacklistCache.js')} blacklistCache - Blacklisted users and guilds
+ * @param {import('pino').Logger} log
  */
-function handler (message, limited, blacklistCache) {
-  if (message.author.bot || !message.guild || blacklistCache.guilds.has(message.guild.id) || blacklistCache.users.has(message.author.id)) {
+function handler (message, blacklistCache, log) {
+  const { guild, author, channel, content } = message
+  const logChild = log.child({
+    message,
+    guild,
+    channel,
+    user: author
+  })
+  if (author.bot || !guild || blacklistCache.guilds.has(guild.id) || blacklistCache.users.has(author.id)) {
+    logChild.debug(`Ignored message. One or more conditions are true - author bot:${!!author.bot}, no guild:${!guild}, blacklisted guild:${blacklistCache.guilds.has(guild.id)}, blacklisted user: ${blacklistCache.users.has(author.id)}`)
     return
   }
 
   const config = getConfig()
-  const command = message.content.split(' ')[0].substr(config.bot.prefix.length)
+  const command = content.split(' ')[0].substr(config.bot.prefix.length)
   if (command === 'forceexit') {
-    return require(`../commands/forceexit.js`)(message.client, message) // To forcibly clear a channel of active menus
+    // Forcibly clear a channel of active menus
+    return require(`../commands/forceexit.js`)(message)
   }
 
-  if (channelTracker.hasActiveMenus(message.channel.id)) {
+  if (channelTracker.hasActiveMenus(channel.id)) {
+    logChild.debug(`Ignored message - channel has active menus`)
     return
   }
 
   // Regular commands
   const ownerIDs = config.bot.ownerIDs
-  if ((!limited && commands.has(message)) || (limited && ownerIDs.includes(message.author.id) && commands.has(message))) {
+  const onlyOwner = config.bot.enableCommands !== true || config.dev === true
+  if (commands.has(message)) {
     if (storage.initialized < 2) {
-      return message.channel.send(`This command is disabled while booting up, please wait.`)
+      logChild.debug(`Bot is currently booting up, ignoring all commands. Current stage is ${storage.initialized}`)
+      return channel.send(`This command is disabled while booting up, please wait.`)
         .then(m => m.delete({ timeout: 4000 }))
     }
-    return commands.run(message)
+    logChild.debug(`Understood command, checking if user has access to use commands`)
+    if (!onlyOwner || ownerIDs.includes(author.id)) {
+      logChild.debug(`Permission granted to proceed with command. Only owners allowed: ${onlyOwner}, is owner: ${ownerIDs.includes(author.id)}`)
+      return commands.run(message, logChild)
+    }
   }
 
   // Bot owner commands
-  if (ownerIDs.includes(message.author.id)) {
-    commands.runOwner(message)
+  if (ownerIDs.includes(author.id)) {
+    commands.runOwner(message, logChild)
   }
 }
 

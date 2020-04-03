@@ -157,18 +157,15 @@ exports.has = message => {
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   return list.hasOwnProperty(first.substr(prefix.length))
 }
-exports.run = async message => {
+exports.run = async (message, log) => {
   const config = getConfig()
-  const log = createLogger(message.guild.shard.id)
   const bot = message.client
   const first = message.content.split(' ')[0]
   const guildPrefix = storage.prefixes[message.guild.id]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   let name = first.substr(prefix.length)
   if (!list.hasOwnProperty(name)) {
-    return log.error({
-      guild: message.guild
-    }, `Failed to run ${name} - nonexistent command`)
+    return log.error(`Failed to run ${name} - nonexistent command`)
   }
 
   const cmdInfo = list[name]
@@ -176,9 +173,7 @@ exports.run = async message => {
   const guild = bot.guilds.cache.get(channel.guild.id)
   if (cmdInfo && cmdInfo.aliasFor) name = cmdInfo.aliasFor
   if (!cmdInfo) {
-    return log.error({
-      guild: message.guild
-    }, `Could not run command "${name}" because command data does not exist`)
+    return log.error(`Could not run command "${name}" because command data does not exist`)
   }
   const botPerm = cmdInfo.botPerm
   const userPerm = cmdInfo.userPerm
@@ -186,16 +181,14 @@ exports.run = async message => {
   try {
     if (guildPrefix && !message.content.startsWith(guildPrefix)) {
       await message.channel.send(`Invalid command prefix. You are not using the prefix you set for your server (${guildPrefix}).`)
-      return log.info({
-        guild: message.guild
-      }, `Ignoring command ${name} due to incorrect prefix (${prefix})`)
+      return log.info(`Ignoring command ${name} due to incorrect prefix (${prefix})`)
     } else if (!guildPrefix && !message.content.startsWith(config.bot.prefix)) {
+      log.debug(`Ignoring command with invalid prefix found in front (guild prefix: ${guildPrefix}, bot prefix: ${config.bot.prefix})`)
       return
     }
-    log.info({
-      guild: message.guild
-    }, `Used ${message.content}`)
+    log.info(`Used command`)
     if (cmdInfo.initLevel !== undefined && cmdInfo.initLevel > storage.initialized) {
+      log.debug(`Ignoring disabled command during bootup (required stage: ${cmdInfo.initLevel}, current stage: ${storage.initialized})`)
       const m = await message.channel.send(`This command is disabled while booting up, please wait.`)
       await m.delete({ timeout: 4000 })
     }
@@ -212,9 +205,7 @@ exports.run = async message => {
     }
 
     if (botPermitted) {
-      log.info({
-        guild: message.guild
-      }, `Missing bot permission ${botPerm} for bot, blocked ${message.content}`)
+      log.info(`Missing bot permission ${botPerm}`)
       return await message.channel.send(`This command has been disabled due to missing bot permission \`${botPerm}\`.`)
     }
 
@@ -231,10 +222,7 @@ exports.run = async message => {
     if (serverPerm || channelPerm) {
       return await loadCommand(name, message, name)
     }
-    log.info({
-      user: message.author,
-      guild: message.guild
-    }, `Missing user permissions for blocked ${message.content}`)
+    log.info(`Missing user permissions ${userPerm}`)
     await message.channel.send(`You do not have the permission \`${userPerm}\` to use this command.`)
   } catch (err) {
     channelTracker.remove(message.channel.id)
@@ -248,12 +236,13 @@ exports.run = async message => {
   }
 }
 
-exports.runOwner = async message => {
+exports.runOwner = async (message, log) => {
   const config = getConfig()
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   const command = first.substr(prefix.length)
   if (!message.content.startsWith(prefix)) {
+    log.debug(`Ignoring command, missing prefix ${prefix}`)
     return
   }
   if (!fs.existsSync(path.join(__dirname, '..', 'commands', 'owner', `${command}.js`))) {

@@ -19,8 +19,16 @@ function user (user) {
   return `${user.id}, ${user.username}`
 }
 
+/**
+ * @param {import('discord.js').Message} message
+ */
+function message (message) {
+  return `${message.content}`
+}
+
 module.exports = {
   guild,
   channel,
-  user
+  user,
+  message
 }

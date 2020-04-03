@@ -3,6 +3,8 @@ const path = require('path')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
 const getConfig = require('../config.js').get
+const createLogger = require('../util/logger/create.js')
+
 const eventHandlers = []
 const VALID_EVENTS = [
   'channelCreate',
@@ -52,10 +54,9 @@ const VALID_EVENTS = [
   'warn'
 ]
 
-const messageHandler = (blacklistCache) => message => {
-  const config = getConfig()
-  const onlyOwner = config.bot.enableCommands !== true || config.dev === true
-  require('../events/message.js')(message, onlyOwner, blacklistCache)
+const messageHandler = (bot, blacklistCache) => message => {
+  const log = createLogger(bot.shard.ids[0])
+  require('../events/message.js')(message, blacklistCache, log)
 }
 
 exports.createManagers = (bot) => {
@@ -75,7 +76,7 @@ exports.createManagers = (bot) => {
 exports.enableCommands = async (bot) => {
   const blacklistCache = new BlacklistCache(await Blacklist.getAll())
   exports.blacklistCache = blacklistCache
-  eventHandlers.push({ name: 'message', func: messageHandler(blacklistCache) })
+  eventHandlers.push({ name: 'message', func: messageHandler(bot, blacklistCache) })
   bot.on('message', eventHandlers[eventHandlers.length - 1].func)
 }
 
