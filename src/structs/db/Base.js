@@ -56,6 +56,7 @@ class Base {
     this.addedAt = this.getField('addedAt')
 
     // Run the get method and throw its associated error if unimplemented
+    // eslint-disable-next-line no-void
     void this.constructor.Model
   }
 
@@ -92,7 +93,7 @@ class Base {
     const config = getConfig()
     const folderPath = config.database.uri
     const subfolderPath = path.join(folderPath, this.Model.collection.collectionName)
-    return [ folderPath, subfolderPath ]
+    return [folderPath, subfolderPath]
   }
 
   /**

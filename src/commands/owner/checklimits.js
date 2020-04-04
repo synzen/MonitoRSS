@@ -33,7 +33,7 @@ module.exports = async (message) => {
   }
 
   if (illegals.length === 0) {
-    await message.channel.send(`Everything looks good!`)
+    await message.channel.send('Everything looks good!')
   } else {
     await message.channel.send(`Illegal sources found for the following guilds: \n\`\`\`${illegals}\`\`\``)
   }

@@ -6,7 +6,7 @@ module.exports = async (message) => {
   const feedID = content[1]
   const feed = await Feed.get(feedID)
   if (!feed) {
-    return message.channel.send(`Could not find any feeds with that id.`)
+    return message.channel.send('Could not find any feeds with that id.')
   }
   return message.channel.send(`Found guild ${feed.guild}`)
 }

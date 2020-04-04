@@ -43,7 +43,7 @@ describe('Unit::structs/db/Base', function () {
       const expectedError = new Error('Model static get method must be implemented by subclasses')
       expect(() => new Base()).toThrowError(expectedError)
     })
-    it(`doesn't throw an error when Model is implemented in subclass`, function () {
+    it('doesn\'t throw an error when Model is implemented in subclass', function () {
       const spy = jest.spyOn(Base, 'Model', 'get').mockImplementationOnce(() => {})
       expect(() => new Base()).not.toThrowError()
       spy.mockReset()
@@ -73,6 +73,7 @@ describe('Unit::structs/db/Base', function () {
           }
         }
       })
+      // eslint-disable-next-line no-void
       void BasicBase.isMongoDatabase
       expect(startsWith).toHaveBeenCalled()
     })
@@ -133,7 +134,7 @@ describe('Unit::structs/db/Base', function () {
       const base = new BasicBase()
       expect(() => base.toObject()).toThrowError(new Error('Method must be implemented by subclasses'))
     })
-    it(`doesn't throw an error when implemented`, function () {
+    it('doesn\'t throw an error when implemented', function () {
       const base = new BasicBase()
       const spy = jest.spyOn(BasicBase.prototype, 'toObject').mockImplementation(() => {})
       expect(() => base.toObject()).not.toThrowError()
@@ -159,7 +160,7 @@ describe('Unit::structs/db/Base', function () {
       beforeEach(function () {
         jest.spyOn(BasicBase, 'isMongoDatabase', 'get').mockReturnValue(true)
       })
-      it(`uses findOne for database`, async function () {
+      it('uses findOne for database', async function () {
         const id = '3w4e5rytu'
         await BasicBase.get(id)
         expect(MockModel.findById).toHaveBeenCalledWith(id)
@@ -493,14 +494,14 @@ describe('Unit::structs/db/Base', function () {
         fsPromises.unlink = fsPromisesUnlink
         fsPromises.rmdir = fsPromisesRmdir
       })
-      it(`doesn't call rmdir if the folder doesn't exist`, async function () {
+      it('doesn\'t call rmdir if the folder doesn\'t exist', async function () {
         fs.existsSync.mockReturnValue(false)
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
         await BasicBase.deleteAll()
         expect(fs.existsSync).toHaveBeenCalledWith('b')
         expect(fs.rmdirSync).not.toHaveBeenCalled()
       })
-      it(`calls rmdir if the folder exists`, async function () {
+      it('calls rmdir if the folder exists', async function () {
         fs.existsSync.mockReturnValue(true)
         fsPromises.readdir.mockResolvedValue(['file1.json', 'file2.json'])
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a', 'b'])
@@ -557,7 +558,7 @@ describe('Unit::structs/db/Base', function () {
         await base.delete()
         expect(fs.existsSync).toHaveBeenCalledWith(path.join(folderPaths[1], `${id}.json`))
       })
-      it(`doesn't call unlink if path doesn't exist`, async function () {
+      it('doesn\'t call unlink if path doesn\'t exist', async function () {
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(['a'])
         fs.existsSync = jest.fn(() => false)
         fs.unlinkSync = jest.fn(() => {})
@@ -566,7 +567,7 @@ describe('Unit::structs/db/Base', function () {
         await base.delete()
         expect(fs.unlinkSync).not.toHaveBeenCalled()
       })
-      it(`calls unlink if path exists`, async function () {
+      it('calls unlink if path exists', async function () {
         const folderPaths = ['a', path.join('a', 'b')]
         jest.spyOn(BasicBase, 'getFolderPaths').mockReturnValue(folderPaths)
         fs.existsSync = jest.fn(() => true)
@@ -890,7 +891,7 @@ describe('Unit::structs/db/Base', function () {
         await base.saveToFile()
         expect(base._saved).toEqual(true)
       })
-      it(`adds _id to the file if it doesn't already exists`, async function () {
+      it('adds _id to the file if it doesn\'t already exists', async function () {
         const newId = 'qa3et54wry'
         jest.spyOn(mongoose.Types, 'ObjectId').mockImplementation(() => ({
           toHexString: jest.fn(() => newId)
@@ -905,7 +906,7 @@ describe('Unit::structs/db/Base', function () {
         expect(JSON.parse(written)._id).toEqual(newId)
         expect(writtenTo).toEqual(path.join('a', `${newId}.json`))
       })
-      it(`uses the current _id and adds it to the file if already exists`, async function () {
+      it('uses the current _id and adds it to the file if already exists', async function () {
         const _id = 'heasdz'
         jest.spyOn(BasicBase.prototype, 'toJSON').mockReturnValue({
           _id

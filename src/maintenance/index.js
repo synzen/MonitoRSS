@@ -57,8 +57,8 @@ function cycleFunctions () {
   const log = createLogger('M')
   if (Supporter.enabled) {
     Patron.refresh()
-      .then(() => log.info(`Patron check finished`))
-      .catch(err => log.error(err, `Failed to refresh patrons on timer`))
+      .then(() => log.info('Patron check finished'))
+      .catch(err => log.error(err, 'Failed to refresh patrons on timer'))
   }
 }
 

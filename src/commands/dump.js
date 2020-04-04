@@ -20,7 +20,7 @@ module.exports = async (message, command) => {
   const url = feed.url
   const { articleList } = await FeedFetcher.fetchFeed(url)
   let textOutput = ''
-  let objOutput = []
+  const objOutput = []
   const raw = message.content.split(' ')[1] === 'original'
   for (var articleObject of articleList) {
     if (raw) objOutput.push(articleObject)

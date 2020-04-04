@@ -332,8 +332,8 @@ describe('Unit::FeedFetcher', function () {
     })
     it('returns the articleList and idType', async function () {
       const results = await FeedFetcher.fetchFeed()
-      expect(results.hasOwnProperty('articleList')).toEqual(true)
-      expect(results.hasOwnProperty('idType')).toEqual(true)
+      expect(Object.prototype.hasOwnProperty.call(results, 'articleList')).toEqual(true)
+      expect(Object.prototype.hasOwnProperty.call(results, 'idType')).toEqual(true)
     })
   })
   describe('fetchRandomArticle', function () {

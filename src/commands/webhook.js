@@ -12,12 +12,14 @@ async function feedSelectorFn (m, data) {
 
   const text = `${webhook ? translate('commands.webhook.existingFound', { name: webhook.name }) : ''}${translate('commands.webhook.prompt')}`
 
-  return { ...data,
+  return {
+    ...data,
     existingWebhook: webhook,
     next: {
       text: text,
       embed: null
-    } }
+    }
+  }
 }
 
 async function collectWebhookFn (m, data) {
@@ -51,7 +53,7 @@ async function collectWebhookFn (m, data) {
 
 module.exports = async (message, command) => {
   const bot = message.client
-  const [ profile, validServer ] = await Promise.all([
+  const [profile, validServer] = await Promise.all([
     Profile.get(message.guild.id),
     Supporter.hasValidGuild(message.guild.id)
   ])
@@ -62,8 +64,8 @@ module.exports = async (message, command) => {
     log.info({
       guild: message.guild,
       user: message.author
-    }, `Unauthorized attempt to access webhooks`)
-    return message.channel.send(`Only servers with patron backing have access to webhooks.`)
+    }, 'Unauthorized attempt to access webhooks')
+    return message.channel.send('Only servers with patron backing have access to webhooks.')
   }
   if (!message.guild.me.permissionsIn(message.channel).has('MANAGE_WEBHOOKS')) {
     return message.channel.send(translate('commands.webhook.noPermission'))

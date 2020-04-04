@@ -49,8 +49,8 @@ async function selectFeedFn (m, data, callback) {
       .split(',')
       .map(item => item.trim())
       .filter((item, index, self) => item && index === self.indexOf(item))
-    let valid = []
-    let invalid = []
+    const valid = []
+    const invalid = []
 
     // Validate user choices
     for (const input of chosenOptionList) {
@@ -275,7 +275,7 @@ class FeedSelector extends Menu {
           }
           const passover = await this.fn(m, data)
           collector.stop()
-          resolve([ passover, this._msgCleaner ])
+          resolve([passover, this._msgCleaner])
         } catch (err) {
           if (err instanceof MenuOptionError) {
             const message = err.message || this.translate('structs.errors.MenuOptionError.message')
@@ -296,7 +296,7 @@ class FeedSelector extends Menu {
           this.channel.send(this.translate('structs.MenuUtils.closedInactivity'))
             .catch(err => {
               const log = createLogger(this.channel.guild.shard.id)
-              log.warn(err, `Unable to send expired menu message`)
+              log.warn(err, 'Unable to send expired menu message')
             })
         } else {
           this.channel.send(reason).then(m => m.delete({ timeout: 6000 }))

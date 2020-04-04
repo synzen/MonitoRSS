@@ -15,7 +15,7 @@ function addRole (message, role, links, translate) {
         guild: message.guild,
         user: message.author,
         role
-      }, `Role successfully added to member`)
+      }, 'Role successfully added to member')
     })
     .catch(err => {
       message.channel.send(translate('commands.sub.addFailed') + err.message ? ` (${err.message})` : '', { split: true }).catch(err => log.comamnd.warning('subme addrole 2', err))
@@ -23,7 +23,7 @@ function addRole (message, role, links, translate) {
         error: err,
         guild: message.guild,
         user: message.author
-      }, `Unable to add role to user`)
+      }, 'Unable to add role to user')
     })
 }
 
@@ -77,7 +77,7 @@ module.exports = async (message, command) => {
       // If there are too many roles, add it into another field
       if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
         ask.addOption(title, desc, true)
-        desc = ``
+        desc = ''
       }
     }
     ask.addOption(title, desc, true)

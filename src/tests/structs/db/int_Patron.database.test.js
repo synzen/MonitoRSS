@@ -66,7 +66,7 @@ describe('Int::structs/db/Patron Database', function () {
         pledge: 1,
         pledgeLifetime: 2
       }
-      await collection.insertMany([ data, data2 ])
+      await collection.insertMany([data, data2])
       const patron = await Patron.get(data._id)
       const patron2 = await Patron.get(data2._id)
       expect(patron.isActive()).toEqual(false)

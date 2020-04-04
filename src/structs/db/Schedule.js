@@ -22,7 +22,7 @@ class Schedule extends Base {
     if (!this.refreshRateMinutes) {
       throw new Error('refreshRateMinutes is undefined')
     } else if (isNaN(this.refreshRateMinutes)) {
-      throw new Error(`refreshRateMinutes must be a number`)
+      throw new Error('refreshRateMinutes must be a number')
     }
 
     /**

@@ -44,10 +44,10 @@ async function switchServerArg (bot, message, args, supporter, supportedGuilds, 
       return message.channel.send(`You cannot add any more servers for your patron status. Your maximum is ${maxServers}.`)
     }
     if (supporter.guilds.includes(server)) {
-      return message.channel.send(`That server already has your patron backing.`)
+      return message.channel.send('That server already has your patron backing.')
     }
     if (supportedGuilds.includes(server)) {
-      return message.channel.send(`This server is already supported by another patron.`)
+      return message.channel.send('This server is already supported by another patron.')
     }
     const m = await message.channel.send(`Adding server ${server}...`)
     const gotGuild = await verifyServer(bot, server)
@@ -63,12 +63,12 @@ async function switchServerArg (bot, message, args, supporter, supportedGuilds, 
     }, `Added patron server ${server} (${gotGuild.name})`)
   } else if (action === 'remove') {
     if (!supporter.guilds.includes(server)) {
-      return message.channel.send(`That server does not have your patron backing.`)
+      return message.channel.send('That server does not have your patron backing.')
     }
     const m2 = await message.channel.send(`Removing server ${server}...`)
     supporter.guilds.splice(supporter.guilds.indexOf(server), 1)
     await supporter.save()
-    await m2.edit(`Successfully removed`)
+    await m2.edit('Successfully removed')
     log.info({
       guild: message.guild,
       user: message.author
@@ -90,7 +90,7 @@ async function switchServerArg (bot, message, args, supporter, supportedGuilds, 
 }
 
 module.exports = async (message) => {
-  const [ profile, supporter, supportedGuilds ] = await Promise.all([
+  const [profile, supporter, supportedGuilds] = await Promise.all([
     Profile.get(message.guild.id),
     Supporter.get(message.author.id),
     Supporter.getValidGuilds()

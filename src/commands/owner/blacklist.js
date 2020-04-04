@@ -8,7 +8,7 @@ module.exports = async (message) => {
   const id = content[1]
   const blacklisted = await Blacklist.get(id)
   if (blacklisted) {
-    return message.channel.send(`Target is already blacklisted.`)
+    return message.channel.send('Target is already blacklisted.')
   }
   const results = await message.client.shard.broadcastEval(`
     const guild = this.guilds.cache.get('${id}');

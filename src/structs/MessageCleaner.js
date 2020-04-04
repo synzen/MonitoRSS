@@ -46,7 +46,7 @@ class MessageCleaner {
       this._messageList[0].delete().then(m => {
         this._messageList = []
       }).catch(err => {
-        this.log.error(err, `Unable to delete single message after menu series`)
+        this.log.error(err, 'Unable to delete single message after menu series')
         this._messageList = []
       })
     } else if (this._allowed && this._messageList.length > 1) {
@@ -54,7 +54,7 @@ class MessageCleaner {
         this._messageList = []
       }).catch(err => {
         this._messageList = []
-        this.log.error(err, `Unable to bulk delete messages after menu series`)
+        this.log.error(err, 'Unable to bulk delete messages after menu series')
       })
     }
   }

@@ -4,7 +4,7 @@ module.exports = async (message) => {
   const content = message.content.split(' ')
   if (content.length === 1) return
   content.shift()
-  let username = content.join(' ')
+  const username = content.join(' ')
   const original = message.client.user.username
   const u = await message.client.user.setUsername(username)
   const log = createLogger(message.guild.shard.id)

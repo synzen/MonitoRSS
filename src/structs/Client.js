@@ -67,7 +67,7 @@ class Client extends EventEmitter {
       } else {
         this.log.warn({
           error: err
-        }, `Discord.RSS failed to start, retrying in 10 minutes`)
+        }, 'Discord.RSS failed to start, retrying in 10 minutes')
         setTimeout(() => this.login.bind(this)(token), 600000)
       }
     }
@@ -81,7 +81,7 @@ class Client extends EventEmitter {
   _setup () {
     const bot = this.bot
     bot.on('error', err => {
-      this.log.warn(`Websocket error`, err)
+      this.log.warn('Websocket error', err)
       const config = getConfig()
       if (config.bot.exitOnSocketIssues === true) {
         this.log.warn('Stopping all processes due to config.bot.exitOnSocketIssues')
@@ -91,7 +91,7 @@ class Client extends EventEmitter {
       }
     })
     bot.on('resume', () => {
-      this.log.info(`Websocket resumed`)
+      this.log.info('Websocket resumed')
       this.start()
     })
     bot.on('disconnect', () => {
@@ -118,7 +118,7 @@ class Client extends EventEmitter {
       }
       try {
         switch (message.type) {
-          case ipc.TYPES.START_INIT:
+          case ipc.TYPES.START_INIT: {
             const data = message.data
             if (data.setPresence) {
               const config = getConfig()
@@ -135,6 +135,7 @@ class Client extends EventEmitter {
             }
             this.start()
             break
+          }
           case ipc.TYPES.NEW_ARTICLE:
             this.onNewArticle(message.data.article, message.data.debug)
             break
@@ -176,7 +177,7 @@ class Client extends EventEmitter {
         channel.send(`Failed to send formatted article for article <${article.link}>.\`\`\`${err.message}\`\`\``)
           .catch(err => this.log.warn({
             error: err
-          }, `Unable to send failed-to-send message for article`))
+          }, 'Unable to send failed-to-send message for article'))
       }
     }
   }
@@ -253,7 +254,7 @@ class Client extends EventEmitter {
       listeners.createManagers(this.bot)
       this.emit('finishInit')
     } catch (err) {
-      this.log.error(err, `Client start`)
+      this.log.error(err, 'Client start')
     }
   }
 
@@ -261,7 +262,7 @@ class Client extends EventEmitter {
     if (this.state === STATES.STARTING || this.state === STATES.STOPPED) {
       return this.log.warn(`Ignoring stop command because of ${this.state} state`)
     }
-    this.log.info(`Discord.RSS has received stop command`)
+    this.log.info('Discord.RSS has received stop command')
     storage.initialized = 0
     clearInterval(this.maintenance)
     listeners.disableAll(this.bot)

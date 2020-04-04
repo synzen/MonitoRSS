@@ -47,7 +47,8 @@ async function feedSelectorFn (m, data) {
       .addOption(translate('commands.split.optionDisable'), '\u200b')
   }
 
-  return { ...data,
+  return {
+    ...data,
     next: {
       menu: nextMenu
     }
@@ -80,10 +81,12 @@ async function enable (m, data) {
     .addOption(translate('commands.split.optionSetMaxLength'), `${translate('commands.split.optionSetMaxLengthDescription')} ${defMaxLenStr(translate)}`)
     .addOption(translate('commands.split.optionDisable'), '\u200b')
 
-  return { ...data,
+  return {
+    ...data,
     next: {
       menu: nextMenu
-    } }
+    }
+  }
 }
 
 async function selectSetting (m, data) {
@@ -114,12 +117,14 @@ async function selectSetting (m, data) {
     throw new MenuUtils.MenuOptionError()
   }
 
-  return { ...data,
+  return {
+    ...data,
     selected: selected,
     next: {
       text: nextText,
       menu: new MenuUtils.Menu(m, setSetting)
-    } }
+    }
+  }
 }
 
 async function setSetting (m, data) {

@@ -20,7 +20,7 @@ describe('Unit::Translator', function () {
   })
   describe('getLocales', function () {
     const originalValue = Array.from(Translator.LOCALES_DATA)
-    const mockValues = [['z', 2], [ 'c', 1 ], ['b', 2], ['a', 3]]
+    const mockValues = [['z', 2], ['c', 1], ['b', 2], ['a', 3]]
 
     beforeEach(function () {
       Translator.LOCALES_DATA.clear()

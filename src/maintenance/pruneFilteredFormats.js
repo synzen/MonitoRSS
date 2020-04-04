@@ -6,7 +6,7 @@ const Feed = require('../structs/db/Feed.js')
  * @returns {number}
  */
 async function pruneFormats () {
-  const [ filteredFormats, feeds ] = await Promise.all([
+  const [filteredFormats, feeds] = await Promise.all([
     FilteredFormat.getAll(),
     Feed.getAll()
   ])

@@ -7,10 +7,10 @@ const Subscriber = require('../structs/db/Subscriber.js')
 const Translator = require('../structs/Translator.js')
 const createLogger = require('../util/logger/create.js')
 const properties = [
-  `format`,
-  `filters`,
-  `misc-options`,
-  `subscribers`,
+  'format',
+  'filters',
+  'misc-options',
+  'subscribers',
   'comparisons',
   'all'
 ]
@@ -80,7 +80,7 @@ module.exports = async (message, command) => {
       properties: properties.join('`, `')
     }))
   }
-  let invalidArgs = []
+  const invalidArgs = []
   for (const arg of args) {
     if (!properties.includes(arg)) {
       invalidArgs.push(arg)

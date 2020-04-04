@@ -10,6 +10,6 @@ module.exports = async (oldGuild, newGuild) => {
     }
   } catch (err) {
     const log = createLogger(oldGuild.shard.id)
-    log.warn(err, `Could not update guild after name change event`)
+    log.warn(err, 'Could not update guild after name change event')
   }
 }

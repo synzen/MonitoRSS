@@ -8,7 +8,7 @@ const PendingArticle = require('../structs/db/PendingArticle.js')
  * @param {Object<string, string|number>} meta
  */
 function formatArticleForDatabase (article, properties, meta) {
-  let propertyValues = {}
+  const propertyValues = {}
   for (const property of properties) {
     const value = article[property]
     if (value && typeof value === 'string') {

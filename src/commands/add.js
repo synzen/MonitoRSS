@@ -8,7 +8,7 @@ const Feed = require('../structs/db/Feed.js')
 const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message) => {
-  const [ profile, supporter ] = await Promise.all([
+  const [profile, supporter] = await Promise.all([
     Profile.get(message.guild.id),
     Supporter.getValidSupporterOfGuild(message.guild.id)
   ])
@@ -41,7 +41,7 @@ module.exports = async (message) => {
   for (let i = 0; i < linkList.length; ++i) {
     const curLink = linkList[i]
     const linkItem = curLink.split(' ')
-    let link = linkItem[0].trim()
+    const link = linkItem[0].trim()
     if (!link.startsWith('http')) {
       failedAddLinks[link] = translate('commands.add.improperFormat')
       continue
@@ -81,7 +81,7 @@ module.exports = async (message) => {
       passedAddLinks.push(link)
       ++checkedSoFar
     } catch (err) {
-      let channelErrMsg = err.message
+      const channelErrMsg = err.message
       log.warn(err, `Unable to add ${link}`)
       failedAddLinks[link] = channelErrMsg
     }

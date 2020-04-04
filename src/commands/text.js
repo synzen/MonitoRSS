@@ -18,8 +18,7 @@ async function feedSelectorFn (m, data) {
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const nextData = {
     ...data,
-    next: {
-      text: Translator.translate('commands.text.prompt', locale, { prefix, currentMsg, link: feed.url }) }
+    next: { text: Translator.translate('commands.text.prompt', locale, { prefix, currentMsg, link: feed.url }) }
   }
   return nextData
 }
@@ -76,6 +75,6 @@ module.exports = async (message, command) => {
       guild: message.guild
     }, `New text recorded for ${feed.url}`)
     // Escape backticks in code blocks by inserting zero-width space before each backtick
-    await message.channel.send(`${translate('commands.text.setSuccess', { link: feed.url })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.text.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.text.noSubscriptionsPlaceholder', { prefix })}` : ``}`)
+    await message.channel.send(`${translate('commands.text.setSuccess', { link: feed.url })}\n \`\`\`Markdown\n${setting.replace('`', '​`')}\`\`\`\n${translate('commands.text.reminder', { prefix })} ${translate('generics.backupReminder', { prefix })}${setting.search(/{subscriptions}/) === -1 ? ` ${translate('commands.text.noSubscriptionsPlaceholder', { prefix })}` : ''}`)
   }
 }

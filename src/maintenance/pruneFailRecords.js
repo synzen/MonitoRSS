@@ -6,7 +6,7 @@ const Feed = require('../structs/db/Feed.js')
  * @returns {number}
  */
 async function pruneFailRecords () {
-  const [ records, feeds ] = await Promise.all([
+  const [records, feeds] = await Promise.all([
     FailRecord.getAll(),
     Feed.getAll()
   ])

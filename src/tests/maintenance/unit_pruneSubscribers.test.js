@@ -60,7 +60,7 @@ describe('Unit::maintenance/pruneSubscribers', function () {
   })
   describe('feed exists', function () {
     describe('sharded bot', function () {
-      it(`doesn't prune subscribers whose guilds are not within the bot`, async function () {
+      it('doesn\'t prune subscribers whose guilds are not within the bot', async function () {
         const subscribers = [{
           type: 'user',
           feed: 'feedA',

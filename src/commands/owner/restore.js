@@ -15,7 +15,7 @@ async function getID (message) {
   }
   const res = await fetch(url)
   if (res.status !== 200) {
-    throw new Error(`Non-200 status code: `, res.status)
+    throw new Error('Non-200 status code: ', res.status)
   }
   const file = await res.json()
   return file

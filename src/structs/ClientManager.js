@@ -153,7 +153,7 @@ class ClientManager extends EventEmitter {
       this.scheduleManager.addSchedules(schedules)
       await this.shardingManager.spawn(shardCount || undefined)
     } catch (err) {
-      this.log.error(err, `ClientManager failed to start. Verify the correctness of your token.`)
+      this.log.error(err, 'ClientManager failed to start. Verify the correctness of your token.')
       process.exit(1)
     }
   }
@@ -227,7 +227,7 @@ class ClientManager extends EventEmitter {
       return
     }
     try {
-      this.log.info(`All shards have initialized by the Sharding Manager.`)
+      this.log.info('All shards have initialized by the Sharding Manager.')
       this.sendQueuedArticles(shard)
       await maintenance.prunePostInit(this.guildIdsByShard)
       if (Supporter.enabled) {
@@ -237,7 +237,7 @@ class ClientManager extends EventEmitter {
       this.broadcast(ipc.TYPES.FINISHED_INIT)
       this.emit('finishInit')
     } catch (err) {
-      this.log.fatal(err, `Post-initialization failed in sharding manager`)
+      this.log.fatal(err, 'Post-initialization failed in sharding manager')
     }
   }
 

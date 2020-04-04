@@ -37,7 +37,7 @@ module.exports = async (message) => {
     profile.locale = undefined
     log.info({
       guild: message.guild
-    }, `Locale reset`)
+    }, 'Locale reset')
     await profile.save()
     return message.channel.send(Translator.translate('commands.locale.resetSuccess', botLocale, { locale: botLocale }))
   }

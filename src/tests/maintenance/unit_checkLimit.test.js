@@ -131,7 +131,7 @@ describe('Unit::maintenance/checkLimits', function () {
     expect(result.enabled).toEqual(1)
     expect(result.disabled).toEqual(1)
   })
-  it(`uses the supporter limit if available for guild`, async function () {
+  it('uses the supporter limit if available for guild', async function () {
     const feeds = [{
       // Enabled
       guild: 'a',
@@ -155,7 +155,7 @@ describe('Unit::maintenance/checkLimits', function () {
     expect(feeds[2].disable).not.toHaveBeenCalledTimes(1)
     expect(feeds[3].disable).not.toHaveBeenCalled()
   })
-  it(`enables all and disables none if limit is 0`, async function () {
+  it('enables all and disables none if limit is 0', async function () {
     config.get.mockReturnValue({
       feeds: {
         max: 0
@@ -200,7 +200,7 @@ describe('Unit::maintenance/checkLimits', function () {
     expect(feeds[4].enable).not.toHaveBeenCalled()
     expect(feeds[4].disable).not.toHaveBeenCalled()
   })
-  it(`only calls enable for feeds with 'Exceeded feed limit' reason`, async function () {
+  it('only calls enable for feeds with \'Exceeded feed limit\' reason', async function () {
     const feeds = [{
       // Disabled, under limit but should not be enabled be limit checks
       guild: 'a',

@@ -9,7 +9,7 @@ const Feed = require('../structs/db/Feed.js')
 const getConfig = require('../config.js').get
 
 module.exports = async (message, command) => {
-  const [ profile, supporter, schedules, supporterGuilds ] = await Promise.all([
+  const [profile, supporter, schedules, supporterGuilds] = await Promise.all([
     Profile.get(message.guild.id),
     Supporter.getValidSupporterOfGuild(message.guild.id),
     Schedule.getAll(),
@@ -49,7 +49,7 @@ module.exports = async (message, command) => {
     vipDetails = '\n'
   }
 
-  let desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
+  const desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
   // desc += failedFeedCount > 0 ? translate('commands.list.failAlert', { failLimit: FAIL_LIMIT, prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix }) : ''
 
   const list = new MenuUtils.Menu(message)

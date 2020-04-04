@@ -6,6 +6,6 @@ module.exports = async (message) => {
   const log = createLogger(message.guild.shard.id)
   log.owner({
     user: message.author
-  }, `Refreshed VIPs`)
-  await message.channel.send(`Refreshed VIPs.`)
+  }, 'Refreshed VIPs')
+  await message.channel.send('Refreshed VIPs.')
 }

@@ -86,9 +86,9 @@ describe('Int::structs/db/Base Database', function () {
   it('gets many', async function () {
     const a = new Foobar({ foo: 'a' })
     const b = new Foobar({ foo: 'b' })
-    const saves = await Promise.all([ a.save(), b.save() ])
-    const [ id1, id2 ] = saves.map(doc => doc._id.toHexString())
-    const classes = await FoobarClass.getMany([ id1, id2 ])
+    const saves = await Promise.all([a.save(), b.save()])
+    const [id1, id2] = saves.map(doc => doc._id.toHexString())
+    const classes = await FoobarClass.getMany([id1, id2])
     expect(classes.length).toEqual(2)
     for (const item of classes) {
       expect(item).toBeInstanceOf(FoobarClass)
@@ -117,7 +117,7 @@ describe('Int::structs/db/Base Database', function () {
     const found = await Foobar.findById(initFoobar.id).lean().exec()
     expect(Object.keys(found)).not.toContain('foo')
   })
-  it(`doesn't add keys after update`, async function () {
+  it('doesn\'t add keys after update', async function () {
     const initData = { foo: 'w49t4qwej', baz: 976 }
     const foobar = new FoobarClass(initData)
     const saved = await foobar.save()
@@ -126,14 +126,14 @@ describe('Int::structs/db/Base Database', function () {
     const found = await Foobar.findById(saved._id).lean().exec()
     expect(found.nullField).toBeUndefined()
   })
-  it(`doesn't set object field when undefined`, async function () {
+  it('doesn\'t set object field when undefined', async function () {
     const initData = { foo: 'w44jk', baz: 135749 }
     const foobar = new FoobarClass(initData)
     const saved = await foobar.save()
     const found = await Foobar.findById(saved._id).lean().exec()
     expect(Object.keys(found)).not.toContain('object')
   })
-  it(`doesn't set object field when undefined after update`, async function () {
+  it('doesn\'t set object field when undefined after update', async function () {
     const initData = { foo: 'w44zj', baz: 136679 }
     const foobar = new FoobarClass(initData)
     const saved = await foobar.save()
@@ -142,13 +142,13 @@ describe('Int::structs/db/Base Database', function () {
     const found = await Foobar.findById(saved._id).lean().exec()
     expect(Object.keys(found)).not.toContain('object')
   })
-  it(`sets default empty array`, async function () {
+  it('sets default empty array', async function () {
     const initData = { foo: 'w4h4j', baz: 13111 }
     const foobar = new FoobarClass(initData)
     expect(foobar.array).toBeInstanceOf(Array)
     expect(foobar.array).toHaveLength(0)
   })
-  it(`doesn't remove the array when updated`, async function () {
+  it('doesn\'t remove the array when updated', async function () {
     const initData = { foo: 'wf44j', baz: 53579 }
     const foobar = new FoobarClass(initData)
     const saved = await foobar.save()

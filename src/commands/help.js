@@ -38,7 +38,7 @@ module.exports = async (message, command) => {
           log.warn({
             error: err,
             user: message.author
-          }, `Failed to send DM notification in text channel`)
+          }, 'Failed to send DM notification in text channel')
         })
     })
     .catch(err => {
@@ -46,7 +46,7 @@ module.exports = async (message, command) => {
       log.warn({
         error: err,
         user: message.author
-      }, `Failed to direct message help text to user`)
+      }, 'Failed to direct message help text to user')
       return message.channel.send(helpMessage, { split: { prepend: '\u200b\n' } })
     })
 }

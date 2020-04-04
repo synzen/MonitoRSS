@@ -14,7 +14,7 @@ function removeRole (message, role, translate) {
         guld: message.guild,
         user: message.author,
         role
-      }, `Removed role from member`)
+      }, 'Removed role from member')
       message.channel.send(translate('commands.unsub.removeSuccess', { name: role.name }))
     })
     .catch(err => {
@@ -24,7 +24,7 @@ function removeRole (message, role, translate) {
         guld: message.guild,
         user: message.author,
         role
-      }, `Unable to remove role`)
+      }, 'Unable to remove role')
     })
 }
 
@@ -89,7 +89,7 @@ module.exports = async (message, command) => {
       continue
     }
     const title = subscriptionData.source.title + ` (${temp.length})`
-    let channelName = message.guild.channels.cache.get(subscriptionData.source.channel).name
+    const channelName = message.guild.channels.cache.get(subscriptionData.source.channel).name
     let desc = `**${translate('commands.sub.link')}**: ${subscriptionData.source.url}\n**${translate('commands.sub.channel')}**: #${channelName}\n**${translate('commands.sub.roles')}**:\n`
     for (var x = 0; x < temp.length; ++x) {
       const cur = temp[x]
@@ -98,7 +98,7 @@ module.exports = async (message, command) => {
       // If there are too many roles, add it into another field
       if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
         ask.addOption(title, desc, true)
-        desc = ``
+        desc = ''
       }
     }
     ask.addOption(title, desc, true)
@@ -117,7 +117,7 @@ module.exports = async (message, command) => {
       temp.push(filteredMemberRoles[leftoverRole].name)
     }
     temp.sort()
-    const title = `${translate('commands.unsub.otherRoles')}${temp.length > 0 ? ` (${temp.length})` : ``}`
+    const title = `${translate('commands.unsub.otherRoles')}${temp.length > 0 ? ` (${temp.length})` : ''}`
     let desc = ''
     for (let y = 0; y < temp.length; ++y) {
       const cur = temp[y]

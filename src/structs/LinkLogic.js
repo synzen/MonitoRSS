@@ -182,7 +182,7 @@ class LinkLogic extends EventEmitter {
     const articleID = article._id
     const { ncomparisons, pcomparisons } = feed
     if (!articleID) {
-      this._logDebug(feedID, `No article ID found for article. Blocked.`, {
+      this._logDebug(feedID, 'No article ID found for article. Blocked.', {
         article
       })
       return false

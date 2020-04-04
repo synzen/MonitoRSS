@@ -25,7 +25,7 @@ describe('Unit::structs/GuildData', function () {
     Subscriber.mockReset()
   })
   describe('constructor', function () {
-    it(`throws error if feeds don't match the guild`, function () {
+    it('throws error if feeds don\'t match the guild', function () {
       const profile = {
         _id: 'id1'
       }
@@ -38,9 +38,9 @@ describe('Unit::structs/GuildData', function () {
         feeds
       }
       expect(() => new GuildData(data))
-        .toThrow(`Feed abc does not match profile`)
+        .toThrow('Feed abc does not match profile')
     })
-    it(`throws error if formats don't match any feeds`, function () {
+    it('throws error if formats don\'t match any feeds', function () {
       const feeds = [{
         _id: 'abc',
         guild: 'id2'
@@ -54,9 +54,9 @@ describe('Unit::structs/GuildData', function () {
         filteredFormats
       }
       expect(() => new GuildData(data))
-        .toThrow(`Format whatever does not match any given feeds`)
+        .toThrow('Format whatever does not match any given feeds')
     })
-    it(`throws error if subscribers don't match any feeds`, function () {
+    it('throws error if subscribers don\'t match any feeds', function () {
       const feeds = [{
         _id: 'abc',
         guild: 'id2'
@@ -71,7 +71,7 @@ describe('Unit::structs/GuildData', function () {
         filteredFormats: []
       }
       expect(() => new GuildData(data))
-        .toThrow(`Subscriber whatever does not match any given feeds`)
+        .toThrow('Subscriber whatever does not match any given feeds')
     })
     it('throws for multiple guild ids found for feeds', function () {
       const feeds = [{

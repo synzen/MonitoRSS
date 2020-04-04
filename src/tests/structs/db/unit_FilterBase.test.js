@@ -130,7 +130,7 @@ describe('Unit::structs/db/FilterBase', function () {
       jest.spyOn(FilterClass.prototype, 'getFilterIndex').mockReturnValue(-1)
       const base = new FilterClass()
       return expect(base.removeFilter('', 'abc'))
-        .rejects.toThrowError(new Error(`"abc" does not exist`))
+        .rejects.toThrowError(new Error('"abc" does not exist'))
     })
     it('splices the value if it exists', async function () {
       const filters = {
@@ -163,7 +163,7 @@ describe('Unit::structs/db/FilterBase', function () {
       jest.spyOn(FilterClass.prototype, 'getFilterIndex').mockReturnValue(1)
       const base = new FilterClass()
       return expect(base.addFilter('', 'abc'))
-        .rejects.toThrowError(new Error(`"abc" already exists`))
+        .rejects.toThrowError(new Error('"abc" already exists'))
     })
     it('adds the value', async function () {
       const filters = {
@@ -217,7 +217,7 @@ describe('Unit::structs/db/FilterBase', function () {
         h: ['da', 'abc']
       }
       return expect(base.addFilters('h', ['zzz', 'asdf']))
-        .rejects.toThrowError(new Error(`"asdf" already exists`))
+        .rejects.toThrowError(new Error('"asdf" already exists'))
     })
     it('adds the values', async function () {
       const filters = {

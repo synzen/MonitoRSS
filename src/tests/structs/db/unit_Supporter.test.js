@@ -35,13 +35,13 @@ describe('Unit::structs/db/Supporter', function () {
       expect(() => new Supporter(data))
         .toThrow(new TypeError('_id is undefined'))
     })
-    it(`does not throw errors for any values other than _id`, function () {
+    it('does not throw errors for any values other than _id', function () {
       const data = {
         _id: '123'
       }
       expect(() => new Supporter(data)).not.toThrow()
     })
-    it(`initializes correctly`, function () {
+    it('initializes correctly', function () {
       const supporter = new Supporter({ ...initData })
       expect(supporter.guilds).toEqual([])
     })
@@ -285,7 +285,7 @@ describe('Unit::structs/db/Supporter', function () {
     })
   })
   describe('getFeedLimitsOfGuilds', function () {
-    it(`returns guilds with their respsective supporter feed limits`, async function () {
+    it('returns guilds with their respsective supporter feed limits', async function () {
       const validSupporters = [{
         getMaxFeeds: () => 99,
         guilds: ['a', 'b']

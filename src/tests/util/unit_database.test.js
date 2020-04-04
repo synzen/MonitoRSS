@@ -334,12 +334,12 @@ describe('Unit::util/database', function () {
       }]
       const result = await databaseFuncs.mapArticleDocumentsToURL(articles)
       expect(result).toEqual({
-        '1': [{
+        1: [{
           ...articles[0]
         }, {
           ...articles[2]
         }],
-        '2': [{
+        2: [{
           ...articles[1]
         }]
       })

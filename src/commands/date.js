@@ -35,7 +35,8 @@ async function selectOptionFn (m, data) {
 
   const setOption = new MenuUtils.Menu(m, setOptionFn)
 
-  return { ...data,
+  return {
+    ...data,
     num: num,
     locales: locales,
     localesList: localesList,
@@ -43,7 +44,8 @@ async function selectOptionFn (m, data) {
       text: desc,
       embed: null,
       menu: setOption
-    } }
+    }
+  }
 }
 
 async function setOptionFn (m, data) {
@@ -99,7 +101,7 @@ module.exports = async (message) => {
 
     log.info({
       guild: message.guild
-    }, `Date settings resetting to default`)
+    }, 'Date settings resetting to default')
     await profile.save()
     return message.channel.send(translate('commands.date.successResetAll'))
   }

@@ -124,7 +124,7 @@ describe('Unit::maintenance/checkPermission', function () {
       ]))
       const res = await checkPermissions.feed(feed, bot)
       expect(feed.disable).toHaveBeenCalledTimes(1)
-      expect(feed.disable).toHaveBeenCalledWith(`Missing permissions SEND_MESSAGES, VIEW_CHANNEL`)
+      expect(feed.disable).toHaveBeenCalledWith('Missing permissions SEND_MESSAGES, VIEW_CHANNEL')
       expect(res).toEqual(true)
     })
     it('changes the disable reason if one of the permission status changes', async function () {
@@ -138,7 +138,7 @@ describe('Unit::maintenance/checkPermission', function () {
       ]))
       const res = await checkPermissions.feed(feed, bot)
       expect(feed.disable).toHaveBeenCalledTimes(1)
-      expect(feed.disable).toHaveBeenCalledWith(`Missing permissions SEND_MESSAGES, VIEW_CHANNEL`)
+      expect(feed.disable).toHaveBeenCalledWith('Missing permissions SEND_MESSAGES, VIEW_CHANNEL')
       expect(res).toEqual(true)
     })
     it('does not call disable if feed is already disabled unrelated to permissions', async function () {

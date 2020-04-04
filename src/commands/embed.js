@@ -91,7 +91,7 @@ async function feedSelectorFn (m, data) {
     selectEmbed.addOption(translate('commands.embed.embedSelectionOptionAdd'), translate('commands.embed.embedSelectionOptionAddDescription'))
   }
   if (feed.embeds.length > 0) {
-    selectEmbed.addOption(translate('commands.embed.embedSelectionOptionRemoveAll'), `\u200b`)
+    selectEmbed.addOption(translate('commands.embed.embedSelectionOptionRemoveAll'), '\u200b')
   }
   return {
     ...data,
@@ -176,8 +176,7 @@ async function generatePropertiesMessage (m, nextData) {
   if (!changed) currentEmbedProps = '```\nNo properties set.\n'
   const m1 = translate('commands.embed.currentPropertiesList', { link: feed.url, list: currentEmbedProps })
   const m2 = translate('commands.embed.availablePropertiesList', { list: embedPropertiesListed })
-  let mFull
-  mFull = (m1 + m2).length < 1995 ? `${m1}\n${m2}` : [m1, m2] // Separate into two messages if it exceeds Discord's max length of 2000
+  const mFull = (m1 + m2).length < 1995 ? `${m1}\n${m2}` : [m1, m2] // Separate into two messages if it exceeds Discord's max length of 2000
   nextData.next = {
     text: mFull,
     menu: selectProp
@@ -226,7 +225,8 @@ async function selectPropFn (m, data) {
     text: choices[0] === 'timestamp' ? translate('commands.embed.settingPropertyTimezone') : translate('commands.embed.settingProperty', { property: embedProperties[choices[0]].name }),
     menu: setMenus
   }
-  return { ...data,
+  return {
+    ...data,
     properties: choices,
     settings: {}
   }
@@ -330,11 +330,14 @@ const fieldFunctions = {
       }
 
       const specMenu = new MenuUtils.Menu(m, fieldFunctions.add)
-      return { ...data,
+      return {
+        ...data,
         selectedOption: input,
         next:
-        { menu: specMenu,
-          text: translate('commands.embed.embedFieldsSettingPrompt') }
+        {
+          menu: specMenu,
+          text: translate('commands.embed.embedFieldsSettingPrompt')
+        }
       }
     }
   },
@@ -372,7 +375,8 @@ const fieldFunctions = {
       guild: m.guild
     }, `Embed field added. Title: '${name}', Value: '${val}'`)
 
-    return { ...data,
+    return {
+      ...data,
       successText: translate('commands.embed.embedFieldsAdded', {
         type: selectedOption === 2 ? ' inline' : '',
         title: name,

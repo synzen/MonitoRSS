@@ -23,7 +23,7 @@ class FeedSchedule extends EventEmitter {
     }
     super()
     this.name = schedule.name
-    this.log = createLogger(`M`)
+    this.log = createLogger('M')
     this.refreshRate = schedule.refreshRateMinutes
     this._linksResponded = {}
     this._processorList = []
@@ -54,13 +54,13 @@ class FeedSchedule extends EventEmitter {
     }
 
     if (this._sourceList.has(feedData.url)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
-      let linkList = this._sourceList.get(feedData.url)
+      const linkList = this._sourceList.get(feedData.url)
       linkList[feedData._id] = feedData
       if (debug) {
         this.log.info(`${feedData._id}: Adding to pre-existing source list`)
       }
     } else {
-      let linkList = {}
+      const linkList = {}
       linkList[feedData._id] = feedData
       this._sourceList.set(feedData.url, linkList)
       if (debug) {
@@ -153,7 +153,7 @@ class FeedSchedule extends EventEmitter {
     if (Supporter.enabled) {
       const supporters = await Supporter.getValidSupporters()
       for (const supporter of supporters) {
-        const [ allowWebhook, maxFeeds ] = await Promise.all([
+        const [allowWebhook, maxFeeds] = await Promise.all([
           supporter.getWebhookAccess(),
           supporter.getMaxFeeds()
         ])
@@ -249,7 +249,7 @@ class FeedSchedule extends EventEmitter {
     const totalBatchLengths = this._regBatchList.length
     let completedBatches = 0
     let willCompleteBatch = 0
-    let regIndices = this._regBatchList.map((batch, index) => index)
+    const regIndices = this._regBatchList.map((batch, index) => index)
 
     const deployProcessor = (currentBatch, callback) => {
       if (!currentBatch) {
@@ -374,7 +374,7 @@ class FeedSchedule extends EventEmitter {
           stats.lastUpdated = data.lastUpdated
           return stats.save()
         }
-      }).catch(err => this.log.error(err, `Unable to update statistics after cycle`, err))
+      }).catch(err => this.log.error(err, 'Unable to update statistics after cycle', err))
   }
 }
 

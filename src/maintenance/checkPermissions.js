@@ -23,7 +23,7 @@ async function feed (feed, bot) {
   const allowSendMessages = permissions.has(FLAGS.SEND_MESSAGES)
   const allowEmbedLinks = feed.embeds.length === 0 ? true : permissions.has(FLAGS.EMBED_LINKS)
   if (!allowSendMessages || !allowEmbedLinks || !allowView) {
-    let reasons = []
+    const reasons = []
     if (!allowSendMessages) {
       reasons.push('SEND_MESSAGES')
     }

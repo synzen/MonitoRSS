@@ -86,7 +86,7 @@ class FlattenedJSON {
     let valueHeader = 'VALUE'
     let longestNameLen = 0
     let longestValLen = 0
-    for (let key in this.results) {
+    for (const key in this.results) {
       const val = this.data[key]
       if (key.length > longestNameLen) longestNameLen = key.length
       if (val && val.length > longestValLen) longestValLen = val.length
@@ -106,11 +106,11 @@ class FlattenedJSON {
     this.text = header + '\r\n' + bar + '\r\n'
 
     // Add in the key/values
-    for (let key in this.results) {
+    for (const key in this.results) {
       let curStr = key
       while (curStr.length < longestNameLen) curStr += ' '
       const propNameLength = curStr.length
-      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ` [DATE OBJECT]`] : cleanup(this.feed, this.results[key].toString(), this.encoding).split('\n')
+      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ' [DATE OBJECT]'] : cleanup(this.feed, this.results[key].toString(), this.encoding).split('\n')
       for (let u = 0; u < valueLines.length; ++u) {
         curStr += u === 0 ? `|  ${valueLines[u]}\r\n` : `   ${valueLines[u]}\r\n`
         if (u < valueLines.length - 1) {

@@ -43,7 +43,7 @@ describe('Int::structs/db/FailRecord Database', function () {
     collection = con.db.collection('fail_records')
   })
   describe('static record', function () {
-    it(`creates the doc if url is new`, async function () {
+    it('creates the doc if url is new', async function () {
       const url = 'wst34eygr5ht'
       const reason = '23twe4gr'
       const record = await FailRecord.record(url, reason)
@@ -56,7 +56,7 @@ describe('Int::structs/db/FailRecord Database', function () {
       expect(result.reason).toEqual(reason)
       await collection.deleteOne({ url })
     })
-    it(`updates reason and alerted field if it exists for old date`, async function () {
+    it('updates reason and alerted field if it exists for old date', async function () {
       const url = 'incdocexist'
       const reason = 'q23werf'
       await collection.insertOne({

@@ -92,7 +92,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
     })
   })
   describe('profile', function () {
-    it(`does restores profile`, async function () {
+    it('does restores profile', async function () {
       const guildRss = {
         id: '32qwet4ry',
         name: 'azdsh',
@@ -104,7 +104,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       })
       expect(profile).toBeDefined()
     })
-    it(`does restores profile with alerts`, async function () {
+    it('does restores profile with alerts', async function () {
       const guildRss = {
         id: '32qwet4ry',
         name: 'azdsh',

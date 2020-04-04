@@ -56,7 +56,7 @@ module.exports = async (message) => {
   const args = message.content.split(' ').map(s => s.trim()).filter(s => s)
   args.shift()
   if (args.length === 0) {
-    return message.channel.send(`Insufficient number of arguments.`)
+    return message.channel.send('Insufficient number of arguments.')
   }
   const presenceData = getPresenceFromArgs(args)
   const results = schema.validate(presenceData, {
@@ -79,6 +79,6 @@ module.exports = async (message) => {
   log.owner({
     user: message.author,
     presenceData
-  }, `Set presence`)
-  await message.channel.send(`Successfully changed presence. It may be some time until it shows due to rate limiting.`)
+  }, 'Set presence')
+  await message.channel.send('Successfully changed presence. It may be some time until it shows due to rate limiting.')
 }

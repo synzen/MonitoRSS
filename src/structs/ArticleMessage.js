@@ -73,7 +73,7 @@ class ArticleMessage {
 
     // See if there are any filter-specific messages
     if (filteredFormats.length > 0) {
-      let matched = { }
+      const matched = { }
       let highestPriority = -1
       let selectedFormat
       for (const filteredFormat of filteredFormats) {
@@ -229,7 +229,7 @@ class ArticleMessage {
       this.log.warn({
         channel: this.channel,
         error: err
-      }, `Cannot fetch webhooks for ArticleMessage webhook initialization to send message`)
+      }, 'Cannot fetch webhooks for ArticleMessage webhook initialization to send message')
     }
   }
 

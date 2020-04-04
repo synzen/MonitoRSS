@@ -13,7 +13,7 @@ const createLogger = require('../util/logger/create.js')
  */
 async function pruneSubscribers (bot) {
   const log = createLogger(bot.shard.ids[0])
-  const [ subscribers, feeds ] = await Promise.all([
+  const [subscribers, feeds] = await Promise.all([
     Subscriber.getAll(),
     Feed.getAll()
   ])

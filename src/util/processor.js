@@ -9,7 +9,7 @@ const databaseFuncs = require('../util/database.js')
 
 async function fetchFeed (headers, url, log) {
   if (log) {
-    log.info(`Fetching URL`)
+    log.info('Fetching URL')
   }
   const fetchOptions = {}
   if (headers) {
@@ -24,12 +24,12 @@ async function fetchFeed (headers, url, log) {
   const { stream, response } = await FeedFetcher.fetchURL(url, fetchOptions)
   if (response.status === 304) {
     if (log) {
-      log.info(`304 response, sending success status`)
+      log.info('304 response, sending success status')
     }
     return null
   } else {
     const lastModified = response.headers['last-modified']
-    const etag = response.headers['etag']
+    const etag = response.headers.etag
 
     if (lastModified && etag) {
       process.send({
@@ -39,7 +39,7 @@ async function fetchFeed (headers, url, log) {
         etag
       })
       if (log) {
-        log.info(`Sending back headers`)
+        log.info('Sending back headers')
       }
     }
     return stream
@@ -48,12 +48,12 @@ async function fetchFeed (headers, url, log) {
 
 async function parseStream (stream, url, log) {
   if (log) {
-    log.info(`Parsing stream`)
+    log.info('Parsing stream')
   }
   const { articleList } = await FeedFetcher.parseStream(stream, url)
   if (articleList.length === 0) {
     if (log) {
-      log.info(`No articles found, sending success status`)
+      log.info('No articles found, sending success status')
     }
     return null
   }
@@ -97,7 +97,7 @@ async function sendArticles (articles, log) {
     const result = results[i]
     const article = articles[i]
     if (result.status === 'rejected') {
-      log.error(result.reason, `Failed to store pending article before process.send`)
+      log.error(result.reason, 'Failed to store pending article before process.send')
     } else {
       article._pendingArticleID = result.value
     }
@@ -115,7 +115,7 @@ async function getFeed (data, log) {
     url: link
   }) : null
   if (urlLog) {
-    urlLog.info(`Isolated processor received in batch`)
+    urlLog.info('Isolated processor received in batch')
   }
   try {
     const stream = await fetchFeed(headers[link], link, urlLog)
@@ -166,7 +166,7 @@ async function getFeed (data, log) {
     })
   } catch (err) {
     if (urlLog) {
-      urlLog.info(`Sending failed status`)
+      urlLog.info('Sending failed status')
     }
     process.send({ status: 'failed', link, rssList })
     if (err instanceof RequestError || err instanceof FeedParserError) {
@@ -176,7 +176,7 @@ async function getFeed (data, log) {
         }, `Skipping ${link}`)
       }
     } else {
-      log.error(err, `Cycle logic`)
+      log.error(err, 'Cycle logic')
     }
   }
 }
@@ -207,6 +207,6 @@ process.on('message', async m => {
     await Promise.all(promises)
     process.exit()
   } catch (err) {
-    log.error(err, `processor`)
+    log.error(err, 'processor')
   }
 })

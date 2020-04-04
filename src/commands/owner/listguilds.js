@@ -22,7 +22,7 @@ module.exports = async (message) => {
   allGuilds.sort((a, b) => b.members - a.members)
   let txt = ''
   allGuilds.forEach(item => {
-    txt += `[${item.members}] (G: ${item.id}, ${item.name}) ${item.owner ? `(O: ${item.owner.id}, ${item.owner.name})` : `(O: None)`} \n`
+    txt += `[${item.members}] (G: ${item.id}, ${item.name}) ${item.owner ? `(O: ${item.owner.id}, ${item.owner.name})` : '(O: None)'} \n`
   })
   await m.delete()
   await message.channel.send({

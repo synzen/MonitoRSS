@@ -61,7 +61,7 @@ async function inputFilterFn (m, data) {
   const addList = input.trim().split('\n').map(item => item.trim().toLowerCase()).filter((item, index, self) => item && index === self.indexOf(item)) // Valid items to be added, trimmed and lowercased
   let addedList = '' // Valid items that were added
   let invalidItems = '' // Invalid items that were not added
-  let add = []
+  const add = []
 
   for (const item of addList) {
     if (target.getFilterIndex(chosenFilterType, item) === -1) {
@@ -213,7 +213,7 @@ async function removeFilterFn (m, data) {
   let validItems = ''
   let invalidItems = '' // Invalid items that could not be removed
 
-  let remove = []
+  const remove = []
   for (const item of removeList) {
     const index = target.getFilterIndex(chosenFilterType, item)
     if (index === -1) {

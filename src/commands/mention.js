@@ -55,8 +55,8 @@ async function printSubscriptions (message, feeds, translate) {
   }
   for (const feed in subList) {
     let list = ''
-    let globalSubs = []
-    for (let globalSubber in subList[feed].globalSubs) {
+    const globalSubs = []
+    for (const globalSubber in subList[feed].globalSubs) {
       globalSubs.push(subList[feed].globalSubs[globalSubber])
     }
     globalSubs.sort()
@@ -65,7 +65,7 @@ async function printSubscriptions (message, feeds, translate) {
     }
 
     const filteredSubs = []
-    for (let filteredSubber in subList[feed].filteredSubs) {
+    for (const filteredSubber in subList[feed].filteredSubs) {
       filteredSubs.push(subList[feed].filteredSubs[filteredSubber])
     }
     filteredSubs.sort()
@@ -126,7 +126,7 @@ async function deleteSubscription (message, profile, feeds, role, user) {
       } else {
         logBindings.role = role
       }
-      log.info(logBindings, `Deleted all subscriptions`)
+      log.info(logBindings, 'Deleted all subscriptions')
       await message.channel.send(`${translate('commands.mention.removeSubscriptionsSuccess', {
         name: role ? role.name : user.username,
         type: role ? translate('commands.mention.role') : translate('commands.mention.user')
@@ -219,7 +219,8 @@ async function filteredSubMenuFn (m, data) {
       ...data,
       next: {
         series: await filters.add(m, profile, feed, role, user)
-      } }
+      }
+    }
   } else if (input === '2') {
     const subscribers = await feed.getSubscribers()
     if (subscribers.length === 0) {
@@ -229,7 +230,8 @@ async function filteredSubMenuFn (m, data) {
       ...data,
       next: {
         series: await filters.remove(m, profile, feed, role, user)
-      } }
+      }
+    }
   } else throw new MenuUtils.MenuOptionError()
 }
 

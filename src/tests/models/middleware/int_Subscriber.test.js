@@ -16,7 +16,7 @@ describe('Int::models/middleware/Subscriber', function () {
     await con.db.dropDatabase()
     await initialize.setupModels(con)
   })
-  it(`throws an error if the feed does not exist`, async function () {
+  it('throws an error if the feed does not exist', async function () {
     const subscriber = new SubscriberModel.Model({
       id: 'asd',
       type: 'role',

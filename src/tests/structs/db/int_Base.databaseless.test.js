@@ -77,7 +77,7 @@ describe('Int::structs/db/Base Databaseless', function () {
     expect(fs.existsSync(filePath2)).toEqual(true)
     const foobar = new FoobarClass({ ...data, _id })
     const foobar2 = new FoobarClass({ ...data2, _id: _id2 })
-    const foobars = await FoobarClass.getMany([ _id, _id2 ])
+    const foobars = await FoobarClass.getMany([_id, _id2])
     expect(foobars).toHaveLength(2)
     for (const key in data) {
       expect(foobar[key]).toEqual(data[key])

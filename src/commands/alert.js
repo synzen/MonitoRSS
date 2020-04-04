@@ -5,7 +5,7 @@ const Feed = require('../structs/db/Feed.js')
 const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message, automatic) => { // automatic indicates invokation by the bot
-  let [ profile, feeds ] = await Promise.all([
+  let [profile, feeds] = await Promise.all([
     Profile.get(message.guild.id),
     Feed.getManyBy('guild', message.guild.id)
   ])
@@ -27,7 +27,7 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
   const log = createLogger(message.guild.shard.id)
   switch (contentArray[1]) {
     case 'add':
-    case 'remove':
+    case 'remove': {
       if (!contentArray[2]) {
         return message.channel.send(translate('commands.alert.info', { prefix }))
       }
@@ -41,7 +41,7 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
         profile.alert.push(member.id)
         log.info({
           guild: message.guild
-        }, `Added user to alerts`, message.guild, userMention || member.user)
+        }, 'Added user to alerts', message.guild, userMention || member.user)
         await member.send(translate('commands.alert.successDM', { member, guildName, guildID }))
         await message.channel.send(translate('commands.alert.success', { member }))
       } else {
@@ -52,13 +52,14 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
         profile.alert.splice(removeIndex, 1)
         log.info({
           guild: message.guild
-        }, `Removed user from alerts`, message.guild, userMention || member.user)
+        }, 'Removed user from alerts', message.guild, userMention || member.user)
         await member.send(translate('commands.alert.removedDM', { member, guildName, guildID }))
         await message.channel.send(translate('commands.alert.removed', { member }))
       }
       await profile.save()
       break
-    case 'list':
+    }
+    case 'list': {
       if (profile.alert.length === 0) {
         return message.channel.send(translate('commands.alert.listEmpty'))
       }
@@ -68,6 +69,7 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
       }
       await message.channel.send(msg)
       break
+    }
     default:
       return message.channel.send(translate('commands.alert.info', { prefix }))
   }

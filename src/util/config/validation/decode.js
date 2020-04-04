@@ -6,7 +6,7 @@ const custom = Joi.extend(joi => {
     base: joi.object().pattern(/^/, joi.string()).default({}),
     type: 'config',
     messages: {
-      encoding: `{{#label}} has items with invalid encodings: {{#invalid}}`
+      encoding: '{{#label}} has items with invalid encodings: {{#invalid}}'
     },
     rules: {
       encoding: {
@@ -19,7 +19,7 @@ const custom = Joi.extend(joi => {
             }
           }
           if (invalids.size > 0) {
-            return helpers.error(`encoding`, {
+            return helpers.error('encoding', {
               invalid: Array.from(invalids).join(',')
             })
           }

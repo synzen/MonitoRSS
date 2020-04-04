@@ -155,7 +155,7 @@ exports.has = message => {
   const config = getConfig()
   const first = message.content.split(' ')[0]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
-  return list.hasOwnProperty(first.substr(prefix.length))
+  return Object.prototype.hasOwnProperty.call(list, first.substr(prefix.length))
 }
 exports.run = async (message, log) => {
   const config = getConfig()
@@ -164,7 +164,7 @@ exports.run = async (message, log) => {
   const guildPrefix = storage.prefixes[message.guild.id]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
   let name = first.substr(prefix.length)
-  if (!list.hasOwnProperty(name)) {
+  if (!Object.prototype.hasOwnProperty.call(list, name)) {
     return log.error(`Failed to run ${name} - nonexistent command`)
   }
 
@@ -186,10 +186,10 @@ exports.run = async (message, log) => {
       log.debug(`Ignoring command with invalid prefix found in front (guild prefix: ${guildPrefix}, bot prefix: ${config.bot.prefix})`)
       return
     }
-    log.info(`Used command`)
+    log.info('Used command')
     if (cmdInfo.initLevel !== undefined && cmdInfo.initLevel > storage.initialized) {
       log.debug(`Ignoring disabled command during bootup (required stage: ${cmdInfo.initLevel}, current stage: ${storage.initialized})`)
-      const m = await message.channel.send(`This command is disabled while booting up, please wait.`)
+      const m = await message.channel.send('This command is disabled while booting up, please wait.')
       await m.delete({ timeout: 4000 })
     }
 
@@ -249,7 +249,7 @@ exports.runOwner = async (message, log) => {
     return
   }
   if (storage.initialized < 2) {
-    return message.channel.send(`This command is disabled while booting up, please wait.`).then(m => m.delete(4000))
+    return message.channel.send('This command is disabled while booting up, please wait.').then(m => m.delete(4000))
   }
   try {
     await loadOwnerCommand(command, message)

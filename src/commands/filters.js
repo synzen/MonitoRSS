@@ -20,7 +20,8 @@ async function feedSelectorFn (m, data) {
         description: Translator.translate('commands.filters.selectFeedDescription', locale, {
           title: feed.title,
           link: feed.url
-        }) }
+        })
+      }
     }
   }
 }

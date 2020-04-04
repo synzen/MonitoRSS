@@ -523,7 +523,7 @@ module.exports = class Article {
     const filterResults = this.testFilters(this.source.filters)
     let testDetails = ''
     const footer = '\nBelow is the configured message to be sent for this feed:\n\n--'
-    testDetails += `\`\`\`Markdown\n# BEGIN TEST DETAILS #\`\`\`\`\`\`Markdown`
+    testDetails += '```Markdown\n# BEGIN TEST DETAILS #``````Markdown'
 
     if (this.title) {
       testDetails += `\n\n[Title]: {title}\n${this.title}`

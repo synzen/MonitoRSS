@@ -18,7 +18,7 @@ module.exports = async (message, command) => {
     return message.channel.send(translate('commands.refresh.noFailLimit'))
   }
 
-  let records = []
+  const records = []
   channelTracker.add(message.channel.id)
   for (const feed of feeds) {
     const failRecord = await FailRecord.getBy('url', feed.url)
@@ -33,7 +33,7 @@ module.exports = async (message, command) => {
   }
   const log = createLogger(message.guild.shard.id)
   const processing = await message.channel.send(translate('commands.refresh.processing'))
-  let failedReasons = {}
+  const failedReasons = {}
   for (const record of records) {
     const url = record.url
     log.info({

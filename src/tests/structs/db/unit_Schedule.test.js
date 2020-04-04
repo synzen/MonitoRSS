@@ -10,14 +10,14 @@ describe('Unit::structs/db/Schedule', function () {
         refreshRateMinutes: 34,
         keywords: ['ab'],
         feeds: ['asd']
-      })).toThrow(`name is undefined`)
+      })).toThrow('name is undefined')
     })
     it('throws if refreshRateMinutes is missing', function () {
       expect(() => new Schedule({
         name: 'hello',
         keywords: ['ab'],
         feeds: ['asd']
-      })).toThrow(`refreshRateMinutes is undefined`)
+      })).toThrow('refreshRateMinutes is undefined')
     })
     it('throws if refreshRateMinutes is not a number', function () {
       expect(() => new Schedule({
@@ -25,7 +25,7 @@ describe('Unit::structs/db/Schedule', function () {
         name: 'hello',
         keywords: ['ab'],
         feeds: ['asd']
-      })).toThrow(`refreshRateMinutes must be a number`)
+      })).toThrow('refreshRateMinutes must be a number')
     })
     it('does not throw if name and refresh rate is defined', function () {
       expect(() => new Schedule({

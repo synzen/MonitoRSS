@@ -236,7 +236,7 @@ class Menu {
           const passover = await this.fn(m, data)
           collector.stop()
           // Pass over the data to the next function (if a MenuSeries, then to the next Menu's function)
-          resolve([ passover, this._msgCleaner ])
+          resolve([passover, this._msgCleaner])
         } catch (err) {
           if (err instanceof MenuOptionError) {
             const message = err.message || this.translate('structs.errors.MenuOptionError.message')
@@ -258,14 +258,14 @@ class Menu {
           this.channel.send(this.translate('structs.MenuUtils.closedInactivity'))
             .catch(err => {
               const log = createLogger(this.channel.guild.shard.id)
-              log.warn(err, `Unable to send expired menu message`)
+              log.warn(err, 'Unable to send expired menu message')
             })
         } else {
           this.channel.send(reason)
             .then(m => m.delete({ timeout: 6000 }))
             .catch(err => {
               const log = createLogger(this.channel.guild.shard.id)
-              log.warn(err, `Menu collector on end message.send`)
+              log.warn(err, 'Menu collector on end message.send')
             })
         }
       })
@@ -353,7 +353,7 @@ class MenuSeries {
   async _end (err, data) {
     this._msgCleaner.deleteAll()
     if (err) {
-      err.message = `[MenuSeries Error] ` + err.message
+      err.message = '[MenuSeries Error] ' + err.message
       if (err.code !== 50013) {
         const log = createLogger()
         log.info(`MenuSeries command history: ${this._commandHistory.toString()}`)
@@ -393,7 +393,7 @@ class MenuSeries {
     }
 
     try {
-      var [ passover, msgCleaner ] = await curMenu.send(data)
+      var [passover, msgCleaner] = await curMenu.send(data)
       if (!passover) return this._end() // No data
     } catch (err) {
       return this._end(err)

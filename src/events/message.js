@@ -26,11 +26,11 @@ function handler (message, blacklistCache, log) {
   const command = content.split(' ')[0].substr(config.bot.prefix.length)
   if (command === 'forceexit') {
     // Forcibly clear a channel of active menus
-    return require(`../commands/forceexit.js`)(message)
+    return require('../commands/forceexit.js')(message)
   }
 
   if (channelTracker.hasActiveMenus(channel.id)) {
-    logChild.debug(`Ignored message - channel has active menus`)
+    logChild.debug('Ignored message - channel has active menus')
     return
   }
 
@@ -40,10 +40,10 @@ function handler (message, blacklistCache, log) {
   if (commands.has(message)) {
     if (storage.initialized < 2) {
       logChild.debug(`Bot is currently booting up, ignoring all commands. Current stage is ${storage.initialized}`)
-      return channel.send(`This command is disabled while booting up, please wait.`)
+      return channel.send('This command is disabled while booting up, please wait.')
         .then(m => m.delete({ timeout: 4000 }))
     }
-    logChild.debug(`Understood command, checking if user has access to use commands`)
+    logChild.debug('Understood command, checking if user has access to use commands')
     if (!onlyOwner || ownerIDs.includes(author.id)) {
       logChild.debug(`Permission granted to proceed with command. Only owners allowed: ${onlyOwner}, is owner: ${ownerIDs.includes(author.id)}`)
       return commands.run(message, logChild)

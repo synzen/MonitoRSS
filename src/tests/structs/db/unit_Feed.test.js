@@ -29,15 +29,15 @@ describe('Unit::structs/db/Feed', function () {
     jest.restoreAllMocks()
   })
   describe('constructor', function () {
-    it(`throws an error when channel is missing`, function () {
+    it('throws an error when channel is missing', function () {
       expect(() => new Feed({ title: 1, url: 1, guild: 1 }))
         .toThrowError(new Error('Undefined channel'))
     })
-    it(`throws an error when url is missing`, function () {
+    it('throws an error when url is missing', function () {
       expect(() => new Feed({ title: 1, channel: 1, guild: 1 }))
         .toThrowError(new Error('Undefined url'))
     })
-    it(`throws an error when guild is missing`, function () {
+    it('throws an error when guild is missing', function () {
       expect(() => new Feed({ title: 1, url: 1, channel: 1 }))
         .toThrowError(new Error('Undefined guild'))
     })
@@ -281,21 +281,21 @@ describe('Unit::structs/db/Feed', function () {
       await feed.determineSchedule([], undefined)
       expect(Schedule.getAll).not.toHaveBeenCalled()
     })
-    it(`returns the schedule that has the feed's id`, async function () {
+    it('returns the schedule that has the feed\'s id', async function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'id1'
       feed.url = 'no match'
       const schedule = await feed.determineSchedule(schedules, [])
       expect(schedule).toEqual(schedules[2])
     })
-    it(`returns the schedule if it has a keyword in the feed's url`, async function () {
+    it('returns the schedule if it has a keyword in the feed\'s url', async function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'no match'
       feed.url = 'dun yek2 haz'
       const schedule = await feed.determineSchedule(schedules, [])
       expect(schedule).toEqual(schedules[2])
     })
-    it(`returns the default schedule if it matches no schedules`, async function () {
+    it('returns the default schedule if it matches no schedules', async function () {
       const feed = new Feed({ ...necessaryInit })
       feed._id = 'no match'
       feed.url = 'no match'
@@ -309,7 +309,7 @@ describe('Unit::structs/db/Feed', function () {
       afterEach(function () {
         Supporter.enabled = false
       })
-      it(`returns the supporter schedule if it is not feed43`, async function () {
+      it('returns the supporter schedule if it is not feed43', async function () {
         const guild = 'w234tyg5er'
         const scheduleName = 'foobzz'
         Supporter.schedule = {
@@ -324,7 +324,7 @@ describe('Unit::structs/db/Feed', function () {
         expect(schedule).toEqual(Supporter.schedule)
         Supporter.schedule = undefined
       })
-      it(`does not return supporter schedule if feed43`, async function () {
+      it('does not return supporter schedule if feed43', async function () {
         const guild = 'w234hjnvbmr'
         const scheduleName = 'foobzz'
         Supporter.schedule = {

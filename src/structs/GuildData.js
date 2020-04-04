@@ -16,14 +16,14 @@ class GuildData {
     this.data = data
     const { profile, feeds, filteredFormats, subscribers } = data
     if (profile && !profile._id) {
-      throw new Error(`Profile missing _id`)
+      throw new Error('Profile missing _id')
     }
     const feedIDs = new Set()
     const guildIDs = new Set()
     for (const feed of feeds) {
       guildIDs.add(feed.guild)
       if (guildIDs.size > 1) {
-        throw new Error(`Mismatched guild IDs found for feeds`)
+        throw new Error('Mismatched guild IDs found for feeds')
       }
       feedIDs.add(feed._id)
       if (profile && feed.guild !== profile._id) {
@@ -58,7 +58,7 @@ class GuildData {
    * @returns {GuildData}
    */
   static async get (guildId) {
-    const [ profile, feeds ] = await Promise.all([
+    const [profile, feeds] = await Promise.all([
       Profile.get(guildId),
       Feed.getManyBy('guild', guildId)
     ])

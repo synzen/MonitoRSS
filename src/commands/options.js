@@ -51,7 +51,8 @@ async function selectOption (m, data) {
     if (properties[propRef].num === num) chosenProp = propRef
   }
 
-  return { ...data,
+  return {
+    ...data,
     chosenProp: chosenProp,
     next: {
       menu: new FeedSelector(m, null, {
@@ -59,7 +60,8 @@ async function selectOption (m, data) {
         miscOption: chosenProp,
         locale: data.locale
       }, data.feeds)
-    } }
+    }
+  }
 }
 
 module.exports = async (message, command) => {

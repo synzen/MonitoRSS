@@ -12,6 +12,6 @@ module.exports = async role => {
         })
     })
   } catch (err) {
-    log.error(err, `Role could not be removed from config by guild role deletion`)
+    log.error(err, 'Role could not be removed from config by guild role deletion')
   }
 }
