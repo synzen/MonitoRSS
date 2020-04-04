@@ -53,9 +53,8 @@ const VALID_EVENTS = [
   'warn'
 ]
 
-const messageHandler = (bot, blacklistCache) => message => {
-  const log = createLogger(bot.shard.ids[0])
-  require('../events/message.js')(message, blacklistCache, log)
+const messageHandler = (blacklistCache) => message => {
+  require('../events/message.js')(message, blacklistCache)
 }
 
 exports.createManagers = (bot) => {
@@ -75,7 +74,7 @@ exports.createManagers = (bot) => {
 exports.enableCommands = async (bot) => {
   const blacklistCache = new BlacklistCache(await Blacklist.getAll())
   exports.blacklistCache = blacklistCache
-  eventHandlers.push({ name: 'message', func: messageHandler(bot, blacklistCache) })
+  eventHandlers.push({ name: 'message', func: messageHandler(blacklistCache) })
   bot.on('message', eventHandlers[eventHandlers.length - 1].func)
 }
 
