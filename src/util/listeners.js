@@ -2,7 +2,6 @@ const fs = require('fs')
 const path = require('path')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
-const createLogger = require('../util/logger/create.js')
 
 const eventHandlers = []
 const VALID_EVENTS = [
