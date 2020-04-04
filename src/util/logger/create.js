@@ -33,7 +33,7 @@ function createLogger (shardID) {
   if (pinoConfig.enabled) {
     destination = config.log.destination || undefined
     pinoConfig.level = config.log.level
-    pinoConfig.prettyPrint = !destination
+    pinoConfig.prettyPrint = !destination ? prettyPrint : false
   }
 
   return pino(pinoConfig, pino.destination(destination))
