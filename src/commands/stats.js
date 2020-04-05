@@ -12,7 +12,7 @@ module.exports = async (message) => {
   if (scheduleStats.feeds === 0) {
     return message.channel.send('No feeds found for any data.')
   }
-  const sizeFetches = await bot.shard.fetchClientValues('guilds.size')
+  const sizeFetches = await bot.shard.fetchClientValues('guilds.cache.size')
 
   const aggregated = {
     guilds: sizeFetches.reduce((prev, val) => prev + val, 0),
