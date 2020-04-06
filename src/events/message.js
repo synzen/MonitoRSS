@@ -10,14 +10,14 @@ const createLogger = require('../util/logger/create.js')
  * @param {import('../structs/BlacklistCache.js')} blacklistCache - Blacklisted users and guilds
  */
 function handler (message, blacklistCache) {
-  const { guild, author, channel, content } = message
+  const { guild, author, channel, content, client } = message
   const log = createLogger(message.guild.shard.id, {
     message,
     guild,
     channel,
     user: author
   })
-  if (author.bot || !guild || blacklistCache.guilds.has(guild.id) || blacklistCache.users.has(author.id)) {
+  if (author.id === client.user.id || !guild || blacklistCache.guilds.has(guild.id) || blacklistCache.users.has(author.id)) {
     log.debug(`Ignored message. One or more conditions are true - author bot:${!!author.bot}, no guild:${!guild}, blacklisted guild:${blacklistCache.guilds.has(guild.id)}, blacklisted user: ${blacklistCache.users.has(author.id)}`)
     return
   }
