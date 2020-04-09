@@ -81,4 +81,5 @@ exports.disableAll = (bot) => {
   for (const eventHandler of eventHandlers) {
     bot.removeListener(eventHandler.name, eventHandler.func)
   }
+  eventHandlers.length = 0
 }

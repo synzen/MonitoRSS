@@ -242,8 +242,10 @@ class Client extends EventEmitter {
         this.mongo = await this.connectToDatabase()
       }
       await intiialize.setupModels(this.mongo)
-      await listeners.enableCommands(this.bot)
-      this.log.info(`Commands have been ${config.bot.enableCommands !== false ? 'enabled' : 'disabled'}.`)
+      if (config.bot.enableCommands) {
+        await listeners.enableCommands(this.bot)
+      }
+      this.log.info(`Commands have been ${config.bot.enableCommands ? 'enabled' : 'disabled'}.`)
       const uri = config.database.uri
       this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
       await maintenance.pruneWithBot(this.bot)
@@ -278,11 +280,6 @@ class Client extends EventEmitter {
       this.stop()
     }
     return this.start()
-  }
-
-  disableCommands () {
-    listeners.disableCommands()
-    return this
   }
 }
 
