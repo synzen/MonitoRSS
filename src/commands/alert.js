@@ -32,7 +32,7 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
         return message.channel.send(translate('commands.alert.info', { prefix }))
       }
       const userMention = message.mentions.users.first()
-      const member = userMention || await message.guild.members.cache.get(contentArray[2] === 'me' ? message.author.id : contentArray[2])
+      const member = userMention || await message.guild.members.fetch(contentArray[2] === 'me' ? message.author.id : contentArray[2])
       if (!member) return message.channel.send(translate('commands.alert.notFound', { user: userMention || `\`${contentArray[2]}\`` }))
       if (contentArray[1] === 'add') {
         if (profile.alert.includes(member.id)) {
@@ -65,7 +65,16 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
       }
       let msg = translate('commands.alert.list')
       for (const id of profile.alert) {
-        msg += `${await message.guild.members.cache.get(id)}\n`
+        try {
+          const member = await message.guild.members.fetch(id)
+          msg += `${member}\n`
+        } catch (err) {
+          log.warn({
+            id,
+            error: err
+          }, 'Failed to fetch member')
+          msg += `${id} (Unknown member)\n`
+        }
       }
       await message.channel.send(msg)
       break

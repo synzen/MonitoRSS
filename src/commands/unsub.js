@@ -29,13 +29,12 @@ function removeRole (message, role, translate) {
 }
 
 module.exports = async (message, command) => {
-  const bot = message.client
   const profile = await Profile.get(message.guild.id)
   const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
   const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const feeds = await Feed.getManyBy('guild', message.guild.id)
-  const botRole = message.guild.members.cache.get(bot.user.id).roles.highest
+  const botRole = message.guild.me.roles.highest
   const memberRoles = message.member.roles.cache
 
   // Get an array of eligible roles that is lower than the bot's role, and is not @everyone by filtering it
@@ -61,7 +60,7 @@ module.exports = async (message, command) => {
     } else if (mention && eligibleRoles.includes(mention.name.toLowerCase())) {
       return removeRole(message, mention, translate)
     }
-    return message.channel.send(translate('commands.unsub.invalidRole'))
+    return message.channel.send(translate('commands.unsub.invalidRole', { prefix }))
   }
 
   const ask = new MenuUtils.Menu(message, null, { numbered: false })

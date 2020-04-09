@@ -18,7 +18,7 @@ class MessageCleaner {
     this._allowed = false
     this.log = createLogger(message.guild.shard.id)
     if (!guildBot) {
-      message.guild.members.cache.fetch(message.client.user).then(m => {
+      message.guild.members.fetch(message.client.user).then(m => {
         this._allowed = m.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true
       }).catch(err => this.log.error(err, 'Unable to fetch client as member to determine message deletion permissions'))
     } else this._allowed = !guildBot.permissionsIn(message.channel).has('MANAGE_MESSAGES') ? false : config.bot.deleteMenus === true

@@ -159,7 +159,6 @@ exports.has = message => {
 }
 exports.run = async (message, log) => {
   const config = getConfig()
-  const bot = message.client
   const first = message.content.split(' ')[0]
   const guildPrefix = storage.prefixes[message.guild.id]
   const prefix = storage.prefixes[message.guild.id] || config.bot.prefix
@@ -170,7 +169,7 @@ exports.run = async (message, log) => {
 
   const cmdInfo = list[name]
   const channel = message.channel
-  const guild = bot.guilds.cache.get(channel.guild.id)
+  const guild = message.guild
   if (cmdInfo && cmdInfo.aliasFor) name = cmdInfo.aliasFor
   if (!cmdInfo) {
     return log.error(`Could not run command "${name}" because command data does not exist`)
@@ -196,10 +195,10 @@ exports.run = async (message, log) => {
     // Check bot perm
     let botPermitted
     if (typeof botPerm === 'string') {
-      botPermitted = PERMISSIONS.includes(botPerm) && !guild.members.cache.get(bot.user.id).permissionsIn(channel).has(botPerm)
+      botPermitted = PERMISSIONS.includes(botPerm) && !guild.me.permissionsIn(channel).has(botPerm)
     } else if (Array.isArray(botPerm)) {
       for (var i = 0; i < botPerm.length; ++i) {
-        const thisPerm = PERMISSIONS.includes(botPerm) && !guild.members.cache.get(bot.user.id).permissionsIn(channel).has(botPerm)
+        const thisPerm = PERMISSIONS.includes(botPerm) && !guild.members.me.permissionsIn(channel).has(botPerm)
         botPermitted = botPermitted === undefined ? thisPerm : botPermitted && thisPerm
       }
     }
