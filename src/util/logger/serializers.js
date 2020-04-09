@@ -2,6 +2,9 @@
  * @param {import('discord.js').Guild} guild
  */
 function guild (guild) {
+  if (!guild) {
+    return guild
+  }
   return `${guild.id}, ${guild.name}`
 }
 
@@ -9,6 +12,9 @@ function guild (guild) {
 * @param {import('discord.js').TextChannel} channel
 */
 function channel (channel) {
+  if (!channel) {
+    return channel
+  }
   return `${channel.id}, ${channel.name}`
 }
 
@@ -16,6 +22,9 @@ function channel (channel) {
 * @param {import('discord.js').User} user
 */
 function user (user) {
+  if (!user) {
+    return user
+  }
   return `${user.id}, ${user.username}`
 }
 
@@ -23,6 +32,9 @@ function user (user) {
  * @param {import('discord.js').Message} message
  */
 function message (message) {
+  if (!message) {
+    return message
+  }
   return `${message.content}`
 }
 
