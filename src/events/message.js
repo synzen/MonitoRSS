@@ -11,7 +11,7 @@ const createLogger = require('../util/logger/create.js')
  */
 function handler (message, blacklistCache) {
   const { guild, author, channel, content, client } = message
-  const log = createLogger(message.guild.shard.id, {
+  const log = createLogger(client.shard.ids[0], {
     message,
     guild,
     channel,
