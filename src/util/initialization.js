@@ -50,7 +50,10 @@ async function populateKeyValues () {
   await KeyValue.deleteAll()
   const data = {
     _id: 'feedConfig',
-    value: config.feeds
+    value: {
+      ...config.feeds,
+      decode: {}
+    }
   }
   const feedsConfig = new KeyValue(data)
   await feedsConfig.save()
