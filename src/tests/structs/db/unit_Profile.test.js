@@ -6,6 +6,9 @@ const Supporter = require('../../../structs/db/Supporter.js')
 jest.mock('../../../structs/db/Supporter.js')
 jest.mock('../../../config.js', () => ({
   get: () => ({
+    bot: {
+      prefix: 'sdf'
+    },
     feeds: {
       max: 22
     }
@@ -13,6 +16,10 @@ jest.mock('../../../config.js', () => ({
 }))
 
 describe('Unit::structs/db/Profile', function () {
+  const necessaryInit = {
+    _id: 'sr',
+    name: 'sedg'
+  }
   afterEach(function () {
     jest.restoreAllMocks()
     Supporter.getValidSupporterOfGuild.mockReset()
@@ -66,7 +73,21 @@ describe('Unit::structs/db/Profile', function () {
       }
     })
   })
-  describe('getFeedLimit', function () {
+  describe('getPrefix', function () {
+    it('returns the profile prefix if it exists', () => {
+      const profilePrefix = 'aedswgrf'
+      const profile = new Profile(necessaryInit)
+      profile.prefix = profilePrefix
+      expect(profile.getPrefix()).toEqual(profilePrefix)
+    })
+    it('returns the default prefix if no profile prefix', () => {
+      const profilePrefix = undefined
+      const profile = new Profile(necessaryInit)
+      profile.prefix = profilePrefix
+      expect(profile.getPrefix()).toEqual(config.get().bot.prefix)
+    })
+  })
+  describe('static getFeedLimit', function () {
     it('calls supporter get max feeds if supporter', async function () {
       const maxFeeds = 22
       const getMaxFeeds = jest.fn(() => maxFeeds)

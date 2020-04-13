@@ -77,6 +77,20 @@ class Profile extends Base {
   }
 
   /**
+   * Returns this profile's prefix, or the default prefix
+   * if it does not exist.
+   * @returns {string}
+   */
+  getPrefix () {
+    const config = getConfig()
+    if (this.prefix) {
+      return this.prefix
+    } else {
+      return config.bot.prefix
+    }
+  }
+
+  /**
    * Returns the feed limit of this server
    * @returns {number}
    */
