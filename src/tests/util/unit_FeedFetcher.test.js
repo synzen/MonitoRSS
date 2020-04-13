@@ -62,6 +62,36 @@ describe('Unit::FeedFetcher', function () {
       expect(FeedFetcher.formatNodeFetchResponse({ ...res }).headers)
         .toEqual(expectedHeaders)
     })
+    it('converts array last-modified to string', function () {
+      const headers = {
+        'last-modified': ['world']
+      }
+      const res = {
+        headers: {
+          raw: jest.fn(() => headers)
+        }
+      }
+      const expectedHeaders = {
+        'last-modified': headers['last-modified'][0]
+      }
+      expect(FeedFetcher.formatNodeFetchResponse({ ...res }).headers)
+        .toEqual(expectedHeaders)
+    })
+    it('converts array content-type to string', function () {
+      const headers = {
+        'content-type': ['world']
+      }
+      const res = {
+        headers: {
+          raw: jest.fn(() => headers)
+        }
+      }
+      const expectedHeaders = {
+        'content-type': headers['content-type'][0]
+      }
+      expect(FeedFetcher.formatNodeFetchResponse({ ...res }).headers)
+        .toEqual(expectedHeaders)
+    })
     it('returns status and headers object', function () {
       const headers = {
         jack: 'h',
@@ -312,6 +342,8 @@ describe('Unit::FeedFetcher', function () {
     const origParseStream = FeedFetcher.parseStream
     const fetchURLResults = { stream: 'abc' }
     beforeEach(function () {
+      jest.spyOn(FeedFetcher, 'getCharsetFromResponse')
+        .mockImplementation()
       FeedFetcher.fetchURL = jest.fn(() => fetchURLResults)
       FeedFetcher.parseStream = jest.fn(() => ({}))
     })
@@ -319,7 +351,7 @@ describe('Unit::FeedFetcher', function () {
       FeedFetcher.fetchURL = origFetchURL
       FeedFetcher.parseStream = origParseStream
     })
-    it('passes the url and options to fetchURL', async function () {
+    it('passes the url, options and charset to fetchURL', async function () {
       const url = 'abc'
       const opts = { a: 'b', c: 1 }
       await FeedFetcher.fetchFeed(url, opts)
@@ -327,8 +359,11 @@ describe('Unit::FeedFetcher', function () {
     })
     it('passes the stream from fetchURL and url to parseStream', async function () {
       const url = 'abzz'
+      const charset = 'aedswry'
+      jest.spyOn(FeedFetcher, 'getCharsetFromResponse')
+        .mockReturnValue(charset)
       await FeedFetcher.fetchFeed(url)
-      expect(FeedFetcher.parseStream).toHaveBeenCalledWith(fetchURLResults.stream, url)
+      expect(FeedFetcher.parseStream).toHaveBeenCalledWith(fetchURLResults.stream, url, charset)
     })
     it('returns the articleList and idType', async function () {
       const results = await FeedFetcher.fetchFeed()
@@ -380,6 +415,24 @@ describe('Unit::FeedFetcher', function () {
       const filteredArticleList = articleList.filter(filterFunc)
       const expectedIndex = Math.round(randNum * (filteredArticleList.length - 1))
       return expect(FeedFetcher.fetchRandomArticle('a', { a: 'b' })).resolves.toEqual(filteredArticleList[expectedIndex])
+    })
+  })
+  describe('static getCharsetFromResponse', function () {
+    it('returns the charset', function () {
+      const response = {
+        headers: {
+          'content-type': 'application/rss+xml; charset=ISO-8859-1'
+        }
+      }
+      expect(FeedFetcher.getCharsetFromResponse(response))
+        .toEqual('ISO-8859-1')
+    })
+    it('does not throw on incomplete headers', function () {
+      const response = {
+        headers: {}
+      }
+      expect(() => FeedFetcher.getCharsetFromResponse(response))
+        .not.toThrow()
     })
   })
 })

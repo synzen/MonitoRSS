@@ -43,8 +43,14 @@ class FeedFetcher {
       headers[key.toLowerCase()] = val
     }
     // Sometimes it's an array for some reason
-    if (headers.etag && Array.isArray(headers.etag)) {
+    if (Array.isArray(headers.etag)) {
       headers.etag = headers.etag[0]
+    }
+    if (Array.isArray(headers['last-modified'])) {
+      headers['last-modified'] = headers['last-modified'][0]
+    }
+    if (Array.isArray(headers['content-type'])) {
+      headers['content-type'] = headers['content-type'][0]
     }
     return {
       status: res.status,
@@ -148,6 +154,7 @@ class FeedFetcher {
   /**
    * @typedef {Object} CSResults
    * @property {import('stream').Readable} stream
+   * @property {Object<string, any>} response
    */
 
   /**
@@ -193,13 +200,14 @@ class FeedFetcher {
    * Parse a stream and return the article list, and the article ID type used
    * @param {object} stream
    * @param {string} url - The fetched URL of this stream
+   * @param {charset} [encoding] - Response charset
    * @returns {FeedData} - The article list and the id type used
    */
-  static async parseStream (stream, url) {
+  static async parseStream (stream, url, charset) {
     if (!url) {
       throw new Error('No url defined')
     }
-    const feedparser = new DecodedFeedParser(null, url)
+    const feedparser = new DecodedFeedParser(null, url, charset)
     const idResolver = new ArticleIDResolver()
     const articleList = []
 
@@ -248,8 +256,9 @@ class FeedFetcher {
    * @returns {FeedData} - The article list and the id type used
    */
   static async fetchFeed (url, options) {
-    const { stream } = await this.fetchURL(url, options)
-    const { articleList, idType } = await this.parseStream(stream, url)
+    const { stream, response } = await this.fetchURL(url, options)
+    const charset = this.getCharsetFromResponse(response)
+    const { articleList, idType } = await this.parseStream(stream, url, charset)
     return { articleList, idType }
   }
 
@@ -273,6 +282,22 @@ class FeedFetcher {
       }
     }
     return filtered.length === 0 ? null : filtered[Math.round(Math.random() * (filtered.length - 1))]
+  }
+
+  /**
+   * @param {Object<string, any>} response
+   */
+  static getCharsetFromResponse (response) {
+    const headers = response.headers
+    const contentType = headers['content-type']
+    if (!contentType) {
+      return null
+    }
+    const match = /charset(?:=?)(.*)(?:$|\s)/ig.exec(contentType)
+    if (match && match[1]) {
+      return match[1]
+    }
+    return null
   }
 }
 

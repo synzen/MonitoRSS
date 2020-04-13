@@ -42,15 +42,18 @@ async function fetchFeed (headers, url, log) {
         log.info('Sending back headers')
       }
     }
-    return stream
+    return {
+      stream,
+      response
+    }
   }
 }
 
-async function parseStream (stream, url, log) {
+async function parseStream (stream, charset, url, log) {
   if (log) {
     log.info('Parsing stream')
   }
-  const { articleList } = await FeedFetcher.parseStream(stream, url)
+  const { articleList } = await FeedFetcher.parseStream(stream, url, charset)
   if (articleList.length === 0) {
     if (log) {
       log.info('No articles found, sending success status')
@@ -118,12 +121,14 @@ async function getFeed (data, log) {
     urlLog.info('Isolated processor received in batch')
   }
   try {
-    const stream = await fetchFeed(headers[link], link, urlLog)
-    if (!stream) {
+    const fetchData = await fetchFeed(headers[link], link, urlLog)
+    if (!fetchData) {
       process.send({ status: 'success', link })
       return
     }
-    const articleList = await parseStream(stream, link, urlLog)
+    const { stream, response } = fetchData
+    const charset = FeedFetcher.getCharsetFromResponse(response)
+    const articleList = await parseStream(stream, charset, link, urlLog)
     if (!articleList) {
       process.send({ status: 'success', link })
       return
