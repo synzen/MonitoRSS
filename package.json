@@ -30,7 +30,7 @@
     "moment-timezone": "^0.5.28",
     "mongoose": "^5.9.7",
     "node-fetch": "^2.6.0",
-    "pino": "^6.1.1",
+    "pino": "^6.2.0",
     "pino-pretty": "^4.0.0",
     "redis": "^3.0.2"
   },
@@ -51,7 +51,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "jest": "^25.2.7"
+    "jest": "^25.3.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.1",
