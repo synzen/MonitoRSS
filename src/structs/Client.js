@@ -242,16 +242,16 @@ class Client extends EventEmitter {
         this.mongo = await this.connectToDatabase()
       }
       await intiialize.setupModels(this.mongo)
-      if (config.bot.enableCommands) {
-        await listeners.enableCommands(this.bot)
-      }
-      this.log.info(`Commands have been ${config.bot.enableCommands ? 'enabled' : 'disabled'}.`)
       const uri = config.database.uri
       this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
       await maintenance.pruneWithBot(this.bot)
       storage.initialized = 2
       this.state = STATES.READY
       await this.sendPendingArticles()
+      if (config.bot.enableCommands) {
+        await listeners.enableCommands(this.bot)
+      }
+      this.log.info(`Commands have been ${config.bot.enableCommands ? 'enabled' : 'disabled'}.`)
       ipc.send(ipc.TYPES.INIT_COMPLETE)
       listeners.createManagers(this.bot)
       this.emit('finishInit')
