@@ -28,7 +28,7 @@
     "iconv-lite": "^0.5.1",
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.28",
-    "mongoose": "^5.9.7",
+    "mongoose": "^5.9.9",
     "node-fetch": "^2.6.0",
     "pino": "^6.2.0",
     "pino-pretty": "^4.0.0",
