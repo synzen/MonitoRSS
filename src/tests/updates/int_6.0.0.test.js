@@ -116,6 +116,18 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       })
       expect(profile).toBeDefined()
     })
+    it('deletes prefixes with empty spaces', async function () {
+      const guildRss = {
+        id: '32qwet4ry',
+        name: 'azdsh',
+        prefix: 'hello world'
+      }
+      await updateProfiles(guildRss)
+      const profile = await con.collection('profiles').findOne({
+        _id: guildRss.id
+      })
+      expect(profile).toBeNull()
+    })
     it('does not restore empty profile', async function () {
       const guildRss = {
         id: '32qwethk4ry',

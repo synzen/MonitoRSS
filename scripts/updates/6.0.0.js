@@ -110,10 +110,17 @@ async function updateProfiles (guildRss) {
     }
     const value = profileJSON[key]
     if (key === 'alert') {
-      if (value.length > 0) {
+      if (value && value.length > 0) {
         populatedProfile = true
       }
       continue
+    }
+    if (key === 'prefix') {
+      if (!value || value.includes(' ')) {
+        // Delete prefixes with spaces - not supported
+        profileJSON[key] = undefined
+        continue
+      }
     }
     if (value !== undefined) {
       populatedProfile = true
