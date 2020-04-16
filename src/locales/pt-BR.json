@@ -419,7 +419,7 @@
       "helpText": "Você deve especificar um prefixo de 4 caracteres ou menos como o primeiro argumento para definir um prefixo personalizado ou `reset` para redefinir o prefixo para padrão se um prefixo personalizado já estiver definido.",
       "resetNone": "Você não tem prefixo personalizado para resetar.",
       "resetSuccess": "O prefixo de comandos foi redefinido de volta ao padrão ({{prefix}}).",
-      "mustBeLess": "O comprimento do prefixo de comandos deve ser menor que 5 caracteres.",
+      "requirements": "O comprimento do prefixo de comandos deve ser menor que 5 caracteres sem espaços.",
       "cannotUseDefault": "Não é possível usar este prefixo de comandos porque ele já é o prefixo padrão.",
       "setSuccess": "Comando alterado com sucesso prefixo para \"{{prefixo}}\"."
     },

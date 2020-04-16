@@ -436,7 +436,7 @@
       "helpText": "You must specify a prefix 4 characters or less as the first argument to set a custom prefix, or `reset` to reset the prefix to default if a custom prefix is already set.",
       "resetNone": "You have no custom prefix to reset.",
       "resetSuccess": "Commands prefix has been reset back to the default ({{prefix}}).",
-      "mustBeLess": "Commands prefix length must be less than 5 characters.",
+      "requirements": "Commands prefix length must be less than 5 characters with no spaces.",
       "cannotUseDefault": "Cannot use this commands prefix because it is already the default prefix.",
       "setSuccess": "Successfully changed commands prefix to \"{{prefix}}\"."
     },

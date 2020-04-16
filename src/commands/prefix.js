@@ -22,8 +22,8 @@ module.exports = async (message) => {
     await profile.setPrefixAndSave()
     return message.channel.send(translate('commands.prefix.resetSuccess', { prefix: config.bot.prefix }))
   }
-  if (prefix.length > 4) {
-    return message.channel.send(translate('commands.prefix.mustBeLess'))
+  if (prefix.length > 4 || prefix.includes(' ')) {
+    return message.channel.send(translate('commands.prefix.requirements'))
   }
   if (config.bot.prefix === prefix) {
     return message.channel.send(translate('commands.prefix.cannotUseDefault'))
