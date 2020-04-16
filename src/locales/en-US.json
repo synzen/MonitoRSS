@@ -127,7 +127,7 @@
     "invite": {
       "description": "Send the invite links for this bot."
     },
-    "rssversion": {
+    "version": {
       "description": "Show version of the bot."
     },
     "compare": {
