@@ -7,8 +7,7 @@ const ipc = require('../util/ipc.js')
 const Profile = require('./db/Profile.js')
 const ArticleMessage = require('./ArticleMessage.js')
 const PendingArticle = require('./db/PendingArticle.js')
-const storage = require('../util/storage.js')
-const intiialize = require('../util/initialization.js')
+const initialize = require('../util/initialization.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const connectDb = require('../util/connectDatabase.js')
@@ -140,7 +139,6 @@ class Client extends EventEmitter {
             this.onNewArticle(message.data.article, message.data.debug)
             break
           case ipc.TYPES.FINISHED_INIT:
-            storage.initialized = 2
             break
           case ipc.TYPES.SEND_CHANNEL_MESSAGE:
             this.sendChannelAlert(message.data.channel, message.data.message, message.data.alert)
@@ -241,11 +239,11 @@ class Client extends EventEmitter {
       if ((this.mongo && this.mongo.readyState !== 1) || Profile.isMongoDatabase) {
         this.mongo = await this.connectToDatabase()
       }
-      await intiialize.setupModels(this.mongo)
+      await initialize.setupModels(this.mongo)
+      await initialize.setupCommands()
       const uri = config.database.uri
       this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
       await maintenance.pruneWithBot(this.bot)
-      storage.initialized = 2
       this.state = STATES.READY
       await this.sendPendingArticles()
       if (config.bot.enableCommands) {
@@ -265,7 +263,6 @@ class Client extends EventEmitter {
       return this.log.warn(`Ignoring stop command because of ${this.state} state`)
     }
     this.log.info('Discord.RSS has received stop command')
-    storage.initialized = 0
     clearInterval(this.maintenance)
     listeners.disableAll(this.bot)
     this.state = STATES.STOPPED

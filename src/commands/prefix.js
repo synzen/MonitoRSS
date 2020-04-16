@@ -1,4 +1,3 @@
-const storage = require('../util/storage.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const getConfig = require('../config.js').get
@@ -6,6 +5,7 @@ const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message) => {
   const prefix = message.content.split(' ')[1]
+  /** @type {Profile} */
   const profile = await Profile.get(message.guild.id)
   const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
 
@@ -19,9 +19,7 @@ module.exports = async (message) => {
     if (!profile || !profile.prefix) {
       return message.channel.send(translate('commands.prefix.resetNone'))
     }
-    profile.prefix = undefined
-    delete storage.prefixes[profile.id]
-    await profile.save()
+    await profile.setPrefixAndSave()
     return message.channel.send(translate('commands.prefix.resetSuccess', { prefix: config.bot.prefix }))
   }
   if (prefix.length > 4) {
@@ -34,14 +32,12 @@ module.exports = async (message) => {
   if (!profile) {
     const data = {
       _id: message.guild.id,
-      name: message.guild.name,
-      prefix
+      name: message.guild.name
     }
     const newProfile = new Profile(data)
-    await newProfile.save()
+    await newProfile.setPrefixAndSave(prefix)
   } else {
-    profile.prefix = prefix
-    await profile.save()
+    await profile.setPrefixAndSave(prefix)
   }
 
   const log = createLogger(message.guild.shard.id)
@@ -50,5 +46,4 @@ module.exports = async (message) => {
   }, `Guild prefix updated to ${prefix}`)
 
   await message.channel.send(translate('commands.prefix.setSuccess', { prefix }))
-  storage.prefixes[profile.id] = prefix
 }

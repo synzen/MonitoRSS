@@ -68,6 +68,44 @@ class Profile extends Base {
   }
 
   /**
+   * Store all guild prefixes for reference by commands
+   */
+  static async populatePrefixes () {
+    const profiles = await this.getAll()
+    this.prefixes.clear()
+    for (const profile of profiles) {
+      if (profile.prefix) {
+        this.setPrefix(profile._id, profile.prefix)
+      }
+    }
+  }
+
+  /**
+   * Cache a guild's prefix
+   * @param {string} guildID
+   * @param {string} prefix
+   */
+  static setPrefix (guildID, prefix) {
+    this.prefixes.set(guildID, prefix)
+  }
+
+  /**
+   * Delete a guild's prefix from cache
+   * @param {string} guildID
+   */
+  static deletePrefix (guildID) {
+    this.prefixes.delete(guildID)
+  }
+
+  /**
+   * Get a guild's cached prefix
+   * @param {string} guildID
+   */
+  static getPrefix (guildID) {
+    return this.prefixes.get(guildID)
+  }
+
+  /**
    * Getter for this._id since _id and id should be
    * the same.
    * @returns {string}
@@ -77,16 +115,16 @@ class Profile extends Base {
   }
 
   /**
-   * Returns this profile's prefix, or the default prefix
-   * if it does not exist.
-   * @returns {string}
+   * Save and cache a new prefix
+   * @param {string} prefix
    */
-  getPrefix () {
-    const config = getConfig()
-    if (this.prefix) {
-      return this.prefix
+  async setPrefixAndSave (prefix) {
+    this.prefix = prefix
+    await this.save()
+    if (prefix) {
+      Profile.setPrefix(this._id, prefix)
     } else {
-      return config.bot.prefix
+      Profile.deletePrefix(this._id)
     }
   }
 
@@ -121,5 +159,11 @@ class Profile extends Base {
     return ProfileModel.Model
   }
 }
+
+/**
+ * Cached prefixes of all guilds, used for commands
+ * @type {Map<string, string>}
+ */
+Profile.prefixes = new Map()
 
 module.exports = Profile

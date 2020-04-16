@@ -1,11 +1,11 @@
 const fs = require('fs')
 const path = require('path')
 const mongoose = require('mongoose')
-const storage = require('./storage.js')
+const Profile = require('../structs/db/Profile.js')
 const KeyValue = require('../structs/db/KeyValue.js')
 const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
-const Profile = require('../structs/db/Profile.js')
+const Command = require('../structs/Command.js')
 const getConfig = require('../config.js').get
 
 /**
@@ -41,6 +41,11 @@ async function setupModels (connection) {
   }
 }
 
+async function setupCommands () {
+  await Profile.populatePrefixes()
+  await Command.initialize()
+}
+
 /**
  * Stores the feeds config for use by the control panel
  * that is an external process
@@ -57,16 +62,6 @@ async function populateKeyValues () {
   }
   const feedsConfig = new KeyValue(data)
   await feedsConfig.save()
-}
-
-async function populatePefixes () {
-  const profiles = await Profile.getAll()
-  for (const profile of profiles) {
-    const guildId = profile.id
-    if (profile.prefix) {
-      storage.prefixes[guildId] = profile.prefix
-    }
-  }
 }
 
 /**
@@ -117,7 +112,7 @@ async function populateSchedules (customSchedules = {}) {
 
 module.exports = {
   setupModels,
+  setupCommands,
   populateSchedules,
-  populatePefixes,
   populateKeyValues
 }

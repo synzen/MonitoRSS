@@ -1,7 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const Blacklist = require('../structs/db/Blacklist.js')
-const BlacklistCache = require('../structs/BlacklistCache.js')
+const Command = require('../structs/Command.js')
 
 const eventHandlers = []
 const VALID_EVENTS = [
@@ -52,8 +51,8 @@ const VALID_EVENTS = [
   'warn'
 ]
 
-const messageHandler = (blacklistCache) => message => {
-  require('../events/message.js')(message, blacklistCache)
+const messageHandler = message => {
+  require('../events/message.js')(message)
 }
 
 exports.createManagers = (bot) => {
@@ -71,10 +70,9 @@ exports.createManagers = (bot) => {
 }
 
 exports.enableCommands = async (bot) => {
-  const blacklistCache = new BlacklistCache(await Blacklist.getAll())
-  exports.blacklistCache = blacklistCache
-  eventHandlers.push({ name: 'message', func: messageHandler(blacklistCache) })
+  eventHandlers.push({ name: 'message', func: messageHandler })
   bot.on('message', eventHandlers[eventHandlers.length - 1].func)
+  Command.enable()
 }
 
 exports.disableAll = (bot) => {
@@ -82,4 +80,5 @@ exports.disableAll = (bot) => {
     bot.removeListener(eventHandler.name, eventHandler.func)
   }
   eventHandlers.length = 0
+  Command.disable()
 }

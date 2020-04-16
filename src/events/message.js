@@ -1,58 +1,56 @@
-const commands = require('../util/commands.js')
-const channelTracker = require('../util/channelTracker.js')
-const storage = require('../util/storage.js')
-const getConfig = require('../config.js').get
+const Command = require('../structs/Command.js')
 const createLogger = require('../util/logger/create.js')
 
 /**
  * Handle discord messages from ws
  * @param {import('discord.js').Message} message - Discord message
- * @param {import('../structs/BlacklistCache.js')} blacklistCache - Blacklisted users and guilds
  */
-function handler (message, blacklistCache) {
-  const { guild, author, channel, content, client } = message
+async function handler (message) {
+  const { guild, author, channel, client } = message
   const log = createLogger(client.shard.ids[0], {
     message,
     guild,
     channel,
     user: author
   })
-  if (author.id === client.user.id || !guild || blacklistCache.guilds.has(guild.id) || blacklistCache.users.has(author.id)) {
-    log.debug(`Ignored message. One or more conditions are true - author bot:${!!author.bot}, no guild:${!guild}, blacklisted guild:${guild ? blacklistCache.guilds.has(guild.id) : false}, blacklisted user: ${author ? blacklistCache.users.has(author.id) : false}`)
+  if (Command.shouldIgnore(message, log)) {
     return
   }
-
-  const config = getConfig()
-  const command = content.split(' ')[0].substr(config.bot.prefix.length)
-  if (command === 'forceexit') {
-    // Forcibly clear a channel of active menus
-    return require('../commands/forceexit.js')(message)
+  // Check command validity
+  const command = Command.tryGetCommand(message, log)
+  if (!command) {
+    return log.debug('No valid command found')
   }
-
-  if (channelTracker.hasActiveMenus(channel.id)) {
-    log.debug('Ignored message - channel has active menus')
-    return
-  }
-
-  // Regular commands
-  const ownerIDs = config.bot.ownerIDs
-  const onlyOwner = config.bot.enableCommands !== true || config.dev === true
-  if (commands.has(message)) {
-    if (storage.initialized < 2) {
-      log.debug(`Bot is currently booting up, ignoring all commands. Current stage is ${storage.initialized}`)
-      return channel.send('This command is disabled while booting up, please wait.')
-        .then(m => m.delete({ timeout: 4000 }))
+  try {
+    // Check member
+    log.debug({
+      requiredPerms: Command.getPermissionNames(command.getMemberPermission())
+    }, 'Checking member permissions')
+    const hasMemberPermission = await command.hasMemberPermission(message)
+    if (!hasMemberPermission) {
+      const requiredPerms = await command.notifyMissingMemberPerms(message)
+      return log.debug(`Member permissions missing: ${requiredPerms}, commands enabled: ${Command.enabled}`)
     }
-    log.debug('Understood command, checking if user has access to use commands')
-    if (!onlyOwner || ownerIDs.includes(author.id)) {
-      log.debug(`Permission granted to proceed with command. Only owners allowed: ${onlyOwner}, is owner: ${ownerIDs.includes(author.id)}`)
-      return commands.run(message, log)
+    // Check bot
+    log.debug({
+      requiredPerms: Command.getPermissionNames(command.getBotPermissions())
+    }, 'Checking bot permissions')
+    const hasBotPermission = command.hasBotPermission(message)
+    if (!hasBotPermission) {
+      const requiredPerms = await command.notifyMissingBotPerms(message)
+      return log.debug(`Bot permissions missing: ${requiredPerms}`)
     }
-  }
-
-  // Bot owner commands
-  if (ownerIDs.includes(author.id)) {
-    commands.runOwner(message, log)
+    log.debug(`Running command ${command.name}`)
+    // Run
+    await command.run(message)
+  } catch (err) {
+    if (err.code !== 50013) {
+      log.error(err, 'Message listener error (not 50013)')
+      message.channel.send(err.message)
+        .catch(err => log.error(err, 'Failed to send error message to channel'))
+    } else {
+      log.warn(err, 'Message listener (50013 permission error)')
+    }
   }
 }
 

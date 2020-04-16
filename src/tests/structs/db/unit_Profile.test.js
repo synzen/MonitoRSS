@@ -73,18 +73,58 @@ describe('Unit::structs/db/Profile', function () {
       }
     })
   })
-  describe('getPrefix', function () {
-    it('returns the profile prefix if it exists', () => {
-      const profilePrefix = 'aedswgrf'
-      const profile = new Profile(necessaryInit)
-      profile.prefix = profilePrefix
-      expect(profile.getPrefix()).toEqual(profilePrefix)
+  describe('static setPrefix', function () {
+    afterEach(function () {
+      Profile.prefixes = new Map()
     })
-    it('returns the default prefix if no profile prefix', () => {
-      const profilePrefix = undefined
-      const profile = new Profile(necessaryInit)
-      profile.prefix = profilePrefix
-      expect(profile.getPrefix()).toEqual(config.get().bot.prefix)
+    it('sets the new prefix', function () {
+      const guildID = 'qwt4ery'
+      const prefix = 'w4rye5t'
+      Profile.setPrefix(guildID, prefix)
+      expect(Profile.prefixes.get(guildID))
+        .toEqual(prefix)
+    })
+  })
+  describe('static getPrefix', function () {
+    afterEach(function () {
+      Profile.prefixes = new Map()
+    })
+    it('gets the prefix', function () {
+      const guildID = 'qwt4ery'
+      const prefix = 'w4rye5t'
+      Profile.prefixes.set(guildID, prefix)
+      expect(Profile.getPrefix(guildID))
+        .toEqual(prefix)
+    })
+  })
+  describe('static populatePrefixes', function () {
+    it('populates properly', async function () {
+      const profiles = [{
+        _id: 1,
+        prefix: 'a'
+      }, {
+        _id: 2
+      }, {
+        _id: 3,
+        prefix: 'b'
+      }]
+      jest.spyOn(Profile, 'getAll')
+        .mockResolvedValue(profiles)
+      const setPrefix = jest.spyOn(Profile, 'setPrefix')
+        .mockImplementation()
+      await Profile.populatePrefixes()
+      expect(setPrefix).toHaveBeenCalledWith(profiles[0]._id, profiles[0].prefix)
+      expect(setPrefix).not.toHaveBeenCalledWith(profiles[1]._id, profiles[1].prefix)
+      expect(setPrefix).toHaveBeenCalledWith(profiles[2]._id, profiles[2].prefix)
+    })
+    it('clears prefixes', async function () {
+      Profile.prefixes = new Map([['1', '2'], ['3', '4']])
+      jest.spyOn(Profile, 'getAll')
+        .mockResolvedValue([])
+      jest.spyOn(Profile, 'setPrefix')
+        .mockImplementation()
+      await Profile.populatePrefixes()
+      expect(Profile.prefixes.size).toEqual(0)
     })
   })
   describe('static getFeedLimit', function () {
@@ -101,6 +141,48 @@ describe('Unit::structs/db/Profile', function () {
       const returned = await Profile.getFeedLimit()
       expect(Supporter.getValidSupporterOfGuild).toHaveBeenCalledTimes(1)
       expect(returned).toEqual(config.get().feeds.max)
+    })
+  })
+  describe('setPrefixAndSave', function () {
+    it('saves', async function () {
+      const prefix = 'qa3et4wr'
+      const profile = new Profile({ ...necessaryInit })
+      const save = jest.spyOn(profile, 'save')
+        .mockImplementation()
+      await profile.setPrefixAndSave(prefix)
+      expect(save).toHaveBeenCalledTimes(1)
+    })
+    it('sets the prefix', async function () {
+      const prefix = 'qa3et4wr'
+      const profile = new Profile({ ...necessaryInit })
+      jest.spyOn(profile, 'save')
+        .mockImplementation()
+      await profile.setPrefixAndSave(prefix)
+      expect(profile.prefix).toEqual(prefix)
+    })
+    it('updates the cache', async function () {
+      const prefix = 'qa3et4wr'
+      const profileID = 'w4rey57tu6'
+      const profile = new Profile({ ...necessaryInit })
+      profile._id = profileID
+      const setPrefix = jest.spyOn(Profile, 'setPrefix')
+        .mockImplementation()
+      jest.spyOn(profile, 'save')
+        .mockImplementation()
+      await profile.setPrefixAndSave(prefix)
+      expect(setPrefix).toHaveBeenCalledWith(profileID, prefix)
+    })
+    it('deletes from cache if undefined', async function () {
+      const prefix = undefined
+      const profileID = 'w4rey57tu6'
+      const profile = new Profile({ ...necessaryInit })
+      profile._id = profileID
+      const deletePrefix = jest.spyOn(Profile, 'deletePrefix')
+        .mockImplementation()
+      jest.spyOn(profile, 'save')
+        .mockImplementation()
+      await profile.setPrefixAndSave(prefix)
+      expect(deletePrefix).toHaveBeenCalledWith(profileID)
     })
   })
 })
