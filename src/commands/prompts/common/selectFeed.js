@@ -39,7 +39,7 @@ function selectFeedVisual (data) {
     title: translate('structs.FeedSelector.feedSelectionMenu'),
     description: `${translate('structs.FeedSelector.prompt')} ${translate('structs.FeedSelector.exitToCancel')} `
   })
-  const menu = new MenuEmbed(embed, { maxPerPage: 1 })
+  const menu = new MenuEmbed(embed)
     .enablePagination(handlePaginationError)
 
   for (const feed of feeds) {
