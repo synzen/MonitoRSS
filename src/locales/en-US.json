@@ -188,6 +188,7 @@
       "success": "The following comparisons have been set for the feed <{{url}}>:\n\n{{added}}"
     },
     "date": {
+      "selectTitle": "Date Customizations",
       "dateLanguage": "Date language",
       "dateFormat": "Date format",
       "timezone": "Timezone",

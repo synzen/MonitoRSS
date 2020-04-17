@@ -19,8 +19,8 @@ function selectCustomizationVisual (data) {
   const { profile } = data
   const translate = Translator.createProfileTranslator(profile)
   const embed = new MessageEmbed({
-    title: translate('structs.FeedSelector.feedSelectionMenu'),
-    description: `${translate('structs.FeedSelector.prompt')} ${translate('structs.FeedSelector.exitToCancel')} `
+    title: translate('commands.date.selectTitle'),
+    description: translate('commands.date.description')
   })
   const menu = new MenuEmbed(embed)
     .addOption(translate('commands.date.optionChangeTimezone'), `${translate('generics.defaultSetting', { value: config.feeds.timezone })} ${profile.timezone ? translate('commands.date.optionCurrentSetting', { value: profile.timezone }) : ''}`)
