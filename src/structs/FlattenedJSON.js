@@ -2,7 +2,7 @@ const htmlConvert = require('html-to-text')
 const getConfig = require('../config.js').get
 const EXCLUDED_KEYS = ['title', 'description', 'summary', 'author', 'pubDate', 'pubdate', 'date']
 
-function cleanup (feed, text, encoding) {
+function cleanup (feed, text) {
   if (!text) return ''
 
   const config = getConfig()
@@ -53,8 +53,7 @@ function cleanup (feed, text, encoding) {
 }
 
 class FlattenedJSON {
-  constructor (data, feed, encoding = 'utf-8') {
-    this.encoding = encoding.toLowerCase()
+  constructor (data, feed) {
     this.feed = feed
     this.data = data
     this.results = {}
@@ -110,7 +109,7 @@ class FlattenedJSON {
       let curStr = key
       while (curStr.length < longestNameLen) curStr += ' '
       const propNameLength = curStr.length
-      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ' [DATE OBJECT]'] : cleanup(this.feed, this.results[key].toString(), this.encoding).split('\n')
+      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ' [DATE OBJECT]'] : cleanup(this.feed, this.results[key].toString()).split('\n')
       for (let u = 0; u < valueLines.length; ++u) {
         curStr += u === 0 ? `|  ${valueLines[u]}\r\n` : `   ${valueLines[u]}\r\n`
         if (u < valueLines.length - 1) {

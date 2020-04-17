@@ -111,7 +111,7 @@ function evalRegexConfig (source, text, placeholderName) {
   return customPlaceholders
 }
 
-function cleanup (source, text, imgSrcs, anchorLinks, encoding) {
+function cleanup (source, text, imgSrcs, anchorLinks) {
   if (!text) return ''
   const config = getConfig()
   text = htmlDecoder({ data: text }, {}).replace(/\*/gi, '')
@@ -177,7 +177,6 @@ module.exports = class Article {
     this.source = source
     this.profile = profile
     this.raw = raw
-    this.encoding = raw.meta['#xml'].encoding ? raw.meta['#xml'].encoding.toLowerCase() : 'utf-8'
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
     this.youtube = !!(raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#'])
     this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
@@ -187,7 +186,7 @@ module.exports = class Article {
     this.meta = raw.meta
     this.guid = raw.guid
     // Author
-    this.author = raw.author ? cleanup(source, raw.author, undefined, undefined, this.encoding) : ''
+    this.author = raw.author ? cleanup(source, raw.author, undefined, undefined) : ''
     if (this.author) this.placeholders.push('author')
 
     // Link
@@ -198,7 +197,7 @@ module.exports = class Article {
     // Title
     this.titleImages = []
     this.titleAnchors = []
-    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors, this.encoding)
+    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors)
     this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
     if (this.title) this.placeholders.push('title')
     for (var titleImgNum in this.titleImages) {
@@ -226,7 +225,7 @@ module.exports = class Article {
     // Description and reddit-specific placeholders
     this.descriptionImages = []
     this.descriptionAnchors = []
-    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors, this.encoding) // Account for youtube's description
+    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors) // Account for youtube's description
     this.description = this.fullDescription
     this.description = this.description.length > 800 ? `${this.description.slice(0, 790)}...` : this.description
     if (this.description) this.placeholders.push('description')
@@ -252,7 +251,7 @@ module.exports = class Article {
     // Summary
     this.summaryImages = []
     this.summaryAnchors = []
-    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors, this.encoding)
+    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors)
     this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
     if (this.summary && raw.summary !== raw.description) this.placeholders.push('summary')
     for (var sumImgNum in this.summaryImages) {
@@ -292,7 +291,7 @@ module.exports = class Article {
         categoryList += cats[category].trim()
         if (parseInt(category, 10) !== cats.length - 1) categoryList += '\n'
       }
-      this.tags = cleanup(source, categoryList, undefined, undefined, this.encoding)
+      this.tags = cleanup(source, categoryList)
       if (this.tags) this.placeholders.push('tags')
     }
 
@@ -464,7 +463,7 @@ module.exports = class Article {
     do {
       result = regex.exec(content)
       if (!result) continue
-      if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source, this.encoding)
+      if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
       const fullMatch = result[0]
       const matchName = result[1]
       matches[fullMatch] = this.flattenedJSON.results[matchName] || ''
@@ -487,7 +486,7 @@ module.exports = class Article {
   }
 
   getRawPlaceholders () {
-    if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source, this.encoding)
+    if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
     return this.flattenedJSON.results
   }
 
@@ -495,7 +494,7 @@ module.exports = class Article {
     if (!phName.startsWith('raw:')) return ''
     if (this.flattenedJSON) return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
     else {
-      this.flattenedJSON = new FlattenedJSON(this.raw, this.source, this.encoding)
+      this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
       return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
     }
   }
