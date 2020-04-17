@@ -5,9 +5,15 @@ const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')
 module.exports = async (message) => {
   const selectCustomizationNode = new PromptNode(datePrompts.selectCustomization.prompt)
   const successResetNode = new PromptNode(datePrompts.successReset.prompt)
-  const askTimezoneNode = new PromptNode(datePrompts.askTimezone.prompt)
-  const askFormatNode = new PromptNode(datePrompts.askFormat.prompt)
-  const askLanguageNode = new PromptNode(datePrompts.askLanguage.prompt)
+
+  const askTimezoneCondition = data => data.selected === '1'
+  const askTimezoneNode = new PromptNode(datePrompts.askTimezone.prompt, askTimezoneCondition)
+
+  const askFormatCondition = data => data.selected === '2'
+  const askFormatNode = new PromptNode(datePrompts.askFormat.prompt, askFormatCondition)
+
+  const askLanguageCondition = data => data.selected === '3'
+  const askLanguageNode = new PromptNode(datePrompts.askLanguage.prompt, askLanguageCondition)
 
   selectCustomizationNode.setChildren([
     successResetNode,

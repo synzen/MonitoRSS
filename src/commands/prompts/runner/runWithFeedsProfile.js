@@ -12,7 +12,8 @@ async function runWithFeedsProfile (rootNode, message, initialData = {}) {
   const { author, channel, guild } = message
   const profile = await Profile.get(guild.id)
   const feeds = await Feed.getManyBy('guild', guild.id)
-  const noFeedsNode = new PromptNode(noFeeds.prompt)
+  const noFeedsFoundCondition = data => data.feeds.length === 0
+  const noFeedsNode = new PromptNode(noFeeds.prompt, noFeedsFoundCondition)
   const runner = new DiscordPromptRunner(author, {
     feeds,
     profile,

@@ -62,7 +62,7 @@ async function askFormatFn (message, data) {
     setting
   }
 }
-const askFormatCondition = data => data.selected === '2'
-const prompt = new DiscordPrompt(askFormatVisual, askFormatFn, askFormatCondition)
+
+const prompt = new DiscordPrompt(askFormatVisual, askFormatFn)
 
 exports.prompt = prompt

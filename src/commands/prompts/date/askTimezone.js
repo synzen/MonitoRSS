@@ -66,7 +66,7 @@ async function askTimezoneFn (message, data) {
     setting
   }
 }
-const askTimezoneCondition = data => data.selected === '1'
-const prompt = new DiscordPrompt(askTimezoneVisual, askTimezoneFn, askTimezoneCondition)
+
+const prompt = new DiscordPrompt(askTimezoneVisual, askTimezoneFn)
 
 exports.prompt = prompt

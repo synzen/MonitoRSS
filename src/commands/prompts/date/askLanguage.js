@@ -72,7 +72,7 @@ async function askLanguageFn (message, data) {
     setting
   }
 }
-const askLanguageCondition = data => data.selected === '3'
-const prompt = new DiscordPrompt(askLanguageVisual, askLanguageFn, askLanguageCondition)
+
+const prompt = new DiscordPrompt(askLanguageVisual, askLanguageFn)
 
 exports.prompt = prompt
