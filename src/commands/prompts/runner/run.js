@@ -1,4 +1,4 @@
-const { DiscordPromptRunner } = require('discord-prompts')
+const { DiscordPromptRunner } = require('discord.js-prompts')
 
 /**
  * @param {import('discord-prompts').DiscordPrompt} rootNode

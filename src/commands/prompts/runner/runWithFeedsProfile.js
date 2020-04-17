@@ -1,4 +1,4 @@
-const { PromptNode, DiscordPromptRunner } = require('discord-prompts')
+const { PromptNode, DiscordPromptRunner } = require('discord.js-prompts')
 const Profile = require('../../../structs/db/Profile.js')
 const Feed = require('../../../structs/db/Feed.js')
 const noFeeds = require('../common/noFeedsFound.js')

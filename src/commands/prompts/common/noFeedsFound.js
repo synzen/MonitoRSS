@@ -1,4 +1,4 @@
-const { DiscordPrompt } = require('discord-prompts')
+const { DiscordPrompt } = require('discord.js-prompts')
 const Translator = require('../../../structs/Translator.js')
 
 /**

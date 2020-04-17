@@ -1,4 +1,4 @@
-const { PromptNode } = require('discord-prompts')
+const { PromptNode } = require('discord.js-prompts')
 const commonPrompts = require('./prompts/common/index.js')
 const messagePrompts = require('./prompts/text/index.js')
 const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')

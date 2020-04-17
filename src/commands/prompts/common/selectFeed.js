@@ -1,5 +1,5 @@
 const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord-prompts')
+const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord.js-prompts')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 
