@@ -290,7 +290,6 @@
       "noFilters": "Não há filtros atribuídos a {{link}}.",
       "listFilters": "Lista de filtros atribuídos",
       "listFiltersDescription": "**Feed Título:** {{title}}\n**Feed Link:** {{link}}\n\nAbaixo estão as categorias de filtro com suas palavras/frases em cada um.\u200b\n\u200b\n",
-      "connectionFailureLimit": "Limite de falha de conexão atingida.",
       "noArticlesPassed": "Nenhum artigo conseguiu passar nos filtros deste feed."
     },
     "rsshelp": {
@@ -528,7 +527,7 @@
         "removeFilterConfirm": "Confirme a palavra/frase de filtro que você gostaria de remover na categoria `{{category}}` digitando uma ou várias palavras/frases separadas por novas linhas (diferenciando maiúsculas de minúsculas).",
         "removeFilterInvalid": "Esse não é um filtro válido para remover de `{{category}}`. Tente novamente ou digite `exit` para cancelar.",
         "removeSuccess": "Os seguintes filtros foram removidos com sucesso da categoria de filtro",
-        "removeSuccessSubscriber": "as seguintes inscrições foram atualizada para o `{{name}}`. Os seguintes filtros foram removidos com sucesso da categoria de filtro",
+        "removeSuccessSubscriber": "as seguintes inscrições foram atualizada para o `{{name}}`.",
         "removeFailedNoExist": "Os seguintes filtros não puderam ser excluídos porque não existem",
         "removeNone": "Não há filtros para remover de <{{link}}>",
         "listOfFilters": "Lista de filtros atribuídos",

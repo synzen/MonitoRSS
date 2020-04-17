@@ -17,13 +17,6 @@ function noFeedsFoundVisual (data) {
   }
 }
 
-/**
- * @param {Data} data
- */
-async function noFeedsFoundCondition (data) {
-  return data.feeds.length === 0
-}
-
-const prompt = new DiscordPrompt(noFeedsFoundVisual, undefined, noFeedsFoundCondition)
+const prompt = new DiscordPrompt(noFeedsFoundVisual)
 
 exports.prompt = prompt

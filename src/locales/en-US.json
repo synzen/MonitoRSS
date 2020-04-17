@@ -306,9 +306,10 @@
       "optionSendArticleDescription": "Send a randomly chosen article that passes current filter(s) if they exist.",
       "removedAllSuccess": "All feed filters have been successfully removed from <{{link}}>.",
       "noFilters": "There are no filters assigned to {{link}}.",
+      "noFiltersTryAgain": "There are no filters assigned to {{link}}. Select another option, or type `exit` to cancel.",
       "listFilters": "List of Assigned Filters",
       "listFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n",
-      "connectionFailureLimit": "Reached connection failure limit.",
+      "connectionFailureLimit": "Unable to send article since failure limit has been reached (see {{prefix}}list for more information). Select another option, or type `exit` to cancel.",
       "noArticlesPassed": "No articles were able to pass this feed's filters."
     },
     "help": {
@@ -546,7 +547,7 @@
         "removeFilterConfirm": "Confirm the filter word/phrase you would like to remove in the category `{{category}}` by typing one or multiple word/phrases separated by new lines (case sensitive).",
         "removeFilterInvalid": "That is not a valid filter to remove from `{{category}}`. Try again, or type `exit` to cancel.",
         "removeSuccess": "The following filter(s) have been successfully removed from the filter category",
-        "removeSuccessSubscriber": "Subscription updated for `{{name}}`. The following filter(s) have been successfully removed from the filter category",
+        "removeSuccessSubscriber": "Subscription updated for `{{name}}`.",
         "removeFailedNoExist": "The following filter(s) were unable to be deleted because they do not exist",
         "removeNone": "There are no filters to remove for <{{link}}>.",
         "listOfFilters": "List of Assigned Filters",
