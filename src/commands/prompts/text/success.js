@@ -1,4 +1,4 @@
-const { DiscordPrompt } = require('discord.js-prompts')
+const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
 const Translator = require('../../../structs/Translator.js')
 const getConfig = require('../../../config.js').get
 
@@ -20,18 +20,14 @@ function successVisual (data) {
   const defaultText = config.feeds.defaultText
   const translate = Translator.createLocaleTranslator(locale)
   if (text === undefined) {
-    return {
-      text: translate('commands.text.resetSuccess', { link: url }) + `\n \`\`\`Markdown\n${defaultText}\`\`\``
-    }
+    return new MessageVisual(translate('commands.text.resetSuccess', { link: url }) + `\n \`\`\`Markdown\n${defaultText}\`\`\``)
   }
   const confirmSuccess = translate('commands.text.setSuccess', { link: url })
   const escapedText = text.replace('`', '​`')
   const testReminder = translate('commands.text.reminder', { prefix })
   const backupReminder = translate('generics.backupReminder', { prefix })
   const subscriptionsReminder = text.search(/{subscriptions}/) === -1 ? translate('commands.text.noSubscriptionsPlaceholder', { prefix }) : ''
-  return {
-    text: `${confirmSuccess}\n \`\`\`Markdown\n${escapedText}\`\`\`\n${testReminder} ${backupReminder}${subscriptionsReminder}`
-  }
+  return new MessageVisual(`${confirmSuccess}\n \`\`\`Markdown\n${escapedText}\`\`\`\n${testReminder} ${backupReminder}${subscriptionsReminder}`)
 }
 
 const prompt = new DiscordPrompt(successVisual)

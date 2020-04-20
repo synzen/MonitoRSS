@@ -1,4 +1,4 @@
-const { DiscordPrompt } = require('discord.js-prompts')
+const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
 const Translator = require('../../../structs/Translator.js')
 const getConfig = require('../../../config.js').get
 const createLogger = require('../../../util/logger/create.js')
@@ -24,13 +24,11 @@ function setMessageVisual (data) {
   } else {
     currentMsg = `\`\`\`Markdown\n${Translator.translate('commands.text.noSetText', locale)}\n\n\`\`\`\`\`\`\n` + config.feeds.defaultText + '```'
   }
-  return {
-    text: Translator.translate('commands.text.prompt', locale, {
-      prefix,
-      currentMsg,
-      link: url
-    })
-  }
+  return new MessageVisual(Translator.translate('commands.text.prompt', locale, {
+    prefix,
+    currentMsg,
+    link: url
+  }))
 }
 
 /**
