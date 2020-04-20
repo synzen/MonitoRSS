@@ -98,15 +98,12 @@ async function sendArticles (articles, log) {
   const len = results.length
   for (var i = 0; i < len; ++i) {
     const result = results[i]
-    const article = articles[i]
     if (result.status === 'rejected') {
       log.error(result.reason, 'Failed to store pending article before process.send')
-    } else {
-      article._pendingArticleID = result.value
     }
     process.send({
-      status: 'article',
-      article
+      status: 'pendingArticle',
+      pendingArticle: result.value
     })
   }
 }

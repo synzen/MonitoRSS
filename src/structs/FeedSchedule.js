@@ -270,8 +270,8 @@ class FeedSchedule extends EventEmitter {
           }
           return
         }
-        if (linkCompletion.status === 'article') {
-          return this.emit('article', linkCompletion.article)
+        if (linkCompletion.status === 'pendingArticle') {
+          return this.emit('pendingArticle', linkCompletion.pendingArticle)
         }
         if (linkCompletion.status === 'failed') {
           ++this._cycleFailCount
