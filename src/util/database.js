@@ -190,14 +190,13 @@ async function getAllDocuments (scheduleName, memoryCollection) {
  * down before articles could be sent after IPC
  *
  * @param {Object<string, any>} article
- * @returns {string} - The mongoDB generated ID
+ * @returns {Object<string, any>} - JSON of pending article
  */
 async function storePendingArticle (article) {
   const pending = new PendingArticle({
     article
   })
-  const saved = await pending.save()
-  return saved._id
+  return (await pending.save()).toJSON()
 }
 
 module.exports = {

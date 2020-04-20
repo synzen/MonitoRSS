@@ -11,17 +11,18 @@ class ScheduleManager extends EventEmitter {
     this.debugFeedIDs = new Set()
   }
 
-  async _onArticle (article) {
+  async _onPendingArticle (pendingArticle) {
+    const article = pendingArticle.article
     if (this.debugFeedIDs.has(article._feed._id)) {
       this.log.debug(`${article._feed._id} ScheduleManager queueing article ${article.link} to send`)
     }
-    this.emit('article', article)
+    this.emit('pendingArticle', pendingArticle)
   }
 
   addSchedule (schedule) {
     const feedSchedule = new FeedSchedule(schedule)
     this.schedules.push(feedSchedule)
-    feedSchedule.on('article', this._onArticle.bind(this))
+    feedSchedule.on('pendingArticle', this._onPendingArticle.bind(this))
   }
 
   addSchedules (schedules) {

@@ -135,8 +135,8 @@ class Client extends EventEmitter {
             this.start()
             break
           }
-          case ipc.TYPES.NEW_ARTICLE:
-            this.onNewArticle(message.data.article, message.data.debug)
+          case ipc.TYPES.PENDING_ARTICLE:
+            this.onNewPendingArticle(message.data.pendingArticle, message.data.debug)
             break
           case ipc.TYPES.FINISHED_INIT:
             break
@@ -154,17 +154,19 @@ class Client extends EventEmitter {
     })
   }
 
-  async onNewArticle (article, debug) {
+  async onNewPendingArticle (pendingArticle, debug) {
+    const article = pendingArticle.article
     const feed = article._feed
-    const pendingArticleID = article._pendingArticleID
     const channel = this.bot.channels.cache.get(feed.channel)
     if (!channel) {
+      this.log.debug(`No channel found for article ${article._id} of feed ${feed._id}`)
       return
     }
     try {
       const articleMessage = new ArticleMessage(this.bot, article, false, debug)
-      await PendingArticle.deleteID(pendingArticleID)
+      await PendingArticle.deleteID(pendingArticle._id)
       await articleMessage.send()
+      this.log.debug(`Sent article ${article._id} of feed ${feed._id}, deleted pending article ${pendingArticle._id}`)
     } catch (err) {
       this.log.warn({
         error: err,
@@ -224,8 +226,7 @@ class Client extends EventEmitter {
   async sendPendingArticles () {
     const pendingArticles = await PendingArticle.getAll()
     for (const pendingArticle of pendingArticles) {
-      const article = pendingArticle.article
-      await this.onNewArticle(article)
+      await this.onNewPendingArticle(pendingArticle)
     }
   }
 
