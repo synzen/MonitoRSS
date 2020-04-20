@@ -350,13 +350,17 @@ describe('Unit::util/database', function () {
       const article = {
         a: 1
       }
+      const jsonValue = {
+        foo: 'baz'
+      }
       const createdDoc = {
-        _id: 'abc123'
+        _id: 'abc123',
+        toJSON: () => jsonValue
       }
       jest.spyOn(PendingArticle.prototype, 'save')
         .mockResolvedValue(createdDoc)
       const returned = await databaseFuncs.storePendingArticle(article)
-      expect(returned).toEqual(createdDoc._id)
+      expect(returned).toEqual(jsonValue)
     })
   })
 })
