@@ -28,11 +28,12 @@
       "description": "Open a menu to customize a feed's text message."
     },
     "embed": {
-      "args": {
-        "fields": "Customize Fields for the embed."
-      },
-      "action": "Embed Message Customization",
+      "action": "Embed Customization",
       "description": "Open a menu to customize a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
+    },
+    "embed.fields": {
+      "action": "Embed Fields Customization",
+      "description": "Open a menu to customize fields for a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
     },
     "filters": {
       "action": "Feed Filter Addition/Removal",
@@ -214,7 +215,6 @@
       "generatedDump": "Dump has been generated. Attempting to attach file, see below."
     },
     "embed": {
-      "defaultEmbed": "Default Embed",
       "numberedEmbed": "Embed #{{number}}",
       "embedSelection": "Embed Selection",
       "embedSelectionDescription": "The properties for each embed is shown below. Select one of the embeds by typing the number next to it, or type `exit` to cancel.\n\u200b",
@@ -227,12 +227,9 @@
       "availablePropertiesList": "The list of embed properties that can be set are:\n{{list}}\nType the embed property (for example, `color` or `message`) you want to set/reset, or multiple properties by separation with commas (for example, `color, message`). Type `reset` to remove all properties, or type `exit` to cancel.",
       "invalidColorNumber": "The color must be an **number**. See <https://www.shodor.org/stella2java/rgbint.html>. Try again, or type `exit` to cancel.",
       "invalidColorRange": "The color must be a number between 0 and 16777215. Try again, or type `exit` to cancel.",
-      "invalidURL": "URLs must link to actual images or be `{imageX}` placeholders. Try again, or type `exit` to cancel.",
       "invalidProperties": "The following properties {{invalids}} are invalid. Try again, or type `exit` to cancel.",
-      "noPropertiesSelected": "No valid properties selected. Try again, or type `exit` to cancel.",
       "removedAllEmbeds": "Successfully removed all embeds.",
       "removedEmbed": "Embed has been disabled, and all properties have been removed for <{{link}}>.",
-      "resetNothing": "🇽 **{{propName}}** has nothing to reset\n",
       "resetSuccess": "☑ **{{propName}}** has been reset\n",
       "updatedSuccess": "☑ **{{propName}}** updated to \n```\n{{userSetting}}\n```\n",
       "updatedInfo": "Settings updated for <{{link}}>:\n\n{{resetList}}{{updateList}}\nYou may use `{{prefix}}test` or `{{prefix}}test simple` to see your new embed format.",
@@ -261,14 +258,13 @@
       "authorIconURL": "Author Icon URL",
       "authorIconURLDescription": "Icon to the left of Author Name\nMUST be a link to an image. If Author Name is unspecified, the Author Icon will be hidden",
       "settingProperty": "You are now customizing the **{{property}}**. Type your input now. To reset the property, type `reset`.",
-      "settingPropertyTimezone": "You are now customizing the **timezone**. Type your input now.\n\nTo set the timestamp to the time the article is sent to Discord, type `now`.\nTo set the timestamp to the time the article was published (if available in the feed), type `article`.\nFor a custom timestamp, type the text representation of a custom date (see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nTo reset the property, type `reset`.",
-      "settingPropertyTimezoneError": "That is not a valid setting. It must be either `now`, `article`, or a valid text representation of a date. Try again.",
+      "settingPropertyTimestamp": "You are now customizing the **timestamp**. Type your input now.\n\nTo set the timestamp to the time the article is sent to Discord, type `now`.\nTo set the timestamp to the time the article was published (if available in the feed), type `article`.\nFor a custom timestamp, type the text representation of a custom date (see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nTo reset the property, type `reset`.",
+      "settingPropertyTimestampError": "That is not a valid setting. It must be either `now`, `article`, or a valid text representation of a date. Try again.",
       "inline": "Inline",
       "regular": "Regular",
       "blankField": "Blank Field",
       "embedFields": "Embed Fields",
-      "embedFieldsMaximum": "You have reached the maximum number of fields you can add (10).",
-      "embedFieldsRemoveNone": "There are no embed fields to remove for this feed.",
+      "embedFieldsRemoveNone": "There are no embed fields to remove for this feed. Try again, or type `exit` to cancel.",
       "embedFieldsRemoved": "The Field(s) numbered {{numbers}} have been removed from the embed for the feed <{{link}}>.",
       "embedFieldsDescription": "\u200b\nSelect whether to add or remove a field from this feed's embed. For an example of what a field looks like, see https://i.imgur.com/WSHwmyB.png. Type `exit` to cancel.\n\u200b",
       "embedFieldsOptionRemove": "Remove a Field",
@@ -286,10 +282,9 @@
       "embedFieldsAddedBlank": "An blank Field has been added to the embed for the feed <{{link}}>.",
       "embedFieldsAddedBlankInline": "An inline blank Field has been added to the embed for the feed <{{link}}>.",
       "embedFieldsSettingPrompt": "Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type `exit` to cancel.",
-      "embedFieldsSettingNoTitle": "No valid title found. Try again, or type `exit` to cancel.",
       "embedFieldsSettingTitleLong": "Titles cannot exceed 256 characters. Try again, or type `exit` to cancel.",
       "embedFieldsSettingValueLong": "Field values cannot exceed 1024 characters. Try again, or type `exit` to cancel.",
-      "embedFieldsAdded": "A new{{type}} Field has been added to the embed with the following details:\n\n**Title**\n```\n{{title}}\n```\n**Value**\n```\n{{value}}\n```\nfor the feed {{link}}."
+      "embedFieldsAdded": "A new{{type}} Field has been added to the embed with the following details:\n\n**Title**\n```\n{{name}}\n```\n**Value**\n```\n{{value}}\n```\nfor the feed {{link}}."
     },
     "filters": {
       "selectFeedDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n",

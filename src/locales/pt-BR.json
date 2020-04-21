@@ -28,9 +28,6 @@
       "description": "Abre um menu para customizar a texto do feed."
     },
     "embed": {
-      "args": {
-        "fields": "Customizar campos para a embed"
-      },
       "action": "Customizar mensagem da embed",
       "description": "Abre um menu para customizar a mensagem da embed. Isso irá substituir a embed padrão que o Discord utiliza quando um link é postado."
     },
@@ -196,25 +193,20 @@
       "generatedDump": "Dump foi gerado, tentando anexar arquivo, veja abaixo."
     },
     "embed": {
-      "defaultEmbed": "Embed Padrão",
       "numberedEmbed": "Embed #{{number}}",
       "embedSelection": "Seleção de embed",
       "embedSelectionDescription": "As propriedades de cada embed são mostradas abaixo. Selecione uma das embeds digitando o número ao lado, ou digite `exit` para cancelar.\n\u200b",
       "embedSelectionOptionAdd": "adicionar uma nova embed",
       "embedSelectionOptionAddDescription": "No máximo 10 embeds podem ser adicionadas.\n\u200b",
-      "embedSelectionOptionRemoveAll": "Remover todas as embeds",
       "currentProperties": "Propriedades atuais",
       "currentPropertiesList": "As propriedades atuais incorporadas para {{link}} são: \n{{list}}```\n",
       "availableProperties": "Propriedades disponíveis",
       "availablePropertiesList": "A lista de propriedades embeds que podem ser definidas são:\n{{list}}\nDigite a propriedade embed (por exemplo, `color` ou `message`) que você deseja definir/resetar, ou várias propriedades por separação por vírgulas (por exemplo, `color, message`). Digite `reset` para remover todas as propriedades ou digite `exit` para cancelar.",
       "invalidColorNumber": "A cor deve ser um **número**. Veja <https://www.shodor.org/stella2java/rgbint.html> Tente novamente, ou digite `exit` para cancelar.",
       "invalidColorRange": "A cor precisa ser um numero entre 0 e 16777215. Tente novamente, ou digite `exit` para cancelar.",
-      "invalidURL": "URLs devem estar vinculadas a imagens reais ou ter um campo `{imageX}`, Tente novamente ou digite `exit` para cancelar.",
       "invalidProperties": "As seguintes propriedades {{invalids}} são inválidas. Tente novamente, ou digite `exit` para cancelar.",
-      "noPropertiesSelected": "Nenhuma propriedade válida selecionada. Tente novamente, ou digite `exit` para cancelar.",
       "removedAllEmbeds": "Todas as embeds foram removidas.",
       "removedEmbed": "A embed foi desativada e todas as propriedades foram removidas para <{{link}}>.",
-      "resetNothing": "🇽 **{{propName}}** não tem nada para resetar\n",
       "resetSuccess": "☑ **{{propName}}** foi resetada\n",
       "updatedSuccess": "☑ **{{propName}}** Atualizado para \n```\n{{userSetting}}\n```\n",
       "updatedInfo": "Configurações atualizadas para <{{link}}>:\n\n{{resetList}}{{updateList}}\nVocê pode utilizar `{{prefix}}test` ou `{{prefix}}test simple` para ver seu novo formato de embed.",
@@ -243,14 +235,13 @@
       "authorIconURL": "Icone do Autor URL",
       "authorIconURLDescription": "O ícone à esquerda do Nome do Autor\nPRECISA ser um link para uma imagem, Se o nome do autor não for especificado, o icone do autor será escondido",
       "settingProperty": "Você está personalizando a **{{property}}**. Digite sua entrada agora. Para redefinir a propriedade, digite `reset`.",
-      "settingPropertyTimezone": "Agora você está personalizando o **timezone** Digite sua entrada agora.\n\nPara definir o registro de data e hora para o momento em que o artigo é enviado para Discord, digite `now`.\nPara definir o registro de data e hora para o momento em que o artigo foi publicado (se disponível no feed), digite` article`.\nPara uma data e hora personalizada, digite a representação de texto de uma data personalizada (consulte <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nPara redefinir a propriedade, digite `reset`.",
-      "settingPropertyTimezoneError": "Essa não é uma configuração válida. Deve ser `now`, `article` ou uma representação de texto válida de uma data. Tente novamente.",
+      "settingPropertyTimestamp": "Agora você está personalizando o **timestamp** Digite sua entrada agora.\n\nPara definir o registro de data e hora para o momento em que o artigo é enviado para Discord, digite `now`.\nPara definir o registro de data e hora para o momento em que o artigo foi publicado (se disponível no feed), digite` article`.\nPara uma data e hora personalizada, digite a representação de texto de uma data personalizada (consulte <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nPara redefinir a propriedade, digite `reset`.",
+      "settingPropertyTimestampError": "Essa não é uma configuração válida. Deve ser `now`, `article` ou uma representação de texto válida de uma data. Tente novamente.",
       "inline": "Na linha",
       "regular": "Regular",
       "blankField": "Campo em branco",
       "embedFields": "embedar campos",
-      "embedFieldsMaximum": "Você atingiu o número máximo de campos que você pode adicionar (10).",
-      "embedFieldsRemoveNone": "Não há campos embedados a serem removidos para este feed.",
+      "embedFieldsRemoveNone": "Não há campos embedados a serem removidos para este feed. Tente novamente, ou digite `exit` para cancelar.",
       "embedFieldsRemoved": "O campo(s) numerado {{numbers}} foram removidos da embed para o feed <{{link}}>",
       "embedFieldsDescription": "\u200b\nSelecione se deseja adicionar ou remover um campo da embed deste feed. Para um exemplo de como um campo se parece, consulte https://i.imgur.com/WSHwmyB.png. Digite `exit` para cancelar.\n\u200b",
       "embedFieldsOptionRemove": "Remover um campo",
@@ -268,10 +259,9 @@
       "embedFieldsAddedBlank": "Um campo em branco foi adicionado a embed do feed <{{link}}>.",
       "embedFieldsAddedBlankInline": "Um campo em branco inline foi adicionado ao embed do feed <{{link}}>",
       "embedFieldsSettingPrompt": "Defina suas configurações de campo agora. A **primeira linha será o título do campo** e **todas as novas linhas após a primeira serão a descrição do campo**. Se não houver conteúdo após a primeira linha, será uma descrição vazia. Digite `exit` para cancelar.",
-      "embedFieldsSettingNoTitle": "Nenhum título válido encontrado. Tente novamente, ou digite `exit` para cancelar.",
-      "embedFieldsSettingTitleLong": "Os títulos não podem exceder 256 caracteres. Tente novamente, ou digite `exit` para cancelar.",
+      "embedFieldsSettingTitleLong": "Títulos não podem exceder 256 caracteres. Tente novamente, ou digite `exit` para cancelar.",
       "embedFieldsSettingValueLong": "Valores de campo não podem exceder 1024 caracteres. Tente novamente, ou digite `exit` para cancelar.",
-      "embedFieldsAdded": "Um novo campo {{type}} foi adicionado á embed com os seguintes detalhes: \n\n**Título**\n```\n{{title}}\n```\n**Valor**\n```\n{{value}}\n```\npara o feed {{link}}."
+      "embedFieldsAdded": "Um novo campo {{type}} foi adicionado á embed com os seguintes detalhes: \n\n**Título**\n```\n{{name}}\n```\n**Valor**\n```\n{{value}}\n```\npara o feed {{link}}."
     },
     "filters": {
       "selectFeedDescription": "**Feed Título:** {{title}}\n**Feed Link:** {{link}}\n\nSeleciona uma opção digitando o numero mostrado, ou digite *exit* para cancelar. Somente as mensagens que contiverem qualquer uma das palavras definidas nesses filtros de feed serão enviadas para Discord.\u200b\n\u200b\n",
