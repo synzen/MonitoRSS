@@ -178,6 +178,9 @@ class Command {
    */
   static parseForName (message, prefix) {
     const { content } = message
+    if (!content.startsWith(prefix)) {
+      return ''
+    }
     // This assumes the prefix has no spaces
     const target = content.split(' ')[0]
     const name = target.slice(prefix.length, target.length)
