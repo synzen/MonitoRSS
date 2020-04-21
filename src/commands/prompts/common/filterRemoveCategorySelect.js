@@ -1,8 +1,6 @@
 const { MessageEmbed } = require('discord.js')
 const { Rejection, DiscordPrompt, MessageVisual } = require('discord.js-prompts')
 const Translator = require('../../../structs/Translator.js')
-const createLogger = require('../../../util/logger/create.js')
-const getConfig = require('../../../config.js').get
 
 /**
  * @typedef {Object} Data
