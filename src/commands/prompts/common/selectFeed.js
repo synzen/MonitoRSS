@@ -67,4 +67,5 @@ async function selectFeedFn (message, data) {
 const prompt = new DiscordPrompt(selectFeedVisual, selectFeedFn)
 
 exports.visual = selectFeedVisual
+exports.fn = selectFeedFn
 exports.prompt = prompt

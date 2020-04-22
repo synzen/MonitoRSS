@@ -83,9 +83,6 @@
     "clone": {
       "action": "Feed Settings Cloning",
       "description": "Clone a feed's settings to other feed(s).",
-      "args": {
-        "<property>": "Use the command without arguments for further information."
-      }
     },
     "backup": {
       "description": "Send server profile as a JSON attachment for personal backups."
@@ -173,7 +170,7 @@
     "clone": {
       "copyFrom": "Select the source to copy from.",
       "copyTo": "Select the destination(s) to copy to.",
-      "noProperties": "You must add at least one property to clone as an argument. The properties available for cloning are `{{properties}}`. To clone all these properties, you can just use `all`.\n\nFor example, to clone a feed's filters and message/embed, type `{{prefix}}clone filters format`.",
+      "inputProperties": "Input properties to clone, separated by commas. The properties available for cloning are `{{properties}}`. To clone all these properties, you can just use `all`.\n\nFor example, to clone a feed's filters and message, type `filters,message`.",
       "invalidProperties": "Invalid properties found: `{{invalid}}`\n\nValid properties available for cloning are `{{properties}}`.",
       "confirm": "The following settings for the feed <{{link}}>\n\n`{{cloning}}`\n\nare about to be cloned into the following feeds:\n```{{destinations}}```\nNote that if a property does not exist in the source feed, the same property in the destination feed(s) will be **deleted**.To confirm this, type `yes`. Otherwise, type `exit` to cancel.",
       "confirmError": "You must confirm by typing `yes`, or cancel by typing `exit`. Try again.",

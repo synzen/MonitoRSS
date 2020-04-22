@@ -78,10 +78,7 @@
     },
     "clone": {
       "action": "Clonar configurações do feed.",
-      "description": "Clona as configurações de um feed para outro.",
-      "args": {
-        "<property>": "Use o comando sem argumentos para mais informações."
-      }
+      "description": "Clona as configurações de um feed para outro."
     },
     "backup": {
       "description": "Envia o perfil do servidor como um anexo JSON para backups pessoais"
@@ -161,7 +158,7 @@
     "clone": {
       "copyFrom": "Selecione a fonte para copiar de.",
       "copyTo": "Selecione o destino pra copiar para.",
-      "noProperties": "Você deve adicionar pelo menos uma propriedade para clonar como um argumento. As propriedades disponíveis para clonagem são `{{properties}}`. Para clonar todas estas propriedades, Você pode simplesmente utilizar `all`.\n\nPor exemplo, para clonar a mensagem/embed de um feed e a filtros, digite `{{prefix}}clone message embed`.",
+      "inputProperties": "Entrar propriedades para clonar, separadas por vírgulas. As propriedades disponíveis para clonagem são `{{properties}}`. Para clonar todas estas propriedades, Você pode simplesmente utilizar `all`.\n\nPor exemplo, para clonar a mensagem de um feed e a filtros, digite `filters,message`.",
       "invalidProperties": "Propriedades inválidas encontrada: `{{invalid}}`\n\nPropriedades disponíveis para clonagem são `{{properties}}`.",
       "confirm": "As seguintes configurações para o feed <{{link}}>\n\n`{{cloning}}`\n\nestão prestes a ser clonadas nos seguintes feeds:\n```{{destinations}}```\nObserve que se uma propriedade não existir no feed de origem, a mesma propriedade no(s) feed(s) de destino será **deletada**.Para confirmar isso, digite `yes`. Caso contrário, digite `exit` para cancelar.",
       "confirmError": "Você precisa confirmar digitando `yes`, ou cancelar digitando `exit`. tente novamente.",
