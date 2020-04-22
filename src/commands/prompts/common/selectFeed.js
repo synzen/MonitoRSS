@@ -45,7 +45,7 @@ function selectFeedVisual (data) {
   for (const feed of feeds) {
     const title = feed.title.length > 200 ? feed.title.slice(0, 200) + '...' : feed.title
     const url = feed.url.length > 500 ? translate('commands.list.exceeds500Characters') : feed.url
-    menu.addOption(title, `URL: ${url}`)
+    menu.addOption(title, `Channel: <#${feed.channel}>\nURL: ${url}`)
   }
   const visual = new MenuVisual(menu)
   return visual
@@ -66,4 +66,5 @@ async function selectFeedFn (message, data) {
 
 const prompt = new DiscordPrompt(selectFeedVisual, selectFeedFn)
 
+exports.visual = selectFeedVisual
 exports.prompt = prompt
