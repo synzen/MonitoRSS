@@ -16,7 +16,7 @@ const MIN_PERMISSION_USER = [
  * @typedef {Object} Data
  * @property {import('../../../structs/db/Feed.js')[]} feeds
  * @property {import('../../../structs/db/Profile.js')} profile
- * @property {import('../../../structs/db/Feed.js')[]} sourceFeeds
+ * @property {import('../../../structs/db/Feed.js')[]} selectedFeeds
  */
 
 /**
@@ -33,7 +33,7 @@ function selectDestinationChannelVisual (data) {
  * @param {Data} data
  */
 async function selectDestinationChannelFn (message, data) {
-  const { profile, sourceFeeds, feeds } = data
+  const { profile, selectedFeeds, feeds } = data
   const { content, member, guild, author } = message
   const translate = Translator.createProfileTranslator(profile)
   const selected = content === 'this' ? message.channel : message.mentions.channels.first()
@@ -49,8 +49,8 @@ async function selectDestinationChannelFn (message, data) {
   }
 
   let feedSpecificErrors = ''
-  for (let i = 0; i < sourceFeeds.length; ++i) {
-    const selectedFeed = sourceFeeds[i]
+  for (let i = 0; i < selectedFeeds.length; ++i) {
+    const selectedFeed = selectedFeeds[i]
     let curErrors = ''
     const hasEmbed = selectedFeed.embeds.length > 0
     const sourceChannel = guild.channels.cache.get(selectedFeed.channel)
@@ -71,7 +71,7 @@ async function selectDestinationChannelFn (message, data) {
       }
     }
     if (curErrors) {
-      feedSpecificErrors += `\n__Errors for <${selectedFeed.url}>:__${curErrors}${i === sourceFeeds.length - 1 ? '' : '\n'}`
+      feedSpecificErrors += `\n__Errors for <${selectedFeed.url}>:__${curErrors}${i === selectedFeeds.length - 1 ? '' : '\n'}`
     }
   }
 
@@ -86,7 +86,7 @@ async function selectDestinationChannelFn (message, data) {
   }
 
   const promises = []
-  for (const feed of sourceFeeds) {
+  for (const feed of selectedFeeds) {
     feed.channel = selected.id
     promises.push(feed.save())
   }

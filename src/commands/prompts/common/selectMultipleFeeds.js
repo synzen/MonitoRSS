@@ -1,5 +1,5 @@
 const { DiscordPrompt } = require('discord.js-prompts')
-const commonPrompts = require('../common/index.js')
+const selectFeed = require('./selectFeed.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -14,7 +14,7 @@ const Translator = require('../../../structs/Translator.js')
 function selectSourceFeedsVisual (data) {
   const { profile } = data
   const translate = Translator.createProfileTranslator(profile)
-  const selectFeedVisual = commonPrompts.selectFeed.visual(data)
+  const selectFeedVisual = selectFeed.visual(data)
   const menu = selectFeedVisual.menu
   menu.enableMultiSelect()
   const embed = menu.embed
@@ -29,12 +29,12 @@ function selectSourceFeedsVisual (data) {
 async function selectSourceFeedsFn (message, data) {
   const { feeds } = data
   const { content } = message
-  const sourceFeeds = content
+  const selectedFeeds = content
     .split(',')
     .map(index => feeds[Number(index) - 1])
   return {
     ...data,
-    sourceFeeds
+    selectedFeeds
   }
 }
 

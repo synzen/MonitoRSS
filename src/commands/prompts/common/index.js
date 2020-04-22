@@ -1,5 +1,6 @@
 exports.noFeedsFound = require('./noFeedsFound.js')
 exports.selectFeed = require('./selectFeed.js')
+exports.selectMultipleFeeds = require('./selectMultipleFeeds.js')
 
 // Filter related
 exports.filterAddCategorySelect = require('./filterAddCategorySelect.js')

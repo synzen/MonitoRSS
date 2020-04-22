@@ -6,7 +6,7 @@ const getConfig = require('../../../config.js').get
  * @typedef {Object} Data
  * @property {import('../../../structs/db/Feed.js')[]} feeds
  * @property {import('../../../structs/db/Profile.js')} profile
- * @property {import('../../../structs/db/Feed.js')[]} sourceFeeds
+ * @property {import('../../../structs/db/Feed.js')[]} selectedFeeds
  * @property {import('discord.js').TextChannel} destinationChannel
  */
 
@@ -14,12 +14,12 @@ const getConfig = require('../../../config.js').get
  * @param {Data} data
  */
 function successVisual (data) {
-  const { profile, sourceFeeds, destinationChannel } = data
+  const { profile, selectedFeeds, destinationChannel } = data
   const translate = Translator.createProfileTranslator(profile)
   const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   const summary = []
-  for (const feed of sourceFeeds) {
+  for (const feed of selectedFeeds) {
     summary.push(`<${feed.url}>`)
   }
   return new MessageVisual(`${translate('commands.move.moveSuccess', {

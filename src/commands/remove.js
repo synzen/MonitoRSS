@@ -1,5 +1,5 @@
 const { PromptNode } = require('discord.js-prompts')
-const movePrompts = require('./prompts/move/index.js')
+const commonPrompts = require('./prompts/common/index.js')
 const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
@@ -9,8 +9,8 @@ const createLogger = require('../util/logger/create.js')
 module.exports = async (message, command) => {
   const profile = await Profile.get(message.guild.id)
   const translate = Translator.createProfileTranslator(profile)
-  const selectSourceFeedsNode = new PromptNode(movePrompts.selectSourceFeeds.prompt)
-  const data = await runWithFeedGuild(selectSourceFeedsNode, message)
+  const selectMultipleFeedsNode = new PromptNode(commonPrompts.selectMultipleFeeds.prompt)
+  const data = await runWithFeedGuild(selectMultipleFeedsNode, message)
   const { sourceFeeds } = data
   if (!sourceFeeds) {
     return
