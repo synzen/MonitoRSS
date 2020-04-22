@@ -1,25 +1,25 @@
-const FeedSelector = require('../structs/FeedSelector.js')
-const MenuUtils = require('../structs/MenuUtils.js')
+const { PromptNode } = require('discord.js-prompts')
+const movePrompts = require('./prompts/move/index.js')
+const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const Feed = require('../structs/db/Feed.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 module.exports = async (message, command) => {
   const profile = await Profile.get(message.guild.id)
-  const guildLocale = profile ? profile.locale : undefined
-  const translate = Translator.createLocaleTranslator(guildLocale)
-  const feeds = await Feed.getManyBy('guild', message.guild.id)
-  const feedSelector = new FeedSelector(message, null, { command, locale: guildLocale, multiSelect: true }, feeds)
-  const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
-  if (!data) return
-  const { selectedFeeds } = data
+  const translate = Translator.createProfileTranslator(profile)
+  const selectSourceFeedsNode = new PromptNode(movePrompts.selectSourceFeeds.prompt)
+  const data = await runWithFeedGuild(selectSourceFeedsNode, message)
+  const { sourceFeeds } = data
+  if (!sourceFeeds) {
+    return
+  }
   const removing = await message.channel.send(translate('commands.remove.removing'))
   const errors = []
   const log = createLogger(message.guild.shard.id)
   let removed = translate('commands.remove.success') + '\n```\n'
-  for (const feed of selectedFeeds) {
+  for (const feed of sourceFeeds) {
     const link = feed.url
     try {
       await feed.delete()
