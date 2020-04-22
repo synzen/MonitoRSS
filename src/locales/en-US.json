@@ -82,7 +82,7 @@
     },
     "clone": {
       "action": "Feed Settings Cloning",
-      "description": "Clone a feed's settings to other feed(s).",
+      "description": "Clone a feed's settings to other feed(s)."
     },
     "backup": {
       "description": "Send server profile as a JSON attachment for personal backups."
