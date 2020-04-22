@@ -1,4 +1,4 @@
-const MenuUtils = require('../structs/MenuUtils.js')
+const Discord = require('discord.js')
 const moment = require('moment')
 const Schedule = require('../structs/db/Schedule.js')
 const Translator = require('../structs/Translator.js')
@@ -52,7 +52,7 @@ module.exports = async (message, command) => {
   const desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
   // desc += failedFeedCount > 0 ? translate('commands.list.failAlert', { failLimit: FAIL_LIMIT, prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix }) : ''
 
-  const list = new MenuUtils.Menu(message)
+  const list = new Discord.MessageEmbed()
     .setAuthor(translate('commands.list.currentActiveFeeds'))
     .setDescription(desc)
 
@@ -68,7 +68,7 @@ module.exports = async (message, command) => {
     const title = feed.title
 
     // Channel
-    const channelName = bot.channels.cache.get(feed.channel) ? bot.channels.cache.get(feed.channel).name : 'Unknown'
+    const channel = `<#${feed.channel}>`
 
     // Status
     let status = ''
@@ -77,7 +77,7 @@ module.exports = async (message, command) => {
     } else if (FailRecord.limit !== 0) {
       const failRecord = failRecordsMap[feed.url]
       if (!failRecord || !failRecord.hasFailed()) {
-        let health = '100%'
+        let health = '(100% health)'
         if (failRecord) {
           // Determine hours between config spec and now, then calculate health
           const hours = (new Date().getTime() - new Date(failRecord.failedAt).getTime()) / 36e5
@@ -104,8 +104,8 @@ module.exports = async (message, command) => {
     if (Supporter.enabled && !supporter) {
       refreshRate += ' [－](https://www.patreon.com/discordrss)'
     }
-    list.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('generics.channelUpper')}: #${channelName}\n${translate('commands.list.refreshRate')}: ${refreshRate}\n${webhook}${translate('commands.list.link')}: ${url}`)
+    list.addField(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('commands.list.refreshRate')}: ${refreshRate}\n${translate('generics.channelUpper')}: ${channel}\n${webhook}${translate('commands.list.link')}: ${url}`)
   })
 
-  await list.send()
+  await message.channel.send('', list)
 }
