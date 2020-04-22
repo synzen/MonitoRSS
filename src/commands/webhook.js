@@ -1,119 +1,15 @@
-const MenuUtils = require('../structs/MenuUtils.js')
-const FeedSelector = require('../structs/FeedSelector.js')
-const Translator = require('../structs/Translator.js')
-const Profile = require('../structs/db/Profile.js')
-const Feed = require('../structs/db/Feed.js')
-const Supporter = require('../structs/db/Supporter.js')
-const createLogger = require('../util/logger/create.js')
+const { PromptNode } = require('discord.js-prompts')
+const commonPrompts = require('./prompts/common/index.js')
+const webhookPrompts = require('./prompts/webhook/index.js')
+const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')
 
-async function feedSelectorFn (m, data) {
-  const { feed, translate } = data
-  const webhook = feed.webhook
+module.exports = async (message) => {
+  const selectFeedNode = new PromptNode(commonPrompts.selectFeed.prompt)
+  const selectWebhookNode = new PromptNode(webhookPrompts.selectWebhook.prompt)
+  const removedSuccessNodeCondition = data => data.removed === true
+  const removedSuccessNode = new PromptNode(webhookPrompts.removedSuccess.prompt, removedSuccessNodeCondition)
 
-  const text = `${webhook ? translate('commands.webhook.existingFound', { name: webhook.name }) : ''}${translate('commands.webhook.prompt')}`
-
-  return {
-    ...data,
-    existingWebhook: webhook,
-    next: {
-      text: text,
-      embed: null
-    }
-  }
-}
-
-async function collectWebhookFn (m, data) {
-  const { hooks, translate } = data
-  const webhookName = m.content
-  if (webhookName === '{remove}') {
-    return { ...data, webhookName }
-  }
-
-  const nameRegex = /--name="(((?!(--name|--avatar)).)*)"/
-  const avatarRegex = /--avatar="(((?!(--name|--avatar)).)*)"/
-  const hookName = m.content.replace(nameRegex, '').replace(avatarRegex, '').trim()
-  const hook = hooks.find(h => h.name === hookName)
-  if (!hook) {
-    throw new MenuUtils.MenuOptionError(translate('commands.webhook.notFound', { name: hookName }))
-  }
-  let customNameSrch = m.content.match(nameRegex)
-  let customAvatarSrch = m.content.match(avatarRegex)
-
-  if (customNameSrch) {
-    customNameSrch = customNameSrch[1]
-    if (customNameSrch.length > 32 || customNameSrch.length < 2) {
-      throw new MenuUtils.MenuOptionError(translate('commands.webhook.tooLong'))
-    }
-  }
-  if (customAvatarSrch) {
-    customAvatarSrch = customAvatarSrch[1]
-  }
-  return { ...data, webhook: hook, customAvatarSrch, customNameSrch }
-}
-
-module.exports = async (message, command) => {
-  const bot = message.client
-  const [profile, validServer] = await Promise.all([
-    Profile.get(message.guild.id),
-    Supporter.hasValidGuild(message.guild.id)
-  ])
-  const guildLocale = profile ? profile.locale : undefined
-  const translate = Translator.createLocaleTranslator(guildLocale)
-  const log = createLogger(message.guild.shard.id)
-  if (Supporter.enabled && !validServer) {
-    log.info({
-      guild: message.guild,
-      user: message.author
-    }, 'Unauthorized attempt to access webhooks')
-    return message.channel.send('Only servers with patron backing have access to webhooks.')
-  }
-  if (!message.guild.me.permissionsIn(message.channel).has('MANAGE_WEBHOOKS')) {
-    return message.channel.send(translate('commands.webhook.noPermission'))
-  }
-
-  const hooks = await message.channel.fetchWebhooks()
-  const feeds = await Feed.getManyBy('guild', message.guild.id)
-  const feedSelector = new FeedSelector(message, feedSelectorFn, { command: command }, feeds)
-  const collectWebhook = new MenuUtils.Menu(message, collectWebhookFn)
-
-  const data = await new MenuUtils.MenuSeries(message, [feedSelector, collectWebhook], { hooks, locale: guildLocale, translate }).start()
-  if (!data) {
-    return
-  }
-  const { feed, existingWebhook, webhookName, webhook, customAvatarSrch, customNameSrch } = data
-
-  if (webhookName === '{remove}') {
-    if (typeof existingWebhook !== 'object') {
-      await message.channel.send(translate('commands.webhook.noneAssigned'))
-    } else {
-      feed.webhook = undefined
-      await feed.save()
-      await message.channel.send(translate('commands.webhook.removeSuccess', { link: feed.url }))
-    }
-    return
-  }
-
-  feed.webhook = {
-    id: webhook.id
-  }
-
-  if (customNameSrch) {
-    feed.webhook.name = customNameSrch
-  }
-  if (customAvatarSrch) {
-    feed.webhook.avatar = customAvatarSrch
-  }
-  log.info({
-    channel: message.channel,
-    guild: message.guild,
-    user: message.author
-  }, `Webhook ID ${webhook.id} (${webhook.name}) connecting to feed ${feed.url}`)
-  const connected = translate('commands.webhook.connected', { botUser: bot.user, link: feed.url })
-  await feed.save()
-  await webhook.send(connected, { username: customNameSrch, avatarURL: customAvatarSrch })
-    .catch(err => {
-      if (err.message.includes('avatar_url')) {
-        return webhook.send(connected, { username: customNameSrch })
-      }
-    })
+  selectFeedNode.addChild(selectWebhookNode)
+  selectWebhookNode.addChild(removedSuccessNode)
+  await runWithFeedGuild(selectFeedNode, message)
 }

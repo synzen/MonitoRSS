@@ -462,14 +462,13 @@
       "noArticles": "Não há artigos neste feed para enviar."
     },
     "webhook": {
-      "existingFound": "Um webhook existente foi encontrado ({{name}}). Você pode digitar `{remove}` para desconectar o webhook existente ou continuar, e sua nova configuração sobrescreverá a existente.\n\n",
+      "existingFound": "Um webhook existente foi encontrado ({{webhookMention}}). Você pode digitar `{remove}` para desconectar o webhook existente ou continuar, e sua nova configuração sobrescreverá a existente.\n\n",
       "prompt": "Digite o nome do webhook neste canal que você deseja usar (com distinção entre maiúsculas e minúsculas) ou digite `exit` para cancelar.\n\nPara usar um nome ou URL de avatar diferente do webhook quando os artigos são enviados para este feed específico, adicione parâmetros `--name=\"my new name here\"` or `--avatar=\"http://website.com/image.jpg\"`. Espaços reservados são suportados.",
       "notFound": "Nenhum webhook chamado \"{{name}}\" foi encontrado para este canal. Tente novamente ou digite `exit` para cancelar.",
       "tooLong": "O nome do Webhook deve ter entre 2 e 32 caracteres. Tente novamente ou digite `exit` para cancelar.",
       "noPermission": "Eu preciso ter a permissão Gerenciar Webhooks neste canal para funcionar.",
-      "noneAssigned": "Não há nenhum webhook atribuído a este feed.",
       "removeSuccess": "Webhook removido com sucesso do feed <{{link}}>.",
-      "connected": "Agora estou conectado a {{botUser}} e vou enviar artigos de feed para <{{link}}>!"
+      "connected": "Agora estou conectado a {{clientMention}} e vou enviar artigos de feed para <{{link}}>!"
     },
     "sub": {
       "noFeeds": "Não há feeds para se inscrever.",

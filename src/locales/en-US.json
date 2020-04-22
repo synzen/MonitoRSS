@@ -487,14 +487,13 @@
       "noArticles": "There are no articles in this feed to send."
     },
     "webhook": {
-      "existingFound": "An existing webhook was found ({{name}}). You may type `{remove}` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n",
+      "existingFound": "An existing webhook was found ({{webhookMention}}). You may type `{remove}` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n",
       "prompt": "Type the name of the webhook in this channel you wish to use (case sensitive), or type `exit` to cancel.\n\nTo use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters `--name=\"my new name here\"` or `--avatar=\"http://website.com/image.jpg\"`. Placeholders are supported.",
       "notFound": "No such webhook named \"{{name}}\" found for this channel. Try again, or type `exit` to cancel.",
       "tooLong": "Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.",
       "noPermission": "I must have Manage Webhooks permission in this channel in order to work.",
-      "noneAssigned": "There is no webhook assigned to this feed.",
       "removeSuccess": "Successfully removed webhook from the feed <{{link}}>.",
-      "connected": "I am now connected to {{botUser}}, and will send feed articles for <{{link}}>!"
+      "connected": "I am now connected to {{clientMention}}, and will send feed articles for <{{link}}>!"
     },
     "sub": {
       "noFeeds": "There are no feeds to subscribe to.",
