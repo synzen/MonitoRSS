@@ -1,5 +1,5 @@
+const Discord = require('discord.js')
 const getSubList = require('./util/getSubList.js')
-const MenuUtils = require('../structs/MenuUtils.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const Feed = require('../structs/db/Feed.js')
@@ -63,7 +63,7 @@ module.exports = async (message, command) => {
     return message.channel.send(translate('commands.unsub.invalidRole', { prefix }))
   }
 
-  const ask = new MenuUtils.Menu(message, null, { numbered: false })
+  const ask = new Discord.MessageEmbed()
     .setTitle(translate('commands.unsub.selfSubscriptionRemoval'))
     .setDescription(translate('commands.unsub.listDescription', { prefix }))
 
@@ -96,11 +96,11 @@ module.exports = async (message, command) => {
       desc += `${cur}\n`
       // If there are too many roles, add it into another field
       if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
-        ask.addOption(title, desc, true)
+        ask.addField(title, desc, true)
         desc = ''
       }
     }
-    ask.addOption(title, desc, true)
+    ask.addField(title, desc, true)
     userHasRoles = true
   }
 
@@ -124,12 +124,12 @@ module.exports = async (message, command) => {
       desc += `${cur}\n`
       // If there are too many roles, add it into another field
       if (desc.length < 1024 && next && (`${next}\n`.length + desc.length) >= 1024) {
-        ask.addOption(title, desc, true)
+        ask.addField(title, desc, true)
         desc = ''
       }
     }
-    ask.addOption(translate('commands.unsub.otherRoles'), desc, true)
+    ask.addField(translate('commands.unsub.otherRoles'), desc, true)
   }
 
-  await ask.send()
+  await message.channel.send('', ask)
 }
