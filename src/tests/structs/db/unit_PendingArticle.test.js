@@ -17,11 +17,13 @@ describe('Unit::structs/db/PendingArticle', function () {
   describe('toObject', function () {
     it('returns correctly', function () {
       const data = {
+        _id: 'w34ery',
         article: {
           a: '3e45y'
         }
       }
       const kv = new PendingArticle({ ...data })
+      kv._id = data._id
       kv.article = data.article
       const returned = kv.toObject()
       expect(returned).toEqual(data)
