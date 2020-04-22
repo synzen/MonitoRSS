@@ -17,6 +17,7 @@ class PendingArticle extends Base {
 
   toObject () {
     return {
+      _id: this._id,
       article: this.article
     }
   }
