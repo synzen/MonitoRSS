@@ -15,7 +15,6 @@ module.exports = async (message, command) => {
     Schedule.getAll(),
     Supporter.getValidGuilds()
   ])
-  const bot = message.client
   const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
   const feeds = await Feed.getManyBy('guild', message.guild.id)
   if (feeds.length === 0) {
