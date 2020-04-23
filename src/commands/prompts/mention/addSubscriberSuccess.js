@@ -1,0 +1,30 @@
+const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const Translator = require('../../../structs/Translator.js')
+const getConfig = require('../../../config.js').get
+
+/**
+ * @typedef {Object} Data
+ * @property {import('../../../structs/db/Profile.js')} [profile]
+ * @property {import('../../../structs/db/Feed.js')[]} feeds
+ * @property {import('../../../structs/db/Feed.js')} selectedFeed
+ * @property {import('../../../structs/db/Subscriber.js')} addedSubscriber
+ */
+
+/**
+ * @param {Data} data
+ */
+async function addSubscriberSuccessVisual (data) {
+  const { profile, addedSubscriber, selectedFeed: feed } = data
+  const config = getConfig()
+  const translate = Translator.createProfileTranslator(profile)
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
+  return new MessageVisual(`${translate('commands.mention.addSubscriberGlobalSuccess', {
+    link: feed.url,
+    name: `<@${addedSubscriber.id}>`,
+    type: addedSubscriber.type === 'role' ? translate('commands.mention.role') : translate('commands.mention.user')
+  })} ${translate('generics.backupReminder', { prefix })}`)
+}
+
+const prompt = new DiscordPrompt(addSubscriberSuccessVisual)
+
+exports.prompt = prompt
