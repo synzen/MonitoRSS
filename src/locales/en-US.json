@@ -57,15 +57,9 @@
       "description": "Opens a menu to send a test message for a random article in a feed, along with the available properties and placeholders for various customizations. You may add `simple` as a parameter to exclude the test details."
     },
     "sub": {
-      "args": {
-        "<role name/mention>": "Directly input the role instead of going through the menu."
-      },
       "description": "Open a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
     },
     "unsub": {
-      "args": {
-        "<role name/mention>": "Directly input the role instead of going through the menu."
-      },
       "description": "Open a menu similar to `sub`, except to remove a role. Any role beneath the bot's role order will be removeable."
     },
     "refresh": {
@@ -497,16 +491,23 @@
       "connected": "I am now connected to {{clientMention}}, and will send feed articles for <{{link}}>!"
     },
     "sub": {
-      "noFeeds": "There are no feeds to subscribe to.",
-      "noEligible": "There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.",
-      "invalidRole": "That is not a valid role to add. To see the the full list of roles that can be added, type `{{prefix}}sub`.",
-      "selfSubscriptionAddition": "Self-Subscription Addition",
-      "listDescription": "Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name after **{{prefix}}sub** to add the role to yourself.\u200b\n\u200b\n",
-      "link": "Link",
-      "channel": "Channel",
-      "roles": "Roles",
-      "addSuccess": "You now have the role `{{name}}`, subscribed to:\n\n**<{{links}}>**",
-      "addFailed": "Error: Unable to add role."
+      "title": "Self-Subscription Addition",
+      "description": "You may be mentioned whenever a new article comes in for a particular feed by selecting an option below. ",
+      "optionAddRole": "I want to add a mentioned role to myself",
+      "optionAddRoleDescription": "You may add a role that is subscribed to a feed so that you'll be mentioned via role.",
+      "optionAddMe": "I want to be directly mentioned",
+      "optionAddMeDescription": "You may directly add yourself as a subscriber to a feed so that you'll be directly mentioned. **This is only possible if this feature is enabled for this server.**",
+      "optionSubscribedFeeds": "List my subscribed feeds",
+      "optionSubscribedFeedsDescription": "Show all the feeds that you are currently being mentioned in (whether they're role mentions or direct mentions)",
+      "subscribedFeedsList": "Below is the list of feeds that you are subscribed to.",
+      "noSubscribedFeedsList": "You are not being mentioned in any feeds.",
+      "noEligible": "There are either no feeds with subscribed roles, or no eligible subscribed roles that can be self-added.",
+      "invalidRole": "That is an invalid role. Try again, or type `exit` to cancel.",
+      "listInputRole": "Above is the list of feeds, their channels, and eligible roles that you may add to yourself. Type the role name to add the role to yourself, or type `exit` to cancel.",
+      "addSuccess": "You now have the role `{{name}}`, subscribed to:",
+      "directSubscribeExists": "Unable to directly subscribe to feed <{{link}}>. You are already subscribed to it.",
+      "directSubscribeSuccess": "You are now directly subscribed to the feed <{{link}}>.",
+      "alreadyHaveRole": "You already have this role. Try another role name, or type `exit` to cancel."
     },
     "unsub": {
       "noEligible": "There are no eligible roles to be removed from you.",

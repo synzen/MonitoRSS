@@ -50,15 +50,9 @@
       "description": "Abre um menu para enviar uma mensagem de teste para um artigo aleatório em um feed, juntamente com as propriedades e espaços reservados disponíveis para várias personalizações. Você pode adicionar `simple` como um parâmetro para excluir os detalhes do teste."
     },
     "sub": {
-      "args": {
-        "<role name/mention>": "Adicione diretamente o cargo em vez de adicionar pelo menu."
-      },
       "description": "Abre um menu para adicionar um cargo com uma menção filtrada ao usuário. Usável por qualquer um no servidor, ativável/desativável pela permissão \"Gerenciar Cargos\". Os cargo precisam estar abaixo do cargo do bot na configuração de cargos."
     },
     "unsub": {
-      "args": {
-        "<role name/mention>": "Remova diretamente o cargo em vez de remover pelo menu."
-      },
       "description": "Abre um menu semelhante ao `sub`, mas será para remover o cargo. Qualquer cargo abaixo do cargo do bot será removível."
     },
     "refresh": {
@@ -450,16 +444,9 @@
       "connected": "Agora estou conectado a {{clientMention}} e vou enviar artigos de feed para <{{link}}>!"
     },
     "sub": {
-      "noFeeds": "Não há feeds para se inscrever.",
-      "noEligible": "Não há feeds com inscrições, ou nenhum cargo elegível que pode ser adicionado em você mesmo.",
+      "title": "cargo auto-adicionável",
       "invalidRole": "Esse não é um cargo válida para adicionar. Para ver a lista completa de cargos que podem ser adicionadas, digite `{{prefix}}sub`.",
-      "selfSubscriptionAddition": "cargo auto-adicionável",
-      "listDescription": "Abaixo está a lista de feeds, seus canais e seus cargos qualificados que você pode adicionar a si mesmo. Digite o nome do cargo depois do **{{prefix}}sub** para adicionar o cargo a você mesmo.\u200b\n\u200b\n",
-      "link": "Link",
-      "channel": "Canal",
-      "roles": "Cargos",
-      "addSuccess": "Agora você tem o cargo `{{name}}`, inscrito em:\n\n**<{{links}}>**",
-      "addFailed": "Erro: não é possível adicionar o cargo."
+      "addSuccess": "Agora você tem o cargo `{{name}}`, inscrito em:"
     },
     "unsub": {
       "noEligible": "Não há cargos qualificados para serem removidos de você.",
