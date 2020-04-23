@@ -306,7 +306,7 @@ module.exports = class Article {
     }
 
     // Finally subscriptions - this MUST be done last after all variables have been defined for filter testing
-    this.subscriptions = ''
+    this.subscribers = ''
 
     // Get filtered subscriptions
     const subscribers = source.subscribers
@@ -318,14 +318,16 @@ module.exports = class Article {
         }
         const mentionText = type === 'role' ? `<@&${subscriber.id}> ` : `<@${subscriber.id}> `
         if (subscriber.filters && this.testFilters(subscriber.filters).passed) {
-          this.subscriptions += mentionText
+          this.subscribers += mentionText
         } else if (!subscriber.filters || Object.keys(subscriber.filters).length === 0) {
-          this.subscriptions += mentionText
+          this.subscribers += mentionText
         }
       }
     }
-    if (this.subscriptions) {
+
+    if (this.subscribers) {
       this.placeholders.push('subscriptions')
+      this.placeholders.push('subscribers')
     }
   }
 
@@ -554,7 +556,7 @@ module.exports = class Article {
     if (this.date) testDetails += `\n\n[Published Date]: {date}\n${this.date}`
     if (this.author) testDetails += `\n\n[Author]: {author}\n${this.author}`
     if (this.link) testDetails += `\n\n[Link]: {link}\n${this.link}`
-    if (this.subscriptions) testDetails += `\n\n[Subscriptions]: {subscriptions}\n${this.subscriptions.split(' ').length - 1} subscriber(s)`
+    if (this.subscribers) testDetails += `\n\n[Subscribers]: {subscribers}\n${this.subscribers.split(' ').length - 1} subscriber(s)`
     if (this.images) testDetails += `\n\n${this.listImages()}`
     const placeholderImgs = this.listPlaceholderImages()
     if (placeholderImgs) testDetails += `\n\n${placeholderImgs}`
@@ -635,7 +637,7 @@ module.exports = class Article {
     let content = word.replace(/{title}/g, ignoreCharLimits ? this.fullTitle : this.title)
       .replace(/{author}/g, this.author)
       .replace(/{summary}/g, ignoreCharLimits ? this.fullSummary : this.summary)
-      .replace(/{subscriptions}/g, this.subscriptions)
+      .replace(/({subscriptions})|({subscribers})/g, this.subscribers)
       .replace(/{link}/g, this.link)
       .replace(/{description}/g, ignoreCharLimits ? this.fullDescription : this.description)
       .replace(/{tags}/g, this.tags)
