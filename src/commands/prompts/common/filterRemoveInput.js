@@ -51,7 +51,7 @@ async function fn (message, data) {
       user: message.author,
       target
     }, `Removed filters from ${feed.url}: ${remove.join('\n')}`)
-    await target.removeFilter(filterCategory, remove)
+    await target.removeFilters(filterCategory, remove)
   }
 
   return {
