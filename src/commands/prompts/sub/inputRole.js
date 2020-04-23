@@ -45,7 +45,7 @@ async function inputRoleFn (message, data) {
    */
   const subscriberIDs = new Set(subscribers.flat().map(s => s.id))
   const subscriberRoles = guild.roles.cache.filter(role => subscriberIDs.has(role.id))
-  const matchedRole = subscriberRoles.find(role => role.name.toLowerCase() === roleName)
+  const matchedRole = subscriberRoles.find(role => role.name.toLowerCase() === roleName.toLowerCase())
   if (!matchedRole) {
     throw new Rejection(translate('commands.sub.invalidRole'))
   }
