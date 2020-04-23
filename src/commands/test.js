@@ -36,7 +36,7 @@ module.exports = async (message, command) => {
   }
 
   if (!simple) {
-    const parsedArticle = new Article(article, feed, profile || {})
+    const parsedArticle = new Article(article, article._feed, profile || {})
     const testText = parsedArticle.createTestText()
     await message.channel.send(testText, {
       split: {
