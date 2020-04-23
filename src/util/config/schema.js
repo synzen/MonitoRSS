@@ -46,7 +46,7 @@ const feedsSchema = Joi.object({
   notifyFail: Joi.bool().strict().default(true),
   sendFirstCycle: Joi.bool().strict().default(true),
   cycleMaxAge: Joi.number().strict().default(1),
-  defaultText: Joi.string().default(':newspaper:  |  **{title}**\n\n{link}\n\n{subscriptions}'),
+  defaultText: Joi.string().default(':newspaper:  |  **{title}**\n\n{link}\n\n{subscribers}'),
   imgPreviews: Joi.bool().strict().default(true),
   imgLinksExistence: Joi.bool().strict().default(true),
   checkDates: Joi.bool().strict().default(true),
