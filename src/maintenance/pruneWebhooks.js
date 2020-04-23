@@ -1,4 +1,5 @@
 const Feed = require('../structs/db/Feed.js')
+const Supporter = require('../structs/db/Supporter.js')
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -11,6 +12,7 @@ const createLogger = require('../util/logger/create.js')
  */
 async function pruneWebhooks (bot) {
   const log = createLogger(bot.shard.ids[0])
+  /** @type {Feed[]} */
   const feeds = await Feed.getAll()
   /** @type {Map<string, Feed>} */
   const updates = []
@@ -32,6 +34,15 @@ async function pruneWebhooks (bot) {
       log.info({
         guild: channel.guild
       }, `Removing missing webhook from feed ${feed._id}`)
+      feed.webhook = undefined
+      updates.push(feed.save())
+    }
+
+    // Check supporter
+    if (Supporter.enabled && feed.webhook && !(await Supporter.hasValidGuild(channel.guild.id))) {
+      log.info({
+        guild: channel.guild
+      }, `Removing unauthorized webhook from feed ${feed._id}`)
       feed.webhook = undefined
       updates.push(feed.save())
     }

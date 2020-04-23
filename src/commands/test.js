@@ -8,7 +8,6 @@ const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 const FeedData = require('../structs/FeedData.js')
-const Supporter = require('../structs/db/Supporter.js')
 
 module.exports = async (message, command) => {
   const simple = message.content.endsWith('simple')
@@ -30,10 +29,6 @@ module.exports = async (message, command) => {
     return message.channel.send(translate('commands.test.noArticles'))
   }
   article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
-  if (Supporter.enabled && profile.webhook && !(await Supporter.hasValidGuild(message.guild.id))) {
-    profile.webhook = undefined
-    await profile.save()
-  }
 
   if (!simple) {
     const parsedArticle = new Article(article, article._feed, profile || {})
