@@ -20,7 +20,7 @@ async function removeSubscriberSuccessVisual (data) {
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   return new MessageVisual(`${translate('commands.mention.removeSubscriberSuccess', {
     link: feed.url,
-    name: removedSubscriber.type === 'role' ? `<@&${removedSubscriber.id}>` : `<@${removedSubscriber.id}>`
+    mention: removedSubscriber.type === 'role' ? `<@&${removedSubscriber.id}>` : `<@${removedSubscriber.id}>`
   })} ${translate('generics.backupReminder', { prefix })}`)
 }
 

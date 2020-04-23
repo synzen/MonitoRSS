@@ -320,11 +320,10 @@
       "optionRemoveAllSubscribers": "Remover todas as menções para um Cargo ou Usuário",
       "optionListSubscribers": "Listar todas as menções",
       "optionListSubscribersDescription": "Listar todas as menções",
-      "addSubscriberExists": "Não é possível adicionar a inscrição. {{type}} `{{name}}` já está inscrito neste feed.",
-      "addSubscriberSuccess": "Inscrição {{type}} `{{name}}` adicionada com sucesso ao feed <{{link}}>.",
+      "addSubscriberExists": "Não é possível adicionar a inscrição. {{type}} {{mention}} já está inscrito neste feed.",
+      "addSubscriberSuccess": "Inscrição {{type}} {{mention}} adicionada com sucesso ao feed <{{link}}>.",
       "removeAnySubscriberNone": "Não há inscritos para remover no feed <{{link}}>.",
       "invalidRoleOrUser": "Esse não é um cargo válido ou usuário válido. Tente novamente, ou digite `exit` para cancelar.",
-      "selectedRoleDescription": "**selecionado**: {{name}}\n**Feed Título:** {{feedTitle}}\n**Feed Link:** {{feedLink}}\n\nSelecione uma opção digitando o numero, ou digite `exit` para cancelar.\u200b\n\u200b\n",
       "filters": {
         "optionAddFilter": "Adicionar filtro(s) a menção"
       }

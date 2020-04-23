@@ -18,9 +18,9 @@ async function addSubscriberSuccessVisual (data) {
   const config = getConfig()
   const translate = Translator.createProfileTranslator(profile)
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
-  return new MessageVisual(`${translate('commands.mention.addSubscriberGlobalSuccess', {
+  return new MessageVisual(`${translate('commands.mention.addSubscriberSuccess', {
     link: feed.url,
-    name: `<@${addedSubscriber.id}>`,
+    mention: addedSubscriber.type === 'role' ? `<@&${addedSubscriber.id}>` : `<@${addedSubscriber.id}>`,
     type: addedSubscriber.type === 'role' ? translate('commands.mention.role') : translate('commands.mention.user')
   })} ${translate('generics.backupReminder', { prefix })}`)
 }

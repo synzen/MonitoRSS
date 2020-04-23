@@ -49,7 +49,7 @@ async function addSubscriberFn (message, data) {
   if (existingSubscriber) {
     throw new Rejection(translate('commands.mention.addSubscriberExists', {
       type: subscriberData.type,
-      name: existingSubscriber.type === 'role' ? `<@&${subscriberData.id}>` : `<@${subscriberData.id}>`
+      mention: existingSubscriber.type === 'role' ? `<@&${subscriberData.id}>` : `<@${subscriberData.id}>`
     }))
   }
 
