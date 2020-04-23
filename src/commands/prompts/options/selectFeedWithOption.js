@@ -40,6 +40,8 @@ function selectFeedWithOptionVisual (data) {
       optionName = translate('commands.options.dateChecks')
     } else if (optionKey === 'formatTables') {
       optionName = translate('commands.options.tableFormatting')
+    } else if (optionKey === 'directSubscribers') {
+      optionName = translate('commands.options.directSubscribers')
     }
     let settingState
     if (typeof feed[optionKey] === 'boolean') {

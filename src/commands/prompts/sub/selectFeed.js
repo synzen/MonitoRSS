@@ -1,6 +1,9 @@
-const { DiscordPrompt } = require('discord.js-prompts')
-const Subscriber = require('../../../structs/db/Subscriber.js')
+const { Rejection, DiscordPrompt } = require('discord.js-prompts')
 const commonPrompts = require('../common/index.js')
+const Subscriber = require('../../../structs/db/Subscriber.js')
+const Translator = require('../../../structs/Translator.js')
+const getConfig = require('../../../config.js').get
+
 /**
  * @typedef {Object} Data
  * @property {import('../../../structs/db/Profile.js')} [profile]
@@ -20,9 +23,20 @@ function selectFeedVisual (data) {
  */
 async function selectFeedFn (message, data) {
   const newData = await commonPrompts.selectFeed.fn(message, data)
-  const { selectedFeed: feed } = newData
+  const { selectedFeed: feed, profile } = newData
   const { author } = message
   const feedID = feed._id
+  const translate = Translator.createProfileTranslator(profile)
+  const config = getConfig()
+
+  const enabled = feed.directSubscribers === undefined ? config.feeds.directSubscribers : feed.directSubscribers
+  if (!enabled) {
+    throw new Rejection(translate('commands.options.directSubscriberDisabled', {
+      link: feed.url,
+      channel: `<#${feed.channel}>`
+    }))
+  }
+
   const existingSubscriber = await Subscriber.getByQuery({
     feed: feedID,
     id: author.id

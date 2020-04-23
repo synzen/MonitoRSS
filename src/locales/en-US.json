@@ -415,11 +415,12 @@
       "tableFormatting": "Table Formatting",
       "tableFormattingToggle": "Toggle Table Formatting for a feed",
       "tableFormattingDescription": "If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing.",
-      "roleMentioning": "Role Mentioning Toggle",
-      "roleMentioningToggle": "Toggle Role Mentioning for Subscriptions",
-      "roleMentioningDescription": "Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent.\n\n**WARNING**: Only applies if roles are below the bot's highest role, and the bot has **Manage Roles** permission. Otherwise, __THIS WILL NOT WORK__.",
+      "directSubscribers": "Direct Subscriptions",
+      "directSubscribersToggle": "Toggle direct subscriptions for a feed",
+      "directSubscribersDescription": "Allows users to directly add themselves as a subscriber to the feed `{subscribers}` placeholder. This is an alternative to letting users add roles to themselves.",
       "settingChanged": "{{propName}} has been {{finalSetting}} for <{{link}}>{{isDefault}}.",
-      "defaultSetting": "default setting"
+      "defaultSetting": "default setting",
+      "directSubscriberDisabled": "The feed <{{link}}> in {{channel}} does not allow direct subscribers. Try another feed, or type `exit` to cancel."
     },
     "prefix": {
       "helpText": "You must specify a prefix 4 characters or less as the first argument to set a custom prefix, or `reset` to reset the prefix to default if a custom prefix is already set.",

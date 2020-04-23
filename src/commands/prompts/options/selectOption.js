@@ -35,7 +35,9 @@ function selectOptionVisual (data) {
     .addOption(translate('commands.options.tableFormattingToggle'), `${translate('generics.defaultSetting', {
       value: config.feeds.formatTables === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED
     })} ${translate('commands.options.tableFormattingDescription')}`)
-
+    .addOption(translate('commands.options.directSubscribersToggle'), `${translate('generics.defaultSetting', {
+      value: config.feeds.directSubscribers === false ? DISABLED_TRANSLATED : ENABLED_TRANSLATED
+    })} ${translate('commands.options.directSubscribersDescription')}`)
   const visual = new MenuVisual(menu)
   return visual
 }
@@ -55,6 +57,8 @@ async function selectOptionFn (message, data) {
     optionKey = 'checkDates'
   } else if (content === '4') {
     optionKey = 'formatTables'
+  } else if (content === '5') {
+    optionKey = 'directSubscribers'
   }
   return {
     ...data,

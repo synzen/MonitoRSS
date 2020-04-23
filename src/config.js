@@ -76,6 +76,7 @@ exports.set = (override) => {
   feeds.imgLinksExistence = Boolean(process.env.DRSS_FEEDS_IMGLINKSEXISTENCE) || feedsOverride.imgLinksExistence === undefined ? feeds.imgLinksExistence : feedsOverride.imgLinksExistence
   feeds.checkDates = Boolean(process.env.DRSS_FEEDS_CHECKDATES) || feedsOverride.checkDates === undefined ? feeds.checkDates : feedsOverride.checkDates
   feeds.formatTables = Boolean(process.env.DRSS_FEEDS_FORMATTABLES) || feedsOverride.formatTables === undefined ? feeds.formatTables : feedsOverride.formatTables
+  feeds.directSubscribers = Boolean(process.env.DRSS_FEEDS_DIRECTSUBSCRIBERS) || feedsOverride.directSubscribers === undefined ? feeds.directSubscribers : feedsOverride.directSubscribers
   feeds.decode = feedsOverride.decode || feeds.decode
 
   // ADVANCED

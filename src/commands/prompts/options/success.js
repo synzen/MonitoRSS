@@ -28,6 +28,8 @@ function successVisual (data) {
     optionName = translate('commands.options.dateChecks')
   } else if (optionKey === 'formatTables') {
     optionName = translate('commands.options.tableFormatting')
+  } else if (optionKey === 'directSubscribers') {
+    optionName = translate('commands.options.directSubscribers')
   }
   const finalState = typeof feed[optionKey] === 'boolean' ? feed[optionKey] : config.feeds[optionKey]
   return new MessageVisual(`${translate('commands.options.settingChanged', {

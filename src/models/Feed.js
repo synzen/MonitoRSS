@@ -59,6 +59,7 @@ const schema = new mongoose.Schema({
   imgPreviews: Boolean,
   imgLinksExistence: Boolean,
   formatTables: Boolean,
+  directSubscribers: Boolean,
   ncomparisons: [String],
   pcomparisons: [String],
   regexOps: {

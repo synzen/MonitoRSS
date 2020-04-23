@@ -51,6 +51,7 @@ const feedsSchema = Joi.object({
   imgLinksExistence: Joi.bool().strict().default(true),
   checkDates: Joi.bool().strict().default(true),
   formatTables: Joi.bool().strict().default(false),
+  directSubscribers: Joi.bool().strict().default(false),
   decode: decodeValidator.config().encoding()
 })
 

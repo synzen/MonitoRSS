@@ -368,9 +368,6 @@
       "tableFormatting": "Formatação de Tabelas",
       "tableFormattingToggle": "Alternar a formatação da tabela para um feed",
       "tableFormattingDescription": "Se a formatação da tabela estiver ativada, eles devem ser colocados em blocos de código para garantir um espaçamento uniforme.",
-      "roleMentioning": "Alternar Menção de Cargo",
-      "roleMentioningToggle": "Alternar menção de cargos para inscrições",
-      "roleMentioningDescription": "Ativa a menção de cargos para qualquer cargo inscrito em um feed quando os artigos estão prestes a ser enviados e, em seguida, desativa imediatamente o mencionamento após o envio do artigo.\n\n**AVISO**: Apenas aplica se os cargos estiverem abaixo do cargo do bot, e o bot tiver permissão para **gerenciar cargos**. Caso contrário, __ISSO NÃO FUNCIONARÁ__ ",
       "settingChanged": "{{propName}} foi {{finalSetting}} para <{{link}}>{{isDefault}}.",
       "defaultSetting": "configuração padrão"
     },

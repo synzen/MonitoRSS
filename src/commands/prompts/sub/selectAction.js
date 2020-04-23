@@ -44,16 +44,21 @@ async function selectActionFn (message, data) {
       selected,
       subscribers
     }
-  } else if (selected === '3') {
+  }
+
+  if (selected === '2') {
+    return {
+      ...data,
+      selected
+    }
+  }
+
+  if (selected === '3') {
     return {
       ...data,
       selected,
       member
     }
-  }
-  return {
-    ...data,
-    selected
   }
 }
 
