@@ -495,7 +495,7 @@
       "description": "You may be mentioned whenever a new article comes in for a particular feed by selecting an option below. ",
       "optionAddRole": "I want to add a mentioned role to myself",
       "optionAddRoleDescription": "You may add a role that is subscribed to a feed so that you'll be mentioned via role.",
-      "optionAddMe": "I want to be directly mentioned",
+      "optionAddMe": "I want to be directly mentioned for a feed",
       "optionAddMeDescription": "You may directly add yourself as a subscriber to a feed so that you'll be directly mentioned. **This is only possible if this feature is enabled for this server.**",
       "optionSubscribedFeeds": "List my subscribed feeds",
       "optionSubscribedFeedsDescription": "Show all the feeds that you are currently being mentioned in (whether they're role mentions or direct mentions)",
@@ -510,13 +510,21 @@
       "alreadyHaveRole": "You already have this role. Try another role name, or type `exit` to cancel."
     },
     "unsub": {
-      "noEligible": "There are no eligible roles to be removed from you.",
-      "invalidRole": "That is not a valid role to remove. To see the the full list of roles that can be removed, type `{{prefix}}unsub`.",
-      "selfSubscriptionRemoval": "Self-Subscription Removal",
-      "listDescription": "Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name after **{{prefix}}unsub** to remove a role from yourself.\u200b\n\u200b\n",
-      "otherRoles": "Other Roles",
-      "removeSuccess": "You no longer have the role `{{name}}`.",
-      "removeFailed": "Error: Unable to remove role."
+      "optionRemoveRole": "I want to remove a mentioned role from myself",
+      "optionRemoveRoleDescription": "Remove a role from yourself that is currently mentioned within a feed",
+      "optionRemoveMyself": "I want to remove a mention of myself from a feed",
+      "optionRemoveMyselfDescription": "Remove a direct mention of yourself within a feed",
+      "optionRemoveAll": "I want to remove all mentions of me from all feeds",
+      "optionRemoveAllDescription": "Remove all direct mentions and mentioned roles within feeds that include you",
+      "noEligibleRoles": "There are no eligible roles to be removed from you. Select a different option, or type `exit` to cancel.",
+      "noEligibleDirect": "You are not directly mentioned in any feeds. Select a different option, or type `exit` to cancel.",
+      "invalidRole": "That is not a valid role to remove. Try again, or type `exit` to cancel.",
+      "title": "Self-Subscription Removal",
+      "directRemoveList": "Below are all the feeds you are directly mentioned in.",
+      "listInputRole": "Above is the list of feeds, their channels, and eligible roles that you may remove from yourself. Type the role name to remove it, or type `exit` to cancel.",
+      "roleRemoveSuccess": "You no longer have the role {{role}}.",
+      "directRemoveSuccess": "You will now no longer be directly mentioned for the feed <{{link}}>.",
+      "removeAllSuccess": "You will now no longer be directly mentioned or mentioned through roles for any feed."
     },
     "utils": {
       "filters": {

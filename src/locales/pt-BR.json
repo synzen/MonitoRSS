@@ -449,13 +449,8 @@
       "addSuccess": "Agora você tem o cargo `{{name}}`, inscrito em:"
     },
     "unsub": {
-      "noEligible": "Não há cargos qualificados para serem removidos de você.",
-      "invalidRole": "Essa não é um cargo válida para remover. Para ver a lista completa de cargos que podem ser removidos, digite `{{prefix}}unsub`.",
-      "selfSubscriptionRemoval": "Remoção de auto-inscrição",
-      "listDescription": "Abaixo está a lista de feeds, seus canais e suas funções elegíveis das quais você pode se remover. Digite o nome do cargo depois de **{{prefixo}}unsub** para remover um cargo de você mesmo.\u200b\n\u200b\n",
-      "otherRoles": "Outros cargos",
-      "removeSuccess": "Você não tem mais o cargo `{{name}}`.",
-      "removeFailed": "Erro: não é possível remover o cargo."
+      "title": "Remoção de auto-inscrição",
+      "roleRemoveSuccess": "Você não tem mais o cargo {{role}}."
     },
     "utils": {
       "filters": {
