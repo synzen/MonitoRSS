@@ -11,7 +11,7 @@ const Translator = require('../../../structs/Translator.js')
 /**
  * @param {Data} data
  */
-function selectSourceFeedsVisual (data) {
+function selectMultipleFeedsVisual (data) {
   const { profile } = data
   const translate = Translator.createProfileTranslator(profile)
   const selectFeedVisual = selectFeed.visual(data)
@@ -26,7 +26,7 @@ function selectSourceFeedsVisual (data) {
  * @param {import('discord.js').Message} message
  * @param {Data} data
  */
-async function selectSourceFeedsFn (message, data) {
+async function selectMultipleFeedsFn (message, data) {
   const { feeds } = data
   const { content } = message
   const selectedFeeds = content
@@ -38,6 +38,8 @@ async function selectSourceFeedsFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectSourceFeedsVisual, selectSourceFeedsFn)
+const prompt = new DiscordPrompt(selectMultipleFeedsVisual, selectMultipleFeedsFn)
 
+exports.visual = selectMultipleFeedsVisual
+exports.fn = selectMultipleFeedsFn
 exports.prompt = prompt

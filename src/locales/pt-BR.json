@@ -387,8 +387,7 @@
     },
     "remove": {
       "removing": "Removendo...",
-      "success": "Removeu com sucesso o seguinte link(s):",
-      "internalError": "Não é possível remover feeds especificados devido a um erro interno."
+      "success": "Removeu com sucesso o seguinte link(s):"
     },
     "split": {
       "messageSplittingOptions": "Opções de divisão de mensagens",
