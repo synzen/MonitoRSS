@@ -1,4 +1,3 @@
-const channelTracker = require('../util/channelTracker.js')
 const getConfig = require('../config.js').get
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
@@ -32,7 +31,6 @@ module.exports = async (message) => {
   const totalLinks = linkList.length
   let limitExceeded = false
 
-  channelTracker.add(message.channel.id)
   let checkedSoFar = 0
 
   const verifyMsg = await message.channel.send(translate('commands.add.processing'))
@@ -73,7 +71,6 @@ module.exports = async (message) => {
         guild: message.guild.id
       })
       await newFeed.testAndSave(message.guild.shardID)
-      channelTracker.remove(message.channel.id)
       log.info({
         guild: message.guild
       }, `Added ${link}`)
@@ -109,6 +106,5 @@ module.exports = async (message) => {
     msg += `${translate('commands.add.successInfo', { prefix })} ${translate('generics.backupReminder', { prefix })}`
   }
 
-  channelTracker.remove(message.channel.id)
   await verifyMsg.edit(msg)
 }
