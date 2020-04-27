@@ -1,5 +1,6 @@
 const FLAGS = require('discord.js').Permissions.FLAGS
-const { Rejection, DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { Rejection, MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 const MIN_PERMISSION_BOT = [
@@ -102,6 +103,6 @@ async function selectDestinationChannelFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectDestinationChannelVisual, selectDestinationChannelFn)
+const prompt = new LocalizedPrompt(selectDestinationChannelVisual, selectDestinationChannelFn)
 
 exports.prompt = prompt

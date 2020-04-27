@@ -1,5 +1,6 @@
 const moment = require('moment-timezone')
-const { MessageVisual, DiscordPrompt, Rejection } = require('discord.js-prompts')
+const { MessageVisual, Rejection } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Profile = require('../../../structs/db/Profile.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
@@ -67,6 +68,6 @@ async function askTimezoneFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(askTimezoneVisual, askTimezoneFn)
+const prompt = new LocalizedPrompt(askTimezoneVisual, askTimezoneFn)
 
 exports.prompt = prompt

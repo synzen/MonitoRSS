@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -21,6 +22,6 @@ function resetEmbedSuccessVisual (data) {
   }))
 }
 
-const prompt = new DiscordPrompt(resetEmbedSuccessVisual)
+const prompt = new LocalizedPrompt(resetEmbedSuccessVisual)
 
 exports.prompt = prompt

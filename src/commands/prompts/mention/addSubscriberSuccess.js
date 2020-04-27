@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const getConfig = require('../../../config.js').get
 
@@ -25,6 +26,6 @@ async function addSubscriberSuccessVisual (data) {
   })} ${translate('generics.backupReminder', { prefix })}`)
 }
 
-const prompt = new DiscordPrompt(addSubscriberSuccessVisual)
+const prompt = new LocalizedPrompt(addSubscriberSuccessVisual)
 
 exports.prompt = prompt

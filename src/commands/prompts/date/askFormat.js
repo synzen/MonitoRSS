@@ -1,4 +1,5 @@
-const { MessageVisual, DiscordPrompt } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Profile = require('../../../structs/db/Profile.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
@@ -63,6 +64,6 @@ async function askFormatFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(askFormatVisual, askFormatFn)
+const prompt = new LocalizedPrompt(askFormatVisual, askFormatFn)
 
 exports.prompt = prompt

@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -27,6 +28,6 @@ function addRoleSuccess (data) {
   })}\n\n${feedURLs.map(url => `**<${url}>**`).join('\n')}`)
 }
 
-const prompt = new DiscordPrompt(addRoleSuccess)
+const prompt = new LocalizedPrompt(addRoleSuccess)
 
 exports.prompt = prompt

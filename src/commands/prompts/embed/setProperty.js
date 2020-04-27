@@ -1,4 +1,5 @@
-const { Rejection, DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { Rejection, MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 const prettyNames = new Map([
@@ -100,6 +101,6 @@ async function setPropertyFn (message, data) {
   return newData
 }
 
-const prompt = new DiscordPrompt(setPropertyVisual, setPropertyFn)
+const prompt = new LocalizedPrompt(setPropertyVisual, setPropertyFn)
 
 exports.prompt = prompt

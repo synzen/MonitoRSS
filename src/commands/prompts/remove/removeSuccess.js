@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const getConfig = require('../../../config.js').get
 
@@ -23,6 +24,6 @@ async function removeSuccessVisual (data) {
   })}`)
 }
 
-const prompt = new DiscordPrompt(removeSuccessVisual)
+const prompt = new LocalizedPrompt(removeSuccessVisual)
 
 exports.prompt = prompt

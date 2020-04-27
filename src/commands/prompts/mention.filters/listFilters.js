@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -23,7 +24,7 @@ function listFiltersVisual (data) {
       subscriber: subscriberString
     }))
   }
-  const embed = new MessageEmbed({
+  const embed = new ThemedEmbed({
     title: translate('commands.mention.filters.title'),
     description: translate('commands.mention.filters.listFiltersDescription', {
       title: feed.title,
@@ -46,6 +47,6 @@ function listFiltersVisual (data) {
   })
 }
 
-const prompt = new DiscordPrompt(listFiltersVisual)
+const prompt = new LocalizedPrompt(listFiltersVisual)
 
 exports.prompt = prompt

@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -20,6 +21,6 @@ function successResetVisual (data) {
 }
 
 const successResetCondition = data => data.selected === '4'
-const prompt = new DiscordPrompt(successResetVisual, undefined, successResetCondition)
+const prompt = new LocalizedPrompt(successResetVisual, undefined, successResetCondition)
 
 exports.prompt = prompt

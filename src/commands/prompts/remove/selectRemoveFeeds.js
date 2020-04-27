@@ -1,4 +1,4 @@
-const { DiscordPrompt } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const selectMultipleFeeds = require('../common/selectMultipleFeeds.js')
 const createLogger = require('../../../util/logger/create.js')
 
@@ -32,6 +32,6 @@ async function selectRemoveFeedsFn (message, data) {
   return newData
 }
 
-const prompt = new DiscordPrompt(selectRemoveFeedsVisual, selectRemoveFeedsFn)
+const prompt = new LocalizedPrompt(selectRemoveFeedsVisual, selectRemoveFeedsFn)
 
 exports.prompt = prompt

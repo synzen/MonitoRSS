@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const { MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const handlePaginationError = require('../common/utils/handlePaginationError.js')
 const getConfig = require('../../../config.js').get
@@ -21,7 +22,7 @@ function selectFeedWithOptionVisual (data) {
   const { profile, optionKey, feeds } = data
   const config = getConfig()
   const translate = Translator.createProfileTranslator(profile)
-  const embed = new MessageEmbed({
+  const embed = new ThemedEmbed({
     title: translate('structs.FeedSelector.feedSelectionMenu'),
     description: `${translate('structs.FeedSelector.prompt')} ${translate('structs.FeedSelector.exitToCancel')} `
   })
@@ -84,6 +85,6 @@ async function selectFeedWithOptionFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectFeedWithOptionVisual, selectFeedWithOptionFn)
+const prompt = new LocalizedPrompt(selectFeedWithOptionVisual, selectFeedWithOptionFn)
 
 exports.prompt = prompt

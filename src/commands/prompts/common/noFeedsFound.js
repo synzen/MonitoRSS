@@ -1,4 +1,5 @@
-const { DiscordPrompt } = require('discord.js-prompts')
+const ThemedEmbed = require('./utils/ThemedEmbed.js')
+const LocalizedPrompt = require('./utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -17,6 +18,6 @@ function noFeedsFoundVisual (data) {
   }
 }
 
-const prompt = new DiscordPrompt(noFeedsFoundVisual)
+const prompt = new LocalizedPrompt(noFeedsFoundVisual)
 
 exports.prompt = prompt

@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const { MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const getConfig = require('../../../config.js').get
 
@@ -16,7 +17,7 @@ function selectOptionVisual (data) {
   const { locale } = data.profile || {}
   const config = getConfig()
   const translate = Translator.createLocaleTranslator(locale)
-  const embed = new MessageEmbed({
+  const embed = new ThemedEmbed({
     title: translate('commands.options.miscFeedOptions'),
     description: translate('commands.options.selectOption')
   })
@@ -66,6 +67,6 @@ async function selectOptionFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectOptionVisual, selectOptionFn)
+const prompt = new LocalizedPrompt(selectOptionVisual, selectOptionFn)
 
 exports.prompt = prompt

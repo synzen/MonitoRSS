@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { Rejection, DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { Rejection, MessageVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('./utils/ThemedEmbed.js')
+const LocalizedPrompt = require('./utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -16,7 +17,7 @@ const Translator = require('../../../structs/Translator.js')
 function visual (data) {
   const { profile, selectedFeed: feed } = data
   const translate = Translator.createProfileTranslator(profile)
-  const embed = new MessageEmbed({
+  const embed = new ThemedEmbed({
     title: translate('commands.utils.filters.filtersCustomization'),
     description: `**${translate('commands.utils.filters.feed')}:** ${feed.url}\n\n${translate('commands.utils.filters.categoryDescription')}`
   }).addField('Title', '\u200b')
@@ -49,6 +50,6 @@ async function fn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(visual, fn)
+const prompt = new LocalizedPrompt(visual, fn)
 
 exports.prompt = prompt

@@ -1,4 +1,5 @@
-const { Rejection, DiscordPrompt } = require('discord.js-prompts')
+const { Rejection } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const commonPrompts = require('../common/index.js')
 const Subscriber = require('../../../structs/db/Subscriber.js')
 const Translator = require('../../../structs/Translator.js')
@@ -59,6 +60,6 @@ async function selectFeedFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectFeedVisual, selectFeedFn)
+const prompt = new LocalizedPrompt(selectFeedVisual, selectFeedFn)
 
 exports.prompt = prompt

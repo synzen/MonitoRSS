@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const { MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 
@@ -16,7 +17,7 @@ const createLogger = require('../../../util/logger/create.js')
 function enableVisual (data) {
   const { profile, selectedFeed: feed } = data
   const translate = Translator.createProfileTranslator(profile)
-  const embed = new MessageEmbed()
+  const embed = new ThemedEmbed()
     .setTitle(translate('commands.split.messageSplittingOptions'))
     .setDescription(translate('commands.split.description', {
       title: feed.title,
@@ -48,6 +49,6 @@ async function enableFn (message, data) {
   return data
 }
 
-const prompt = new DiscordPrompt(enableVisual, enableFn)
+const prompt = new LocalizedPrompt(enableVisual, enableFn)
 
 exports.prompt = prompt

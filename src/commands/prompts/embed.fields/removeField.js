@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const { MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 
@@ -18,7 +19,7 @@ const createLogger = require('../../../util/logger/create.js')
 function removeFieldVisual (data) {
   const { profile, selectedFeed: feed, targetEmbedIndex } = data
   const translate = Translator.createProfileTranslator(profile)
-  const embed = new MessageEmbed()
+  const embed = new ThemedEmbed()
     .setTitle(translate('commands.embed.embedFieldsOptionRemoveEmbedTitle'))
     .setDescription(translate('commands.embed.embedFieldsOptionRemoveEmbedDescription'))
   const menu = new MenuEmbed(embed)
@@ -58,6 +59,6 @@ async function removeFieldFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(removeFieldVisual, removeFieldFn)
+const prompt = new LocalizedPrompt(removeFieldVisual, removeFieldFn)
 
 exports.prompt = prompt

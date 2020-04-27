@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -22,7 +23,7 @@ function visual (data) {
       link: feed.url
     }))
   }
-  const embed = new MessageEmbed({
+  const embed = new ThemedEmbed({
     author: {
       name: translate('commands.filters.listFilters')
     },
@@ -45,6 +46,6 @@ function visual (data) {
   })
 }
 
-const prompt = new DiscordPrompt(visual)
+const prompt = new LocalizedPrompt(visual)
 
 exports.prompt = prompt

@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const getConfig = require('../../../config.js').get
 
@@ -29,6 +30,6 @@ function inputSplitCharacterVisual (data) {
   }
 }
 
-const prompt = new DiscordPrompt(inputSplitCharacterVisual)
+const prompt = new LocalizedPrompt(inputSplitCharacterVisual)
 
 exports.prompt = prompt

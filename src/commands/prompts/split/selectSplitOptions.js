@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const { MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 
@@ -23,7 +24,7 @@ const defMaxLenStr = translate => translate('commands.split.defaultIsValue', { v
 function selectSplitOptionsVisual (data) {
   const { profile, selectedFeed: feed } = data
   const translate = Translator.createProfileTranslator(profile)
-  const embed = new MessageEmbed()
+  const embed = new ThemedEmbed()
     .setTitle(translate('commands.split.messageSplittingOptions'))
     .setDescription(translate('commands.split.description', {
       title: feed.title,
@@ -81,6 +82,6 @@ async function selectSplitOptionsFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectSplitOptionsVisual, selectSplitOptionsFn)
+const prompt = new LocalizedPrompt(selectSplitOptionsVisual, selectSplitOptionsFn)
 
 exports.prompt = prompt

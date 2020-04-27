@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -20,6 +21,6 @@ function removeRoleSuccess (data) {
   }))
 }
 
-const prompt = new DiscordPrompt(removeRoleSuccess)
+const prompt = new LocalizedPrompt(removeRoleSuccess)
 
 exports.prompt = prompt

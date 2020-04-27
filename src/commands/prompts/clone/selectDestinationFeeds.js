@@ -1,4 +1,4 @@
-const { DiscordPrompt } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const commonPrompts = require('../common/index.js')
 const Translator = require('../../../structs/Translator.js')
 
@@ -39,6 +39,6 @@ async function selectDestinationFeedsFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectDestinationFeedsVisual, selectDestinationFeedsFn)
+const prompt = new LocalizedPrompt(selectDestinationFeedsVisual, selectDestinationFeedsFn)
 
 exports.prompt = prompt

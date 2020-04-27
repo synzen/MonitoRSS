@@ -1,4 +1,5 @@
-const { Rejection, DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { Rejection, MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 
@@ -60,6 +61,6 @@ async function addFieldFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(addFieldVisual, addFieldFn)
+const prompt = new LocalizedPrompt(addFieldVisual, addFieldFn)
 
 exports.prompt = prompt

@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const { MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 
@@ -30,7 +31,7 @@ function selectPropertiesVisual (data) {
   const { profile, selectedFeed: feed } = data
   const embeds = feed.embeds
   const translate = Translator.createProfileTranslator(profile)
-  const messageEmbed = new MessageEmbed()
+  const messageEmbed = new ThemedEmbed()
     .setTitle(translate('commands.embed.embedSelection'))
     .setDescription(translate('commands.embed.embedSelectionDescription'))
   const menu = new MenuEmbed(messageEmbed)
@@ -78,6 +79,6 @@ async function selectPropertiesFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectPropertiesVisual, selectPropertiesFn)
+const prompt = new LocalizedPrompt(selectPropertiesVisual, selectPropertiesFn)
 
 exports.prompt = prompt

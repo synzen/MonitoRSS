@@ -1,5 +1,6 @@
-const { MessageEmbed } = require('discord.js')
-const { DiscordPrompt, MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const { MenuEmbed, MenuVisual } = require('discord.js-prompts')
+const ThemedEmbed = require('../common/utils/ThemedEmbed')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 const getConfig = require('../../../config.js').get
@@ -18,7 +19,7 @@ function selectCustomizationVisual (data) {
   const config = getConfig()
   const { profile } = data
   const translate = Translator.createProfileTranslator(profile)
-  const embed = new MessageEmbed({
+  const embed = new ThemedEmbed({
     title: translate('commands.date.selectTitle'),
     description: translate('commands.date.description')
   })
@@ -58,6 +59,6 @@ async function selectCustomizationFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectCustomizationVisual, selectCustomizationFn)
+const prompt = new LocalizedPrompt(selectCustomizationVisual, selectCustomizationFn)
 
 exports.prompt = prompt

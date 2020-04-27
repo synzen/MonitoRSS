@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const FailRecord = require('../../../structs/db/FailRecord.js')
 const Translator = require('../../../structs/Translator.js')
 const FeedFetcher = require('../../../util/FeedFetcher.js')
@@ -33,6 +34,6 @@ async function visual (data) {
   return new MessageVisual('Sending article...')
 }
 
-const prompt = new DiscordPrompt(visual, undefined)
+const prompt = new LocalizedPrompt(visual)
 
 exports.prompt = prompt

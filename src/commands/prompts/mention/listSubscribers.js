@@ -1,4 +1,5 @@
-const { DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -49,6 +50,6 @@ async function listSubscribersVisual (data) {
   })
 }
 
-const prompt = new DiscordPrompt(listSubscribersVisual)
+const prompt = new LocalizedPrompt(listSubscribersVisual)
 
 exports.prompt = prompt

@@ -1,4 +1,5 @@
-const { Rejection, DiscordPrompt, MessageVisual } = require('discord.js-prompts')
+const { Rejection, MessageVisual } = require('discord.js-prompts')
+const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const referenceProperties = [
   'message',
@@ -59,6 +60,6 @@ async function selectDestinationFeedsFn (message, data) {
   }
 }
 
-const prompt = new DiscordPrompt(selectPropertiesVisual, selectDestinationFeedsFn)
+const prompt = new LocalizedPrompt(selectPropertiesVisual, selectDestinationFeedsFn)
 
 exports.prompt = prompt
