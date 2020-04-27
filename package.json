@@ -23,7 +23,7 @@
     "@hapi/joi": "^17.1.1",
     "cloudscraper": "^4.6.0",
     "discord.js": "^12.1.1",
-    "discord.js-prompts": "github:synzen/discord.js-prompts",
+    "discord.js-prompts": "0.0.1",
     "feedparser": "^2.2.9",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.5.1",
