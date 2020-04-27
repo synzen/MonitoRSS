@@ -9,7 +9,7 @@ module.exports = async (message) => {
   const selectEmbedNodeCondition = data => !!data.selectedFeed.webhook
   const selectEmbedNode = new PromptNode(embedPrompts.selectEmbed.prompt, selectEmbedNodeCondition)
 
-  const selectPropertiesNodeCondition = data => !data.selectedFeed.webhook
+  const selectPropertiesNodeCondition = () => true
   const selectPropertiesNode = new PromptNode(embedPrompts.selectProperties.prompt, selectPropertiesNodeCondition)
 
   const resetEmbedSuccessNodeCondition = data => data.reset
