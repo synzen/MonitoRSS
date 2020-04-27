@@ -1,6 +1,6 @@
 const { PromptNode } = require('discord.js-prompts')
 const subPrompts = require('./prompts/sub/index.js')
-const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')
+const runWithFeedGuild = require('./prompts/runner/run.js')
 
 module.exports = async (message) => {
   const selectActionNode = new PromptNode(subPrompts.selectAction.prompt)

@@ -1,6 +1,5 @@
 const { PromptNode } = require('discord.js-prompts')
 const commonPrompts = require('./prompts/common/index.js')
-const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')
 const Article = require('../structs/Article.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const ArticleMessage = require('../structs/ArticleMessage.js')
@@ -8,6 +7,7 @@ const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 const FeedData = require('../structs/FeedData.js')
+const runWithFeedGuild = require('./prompts/runner/run.js')
 
 module.exports = async (message, command) => {
   const simple = message.content.endsWith('simple')

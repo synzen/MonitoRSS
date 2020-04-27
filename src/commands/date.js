@@ -1,6 +1,6 @@
 const { PromptNode } = require('discord.js-prompts')
 const datePrompts = require('./prompts/date/index.js')
-const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')
+const runWithFeedGuild = require('./prompts/runner/run.js')
 
 module.exports = async (message) => {
   const selectCustomizationNode = new PromptNode(datePrompts.selectCustomization.prompt)

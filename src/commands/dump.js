@@ -4,7 +4,7 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const { PromptNode } = require('discord.js-prompts')
 const commonPrompts = require('./prompts/common/index.js')
-const runWithFeedGuild = require('./prompts/runner/runWithFeedsProfile.js')
+const runWithFeedGuild = require('./prompts/runner/run.js')
 
 module.exports = async (message, command) => {
   const selectFeedNode = new PromptNode(commonPrompts.selectFeed.prompt)

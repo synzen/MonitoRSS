@@ -6,7 +6,7 @@ const FeedData = require('../structs/FeedData.js')
 const createLogger = require('../util/logger/create.js')
 const commonPrompts = require('./prompts/common/index.js')
 const filterPrompts = require('./prompts/filters/index.js')
-const runWithFeedsProfile = require('./prompts/runner/runWithFeedsProfile.js')
+const runWithFeedsProfile = require('./prompts/runner/run.js')
 
 module.exports = async (message, command, role) => {
   const selectFeedNode = new PromptNode(commonPrompts.selectFeed.prompt)
