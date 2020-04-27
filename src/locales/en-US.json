@@ -28,11 +28,12 @@
       "description": "Open a menu to customize a feed's text message."
     },
     "embed": {
-      "args": {
-        "fields": "Customize Fields for the embed."
-      },
-      "action": "Embed Message Customization",
+      "action": "Embed Customization",
       "description": "Open a menu to customize a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
+    },
+    "embed.fields": {
+      "action": "Embed Fields Customization",
+      "description": "Open a menu to customize fields for a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
     },
     "filters": {
       "action": "Feed Filter Addition/Removal",
@@ -45,6 +46,9 @@
       "action": "Subscriber Customization",
       "description": "Open a menu to add global/filtered subscriptions for roles/users to feeds."
     },
+    "mention.filters": {
+      "description": "Open a menu to manage filters for subscribers so they only get mentioned when its filters pass for any particular delivered article."
+    },
     "test": {
       "args": {
         "simple": "Omit the test results and only send the message."
@@ -53,15 +57,9 @@
       "description": "Opens a menu to send a test message for a random article in a feed, along with the available properties and placeholders for various customizations. You may add `simple` as a parameter to exclude the test details."
     },
     "sub": {
-      "args": {
-        "<role name/mention>": "Directly input the role instead of going through the menu."
-      },
       "description": "Open a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
     },
     "unsub": {
-      "args": {
-        "<role name/mention>": "Directly input the role instead of going through the menu."
-      },
       "description": "Open a menu similar to `sub`, except to remove a role. Any role beneath the bot's role order will be removeable."
     },
     "refresh": {
@@ -81,10 +79,7 @@
     },
     "clone": {
       "action": "Feed Settings Cloning",
-      "description": "Clone a feed's settings to other feed(s).",
-      "args": {
-        "<property>": "Use the command without arguments for further information."
-      }
+      "description": "Clone a feed's settings to other feed(s)."
     },
     "backup": {
       "description": "Send server profile as a JSON attachment for personal backups."
@@ -172,7 +167,7 @@
     "clone": {
       "copyFrom": "Select the source to copy from.",
       "copyTo": "Select the destination(s) to copy to.",
-      "noProperties": "You must add at least one property to clone as an argument. The properties available for cloning are `{{properties}}`. To clone all these properties, you can just use `all`.\n\nFor example, to clone a feed's filters and message/embed, type `{{prefix}}clone filters format`.",
+      "inputProperties": "Input properties to clone, separated by commas. The properties available for cloning are `{{properties}}`. To clone all these properties, you can just use `all`.\n\nFor example, to clone a feed's filters and message, type `filters,message`.",
       "invalidProperties": "Invalid properties found: `{{invalid}}`\n\nValid properties available for cloning are `{{properties}}`.",
       "confirm": "The following settings for the feed <{{link}}>\n\n`{{cloning}}`\n\nare about to be cloned into the following feeds:\n```{{destinations}}```\nNote that if a property does not exist in the source feed, the same property in the destination feed(s) will be **deleted**.To confirm this, type `yes`. Otherwise, type `exit` to cancel.",
       "confirmError": "You must confirm by typing `yes`, or cancel by typing `exit`. Try again.",
@@ -188,6 +183,7 @@
       "success": "The following comparisons have been set for the feed <{{url}}>:\n\n{{added}}"
     },
     "date": {
+      "selectTitle": "Date Customizations",
       "dateLanguage": "Date language",
       "dateFormat": "Date format",
       "timezone": "Timezone",
@@ -213,7 +209,6 @@
       "generatedDump": "Dump has been generated. Attempting to attach file, see below."
     },
     "embed": {
-      "defaultEmbed": "Default Embed",
       "numberedEmbed": "Embed #{{number}}",
       "embedSelection": "Embed Selection",
       "embedSelectionDescription": "The properties for each embed is shown below. Select one of the embeds by typing the number next to it, or type `exit` to cancel.\n\u200b",
@@ -226,12 +221,9 @@
       "availablePropertiesList": "The list of embed properties that can be set are:\n{{list}}\nType the embed property (for example, `color` or `message`) you want to set/reset, or multiple properties by separation with commas (for example, `color, message`). Type `reset` to remove all properties, or type `exit` to cancel.",
       "invalidColorNumber": "The color must be an **number**. See <https://www.shodor.org/stella2java/rgbint.html>. Try again, or type `exit` to cancel.",
       "invalidColorRange": "The color must be a number between 0 and 16777215. Try again, or type `exit` to cancel.",
-      "invalidURL": "URLs must link to actual images or be `{imageX}` placeholders. Try again, or type `exit` to cancel.",
       "invalidProperties": "The following properties {{invalids}} are invalid. Try again, or type `exit` to cancel.",
-      "noPropertiesSelected": "No valid properties selected. Try again, or type `exit` to cancel.",
       "removedAllEmbeds": "Successfully removed all embeds.",
       "removedEmbed": "Embed has been disabled, and all properties have been removed for <{{link}}>.",
-      "resetNothing": "🇽 **{{propName}}** has nothing to reset\n",
       "resetSuccess": "☑ **{{propName}}** has been reset\n",
       "updatedSuccess": "☑ **{{propName}}** updated to \n```\n{{userSetting}}\n```\n",
       "updatedInfo": "Settings updated for <{{link}}>:\n\n{{resetList}}{{updateList}}\nYou may use `{{prefix}}test` or `{{prefix}}test simple` to see your new embed format.",
@@ -260,14 +252,13 @@
       "authorIconURL": "Author Icon URL",
       "authorIconURLDescription": "Icon to the left of Author Name\nMUST be a link to an image. If Author Name is unspecified, the Author Icon will be hidden",
       "settingProperty": "You are now customizing the **{{property}}**. Type your input now. To reset the property, type `reset`.",
-      "settingPropertyTimezone": "You are now customizing the **timezone**. Type your input now.\n\nTo set the timestamp to the time the article is sent to Discord, type `now`.\nTo set the timestamp to the time the article was published (if available in the feed), type `article`.\nFor a custom timestamp, type the text representation of a custom date (see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nTo reset the property, type `reset`.",
-      "settingPropertyTimezoneError": "That is not a valid setting. It must be either `now`, `article`, or a valid text representation of a date. Try again.",
+      "settingPropertyTimestamp": "You are now customizing the **timestamp**. Type your input now.\n\nTo set the timestamp to the time the article is sent to Discord, type `now`.\nTo set the timestamp to the time the article was published (if available in the feed), type `article`.\nFor a custom timestamp, type the text representation of a custom date (see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nTo reset the property, type `reset`.",
+      "settingPropertyTimestampError": "That is not a valid setting. It must be either `now`, `article`, or a valid text representation of a date. Try again.",
       "inline": "Inline",
       "regular": "Regular",
       "blankField": "Blank Field",
       "embedFields": "Embed Fields",
-      "embedFieldsMaximum": "You have reached the maximum number of fields you can add (10).",
-      "embedFieldsRemoveNone": "There are no embed fields to remove for this feed.",
+      "embedFieldsRemoveNone": "There are no embed fields to remove for this feed. Try again, or type `exit` to cancel.",
       "embedFieldsRemoved": "The Field(s) numbered {{numbers}} have been removed from the embed for the feed <{{link}}>.",
       "embedFieldsDescription": "\u200b\nSelect whether to add or remove a field from this feed's embed. For an example of what a field looks like, see https://i.imgur.com/WSHwmyB.png. Type `exit` to cancel.\n\u200b",
       "embedFieldsOptionRemove": "Remove a Field",
@@ -285,10 +276,9 @@
       "embedFieldsAddedBlank": "An blank Field has been added to the embed for the feed <{{link}}>.",
       "embedFieldsAddedBlankInline": "An inline blank Field has been added to the embed for the feed <{{link}}>.",
       "embedFieldsSettingPrompt": "Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type `exit` to cancel.",
-      "embedFieldsSettingNoTitle": "No valid title found. Try again, or type `exit` to cancel.",
       "embedFieldsSettingTitleLong": "Titles cannot exceed 256 characters. Try again, or type `exit` to cancel.",
       "embedFieldsSettingValueLong": "Field values cannot exceed 1024 characters. Try again, or type `exit` to cancel.",
-      "embedFieldsAdded": "A new{{type}} Field has been added to the embed with the following details:\n\n**Title**\n```\n{{title}}\n```\n**Value**\n```\n{{value}}\n```\nfor the feed {{link}}."
+      "embedFieldsAdded": "A new{{type}} Field has been added to the embed with the following details:\n\n**Title**\n```\n{{name}}\n```\n**Value**\n```\n{{value}}\n```\nfor the feed {{link}}."
     },
     "filters": {
       "selectFeedDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n",
@@ -305,9 +295,10 @@
       "optionSendArticleDescription": "Send a randomly chosen article that passes current filter(s) if they exist.",
       "removedAllSuccess": "All feed filters have been successfully removed from <{{link}}>.",
       "noFilters": "There are no filters assigned to {{link}}.",
+      "noFiltersTryAgain": "There are no filters assigned to {{link}}. Select another option, or type `exit` to cancel.",
       "listFilters": "List of Assigned Filters",
       "listFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n",
-      "connectionFailureLimit": "Reached connection failure limit.",
+      "connectionFailureLimit": "Unable to send article since failure limit has been reached (see {{prefix}}list for more information). Select another option, or type `exit` to cancel.",
       "noArticlesPassed": "No articles were able to pass this feed's filters."
     },
     "help": {
@@ -351,41 +342,38 @@
       "user": "user",
       "noFeeds": "Cannot add mention customizations without any active feeds.",
       "subscriptionsList": "Subscriptions List",
-      "description": "\n**Current Channel:** #{{channel}}\n\nAdding a subscription for a user or role will automatically add their mentions in the `{subscribers}` placeholder. If the subscriber is a role, then the role will be added to the list of eligible roles for role mention toggling, and also for the commands {{prefix}}sub/unsub.\n\nSelect an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
-      "subscriptionOptions": "Subscription Options",
-      "optionSubscriberFeed": "Add/Remove Role or User Subscriber to a Feed",
-      "optionSubscriberFeedDescription": "Enable mentions for a role/user for all delivered articles of this feed.\n*Using global subscriptions will remove filtered subscriptions if enabled for that role/user.*",
-      "optionFilteredSubscriberFeed": "Add/Remove Role or User Filtered Subscriber to a Feed",
-      "optionFilteredSubscriberFeedDescription": "Create role/user-specific filters where only selected articles will mention a role/user.\n*Using filtered subscriptions will remove global subscriptions if enabled for that role/user.*",
-      "optionRemoveSubscriptions": "Remove All Subscriptions for a Role or User",
-      "optionRemoveSubscriptionsDescription": "Remove all subscriptions for a role/user.",
-      "optionListSubscriptions": "List All Subscribers",
-      "optionListSubscriptionsDescription": "List all subscribers.",
-      "promptUserOrRole": "Enter a valid case-sensitive role name, role/user mention or user ID. The `@everyone` role cannot be used.",
-      "globalSubscriptionsTitle": "Subscription Customization - Add/Remove Global Subscription",
-      "globalSubscriptionsOptionAdd": "Add a global subscription",
-      "globalSubscriptionsOptionAddDescription": "Have the role/user get mentioned every time a new article is posted from this feed.",
-      "globalSubscriptionsOptionRemove": "Remove a global subscription",
-      "globalSubscriptionsOptionRemoveDescription": "Remove the role/user's subscription to this feed.",
-      "filteredSubscriptionsTitle": "Subscription Customization - Add/Remove Filtered Subscription",
-      "filteredSubscriptionsOptionAdd": "Add filter(s) to filtered subscriber",
-      "filteredSubscriptionsOptionAddDescription": "Add a filtered subscription so that this role/user will get mentioned everytime an article from a feed passes its filter tests.",
-      "filteredSubscriptionsOptionRemove": "Remove filter(s) to filtered subscriber",
-      "filteredSubscriptionsOptionRemoveDescription": "Remove a word/phrase from this role/user's subscription to a feed.",
-      "listSubscriptionsDescription": "\nBelow are the feed titles with any roles and users subscribed to that feed under it. Each role is then categorized as either a global or filtered subscription.\u200b\n\u200b\n",
-      "listSubscriptionsNone": "There are no subscriptions for any feeds.",
-      "removeSubscriptionsNone": "This {{type}} has no subscriptions to remove.",
-      "removeSubscriptionsSuccess": "All subscriptions successfully deleted for {{type}} `{{name}}`.",
-      "addSubscriberGlobalExists": "Unable to add global subscriber. {{type}} `{{name}}` is already subscribed to this feed.",
-      "addSubscriberGlobalSuccess": "Global subscriber {{type}} `{{name}}` successfully added to feed <{{link}}>.",
-      "removeGlobalSubscriberExists": "This subscriber is not globally subscribed to the feed <{{link}}>.",
-      "removeGlobalSubscriberSuccess": "Successfully removed the global subscription of the {{type}} `{{name}}` from the feed <{{link}}>.",
+      "description": "Adding a subscription for a user or role will automatically add their mentions in the `{subscribers}` placeholder. If the subscriber is a role, then the role will be added to the list of eligible roles for role mention toggling, and also for the commands {{prefix}}sub/unsub.\n\nSelect an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
+      "subscriberOptions": "Subscriber Options",
+      "optionAddSubscriber": "Add a subscriber to a feed",
+      "optionAddSubscriberDescription": "Mentions a role/user for all delivered articles of this feed.",
+      "optionRemoveSubscriber": "Remove a subscriber from a feed",
+      "optionRemoveSubscriberDescription": "Remove a subscribed role/user from a feed",
+      "optionRemoveAllSubscribers": "Remove all subscribers of a feed",
+      "optionRemoveAllSubscribersDescription": "Remove all role/user subscribers from a feed",
+      "optionListSubscribers": "List all subscribers",
+      "optionListSubscribersDescription": "List all subscribers.",
+      "promptUserOrRole": "Mention a role/user that is subscribed to the feed <{{link}}> in channel {{channel}} to manage its filters.",
+      "listSubscribersDescription": "Below are the subscribers of the feed <{{link}}> in channel {{channel}}.",
+      "listSubscribersNone": "There are no subscribers for the feed <{{link}}> in channel {{channel}}.",
+      "removeAllSubscribersSuccess": "All subscribers have been successfully removed from feed <{{link}}>.",
+      "addSubscriberExists": "Unable to add subscriber. {{type}} {{mention}} is already subscribed to this feed.",
+      "addSubscriberSuccess": "Subscriber {{type}} {{mention}} successfully added to feed <{{link}}>.",
+      "notFeedSubscriber": "This role or user is not subscribed to the feed <{{link}}>. Try again, or type `exit` to cancel.",
+      "removeSubscriberSuccess": "Successfully removed the subscriber {{mention}} from the feed <{{link}}>.",
       "removeAnySubscriberNone": "There are no subscribers to remove from the feed <{{link}}>.",
       "invalidRoleOrUser": "That is not a valid role or user. Try again, or type `exit` to cancel.",
-      "multipleRoles": "There are multiple roles with that name. Mention the role, type another role/user, or type `exit` to cancel.",
-      "selectedRoleDescription": "**Selected**: {{name}}\n**Feed Title:** {{feedTitle}}\n**Feed Link:** {{feedLink}}\n\nSelect an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
-      "globalSubscribers": "**Global Subscribers:**\n",
-      "filteredSubscribers": "**Filtered Subscribers:**\n"
+      "filters": {
+        "title": "Subscriber Filters Customization",
+        "description": "**Feed URL:** {{link}}\n\nAdding filters to a subscriber will cause it to only get mentioned within the `{suscribers}` placeholder of an article if its filters pass the article.",
+        "notSubscriber": "This role or user is not a subscriber. Try again, or type `exit` to cancel.",
+        "optionAddFilter": "Add filter(s) to a subscriber",
+        "optionRemoveFilter": "Remove filter(s) from a subscriber",
+        "optionRemoveAllFilters": "Remove all filters from a subscriber",
+        "optionListFilters": "List all filters of a subscriber",
+        "listFiltersDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n**Subscriber:** {{subscriber}}\n\nBelow are the filter categories with their words/phrases under each.\u200b\n\u200b\n",
+        "listNoFilters": "There are no filters assigned to {{subscriber}} for the feed <{{link}}>.",
+        "removedAllFilters": "Successfully removed all filters from subscriber {{subscriber}} for feed <{{link}}>"
+      }
     },
     "text": {
       "prompt": "The current text for {{link}} is: \n{{currentMsg}}\nType your new customized text now, type `reset` to use the default text, or type `exit` to cancel. \n\nRemember that you can use the placeholders `{title}`, `{description}`, `{link}`, and etc. `{empty}` will create an empty message, but only if an embed is used. Regular formatting such as **bold** and etc. is also available. To find other placeholders, type `exit` then `{{prefix}}test`.\n\n",
@@ -426,11 +414,12 @@
       "tableFormatting": "Table Formatting",
       "tableFormattingToggle": "Toggle Table Formatting for a feed",
       "tableFormattingDescription": "If table formatting is enabled, they should be enclosed in code blocks to ensure uniform spacing.",
-      "roleMentioning": "Role Mentioning Toggle",
-      "roleMentioningToggle": "Toggle Role Mentioning for Subscriptions",
-      "roleMentioningDescription": "Turns on role mentionability for any subscribed roles to a feed when articles are about to send, then immediately turns their mentionability off after the article has been sent.\n\n**WARNING**: Only applies if roles are below the bot's highest role, and the bot has **Manage Roles** permission. Otherwise, __THIS WILL NOT WORK__.",
+      "directSubscribers": "Direct Subscriptions",
+      "directSubscribersToggle": "Toggle direct subscriptions for a feed",
+      "directSubscribersDescription": "Allows users to directly add themselves as a subscriber to the feed `{subscribers}` placeholder. This is an alternative to letting users add roles to themselves.",
       "settingChanged": "{{propName}} has been {{finalSetting}} for <{{link}}>{{isDefault}}.",
-      "defaultSetting": "default setting"
+      "defaultSetting": "default setting",
+      "directSubscriberDisabled": "The feed <{{link}}> in {{channel}} does not allow direct subscribers. Try another feed, or type `exit` to cancel."
     },
     "prefix": {
       "helpText": "You must specify a prefix 4 characters or less as the first argument to set a custom prefix, or `reset` to reset the prefix to default if a custom prefix is already set.",
@@ -449,8 +438,7 @@
     },
     "remove": {
       "removing": "Removing...",
-      "success": "Successfully removed the following link(s):",
-      "internalError": "Unable to remove specified feeds due to internal error."
+      "success": "Successfully removed the following link(s):"
     },
     "split": {
       "messageSplittingOptions": "Message Splitting Options",
@@ -493,35 +481,49 @@
       "noArticles": "There are no articles in this feed to send."
     },
     "webhook": {
-      "existingFound": "An existing webhook was found ({{name}}). You may type `{remove}` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n",
+      "existingFound": "An existing webhook was found ({{webhookMention}}). You may type `{remove}` to disconnect the existing webhook, or continue and your new setting will overwrite the existing one.\n\n",
       "prompt": "Type the name of the webhook in this channel you wish to use (case sensitive), or type `exit` to cancel.\n\nTo use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters `--name=\"my new name here\"` or `--avatar=\"http://website.com/image.jpg\"`. Placeholders are supported.",
       "notFound": "No such webhook named \"{{name}}\" found for this channel. Try again, or type `exit` to cancel.",
       "tooLong": "Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.",
       "noPermission": "I must have Manage Webhooks permission in this channel in order to work.",
-      "noneAssigned": "There is no webhook assigned to this feed.",
       "removeSuccess": "Successfully removed webhook from the feed <{{link}}>.",
-      "connected": "I am now connected to {{botUser}}, and will send feed articles for <{{link}}>!"
+      "connected": "I am now connected to {{clientMention}}, and will send feed articles for <{{link}}>!"
     },
     "sub": {
-      "noFeeds": "There are no feeds to subscribe to.",
-      "noEligible": "There are either no feeds with subscriptions, or no eligible subscribed roles that can be self-added.",
-      "invalidRole": "That is not a valid role to add. To see the the full list of roles that can be added, type `{{prefix}}sub`.",
-      "selfSubscriptionAddition": "Self-Subscription Addition",
-      "listDescription": "Below is the list of feeds, their channels, and its eligible roles that you may add to yourself. Type the role name after **{{prefix}}sub** to add the role to yourself.\u200b\n\u200b\n",
-      "link": "Link",
-      "channel": "Channel",
-      "roles": "Roles",
-      "addSuccess": "You now have the role `{{name}}`, subscribed to:\n\n**<{{links}}>**",
-      "addFailed": "Error: Unable to add role."
+      "title": "Self-Subscription Addition",
+      "description": "You may be mentioned whenever a new article comes in for a particular feed by selecting an option below. ",
+      "optionAddRole": "I want to add a mentioned role to myself",
+      "optionAddRoleDescription": "You may add a role that is subscribed to a feed so that you'll be mentioned via role.",
+      "optionAddMe": "I want to be directly mentioned for a feed",
+      "optionAddMeDescription": "You may directly add yourself as a subscriber to a feed so that you'll be directly mentioned. **This is only possible if this feature is enabled for this server.**",
+      "optionSubscribedFeeds": "List my subscribed feeds",
+      "optionSubscribedFeedsDescription": "Show all the feeds that you are currently being mentioned in (whether they're role mentions or direct mentions)",
+      "subscribedFeedsList": "Below is the list of feeds that you are subscribed to.",
+      "noSubscribedFeedsList": "You are not being mentioned in any feeds.",
+      "noEligible": "There are either no feeds with subscribed roles, or no eligible subscribed roles that can be self-added.",
+      "invalidRole": "That is an invalid role. Try again, or type `exit` to cancel.",
+      "listInputRole": "Above is the list of feeds, their channels, and eligible roles that you may add to yourself. Type the role name to add the role to yourself, or type `exit` to cancel.",
+      "addSuccess": "You now have the role `{{name}}`, subscribed to:",
+      "directSubscribeExists": "Unable to directly subscribe to feed <{{link}}>. You are already subscribed to it.",
+      "directSubscribeSuccess": "You are now directly subscribed to the feed <{{link}}>.",
+      "alreadyHaveRole": "You already have this role. Try another role name, or type `exit` to cancel."
     },
     "unsub": {
-      "noEligible": "There are no eligible roles to be removed from you.",
-      "invalidRole": "That is not a valid role to remove. To see the the full list of roles that can be removed, type `{{prefix}}unsub`.",
-      "selfSubscriptionRemoval": "Self-Subscription Removal",
-      "listDescription": "Below is the list of feeds, their channels, and its eligible roles that you may remove yourself from. Type the role name after **{{prefix}}unsub** to remove a role from yourself.\u200b\n\u200b\n",
-      "otherRoles": "Other Roles",
-      "removeSuccess": "You no longer have the role `{{name}}`.",
-      "removeFailed": "Error: Unable to remove role."
+      "optionRemoveRole": "I want to remove a mentioned role from myself",
+      "optionRemoveRoleDescription": "Remove a role from yourself that is currently mentioned within a feed",
+      "optionRemoveMyself": "I want to remove a mention of myself from a feed",
+      "optionRemoveMyselfDescription": "Remove a direct mention of yourself within a feed",
+      "optionRemoveAll": "I want to remove all mentions of me from all feeds",
+      "optionRemoveAllDescription": "Remove all direct mentions and mentioned roles within feeds that include you",
+      "noEligibleRoles": "There are no eligible roles to be removed from you. Select a different option, or type `exit` to cancel.",
+      "noEligibleDirect": "You are not directly mentioned in any feeds. Select a different option, or type `exit` to cancel.",
+      "invalidRole": "That is not a valid role to remove. Try again, or type `exit` to cancel.",
+      "title": "Self-Subscription Removal",
+      "directRemoveList": "Below are all the feeds you are directly mentioned in.",
+      "listInputRole": "Above is the list of feeds, their channels, and eligible roles that you may remove from yourself. Type the role name to remove it, or type `exit` to cancel.",
+      "roleRemoveSuccess": "You no longer have the role {{role}}.",
+      "directRemoveSuccess": "You will now no longer be directly mentioned for the feed <{{link}}>.",
+      "removeAllSuccess": "You will now no longer be directly mentioned or mentioned through roles for any feed."
     },
     "utils": {
       "filters": {
@@ -545,7 +547,7 @@
         "removeFilterConfirm": "Confirm the filter word/phrase you would like to remove in the category `{{category}}` by typing one or multiple word/phrases separated by new lines (case sensitive).",
         "removeFilterInvalid": "That is not a valid filter to remove from `{{category}}`. Try again, or type `exit` to cancel.",
         "removeSuccess": "The following filter(s) have been successfully removed from the filter category",
-        "removeSuccessSubscriber": "Subscription updated for `{{name}}`. The following filter(s) have been successfully removed from the filter category",
+        "removeSuccessSubscriber": "Subscription updated for `{{name}}`.",
         "removeFailedNoExist": "The following filter(s) were unable to be deleted because they do not exist",
         "removeNone": "There are no filters to remove for <{{link}}>.",
         "listOfFilters": "List of Assigned Filters",

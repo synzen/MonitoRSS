@@ -1,4 +1,3 @@
-const channelTracker = require('../util/channelTracker.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
@@ -19,7 +18,6 @@ module.exports = async (message, command) => {
   }
 
   const records = []
-  channelTracker.add(message.channel.id)
   for (const feed of feeds) {
     const failRecord = await FailRecord.getBy('url', feed.url)
     if (!FailRecord || !failRecord.hasFailed()) {
@@ -28,7 +26,6 @@ module.exports = async (message, command) => {
     records.push(failRecord)
   }
   if (records.length === 0) {
-    channelTracker.remove(message.channel.id)
     return message.channel.send(translate('commands.refresh.noFailedFeeds'))
   }
   const log = createLogger(message.guild.shard.id)
@@ -68,6 +65,5 @@ module.exports = async (message, command) => {
   if (failedLinks) {
     reply += translate('commands.refresh.failed') + '\n```' + failedLinks + '```'
   }
-  channelTracker.remove(message.channel.id)
   await processing.edit(reply)
 }

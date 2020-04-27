@@ -1,22 +1,20 @@
 const Discord = require('discord.js')
-const FeedSelector = require('../structs/FeedSelector.js')
-const MenuUtils = require('../structs/MenuUtils.js')
 const FlattenedJSON = require('../structs/FlattenedJSON.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
-const Profile = require('../structs/db/Profile.js')
-const Feed = require('../structs/db/Feed.js')
+const { PromptNode } = require('discord.js-prompts')
+const commonPrompts = require('./prompts/common/index.js')
+const runWithFeedGuild = require('./prompts/runner/run.js')
 
 module.exports = async (message, command) => {
-  const profile = await Profile.get(message.guild.id)
+  const selectFeedNode = new PromptNode(commonPrompts.selectFeed.prompt)
+  const { selectedFeed: feed, profile } = await runWithFeedGuild(selectFeedNode, message)
   const guildLocale = profile ? profile.locale : undefined
-  const feeds = await Feed.getManyBy('guild', message.guild.id)
-  const feedSelector = new FeedSelector(message, undefined, { command: command }, feeds)
-  const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
-  if (!data) return
+  if (!feed) {
+    return
+  }
   const translate = Translator.createLocaleTranslator(guildLocale)
   const wait = await message.channel.send(translate('commands.dump.generatingDump'))
-  const feed = data.feed
   const url = feed.url
   const { articleList } = await FeedFetcher.fetchFeed(url)
   let textOutput = ''

@@ -59,6 +59,15 @@ class Translator {
   }
 
   /**
+   * Gets the locale from a profile and creates a translate func
+   * @param {import('./db/Profile.js')} profile
+   */
+  static createProfileTranslator (profile) {
+    const locale = profile ? profile.locale : undefined
+    return this.createLocaleTranslator(locale)
+  }
+
+  /**
    * Check if a locale exists
    * @param {string} locale
    * @returns {boolean}

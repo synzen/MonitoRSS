@@ -1,10 +1,10 @@
 const path = require('path')
 const fsPromises = require('fs').promises
 const Discord = require('discord.js')
+const { DiscordPromptRunner } = require('discord.js-prompts')
 const Profile = require('../structs/db/Profile.js')
 const Blacklist = require('../structs/db/Blacklist.js')
 const BlacklistCache = require('../structs/BlacklistCache.js')
-const channelTracker = require('../util/channelTracker.js')
 const Permissions = Discord.Permissions.FLAGS
 const getConfig = require('../config.js').get
 
@@ -84,7 +84,7 @@ class Command {
     } else if (author.id === client.user.id) {
       log.debug('Ignored message from self (bot)')
       return true
-    } else if (channelTracker.hasActiveMenus(channel.id)) {
+    } else if (DiscordPromptRunner.isActiveChannel(channel.id)) {
       log.debug('Ignored message because of active menu in channel')
       return true
     } else if (this.isBlacklistedID(guild.id)) {
@@ -317,9 +317,12 @@ class Command {
    */
   async run (message) {
     const channelID = message.channel.id
-    channelTracker.add(channelID)
-    await this.func(message, this.name)
-    channelTracker.remove(channelID)
+    DiscordPromptRunner.addActiveChannel(channelID)
+    try {
+      await this.func(message, this.name)
+    } finally {
+      DiscordPromptRunner.deleteActiveChannel(channelID)
+    }
   }
 }
 

@@ -4,9 +4,25 @@ const Translator = require('../../structs/Translator.js')
 jest.mock('../../config.js')
 
 describe('Unit::Translator', function () {
+  afterEach(function () {
+    jest.restoreAllMocks()
+  })
   describe('createLocaleTranslator', function () {
     it('returns a function', function () {
       expect(typeof Translator.createLocaleTranslator('eaa')).toEqual('function')
+    })
+  })
+  describe('createProfileTranslator', function () {
+    it('creates a locale translator correctly', function () {
+      const createLocaleTranslator = jest.spyOn(Translator, 'createLocaleTranslator')
+        .mockImplementation()
+      Translator.createProfileTranslator()
+      expect(createLocaleTranslator).toHaveBeenCalledWith(undefined)
+      createLocaleTranslator.mockReset()
+      Translator.createProfileTranslator({
+        locale: 'qwerty'
+      })
+      expect(createLocaleTranslator).toHaveBeenCalledWith('qwerty')
     })
   })
   describe('hasLocale', function () {

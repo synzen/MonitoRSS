@@ -109,6 +109,12 @@ class Feed extends FilterBase {
     this.formatTables = this.getField('formatTables')
 
     /**
+     * Allow direct subscribers through sub command
+     * @type {boolean}
+     */
+    this.directSubscribers = this.getField('directSubscribers')
+
+    /**
      * Disabled status. Either undefined if enabled, or
      * a string stating the reason why.
      * @type {string}
@@ -182,6 +188,7 @@ class Feed extends FilterBase {
       imgPreviews: this.imgPreviews,
       imgLinksExistence: this.imgLinksExistence,
       formatTables: this.formatTables,
+      directSubscribers: this.directSubscribers,
       disabled: this.disabled,
       webhook: this.webhook,
       split: this.split,

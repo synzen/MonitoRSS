@@ -1,8 +1,8 @@
-const FeedSelector = require('../structs/FeedSelector.js')
-const MenuUtils = require('../structs/MenuUtils.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
-const Feed = require('../structs/db/Feed.js')
+const { PromptNode } = require('discord.js-prompts')
+const commonPrompts = require('./prompts/common/index.js')
+const runWithFeedsProfile = require('./prompts/runner/run.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
@@ -55,11 +55,11 @@ module.exports = async (message, command) => {
       return message.channel.send(translate('commands.compare.onlyTitle'))
     }
   }
-  const feeds = await Feed.getManyBy('guild', message.guild.id)
-  const feedSelector = new FeedSelector(message, undefined, { command }, feeds)
-  const data = await new MenuUtils.MenuSeries(message, [feedSelector], { locale: guildLocale }).start()
-  if (!data) return
-  const feed = data.feed
+  const selectFeedNode = new PromptNode(commonPrompts.selectFeed.prompt)
+  const { selectedFeed: feed } = await runWithFeedsProfile(selectFeedNode, message)
+  if (!feed) {
+    return
+  }
   if (list) {
     const nvalues = feed.ncomparisons.map(v => `-${v}`)
     const pvalues = feed.pcomparisons.map(v => `+${v}`)

@@ -1,4 +1,4 @@
-const MenuUtils = require('../structs/MenuUtils.js')
+const Discord = require('discord.js')
 const moment = require('moment')
 const ScheduleStats = require('../structs/db/ScheduleStats.js')
 
@@ -23,7 +23,7 @@ module.exports = async (message) => {
     lastUpdated: new Date(scheduleStats.lastUpdated)
   }
 
-  const visual = new MenuUtils.Menu(message, null, { numbered: false, maxPerPage: 9 })
+  const visual = new Discord.MessageEmbed()
     .setAuthor('Basic Performance Stats')
     .setDescription(`
 **Unique Feeds** - Number of unique feed links (duplicate links are not counted).
@@ -40,9 +40,9 @@ module.exports = async (message) => {
   const successRate = `${((1 - aggregated.cycleFails / aggregated.cycleURLs) * 100).toFixed(2)}%`
 
   visual
-    .addOption('Servers', guilds, true)
-    .addOption('Shard Count', bot.shard.count, true)
-    .addOption('\u200b', '\u200b', true)
+    .addField('Servers', guilds, true)
+    .addField('Shard Count', bot.shard.count, true)
+    .addField('\u200b', '\u200b', true)
 
   let diff = moment.duration(moment().diff(moment(aggregated.lastUpdated)))
   if (diff.asMinutes() < 1) {
@@ -52,13 +52,13 @@ module.exports = async (message) => {
   }
 
   visual
-    .addOption('Unique Feeds', cycleURLs, true)
-    .addOption('Total Feeds', feeds, true)
-    .addOption('Cycle Duration', cycleTime, true)
-    .addOption('Cycle Failures', cycleFails, true)
-    .addOption('Success Rate', successRate, true)
-    .addOption('\u200b', '\u200b', true)
+    .addField('Unique Feeds', cycleURLs, true)
+    .addField('Total Feeds', feeds, true)
+    .addField('Cycle Duration', cycleTime, true)
+    .addField('Cycle Failures', cycleFails, true)
+    .addField('Success Rate', successRate, true)
+    .addField('\u200b', '\u200b', true)
     .setFooter(diff)
 
-  await visual.send()
+  await message.channel.send('', visual)
 }

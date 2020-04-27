@@ -28,9 +28,6 @@
       "description": "Abre um menu para customizar a texto do feed."
     },
     "embed": {
-      "args": {
-        "fields": "Customizar campos para a embed"
-      },
       "action": "Customizar mensagem da embed",
       "description": "Abre um menu para customizar a mensagem da embed. Isso irá substituir a embed padrão que o Discord utiliza quando um link é postado."
     },
@@ -53,15 +50,9 @@
       "description": "Abre um menu para enviar uma mensagem de teste para um artigo aleatório em um feed, juntamente com as propriedades e espaços reservados disponíveis para várias personalizações. Você pode adicionar `simple` como um parâmetro para excluir os detalhes do teste."
     },
     "sub": {
-      "args": {
-        "<role name/mention>": "Adicione diretamente o cargo em vez de adicionar pelo menu."
-      },
       "description": "Abre um menu para adicionar um cargo com uma menção filtrada ao usuário. Usável por qualquer um no servidor, ativável/desativável pela permissão \"Gerenciar Cargos\". Os cargo precisam estar abaixo do cargo do bot na configuração de cargos."
     },
     "unsub": {
-      "args": {
-        "<role name/mention>": "Remova diretamente o cargo em vez de remover pelo menu."
-      },
       "description": "Abre um menu semelhante ao `sub`, mas será para remover o cargo. Qualquer cargo abaixo do cargo do bot será removível."
     },
     "refresh": {
@@ -81,10 +72,7 @@
     },
     "clone": {
       "action": "Clonar configurações do feed.",
-      "description": "Clona as configurações de um feed para outro.",
-      "args": {
-        "<property>": "Use o comando sem argumentos para mais informações."
-      }
+      "description": "Clona as configurações de um feed para outro."
     },
     "backup": {
       "description": "Envia o perfil do servidor como um anexo JSON para backups pessoais"
@@ -164,7 +152,7 @@
     "clone": {
       "copyFrom": "Selecione a fonte para copiar de.",
       "copyTo": "Selecione o destino pra copiar para.",
-      "noProperties": "Você deve adicionar pelo menos uma propriedade para clonar como um argumento. As propriedades disponíveis para clonagem são `{{properties}}`. Para clonar todas estas propriedades, Você pode simplesmente utilizar `all`.\n\nPor exemplo, para clonar a mensagem/embed de um feed e a filtros, digite `{{prefix}}clone message embed`.",
+      "inputProperties": "Entrar propriedades para clonar, separadas por vírgulas. As propriedades disponíveis para clonagem são `{{properties}}`. Para clonar todas estas propriedades, Você pode simplesmente utilizar `all`.\n\nPor exemplo, para clonar a mensagem de um feed e a filtros, digite `filters,message`.",
       "invalidProperties": "Propriedades inválidas encontrada: `{{invalid}}`\n\nPropriedades disponíveis para clonagem são `{{properties}}`.",
       "confirm": "As seguintes configurações para o feed <{{link}}>\n\n`{{cloning}}`\n\nestão prestes a ser clonadas nos seguintes feeds:\n```{{destinations}}```\nObserve que se uma propriedade não existir no feed de origem, a mesma propriedade no(s) feed(s) de destino será **deletada**.Para confirmar isso, digite `yes`. Caso contrário, digite `exit` para cancelar.",
       "confirmError": "Você precisa confirmar digitando `yes`, ou cancelar digitando `exit`. tente novamente.",
@@ -196,25 +184,20 @@
       "generatedDump": "Dump foi gerado, tentando anexar arquivo, veja abaixo."
     },
     "embed": {
-      "defaultEmbed": "Embed Padrão",
       "numberedEmbed": "Embed #{{number}}",
       "embedSelection": "Seleção de embed",
       "embedSelectionDescription": "As propriedades de cada embed são mostradas abaixo. Selecione uma das embeds digitando o número ao lado, ou digite `exit` para cancelar.\n\u200b",
       "embedSelectionOptionAdd": "adicionar uma nova embed",
       "embedSelectionOptionAddDescription": "No máximo 10 embeds podem ser adicionadas.\n\u200b",
-      "embedSelectionOptionRemoveAll": "Remover todas as embeds",
       "currentProperties": "Propriedades atuais",
       "currentPropertiesList": "As propriedades atuais incorporadas para {{link}} são: \n{{list}}```\n",
       "availableProperties": "Propriedades disponíveis",
       "availablePropertiesList": "A lista de propriedades embeds que podem ser definidas são:\n{{list}}\nDigite a propriedade embed (por exemplo, `color` ou `message`) que você deseja definir/resetar, ou várias propriedades por separação por vírgulas (por exemplo, `color, message`). Digite `reset` para remover todas as propriedades ou digite `exit` para cancelar.",
       "invalidColorNumber": "A cor deve ser um **número**. Veja <https://www.shodor.org/stella2java/rgbint.html> Tente novamente, ou digite `exit` para cancelar.",
       "invalidColorRange": "A cor precisa ser um numero entre 0 e 16777215. Tente novamente, ou digite `exit` para cancelar.",
-      "invalidURL": "URLs devem estar vinculadas a imagens reais ou ter um campo `{imageX}`, Tente novamente ou digite `exit` para cancelar.",
       "invalidProperties": "As seguintes propriedades {{invalids}} são inválidas. Tente novamente, ou digite `exit` para cancelar.",
-      "noPropertiesSelected": "Nenhuma propriedade válida selecionada. Tente novamente, ou digite `exit` para cancelar.",
       "removedAllEmbeds": "Todas as embeds foram removidas.",
       "removedEmbed": "A embed foi desativada e todas as propriedades foram removidas para <{{link}}>.",
-      "resetNothing": "🇽 **{{propName}}** não tem nada para resetar\n",
       "resetSuccess": "☑ **{{propName}}** foi resetada\n",
       "updatedSuccess": "☑ **{{propName}}** Atualizado para \n```\n{{userSetting}}\n```\n",
       "updatedInfo": "Configurações atualizadas para <{{link}}>:\n\n{{resetList}}{{updateList}}\nVocê pode utilizar `{{prefix}}test` ou `{{prefix}}test simple` para ver seu novo formato de embed.",
@@ -243,14 +226,13 @@
       "authorIconURL": "Icone do Autor URL",
       "authorIconURLDescription": "O ícone à esquerda do Nome do Autor\nPRECISA ser um link para uma imagem, Se o nome do autor não for especificado, o icone do autor será escondido",
       "settingProperty": "Você está personalizando a **{{property}}**. Digite sua entrada agora. Para redefinir a propriedade, digite `reset`.",
-      "settingPropertyTimezone": "Agora você está personalizando o **timezone** Digite sua entrada agora.\n\nPara definir o registro de data e hora para o momento em que o artigo é enviado para Discord, digite `now`.\nPara definir o registro de data e hora para o momento em que o artigo foi publicado (se disponível no feed), digite` article`.\nPara uma data e hora personalizada, digite a representação de texto de uma data personalizada (consulte <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nPara redefinir a propriedade, digite `reset`.",
-      "settingPropertyTimezoneError": "Essa não é uma configuração válida. Deve ser `now`, `article` ou uma representação de texto válida de uma data. Tente novamente.",
+      "settingPropertyTimestamp": "Agora você está personalizando o **timestamp** Digite sua entrada agora.\n\nPara definir o registro de data e hora para o momento em que o artigo é enviado para Discord, digite `now`.\nPara definir o registro de data e hora para o momento em que o artigo foi publicado (se disponível no feed), digite` article`.\nPara uma data e hora personalizada, digite a representação de texto de uma data personalizada (consulte <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nPara redefinir a propriedade, digite `reset`.",
+      "settingPropertyTimestampError": "Essa não é uma configuração válida. Deve ser `now`, `article` ou uma representação de texto válida de uma data. Tente novamente.",
       "inline": "Na linha",
       "regular": "Regular",
       "blankField": "Campo em branco",
       "embedFields": "embedar campos",
-      "embedFieldsMaximum": "Você atingiu o número máximo de campos que você pode adicionar (10).",
-      "embedFieldsRemoveNone": "Não há campos embedados a serem removidos para este feed.",
+      "embedFieldsRemoveNone": "Não há campos embedados a serem removidos para este feed. Tente novamente, ou digite `exit` para cancelar.",
       "embedFieldsRemoved": "O campo(s) numerado {{numbers}} foram removidos da embed para o feed <{{link}}>",
       "embedFieldsDescription": "\u200b\nSelecione se deseja adicionar ou remover um campo da embed deste feed. Para um exemplo de como um campo se parece, consulte https://i.imgur.com/WSHwmyB.png. Digite `exit` para cancelar.\n\u200b",
       "embedFieldsOptionRemove": "Remover um campo",
@@ -268,10 +250,9 @@
       "embedFieldsAddedBlank": "Um campo em branco foi adicionado a embed do feed <{{link}}>.",
       "embedFieldsAddedBlankInline": "Um campo em branco inline foi adicionado ao embed do feed <{{link}}>",
       "embedFieldsSettingPrompt": "Defina suas configurações de campo agora. A **primeira linha será o título do campo** e **todas as novas linhas após a primeira serão a descrição do campo**. Se não houver conteúdo após a primeira linha, será uma descrição vazia. Digite `exit` para cancelar.",
-      "embedFieldsSettingNoTitle": "Nenhum título válido encontrado. Tente novamente, ou digite `exit` para cancelar.",
-      "embedFieldsSettingTitleLong": "Os títulos não podem exceder 256 caracteres. Tente novamente, ou digite `exit` para cancelar.",
+      "embedFieldsSettingTitleLong": "Títulos não podem exceder 256 caracteres. Tente novamente, ou digite `exit` para cancelar.",
       "embedFieldsSettingValueLong": "Valores de campo não podem exceder 1024 caracteres. Tente novamente, ou digite `exit` para cancelar.",
-      "embedFieldsAdded": "Um novo campo {{type}} foi adicionado á embed com os seguintes detalhes: \n\n**Título**\n```\n{{title}}\n```\n**Valor**\n```\n{{value}}\n```\npara o feed {{link}}."
+      "embedFieldsAdded": "Um novo campo {{type}} foi adicionado á embed com os seguintes detalhes: \n\n**Título**\n```\n{{name}}\n```\n**Valor**\n```\n{{value}}\n```\npara o feed {{link}}."
     },
     "filters": {
       "selectFeedDescription": "**Feed Título:** {{title}}\n**Feed Link:** {{link}}\n\nSeleciona uma opção digitando o numero mostrado, ou digite *exit* para cancelar. Somente as mensagens que contiverem qualquer uma das palavras definidas nesses filtros de feed serão enviadas para Discord.\u200b\n\u200b\n",
@@ -290,7 +271,6 @@
       "noFilters": "Não há filtros atribuídos a {{link}}.",
       "listFilters": "Lista de filtros atribuídos",
       "listFiltersDescription": "**Feed Título:** {{title}}\n**Feed Link:** {{link}}\n\nAbaixo estão as categorias de filtro com suas palavras/frases em cada um.\u200b\n\u200b\n",
-      "connectionFailureLimit": "Limite de falha de conexão atingida.",
       "noArticlesPassed": "Nenhum artigo conseguiu passar nos filtros deste feed."
     },
     "rsshelp": {
@@ -334,41 +314,19 @@
       "user": "usuário",
       "noFeeds": "Não é possível adicionar personalizações de menção sem nenhum feed ativo.",
       "subscriptionsList": "Lista de inscrição",
-      "description": "\n**Canal atual:** #{{channel}}\n\nAdicionando a inscrição para um usuário ou cargo irá automaticamente adicionar a menção no campo `{subscribers}`. Se a menção for em um cargo, então o cargo irá ser adicionado na lista de cargos elegíveis para a alternancia de menção (mencionável para não mencionável ou vice-versa) e também para os comandos {{prefix}}sub/unsub.\n\nSelecione uma opção digitando o numero, ou digite `exit` para cancelar.\u200b\n\u200b\n",
-      "subscriptionOptions": "Opções de menção",
-      "optionSubscriberFeed": "Adicionar/Remover um cargo ou usuário mencionável a um feed",
-      "optionSubscriberFeedDescription": "Ativa as menções para um cargo/usuário para todos os arquivos enviados deste feed.\n*Usando inscrição global irá remover inscrições filtradas se ativadas para esse cargo/usuário.*",
-      "optionFilteredSubscriberFeed": "Adicionar/Remover cargo ou inscrever um usuário filtrado a um feed",
-      "optionFilteredSubscriberFeedDescription": "Criar filtros específicos de um cargo/usuário em que apenas artigos selecionados mencionarão um cargo/usuário.\n*O uso de menções filtradas removerá as menções globais, se estiverem ativadas para esse cargo/usuário*",
-      "optionRemoveSubscriptions": "Remover todas as menções para um Cargo ou Usuário",
-      "optionRemoveSubscriptionsDescription": "Remover todas as menções para um Cargo ou Usuário.",
-      "optionListSubscriptions": "Listar todas as menções",
-      "optionListSubscriptionsDescription": "Listar todas as menções",
-      "promptUserOrRole": "Digite um nome de um cargo com distinção entre maiúsculas e minúsculas, mencionar o Cargo/Usuário ou ID do usuário. O cargo `@everyone` não pode ser usado.",
-      "globalSubscriptionsTitle": "Customizar menções - Adicionar/Remover menção global",
-      "globalSubscriptionsOptionAdd": "Adicionar uma inscrição global",
-      "globalSubscriptionsOptionAddDescription": "O Cargo/Usuário será mencionado toda vez que um artigo for postado deste feed.",
-      "globalSubscriptionsOptionRemove": "Remove uma inscrição global",
-      "globalSubscriptionsOptionRemoveDescription": "Remove a inscrição do cargo/usuário deste feed.",
-      "filteredSubscriptionsTitle": "Personalizar inscrição - Adicionar/Remover inscrição filtrada",
-      "filteredSubscriptionsOptionAdd": "Adicionar filtro(s) a menção filtrada",
-      "filteredSubscriptionsOptionAddDescription": "Adicione uma inscrição filtrada para que este cargo/usuário seja mencionado toda vez que um artigo deste feed passar por seus testes de filtro.",
-      "filteredSubscriptionsOptionRemove": "Remover filtro(s) para uma inscrição filtrada",
-      "filteredSubscriptionsOptionRemoveDescription": "Remover uma palavra/frase da menção deste cargo/usuário a um feed",
-      "listSubscriptionsDescription": "\nAbaixo estão os títulos de feed com todas os cargos e os usuários inscritos nesse feed. cada cargo é categorizado como uma menção global ou filtrada.\u200b\n\u200b\n",
-      "listSubscriptionsNone": "Não há inscrições para nenhum feed.",
-      "removeSubscriptionsNone": "Este {{type}} não tem inscrições para remover",
-      "removeSubscriptionsSuccess": "Todas as inscrições foram excluídas com sucesso para {{type}} `{{name}}`.",
-      "addSubscriberGlobalExists": "Não é possível adicionar a inscrição global. {{type}} `{{name}}` já está inscrito neste feed.",
-      "addSubscriberGlobalSuccess": "Inscrição global {{type}} `{{name}}` adicionada com sucesso ao feed <{{link}}>.",
-      "removeGlobalSubscriberExists": "Esta inscrição não está globalmente inscrito no feed <{{link}}>.",
-      "removeGlobalSubscriberSuccess": "Removeu com sucesso a inscrição global de {{type}} `{{name}}` do feed <{{link}}>",
+      "description": "Adicionando a inscrição para um usuário ou cargo irá automaticamente adicionar a menção no campo `{subscribers}`. Se a menção for em um cargo, então o cargo irá ser adicionado na lista de cargos elegíveis para a alternancia de menção (mencionável para não mencionável ou vice-versa) e também para os comandos {{prefix}}sub/unsub.\n\nSelecione uma opção digitando o numero, ou digite `exit` para cancelar.\u200b\n\u200b\n",
+      "subscriberOptions": "Opções de menção",
+      "optionAddSubscriberDescription": "Menções para um cargo/usuário para todos os arquivos enviados deste feed.",
+      "optionRemoveAllSubscribers": "Remover todas as menções para um Cargo ou Usuário",
+      "optionListSubscribers": "Listar todas as menções",
+      "optionListSubscribersDescription": "Listar todas as menções",
+      "addSubscriberExists": "Não é possível adicionar a inscrição. {{type}} {{mention}} já está inscrito neste feed.",
+      "addSubscriberSuccess": "Inscrição {{type}} {{mention}} adicionada com sucesso ao feed <{{link}}>.",
       "removeAnySubscriberNone": "Não há inscritos para remover no feed <{{link}}>.",
       "invalidRoleOrUser": "Esse não é um cargo válido ou usuário válido. Tente novamente, ou digite `exit` para cancelar.",
-      "multipleRoles": "Existem vários cargos com esse nome. Mencione o cargo, digite outro cargo/usuario, ou digite `exit` para cancelar.",
-      "selectedRoleDescription": "**selecionado**: {{name}}\n**Feed Título:** {{feedTitle}}\n**Feed Link:** {{feedLink}}\n\nSelecione uma opção digitando o numero, ou digite `exit` para cancelar.\u200b\n\u200b\n",
-      "globalSubscribers": "**Inscrições Globais:**\n",
-      "filteredSubscribers": "**Inscrições filtrada:**\n"
+      "filters": {
+        "optionAddFilter": "Adicionar filtro(s) a menção"
+      }
     },
     "text": {
       "prompt": "A texto atual para {{link}} é: \n{{currentMsg}}\nDigite sua nova texto personalizada agora, digite `reset` para usar a texto padrão, ou digite` exit` para cancelar. \n\nLembre-se que você pode usar campos como `{title}`, `{description}`, `{link}`, e etc. `{empty}` irá criar uma mensagem vazia, but apenas se uma embed for usada. formato regular como **negrito** e etc. também está disponível. para encontrar outros campos, digite `exit` e então `{{prefix}}test`.\n\n",
@@ -409,9 +367,6 @@
       "tableFormatting": "Formatação de Tabelas",
       "tableFormattingToggle": "Alternar a formatação da tabela para um feed",
       "tableFormattingDescription": "Se a formatação da tabela estiver ativada, eles devem ser colocados em blocos de código para garantir um espaçamento uniforme.",
-      "roleMentioning": "Alternar Menção de Cargo",
-      "roleMentioningToggle": "Alternar menção de cargos para inscrições",
-      "roleMentioningDescription": "Ativa a menção de cargos para qualquer cargo inscrito em um feed quando os artigos estão prestes a ser enviados e, em seguida, desativa imediatamente o mencionamento após o envio do artigo.\n\n**AVISO**: Apenas aplica se os cargos estiverem abaixo do cargo do bot, e o bot tiver permissão para **gerenciar cargos**. Caso contrário, __ISSO NÃO FUNCIONARÁ__ ",
       "settingChanged": "{{propName}} foi {{finalSetting}} para <{{link}}>{{isDefault}}.",
       "defaultSetting": "configuração padrão"
     },
@@ -432,8 +387,7 @@
     },
     "remove": {
       "removing": "Removendo...",
-      "success": "Removeu com sucesso o seguinte link(s):",
-      "internalError": "Não é possível remover feeds especificados devido a um erro interno."
+      "success": "Removeu com sucesso o seguinte link(s):"
     },
     "split": {
       "messageSplittingOptions": "Opções de divisão de mensagens",
@@ -476,35 +430,22 @@
       "noArticles": "Não há artigos neste feed para enviar."
     },
     "webhook": {
-      "existingFound": "Um webhook existente foi encontrado ({{name}}). Você pode digitar `{remove}` para desconectar o webhook existente ou continuar, e sua nova configuração sobrescreverá a existente.\n\n",
+      "existingFound": "Um webhook existente foi encontrado ({{webhookMention}}). Você pode digitar `{remove}` para desconectar o webhook existente ou continuar, e sua nova configuração sobrescreverá a existente.\n\n",
       "prompt": "Digite o nome do webhook neste canal que você deseja usar (com distinção entre maiúsculas e minúsculas) ou digite `exit` para cancelar.\n\nPara usar um nome ou URL de avatar diferente do webhook quando os artigos são enviados para este feed específico, adicione parâmetros `--name=\"my new name here\"` or `--avatar=\"http://website.com/image.jpg\"`. Espaços reservados são suportados.",
       "notFound": "Nenhum webhook chamado \"{{name}}\" foi encontrado para este canal. Tente novamente ou digite `exit` para cancelar.",
       "tooLong": "O nome do Webhook deve ter entre 2 e 32 caracteres. Tente novamente ou digite `exit` para cancelar.",
       "noPermission": "Eu preciso ter a permissão Gerenciar Webhooks neste canal para funcionar.",
-      "noneAssigned": "Não há nenhum webhook atribuído a este feed.",
       "removeSuccess": "Webhook removido com sucesso do feed <{{link}}>.",
-      "connected": "Agora estou conectado a {{botUser}} e vou enviar artigos de feed para <{{link}}>!"
+      "connected": "Agora estou conectado a {{clientMention}} e vou enviar artigos de feed para <{{link}}>!"
     },
     "sub": {
-      "noFeeds": "Não há feeds para se inscrever.",
-      "noEligible": "Não há feeds com inscrições, ou nenhum cargo elegível que pode ser adicionado em você mesmo.",
+      "title": "cargo auto-adicionável",
       "invalidRole": "Esse não é um cargo válida para adicionar. Para ver a lista completa de cargos que podem ser adicionadas, digite `{{prefix}}sub`.",
-      "selfSubscriptionAddition": "cargo auto-adicionável",
-      "listDescription": "Abaixo está a lista de feeds, seus canais e seus cargos qualificados que você pode adicionar a si mesmo. Digite o nome do cargo depois do **{{prefix}}sub** para adicionar o cargo a você mesmo.\u200b\n\u200b\n",
-      "link": "Link",
-      "channel": "Canal",
-      "roles": "Cargos",
-      "addSuccess": "Agora você tem o cargo `{{name}}`, inscrito em:\n\n**<{{links}}>**",
-      "addFailed": "Erro: não é possível adicionar o cargo."
+      "addSuccess": "Agora você tem o cargo `{{name}}`, inscrito em:"
     },
     "unsub": {
-      "noEligible": "Não há cargos qualificados para serem removidos de você.",
-      "invalidRole": "Essa não é um cargo válida para remover. Para ver a lista completa de cargos que podem ser removidos, digite `{{prefix}}unsub`.",
-      "selfSubscriptionRemoval": "Remoção de auto-inscrição",
-      "listDescription": "Abaixo está a lista de feeds, seus canais e suas funções elegíveis das quais você pode se remover. Digite o nome do cargo depois de **{{prefixo}}unsub** para remover um cargo de você mesmo.\u200b\n\u200b\n",
-      "otherRoles": "Outros cargos",
-      "removeSuccess": "Você não tem mais o cargo `{{name}}`.",
-      "removeFailed": "Erro: não é possível remover o cargo."
+      "title": "Remoção de auto-inscrição",
+      "roleRemoveSuccess": "Você não tem mais o cargo {{role}}."
     },
     "utils": {
       "filters": {
@@ -528,7 +469,7 @@
         "removeFilterConfirm": "Confirme a palavra/frase de filtro que você gostaria de remover na categoria `{{category}}` digitando uma ou várias palavras/frases separadas por novas linhas (diferenciando maiúsculas de minúsculas).",
         "removeFilterInvalid": "Esse não é um filtro válido para remover de `{{category}}`. Tente novamente ou digite `exit` para cancelar.",
         "removeSuccess": "Os seguintes filtros foram removidos com sucesso da categoria de filtro",
-        "removeSuccessSubscriber": "as seguintes inscrições foram atualizada para o `{{name}}`. Os seguintes filtros foram removidos com sucesso da categoria de filtro",
+        "removeSuccessSubscriber": "as seguintes inscrições foram atualizada para o `{{name}}`.",
         "removeFailedNoExist": "Os seguintes filtros não puderam ser excluídos porque não existem",
         "removeNone": "Não há filtros para remover de <{{link}}>",
         "listOfFilters": "Lista de filtros atribuídos",

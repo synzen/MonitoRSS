@@ -1,8 +1,8 @@
 # Discord.RSS
 
-This is the core repository of Discord.RSS. For users who want to clone this repository for personal use, see https://github.com/synzen/Discord.RSS-Clone.
+This is the core repository of the Discord.RSS bot for development and programmatic use. For the web interface development and programmatic use, see https://github.com/synzen/Discord.RSS-Web.
 
-For the web interface, see https://github.com/synzen/Discord.RSS-Web.
+For users who want to clone this repository for personal use, see https://github.com/synzen/Discord.RSS-Clone.
 
 ***
 
@@ -26,7 +26,7 @@ https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot&p
 
 ### Quick Start
 
-Please note that this is for dev branch. For a stable experience, switch to master branch instead.
+Please note that this is for dev (development) branch. For a stable experience, switch to master branch instead.
 
 ```
 npm install synzen/discord.rss#dev
