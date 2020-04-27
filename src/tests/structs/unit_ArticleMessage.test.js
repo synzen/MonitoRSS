@@ -1,9 +1,9 @@
 process.env.TEST_ENV = true
 const ArticleMessage = require('../../structs/ArticleMessage.js')
 const Article = require('../../structs/Article.js')
+
 jest.mock('discord.js')
 jest.mock('../../structs/Article.js')
-jest.mock('../../util/storage.js')
 
 const Bot = () => ({
   shard: {
