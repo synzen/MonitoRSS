@@ -1,5 +1,4 @@
 const { MessageVisual } = require('discord.js-prompts')
-const ThemedEmbed = require('../common/utils/ThemedEmbed')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 

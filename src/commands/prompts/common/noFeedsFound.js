@@ -1,4 +1,3 @@
-const ThemedEmbed = require('./utils/ThemedEmbed.js')
 const LocalizedPrompt = require('./utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
