@@ -23,6 +23,7 @@ module.exports = async (uri, userOptions) => {
     useFindAndModify: false,
     useUnifiedTopology: true,
     useNewUrlParser: true,
+    socketTimeoutMS: 90000,
     ...userOptions,
     ...connectionSettings,
     ...buffers
