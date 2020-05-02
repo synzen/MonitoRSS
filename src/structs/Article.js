@@ -578,6 +578,7 @@ module.exports = class Article {
       title: this.fullTitle
     }
     let passed = false
+    let negated = false
     const filterResults = new FilterResults()
     if (Object.keys(filters).length === 0) {
       passed = true
@@ -601,12 +602,17 @@ module.exports = class Article {
           // Array
           for (const word of userFilters) {
             const filter = new Filter(word)
-            passed = passed || filter.passes(reference)
+            const filterPassed = filter.passes(reference)
             if (filter.inverted) {
               invertedMatches.push(word)
+              if (!filterPassed) {
+                negated = true
+              }
             } else {
               matches.push(word)
             }
+            // If a inverted filter does not pass, always block regardless of any other filter
+            passed = negated ? false : passed || filterPassed
           }
         } else {
           // String
