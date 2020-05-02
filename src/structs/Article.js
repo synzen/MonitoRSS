@@ -523,7 +523,7 @@ module.exports = class Article {
   createTestText () {
     const filterResults = this.testFilters(this.source.filters)
     let testDetails = ''
-    const footer = '\nBelow is the configured message to be sent for this feed:\n\n--'
+    const footer = `\nBelow is the configured message to be sent for this feed in the channel <#${this.source.channel}>:\n\n--`
     testDetails += '```Markdown\n# BEGIN TEST DETAILS #``````Markdown'
 
     if (this.title) {

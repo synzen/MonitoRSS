@@ -64,6 +64,7 @@ module.exports = async (message, command, role) => {
     log.info(`Sending filtered article for ${feed.url}`)
     const feedDatas = await FeedData.getManyBy('guild', message.guild.id)
     article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
+    article._feed.channel = message.channel.id
 
     const articleMessage = new ArticleMessage(message.client, article, true)
     await articleMessage.send()

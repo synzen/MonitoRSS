@@ -29,7 +29,7 @@ module.exports = async (message, command) => {
     return message.channel.send(translate('commands.test.noArticles'))
   }
   article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
-
+  article._feed.channel = message.channel.id
   if (!simple) {
     const parsedArticle = new Article(article, article._feed, profile || {})
     const testText = parsedArticle.createTestText()
