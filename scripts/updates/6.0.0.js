@@ -224,7 +224,12 @@ function formatRejections (results, dataList) {
   return errors
 }
 
-async function getProfiles (databaseless, uri) {
+/**
+ * @param {boolean} databaseless
+ * @param {string} uri
+ * @param {import('mongoose').Connection} connection
+ */
+async function getProfiles (databaseless, uri, connection) {
   if (databaseless) {
     const names = fs.readdirSync(uri)
     return names.map(n => {
@@ -233,44 +238,57 @@ async function getProfiles (databaseless, uri) {
       return json
     })
   } else {
-    return mongoose.connection.collection('guilds').find({}).toArray()
+    return connection.collection('guilds').find({}).toArray()
   }
 }
 
-async function startProfiles (databaseless, uri) {
+/**
+ * @param {boolean} databaseless
+ * @param {string} uri
+ * @param {import('mongoose').Connection} connection
+ */
+async function startProfiles (databaseless, uri, connection) {
   console.log('Running profile migration')
-  const guildRssList = await getProfiles(databaseless, uri)
+  const guildRssList = await getProfiles(databaseless, uri, connection)
   if (guildRssList.length === 0) {
     console.log('No guilds found')
-    return startFailRecords(databaseless)
+    return startFailRecords(databaseless, connection)
   }
   const promises = guildRssList.map(guildRss => updateProfiles(guildRss))
   const results = await Promise.allSettled(promises)
   const rejects = formatRejections(results, guildRssList)
   console.log(`Completed ${results.length} profiles`)
-  return rejects.concat(await startFailRecords(databaseless))
+  return rejects.concat(await startFailRecords(databaseless, connection))
 }
 
-async function startFailRecords (databaseless) {
+/**
+ * @param {boolean} databaseless
+ * @param {import('mongoose').Connection} connection
+ */
+async function startFailRecords (databaseless, connection) {
   if (databaseless) {
     console.log('Skipping fail records migration due to databaseless')
     return []
   }
   console.log('Running fail records migration')
-  const failedLinks = await mongoose.connection.collection('failed_links').find({}).toArray()
+  const failedLinks = await connection.collection('failed_links').find({}).toArray()
   if (failedLinks.length === 0) {
     console.log('No failed links found')
-    return startVIPs()
+    return startVIPs(connection)
   }
   const promises = failedLinks.map(failedLink => updateFailRecords(failedLink))
   const results = await Promise.allSettled(promises)
   const rejects = formatRejections(results, failedLinks)
   console.log(`Completed ${results.length} fail records`)
-  return rejects.concat(await startVIPs())
+  return rejects.concat(await startVIPs(connection))
 }
 
-async function startVIPs () {
-  const vips = await mongoose.connection.collection('vips').find({}).toArray()
+/**
+ *
+ * @param {import('mongoose').Connection} connection
+ */
+async function startVIPs (connection) {
+  const vips = await connection.collection('vips').find({}).toArray()
   if (vips.length === 0) {
     return []
   }

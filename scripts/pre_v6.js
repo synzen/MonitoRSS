@@ -1,6 +1,7 @@
 const fs = require('fs')
 const configuration = require('../src/config.js')
 const mongoose = require('mongoose')
+const init = require('../src/util/initialization.js')
 const v6 = require('./updates/6.0.0.js')
 
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']
@@ -18,14 +19,17 @@ function readFileData (config = {}) {
   return buffers
 }
 
-async function dumpCollections () {
+/**
+ * @param {import('mongoose').Connection} connection
+ */
+async function dumpCollections (connection) {
   const toCheck = ['profiles', 'feeds', 'subscribers', 'filtered_formats', 'fail_records', 'supporters']
-  const collections = (await mongoose.connection.db
+  const collections = (await connection.db
     .listCollections().toArray()).map(c => c.name)
   for (const name of toCheck) {
     if (collections.includes(name)) {
       console.log(`Dropping ${name} collection`)
-      await mongoose.connection.collection(name).drop()
+      await connection.collection(name).drop()
     }
   }
 }
@@ -40,15 +44,16 @@ async function run (config) {
   configuration.set(config)
   if (uri.startsWith('mongo')) {
     const parsedOptions = readFileData(options)
-    await mongoose.connect(uri, {
+    const connection = await mongoose.createConnection(uri, {
       useCreateIndex: true,
       useNewUrlParser: true,
       useUnifiedTopology: true,
       ...parsedOptions
     })
-    await dumpCollections()
-    const failures = await v6.run(false, uri)
-    await mongoose.connection.close()
+    await init.setupModels(connection)
+    await dumpCollections(connection)
+    const failures = await v6.run(false, uri, connection)
+    await connection.close()
     return failures
   } else {
     return v6.run(true, uri)
