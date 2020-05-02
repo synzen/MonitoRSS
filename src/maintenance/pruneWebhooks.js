@@ -1,3 +1,4 @@
+const Discord = require('discord.js')
 const Feed = require('../structs/db/Feed.js')
 const Supporter = require('../structs/db/Supporter.js')
 const createLogger = require('../util/logger/create.js')
@@ -29,13 +30,22 @@ async function pruneWebhooks (bot) {
       continue
     }
 
-    const webhooks = await channel.fetchWebhooks()
-    if (!webhooks.get(webhookID)) {
-      log.info({
-        guild: channel.guild
-      }, `Removing missing webhook from feed ${feed._id}`)
-      feed.webhook = undefined
-      updates.push(feed.save())
+    try {
+      const webhooks = await channel.fetchWebhooks()
+      if (!webhooks.get(webhookID)) {
+        log.info({
+          guild: channel.guild,
+          channel
+        }, `Removing missing webhook from feed ${feed._id}`)
+        feed.webhook = undefined
+        updates.push(feed.save())
+      }
+    } catch (err) {
+      log.warn({
+        guild: channel.guild,
+        channel,
+        error: err
+      }, `Unable to check webhook (request error, code ${err.code})`)
     }
 
     // Check supporter
