@@ -44,7 +44,7 @@ function selectPropertiesVisual (data) {
     }), `${val}\u200b`)
   }
 
-  if (embeds.length > 0 && embeds.length < 10) {
+  if (embeds.length < 10) {
     menu.addOption(translate('commands.embed.embedSelectionOptionAdd'), translate('commands.embed.embedSelectionOptionAddDescription'))
   }
 
@@ -67,7 +67,7 @@ async function selectPropertiesFn (message, data) {
       feed.text = undefined
     }
     await feed.save()
-    const log = createLogger()
+    const log = createLogger(message.client.shard.ids[0])
     log.info({
       guild: message.guild,
       user: message.author

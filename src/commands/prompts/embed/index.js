@@ -1,3 +1,4 @@
+exports.removeAllEmbedsSuccess = require('./removeAllEmbedsSuccess.js')
 exports.selectEmbed = require('./selectEmbed.js')
 exports.selectProperties = require('./selectProperties.js')
 exports.resetEmbedSuccess = require('./resetEmbedSuccess.js')

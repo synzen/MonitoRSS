@@ -9,6 +9,9 @@ module.exports = async (message) => {
   const selectEmbedNodeCondition = data => !!data.selectedFeed.webhook
   const selectEmbedNode = new PromptNode(embedPrompts.selectEmbed.prompt, selectEmbedNodeCondition)
 
+  const removeAllEmbedsSuccessNodeCondition = data => data.targetEmbedIndex === data.selectedFeed.embeds.length + 1
+  const removeAllEmbedsSuccessNode = new PromptNode(embedPrompts.removeAllEmbedsSuccess.prompt, removeAllEmbedsSuccessNodeCondition)
+
   const selectPropertiesNodeCondition = () => true
   const selectPropertiesNode = new PromptNode(embedPrompts.selectProperties.prompt, selectPropertiesNodeCondition)
 
@@ -25,7 +28,10 @@ module.exports = async (message) => {
     selectEmbedNode,
     selectPropertiesNode
   ])
-  selectEmbedNode.addChild(selectPropertiesNode)
+  selectEmbedNode.setChildren([
+    removeAllEmbedsSuccessNode,
+    selectPropertiesNode
+  ])
   selectPropertiesNode.setChildren([
     resetEmbedSuccessNode,
     setPropertyNode

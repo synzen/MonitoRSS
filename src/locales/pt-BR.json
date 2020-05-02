@@ -196,7 +196,6 @@
       "invalidColorNumber": "A cor deve ser um **número**. Veja <https://www.shodor.org/stella2java/rgbint.html> Tente novamente, ou digite `exit` para cancelar.",
       "invalidColorRange": "A cor precisa ser um numero entre 0 e 16777215. Tente novamente, ou digite `exit` para cancelar.",
       "invalidProperties": "As seguintes propriedades {{invalids}} são inválidas. Tente novamente, ou digite `exit` para cancelar.",
-      "removedAllEmbeds": "Todas as embeds foram removidas.",
       "removedEmbed": "A embed foi desativada e todas as propriedades foram removidas para <{{link}}>.",
       "resetSuccess": "☑ **{{propName}}** foi resetada\n",
       "updatedSuccess": "☑ **{{propName}}** Atualizado para \n```\n{{userSetting}}\n```\n",

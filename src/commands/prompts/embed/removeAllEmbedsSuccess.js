@@ -14,10 +14,12 @@ const Translator = require('../../../structs/Translator.js')
  * @param {Data} data
  */
 function removeAllEmbedsSuccessVisual (data) {
-  const { profile } = data
+  const { profile, selectedFeed } = data
   const translate = Translator.createProfileTranslator(profile)
 
-  return new MessageVisual(translate('commands.embed.removedAllEmbeds'))
+  return new MessageVisual(translate('commands.embed.removedAllEmbeds', {
+    link: selectedFeed.url
+  }))
 }
 
 const prompt = new LocalizedPrompt(removeAllEmbedsSuccessVisual)
