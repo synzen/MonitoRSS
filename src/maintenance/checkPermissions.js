@@ -1,5 +1,4 @@
 const FLAGS = require('discord.js').Permissions.FLAGS
-const Feed = require('../structs/db/Feed.js')
 const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
 
