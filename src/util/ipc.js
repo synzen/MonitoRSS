@@ -38,11 +38,11 @@ class IPC {
    * @param {string} message - Message to send
    */
   static sendChannelAlert (channel, message) {
-    this.send(this.TYPES.SEND_CHANNEL_MESSAGE, {
-      channel,
-      message,
-      alert: true
-    }, true)
+    // this.send(this.TYPES.SEND_CHANNEL_MESSAGE, {
+    //   channel,
+    //   message,
+    //   alert: true
+    // }, true)
   }
 
   /**
@@ -51,10 +51,10 @@ class IPC {
    * @param {string} message - Message to send
    */
   static sendUserAlert (channel, message) {
-    this.send(this.TYPES.SEND_USER_MESSAGE, {
-      channel,
-      message
-    }, true)
+    // this.send(this.TYPES.SEND_USER_MESSAGE, {
+    //   channel,
+    //   message
+    // }, true)
   }
 
   static get TYPES () {
