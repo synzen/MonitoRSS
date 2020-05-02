@@ -286,6 +286,9 @@ class ArticleMessage {
   }
 
   async send () {
+    if (this.config.dev) {
+      return null
+    }
     if (!this.feed) {
       throw new Error('Missing feed')
     }
