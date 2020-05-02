@@ -1,5 +1,4 @@
 process.env.TEST_ENV = true
-const Feed = require('../../structs/db/Feed.js')
 const FilteredFormat = require('../../structs/db/FilteredFormat.js')
 const pruneFilteredFormats = require('../../maintenance/pruneFilteredFormats.js')
 
@@ -11,7 +10,6 @@ describe('Unit::maintenance/pruneFilteredFormats', function () {
     jest.restoreAllMocks()
   })
   afterEach(function () {
-    Feed.getAll.mockReset()
     FilteredFormat.getAll.mockReset()
   })
   it('deletes the formats whose feed does not exist', async function () {
@@ -35,9 +33,8 @@ describe('Unit::maintenance/pruneFilteredFormats', function () {
     }, {
       _id: 'z'
     }]
-    Feed.getAll.mockResolvedValue(feeds)
     FilteredFormat.getAll.mockResolvedValue(FilteredFormats)
-    await pruneFilteredFormats()
+    await pruneFilteredFormats(feeds)
     expect(FilteredFormats[0].delete).not.toHaveBeenCalled()
     expect(FilteredFormats[1].delete).toHaveBeenCalledTimes(1)
     expect(FilteredFormats[2].delete).toHaveBeenCalledTimes(1)
@@ -64,9 +61,8 @@ describe('Unit::maintenance/pruneFilteredFormats', function () {
     }, {
       _id: 'z'
     }]
-    Feed.getAll.mockResolvedValue(feeds)
     FilteredFormat.getAll.mockResolvedValue(filteredFormats)
-    const result = await pruneFilteredFormats()
+    const result = await pruneFilteredFormats(feeds)
     expect(result).toEqual(2)
   })
 })

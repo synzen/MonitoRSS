@@ -41,7 +41,7 @@ describe('Unit::util/ipc.js', function () {
       expect(ipc.isLoopback({ _loopback: 1 })).toEqual(false)
     })
   })
-  describe('sendChannelAlert', function () {
+  describe.skip('sendChannelAlert', function () {
     it('sends correctly', function () {
       const spy = jest.spyOn(ipc, 'send').mockReturnValue()
       const channel = '24356t'
@@ -54,7 +54,7 @@ describe('Unit::util/ipc.js', function () {
       }, true)
     })
   })
-  describe('sendUserAlert', function () {
+  describe.skip('sendUserAlert', function () {
     it('sends correctly', function () {
       const spy = jest.spyOn(ipc, 'send').mockReturnValue()
       const channel = 'q3'

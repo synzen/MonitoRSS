@@ -1,9 +1,7 @@
 process.env.TEST_ENV = true
-const Feed = require('../../structs/db/Feed.js')
 const Supporter = require('../../structs/db/Supporter.js')
 const pruneWebhooks = require('../../maintenance/pruneWebhooks')
 
-jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/db/Supporter.js')
 
 describe('Unit::maintenance/pruneWebhooks', function () {
@@ -19,9 +17,9 @@ describe('Unit::maintenance/pruneWebhooks', function () {
   }
   beforeEach(function () {
     jest.restoreAllMocks()
-    Feed.mockReset()
     Supporter.mockReset()
     Supporter.enabled = false
+    bot.channels.cache.get.mockReset()
   })
   it('does not delete authorized webhooks', async function () {
     const feeds = [{
@@ -36,16 +34,15 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       save: jest.fn()
     }]
     const channelOne = {
-      fetchWebhooks: async () => new Map([['1', {}]])
+      fetchWebhooks: async () => new Map([['2', {}]])
     }
     const channelThree = {
-      fetchWebhooks: async () => new Map([['2', {}]])
+      fetchWebhooks: async () => new Map([['1', {}]])
     }
     bot.channels.cache.get
       .mockReturnValueOnce(channelOne)
       .mockReturnValueOnce(channelThree)
-    Feed.getAll.mockResolvedValue(feeds)
-    await pruneWebhooks(bot)
+    await pruneWebhooks(bot, feeds)
     expect(feeds[0].webhook).toBeDefined()
     expect(feeds[0].save).not.toHaveBeenCalled()
     expect(feeds[1].webhook).toBeDefined()
@@ -75,11 +72,10 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       fetchWebhooks: async () => new Map([['3', {}]])
     }
     bot.channels.cache.get
-      .mockReturnValueOnce(channelOne)
-      .mockReturnValueOnce(channelOne)
       .mockReturnValueOnce(channelThree)
-    Feed.getAll.mockResolvedValue(feeds)
-    await pruneWebhooks(bot)
+      .mockReturnValueOnce(channelOne)
+      .mockReturnValueOnce(channelOne)
+    await pruneWebhooks(bot, feeds)
     expect(feeds[0].webhook).toBeDefined()
     expect(feeds[0].save).not.toHaveBeenCalled()
     expect(feeds[1].webhook).toBeUndefined()
@@ -103,8 +99,7 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       .mockReturnValueOnce(null)
       .mockReturnValueOnce(null)
       .mockReturnValueOnce(null)
-    Feed.getAll.mockResolvedValue(feeds)
-    await pruneWebhooks(bot)
+    await pruneWebhooks(bot, feeds)
     expect(feeds[0].webhook).toBeDefined()
     expect(feeds[0].save).not.toHaveBeenCalled()
     expect(feeds[1].webhook).toBeDefined()
@@ -123,20 +118,21 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       save: jest.fn()
     }]
     const channelOne = {
-      fetchWebhooks: async () => new Map([['1', {}]])
+      fetchWebhooks: async () => new Map([['1', {}]]),
+      guild: {}
     }
-    const channelThree = {
-      fetchWebhooks: async () => new Map([['2', {}]])
+    const channelTwo = {
+      fetchWebhooks: async () => new Map([['2', {}]]),
+      guild: {}
     }
     bot.channels.cache.get
+      .mockReturnValueOnce(channelTwo)
       .mockReturnValueOnce(channelOne)
-      .mockReturnValueOnce(channelThree)
-    Feed.getAll.mockResolvedValue(feeds)
     Supporter.enabled = true
     jest.spyOn(Supporter, 'hasValidGuild')
-      .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false)
-    await pruneWebhooks(bot)
+      .mockResolvedValueOnce(true)
+    await pruneWebhooks(bot, feeds)
     expect(feeds[0].webhook).toBeDefined()
     expect(feeds[0].save).not.toHaveBeenCalled()
     expect(feeds[1].webhook).toBeUndefined()

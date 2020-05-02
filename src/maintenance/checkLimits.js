@@ -16,7 +16,9 @@ async function checkLimits (feeds, supporterLimits) {
   const feedCounts = new Map()
   const enabled = []
   const disabled = []
-  for (const feed of feeds) {
+  const length = feeds.length
+  for (var i = 0; i < length; ++i) {
+    const feed = feeds[i]
     const guild = feed.guild
     const supporterLimit = supporterLimits.get(guild)
     const guildLimit = supporterLimit === undefined ? config.feeds.max : supporterLimit

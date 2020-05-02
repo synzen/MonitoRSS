@@ -8,7 +8,9 @@ const Profile = require('../structs/db/Profile.js')
 async function pruneProfiles (guildIdsByShard) {
   const profiles = await Profile.getAll()
   const deletions = []
-  for (const profile of profiles) {
+  const length = profiles.length
+  for (var i = 0; i < length; ++i) {
+    const profile = profiles[i]
     if (!guildIdsByShard.has(profile._id)) {
       deletions.push(profile.delete())
     }

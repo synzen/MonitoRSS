@@ -42,12 +42,11 @@ describe('Unit::maintenance/checkPermission', function () {
       }, {
         channel: '3'
       }]
-      Feed.getAll.mockResolvedValue(feeds)
       bot.channels.cache.has
         .mockReturnValueOnce(true)
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(true)
-      await checkPermissions.feeds(bot)
+      await checkPermissions.feeds(bot, feeds)
       expect(spy).toHaveBeenCalledWith(feeds[0], bot)
       expect(spy).not.toHaveBeenCalledWith(feeds[1], bot)
       expect(spy).toHaveBeenCalledWith(feeds[2], bot)

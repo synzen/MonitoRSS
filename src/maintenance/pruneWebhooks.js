@@ -1,5 +1,3 @@
-const Discord = require('discord.js')
-const Feed = require('../structs/db/Feed.js')
 const Supporter = require('../structs/db/Supporter.js')
 const createLogger = require('../util/logger/create.js')
 
@@ -9,16 +7,15 @@ const createLogger = require('../util/logger/create.js')
  *
  * Remove all webhooks from feeds that don't exist
  * @param {import('discord.js').Client} bot
+ * @param {import('../structs/db/Feed.js')} feeds
  * @returns {number}
  */
-async function pruneWebhooks (bot) {
+async function pruneWebhooks (bot, feeds) {
   const log = createLogger(bot.shard.ids[0])
-  /** @type {Feed[]} */
-  const feeds = await Feed.getAll()
   /** @type {Map<string, Feed>} */
   const updates = []
   const length = feeds.length
-  for (var i = 0; i < length; ++i) {
+  for (var i = length - 1; i >= 0; --i) {
     const feed = feeds[i]
     if (!feed.webhook) {
       continue

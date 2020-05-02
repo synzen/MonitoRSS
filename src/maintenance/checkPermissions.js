@@ -64,12 +64,12 @@ async function feed (feed, bot) {
 /**
  * Checks the permissions of all feeds.
  * @param {import('discord.js').Client} bot
+ * @param {import('../structs/db/Feed.js')[]} feeds
  */
-async function feeds (bot) {
-  const feeds = await Feed.getAll()
+async function feeds (bot, feeds) {
   const length = feeds.length
   const promises = []
-  for (var i = 0; i < length; ++i) {
+  for (var i = length - 1; i >= 0; --i) {
     const feed = feeds[i]
     const channelID = feed.channel
     const hasChannel = bot.channels.cache.has(channelID)

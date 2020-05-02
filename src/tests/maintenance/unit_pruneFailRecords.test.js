@@ -1,9 +1,7 @@
 process.env.TEST_ENV = true
-const Feed = require('../../structs/db/Feed.js')
 const FailRecord = require('../../structs/db/FailRecord.js')
 const pruneFailRecords = require('../../maintenance/pruneFailRecords.js')
 
-jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/db/FailRecord.js')
 
 describe('Unit::maintenance/pruneFailRecords', function () {
@@ -11,7 +9,6 @@ describe('Unit::maintenance/pruneFailRecords', function () {
     jest.restoreAllMocks()
   })
   afterEach(function () {
-    Feed.getAll.mockReset()
     FailRecord.getAll.mockReset()
   })
   it('deletes the records whose url does not exist', async function () {
@@ -35,9 +32,8 @@ describe('Unit::maintenance/pruneFailRecords', function () {
     }, {
       url: 'z'
     }]
-    Feed.getAll.mockResolvedValue(feeds)
     FailRecord.getAll.mockResolvedValue(failRecords)
-    await pruneFailRecords()
+    await pruneFailRecords(feeds)
     expect(failRecords[0].delete).not.toHaveBeenCalled()
     expect(failRecords[1].delete).toHaveBeenCalledTimes(1)
     expect(failRecords[2].delete).toHaveBeenCalledTimes(1)
@@ -64,9 +60,8 @@ describe('Unit::maintenance/pruneFailRecords', function () {
     }, {
       url: 'z'
     }]
-    Feed.getAll.mockResolvedValue(feeds)
     FailRecord.getAll.mockResolvedValue(failRecords)
-    const result = await pruneFailRecords()
+    const result = await pruneFailRecords(feeds)
     expect(result).toEqual(2)
   })
 })

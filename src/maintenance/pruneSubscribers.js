@@ -1,5 +1,4 @@
 const Subscriber = require('../structs/db/Subscriber.js')
-const Feed = require('../structs/db/Feed.js')
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -9,21 +8,23 @@ const createLogger = require('../util/logger/create.js')
  * 1. Remove all subscribers whose feed doesn't exist
  * 2. Remove all subscribers that don't exist in Discord
  * @param {import('discord.js').Client} bot
+ * @param {import('../structs/db/Feed.js')[]} feeds
  * @returns {number}
  */
-async function pruneSubscribers (bot) {
+async function pruneSubscribers (bot, feeds) {
   const log = createLogger(bot.shard.ids[0])
-  const [subscribers, feeds] = await Promise.all([
-    Subscriber.getAll(),
-    Feed.getAll()
-  ])
-  /** @type {Map<string, Feed>} */
+  const subscribers = await Subscriber.getAll()
+  /** @type {Map<string, import('../structs/db/Feed.js')>} */
   const feedsById = new Map()
-  for (const feed of feeds) {
+  const feedsLength = feeds.length
+  for (var i = feedsLength - 1; i >= 0; --i) {
+    const feed = feeds[i]
     feedsById.set(feed._id, feed)
   }
   const deletions = []
-  for (const subscriber of subscribers) {
+  const subscribersLength = subscribers.length
+  for (var j = subscribersLength - 1; j >= 0; --j) {
+    const subscriber = subscribers[j]
     const feed = feedsById.get(subscriber.feed)
     if (!feed) {
       deletions.push(subscriber.delete())

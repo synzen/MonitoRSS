@@ -19,7 +19,7 @@ async function pruneProfileAlerts (bot) {
       return
     }
     const userAlerts = profile.alert
-    for (let i = userAlerts.length - 1; i >= 0; --i) {
+    for (var i = userAlerts.length - 1; i >= 0; --i) {
       const memberID = userAlerts[i]
       if (!(/^\d+$/.test(memberID))) {
         // Has non-digits

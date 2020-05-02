@@ -1,9 +1,7 @@
 process.env.TEST_ENV = true
-const Feed = require('../../structs/db/Feed.js')
 const Subscriber = require('../../structs/db/Subscriber.js')
 const pruneSubscribers = require('../../maintenance/pruneSubscribers.js')
 
-jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/db/Subscriber.js')
 
 Subscriber.TYPES = {
@@ -16,7 +14,6 @@ describe('Unit::maintenance/pruneSubscribers', function () {
     jest.restoreAllMocks()
   })
   afterEach(function () {
-    Feed.getAll.mockReset()
     Subscriber.getAll.mockReset()
   })
   it('deletes subscribers whose feed does not exist', async function () {
@@ -52,8 +49,7 @@ describe('Unit::maintenance/pruneSubscribers', function () {
       }
     }
     Subscriber.getAll.mockResolvedValue(subscribers)
-    Feed.getAll.mockResolvedValue(feeds)
-    await pruneSubscribers(bot)
+    await pruneSubscribers(bot, feeds)
     expect(subscribers[0].delete).toHaveBeenCalled()
     expect(subscribers[1].delete).toHaveBeenCalled()
     expect(subscribers[2].delete).not.toHaveBeenCalled()
@@ -83,8 +79,7 @@ describe('Unit::maintenance/pruneSubscribers', function () {
           }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
-        Feed.getAll.mockResolvedValue(feeds)
-        await pruneSubscribers(bot)
+        await pruneSubscribers(bot, feeds)
         expect(subscribers[0].delete).not.toHaveBeenCalled()
         expect(subscribers[1].delete).not.toHaveBeenCalled()
       })
@@ -123,10 +118,9 @@ describe('Unit::maintenance/pruneSubscribers', function () {
           }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
-        Feed.getAll.mockResolvedValue(feeds)
-        await pruneSubscribers(bot)
-        expect(subscribers[1].delete).not.toHaveBeenCalled()
-        expect(subscribers[0].delete).toHaveBeenCalled()
+        await pruneSubscribers(bot, feeds)
+        expect(subscribers[0].delete).not.toHaveBeenCalled()
+        expect(subscribers[1].delete).toHaveBeenCalled()
       })
       it('prunes roles if they are not in guild that exists in bot', async function () {
         const subscribers = [{
@@ -163,10 +157,9 @@ describe('Unit::maintenance/pruneSubscribers', function () {
           }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
-        Feed.getAll.mockResolvedValue(feeds)
-        await pruneSubscribers(bot)
-        expect(subscribers[1].delete).not.toHaveBeenCalled()
-        expect(subscribers[0].delete).toHaveBeenCalled()
+        await pruneSubscribers(bot, feeds)
+        expect(subscribers[0].delete).not.toHaveBeenCalled()
+        expect(subscribers[1].delete).toHaveBeenCalled()
       })
       it('prunes roles and users if they both do not exist', async function () {
         const subscribers = [{
@@ -209,8 +202,7 @@ describe('Unit::maintenance/pruneSubscribers', function () {
           }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
-        Feed.getAll.mockResolvedValue(feeds)
-        await pruneSubscribers(bot)
+        await pruneSubscribers(bot, feeds)
         expect(subscribers[1].delete).toHaveBeenCalled()
         expect(subscribers[0].delete).toHaveBeenCalled()
       })
@@ -252,8 +244,7 @@ describe('Unit::maintenance/pruneSubscribers', function () {
           }
         }
         Subscriber.getAll.mockResolvedValue(subscribers)
-        Feed.getAll.mockResolvedValue(feeds)
-        await pruneSubscribers(bot)
+        await pruneSubscribers(bot, feeds)
         expect(subscribers[1].delete).toHaveBeenCalled()
         expect(subscribers[0].delete).toHaveBeenCalled()
       })
