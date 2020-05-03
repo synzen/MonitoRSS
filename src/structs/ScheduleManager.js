@@ -35,7 +35,7 @@ class ScheduleManager extends EventEmitter {
     for (var feedSchedule of this.schedules) {
       if (feedSchedule.refreshRate === refreshRate) {
         return feedSchedule.run(this.debugFeedIDs)
-          .catch(err => this.log.error(err, `Schedule ${this.name} failed to run cycle`))
+          .catch(err => this.log.error(err, `Schedule ${feedSchedule.name} failed to run cycle`))
       }
     }
   }
