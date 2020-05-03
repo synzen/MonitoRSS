@@ -2,7 +2,7 @@ const pino = require('pino')
 const serializers = require('./serializers.js')
 const getConfig = require('../../config.js').get
 
-function createLogger (tag, base = {}) {
+function createLogger (tag = '-', base = {}) {
   const config = getConfig()
   const prettyPrint = {
     translateTime: 'yyyy-mm-dd HH:MM:ss',
