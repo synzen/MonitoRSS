@@ -172,10 +172,9 @@ async function updateProfiles (guildRss) {
             delete embed.fields
           } else {
             for (const field of fields) {
-              if (field.title) {
-                field.name = field.title
-                delete field.title
-              }
+              field.name = field.title ? field.title : '\u200b'
+              delete field.title
+              field.value = field.value ? field.value : '\u200b'
             }
           }
         }

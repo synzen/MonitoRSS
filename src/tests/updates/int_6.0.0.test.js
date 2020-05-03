@@ -177,6 +177,9 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         fields: [{
           title: 'hello',
           value: 'world'
+        }, {
+          title: '',
+          value: ''
         }]
       }]
       const guildRss = {
@@ -201,6 +204,9 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
         fields: [{
           name: 'hello',
           value: 'world'
+        }, {
+          name: '\u200b',
+          value: '\u200b'
         }]
       }]
       await updateProfiles(guildRss)
