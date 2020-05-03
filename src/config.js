@@ -11,7 +11,6 @@ function envArray (name) {
 }
 
 exports.set = (override) => {
-  console.log(override.log)
   // LOG
   if (!override.log) {
     override.log = {}
