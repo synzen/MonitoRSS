@@ -13,7 +13,7 @@ const INIT_DATA = {
 
 describe('Unit::structs/FeedData', function () {
   beforeEach(function () {
-    jest.resetAllMocks()
+    jest.restoreAllMocks()
     Profile.get.mockReset()
     Feed.prototype.getSubscribers.mockReset()
     Feed.prototype.getFilteredFormats.mockReset()
@@ -232,6 +232,21 @@ describe('Unit::structs/FeedData', function () {
       Feed.getAll.mockResolvedValue([])
       const returned = await FeedData.getAll()
       expect(returned).toEqual([])
+    })
+  })
+  describe('ofFeed', function () {
+    it('returns correctly', async function () {
+      const associations = {
+        profile: 'b',
+        subscribers: 'd'
+      }
+      jest.spyOn(FeedData, 'getFeedAssociations')
+        .mockResolvedValue(associations)
+      const feed = {
+        foo: 'bar'
+      }
+      const returned = await FeedData.ofFeed(feed)
+      expect(returned).toBeInstanceOf(FeedData)
     })
   })
 })

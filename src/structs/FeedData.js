@@ -122,6 +122,17 @@ class FeedData {
       filteredFormats: associations[i].filteredFormats
     }))
   }
+
+  /**
+   * @param {import('./db/Feed.js')} feed
+   */
+  static async ofFeed (feed) {
+    const associations = await this.getFeedAssociations(feed)
+    return new FeedData({
+      feed,
+      ...associations
+    })
+  }
 }
 
 module.exports = FeedData

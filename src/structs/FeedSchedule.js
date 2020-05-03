@@ -2,6 +2,7 @@ const path = require('path')
 const Schedule = require('./db/Schedule.js')
 const FailRecord = require('./db/FailRecord.js')
 const FeedData = require('./FeedData.js')
+const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
 const EventEmitter = require('events')
 const childProcess = require('child_process')
@@ -169,18 +170,15 @@ class FeedSchedule extends EventEmitter {
 
     const [
       failRecords,
-      feedDatas,
+      feeds,
       supporterGuilds,
       schedules
     ] = await Promise.all([
       FailRecord.getAll(),
-      FeedData.getAll(),
+      Feed.getAll(),
       Supporter.getValidGuilds(),
       Schedule.getAll()
     ])
-    const feeds = feedDatas.map(data => data.feed)
-    const feedDataJSONs = feedDatas.map(data => data.toJSON())
-
     // Save the fail records
     this.failRecords.clear()
     for (const record of failRecords) {
@@ -202,14 +200,19 @@ class FeedSchedule extends EventEmitter {
     const determinedSchedules = await Promise.all(
       feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds))
     )
-    for (let i = 0; i < feeds.length; ++i) {
-      const feedData = feedDataJSONs[i]
+    /** @type {import('./db/Feed.js')[]} */
+    const feedsToFetchData = []
+    for (var i = feeds.length - 1; i >= 0; --i) {
       const name = determinedSchedules[i].name
       // Match schedule
-      if (this.name !== name) {
-        continue
+      if (this.name === name) {
+        feedsToFetchData.push(feeds[i])
       }
+    }
 
+    const feedDatas = await Promise.all(feedsToFetchData.map(f => FeedData.ofFeed(f)))
+    for (var j = feedsToFetchData.length - 1; j >= 0; --j) {
+      const feedData = feedDatas[j].toJSON()
       // Delegate feed
       if (!this._shouldDelegateFeed(feedData, debugFeedIDs)) {
         continue
