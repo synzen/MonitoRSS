@@ -74,7 +74,10 @@ function getInsertsAndUpdates (articleList, dbDocs, properties, meta) {
   if (!meta.scheduleName) {
     throw new Error('Missing scheduleName for database insert/update')
   }
-  const dbIDs = new Set(dbDocs.map(d => d.id))
+  const dbIDs = new Set()
+  for (var i = dbDocs.length - 1; i >= 0; --i) {
+    dbIDs.add(dbDocs[i].id)
+  }
   const toInsert = []
   const toUpdate = []
   // Insert
@@ -88,7 +91,8 @@ function getInsertsAndUpdates (articleList, dbDocs, properties, meta) {
     }
   }
   // Update
-  for (const doc of dbDocs) {
+  for (var j = dbDocs.length - 1; j >= 0; --j) {
+    const doc = dbDocs[j]
     const article = articleList.find(a => a._id === doc.id)
     let updated = false
     if (article) {
@@ -118,7 +122,10 @@ async function insertDocuments (documents, memoryCollection) {
     documents.forEach(doc => memoryCollection.push({ ...doc }))
   } else {
     const Model = Article.Model
-    const insert = documents.map(article => new Model(article))
+    const insert = []
+    for (var i = documents.length - 1; i >= 0; --i) {
+      insert.push(new Model(documents[i]))
+    }
     await Model.insertMany(insert)
   }
 }
@@ -144,11 +151,15 @@ async function updateDocuments (documents, memoryCollection) {
       }
     }
   } else {
-    const promises = documents.map(doc => Article.Model.updateOne({
-      _id: doc._id
-    }, {
-      $set: doc
-    }).exec())
+    const promises = []
+    for (var i = documents.length - 1; i >= 0; --i) {
+      const doc = documents[i]
+      promises.push(Article.Model.updateOne({
+        _id: doc._id
+      }, {
+        $set: doc
+      }).exec())
+    }
     await Promise.all(promises)
   }
 }
@@ -159,7 +170,8 @@ async function updateDocuments (documents, memoryCollection) {
 async function mapArticleDocumentsToURL (documents) {
   /** @type {Object<string, Object<string, any>[]>} */
   const map = {}
-  for (const article of documents) {
+  for (var i = documents.length - 1; i >= 0; --i) {
+    const article = documents[i]
     const feedURL = article.feedURL
     if (!map[feedURL]) {
       map[feedURL] = [article]

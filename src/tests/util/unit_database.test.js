@@ -185,10 +185,10 @@ describe('Unit::util/database', function () {
         .mockReturnValueOnce(true)
       const returned = databaseFuncs.getInsertsAndUpdates(articleList, dbDocs, [], meta)
       expect(spy).toHaveBeenCalledTimes(2)
-      expect(spy.mock.calls[0][0]).toEqual(articleList[0])
-      expect(spy.mock.calls[1][0]).toEqual(articleList[1])
+      expect(spy.mock.calls[1][0]).toEqual(articleList[0])
+      expect(spy.mock.calls[0][0]).toEqual(articleList[1])
       expect(returned.toUpdate).toHaveLength(1)
-      expect(returned.toUpdate).toContain(dbDocs[1])
+      expect(returned.toUpdate).toContain(dbDocs[0])
     })
   })
   describe('insertDocuments', function () {
@@ -335,9 +335,9 @@ describe('Unit::util/database', function () {
       const result = await databaseFuncs.mapArticleDocumentsToURL(articles)
       expect(result).toEqual({
         1: [{
-          ...articles[0]
-        }, {
           ...articles[2]
+        }, {
+          ...articles[0]
         }],
         2: [{
           ...articles[1]
