@@ -11,6 +11,7 @@ function envArray (name) {
 }
 
 exports.set = (override) => {
+  console.log(override.log)
   // LOG
   if (!override.log) {
     override.log = {}
@@ -19,9 +20,9 @@ exports.set = (override) => {
   const logOverride = override.log
   log.level = process.env.DRSS_LOG_LEVEL || logOverride.level || log.level
   log.destination = process.env.DRSS_LOG_DESTINATION || logOverride.destination || log.destination
-  log.linkErrs = Boolean(process.env.DRSS_LOG_LINKERRS) || logOverride.linkErrs || log.linkErrs
-  log.unfiltered = Boolean(process.env.DRSS_LOG_UNFILTERED) || logOverride.unfiltered || log.unfiltered
-  log.failedFeeds = Boolean(process.env.DRSS_LOG_FAILEDFEEDS) || logOverride.failedFeeds || log.failedFeeds
+  log.linkErrs = Boolean(process.env.DRSS_LOG_LINKERRS) || logOverride.linkErrs === undefined ? log.linkErrs : logOverride.linkErrs
+  log.unfiltered = Boolean(process.env.DRSS_LOG_UNFILTERED) || logOverride.unfiltered === undefined ? log.unfiltered : logOverride.unfiltered
+  log.failedFeeds = Boolean(process.env.DRSS_LOG_FAILEDFEEDS) || logOverride.failedFeeds === undefined ? log.failedFeeds : logOverride.failedFeeds
 
   // BOT
   if (!override.bot) {
