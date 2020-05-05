@@ -155,6 +155,10 @@ class Client extends EventEmitter {
   }
 
   async onNewPendingArticle (pendingArticle, debug) {
+    const config = getConfig()
+    if (config.dev === true) {
+      return
+    }
     const article = pendingArticle.article
     const feed = article._feed
     const channel = this.bot.channels.cache.get(feed.channel)
@@ -224,6 +228,10 @@ class Client extends EventEmitter {
   }
 
   async sendPendingArticles () {
+    const config = getConfig()
+    if (config.dev === true) {
+      return
+    }
     const pendingArticles = await PendingArticle.getAll()
     for (const pendingArticle of pendingArticles) {
       await this.onNewPendingArticle(pendingArticle)
