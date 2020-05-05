@@ -216,9 +216,25 @@ class FeedSchedule extends EventEmitter {
   }
 
   /**
+   * @param {URLBatch[]} batches
+   * @param {number} groupSize
+   */
+  createBatchGroups (batches, groupSize) {
+    const batchesLength = batches.length
+    const groups = []
+    const maxPerGroup = Math.ceil(batchesLength / groupSize)
+    for (var i = 0; i < batchesLength; i += maxPerGroup) {
+      const group = batches.slice(i, i + maxPerGroup)
+      groups.push(group)
+    }
+    return groups
+  }
+
+  /**
    * @param {Set<string>} debugFeedIDs
    */
   async run (debugFeedIDs) {
+    console.log(this._processorList.length)
     if (this.inProgress) {
       const failedURLs = []
       for (const link in this._linksResponded) {
@@ -238,6 +254,7 @@ class FeedSchedule extends EventEmitter {
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
     this._linksResponded = {}
+    const config = getConfig()
 
     const feeds = await Feed.getAll()
     const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
@@ -256,101 +273,82 @@ class FeedSchedule extends EventEmitter {
     this.inProgress = true
     // Batch them up
     const batches = this.createBatches(urlMap, debugFeedURLs)
-    this._getBatchParallel(batches, debugFeedIDs, debugFeedURLs)
+    const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
+    let groupsCompleted = 0
+    for (const group of batchGroups) {
+      this.processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs, () => {
+        if (++groupsCompleted === batchGroups.length) {
+          this._finishCycle()
+        }
+      })
+    }
   }
 
-  /**
-   * @param {URLBatch[]} batches
-   * @param {Set<string>} debugFeedIDs
-   * @param {Set<string>} debugFeedURLs
-   */
-  _getBatchParallel (batches, debugFeedIDs, debugFeedURLs) {
-    const config = getConfig()
-    const totalBatchLengths = batches.length
-    let completedBatches = 0
-    let willCompleteBatch = 0
-    const regIndices = batches.map((batch, index) => index)
-
-    /**
-     * @param {URLBatch} currentBatch
-     * @param {*} callback
-     */
-    const deployProcessor = (currentBatch, callback) => {
-      if (!currentBatch) {
+  createMessageHandler (batchLength, debugFeedURLs, callback) {
+    let completedLinks = 0
+    return linkCompletion => {
+      if (linkCompletion.status === 'headers') {
+        this.headers[linkCompletion.link] = {
+          lastModified: linkCompletion.lastModified,
+          etag: linkCompletion.etag
+        }
         return
       }
-      let completedLinks = 0
-      const currentBatchLen = Object.keys(currentBatch).length
-      this._processorList.push(childProcess.fork(path.join(__dirname, '..', 'util', 'processor.js')))
-
-      const processorIndex = this._processorList.length - 1
-      const processor = this._processorList[processorIndex]
-
-      processor.on('message', linkCompletion => {
-        if (linkCompletion.status === 'headers') {
-          this.headers[linkCompletion.link] = {
-            lastModified: linkCompletion.lastModified,
-            etag: linkCompletion.etag
-          }
-          return
+      if (linkCompletion.status === 'pendingArticle') {
+        return this.emit('pendingArticle', linkCompletion.pendingArticle)
+      }
+      if (linkCompletion.status === 'failed') {
+        ++this._cycleFailCount
+        FailRecord.record(linkCompletion.link)
+          .catch(err => this.log.error(err, `Unable to record url failure ${linkCompletion.link}`))
+      } else if (linkCompletion.status === 'success') {
+        FailRecord.reset(linkCompletion.link)
+          .catch(err => this.log.error(err, `Unable to reset fail record ${linkCompletion.link}`))
+        if (linkCompletion.memoryCollection) {
+          this.memoryCollections[linkCompletion.link] = linkCompletion.memoryCollection
         }
-        if (linkCompletion.status === 'pendingArticle') {
-          return this.emit('pendingArticle', linkCompletion.pendingArticle)
-        }
-        if (linkCompletion.status === 'failed') {
-          ++this._cycleFailCount
-          FailRecord.record(linkCompletion.link)
-            .catch(err => this.log.error(err, `Unable to record url failure ${linkCompletion.link}`))
-        } else if (linkCompletion.status === 'success') {
-          FailRecord.reset(linkCompletion.link)
-            .catch(err => this.log.error(err, `Unable to reset fail record ${linkCompletion.link}`))
-          if (linkCompletion.memoryCollection) {
-            this.memoryCollections[linkCompletion.link] = linkCompletion.memoryCollection
-          }
-        }
+      }
 
-        ++this._cycleTotalCount
-        ++completedLinks
-        --this._linksResponded[linkCompletion.link]
-        if (debugFeedURLs.has(linkCompletion.link)) {
-          this.log.info(`${linkCompletion.link}: Link responded from processor`)
+      ++this._cycleTotalCount
+      ++completedLinks
+      --this._linksResponded[linkCompletion.link]
+      if (debugFeedURLs.has(linkCompletion.link)) {
+        this.log.info(`${linkCompletion.link}: Link responded from processor`)
+      }
+      if (completedLinks === batchLength) {
+        if (callback) {
+          callback()
         }
-        if (completedLinks === currentBatchLen) {
-          if (callback) {
-            callback()
-          }
-          completedBatches++
-          if (completedBatches === totalBatchLengths) {
-            this._processorList.length = 0
-            this._finishCycle()
-          }
-        }
-      })
-
-      processor.send({
-        config,
-        currentBatch,
-        debugFeeds: Array.from(debugFeedIDs),
-        debugURLs: Array.from(debugFeedURLs),
-        headers: this.headers,
-        memoryCollections: this.memoryCollections,
-        runNum: this.ran,
-        scheduleName: this.name
-      })
-    }
-
-    const spawn = (count) => {
-      for (let q = 0; q < count; ++q) {
-        willCompleteBatch++
-        deployProcessor(batches[regIndices.shift()], () => {
-          if (willCompleteBatch < totalBatchLengths) {
-            spawn(1)
-          }
-        })
       }
     }
+  }
 
-    spawn(config.advanced.parallelBatches)
+  processBatchGroup (batchGroup, batchIndex, debugFeedIDs, debugFeedURLs, onGroupCompleted) {
+    const thisBatch = batchGroup[batchIndex]
+    const batchLength = Object.keys(thisBatch).length
+    const processor = childProcess.fork(path.join(__dirname, '..', 'util', 'processor.js'))
+    this._processorList.push(processor)
+    const scopedBatchIndex = batchIndex
+    const handler = this.createMessageHandler(batchLength, debugFeedURLs, () => {
+      processor.kill()
+      this._processorList.splice(this._processorList.indexOf(processor), 1)
+      if (scopedBatchIndex + 1 < batchGroup.length) {
+        this.processBatchGroup(batchGroup, scopedBatchIndex + 1, debugFeedIDs, debugFeedURLs, onGroupCompleted)
+      } else {
+        onGroupCompleted()
+      }
+    })
+    processor.on('message', handler.bind(this))
+    processor.send({
+      config: getConfig(),
+      currentBatch: thisBatch,
+      debugFeeds: Array.from(debugFeedIDs),
+      debugURLs: Array.from(debugFeedURLs),
+      headers: this.headers,
+      memoryCollections: this.memoryCollections,
+      runNum: this.ran,
+      scheduleName: this.name
+    })
   }
 
   killChildren () {
