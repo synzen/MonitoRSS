@@ -234,7 +234,6 @@ class FeedSchedule extends EventEmitter {
    * @param {Set<string>} debugFeedIDs
    */
   async run (debugFeedIDs) {
-    console.log(this._processorList.length)
     if (this.inProgress) {
       const failedURLs = []
       for (const link in this._linksResponded) {
@@ -268,7 +267,7 @@ class FeedSchedule extends EventEmitter {
     const urlMap = this.mapFeedsByURL(feedDatas, failRecordMap, debugFeedIDs)
     if (urlMap.size === 0) {
       this.inProgress = false
-      return this._finishCycle(true)
+      return this.finishNoFeedsCycle()
     }
     this.inProgress = true
     // Batch them up
@@ -278,7 +277,7 @@ class FeedSchedule extends EventEmitter {
     for (const group of batchGroups) {
       this.processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs, () => {
         if (++groupsCompleted === batchGroups.length) {
-          this._finishCycle()
+          this.finishFeedsCycle()
         }
       })
     }
@@ -358,45 +357,52 @@ class FeedSchedule extends EventEmitter {
     this._processorList = []
   }
 
-  _finishCycle (noFeeds) {
-    const cycleTime = (new Date() - this._startTime) / 1000
-    this.updateStats(cycleTime)
-    const timeTaken = cycleTime.toFixed(2)
+  finishNoFeedsCycle () {
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
-    if (noFeeds) {
-      this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)
-    } else {
-      if (this._processorList.length === 0) this.inProgress = false
-      this.emit('finish')
-      const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
-      this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
-    }
+    this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)
+    this.emit('finish')
     ++this.ran
   }
 
-  updateStats (cycleTime) {
-    ScheduleStats.get(this.name)
-      .then(stats => {
-        const data = {
-          _id: this.name,
-          feeds: this.feedCount,
-          cycleTime,
-          cycleFails: this._cycleFailCount,
-          cycleURLs: this._cycleTotalCount,
-          lastUpdated: new Date().toISOString()
-        }
-        if (!stats) {
-          stats = new ScheduleStats(data)
-          return stats.save()
-        } else {
-          stats.feeds = data.feeds
-          stats.cycleTime = Math.round((data.cycleTime + stats.cycleTime) / 2)
-          stats.cycleFails = Math.round((data.cycleFails + stats.cycleFails) / 2)
-          stats.cycleURLs = data.cycleURLs
-          stats.lastUpdated = data.lastUpdated
-          return stats.save()
-        }
-      }).catch(err => this.log.error(err, 'Unable to update statistics after cycle', err))
+  async finishFeedsCycle () {
+    const cycleTime = (new Date() - this._startTime) / 1000
+    await this.updateStats(cycleTime)
+    const timeTaken = cycleTime.toFixed(2)
+    const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
+    if (this._processorList.length === 0) {
+      this.inProgress = false
+    }
+    this.emit('finish')
+    const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
+    this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
+    ++this.ran
+  }
+
+  async updateStats (cycleTime) {
+    try {
+      const stats = await ScheduleStats.get(this.name)
+      const data = {
+        _id: this.name,
+        feeds: this.feedCount,
+        cycleTime,
+        cycleFails: this._cycleFailCount,
+        cycleURLs: this._cycleTotalCount,
+        lastUpdated: new Date().toISOString()
+      }
+      if (!stats) {
+        const newStats = new ScheduleStats(data)
+        return newStats.save()
+      } else {
+        stats.feeds = data.feeds
+        stats.cycleTime = Math.round((data.cycleTime + stats.cycleTime) / 2)
+        stats.cycleFails = Math.round((data.cycleFails + stats.cycleFails) / 2)
+        stats.cycleURLs = data.cycleURLs
+        stats.lastUpdated = data.lastUpdated
+        return stats.save()
+      }
+    } catch (err) {
+      this.log.error(err, 'Unable to update statistics after cycle', err)
+    }
   }
 }
 
