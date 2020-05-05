@@ -63,11 +63,16 @@ class ScheduleRun extends EventEmitter {
    * @param {import('./db/Feed.js')[]} feeds
    */
   async getFeedDatas (feeds) {
-    const schedules = await Schedule.getAll()
-    const supporterGuilds = await Supporter.getValidGuilds()
-    const determinedSchedules = await Promise.all(
-      feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds))
-    )
+    const [schedules, supporterGuilds] = await Promise.all([
+      Schedule.getAll(),
+      Supporter.getValidGuilds()
+    ])
+    const schedulesToFetch = []
+    for (var h = feeds.length - 1; h >= 0; --h) {
+      const feed = feeds[h]
+      schedulesToFetch.push(feed.determineSchedule(schedules, supporterGuilds))
+    }
+    const determinedSchedules = await Promise.all(schedulesToFetch)
     const feedsToFetchData = []
     for (var i = feeds.length - 1; i >= 0; --i) {
       const feed = feeds[i]
