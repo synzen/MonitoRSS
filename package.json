@@ -22,16 +22,16 @@
   "dependencies": {
     "@hapi/joi": "^17.1.1",
     "cloudscraper": "^4.6.0",
-    "discord.js": "^12.1.1",
+    "discord.js": "^12.2.0",
     "discord.js-prompts": "0.0.1",
-    "feedparser": "^2.2.9",
+    "feedparser": "^2.2.10",
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.5.1",
-    "moment": "^2.24.0",
+    "moment": "^2.25.3",
     "moment-timezone": "^0.5.28",
-    "mongoose": "^5.9.9",
+    "mongoose": "^5.9.12",
     "node-fetch": "^2.6.0",
-    "pino": "^6.2.0",
+    "pino": "^6.2.1",
     "pino-pretty": "^4.0.0",
     "redis": "^3.0.2"
   },
@@ -52,7 +52,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "jest": "^25.3.0"
+    "jest": "^26.0.0"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.1",
