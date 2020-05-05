@@ -83,6 +83,24 @@ describe('Unit::maintenance/pruneWebhooks', function () {
     expect(feeds[2].webhook).toBeDefined()
     expect(feeds[2].save).not.toHaveBeenCalled()
   })
+  it('deletes webhooks in channel with 50013 errors', async function () {
+    const feeds = [{
+      webhook: {
+        id: '1'
+      },
+      save: jest.fn()
+    }]
+    const error = new Error('azdsexyh')
+    error.code = 50013
+    const channelOne = {
+      fetchWebhooks: jest.fn().mockRejectedValue(error)
+    }
+    bot.channels.cache.get
+      .mockReturnValueOnce(channelOne)
+    await pruneWebhooks(bot, feeds)
+    expect(feeds[0].webhook).toBeUndefined()
+    expect(feeds[0].save).toHaveBeenCalled()
+  })
   it('ignores feeds with missing channels', async function () {
     const feeds = [{
       webhook: {

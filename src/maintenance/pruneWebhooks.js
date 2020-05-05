@@ -27,29 +27,34 @@ async function pruneWebhooks (bot, feeds) {
       continue
     }
 
+    let removeReason = ''
     try {
       const webhooks = await channel.fetchWebhooks()
       if (!webhooks.get(webhookID)) {
-        log.info({
-          guild: channel.guild,
-          channel
-        }, `Removing missing webhook from feed ${feed._id}`)
-        feed.webhook = undefined
-        updates.push(feed.save())
+        removeReason = `Removing missing webhook from feed ${feed._id}`
       }
     } catch (err) {
-      log.warn({
-        guild: channel.guild,
-        channel,
-        error: err
-      }, `Unable to check webhook (request error, code ${err.code})`)
+      if (err.code === 50013) {
+        removeReason = `Removing unpermitted webhook from feed ${feed._id}`
+      } else {
+        log.warn({
+          guild: channel.guild,
+          channel,
+          error: err
+        }, `Unable to check webhook (request error, code ${err.code})`)
+      }
     }
 
     // Check supporter
-    if (Supporter.enabled && feed.webhook && !(await Supporter.hasValidGuild(channel.guild.id))) {
+    if (!removeReason && Supporter.enabled && !(await Supporter.hasValidGuild(channel.guild.id))) {
+      removeReason = `Removing unauthorized supporter webhook from feed ${feed._id}`
+    }
+
+    if (removeReason) {
       log.info({
-        guild: channel.guild
-      }, `Removing unauthorized webhook from feed ${feed._id}`)
+        guild: channel.guild,
+        channel
+      }, removeReason)
       feed.webhook = undefined
       updates.push(feed.save())
     }
