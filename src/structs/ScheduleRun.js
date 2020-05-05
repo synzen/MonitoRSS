@@ -4,7 +4,7 @@ const FailRecord = require('./db/FailRecord.js')
 const FeedData = require('./FeedData.js')
 const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
-const ScheduleStats = require('../structs/db/ScheduleStats.js')
+const ScheduleStats = require('./db/ScheduleStats.js')
 const Processor = require('./Processor.js')
 const maintenance = require('../maintenance/index.js')
 const getConfig = require('../config.js').get
@@ -22,31 +22,31 @@ const createLogger = require('../util/logger/create.js')
  * @typedef {Object<string, any>} FeedObject
  */
 
-class FeedSchedule extends EventEmitter {
+class ScheduleRun extends EventEmitter {
   /**
-   * @param {Object<string, any>} schedule
+   * @param {import('./db/Schedule.js')} schedule
+   * @param {number} runCount
+   * @param {Object<string, any>} memoryCollections
    */
-  constructor (schedule) {
+  constructor (schedule, runCount, memoryCollections, headers) {
     if (!schedule.refreshRateMinutes) {
       throw new Error('No refreshRateMinutes has been declared for a schedule')
     }
     if (schedule.name !== 'default' && schedule.name !== Supporter.schedule.name && schedule.keywords.length === 0 && schedule.feeds.length === 0) {
-      throw new Error(`Cannot create a FeedSchedule with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
+      throw new Error(`Cannot create a ScheduleRun with invalid/empty keywords array for nondefault schedule (name: ${schedule.name})`)
     }
     super()
     this.name = schedule.name
+    this.schedule = schedule
     this.log = createLogger('M')
-    this.refreshRate = schedule.refreshRateMinutes
     this._processorList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
-    this._running = 0 // Number of concurrent run()s that haven't finished
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
-    this.memoryCollections = Schedule.isMongoDatabase ? undefined : {}
+    this.memoryCollections = memoryCollections
     this.feedCount = 0 // For statistics
-    this.ran = 0 // # of times this schedule has ran
-
-    this.headers = {}
+    this.ran = runCount // # of times this schedule has ran
+    this.headers = headers
   }
 
   async getFailRecordMap () {
@@ -229,24 +229,11 @@ class FeedSchedule extends EventEmitter {
     return groups
   }
 
-  atMaxRuns () {
-    const config = getConfig()
-    return this._running === config.advanced.parallelRuns
-  }
-
   /**
    * @param {Set<string>} debugFeedIDs
    */
   async run (debugFeedIDs) {
-    if (this.atMaxRuns()) {
-      this.log.warn(`Previous schedule runs were not finished (${this._running} runs, ${this._processorList.length} processors remaining). Killing all processors. If repeatedly seeing this message, consider increasing your refresh rate.`)
-      this.killChildren()
-      this._running = 0
-    }
     this._startTime = new Date()
-    this._cycleFailCount = 0
-    this._cycleTotalCount = 0
-    this._running += 1
     const config = getConfig()
 
     const feeds = await Feed.getAll()
@@ -345,6 +332,10 @@ class FeedSchedule extends EventEmitter {
     })
   }
 
+  terminate () {
+    this.killChildren()
+  }
+
   killChildren () {
     for (const x of this._processorList) {
       x.removeAllListeners()
@@ -357,15 +348,11 @@ class FeedSchedule extends EventEmitter {
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)
     this.emit('finish')
-    --this._running
-    ++this.ran
   }
 
   async finishFeedsCycle () {
     const cycleTime = (new Date() - this._startTime) / 1000
     await this.updateStats(cycleTime)
-    --this._running
-    ++this.ran
     const timeTaken = cycleTime.toFixed(2)
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
@@ -401,4 +388,4 @@ class FeedSchedule extends EventEmitter {
   }
 }
 
-module.exports = FeedSchedule
+module.exports = ScheduleRun
