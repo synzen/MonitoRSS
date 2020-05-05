@@ -4,12 +4,24 @@ const FailRecord = require('./db/FailRecord.js')
 const FeedData = require('./FeedData.js')
 const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
-const EventEmitter = require('events')
+const EventEmitter = require('events').EventEmitter
 const childProcess = require('child_process')
 const maintenance = require('../maintenance/index.js')
 const createLogger = require('../util/logger/create.js')
 const ScheduleStats = require('../structs/db/ScheduleStats.js')
 const getConfig = require('../config.js').get
+
+/**
+ * @typedef {string} FeedID
+ */
+
+/**
+ * @typedef {string} FeedURL
+ */
+
+/**
+ * @typedef {Object<string, any>} FeedObject
+ */
 
 class FeedSchedule extends EventEmitter {
   /**
@@ -28,71 +40,95 @@ class FeedSchedule extends EventEmitter {
     this.refreshRate = schedule.refreshRateMinutes
     this._linksResponded = {}
     this._processorList = []
-    this._regBatchList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
-    this._sourceList = new Map()
-    this.failRecords = new Map()
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.memoryCollections = Schedule.isMongoDatabase ? undefined : {}
     this.feedCount = 0 // For statistics
     this.ran = 0 // # of times this schedule has ran
     this.headers = {}
+  }
 
-    // For vip tracking
-    this.allowWebhooks = new Map()
+  async getFailRecordMap () {
+    const failRecords = await FailRecord.getAll()
+    const failRecordMap = new Map()
+    for (const record of failRecords) {
+      failRecordMap.set(record.url, record)
+    }
+    return failRecordMap
   }
 
   /**
-   * @param {FeedData} feed
+   * Get the feeds that belong to this schedule
+   * @param {import('./db/Feed.js')[]} feeds
+   */
+  async getFeedDatas (feeds) {
+    const schedules = await Schedule.getAll()
+    const supporterGuilds = await Supporter.getValidGuilds()
+    const determinedSchedules = await Promise.all(
+      feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds))
+    )
+    const feedsToFetchData = []
+    for (var i = feeds.length - 1; i >= 0; --i) {
+      const feed = feeds[i]
+      const name = determinedSchedules[i].name
+      // Match schedule
+      if (this.name !== name) {
+        continue
+      }
+      feedsToFetchData.push(FeedData.ofFeed(feed))
+    }
+    const feedDatas = await Promise.all(feedsToFetchData)
+    const jsons = []
+    for (var j = feedDatas.length - 1; j >= 0; --j) {
+      jsons.push(feedDatas[j].toJSON())
+    }
+    return jsons
+  }
+
+  /**
+   * @param {import('./db/Feed.js')[]} feeds
    * @param {Set<string>} debugFeedIDs
    */
-  _delegateFeed (feedData, debugFeedIDs) {
-    const debug = debugFeedIDs.has(feedData._id)
-    if (Supporter.enabled && !this.allowWebhooks.has(feedData.guild) && feedData.webhook) {
-      // log.cycle.warning(`Illegal webhook found for guild ${guildRss.id} for source ${rssName}`)
-      feedData.webhook = undefined
+  getDebugURLs (feeds, debugFeedIDs) {
+    const debugFeedURLs = new Set()
+    if (debugFeedIDs.size === 0) {
+      return debugFeedURLs
     }
-
-    if (this._sourceList.has(feedData.url)) { // Each item in the this._sourceList has a unique URL, with every source with this the same link aggregated below it
-      const linkList = this._sourceList.get(feedData.url)
-      linkList[feedData._id] = feedData
-      if (debug) {
-        this.log.info(`${feedData._id}: Adding to pre-existing source list`)
-      }
-    } else {
-      const linkList = {}
-      linkList[feedData._id] = feedData
-      this._sourceList.set(feedData.url, linkList)
-      if (debug) {
-        this.log.info(`${feedData._id}: Creating new source list`)
-      }
+    const mappedURLs = new Map()
+    for (var i = feeds.length - 1; i >= 0; --i) {
+      const feed = feeds[i]
+      mappedURLs.set(feed._id, feed.url)
     }
+    debugFeedIDs.forEach((feedID) => {
+      if (mappedURLs.has(feedID)) {
+        debugFeedURLs.add(mappedURLs.get(feedID))
+      }
+    })
+    return debugFeedURLs
   }
 
   /**
    * @param {Object<string, any>} feedData
+   * @param {Map<string, FailRecord>} failRecordsMap
    * @param {Set<string>} debugFeedIDs
    */
-  _shouldDelegateFeed (feedData, debugFeedIDs) {
+  isEligibleFeed (feedData, failRecordsMap, debugFeedIDs) {
     const toDebug = debugFeedIDs.has(feedData._id)
     /** @type {FailRecord} */
-    const failRecord = this.failRecords.get(feedData.url)
-
     if (feedData.disabled) {
       if (toDebug) {
         this.log.info(`${feedData._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
-
+    const failRecord = failRecordsMap.get(feedData.url)
     if (failRecord && (failRecord.hasFailed() && failRecord.alerted)) {
       if (toDebug) {
         this.log.info(`${feedData._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
       return false
     }
-
     if (toDebug) {
       this.log.info(`${feedData._id}: Preparing for feed delegation`)
     }
@@ -100,18 +136,73 @@ class FeedSchedule extends EventEmitter {
   }
 
   /**
-   * @param {Set<string>} debugFeedURLs
+   * @typedef {Object<FeedID, FeedObject>} FeedByIDs
    */
-  _genBatchLists (debugFeedURLs) {
+
+  /**
+   * @typedef {Map<FeedURL, FeedByIDs>} URLMap
+   */
+
+  /**
+   * @param {Object<string, any>} feedsDatas
+   * @param {Map<string, FailRecord>} failRecordsMap
+   * @param {Set<string>} debugFeedIDs
+   * @returns {URLMap}
+   */
+  mapFeedsByURL (feedDatas, failRecordsMap, debugFeedIDs) {
+    const map = new Map()
+    for (var i = feedDatas.length - 1; i >= 0; --i) {
+      const feedData = feedDatas[i]
+
+      if (!this.isEligibleFeed(feedData, failRecordsMap, debugFeedIDs)) {
+        continue
+      }
+
+      if (this.memoryCollections && !this.memoryCollections[feedData.url]) {
+        this.memoryCollections[feedData.url] = []
+      }
+
+      const debug = debugFeedIDs.has(feedData._id)
+
+      // Each item in the map has a unique URL, with every source with this the same link aggregated below it
+      if (map.has(feedData.url)) {
+        const urlMap = map.get(feedData.url)
+        urlMap[feedData._id] = feedData
+        if (debug) {
+          this.log.info(`${feedData._id}: Adding to pre-existing source list`)
+        }
+      } else {
+        const urlMap = {}
+        urlMap[feedData._id] = feedData
+        map.set(feedData.url, urlMap)
+        if (debug) {
+          this.log.info(`${feedData._id}: Creating new source list`)
+        }
+      }
+    }
+    return map
+  }
+
+  /**
+   * @typedef {Object<FeedURL, FeedByIDs>} URLBatch
+   */
+
+  /**
+   * @param {URLMap} urlMap
+   * @param {Set<string>} debugFeedURLs
+   * @returns {URLBatch[]}
+   */
+  createBatches (urlMap, debugFeedURLs) {
+    const batches = []
     let batch = {}
     const config = getConfig()
     const batchSize = config.advanced.batchSize
-    this._sourceList.forEach((rssList, url) => { // rssList per url
+    urlMap.forEach((feedByIDs, url) => {
       if (Object.keys(batch).length >= batchSize) {
-        this._regBatchList.push(batch)
+        batches.push(batch)
         batch = {}
       }
-      batch[url] = rssList
+      batch[url] = feedByIDs
       if (debugFeedURLs.has(url)) {
         this.log.info(`${url}: Attached URL to regular batch list for ${this.name}`)
       }
@@ -119,8 +210,9 @@ class FeedSchedule extends EventEmitter {
     })
 
     if (Object.keys(batch).length > 0) {
-      this._regBatchList.push(batch)
+      batches.push(batch)
     }
+    return batches
   }
 
   /**
@@ -128,132 +220,61 @@ class FeedSchedule extends EventEmitter {
    */
   async run (debugFeedIDs) {
     if (this.inProgress) {
-      let list = ''
-      let c = 0
+      const failedURLs = []
       for (const link in this._linksResponded) {
         if (this._linksResponded[link] === 0) {
           continue
         }
+        failedURLs.push(link)
         FailRecord.record(link, 'Failed to respond in a timely manner')
           .catch(err => this.log.error(err, `Unable to record url failure ${link}`))
-        list += `${link}\n`
-        ++c
-      }
-      if (c > 25) {
-        list = 'Greater than 25 links, skipping log'
       }
       this.log.warn({
-        failedURLs: list
-      }, `Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${c}) failed to respond:`)
+        failedURLs: failedURLs.length > 25 ? 'Greater than 25 links, skipping log' : failedURLs.join('\n')
+      }, `Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${failedURLs.length}) failed to respond:`)
       this.killChildren()
     }
-
-    this.allowWebhooks.clear()
-    const supporterLimits = new Map()
-
-    if (Supporter.enabled) {
-      const supporters = await Supporter.getValidSupporters()
-      for (const supporter of supporters) {
-        const [allowWebhook, maxFeeds] = await Promise.all([
-          supporter.getWebhookAccess(),
-          supporter.getMaxFeeds()
-        ])
-        const guilds = supporter.guilds
-        for (const guildId of guilds) {
-          if (allowWebhook) {
-            this.allowWebhooks.set(guildId, true)
-          }
-          supporterLimits.set(guildId, maxFeeds)
-        }
-      }
-    }
-
-    const [
-      failRecords,
-      feeds,
-      supporterGuilds,
-      schedules
-    ] = await Promise.all([
-      FailRecord.getAll(),
-      Feed.getAll(),
-      Supporter.getValidGuilds(),
-      Schedule.getAll()
-    ])
-    // Save the fail records
-    this.failRecords.clear()
-    for (const record of failRecords) {
-      this.failRecords.set(record.url, record)
-    }
-
-    // Check the limits
-    await maintenance.checkLimits(feeds, supporterLimits)
-
     this._startTime = new Date()
-    this._regBatchList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
     this._linksResponded = {}
 
-    this._sourceList.clear()
-    let feedCount = 0 // For statistics in storage
-    const debugFeedURLs = new Set()
-    const determinedSchedules = await Promise.all(
-      feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds))
-    )
-    /** @type {import('./db/Feed.js')[]} */
-    const feedsToFetchData = []
-    for (var i = feeds.length - 1; i >= 0; --i) {
-      const name = determinedSchedules[i].name
-      // Match schedule
-      if (this.name === name) {
-        feedsToFetchData.push(feeds[i])
-      }
-    }
-
-    const feedDatas = await Promise.all(feedsToFetchData.map(f => FeedData.ofFeed(f)))
-    for (var j = feedsToFetchData.length - 1; j >= 0; --j) {
-      const feedData = feedDatas[j].toJSON()
-      // Delegate feed
-      if (!this._shouldDelegateFeed(feedData, debugFeedIDs)) {
-        continue
-      }
-
-      // Initialize memory collections
-      if (this.memoryCollections && !this.memoryCollections[feedData.url]) {
-        this.memoryCollections[feedData.url] = []
-      }
-
-      if (debugFeedIDs.has(feedData._id)) {
-        debugFeedURLs.add(feedData.url)
-        this.log.info(`${feedData._id}: Assigned schedule`)
-      }
-
-      this._delegateFeed(feedData, debugFeedIDs)
-      feedCount++
-    }
-
-    this.inProgress = true
-    this.feedCount = feedCount
-    this._genBatchLists(debugFeedURLs)
-    if (this._sourceList.size === 0) {
+    const feeds = await Feed.getAll()
+    const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
+    const failRecordMap = await this.getFailRecordMap()
+    // Check the limits
+    await maintenance.checkLimits.limits(feeds)
+    // Get feed data
+    const feedDatas = await this.getFeedDatas(feeds)
+    this.feedCount = feedDatas.length
+    // Put all feeds with the same URLs together
+    const urlMap = this.mapFeedsByURL(feedDatas, failRecordMap, debugFeedIDs)
+    if (urlMap.size === 0) {
       this.inProgress = false
       return this._finishCycle(true)
     }
-
-    this._getBatchParallel(debugFeedIDs, debugFeedURLs)
+    this.inProgress = true
+    // Batch them up
+    const batches = this.createBatches(urlMap, debugFeedURLs)
+    this._getBatchParallel(batches, debugFeedIDs, debugFeedURLs)
   }
 
   /**
+   * @param {URLBatch[]} batches
    * @param {Set<string>} debugFeedIDs
    * @param {Set<string>} debugFeedURLs
    */
-  _getBatchParallel (debugFeedIDs, debugFeedURLs) {
+  _getBatchParallel (batches, debugFeedIDs, debugFeedURLs) {
     const config = getConfig()
-    const totalBatchLengths = this._regBatchList.length
+    const totalBatchLengths = batches.length
     let completedBatches = 0
     let willCompleteBatch = 0
-    const regIndices = this._regBatchList.map((batch, index) => index)
+    const regIndices = batches.map((batch, index) => index)
 
+    /**
+     * @param {URLBatch} currentBatch
+     * @param {*} callback
+     */
     const deployProcessor = (currentBatch, callback) => {
       if (!currentBatch) {
         return
@@ -321,7 +342,7 @@ class FeedSchedule extends EventEmitter {
     const spawn = (count) => {
       for (let q = 0; q < count; ++q) {
         willCompleteBatch++
-        deployProcessor(this._regBatchList[regIndices.shift()], () => {
+        deployProcessor(batches[regIndices.shift()], () => {
           if (willCompleteBatch < totalBatchLengths) {
             spawn(1)
           }

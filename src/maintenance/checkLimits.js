@@ -1,17 +1,33 @@
+const Supporter = require('../structs/db/Supporter.js')
 const createLogger = require('../util/logger/create.js')
 const ipc = require('../util/ipc.js')
 const getConfig = require('../config.js').get
 const log = createLogger()
 
+async function getSupporterLimits () {
+  const supporterLimits = new Map()
+  if (Supporter.enabled) {
+    const supporters = await Supporter.getValidSupporters()
+    for (const supporter of supporters) {
+      const maxFeeds = await supporter.getMaxFeeds()
+      const guilds = supporter.guilds
+      for (const guildId of guilds) {
+        supporterLimits.set(guildId, maxFeeds)
+      }
+    }
+  }
+  return supporterLimits
+}
+
 /**
  * Enable or disable feeds for guilds past their limit
  * @param {import('../../structs/db/Feed.js')[]} feeds
- * @param {Map<string, number>} supporterLimits
  * @returns {Object<string, number>} object
  * @returns {number} object.enabled - Number of enabled feeds
  * @returns {number} object.disabled - Number of disabled feeds
  */
-async function checkLimits (feeds, supporterLimits) {
+async function checkLimits (feeds) {
+  const supporterLimits = await exports.getSupporterLimits()
   const config = getConfig()
   const feedCounts = new Map()
   const enabled = []
@@ -77,4 +93,5 @@ async function checkLimits (feeds, supporterLimits) {
   }
 }
 
-module.exports = checkLimits
+exports.limits = checkLimits
+exports.getSupporterLimits = getSupporterLimits
