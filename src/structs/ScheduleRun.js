@@ -189,14 +189,13 @@ class ScheduleRun extends EventEmitter {
 
   /**
    * @param {URLMap} urlMap
+   * @param {number} batchSize
    * @param {Set<string>} debugFeedURLs
    * @returns {URLBatch[]}
    */
-  createBatches (urlMap, debugFeedURLs) {
+  createBatches (urlMap, batchSize, debugFeedURLs) {
     const batches = []
     let batch = {}
-    const config = getConfig()
-    const batchSize = config.advanced.batchSize
     urlMap.forEach((feedByIDs, url) => {
       if (Object.keys(batch).length >= batchSize) {
         batches.push(batch)
@@ -252,7 +251,7 @@ class ScheduleRun extends EventEmitter {
     }
     this.inProgress = true
     // Batch them up
-    const batches = this.createBatches(urlMap, debugFeedURLs)
+    const batches = this.createBatches(urlMap, config.advanced.batchSize, debugFeedURLs)
     const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
     let groupsCompleted = 0
     for (const group of batchGroups) {
