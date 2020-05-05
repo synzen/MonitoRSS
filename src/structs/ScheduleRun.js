@@ -72,6 +72,7 @@ class ScheduleRun extends EventEmitter {
       const feed = feeds[h]
       schedulesToFetch.push(feed.determineSchedule(schedules, supporterGuilds))
     }
+    this.log.debug(`Determing schedules of ${schedulesToFetch.length} feeds`)
     const determinedSchedules = await Promise.all(schedulesToFetch)
     const feedsToFetchData = []
     for (var i = feeds.length - 1; i >= 0; --i) {
@@ -83,11 +84,13 @@ class ScheduleRun extends EventEmitter {
       }
       feedsToFetchData.push(FeedData.ofFeed(feed))
     }
+    this.log.debug(`Fetching FeedDatas of ${feedsToFetchData.length} feeds`)
     const feedDatas = await Promise.all(feedsToFetchData)
     const jsons = []
     for (var j = feedDatas.length - 1; j >= 0; --j) {
       jsons.push(feedDatas[j].toJSON())
     }
+    this.log.debug(`Completed FeedDatas fetch of ${feedsToFetchData.length} feeds`)
     return jsons
   }
 
@@ -239,28 +242,38 @@ class ScheduleRun extends EventEmitter {
   async run (debugFeedIDs) {
     this._startTime = new Date()
     const config = getConfig()
-
+    this.log.debug({
+      schedule: this.schedule
+    }, '1/8 Running schedule, getting all feeds')
     const feeds = await Feed.getAll()
+    this.log.debug('2/8 Fetched all feeds, getting debug URLs and fail record map')
     const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
     const failRecordMap = await this.getFailRecordMap()
+    this.log.debug('3/8 Created fail records map, checking feed limits')
     // Check the limits
     await maintenance.checkLimits.limits(feeds)
+    this.log.debug('4/8 Checked feed limits, getting feed datas')
     // Get feed data
     const feedDatas = await this.getFeedDatas(feeds)
+    this.log.debug('5/8 Fetched relevant feed data, mapping feeds by URL')
     this.feedCount = feedDatas.length
     // Put all feeds with the same URLs together
     const urlMap = this.mapFeedsByURL(feedDatas, failRecordMap, debugFeedIDs)
+    this.log.debug('6/8 Mapped feeds by URL, creating batches')
     if (urlMap.size === 0) {
-      this.inProgress = false
       return this.finishNoFeedsCycle()
     }
-    this.inProgress = true
     // Batch them up
     const batches = this.createBatches(urlMap, config.advanced.batchSize, debugFeedURLs)
+    this.log.debug(`7/8 Created ${batches.length} batches`)
+    this.batches = batches
     const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
+    this.log.debug(`8/8 Created ${batchGroups.length} batch groups`)
+    this.batchGroups = batchGroups
     let groupsCompleted = 0
     for (let i = 0; i < batchGroups.length; ++i) {
       const group = batchGroups[i]
+      this.log.info(`Starting batch group ${i + 1}/${batchGroups.length}`)
       this.processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs, () => {
         this.log.info(`Finished batch group ${i + 1}/${batchGroups.length}`)
         if (++groupsCompleted === batchGroups.length) {
@@ -310,6 +323,8 @@ class ScheduleRun extends EventEmitter {
   }
 
   processBatchGroup (batchGroup, batchIndex, debugFeedIDs, debugFeedURLs, onGroupCompleted) {
+    const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
+    this.log.info(`Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}`)
     const thisBatch = batchGroup[batchIndex]
     const batchLength = Object.keys(thisBatch).length
     const { process: processor } = new Processor()
@@ -319,6 +334,7 @@ class ScheduleRun extends EventEmitter {
       processor.removeAllListeners()
       processor.kill()
       this._processorList.splice(this._processorList.indexOf(processor), 1)
+      this.log.info(`Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed`)
       if (scopedBatchIndex + 1 < batchGroup.length) {
         this.processBatchGroup(batchGroup, scopedBatchIndex + 1, debugFeedIDs, debugFeedURLs, onGroupCompleted)
       } else {
