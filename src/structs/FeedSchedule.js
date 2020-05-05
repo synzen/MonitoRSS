@@ -1,15 +1,14 @@
-const path = require('path')
+const EventEmitter = require('events').EventEmitter
 const Schedule = require('./db/Schedule.js')
 const FailRecord = require('./db/FailRecord.js')
 const FeedData = require('./FeedData.js')
 const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
-const EventEmitter = require('events').EventEmitter
-const childProcess = require('child_process')
-const maintenance = require('../maintenance/index.js')
-const createLogger = require('../util/logger/create.js')
 const ScheduleStats = require('../structs/db/ScheduleStats.js')
+const Processor = require('./Processor.js')
+const maintenance = require('../maintenance/index.js')
 const getConfig = require('../config.js').get
+const createLogger = require('../util/logger/create.js')
 
 /**
  * @typedef {string} FeedID
@@ -38,14 +37,15 @@ class FeedSchedule extends EventEmitter {
     this.name = schedule.name
     this.log = createLogger('M')
     this.refreshRate = schedule.refreshRateMinutes
-    this._linksResponded = {}
     this._processorList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
+    this._running = 0 // Number of concurrent run()s that haven't finished
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.memoryCollections = Schedule.isMongoDatabase ? undefined : {}
     this.feedCount = 0 // For statistics
     this.ran = 0 // # of times this schedule has ran
+
     this.headers = {}
   }
 
@@ -206,7 +206,6 @@ class FeedSchedule extends EventEmitter {
       if (debugFeedURLs.has(url)) {
         this.log.info(`${url}: Attached URL to regular batch list for ${this.name}`)
       }
-      this._linksResponded[url] = 1
     })
 
     if (Object.keys(batch).length > 0) {
@@ -230,29 +229,24 @@ class FeedSchedule extends EventEmitter {
     return groups
   }
 
+  atMaxRuns () {
+    const config = getConfig()
+    return this._running === config.advanced.parallelRuns
+  }
+
   /**
    * @param {Set<string>} debugFeedIDs
    */
   async run (debugFeedIDs) {
-    if (this.inProgress) {
-      const failedURLs = []
-      for (const link in this._linksResponded) {
-        if (this._linksResponded[link] === 0) {
-          continue
-        }
-        failedURLs.push(link)
-        FailRecord.record(link, 'Failed to respond in a timely manner')
-          .catch(err => this.log.error(err, `Unable to record url failure ${link}`))
-      }
-      this.log.warn({
-        failedURLs: failedURLs.length > 25 ? 'Greater than 25 links, skipping log' : failedURLs.join('\n')
-      }, `Processors from previous cycle were not killed (${this._processorList.length}). Killing all processors now. If repeatedly seeing this message, consider increasing your refresh time. The following links (${failedURLs.length}) failed to respond:`)
+    if (this.atMaxRuns()) {
+      this.log.warn(`Previous schedule runs were not finished (${this._running} runs, ${this._processorList.length} processors remaining). Killing all processors. If repeatedly seeing this message, consider increasing your refresh rate.`)
       this.killChildren()
+      this._running = 0
     }
     this._startTime = new Date()
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
-    this._linksResponded = {}
+    this._running += 1
     const config = getConfig()
 
     const feeds = await Feed.getAll()
@@ -286,33 +280,33 @@ class FeedSchedule extends EventEmitter {
   createMessageHandler (batchLength, debugFeedURLs, callback) {
     let completedLinks = 0
     return linkCompletion => {
-      if (linkCompletion.status === 'headers') {
-        this.headers[linkCompletion.link] = {
-          lastModified: linkCompletion.lastModified,
-          etag: linkCompletion.etag
+      const { link, status, lastModified, etag, memoryCollection, pendingArticle } = linkCompletion
+      if (status === 'headers') {
+        this.headers[link] = {
+          lastModified,
+          etag
         }
         return
       }
-      if (linkCompletion.status === 'pendingArticle') {
-        return this.emit('pendingArticle', linkCompletion.pendingArticle)
+      if (status === 'pendingArticle') {
+        return this.emit('pendingArticle', pendingArticle)
       }
-      if (linkCompletion.status === 'failed') {
+      if (status === 'failed') {
         ++this._cycleFailCount
-        FailRecord.record(linkCompletion.link)
-          .catch(err => this.log.error(err, `Unable to record url failure ${linkCompletion.link}`))
-      } else if (linkCompletion.status === 'success') {
-        FailRecord.reset(linkCompletion.link)
-          .catch(err => this.log.error(err, `Unable to reset fail record ${linkCompletion.link}`))
-        if (linkCompletion.memoryCollection) {
-          this.memoryCollections[linkCompletion.link] = linkCompletion.memoryCollection
+        FailRecord.record(link)
+          .catch(err => this.log.error(err, `Unable to record url failure ${link}`))
+      } else if (status === 'success') {
+        FailRecord.reset(link)
+          .catch(err => this.log.error(err, `Unable to reset fail record ${link}`))
+        if (memoryCollection) {
+          this.memoryCollections[link] = memoryCollection
         }
       }
 
       ++this._cycleTotalCount
       ++completedLinks
-      --this._linksResponded[linkCompletion.link]
-      if (debugFeedURLs.has(linkCompletion.link)) {
-        this.log.info(`${linkCompletion.link}: Link responded from processor`)
+      if (debugFeedURLs.has(link)) {
+        this.log.info(`${link}: Link responded from processor`)
       }
       if (completedLinks === batchLength) {
         if (callback) {
@@ -325,10 +319,11 @@ class FeedSchedule extends EventEmitter {
   processBatchGroup (batchGroup, batchIndex, debugFeedIDs, debugFeedURLs, onGroupCompleted) {
     const thisBatch = batchGroup[batchIndex]
     const batchLength = Object.keys(thisBatch).length
-    const processor = childProcess.fork(path.join(__dirname, '..', 'util', 'processor.js'))
+    const { process: processor } = new Processor()
     this._processorList.push(processor)
     const scopedBatchIndex = batchIndex
     const handler = this.createMessageHandler(batchLength, debugFeedURLs, () => {
+      processor.removeAllListeners()
       processor.kill()
       this._processorList.splice(this._processorList.indexOf(processor), 1)
       if (scopedBatchIndex + 1 < batchGroup.length) {
@@ -352,6 +347,7 @@ class FeedSchedule extends EventEmitter {
 
   killChildren () {
     for (const x of this._processorList) {
+      x.removeAllListeners()
       x.kill()
     }
     this._processorList = []
@@ -361,21 +357,20 @@ class FeedSchedule extends EventEmitter {
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)
     this.emit('finish')
+    --this._running
     ++this.ran
   }
 
   async finishFeedsCycle () {
     const cycleTime = (new Date() - this._startTime) / 1000
     await this.updateStats(cycleTime)
+    --this._running
+    ++this.ran
     const timeTaken = cycleTime.toFixed(2)
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
-    if (this._processorList.length === 0) {
-      this.inProgress = false
-    }
-    this.emit('finish')
     const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
     this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
-    ++this.ran
+    this.emit('finish')
   }
 
   async updateStats (cycleTime) {

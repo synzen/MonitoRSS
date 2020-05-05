@@ -88,6 +88,7 @@ exports.set = (override) => {
   advanced.shards = Number(process.env.DRSS_ADVANCED_SHARDS) || advancedOverride.shards || advanced.shards
   advanced.batchSize = Number(process.env.DRSS_ADVANCED_BATCHSIZE) || advancedOverride.batchSize || advanced.batchSize
   advanced.parallelBatches = Number(process.env.DRSS_ADVANCED_PARALLELBATCHES) || advancedOverride.parallelBatches || advanced.parallelBatches
+  advanced.parallelRuns = Number(process.env.DRSS_ADVANCED_PARALLELRUNS) || advancedOverride.parallelRuns || advanced.parallelRuns
 
   // Web URL
   config.webURL = process.env.DRSS_WEBURL || override.webURL || config.webURL
