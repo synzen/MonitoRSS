@@ -38,7 +38,7 @@ class ScheduleRun extends EventEmitter {
     super()
     this.name = schedule.name
     this.schedule = schedule
-    this.log = createLogger('M')
+    this.log = createLogger(this.name)
     this._processorList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
@@ -254,8 +254,10 @@ class ScheduleRun extends EventEmitter {
     const batches = this.createBatches(urlMap, config.advanced.batchSize, debugFeedURLs)
     const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
     let groupsCompleted = 0
-    for (const group of batchGroups) {
+    for (let i = 0; i < batchGroups.length; ++i) {
+      const group = batchGroups[i]
       this.processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs, () => {
+        this.log.info(`Finished batch group ${i + 1}/${batchGroups.length}`)
         if (++groupsCompleted === batchGroups.length) {
           this.finishFeedsCycle()
         }
