@@ -43,8 +43,12 @@ class ScheduleManager extends EventEmitter {
     this.headers = new Map() // by schedule
   }
 
-  async _onPendingArticle (newArticle) {
+  async _onNewArticle (newArticle) {
     const { article, feedObject } = newArticle
+    const config = getConfig()
+    if (config.dev === true) {
+      return
+    }
     if (this.debugFeedIDs.has(feedObject._id)) {
       this.log.debug(`${feedObject._id} ScheduleManager queueing article ${article.link} to send`)
     }
@@ -150,7 +154,7 @@ class ScheduleManager extends EventEmitter {
       this.terminateRun(run)
       this.incrementRunCount(schedule)
     })
-    run.on('newArticle', this._onPendingArticle.bind(this))
+    run.on('newArticle', this._onNewArticle.bind(this))
     this.scheduleRuns.push(run)
     run.run(this.debugFeedIDs)
   }
