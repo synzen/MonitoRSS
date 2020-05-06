@@ -266,13 +266,9 @@ class ScheduleRun extends EventEmitter {
     urlBatch.delete(url)
   }
 
-  /**
-   * @returns {string[]}
-   */
   getHungUpURLs () {
-    const urls = []
-    this.urlBatchGroups.forEach((urlGroup, groupIndex) => {
-      urlGroup.filter((urlBatch, batchIndex) => {
+    return this.urlBatchGroups.map((urlGroup, groupIndex) => {
+      return urlGroup.filter((urlBatch, batchIndex) => {
         const origBatchSize = this.urlSizeGroups[groupIndex][batchIndex]
         /**
          * If equal to original batch size, none of the URLs were completed
@@ -282,11 +278,8 @@ class ScheduleRun extends EventEmitter {
          */
         const someCompleted = urlBatch.size < origBatchSize && urlBatch.size > 0
         return someCompleted
-      }).forEach((urlBatch) => {
-        urlBatch.forEach(url => urls.push(url))
       })
     })
-    return urls
   }
 
   /**

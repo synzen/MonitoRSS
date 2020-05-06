@@ -82,23 +82,10 @@ describe('Unit::structs/ScheduleRun', function () {
         [2, 2],
         [2, 1]
       ]
-      expect(run.getHungUpURLs()).toEqual(expect.arrayContaining([
-        'url5', 'url3'
-      ]))
-    })
-    it('does not contain urls in batches that never progressed', function () {
-      const run = new ScheduleRun(basicSchedule)
-      run.urlBatchGroups = [
-        [new Set(['url1', 'url2']), new Set(['url3'])],
-        [new Set(['url5']), new Set(['url7'])]
-      ]
-      run.urlSizeGroups = [
-        [2, 2],
-        [2, 1]
-      ]
-      expect(run.getHungUpURLs()).toEqual(expect.not.arrayContaining([
-        'url1', 'url2', 'url7'
-      ]))
+      expect(run.getHungUpURLs()).toEqual([
+        [new Set(['url3'])],
+        [new Set(['url5'])]
+      ])
     })
   })
 })
