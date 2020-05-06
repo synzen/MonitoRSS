@@ -273,9 +273,9 @@ class ScheduleRun extends EventEmitter {
     let groupsCompleted = 0
     for (let i = 0; i < batchGroups.length; ++i) {
       const group = batchGroups[i]
-      this.log.info(`Starting batch group ${i + 1}/${batchGroups.length}`)
+      this.log.debug(`Starting batch group ${i + 1}/${batchGroups.length}`)
       this.processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs, () => {
-        this.log.info(`Finished batch group ${i + 1}/${batchGroups.length}`)
+        this.log.debug(`Finished batch group ${i + 1}/${batchGroups.length}`)
         if (++groupsCompleted === batchGroups.length) {
           this.finishFeedsCycle()
         }
@@ -324,7 +324,7 @@ class ScheduleRun extends EventEmitter {
 
   processBatchGroup (batchGroup, batchIndex, debugFeedIDs, debugFeedURLs, onGroupCompleted) {
     const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
-    this.log.info(`Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}`)
+    this.log.debug(`Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}`)
     const thisBatch = batchGroup[batchIndex]
     const batchLength = Object.keys(thisBatch).length
     const { process: processor } = new Processor()
@@ -334,7 +334,7 @@ class ScheduleRun extends EventEmitter {
       processor.removeAllListeners()
       processor.kill()
       this._processorList.splice(this._processorList.indexOf(processor), 1)
-      this.log.info(`Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed`)
+      this.log.debug(`Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed`)
       if (scopedBatchIndex + 1 < batchGroup.length) {
         this.processBatchGroup(batchGroup, scopedBatchIndex + 1, debugFeedIDs, debugFeedURLs, onGroupCompleted)
       } else {
