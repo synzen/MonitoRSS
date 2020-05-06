@@ -267,8 +267,9 @@ class ScheduleRun extends EventEmitter {
       const group = batchGroups[i]
       this.log.debug(`[GROUPS] Starting batch group ${i + 1}/${batchGroups.length}`)
       this.processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs, () => {
-        this.log.debug(`[GROUPS] Finished batch group ${++groupsCompleted}/${batchGroups.length}`)
-        if (++groupsCompleted === batchGroups.length) {
+        ++groupsCompleted
+        this.log.debug(`[GROUPS] Finished batch group ${groupsCompleted}/${batchGroups.length}`)
+        if (groupsCompleted === batchGroups.length) {
           this.finishFeedsCycle()
         }
       })
