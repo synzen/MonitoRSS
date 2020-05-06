@@ -85,25 +85,17 @@ async function syncDatabase (articleList, databaseDocs, feeds, meta, isDatabasel
   await databaseFuncs.updateDocuments(toUpdate, memoryCollection)
 }
 
-async function sendArticles (articles, log) {
-  /**
-   * Articles should be stored as pending first so that in
-   * case the bot shuts down while sending articles,
-   * they can still be retrieved from the database.
-   */
-  const promises = articles.map(article => {
-    return databaseFuncs.storePendingArticle(article)
-  })
-  const results = await Promise.allSettled(promises)
-  const len = results.length
+/**
+ * @param {import('../structs/NewArticle.js')[]} newArticles
+ * @param {import('pino').Logger} log
+ */
+async function sendArticles (newArticles) {
+  const len = newArticles.length
   for (var i = 0; i < len; ++i) {
-    const result = results[i]
-    if (result.status === 'rejected') {
-      log.error(result.reason, 'Failed to store pending article before process.send')
-    }
+    const newArticle = newArticles[i]
     process.send({
-      status: 'pendingArticle',
-      pendingArticle: result.value
+      status: 'newArticle',
+      newArticle: newArticle.toJSON()
     })
   }
 }
@@ -140,6 +132,9 @@ async function getFeed (data, log) {
      */
     const logic = new LinkLogic({ articleList, ...data })
     const result = await logic.run(docs)
+    /**
+     * @type {import('../structs/NewArticle.js')[]}
+     */
     const newArticles = result.newArticles
 
     /**
@@ -158,7 +153,7 @@ async function getFeed (data, log) {
       if (urlLog) {
         urlLog.info(`Sending article status for ${newArticles.length} articles`)
       }
-      await sendArticles(newArticles, log)
+      await sendArticles(newArticles)
     }
 
     process.send({

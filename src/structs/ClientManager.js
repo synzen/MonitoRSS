@@ -45,12 +45,12 @@ class ClientManager extends EventEmitter {
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardsStopped = new Set()
     this.scheduleManager = new ScheduleManager()
-    this.scheduleManager.on('pendingArticle', pendingArticle => {
-      const article = pendingArticle.article
+    this.scheduleManager.on('newArticle', newArticle => {
+      const { article } = newArticle
       this.log.debug({
-        pendingArticle
-      }, `ScheduleManager emitted pending article ${pendingArticle._id}, article id ${article._id}`)
-      this.handlePendingArticle(pendingArticle)
+        newArticle
+      }, `ScheduleManager emitted new article article id ${article._id}`)
+      this.handleNewArticle(newArticle)
     })
     this.shardingManager = new Discord.ShardingManager(path.join(__dirname, '..', '..', 'shard.js'), {
       respawn: false,
@@ -77,44 +77,41 @@ class ClientManager extends EventEmitter {
     })
   }
 
-  broadcastPendingArticle (pendingArticle) {
-    const article = pendingArticle.article
-    const feed = article._feed
-    const debug = this.scheduleManager.isDebugging(feed._id)
-    this.broadcast(ipc.TYPES.PENDING_ARTICLE, {
+  broadcastNewArticle (newArticle) {
+    const { feedObject } = newArticle
+    const debug = this.scheduleManager.isDebugging(feedObject._id)
+    this.broadcast(ipc.TYPES.NEW_ARTICLE, {
       debug,
-      pendingArticle
+      newArticle
     })
   }
 
-  sendPendingArticle (pendingArticle, shard) {
-    const article = pendingArticle.article
-    const feed = article._feed
-    const debug = this.scheduleManager.isDebugging(feed._id)
-    this.send(ipc.TYPES.PENDING_ARTICLE, {
+  sendNewArticle (newArticle, shard) {
+    const { feedObject } = newArticle
+    const debug = this.scheduleManager.isDebugging(feedObject._id)
+    this.send(ipc.TYPES.NEW_ARTICLE, {
       debug,
-      pendingArticle
+      newArticle
     }, shard)
   }
 
-  handlePendingArticle (pendingArticle) {
-    const article = pendingArticle.article
-    const feed = article._feed
-    this.log.debug(`Got new feed $${feed._id} article ${article._id}`)
+  handleNewArticle (newArticle) {
+    const { article, feedObject } = newArticle
+    this.log.debug(`Got new feed $${feedObject._id} article ${article._id}`)
     if (this.shardsStopped.size > 0) {
       this.shardingManager.shards.forEach(shard => {
         const shardID = shard.id
         if (this.shardsStopped.has(shardID)) {
-          this.log.debug(`Queueing feed ${feed._id} article ${article._id} for shard ${shardID} with some stopped shards`)
+          this.log.debug(`Queueing feed ${feedObject._id} article ${article._id} for shard ${shardID} with some stopped shards`)
           this.queuedArticles.get(shardID).push(article)
         } else {
-          this.log.debug(`Sending feed ${feed._id} article ${article._id} for shard ${shardID} with some stopped shards`)
-          this.sendPendingArticle(pendingArticle, shard)
+          this.log.debug(`Sending feed ${feedObject._id} article ${article._id} for shard ${shardID} with some stopped shards`)
+          this.sendNewArticle(newArticle, shard)
         }
       })
     } else {
-      this.log.debug(`Broadcasting feed ${feed._id} article ${article._id}`)
-      this.broadcastPendingArticle(pendingArticle)
+      this.log.debug(`Broadcasting feed ${feedObject._id} article ${article._id}`)
+      this.broadcastNewArticle(newArticle)
     }
   }
 
@@ -126,7 +123,7 @@ class ClientManager extends EventEmitter {
     for (var i = 0; i < length; ++i) {
       const article = queue[i]
       this.log.debug(`Sending queued article ${article._id} to shard ${shard.id}`)
-      this.sendPendingArticle(article, shard)
+      this.sendNewArticle(article, shard)
     }
     queue.length = 0
   }

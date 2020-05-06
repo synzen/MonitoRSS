@@ -5,8 +5,8 @@ const listeners = require('../util/listeners.js')
 const maintenance = require('../maintenance/index.js')
 const ipc = require('../util/ipc.js')
 const Profile = require('./db/Profile.js')
+const NewArticle = require('./NewArticle.js')
 const ArticleMessage = require('./ArticleMessage.js')
-const PendingArticle = require('./db/PendingArticle.js')
 const initialize = require('../util/initialization.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
@@ -135,8 +135,8 @@ class Client extends EventEmitter {
             this.start()
             break
           }
-          case ipc.TYPES.PENDING_ARTICLE:
-            this.onNewPendingArticle(message.data.pendingArticle, message.data.debug)
+          case ipc.TYPES.NEW_ARTICLE:
+            this.onNewArticle(message.data.newArticle, message.data.debug)
             break
           case ipc.TYPES.FINISHED_INIT:
             break
@@ -154,24 +154,24 @@ class Client extends EventEmitter {
     })
   }
 
-  async onNewPendingArticle (pendingArticle, debug) {
+  async onNewArticle (newArticle, debug) {
     const config = getConfig()
     if (config.dev === true) {
       return
     }
-    const article = pendingArticle.article
-    const feed = article._feed
-    const channel = this.bot.channels.cache.get(feed.channel)
-    if (!channel) {
-      this.log.debug(`No channel found for article ${article._id} of feed ${feed._id}`)
-      return
-    }
+    const { feedObject } = newArticle
+    const channel = this.bot.channels.cache.get(feedObject.channel)
     try {
+      const article = await NewArticle.formatWithFeedData(newArticle)
+      if (!channel) {
+        this.log.debug(`No channel found for article ${article._id} of feed ${feedObject._id}`)
+        return
+      }
       const articleMessage = new ArticleMessage(this.bot, article, false, debug)
-      await PendingArticle.deleteID(pendingArticle._id)
       await articleMessage.send()
-      this.log.debug(`Sent article ${article._id} of feed ${feed._id}, deleted pending article ${pendingArticle._id}`)
+      this.log.debug(`Sent article ${article._id} of feed ${feedObject._id}`)
     } catch (err) {
+      const article = newArticle.article
       this.log.warn({
         error: err,
         guild: channel.guild,
@@ -227,17 +227,6 @@ class Client extends EventEmitter {
     }
   }
 
-  async sendPendingArticles () {
-    const config = getConfig()
-    if (config.dev === true) {
-      return
-    }
-    const pendingArticles = await PendingArticle.getAll()
-    for (const pendingArticle of pendingArticles) {
-      await this.onNewPendingArticle(pendingArticle)
-    }
-  }
-
   async start () {
     if (this.state === STATES.STARTING || this.state === STATES.READY) {
       return this.log.warn(`Ignoring start command because of ${this.state} state`)
@@ -254,7 +243,6 @@ class Client extends EventEmitter {
       this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
       await maintenance.pruneWithBot(this.bot)
       this.state = STATES.READY
-      await this.sendPendingArticles()
       if (config.bot.enableCommands) {
         await listeners.enableCommands(this.bot)
       }

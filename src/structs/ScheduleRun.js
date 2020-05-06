@@ -286,7 +286,7 @@ class ScheduleRun extends EventEmitter {
   createMessageHandler (batchLength, debugFeedURLs, callback) {
     let completedLinks = 0
     return linkCompletion => {
-      const { link, status, lastModified, etag, memoryCollection, pendingArticle } = linkCompletion
+      const { link, status, lastModified, etag, memoryCollection, newArticle } = linkCompletion
       if (status === 'headers') {
         this.headers[link] = {
           lastModified,
@@ -294,8 +294,8 @@ class ScheduleRun extends EventEmitter {
         }
         return
       }
-      if (status === 'pendingArticle') {
-        return this.emit('pendingArticle', pendingArticle)
+      if (status === 'newArticle') {
+        return this.emit('newArticle', newArticle)
       }
       if (status === 'failed') {
         ++this._cycleFailCount

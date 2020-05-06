@@ -1,4 +1,5 @@
 const { EventEmitter } = require('events')
+const NewArticle = require('./NewArticle.js')
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -86,19 +87,6 @@ class LinkLogic extends EventEmitter {
       }
     }
     return dbReferences
-  }
-
-  /**
-   * @param {Object} article
-   * @param {Object} feed
-   * @returns {FormattedArticle}
-   */
-  static formatArticle (article, feed) {
-    // For ArticleMessage to access once ScheduleManager receives this article
-    return {
-      ...article,
-      _feed: feed
-    }
   }
 
   /**
@@ -280,7 +268,7 @@ class LinkLogic extends EventEmitter {
       const article = articleList[a]
       const isNew = this.isNewArticle(dbIDs, article, feed, checkDates, comparisonReferences)
       if (isNew) {
-        newArticles.push(LinkLogic.formatArticle(article, feed))
+        newArticles.push(new NewArticle(article, feed))
       }
     }
     return newArticles

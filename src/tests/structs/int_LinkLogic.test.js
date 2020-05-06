@@ -61,8 +61,8 @@ describe('Int::structs/LinkLogic Database', function () {
     const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
     expect(newArticles[0]).toEqual({
-      ...articleList[0],
-      _feed: rssList.feedid1
+      article: articleList[0],
+      feedObject: rssList.feedid1
     })
   })
   it('does not send new articles if old ID', async function () {
@@ -140,8 +140,8 @@ describe('Int::structs/LinkLogic Database', function () {
     const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
     expect(newArticles[0]).toEqual({
-      ...articleList[1],
-      _feed: rssList.feedid1
+      article: articleList[1],
+      feedObject: rssList.feedid1
     })
   })
   it('does not send articles when id is new but ncomparison blocks', async function () {
@@ -220,7 +220,7 @@ describe('Int::structs/LinkLogic Database', function () {
   it('does not send new article with old ID but contains a pcomparison value of recently sent article', async function () {
     /**
      * This is when the IDs are within the database. This
-     * case is whewn IDs are sen in DB.
+     * case is when IDs are seen in DB.
      */
     const articleList = [{
       /**
@@ -271,7 +271,7 @@ describe('Int::structs/LinkLogic Database', function () {
     const logic = new LinkLogic(logicData)
     const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
-    expect(newArticles[0]).toEqual(expect.objectContaining(articleList[1]))
+    expect(newArticles[0].article).toEqual(expect.objectContaining(articleList[1]))
   })
   it('does not send new article with new IDs when ncomparison blocked a recent new article', async function () {
     /**
@@ -321,7 +321,7 @@ describe('Int::structs/LinkLogic Database', function () {
     const logic = new LinkLogic(logicData)
     const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
-    expect(newArticles[0]).toEqual(expect.objectContaining(articleList[1]))
+    expect(newArticles[0].article).toEqual(expect.objectContaining(articleList[1]))
   })
   it('sends when at least 1 pcomparison passes if others do not pass', async function () {
     const articleList = [{
@@ -361,7 +361,7 @@ describe('Int::structs/LinkLogic Database', function () {
     const logic = new LinkLogic(logicData)
     const { newArticles } = await logic.run(docs)
     expect(newArticles).toHaveLength(1)
-    expect(newArticles[0]).toEqual(expect.objectContaining(articleList[0]))
+    expect(newArticles[0].article).toEqual(expect.objectContaining(articleList[0]))
   })
   it('blocks when at least 1 ncomparison blocks if others pass', async function () {
     const articleList = [{

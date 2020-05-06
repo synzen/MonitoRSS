@@ -1,6 +1,5 @@
 const databaseFuncs = require('../../util/database.js')
 const Article = require('../../models/Article')
-const PendingArticle = require('../../structs/db/PendingArticle.js')
 
 jest.mock('../../models/Article', () => ({
   Model: {
@@ -14,7 +13,6 @@ jest.mock('../../models/Article', () => ({
     }))
   }
 }))
-jest.mock('../../structs/db/PendingArticle.js')
 
 describe('Unit::util/database', function () {
   afterEach(function () {
@@ -343,24 +341,6 @@ describe('Unit::util/database', function () {
           ...articles[1]
         }]
       })
-    })
-  })
-  describe('storePendingArticle', function () {
-    it('returns the id of the created struct', async function () {
-      const article = {
-        a: 1
-      }
-      const jsonValue = {
-        foo: 'baz'
-      }
-      const createdDoc = {
-        _id: 'abc123',
-        toJSON: () => jsonValue
-      }
-      jest.spyOn(PendingArticle.prototype, 'save')
-        .mockResolvedValue(createdDoc)
-      const returned = await databaseFuncs.storePendingArticle(article)
-      expect(returned).toEqual(jsonValue)
     })
   })
 })

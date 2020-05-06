@@ -1,6 +1,8 @@
 process.env.TEST_ENV = true
+const NewArticle = require('../../structs/NewArticle.js')
 const LinkLogic = require('../../structs/LinkLogic.js')
 
+jest.mock('../../structs/NewArticle.js')
 jest.mock('../../config.js')
 
 const DEFAULT_DATA = { config: { feeds: {} } }
@@ -8,6 +10,7 @@ const DEFAULT_DATA = { config: { feeds: {} } }
 describe('Unit::LinkLogic', function () {
   beforeEach(function () {
     jest.restoreAllMocks()
+    NewArticle.mockReset()
   })
   describe('getComparisonReferences', function () {
     it('returns a map', function () {
@@ -28,21 +31,6 @@ describe('Unit::LinkLogic', function () {
       const result = LinkLogic.getComparisonReferences(docs)
       expect(result.get('title')).toEqual(new Set(['t1', 't2']))
       expect(result.get('description')).toEqual(new Set(['d1']))
-    })
-  })
-  describe('formatArticle', function () {
-    it('returns correctly', function () {
-      const article = {
-        a: 1,
-        b: 2
-      }
-      const feed = {
-        a: 6
-      }
-      expect(LinkLogic.formatArticle(article, feed)).toEqual({
-        ...article,
-        _feed: feed
-      })
     })
   })
   describe('positiveComparisonPasses', function () {
@@ -316,8 +304,9 @@ describe('Unit::LinkLogic', function () {
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(true)
         .mockReturnValueOnce(false)
-      jest.spyOn(LinkLogic, 'formatArticle')
-        .mockReturnValue(formatted)
+      NewArticle.mockImplementation(() => {
+        return formatted
+      })
       const newArticles = logic.getNewArticlesOfFeed(new Set(), {}, articleList, new Map())
       expect(newArticles).toHaveLength(1)
       expect(newArticles[0]).toEqual(formatted)
