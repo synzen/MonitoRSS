@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@hapi/joi": "^17.1.1",
+    "abort-controller": "^3.0.0",
     "cloudscraper": "^4.6.0",
     "discord.js": "^12.2.0",
     "discord.js-prompts": "0.0.1",

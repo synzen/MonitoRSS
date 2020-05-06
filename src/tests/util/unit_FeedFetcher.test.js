@@ -3,6 +3,7 @@ const FeedFetcher = require('../../util/FeedFetcher.js')
 const fetch = require('node-fetch')
 const Article = require('../../structs/Article.js')
 const RequestError = require('../../structs/errors/RequestError.js')
+const AbortController = require('abort-controller').AbortController
 const cloudscraper = require('cloudscraper')
 const config = require('../../config.js')
 const Readable = require('stream').Readable
@@ -17,9 +18,12 @@ jest.mock('../../config.js', () => ({
 jest.mock('../../structs/ArticleIDResolver.js')
 jest.mock('../../structs/Article.js')
 jest.mock('../../structs/DecodedFeedParser.js')
+jest.mock('abort-controller')
+jest.useFakeTimers()
 
 describe('Unit::FeedFetcher', function () {
   afterEach(function () {
+    AbortController.mockRestore()
     jest.restoreAllMocks()
     fetch.mockReset()
     config.get.mockReturnValue({
@@ -144,30 +148,79 @@ describe('Unit::FeedFetcher', function () {
         .toEqual(expectedReturn)
     })
   })
+  describe('createFetchOptions', function () {
+    afterEach(function () {
+      jest.clearAllTimers()
+    })
+    it('adds the request options', function () {
+      const requestOptions = {
+        foo: 'bar',
+        bz: 'da'
+      }
+      const returned = FeedFetcher.createFetchOptions('asd', requestOptions)
+      expect(returned.options)
+        .toEqual(expect.objectContaining(requestOptions))
+    })
+    it('adds the headers', function () {
+      const headers = {
+        foz: 'baz'
+      }
+      const requestOptions = {
+        headers
+      }
+      const returned = FeedFetcher.createFetchOptions('asd', requestOptions)
+      expect(returned.options.headers)
+        .toEqual(expect.objectContaining(headers))
+    })
+    it('adds the abort signal', function () {
+      const signal = jest.fn()
+      const abort = jest.fn()
+      const controller = {
+        signal,
+        abort
+      }
+      AbortController.mockReturnValue(controller)
+      const returned = FeedFetcher.createFetchOptions('asd', {})
+      expect(returned.options.signal).toEqual(signal)
+    })
+    it('aborts the signal in 15s', function () {
+      const signal = jest.fn()
+      const abort = jest.fn()
+      const controller = {
+        signal,
+        abort
+      }
+      AbortController.mockReturnValue(controller)
+      FeedFetcher.createFetchOptions('asd', {})
+      jest.runAllTimers()
+      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 15000)
+      expect(abort).toHaveBeenCalled()
+    })
+  })
   describe('fetchURL', function () {
     beforeEach(function () {
       jest.spyOn(FeedFetcher, 'formatNodeFetchResponse').mockReturnValue({})
+      jest.spyOn(FeedFetcher, 'createFetchOptions').mockReturnValue({
+        options: {
+          headers: {}
+        }
+      })
     })
     describe('retried is false', function () {
       it('throws an error if url is not defined', function () {
         return expect(FeedFetcher.fetchURL()).rejects.toBeInstanceOf(Error)
       })
-      it('passes the shallow request options to fetch', async function () {
+      it('passes the options to fetch', async function () {
         const reqOpts = { a: 'b', c: 'd', e: 'f' }
+        jest.spyOn(FeedFetcher, 'createFetchOptions')
+          .mockReturnValue({
+            options: reqOpts
+          })
         fetch.mockResolvedValueOnce({ status: 200 })
         await FeedFetcher.fetchURL('abc', reqOpts)
         const passedObject = fetch.mock.calls[0][1]
         for (const key in reqOpts) {
           expect(passedObject[key]).toEqual(reqOpts[key])
-        }
-      })
-      it('passes the options.headers to fetch', async function () {
-        const reqOpts = { headers: { a: 'b', c: 'd' } }
-        fetch.mockResolvedValueOnce({ status: 200 })
-        await FeedFetcher.fetchURL('abc', reqOpts)
-        const passedObject = fetch.mock.calls[0][1]
-        for (const key in reqOpts.headers) {
-          expect(passedObject.headers[key]).toEqual(reqOpts.headers[key])
         }
       })
       it('does no recursive call if fetch failed and retried is true', function (done) {
@@ -196,6 +249,12 @@ describe('Unit::FeedFetcher', function () {
       })
       it('returns the stream and response if the response status is 304 with If-Modified-Since and If-None-Match is in request headers', async function () {
         const headers = { 'If-Modified-Since': 1, 'If-None-Match': 1 }
+        jest.spyOn(FeedFetcher, 'createFetchOptions')
+          .mockReturnValue({
+            options: {
+              headers
+            }
+          })
         const body = 'abc'
         const response = { body, status: 304 }
         const parsedResponse = { a: 1 }
@@ -216,13 +275,14 @@ describe('Unit::FeedFetcher', function () {
       })
       it('recursively calls with empty user agent if res status is 403/400', async function () {
         const headers = { a: 'b', c: 'd' }
+        const fetchURL = jest.spyOn(FeedFetcher, 'fetchURL')
         fetch
           .mockResolvedValueOnce({ status: 403 })
           .mockResolvedValueOnce({ status: 200 })
         jest.spyOn(FeedFetcher, 'formatNodeFetchResponse')
           .mockReturnValue({ status: 200 })
         await FeedFetcher.fetchURL('abc', { headers })
-        expect(fetch.mock.calls[1][1].headers['user-agent']).toEqual('')
+        expect(fetchURL.mock.calls[1][1].headers['user-agent']).toEqual('')
       })
     })
     describe('request failed and retried is true', function () {

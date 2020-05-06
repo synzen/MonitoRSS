@@ -1,5 +1,6 @@
 const fetch = require('node-fetch')
 const cloudscraper = require('cloudscraper') // For cloudflare
+const AbortController = require('abort-controller').AbortController
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
@@ -78,6 +79,39 @@ class FeedFetcher {
   }
 
   /**
+   * @param {string} url
+   * @param {Object<string, any>} requestOptions
+   */
+  static createFetchOptions (url, requestOptions = {}) {
+    const options = {
+      follow: 5,
+      ...requestOptions,
+      headers: {
+        'user-agent': `Mozilla/5.0 ${url.includes('.tumblr.com') ? 'GoogleBot' : ''} (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36`
+      }
+    }
+
+    if (requestOptions.headers) {
+      options.headers = {
+        ...options.headers,
+        ...requestOptions.headers
+      }
+    }
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => {
+      controller.abort()
+    }, 15000)
+
+    options.signal = controller.signal
+
+    return {
+      options,
+      timeout
+    }
+  }
+
+  /**
    * @typedef {object} FetchResults
    * @property {import('stream').Readable} stream
    * @property {import('node-fetch').Response} response
@@ -92,21 +126,7 @@ class FeedFetcher {
    */
   static async fetchURL (url, requestOptions = {}, retried) {
     if (!url) throw new Error('No url defined')
-    const options = {
-      timeout: 15000,
-      follow: 5,
-      ...requestOptions,
-      headers: {
-        'user-agent': `Mozilla/5.0 ${url.includes('.tumblr.com') ? 'GoogleBot' : ''} (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36`
-      }
-    }
-
-    if (requestOptions.headers) {
-      options.headers = {
-        ...options.headers,
-        ...requestOptions.headers
-      }
-    }
+    const { options, timeout } = this.createFetchOptions(url, requestOptions)
     let endStatus
     let res
 
@@ -114,6 +134,8 @@ class FeedFetcher {
       res = await fetch(url, options)
     } catch (err) {
       throw new RequestError(null, err.message)
+    } finally {
+      clearTimeout(timeout)
     }
 
     endStatus = res.status
