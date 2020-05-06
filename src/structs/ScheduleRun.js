@@ -60,8 +60,10 @@ class ScheduleRun extends EventEmitter {
   /**
    * Get the feeds that belong to this schedule
    * @param {import('./db/Feed.js')[]} feeds
+   * @param {Map<string, FailRecord>} failRecordsMap
+   * @param {Set<string>} debugFeedIDs
    */
-  async getApplicableFeeds (feeds) {
+  async getApplicableFeeds (feeds, failRecordsMap, debugFeedIDs) {
     const [schedules, supporterGuilds] = await Promise.all([
       Schedule.getAll(),
       Supporter.getValidGuilds()
@@ -79,6 +81,9 @@ class ScheduleRun extends EventEmitter {
       const name = determinedSchedules[i].name
       // Match schedule
       if (this.name !== name) {
+        continue
+      }
+      if (!this.isEligibleFeed(feed, failRecordsMap, debugFeedIDs)) {
         continue
       }
       jsons.push(feed.toJSON())
@@ -109,28 +114,28 @@ class ScheduleRun extends EventEmitter {
   }
 
   /**
-   * @param {Object<string, any>} feedData
+   * @param {Object<string, any>} feedObjects
    * @param {Map<string, FailRecord>} failRecordsMap
    * @param {Set<string>} debugFeedIDs
    */
-  isEligibleFeed (feedData, failRecordsMap, debugFeedIDs) {
-    const toDebug = debugFeedIDs.has(feedData._id)
+  isEligibleFeed (feedObjects, failRecordsMap, debugFeedIDs) {
+    const toDebug = debugFeedIDs.has(feedObjects._id)
     /** @type {FailRecord} */
-    if (feedData.disabled) {
+    if (feedObjects.disabled) {
       if (toDebug) {
-        this.log.info(`${feedData._id}: Skipping feed delegation due to disabled status`)
+        this.log.info(`${feedObjects._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
-    const failRecord = failRecordsMap.get(feedData.url)
+    const failRecord = failRecordsMap.get(feedObjects.url)
     if (failRecord && (failRecord.hasFailed() && failRecord.alerted)) {
       if (toDebug) {
-        this.log.info(`${feedData._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
+        this.log.info(`${feedObjects._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
       return false
     }
     if (toDebug) {
-      this.log.info(`${feedData._id}: Preparing for feed delegation`)
+      this.log.info(`${feedObjects._id}: Preparing for feed delegation`)
     }
     return true
   }
@@ -145,18 +150,13 @@ class ScheduleRun extends EventEmitter {
 
   /**
    * @param {Object<string, any>} feedsDatas
-   * @param {Map<string, FailRecord>} failRecordsMap
    * @param {Set<string>} debugFeedIDs
    * @returns {URLMap}
    */
-  mapFeedsByURL (feedDatas, failRecordsMap, debugFeedIDs) {
+  mapFeedsByURL (feedDatas, debugFeedIDs) {
     const map = new Map()
     for (var i = feedDatas.length - 1; i >= 0; --i) {
       const feedData = feedDatas[i]
-
-      if (!this.isEligibleFeed(feedData, failRecordsMap, debugFeedIDs)) {
-        continue
-      }
 
       if (this.memoryCollections && !this.memoryCollections[feedData.url]) {
         this.memoryCollections[feedData.url] = []
@@ -238,19 +238,19 @@ class ScheduleRun extends EventEmitter {
       schedule: this.schedule
     }, '1/8 Running schedule, getting all feeds')
     const feeds = await Feed.getAll()
-    this.log.debug('2/8 Fetched all feeds, getting debug URLs and fail record map')
+    // Check the limits
+    this.log.debug('2/8 Fetched all feeds, checking feed limits')
+    await maintenance.checkLimits.limits(feeds)
+    this.log.debug('3/8 Checked feed limits, getting debug URLs and fail record map')
     const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
     const failRecordMap = await this.getFailRecordMap()
-    this.log.debug('3/8 Created fail records map, checking feed limits')
-    // Check the limits
-    await maintenance.checkLimits.limits(feeds)
-    this.log.debug('4/8 Checked feed limits, getting feed datas')
+    this.log.debug('4/8 Created fail records map, getting applicable feeds')
     // Get feed data
-    const applicableFeeds = await this.getApplicableFeeds(feeds)
+    const applicableFeeds = await this.getApplicableFeeds(feeds, failRecordMap, debugFeedIDs)
     this.log.debug('5/8 Fetched relevant feed data, mapping feeds by URL')
     this.feedCount = applicableFeeds.length
     // Put all feeds with the same URLs together
-    const urlMap = this.mapFeedsByURL(applicableFeeds, failRecordMap, debugFeedIDs)
+    const urlMap = this.mapFeedsByURL(applicableFeeds, debugFeedIDs)
     this.log.debug('6/8 Mapped feeds by URL, creating batches')
     if (urlMap.size === 0) {
       return this.finishNoFeedsCycle()
@@ -265,9 +265,9 @@ class ScheduleRun extends EventEmitter {
     let groupsCompleted = 0
     for (let i = 0; i < batchGroups.length; ++i) {
       const group = batchGroups[i]
-      this.log.debug(`Starting batch group ${i + 1}/${batchGroups.length}`)
+      this.log.debug(`[GROUPS] Starting batch group ${i + 1}/${batchGroups.length}`)
       this.processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs, () => {
-        this.log.debug(`Finished batch group ${i + 1}/${batchGroups.length}`)
+        this.log.debug(`[GROUPS] Finished batch group ${++groupsCompleted}/${batchGroups.length}`)
         if (++groupsCompleted === batchGroups.length) {
           this.finishFeedsCycle()
         }
@@ -316,7 +316,7 @@ class ScheduleRun extends EventEmitter {
 
   processBatchGroup (batchGroup, batchIndex, debugFeedIDs, debugFeedURLs, onGroupCompleted) {
     const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
-    this.log.debug(`Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}`)
+    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}`)
     const thisBatch = batchGroup[batchIndex]
     const batchLength = Object.keys(thisBatch).length
     const { process: processor } = new Processor()
@@ -326,7 +326,7 @@ class ScheduleRun extends EventEmitter {
       processor.removeAllListeners()
       processor.kill()
       this._processorList.splice(this._processorList.indexOf(processor), 1)
-      this.log.debug(`Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed`)
+      this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed batch index ${batchIndex + 1}/${batchGroup.length}`)
       if (scopedBatchIndex + 1 < batchGroup.length) {
         this.processBatchGroup(batchGroup, scopedBatchIndex + 1, debugFeedIDs, debugFeedURLs, onGroupCompleted)
       } else {
