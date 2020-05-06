@@ -1,4 +1,5 @@
 const Base = require('./db/Base.js')
+const FailRecord = require('../structs/db/FailRecord.js')
 const ScheduleRun = require('./ScheduleRun.js')
 const createLogger = require('../util/logger/create.js')
 const EventEmitter = require('events').EventEmitter
@@ -134,6 +135,18 @@ class ScheduleManager extends EventEmitter {
   }
 
   /**
+   * Record the failure of hung up URLs
+   *
+   * @param {string[]} urls
+   */
+  failURLs (urls) {
+    for (const url of urls) {
+      FailRecord.record(url)
+        .catch(err => this.log.error(err, `Unable to record url failure ${url}`))
+    }
+  }
+
+  /**
    * Run a schedule
    *
    * @param {import('./db/Schedule.js')} schedule
@@ -141,9 +154,11 @@ class ScheduleManager extends EventEmitter {
   run (schedule) { // Run schedules with respect to their refresh times
     if (this.atMaxRuns(schedule)) {
       const runs = this.getRuns(schedule)
+      const hungupURLs = runs.map(run => run.getHungUpURLs())
       this.log.warn({
-        urls: runs.map(run => run.getHungUpURLs())
+        urls: hungupURLs
       }, `Previous schedule runs were not finished (${runs.length} run(s)). Terminating all runs. If repeatedly seeing this message, consider increasing your refresh rate.`)
+      this.failURLs(hungupURLs.flat(3))
       this.terminateScheduleRuns(schedule)
     }
     const runCount = this.scheduleRunCounts.get(schedule)
