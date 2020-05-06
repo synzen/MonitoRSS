@@ -1,7 +1,6 @@
 const EventEmitter = require('events').EventEmitter
 const Schedule = require('./db/Schedule.js')
 const FailRecord = require('./db/FailRecord.js')
-const FeedData = require('./FeedData.js')
 const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
 const ScheduleStats = require('./db/ScheduleStats.js')
@@ -62,7 +61,7 @@ class ScheduleRun extends EventEmitter {
    * Get the feeds that belong to this schedule
    * @param {import('./db/Feed.js')[]} feeds
    */
-  async getFeedDatas (feeds) {
+  async getApplicableFeeds (feeds) {
     const [schedules, supporterGuilds] = await Promise.all([
       Schedule.getAll(),
       Supporter.getValidGuilds()
@@ -74,7 +73,7 @@ class ScheduleRun extends EventEmitter {
     }
     this.log.debug(`Determing schedules of ${schedulesToFetch.length} feeds`)
     const determinedSchedules = await Promise.all(schedulesToFetch)
-    const feedsToFetchData = []
+    const jsons = []
     for (var i = feeds.length - 1; i >= 0; --i) {
       const feed = feeds[i]
       const name = determinedSchedules[i].name
@@ -82,15 +81,8 @@ class ScheduleRun extends EventEmitter {
       if (this.name !== name) {
         continue
       }
-      feedsToFetchData.push(FeedData.ofFeed(feed))
+      jsons.push(feed.toJSON())
     }
-    this.log.debug(`Fetching FeedDatas of ${feedsToFetchData.length} feeds`)
-    const feedDatas = await Promise.all(feedsToFetchData)
-    const jsons = []
-    for (var j = feedDatas.length - 1; j >= 0; --j) {
-      jsons.push(feedDatas[j].toJSON())
-    }
-    this.log.debug(`Completed FeedDatas fetch of ${feedsToFetchData.length} feeds`)
     return jsons
   }
 
@@ -254,11 +246,11 @@ class ScheduleRun extends EventEmitter {
     await maintenance.checkLimits.limits(feeds)
     this.log.debug('4/8 Checked feed limits, getting feed datas')
     // Get feed data
-    const feedDatas = await this.getFeedDatas(feeds)
+    const applicableFeeds = await this.getApplicableFeeds(feeds)
     this.log.debug('5/8 Fetched relevant feed data, mapping feeds by URL')
-    this.feedCount = feedDatas.length
+    this.feedCount = applicableFeeds.length
     // Put all feeds with the same URLs together
-    const urlMap = this.mapFeedsByURL(feedDatas, failRecordMap, debugFeedIDs)
+    const urlMap = this.mapFeedsByURL(applicableFeeds, failRecordMap, debugFeedIDs)
     this.log.debug('6/8 Mapped feeds by URL, creating batches')
     if (urlMap.size === 0) {
       return this.finishNoFeedsCycle()
