@@ -136,8 +136,10 @@ class ScheduleManager extends EventEmitter {
    */
   run (schedule) { // Run schedules with respect to their refresh times
     if (this.atMaxRuns(schedule)) {
-      const runCount = this.getRuns(schedule).length
-      this.log.warn(`Previous schedule runs were not finished (${runCount} run(s)). Terminating all runs. If repeatedly seeing this message, consider increasing your refresh rate.`)
+      const runs = this.getRuns(schedule)
+      this.log.warn({
+        urls: runs.map(run => run.getHungUpURLs())
+      }, `Previous schedule runs were not finished (${runs.length} run(s)). Terminating all runs. If repeatedly seeing this message, consider increasing your refresh rate.`)
       this.terminateScheduleRuns(schedule)
     }
     const runCount = this.scheduleRunCounts.get(schedule)

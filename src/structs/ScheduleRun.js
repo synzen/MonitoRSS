@@ -38,6 +38,14 @@ class ScheduleRun extends EventEmitter {
     this.name = schedule.name
     this.schedule = schedule
     this.log = createLogger(this.name)
+    /**
+     * @type {Set<string>[][]}
+    */
+    this.urlBatchGroups = []
+    /**
+     * @type {number[][]}
+    */
+    this.urlSizeGroups = []
     this._processorList = []
     this._cycleFailCount = 0
     this._cycleTotalCount = 0
@@ -210,6 +218,7 @@ class ScheduleRun extends EventEmitter {
     if (Object.keys(batch).length > 0) {
       batches.push(batch)
     }
+    this.batches = batches
     return batches
   }
 
@@ -225,7 +234,59 @@ class ScheduleRun extends EventEmitter {
       const group = batches.slice(i, i + maxPerGroup)
       groups.push(group)
     }
+    this.batchGroups = groups
+    this.createURLRecords(groups)
     return groups
+  }
+
+  /**
+   * Create records to track what URLs responded within
+   * this run, and which hung up. Initially store them,
+   * and wait for them to be removed
+   *
+   * @param {URLBatch[][]} batchGroups
+   */
+  createURLRecords (batchGroups) {
+    const urlBatchGroups = batchGroups.map(group => group.map(batch => new Set(Object.keys(batch))))
+    const urlSizeGroups = urlBatchGroups.map(group => group.map(set => set.size))
+    this.urlBatchGroups = urlBatchGroups
+    this.urlSizeGroups = urlSizeGroups
+  }
+
+  /**
+   * Mark a URL as "responded" by removing it from records
+   *
+   * @param {number} groupIndex
+   * @param {number} batchIndex
+   * @param {string} url
+   */
+  removeFromBatchRecords (groupIndex, batchIndex, url) {
+    const urlBatchGroup = this.urlBatchGroups[groupIndex]
+    const urlBatch = urlBatchGroup[batchIndex]
+    urlBatch.delete(url)
+  }
+
+  /**
+   * @returns {string[]}
+   */
+  getHungUpURLs () {
+    const urls = []
+    this.urlBatchGroups.forEach((urlGroup, groupIndex) => {
+      urlGroup.filter((urlBatch, batchIndex) => {
+        const origBatchSize = this.urlSizeGroups[groupIndex][batchIndex]
+        /**
+         * If equal to original batch size, none of the URLs were completed
+         * If equal to 0, all of them were completed
+         *
+         * This function does not work if a batch was hung up on all URLs
+         */
+        const someCompleted = urlBatch.size < origBatchSize && urlBatch.size > 0
+        return someCompleted
+      }).forEach((urlBatch) => {
+        urlBatch.forEach(url => urls.push(url))
+      })
+    })
+    return urls
   }
 
   /**
@@ -258,10 +319,8 @@ class ScheduleRun extends EventEmitter {
     // Batch them up
     const batches = this.createBatches(urlMap, config.advanced.batchSize, debugFeedURLs)
     this.log.debug(`7/8 Created ${batches.length} batches`)
-    this.batches = batches
     const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
     this.log.debug(`8/8 Created ${batchGroups.length} batch groups (${JSON.stringify(batchGroups.map(arr => arr.map(m => Object.keys(m).length)))})`)
-    this.batchGroups = batchGroups
     let groupsCompleted = 0
     for (let i = 0; i < batchGroups.length; ++i) {
       const group = batchGroups[i]
@@ -308,6 +367,7 @@ class ScheduleRun extends EventEmitter {
 
       ++this._cycleTotalCount
       ++completedLinks
+      this.removeFromBatchRecords(batchGroupIndex, batchIndex, link)
       this.log.trace(`[GROUP ${batchGroupIndex + 1}/${this.batchGroups.length}, BATCH ${batchIndex + 1}/${batchGroup.length}] URLs Completed: ${completedLinks}/${batchLength}`)
       if (debugFeedURLs.has(link)) {
         this.log.info(`${link}: Link responded from processor`)
