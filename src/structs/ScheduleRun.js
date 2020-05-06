@@ -276,8 +276,12 @@ class ScheduleRun extends EventEmitter {
     }
   }
 
-  createMessageHandler (batchLength, debugFeedURLs, callback) {
+  createMessageHandler (batchGroup, batchIndex, debugFeedURLs, callback) {
+    const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
+    const thisBatch = batchGroup[batchIndex]
+    const batchLength = Object.keys(thisBatch).length
     let completedLinks = 0
+
     return linkCompletion => {
       const { link, status, lastModified, etag, memoryCollection, newArticle } = linkCompletion
       if (status === 'headers') {
@@ -304,6 +308,7 @@ class ScheduleRun extends EventEmitter {
 
       ++this._cycleTotalCount
       ++completedLinks
+      this.log.trace(`[GROUP ${batchGroupIndex + 1}/${this.batchGroups.length}, BATCH ${batchIndex + 1}/${batchGroup.length}] URLs Completed: ${completedLinks}/${batchLength}`)
       if (debugFeedURLs.has(link)) {
         this.log.info(`${link}: Link responded from processor`)
       }
@@ -319,11 +324,10 @@ class ScheduleRun extends EventEmitter {
     const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
     this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}`)
     const thisBatch = batchGroup[batchIndex]
-    const batchLength = Object.keys(thisBatch).length
     const { process: processor } = new Processor()
     this._processorList.push(processor)
     const scopedBatchIndex = batchIndex
-    const handler = this.createMessageHandler(batchLength, debugFeedURLs, () => {
+    const handler = this.createMessageHandler(batchGroup, batchIndex, debugFeedURLs, () => {
       processor.removeAllListeners()
       processor.kill()
       this._processorList.splice(this._processorList.indexOf(processor), 1)
