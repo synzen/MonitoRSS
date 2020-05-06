@@ -278,7 +278,7 @@ class ScheduleRun extends EventEmitter {
          */
         const someCompleted = urlBatch.size < origBatchSize && urlBatch.size > 0
         return someCompleted
-      })
+      }).map((urlBatch) => Array.from(urlBatch))
     })
   }
 

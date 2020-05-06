@@ -83,8 +83,8 @@ describe('Unit::structs/ScheduleRun', function () {
         [2, 1]
       ]
       expect(run.getHungUpURLs()).toEqual([
-        [new Set(['url3'])],
-        [new Set(['url5'])]
+        [['url3']],
+        [['url5']]
       ])
     })
   })
