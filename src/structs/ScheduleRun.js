@@ -46,8 +46,12 @@ class ScheduleRun extends EventEmitter {
      * @type {number[][]}
     */
     this.urlSizeGroups = []
+    /**
+     * @type {Set<string>}
+     */
+    this.failedURLs = new Set()
+    this.succeededURLs = new Set()
     this._processorList = []
-    this._cycleFailCount = 0
     this._cycleTotalCount = 0
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.memoryCollections = memoryCollections
@@ -348,7 +352,7 @@ class ScheduleRun extends EventEmitter {
         return this.emit('newArticle', newArticle)
       }
       if (status === 'failed') {
-        ++this._cycleFailCount
+        this.failedURLs.add(link)
         FailRecord.record(link)
           .catch(err => this.log.error(err, `Unable to record url failure ${link}`))
       } else if (status === 'success') {
@@ -429,7 +433,7 @@ class ScheduleRun extends EventEmitter {
     await this.updateStats(cycleTime)
     const timeTaken = cycleTime.toFixed(2)
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
-    const count = this._cycleFailCount > 0 ? ` (${this._cycleFailCount}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
+    const count = this.failedURLs.size > 0 ? ` (${this.failedURLs.size}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
     this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
     this.emit('finish')
   }
@@ -444,7 +448,7 @@ class ScheduleRun extends EventEmitter {
         _id: this.name,
         feeds: this.feedCount,
         cycleTime,
-        cycleFails: this._cycleFailCount,
+        cycleFails: this.failedURLs.size,
         cycleURLs: this._cycleTotalCount,
         lastUpdated: new Date().toISOString()
       }
