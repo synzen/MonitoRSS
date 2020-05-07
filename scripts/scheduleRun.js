@@ -16,6 +16,7 @@ async function testScheduleRun (userConfig) {
   try {
     console.log('Connected to database')
     await initialize.setupModels(con)
+    await initialize.populateSchedules()
     console.log('Models set up')
     const schedule = {
       name: 'default',
