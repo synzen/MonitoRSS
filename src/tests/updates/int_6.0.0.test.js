@@ -350,6 +350,9 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
             subscribers: [{
               id: 'are3'
               // Missing type should be "role"
+            }, {
+              id: 'are4',
+              type: 'boogaloo'
             }]
           }
         }
@@ -357,10 +360,16 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       await updateProfiles(guildRss)
       const subscribers = await con
         .collection('subscribers').find({}).toArray()
-      expect(subscribers[0]).toEqual(expect.objectContaining({
-        id: 'are3',
-        type: 'role'
-      }))
+      expect(subscribers).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          id: 'are3',
+          type: 'role'
+        }),
+        expect.objectContaining({
+          id: 'are4',
+          type: 'role'
+        })
+      ]))
     })
   })
   afterAll(async function () {
