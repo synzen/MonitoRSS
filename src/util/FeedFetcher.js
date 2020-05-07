@@ -133,7 +133,7 @@ class FeedFetcher {
     try {
       res = await fetch(url, options)
     } catch (err) {
-      throw new RequestError(null, err.message)
+      throw new RequestError(null, err.message === 'The user aborted a request.' ? 'Connected timed out' : err.message)
     } finally {
       clearTimeout(timeout)
     }
