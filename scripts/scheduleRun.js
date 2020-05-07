@@ -3,7 +3,7 @@ const connectDatabase = require('../src/util/connectDatabase.js')
 const ScheduleRun = require('../src/structs/ScheduleRun.js')
 const setConfig = require('../src/config.js').set
 
-async function testScheduleRun (userConfig) {
+async function testScheduleRun (userConfig, callback) {
   let config = setConfig(userConfig)
   config = setConfig({
     ...config,
@@ -24,10 +24,12 @@ async function testScheduleRun (userConfig) {
     console.log('Running...')
     const scheduleRun = new ScheduleRun(schedule, 0, {}, {}, true)
     scheduleRun.on('finish', () => {
+      callback(undefined, scheduleRun)
       con.close()
     })
     await scheduleRun.run(new Set())
-    return scheduleRun
+  } catch (err) {
+    callback(err)
   } finally {
     con.close()
   }
