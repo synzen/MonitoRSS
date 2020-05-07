@@ -197,6 +197,7 @@ async function updateProfiles (guildRss) {
           sanitizeFilters(s)
           const subscriber = new Subscriber({
             ...s,
+            type: s.type || 'role',
             feed: feed._id
           })
           data.subscribers.push(subscriber.toJSON())

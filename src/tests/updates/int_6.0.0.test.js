@@ -315,10 +315,10 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
             link: 'u1',
             channel: 'q3wet4',
             subscribers: [{
-              id: 'are',
+              id: 'are1',
               type: 'role'
             }, {
-              id: 'ees',
+              id: 'ees2',
               type: 'user'
             }]
           },
@@ -327,7 +327,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
             link: 'u2',
             channel: 'aq3wet4',
             subscribers: [{
-              id: 'are',
+              id: 'are3',
               type: 'role'
             }]
           }
@@ -337,6 +337,30 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       const subscribers = await con
         .collection('subscribers').find({}).toArray()
       expect(subscribers).toHaveLength(3)
+    })
+    it('converts unknown subscriber types to role', async function () {
+      const guildRss = {
+        id: '32qwet4ry',
+        name: 'azdsh',
+        sources: {
+          f2: {
+            title: 't2',
+            link: 'u2',
+            channel: 'aq3wet4',
+            subscribers: [{
+              id: 'are3'
+              // Missing type should be "role"
+            }]
+          }
+        }
+      }
+      await updateProfiles(guildRss)
+      const subscribers = await con
+        .collection('subscribers').find({}).toArray()
+      expect(subscribers[0]).toEqual(expect.objectContaining({
+        id: 'are3',
+        type: 'role'
+      }))
     })
   })
   afterAll(async function () {
