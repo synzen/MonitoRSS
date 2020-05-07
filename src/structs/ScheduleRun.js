@@ -27,7 +27,7 @@ class ScheduleRun extends EventEmitter {
    * @param {number} runCount
    * @param {Object<string, any>} memoryCollections
    */
-  constructor (schedule, runCount, memoryCollections, headers) {
+  constructor (schedule, runCount, memoryCollections, headers, testRun = false) {
     if (!schedule.refreshRateMinutes) {
       throw new Error('No refreshRateMinutes has been declared for a schedule')
     }
@@ -54,6 +54,7 @@ class ScheduleRun extends EventEmitter {
     this.feedCount = 0 // For statistics
     this.ran = runCount // # of times this schedule has ran
     this.headers = headers
+    this.testRun = testRun
   }
 
   async getFailRecordMap () {
@@ -400,7 +401,8 @@ class ScheduleRun extends EventEmitter {
       headers: this.headers,
       memoryCollections: this.memoryCollections,
       runNum: this.ran,
-      scheduleName: this.name
+      scheduleName: this.name,
+      testRun: this.testRun
     })
   }
 
@@ -433,6 +435,9 @@ class ScheduleRun extends EventEmitter {
   }
 
   async updateStats (cycleTime) {
+    if (this.testRun) {
+      return
+    }
     try {
       const stats = await ScheduleStats.get(this.name)
       const data = {

@@ -44,6 +44,9 @@ exports.Supporter = require('./src/structs/db/Supporter.js')
 exports.FeedFetcher = require('./src/util/FeedFetcher.js')
 exports.validateConfig = require('./src/util/config/schema').validate
 exports.schemas = require('./src/util/config/schema.js').schemas
+exports.scripts = {
+  runSchedule: require('./scripts/scheduleRun.js')
+}
 exports.migrations = {
   v6: require('./scripts/pre_v6.js')
 }

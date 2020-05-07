@@ -101,7 +101,7 @@ async function sendArticles (newArticles) {
 }
 
 async function getFeed (data, log) {
-  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config } = data
+  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config, testRun } = data
   const isDatabaseless = !!memoryCollections
   const urlLog = toDebug ? log.child({
     url: link
@@ -120,6 +120,13 @@ async function getFeed (data, log) {
     const articleList = await parseStream(stream, charset, link, urlLog)
     if (!articleList) {
       process.send({ status: 'success', link })
+      return
+    }
+    if (testRun) {
+      process.send({
+        status: 'success',
+        link
+      })
       return
     }
 
