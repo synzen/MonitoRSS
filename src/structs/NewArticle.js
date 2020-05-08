@@ -18,8 +18,8 @@ class NewArticle {
     }
   }
 
-  static async formatWithFeedData (newArticle) {
-    const { article, feedObject } = newArticle
+  async formatWithFeedData () {
+    const { article, feedObject } = this
     const feed = new Feed(feedObject)
     const feedData = await FeedData.ofFeed(feed)
     return {

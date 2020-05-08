@@ -162,7 +162,8 @@ class Client extends EventEmitter {
     const { feedObject } = newArticle
     const channel = this.bot.channels.cache.get(feedObject.channel)
     try {
-      const article = await NewArticle.formatWithFeedData(newArticle)
+      const reconstructed = new NewArticle(newArticle.article, newArticle.feedObject)
+      const article = await reconstructed.formatWithFeedData()
       if (!channel) {
         this.log.debug(`No channel found for article ${article._id} of feed ${feedObject._id}`)
         return
