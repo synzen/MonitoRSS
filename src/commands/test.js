@@ -6,13 +6,12 @@ const ArticleMessage = require('../structs/ArticleMessage.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
-const FeedData = require('../structs/FeedData.js')
+const NewArticle = require('../structs/NewArticle.js')
 const runWithFeedGuild = require('./prompts/runner/run.js')
 
 module.exports = async (message, command) => {
   const simple = message.content.endsWith('simple')
   const profile = await Profile.get(message.guild.id)
-  const feedDatas = await FeedData.getManyBy('guild', message.guild.id)
   const translate = Translator.createProfileTranslator(profile)
   const selectFeedNode = new PromptNode(commonPrompts.selectFeed.prompt)
   const data = await runWithFeedGuild(selectFeedNode, message)
@@ -28,10 +27,10 @@ module.exports = async (message, command) => {
   if (!article) {
     return message.channel.send(translate('commands.test.noArticles'))
   }
-  article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
-  article._feed.channel = message.channel.id
+  const formatted = await (new NewArticle(article, feed)).formatWithFeedData()
+  formatted._feed.channel = message.channel.id
   if (!simple) {
-    const parsedArticle = new Article(article, article._feed, profile || {})
+    const parsedArticle = new Article(article, formatted._feed, profile || {})
     const testText = parsedArticle.createTestText()
     await message.channel.send(testText, {
       split: {
@@ -41,7 +40,7 @@ module.exports = async (message, command) => {
     })
   }
 
-  const articleMessage = new ArticleMessage(message.client, article, true)
+  const articleMessage = new ArticleMessage(message.client, formatted, true)
   await articleMessage.send()
   await grabMsg.delete()
 }

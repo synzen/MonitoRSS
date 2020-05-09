@@ -2,7 +2,7 @@ const { PromptNode } = require('discord.js-prompts')
 const ArticleMessage = require('../structs/ArticleMessage.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
 const Translator = require('../structs/Translator.js')
-const FeedData = require('../structs/FeedData.js')
+const NewArticle = require('../structs/NewArticle.js')
 const createLogger = require('../util/logger/create.js')
 const commonPrompts = require('./prompts/common/index.js')
 const filterPrompts = require('./prompts/filters/index.js')
@@ -62,11 +62,10 @@ module.exports = async (message, command, role) => {
       return message.channel.send(translate('commands.filters.noArticlesPassed'))
     }
     log.info(`Sending filtered article for ${feed.url}`)
-    const feedDatas = await FeedData.getManyBy('guild', message.guild.id)
-    article._feed = feedDatas.find(data => data.feed._id === feed._id).toJSON()
-    article._feed.channel = message.channel.id
+    const formatted = await (new NewArticle(article, feed)).formatWithFeedData()
+    formatted._feed.channel = message.channel.id
 
-    const articleMessage = new ArticleMessage(message.client, article, true)
+    const articleMessage = new ArticleMessage(message.client, formatted, true)
     await articleMessage.send()
   }
 }

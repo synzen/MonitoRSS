@@ -4,7 +4,7 @@ const FeedData = require('./FeedData.js')
 class NewArticle {
   /**
    * @param {Object<string, any>} article
-   * @param {Object<string, any>} feedObject
+   * @param {Object<string, any>|import('./db/Feed.js')} feedObject
    */
   constructor (article, feedObject) {
     this.article = article
@@ -20,7 +20,7 @@ class NewArticle {
 
   async formatWithFeedData () {
     const { article, feedObject } = this
-    const feed = new Feed(feedObject)
+    const feed = feedObject instanceof Feed ? feedObject : new Feed(feedObject)
     const feedData = await FeedData.ofFeed(feed)
     return {
       ...article,
