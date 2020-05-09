@@ -1,7 +1,7 @@
+const mongoose = require('mongoose')
 const { MenuEmbed, MenuVisual } = require('discord.js-prompts')
 const ThemedEmbed = require('../common/utils/ThemedEmbed')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
-const commonPrompts = require('../common/index.js')
 const handlePaginationError = require('../common/utils/handlePaginationError.js')
 const Subscriber = require('../../../structs/db/Subscriber.js')
 const Translator = require('../../../structs/Translator.js')
@@ -48,24 +48,30 @@ function selectFeedVisual (data) {
  * @param {Data} data
  */
 async function selectFeedFn (message, data) {
-  const newData = await commonPrompts.selectFeed.fn(message, data)
-  const { selectedFeed: feed } = newData
-  const { author, client, guild } = message
-  const feedID = feed._id
+  const { author, client, guild, content } = message
+  const { feeds, subscribers, member } = data
+
+  /** @type {import('../../../structs/db/Subscriber.js')[]} */
+  const meSubscribers = subscribers.flat().filter(s => s.id === member.id)
+  const relevantFeeds = feeds.filter(f => meSubscribers.some(s => s.feed === f._id))
+
+  const selectedIndex = Number(content) - 1
+  const selectedFeed = relevantFeeds[selectedIndex]
+  const feedID = selectedFeed._id
   const existingSubscriber = await Subscriber.getByQuery({
-    feed: feedID,
+    feed: new mongoose.Types.ObjectId(feedID),
     id: author.id
   })
+  const log = createLogger(client.shard.ids[0])
   if (existingSubscriber) {
     await existingSubscriber.delete()
-    const log = createLogger(client.shard.ids[0])
     log.info({
       guild,
       user: author
-    }, `Removed direct subscriber of feed ${feed.url}`)
+    }, `Removed direct subscriber of feed ${selectedFeed.url}`)
   }
   return {
-    ...newData,
+    selectedFeed,
     newSubscriber: false
   }
 }
