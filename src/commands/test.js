@@ -6,7 +6,6 @@ const ArticleTestMessage = require('../structs/ArticleTestMessage.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
-const NewArticle = require('../structs/NewArticle.js')
 const FeedData = require('../structs/FeedData.js')
 const runWithFeedGuild = require('./prompts/runner/run.js')
 
