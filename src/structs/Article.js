@@ -88,17 +88,17 @@ function regexReplace (string, searchOptions, replacement, replacementDirect) {
   return string
 }
 
-function evalRegexConfig (source, text, placeholderName) {
+function evalRegexConfig (feed, text, placeholderName) {
   const customPlaceholders = {}
 
-  if (Array.isArray(source.regexOps[placeholderName])) { // Eval regex if specified
-    if (Array.isArray(source.regexOps.disabled) && source.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
-      for (var y in source.regexOps.disabled) { // Looping through strings of placeholders
-        if (source.regexOps.disabled[y] === placeholderName) return null
+  if (Array.isArray(feed.regexOps[placeholderName])) { // Eval regex if specified
+    if (Array.isArray(feed.regexOps.disabled) && feed.regexOps.disabled.length > 0) { // .disabled can be an array of disabled placeholders, or just a boolean to disable everything
+      for (var y in feed.regexOps.disabled) { // Looping through strings of placeholders
+        if (feed.regexOps.disabled[y] === placeholderName) return null
       }
     }
 
-    const phRegexOps = source.regexOps[placeholderName]
+    const phRegexOps = feed.regexOps[placeholderName]
     for (var regexOpIndex in phRegexOps) { // Looping through each regexOp for a placeholder
       const regexOp = phRegexOps[regexOpIndex]
       if (regexOp.disabled === true || typeof regexOp.name !== 'string') continue
@@ -111,7 +111,7 @@ function evalRegexConfig (source, text, placeholderName) {
   return customPlaceholders
 }
 
-function cleanup (source, text, imgSrcs, anchorLinks) {
+function cleanup (feed, text, imgSrcs, anchorLinks) {
   if (!text) return ''
   const config = getConfig()
   text = htmlDecoder({ data: text }, {}).replace(/\*/gi, '')
@@ -120,7 +120,7 @@ function cleanup (source, text, imgSrcs, anchorLinks) {
     .replace(/<(u)>(.*?)<(\/(u))>/gi, '__$2__') // Underlined markdown
 
   text = htmlConvert.fromString(text, {
-    tables: (source.formatTables !== undefined && typeof source.formatTables === 'boolean' ? source.formatTables : config.feeds.formatTables) === true ? true : [],
+    tables: (feed.formatTables !== undefined && typeof feed.formatTables === 'boolean' ? feed.formatTables : config.feeds.formatTables) === true ? true : [],
     wordwrap: null,
     ignoreHref: true,
     noLinkBrackets: true,
@@ -138,14 +138,14 @@ function cleanup (source, text, imgSrcs, anchorLinks) {
         let exist = true
         const globalExistOption = config.feeds.imgLinksExistence
         exist = globalExistOption
-        const specificExistOption = source.imgLinksExistence
+        const specificExistOption = feed.imgLinksExistence
         exist = typeof specificExistOption !== 'boolean' ? exist : specificExistOption
         if (!exist) return ''
 
         let image = ''
         const globalPreviewOption = config.feeds.imgPreviews
         image = globalPreviewOption ? link : `<${link}>`
-        const specificPreviewOption = source.imgPreviews
+        const specificPreviewOption = feed.imgPreviews
         image = typeof specificPreviewOption !== 'boolean' ? image : specificPreviewOption === true ? link : `<${link}>`
 
         return image
@@ -173,22 +173,22 @@ function cleanup (source, text, imgSrcs, anchorLinks) {
 
 module.exports = class Article {
   constructor (raw, feedData) {
-    const source = feedData.feed
+    const feed = feedData.feed
     const profile = feedData.profile || {}
     this.id = raw._id || null
-    this.source = source
+    this.feed = feed
     this.profile = profile
     this.raw = raw
     this.reddit = raw.meta.link && raw.meta.link.includes('www.reddit.com')
     this.youtube = !!(raw.guid && raw.guid.startsWith('yt:video') && raw['media:group'] && raw['media:group']['media:description'] && raw['media:group']['media:description']['#'])
-    this.enabledRegex = typeof source.regexOps === 'object' && source.regexOps.disabled !== true
+    this.enabledRegex = typeof feed.regexOps === 'object' && feed.regexOps.disabled !== true
     this.placeholdersForRegex = BASE_REGEX_PHS.slice()
     this.privatePlaceholders = ['id', 'fullDescription', 'fullSummary', 'fullTitle', 'fullDate']
     this.placeholders = []
     this.meta = raw.meta
     this.guid = raw.guid
     // Author
-    this.author = raw.author ? cleanup(source, raw.author, undefined, undefined) : ''
+    this.author = raw.author ? cleanup(feed, raw.author) : ''
     if (this.author) this.placeholders.push('author')
 
     // Link
@@ -199,7 +199,7 @@ module.exports = class Article {
     // Title
     this.titleImages = []
     this.titleAnchors = []
-    this.fullTitle = cleanup(source, raw.title, this.titleImages, this.titleAnchors)
+    this.fullTitle = cleanup(feed, raw.title, this.titleImages, this.titleAnchors)
     this.title = this.fullTitle.length > 150 ? `${this.fullTitle.slice(0, 150)}...` : this.fullTitle
     if (this.title) this.placeholders.push('title')
     for (var titleImgNum in this.titleImages) {
@@ -227,7 +227,7 @@ module.exports = class Article {
     // Description and reddit-specific placeholders
     this.descriptionImages = []
     this.descriptionAnchors = []
-    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(source, raw.description, this.descriptionImages, this.descriptionAnchors) // Account for youtube's description
+    this.fullDescription = this.youtube ? raw['media:group']['media:description']['#'] : cleanup(feed, raw.description, this.descriptionImages, this.descriptionAnchors) // Account for youtube's description
     this.description = this.fullDescription
     this.description = this.description.length > 800 ? `${this.description.slice(0, 790)}...` : this.description
     if (this.description) this.placeholders.push('description')
@@ -253,7 +253,7 @@ module.exports = class Article {
     // Summary
     this.summaryImages = []
     this.summaryAnchors = []
-    this.fullSummary = cleanup(source, raw.summary, this.summaryImages, this.summaryAnchors)
+    this.fullSummary = cleanup(feed, raw.summary, this.summaryImages, this.summaryAnchors)
     this.summary = this.fullSummary.length > 800 ? `${this.fullSummary.slice(0, 790)}...` : this.fullSummary
     if (this.summary && raw.summary !== raw.description) this.placeholders.push('summary')
     for (var sumImgNum in this.summaryImages) {
@@ -293,7 +293,7 @@ module.exports = class Article {
         categoryList += cats[category].trim()
         if (parseInt(category, 10) !== cats.length - 1) categoryList += '\n'
       }
-      this.tags = cleanup(source, categoryList)
+      this.tags = cleanup(feed, categoryList)
       if (this.tags) this.placeholders.push('tags')
     }
 
@@ -302,7 +302,7 @@ module.exports = class Article {
       this.regexPlaceholders = {} // Each key is a validRegexPlaceholder, and their values are an object of named placeholders with the modified content
       for (var b in this.placeholdersForRegex) {
         const placeholderName = this.placeholdersForRegex[b]
-        const regexResults = evalRegexConfig(source, this[placeholderName], placeholderName)
+        const regexResults = evalRegexConfig(feed, this[placeholderName], placeholderName)
         this.regexPlaceholders[placeholderName] = regexResults
       }
     }
@@ -467,7 +467,7 @@ module.exports = class Article {
     do {
       result = regex.exec(content)
       if (!result) continue
-      if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
+      if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.feed)
       const fullMatch = result[0]
       const matchName = result[1]
       matches[fullMatch] = this.flattenedJSON.results[matchName] || ''
@@ -490,7 +490,7 @@ module.exports = class Article {
   }
 
   getRawPlaceholders () {
-    if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
+    if (!this.flattenedJSON) this.flattenedJSON = new FlattenedJSON(this.raw, this.feed)
     return this.flattenedJSON.results
   }
 
@@ -498,7 +498,7 @@ module.exports = class Article {
     if (!phName.startsWith('raw:')) return ''
     if (this.flattenedJSON) return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
     else {
-      this.flattenedJSON = new FlattenedJSON(this.raw, this.source)
+      this.flattenedJSON = new FlattenedJSON(this.raw, this.feed)
       return this.flattenedJSON.results[phName.replace(/raw:/, '')] || ''
     }
   }
@@ -523,9 +523,9 @@ module.exports = class Article {
   }
 
   createTestText () {
-    const filterResults = this.testFilters(this.source.filters)
+    const filterResults = this.testFilters(this.feed.filters)
     let testDetails = ''
-    const footer = `\nBelow is the configured message to be sent for this feed in the channel <#${this.source.channel}>:\n\n--`
+    const footer = `\nBelow is the configured message to be sent for this feed in the channel <#${this.feed.channel}>:\n\n--`
     testDetails += '```Markdown\n# BEGIN TEST DETAILS #``````Markdown'
 
     if (this.title) {
@@ -565,7 +565,7 @@ module.exports = class Article {
     const placeholderAnchors = this.listPlaceholderAnchors()
     if (placeholderAnchors) testDetails += `\n\n${placeholderAnchors}`
     if (this.tags) testDetails += `\n\n[Tags]: {tags}\n${this.tags}`
-    if (this.source.filters) {
+    if (this.feed.filters) {
       testDetails += `\n\n[Passed Filters?]: ${filterResults.passed ? 'Yes' : 'No'}${filterResults.passed ? filterResults.listMatches(false) + filterResults.listMatches(true) : filterResults.listMatches(true) + filterResults.listMatches(false)}`
     }
     testDetails += '```' + footer
