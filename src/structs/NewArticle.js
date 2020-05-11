@@ -1,3 +1,4 @@
+const ArticleMessage = require('./ArticleMessage.js')
 const Feed = require('./db/Feed.js')
 const FeedData = require('./FeedData.js')
 
@@ -18,14 +19,12 @@ class NewArticle {
     }
   }
 
-  async formatWithFeedData () {
-    const { article, feedObject } = this
+  async getArticleMessage (bot, debug) {
+    const feedObject = this.feedObject
     const feed = feedObject instanceof Feed ? feedObject : new Feed(feedObject)
     const feedData = await FeedData.ofFeed(feed)
-    return {
-      ...article,
-      _feed: feedData.toJSON()
-    }
+    const articleMessage = new ArticleMessage(bot, this.article, feedData, debug)
+    return articleMessage
   }
 }
 

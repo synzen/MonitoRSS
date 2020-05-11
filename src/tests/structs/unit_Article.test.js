@@ -4,10 +4,12 @@ describe('Unit::structs/Article', function () {
   const baseArticle = {
     meta: {}
   }
-  const baseSource = {}
+  const feedData = {
+    feed: {}
+  }
   describe('testFilters', function () {
     it('works with regular filters', function () {
-      const article = new Article(baseArticle, baseSource)
+      const article = new Article(baseArticle, feedData)
       article.fullTitle = 'my sentence is this'
       const filters = {
         title: ['foo', 'sentence']
@@ -16,7 +18,7 @@ describe('Unit::structs/Article', function () {
       expect(returned.passed).toEqual(true)
     })
     it('works with negated filters', function () {
-      const article = new Article(baseArticle, baseSource)
+      const article = new Article(baseArticle, feedData)
       article.fullTitle = 'my sentence is this'
       const filters = {
         title: ['!sentence']
@@ -25,7 +27,7 @@ describe('Unit::structs/Article', function () {
       expect(returned.passed).toEqual(false)
     })
     it('works with broad filters', function () {
-      const article = new Article(baseArticle, baseSource)
+      const article = new Article(baseArticle, feedData)
       article.fullTitle = 'my sentence is this'
       const filters = {
         title: ['~ence']
@@ -34,7 +36,7 @@ describe('Unit::structs/Article', function () {
       expect(returned.passed).toEqual(true)
     })
     it('works with regular and negated filters', function () {
-      const article = new Article(baseArticle, baseSource)
+      const article = new Article(baseArticle, feedData)
       article.fullTitle = 'my sentence is this'
       const filters = {
         title: ['!sentence', 'my']
@@ -43,7 +45,7 @@ describe('Unit::structs/Article', function () {
       expect(returned.passed).toEqual(false)
     })
     it('works with broad and negated filters', function () {
-      const article = new Article(baseArticle, baseSource)
+      const article = new Article(baseArticle, feedData)
       article.fullTitle = 'my sentence is this'
       const filters = {
         title: ['!sentence', '~ence']

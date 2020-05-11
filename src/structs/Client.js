@@ -5,8 +5,9 @@ const listeners = require('../util/listeners.js')
 const maintenance = require('../maintenance/index.js')
 const ipc = require('../util/ipc.js')
 const Profile = require('./db/Profile.js')
-const NewArticle = require('./NewArticle.js')
 const ArticleMessage = require('./ArticleMessage.js')
+const Feed = require('./db/Feed.js')
+const FeedData = require('./FeedData.js')
 const initialize = require('../util/initialization.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
@@ -159,16 +160,15 @@ class Client extends EventEmitter {
     if (config.dev === true) {
       return
     }
-    const { feedObject } = newArticle
+    const { article, feedObject } = newArticle
     const channel = this.bot.channels.cache.get(feedObject.channel)
     try {
-      const reconstructed = new NewArticle(newArticle.article, newArticle.feedObject)
-      const article = await reconstructed.formatWithFeedData()
       if (!channel) {
         this.log.debug(`No channel found for article ${article._id} of feed ${feedObject._id}`)
         return
       }
-      const articleMessage = new ArticleMessage(this.bot, article, false, debug)
+      const feedData = await FeedData.ofFeed(new Feed(feedObject))
+      const articleMessage = new ArticleMessage(this.bot, article, feedData, debug)
       await articleMessage.send()
       this.log.debug(`Sent article ${article._id} of feed ${feedObject._id}`)
     } catch (err) {

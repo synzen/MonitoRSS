@@ -2,11 +2,12 @@ const { PromptNode } = require('discord.js-prompts')
 const commonPrompts = require('./prompts/common/index.js')
 const Article = require('../structs/Article.js')
 const FeedFetcher = require('../util/FeedFetcher.js')
-const ArticleMessage = require('../structs/ArticleMessage.js')
+const ArticleTestMessage = require('../structs/ArticleTestMessage.js')
 const Translator = require('../structs/Translator.js')
 const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 const NewArticle = require('../structs/NewArticle.js')
+const FeedData = require('../structs/FeedData.js')
 const runWithFeedGuild = require('./prompts/runner/run.js')
 
 module.exports = async (message, command) => {
@@ -27,10 +28,10 @@ module.exports = async (message, command) => {
   if (!article) {
     return message.channel.send(translate('commands.test.noArticles'))
   }
-  const formatted = await (new NewArticle(article, feed)).formatWithFeedData()
-  formatted._feed.channel = message.channel.id
+  const feedData = await FeedData.ofFeed(feed)
+
   if (!simple) {
-    const parsedArticle = new Article(article, formatted._feed, profile || {})
+    const parsedArticle = new Article(article, feedData)
     const testText = parsedArticle.createTestText()
     await message.channel.send(testText, {
       split: {
@@ -40,7 +41,9 @@ module.exports = async (message, command) => {
     })
   }
 
-  const articleMessage = new ArticleMessage(message.client, formatted, true)
+  const articleMessage = new ArticleTestMessage(message.client, article, feedData)
+  articleMessage.feed.channel = message.channel.id
+
   await articleMessage.send()
   await grabMsg.delete()
 }

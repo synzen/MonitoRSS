@@ -172,7 +172,9 @@ function cleanup (source, text, imgSrcs, anchorLinks) {
 }
 
 module.exports = class Article {
-  constructor (raw, source, profile = {}) {
+  constructor (raw, feedData) {
+    const source = feedData.feed
+    const profile = feedData.profile || {}
     this.id = raw._id || null
     this.source = source
     this.profile = profile
@@ -309,7 +311,7 @@ module.exports = class Article {
     this.subscribers = ''
 
     // Get filtered subscriptions
-    const subscribers = source.subscribers
+    const subscribers = feedData.subscribers
     if (subscribers) {
       for (const subscriber of subscribers) {
         const type = subscriber.type

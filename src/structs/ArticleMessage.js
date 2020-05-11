@@ -3,70 +3,33 @@ const Article = require('./Article.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
-/**
- * @typedef {Object} PreparedArticle
- * @property {Object} _feed - The feed source where this article came from
- */
-
 class ArticleMessage {
   /**
-   * @param {Discord.Client} bot - Discord client
-   * @param {PreparedArticle} article - The article object
-   * @param {boolean} skipFilters - Whether this should skip filters
+   * @param {Discord.Client} bot
+   * @param {Object<string, any>} article
+   * @param {import('./FeedData.js')} feedData
    * @param {boolean} debug
    */
-  constructor (bot, article, skipFilters = false, debug = false) {
-    if (!article._feed) {
-      throw new Error('article._feed property missing')
-    }
+  constructor (bot, article, feedData, debug = false) {
+    this.bot = bot
     this.config = getConfig()
     this.log = createLogger(bot.shard.ids[0])
     this.debug = debug
-    this.skipFilters = skipFilters
     this.article = article
-    this.feed = article._feed
-    this.feedID = this.feed._id
-    this.profile = this.feed.profile || {}
-    this.split = this.feed.split
-    this.filters = this.feed.filters
-    this.rfilters = this.feed.rfilters
-    this.filteredFormats = this.feed.filteredFormats
-    /** @type {Discord.TextChannel} */
-    this.channelID = this.feed.channel
-    this.channel = bot.channels.cache.get(this.channelID)
-    if (!this.channel) {
-      if (this.debug) {
-        this.log.info(`Skipping article delivery due to missing channel (${this.channelID})`)
-      }
-      return
-    }
+    this.feed = feedData.feed
     this.sendFailed = 0
-    this.webhook = undefined
-    this.parsedArticle = new Article(article, this.feed, this.profile)
-
-    if (Object.keys(this.feed.rfilters).length > 0) {
-      // Regex
-      this.filterResults = this.parsedArticle.testFilters(this.rfilters)
-    } else {
-      // Regular
-      this.filterResults = this.parsedArticle.testFilters(this.filters)
-    }
-
-    this.subscriptionIDs = this.parsedArticle.subscriptionIds
-    const { embeds, text } = this._generateMessage()
-    this.text = text
-    this.embeds = embeds
+    this.parsedArticle = new Article(article, feedData)
   }
 
   passedFilters () {
-    if (this.skipFilters) {
-      return true
+    if (Object.keys(this.feed.rfilters).length > 0) {
+      return this.parsedArticle.testFilters(this.feed.rfilters).passed
     } else {
-      return this.filterResults.passed
+      return this.parsedArticle.testFilters(this.feed.filters).passed
     }
   }
 
-  _determineFormat () {
+  determineFormat () {
     const { feed, filteredFormats, parsedArticle } = this
     let text = feed.text || this.config.feeds.defaultText
     let embeds = feed.embeds
@@ -110,7 +73,7 @@ class ArticleMessage {
     return { text, embeds }
   }
 
-  _convertEmbeds (embeds) {
+  convertEmbeds (embeds) {
     const { parsedArticle } = this
     const richEmbeds = []
     const convert = parsedArticle.convertKeywords.bind(parsedArticle)
@@ -193,8 +156,12 @@ class ArticleMessage {
     return richEmbeds
   }
 
-  async _resolveWebhook () {
-    const { channel, feed } = this
+  async getWebhook () {
+    const { feed, bot } = this
+    const channel = bot.channels.cache.get(feed.channel)
+    if (!channel) {
+      return
+    }
     const permission = Discord.Permissions.FLAGS.MANAGE_WEBHOOKS
     if (!feed.webhook || !channel.guild.me.permissionsIn(channel).has(permission)) {
       return
@@ -205,43 +172,42 @@ class ArticleMessage {
       if (!hook) {
         return
       }
-      const guildID = channel.guild.id
-      const guildName = channel.guild.name
-      this.webhook = hook
-      this.webhook.guild = { id: guildID, name: guildName }
-      let name
-      if (feed.webhook.name) {
-        name = this.parsedArticle.convertKeywords(feed.webhook.name)
-      }
-      if (name) {
-        if (name.length > 32) {
-          name = name.slice(0, 29) + '...'
-        } else if (name.length < 2) {
-          name = undefined
-        }
-      }
-      this.webhook.name = name
-      this.webhook.avatar = undefined
-      if (feed.webhook.avatar) {
-        this.webhook.avatar = this.parsedArticle.convertImgs(feed.webhook.avatar)
-      }
+      return hook
     } catch (err) {
       this.log.warn({
-        channel: this.channel,
+        channel,
         error: err
       }, 'Cannot fetch webhooks for ArticleMessage webhook initialization to send message')
     }
   }
 
-  _generateMessage (ignoreLimits = !!this.split) {
-    const { parsedArticle } = this
-    const { text, embeds } = this._determineFormat()
+  /**
+   * @param {import('discord.js').Webhook} [webhook]
+   */
+  getWebhookNameAvatar (webhook) {
+    const { feed, parsedArticle } = this
+    const options = {
+      username: webhook.name,
+      avatarURL: webhook.avatarURL()
+    }
+    if (feed.webhook.name) {
+      options.username = parsedArticle.convertKeywords(feed.webhook.name).slice(0, 32)
+    }
+    if (feed.webhook.avatar) {
+      options.avatarURL = parsedArticle.convertImgs(feed.webhook.avatar)
+    }
+    return options
+  }
 
-    // Determine what the text/sembed are, based on whether an embed exists
+  generateMessage (ignoreLimits = !!this.feed.split) {
+    const { parsedArticle } = this
+    const { text, embeds } = this.determineFormat()
+
+    // Determine what the text/embeds are, based on whether an embed exists
     let useEmbeds = embeds
     let useText = text
     if (embeds.length > 0) {
-      useEmbeds = this._convertEmbeds(embeds)
+      useEmbeds = this.convertEmbeds(embeds)
       let convert = text
       if (text === '{empty}') {
         convert = ''
@@ -254,61 +220,67 @@ class ArticleMessage {
       }
       useText = parsedArticle.convertKeywords(convert, ignoreLimits)
     }
+    if (useText.length > 1950 && !ignoreLimits) {
+      useText = `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.`
+    }
+    if (useText.length === 0 && embeds.length === 0) {
+      useText = `Unable to send empty message for feed article <${this.article.link}> (${this.feed._id}).`
+    }
     return {
       embeds: useEmbeds,
       text: useText
     }
   }
 
-  _createSendOptions () {
-    let text = this.text
-    if (this.text.length > 1950 && !this.split) {
-      text = `Error: Feed Article could not be sent for ${this.article.link} due to a single message's character count >1950.`
-    } else if (this.text.length === 0 && this.embeds.length === 0) {
-      text = `Unable to send empty message for feed article <${this.article.link}> (${this.feedID}).`
-    }
+  createOptions (embeds, medium) {
+    const isWebhook = medium instanceof Discord.Webhook
     const options = {
       allowedMentions: {
         parse: ['roles', 'users', 'everyone']
       }
     }
-    if (this.webhook) {
-      options.username = this.webhook.name
-      options.avatarURL = this.webhook.avatar
-    }
-    if (this.webhook) {
-      options.embeds = this.embeds
+    if (isWebhook) {
+      options.embeds = embeds
+      const webhookSettings = this.getWebhookNameAvatar(medium)
+      options.username = webhookSettings.username
+      options.avatarURL = webhookSettings.avatarURL
     } else {
-      options.embed = this.embeds[0]
+      options.embed = embeds[0]
     }
-    options.split = this.split
-    return { text, options }
+    options.split = this.feed.split
+    return options
+  }
+
+  async getMedium () {
+    const webhook = await this.getWebhook()
+    if (webhook) {
+      return webhook
+    }
+    const channel = this.bot.channels.cache.get(this.feed.channel)
+    return channel
   }
 
   async send () {
     if (this.config.dev) {
-      return null
+      return
     }
-    if (!this.feed) {
-      throw new Error('Missing feed')
+    const medium = await this.getMedium()
+    if (!medium) {
+      throw new Error('Missing medium to send message to')
     }
-    if (!this.channel) {
-      throw new Error('Missing feed channel')
-    }
-    await this._resolveWebhook()
     if (!this.passedFilters()) {
       if (this.config.log.unfiltered === true || this.debug) {
         this.log.info({
-          channel: this.channel
+          medium
         }, `'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`)
       }
       return
     }
 
-    const { text, options } = this._createSendOptions()
+    const { text, embeds } = this.generateMessage()
+    const options = this.createOptions(embeds, medium)
 
     // Send the message, and repeat attempt if failed
-    const medium = this.webhook ? this.webhook : this.channel
     try {
       return await medium.send(text, options)
     } catch (err) {
@@ -317,22 +289,9 @@ class ArticleMessage {
         if (this.debug) {
           this.log.info({
             error: err
-          }, `${this.feedID}: Message has been translated but could not be sent (TITLE: ${this.article.title})`)
+          }, `${this.feed._id}: Message has been translated but could not be sent (TITLE: ${this.article.title})`)
         }
         throw err
-      }
-      if (this.split) {
-        const tooLong = err.message.includes('2000 or fewer in length')
-        const noSplitChar = err.message.includes('no split characters')
-        if (tooLong) {
-          delete this.split
-        }
-        if (tooLong || noSplitChar) {
-          // Regenerate with the character limits for individual placeholders again
-          const { embeds, text } = this._generateMessage(false)
-          this.embeds = embeds
-          this.text = text
-        }
       }
       return this.send()
     }

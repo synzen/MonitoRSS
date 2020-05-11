@@ -1,4 +1,5 @@
 process.env.TEST_ENV = true
+const Discord = require('discord.js')
 const ArticleMessage = require('../../structs/ArticleMessage.js')
 const Article = require('../../structs/Article.js')
 
@@ -11,80 +12,151 @@ const Bot = () => ({
   },
   channels: {
     cache: {
-      get: () => ({})
+      get: jest.fn()
     }
   }
 })
 
 describe('Unit::ArticleMessage', function () {
+  const baseFeedData = {
+    feed: {}
+  }
+  afterEach(function () {
+    jest.restoreAllMocks()
+  })
   describe('constructor', function () {
-    const rawArticle = {
-      _feed: {
-        channel: 'abc',
-        filters: { a: 1 },
-        rfilters: {},
-        filteredFormats: []
-      }
-    }
-    const rawArticleWithNoFilters = {
-      _feed: {
-        channel: 'abc',
-        filters: {},
-        rfilters: {},
-        filteredFormats: []
-      }
-    }
-
-    const generatedMessage = { text: 'awszf', embeds: [1, 2] }
-    beforeEach(function () {
-      jest.spyOn(ArticleMessage.prototype, '_generateMessage')
-        .mockImplementation(() => generatedMessage)
-      jest.spyOn(Article.prototype, 'testFilters')
-        .mockReturnValue({ passed: true })
-    })
-    afterEach(function () {
-      jest.restoreAllMocks()
-    })
-    it('throws an error if _feed is missing', function () {
-      expect(() => new ArticleMessage(Bot(), {}))
-        .toThrowError('article._feed property missing')
-    })
+    const baseArticle = {}
     it('defines the correct properties for this.parsedArticle', function () {
-      const parsedArticle = { foo: 'bar', subscriptionIDs: [1, 4, 5], testFilters: jest.fn() }
+      const parsedArticle = {
+        foo: 'barbara'
+      }
       Article.mockImplementationOnce(() => parsedArticle)
-      const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
+      const bot = Bot()
+      const feedData = {
+        foo: 'baz',
+        feed: 'boobaz'
+      }
+      const debug = true
+      const m = new ArticleMessage(bot, baseArticle, feedData, debug)
+      expect(m.bot).toEqual(bot)
+      expect(m.article).toEqual(baseArticle)
+      expect(m.feed).toEqual(feedData.feed)
       expect(m.parsedArticle).toEqual(parsedArticle)
-      expect(m.channelID).toEqual(rawArticle._feed.channel)
-      expect(m.text).toEqual(generatedMessage.text)
-      expect(m.embeds).toEqual(generatedMessage.embeds)
-      expect(m.subscriptionIDs).toEqual(parsedArticle.subscriptionIds)
-      expect(m.skipFilters).toEqual(false)
+      expect(m.debug).toEqual(debug)
     })
-    it('attaches filter results if passed', function () {
-      const filterResults = { a: 1, passed: true }
-      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
-      const m = new ArticleMessage(Bot(), rawArticle)
-      expect(m.filterResults).toEqual(filterResults)
-      expect(m.passedFilters()).toEqual(filterResults.passed)
+  })
+  describe('passedFilters', function () {
+    it('returns the tested filters for regex if it exists', function () {
+      const feedData = {
+        feed: {
+          rfilters: {
+            title: 'myregex'
+          }
+        }
+      }
+      const testFilters = jest.fn()
+        .mockReturnValue({
+          passed: 'what is here'
+        })
+      const parsedArticle = {
+        testFilters
+      }
+      const m = new ArticleMessage(Bot(), {}, feedData)
+      m.parsedArticle = parsedArticle
+      expect(m.passedFilters()).toEqual('what is here')
+      expect(testFilters).toHaveBeenCalledWith(feedData.feed.rfilters)
     })
-    it('attaches filter results if not passed', function () {
-      const filterResults = { a: 1, passed: false }
-      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
-      const m = new ArticleMessage(Bot(), rawArticle)
-      expect(m.filterResults).toEqual(filterResults)
-      expect(m.passedFilters()).toEqual(filterResults.passed)
+    it('returns the tested filters for non-regex if regex does not exist', function () {
+      const feedData = {
+        feed: {
+          filters: {
+            title: ['a', 'b']
+          },
+          rfilters: {}
+        }
+      }
+      const testFilters = jest.fn()
+        .mockReturnValue({
+          passed: 'water'
+        })
+      const parsedArticle = {
+        testFilters
+      }
+      const m = new ArticleMessage(Bot(), {}, feedData)
+      m.parsedArticle = parsedArticle
+      expect(m.passedFilters()).toEqual('water')
+      expect(testFilters).toHaveBeenCalledWith(feedData.feed.filters)
     })
-    it('passes filters if there are no filters in feed', function () {
-      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue({ passed: true })
-      const m = new ArticleMessage(Bot(), rawArticleWithNoFilters)
-      expect(m.passedFilters()).toEqual(true)
+  })
+  describe('getWebhookNameAvatar', function () {
+    it('returns default name and avatar if no custom settings', function () {
+      const avatarURL = 'ews4r357ytur'
+      const webhook = {
+        name: 'abc',
+        avatarURL: () => avatarURL
+      }
+      const feedData = {
+        ...baseFeedData,
+        feed: {
+          webhook: {}
+        }
+      }
+      const m = new ArticleMessage(Bot(), {}, feedData)
+      expect(m.getWebhookNameAvatar(webhook))
+        .toEqual({
+          username: webhook.name,
+          avatarURL
+        })
     })
-    it('does not attach filter results if skip filters', function () {
-      const filterResults = { a: 1, passed: false }
-      jest.spyOn(Article.prototype, 'testFilters').mockReturnValue(filterResults)
-      const m = new ArticleMessage(Bot(), rawArticle, true)
-      expect(m.skipFilters).toEqual(true)
-      expect(m.passedFilters()).toEqual(true)
+    it('returns the custom name if it exists', function () {
+      const avatarURL = 'ews4r357ytur'
+      const webhook = {
+        name: 'abc',
+        avatarURL: () => avatarURL
+      }
+      const feedData = {
+        ...baseFeedData,
+        feed: {
+          webhook: {
+            name: 'bqa wsedtgrf'
+          }
+        }
+      }
+      const customName = 'we4r5ytu6j546ut7ryji5e6rr7irkmkw34ry54'
+      const m = new ArticleMessage(Bot(), {}, feedData)
+      m.parsedArticle = {
+        convertKeywords: () => customName
+      }
+      expect(m.getWebhookNameAvatar(webhook))
+        .toEqual({
+          username: customName.slice(0, 32),
+          avatarURL
+        })
+    })
+    it('returns the custom avatar if it exists', function () {
+      const avatarURL = 'ews4r357ytur'
+      const webhook = {
+        name: 'abc',
+        avatarURL: () => avatarURL
+      }
+      const feedData = {
+        ...baseFeedData,
+        feed: {
+          webhook: {
+            avatar: 'my avatar {placeholders}'
+          }
+        }
+      }
+      const customAvatar = 'we4r5ytu6j546ut7ryji5e6rr7irkmkw34ry54'
+      const m = new ArticleMessage(Bot(), {}, feedData)
+      m.parsedArticle = {
+        convertImgs: () => customAvatar
+      }
+      expect(m.getWebhookNameAvatar(webhook))
+        .toEqual({
+          username: webhook.name,
+          avatarURL: customAvatar
+        })
     })
   })
   describe('send()', function () {
@@ -96,194 +168,118 @@ describe('Unit::ArticleMessage', function () {
         embeds: []
       }
     }
+    let medium
     beforeEach(function () {
       const generatedMessage = { text: 'awszf', embeds: [1, 2] }
-      jest.spyOn(ArticleMessage.prototype, '_resolveWebhook')
+      medium = {
+        send: jest.fn()
+      }
+      jest.spyOn(ArticleMessage.prototype, 'getWebhook')
         .mockImplementation()
-      jest.spyOn(ArticleMessage.prototype, '_createSendOptions')
+      jest.spyOn(ArticleMessage.prototype, 'createOptions')
         .mockImplementation(() => generatedMessage)
+      jest.spyOn(ArticleMessage.prototype, 'getMedium')
+        .mockReturnValue(medium)
+      jest.spyOn(ArticleMessage.prototype, 'passedFilters')
+        .mockReturnValue(true)
+      jest.spyOn(ArticleMessage.prototype, 'generateMessage')
+        .mockReturnValue({})
     })
     afterEach(function () {
       jest.restoreAllMocks()
     })
-    it('throws an error if missing feed', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.feed = undefined
-      return expect(m.send()).rejects.toBeInstanceOf(Error)
-    })
     it('throws an error if missing channel', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.channel = undefined
+      const bot = Bot()
+      const m = new ArticleMessage(bot, rawArticle, baseFeedData)
+      jest.spyOn(m, 'getMedium')
+        .mockResolvedValue()
       return expect(m.send()).rejects.toBeInstanceOf(Error)
     })
     it('does not send the article if it did not pass filters', async function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      const medium = { send: jest.fn(async () => Promise.resolve()) }
-      m.passedFilters = () => false
-      m.channel = medium
+      const bot = Bot()
+      const m = new ArticleMessage(bot, rawArticle, baseFeedData)
+      jest.spyOn(m, 'passedFilters')
+        .mockReturnValue(false)
       await m.send()
       expect(medium.send).not.toHaveBeenCalled()
     })
-    it('sends via webhook if it exists', async function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      const channel = { send: jest.fn(async () => Promise.resolve()) }
-      const webhook = { send: jest.fn(async () => Promise.resolve()) }
-      m.channel = channel
-      m.webhook = webhook
-      m.filterResults = { passed: true }
-      await m.send()
-      expect(webhook.send).toHaveBeenCalledTimes(1)
-    })
     it('throws the same error that channel.send throws ', async function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
+      const bot = Bot()
+      const m = new ArticleMessage(bot, rawArticle, baseFeedData)
       const error = new Error('hello world')
       error.code = 5555
-      const channel = { send: jest.fn(async () => Promise.reject(error)) }
-      m.channel = channel
-      m.filterResults = { passed: true }
-      try {
-        await m.send()
-        throw new Error('Send promise resolved')
-      } catch (err) {
-        expect(err).toEqual(error)
-      }
+      medium.send.mockRejectedValue(error)
+      await expect(m.send()).rejects.toThrow(error)
     })
     it('does not retry if errorCode is 50013', async function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
+      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
       const error = new Error('hello world')
       error.code = 50013
-      const channel = { send: jest.fn(async () => Promise.reject(error)) }
-      m.channel = channel
-      m.filterResults = { passed: true }
-      try {
-        await m.send()
-        throw new Error('Send promise resolved')
-      } catch (err) {
-        expect(channel.send).toHaveBeenCalledTimes(1)
-      }
+      medium.send.mockRejectedValue(error)
+      await expect(m.send()).rejects.toThrow(Error)
+      expect(medium.send).toHaveBeenCalledTimes(1)
     })
     it('retries a maximum of 4 times with an unrecognized error', async function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.filterResults = { passed: true }
+      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
       const error = new Error('hello world')
-      const channel = { send: jest.fn(async () => Promise.reject(error)) }
-      m.channel = channel
-      try {
-        await m.send()
-        throw new Error('Send promise resolved')
-      } catch (err) {
-        expect(channel.send).toHaveBeenCalledTimes(4)
-      }
-    })
-    it('regenerates message with character limits if this.split is true and error is about message with >2000 chars', async function () {
-      const generated = {
-        embeds: [1, 2, 3],
-        text: 'adsefgrth'
-      }
-      const m = new ArticleMessage(Bot(), rawArticle)
-      jest.spyOn(m, '_generateMessage').mockReturnValueOnce(generated)
-      const error = new Error('2000 or fewer in length')
-      const channel = { send: jest.fn(async () => Promise.resolve()) }
-      channel.send.mockImplementationOnce(async () => Promise.reject(error))
-      m.channel = channel
-      m.split = { a: 1 }
-      m.filterResults = { passed: true }
-      await m.send()
-      expect(channel.send).toHaveBeenCalledTimes(2)
-      expect(m.split).toBeUndefined()
-      expect(m.text).toEqual(generated.text)
-      expect(m.embeds).toEqual(generated.embeds)
-    })
-    it('regenerates message with character limits if this.split is true and error is about no split characters', async function () {
-      const generated = {
-        embeds: [1, 6, 3],
-        text: 'adsefftjgugrth'
-      }
-      const splitOptions = { b: 2 }
-      const m = new ArticleMessage(Bot(), rawArticle)
-      jest.spyOn(m, '_generateMessage').mockReturnValueOnce(generated)
-      const error = new Error('no split characters')
-      const channel = { send: jest.fn(async () => Promise.resolve()) }
-      channel.send.mockImplementationOnce(async () => Promise.reject(error))
-      m.channel = channel
-      m.split = splitOptions
-      m.filterResults = { passed: true }
-      await m.send()
-      expect(channel.send).toHaveBeenCalledTimes(2)
-      expect(m.split).toEqual(splitOptions)
-      expect(m.text).toEqual(generated.text)
-      expect(m.embeds).toEqual(generated.embeds)
+      medium.send.mockRejectedValue(error)
+      await expect(m.send()).rejects.toThrow(Error)
+      expect(medium.send).toHaveBeenCalledTimes(4)
     })
   })
-  describe('_createSendOptions', function () {
-    const rawArticle = {
-      _feed: {
-        filters: {},
-        rfilters: {},
-        filteredFormats: [],
-        embeds: []
-      }
-    }
+  describe('createOptions', function () {
+    const rawArticle = {}
     beforeEach(function () {
-      jest.spyOn(ArticleMessage.prototype, '_convertEmbeds').mockImplementation()
+      jest.spyOn(ArticleMessage.prototype, 'getWebhookNameAvatar')
+        .mockReturnValue({})
     })
-    it('returns the webhook if there is a webhook', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.webhook = { name: 'foo', avatar: 'bar' }
-      m.text = 'abc'
-      m.article = {}
-      const data = m._createSendOptions()
-      expect(data.options.username).toEqual('foo')
-      expect(data.options.avatarURL).toEqual('bar')
+    it('parses roles, users, everyone', function () {
+      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const embeds = []
+      const options = m.createOptions(embeds)
+      expect(options.allowedMentions.parse)
+        .toEqual(expect.arrayContaining(['roles', 'users', 'everyone']))
     })
-    it('returns the text', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.text = 'abc'
-      m.article = {}
-      const data = m._createSendOptions()
-      expect(data.text).toEqual(m.text)
+    it('sets the username and avatar URL if the medium is a webhook', function () {
+      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const webhookSettings = {
+        username: 'fooby',
+        avatarURL: 'urlhere'
+      }
+      jest.spyOn(m, 'getWebhookNameAvatar')
+        .mockReturnValue(webhookSettings)
+      const webhook = new Discord.Webhook()
+      const options = m.createOptions([], webhook)
+      expect(options.username).toEqual(webhookSettings.username)
+      expect(options.avatarURL).toEqual(webhookSettings.avatarURL)
     })
     it('returns the first embed in a list of embeds if there is no webhook', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.text = 'abc'
-      m.embeds = [1, 2, 3]
-      const data = m._createSendOptions()
-      expect(data.options.embed).toEqual(m.embeds[0])
-      expect(data.options.embeds).toBeUndefined()
+      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const embeds = [1, 2, 3]
+      const data = m.createOptions(embeds)
+      expect(data.embed).toEqual(embeds[0])
+      expect(data.embeds).toBeUndefined()
     })
     it('returns all the embeds in a list there is a webhook', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.webhook = { name: 'foo', avatar: 'bar' }
-      m.text = 'abc'
-      m.embeds = [1, 2, 3]
-      const data = m._createSendOptions()
-      expect(data.options.embed).toBeUndefined()
-      expect(data.options.embeds).toEqual(m.embeds)
+      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const embeds = [1, 2, 3]
+      const webhook = new Discord.Webhook()
+      const data = m.createOptions(embeds, webhook)
+      expect(data.embed).toBeUndefined()
+      expect(data.embeds).toEqual(embeds)
     })
     it('attaches user split options for non-test-message', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.split = { a: 'b' }
-      m.article = {}
-      m.text = 'aszf'
-      const data = m._createSendOptions()
-      expect(data.options.split).toEqual(m.split)
-    })
-    it('changes the text to error if there is no split and the text exceeds 1950 length', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.article = {}
-      m.text = ''
-      while (m.text.length < 2000) {
-        m.text += 'awsfdegrhk'
+      const feedData = {
+        ...baseFeedData,
+        feed: {
+          split: {
+            a: 'b'
+          }
+        }
       }
-      const data = m._createSendOptions()
-      expect(data.text).toEqual(expect.stringContaining('>1950'))
-    })
-    it('changes the text to error if there is no text and no embeds', function () {
-      const m = new ArticleMessage(Bot(), rawArticle)
-      m.article = {}
-      m.text = ''
-      const data = m._createSendOptions()
-      expect(data.text).toEqual(expect.stringContaining('empty message'))
+      const m = new ArticleMessage(Bot(), rawArticle, feedData)
+      const data = m.createOptions([])
+      expect(data.split).toEqual(feedData.feed.split)
     })
   })
 })
