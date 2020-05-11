@@ -22,10 +22,11 @@ class ArticleMessage {
   }
 
   passedFilters () {
-    if (Object.keys(this.feed.rfilters).length > 0) {
-      return this.parsedArticle.testFilters(this.feed.rfilters).passed
+    const { filters, rfilters } = this.feed
+    if (Object.keys(rfilters).length > 0) {
+      return this.parsedArticle.testFilters(rfilters).passed
     } else {
-      return this.parsedArticle.testFilters(this.feed.filters).passed
+      return this.parsedArticle.testFilters(filters).passed
     }
   }
 
