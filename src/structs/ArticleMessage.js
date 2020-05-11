@@ -30,7 +30,8 @@ class ArticleMessage {
   }
 
   determineFormat () {
-    const { feed, filteredFormats, parsedArticle } = this
+    const { feed, parsedArticle } = this
+    const filteredFormats = feed.filteredFormats
     let text = feed.text || this.config.feeds.defaultText
     let embeds = feed.embeds
 
