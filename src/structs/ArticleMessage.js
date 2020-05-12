@@ -17,6 +17,7 @@ class ArticleMessage {
     this.debug = debug
     this.article = article
     this.feed = feedData.feed
+    this.filteredFormats = feedData.filteredFormats
     this.sendFailed = 0
     this.parsedArticle = new Article(article, feedData)
   }
@@ -31,8 +32,7 @@ class ArticleMessage {
   }
 
   determineFormat () {
-    const { feed, parsedArticle } = this
-    const filteredFormats = feed.filteredFormats
+    const { feed, parsedArticle, filteredFormats } = this
     let text = feed.text || this.config.feeds.defaultText
     let embeds = feed.embeds
 

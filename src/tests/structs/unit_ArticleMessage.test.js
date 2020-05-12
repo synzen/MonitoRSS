@@ -34,13 +34,15 @@ describe('Unit::ArticleMessage', function () {
       const bot = Bot()
       const feedData = {
         foo: 'baz',
-        feed: 'boobaz'
+        feed: 'boobaz',
+        filteredFormats: 'asrfdeuj'
       }
       const debug = true
       const m = new ArticleMessage(bot, baseArticle, feedData, debug)
       expect(m.bot).toEqual(bot)
       expect(m.article).toEqual(baseArticle)
       expect(m.feed).toEqual(feedData.feed)
+      expect(m.filteredFormats).toEqual(feedData.filteredFormats)
       expect(m.parsedArticle).toEqual(parsedArticle)
       expect(m.debug).toEqual(debug)
     })
