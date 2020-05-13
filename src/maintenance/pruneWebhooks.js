@@ -29,9 +29,7 @@ async function pruneWebhooks (bot, feeds) {
     relevantFeeds.push(feed)
     relevantChannels.push(channel)
   }
-  const webhooksFetchResults = await Promise.allSettled(relevantFeeds.map((f, i) => {
-    return relevantChannels[i].fetchWebhooks()
-  }))
+  const webhooksFetchResults = await Promise.allSettled(relevantChannels.map(c => c.fetchWebhooks()))
 
   // Parse the fetch results
   const fetchesLength = webhooksFetchResults.length
@@ -39,7 +37,7 @@ async function pruneWebhooks (bot, feeds) {
     const feed = relevantFeeds[j]
     const webhookFetchResult = webhooksFetchResults[j]
     const webhookID = feed.webhook.id
-    const channel = bot.channels.cache.get(feed.channel)
+    const channel = relevantChannels[j]
     let removeReason = ''
     if (webhookFetchResult.status === 'fulfilled') {
       const webhooks = webhookFetchResult.value
