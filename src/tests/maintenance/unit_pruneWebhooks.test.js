@@ -40,6 +40,10 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       fetchWebhooks: async () => new Map([['1', {}]])
     }
     bot.channels.cache.get
+      // Fetching webhooks
+      .mockReturnValueOnce(channelOne)
+      .mockReturnValueOnce(channelThree)
+      // Parsing them
       .mockReturnValueOnce(channelOne)
       .mockReturnValueOnce(channelThree)
     await pruneWebhooks(bot, feeds)
@@ -72,6 +76,11 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       fetchWebhooks: async () => new Map([['3', {}]])
     }
     bot.channels.cache.get
+      // Fetching webhooks
+      .mockReturnValueOnce(channelThree)
+      .mockReturnValueOnce(channelOne)
+      .mockReturnValueOnce(channelOne)
+      // Parsing
       .mockReturnValueOnce(channelThree)
       .mockReturnValueOnce(channelOne)
       .mockReturnValueOnce(channelOne)
@@ -97,6 +106,7 @@ describe('Unit::maintenance/pruneWebhooks', function () {
     }
     bot.channels.cache.get
       .mockReturnValueOnce(channelOne)
+      .mockReturnValueOnce(channelOne)
     await pruneWebhooks(bot, feeds)
     expect(feeds[0].webhook).toBeUndefined()
     expect(feeds[0].save).toHaveBeenCalled()
@@ -114,6 +124,9 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       save: jest.fn()
     }]
     bot.channels.cache.get
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce(null)
+      .mockReturnValueOnce(null)
       .mockReturnValueOnce(null)
       .mockReturnValueOnce(null)
       .mockReturnValueOnce(null)
@@ -144,6 +157,10 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       guild: {}
     }
     bot.channels.cache.get
+      // Fetching webhooks
+      .mockReturnValueOnce(channelTwo)
+      .mockReturnValueOnce(channelOne)
+      // Parsing
       .mockReturnValueOnce(channelTwo)
       .mockReturnValueOnce(channelOne)
     Supporter.enabled = true

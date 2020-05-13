@@ -7,33 +7,47 @@ const createLogger = require('../util/logger/create.js')
  *
  * Remove all webhooks from feeds that don't exist
  * @param {import('discord.js').Client} bot
- * @param {import('../structs/db/Feed.js')} feeds
+ * @param {import('../structs/db/Feed.js')[]} feeds
  * @returns {number}
  */
 async function pruneWebhooks (bot, feeds) {
   const log = createLogger(bot.shard.ids[0])
   /** @type {Map<string, Feed>} */
   const updates = []
-  const length = feeds.length
-  for (var i = length - 1; i >= 0; --i) {
+  const relevantFeeds = []
+  const relevantChannels = []
+  // Optimize webhook fetches
+  for (var i = feeds.length - 1; i >= 0; --i) {
     const feed = feeds[i]
     if (!feed.webhook) {
       continue
     }
-    const webhookID = feed.webhook.id
-    const channelID = feed.channel
-    const channel = bot.channels.cache.get(channelID)
+    const channel = bot.channels.cache.get(feed.channel)
     if (!channel) {
       continue
     }
+    relevantFeeds.push(feed)
+    relevantChannels.push(channel)
+  }
+  const webhooksFetchResults = await Promise.allSettled(relevantFeeds.map((f, i) => {
+    return relevantChannels[i].fetchWebhooks()
+  }))
 
+  // Parse the fetch results
+  const fetchesLength = webhooksFetchResults.length
+  for (var j = 0; j < fetchesLength; ++j) {
+    const feed = relevantFeeds[j]
+    const webhookFetchResult = webhooksFetchResults[j]
+    const webhookID = feed.webhook.id
+    const channel = bot.channels.cache.get(feed.channel)
     let removeReason = ''
-    try {
-      const webhooks = await channel.fetchWebhooks()
+    if (webhookFetchResult.status === 'fulfilled') {
+      const webhooks = webhookFetchResult.value
       if (!webhooks.get(webhookID)) {
         removeReason = `Removing missing webhook from feed ${feed._id}`
       }
-    } catch (err) {
+    } else {
+      const err = webhookFetchResult.reason
       if (err.code === 50013) {
         removeReason = `Removing unpermitted webhook from feed ${feed._id}`
       } else {
