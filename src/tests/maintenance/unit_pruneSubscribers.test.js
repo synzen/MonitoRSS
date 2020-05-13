@@ -42,7 +42,11 @@ describe('Unit::maintenance/pruneSubscribers', function () {
         ids: []
       },
       guilds: {
-        cache: new Map([['guildA', {}]])
+        cache: new Map([['guildA', {
+          members: {
+            fetch: async () => true
+          }
+        }]])
       },
       users: {
         fetch: async () => true

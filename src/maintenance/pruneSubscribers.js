@@ -1,5 +1,6 @@
 const Subscriber = require('../structs/db/Subscriber.js')
 const createLogger = require('../util/logger/create.js')
+const MISSING_CODES = [10011, 10013, 10007]
 
 /**
  * Precondition: Feeds have been pruned, and thus no feeds
@@ -23,6 +24,8 @@ async function pruneSubscribers (bot, feeds) {
   }
   const deletions = []
   const subscribersLength = subscribers.length
+  const relevantSubscribers = []
+  const relevantFetches = []
   for (var j = subscribersLength - 1; j >= 0; --j) {
     const subscriber = subscribers[j]
     const feed = feedsById.get(subscriber.feed)
@@ -40,25 +43,26 @@ async function pruneSubscribers (bot, feeds) {
     }
 
     if (subscriber.type === Subscriber.TYPES.USER) {
-      try {
-        await guild.members.fetch(subscriber.id)
-      } catch (err) {
-        if (err.code === 10013 || err.code === 10007) {
-          log.info(`Deleting missing user subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
-          deletions.push(subscriber.delete())
-        }
-      }
+      relevantSubscribers.push(subscriber)
+      relevantFetches.push(guild.members.fetch(subscriber.id))
     } else if (subscriber.type === Subscriber.TYPES.ROLE) {
-      try {
-        await guild.roles.fetch(subscriber.id)
-      } catch (err) {
-        if (err.code === 10011) {
-          log.info(`Deleting missing role subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
-          deletions.push(subscriber.delete())
-        }
-      }
+      relevantSubscribers.push(subscriber)
+      relevantFetches.push(guild.roles.fetch(subscriber.id))
     }
   }
+
+  const completedFetches = await Promise.allSettled(relevantFetches)
+  const fetchesLength = completedFetches.length
+  for (var k = 0; k < fetchesLength; ++k) {
+    const subscriber = relevantSubscribers[k]
+    const feed = feedsById.get(subscriber.feed)
+    const result = completedFetches[k]
+    if (result.status === 'rejected' && MISSING_CODES.includes(result.reason.code)) {
+      log.info(`Deleting missing ${subscriber.type} subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
+      deletions.push(subscriber.delete())
+    }
+  }
+
   await Promise.all(deletions)
   return deletions.length
 }
