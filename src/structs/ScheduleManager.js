@@ -64,7 +64,7 @@ class ScheduleManager extends EventEmitter {
   addSchedule (schedule) {
     this.schedules.push(schedule)
     this.scheduleRunCounts.set(schedule, 0)
-    if (Base.isMongoDatabase) {
+    if (!Base.isMongoDatabase) {
       this.memoryCollections.set(schedule, {})
     }
     this.headers.set(schedule, {})
