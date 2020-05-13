@@ -41,12 +41,10 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
  */
 async function pruneWithBot (bot) {
   const feeds = await Feed.getAll()
-  await Promise.all([
-    pruneSubscribers(bot, feeds),
-    pruneProfileAlerts(bot),
-    pruneWebhooks(bot, feeds),
-    checkPermissions.feeds(bot, feeds)
-  ])
+  await pruneSubscribers(bot, feeds)
+  await pruneProfileAlerts(bot)
+  await pruneWebhooks(bot, feeds)
+  await checkPermissions.feeds(bot, feeds)
 }
 
 /**
