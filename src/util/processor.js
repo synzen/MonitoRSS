@@ -209,7 +209,6 @@ process.on('message', async m => {
       promises.push(getFeed({ ...m, link, toDebug, rssList, docs }, log))
     }
     await Promise.all(promises)
-    process.exit()
   } catch (err) {
     log.error(err, 'processor')
   }

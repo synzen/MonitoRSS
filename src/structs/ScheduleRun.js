@@ -4,7 +4,7 @@ const FailRecord = require('./db/FailRecord.js')
 const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
 const ScheduleStats = require('./db/ScheduleStats.js')
-const Processor = require('./Processor.js')
+const ProcessorPool = require('./ProcessorPool.js')
 const maintenance = require('../maintenance/index.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
@@ -51,7 +51,6 @@ class ScheduleRun extends EventEmitter {
      */
     this.failedURLs = new Set()
     this.succeededURLs = new Set()
-    this._processorList = []
     this._cycleTotalCount = 0
     // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
     this.memoryCollections = memoryCollections
@@ -333,11 +332,12 @@ class ScheduleRun extends EventEmitter {
     }
   }
 
-  createMessageHandler (batchGroup, batchIndex, debugFeedURLs, callback) {
+  createMessageHandler (batchGroup, batchIndex, debugFeedURLs, onFinish) {
     const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
     const thisBatch = batchGroup[batchIndex]
     const batchLength = Object.keys(thisBatch).length
     let completedLinks = 0
+    let thisFailures = 0
 
     return linkCompletion => {
       const { link, status, lastModified, etag, memoryCollection, newArticle } = linkCompletion
@@ -352,6 +352,7 @@ class ScheduleRun extends EventEmitter {
         return this.emit('newArticle', newArticle)
       }
       if (status === 'failed') {
+        ++thisFailures
         this.failedURLs.add(link)
         FailRecord.record(link)
           .catch(err => this.log.error(err, `Unable to record url failure ${link}`))
@@ -371,25 +372,21 @@ class ScheduleRun extends EventEmitter {
         this.log.info(`${link}: Link responded from processor`)
       }
       if (completedLinks === batchLength) {
-        if (callback) {
-          callback()
-        }
+        onFinish(thisFailures)
       }
     }
   }
 
   processBatchGroup (batchGroup, batchIndex, debugFeedIDs, debugFeedURLs, onGroupCompleted) {
     const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
-    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}`)
     const thisBatch = batchGroup[batchIndex]
-    const { process: processor } = new Processor()
-    this._processorList.push(processor)
+    const thisBatchLength = Object.keys(thisBatch).length
+    const processor = ProcessorPool.getProcessor()
+    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in pool: ${ProcessorPool.pool.length}`)
     const scopedBatchIndex = batchIndex
-    const handler = this.createMessageHandler(batchGroup, batchIndex, debugFeedURLs, () => {
-      processor.removeAllListeners()
-      processor.kill()
-      this._processorList.splice(this._processorList.indexOf(processor), 1)
-      this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed batch index ${batchIndex + 1}/${batchGroup.length}`)
+    const handler = this.createMessageHandler(batchGroup, batchIndex, debugFeedURLs, (failures) => {
+      ProcessorPool.releaseProcessor(processor)
+      this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed batch index ${batchIndex + 1}/${batchGroup.length} (${failures} failed/${thisBatchLength})`)
       if (scopedBatchIndex + 1 < batchGroup.length) {
         this.processBatchGroup(batchGroup, scopedBatchIndex + 1, debugFeedIDs, debugFeedURLs, onGroupCompleted)
       } else {
@@ -408,18 +405,6 @@ class ScheduleRun extends EventEmitter {
       scheduleName: this.name,
       testRun: this.testRun
     })
-  }
-
-  terminate () {
-    this.killChildren()
-  }
-
-  killChildren () {
-    for (const x of this._processorList) {
-      x.removeAllListeners()
-      x.kill()
-    }
-    this._processorList = []
   }
 
   finishNoFeedsCycle () {
