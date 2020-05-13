@@ -27,7 +27,6 @@ const schema = new mongoose.Schema({
 schema.add(Version)
 
 schema.index({
-  feedURL: 1,
   scheduleName: 1
 })
 
