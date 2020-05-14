@@ -38,7 +38,10 @@ class ScheduleRun extends EventEmitter {
     this.name = schedule.name
     this.schedule = schedule
     this.log = createLogger(this.name)
-    this.processorPool = new ProcessorPool()
+    /**
+     * @type {import('./Processor.js')[]}
+     */
+    this.processorsInUse = []
     /**
      * @type {Set<string>[][]}
     */
@@ -59,6 +62,28 @@ class ScheduleRun extends EventEmitter {
     this.ran = runCount // # of times this schedule has ran
     this.headers = headers
     this.testRun = testRun
+  }
+
+  getProcessor () {
+    const processor = ProcessorPool.get()
+    this.processorsInUse.push(processor)
+    return processor
+  }
+
+  /**
+   * @param {import('./Processor.js')} processor
+   */
+  releaseProcessor (processor) {
+    ProcessorPool.release(processor)
+    this.processorsInUse.splice(this.processorsInUse.indexOf(processor), 1)
+  }
+
+  /**
+   * @param {import('./Processor.js')} processor
+   */
+  killProcessor (processor) {
+    this.releaseProcessor(processor)
+    ProcessorPool.kill(processor)
   }
 
   async getFailRecordMap () {
@@ -390,8 +415,8 @@ class ScheduleRun extends EventEmitter {
     const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
     const thisBatch = batchGroup[batchIndex]
     const thisBatchLength = Object.keys(thisBatch).length
-    const processor = this.processorPool.get()
-    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in pool: ${this.processorPool.pool.length}`)
+    const processor = this.getProcessor()
+    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in use: ${this.processorsInUse.length}`)
     const scopedBatchIndex = batchIndex
     const onAllConnected = () => {
       this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} connected batch index ${batchIndex + 1}/${batchGroup.length}`)
@@ -400,7 +425,7 @@ class ScheduleRun extends EventEmitter {
       }
     }
     const onComplete = (failures) => {
-      this.processorPool.release(processor)
+      this.releaseProcessor(processor)
       this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed batch index ${batchIndex + 1}/${batchGroup.length} (${failures} failed/${thisBatchLength})`)
       if (scopedBatchIndex + 1 === batchGroup.length) {
         onGroupCompleted()
@@ -423,7 +448,9 @@ class ScheduleRun extends EventEmitter {
 
   terminate () {
     this.removeAllListeners()
-    this.processorPool.killUnavailables()
+    for (const processor of this.processorsInUse) {
+      this.killProcessor(processor)
+    }
   }
 
   finishNoFeedsCycle () {

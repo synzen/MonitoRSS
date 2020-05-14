@@ -165,7 +165,7 @@ class ScheduleManager extends EventEmitter {
     const headers = this.headers.get(schedule)
     const run = new ScheduleRun(schedule, runCount, memoryCollection, headers)
     run.once('finish', () => {
-      this.terminateRun(run)
+      run.removeAllListeners()
       this.incrementRunCount(schedule)
     })
     run.on('newArticle', this._onNewArticle.bind(this))
