@@ -1,16 +1,23 @@
 const Processor = require('./Processor.js')
 
 class ProcessorPool {
-  static createProcessor () {
+  constructor () {
+    /**
+     * @type {import('./Processor.js')[]}
+     */
+    this.pool = []
+  }
+
+  create () {
     const processor = new Processor()
     this.pool.push(processor)
     return processor
   }
 
-  static getProcessor () {
+  get () {
     const found = this.pool.find(p => p.available)
     if (!found) {
-      const created = this.createProcessor()
+      const created = this.create()
       created.lock()
       return created
     }
@@ -21,14 +28,18 @@ class ProcessorPool {
   /**
    * @param {import('./Processor')} processor
    */
-  static releaseProcessor (processor) {
+  release (processor) {
     processor.release()
   }
-}
 
-/**
- * @type {import('./Processor')[]}
- */
-ProcessorPool.pool = []
+  killUnavailables () {
+    const unavailables = this.pool.filter(p => !p.available)
+    unavailables.map(p => p.kill())
+    for (const p of unavailables) {
+      p.kill()
+      this.pool.splice(this.pool.indexOf(p), 1)
+    }
+  }
+}
 
 module.exports = ProcessorPool

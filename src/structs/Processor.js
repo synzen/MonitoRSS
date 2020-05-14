@@ -27,6 +27,11 @@ class Processor {
   send (...args) {
     return this.process.send(...args)
   }
+
+  kill () {
+    this.release()
+    this.process.kill()
+  }
 }
 
 module.exports = Processor

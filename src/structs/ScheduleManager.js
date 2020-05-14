@@ -97,8 +97,7 @@ class ScheduleManager extends EventEmitter {
    * @param {import('./ScheduleRun.js')} run
    */
   terminateRun (run) {
-    // run.terminate()
-    run.removeAllListeners()
+    run.terminate()
     this.scheduleRuns.splice(this.scheduleRuns.indexOf(run), 1)
   }
 

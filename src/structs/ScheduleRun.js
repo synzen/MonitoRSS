@@ -38,6 +38,7 @@ class ScheduleRun extends EventEmitter {
     this.name = schedule.name
     this.schedule = schedule
     this.log = createLogger(this.name)
+    this.processorPool = new ProcessorPool()
     /**
      * @type {Set<string>[][]}
     */
@@ -381,11 +382,11 @@ class ScheduleRun extends EventEmitter {
     const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
     const thisBatch = batchGroup[batchIndex]
     const thisBatchLength = Object.keys(thisBatch).length
-    const processor = ProcessorPool.getProcessor()
-    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in pool: ${ProcessorPool.pool.length}`)
+    const processor = this.processorPool.get()
+    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in pool: ${this.processorPool.pool.length}`)
     const scopedBatchIndex = batchIndex
     const handler = this.createMessageHandler(batchGroup, batchIndex, debugFeedURLs, (failures) => {
-      ProcessorPool.releaseProcessor(processor)
+      this.processorPool.release(processor)
       this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed batch index ${batchIndex + 1}/${batchGroup.length} (${failures} failed/${thisBatchLength})`)
       if (scopedBatchIndex + 1 < batchGroup.length) {
         this.processBatchGroup(batchGroup, scopedBatchIndex + 1, debugFeedIDs, debugFeedURLs, onGroupCompleted)
@@ -405,6 +406,11 @@ class ScheduleRun extends EventEmitter {
       scheduleName: this.name,
       testRun: this.testRun
     })
+  }
+
+  terminate () {
+    this.removeAllListeners()
+    this.processorPool.killUnavailables()
   }
 
   finishNoFeedsCycle () {
