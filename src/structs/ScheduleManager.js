@@ -91,6 +91,16 @@ class ScheduleManager extends EventEmitter {
   }
 
   /**
+   * @param {import('./ScheduleRun.js')} run
+   * @param {import('./db/Schedule.js')} schedule
+   */
+  endRun (run, schedule) {
+    run.removeAllListeners()
+    this.scheduleRuns.splice(this.scheduleRuns.indexOf(run), 1)
+    this.incrementRunCount(schedule)
+  }
+
+  /**
    * Terminate a run by killing its children, removing
    * listeners and deleting it from storage
    *
@@ -164,10 +174,7 @@ class ScheduleManager extends EventEmitter {
     const memoryCollection = this.memoryCollections.get(schedule)
     const headers = this.headers.get(schedule)
     const run = new ScheduleRun(schedule, runCount, memoryCollection, headers)
-    run.once('finish', () => {
-      run.removeAllListeners()
-      this.incrementRunCount(schedule)
-    })
+    run.once('finish', () => this.endRun(run, schedule))
     run.on('newArticle', this._onNewArticle.bind(this))
     this.scheduleRuns.push(run)
     run.run(this.debugFeedIDs)
