@@ -333,10 +333,11 @@ class ScheduleRun extends EventEmitter {
     }
   }
 
-  createMessageHandler (batchGroup, batchIndex, debugFeedURLs, onFinish) {
+  createMessageHandler (batchGroup, batchIndex, debugFeedURLs, onAllConnected, onComplete) {
     const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
     const thisBatch = batchGroup[batchIndex]
     const batchLength = Object.keys(thisBatch).length
+    let connectedLinks = 0
     let completedLinks = 0
     let thisFailures = 0
 
@@ -346,6 +347,13 @@ class ScheduleRun extends EventEmitter {
         this.headers[link] = {
           lastModified,
           etag
+        }
+        return
+      }
+      if (status === 'connected') {
+        ++connectedLinks
+        if (connectedLinks === batchLength) {
+          onAllConnected()
         }
         return
       }
@@ -373,7 +381,7 @@ class ScheduleRun extends EventEmitter {
         this.log.info(`${link}: Link responded from processor`)
       }
       if (completedLinks === batchLength) {
-        onFinish(thisFailures)
+        onComplete(thisFailures)
       }
     }
   }
@@ -385,15 +393,20 @@ class ScheduleRun extends EventEmitter {
     const processor = this.processorPool.get()
     this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in pool: ${this.processorPool.pool.length}`)
     const scopedBatchIndex = batchIndex
-    const handler = this.createMessageHandler(batchGroup, batchIndex, debugFeedURLs, (failures) => {
-      this.processorPool.release(processor)
-      this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed batch index ${batchIndex + 1}/${batchGroup.length} (${failures} failed/${thisBatchLength})`)
+    const onAllConnected = () => {
+      this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} connected batch index ${batchIndex + 1}/${batchGroup.length}`)
       if (scopedBatchIndex + 1 < batchGroup.length) {
         this.processBatchGroup(batchGroup, scopedBatchIndex + 1, debugFeedIDs, debugFeedURLs, onGroupCompleted)
-      } else {
+      }
+    }
+    const onComplete = (failures) => {
+      this.processorPool.release(processor)
+      this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed batch index ${batchIndex + 1}/${batchGroup.length} (${failures} failed/${thisBatchLength})`)
+      if (scopedBatchIndex + 1 === batchGroup.length) {
         onGroupCompleted()
       }
-    })
+    }
+    const handler = this.createMessageHandler(batchGroup, batchIndex, debugFeedURLs, onAllConnected, onComplete)
     processor.on('message', handler.bind(this))
     processor.send({
       config: getConfig(),

@@ -109,12 +109,33 @@ async function getFeed (data, log) {
   if (urlLog) {
     urlLog.info('Isolated processor received in batch')
   }
+
+  let fetchData
   try {
-    const fetchData = await fetchFeed(headers[link], link, urlLog)
+    fetchData = await fetchFeed(headers[link], link, urlLog)
+    process.send({ status: 'connected' })
     if (!fetchData) {
       process.send({ status: 'success', link })
       return
     }
+  } catch (err) {
+    process.send({ status: 'connected' })
+    if (err instanceof RequestError || err instanceof FeedParserError) {
+      if (config.log.linkErrs) {
+        log.warn({
+          error: err
+        }, `Skipping ${link}`)
+      }
+    } else {
+      if (urlLog) {
+        urlLog.info('Sending failed status during connection')
+      }
+      log.error(err, 'URL connection')
+    }
+    return process.send({ status: 'failed', link, rssList })
+  }
+
+  try {
     const { stream, response } = fetchData
     const charset = FeedFetcher.getCharsetFromResponse(response)
     const articleList = await parseStream(stream, charset, link, urlLog)
@@ -172,8 +193,7 @@ async function getFeed (data, log) {
     if (urlLog) {
       urlLog.info('Sending failed status')
     }
-    process.send({ status: 'failed', link, rssList })
-    if (err instanceof RequestError || err instanceof FeedParserError) {
+    if (err instanceof FeedParserError) {
       if (config.log.linkErrs) {
         log.warn({
           error: err
@@ -182,6 +202,7 @@ async function getFeed (data, log) {
     } else {
       log.error(err, 'Cycle logic')
     }
+    process.send({ status: 'failed', link, rssList })
   }
 }
 

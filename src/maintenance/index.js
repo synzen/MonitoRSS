@@ -39,11 +39,18 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
  * @param {import('discord.js').Client} bot
  */
 async function pruneWithBot (bot) {
+  const log = createLogger(bot.shard.ids[0])
+  log.debug('Pruning with bot. Fetching feeds')
   const feeds = await Feed.getAll()
+  log.debug(`Fetched ${feeds.length} feeds`)
   await pruneSubscribers(bot, feeds)
+  log.debug('Pruned subscribers')
   await pruneProfileAlerts(bot)
+  log.debug('Pruned profile alerts')
   await pruneWebhooks(bot, feeds)
+  log.debug('Pruned webhooks')
   await checkPermissions.feeds(bot, feeds)
+  log.debug('Checked permissions of feeds')
 }
 
 /**
@@ -53,7 +60,7 @@ async function prunePostInit (guildIdsByShard) {
 }
 
 function cycleFunctions () {
-  const log = createLogger('M')
+  const log = createLogger()
   if (Supporter.enabled) {
     Patron.refresh()
       .then(() => log.info('Patron check finished'))
