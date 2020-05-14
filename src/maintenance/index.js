@@ -1,7 +1,6 @@
 const pruneProfiles = require('./pruneProfiles.js')
 const pruneProfileAlerts = require('./pruneProfileAlerts.js')
 const pruneFeeds = require('./pruneFeeds.js')
-const pruneArticles = require('./pruneArticles.js')
 const pruneFilteredFormats = require('./pruneFilteredFormats.js')
 const pruneFailRecords = require('./pruneFailRecords.js')
 const pruneSubscribers = require('./pruneSubscribers.js')
@@ -51,7 +50,6 @@ async function pruneWithBot (bot) {
  * @param {Map<string, number>} guildIdsByShard
  */
 async function prunePostInit (guildIdsByShard) {
-  await pruneArticles.pruneArticles(guildIdsByShard)
 }
 
 function cycleFunctions () {
@@ -76,7 +74,6 @@ module.exports = {
   pruneProfiles,
   pruneProfileAlerts,
   pruneFeeds,
-  pruneArticles,
   pruneFilteredFormats,
   pruneFailRecords,
   pruneSubscribers,
