@@ -209,6 +209,7 @@ class ClientManager extends EventEmitter {
     }
     // Only after all shards are ready do we broadcast start init
     try {
+      this.log.debug('Running pre-init')
       await maintenance.prunePreInit(this.guildIdsByShard, this.channelIdsByShard)
       const data = {
         setPresence: this.setPresence || false,
@@ -232,7 +233,9 @@ class ClientManager extends EventEmitter {
     try {
       this.log.info('All shards have initialized by the Sharding Manager.')
       this.sendQueuedArticles(shard)
+      this.log.debug('Running post-init')
       await maintenance.prunePostInit(this.guildIdsByShard)
+      this.log.debug('Post-init finished')
       if (Supporter.enabled) {
         await Patron.refresh()
       }
