@@ -107,15 +107,16 @@ class ScheduleRun extends EventEmitter {
       Schedule.getAll(),
       Supporter.getValidGuilds()
     ])
+    const feedsLength = feeds.length
     const schedulesToFetch = []
-    for (var h = feeds.length - 1; h >= 0; --h) {
+    for (var h = 0; h < feedsLength; ++h) {
       const feed = feeds[h]
       schedulesToFetch.push(feed.determineSchedule(schedules, supporterGuilds))
     }
     this.log.debug(`Determing schedules of ${schedulesToFetch.length} feeds`)
     const determinedSchedules = await Promise.all(schedulesToFetch)
     const jsons = []
-    for (var i = feeds.length - 1; i >= 0; --i) {
+    for (var i = 0; i < feedsLength; ++i) {
       const feed = feeds[i]
       const name = determinedSchedules[i].name
       // Match schedule
