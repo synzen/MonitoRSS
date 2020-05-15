@@ -200,7 +200,7 @@ async function getFeed (data, log) {
         }, `Skipping ${link}`)
       }
     } else {
-      log.error(err, 'Cycle logic')
+      log.error(err, `Cycle logic for ${link}`)
     }
     process.send({ status: 'failed', link, rssList })
   }
