@@ -23,7 +23,7 @@ async function testScheduleRun (userConfig) {
       refreshRateMinutes: 999
     }
     console.log('Running...')
-    const scheduleRun = new ScheduleRun(schedule, 0, {}, {}, true)
+    const scheduleRun = new ScheduleRun(schedule, 0, undefined, {}, true)
     scheduleRun.on('finish', () => {
       con.close()
     })
