@@ -485,9 +485,10 @@
       "prompt": "Type the name of the webhook in this channel you wish to use (case sensitive), or type `exit` to cancel.\n\nTo use a different name or avatar url of the webhook when articles are sent for this particular feed, add parameters `--name=\"my new name here\"` or `--avatar=\"http://website.com/image.jpg\"`. Placeholders are supported.",
       "notFound": "No such webhook named \"{{name}}\" found for this channel. Try again, or type `exit` to cancel.",
       "tooLong": "Webhook name must be between 2 and 32 characters. Try again, or type `exit` to cancel.",
-      "noPermission": "I must have Manage Webhooks permission in this channel in order to work.",
+      "noPermission": "I must have Manage Webhooks permission in this channel in order to work. Try again, or type `exit` to cancel.",
       "removeSuccess": "Successfully removed webhook from the feed <{{link}}>.",
-      "connected": "I am now connected to {{clientMention}}, and will send feed articles for <{{link}}>!"
+      "connected": "I am now connected to {{clientMention}}, and will send feed articles for <{{link}}>!",
+      "missingChannel": "The channel <#{{channelID}}> for the feed <{{link}}> is missing. Try again, or type `exit` to cancel."
     },
     "sub": {
       "title": "Self-Subscription Addition",
