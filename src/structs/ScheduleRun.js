@@ -5,6 +5,7 @@ const Feed = require('./db/Feed.js')
 const Supporter = require('./db/Supporter.js')
 const ScheduleStats = require('./db/ScheduleStats.js')
 const ProcessorPool = require('./ProcessorPool.js')
+const promisify = require('util').promisify
 const maintenance = require('../maintenance/index.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
@@ -344,18 +345,15 @@ class ScheduleRun extends EventEmitter {
     this.log.debug(`7/8 Created ${batches.length} batches`)
     const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
     this.log.debug(`8/8 Created ${batchGroups.length} batch groups (${JSON.stringify(batchGroups.map(arr => arr.map(m => Object.keys(m).length)))})`)
-    let groupsCompleted = 0
+    const processBatchGroup = promisify(this.processBatchGroup).bind(this)
+    const processing = []
     for (let i = 0; i < batchGroups.length; ++i) {
       const group = batchGroups[i]
       this.log.debug(`[GROUPS] Starting batch group ${i + 1}/${batchGroups.length}`)
-      this.processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs, () => {
-        ++groupsCompleted
-        this.log.debug(`[GROUPS] Finished batch group ${groupsCompleted}/${batchGroups.length}`)
-        if (groupsCompleted === batchGroups.length) {
-          this.finishFeedsCycle()
-        }
-      })
+      processing.push(processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs))
     }
+    await Promise.all(processing)
+    await this.finishFeedsCycle()
   }
 
   createMessageHandler (batchGroup, batchIndex, debugFeedURLs, onAllConnected, onComplete) {
@@ -456,7 +454,6 @@ class ScheduleRun extends EventEmitter {
   finishNoFeedsCycle () {
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)
-    this.emit('finish')
   }
 
   async finishFeedsCycle () {
@@ -466,7 +463,6 @@ class ScheduleRun extends EventEmitter {
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     const count = this.failedURLs.size > 0 ? ` (${this.failedURLs.size}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
     this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
-    this.emit('finish')
   }
 
   async updateStats (cycleTime) {

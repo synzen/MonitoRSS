@@ -160,7 +160,7 @@ class ScheduleManager extends EventEmitter {
    *
    * @param {import('./db/Schedule.js')} schedule
    */
-  run (schedule) { // Run schedules with respect to their refresh times
+  async run (schedule) {
     if (this.atMaxRuns(schedule)) {
       const runs = this.getRuns(schedule)
       const hungupURLs = runs.map(run => run.getHungUpURLs())
@@ -174,10 +174,14 @@ class ScheduleManager extends EventEmitter {
     const memoryCollection = this.memoryCollections.get(schedule)
     const headers = this.headers.get(schedule)
     const run = new ScheduleRun(schedule, runCount, memoryCollection, headers)
-    run.once('finish', () => this.endRun(run, schedule))
     run.on('newArticle', this._onNewArticle.bind(this))
     this.scheduleRuns.push(run)
-    run.run(this.debugFeedIDs)
+    try {
+      await run.run(this.debugFeedIDs)
+      this.endRun(run, schedule)
+    } catch (err) {
+      this.log.error(err, 'Error during schedule run')
+    }
   }
 
   /**
