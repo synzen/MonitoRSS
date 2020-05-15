@@ -30,6 +30,11 @@ schema.index({
   scheduleName: 1
 })
 
+schema.index({
+  feedURL: 1,
+  scheduleName: 1
+})
+
 exports.schema = schema
 /** @type {import('mongoose').Model} */
 exports.Model = null

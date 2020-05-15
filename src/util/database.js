@@ -184,13 +184,17 @@ async function mapArticleDocumentsToURL (documents) {
 /**
  * @param {string} scheduleName
  * @param {Object<string, Object<string, any>[]>} memoryCollection
+ * @param {string[]} urls
  */
-async function getAllDocuments (scheduleName, memoryCollection) {
+async function getAllDocuments (scheduleName, memoryCollection, urls) {
   if (memoryCollection) {
     return memoryCollection
   } else {
     const documents = await Article.Model.find({
-      scheduleName
+      scheduleName,
+      feedURL: {
+        $in: urls
+      }
     }).lean().exec()
     return module.exports.mapArticleDocumentsToURL(documents)
   }

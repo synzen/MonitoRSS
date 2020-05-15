@@ -219,11 +219,12 @@ process.on('message', async m => {
   const { debugURLs, scheduleName, memoryCollections, config } = m
   const logMarker = scheduleName
   const log = createLogger(logMarker)
+  const urls = Object.keys(currentBatch)
   try {
     await connectToDatabase(config)
-    const articleDocuments = await databaseFuncs.getAllDocuments(scheduleName, memoryCollections)
+    const articleDocuments = await databaseFuncs.getAllDocuments(scheduleName, memoryCollections, urls)
     const promises = []
-    for (const link in currentBatch) {
+    for (var link in currentBatch) {
       const docs = articleDocuments[link] || []
       const rssList = currentBatch[link]
       const toDebug = debugURLs.includes(link)

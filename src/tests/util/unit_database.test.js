@@ -317,6 +317,19 @@ describe('Unit::util/database', function () {
       expect(spy).toHaveBeenCalledWith(documents)
       expect(returned).toEqual(mappedResult)
     })
+    it('uses the right query', async function () {
+      const scheduleName = 'aqwrsefd'
+      jest.spyOn(databaseFuncs, 'mapArticleDocumentsToURL')
+        .mockReturnValue()
+      const urls = ['a', 'b']
+      await databaseFuncs.getAllDocuments(scheduleName, undefined, urls)
+      expect(Article.Model.find).toHaveBeenCalledWith({
+        scheduleName,
+        feedURL: {
+          $in: urls
+        }
+      })
+    })
   })
   describe('mapArticleDocumentsToURL', function () {
     it('returns correctly', async function () {
