@@ -9,7 +9,8 @@ const dbName = 'test_int_feed'
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  useCreateIndex: true
+  useCreateIndex: true,
+  autoIndex: false
 }
 
 jest.mock('../../../config.js', () => ({

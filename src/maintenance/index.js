@@ -40,17 +40,20 @@ async function prunePreInit (guildIdsByShard, channelIdsByShard) {
  */
 async function pruneWithBot (bot) {
   const log = createLogger(bot.shard.ids[0])
+  const guilds = bot.guilds.cache.keyArray()
   log.debug('Pruning with bot. Fetching feeds')
-  const feeds = await Feed.getAll()
-  log.debug(`Fetched ${feeds.length} feeds`)
-  await pruneSubscribers(bot, feeds)
-  log.debug('Pruned subscribers')
-  await pruneProfileAlerts(bot)
-  log.debug('Pruned profile alerts')
-  await pruneWebhooks(bot, feeds)
-  log.debug('Pruned webhooks')
-  await checkPermissions.feeds(bot, feeds)
-  log.debug('Checked permissions of feeds')
+  const feeds = await Feed.getManyByQuery({
+    guild: {
+      $in: guilds
+    }
+  })
+  log.debug(`Fetched ${feeds.length} feeds for pruning`)
+  await Promise.all([
+    pruneSubscribers(bot, feeds),
+    pruneProfileAlerts(bot),
+    pruneWebhooks.pruneWebhooks(bot, feeds),
+    checkPermissions.feeds(bot, feeds)
+  ])
 }
 
 /**
