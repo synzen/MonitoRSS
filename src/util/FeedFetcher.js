@@ -234,7 +234,10 @@ class FeedFetcher {
     const articleList = []
 
     return new Promise((resolve, reject) => {
-      stream.on('error', err => reject(new RequestError(this.REQUEST_ERROR_CODE, err.message))) // feedparser may not handle all errors such as incorrect headers. (feedparser v2.2.9)
+      stream.on('error', err => {
+        // feedparser may not handle all errors such as incorrect headers. (feedparser v2.2.9)
+        reject(new FeedParserError(this.REQUEST_ERROR_CODE, err.message))
+      })
 
       feedparser.on('error', err => {
         feedparser.removeAllListeners('end')
