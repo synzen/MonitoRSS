@@ -1,110 +1,11 @@
-const Discord = require('discord.js')
-const moment = require('moment')
-const Schedule = require('../structs/db/Schedule.js')
-const Translator = require('../structs/Translator.js')
-const Profile = require('../structs/db/Profile.js')
-const FailRecord = require('../structs/db/FailRecord.js')
-const Supporter = require('../structs/db/Supporter.js')
-const Feed = require('../structs/db/Feed.js')
-const getConfig = require('../config.js').get
+const { PromptNode } = require('discord.js-prompts')
+const listPrompts = require('./prompts/list/index.js')
+const runWithFeedGuild = require('./prompts/runner/run.js')
 
-module.exports = async (message, command) => {
-  const [profile, supporter, schedules, supporterGuilds] = await Promise.all([
-    Profile.get(message.guild.id),
-    Supporter.getValidSupporterOfGuild(message.guild.id),
-    Schedule.getAll(),
-    Supporter.getValidGuilds()
-  ])
-  const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
-  const feeds = await Feed.getManyBy('guild', message.guild.id)
-  if (feeds.length === 0) {
-    return message.channel.send(translate('commands.list.noFeeds'))
-  }
+module.exports = async (message) => {
+  const selectSourceFeedNode = new PromptNode(listPrompts.listFeeds.prompt)
 
-  const config = getConfig()
-  const failRecordsMap = {}
-  const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
-
-  // Generate the info for each feed as an array, and push into another array
-  const failRecords = await Promise.all(feeds.map(feed => FailRecord.getBy('url', feed.url)))
-  const fetchedSchedules = await Promise.all(feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds)))
-
-  for (const record of failRecords) {
-    if (record) {
-      failRecordsMap[record.url] = record
-    }
-  }
-  let vipDetails = ''
-  if (supporter) {
-    vipDetails += '**Patron Until:** '
-    if (supporter.expireAt) {
-      const expireAt = moment(supporter.expireAt)
-      const daysLeft = Math.round(moment.duration(expireAt.diff(moment())).asDays())
-      vipDetails += `${expireAt.format('D MMMM YYYY')} (${daysLeft} days)\n`
-    } else {
-      vipDetails += 'Ongoing\n'
-    }
-  } else {
-    vipDetails = '\n'
-  }
-
-  const desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
-  // desc += failedFeedCount > 0 ? translate('commands.list.failAlert', { failLimit: FAIL_LIMIT, prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix }) : ''
-
-  const list = new Discord.MessageEmbed()
-    .setAuthor(translate('commands.list.currentActiveFeeds'))
-    .setDescription(desc)
-
-  if (supporter) {
-    list.setFooter(`Patronage backed by ${supporter._id}`)
-  }
-
-  feeds.forEach((feed, i) => {
-    // URL
-    const url = feed.url.length > 500 ? translate('commands.list.exceeds500Characters') : feed.url
-
-    // Title
-    const title = feed.title
-
-    // Channel
-    const channel = `<#${feed.channel}>`
-
-    // Status
-    let status = ''
-    if (feed.disabled) {
-      status = translate('commands.list.statusDisabled', { reason: feed.disabled })
-    } else if (FailRecord.limit !== 0) {
-      const failRecord = failRecordsMap[feed.url]
-      if (!failRecord || !failRecord.hasFailed()) {
-        let health = '(100% health)'
-        if (failRecord) {
-          // Determine hours between config spec and now, then calculate health
-          const hours = (new Date().getTime() - new Date(failRecord.failedAt).getTime()) / 36e5
-          health = `(${100 - Math.ceil(hours / config.feeds.hoursUntilFail * 100)}% health)`
-        }
-        status = translate('commands.list.statusOk', { failCount: `${health}` })
-      } else {
-        status = translate('commands.list.statusFailed')
-      }
-    }
-
-    // Title checks
-    const titleChecks = feed.checkTitles === true ? translate('commands.list.titleChecksEnabled') : ''
-
-    // Webhook
-    const webhook = feed.webhook ? `${translate('commands.list.webhook')}: ${feed.webhook.id}\n` : ''
-
-    // Refresh rate
-    const schedule = fetchedSchedules[i]
-    let refreshRate = schedule.refreshRateMinutes < 1 ? `${schedule.refreshRateMinutes * 60} ${translate('commands.list.seconds')}` : `${schedule.refreshRateMinutes} ${translate('commands.list.minutes')}`
-    // : translate('commands.list.unknown')
-
-    // Patreon link
-    if (Supporter.enabled && !supporter) {
-      refreshRate += ' [－](https://www.patreon.com/discordrss)'
-    }
-    list.addField(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('commands.list.refreshRate')}: ${refreshRate}\n${translate('generics.channelUpper')}: ${channel}\n${webhook}${translate('commands.list.link')}: ${url}`)
+  await runWithFeedGuild(selectSourceFeedNode, message, {
+    guildID: message.guild.id
   })
-
-  await message.channel.send('', list)
 }
