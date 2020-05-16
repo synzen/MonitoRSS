@@ -290,7 +290,7 @@ describe('Unit::FeedFetcher', function () {
         fetch.mockResolvedValueOnce({ status: 403, headers: { get: () => null } })
         return expect(FeedFetcher.fetchURL('abc', {}, true)).rejects.toBeInstanceOf(RequestError)
       })
-      it('throws a RequestError with an unsupported Cloudflare message if cloudflare and config._vip is true', function (done) {
+      it.skip('throws a RequestError with an unsupported Cloudflare message if cloudflare and config._vip is true', function (done) {
         config.get.mockReturnValue({
           _vip: true
         })
@@ -304,7 +304,7 @@ describe('Unit::FeedFetcher', function () {
           })
           .catch(done)
       })
-      it('attaches the error code to the error thrown if cloudflare and config._vip is true', function (done) {
+      it.skip('attaches the error code to the error thrown if cloudflare and config._vip is true', function (done) {
         config.get.mockReturnValue({
           _vip: true
         })
