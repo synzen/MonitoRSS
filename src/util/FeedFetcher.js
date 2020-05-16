@@ -5,7 +5,6 @@ const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
-const Supporter = require('../structs/db/Supporter.js')
 const Article = require('../structs/Article.js')
 
 class FeedFetcher {
