@@ -168,9 +168,9 @@ class FeedFetcher {
     }
 
     // Cloudflare is used here
-    if (Supporter.enabled) {
-      throw new RequestError(this.REQUEST_ERROR_CODE, `Bad Cloudflare status code (${endStatus}) (Unsupported on public bot)`, true)
-    }
+    // if (Supporter.enabled) {
+    //   throw new RequestError(this.REQUEST_ERROR_CODE, `Bad Cloudflare status code (${endStatus}) (Unsupported on public bot)`, true)
+    // }
     return this.fetchCloudScraper(url)
   }
   /**
