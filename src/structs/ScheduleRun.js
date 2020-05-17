@@ -40,9 +40,9 @@ class ScheduleRun extends EventEmitter {
     this.schedule = schedule
     this.log = createLogger(this.name)
     /**
-     * @type {import('./Processor.js')[]}
+     * @type {Set<import('./Processor.js')>}
      */
-    this.processorsInUse = []
+    this.processorsInUse = new Set()
     /**
      * @type {Set<string>[][]}
     */
@@ -67,7 +67,7 @@ class ScheduleRun extends EventEmitter {
 
   getProcessor () {
     const processor = ProcessorPool.get()
-    this.processorsInUse.push(processor)
+    this.processorsInUse.add(processor)
     return processor
   }
 
@@ -76,7 +76,6 @@ class ScheduleRun extends EventEmitter {
    */
   releaseProcessor (processor) {
     ProcessorPool.release(processor)
-    this.processorsInUse.splice(this.processorsInUse.indexOf(processor), 1)
   }
 
   /**
@@ -415,7 +414,7 @@ class ScheduleRun extends EventEmitter {
     const thisBatch = batchGroup[batchIndex]
     const thisBatchLength = Object.keys(thisBatch).length
     const processor = this.getProcessor()
-    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in use: ${this.processorsInUse.length}`)
+    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in use: ${this.processorsInUse.size}`)
     const scopedBatchIndex = batchIndex
     const onAllConnected = () => {
       this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} connected batch index ${batchIndex + 1}/${batchGroup.length}`)
@@ -454,6 +453,7 @@ class ScheduleRun extends EventEmitter {
 
   finishNoFeedsCycle () {
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
+    this.processorsInUse.forEach(p => ProcessorPool.kill(p))
     this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)
   }
 
@@ -463,6 +463,7 @@ class ScheduleRun extends EventEmitter {
     const timeTaken = cycleTime.toFixed(2)
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     const count = this.failedURLs.size > 0 ? ` (${this.failedURLs.size}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
+    this.processorsInUse.forEach(p => ProcessorPool.kill(p))
     this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
   }
 
