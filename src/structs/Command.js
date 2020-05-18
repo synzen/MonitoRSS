@@ -264,9 +264,6 @@ class Command {
     if (this.owner) {
       return Command.isOwnerID(member.user.id)
     }
-    if (!Command.enabled) {
-      return false
-    }
     const memberPermissions = this.getMemberPermission()
     const fetched = await member.fetch()
     return fetched.permissionsIn(channel).has(memberPermissions)

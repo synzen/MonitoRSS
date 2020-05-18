@@ -29,7 +29,11 @@ async function handler (message) {
     const hasMemberPermission = await command.hasMemberPermission(message)
     if (!hasMemberPermission) {
       const requiredPerms = await command.notifyMissingMemberPerms(message)
-      return log.debug(`Member permissions missing: ${requiredPerms}, commands enabled: ${Command.enabled}`)
+      return log.info(`Member permissions ${requiredPerms} missing for command ${command.name}`)
+    }
+    // If commands are disabled, ignore if it's not an owner
+    if (!Command.enabled && !Command.isOwnerID(author.id)) {
+      return log.info(`Command ${command.name} disabled, only owners allowed`)
     }
     // Check bot
     log.debug({
@@ -38,10 +42,10 @@ async function handler (message) {
     const hasBotPermission = command.hasBotPermission(message)
     if (!hasBotPermission) {
       const requiredPerms = await command.notifyMissingBotPerms(message)
-      return log.debug(`Bot permissions missing: ${requiredPerms}`)
+      return log.info(`Bot permissions ${requiredPerms} missing for command ${command.name}`)
     }
-    log.debug(`Running command ${command.name}`)
     // Run
+    log.info(`Used ${command.name}`)
     await command.run(message)
   } catch (err) {
     if (err.code !== 50013) {
