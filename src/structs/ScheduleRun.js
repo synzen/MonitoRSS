@@ -153,28 +153,28 @@ class ScheduleRun extends EventEmitter {
   }
 
   /**
-   * @param {Object<string, any>} feedObjects
+   * @param {Object<string, any>} feedObject
    * @param {Map<string, FailRecord>} failRecordsMap
    * @param {Set<string>} debugFeedIDs
    */
-  isEligibleFeed (feedObjects, failRecordsMap, debugFeedIDs) {
-    const toDebug = debugFeedIDs.has(feedObjects._id)
+  isEligibleFeed (feedObject, failRecordsMap, debugFeedIDs) {
+    const toDebug = debugFeedIDs.has(feedObject._id)
     /** @type {FailRecord} */
-    if (feedObjects.disabled) {
+    if (feedObject.disabled) {
       if (toDebug) {
-        this.log.info(`${feedObjects._id}: Skipping feed delegation due to disabled status`)
+        this.log.info(`${feedObject._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
-    const failRecord = failRecordsMap.get(feedObjects.url)
-    if (failRecord && (failRecord.hasFailed() && failRecord.alerted)) {
+    const failRecord = failRecordsMap.get(feedObject.url)
+    if (failRecord && failRecord.hasFailed()) {
       if (toDebug) {
-        this.log.info(`${feedObjects._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
+        this.log.info(`${feedObject._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
       return false
     }
     if (toDebug) {
-      this.log.info(`${feedObjects._id}: Preparing for feed delegation`)
+      this.log.info(`${feedObject._id}: Preparing for feed delegation`)
     }
     return true
   }
