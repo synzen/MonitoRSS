@@ -34,7 +34,7 @@ module.exports = async (message) => {
 
   const guilds = `${aggregated.guilds}`
   const feeds = `${aggregated.feeds}`
-  const cycleURLs = `${aggregated.cycleURLs.toFixed(2)}`
+  const cycleURLs = `${aggregated.cycleURLs}`
   const cycleFails = `${aggregated.cycleFails.toFixed(2)}`
   const cycleTime = `${aggregated.cycleTime.toFixed(2)}s`
   const successRate = `${((1 - aggregated.cycleFails / aggregated.cycleURLs) * 100).toFixed(2)}%`
