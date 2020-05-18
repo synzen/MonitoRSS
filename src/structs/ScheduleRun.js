@@ -188,34 +188,34 @@ class ScheduleRun extends EventEmitter {
    */
 
   /**
-   * @param {Object<string, any>} feedsDatas
+   * @param {Object<string, any>[]} feedObjects
    * @param {Set<string>} debugFeedIDs
    * @returns {URLMap}
    */
-  mapFeedsByURL (feedDatas, debugFeedIDs) {
+  mapFeedsByURL (feedObjects, debugFeedIDs) {
     const map = new Map()
-    for (var i = feedDatas.length - 1; i >= 0; --i) {
-      const feedData = feedDatas[i]
+    for (var i = feedObjects.length - 1; i >= 0; --i) {
+      const feedObject = feedObjects[i]
 
-      if (this.memoryCollections && !this.memoryCollections[feedData.url]) {
-        this.memoryCollections[feedData.url] = []
+      if (this.memoryCollections && !this.memoryCollections[feedObject.url]) {
+        this.memoryCollections[feedObject.url] = []
       }
 
-      const debug = debugFeedIDs.has(feedData._id)
+      const debug = debugFeedIDs.has(feedObject._id)
 
       // Each item in the map has a unique URL, with every source with this the same link aggregated below it
-      if (map.has(feedData.url)) {
-        const urlMap = map.get(feedData.url)
-        urlMap[feedData._id] = feedData
+      if (map.has(feedObject.url)) {
+        const urlMap = map.get(feedObject.url)
+        urlMap[feedObject._id] = feedObject
         if (debug) {
-          this.log.info(`${feedData._id}: Adding to pre-existing source list`)
+          this.log.info(`${feedObject._id}: Adding to pre-existing source list`)
         }
       } else {
         const urlMap = {}
-        urlMap[feedData._id] = feedData
-        map.set(feedData.url, urlMap)
+        urlMap[feedObject._id] = feedObject
+        map.set(feedObject.url, urlMap)
         if (debug) {
-          this.log.info(`${feedData._id}: Creating new source list`)
+          this.log.info(`${feedObject._id}: Creating new source list`)
         }
       }
     }
