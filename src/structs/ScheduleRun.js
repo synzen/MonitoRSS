@@ -493,7 +493,7 @@ class ScheduleRun extends EventEmitter {
         return stats.save()
       }
     } catch (err) {
-      this.log.error(err, 'Unable to update statistics after cycle', err)
+      this.log.error(err, 'Unable to update statistics after cycle')
     }
   }
 }
