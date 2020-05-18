@@ -172,17 +172,16 @@ class Command {
 
   /**
    * Try to get a command name from user input
-   * @param {import('discord.js').Message} message
+   * @param {string} string
    * @param {boolean} withDefault
    * @returns {Promise<string>} - The command name
    */
-  static parseForName (message, prefix) {
-    const { content } = message
-    if (!content.startsWith(prefix)) {
+  static parseForName (string, prefix) {
+    if (!string.startsWith(prefix)) {
       return ''
     }
     // This assumes the prefix has no spaces
-    const target = content.split(' ')[0]
+    const target = string.split(' ')[0]
     const name = target.slice(prefix.length, target.length)
     return name
   }
@@ -196,7 +195,7 @@ class Command {
     const { guild } = message
     // With guild prefix
     const guildPrefix = this.getPrefix(guild.id)
-    let name = this.parseForName(message, guildPrefix)
+    let name = this.parseForName(message.content, guildPrefix)
     let command = this.get(name)
     log.debug(`Parsed for command name with guild prefix as ${name}`)
     if (command) {
@@ -204,7 +203,7 @@ class Command {
     }
     // With default prefix
     const defaultPrefix = this.getDefaultPrefix()
-    name = this.parseForName(message, defaultPrefix)
+    name = this.parseForName(message.content, defaultPrefix)
     log.debug(`Parsed for command name with default prefix as ${name}`)
     command = this.get(name)
     return command
