@@ -8,9 +8,7 @@ ESLint and StandardJS are used to enforce a consistent coding style, so having t
 
 All development happens on dev branches.
 
-## Setup
-
-To directly work with the core module:
+## Directly Work with Core Module
 
 1. Fork & clone this core repo
 2. Create a new branch from the **dev** branch
@@ -19,7 +17,9 @@ To directly work with the core module:
 5. Push your work to your fork and submit a pull request (before that you may need to merge the latest from **upstream**)
 
 
-To work with the core module and be able to test it in the clone repo:
+## Work with Core Module with Clone Repo
+
+This will allow you to make changes to discord.rss and immediately testing the changes with the clone repo.
 
 1. Fork & clone this core repo
 2. In the core repo, create a new branch from the **dev** branch
