@@ -42,6 +42,10 @@ class ScheduleManager extends EventEmitter {
      * @type {Map<import('./db/Schedule.js'), Object<string, any>}
      * */
     this.headers = new Map() // by schedule
+    this.urlFailuresRecording = new Set()
+    this.urlSuccessesRecording = new Set()
+    this.sendingEnabledNotifications = new Set()
+    this.sendingDisabledNotifications = new Set()
   }
 
   async _onNewArticle (newArticle) {
@@ -54,6 +58,68 @@ class ScheduleManager extends EventEmitter {
       this.log.debug(`${feedObject._id} ScheduleManager queueing article ${article.link} to send`)
     }
     this.emit('newArticle', newArticle)
+  }
+
+  /**
+   * Handle fail records in ScheduleManager since multiple
+   * runs could be trying to record the same failure at the
+   * same time, causing race conditions
+   *
+   * @param {string} url
+   */
+  async _onConnectionFailure (url) {
+    if (this.urlFailuresRecording.has(url)) {
+      return
+    }
+    this.urlFailuresRecording.add(url)
+    try {
+      const record = await FailRecord.record(url)
+      if (record.hasFailed()) {
+        await this.alertFailRecord(record)
+      }
+    } catch (err) {
+      this.log.error(err, `Failed to record url fail record ${url}`)
+    }
+    this.urlFailuresRecording.delete(url)
+  }
+
+  /**
+   * @param {string} url
+   */
+  async _onConnectionSuccess (url) {
+    if (this.urlSuccessesRecording.has(url)) {
+      return
+    }
+    this.urlSuccessesRecording.add(url)
+    try {
+      await FailRecord.reset(url)
+    } catch (err) {
+      this.log.error(err, `Failed to reset url fail record ${url}`)
+    }
+    this.urlSuccessesRecording.delete(url)
+  }
+
+  /**
+   * @param {import('./db/FailRecord.js')} record
+   */
+  async alertFailRecord (record) {
+    const url = record.url
+    record.alerted = true
+    await record.save()
+    const feeds = await record.getAssociatedFeeds()
+    this.log.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
+    feeds.forEach(({ channel }) => {
+      const message = `Feed <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
+      this.emitAlert(channel, message)
+    })
+  }
+
+  /**
+   * @param {string} channelID
+   * @param {string} message
+   */
+  emitAlert (channelID, message) {
+    this.emit('alert', channelID, message)
   }
 
   /**
@@ -175,6 +241,8 @@ class ScheduleManager extends EventEmitter {
     const headers = this.headers.get(schedule)
     const run = new ScheduleRun(schedule, runCount, memoryCollection, headers)
     run.on('newArticle', this._onNewArticle.bind(this))
+    run.on('conFailure', this._onConnectionFailure.bind(this))
+    run.on('conSuccess', this._onConnectionSuccess.bind(this))
     this.scheduleRuns.push(run)
     try {
       await run.run(this.debugFeedIDs)

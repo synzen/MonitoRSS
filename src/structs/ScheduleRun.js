@@ -167,7 +167,7 @@ class ScheduleRun extends EventEmitter {
       return false
     }
     const failRecord = failRecordsMap.get(feedObject.url)
-    if (failRecord && failRecord.hasFailed()) {
+    if (failRecord && failRecord.alerted) {
       if (toDebug) {
         this.log.info(`${feedObject._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
@@ -386,11 +386,9 @@ class ScheduleRun extends EventEmitter {
       if (status === 'failed') {
         ++thisFailures
         this.failedURLs.add(link)
-        FailRecord.record(link)
-          .catch(err => this.log.error(err, `Unable to record url failure ${link}`))
+        this.emit('conFailure', link)
       } else if (status === 'success') {
-        FailRecord.reset(link)
-          .catch(err => this.log.error(err, `Unable to reset fail record ${link}`))
+        this.emit('conSuccess', link)
         if (memoryCollection) {
           this.memoryCollections[link] = memoryCollection
         }

@@ -68,7 +68,6 @@ describe('Int::structs/db/FailRecord Database', function () {
         url
       })
       expect(result.reason).toEqual(reason)
-      expect(result.alerted).toEqual(true)
       await collection.deleteOne({ url })
     })
     it('does not change alerted status if not old date', async function () {

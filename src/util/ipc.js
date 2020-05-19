@@ -67,8 +67,7 @@ class IPC {
       FINISHED_INIT: 'finishedInit',
       RUN_SCHEDULE: 'runSchedule',
       SHARD_STOPPED: 'shardStopped',
-      SEND_CHANNEL_MESSAGE: 'sendChannelAlert',
-      SEND_USER_MESSAGE: 'sendUserAlert',
+      SEND_USER_ALERT: 'sendUserAlert',
       NEW_ARTICLE: 'newArticle',
       ADD_DEBUG_FEEDID: 'addDebugFeedID',
       REMOVE_DEBUG_FEEDID: 'removeDebugFeedID'

@@ -44,14 +44,7 @@ class ClientManager extends EventEmitter {
     this.shardsReady = 0 // Shards that have reported that they're ready
     this.shardsDone = 0 // Shards that have reported that they're done initializing
     this.shardsStopped = new Set()
-    this.scheduleManager = new ScheduleManager()
-    this.scheduleManager.on('newArticle', newArticle => {
-      const { article } = newArticle
-      this.log.debug({
-        newArticle
-      }, `ScheduleManager emitted new article article id ${article._id}`)
-      this.handleNewArticle(newArticle)
-    })
+    this.scheduleManager = this.createScheduleManager()
     this.shardingManager = new Discord.ShardingManager(path.join(__dirname, '..', '..', 'shard.js'), {
       respawn: false,
       token: this.config.bot.token
@@ -59,6 +52,21 @@ class ClientManager extends EventEmitter {
     this.shardingManager.on('shardCreate', shard => {
       shard.on('message', message => this.messageHandler(shard, message))
     })
+  }
+
+  createScheduleManager () {
+    const scheduleManager = new ScheduleManager()
+    scheduleManager.on('newArticle', newArticle => {
+      const { article } = newArticle
+      this.log.debug({
+        newArticle
+      }, `ScheduleManager emitted new article article id ${article._id}`)
+      this.handleNewArticle(newArticle)
+    })
+    scheduleManager.on('alert', (channelID, message) => {
+      this.broadcastUserAlert(channelID, message)
+    })
+    return scheduleManager
   }
 
   broadcast (type, data) {
@@ -83,6 +91,13 @@ class ClientManager extends EventEmitter {
     this.broadcast(ipc.TYPES.NEW_ARTICLE, {
       debug,
       newArticle
+    })
+  }
+
+  broadcastUserAlert (channelID, message) {
+    this.broadcast(ipc.TYPES.SEND_USER_ALERT, {
+      channel: channelID,
+      message
     })
   }
 

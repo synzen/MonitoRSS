@@ -105,7 +105,7 @@ describe('Unit::structs/ScheduleRun', function () {
       expect(run.isEligibleFeed(feedObject, new Map(), new Set()))
         .toEqual(false)
     })
-    it('returns false if failed', function () {
+    it('returns false if fail record was alerted', function () {
       const run = new ScheduleRun(basicSchedule)
       const feedObject = {
         disabled: false,
@@ -113,7 +113,6 @@ describe('Unit::structs/ScheduleRun', function () {
       }
       const failRecordMap = new Map([
         [feedObject.url, {
-          hasFailed: () => true,
           alerted: true
         }]
       ])
@@ -128,7 +127,6 @@ describe('Unit::structs/ScheduleRun', function () {
       }
       const failRecordMap = new Map([
         [feedObject.url, {
-          hasFailed: () => false,
           alerted: false
         }]
       ])

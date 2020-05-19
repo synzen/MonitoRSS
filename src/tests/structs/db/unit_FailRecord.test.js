@@ -35,7 +35,7 @@ describe('Unit::structs/db/FailRecord', function () {
     it('finds the right model', async function () {
       const spy = jest.spyOn(FailRecord, 'getBy').mockResolvedValue({
         save: jest.fn(),
-        pastCutoff: jest.fn().mockReturnValue(false)
+        hasFailed: jest.fn().mockReturnValue(false)
       })
       const url = 'srfyhed'
       await FailRecord.record(url)
@@ -45,7 +45,7 @@ describe('Unit::structs/db/FailRecord', function () {
       const reason = 'ewstr4ydh'
       const found = {
         save: jest.fn(),
-        pastCutoff: jest.fn().mockReturnValue(false),
+        hasFailed: jest.fn().mockReturnValue(false),
         reason: reason + 'abc'
       }
       jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
@@ -53,43 +53,17 @@ describe('Unit::structs/db/FailRecord', function () {
       expect(found.save).toHaveBeenCalledWith()
       expect(found.reason).toEqual(reason)
     })
-    it('updates the alert the model if it exists', async function () {
-      const reason = 'rrr'
-      const found = {
-        save: jest.fn(),
-        reason,
-        pastCutoff: jest.fn().mockReturnValue(true),
-        alerted: false
-      }
-      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
-      await FailRecord.record('', reason)
-      expect(found.save).toHaveBeenCalledWith()
-      expect(found.alerted).toEqual(true)
-    })
     it('returns the record if it exists', async function () {
       const reason = 'rrr'
       const found = {
         save: jest.fn(),
-        pastCutoff: jest.fn().mockReturnValue(false),
+        hasFailed: jest.fn().mockReturnValue(false),
         reason,
         alerted: true
       }
       jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
       const returned = await FailRecord.record('', reason)
       expect(returned).toEqual(found)
-    })
-    it('sends fail message if failed and not alerted', async function () {
-      const reason = 'rrr'
-      const found = {
-        save: jest.fn(),
-        reason,
-        pastCutoff: jest.fn().mockReturnValue(true),
-        alerted: false
-      }
-      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
-      const spy = jest.spyOn(FailRecord, 'sendFailMessage').mockReturnValue()
-      await FailRecord.record('', reason)
-      expect(spy).toHaveBeenCalled()
     })
   })
   describe('static reset', function () {

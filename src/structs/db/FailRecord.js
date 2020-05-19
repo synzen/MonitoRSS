@@ -1,9 +1,7 @@
 const Base = require('./Base.js')
 const Feed = require('./Feed.js')
-const ipc = require('../../util/ipc.js')
 const FailRecordModel = require('../../models/FailRecord.js')
 const getConfig = require('../../config.js').get
-const createLogger = require('../../util/logger/create.js')
 
 class FailRecord extends Base {
   constructor (data, _saved) {
@@ -31,7 +29,9 @@ class FailRecord extends Base {
     this.failedAt = this.getField('failedAt', new Date().toISOString())
 
     /**
-     * Whether an alert has been sent out for this
+     * Whether an alert has been sent out for this. Only a
+     * meta property. If true, this feed will be skipped
+     * during cycles.
      * @type {boolean}
      */
     this.alerted = this.getField('alerted', false)
@@ -59,17 +59,8 @@ class FailRecord extends Base {
       await newRecord.save()
       return newRecord
     }
-    let save = false
     if (record.reason !== reason) {
       record.reason = reason
-      save = true
-    }
-    if (record.pastCutoff() && !record.alerted) {
-      FailRecord.sendFailMessage(url)
-      record.alerted = true
-      save = true
-    }
-    if (save) {
       await record.save()
     }
     return record
@@ -109,6 +100,13 @@ class FailRecord extends Base {
   }
 
   /**
+   * Get all feeds with this URL
+   */
+  async getAssociatedFeeds () {
+    return Feed.getManyBy('url', this.url)
+  }
+
+  /**
    * If past the cutoff date, then this URL should not be fetched
    * @returns {boolean}
    */
@@ -129,24 +127,6 @@ class FailRecord extends Base {
    */
   hasFailed () {
     return this.pastCutoff()
-  }
-
-  /**
-   * @param {string} url
-   */
-  static sendFailMessage (url) {
-    const log = createLogger()
-    Feed.getManyBy('url', url)
-      .then(feeds => {
-        log.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
-        feeds.forEach(({ channel }) => {
-          const message = `Feed <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
-          ipc.sendChannelAlert(channel, message)
-        })
-      })
-      .catch(err => {
-        log.error(err, `Failed to get many feeds for sendFailMessage of ${url}`)
-      })
   }
 
   static get Model () {
