@@ -75,6 +75,10 @@ schema.index({
   guild: 1
 })
 
+schema.index({
+  url: 1
+})
+
 exports.schema = schema
 /** @type {import('mongoose').Model} */
 exports.Model = null
