@@ -1,6 +1,5 @@
 const Supporter = require('../structs/db/Supporter.js')
 const createLogger = require('../util/logger/create.js')
-const ipc = require('../util/ipc.js')
 const getConfig = require('../config.js').get
 const log = createLogger()
 
@@ -21,10 +20,10 @@ async function getSupporterLimits () {
 
 /**
  * Enable or disable feeds for guilds past their limit
- * @param {import('../../structs/db/Feed.js')[]} feeds
- * @returns {Object<string, number>} object
- * @returns {number} object.enabled - Number of enabled feeds
- * @returns {number} object.disabled - Number of disabled feeds
+ * @param {import('../structs/db/Feed.js')[]} feeds
+ * @returns {Object<string, import('../structs/db/Feed.js')[]>} object
+ * @returns {import('../structs/db/Feed.js')[]} object.enabled - Number of enabled feeds
+ * @returns {import('../structs/db/Feed.js')[]} object.disabled - Number of disabled feeds
  */
 async function checkLimits (feeds) {
   const supporterLimits = await exports.getSupporterLimits()
@@ -66,7 +65,6 @@ async function checkLimits (feeds) {
         feedCount = feedCount + 1
         feedCounts.set(guild, feedCount)
         log.info(`Enabling disabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
-        ipc.sendUserAlert(feed.channel, `Feed <${feed.url}> has been enabled in <#${feed.channel}> to due limit changes.`)
         enabled.push(feed.enable())
       }
       // Otherwise, don't count it
@@ -74,7 +72,6 @@ async function checkLimits (feeds) {
       if (feedCount + 1 > guildLimit) {
         // Disable it if adding the current one goes over limit
         log.info(`Disabling enabled feed ${feed._id} of guild ${feed.guild} due to limit change`)
-        ipc.sendUserAlert(feed.channel, `Feed <${feed.url}> has been disabled in <#${feed.channel}> to due limit changes.`)
         disabled.push(feed.disable('Exceeded feed limit'))
       } else {
         // Otherwise, just count it
@@ -83,13 +80,13 @@ async function checkLimits (feeds) {
       }
     }
   }
-  await Promise.all([
+  const results = await Promise.all([
     Promise.all(disabled),
     Promise.all(enabled)
   ])
   return {
-    enabled: enabled.length,
-    disabled: disabled.length
+    disabled: results[0],
+    enabled: results[1]
   }
 }
 

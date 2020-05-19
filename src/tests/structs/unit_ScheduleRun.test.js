@@ -1,10 +1,12 @@
 const ScheduleRun = require('../../structs/ScheduleRun.js')
 const Supporter = require('../../structs/db/Supporter.js')
 const FailRecord = require('../../structs/db/FailRecord.js')
+const maintenance = require('../../maintenance/index.js')
 
 jest.mock('../../structs/db/Schedule.js')
 jest.mock('../../structs/db/Supporter.js')
 jest.mock('../../structs/db/FailRecord.js')
+jest.mock('../../maintenance/index.js')
 
 Supporter.schedule = {
   name: 'default'
@@ -20,6 +22,22 @@ describe('Unit::structs/ScheduleRun', function () {
     refreshRateMinutes: 55,
     keywords: ['35']
   }
+  describe('updateFeedsStatus', function () {
+    it('runs the right func', async function () {
+      const run = new ScheduleRun(basicSchedule)
+      maintenance.checkLimits.limits
+        .mockResolvedValue({
+          enabled: [1, 2],
+          disabled: [3, 4]
+        })
+      const emit = jest.spyOn(run, 'emit')
+      await run.updateFeedsStatus([])
+      expect(emit).toHaveBeenCalledWith('feedEnabled', 1)
+      expect(emit).toHaveBeenCalledWith('feedEnabled', 2)
+      expect(emit).toHaveBeenCalledWith('feedDisabled', 3)
+      expect(emit).toHaveBeenCalledWith('feedDisabled', 4)
+    })
+  })
   describe('getFailRecordMap', function () {
     it('returns correctly', async function () {
       const failRecords = [{
@@ -38,62 +56,52 @@ describe('Unit::structs/ScheduleRun', function () {
         ]))
     })
   })
-  describe('getApplicableFeeds', function () {
-    beforeEach(function () {
-      jest.spyOn(ScheduleRun.prototype, 'isEligibleFeed')
-        .mockImplementation()
-    })
+  describe('getScheduleFeeds', function () {
     it('returns all feeds of this schedule', async function () {
       const scheduleName = 'abaesdgr'
       const run = new ScheduleRun(basicSchedule)
       run.name = scheduleName
       const feeds = [{
         key: 1,
-        determineSchedule: async () => ({ name: scheduleName }),
-        toJSON: () => 'feed1'
+        determineSchedule: async () => ({ name: scheduleName })
       }, {
         key: 2,
-        determineSchedule: async () => ({ name: scheduleName + 'other' }),
-        toJSON: () => 'feed2'
+        determineSchedule: async () => ({ name: scheduleName + 'other' })
       }, {
         key: 3,
-        determineSchedule: async () => ({ name: scheduleName }),
-        toJSON: () => 'feed3'
+        determineSchedule: async () => ({ name: scheduleName })
       }]
-      jest.spyOn(run, 'isEligibleFeed')
-        .mockReturnValue(true)
-      const returned = await run.getApplicableFeeds(feeds, new Map(), new Set())
+      const returned = await run.getScheduleFeeds(feeds)
       expect(returned).toEqual([
-        'feed1',
-        'feed3'
+        feeds[0],
+        feeds[2]
       ])
+    })
+  })
+  describe('getEligibleFeeds', function () {
+    beforeEach(function () {
+      jest.spyOn(ScheduleRun.prototype, 'isEligibleFeed')
+        .mockImplementation()
     })
     it('excludes ineligible feeds', async function () {
       const scheduleName = 'abaesdgr'
       const run = new ScheduleRun(basicSchedule)
       run.name = scheduleName
       const feeds = [{
-        key: 1,
-        determineSchedule: async () => ({ name: scheduleName }),
-        toJSON: () => 'feed1'
+        key: 1
       }, {
-        key: 2,
-        determineSchedule: async () => ({ name: scheduleName }),
-        toJSON: () => 'feed2'
+        key: 2
       }, {
-        key: 3,
-        determineSchedule: async () => ({ name: scheduleName }),
-        toJSON: () => 'feed3'
+        key: 3
       }]
       jest.spyOn(run, 'isEligibleFeed')
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(true)
         .mockReturnValueOnce(false)
-      const returned = await run.getApplicableFeeds(feeds, new Map(), new Set())
-      expect(returned).toEqual(expect.not.arrayContaining([
-        'feed1',
-        'feed3'
-      ]))
+      const returned = await run.getEligibleFeeds(feeds, new Map(), new Set())
+      expect(returned).toEqual([
+        feeds[1]
+      ])
     })
   })
   describe('isEligibleFeed', function () {
@@ -132,6 +140,20 @@ describe('Unit::structs/ScheduleRun', function () {
       ])
       expect(run.isEligibleFeed(feedObject, failRecordMap, new Set()))
         .toEqual(true)
+    })
+  })
+  describe('convertFeedsToJSON', function () {
+    it('returns json of feeds', function () {
+      const run = new ScheduleRun(basicSchedule)
+      const feeds = [{
+        toJSON: () => 1
+      }, {
+        toJSON: () => 2
+      }, {
+        toJSON: () => 3
+      }]
+      const returned = run.convertFeedsToJSON(feeds)
+      expect(returned).toEqual([1, 2, 3])
     })
   })
   describe('mapFeedsByURL', function () {

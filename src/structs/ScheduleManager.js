@@ -100,6 +100,34 @@ class ScheduleManager extends EventEmitter {
   }
 
   /**
+   * @param {import('./db/Feed.js')} feed
+   */
+  async _onFeedDisabled (feed) {
+    if (this.sendingDisabledNotifications.has(feed._id)) {
+      return
+    }
+    this.sendingDisabledNotifications.add(feed._id)
+    const message = `Feed <${feed.url}> has been disabled in <#${feed.channel}> to due limit changes.`
+    this.log.info(`Sending disabled notification for feed ${feed._id} in channel ${feed.channel}`)
+    this.emitAlert(feed.channel, message)
+    this.sendingDisabledNotifications.delete(feed._id)
+  }
+
+  /**
+   * @param {import('./db/Feed.js')} feed
+   */
+  async _onFeedEnabled (feed) {
+    if (this.sendingEnabledNotifications.has(feed._id)) {
+      return
+    }
+    this.sendingEnabledNotifications.add(feed._id)
+    const message = `Feed <${feed.url}> has been enabled in <#${feed.channel}> to due limit changes.`
+    this.log.info(`Sending enabled notification for feed ${feed._id} in channel ${feed.channel}`)
+    this.emitAlert(feed.channel, message)
+    this.sendingEnabledNotifications.delete(feed._id)
+  }
+
+  /**
    * @param {import('./db/FailRecord.js')} record
    */
   async alertFailRecord (record) {
@@ -243,6 +271,8 @@ class ScheduleManager extends EventEmitter {
     run.on('newArticle', this._onNewArticle.bind(this))
     run.on('conFailure', this._onConnectionFailure.bind(this))
     run.on('conSuccess', this._onConnectionSuccess.bind(this))
+    run.on('feedEnabled', this._onFeedEnabled.bind(this))
+    run.on('feedDisabled', this._onFeedDisabled.bind(this))
     this.scheduleRuns.push(run)
     try {
       await run.run(this.debugFeedIDs)

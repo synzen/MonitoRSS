@@ -1,6 +1,5 @@
 const FLAGS = require('discord.js').Permissions.FLAGS
 const createLogger = require('../util/logger/create.js')
-const ipc = require('../util/ipc.js')
 
 /**
  * Precondition: The feed's guild belongs to the bot, or the
@@ -34,7 +33,7 @@ async function feed (feed, bot) {
     }
     const reason = `Missing permissions ${reasons.join(', ')}`
     if (!feed.disabled) {
-      ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been disabled in channel <#${channel.id}>: ${reason}`)
+      // ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been disabled in channel <#${channel.id}>: ${reason}`)
       log.info({
         guild,
         channel
@@ -53,7 +52,7 @@ async function feed (feed, bot) {
       guild,
       channel
     }, `Enabling feed ${feed._id} for found permissions`)
-    ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been enabled in channel <#${channel.id}> due to found permissions.`)
+    // ipc.sendUserAlert(channel.id, `The feed <${feed.url}> has been enabled in channel <#${channel.id}> due to found permissions.`)
     await feed.enable()
     return false
   }

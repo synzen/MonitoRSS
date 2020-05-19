@@ -162,20 +162,20 @@ describe('Unit::maintenance/checkLimits', function () {
         // Disabled, should be enabled since it's the 2nd feed
         guild: 'a',
         disabled: 'Exceeded feed limit',
-        enable: jest.fn(),
+        enable: jest.fn().mockResolvedValue('feed1'),
         disable: jest.fn()
       }, {
         // Enabled, should be disabled since the limit is 2
         guild: 'a',
         disabled: undefined,
         enable: jest.fn(),
-        disable: jest.fn()
+        disable: jest.fn().mockResolvedValue('feed2')
       }]
       jest.spyOn(checkLimits, 'getSupporterLimits')
         .mockResolvedValue(new Map())
       const result = await checkLimits.limits(feeds)
-      expect(result.enabled).toEqual(1)
-      expect(result.disabled).toEqual(1)
+      expect(result.enabled).toEqual(['feed1'])
+      expect(result.disabled).toEqual(['feed2'])
     })
     it('uses the supporter limit if available for guild', async function () {
       const feeds = [{

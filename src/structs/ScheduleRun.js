@@ -65,71 +65,6 @@ class ScheduleRun extends EventEmitter {
     this.testRun = testRun
   }
 
-  getProcessor () {
-    const processor = ProcessorPool.get()
-    this.processorsInUse.add(processor)
-    return processor
-  }
-
-  /**
-   * @param {import('./Processor.js')} processor
-   */
-  releaseProcessor (processor) {
-    ProcessorPool.release(processor)
-  }
-
-  /**
-   * @param {import('./Processor.js')} processor
-   */
-  killProcessor (processor) {
-    this.releaseProcessor(processor)
-    ProcessorPool.kill(processor)
-  }
-
-  async getFailRecordMap () {
-    const failRecords = await FailRecord.getAll()
-    const failRecordMap = new Map()
-    for (const record of failRecords) {
-      failRecordMap.set(record.url, record)
-    }
-    return failRecordMap
-  }
-
-  /**
-   * Get the feeds that belong to this schedule
-   * @param {import('./db/Feed.js')[]} feeds
-   * @param {Map<string, FailRecord>} failRecordsMap
-   * @param {Set<string>} debugFeedIDs
-   */
-  async getApplicableFeeds (feeds, failRecordsMap, debugFeedIDs) {
-    const [schedules, supporterGuilds] = await Promise.all([
-      Schedule.getAll(),
-      Supporter.getValidGuilds()
-    ])
-    const feedsLength = feeds.length
-    const schedulesToFetch = []
-    for (var h = 0; h < feedsLength; ++h) {
-      const feed = feeds[h]
-      schedulesToFetch.push(feed.determineSchedule(schedules, supporterGuilds))
-    }
-    this.log.debug(`Determing schedules of ${schedulesToFetch.length} feeds`)
-    const determinedSchedules = await Promise.all(schedulesToFetch)
-    const jsons = []
-    for (var i = 0; i < feedsLength; ++i) {
-      const feed = feeds[i]
-      const name = determinedSchedules[i].name
-      // Match schedule
-      if (this.name !== name) {
-        continue
-      }
-      if (!this.isEligibleFeed(feed, failRecordsMap, debugFeedIDs)) {
-        continue
-      }
-      jsons.push(feed.toJSON())
-    }
-    return jsons
-  }
-
   /**
    * @param {import('./db/Feed.js')[]} feeds
    * @param {Set<string>} debugFeedIDs
@@ -152,29 +87,138 @@ class ScheduleRun extends EventEmitter {
     return debugFeedURLs
   }
 
+  getProcessor () {
+    const processor = ProcessorPool.get()
+    this.processorsInUse.add(processor)
+    return processor
+  }
+
   /**
-   * @param {Object<string, any>} feedObject
+   * @param {import('./Processor.js')} processor
+   */
+  releaseProcessor (processor) {
+    ProcessorPool.release(processor)
+  }
+
+  /**
+   * @param {import('./Processor.js')} processor
+   */
+  killProcessor (processor) {
+    this.releaseProcessor(processor)
+    ProcessorPool.kill(processor)
+  }
+
+  /**
+   * @param {import('./db/Feed.js')[]} feeds
+   */
+  async updateFeedsStatus (feeds) {
+    const { enabled, disabled } = await maintenance.checkLimits.limits(feeds)
+    enabled.forEach(feed => this.emit('feedEnabled', feed))
+    disabled.forEach(feed => this.emit('feedDisabled', feed))
+  }
+
+  async getFailRecordMap () {
+    const failRecords = await FailRecord.getAll()
+    const failRecordMap = new Map()
+    for (const record of failRecords) {
+      failRecordMap.set(record.url, record)
+    }
+    return failRecordMap
+  }
+
+  /**
+   * Get the feeds that belong to this schedule
+   * @param {import('./db/Feed.js')[]} feeds
+   */
+  async getScheduleFeeds (feeds) {
+    const [schedules, supporterGuilds] = await Promise.all([
+      Schedule.getAll(),
+      Supporter.getValidGuilds()
+    ])
+    const feedsLength = feeds.length
+    const schedulesToFetch = []
+    for (var h = 0; h < feedsLength; ++h) {
+      const feed = feeds[h]
+      schedulesToFetch.push(feed.determineSchedule(schedules, supporterGuilds))
+    }
+    this.log.debug(`Determing schedules of ${schedulesToFetch.length} feeds`)
+    const determinedSchedules = await Promise.all(schedulesToFetch)
+    /**
+     * @type {import('./db/Feed.js')[]}
+     */
+    const filtered = []
+    for (var i = 0; i < feedsLength; ++i) {
+      const feed = feeds[i]
+      const name = determinedSchedules[i].name
+      // Match schedule
+      if (this.name !== name) {
+        continue
+      }
+      filtered.push(feed)
+    }
+    return filtered
+  }
+
+  /**
+   * Get the feeds that belong to this schedule
+   * @param {import('./db/Feed.js')[]} feeds
    * @param {Map<string, FailRecord>} failRecordsMap
    * @param {Set<string>} debugFeedIDs
    */
-  isEligibleFeed (feedObject, failRecordsMap, debugFeedIDs) {
-    const toDebug = debugFeedIDs.has(feedObject._id)
+  async getEligibleFeeds (feeds, failRecordsMap, debugFeedIDs) {
+    // Modifies the feeds in-place
+    await this.updateFeedsStatus(feeds)
+    const feedsLength = feeds.length
+    /**
+     * @type {import('./db/Feed.js')[]}
+     */
+    const filtered = []
+    for (var i = 0; i < feedsLength; ++i) {
+      const feed = feeds[i]
+      if (!this.isEligibleFeed(feed, failRecordsMap, debugFeedIDs)) {
+        continue
+      }
+      filtered.push(feed)
+    }
+    return filtered
+  }
+
+  /**
+   * Feeds must be be JSON for IPC
+   * @param {import('./db/Feed.js')[]} feeds
+   */
+  convertFeedsToJSON (feeds) {
+    const converted = []
+    const feedsLength = feeds.length
+    for (var i = 0; i < feedsLength; ++i) {
+      converted.push(feeds[i].toJSON())
+    }
+    return converted
+  }
+
+  /**
+   * @param {import('./db/Feed.js')} feed
+   * @param {Map<string, FailRecord>} failRecordsMap
+   * @param {Set<string>} debugFeedIDs
+   */
+  isEligibleFeed (feed, failRecordsMap, debugFeedIDs) {
+    const toDebug = debugFeedIDs.has(feed._id)
     /** @type {FailRecord} */
-    if (feedObject.disabled) {
+    if (feed.disabled) {
       if (toDebug) {
-        this.log.info(`${feedObject._id}: Skipping feed delegation due to disabled status`)
+        this.log.info(`${feed._id}: Skipping feed delegation due to disabled status`)
       }
       return false
     }
-    const failRecord = failRecordsMap.get(feedObject.url)
+    const failRecord = failRecordsMap.get(feed.url)
     if (failRecord && failRecord.alerted) {
       if (toDebug) {
-        this.log.info(`${feedObject._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
+        this.log.info(`${feed._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       }
       return false
     }
     if (toDebug) {
-      this.log.info(`${feedObject._id}: Preparing for feed delegation`)
+      this.log.info(`${feed._id}: Preparing for feed delegation`)
     }
     return true
   }
@@ -321,30 +365,33 @@ class ScheduleRun extends EventEmitter {
     const config = getConfig()
     this.log.debug({
       schedule: this.schedule
-    }, '1/8 Running schedule, getting all feeds')
+    }, '1/10 Running schedule, getting all feeds')
     const feeds = await Feed.getAll()
     // Check the limits
-    this.log.debug(`2/8 Fetched all feeds (${feeds.length}), checking feed limits`)
-    await maintenance.checkLimits.limits(feeds)
-    this.log.debug('3/8 Checked feed limits, getting debug URLs and fail record map')
+    this.log.debug(`2/10 Fetched all feeds (${feeds.length}), checking feed limits`)
+    this.log.debug('3/10 Checked feed limits, getting debug URLs and fail record map')
     const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
     const failRecordMap = await this.getFailRecordMap()
-    this.log.debug('4/8 Created fail records map, getting applicable feeds')
-    // Get feed data
-    const applicableFeeds = await this.getApplicableFeeds(feeds, failRecordMap, debugFeedIDs)
-    this.log.debug(`5/8 Fetched applicable feeds (${applicableFeeds.length}), mapping feeds by URL`)
-    this.feedCount = applicableFeeds.length
+    this.log.debug('4/10 Created fail records map, getting feeds of this schedule')
+    // Get eligible feeds of this schedule
+    const scheduleFeeds = await this.getScheduleFeeds(feeds)
+    this.log.debug('5/10 Got feeds of this schedule, getting elgibile feeds')
+    const eligibleFeeds = await this.getEligibleFeeds(scheduleFeeds, failRecordMap, debugFeedIDs)
+    this.log.debug('6/10 Got eligibile feeds, converting all to JSON')
+    const feedObjects = this.convertFeedsToJSON(eligibleFeeds)
+    this.log.debug(`7/10 Fetched applicable feeds (${feedObjects.length}), mapping feeds by URL`)
+    this.feedCount = feedObjects.length
     // Put all feeds with the same URLs together
-    const urlMap = this.mapFeedsByURL(applicableFeeds, debugFeedIDs)
-    this.log.debug(`6/8 Mapped feeds by URL (${urlMap.size} URLs), creating batches`)
+    const urlMap = this.mapFeedsByURL(feedObjects, debugFeedIDs)
+    this.log.debug(`8/10 Mapped feeds by URL (${urlMap.size} URLs), creating batches`)
     if (urlMap.size === 0) {
       return this.finishNoFeedsCycle()
     }
     // Batch them up
     const batches = this.createBatches(urlMap, config.advanced.batchSize, debugFeedURLs)
-    this.log.debug(`7/8 Created ${batches.length} batches`)
+    this.log.debug(`9/10 Created ${batches.length} batches`)
     const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
-    this.log.debug(`8/8 Created ${batchGroups.length} batch groups (${JSON.stringify(batchGroups.map(arr => arr.map(m => Object.keys(m).length)))})`)
+    this.log.debug(`10/10 Created ${batchGroups.length} batch groups (${JSON.stringify(batchGroups.map(arr => arr.map(m => Object.keys(m).length)))})`)
     const processBatchGroup = promisify(this.processBatchGroup).bind(this)
     const processing = []
     for (let i = 0; i < batchGroups.length; ++i) {
