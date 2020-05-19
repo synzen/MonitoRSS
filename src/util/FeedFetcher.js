@@ -233,6 +233,10 @@ class FeedFetcher {
     const articleList = []
 
     return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        reject(new FeedParserError('Feed parsing took too long'))
+      }, 10000)
+
       stream.on('error', err => {
         // feedparser may not handle all errors such as incorrect headers. (feedparser v2.2.9)
         reject(new FeedParserError(this.REQUEST_ERROR_CODE, err.message))
