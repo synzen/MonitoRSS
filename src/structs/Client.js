@@ -12,6 +12,7 @@ const initialize = require('../util/initialization.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const connectDb = require('../util/connectDatabase.js')
+const { once } = require('events')
 
 const DISABLED_EVENTS = [
   'TYPING_START',
@@ -57,7 +58,8 @@ class Client extends EventEmitter {
       this.shardID = client.shard.ids[0]
       this.listenToShardedEvents(client)
       if (!client.readyAt) {
-        client.once('ready', this._setup.bind(this))
+        await once(client, 'ready')
+        this._setup()
       } else {
         this._setup()
       }
