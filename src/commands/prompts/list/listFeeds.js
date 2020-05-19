@@ -62,7 +62,7 @@ async function listFeedVisual (data) {
   // desc += failedFeedCount > 0 ? translate('commands.list.failAlert', { failLimit: FAIL_LIMIT, prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix }) : ''
 
   const list = new ThemedEmbed()
-    .setAuthor(translate('commands.list.currentActiveFeeds'))
+    .setAuthor(translate('commands.list.currentActiveFeeds') + ` (${feeds.length})`)
     .setDescription(desc)
 
   if (supporter) {
