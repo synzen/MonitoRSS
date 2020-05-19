@@ -145,7 +145,7 @@ class Client extends EventEmitter {
             break
           case ipc.TYPES.SEND_USER_ALERT:
             this.sendUserAlert(message.data.channel, message.data.message)
-              .catch(err => this.log.general.warning(`Failed to send inter-process message to user ${message.user}`, err))
+              .catch(err => this.log.warn(`Failed to send inter-process alert to channel ${message.data.channel}`, err))
         }
       } catch (err) {
         this.log.error(err, 'client')
@@ -185,6 +185,25 @@ class Client extends EventEmitter {
     }
   }
 
+  async sendChannelMessage (channelID, message) {
+    const channel = this.bot.channels.cache.get(channelID)
+    if (!channel) {
+      return
+    }
+    /**
+     * @type {import('discord.js').GuildMember}
+     */
+    const guildMeMember = channel.guild.me
+    if (!guildMeMember.permissionsIn(channel).has(Discord.Permissions.FLAGS.SEND_MESSAGES)) {
+      this.log.warn({
+        channel,
+        string: message
+      }, 'Failed to send Client message to channel')
+      return
+    }
+    channel.send(message)
+  }
+
   async sendUserAlert (channelID, message) {
     const config = getConfig()
     if (config.dev === true) {
@@ -198,7 +217,7 @@ class Client extends EventEmitter {
     try {
       const profile = await Profile.get(fetchedChannel.guild.id)
       if (!profile) {
-        return fetchedChannel.send(alertMessage)
+        return this.sendChannelMessage(channelID, alertMessage)
       }
       const alertTo = profile.alert
       for (const id of alertTo) {
@@ -211,7 +230,7 @@ class Client extends EventEmitter {
       this.log.warn({
         error: err
       }, `Failed to send user alert to channel ${channelID}`)
-      return fetchedChannel.send(alertMessage)
+      return this.sendChannelMessage(alertMessage)
     }
   }
 
