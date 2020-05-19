@@ -329,10 +329,13 @@ describe('Unit::structs/ScheduleRun', function () {
         [2, 2],
         [2, 1]
       ]
-      expect(run.getHungUpURLs()).toEqual([
-        [['url3']],
-        [['url5']]
-      ])
+      expect(run.getHungUpURLs()).toEqual({
+        summary: [
+          [['url3']],
+          [['url5']]
+        ],
+        total: 5
+      })
     })
   })
 })

@@ -342,19 +342,25 @@ class ScheduleRun extends EventEmitter {
   }
 
   getHungUpURLs () {
-    return this.urlBatchGroups.map((urlGroup, groupIndex) => {
+    let total = 0
+    const summary = this.urlBatchGroups.map((urlGroup, groupIndex) => {
       return urlGroup.filter((urlBatch, batchIndex) => {
         const origBatchSize = this.urlSizeGroups[groupIndex][batchIndex]
+        total += urlBatch.size
         /**
          * If equal to original batch size, none of the URLs were completed
          * If equal to 0, all of them were completed
          *
-         * This function does not work if a batch was hung up on all URLs
+         * This summary does not show a batch if it was hung up on all URLs
          */
         const someCompleted = urlBatch.size < origBatchSize && urlBatch.size > 0
         return someCompleted
       }).map((urlBatch) => Array.from(urlBatch))
     })
+    return {
+      summary,
+      total
+    }
   }
 
   /**
