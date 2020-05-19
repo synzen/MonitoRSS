@@ -261,7 +261,7 @@ class ScheduleManager extends EventEmitter {
       this.log.warn({
         urls: hungupURLs
       }, `Previous schedule runs were not finished (${runs.length} run(s)). Terminating all runs. If repeatedly seeing this message, consider increasing your refresh rate.`)
-      this.failURLs(hungupURLs.flat(3))
+      hungupURLs.forEach((hangups) => this.failURLs(hangups.summary.flat(3)))
       this.terminateScheduleRuns(schedule)
     }
     const runCount = this.scheduleRunCounts.get(schedule)
