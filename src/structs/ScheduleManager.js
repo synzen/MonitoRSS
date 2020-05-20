@@ -55,7 +55,7 @@ class ScheduleManager extends EventEmitter {
       return
     }
     if (this.debugFeedIDs.has(feedObject._id)) {
-      this.log.debug(`${feedObject._id} ScheduleManager queueing article ${article.link} to send`)
+      this.log.info(`${feedObject._id} ScheduleManager queueing article ${article.link} to send`)
     }
     this.emit('newArticle', newArticle)
   }

@@ -203,23 +203,18 @@ class ScheduleRun extends EventEmitter {
    */
   isEligibleFeed (feed, failRecordsMap, debugFeedIDs) {
     const toDebug = debugFeedIDs.has(feed._id)
+    const debugLog = toDebug ? m => this.log.info(`${feed._id} ${m}`) : () => {}
     /** @type {FailRecord} */
     if (feed.disabled) {
-      if (toDebug) {
-        this.log.info(`${feed._id}: Skipping feed delegation due to disabled status`)
-      }
+      debugLog('Skipping feed delegation due to disabled status')
       return false
     }
     const failRecord = failRecordsMap.get(feed.url)
     if (failRecord && failRecord.alerted) {
-      if (toDebug) {
-        this.log.info(`${feed._id}: Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
-      }
+      debugLog(`Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       return false
     }
-    if (toDebug) {
-      this.log.info(`${feed._id}: Preparing for feed delegation`)
-    }
+    debugLog('Preparing for feed delegation')
     return true
   }
 
@@ -246,21 +241,18 @@ class ScheduleRun extends EventEmitter {
       }
 
       const debug = debugFeedIDs.has(feedObject._id)
+      const debugLog = debug ? m => this.log.info(`${feedObject._id} ${m}`) : () => {}
 
       // Each item in the map has a unique URL, with every source with this the same link aggregated below it
       if (map.has(feedObject.url)) {
         const urlMap = map.get(feedObject.url)
         urlMap[feedObject._id] = feedObject
-        if (debug) {
-          this.log.info(`${feedObject._id}: Adding to pre-existing source list`)
-        }
+        debugLog('Adding to pre-existing source list')
       } else {
         const urlMap = {}
         urlMap[feedObject._id] = feedObject
         map.set(feedObject.url, urlMap)
-        if (debug) {
-          this.log.info(`${feedObject._id}: Creating new source list`)
-        }
+        debugLog('Creating new source list')
       }
     }
     return map
@@ -375,8 +367,7 @@ class ScheduleRun extends EventEmitter {
     const feeds = await Feed.getAll()
     // Check the limits
     this.log.debug(`2/10 Fetched all feeds (${feeds.length}), checking feed limits`)
-    this.log.debug('3/10 Checked feed limits, getting debug URLs and fail record map')
-    const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
+    this.log.debug('3/10 Checked feed limits, getting fail record map')
     const failRecordMap = await this.getFailRecordMap()
     this.log.debug('4/10 Created fail records map, getting feeds of this schedule')
     // Get eligible feeds of this schedule
@@ -394,6 +385,7 @@ class ScheduleRun extends EventEmitter {
       return this.finishNoFeedsCycle()
     }
     // Batch them up
+    const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
     const batches = this.createBatches(urlMap, config.advanced.batchSize, debugFeedURLs)
     this.log.debug(`9/10 Created ${batches.length} batches`)
     const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
@@ -419,6 +411,7 @@ class ScheduleRun extends EventEmitter {
 
     return linkCompletion => {
       const { link, status, lastModified, etag, memoryCollection, newArticle } = linkCompletion
+      const debugLog = debugFeedURLs.has(link) ? m => this.log.info({ url: link, status }, m) : () => {}
       if (status === 'headers') {
         this.headers[link] = {
           lastModified,
@@ -428,6 +421,7 @@ class ScheduleRun extends EventEmitter {
       }
       if (status === 'connected') {
         ++connectedLinks
+        debugLog('Link connected from processor')
         if (connectedLinks === batchLength) {
           onAllConnected()
         }
@@ -451,9 +445,7 @@ class ScheduleRun extends EventEmitter {
       ++completedLinks
       this.removeFromBatchRecords(batchGroupIndex, batchIndex, link)
       this.log.trace(`[GROUP ${batchGroupIndex + 1}/${this.batchGroups.length}, BATCH ${batchIndex + 1}/${batchGroup.length}] URLs Completed: ${completedLinks}/${batchLength}`)
-      if (debugFeedURLs.has(link)) {
-        this.log.info(`${link}: Link responded from processor`)
-      }
+      debugLog('Link completed from processor')
       if (completedLinks === batchLength) {
         onComplete(thisFailures)
       }

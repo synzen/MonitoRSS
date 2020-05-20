@@ -7,10 +7,7 @@ const LinkLogic = require('../structs/LinkLogic.js')
 const initialize = require('./initialization.js')
 const databaseFuncs = require('../util/database.js')
 
-async function fetchFeed (headers, url, log) {
-  if (log) {
-    log.info('Fetching URL')
-  }
+async function fetchFeed (headers, url, urlLog) {
   const fetchOptions = {}
   if (headers) {
     if (!headers.lastModified || !headers.etag) {
@@ -23,9 +20,6 @@ async function fetchFeed (headers, url, log) {
   }
   const { stream, response } = await FeedFetcher.fetchURL(url, fetchOptions)
   if (response.status === 304) {
-    if (log) {
-      log.info('304 response, sending success status')
-    }
     return null
   } else {
     const lastModified = response.headers['last-modified']
@@ -38,9 +32,7 @@ async function fetchFeed (headers, url, log) {
         lastModified,
         etag
       })
-      if (log) {
-        log.info('Sending back headers')
-      }
+      urlLog('Sending back headers')
     }
     return {
       stream,
@@ -49,17 +41,8 @@ async function fetchFeed (headers, url, log) {
   }
 }
 
-async function parseStream (stream, charset, url, log) {
-  if (log) {
-    log.info('Parsing stream')
-  }
+async function parseStream (stream, charset, url, urlLog) {
   const { articleList } = await FeedFetcher.parseStream(stream, url, charset)
-  if (articleList.length === 0) {
-    if (log) {
-      log.info('No articles found, sending success status')
-    }
-    return null
-  }
   return articleList
 }
 
@@ -103,26 +86,31 @@ async function sendArticles (newArticles) {
 async function getFeed (data, log) {
   const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config, testRun } = data
   const isDatabaseless = !!memoryCollections
-  const urlLog = toDebug ? log.child({
+  const debugLogger = log.child({
     url: link
-  }) : null
-  if (urlLog) {
-    urlLog.info('Isolated processor received in batch')
-  }
+  })
+  const urlLog = toDebug ? debugLogger.info.bind(debugLogger) : () => {}
+  urlLog('Isolated processor received in batch')
 
   let articleList
   try {
+    // Request URL
+    urlLog('Requesting url')
     const fetchData = await fetchFeed(headers[link], link, urlLog)
     if (!fetchData) {
+      urlLog('304 response, sending success')
       process.send({ status: 'connected' })
       process.send({ status: 'success', link })
       return
     }
+    // Parse feed
     const { stream, response } = fetchData
     const charset = FeedFetcher.getCharsetFromResponse(response)
+    urlLog(`Parsing stream with ${charset} charset`)
     articleList = await parseStream(stream, charset, link, urlLog)
     process.send({ status: 'connected' })
-    if (!articleList) {
+    if (articleList.length === 0) {
+      urlLog('No articles found, sending success')
       process.send({ status: 'success', link })
       return
     }
@@ -130,18 +118,15 @@ async function getFeed (data, log) {
     if (!(err instanceof RequestError) && !(err instanceof FeedParserError)) {
       log.error(err, 'URL connection')
     } else if (config.log.linkErrs) {
-      log.warn({
-        error: err
-      }, `Skipping ${link}`)
+      log.warn({ error: err }, `Skipping ${link}`)
     }
-    if (urlLog) {
-      urlLog.info('Sending failed status during connection')
-    }
+    urlLog({ error: err }, 'Sending failed status during connection')
     process.send({ status: 'connected' })
     process.send({ status: 'failed', link, rssList })
     return
   }
 
+  // Go through articles
   try {
     if (testRun) {
       process.send({
@@ -178,9 +163,7 @@ async function getFeed (data, log) {
      * Then finally send new articles to prevent spam if sync fails
      */
     if (runNum !== 0 || config.feeds.sendFirstCycle === true) {
-      if (urlLog) {
-        urlLog.info(`Sending article status for ${newArticles.length} articles`)
-      }
+      urlLog(`${newArticles.length} new articles found`)
       await sendArticles(newArticles)
     }
 
@@ -190,12 +173,7 @@ async function getFeed (data, log) {
       memoryCollection: isDatabaseless ? docs : undefined
     })
   } catch (err) {
-    if (urlLog) {
-      urlLog.info('Sending failed status')
-    }
-    if (!(err instanceof FeedParserError)) {
-      log.error(err, `Cycle logic for ${link}`)
-    }
+    log.error(err, `Cycle logic for ${link}`)
     process.send({ status: 'failed', link, rssList })
   }
 }
