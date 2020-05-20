@@ -113,7 +113,7 @@ describe('Unit::structs/ScheduleRun', function () {
       expect(run.isEligibleFeed(feedObject, new Map(), new Set()))
         .toEqual(false)
     })
-    it('returns false if fail record was alerted', function () {
+    it('returns false if fail record has failed', function () {
       const run = new ScheduleRun(basicSchedule)
       const feedObject = {
         disabled: false,
@@ -121,8 +121,7 @@ describe('Unit::structs/ScheduleRun', function () {
       }
       const failRecordMap = new Map([
         [feedObject.url, {
-          alerted: true,
-          hasFailed: jest.fn()
+          hasFailed: jest.fn().mockReturnValue(true)
         }]
       ])
       expect(run.isEligibleFeed(feedObject, failRecordMap, new Set()))
@@ -136,7 +135,7 @@ describe('Unit::structs/ScheduleRun', function () {
       }
       const failRecordMap = new Map([
         [feedObject.url, {
-          alerted: false
+          hasFailed: jest.fn().mockReturnValue(false)
         }]
       ])
       expect(run.isEligibleFeed(feedObject, failRecordMap, new Set()))

@@ -1,4 +1,3 @@
-const Base = require('./db/Base.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 const ScheduleRun = require('./ScheduleRun.js')
 const createLogger = require('../util/logger/create.js')
@@ -34,14 +33,6 @@ class ScheduleManager extends EventEmitter {
      * @type {Map<import('./db/Schedule.js'), number>}
      */
     this.scheduleRunCounts = new Map()
-    /**
-     * @type {Map<import('./db/Schedule.js'), MemoryCollection>}
-     * */
-    this.memoryCollections = new Map() // by schedule
-    /**
-     * @type {Map<import('./db/Schedule.js'), Object<string, any>}
-     * */
-    this.headers = new Map() // by schedule
     this.urlFailuresRecording = new Set()
     this.urlSuccessesRecording = new Set()
     this.sendingEnabledNotifications = new Set()
@@ -73,10 +64,7 @@ class ScheduleManager extends EventEmitter {
     }
     this.urlFailuresRecording.add(url)
     try {
-      const record = await FailRecord.record(url)
-      if (record.hasFailed()) {
-        await this.alertFailRecord(record)
-      }
+      await FailRecord.record(url)
     } catch (err) {
       this.log.error(err, `Failed to record url fail record ${url}`)
     }
@@ -158,10 +146,6 @@ class ScheduleManager extends EventEmitter {
   addSchedule (schedule) {
     this.schedules.push(schedule)
     this.scheduleRunCounts.set(schedule, 0)
-    if (!Base.isMongoDatabase) {
-      this.memoryCollections.set(schedule, {})
-    }
-    this.headers.set(schedule, {})
   }
 
   /**
@@ -265,12 +249,11 @@ class ScheduleManager extends EventEmitter {
       this.terminateScheduleRuns(schedule)
     }
     const runCount = this.scheduleRunCounts.get(schedule)
-    const memoryCollection = this.memoryCollections.get(schedule)
-    const headers = this.headers.get(schedule)
-    const run = new ScheduleRun(schedule, runCount, memoryCollection, headers)
+    const run = new ScheduleRun(schedule, runCount)
     run.on('newArticle', this._onNewArticle.bind(this))
     run.on('conFailure', this._onConnectionFailure.bind(this))
     run.on('conSuccess', this._onConnectionSuccess.bind(this))
+    run.on('alertFail', this.alertFailRecord.bind(this))
     run.on('feedEnabled', this._onFeedEnabled.bind(this))
     run.on('feedDisabled', this._onFeedDisabled.bind(this))
     this.scheduleRuns.push(run)

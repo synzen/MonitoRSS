@@ -28,7 +28,7 @@ class ScheduleRun extends EventEmitter {
    * @param {number} runCount
    * @param {Object<string, any>} memoryCollections
    */
-  constructor (schedule, runCount, memoryCollections, headers, testRun = false) {
+  constructor (schedule, runCount, testRun = false) {
     if (!schedule.refreshRateMinutes) {
       throw new Error('No refreshRateMinutes has been declared for a schedule')
     }
@@ -57,11 +57,17 @@ class ScheduleRun extends EventEmitter {
     this.failedURLs = new Set()
     this.succeededURLs = new Set()
     this._cycleTotalCount = 0
-    // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
-    this.memoryCollections = memoryCollections
     this.feedCount = 0 // For statistics
     this.ran = runCount // # of times this schedule has ran
-    this.headers = headers
+    if (!ScheduleRun.headers.has(schedule)) {
+      ScheduleRun.headers.set(schedule, {})
+    }
+    this.headers = ScheduleRun.headers.get(schedule)
+    if (!Schedule.isMongoDatabase && !ScheduleRun.memoryCollections.has(schedule)) {
+      ScheduleRun.memoryCollections.set(schedule, {})
+    }
+    // ONLY FOR DATABASELESS USE. Object of collection ids as keys, and arrays of objects (AKA articles) as values
+    this.memoryCollections = ScheduleRun.memoryCollections.get(schedule)
     this.testRun = testRun
   }
 
@@ -124,6 +130,17 @@ class ScheduleRun extends EventEmitter {
       failRecordMap.set(record.url, record)
     }
     return failRecordMap
+  }
+
+  /**
+   * @param {Map<string, import('./db/FailRecord.js')} failRecordMap
+   */
+  alertFailRecords (failRecordMap) {
+    failRecordMap.forEach(record => {
+      if (record.hasFailed() && !record.alerted) {
+        this.emit('alertFail', record)
+      }
+    })
   }
 
   /**
@@ -210,7 +227,7 @@ class ScheduleRun extends EventEmitter {
       return false
     }
     const failRecord = failRecordsMap.get(feed.url)
-    if (failRecord && failRecord.alerted) {
+    if (failRecord && failRecord.hasFailed()) {
       debugLog(`Skipping feed delegation, failed status: ${failRecord.hasFailed()}, alerted: ${failRecord.alerted}`)
       return false
     }
@@ -369,6 +386,7 @@ class ScheduleRun extends EventEmitter {
     this.log.debug(`2/10 Fetched all feeds (${feeds.length}), checking feed limits`)
     this.log.debug('3/10 Checked feed limits, getting fail record map')
     const failRecordMap = await this.getFailRecordMap()
+    this.alertFailRecords(failRecordMap)
     this.log.debug('4/10 Created fail records map, getting feeds of this schedule')
     // Get eligible feeds of this schedule
     const scheduleFeeds = await this.getScheduleFeeds(feeds)
@@ -540,5 +558,15 @@ class ScheduleRun extends EventEmitter {
     }
   }
 }
+
+/**
+ * @type {Map<import('./db/Schedule.js'), Object<string, any>>}
+ */
+ScheduleRun.headers = new Map()
+
+/**
+ * @type {Map<import('./db/Schedule.js'), Object<string, any>>}
+ */
+ScheduleRun.memoryCollections = new Map()
 
 module.exports = ScheduleRun

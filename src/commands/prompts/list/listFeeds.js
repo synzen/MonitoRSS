@@ -83,22 +83,21 @@ async function listFeedVisual (data) {
     const channel = `<#${feed.channel}>`
 
     // Status
+    const failRecord = failRecordsMap[feed.url]
     let status = ''
     if (feed.disabled) {
       status = translate('commands.list.statusDisabled', { reason: feed.disabled })
-    } else if (FailRecord.limit !== 0) {
-      const failRecord = failRecordsMap[feed.url]
-      if (!failRecord || !failRecord.hasFailed()) {
-        let health = '(100% health)'
-        if (failRecord) {
-          // Determine hours between config spec and now, then calculate health
-          const hours = (new Date().getTime() - new Date(failRecord.failedAt).getTime()) / 36e5
-          health = `(${100 - Math.ceil(hours / config.feeds.hoursUntilFail * 100)}% health)`
-        }
-        status = translate('commands.list.statusOk', { failCount: `${health}` })
+    } else if (failRecord) {
+      if (!failRecord.hasFailed()) {
+        // Determine hours between config spec and now, then calculate health
+        const hours = (new Date().getTime() - new Date(failRecord.failedAt).getTime()) / 36e5
+        const health = `(${100 - Math.ceil(hours / FailRecord.cutoff * 100)}% health)`
+        status = translate('commands.list.statusOk', { failCount: health })
       } else {
         status = translate('commands.list.statusFailed')
       }
+    } else {
+      status = translate('commands.list.statusOk', { failCount: '(100% health)' })
     }
 
     // Title checks
