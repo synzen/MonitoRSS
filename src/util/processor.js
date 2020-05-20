@@ -110,39 +110,39 @@ async function getFeed (data, log) {
     urlLog.info('Isolated processor received in batch')
   }
 
-  let fetchData
+  let articleList
   try {
-    fetchData = await fetchFeed(headers[link], link, urlLog)
-    process.send({ status: 'connected' })
+    const fetchData = await fetchFeed(headers[link], link, urlLog)
     if (!fetchData) {
+      process.send({ status: 'connected' })
       process.send({ status: 'success', link })
       return
     }
-  } catch (err) {
-    process.send({ status: 'connected' })
-    if (err instanceof RequestError || err instanceof FeedParserError) {
-      if (config.log.linkErrs) {
-        log.warn({
-          error: err
-        }, `Skipping ${link}`)
-      }
-    } else {
-      if (urlLog) {
-        urlLog.info('Sending failed status during connection')
-      }
-      log.error(err, 'URL connection')
-    }
-    return process.send({ status: 'failed', link, rssList })
-  }
-
-  try {
     const { stream, response } = fetchData
     const charset = FeedFetcher.getCharsetFromResponse(response)
-    const articleList = await parseStream(stream, charset, link, urlLog)
+    articleList = await parseStream(stream, charset, link, urlLog)
+    process.send({ status: 'connected' })
     if (!articleList) {
       process.send({ status: 'success', link })
       return
     }
+  } catch (err) {
+    if (!(err instanceof RequestError) && !(err instanceof FeedParserError)) {
+      log.error(err, 'URL connection')
+    } else if (config.log.linkErrs) {
+      log.warn({
+        error: err
+      }, `Skipping ${link}`)
+    }
+    if (urlLog) {
+      urlLog.info('Sending failed status during connection')
+    }
+    process.send({ status: 'connected' })
+    process.send({ status: 'failed', link, rssList })
+    return
+  }
+
+  try {
     if (testRun) {
       process.send({
         status: 'success',
@@ -193,13 +193,7 @@ async function getFeed (data, log) {
     if (urlLog) {
       urlLog.info('Sending failed status')
     }
-    if (err instanceof FeedParserError) {
-      if (config.log.linkErrs) {
-        log.warn({
-          error: err
-        }, `Skipping ${link}`)
-      }
-    } else {
+    if (!(err instanceof FeedParserError)) {
       log.error(err, `Cycle logic for ${link}`)
     }
     process.send({ status: 'failed', link, rssList })
