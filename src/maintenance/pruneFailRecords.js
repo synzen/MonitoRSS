@@ -16,7 +16,7 @@ async function pruneFailRecords (feeds) {
   const recordsLength = records.length
   for (var j = recordsLength - 1; j >= 0; --j) {
     const record = records[j]
-    if (!activeURLs.has(record.url)) {
+    if (!activeURLs.has(record._id)) {
       deletions.push(record.delete())
     }
   }

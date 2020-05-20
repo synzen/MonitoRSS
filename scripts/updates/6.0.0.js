@@ -74,7 +74,7 @@ async function updateVIP (vip) {
 async function updateFailRecords (doc) {
   const config = getConfig()
   const insert = {
-    url: doc.link
+    _id: doc.link
   }
   if (doc.failed) {
     insert.reason = doc.failed

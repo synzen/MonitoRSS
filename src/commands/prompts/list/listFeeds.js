@@ -36,12 +36,12 @@ async function listFeedVisual (data) {
   const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
 
   // Generate the info for each feed as an array, and push into another array
-  const failRecords = await Promise.all(feeds.map(feed => FailRecord.getBy('url', feed.url)))
+  const failRecords = await Promise.all(feeds.map(feed => FailRecord.get(feed.url)))
   const fetchedSchedules = await Promise.all(feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds)))
 
   for (const record of failRecords) {
     if (record) {
-      failRecordsMap[record.url] = record
+      failRecordsMap[record._id] = record
     }
   }
   let vipDetails = ''

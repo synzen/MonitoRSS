@@ -13,16 +13,16 @@ describe('Unit::maintenance/pruneFailRecords', function () {
   })
   it('deletes the records whose url does not exist', async function () {
     const failRecords = [{
-      url: 'a',
+      _id: 'a',
       delete: jest.fn()
     }, {
-      url: 'b',
+      _id: 'b',
       delete: jest.fn()
     }, {
-      url: 'foo',
+      _id: 'foo',
       delete: jest.fn()
     }, {
-      url: 'c',
+      _id: 'c',
       delete: jest.fn()
     }]
     const feeds = [{
@@ -41,16 +41,16 @@ describe('Unit::maintenance/pruneFailRecords', function () {
   })
   it('returns the number of deleted failRecords', async function () {
     const failRecords = [{
-      url: 'a',
+      _id: 'a',
       delete: jest.fn()
     }, {
-      url: 'b',
+      _id: 'b',
       delete: jest.fn()
     }, {
-      url: 'foo',
+      _id: 'foo',
       delete: jest.fn()
     }, {
-      url: 'c',
+      _id: 'c',
       delete: jest.fn()
     }]
     const feeds = [{

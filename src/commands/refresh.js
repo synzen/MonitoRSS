@@ -19,7 +19,7 @@ module.exports = async (message, command) => {
 
   const records = []
   for (const feed of feeds) {
-    const failRecord = await FailRecord.getBy('url', feed.url)
+    const failRecord = await FailRecord.get(feed.url)
     if (!FailRecord || !failRecord.hasFailed()) {
       continue
     }

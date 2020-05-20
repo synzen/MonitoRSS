@@ -127,7 +127,7 @@ class ScheduleRun extends EventEmitter {
     const failRecords = await FailRecord.getAll()
     const failRecordMap = new Map()
     for (const record of failRecords) {
-      failRecordMap.set(record.url, record)
+      failRecordMap.set(record._id, record)
     }
     return failRecordMap
   }

@@ -7,13 +7,8 @@ class FailRecord extends Base {
   constructor (data, _saved) {
     super(data, _saved)
 
-    /**
-     * Feed URL
-     * @type {string}
-     */
-    this.url = this.getField('url')
-    if (!this.url) {
-      throw new Error('url is undefined')
+    if (!this._id) {
+      throw new Error('_id is undefined (must be URL)')
     }
 
     /**
@@ -49,10 +44,10 @@ class FailRecord extends Base {
    * @returns {FailRecord}
    */
   static async record (url, reason) {
-    const record = await FailRecord.getBy('url', url)
+    const record = await FailRecord.get(url)
     if (!record) {
       const data = {
-        url,
+        _id: url,
         reason
       }
       const newRecord = new this(data)
@@ -71,7 +66,7 @@ class FailRecord extends Base {
    * @param {string} url - Feed URL
    */
   static async reset (url) {
-    const found = await FailRecord.getBy('url', url)
+    const found = await FailRecord.get(url)
     if (found) {
       return found.delete()
     }
@@ -82,7 +77,7 @@ class FailRecord extends Base {
    * @param {string} url
    */
   static async hasFailed (url) {
-    const found = await FailRecord.getBy('url', url)
+    const found = await FailRecord.get(url)
     if (!found) {
       return false
     } else {
@@ -92,7 +87,7 @@ class FailRecord extends Base {
 
   toObject () {
     return {
-      url: this.url,
+      _id: this._id,
       reason: this.reason,
       failedAt: this.failedAt,
       alerted: this.alerted
@@ -103,7 +98,7 @@ class FailRecord extends Base {
    * Get all feeds with this URL
    */
   async getAssociatedFeeds () {
-    return Feed.getManyBy('url', this.url)
+    return Feed.getManyBy('url', this._id)
   }
 
   /**

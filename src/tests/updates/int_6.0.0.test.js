@@ -55,10 +55,10 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       }
       await updateFailRecords(failedLink)
       const record = await con.collection('fail_records').findOne({
-        url: failedLink.link
+        _id: failedLink.link
       })
       const expected = {
-        url: failedLink.link,
+        _id: failedLink.link,
         reason: failedLink.failed,
         alerted: true
       }
@@ -73,7 +73,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       }
       await updateFailRecords(failedLink)
       const record = await con.collection('fail_records').findOne({
-        url: failedLink.link
+        _id: failedLink.link
       })
       const cutoff = getOldDate(config.get().feeds.hoursUntilFail)
       expect(record.failedAt < cutoff)
@@ -85,7 +85,7 @@ describe('Int::scripts/updates/6.0.0 Database', function () {
       }
       await updateFailRecords(failedLink)
       const record = await con.collection('fail_records').findOne({
-        url: failedLink.link
+        _id: failedLink.link
       })
       const cutoff = getOldDate(config.get().feeds.hoursUntilFail)
       expect(record.failedAt > cutoff)

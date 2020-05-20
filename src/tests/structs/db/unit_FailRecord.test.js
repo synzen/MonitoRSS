@@ -15,7 +15,7 @@ describe('Unit::structs/db/FailRecord', function () {
   describe('constructor', function () {
     it('initializes default values', function () {
       const data = {
-        url: 'aesdgdf'
+        _id: 'aesdgdf'
       }
       const record = new FailRecord(data)
       expect(record.failedAt).toBeDefined()
@@ -23,23 +23,23 @@ describe('Unit::structs/db/FailRecord', function () {
     })
     it('initializes with given values', function () {
       const data = {
-        url: 'aesdgdf',
+        _id: 'aesdgdf',
         reason: 'helaz'
       }
       const record = new FailRecord(data)
-      expect(record.url).toEqual(data.url)
+      expect(record._id).toEqual(data._id)
       expect(record.reason).toEqual(data.reason)
     })
   })
   describe('static record', function () {
     it('finds the right model', async function () {
-      const spy = jest.spyOn(FailRecord, 'getBy').mockResolvedValue({
+      const spy = jest.spyOn(FailRecord, 'get').mockResolvedValue({
         save: jest.fn(),
         hasFailed: jest.fn().mockReturnValue(false)
       })
       const url = 'srfyhed'
       await FailRecord.record(url)
-      expect(spy).toHaveBeenCalledWith('url', url)
+      expect(spy).toHaveBeenCalledWith(url)
     })
     it('updates the reason the model if it exists', async function () {
       const reason = 'ewstr4ydh'
@@ -48,7 +48,7 @@ describe('Unit::structs/db/FailRecord', function () {
         hasFailed: jest.fn().mockReturnValue(false),
         reason: reason + 'abc'
       }
-      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
+      jest.spyOn(FailRecord, 'get').mockResolvedValue(found)
       await FailRecord.record('', reason)
       expect(found.save).toHaveBeenCalledWith()
       expect(found.reason).toEqual(reason)
@@ -61,25 +61,25 @@ describe('Unit::structs/db/FailRecord', function () {
         reason,
         alerted: true
       }
-      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
+      jest.spyOn(FailRecord, 'get').mockResolvedValue(found)
       const returned = await FailRecord.record('', reason)
       expect(returned).toEqual(found)
     })
   })
   describe('static reset', function () {
     it('finds the right model', async function () {
-      const spy = jest.spyOn(FailRecord, 'getBy').mockResolvedValue({
+      const spy = jest.spyOn(FailRecord, 'get').mockResolvedValue({
         delete: jest.fn()
       })
       const url = 'srfyhed'
       await FailRecord.reset(url)
-      expect(spy).toHaveBeenCalledWith('url', url)
+      expect(spy).toHaveBeenCalledWith(url)
     })
     it('deletes the found model', async function () {
       const found = {
         delete: jest.fn()
       }
-      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
+      jest.spyOn(FailRecord, 'get').mockResolvedValue(found)
       const url = 'srfyhed'
       await FailRecord.reset(url)
       expect(found.delete).toHaveBeenCalled()
@@ -87,7 +87,7 @@ describe('Unit::structs/db/FailRecord', function () {
   })
   describe('static hasFailed', function () {
     it('returns false if getBy returns null', async function () {
-      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(null)
+      jest.spyOn(FailRecord, 'get').mockResolvedValue(null)
       const returned = await FailRecord.hasFailed()
       expect(returned).toEqual(false)
     })
@@ -96,7 +96,7 @@ describe('Unit::structs/db/FailRecord', function () {
       const found = {
         hasFailed
       }
-      jest.spyOn(FailRecord, 'getBy').mockResolvedValue(found)
+      jest.spyOn(FailRecord, 'get').mockResolvedValue(found)
       await expect(FailRecord.hasFailed())
         .resolves.toEqual(true)
       hasFailed.mockReturnValue(false)
@@ -115,14 +115,14 @@ describe('Unit::structs/db/FailRecord', function () {
     it('returns false if cutoff is 0', function () {
       jest.spyOn(FailRecord, 'cutoff', 'get').mockReturnValue(0)
       const data = {
-        url: 'sg'
+        _id: 'sg'
       }
       const record = new FailRecord(data)
       expect(record.pastCutoff()).toEqual(false)
     })
     it('returns false if failedAt is recent', function () {
       const data = {
-        url: 'sg'
+        _id: 'sg'
       }
       const record = new FailRecord(data)
       record.failedAt = recentDate.toISOString()
@@ -130,7 +130,7 @@ describe('Unit::structs/db/FailRecord', function () {
     })
     it('returns true if count at or above limit', function () {
       const data = {
-        url: 'sg'
+        _id: 'sg'
       }
       const record = new FailRecord(data)
       record.failedAt = atDate.toISOString()
@@ -142,7 +142,7 @@ describe('Unit::structs/db/FailRecord', function () {
   describe('hasFailed', function () {
     it('returns pastCutoff func value', function () {
       const data = {
-        url: 'wseg'
+        _id: 'wseg'
       }
       const record = new FailRecord(data)
       const pastCutoff = 32546
@@ -154,20 +154,20 @@ describe('Unit::structs/db/FailRecord', function () {
   describe('toObject', function () {
     it('returns correctly', function () {
       const data = {
-        url: 'aetgswr'
+        _id: 'aetgswr'
       }
       const record = new FailRecord(data)
       const url = 'w49y6huie'
       const reason = 'jackzzz'
       const failedAt = 'q3w24t6ery5tu6'
       const alerted = true
-      record.url = url
+      record._id = url
       record.reason = reason
       record.failedAt = failedAt
       record.alerted = alerted
       const returned = record.toObject()
       expect(returned).toEqual({
-        url,
+        _id: url,
         reason,
         failedAt,
         alerted

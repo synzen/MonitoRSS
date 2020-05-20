@@ -2,10 +2,7 @@ const mongoose = require('mongoose')
 const Version = require('./common/Version.js')
 
 const schema = new mongoose.Schema({
-  url: {
-    type: String,
-    unique: true
-  },
+  _id: String,
   reason: String,
   failedAt: {
     type: Date,

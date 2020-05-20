@@ -41,10 +41,10 @@ describe('Unit::structs/ScheduleRun', function () {
   describe('getFailRecordMap', function () {
     it('returns correctly', async function () {
       const failRecords = [{
-        url: 'a',
+        _id: 'a',
         key: '1'
       }, {
-        url: 'b',
+        _id: 'b',
         key: '2'
       }]
       FailRecord.getAll.mockResolvedValue(failRecords)

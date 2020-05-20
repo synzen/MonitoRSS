@@ -119,7 +119,7 @@ class ScheduleManager extends EventEmitter {
    * @param {import('./db/FailRecord.js')} record
    */
   async alertFailRecord (record) {
-    const url = record.url
+    const url = record._id
     record.alerted = true
     await record.save()
     const feeds = await record.getAssociatedFeeds()

@@ -10,7 +10,7 @@ module.exports = async (message) => {
   if (FailRecord.limit === 0) {
     return message.channel.send('No fail limit has been set.')
   }
-  const record = await FailRecord.getBy('url', link)
+  const record = await FailRecord.get(link)
   if (!record || !record.hasFailed()) {
     return message.channel.send('That is not a failed link.')
   }

@@ -49,7 +49,7 @@ describe('Int::structs/db/FailRecord Database', function () {
       const record = await FailRecord.record(url, reason)
       const date = record.failedAt
       const result = await collection.findOne({
-        url
+        _id: url
       })
       expect(result).toBeDefined()
       expect(result.failedAt.toISOString()).toEqual(date)
@@ -60,12 +60,12 @@ describe('Int::structs/db/FailRecord Database', function () {
       const url = 'incdocexist'
       const reason = 'q23werf'
       await collection.insertOne({
-        url,
+        _id: url,
         failedAt: oldDate
       })
       await FailRecord.record(url, reason)
       const result = await collection.findOne({
-        url
+        _id: url
       })
       expect(result.reason).toEqual(reason)
       await collection.deleteOne({ url })
@@ -73,13 +73,13 @@ describe('Int::structs/db/FailRecord Database', function () {
     it('does not change alerted status if not old date', async function () {
       const url = 'incdocexistrecent'
       await collection.insertOne({
-        url,
+        _id: url,
         failedAt: recentDate,
         alerted: false
       })
       await FailRecord.record(url)
       const result = await collection.findOne({
-        url
+        _id: url
       })
       expect(result.alerted).toEqual(false)
       await collection.deleteOne({ url })
@@ -89,12 +89,12 @@ describe('Int::structs/db/FailRecord Database', function () {
     it('deletes the url if it exists', async function () {
       const url = 'incdocreset'
       collection.insertOne({
-        url
+        _id: url
       })
-      expect(collection.findOne({ url }))
+      expect(collection.findOne({ _id: url }))
         .resolves.toBeDefined()
       await FailRecord.reset(url)
-      expect(collection.findOne({ url }))
+      expect(collection.findOne({ _id: url }))
         .resolves.toBeNull()
     })
   })
@@ -102,7 +102,7 @@ describe('Int::structs/db/FailRecord Database', function () {
     it('returns true for failed urls', async function () {
       const url = 'hasfailed'
       await collection.insertOne({
-        url,
+        _id: url,
         failedAt: oldDate
       })
       await expect(FailRecord.hasFailed(url))
@@ -111,7 +111,7 @@ describe('Int::structs/db/FailRecord Database', function () {
     it('returns false for not failed urls', async function () {
       const url = 'hasnotfailed'
       await collection.insertOne({
-        url,
+        _id: url,
         count: recentDate
       })
       await expect(FailRecord.hasFailed(url))
