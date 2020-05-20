@@ -20,6 +20,10 @@ const schema = new mongoose.Schema({
 schema.add(Version)
 schema.add(FilterBase)
 
+schema.index({
+  feed: 1
+})
+
 exports.schema = schema
 /** @type {import('mongoose').Model} */
 exports.Model = null
