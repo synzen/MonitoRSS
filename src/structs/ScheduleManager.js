@@ -300,7 +300,9 @@ class ScheduleManager extends EventEmitter {
     this.clearTimers()
     // const rates = new Set()
     this.schedules.forEach(schedule => {
-      this.run(schedule)
+      if (schedule.name === 'default') {
+        this.run(schedule)
+      }
       this.timers.push(setInterval(() => {
         this.run(schedule)
       }, schedule.refreshRateMinutes * 60000))
