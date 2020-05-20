@@ -121,7 +121,8 @@ describe('Unit::structs/ScheduleRun', function () {
       }
       const failRecordMap = new Map([
         [feedObject.url, {
-          alerted: true
+          alerted: true,
+          hasFailed: jest.fn()
         }]
       ])
       expect(run.isEligibleFeed(feedObject, failRecordMap, new Set()))
