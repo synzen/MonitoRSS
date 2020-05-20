@@ -38,7 +38,7 @@ describe('Unit::structs/ScheduleRun', function () {
       expect(emit).toHaveBeenCalledWith('feedDisabled', 4)
     })
   })
-  describe('getFailRecordMap', function () {
+  describe('getFailRecordsMap', function () {
     it('returns correctly', async function () {
       const failRecords = [{
         _id: 'a',
@@ -47,9 +47,9 @@ describe('Unit::structs/ScheduleRun', function () {
         _id: 'b',
         key: '2'
       }]
-      FailRecord.getAll.mockResolvedValue(failRecords)
+      FailRecord.getManyByQuery.mockResolvedValue(failRecords)
       const run = new ScheduleRun(basicSchedule)
-      await expect(run.getFailRecordMap())
+      await expect(run.getFailRecordsMap([]))
         .resolves.toEqual(new Map([
           ['a', failRecords[0]],
           ['b', failRecords[1]]

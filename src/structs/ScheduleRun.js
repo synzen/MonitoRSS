@@ -123,13 +123,24 @@ class ScheduleRun extends EventEmitter {
     disabled.forEach(feed => this.emit('feedDisabled', feed))
   }
 
-  async getFailRecordMap () {
-    const failRecords = await FailRecord.getAll()
-    const failRecordMap = new Map()
-    for (const record of failRecords) {
-      failRecordMap.set(record._id, record)
+  /**
+   * @param {import('./db/Feed.js')[]} feeds
+   */
+  async getFailRecordsMap (feeds) {
+    const urls = new Set()
+    for (var i = feeds.length - 1; i >= 0; --i) {
+      urls.add(feeds[i].url)
     }
-    return failRecordMap
+    const failRecords = await FailRecord.getManyByQuery({
+      _id: {
+        $in: Array.from(urls)
+      }
+    })
+    const failRecordsMap = new Map()
+    for (const record of failRecords) {
+      failRecordsMap.set(record._id, record)
+    }
+    return failRecordsMap
   }
 
   /**
@@ -380,34 +391,33 @@ class ScheduleRun extends EventEmitter {
     const config = getConfig()
     this.log.debug({
       schedule: this.schedule
-    }, '1/10 Running schedule, getting all feeds')
+    }, '1 Running schedule, getting all feeds')
     const feeds = await Feed.getAll()
     // Check the limits
-    this.log.debug(`2/10 Fetched all feeds (${feeds.length}), checking feed limits`)
-    this.log.debug('3/10 Checked feed limits, getting fail record map')
-    const failRecordMap = await this.getFailRecordMap()
-    this.alertFailRecords(failRecordMap)
-    this.log.debug('4/10 Created fail records map, getting feeds of this schedule')
+    this.log.debug(`2 Fetched all feeds (${feeds.length}), getting feeds of this schedule`)
     // Get eligible feeds of this schedule
     const scheduleFeeds = await this.getScheduleFeeds(feeds)
-    this.log.debug('5/10 Got feeds of this schedule, getting elgibile feeds')
-    const eligibleFeeds = await this.getEligibleFeeds(scheduleFeeds, failRecordMap, debugFeedIDs)
-    this.log.debug('6/10 Got eligibile feeds, converting all to JSON')
+    this.log.debug('3 Got feeds of this schedule, getting fail record map')
+    const failRecordsMap = await this.getFailRecordsMap(scheduleFeeds)
+    this.alertFailRecords(failRecordsMap)
+    this.log.debug('4 Got fail record map, getting elgibile feeds')
+    const eligibleFeeds = await this.getEligibleFeeds(scheduleFeeds, failRecordsMap, debugFeedIDs)
+    this.log.debug('5 Got eligibile feeds, converting all to JSON')
     const feedObjects = this.convertFeedsToJSON(eligibleFeeds)
-    this.log.debug(`7/10 Fetched applicable feeds (${feedObjects.length}), mapping feeds by URL`)
+    this.log.debug(`6 Fetched applicable feeds (${feedObjects.length}), mapping feeds by URL`)
     this.feedCount = feedObjects.length
     // Put all feeds with the same URLs together
     const urlMap = this.mapFeedsByURL(feedObjects, debugFeedIDs)
-    this.log.debug(`8/10 Mapped feeds by URL (${urlMap.size} URLs), creating batches`)
+    this.log.debug(`7 Mapped feeds by URL (${urlMap.size} URLs), creating batches`)
     if (urlMap.size === 0) {
       return this.finishNoFeedsCycle()
     }
     // Batch them up
     const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
     const batches = this.createBatches(urlMap, config.advanced.batchSize, debugFeedURLs)
-    this.log.debug(`9/10 Created ${batches.length} batches`)
+    this.log.debug(`8 Created ${batches.length} batches`)
     const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
-    this.log.debug(`10/10 Created ${batchGroups.length} batch groups (${JSON.stringify(batchGroups.map(arr => arr.map(m => Object.keys(m).length)))})`)
+    this.log.debug(`9 Created ${batchGroups.length} batch groups (${JSON.stringify(batchGroups.map(arr => arr.map(m => Object.keys(m).length)))})`)
     const processBatchGroup = promisify(this.processBatchGroup).bind(this)
     const processing = []
     for (let i = 0; i < batchGroups.length; ++i) {
