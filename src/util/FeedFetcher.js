@@ -234,7 +234,7 @@ class FeedFetcher {
 
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        reject(new FeedParserError('Feed parsing took too long'))
+        reject(new FeedParserError(null, 'Feed parsing took too long'))
       }, 10000)
 
       stream.on('error', err => {
