@@ -84,7 +84,7 @@ async function sendArticles (newArticles) {
 }
 
 async function getFeed (data, log) {
-  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config, testRun } = data
+  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config } = data
   const isDatabaseless = !!memoryCollections
   const debugLogger = log.child({
     url: link
@@ -128,14 +128,6 @@ async function getFeed (data, log) {
 
   // Go through articles
   try {
-    if (testRun) {
-      process.send({
-        status: 'success',
-        link
-      })
-      return
-    }
-
     /**
      * Run the logic to get any new articles before syncDatabase modifies
      * databaseless memory collections in-place
