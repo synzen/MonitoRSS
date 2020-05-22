@@ -79,19 +79,19 @@ class Command {
   static shouldIgnore (message, log) {
     const { author, client, guild, channel } = message
     if (!guild) {
-      log.debug('Ignored message from non-guild')
+      log.trace('Ignored message from non-guild')
       return true
     } else if (author.id === client.user.id) {
-      log.debug('Ignored message from self (bot)')
+      log.trace('Ignored message from self (bot)')
       return true
     } else if (DiscordPromptRunner.isActiveChannel(channel.id)) {
-      log.debug('Ignored message because of active menu in channel')
+      log.trace('Ignored message because of active menu in channel')
       return true
     } else if (this.isBlacklistedID(guild.id)) {
-      log.debug('Ignored message from blacklisted guild')
+      log.trace('Ignored message from blacklisted guild')
       return true
     } else if (this.isBlacklistedID(author.id)) {
-      log.debug('Ignored message from blacklisted user')
+      log.trace('Ignored message from blacklisted user')
       return true
     }
     return false
@@ -197,14 +197,14 @@ class Command {
     const guildPrefix = this.getPrefix(guild.id)
     let name = this.parseForName(message.content, guildPrefix)
     let command = this.get(name)
-    log.debug(`Parsed for command name with guild prefix as ${name}`)
+    log.trace(`Parsed for command name with guild prefix as ${name}`)
     if (command) {
       return command
     }
     // With default prefix
     const defaultPrefix = this.getDefaultPrefix()
     name = this.parseForName(message.content, defaultPrefix)
-    log.debug(`Parsed for command name with default prefix as ${name}`)
+    log.trace(`Parsed for command name with default prefix as ${name}`)
     command = this.get(name)
     return command
   }

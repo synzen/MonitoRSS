@@ -19,7 +19,7 @@ async function handler (message) {
   // Check command validity
   const command = Command.tryGetCommand(message, log)
   if (!command) {
-    return log.debug('No valid command found')
+    return log.trace('No valid command found')
   }
   try {
     // Check member
