@@ -59,7 +59,8 @@ describe('Unit::structs/Command', function () {
   })
   describe('shouldIgnore', function () {
     const log = {
-      debug: jest.fn()
+      debug: jest.fn(),
+      trace: jest.fn()
     }
     const client = {
       user: {
@@ -251,7 +252,8 @@ describe('Unit::structs/Command', function () {
   })
   describe('tryGetCommand', function () {
     const log = {
-      debug: jest.fn()
+      debug: jest.fn(),
+      trace: jest.fn()
     }
     const message = {
       guild: {}
