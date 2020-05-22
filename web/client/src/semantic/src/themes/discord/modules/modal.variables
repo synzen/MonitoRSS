@@ -1,6 +1,0 @@
-
-@background: transparent;
-@contentBackground: #36393f;
-@headerColor: #f6f6f7;
-@borderRadius: 0.75em;
-@border: green;

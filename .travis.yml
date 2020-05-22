@@ -1,0 +1,8 @@
+language: node_js
+node_js:
+  - 12
+services: mongodb
+script:
+  - npm run eslint
+  - npm run test-unit
+  - npm run test-int

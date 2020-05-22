@@ -1,0 +1,6 @@
+exports.addDirectResult = require('./addDirectResult.js')
+exports.addRoleSuccess = require('./addRoleSuccess.js')
+exports.listSubscribedFeeds = require('./listSubscribedFeeds.js')
+exports.inputRole = require('./inputRole.js')
+exports.selectAction = require('./selectAction.js')
+exports.selectFeed = require('./selectFeed.js')
