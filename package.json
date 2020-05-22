@@ -1,10 +1,6 @@
 {
   "name": "discord.rss",
-<<<<<<< HEAD
-  "version": "5.0.6",
-=======
   "version": "6.0.0",
->>>>>>> dev
   "description": "Discord RSS bot with customizable feeds",
   "main": "index.js",
   "author": "synzen",
@@ -24,16 +20,6 @@
     "locale-create": "node scripts/locales/create.js"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "cloudscraper": "^4.1.2",
-    "discord.js": "^11.5.1",
-    "feedparser": "^2.2.9",
-    "html-to-text": "^5.1.1",
-    "iconv-lite": "^0.4.24",
-    "moment": "^2.24.0",
-    "moment-timezone": "^0.5.26",
-    "mongoose": "^5.6.4",
-=======
     "@hapi/joi": "^17.1.1",
     "abort-controller": "^3.0.0",
     "cloudscraper": "^4.6.0",
@@ -45,7 +31,6 @@
     "moment": "^2.25.3",
     "moment-timezone": "^0.5.31",
     "mongoose": "^5.9.14",
->>>>>>> dev
     "node-fetch": "^2.6.0",
     "pino": "^6.2.1",
     "pino-pretty": "^4.0.0",
@@ -60,15 +45,6 @@
     "npm": "6.x"
   },
   "devDependencies": {
-<<<<<<< HEAD
-    "dotenv": "^8.0.0",
-    "eslint": "^5.16.0",
-    "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-import": "^2.18.0",
-    "eslint-plugin-node": "^9.1.0",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.0"
-=======
     "@shelf/jest-mongodb": "^1.1.5",
     "@types/jest": "^25.2.2",
     "eslint": "^6.8.0",
@@ -84,6 +60,5 @@
     "erlpack": "github:discordapp/erlpack",
     "utf-8-validate": "^5.0.2",
     "zlib-sync": "^0.1.6"
->>>>>>> dev
   }
 }
