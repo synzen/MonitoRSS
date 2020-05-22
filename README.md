@@ -2,7 +2,7 @@
 
 This is the core repository of the Discord.RSS bot for development and programmatic use. For the web interface development and programmatic use, see https://github.com/synzen/Discord.RSS-Web.
 
-For users who want to clone this repository for personal use, see https://github.com/synzen/Discord.RSS-Clone.
+For users who want to deploy Discord.RSS for personal use, see https://github.com/synzen/Discord.RSS-Clone.
 
 ***
 
