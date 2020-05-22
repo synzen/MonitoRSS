@@ -44,7 +44,6 @@ const config = {
   }
 }
 
-// Optional settings
 const settings = {
   setPresence: true,
   config
