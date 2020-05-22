@@ -402,7 +402,7 @@ class ScheduleRun extends EventEmitter {
     this.alertFailRecords(failRecordsMap)
     this.log.debug('4 Got fail record map, getting elgibile feeds')
     const eligibleFeeds = await this.getEligibleFeeds(scheduleFeeds, failRecordsMap, debugFeedIDs)
-    this.log.debug('5 Got eligibile feeds, converting all to JSON')
+    this.log.debug(`5 Got eligibile feeds (${eligibleFeeds.length}/${scheduleFeeds.length}/${feeds.length}), converting all to JSON`)
     const feedObjects = this.convertFeedsToJSON(eligibleFeeds)
     this.log.debug(`6 Fetched applicable feeds (${feedObjects.length}), mapping feeds by URL`)
     this.feedCount = feedObjects.length
