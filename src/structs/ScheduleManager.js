@@ -59,7 +59,7 @@ class ScheduleManager extends EventEmitter {
    * @param {string} url
    */
   async _onConnectionFailure (url) {
-    if (this.urlFailuresRecording.has(url)) {
+    if (this.urlFailuresRecording.has(url) || this.testRuns) {
       return
     }
     this.urlFailuresRecording.add(url)
@@ -75,7 +75,7 @@ class ScheduleManager extends EventEmitter {
    * @param {string} url
    */
   async _onConnectionSuccess (url) {
-    if (this.urlSuccessesRecording.has(url)) {
+    if (this.urlSuccessesRecording.has(url) || this.testRuns) {
       return
     }
     this.urlSuccessesRecording.add(url)
@@ -249,7 +249,7 @@ class ScheduleManager extends EventEmitter {
       this.terminateScheduleRuns(schedule)
     }
     const runCount = this.scheduleRunCounts.get(schedule)
-    const run = new ScheduleRun(schedule, runCount)
+    const run = new ScheduleRun(schedule, runCount, this.testRuns)
     run.on('newArticle', this._onNewArticle.bind(this))
     run.on('conFailure', this._onConnectionFailure.bind(this))
     run.on('conSuccess', this._onConnectionSuccess.bind(this))
@@ -283,9 +283,7 @@ class ScheduleManager extends EventEmitter {
     this.clearTimers()
     // const rates = new Set()
     this.schedules.forEach(schedule => {
-      if (schedule.name === 'default') {
-        this.run(schedule)
-      }
+      this.run(schedule)
       this.timers.push(setInterval(() => {
         this.run(schedule)
       }, schedule.refreshRateMinutes * 60000))

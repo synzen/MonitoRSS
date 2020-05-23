@@ -30,17 +30,10 @@ async function pruneSubscribers (bot, feeds) {
     const subscriber = subscribers[j]
     const feed = feedsById.get(subscriber.feed)
     if (!feed) {
-      deletions.push(subscriber.delete())
       continue
     }
     /** @type {import('discord.js').Guild} */
     const guild = bot.guilds.cache.get(feed.guild)
-    /**
-     * If sharded, skip if this bot does not have this guild
-     */
-    if (!guild) {
-      continue
-    }
 
     if (subscriber.type === Subscriber.TYPES.USER) {
       relevantSubscribers.push(subscriber)

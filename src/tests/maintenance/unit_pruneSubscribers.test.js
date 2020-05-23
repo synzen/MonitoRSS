@@ -16,7 +16,7 @@ describe('Unit::maintenance/pruneSubscribers', function () {
   afterEach(function () {
     Subscriber.getAll.mockReset()
   })
-  it('deletes subscribers whose feed does not exist', async function () {
+  it('skips subscribers whose feed does not exist', async function () {
     const subscribers = [{
       id: 'id1',
       type: 'user',
@@ -54,39 +54,12 @@ describe('Unit::maintenance/pruneSubscribers', function () {
     }
     Subscriber.getAll.mockResolvedValue(subscribers)
     await pruneSubscribers(bot, feeds)
-    expect(subscribers[0].delete).toHaveBeenCalled()
-    expect(subscribers[1].delete).toHaveBeenCalled()
+    expect(subscribers[0].delete).not.toHaveBeenCalled()
+    expect(subscribers[1].delete).not.toHaveBeenCalled()
     expect(subscribers[2].delete).not.toHaveBeenCalled()
   })
   describe('feed exists', function () {
     describe('sharded bot', function () {
-      it('doesn\'t prune subscribers whose guilds are not within the bot', async function () {
-        const subscribers = [{
-          type: 'user',
-          feed: 'feedA',
-          delete: jest.fn()
-        }, {
-          type: 'role',
-          feed: 'feedA',
-          delete: jest.fn()
-        }]
-        const feeds = [{
-          _id: 'feedA',
-          guild: 'guildA'
-        }]
-        const bot = {
-          shard: {
-            ids: []
-          },
-          guilds: {
-            cache: new Map([['guildB']])
-          }
-        }
-        Subscriber.getAll.mockResolvedValue(subscribers)
-        await pruneSubscribers(bot, feeds)
-        expect(subscribers[0].delete).not.toHaveBeenCalled()
-        expect(subscribers[1].delete).not.toHaveBeenCalled()
-      })
       it('prunes user if they do not exist in bot', async function () {
         const subscribers = [{
           id: 'u1',

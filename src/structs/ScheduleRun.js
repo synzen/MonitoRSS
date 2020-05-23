@@ -314,24 +314,8 @@ class ScheduleRun extends EventEmitter {
       batches.push(batch)
     }
     this.batches = batches
+    this.createURLRecords(this.batches)
     return batches
-  }
-
-  /**
-   * @param {URLBatch[]} batches
-   * @param {number} groupSize
-   */
-  createBatchGroups (batches, groupSize) {
-    const batchesLength = batches.length
-    const groups = []
-    const maxPerGroup = Math.ceil(batchesLength / groupSize)
-    for (var i = 0; i < batchesLength; i += maxPerGroup) {
-      const group = batches.slice(i, i + maxPerGroup)
-      groups.push(group)
-    }
-    this.batchGroups = groups
-    this.createURLRecords(groups)
-    return groups
   }
 
   /**
@@ -339,13 +323,13 @@ class ScheduleRun extends EventEmitter {
    * this run, and which hung up. Initially store them,
    * and wait for them to be removed
    *
-   * @param {URLBatch[][]} batchGroups
+   * @param {URLBatch[]} batches
    */
-  createURLRecords (batchGroups) {
-    const urlBatchGroups = batchGroups.map(group => group.map(batch => new Set(Object.keys(batch))))
-    const urlSizeGroups = urlBatchGroups.map(group => group.map(set => set.size))
-    this.urlBatchGroups = urlBatchGroups
-    this.urlSizeGroups = urlSizeGroups
+  createURLRecords (batches) {
+    const urlBatchRecords = batches.map(batch => new Set(Object.keys(batch)))
+    const urlSizeRecords = urlBatchRecords.map(batch => batch.size)
+    this.urlBatchRecords = urlBatchRecords
+    this.urlSizeRecords = urlSizeRecords
   }
 
   /**
@@ -355,28 +339,25 @@ class ScheduleRun extends EventEmitter {
    * @param {number} batchIndex
    * @param {string} url
    */
-  removeFromBatchRecords (groupIndex, batchIndex, url) {
-    const urlBatchGroup = this.urlBatchGroups[groupIndex]
-    const urlBatch = urlBatchGroup[batchIndex]
+  removeFromBatchRecords (batchIndex, url) {
+    const urlBatch = this.urlBatchRecords[batchIndex]
     urlBatch.delete(url)
   }
 
   getHungUpURLs () {
     let total = 0
-    const summary = this.urlBatchGroups.map((urlGroup, groupIndex) => {
-      return urlGroup.filter((urlBatch, batchIndex) => {
-        const origBatchSize = this.urlSizeGroups[groupIndex][batchIndex]
-        total += urlBatch.size
-        /**
+    const summary = this.urlBatchRecords.filter((urlBatch, batchIndex) => {
+      const origBatchSize = this.urlSizeRecords[batchIndex]
+      total += urlBatch.size
+      /**
          * If equal to original batch size, none of the URLs were completed
          * If equal to 0, all of them were completed
          *
          * This summary does not show a batch if it was hung up on all URLs
          */
-        const someCompleted = urlBatch.size < origBatchSize && urlBatch.size > 0
-        return someCompleted
-      }).map((urlBatch) => Array.from(urlBatch))
-    })
+      const someCompleted = urlBatch.size < origBatchSize && urlBatch.size > 0
+      return someCompleted
+    }).map((urlBatch) => Array.from(urlBatch))
     return {
       summary,
       total
@@ -415,23 +396,23 @@ class ScheduleRun extends EventEmitter {
     // Batch them up
     const debugFeedURLs = this.getDebugURLs(feeds, debugFeedIDs)
     const batches = this.createBatches(urlMap, config.advanced.batchSize, debugFeedURLs)
+    this.batches = batches
     this.log.debug(`8 Created ${batches.length} batches`)
-    const batchGroups = this.createBatchGroups(batches, config.advanced.parallelBatches)
-    this.log.debug(`9 Created ${batchGroups.length} batch groups (${JSON.stringify(batchGroups.map(arr => arr.map(m => Object.keys(m).length)))})`)
-    const processBatchGroup = promisify(this.processBatchGroup).bind(this)
+    const processBatch = promisify(this.processBatch).bind(this)
     const processing = []
-    for (let i = 0; i < batchGroups.length; ++i) {
-      const group = batchGroups[i]
-      this.log.debug(`[GROUPS] Starting batch group ${i + 1}/${batchGroups.length}`)
-      processing.push(processBatchGroup(group, 0, debugFeedIDs, debugFeedURLs))
+    const parallelBatches = config.advanced.parallelBatches
+    const spawn = batches.length <= parallelBatches ? batches.length : parallelBatches
+    const indexesAvailable = this.batches.map((b, index) => true)
+    for (let i = 0; i < spawn; ++i) {
+      this.log.debug(`[GROUPS] Starting batch ${i + 1}/${batches.length}`)
+      processing.push(processBatch(batches, i, indexesAvailable, debugFeedIDs, debugFeedURLs))
     }
     await Promise.all(processing)
     await this.finishFeedsCycle()
   }
 
-  createMessageHandler (batchGroup, batchIndex, debugFeedURLs, onAllConnected, onComplete) {
-    const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
-    const thisBatch = batchGroup[batchIndex]
+  createMessageHandler (batches, batchIndex, debugFeedURLs, onAllConnected, onComplete) {
+    const thisBatch = batches[batchIndex]
     const batchLength = Object.keys(thisBatch).length
     let connectedLinks = 0
     let completedLinks = 0
@@ -471,8 +452,8 @@ class ScheduleRun extends EventEmitter {
 
       ++this._cycleTotalCount
       ++completedLinks
-      this.removeFromBatchRecords(batchGroupIndex, batchIndex, link)
-      this.log.trace(`[GROUP ${batchGroupIndex + 1}/${this.batchGroups.length}, BATCH ${batchIndex + 1}/${batchGroup.length}] URLs Completed: ${completedLinks}/${batchLength}`)
+      this.removeFromBatchRecords(batchIndex, link)
+      this.log.trace(`[BATCH ${batchIndex + 1}/${batches.length}] URLs Completed: ${completedLinks}/${batchLength}`)
       debugLog('Link completed from processor')
       if (completedLinks === batchLength) {
         onComplete(thisFailures)
@@ -480,27 +461,29 @@ class ScheduleRun extends EventEmitter {
     }
   }
 
-  processBatchGroup (batchGroup, batchIndex, debugFeedIDs, debugFeedURLs, onGroupCompleted) {
-    const batchGroupIndex = this.batchGroups.indexOf(batchGroup)
-    const thisBatch = batchGroup[batchIndex]
+  processBatch (batches, batchIndex, indexesAvailable, debugFeedIDs, debugFeedURLs, onBatchesComplete) {
+    indexesAvailable[batchIndex] = false
+    const thisBatch = batches[batchIndex]
     const thisBatchLength = Object.keys(thisBatch).length
     const processor = this.getProcessor()
-    this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length}, starting batch index ${batchIndex + 1}/${batchGroup.length}. Processors in use: ${this.processorsInUse.size}`)
-    const scopedBatchIndex = batchIndex
+    this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} starting. Processors in use: ${this.processorsInUse.size}`)
     const onAllConnected = () => {
-      this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} connected batch index ${batchIndex + 1}/${batchGroup.length}`)
-      if (scopedBatchIndex + 1 < batchGroup.length) {
-        this.processBatchGroup(batchGroup, scopedBatchIndex + 1, debugFeedIDs, debugFeedURLs, onGroupCompleted)
+      this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} connected`)
+      for (let i = 0; i < indexesAvailable.length; ++i) {
+        const available = indexesAvailable[i]
+        if (available) {
+          return this.processBatch(batches, i, indexesAvailable, debugFeedIDs, debugFeedURLs, onBatchesComplete)
+        }
       }
     }
     const onComplete = (failures) => {
       this.releaseProcessor(processor)
-      this.log.debug(`[GROUP] Batch group ${batchGroupIndex + 1}/${this.batchGroups.length} completed batch index ${batchIndex + 1}/${batchGroup.length} (${failures} failed/${thisBatchLength})`)
-      if (scopedBatchIndex + 1 === batchGroup.length) {
-        onGroupCompleted()
+      this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} completed (${failures} failed/${thisBatchLength})`)
+      if (!indexesAvailable.find(available => available)) {
+        onBatchesComplete()
       }
     }
-    const handler = this.createMessageHandler(batchGroup, batchIndex, debugFeedURLs, onAllConnected, onComplete)
+    const handler = this.createMessageHandler(batches, batchIndex, debugFeedURLs, onAllConnected, onComplete)
     processor.on('message', handler.bind(this))
     processor.send({
       config: getConfig(),

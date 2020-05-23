@@ -84,7 +84,7 @@ async function sendArticles (newArticles) {
 }
 
 async function getFeed (data, log) {
-  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config } = data
+  const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config, testRun } = data
   const isDatabaseless = !!memoryCollections
   const debugLogger = log.child({
     url: link
@@ -124,6 +124,13 @@ async function getFeed (data, log) {
     process.send({ status: 'connected' })
     process.send({ status: 'failed', link, rssList })
     return
+  }
+
+  if (testRun) {
+    return process.send({
+      status: 'success',
+      link
+    })
   }
 
   // Go through articles

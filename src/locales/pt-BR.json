@@ -16,6 +16,14 @@
         "<link>": "Feed Link."
       }
     },
+    "compare": {
+      "action": "",
+      "description": "",
+      "args": {
+        "list": "",
+        "(+|-)<property>": ""
+      }
+    },
     "remove": {
       "action": "Remover feed",
       "description": "Abre um menu para deletar um feed de um canal."
@@ -31,6 +39,10 @@
       "action": "Customizar mensagem da embed",
       "description": "Abre um menu para customizar a mensagem da embed. Isso irá substituir a embed padrão que o Discord utiliza quando um link é postado."
     },
+    "embed.fields": {
+      "action": "",
+      "description": ""
+    },
     "filters": {
       "action": "Adicionar ou remover filtros adicionados ao feed",
       "description": "Abre um menu para adicionar ou remover filtros globais de um feed. Mensagens que não possuam nenhuma das palavras em nenhum de seus filtros não serão enviadas pelo bot."
@@ -41,6 +53,9 @@
     "mention": {
       "action": "Customizar menção",
       "description": "Abre um menu para adicionar menções filtradas/global para cargos/usuarios em um feed"
+    },
+    "mention.filters": {
+      "description": ""
     },
     "test": {
       "args": {
@@ -158,11 +173,21 @@
       "confirmError": "Você precisa confirmar digitando `yes`, ou cancelar digitando `exit`. tente novamente.",
       "success": "As seguintes configurações\n\n`{{cloned}}`\n\npara o feed <{{link}}> foram clonadas com sucesso em {{destinationCount}} feed(s)."
     },
+    "compare": {
+      "info": "",
+      "list": "",
+      "listNone": "",
+      "invalid": "",
+      "onlyTitle": "",
+      "reset": "",
+      "success": ""
+    },
     "date": {
       "dateLanguage": "Idioma da data",
       "dateFormat": "Formato de data",
       "timezone": "Fuso horário",
       "noFeeds": "Você não pode personalizar o espaço reservado para a data se você não adicionou nenhum feed",
+      "selectTitle": "",
       "description": "\u200b\nPor favor, selecione uma opção para personalizar o campo {date} digitando o numero, ou digite `exit` para cancelar.\u200b\n\u200b\n",
       "optionCurrentSetting": "Sua configuração atual é `{{value}}`.",
       "optionChangeTimezone": "Mudar Fuso horário",
@@ -186,6 +211,8 @@
     "embed": {
       "numberedEmbed": "Embed #{{number}}",
       "embedSelection": "Seleção de embed",
+      "embedSelectionOptionRemoveAll": "",
+      "removedAllEmbeds": "",
       "embedSelectionDescription": "As propriedades de cada embed são mostradas abaixo. Selecione uma das embeds digitando o número ao lado, ou digite `exit` para cancelar.\n\u200b",
       "embedSelectionOptionAdd": "adicionar uma nova embed",
       "embedSelectionOptionAddDescription": "No máximo 10 embeds podem ser adicionadas.\n\u200b",
@@ -270,9 +297,11 @@
       "noFilters": "Não há filtros atribuídos a {{link}}.",
       "listFilters": "Lista de filtros atribuídos",
       "listFiltersDescription": "**Feed Título:** {{title}}\n**Feed Link:** {{link}}\n\nAbaixo estão as categorias de filtro com suas palavras/frases em cada um.\u200b\n\u200b\n",
-      "noArticlesPassed": "Nenhum artigo conseguiu passar nos filtros deste feed."
+      "noArticlesPassed": "Nenhum artigo conseguiu passar nos filtros deste feed.",
+      "noFiltersTryAgain": "",
+      "connectionFailureLimit": ""
     },
-    "rsshelp": {
+    "help": {
       "controlPanelLink": "Não deixe de conferir seu painel de controle em {{url}} para facilitar o gerenciamento de feeds!",
       "description": "Argumentos para comandos são adicionados após o comando. Por exemplo: `{{prefixo}}test simple`. Não inclua `<` ou `>` nos argumentos.",
       "arguments": "Argumentos",
@@ -315,6 +344,16 @@
       "subscriptionsList": "Lista de inscrição",
       "description": "Adicionando a inscrição para um usuário ou cargo irá automaticamente adicionar a menção no campo `{subscribers}`. Se a menção for em um cargo, então o cargo irá ser adicionado na lista de cargos elegíveis para a alternancia de menção (mencionável para não mencionável ou vice-versa) e também para os comandos {{prefix}}sub/unsub.\n\nSelecione uma opção digitando o numero, ou digite `exit` para cancelar.\u200b\n\u200b\n",
       "subscriberOptions": "Opções de menção",
+      "optionAddSubscriber": "",
+      "optionRemoveSubscriber": "",
+      "optionRemoveSubscriberDescription": "",
+      "optionRemoveAllSubscribersDescription": "",
+      "promptUserOrRole": "",
+      "listSubscribersDescription": "",
+      "listSubscribersNone": "",
+      "removeAllSubscribersSuccess": "",
+      "notFeedSubscriber": "",
+      "removeSubscriberSuccess": "",
       "optionAddSubscriberDescription": "Menções para um cargo/usuário para todos os arquivos enviados deste feed.",
       "optionRemoveAllSubscribers": "Remover todas as menções para um Cargo ou Usuário",
       "optionListSubscribers": "Listar todas as menções",
@@ -324,7 +363,17 @@
       "removeAnySubscriberNone": "Não há inscritos para remover no feed <{{link}}>.",
       "invalidRoleOrUser": "Esse não é um cargo válido ou usuário válido. Tente novamente, ou digite `exit` para cancelar.",
       "filters": {
-        "optionAddFilter": "Adicionar filtro(s) a menção"
+        "title": "",
+        "description": "",
+        "noSubscriber": "",
+        "optionRemoveFilter": "",
+        "optionAddFilter": "Adicionar filtro(s) a menção",
+        "optionRemoveAllFilters": "",
+        "optionListFilters": "",
+        "listFiltersDescription": "",
+        "listNoFilters": "",
+        "removedAllFilters": "",
+        "notSubscriber": ""
       }
     },
     "text": {
@@ -367,7 +416,11 @@
       "tableFormattingToggle": "Alternar a formatação da tabela para um feed",
       "tableFormattingDescription": "Se a formatação da tabela estiver ativada, eles devem ser colocados em blocos de código para garantir um espaçamento uniforme.",
       "settingChanged": "{{propName}} foi {{finalSetting}} para <{{link}}>{{isDefault}}.",
-      "defaultSetting": "configuração padrão"
+      "defaultSetting": "configuração padrão",
+      "directSubscribers": "",
+      "directSubscribersToggle": "",
+      "directSubscribersDescription": "",
+      "directSubscriberDisabled": ""
     },
     "prefix": {
       "helpText": "Você deve especificar um prefixo de 4 caracteres ou menos como o primeiro argumento para definir um prefixo personalizado ou `reset` para redefinir o prefixo para padrão se um prefixo personalizado já estiver definido.",
@@ -435,16 +488,44 @@
       "tooLong": "O nome do Webhook deve ter entre 2 e 32 caracteres. Tente novamente ou digite `exit` para cancelar.",
       "noPermission": "Eu preciso ter a permissão Gerenciar Webhooks neste canal para funcionar. Tente novamente ou digite `exit` para cancelar.",
       "removeSuccess": "Webhook removido com sucesso do feed <{{link}}>.",
-      "connected": "Agora estou conectado a {{clientMention}} e vou enviar artigos de feed para <{{link}}>!"
+      "connected": "Agora estou conectado a {{clientMention}} e vou enviar artigos de feed para <{{link}}>!",
+      "missingChannel": ""
     },
     "sub": {
       "title": "cargo auto-adicionável",
       "invalidRole": "Esse não é um cargo válida para adicionar. Para ver a lista completa de cargos que podem ser adicionadas, digite `{{prefix}}sub`.",
-      "addSuccess": "Agora você tem o cargo `{{name}}`, inscrito em:"
+      "addSuccess": "Agora você tem o cargo `{{name}}`, inscrito em:",
+      "description": "",
+      "optionAddRole": "",
+      "optionAddRoleDescription": "",
+      "optionAddMe": "",
+      "optionAddMeDescription": "",
+      "optionSubscribedFeeds": "",
+      "optionSubscribedFeedsDescription": "",
+      "subscribedFeedsList": "",
+      "noSubscribedFeedsList": "",
+      "noEligible": "",
+      "listInputRole": "",
+      "directSubscribeExists": "",
+      "directSubscribeSuccess": "",
+      "alreadyHaveRole": ""
     },
     "unsub": {
       "title": "Remoção de auto-inscrição",
-      "roleRemoveSuccess": "Você não tem mais o cargo {{role}}."
+      "roleRemoveSuccess": "Você não tem mais o cargo {{role}}.",
+      "optionRemoveRole": "",
+      "optionRemoveRoleDescription": "",
+      "optionRemoveMyself": "",
+      "optionRemoveMyselfDescription": "",
+      "optionRemoveAll": "",
+      "optionRemoveAllDescription": "",
+      "noEligibleRoles": "",
+      "noEligibleDirect": "",
+      "invalidRole": "",
+      "directRemoveList": "",
+      "listInputRole": "",
+      "directRemoveSuccess": "",
+      "removeAllSuccess": ""
     },
     "utils": {
       "filters": {
