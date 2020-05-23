@@ -46,7 +46,10 @@ async function addSubscriberFn (message, data) {
   } else {
     throw new Rejection(translate('commands.mention.invalidRoleOrUser'))
   }
-  const existingSubscriber = await Subscriber.getBy('id', subscriberData.id)
+  const existingSubscriber = await Subscriber.getByQuery({
+    id: subscriberData.id,
+    feed: feed._id
+  })
   if (existingSubscriber) {
     throw new Rejection(translate('commands.mention.addSubscriberExists', {
       type: subscriberData.type,
