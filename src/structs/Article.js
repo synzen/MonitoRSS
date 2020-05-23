@@ -573,66 +573,94 @@ module.exports = class Article {
     return testDetails
   }
 
-  testFilters (filters) {
+  /**
+   * @param {string[]} userFilters
+   * @param {string} reference
+   */
+  testArrayFilters (userFilters, reference) {
+    // Deal with inverted first
+    const filters = userFilters.map(word => new Filter(word))
+    const invertedFilters = filters.filter(filter => filter.inverted)
+    const regularFilters = filters.filter(filter => !filter.inverted)
+    const blocked = invertedFilters.find(filter => !filter.passes(reference))
+    if (blocked) {
+      return {
+        inverted: invertedFilters.map(f => f.content),
+        regular: regularFilters.map(f => f.content),
+        passed: false
+      }
+    }
+
+    const passed = !!regularFilters.find(filter => filter.passes(reference))
+    return {
+      inverted: invertedFilters.map(f => f.content),
+      regular: regularFilters.map(f => f.content),
+      passed
+    }
+  }
+
+  /**
+   * @param {string} userFilter
+   * @param {string} reference
+   */
+  testRegexFilter (userFilter, reference) {
+    const filter = new FilterRegex(userFilter)
+    const filterPassed = filter.passes(reference)
+    if (filterPassed) {
+      return {
+        inverted: [],
+        regular: [userFilter],
+        passed: true
+      }
+    } else {
+      return {
+        inverted: [userFilter],
+        regular: [],
+        passed: false
+      }
+    }
+  }
+
+  getFilterReference (type) {
     const referenceOverrides = {
       description: this.fullDescription,
       summary: this.fullSummary,
       title: this.fullTitle
     }
-    let passed = false
-    let negated = false
-    const filterResults = new FilterResults()
-    if (Object.keys(filters).length === 0) {
-      passed = true
+    if (type.startsWith('raw:')) {
+      return this.getRawPlaceholderContent(type)
     } else {
-      for (const filterTypeName in filters) {
-        const userFilters = filters[filterTypeName]
-        let reference
-        if (filterTypeName.startsWith('raw:')) {
-          reference = this.getRawPlaceholderContent(filterTypeName)
-        } else {
-          reference = referenceOverrides[filterTypeName.replace('other:', '')] || this[filterTypeName.replace('other:', '')]
-        }
-        if (!reference) {
-          continue
-        }
-        const invertedMatches = []
-        const matches = []
+      return referenceOverrides[type.replace('other:', '')] || this[type.replace('other:', '')]
+    }
+  }
 
-        // Filters can either be an array of words or a string (regex)
-        if (Array.isArray(userFilters)) {
-          // Array
-          for (const word of userFilters) {
-            const filter = new Filter(word)
-            const filterPassed = filter.passes(reference)
-            if (filter.inverted) {
-              invertedMatches.push(word)
-              if (!filterPassed) {
-                negated = true
-              }
-            } else {
-              matches.push(word)
-            }
-            // If a inverted filter does not pass, always block regardless of any other filter
-            passed = negated ? false : passed || filterPassed
-          }
-        } else {
-          // String
-          const filter = new FilterRegex(userFilters)
-          const filterPassed = filter.passes(reference)
-          passed = passed || filterPassed
-          if (filterPassed) {
-            matches.push(userFilters)
-          } else {
-            invertedMatches.push(userFilters)
-          }
-        }
-        if (matches.length > 0) {
-          filterResults.add(filterTypeName, matches, false)
-        }
-        if (invertedMatches.length > 0) {
-          filterResults.add(filterTypeName, invertedMatches, true)
-        }
+  testFilters (filters) {
+    let passed = true
+    const filterResults = new FilterResults()
+    for (const filterTypeName in filters) {
+      const userFilters = filters[filterTypeName]
+      const reference = this.getFilterReference(filterTypeName)
+      if (!reference) {
+        continue
+      }
+      let invertedFilters = []
+      let regularFilters = []
+
+      // Filters can either be an array of words or a string (regex)
+      let results
+      if (Array.isArray(userFilters)) {
+        results = this.testArrayFilters(userFilters, reference)
+      } else {
+        results = this.testRegexFilter(userFilters, reference)
+      }
+      passed = results.passed && passed
+      invertedFilters = invertedFilters.concat(results.inverted)
+      regularFilters = regularFilters.concat(results.regular)
+      if (regularFilters.length > 0) {
+        filterResults.add(filterTypeName, regularFilters, false)
+      }
+      if (invertedFilters.length > 0) {
+        filterResults.add(filterTypeName, invertedFilters, true)
       }
     }
     filterResults.passed = passed
