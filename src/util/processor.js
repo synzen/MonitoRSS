@@ -85,7 +85,6 @@ async function sendArticles (newArticles) {
 
 async function getFeed (data, log) {
   const { link, rssList, headers, toDebug, docs, memoryCollections, scheduleName, runNum, config, testRun } = data
-  console.log(link)
   const isDatabaseless = !!memoryCollections
   const debugLogger = log.child({
     url: link
