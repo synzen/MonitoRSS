@@ -402,10 +402,10 @@ class ScheduleRun extends EventEmitter {
     const processing = []
     const parallelBatches = config.advanced.parallelBatches
     const spawn = batches.length <= parallelBatches ? batches.length : parallelBatches
-    this.indices = this.batches.map((b, index) => true)
+    const indexesAvailable = this.batches.map((b, index) => true)
     for (let i = 0; i < spawn; ++i) {
       this.log.debug(`[GROUPS] Starting batch ${i + 1}/${batches.length}`)
-      processing.push(processBatch(batches, i, debugFeedIDs, debugFeedURLs))
+      processing.push(processBatch(batches, i, indexesAvailable, debugFeedIDs, debugFeedURLs))
     }
     await Promise.all(processing)
     await this.finishFeedsCycle()
@@ -461,25 +461,25 @@ class ScheduleRun extends EventEmitter {
     }
   }
 
-  processBatch (batches, batchIndex, debugFeedIDs, debugFeedURLs, onBatchesComplete) {
-    this.indices[batchIndex] = false
+  processBatch (batches, batchIndex, indexesAvailable, debugFeedIDs, debugFeedURLs, onBatchesComplete) {
+    indexesAvailable[batchIndex] = false
     const thisBatch = batches[batchIndex]
     const thisBatchLength = Object.keys(thisBatch).length
     const processor = this.getProcessor()
-    this.log.debug(`[GROUP] Batch ${batchIndex + 1}/${this.batches.length}, starting batch index ${batchIndex + 1}/${batches.length}. Processors in use: ${this.processorsInUse.size}`)
+    this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} starting. Processors in use: ${this.processorsInUse.size}`)
     const onAllConnected = () => {
-      this.log.debug(`[GROUP] Batch ${batchIndex + 1}/${this.batches.length} connected batch index ${batchIndex + 1}/${batches.length}`)
-      for (let i = 0; i < this.indices.length; ++i) {
-        const available = this.indices[i]
+      this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} connected`)
+      for (let i = 0; i < indexesAvailable.length; ++i) {
+        const available = indexesAvailable[i]
         if (available) {
-          return this.processBatch(batches, i, debugFeedIDs, debugFeedURLs, onBatchesComplete)
+          return this.processBatch(batches, i, indexesAvailable, debugFeedIDs, debugFeedURLs, onBatchesComplete)
         }
       }
     }
     const onComplete = (failures) => {
       this.releaseProcessor(processor)
-      this.log.debug(`[GROUP] Batch ${batchIndex + 1}/${this.batches.length} completed batch index ${batchIndex + 1}/${batches.length} (${failures} failed/${thisBatchLength})`)
-      if (!this.indices.find(available => available)) {
+      this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} completed (${failures} failed/${thisBatchLength})`)
+      if (!indexesAvailable.find(available => available)) {
         onBatchesComplete()
       }
     }
