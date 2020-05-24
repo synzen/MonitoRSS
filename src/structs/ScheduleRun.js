@@ -64,6 +64,7 @@ class ScheduleRun extends EventEmitter {
      * @type {Set<import('./Processor.js')>}
      */
     this.processorsInUse = new Set()
+    this.processorPool = new ProcessorPool(this.name)
     /**
      * @type {Set<string>[][]}
     */
@@ -115,8 +116,7 @@ class ScheduleRun extends EventEmitter {
   }
 
   getProcessor () {
-    const processor = ProcessorPool.get()
-    this.processorsInUse.add(processor)
+    const processor = this.processorPool.get()
     return processor
   }
 
@@ -124,7 +124,7 @@ class ScheduleRun extends EventEmitter {
    * @param {import('./Processor.js')} processor
    */
   releaseProcessor (processor) {
-    ProcessorPool.release(processor)
+    this.processorPool.release(processor)
   }
 
   /**
@@ -132,7 +132,11 @@ class ScheduleRun extends EventEmitter {
    */
   killProcessor (processor) {
     this.releaseProcessor(processor)
-    ProcessorPool.kill(processor)
+    this.processorPool.kill(processor)
+  }
+
+  killAllProcessors () {
+    this.processorPool.killAll()
   }
 
   /**
@@ -525,14 +529,12 @@ class ScheduleRun extends EventEmitter {
 
   terminate () {
     this.removeAllListeners()
-    for (const processor of this.processorsInUse) {
-      this.killProcessor(processor)
-    }
+    this.killAllProcessors()
   }
 
   finishNoFeedsCycle () {
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
-    this.processorsInUse.forEach(p => ProcessorPool.kill(p))
+    this.killAllProcessors()
     this.log.info(`Finished feed retrieval cycle${nameParen}. No feeds to retrieve`)
   }
 
@@ -542,7 +544,7 @@ class ScheduleRun extends EventEmitter {
     const timeTaken = cycleTime.toFixed(2)
     const nameParen = this.name !== 'default' ? ` (${this.name})` : ''
     const count = this.failedURLs.size > 0 ? ` (${this.failedURLs.size}/${this._cycleTotalCount} failed)` : ` (${this._cycleTotalCount})`
-    this.processorsInUse.forEach(p => ProcessorPool.kill(p))
+    this.killAllProcessors()
     this.log.info(`Finished feed retrieval cycle${nameParen}${count}. Cycle Time: ${timeTaken}s`)
   }
 
