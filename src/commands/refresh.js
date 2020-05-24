@@ -20,7 +20,7 @@ module.exports = async (message, command) => {
   const records = []
   for (const feed of feeds) {
     const failRecord = await FailRecord.get(feed.url)
-    if (!FailRecord || !failRecord.hasFailed()) {
+    if (!failRecord || !failRecord.hasFailed()) {
       continue
     }
     records.push(failRecord)
