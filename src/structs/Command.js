@@ -260,8 +260,9 @@ class Command {
    */
   async hasMemberPermission (message) {
     const { member, channel } = message
-    if (this.owner) {
-      return Command.isOwnerID(member.user.id)
+    const isOwnerUser = Command.isOwnerID(member.user.id)
+    if (isOwnerUser || this.owner) {
+      return isOwnerUser
     }
     const memberPermissions = this.getMemberPermission()
     const fetched = await member.fetch()

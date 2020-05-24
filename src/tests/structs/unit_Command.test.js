@@ -352,6 +352,10 @@ describe('Unit::structs/Command', function () {
     })
   })
   describe('hasMemberPermission', function () {
+    beforeEach(function () {
+      jest.spyOn(Command, 'isOwnerID')
+        .mockReturnValue(false)
+    })
     it('returns whether if member is owner if owner command', async function () {
       const command = new Command('', {}, true)
       command.owner = true
@@ -394,6 +398,22 @@ describe('Unit::structs/Command', function () {
       has.mockReturnValue(false)
       await expect(command.hasMemberPermission(message))
         .resolves.toEqual(false)
+    })
+    it('returns true if member is owner', async function () {
+      const command = new Command('', {}, true)
+      command.owner = false
+      const message = {
+        member: {
+          user: {},
+          fetch: jest.fn()
+        },
+        channel: {}
+      }
+      const isOwnerID = true
+      jest.spyOn(Command, 'isOwnerID')
+        .mockReturnValue(isOwnerID)
+      await expect(command.hasMemberPermission(message))
+        .resolves.toEqual(true)
     })
   })
   describe('hasBotPermission', function () {
