@@ -583,18 +583,26 @@ module.exports = class Article {
     const invertedFilters = filters.filter(filter => filter.inverted)
     const regularFilters = filters.filter(filter => !filter.inverted)
     const blocked = invertedFilters.find(filter => !filter.passes(reference))
+    const returnData = {
+      inverted: invertedFilters.map(f => f.content),
+      regular: regularFilters.map(f => f.content)
+    }
     if (blocked) {
       return {
-        inverted: invertedFilters.map(f => f.content),
-        regular: regularFilters.map(f => f.content),
+        ...returnData,
         passed: false
       }
     }
 
+    if (regularFilters.length === 0) {
+      return {
+        ...returnData,
+        passed: true
+      }
+    }
     const passed = !!regularFilters.find(filter => filter.passes(reference))
     return {
-      inverted: invertedFilters.map(f => f.content),
-      regular: regularFilters.map(f => f.content),
+      ...returnData,
       passed
     }
   }

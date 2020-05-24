@@ -17,6 +17,15 @@ describe('Unit::structs/Article', function () {
       const returned = article.testFilters(filters)
       expect(returned.passed).toEqual(true)
     })
+    it('blocks when regular filters are not found', function () {
+      const article = new Article(baseArticle, feedData)
+      article.fullTitle = 'my cahones'
+      const filters = {
+        title: ['foo', 'sentence']
+      }
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(false)
+    })
     it('works with negated filters', function () {
       const article = new Article(baseArticle, feedData)
       article.fullTitle = 'my sentence is this'
@@ -26,6 +35,16 @@ describe('Unit::structs/Article', function () {
       const returned = article.testFilters(filters)
       expect(returned.passed).toEqual(false)
     })
+    it('passes when negated filters are not found', function () {
+      const article = new Article(baseArticle, feedData)
+      article.fullTitle = 'my cajones is this'
+      const filters = {
+        title: ['!sentence']
+      }
+      const returned = article.testFilters(filters)
+      console.log(returned)
+      expect(returned.passed).toEqual(true)
+    })
     it('works with broad filters', function () {
       const article = new Article(baseArticle, feedData)
       article.fullTitle = 'my sentence is this'
@@ -34,6 +53,15 @@ describe('Unit::structs/Article', function () {
       }
       const returned = article.testFilters(filters)
       expect(returned.passed).toEqual(true)
+    })
+    it('blocks when broad filters are not found', function () {
+      const article = new Article(baseArticle, feedData)
+      article.fullTitle = 'is this'
+      const filters = {
+        title: ['~ence']
+      }
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(false)
     })
     it('works with regular and negated filters', function () {
       const article = new Article(baseArticle, feedData)
