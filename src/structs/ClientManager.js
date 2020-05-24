@@ -171,8 +171,19 @@ class ClientManager extends EventEmitter {
       this.scheduleManager.addSchedules(schedules)
       await this.shardingManager.spawn(shardCount || undefined)
     } catch (err) {
-      this.log.error(err, 'ClientManager failed to start. Verify the correctness of your token.')
-      process.exit(1)
+      if (err.json) {
+        err.json().then((response) => {
+          this.log.error({ response }, 'ClientManager failed to start. Verify token and observe rate limits.')
+          process.exit(1)
+        }).catch((jsonErr) => {
+          this.log.error(err, 'ClientManager failed to start')
+          this.log.error(jsonErr, 'Failed to parse response')
+          process.exit(1)
+        })
+      } else {
+        this.log.error(err, 'ClientManager failed to start')
+        process.exit(1)
+      }
     }
   }
 
