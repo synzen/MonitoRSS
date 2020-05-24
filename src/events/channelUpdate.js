@@ -7,14 +7,19 @@ module.exports = async (oldChannel, newChannel) => {
   if (!(newChannel instanceof Discord.GuildChannel) || !(oldChannel instanceof Discord.GuildChannel)) {
     return
   }
+  const log = createLogger(oldChannel.guild.shard.id)
   try {
     const feeds = await Feed.getManyBy('channel', newChannel.id)
-    const log = createLogger(oldChannel.guild.shard.id)
     for (const feed of feeds) {
-      maintenance.checkPermissions.feed(feed, newChannel.client)
-        .catch(err => log.error(err, `Failed to check permissions of feed ${feed._id} after channel update`))
+      if (newChannel.deleted) {
+        feed.delete()
+          .catch(err => log.error(err, 'Failed to delete due to deleted channel'))
+      } else {
+        maintenance.checkPermissions.feed(feed, newChannel.client)
+          .catch(err => log.error(err, `Failed to check permissions of feed ${feed._id} after channel update`))
+      }
     }
   } catch (err) {
-
+    log.error(err, 'Failed to check feeds in channelUpdate')
   }
 }
