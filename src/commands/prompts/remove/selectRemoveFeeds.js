@@ -27,8 +27,9 @@ async function selectRemoveFeedsFn (message, data) {
   await Promise.all(selectedFeeds.map(f => f.delete()))
   log.info({
     guild: message.guild,
-    user: author
-  }, 'Removed all feeds')
+    user: author,
+    selectedFeeds
+  }, `Removed ${selectedFeeds.length} feeds`)
   return newData
 }
 
