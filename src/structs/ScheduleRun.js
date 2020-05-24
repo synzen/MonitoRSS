@@ -29,13 +29,13 @@ const createLogger = require('../util/logger/create.js')
  * @param {Promise[]} promises
  */
 async function promiseAll (promises) {
-  let completed = 0
-  const len = promises.length
   return new Promise((resolve, reject) => {
+    const completed = promises.map((p) => false)
     for (let i = 0; i < promises.length; ++i) {
       const promise = promises[i]
       promise.then(() => {
-        if (++completed === len) {
+        completed[i] = true
+        if (!completed.find(complete => !complete)) {
           resolve()
         }
       }).catch(reject)
@@ -60,10 +60,6 @@ class ScheduleRun extends EventEmitter {
     this.name = schedule.name
     this.schedule = schedule
     this.log = createLogger(this.name)
-    /**
-     * @type {Set<import('./Processor.js')>}
-     */
-    this.processorsInUse = new Set()
     this.processorPool = new ProcessorPool(this.name)
     /**
      * @type {Set<string>[][]}
@@ -431,10 +427,10 @@ class ScheduleRun extends EventEmitter {
     const processing = []
     const parallelBatches = config.advanced.parallelBatches
     const spawn = batches.length <= parallelBatches ? batches.length : parallelBatches
-    const indexesAvailable = this.batches.map((b, index) => true)
+    const batchStatuses = this.batches.map((b, index) => 0)
     for (let i = 0; i < spawn; ++i) {
-      this.log.debug(`[GROUPS] Starting batch ${i + 1}/${batches.length}`)
-      processing.push(processBatch(batches, i, indexesAvailable, debugFeedIDs, debugFeedURLs))
+      this.log.debug(`[START] Starting processor ${i + 1}/${spawn}`)
+      processing.push(processBatch(batches, i, batchStatuses, debugFeedIDs, debugFeedURLs))
     }
     await promiseAll(processing)
     await this.finishFeedsCycle()
@@ -490,25 +486,26 @@ class ScheduleRun extends EventEmitter {
     }
   }
 
-  processBatch (batches, batchIndex, indexesAvailable, debugFeedIDs, debugFeedURLs, onBatchesComplete) {
-    indexesAvailable[batchIndex] = false
+  processBatch (batches, batchIndex, batchStatuses, debugFeedIDs, debugFeedURLs, onBatchesComplete) {
+    batchStatuses[batchIndex] = 1
     const thisBatch = batches[batchIndex]
     const thisBatchLength = Object.keys(thisBatch).length
     const processor = this.getProcessor()
-    this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} starting. Processors in use: ${this.processorsInUse.size}`)
+    this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} starting. Processors in use: ${this.processorPool.pool.length}`)
     const onAllConnected = () => {
       this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} connected`)
-      for (let i = 0; i < indexesAvailable.length; ++i) {
-        const available = indexesAvailable[i]
-        if (available) {
-          return this.processBatch(batches, i, indexesAvailable, debugFeedIDs, debugFeedURLs, onBatchesComplete)
+      for (let i = 0; i < batchStatuses.length; ++i) {
+        const status = batchStatuses[i]
+        if (status === 0) {
+          return this.processBatch(batches, i, batchStatuses, debugFeedIDs, debugFeedURLs, onBatchesComplete)
         }
       }
     }
     const onComplete = (failures) => {
+      batchStatuses[batchIndex] = 2
       this.releaseProcessor(processor)
       this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} completed (${failures} failed/${thisBatchLength})`)
-      if (!indexesAvailable.find(available => available)) {
+      if (!batchStatuses.find(status => status !== 2)) {
         onBatchesComplete()
       }
     }

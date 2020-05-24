@@ -45,12 +45,17 @@ class ProcessorPool {
   kill (processor) {
     processor.release()
     processor.kill()
-    this.pool.splice(this.pool.indexOf(processor), 1)
-    this.log.debug(`Killed processor, pid ${processor.process.pid}`)
+    const index = this.pool.indexOf(processor)
+    this.pool.splice(index, 1)
+    this.log.debug(`Killed processor at index ${index}, pid ${processor.process.pid}`)
   }
 
   killAll () {
-    this.pool.forEach(processor => this.kill(processor))
+    for (let i = this.pool.length - 1; i >= 0; --i) {
+      const processor = this.pool[i]
+      this.kill(processor)
+    }
+    this.log.debug('Killed all processors')
   }
 }
 
