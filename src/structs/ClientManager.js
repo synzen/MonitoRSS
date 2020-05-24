@@ -177,7 +177,7 @@ class ClientManager extends EventEmitter {
           process.exit(1)
         }).catch((jsonErr) => {
           this.log.error(err, 'ClientManager failed to start')
-          this.log.error(jsonErr, 'Failed to parse response')
+          this.log.error(jsonErr, 'Failed to parse response from ClientManager spawn')
           process.exit(1)
         })
       } else {
