@@ -42,7 +42,6 @@ describe('Unit::structs/Article', function () {
         title: ['!sentence']
       }
       const returned = article.testFilters(filters)
-      console.log(returned)
       expect(returned.passed).toEqual(true)
     })
     it('works with broad filters', function () {
