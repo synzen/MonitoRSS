@@ -20,7 +20,7 @@ class ProcessorPool {
       created.lock()
       return created
     }
-    log.debug('Found a free processor')
+    log.debug(`Found a free processor ${found.process.pid}`)
     found.lock()
     return found
   }

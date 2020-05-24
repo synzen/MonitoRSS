@@ -22,6 +22,27 @@ const createLogger = require('../util/logger/create.js')
  * @typedef {Object<string, any>} FeedObject
  */
 
+/**
+ * With a large number of feeds, Promise.all will cause hangups
+ * for some inexplicable reason. This implementation fixes that.
+ *
+ * @param {Promise[]} promises
+ */
+async function promiseAll (promises) {
+  let completed = 0
+  const len = promises.length
+  return new Promise((resolve, reject) => {
+    for (let i = 0; i < promises.length; ++i) {
+      const promise = promises[i]
+      promise.then(() => {
+        if (++completed === len) {
+          resolve()
+        }
+      }).catch(reject)
+    }
+  })
+}
+
 class ScheduleRun extends EventEmitter {
   /**
    * @param {import('./db/Schedule.js')} schedule
@@ -411,7 +432,7 @@ class ScheduleRun extends EventEmitter {
       this.log.debug(`[GROUPS] Starting batch ${i + 1}/${batches.length}`)
       processing.push(processBatch(batches, i, indexesAvailable, debugFeedIDs, debugFeedURLs))
     }
-    await Promise.all(processing)
+    await promiseAll(processing)
     await this.finishFeedsCycle()
   }
 
