@@ -42,6 +42,9 @@ describe('Int::structs/db/FailRecord Database', function () {
     await initialize.setupModels(con)
     collection = con.db.collection('fail_records')
   })
+  afterEach(async function () {
+    await con.db.dropDatabase()
+  })
   describe('static record', function () {
     it('creates the doc if url is new', async function () {
       const url = 'wst34eygr5ht'
