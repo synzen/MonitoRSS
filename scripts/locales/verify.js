@@ -8,7 +8,7 @@ const COLORS = {
   CYAN: '\x1b[36m'
 }
 const CONSTANT_CHARACTERS = ['"', '\n', '`', '\u200b']
-const referenceLocaleData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', `en-US.json`)))
+const referenceLocaleData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'locales', 'en-US.json')))
 const fileNames = fs.readdirSync(path.join(__dirname, '..', '..', 'src', 'locales'))
 
 const stringCountsByLocale = {}
@@ -80,4 +80,4 @@ if (okStrings.length > 0) {
 if (errorStrings.length > 0) {
   console.log(errorStrings.join('\n'))
 }
-console.log(`\nNote that for untranslated strings, their values must be "" (an empty string). They cannot be undefined.\nEmpty string translations will fall back to using the default en-US strings.`)
+console.log('\nNote that for untranslated strings, their values must be "" (an empty string). They cannot be undefined.\nEmpty string translations will fall back to using the default en-US strings.')
