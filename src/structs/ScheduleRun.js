@@ -348,10 +348,8 @@ class ScheduleRun extends EventEmitter {
   }
 
   getHungUpURLs () {
-    let total = 0
     const summary = this.urlBatchRecords.filter((urlBatch, batchIndex) => {
       const origBatchSize = this.urlSizeRecords[batchIndex]
-      total += urlBatch.size
       /**
          * If equal to original batch size, none of the URLs were completed
          * If equal to 0, all of them were completed
@@ -361,8 +359,11 @@ class ScheduleRun extends EventEmitter {
       const someCompleted = urlBatch.size < origBatchSize && urlBatch.size > 0
       return someCompleted
     }).map((urlBatch) => Array.from(urlBatch))
+    const remaining = this.urlBatchRecords.map(b => b.size)
+    const total = remaining.reduce((total, cur) => total + cur, 0)
     return {
       summary,
+      remaining,
       total
     }
   }
