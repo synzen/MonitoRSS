@@ -118,6 +118,9 @@ class ScheduleRun extends EventEmitter {
    * @param {import('./db/Feed.js')[]} feeds
    */
   async updateFeedsStatus (feeds) {
+    if (this.testRun) {
+      return
+    }
     const { enabled, disabled } = await maintenance.checkLimits.limits(feeds)
     enabled.forEach(feed => this.emit('feedEnabled', feed))
     disabled.forEach(feed => this.emit('feedDisabled', feed))
