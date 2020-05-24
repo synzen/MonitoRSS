@@ -31,11 +31,8 @@ module.exports = async (message, command, role) => {
   filterRemoveCategorySelectNode.addChild(filterRemoveInputNode)
   filterRemoveInputNode.addChild(filterRemoveInputSuccessNode)
 
-  const removedAllFiltersCondition = data => data.selected === '3'
-  const removedAllFiltersNode = new PromptNode(filterPrompts.removedAllFiltersSuccess.prompt, removedAllFiltersCondition)
-  const removedAllFiltersSuccessNode = new PromptNode(filterPrompts.removedAllFiltersSuccess.prompt)
-
-  removedAllFiltersNode.addChild(removedAllFiltersSuccessNode)
+  const removedAllFiltersSuccessCondition = data => data.selected === '3'
+  const removedAllFiltersSuccessNode = new PromptNode(filterPrompts.removedAllFiltersSuccess.prompt, removedAllFiltersSuccessCondition)
 
   const listFiltersCondition = data => data.selected === '4'
   const listFiltersNode = new PromptNode(filterPrompts.listFilters.prompt, listFiltersCondition)
@@ -43,7 +40,7 @@ module.exports = async (message, command, role) => {
   selectActionNode.setChildren([
     filterAddCategorySelectNode,
     filterRemoveCategorySelectNode,
-    removedAllFiltersNode,
+    removedAllFiltersSuccessNode,
     listFiltersNode
   ])
 
