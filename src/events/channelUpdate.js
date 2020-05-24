@@ -8,10 +8,11 @@ module.exports = async (oldChannel, newChannel) => {
     return
   }
   const log = createLogger(oldChannel.guild.shard.id)
+  const deleted = newChannel.guild.deleted || newChannel.deleted
   try {
     const feeds = await Feed.getManyBy('channel', newChannel.id)
     for (const feed of feeds) {
-      if (newChannel.deleted) {
+      if (deleted) {
         feed.delete()
           .catch(err => log.error(err, 'Failed to delete due to deleted channel'))
       } else {
