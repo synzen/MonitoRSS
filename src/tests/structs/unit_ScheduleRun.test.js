@@ -322,6 +322,9 @@ describe('Unit::structs/ScheduleRun', function () {
           ['url3'],
           ['url5']
         ],
+        remaining: [
+          2, 1, 1, 1
+        ],
         total: 5
       })
     })

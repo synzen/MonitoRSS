@@ -95,7 +95,6 @@ describe('Unit::structs/Article', function () {
       const article = new Article(baseArticle, feedData)
       article.fullTitle = '[Steam] Key x Sekai Project Publisher Weekend (Planetarian $4.49/55%, Re;Lord $6.99/30%, Clannad Complete $34.40/60%, Maitetsu $8.99/40% and more)'
       const returned = article.testFilters(filters)
-      console.log(returned)
       expect(returned.passed).toEqual(false)
     })
   })
