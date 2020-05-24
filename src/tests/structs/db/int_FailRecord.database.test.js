@@ -42,7 +42,7 @@ describe('Int::structs/db/FailRecord Database', function () {
     await initialize.setupModels(con)
     collection = con.db.collection('fail_records')
   })
-  afterEach(async function () {
+  beforeEach(async function () {
     await con.db.dropDatabase()
   })
   describe('static record', function () {
