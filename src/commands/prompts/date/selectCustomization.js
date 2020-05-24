@@ -23,10 +23,11 @@ function selectCustomizationVisual (data) {
     title: translate('commands.date.selectTitle'),
     description: translate('commands.date.description')
   })
+  const { timezone, dateFormat, dateLanguage } = profile || {}
   const menu = new MenuEmbed(embed)
-    .addOption(translate('commands.date.optionChangeTimezone'), `${translate('generics.defaultSetting', { value: config.feeds.timezone })} ${profile.timezone ? translate('commands.date.optionCurrentSetting', { value: profile.timezone }) : ''}`)
-    .addOption(translate('commands.date.optionCustomizeFormat'), `${translate('generics.defaultSetting', { value: config.feeds.dateFormat })} ${profile.dateFormat ? translate('commands.date.optionCurrentSetting', { value: profile.dateFormat }) : ''}`)
-    .addOption(translate('commands.date.optionChangeLanguage'), `${translate('generics.defaultSetting', { value: config.feeds.dateLanguage })} ${profile.dateLanguage ? translate('commands.date.optionCurrentSetting', { value: profile.dateLanguage }) : ''}`)
+    .addOption(translate('commands.date.optionChangeTimezone'), `${translate('generics.defaultSetting', { value: config.feeds.timezone })} ${timezone ? translate('commands.date.optionCurrentSetting', { value: timezone }) : ''}`)
+    .addOption(translate('commands.date.optionCustomizeFormat'), `${translate('generics.defaultSetting', { value: config.feeds.dateFormat })} ${dateFormat ? translate('commands.date.optionCurrentSetting', { value: dateFormat }) : ''}`)
+    .addOption(translate('commands.date.optionChangeLanguage'), `${translate('generics.defaultSetting', { value: config.feeds.dateLanguage })} ${dateLanguage ? translate('commands.date.optionCurrentSetting', { value: dateLanguage }) : ''}`)
     .addOption(translate('commands.date.optionReset'), translate('commands.date.optionResetValue'))
 
   const visual = new MenuVisual(menu)
