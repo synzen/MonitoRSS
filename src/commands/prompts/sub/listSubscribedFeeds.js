@@ -39,7 +39,9 @@ async function listSubscribedFeedsVisual (data) {
     return new MessageVisual(translate('commands.sub.noSubscribedFeedsList'))
   } else {
     output = `${translate('commands.sub.subscribedFeedsList')}\n\n${output}`
-    return new MessageVisual(output)
+    return new MessageVisual(output, {
+      split: true
+    })
   }
 }
 

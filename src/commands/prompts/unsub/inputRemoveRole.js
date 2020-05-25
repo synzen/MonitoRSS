@@ -1,5 +1,6 @@
 const { Rejection, MessageVisual } = require('discord.js-prompts')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
+const splitMentionsByNewlines = require('../common/utils/splitMentionsByNewlines.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 
@@ -31,12 +32,13 @@ function inputRemoveRoleVisual (data) {
       continue
     }
     output += `\n**${feed.url}** (<#${feed.channel}>)\n`
-    output += memberSubscribedRoles
-      .map(r => `<@&${r.id}>`)
-      .join(' ') + '\n\n'
+    const mentionStrings = memberSubscribedRoles.map(r => `<@&${r.id}>`)
+    output += splitMentionsByNewlines(mentionStrings) + '\n\n'
   }
   output += translate('commands.unsub.listInputRole')
-  return new MessageVisual(output)
+  return new MessageVisual(output, {
+    split: true
+  })
 }
 
 /**
