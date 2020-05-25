@@ -1,5 +1,6 @@
 const connectDb = require('./src/util/connectDatabase.js')
 const initialize = require('./src/util/initialization.js')
+const config = require('./src/config.js')
 
 // Models
 exports.models = {
@@ -43,6 +44,7 @@ exports.Supporter = require('./src/structs/db/Supporter.js')
 // Utils
 exports.FeedFetcher = require('./src/util/FeedFetcher.js')
 exports.validateConfig = require('./src/util/config/schema').validate
+exports.config = config
 exports.schemas = require('./src/util/config/schema.js').schemas
 exports.scripts = {
   runSchedule: require('./scripts/scheduleRun.js')
