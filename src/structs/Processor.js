@@ -4,20 +4,6 @@ const fork = require('child_process').fork
 class Processor {
   constructor () {
     this.process = fork(path.join(__dirname, '..', 'util', 'processor.js'))
-    this.free = true
-  }
-
-  get available () {
-    return this.free
-  }
-
-  lock () {
-    this.free = false
-  }
-
-  release () {
-    this.free = true
-    this.process.removeAllListeners()
   }
 
   on (...args) {
@@ -29,7 +15,6 @@ class Processor {
   }
 
   kill () {
-    this.release()
     this.process.kill()
   }
 }

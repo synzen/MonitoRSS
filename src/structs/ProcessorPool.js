@@ -18,32 +18,14 @@ class ProcessorPool {
   }
 
   get () {
-    this.log.debug('Attempting to find a free processor')
-    const found = this.pool.find(p => p.available)
-    if (!found) {
-      const created = this.create()
-      this.log.debug('Unable to find a free processor, created a new one')
-      created.lock()
-      return created
-    }
-    this.log.debug(`Found a free processor ${found.process.pid}`)
-    found.lock()
-    return found
-  }
-
-  /**
-   * @param {import('./Processor.js')} processor
-   */
-  release (processor) {
-    processor.release()
-    this.log.debug(`Released processor, pid ${processor.process.pid}`)
+    const created = this.create()
+    return created
   }
 
   /**
    * @param {import('./Processor.js')} processor
    */
   kill (processor) {
-    processor.release()
     processor.kill()
     const index = this.pool.indexOf(processor)
     this.pool.splice(index, 1)

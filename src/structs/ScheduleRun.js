@@ -119,15 +119,7 @@ class ScheduleRun extends EventEmitter {
   /**
    * @param {import('./Processor.js')} processor
    */
-  releaseProcessor (processor) {
-    this.processorPool.release(processor)
-  }
-
-  /**
-   * @param {import('./Processor.js')} processor
-   */
   killProcessor (processor) {
-    this.releaseProcessor(processor)
     this.processorPool.kill(processor)
   }
 
@@ -503,7 +495,7 @@ class ScheduleRun extends EventEmitter {
     }
     const onComplete = (failures) => {
       batchStatuses[batchIndex] = 2
-      this.releaseProcessor(processor)
+      this.killProcessor(processor)
       this.log.debug(`Batch ${batchIndex + 1}/${this.batches.length} completed (${failures} failed/${thisBatchLength})`)
       if (!batchStatuses.find(status => status !== 2)) {
         onBatchesComplete()
