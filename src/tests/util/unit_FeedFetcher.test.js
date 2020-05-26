@@ -362,7 +362,7 @@ describe('Unit::FeedFetcher', function () {
       const error = new Error('Hello world')
       cloudscraper.mockRejectedValueOnce(error)
       await expect(FeedFetcher.fetchCloudScraper('asdeg'))
-        .rejects.toThrowError(new RequestError(null, error.message))
+        .rejects.toThrowError(new RequestError(null, `Cloudflare - ${error.message}`))
     })
     it('throws a RequestError if error has bad status code', async function () {
       const error = new Error('Hello world')

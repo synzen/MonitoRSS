@@ -195,7 +195,7 @@ class FeedFetcher {
       if (err.statusCode && err.statusCode !== 200) {
         throw new RequestError(err.statusCode, `Bad Cloudflare status code (${err.statusCode})`)
       } else {
-        throw new RequestError(null, err.message || 'Cloudscraper error')
+        throw new RequestError(null, `Cloudflare - ${err.message}` || 'Cloudscraper error')
       }
     }
     if (res.statusCode !== 200) {
