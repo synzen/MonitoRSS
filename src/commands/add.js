@@ -79,7 +79,9 @@ module.exports = async (message) => {
       ++checkedSoFar
     } catch (err) {
       const channelErrMsg = err.message
-      log.warn(err, `Unable to add ${link}`)
+      log.warn({
+        error: err
+      }, `Unable to add ${link}`)
       failedAddLinks[link] = channelErrMsg
     }
   }
