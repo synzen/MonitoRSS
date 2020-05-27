@@ -101,14 +101,22 @@ async function listFeedVisual (data) {
     }
 
     // Title checks
-    const titleChecks = feed.checkTitles === true ? translate('commands.list.titleChecksEnabled') : ''
+    const titleChecks = feed.checkTitles === true
+      ? translate('commands.list.titleChecksEnabled')
+      : ''
 
     // Webhook
-    const webhook = feed.webhook ? `${translate('commands.list.webhook')}: ${feed.webhook.id}\n` : ''
+    const webhook = feed.webhook
+      ? `${translate('commands.list.webhook')}: ${feed.webhook.id}\n`
+      : ''
 
     // Refresh rate
     const schedule = fetchedSchedules[i]
-    let refreshRate = schedule.refreshRateMinutes < 1 ? `${schedule.refreshRateMinutes * 60} ${translate('commands.list.seconds')}` : `${schedule.refreshRateMinutes} ${translate('commands.list.minutes')}`
+    let refreshRate = failRecord && failRecord.hasFailed()
+      ? 'N/A'
+      : schedule.refreshRateMinutes < 1
+        ? `${schedule.refreshRateMinutes * 60} ${translate('commands.list.seconds')}`
+        : `${schedule.refreshRateMinutes} ${translate('commands.list.minutes')}`
     // : translate('commands.list.unknown')
 
     // Patreon link
