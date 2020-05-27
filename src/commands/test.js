@@ -8,6 +8,7 @@ const Profile = require('../structs/db/Profile.js')
 const FailRecord = require('../structs/db/FailRecord.js')
 const FeedData = require('../structs/FeedData.js')
 const runWithFeedGuild = require('./prompts/runner/run.js')
+const getConfig = require('../config.js').get
 
 module.exports = async (message, command) => {
   const simple = message.content.endsWith('simple')
@@ -19,8 +20,12 @@ module.exports = async (message, command) => {
   if (!feed) {
     return
   }
+  const config = getConfig()
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   if (await FailRecord.hasFailed(feed.url)) {
-    return message.channel.send(translate('commands.test.failed'))
+    return message.channel.send(translate('commands.test.failed'), {
+      prefix
+    })
   }
   const grabMsg = await message.channel.send(translate('commands.test.grabbingRandom'))
   const article = await FeedFetcher.fetchRandomArticle(feed.url)
