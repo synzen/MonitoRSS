@@ -37,7 +37,7 @@ function setPropertyVisual (data) {
   const thisPropertyKey = properties[0]
   const thisPropertyName = prettyNames.get(thisPropertyKey)
   if (thisPropertyKey === 'timestamp') {
-    return new MessageVisual(('commands.embed.settingPropertyTimestamp'))
+    return new MessageVisual(translate('commands.embed.settingPropertyTimestamp'))
   } else {
     return new MessageVisual(translate('commands.embed.settingProperty', {
       property: thisPropertyName
