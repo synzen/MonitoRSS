@@ -31,6 +31,11 @@ class ArticleMessage {
     }
   }
 
+  getChannel () {
+    const channel = this.bot.channels.cache.get(this.feed.channel)
+    return channel
+  }
+
   determineFormat () {
     const { feed, parsedArticle, filteredFormats } = this
     let text = feed.text || this.config.feeds.defaultText
@@ -165,8 +170,8 @@ class ArticleMessage {
   }
 
   async getWebhook () {
-    const { feed, bot } = this
-    const channel = bot.channels.cache.get(feed.channel)
+    const { feed } = this
+    const channel = this.getChannel()
     if (!channel) {
       return
     }
@@ -264,7 +269,7 @@ class ArticleMessage {
     if (webhook) {
       return webhook
     }
-    const channel = this.bot.channels.cache.get(this.feed.channel)
+    const channel = this.getChannel()
     return channel
   }
 
