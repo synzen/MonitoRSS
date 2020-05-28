@@ -6,7 +6,8 @@ const dbName = 'test_int_keyvalue'
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  useCreateIndex: true
+  useCreateIndex: true,
+  autoIndex: false
 }
 
 jest.mock('../../../config.js', () => ({
