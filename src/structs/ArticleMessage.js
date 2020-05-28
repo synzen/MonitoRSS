@@ -140,11 +140,17 @@ class ArticleMessage {
           let name = convert(field.name)
           if (name.length > 256) {
             name = name.slice(0, 250) + '...'
+          } else if (field.name && !name) {
+            // If a placeholder is empty
+            name = '\u200b'
           }
 
           let value = convert(field.value)
           if (value.length > 1024) {
             value = value.slice(0, 1020) + '...'
+          } else if (field.value && !value) {
+            // If a placeholder is empty
+            value = '\u200b'
           }
 
           if (richEmbed.fields.length < 10) {
