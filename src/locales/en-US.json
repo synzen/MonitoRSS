@@ -11,7 +11,7 @@
   },
   "commandDescriptions": {
     "add": {
-      "description": "Add an RSS feed to the channel with the default message. Multiple feeds can be added by separation with `>`.",
+      "description": "Add an RSS feed to the channel this command is used in. Multiple feeds can be added by separation with `>`.",
       "args": {
         "<link>": "Feed URL."
       }
@@ -21,7 +21,10 @@
       "description": "Open a menu to delete a feed from the channel."
     },
     "list": {
-      "description": "List all active feeds in server."
+      "description": "List all active feeds in server.",
+      "args": {
+        "<channel mention>": "Only list the feeds in the mentioned channel."
+      }
     },
     "text": {
       "action": "Text Customization",
@@ -312,14 +315,16 @@
       "text": "Invite with Role - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot&permissions=19456>\n\nInvite without Role - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot>"
     },
     "list": {
-      "noFeeds": "There are no existing feeds.",
+      "noFeeds": "There are no feeds.",
+      "noFeedsChannel": "There are no feeds in the channel {{channel}}.",
       "titleChecksEnabled": "Title Checks: Enabled\n",
       "statusDisabled": "Status: DISABLED ({{reason}})\n",
       "statusFailed": "Status: FAILED\n",
       "statusOk": "Status: OK {{failCount}}\n",
       "serverLimit": "Server Limit",
       "failAlert": "**Attention!** Feeds that have reached {{failLimit}} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use **{{prefix}}refresh** to try to reset its status.\u200b\n\u200b\n",
-      "currentActiveFeeds": "Current Active Feeds",
+      "feedList": "Feed List",
+      "feedListChannel": "Feed List in Channel #{{channel}}",
       "refreshRate": "Refresh Rate",
       "webhook": "Webhook",
       "link": "Link",
