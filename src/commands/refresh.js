@@ -32,7 +32,7 @@ module.exports = async (message, command) => {
   const processing = await message.channel.send(translate('commands.refresh.processing'))
   const failedReasons = {}
   for (const record of records) {
-    const url = record.url
+    const url = record._id
     log.info({
       guild: message.guild
     }, `Attempting to refresh ${url}`)
