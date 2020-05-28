@@ -13,6 +13,7 @@ const getConfig = require('../../../config.js').get
  * @typedef {Object} Data
  * @property {import('../../../structs/db/Profile.js')} [profile]
  * @property {import('../../../structs/db/Feed.js')[]} feeds
+ * @property {import('discord.js').TextChannel} [channel]
  * @property {string} guildID
  */
 
@@ -20,15 +21,21 @@ const getConfig = require('../../../config.js').get
  * @param {Data} data
  */
 async function listFeedVisual (data) {
-  const { feeds, profile, guildID } = data
+  const { feeds, profile, guildID, channel } = data
   const [supporter, schedules, supporterGuilds] = await Promise.all([
     Supporter.getValidSupporterOfGuild(guildID),
     Schedule.getAll(),
     Supporter.getValidGuilds()
   ])
+
+  const targetFeeds = channel ? feeds.filter(f => f.channel === channel.id) : feeds
   const translate = Translator.createProfileTranslator(profile)
   if (feeds.length === 0) {
     return new MessageVisual(translate('commands.list.noFeeds'))
+  } else if (targetFeeds.length === 0) {
+    return new MessageVisual(translate('commands.list.noFeedsChannel', {
+      channel: `<#${channel.id}>`
+    }))
   }
 
   const config = getConfig()
@@ -36,8 +43,8 @@ async function listFeedVisual (data) {
   const maxFeedsAllowed = supporter ? await supporter.getMaxFeeds() : config.feeds.max
 
   // Generate the info for each feed as an array, and push into another array
-  const failRecords = await Promise.all(feeds.map(feed => FailRecord.get(feed.url)))
-  const fetchedSchedules = await Promise.all(feeds.map(feed => feed.determineSchedule(schedules, supporterGuilds)))
+  const failRecords = await Promise.all(targetFeeds.map(feed => FailRecord.get(feed.url)))
+  const fetchedSchedules = await Promise.all(targetFeeds.map(feed => feed.determineSchedule(schedules, supporterGuilds)))
 
   for (const record of failRecords) {
     if (record) {
@@ -58,12 +65,19 @@ async function listFeedVisual (data) {
     vipDetails = '\n'
   }
 
-  const desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${feeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
+  const desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${targetFeeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
   // desc += failedFeedCount > 0 ? translate('commands.list.failAlert', { failLimit: FAIL_LIMIT, prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix }) : ''
 
   const list = new ThemedEmbed()
-    .setAuthor(translate('commands.list.currentActiveFeeds') + ` (${feeds.length})`)
     .setDescription(desc)
+
+  if (!channel) {
+    list.setAuthor(translate('commands.list.feedList') + ` (${feeds.length})`)
+  } else {
+    list.setAuthor(translate('commands.list.feedListChannel', {
+      channel: channel.name
+    }) + ` (${targetFeeds.length})`)
+  }
 
   if (supporter) {
     list.setFooter(`Patronage backed by ${supporter._id}`)
@@ -72,7 +86,7 @@ async function listFeedVisual (data) {
   const menu = new MenuEmbed(list)
     .enablePagination(handlePaginationError)
 
-  feeds.forEach((feed, i) => {
+  targetFeeds.forEach((feed, index) => {
     // URL
     const url = feed.url.length > 500 ? translate('commands.list.exceeds500Characters') : feed.url
 
@@ -111,7 +125,7 @@ async function listFeedVisual (data) {
       : ''
 
     // Refresh rate
-    const schedule = fetchedSchedules[i]
+    const schedule = fetchedSchedules[index]
     let refreshRate = failRecord && failRecord.hasFailed()
       ? 'N/A'
       : schedule.refreshRateMinutes < 1
@@ -123,7 +137,11 @@ async function listFeedVisual (data) {
     if (Supporter.enabled && !supporter) {
       refreshRate += ' [－](https://www.patreon.com/discordrss)'
     }
-    menu.addOption(`${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`, `${titleChecks}${status}${translate('commands.list.refreshRate')}: ${refreshRate}\n${translate('generics.channelUpper')}: ${channel}\n${webhook}${translate('commands.list.link')}: ${url}`)
+
+    const name = `${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`
+    const value = `${titleChecks}${status}${translate('commands.list.refreshRate')}: ${refreshRate}\n${translate('generics.channelUpper')}: ${channel}\n${webhook}${translate('commands.list.link')}: ${url}`
+    const number = feeds.indexOf(feed) + 1
+    menu.addOption(name, value, number)
   })
 
   return new MenuVisual(menu)
