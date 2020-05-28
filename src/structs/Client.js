@@ -8,6 +8,7 @@ const Profile = require('./db/Profile.js')
 const ArticleMessage = require('./ArticleMessage.js')
 const Feed = require('./db/Feed.js')
 const FeedData = require('./FeedData.js')
+const ArticleMessageRateLimiter = require('./ArticleMessageRateLimiter.js')
 const initialize = require('../util/initialization.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
@@ -167,9 +168,15 @@ class Client extends EventEmitter {
       }
       const feedData = await FeedData.ofFeed(new Feed(feedObject))
       const articleMessage = new ArticleMessage(this.bot, article, feedData, debug)
-      await articleMessage.send()
+      await ArticleMessageRateLimiter.enqueue(articleMessage)
       this.log.debug(`Sent article ${article._id} of feed ${feedObject._id}`)
     } catch (err) {
+      if (err.message.includes('Rate limit')) {
+        this.log.debug({
+          error: err
+        }, 'Ignoring rate-limited article')
+        return
+      }
       const article = newArticle.article
       this.log.warn({
         error: err,
@@ -253,6 +260,7 @@ class Client extends EventEmitter {
       if (config.bot.enableCommands) {
         await listeners.enableCommands(this.bot)
       }
+      await initialize.setupRateLimiters(this.bot)
       this.log.info(`Commands have been ${config.bot.enableCommands ? 'enabled' : 'disabled'}.`)
       ipc.send(ipc.TYPES.INIT_COMPLETE)
       listeners.createManagers(this.bot)

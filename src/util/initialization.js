@@ -2,10 +2,12 @@ const fs = require('fs')
 const path = require('path')
 const mongoose = require('mongoose')
 const Profile = require('../structs/db/Profile.js')
+const Feed = require('../structs/db/Feed.js')
 const KeyValue = require('../structs/db/KeyValue.js')
 const Schedule = require('../structs/db/Schedule.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Command = require('../structs/Command.js')
+const ArticleMessageRateLimiter = require('../structs/ArticleMessageRateLimiter.js')
 const getConfig = require('../config.js').get
 
 /**
@@ -110,9 +112,34 @@ async function populateSchedules (customSchedules = {}) {
   return schedules
 }
 
+/**
+ * @param {import('discord.js').Client} bot
+ */
+async function setupRateLimiters (bot) {
+  const guilds = bot.guilds.cache.keyArray()
+  const feeds = await Feed.getManyByQuery({
+    guild: {
+      $in: guilds
+    }
+  })
+  const supporterGuilds = new Set(await Supporter.getValidGuilds())
+  for (var i = feeds.length - 1; i >= 0; --i) {
+    const feed = feeds[i]
+    const channel = bot.channels.cache.get(feed.channel)
+    if (!channel) {
+      continue
+    }
+    const isSupporter = supporterGuilds.has(channel.guild.id)
+    if (!ArticleMessageRateLimiter.hasLimiter(feed.channel)) {
+      ArticleMessageRateLimiter.create(feed.channel, isSupporter)
+    }
+  }
+}
+
 module.exports = {
   setupModels,
   setupCommands,
   populateSchedules,
-  populateKeyValues
+  populateKeyValues,
+  setupRateLimiters
 }
