@@ -283,6 +283,11 @@
       "embedFieldsSettingValueLong": "Field values cannot exceed 1024 characters. Try again, or type `exit` to cancel.",
       "embedFieldsAdded": "A new{{type}} Field has been added to the embed with the following details:\n\n**Title**\n```\n{{name}}\n```\n**Value**\n```\n{{value}}\n```\nfor the feed {{link}}."
     },
+    "faq": {
+      "searchQueryRequired": "A search query is required.",
+      "searching": "Searching...",
+      "noResults": "No results found 🙁"
+    },
     "filters": {
       "selectFeedDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n",
       "feedFiltersCustomization": "Feed Filters Customization",
