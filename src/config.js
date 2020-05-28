@@ -60,6 +60,7 @@ exports.set = (override) => {
   const feeds = config.feeds
   const feedsOverride = override.feeds
   feeds.refreshRateMinutes = Number(process.env.DRSS_FEEDS_REFRESHRATEMINUTES) || feedsOverride.refreshRateMinutes || feeds.refreshRateMinutes
+  feeds.articleRateLimit = Number(process.env.DRSS_FEEDS_ARTICLERATELIMIT) || feedsOverride.articleRateLimit || feeds.articleRateLimit
   feeds.timezone = process.env.DRSS_FEEDS_TIMEZONE || feedsOverride.timezone || feeds.timezone
   feeds.dateFormat = process.env.DRSS_FEEDS_DATEFORMAT || feedsOverride.dateFormat || feeds.dateFormat
   feeds.dateLanguage = process.env.DRSS_FEEDS_DATELANGUAGE || feedsOverride.dateLanguage || feeds.dateLanguage
