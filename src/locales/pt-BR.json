@@ -11,7 +11,7 @@
   },
   "commandDescriptions": {
     "add": {
-      "description": "Adicione um feed ao canal com a mensagem padrão. Multiplos feeds podem ser adicionados separando-os por `>`",
+      "description": " Adicione um feed ao canal com a mensagem padrão. Multiplos feeds podem ser adicionados separando-os por `>`",
       "args": {
         "<link>": "Feed Link."
       }
@@ -312,16 +312,14 @@
       "text": "Convite com cargo - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot&permissions=19456>\n\nConvite sem cargo - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot>"
     },
     "list": {
-      "noFeeds": "Não há feeds",
-      "noFeedsChannel": "",
+      "noFeeds": "Não há feeds existentes",
       "titleChecksEnabled": "Verificações de título: ativada\n",
       "statusDisabled": "Status: DESATIVADO ({{reason}})\n",
       "statusFailed": "Status: FALHADO\n",
       "statusOk": "Status: OK {{failCount}}\n",
       "serverLimit": "Limite do servidor",
       "failAlert": "**Atenção!** Feeds que atingiram o limite de falhas na conexão de {{failLimit}} foram detectados. Eles não serão mais atualizados novamente até que a instância do bot seja reiniciada. Remova ou use o **{{prefixo}}refresh** para tentar redefinir seu status.\u200b\n\u200b\n",
-      "feedList": "Lista de feeds",
-      "feedListChannel": "Lista de feeds no canal #{{channel}}",
+      "currentActiveFeeds": "Feeds ativos",
       "refreshRate": "Taxa de verificação",
       "webhook": "Webhook",
       "link": "Link",
