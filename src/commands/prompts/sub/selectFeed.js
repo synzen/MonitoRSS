@@ -29,12 +29,14 @@ async function selectFeedFn (message, data) {
   const feedID = feed._id
   const translate = Translator.createProfileTranslator(profile)
   const config = getConfig()
+  const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
 
   const enabled = feed.directSubscribers === undefined ? config.feeds.directSubscribers : feed.directSubscribers
   if (!enabled) {
-    throw new Rejection(translate('commands.options.directSubscriberDisabled', {
+    throw new Rejection(translate('commands.sub.directSubscriberDisabled', {
       link: feed.url,
-      channel: `<#${feed.channel}>`
+      channel: `<#${feed.channel}>`,
+      prefix
     }))
   }
 

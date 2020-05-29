@@ -428,8 +428,7 @@
       "directSubscribersToggle": "Toggle direct subscriptions for a feed",
       "directSubscribersDescription": "Allows users to directly add themselves as a subscriber to the feed `{subscribers}` placeholder. This is an alternative to letting users add roles to themselves.",
       "settingChanged": "{{propName}} has been {{finalSetting}} for <{{link}}>{{isDefault}}.",
-      "defaultSetting": "default setting",
-      "directSubscriberDisabled": "The feed <{{link}}> in {{channel}} does not allow direct subscribers. Try another feed, or type `exit` to cancel."
+      "defaultSetting": "default setting"
     },
     "prefix": {
       "helpText": "You must specify a prefix 4 characters or less as the first argument to set a custom prefix, or `reset` to reset the prefix to default if a custom prefix is already set.",
@@ -517,7 +516,8 @@
       "addSuccess": "You now have the role `{{name}}`, subscribed to:",
       "directSubscribeExists": "Unable to directly subscribe to feed <{{link}}>. You are already subscribed to it.",
       "directSubscribeSuccess": "You are now directly subscribed to the feed <{{link}}>.",
-      "alreadyHaveRole": "You already have this role. Try another role name, or type `exit` to cancel."
+      "alreadyHaveRole": "You already have this role. Try another role name, or type `exit` to cancel.",
+      "directSubscriberDisabled": "The feed <{{link}}> in {{channel}} does not allow direct subscribers. It must be enabled in the `{{prefix}}options` command. Try another feed, or type `exit` to cancel."
     },
     "unsub": {
       "optionRemoveRole": "I want to remove a mentioned role from myself",

@@ -426,8 +426,7 @@
       "defaultSetting": "configuração padrão",
       "directSubscribers": "",
       "directSubscribersToggle": "",
-      "directSubscribersDescription": "",
-      "directSubscriberDisabled": ""
+      "directSubscribersDescription": ""
     },
     "prefix": {
       "helpText": "Você deve especificar um prefixo de 4 caracteres ou menos como o primeiro argumento para definir um prefixo personalizado ou `reset` para redefinir o prefixo para padrão se um prefixo personalizado já estiver definido.",
@@ -515,7 +514,8 @@
       "listInputRole": "",
       "directSubscribeExists": "",
       "directSubscribeSuccess": "",
-      "alreadyHaveRole": ""
+      "alreadyHaveRole": "",
+      "directSubscriberDisabled": ""
     },
     "unsub": {
       "title": "Remoção de auto-inscrição",
