@@ -280,10 +280,13 @@ class ScheduleManager extends EventEmitter {
    * Create auto-running schedule timers
    */
   beginTimers () {
+    const config = getConfig()
+    const immediatelyRun = config.bot.runSchedulesOnStart
     this.clearTimers()
-    // const rates = new Set()
     this.schedules.forEach(schedule => {
-      this.run(schedule)
+      if (immediatelyRun) {
+        this.run(schedule)
+      }
       this.timers.push(setInterval(() => {
         this.run(schedule)
       }, schedule.refreshRateMinutes * 60000))

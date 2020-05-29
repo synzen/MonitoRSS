@@ -40,6 +40,7 @@ exports.set = (override) => {
   bot.ownerIDs = envArray('DRSS_BOT_OWNERIDS') || botOverride.ownerIDs || bot.ownerIDs
   bot.menuColor = Number(process.env.DRSS_BOT_MENUCOLOR) || botOverride.menuColor || bot.menuColor
   bot.deleteMenus = Boolean(process.env.DRSS_BOT_DELETEMENUS) || botOverride.deleteMenus || bot.deleteMenus
+  bot.runSchedulesOnStart = Boolean(process.env.RUNSCHEDULESONSTART) || botOverride.runSchedulesOnStart === undefined ? bot.runSchedulesOnStart : botOverride.runSchedulesOnStart
   bot.exitOnSocketIssues = Boolean(process.env.DRSS_EXITONSOCKETISSUES) || botOverride.exitOnSocketIssues || bot.exitOnSocketIssues
 
   // DATABASE

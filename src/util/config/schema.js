@@ -23,6 +23,7 @@ const botSchema = Joi.object({
   ownerIDs: Joi.array().items(Joi.string().strict()).default([]),
   menuColor: Joi.number().strict().greater(0).default(5285609),
   deleteMenus: Joi.bool().strict().default(true),
+  runSchedulesOnStart: Joi.bool().strict().default(true),
   exitOnSocketIssues: Joi.bool().strict().default(true)
 })
 
