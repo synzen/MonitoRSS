@@ -1,5 +1,4 @@
 const Blacklist = require('../../structs/db/Blacklist.js')
-const listeners = require('../../util/listeners.js')
 const createLogger = require('../../util/logger/create.js')
 
 module.exports = async (message) => {
@@ -38,15 +37,10 @@ module.exports = async (message) => {
   const blacklist = new Blacklist(data)
   await blacklist.save()
 
-  if (found.type === 'guild') {
-    listeners.blacklistCache.guilds.add(id)
-  } else {
-    listeners.blacklistCache.users.add(id)
-  }
   const log = createLogger(message.guild.shard.id)
   log.owner({
     guild: message.guild,
     user: message.author
   }, `Added ${found.type} ${id} named "${found.name}" to blacklist`)
-  await message.channel.send(`Added ${found.type} ${id} named "${found.name}" to blacklist`)
+  await message.channel.send(`Added ${found.type} ${id} named "${found.name}" to blacklist. Restart bot to take effect.`)
 }
