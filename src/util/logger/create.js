@@ -5,7 +5,7 @@ const getConfig = require('../../config.js').get
 function createLogger (tag = '-', base = {}) {
   const config = getConfig()
   const prettyPrint = {
-    translateTime: 'yyyy-mm-dd HH:MM:ss',
+    translateTime: 'SYS:standard',
     messageFormat: '[{tag}] \x1b[0m{msg}',
     ignore: 'hostname,tag'
   }
