@@ -30,7 +30,7 @@ async function runWithFeedsProfile (rootNode, message, inputData = {}) {
   const noFeedsNode = new PromptNode(noFeeds.prompt, data => data.feeds.length === 0)
   const runner = new DiscordPromptRunner(author, initialData)
   const channelStore = new DiscordChannel(channel)
-  let finalData
+  let finalData = {}
   try {
     finalData = await runner.runArray([
       noFeedsNode,
