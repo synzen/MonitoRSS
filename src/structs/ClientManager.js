@@ -263,7 +263,9 @@ class ClientManager extends EventEmitter {
       await maintenance.prunePostInit(this.guildIdsByShard)
       this.log.debug('Post-init finished')
       if (Supporter.enabled) {
-        await Patron.refresh()
+        Patron.refresh().catch(err => {
+          this.log.error(err, 'Failed to refresh patrons')
+        })
       }
       this.scheduleManager.beginTimers()
       this.broadcast(ipc.TYPES.FINISHED_INIT)
