@@ -70,7 +70,7 @@ async function pruneSubscribers (bot, feeds) {
     if (subscriber.type === Subscriber.TYPES.ROLE) {
       if (!guild.roles.cache.has(subscriber.id)) {
         log.info(`Deleting missing role subscriber ${subscriber._id} of feed ${subscriber.feed}`)
-        // deletions.push(subscriber.delete())
+        deletions.push(subscriber.delete())
       }
     } else if (subscriber.type === Subscriber.TYPES.USER) {
       relevantSubscribers.push({
@@ -79,7 +79,7 @@ async function pruneSubscribers (bot, feeds) {
       })
     } else {
       log.info(`Deleting invalid ${subscriber.type} subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
-      // deletions.push(subscriber.delete())
+      deletions.push(subscriber.delete())
     }
   }
   const results = await exports.fetchSubscribers(relevantSubscribers)
@@ -93,7 +93,7 @@ async function pruneSubscribers (bot, feeds) {
     const subscriber = subscribers[k]
     if (brokenSubscribers.has(subscriber.id)) {
       log.info(`Deleting missing user subscriber ${subscriber._id} of feed ${subscriber.feed}`)
-      // deletions.push(subscriber.delete())
+      deletions.push(subscriber.delete())
     }
   }
 
