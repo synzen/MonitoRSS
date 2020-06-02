@@ -93,6 +93,7 @@ class Client extends EventEmitter {
         this.stop()
       }
     })
+    bot.on('debug', info => this.log.debug(info))
     bot.on('resume', () => {
       this.log.info('Websocket resumed')
       this.start()
