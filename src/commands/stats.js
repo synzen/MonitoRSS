@@ -34,14 +34,16 @@ module.exports = async (message) => {
     .setDescription(`
 **Unique Feeds** - Number of unique feed links (duplicate links are not counted).
 **Total Feeds** - Number of total feeds.
-**Cycle Duration** - The time it takes to process all the unique feed links.
-**Cycle Failures** - The number of failures out of the number of unique feeds per cycle. 
-**Success Rate** - The rate at which unique links connect successfully per cycle. A high rate is necessary to ensure that all feeds are fetched.\n\u200b`)
+**Cycle Duration** - Time taken to process all the unique feeds.
+**Cycle Failures** - Number of failures out of the number of unique feeds per cycle. 
+**Success Rate** - Rate at which unique links connect successfully per cycle. A high rate is necessary to ensure that all feeds are fetched.
+**Articles Sent** - Total number of articles sent
+**Articles Blocked** - Total number of articles blocked by article rate limits\n\u200b`)
 
   const guilds = `${aggregated.guilds}`
   const feeds = `${aggregated.feeds}`
   const cycleURLs = `${aggregated.cycleURLs}`
-  const cycleFails = `${aggregated.cycleFails.toFixed(2)}`
+  const cycleFails = `${aggregated.cycleFails}`
   const cycleTime = `${aggregated.cycleTime.toFixed(2)}s`
   const successRate = `${((1 - aggregated.cycleFails / aggregated.cycleURLs) * 100).toFixed(2)}%`
   const articlesSent = aggregated.articlesSent ? aggregated.articlesSent.data : 0
@@ -67,11 +69,9 @@ module.exports = async (message) => {
     .addField('Success Rate', successRate, true)
     .addField('\u200b', '\u200b', true)
     .addField('Articles Sent', articlesSent, true)
+    .addField('Articles Blocked', articlesBlocked, true)
+    .addField('\u200b', '\u200b', true)
     .setFooter(diff)
-
-  if (articlesBlocked) {
-    visual.addField('Articles Blocked', articlesBlocked, true)
-  }
 
   await message.channel.send('', visual)
 }
