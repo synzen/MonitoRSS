@@ -193,9 +193,9 @@ class FeedFetcher {
       res = await cloudscraper({ method: 'GET', uri, resolveWithFullResponse: true })
     } catch (err) {
       if (err.statusCode && err.statusCode !== 200) {
-        throw new RequestError(err.statusCode, `Bad Cloudflare status code (${err.statusCode})`)
+        throw new RequestError(err.statusCode, `Bad Cloudflare status code (${err.statusCode})`, true)
       } else {
-        throw new RequestError(null, `Cloudflare - ${err.message}` || 'Cloudscraper error')
+        throw new RequestError(this.REQUEST_ERROR_CODE, `Cloudflare - ${err.message}` || 'Cloudscraper error', true)
       }
     }
     if (res.statusCode !== 200) {
