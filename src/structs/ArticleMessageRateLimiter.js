@@ -121,14 +121,16 @@ ArticleRateLimiter.limiters = new Map()
 ArticleRateLimiter.sent = 0
 ArticleRateLimiter.blocked = 0
 
-ArticleRateLimiter.timer = setInterval(async () => {
-  try {
-    await ArticleRateLimiter.updateArticlesSent()
-    await ArticleRateLimiter.updateArticlesBlocked()
-  } catch (err) {
-    const log = createLogger()
-    log.error(err, 'Failed to update article stats')
-  }
-}, 10000)
+if (process.env.NODE_ENV !== 'test') {
+  ArticleRateLimiter.timer = setInterval(async () => {
+    try {
+      await ArticleRateLimiter.updateArticlesSent()
+      await ArticleRateLimiter.updateArticlesBlocked()
+    } catch (err) {
+      const log = createLogger()
+      log.error(err, 'Failed to update article stats')
+    }
+  }, 10000)
+}
 
 module.exports = ArticleRateLimiter
