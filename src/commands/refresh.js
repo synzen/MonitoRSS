@@ -5,7 +5,7 @@ const FailRecord = require('../structs/db/FailRecord.js')
 const Feed = require('../structs/db/Feed.js')
 const createLogger = require('../util/logger/create.js')
 
-module.exports = async (message, command) => {
+module.exports = async (message) => {
   const profile = await Profile.get(message.guild.id)
   const feeds = await Feed.getManyBy('guild', message.guild.id)
   const translate = Translator.createLocaleTranslator(profile ? profile.locale : undefined)
@@ -44,6 +44,10 @@ module.exports = async (message, command) => {
       }, `Refreshed ${url} and is back on cycle`)
     } catch (err) {
       failedReasons[url] = err.message
+      log.info({
+        guild: message.guild,
+        error: err
+      }, `Failed to refresh ${url} (${err.message})`)
     }
   }
 
