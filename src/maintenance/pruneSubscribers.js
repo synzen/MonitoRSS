@@ -1,6 +1,43 @@
 const Subscriber = require('../structs/db/Subscriber.js')
 const createLogger = require('../util/logger/create.js')
-const MISSING_CODES = [10011, 10013, 10007]
+const MISSING_CODES = new Set([10011, 10013, 10007])
+
+/**
+ * @typedef {Object} SubscriberDetails
+ * @property {import('discord.js').Guild} guild
+ * @property {import('../structs/db/Subscriber.js')} subscriber
+ */
+
+/**
+ * @param {import('discord.js').Client} bot
+ * @param {SubscriberDetails[]} subscribersDetails
+ */
+async function fetchSubscribers (subscribersDetails) {
+  const idsToFetch = new Set()
+  for (var i = subscribersDetails.length - 1; i >= 0; --i) {
+    const { subscriber } = subscribersDetails[i]
+    idsToFetch.add(subscriber.id)
+  }
+  const ids = []
+  const fetches = []
+  for (var j = subscribersDetails.length - 1; j >= 0; --j) {
+    const { subscriber, guild } = subscribersDetails[j]
+    if (!idsToFetch.has(subscriber.id)) {
+      continue
+    }
+    ids.push(subscriber.id)
+    fetches.push(guild.members.fetch(subscriber.id))
+    idsToFetch.delete(subscriber.id)
+  }
+  const results = await Promise.allSettled(fetches)
+  const returnData = new Map()
+  for (var k = results.length - 1; k >= 0; --k) {
+    const id = ids[k]
+    const result = results[k]
+    returnData.set(id, result)
+  }
+  return returnData
+}
 
 /**
  * Precondition: Feeds have been pruned, and thus no feeds
@@ -17,42 +54,46 @@ async function pruneSubscribers (bot, feeds) {
   const subscribers = await Subscriber.getAll()
   /** @type {Map<string, import('../structs/db/Feed.js')>} */
   const feedsById = new Map()
-  const feedsLength = feeds.length
-  for (var i = feedsLength - 1; i >= 0; --i) {
+  for (var i = feeds.length - 1; i >= 0; --i) {
     const feed = feeds[i]
     feedsById.set(feed._id, feed)
   }
   const deletions = []
-  const subscribersLength = subscribers.length
   const relevantSubscribers = []
-  const relevantFetches = []
-  for (var j = subscribersLength - 1; j >= 0; --j) {
+  for (var j = subscribers.length - 1; j >= 0; --j) {
     const subscriber = subscribers[j]
     const feed = feedsById.get(subscriber.feed)
     if (!feed) {
       continue
     }
-    /** @type {import('discord.js').Guild} */
     const guild = bot.guilds.cache.get(feed.guild)
-
-    if (subscriber.type === Subscriber.TYPES.USER) {
-      relevantSubscribers.push(subscriber)
-      relevantFetches.push(guild.members.fetch(subscriber.id))
-    } else if (subscriber.type === Subscriber.TYPES.ROLE) {
-      relevantSubscribers.push(subscriber)
-      relevantFetches.push(guild.roles.fetch(subscriber.id))
+    if (subscriber.type === Subscriber.TYPES.ROLE) {
+      if (!guild.roles.cache.has(subscriber.id)) {
+        log.info(`Deleting missing role subscriber ${subscriber._id} of feed ${subscriber.feed}`)
+        // deletions.push(subscriber.delete())
+      }
+    } else if (subscriber.type === Subscriber.TYPES.USER) {
+      relevantSubscribers.push({
+        guild,
+        subscriber
+      })
+    } else {
+      log.info(`Deleting invalid ${subscriber.type} subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
+      // deletions.push(subscriber.delete())
     }
   }
-
-  const completedFetches = await Promise.allSettled(relevantFetches)
-  const fetchesLength = completedFetches.length
-  for (var k = 0; k < fetchesLength; ++k) {
-    const subscriber = relevantSubscribers[k]
-    const feed = feedsById.get(subscriber.feed)
-    const result = completedFetches[k]
-    if (result.status === 'rejected' && MISSING_CODES.includes(result.reason.code)) {
-      log.info(`Deleting missing ${subscriber.type} subscriber ${subscriber._id} of feed ${feed._id} of guild ${feed.guild}`)
-      deletions.push(subscriber.delete())
+  const results = await exports.fetchSubscribers(relevantSubscribers)
+  const brokenSubscribers = new Set()
+  results.forEach((result, subscriberID) => {
+    if (result.status === 'rejected' && MISSING_CODES.has(result.reason.code)) {
+      brokenSubscribers.add(subscriberID)
+    }
+  })
+  for (var k = subscribers.length - 1; k >= 0; --k) {
+    const subscriber = subscribers[k]
+    if (brokenSubscribers.has(subscriber.id)) {
+      log.info(`Deleting missing user subscriber ${subscriber._id} of feed ${subscriber.feed}`)
+      // deletions.push(subscriber.delete())
     }
   }
 
@@ -60,4 +101,5 @@ async function pruneSubscribers (bot, feeds) {
   return deletions.length
 }
 
-module.exports = pruneSubscribers
+exports.fetchSubscribers = fetchSubscribers
+exports.pruneSubscribers = pruneSubscribers

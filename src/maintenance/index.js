@@ -49,7 +49,7 @@ async function pruneWithBot (bot) {
   })
   log.debug(`Fetched ${feeds.length} feeds for pruning`)
   await Promise.all([
-    pruneSubscribers(bot, feeds),
+    pruneSubscribers.pruneSubscribers(bot, feeds),
     pruneProfileAlerts(bot),
     pruneWebhooks.pruneWebhooks(bot, feeds),
     checkPermissions.feeds(bot, feeds)
