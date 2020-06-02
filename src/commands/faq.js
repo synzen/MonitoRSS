@@ -15,7 +15,6 @@ module.exports = async (message) => {
   const log = createLogger(message.client.shard.ids[0])
   const split = message.content.split(' ')
   const searchTerm = split.slice(1, split.length).join(' ').trim()
-  console.log(searchTerm)
   if (!searchTerm) {
     return message.channel.send(translate('commands.faq.searchQueryRequired'))
   }
