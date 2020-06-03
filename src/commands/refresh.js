@@ -30,7 +30,10 @@ module.exports = async (message) => {
   }
   const log = createLogger(message.guild.shard.id)
   const processing = await message.channel.send(translate('commands.refresh.processing'))
-  const failedReasons = {}
+
+  let successfulLinks = ''
+  let failedLinks = ''
+
   for (const record of records) {
     const url = record._id
     log.info({
@@ -39,26 +42,16 @@ module.exports = async (message) => {
     try {
       await FeedFetcher.fetchURL(url)
       await record.delete()
+      successfulLinks += `${url}\n`
       log.info({
         guild: message.guild
       }, `Refreshed ${url} and is back on cycle`)
     } catch (err) {
-      failedReasons[url] = err.message
+      failedLinks += `${url} (${err.message})`
       log.info({
         guild: message.guild,
         error: err
       }, `Failed to refresh ${url} (${err.message})`)
-    }
-  }
-
-  let successfulLinks = ''
-  let failedLinks = ''
-  for (const record of records) {
-    const url = record.url
-    if (!failedReasons[url]) {
-      successfulLinks += `${url}\n`
-    } else {
-      failedLinks += `${url} (${failedReasons[url]})`
     }
   }
 
