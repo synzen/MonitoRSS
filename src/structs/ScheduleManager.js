@@ -57,16 +57,17 @@ class ScheduleManager extends EventEmitter {
    * same time, causing race conditions
    *
    * @param {string} url
+   * @param {string} [reason]
    */
-  async _onConnectionFailure (url) {
+  async _onConnectionFailure (url, reason) {
     if (this.urlFailuresRecording.has(url) || this.testRuns) {
       return
     }
     this.urlFailuresRecording.add(url)
     try {
-      await FailRecord.record(url)
+      await FailRecord.record(url, reason)
     } catch (err) {
-      this.log.error(err, `Failed to record url fail record ${url}`)
+      this.log.error(err, `Failed to record url fail record ${url} with reason ${reason}`)
     }
     this.urlFailuresRecording.delete(url)
   }
@@ -119,13 +120,14 @@ class ScheduleManager extends EventEmitter {
    * @param {import('./db/FailRecord.js')} record
    */
   async alertFailRecord (record) {
+    const config = getConfig()
     const url = record._id
     record.alerted = true
     await record.save()
     const feeds = await record.getAssociatedFeeds()
     this.log.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
     feeds.forEach(({ channel }) => {
-      const message = `Feed <${url}> in channel <#${channel}> has reached the connection failure limit, and will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
+      const message = `Feed <${url}> in channel <#${channel}> has failed to establish a successful connection in ${config.feeds.hoursUntilFail} hours (recorded reason: ${record.reason}), and will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
       this.emitAlert(channel, message)
     })
   }

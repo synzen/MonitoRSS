@@ -459,7 +459,7 @@ class ScheduleRun extends EventEmitter {
       if (status === 'failed') {
         ++thisFailures
         this.failedURLs.add(link)
-        this.emit('conFailure', link)
+        this.emit('conFailure', link, linkCompletion.reason)
       } else if (status === 'success') {
         this.emit('conSuccess', link)
         if (memoryCollection) {

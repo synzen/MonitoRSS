@@ -122,7 +122,7 @@ async function getFeed (data, log) {
     }
     urlLog({ error: err }, 'Sending failed status during connection')
     process.send({ status: 'connected' })
-    process.send({ status: 'failed', link, rssList })
+    process.send({ status: 'failed', link, rssList, reason: err.message })
     return
   }
 
@@ -173,7 +173,7 @@ async function getFeed (data, log) {
     })
   } catch (err) {
     log.error(err, `Cycle logic for ${link}`)
-    process.send({ status: 'failed', link, rssList })
+    process.send({ status: 'failed', link, rssList, reason: err.message })
   }
 }
 
