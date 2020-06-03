@@ -105,7 +105,7 @@ async function listFeedVisual (data) {
       if (!failRecord.hasFailed()) {
         // Determine hours between config spec and now, then calculate health
         const hours = (new Date().getTime() - new Date(failRecord.failedAt).getTime()) / 36e5
-        const health = `(${100 - Math.ceil(hours / FailRecord.cutoff * 100)}% health)`
+        const health = FailRecord.cutoff === 0 ? '(100% health)' : `(${100 - Math.ceil(hours / FailRecord.cutoff * 100)}% health)`
         status = translate('commands.list.statusOk', { failCount: health })
       } else {
         status = translate('commands.list.statusFailed')
