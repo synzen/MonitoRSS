@@ -127,7 +127,7 @@ class ScheduleManager extends EventEmitter {
     const feeds = await record.getAssociatedFeeds()
     this.log.info(`Sending fail notification for ${url} to ${feeds.length} channels`)
     feeds.forEach(({ channel }) => {
-      const message = `Feed <${url}> in channel <#${channel}> has failed to establish a successful connection in ${config.feeds.hoursUntilFail} hours (recorded reason: ${record.reason}), and will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
+      const message = `Feed <${url}> in channel <#${channel}> has reached the connection failure limit after continuous (${config.feeds.hoursUntilFail} hours) connection failures (recorded reason: ${record.reason}). The feed will not be retried until it is manually refreshed by any server using this feed. Use the \`list\` command in your server for more information.`
       this.emitAlert(channel, message)
     })
   }
