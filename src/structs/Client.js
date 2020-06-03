@@ -65,14 +65,8 @@ class Client extends EventEmitter {
         this._setup()
       }
     } catch (err) {
-      if (err.message.includes('too many guilds')) {
-        throw err
-      } else {
-        this.log.warn({
-          error: err
-        }, 'Discord.RSS failed to start, retrying in 10 minutes')
-        setTimeout(() => this.login.bind(this)(token), 600000)
-      }
+      this.log.error(err, 'Discord.RSS failed to start')
+      ipc.send(ipc.TYPES.KILL)
     }
   }
 
