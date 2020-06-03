@@ -176,15 +176,15 @@ class ClientManager extends EventEmitter {
         const promise = isJSON ? err.json() : err.text()
         promise.then((response) => {
           this.log.error({ response }, 'ClientManager failed to start. Verify token and observe rate limits.')
-          process.exit(1)
         }).catch((parseErr) => {
           this.log.error(err, 'ClientManager failed to start')
           this.log.error(parseErr, `Failed to parse response from ClientManager spawn (Status ${err.status})`)
-          process.exit(1)
+        }).finally(() => {
+          this.kill()
         })
       } else {
         this.log.error(err, 'ClientManager failed to start')
-        process.exit(1)
+        this.kill()
       }
     }
   }
@@ -199,7 +199,10 @@ class ClientManager extends EventEmitter {
     }
     if (ipc.isLoopback(message)) {
       return this.shardingManager.broadcast(message)
-        .catch(err => this._handleErr(err, message))
+        .catch(err => {
+          this.log.error(err, `Sharding Manager broadcast message handling error for message type ${message.type}`)
+          this.kill()
+        })
     }
     switch (message.type) {
       case ipc.TYPES.KILL: this.kill(); break
@@ -215,12 +218,7 @@ class ClientManager extends EventEmitter {
     this.shardingManager.shards.forEach(shard => {
       shard.kill()
     })
-    process.exit(0)
-  }
-
-  _handleErr (err, message) {
-    this.log.error(err, `Sharding Manager broadcast message handling error for message type ${message.type}`)
-    this.kill()
+    process.exit(1)
   }
 
   async _shardReadyEvent (shard, message) {
