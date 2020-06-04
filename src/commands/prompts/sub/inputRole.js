@@ -48,12 +48,15 @@ async function inputRoleFn (message, data) {
    * Input is a role name with no capitalization requirements
    */
   const subscriberIDs = new Set(subscribers.flat().map(s => s.id))
-  const subscriberRoles = guild.roles.cache.filter(role => subscriberIDs.has(role.id))
-  const matchedRole = subscriberRoles.find(role => role.name.toLowerCase() === roleName.toLowerCase())
+  const fetchedMember = await member.fetch()
+  const subscriberRoles = guild.roles.cache
+    .filter(role => subscriberIDs.has(role.id))
+  const matchedRole = subscriberRoles
+    .find(role => role.name.toLowerCase() === roleName.toLowerCase())
   if (!matchedRole) {
     throw new Rejection(translate('commands.sub.invalidRole'))
   }
-  if (member.roles.cache.has(matchedRole.id)) {
+  if (fetchedMember.roles.cache.has(matchedRole.id)) {
     throw new Rejection(translate('commands.sub.alreadyHaveRole'))
   }
   await member.roles.add(matchedRole)

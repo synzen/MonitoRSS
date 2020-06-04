@@ -15,10 +15,10 @@ const createLogger = require('../../../util/logger/create.js')
 /**
  * @param {Data} data
  */
-function inputRemoveRoleVisual (data) {
+async function inputRemoveRoleVisual (data) {
   const { profile, feeds, member, subscribers } = data
   const translate = Translator.createProfileTranslator(profile)
-  const memberRoles = member.roles.cache
+  const memberRoles = (await member.fetch()).roles.cache
   let output = ''
   for (let i = 0; i < feeds.length; ++i) {
     const feed = feeds[i]
@@ -53,7 +53,8 @@ async function inputRemoveRoleFn (message, data) {
    * Input is a role name with no capitalization requirements
    */
   const subscriberIDs = new Set(subscribers.flat().map(s => s.id))
-  const memberSubscribedRoles = member.roles.cache.filter(role => subscriberIDs.has(role.id))
+  const memberSubscribedRoles = (await member.fetch())
+    .roles.cache.filter(role => subscriberIDs.has(role.id))
   const memberRole = memberSubscribedRoles.find(role => role.name.toLowerCase() === roleName.toLowerCase())
   if (!memberRole) {
     throw new Rejection(translate('commands.unsub.invalidRole'))

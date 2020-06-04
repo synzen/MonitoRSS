@@ -37,7 +37,7 @@ async function selectActionFn (message, data) {
   const { guild, author, content: selected, client, member } = message
   const { feeds, profile } = data
   const translate = Translator.createProfileTranslator(profile)
-  const memberRoles = member.roles.cache
+  const memberRoles = (await member.fetch()).roles.cache
   const log = createLogger(client.shard.ids[0], {
     guild,
     user: author
