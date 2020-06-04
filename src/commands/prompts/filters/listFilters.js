@@ -36,7 +36,9 @@ function visual (data) {
     })
   }
 
-  return new MessageVisual(output)
+  return new MessageVisual(output, {
+    split: true
+  })
 }
 
 const prompt = new LocalizedPrompt(visual)
