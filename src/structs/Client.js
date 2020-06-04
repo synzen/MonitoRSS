@@ -15,24 +15,23 @@ const createLogger = require('../util/logger/create.js')
 const connectDb = require('../util/connectDatabase.js')
 const { once } = require('events')
 
-const DISABLED_EVENTS = [
-  'TYPING_START',
-  'MESSAGE_DELETE',
-  'MESSAGE_UPDATE',
-  'PRESENCE_UPDATE',
-  'VOICE_STATE_UPDATE',
-  'VOICE_SERVER_UPDATE',
-  'USER_NOTE_UPDATE',
-  'CHANNEL_PINS_UPDATE'
-]
 const STATES = {
   STOPPED: 'STOPPED',
   STARTING: 'STARTING',
   READY: 'READY'
 }
+/**
+ * @type {import('discord.js').ClientOptions}
+ */
 const CLIENT_OPTIONS = {
-  disabledEvents: DISABLED_EVENTS,
-  messageCacheMaxSize: 100
+  messageCacheMaxSize: 100,
+  ws: {
+    intents: [
+      'GUILDS',
+      'GUILD_MESSAGES',
+      'GUILD_MESSAGE_REACTIONS'
+    ]
+  }
 }
 
 class Client extends EventEmitter {
@@ -223,7 +222,7 @@ class Client extends EventEmitter {
       }
       const alertTo = profile.alert
       for (const id of alertTo) {
-        const user = this.bot.users.cache.get(id)
+        const user = await this.bot.users.fetch(id, false)
         if (user) {
           await user.send(alertMessage)
         }
