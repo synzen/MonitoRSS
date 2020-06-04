@@ -14,9 +14,16 @@ module.exports = async (message) => {
   const translate = Translator.createProfileTranslator(profile)
   const log = createLogger(message.client.shard.ids[0])
   const split = message.content.split(' ')
-  const searchTerm = split.slice(1, split.length).join(' ').trim()
+  let searchTerm = split.slice(1, split.length).join(' ').trim()
   if (!searchTerm) {
     return message.channel.send(translate('commands.faq.searchQueryRequired'))
+  }
+  if (searchTerm === '^') {
+    const fetched = (await message.channel.messages.fetch({
+      limit: 1,
+      before: message.id
+    }, false)).first()
+    searchTerm = fetched.content
   }
   log.info(`Searching "${searchTerm}"`)
   const fetchingMessage = await message.channel.send(translate('commands.faq.searching'))
