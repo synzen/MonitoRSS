@@ -300,8 +300,7 @@
       "optionSendArticleDescription": "Envie um artigo escolhido aleatoriamente que passe o(s) filtro(s) atual(s), se existirem.",
       "removedAllSuccess": "Todos os filtros de feed foram removidos com sucesso de <{{link}}>.",
       "noFilters": "Não há filtros atribuídos a {{link}}.",
-      "listFilters": "Lista de filtros atribuídos",
-      "listFiltersDescription": "**Feed Título:** {{title}}\n**Feed Link:** {{link}}\n\nAbaixo estão as categorias de filtro com suas palavras/frases em cada um.\u200b\n\u200b\n",
+      "listFiltersDescription": "",
       "noArticlesPassed": "Nenhum artigo conseguiu passar nos filtros deste feed.",
       "noFiltersTryAgain": "",
       "connectionFailureLimit": ""
@@ -370,7 +369,6 @@
       "removeAnySubscriberNone": "Não há inscritos para remover no feed <{{link}}>.",
       "invalidRoleOrUser": "Esse não é um cargo válido ou usuário válido. Tente novamente, ou digite `exit` para cancelar.",
       "filters": {
-        "title": "",
         "description": "",
         "noSubscriber": "",
         "optionRemoveFilter": "",

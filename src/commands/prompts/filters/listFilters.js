@@ -1,5 +1,4 @@
 const { MessageVisual } = require('discord.js-prompts')
-const ThemedEmbed = require('../common/utils/ThemedEmbed')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 
@@ -23,27 +22,21 @@ function visual (data) {
       link: feed.url
     }))
   }
-  const embed = new ThemedEmbed({
-    author: {
-      name: translate('commands.filters.listFilters')
-    },
-    description: translate('commands.filters.listFiltersDescription', {
-      title: feed.title,
-      link: feed.url
-    })
+
+  let output = translate('commands.filters.listFiltersDescription', {
+    title: feed.title,
+    link: feed.url,
+    channel: `<#${feed.channel}>`
   })
   for (const filterCat in feed.filters) {
+    output += `\n\n**${filterCat}**`
     const filterContent = feed.filters[filterCat]
-    let value = ''
     filterContent.forEach((filter) => {
-      value += `${filter}\n`
+      output += `\n${filter}`
     })
-    embed.addField(filterCat, value, true)
   }
 
-  return new MessageVisual('', {
-    embed
-  })
+  return new MessageVisual(output)
 }
 
 const prompt = new LocalizedPrompt(visual)
