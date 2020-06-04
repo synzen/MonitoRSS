@@ -372,6 +372,7 @@
       "removeAnySubscriberNone": "There are no subscribers to remove from the feed <{{link}}>.",
       "invalidRoleOrUser": "That is not a valid role or user. Try again, or type `exit` to cancel.",
       "filters": {
+        "title": "Subscriber Filters Customization",
         "description": "**Feed URL:** {{link}}\n\nAdding filters to a subscriber will cause it to only get mentioned within the `{suscribers}` placeholder of an article if its filters pass the article.",
         "notSubscriber": "This role or user is not a subscriber. Try again, or type `exit` to cancel.",
         "optionAddFilter": "Add filter(s) to a subscriber",

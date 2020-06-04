@@ -369,6 +369,7 @@
       "removeAnySubscriberNone": "Não há inscritos para remover no feed <{{link}}>.",
       "invalidRoleOrUser": "Esse não é um cargo válido ou usuário válido. Tente novamente, ou digite `exit` para cancelar.",
       "filters": {
+        "title": "",
         "description": "",
         "noSubscriber": "",
         "optionRemoveFilter": "",
