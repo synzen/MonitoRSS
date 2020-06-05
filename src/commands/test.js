@@ -23,9 +23,9 @@ module.exports = async (message, command) => {
   const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   if (await FailRecord.hasFailed(feed.url)) {
-    return message.channel.send(translate('commands.test.failed'), {
+    return message.channel.send(translate('commands.test.failed', {
       prefix
-    })
+    }))
   }
   const grabMsg = await message.channel.send(translate('commands.test.grabbingRandom'))
   const article = await FeedFetcher.fetchRandomArticle(feed.url)
