@@ -97,5 +97,16 @@ describe('Unit::structs/Article', function () {
       const returned = article.testFilters(filters)
       expect(returned.passed).toEqual(false)
     })
+    it('blocks for non-existent article properties', function () {
+      const filters = {
+        Title: [
+          'Blah'
+        ]
+      }
+      const article = new Article(baseArticle, feedData)
+      article.title = 'Blah george'
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(false)
+    })
   })
 })

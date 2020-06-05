@@ -643,8 +643,13 @@ module.exports = class Article {
   }
 
   testFilters (filters) {
-    let passed = true
     const filterResults = new FilterResults()
+    let passed = Object.keys(filters).every(type => !!this.getFilterReference(type))
+    filterResults.passed = passed
+    // If not every key in filters exists on the articles, auto-block it
+    if (!passed) {
+      return filterResults
+    }
     for (const filterTypeName in filters) {
       const userFilters = filters[filterTypeName]
       const reference = this.getFilterReference(filterTypeName)
