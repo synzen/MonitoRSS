@@ -65,8 +65,9 @@ async function listFeedVisual (data) {
     vipDetails = '\n'
   }
 
-  const desc = maxFeedsAllowed === 0 ? `${vipDetails}\u200b\n` : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${targetFeeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
-  // desc += failedFeedCount > 0 ? translate('commands.list.failAlert', { failLimit: FAIL_LIMIT, prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix }) : ''
+  const desc = maxFeedsAllowed === 0
+    ? `${vipDetails}\u200b\n`
+    : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${targetFeeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
 
   const list = new ThemedEmbed()
     .setDescription(desc)
@@ -86,6 +87,7 @@ async function listFeedVisual (data) {
   const menu = new MenuEmbed(list)
     .enablePagination(handlePaginationError)
 
+  let someFailed = false
   targetFeeds.forEach((feed, index) => {
     // URL
     const url = feed.url.length > 500 ? translate('commands.list.exceeds500Characters') : feed.url
@@ -109,6 +111,7 @@ async function listFeedVisual (data) {
         status = translate('commands.list.statusOk', { failCount: health })
       } else {
         status = translate('commands.list.statusFailed')
+        someFailed = true
       }
     } else {
       status = translate('commands.list.statusOk', { failCount: '(100% health)' })
@@ -143,6 +146,13 @@ async function listFeedVisual (data) {
     const number = feeds.indexOf(feed) + 1
     menu.addOption(name, value, number)
   })
+
+  if (someFailed) {
+    const failAlert = translate('commands.list.failAlert', {
+      prefix: profile && profile.prefix ? profile.prefix : config.bot.prefix
+    })
+    menu.embed.setDescription(`${menu.embed.description}${failAlert}\n\u200b`)
+  }
 
   return new MenuVisual(menu)
 }
