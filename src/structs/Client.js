@@ -26,7 +26,12 @@ const STATES = {
  * @type {import('discord.js').ClientOptions}
  */
 const CLIENT_OPTIONS = {
-  messageCacheMaxSize: 100,
+  /**
+   * Allow minimal caching for message reactions/pagination
+   * handling. After 10 messages after the initial
+   * paginated embed, the pagination will stop working
+   */
+  messageCacheMaxSize: 10,
   ws: {
     intents: [
       'GUILDS',
