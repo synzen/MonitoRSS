@@ -20,11 +20,11 @@ function visual (data) {
   const embed = new ThemedEmbed({
     title: translate('commands.utils.filters.filtersCustomization'),
     description: `**${translate('commands.utils.filters.feed')}:** ${feed.url}\n\n${translate('commands.utils.filters.categoryDescription')}`
-  }).addField('Title', '\u200b')
-    .addField('Description', '\u200b')
-    .addField('Summary', '\u200b')
-    .addField('Author', '\u200b')
-    .addField('Tags', '\u200b')
+  }).addField('title', '\u200b')
+    .addField('description', '\u200b')
+    .addField('summary', '\u200b')
+    .addField('author', '\u200b')
+    .addField('tags', '\u200b')
 
   const visual = new MessageVisual('', {
     embed
@@ -41,7 +41,7 @@ async function fn (message, data) {
   const { content } = message
   const translate = Translator.createProfileTranslator(profile)
   const validInput = ['title', 'description', 'summary', 'author', 'tags']
-  if (!validInput.includes(content.toLowerCase()) && !content.startsWith('raw:') && !content.startsWith('other:')) {
+  if (!validInput.includes(content) && !content.startsWith('raw:') && !content.startsWith('other:')) {
     throw new Rejection(translate('commands.utils.filters.invalidCategory'))
   }
   return {
