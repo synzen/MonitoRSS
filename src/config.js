@@ -43,7 +43,7 @@ exports.set = (override) => {
   const botOverride = override.bot
   bot.token = process.env.DRSS_BOT_TOKEN || botOverride.token || bot.token
   bot.locale = process.env.DRSS_BOT_LOCALE || botOverride.locale || bot.locale
-  bot.enableCommands = process.env.process.env.DRSS_BOT_ENABLECOMMANDS !== undefined
+  bot.enableCommands = process.env.DRSS_BOT_ENABLECOMMANDS !== undefined
     ? Boolean(process.env.DRSS_BOT_ENABLECOMMANDS)
     : botOverride.enableCommands !== undefined
       ? botOverride.enableCommands
