@@ -3,7 +3,7 @@ const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Profile = require('../../../structs/db/Profile.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
-const getConfig = require('../../../config.js')
+const getConfig = require('../../../config.js').get
 
 /**
  * @typedef {Object} Data
