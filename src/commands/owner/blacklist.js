@@ -7,40 +7,40 @@ module.exports = async (message) => {
   const id = content[1]
   const blacklisted = await Blacklist.get(id)
   if (blacklisted) {
-    return message.channel.send('Target is already blacklisted.')
-  }
-  const results = await message.client.shard.broadcastEval(`
-    const guild = this.guilds.cache.get('${id}');
-    const user = this.users.cache.get('${id}');
-    // guild ? guild.leave() : null;
-    guild ? '_guild ' + guild.name : user ? '_user ' + user.username : null
-  `)
-  let found
-  for (let x = 0; x < results.length; ++x) {
-    if (!results[x]) continue
-    const arr = results[x].split(' ')
-    const type = arr.shift().replace('_', '')
-    found = {
-      type,
-      name: arr.join(' ')
-    }
-  }
-  if (!found) {
-    return message.channel.send('No such guild or user exists.')
+    return message.channel.send('ID is already blacklisted.')
   }
   const data = {
-    _id: id,
-    type: found.type === 'guild' ? Blacklist.TYPES.GUILD : Blacklist.TYPES.USER,
-    name: found.name
+    _id: id
+  }
+  const log = createLogger(message.guild.shard.id)
+  const guildResults = await message.client.shard.broadcastEval(`this.guilds.cache.get('${id}') ? this.guilds.cache.get('${id}').name : null`)
+  const matchedGuilds = guildResults.filter(g => g)
+  if (matchedGuilds.length > 0) {
+    data.type = Blacklist.TYPES.GUILD
+    data.name = matchedGuilds[0]
+  } else {
+    /**
+     * @type {import('discord.js').Client}
+     */
+    const client = message.client
+    try {
+      const user = await client.users.fetch(id)
+      data.type = Blacklist.TYPES.USER
+      data.name = user.username
+    } catch (err) {
+      log.owner({
+        error: err
+      }, `No guild or user found for ${id}. User fetch result:`)
+      return message.channel.send(`No guild or user found for id ${id}.`)
+    }
   }
 
   const blacklist = new Blacklist(data)
   await blacklist.save()
 
-  const log = createLogger(message.guild.shard.id)
   log.owner({
     guild: message.guild,
     user: message.author
-  }, `Added ${found.type} ${id} named "${found.name}" to blacklist`)
-  await message.channel.send(`Added ${found.type} ${id} named "${found.name}" to blacklist. Restart bot to take effect.`)
+  }, `Added ${data.type} ${id} named "${data.name}" to blacklist`)
+  await message.channel.send(`Added ${data.type === 0 ? 'user' : 'guild'} ${id} named "${data.name}" to blacklist. Restart bot to take effect.`)
 }
