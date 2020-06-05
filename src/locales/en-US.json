@@ -326,7 +326,7 @@
       "statusFailed": "Status: FAILED\n",
       "statusOk": "Status: OK {{failCount}}\n",
       "serverLimit": "Server Limit",
-      "failAlert": "**Attention!** Feeds that have reached {{failLimit}} connection failure limit have been detected. They will no longer be retried until the bot instance is restarted. Please either remove, or use **{{prefix}}refresh** to try to reset its status.\u200b\n\u200b\n",
+      "failAlert": "**Attention!** Feeds that have reached connection failure limit have been detected. They will no longer be retried. Please either remove, or use **{{prefix}}refresh** to try and reset its status.",
       "feedList": "Feed List",
       "feedListChannel": "Feed List in Channel #{{channel}}",
       "refreshRate": "Refresh Rate",

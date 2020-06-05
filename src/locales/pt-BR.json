@@ -323,7 +323,7 @@
       "statusFailed": "Status: FALHADO\n",
       "statusOk": "Status: OK {{failCount}}\n",
       "serverLimit": "Limite do servidor",
-      "failAlert": "**Atenção!** Feeds que atingiram o limite de falhas na conexão de {{failLimit}} foram detectados. Eles não serão mais atualizados novamente até que a instância do bot seja reiniciada. Remova ou use o **{{prefixo}}refresh** para tentar redefinir seu status.\u200b\n\u200b\n",
+      "failAlert": "",
       "feedList": "Lista de feeds",
       "feedListChannel": "Lista de feeds no canal #{{channel}}",
       "refreshRate": "Taxa de verificação",
