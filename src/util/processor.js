@@ -6,6 +6,7 @@ const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('../structs/LinkLogic.js')
 const initialize = require('./initialization.js')
 const databaseFuncs = require('../util/database.js')
+const devLevels = require('./devLevels.js')
 
 async function fetchFeed (headers, url, urlLog) {
   const fetchOptions = {}
@@ -126,7 +127,7 @@ async function getFeed (data, log) {
     return
   }
 
-  if (testRun) {
+  if (testRun || devLevels.disableCycleDatabase(config)) {
     return process.send({
       status: 'success',
       link

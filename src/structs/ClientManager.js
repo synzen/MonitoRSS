@@ -13,6 +13,8 @@ const ipc = require('../util/ipc.js')
 const configuration = require('../config.js')
 const setConfig = configuration.set
 const getConfig = configuration.get
+const devLevels = require('../util/devLevels.js')
+const dumpHeap = require('../util/dumpHeap.js')
 
 /**
  * @typedef {Object} ClientManagerOptions
@@ -52,6 +54,15 @@ class ClientManager extends EventEmitter {
     this.shardingManager.on('shardCreate', shard => {
       shard.on('message', message => this.messageHandler(shard, message))
     })
+  }
+
+  setupHeapDumps () {
+    // Every 10 minutes
+    const prefix = 'sm'
+    dumpHeap(prefix)
+    setInterval(() => {
+      dumpHeap(prefix)
+    }, 1000 * 60 * 15)
   }
 
   createScheduleManager () {
@@ -267,7 +278,12 @@ class ClientManager extends EventEmitter {
           this.log.error(err, 'Failed to refresh patrons')
         })
       }
-      this.scheduleManager.beginTimers()
+      if (!devLevels.disableCycles()) {
+        this.scheduleManager.beginTimers()
+      }
+      if (devLevels.dumpHeap()) {
+        this.setupHeapDumps()
+      }
       this.broadcast(ipc.TYPES.FINISHED_INIT)
       this.emit('finishInit')
     } catch (err) {

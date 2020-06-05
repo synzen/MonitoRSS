@@ -2,6 +2,7 @@ const Discord = require('discord.js')
 const Article = require('./Article.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
+const devLevels = require('../util/devLevels.js')
 
 class ArticleMessage {
   /**
@@ -274,7 +275,7 @@ class ArticleMessage {
   }
 
   async send () {
-    if (this.config.dev) {
+    if (devLevels.disableOutgoingMessages()) {
       return
     }
     const medium = await this.getMedium()

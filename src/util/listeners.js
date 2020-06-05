@@ -1,26 +1,23 @@
 const fs = require('fs')
 const path = require('path')
 const Command = require('../structs/Command.js')
-const messageHandler = require('../events/message.js')
+const devLevels = require('./devLevels.js')
 const eventHandlers = []
 
 exports.createManagers = (bot) => {
   const fileNames = fs.readdirSync(path.join(__dirname, '..', 'events'))
   for (const fileName of fileNames) {
     const eventName = fileName.replace('.js', '')
-    if (eventName === 'message') {
+    if (eventName === 'message' && devLevels.disableMessageListener()) {
       continue
     }
     const eventHandler = require(`../events/${fileName}`)
     eventHandlers.push({ name: eventName, func: eventHandler })
     bot.on(eventName, eventHandler)
   }
-}
-
-exports.enableCommands = async (bot) => {
-  eventHandlers.push({ name: 'message', func: messageHandler })
-  bot.on('message', messageHandler)
-  Command.enable()
+  if (!devLevels.disableCommands()) {
+    Command.enable()
+  }
 }
 
 exports.disableAll = (bot) => {
