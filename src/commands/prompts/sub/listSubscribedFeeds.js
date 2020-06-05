@@ -17,7 +17,7 @@ async function listSubscribedFeedsVisual (data) {
   const { profile, feeds, member } = data
   const translate = Translator.createProfileTranslator(profile)
   const allSubscribers = await Promise.all(feeds.map(f => f.getSubscribers()))
-  const memberRoles = (await member.fetch()).roles.cache
+  const memberRoles = member.roles.cache
   let output = ''
   for (let i = 0; i < feeds.length; ++i) {
     const feed = feeds[i]

@@ -26,7 +26,7 @@ async function handler (message) {
     log.debug({
       requiredPerms: Command.getPermissionNames(command.getMemberPermission())
     }, 'Checking member permissions')
-    const hasMemberPermission = await command.hasMemberPermission(message)
+    const hasMemberPermission = command.hasMemberPermission(message)
     if (!hasMemberPermission) {
       const requiredPerms = await command.notifyMissingMemberPerms(message)
       return log.info(`Member permissions ${requiredPerms} missing for command ${command.name}`)

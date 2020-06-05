@@ -258,15 +258,14 @@ class Command {
    * @param {import('discord.js').Message} message
    * @returns {boolean}
    */
-  async hasMemberPermission (message) {
+  hasMemberPermission (message) {
     const { member, channel } = message
     const isOwnerUser = Command.isOwnerID(member.user.id)
     if (isOwnerUser || this.owner) {
       return isOwnerUser
     }
     const memberPermissions = this.getMemberPermission()
-    const fetched = await member.fetch()
-    return fetched.permissionsIn(channel).has(memberPermissions)
+    return member.permissionsIn(channel).has(memberPermissions)
   }
 
   /**
