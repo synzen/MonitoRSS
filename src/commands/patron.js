@@ -7,9 +7,9 @@ const helpText = profile => {
   const config = getConfig()
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
   return `Proper usage:
-\`${prefix}rsspatron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
-\`${prefix}rsspatron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
-\`${prefix}rsspatron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
+\`${prefix}patron servers add <server id>\` - Add your patron backing to a server via server ID or \`this\` for this server
+\`${prefix}patron servers remove <server id>\` - Remove your patron backing from a server via server ID or \`this\` for this server
+\`${prefix}patron servers list\` - List servers under your patron backing, and the maximum number of servers you may have
   `
 }
 
