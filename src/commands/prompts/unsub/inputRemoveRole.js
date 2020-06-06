@@ -19,7 +19,7 @@ async function inputRemoveRoleVisual (data) {
   const { profile, feeds, member, subscribers } = data
   const translate = Translator.createProfileTranslator(profile)
   const memberRoles = member.roles.cache
-  let output = ''
+  let output = translate('commands.unsub.listInputRole') + '\n'
   for (let i = 0; i < feeds.length; ++i) {
     const feed = feeds[i]
     const feedSubscribers = subscribers[i]
@@ -33,9 +33,8 @@ async function inputRemoveRoleVisual (data) {
     }
     output += `\n**${feed.url}** (<#${feed.channel}>)\n`
     const mentionStrings = memberSubscribedRoles.map(r => `<@&${r.id}>`)
-    output += splitMentionsByNewlines(mentionStrings) + '\n\n'
+    output += splitMentionsByNewlines(mentionStrings) + '\n'
   }
-  output += translate('commands.unsub.listInputRole')
   return new MessageVisual(output, {
     split: true
   })

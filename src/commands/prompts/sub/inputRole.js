@@ -17,7 +17,7 @@ const createLogger = require('../../../util/logger/create.js')
 function inputRoleVisual (data) {
   const { profile, feeds, subscribers } = data
   const translate = Translator.createProfileTranslator(profile)
-  let output = ''
+  let output = translate('commands.sub.listInputRole') + '\n'
   for (let i = 0; i < feeds.length; ++i) {
     const feed = feeds[i]
     const feedSubscribers = subscribers[i]
@@ -28,9 +28,8 @@ function inputRoleVisual (data) {
     const mentionStrings = feedSubscribers
       .filter(s => s.type === 'role')
       .map(s => `<@&${s.id}>`)
-    output += splitMentionsByNewlines(mentionStrings) + '\n\n'
+    output += splitMentionsByNewlines(mentionStrings) + '\n'
   }
-  output += translate('commands.sub.listInputRole')
   return new MessageVisual(output, {
     split: true
   })
