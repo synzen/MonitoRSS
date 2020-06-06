@@ -19,6 +19,13 @@ class KeyValue extends Base {
     }
   }
 
+  static get keys () {
+    return {
+      FEED_CONFIG: 'feedConfig',
+      SUPPORTER_CONFIG: 'supporterConfig'
+    }
+  }
+
   toObject () {
     return {
       _id: this._id,

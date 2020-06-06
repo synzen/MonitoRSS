@@ -56,14 +56,14 @@ async function populateKeyValues () {
   const config = getConfig()
   await KeyValue.deleteAll()
   const feedConfigData = {
-    _id: 'feedConfig',
+    _id: KeyValue.keys.FEED_CONFIG,
     value: {
       ...config.feeds,
       decode: {}
     }
   }
   const supporterConfigData = {
-    _id: 'supporterData',
+    _id: KeyValue.keys.SUPPORTER_CONFIG,
     value: {
       _vip: config._vip,
       _vipRefreshRateMinutes: config._vipRefreshRateMinutes
