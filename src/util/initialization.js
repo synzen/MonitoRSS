@@ -104,7 +104,9 @@ async function populateSchedules (customSchedules = {}) {
     }
     const supporterSchedule = new Schedule({
       name: Supporter.schedule.name,
-      refreshRateMinutes: supporterRefreshRate
+      refreshRateMinutes: supporterRefreshRate,
+      // Determined at runtime
+      keywords: []
     })
     schedules.push(supporterSchedule)
   }

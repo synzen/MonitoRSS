@@ -297,16 +297,16 @@ class Feed extends FilterBase {
     }
 
     for (const schedule of schedules) {
-      if (schedule.name === 'default' || (Supporter.enabled && schedule.name === Supporter.schedule.name)) {
+      if (schedule.name === 'default') {
         continue
       }
       // Check if non-default schedules first
-      // Feed IDs first
+      // Feed IDs
       const feedIDs = schedule.feeds // Potential array
       if (feedIDs && feedIDs.includes(this._id)) {
         return schedule
       }
-      // keywords second
+      // Keywords
       const sKeywords = schedule.keywords
       if (!sKeywords) {
         continue
