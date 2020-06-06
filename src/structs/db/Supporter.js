@@ -56,11 +56,18 @@ class Supporter extends Base {
     this.slowRate = this.getField('slowRate')
   }
 
+  static get keys () {
+    return {
+      ENABLED: '_vip',
+      REFRESH_RATE: '_vipRefreshRateMinutes'
+    }
+  }
+
   static get schedule () {
     const config = getConfig()
     return {
       name: 'supporter',
-      refreshRateMinutes: config._vipRefreshRateMinutes
+      refreshRateMinutes: config[this.keys.REFRESH_RATE]
     }
   }
 
@@ -69,7 +76,7 @@ class Supporter extends Base {
    */
   static get enabled () {
     const config = getConfig()
-    return config._vip === true
+    return config[this.keys.ENABLED] === true
   }
 
   /**

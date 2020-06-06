@@ -65,8 +65,8 @@ async function populateKeyValues () {
   const supporterConfigData = {
     _id: KeyValue.keys.SUPPORTER_CONFIG,
     value: {
-      _vip: config._vip,
-      _vipRefreshRateMinutes: config._vipRefreshRateMinutes
+      [Supporter.keys.ENABLED]: config[Supporter.keys.ENABLED],
+      [Supporter.keys.REFRESH_RATE]: config[Supporter.keys.REFRESH_RATE]
     }
   }
   const feedsConfig = new KeyValue(feedConfigData)
