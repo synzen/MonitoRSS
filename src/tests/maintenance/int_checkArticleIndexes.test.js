@@ -1,6 +1,6 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
-const initialize = require('../../util/initialization.js')
+const initialize = require('../../initialization/index.js')
 const checkArticleIndexes = require('../../maintenance/checkArticleIndexes.js')
 const dbName = 'test_int_checkIndexes'
 const CON_OPTIONS = {

@@ -4,7 +4,7 @@ const FeedFetcher = require('../util/FeedFetcher.js')
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
 const LinkLogic = require('../structs/LinkLogic.js')
-const initialize = require('./initialization.js')
+const initialize = require('../initialization/index.js')
 const databaseFuncs = require('../util/database.js')
 const devLevels = require('./devLevels.js')
 

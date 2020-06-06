@@ -1,6 +1,6 @@
 process.env.TEST_ENV = true
 const Subscriber = require('../../../structs/db/Subscriber.js')
-const initialize = require('../../../util/initialization.js')
+const initialize = require('../../../initialization/index.js')
 const mongoose = require('mongoose')
 const dbName = 'test_int_subscriber'
 const CON_OPTIONS = {

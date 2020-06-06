@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const Blacklist = require('../../../structs/db/Blacklist.js')
-const initialize = require('../../../util/initialization.js')
+const initialize = require('../../../initialization/index.js')
 const dbName = 'test_int_blacklists'
 const CON_OPTIONS = {
   useNewUrlParser: true,

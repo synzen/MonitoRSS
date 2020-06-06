@@ -1,5 +1,5 @@
 const connectDb = require('./src/util/connectDatabase.js')
-const initialize = require('./src/util/initialization.js')
+const initialize = require('./src/initialization/index.js')
 const config = require('./src/config.js')
 
 // Models

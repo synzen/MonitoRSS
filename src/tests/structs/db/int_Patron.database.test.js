@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const Patron = require('../../../structs/db/Patron.js')
-const initialize = require('../../../util/initialization.js')
+const initialize = require('../../../initialization/index.js')
 const dbName = 'test_int_patrons'
 const CON_OPTIONS = {
   useNewUrlParser: true,

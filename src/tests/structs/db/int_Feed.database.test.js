@@ -4,7 +4,7 @@ const FeedModel = require('../../../models/Feed.js')
 const FilteredFormatModel = require('../../../models/FilteredFormat.js')
 const SubscriberModel = require('../../../models/Subscriber.js')
 const mongoose = require('mongoose')
-const initialize = require('../../../util/initialization.js')
+const initialize = require('../../../initialization/index.js')
 const dbName = 'test_int_feed'
 const CON_OPTIONS = {
   useNewUrlParser: true,

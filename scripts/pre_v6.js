@@ -1,7 +1,7 @@
 const fs = require('fs')
 const configuration = require('../src/config.js')
 const mongoose = require('mongoose')
-const init = require('../src/util/initialization.js')
+const init = require('../src/initialization/index.js')
 const v6 = require('./updates/6.0.0.js')
 
 const BUFFER_CONFIGS = ['sslCA', 'sslCRL', 'sslCert', 'sslKey']

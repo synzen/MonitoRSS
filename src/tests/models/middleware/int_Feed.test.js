@@ -1,5 +1,5 @@
 const FeedModel = require('../../../models/Feed.js')
-const intitialize = require('../../../util/initialization.js')
+const intitialize = require('../../../initialization/index.js')
 const mongoose = require('mongoose')
 
 const dbName = 'test_int_middleware_feed'

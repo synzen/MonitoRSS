@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
 const config = require('../../config.js')
 const mongoose = require('mongoose')
-const initialize = require('../../util/initialization.js')
+const initialize = require('../../initialization/index.js')
 const { updateProfiles, updateFailRecords } = require('../../../scripts/updates/6.0.0.js')
 const dbName = 'test_int_v6_migrate'
 const CON_OPTIONS = {

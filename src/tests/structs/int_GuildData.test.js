@@ -1,7 +1,7 @@
 process.env.TEST_ENV = true
 const mongoose = require('mongoose')
 const GuildData = require('../../structs/GuildData.js')
-const initialize = require('../../util/initialization.js')
+const initialize = require('../../initialization/index.js')
 const dbName = 'test_int_guilddata'
 const CON_OPTIONS = {
   useNewUrlParser: true,

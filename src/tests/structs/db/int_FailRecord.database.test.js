@@ -2,7 +2,7 @@ process.env.TEST_ENV = true
 const config = require('../../../config.js')
 const mongoose = require('mongoose')
 const FailRecord = require('../../../structs/db/FailRecord.js')
-const initialize = require('../../../util/initialization.js')
+const initialize = require('../../../initialization/index.js')
 const dbName = 'test_int_failcounter'
 const CON_OPTIONS = {
   useNewUrlParser: true,

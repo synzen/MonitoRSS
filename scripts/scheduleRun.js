@@ -1,4 +1,4 @@
-const initialize = require('../src/util/initialization.js')
+const initialize = require('../src/initialization/index.js')
 const connectDatabase = require('../src/util/connectDatabase.js')
 const ScheduleManager = require('../src/structs/ScheduleManager.js')
 const setConfig = require('../src/config.js').set
