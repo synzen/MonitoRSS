@@ -48,13 +48,14 @@ async function inputRemoveRoleFn (message, data) {
   const { client, member, author, guild, content: roleName } = message
   const { subscribers, profile } = data
   const translate = Translator.createProfileTranslator(profile)
+  const mention = message.mentions.roles.first()
   /**
    * Input is a role name with no capitalization requirements
    */
   const subscriberIDs = new Set(subscribers.flat().map(s => s.id))
   const memberSubscribedRoles = member.roles.cache
     .filter(role => subscriberIDs.has(role.id))
-  const memberRole = memberSubscribedRoles.find(role => role.name.toLowerCase() === roleName.toLowerCase())
+  const memberRole = memberSubscribedRoles.find(role => role.name.toLowerCase() === roleName.toLowerCase() || (mention && role.id === mention.id))
   if (!memberRole) {
     throw new Rejection(translate('commands.unsub.invalidRole'))
   }

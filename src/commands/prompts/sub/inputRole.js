@@ -43,6 +43,7 @@ async function inputRoleFn (message, data) {
   const { client, member, author, guild, content: roleName } = message
   const { subscribers, profile } = data
   const translate = Translator.createProfileTranslator(profile)
+  const mention = message.mentions.roles.first()
   /**
    * Input is a role name with no capitalization requirements
    */
@@ -50,7 +51,7 @@ async function inputRoleFn (message, data) {
   const subscriberRoles = guild.roles.cache
     .filter(role => subscriberIDs.has(role.id))
   const matchedRole = subscriberRoles
-    .find(role => role.name.toLowerCase() === roleName.toLowerCase())
+    .find(role => role.name.toLowerCase() === roleName.toLowerCase() || (mention && role.id === mention.id))
   if (!matchedRole) {
     throw new Rejection(translate('commands.sub.invalidRole'))
   }

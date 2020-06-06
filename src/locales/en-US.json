@@ -511,7 +511,7 @@
       "noSubscribedFeedsList": "You are not being mentioned in any feeds.",
       "noEligible": "There are either no feeds with subscribed roles, or no eligible subscribed roles that can be self-added.",
       "invalidRole": "That is an invalid role. Try again, or type `exit` to cancel.",
-      "listInputRole": "Below is the list of feeds, their channels, and eligible roles that you may add to yourself. Type the role name to add the role to yourself, or type `exit` to cancel.",
+      "listInputRole": "Below is the list of feeds, their channels, and eligible roles that you may add to yourself. Type the role name or mention to add the role to yourself, or type `exit` to cancel.",
       "addSuccess": "You now have the role `{{name}}`, subscribed to:",
       "directSubscribeExists": "Unable to directly subscribe to feed <{{link}}>. You are already subscribed to it.",
       "directSubscribeSuccess": "You are now directly subscribed to the feed <{{link}}>.",
@@ -530,7 +530,7 @@
       "invalidRole": "That is not a valid role to remove. Try again, or type `exit` to cancel.",
       "title": "Self-Subscription Removal",
       "directRemoveList": "Below are all the feeds you are directly mentioned in.",
-      "listInputRole": "Below is the list of feeds, their channels, and eligible roles that you may remove from yourself. Type the role name to remove it, or type `exit` to cancel.",
+      "listInputRole": "Below is the list of feeds, their channels, and eligible roles that you may remove from yourself. Type the role name or mention to remove it, or type `exit` to cancel.",
       "roleRemoveSuccess": "You no longer have the role {{role}}.",
       "directRemoveSuccess": "You will now no longer be directly mentioned for the feed <{{link}}>.",
       "removeAllSuccess": "You will now no longer be directly mentioned or mentioned through roles for any feed."
