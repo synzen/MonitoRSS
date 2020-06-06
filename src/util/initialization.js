@@ -55,15 +55,24 @@ async function setupCommands () {
 async function populateKeyValues () {
   const config = getConfig()
   await KeyValue.deleteAll()
-  const data = {
+  const feedConfigData = {
     _id: 'feedConfig',
     value: {
       ...config.feeds,
       decode: {}
     }
   }
-  const feedsConfig = new KeyValue(data)
+  const supporterConfigData = {
+    _id: 'supporterData',
+    value: {
+      _vip: config._vip,
+      _vipRefreshRateMinutes: config._vipRefreshRateMinutes
+    }
+  }
+  const feedsConfig = new KeyValue(feedConfigData)
+  const supporterConfig = new KeyValue(supporterConfigData)
   await feedsConfig.save()
+  await supporterConfig.save()
 }
 
 /**
