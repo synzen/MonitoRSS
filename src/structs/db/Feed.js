@@ -380,7 +380,7 @@ class Feed extends FilterBase {
     if (this.title.length > 200) {
       this.title = this.title.slice(0, 200) + '...'
     }
-    const allArticlesHaveDates = articleList.reduce((acc, article) => acc && (!!article.pubdate), true)
+    const allArticlesHaveDates = articleList.every(article => !!article.pubdate)
     if (!allArticlesHaveDates) {
       this.checkDates = false
     }
