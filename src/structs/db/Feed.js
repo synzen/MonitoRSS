@@ -323,19 +323,15 @@ class Feed extends FilterBase {
   }
 
   /**
-   * @param {number} shardID
    * @param {string} scheduleName
    * @param {Object<string, any>[]} articleList
    */
-  async initializeArticles (shardID, scheduleName, articleList) {
+  async initializeArticles (scheduleName, articleList) {
     if (!Base.isMongoDatabase) {
       return
     }
-    if (shardID === undefined) {
-      throw new TypeError('shardID is undefined trying to initialize collection')
-    }
     try {
-      const docsByURL = await databaseFuncs.getAllDocuments(shardID, scheduleName)
+      const docsByURL = await databaseFuncs.getAllDocuments(scheduleName)
       const docs = docsByURL[this.url] || []
       if (docs.length > 0) {
         // The collection already exists from a previous addition, no need to initialize
@@ -344,7 +340,6 @@ class Feed extends FilterBase {
       const comparisons = [...this.ncomparisons, ...this.pcomparisons]
       const insert = []
       const meta = {
-        shardID,
         scheduleName,
         feedURL: this.url
       }
@@ -361,9 +356,8 @@ class Feed extends FilterBase {
 
   /**
    * Fetch the feed and see if it connects before actually saving
-   * @param {number} [shardID] - Used for initializing its Mongo collection
    */
-  async testAndSave (shardID) {
+  async testAndSave () {
     const { articleList } = await FeedFetcher.fetchFeed(this.url)
     const feeds = await Feed.getManyBy('guild', this.guild)
     for (const feed of feeds) {
@@ -385,9 +379,9 @@ class Feed extends FilterBase {
       this.checkDates = false
     }
     await this.save()
-    if (shardID !== undefined && articleList.length > 0) {
+    if (articleList.length > 0) {
       const schedule = await this.determineSchedule()
-      await this.initializeArticles(shardID, schedule.name, articleList)
+      await this.initializeArticles(schedule.name, articleList)
     }
   }
 
