@@ -4,6 +4,8 @@ const Version = require('./common/Version.js')
 const schema = new mongoose.Schema({
   _id: String,
   value: mongoose.Schema.Types.Mixed
+}, {
+  minimize: false
 })
 
 schema.add(Version)
