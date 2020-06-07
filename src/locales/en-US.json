@@ -154,6 +154,7 @@
       "noFeeds": "You cannot set up user alerts if you have not added any feeds.",
       "info": "This command adds users for direct messaging (instead of posting such alerts to the feed's channel by default) when there are any warnings or alerts concerning feeds, such as feed limit changes or feed failures. **The user you're adding or removing will be notified.** The correct syntaxes are:\n\n`{{prefix}}alert add <user id/mention>` - Add a user to alerted.\n`{{prefix}}alert remove <user id/mention>` - Remove a user currently receiving alerts\n`{{prefix}}alert list` - Show all users currently receiving alerts",
       "notFound": "The user {{user}} was not found in this server.",
+      "everyoneNotAllowed": "`@everyone` and `@here` are not allowed. Users must be added individually.",
       "alreadyEnabled": "That user is already enabled for direct messaging feed warnings/failures in this server.",
       "successDM": "At the request of {{member}}, you will now be notified of any warnings/failures of feeds in the server `{{guildName}}` (ID `{{guildID}}`).",
       "success": "Successfully enabled user {{member}} for direct messaging feed warnings/failures. The user has been notified of this change.",

@@ -28,13 +28,24 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
   switch (contentArray[1]) {
     case 'add':
     case 'remove': {
-      if (!contentArray[2]) {
+      const target = contentArray[2]
+      if (!target) {
         return message.channel.send(translate('commands.alert.info', { prefix }))
       }
+      if (target === '@everyone' || target === '@here') {
+        return message.channel.send(translate('commands.alert.everyoneNotAllowed'))
+      }
       const userMention = message.mentions.users.first()
-      const member = userMention || await message.guild.members.fetch(contentArray[2] === 'me' ? message.author.id : contentArray[2])
-      if (!member) return message.channel.send(translate('commands.alert.notFound', { user: userMention || `\`${contentArray[2]}\`` }))
+      const member = userMention || await message.guild.members.fetch(target === 'me'
+        ? message.author.id
+        : target)
+      if (!member) {
+        return message.channel.send(translate('commands.alert.notFound', {
+          user: userMention || `\`${target}\``
+        }))
+      }
       if (contentArray[1] === 'add') {
+        // Add
         if (profile.alert.includes(member.id)) {
           return message.channel.send(translate('commands.alert.alreadyEnabled'))
         }
@@ -45,6 +56,7 @@ module.exports = async (message, automatic) => { // automatic indicates invokati
         await member.send(translate('commands.alert.successDM', { member, guildName, guildID }))
         await message.channel.send(translate('commands.alert.success', { member }))
       } else {
+        // Remove
         const removeIndex = profile.alert.indexOf(member.id)
         if (removeIndex === -1) {
           return message.channel.send(translate('commands.alert.removeFail'))

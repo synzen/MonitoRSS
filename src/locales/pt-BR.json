@@ -151,6 +151,7 @@
       "noFeeds": "Você não pode criar um alerta, porque você não adicionou nenhum feed.",
       "info": "Esse comando adiciona usuários para mensagens diretas (em vez de postar esses alertas no canal do feed por padrão) quando há avisos ou alertas sobre feeds, como alterações no limite de feed ou falhas no feed. **O usuário que você está adicionando ou removendo será notificado**. A sintaxe correta é:\n\n`{{prefix}}alert add <id do usuário/mencionar>` - Adiciona um usuário a ser notificado.\n`{{prefix}}alert remove <id do usuário/mencionar>` - Remove um usuário que está sendo notificado\n`{{prefix}}alert list` - Mostra os usuarios que estão sendo notificados",
       "notFound": "O usuário {{user}} não foi encontrado neste servidor.",
+      "everyoneNotAllowed": "",
       "alreadyEnabled": "Este usuário já está sendo notificado neste servidor",
       "successDM": "A pedido do usuário {{member}}, você será notificado quando houver qualquer aviso/falhas em feeds neste servidor `{{guildName}}` (ID `{{guildID}}`).",
       "success": "Adicionado com sucesso o usuário {{member}} a ser alertado em caso de avisos/falhas. O usuário foi notificado desta mudança.",
