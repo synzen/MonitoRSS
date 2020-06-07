@@ -1,3 +1,4 @@
+const { MenuEmbed } = require('discord.js-prompts')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const commonPrompts = require('../common/index.js')
 const Translator = require('../../../structs/Translator.js')
@@ -30,9 +31,8 @@ function selectDestinationFeedsVisual (data) {
 async function selectDestinationFeedsFn (message, data) {
   const { feeds } = data
   const { content } = message
-  const destinationFeeds = content
-    .split(',')
-    .map(index => feeds[Number(index) - 1])
+  const destinationFeeds = MenuEmbed.getMultiSelectOptions(content)
+    .map((index) => feeds[index - 1])
   return {
     ...data,
     destinationFeeds

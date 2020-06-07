@@ -578,7 +578,7 @@
       "feedSelectionMenu": "Feed Selection Menu",
       "action": "Action",
       "prompt": "Choose a feed to from this channel by typing the number to execute your requested action on.",
-      "multiSelect": "You may select multiple feeds by separation with commas (for example `1,3,8`).",
+      "multiSelect": "You may select multiple feeds by separation with commas (for example `1,3,8`), or with a range (for example `1-3,5,7-9`).",
       "exitToCancel": "Type `exit` to cancel."
     },
     "errors": {
