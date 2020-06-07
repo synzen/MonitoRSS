@@ -10,7 +10,7 @@ function envArray (name) {
   return value.split(',').map(s => s.trim())
 }
 
-exports.set = (override, validate) => {
+exports.set = (override, skipValidation) => {
   // LOG
   if (!override.log) {
     override.log = {}
@@ -223,7 +223,7 @@ exports.set = (override, validate) => {
   if (process.env.NODE_ENV !== 'test') {
     moment.locale(config.feeds.dateLanguage)
     // .validate can throw a TypeError
-    if (validate) {
+    if (!skipValidation) {
       schema.validate(config)
     }
   }
