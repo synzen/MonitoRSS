@@ -18,7 +18,7 @@ function listFiltersVisual (data) {
   const translate = Translator.createProfileTranslator(profile)
   const subscriberString = subscriber.type === 'role' ? `<@&${subscriber.id}>` : `<@${subscriber.id}>`
   if (!subscriber.hasFilters()) {
-    return new MessageVisual(translate('commands.mention.filters.noFilters', {
+    return new MessageVisual(translate('commands.mention.filters.listNoFilters', {
       link: feed.url,
       subscriber: subscriberString
     }))
