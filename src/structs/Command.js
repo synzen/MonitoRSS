@@ -246,10 +246,11 @@ class Command {
    */
   getBotPermissions () {
     const name = this.name
+    const base = [Permissions.SEND_MESSAGES]
     if (name in Command.BOT_PERMISSIONS) {
-      return Command.BOT_PERMISSIONS[name]
+      return Command.BOT_PERMISSIONS[name].concat(base)
     } else {
-      return []
+      return base
     }
   }
 
@@ -287,6 +288,9 @@ class Command {
   async notifyMissingBotPerms (message) {
     const channel = message.channel
     const permissionNames = Command.getPermissionNames(this.getBotPermissions())
+    if (!message.guild.me.permissionsIn(message.channel).has(Permissions.SEND_MESSAGES)) {
+      return permissionNames
+    }
     await channel.send(`I am missing one of the following permissions:\n\n${permissionNames}`)
     return permissionNames
   }
@@ -297,12 +301,15 @@ class Command {
    * @returns {string[]} - Permission names
    */
   async notifyMissingMemberPerms (message) {
+    const channel = message.channel
+    const permissionNames = Command.getPermissionNames(this.getMemberPermission())
+    if (!message.guild.me.permissionsIn(message.channel).has(Permissions.SEND_MESSAGES)) {
+      return permissionNames
+    }
     if (this.owner) {
       await message.channel.send('You must be an owner to use this command.')
       return ['owner']
     }
-    const channel = message.channel
-    const permissionNames = Command.getPermissionNames(this.getMemberPermission())
     await channel.send(`You are missing one of the following permissions:\n\n${permissionNames}`)
     return permissionNames
   }

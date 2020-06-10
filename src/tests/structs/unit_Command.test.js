@@ -342,13 +342,16 @@ describe('Unit::structs/Command', function () {
       jest.spyOn(Command, 'BOT_PERMISSIONS', 'get')
         .mockReturnValue(botPermissions)
       expect(command.getBotPermissions())
-        .toEqual(permissions)
+        .toEqual([
+          ...permissions,
+          Discord.Permissions.FLAGS.SEND_MESSAGES
+        ])
     })
-    it('returns empty array if no specific perms', function () {
+    it('returns the send message perm array if no specific perms', function () {
       const commandName = 'qaetswr'
       const command = new Command(commandName)
       expect(command.getBotPermissions())
-        .toEqual([])
+        .toEqual([Discord.Permissions.FLAGS.SEND_MESSAGES])
     })
   })
   describe('hasMemberPermission', function () {
