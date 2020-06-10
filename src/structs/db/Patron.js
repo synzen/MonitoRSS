@@ -55,8 +55,7 @@ class Patron extends Base {
   }
 
   static async refresh () {
-    const userDirectory = path.dirname(require.main.filename)
-    const filePath = path.join(userDirectory, 'settings', 'api.js')
+    const filePath = path.join(path.resolve(), 'settings', 'api.js')
     return require(filePath)()
   }
 
