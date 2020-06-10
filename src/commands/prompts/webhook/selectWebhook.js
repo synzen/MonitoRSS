@@ -76,7 +76,6 @@ async function selectWebhookFn (message, data) {
     clientMention: `<@${message.client.user.id}>`,
     link: feed.url
   })
-  await feed.save()
   await hook.send(connected, {
     username: newWebhook.name,
     avatarURL: newWebhook.avatar
