@@ -62,6 +62,7 @@ async function confirmFn (message, data) {
       destinationFeed.imgLinksExistence = sourceFeed.imgLinksExistence
       destinationFeed.imgPreviews = sourceFeed.imgPreviews
       destinationFeed.toggleRoleMentions = sourceFeed.toggleRoleMentions
+      destinationFeed.directSubscribers = sourceFeed.directSubscribers
       updateSelected = true
     }
 
