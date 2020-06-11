@@ -291,7 +291,7 @@ class Command {
     if (!message.guild.me.permissionsIn(message.channel).has(Permissions.SEND_MESSAGES)) {
       return permissionNames
     }
-    await channel.send(`I am missing one of the following permissions:\n\n${permissionNames}`)
+    await channel.send(`I am missing one of the following permissions:\n\n${permissionNames.join('\n')}`)
     return permissionNames
   }
 
@@ -310,7 +310,7 @@ class Command {
       await message.channel.send('You must be an owner to use this command.')
       return ['owner']
     }
-    await channel.send(`You are missing one of the following permissions:\n\n${permissionNames}`)
+    await channel.send(`You are missing one of the following permissions:\n\n${permissionNames.join('\n')}`)
     return permissionNames
   }
 
