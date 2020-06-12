@@ -290,6 +290,18 @@ class FeedFetcher {
     return { articleList, idType }
   }
 
+  static async fetchFilteredFeed (url, filters) {
+    const { articleList, idType } = await this.fetchFeed(url)
+    const filtered = articleList.filter(article => {
+      const parsed = new Article(article, { feed: {} })
+      return parsed.testFilters(filters).passed
+    })
+    return {
+      articleList: filtered,
+      idType
+    }
+  }
+
   /**
    * Get a random article in the feed
    * @param {string} url - The URL to fetch
@@ -297,19 +309,13 @@ class FeedFetcher {
    * @returns {object|null} - Either null, or an article object
    */
   static async fetchRandomArticle (url, filters) {
-    const { articleList } = await this.fetchFeed(url)
-    if (articleList.length === 0) return null
-    if (!filters) {
-      return articleList[Math.round(Math.random() * (articleList.length - 1))]
+    const { articleList } = filters
+      ? await this.fetchFilteredFeed(url, filters)
+      : await this.fetchFeed(url)
+    if (articleList.length === 0) {
+      return null
     }
-    const filtered = []
-    for (const article of articleList) {
-      const parsedArticle = new Article(article, { feed: {} })
-      if (parsedArticle.testFilters(filters).passed) {
-        filtered.push(article)
-      }
-    }
-    return filtered.length === 0 ? null : filtered[Math.round(Math.random() * (filtered.length - 1))]
+    return articleList[Math.round(Math.random() * (articleList.length - 1))]
   }
 
   static async fetchLatestArticle (url) {
