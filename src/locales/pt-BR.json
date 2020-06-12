@@ -59,7 +59,8 @@
     },
     "test": {
       "args": {
-        "simple": "Omite os resultados do teste e envia apenas a mensagem."
+        "simple": "Omite os resultados do teste e envia apenas a mensagem.",
+        "latest": ""
       },
       "action": "testar feed",
       "description": "Abre um menu para enviar uma mensagem de teste para um artigo aleatório em um feed, juntamente com as propriedades e espaços reservados disponíveis para várias personalizações. Você pode adicionar `simple` como um parâmetro para excluir os detalhes do teste."
@@ -485,7 +486,8 @@
     "test": {
       "failed": "",
       "grabbingRandom": "Buscando um artigo de feed aleatório ...",
-      "noArticles": "Não há artigos neste feed para enviar."
+      "noArticles": "Não há artigos neste feed para enviar.",
+      "noValidLatest": ""
     },
     "webhook": {
       "existingFound": "Um webhook existente foi encontrado ({{webhookMention}}). Você pode digitar `{remove}` para desconectar o webhook existente ou continuar, e sua nova configuração sobrescreverá a existente.\n\n",
