@@ -14,21 +14,41 @@ const getConfig = require('../../../config.js').get
  * @property {import('../../../structs/db/Profile.js')} [profile]
  * @property {import('../../../structs/db/Feed.js')[]} feeds
  * @property {import('discord.js').TextChannel} [channel]
+ * @property {string} [searchQuery]
  * @property {string} guildID
  */
+
+/**
+ * @param {import('../../../structs/db/Feed.js')[]} feeds
+ * @param {string} query
+ */
+function queryFeeds (feeds, query) {
+  if (!query) {
+    return feeds
+  }
+  return feeds.filter(feed => {
+    for (const key in feed) {
+      const value = feed[key]
+      if (typeof value === 'string' && value.toLowerCase().includes(query.toLowerCase())) {
+        return true
+      }
+    }
+  })
+}
 
 /**
  * @param {Data} data
  */
 async function listFeedVisual (data) {
-  const { feeds, profile, guildID, channel } = data
+  const { feeds, profile, guildID, channel, searchQuery } = data
   const [supporter, schedules, supporterGuilds] = await Promise.all([
     Supporter.getValidSupporterOfGuild(guildID),
     Schedule.getAll(),
     Supporter.getValidGuilds()
   ])
 
-  const targetFeeds = channel ? feeds.filter(f => f.channel === channel.id) : feeds
+  const unqueriedFeeds = channel ? feeds.filter(f => f.channel === channel.id) : feeds
+  const targetFeeds = queryFeeds(unqueriedFeeds, searchQuery)
   const translate = Translator.createProfileTranslator(profile)
   if (feeds.length === 0) {
     return new MessageVisual(translate('commands.list.noFeeds'))
@@ -72,12 +92,14 @@ async function listFeedVisual (data) {
   const list = new ThemedEmbed()
     .setDescription(desc)
 
+  const countString = targetFeeds.length === feeds.length ? targetFeeds.length : `${targetFeeds.length}/${feeds.length} total`
+
   if (!channel) {
-    list.setAuthor(translate('commands.list.feedList') + ` (${feeds.length})`)
+    list.setAuthor(translate('commands.list.feedList') + ` (${countString})`)
   } else {
     list.setAuthor(translate('commands.list.feedListChannel', {
       channel: channel.name
-    }) + ` (${targetFeeds.length})`)
+    }) + ` (${countString})`)
   }
 
   if (supporter) {

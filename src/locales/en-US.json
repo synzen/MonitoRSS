@@ -66,7 +66,7 @@
     "list": {
       "description": "List all active feeds in server.",
       "args": {
-        "<channel mention>": "Only list the feeds in the mentioned channel."
+        "[<channel mention>] [<search query>]": "Mention a channel to only show feeds in that channel, and/or add a search query."
       }
     },
     "locale": {
