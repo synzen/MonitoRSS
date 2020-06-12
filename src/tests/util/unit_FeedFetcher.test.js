@@ -477,6 +477,78 @@ describe('Unit::FeedFetcher', function () {
       return expect(FeedFetcher.fetchRandomArticle('a', { a: 'b' })).resolves.toEqual(filteredArticleList[expectedIndex])
     })
   })
+  describe('static fetchLatestArticle', function () {
+    it('returns the newest article', async function () {
+      const now = new Date()
+      const past = new Date(new Date().getTime() - 1000 * 60)
+      const future = new Date(new Date().getTime() + 1000 * 60)
+      const future2 = new Date(new Date().getTime() + 2000 * 60)
+      const data = {
+        articleList: [{
+          pubDate: past
+        }, {
+          pubDate: future2
+        }, {
+          pubDate: now
+        }, {
+          pubDate: future
+        }]
+      }
+      jest.spyOn(FeedFetcher, 'fetchFeed')
+        .mockResolvedValue(data)
+      await expect(FeedFetcher.fetchLatestArticle())
+        .resolves.toEqual(data.articleList[1])
+    })
+    it('returns null if a date of one article is invalid', async function () {
+      const invalid = new Date('4e3wyr5tu')
+      const past = new Date(new Date().getTime() - 1000 * 60)
+      const future = new Date(new Date().getTime() + 1000 * 60)
+      const future2 = new Date(new Date().getTime() + 2000 * 60)
+      const data = {
+        articleList: [{
+          pubDate: past
+        }, {
+          pubDate: future2
+        }, {
+          pubDate: invalid
+        }, {
+          pubDate: future
+        }]
+      }
+      jest.spyOn(FeedFetcher, 'fetchFeed')
+        .mockResolvedValue(data)
+      await expect(FeedFetcher.fetchLatestArticle())
+        .resolves.toEqual(null)
+    })
+    it('returns null if not all articles have dates', async function () {
+      const invalid = new Date('4e3wyr5tu')
+      const past = new Date(new Date().getTime() - 1000 * 60)
+      const future = new Date(new Date().getTime() + 1000 * 60)
+      const data = {
+        articleList: [{
+          pubDate: past
+        }, {
+        }, {
+          pubDate: invalid
+        }, {
+          pubDate: future
+        }]
+      }
+      jest.spyOn(FeedFetcher, 'fetchFeed')
+        .mockResolvedValue(data)
+      await expect(FeedFetcher.fetchLatestArticle())
+        .resolves.toEqual(null)
+    })
+    it('returns null if there are no articles', async function () {
+      const data = {
+        articleList: []
+      }
+      jest.spyOn(FeedFetcher, 'fetchFeed')
+        .mockResolvedValue(data)
+      await expect(FeedFetcher.fetchLatestArticle())
+        .resolves.toEqual(null)
+    })
+  })
   describe('static getCharsetFromResponse', function () {
     it('returns the charset', function () {
       const response = {

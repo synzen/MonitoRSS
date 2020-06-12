@@ -312,6 +312,23 @@ class FeedFetcher {
     return filtered.length === 0 ? null : filtered[Math.round(Math.random() * (filtered.length - 1))]
   }
 
+  static async fetchLatestArticle (url) {
+    const { articleList } = await this.fetchFeed(url)
+    if (articleList.length === 0) {
+      return null
+    }
+    const allHaveValidDates = articleList.every(article => {
+      const date = new Date(article.pubDate)
+      return !isNaN(date.getTime())
+    })
+    if (!allHaveValidDates) {
+      return null
+    }
+    return articleList.sort((a, b) => {
+      return new Date(b.pubDate) - new Date(a.pubDate)
+    })[0]
+  }
+
   /**
    * @param {Object<string, any>} response
    */
