@@ -18,7 +18,12 @@ module.exports = async (message) => {
   filterAddInputNode.addChild(filterAddInputSuccessNode)
 
   // Path 2
-  const filterRemoveCategorySelectCondition = data => data.selected === '2'
+  // No filters to remove
+  const noFiltersToRemoveCondition = data => data.selected === '2' && !data.selectedSubscriber.hasFilters()
+  const noFiltersToRemoveNode = new PromptNode(mentionFilterPrompts.listFilters.prompt, noFiltersToRemoveCondition)
+
+  // Input filter category and remove
+  const filterRemoveCategorySelectCondition = data => data.selected === '2' && data.selectedSubscriber.hasFilters()
   const filterRemoveCategorySelectNode = new PromptNode(commonPrompts.filterRemoveCategorySelect.prompt, filterRemoveCategorySelectCondition)
   const filterRemoveInputNode = new PromptNode(commonPrompts.filterRemoveInput.prompt)
   const filterRemoveInputSuccessNode = new PromptNode(commonPrompts.filterRemoveInputSuccess.prompt)
@@ -37,6 +42,7 @@ module.exports = async (message) => {
   selectSubscriberNode.addChild(selectActionNode)
   selectActionNode.setChildren([
     filterAddCategorySelectNode,
+    noFiltersToRemoveNode,
     filterRemoveCategorySelectNode,
     removeAllFiltersSuccessNode,
     listFilterNode
