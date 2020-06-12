@@ -374,7 +374,7 @@
         "description": "",
         "noSubscriber": "",
         "optionRemoveFilter": "",
-        "optionAddFilter": "Adicionar filtro(s) a menção",
+        "optionAddFilter": "Adicionar filtro(s)",
         "optionRemoveAllFilters": "",
         "optionListFilters": "",
         "listFiltersDescription": "",
@@ -515,7 +515,10 @@
       "directSubscribeExists": "",
       "directSubscribeSuccess": "",
       "alreadyHaveRole": "",
-      "directSubscriberDisabled": ""
+      "directSubscriberDisabled": "",
+      "filters": {
+        "noSubscribedFeeds": "You are not directly subscribed to any feeds."
+      }
     },
     "unsub": {
       "title": "Remoção de auto-inscrição",

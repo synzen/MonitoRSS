@@ -58,4 +58,6 @@ async function selectActionFn (message, data) {
 
 const prompt = new LocalizedPrompt(selectActionVisual, selectActionFn)
 
+exports.visual = selectActionVisual
+exports.fn = selectActionFn
 exports.prompt = prompt

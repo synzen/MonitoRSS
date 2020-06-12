@@ -115,6 +115,9 @@
     "sub": {
       "description": "Open a menu to add a role with an active feed subscription to the user. Usable by anyone in server, enabled/disabled by \"Manage Roles\" permission. Roles *must* be below the bot's role in role order in role settings."
     },
+    "sub.filters": {
+      "description": "OPen a menu to add filters to yourself (or test them) as a direct subscriber for a particular feed."
+    },
     "test": {
       "args": {
         "simple": "Omit the test results and only send the message."
@@ -376,10 +379,10 @@
         "title": "Subscriber Filters Customization",
         "description": "**Feed URL:** {{link}}\n\nAdding filters to a subscriber will cause it to only get mentioned within the `{suscribers}` placeholder of an article if its filters pass the article.",
         "notSubscriber": "This role or user is not a subscriber. Try again, or type `exit` to cancel.",
-        "optionAddFilter": "Add filter(s) to a subscriber",
-        "optionRemoveFilter": "Remove filter(s) from a subscriber",
-        "optionRemoveAllFilters": "Remove all filters from a subscriber",
-        "optionListFilters": "List all filters of a subscriber",
+        "optionAddFilter": "Add filter(s) to the subscriber",
+        "optionRemoveFilter": "Remove filter(s) from the subscriber",
+        "optionRemoveAllFilters": "Remove all filters from the subscriber",
+        "optionListFilters": "List all filters of the subscriber",
         "listFiltersDescription": "Below are the filter categories with their words/phrases under each for the feed <{{link}}> within the channel {{channel}} for the subscriber {{subscriber}}.",
         "listNoFilters": "There are no filters assigned to {{subscriber}} for the feed <{{link}}>.",
         "removedAllFilters": "Successfully removed all filters from subscriber {{subscriber}} for feed <{{link}}>"
@@ -517,7 +520,21 @@
       "directSubscribeExists": "Unable to directly subscribe to feed <{{link}}>. You are already subscribed to it.",
       "directSubscribeSuccess": "You are now directly subscribed to the feed <{{link}}>.",
       "alreadyHaveRole": "You already have this role. Try another role name, or type `exit` to cancel.",
-      "directSubscriberDisabled": "The feed <{{link}}> in {{channel}} does not allow direct subscribers. It must be enabled in the `{{prefix}}options` command. Try another feed, or type `exit` to cancel."
+      "directSubscriberDisabled": "The feed <{{link}}> in {{channel}} does not allow direct subscribers. It must be enabled in the `{{prefix}}options` command. Try another feed, or type `exit` to cancel.",
+      "filters": {
+        "description": "Manage filters for your subscription. You may use filters to determine what articles within the feed {{link}} you want to be mentioned in.",
+        "noSubscribedFeeds": "You are not directly subscribed to any feeds.",
+        "optionAddFilters": "Add filter(s)",
+        "optionAddFiltersDescription": "Add new filter(s) to myself so I only get mentioned in certain articles.",
+        "optionRemoveFilters": "Remove filter(s)",
+        "optionRemoveFiltersDescription": "Remove existing filter(s) from myself, if any.",
+        "optionRemoveAllFilters": "Remove all filter(s)",
+        "optionRemoveAllFiltersDescription": "Remove all filter(s) from myself, if any.",
+        "optionListFilters": "List existing filter(s)",
+        "optionListFiltersDescription": "List my filters in all categories, if any.",
+        "optionSendFilteredArticle": "Send a filtered article that mentions you",
+        "optionSendFilteredArticleDescription": "Send a random article that will mention you, taking your filters (if they exist) into account."
+      }
     },
     "unsub": {
       "optionRemoveRole": "I want to remove a mentioned role from myself",

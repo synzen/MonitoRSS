@@ -23,7 +23,8 @@ class Command {
   static get USER_PERMISSIONS () {
     return {
       sub: [],
-      unsub: []
+      unsub: [],
+      'sub.filters': []
     }
   }
 
