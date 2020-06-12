@@ -11,8 +11,9 @@ const runWithFeedGuild = require('./prompts/runner/run.js')
 const getConfig = require('../config.js').get
 
 module.exports = async (message) => {
-  const simple = message.content.endsWith('simple')
-  const latest = message.content.endsWith('latest')
+  const split = message.content.split(' ')
+  const simple = split.includes('simple')
+  const latest = split.includes('latest')
   const profile = await Profile.get(message.guild.id)
   const translate = Translator.createProfileTranslator(profile)
   const selectFeedNode = new PromptNode(commonPrompts.selectFeed.prompt)
