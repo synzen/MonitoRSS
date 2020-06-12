@@ -56,6 +56,14 @@ class Subscriber extends FilterBase {
     }
   }
 
+  getMentionText () {
+    if (this.type === Subscriber.TYPES.USER) {
+      return `<@${this.id}>`
+    } else if (this.type === Subscriber.TYPES.ROLE) {
+      return `<@&${this.id}>`
+    }
+  }
+
   static get Model () {
     return SubscriberModel.Model
   }

@@ -89,4 +89,22 @@ describe('Unit::structs/db/Subscriber', function () {
       await expect(subscriber.validate()).resolves.toEqual(undefined)
     })
   })
+  describe('getMentionText', function () {
+    it('returns user mention string correctly', function () {
+      const subscriber = new Subscriber({ ...initData })
+      subscriber.id = '54eu6ryi'
+      subscriber.type = Subscriber.TYPES.USER
+      const expected = `<@${subscriber.id}>`
+      expect(subscriber.getMentionText())
+        .toEqual(expected)
+    })
+    it('returns role mention string correctly', function () {
+      const subscriber = new Subscriber({ ...initData })
+      subscriber.id = '54eu6ryi'
+      subscriber.type = Subscriber.TYPES.ROLE
+      const expected = `<@&${subscriber.id}>`
+      expect(subscriber.getMentionText())
+        .toEqual(expected)
+    })
+  })
 })
