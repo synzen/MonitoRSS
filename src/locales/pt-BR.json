@@ -29,7 +29,10 @@
       "description": "Abre um menu para deletar um feed de um canal."
     },
     "list": {
-      "description": "Mostrar todos os feeds ativos neste servidor."
+      "description": "Mostrar todos os feeds ativos neste servidor.",
+      "args": {
+        "<channel mention>": ""
+      }
     },
     "text": {
       "action": "Customizar texto",
@@ -67,6 +70,9 @@
     },
     "sub": {
       "description": "Abre um menu para adicionar um cargo com uma menção filtrada ao usuário. Usável por qualquer um no servidor, ativável/desativável pela permissão \"Gerenciar Cargos\". Os cargo precisam estar abaixo do cargo do bot na configuração de cargos."
+    },
+    "sub.filters": {
+      "description": ""
     },
     "unsub": {
       "description": "Abre um menu semelhante ao `sub`, mas será para remover o cargo. Qualquer cargo abaixo do cargo do bot será removível."
@@ -519,7 +525,18 @@
       "alreadyHaveRole": "",
       "directSubscriberDisabled": "",
       "filters": {
-        "noSubscribedFeeds": "You are not directly subscribed to any feeds."
+        "description": "",
+        "noSubscribedFeeds": "",
+        "optionAddFilters": "",
+        "optionAddFiltersDescription": "",
+        "optionRemoveFilters": "",
+        "optionRemoveFiltersDescription": "",
+        "optionRemoveAllFilters": "",
+        "optionRemoveAllFiltersDescription": "",
+        "optionListFilters": "",
+        "optionListFiltersDescription": "",
+        "optionSendFilteredArticle": "",
+        "optionSendFilteredArticleDescription": ""
       }
     },
     "unsub": {
