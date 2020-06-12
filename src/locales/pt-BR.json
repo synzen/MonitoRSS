@@ -62,8 +62,7 @@
     },
     "test": {
       "args": {
-        "[simple]": "Omite os resultados do teste e envia apenas a mensagem.",
-        "[latest]": ""
+        "[simple] [latest]": ""
       },
       "action": "testar feed",
       "description": "Abre um menu para enviar uma mensagem de teste para um artigo aleatório em um feed, juntamente com as propriedades e espaços reservados disponíveis para várias personalizações. Você pode adicionar `simple` como um parâmetro para excluir os detalhes do teste."
@@ -315,7 +314,7 @@
     },
     "help": {
       "controlPanelLink": "Não deixe de conferir seu painel de controle em {{url}} para facilitar o gerenciamento de feeds!",
-      "description": "Argumentos para comandos são adicionados após o comando. Por exemplo: `{{prefixo}}test simple`. Não inclua `<` ou `>` nos argumentos.",
+      "description": "",
       "arguments": "Argumentos",
       "support": "\nSuporte pode ser encontrado em https://discord.gg/pudv7Rx",
       "checkDM": "Verifique suas mensagens diretas! 😉"
