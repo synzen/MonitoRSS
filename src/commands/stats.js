@@ -1,5 +1,5 @@
-const Discord = require('discord.js')
 const moment = require('moment')
+const ThemedEmbed = require('./prompts/common/utils/ThemedEmbed.js')
 const GeneralStats = require('../models/GeneralStats.js')
 const ScheduleStats = require('../structs/db/ScheduleStats.js')
 
@@ -29,7 +29,7 @@ module.exports = async (message) => {
     articlesBlocked: allGeneralStats.find(doc => doc._id === GeneralStats.TYPES.ARTICLES_BLOCKED)
   }
 
-  const visual = new Discord.MessageEmbed()
+  const visual = new ThemedEmbed()
     .setAuthor('Basic Stats')
     .setDescription(`
 **Unique Feeds** - Number of unique feed links (duplicate links are not counted).
