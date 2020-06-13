@@ -7,12 +7,11 @@ const pruneSubscribers = require('./pruneSubscribers.js')
 const pruneWebhooks = require('./pruneWebhooks.js')
 const checkLimits = require('./checkLimits.js')
 const checkPermissions = require('./checkPermissions.js')
-const checkArticleIndexes = require('./checkArticleIndexes.js')
+const checkIndexes = require('./checkIndexes.js')
 const ScheduleStats = require('../structs/db/ScheduleStats.js')
 const Supporter = require('../structs/db/Supporter.js')
 const Patron = require('../structs/db/Patron.js')
 const Feed = require('../structs/db/Feed.js')
-const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 
 /**
@@ -21,10 +20,9 @@ const createLogger = require('../util/logger/create.js')
  * @param {import('discord.js').Client} bot
  */
 async function prunePreInit (guildIdsByShard, channelIdsByShard) {
-  const config = getConfig()
   const feeds = await Feed.getAll()
   await Promise.all([
-    checkArticleIndexes(config.feeds.articlesExpire),
+    checkIndexes(),
     ScheduleStats.deleteAll(),
     pruneProfiles(guildIdsByShard)
   ])
@@ -89,6 +87,5 @@ module.exports = {
   pruneSubscribers,
   checkLimits,
   checkPermissions,
-  checkArticleIndexes,
   cycle
 }
