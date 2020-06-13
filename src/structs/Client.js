@@ -5,10 +5,6 @@ const listeners = require('../util/listeners.js')
 const maintenance = require('../maintenance/index.js')
 const ipc = require('../util/ipc.js')
 const Profile = require('./db/Profile.js')
-const ArticleMessage = require('./ArticleMessage.js')
-const Feed = require('./db/Feed.js')
-const FeedData = require('./FeedData.js')
-const ArticleMessageRateLimiter = require('./ArticleMessageRateLimiter.js')
 const initialize = require('../initialization/index.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
@@ -16,6 +12,7 @@ const connectDb = require('../util/connectDatabase.js')
 const { once } = require('events')
 const devLevels = require('../util/devLevels.js')
 const dumpHeap = require('../util/dumpHeap.js')
+const DeliveryPipeline = require('./DeliveryPipeline.js')
 
 const STATES = {
   STOPPED: 'STOPPED',
@@ -46,6 +43,13 @@ class Client extends EventEmitter {
     super()
     this.STATES = STATES
     this.state = STATES.STOPPED
+    /**
+     * @type {import('./DeliveryPipeline.js')}
+     */
+    this.deliveryPipeline = undefined
+    /**
+     * @type {import('pino').Logger}
+     */
     this.log = undefined
   }
 
@@ -58,6 +62,7 @@ class Client extends EventEmitter {
     }
     const client = new Discord.Client(CLIENT_OPTIONS)
     try {
+      this.deliveryPipeline = new DeliveryPipeline(client)
       this.log = createLogger('-')
       await client.login(token)
       this.log = createLogger(client.shard.ids[0].toString())
@@ -168,37 +173,7 @@ class Client extends EventEmitter {
   }
 
   async onNewArticle (newArticle, debug) {
-    const { article, feedObject } = newArticle
-    const channel = this.bot.channels.cache.get(feedObject.channel)
-    try {
-      if (!channel) {
-        this.log.debug(`No channel found for article ${article._id} of feed ${feedObject._id}`)
-        return
-      }
-      const feedData = await FeedData.ofFeed(new Feed(feedObject))
-      const articleMessage = new ArticleMessage(this.bot, article, feedData, debug)
-      await ArticleMessageRateLimiter.enqueue(articleMessage)
-      this.log.debug(`Sent article ${article._id} of feed ${feedObject._id}`)
-    } catch (err) {
-      if (err.message.includes('Rate limit')) {
-        this.log.debug({
-          error: err
-        }, 'Ignoring rate-limited article')
-        return
-      }
-      const article = newArticle.article
-      this.log.warn({
-        error: err,
-        guild: channel.guild,
-        channel
-      }, `Failed to send article ${article.link}`)
-      if (err.code === 50035) {
-        channel.send(`Failed to send formatted article for article <${article.link}>.\`\`\`${err.message}\`\`\``)
-          .catch(err => this.log.warn({
-            error: err
-          }, 'Unable to send failed-to-send message for article'))
-      }
-    }
+    this.deliveryPipeline.deliver(newArticle, debug)
   }
 
   async sendChannelMessage (channelID, message) {

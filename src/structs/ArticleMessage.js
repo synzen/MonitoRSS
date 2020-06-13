@@ -282,14 +282,6 @@ class ArticleMessage {
     if (!medium) {
       throw new Error('Missing medium to send message to')
     }
-    if (!this.passedFilters()) {
-      if (this.config.log.unfiltered === true || this.debug) {
-        this.log.info({
-          medium
-        }, `'${this.article.link ? this.article.link : this.article.title}' did not pass filters and was not sent`)
-      }
-      return
-    }
 
     const { text, embeds } = this.generateMessage()
     const options = this.createOptions(embeds, medium)
