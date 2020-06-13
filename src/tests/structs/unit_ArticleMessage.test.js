@@ -197,14 +197,6 @@ describe('Unit::ArticleMessage', function () {
         .mockResolvedValue()
       return expect(m.send()).rejects.toBeInstanceOf(Error)
     })
-    it('does not send the article if it did not pass filters', async function () {
-      const bot = Bot()
-      const m = new ArticleMessage(bot, rawArticle, baseFeedData)
-      jest.spyOn(m, 'passedFilters')
-        .mockReturnValue(false)
-      await m.send()
-      expect(medium.send).not.toHaveBeenCalled()
-    })
     it('throws the same error that channel.send throws ', async function () {
       const bot = Bot()
       const m = new ArticleMessage(bot, rawArticle, baseFeedData)
