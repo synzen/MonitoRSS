@@ -31,7 +31,8 @@ const databaseSchema = Joi.object({
   uri: Joi.string().strict().default('mongodb://localhost:27017/rss'),
   redis: Joi.string().strict().allow('').default(''),
   connection: Joi.object().default({}),
-  articlesExpire: Joi.number().strict().greater(-1).default(14)
+  articlesExpire: Joi.number().strict().greater(-1).default(14),
+  deliveryRecordsExpire: Joi.number().strict().greater(-1).default(5)
 })
 
 const feedsSchema = Joi.object({

@@ -81,14 +81,19 @@ exports.set = (override, skipValidation) => {
   }
   const database = config.database
   const databaseOverride = override.database
-  config.database.uri = process.env.MONGODB_URI || process.env.DRSS_DATABASE_URI || databaseOverride.uri || database.uri
-  config.database.redis = process.env.REDIS_URL || process.env.DRSS_DATABASE_REDIS || databaseOverride.redis || database.redis
-  config.database.connection = databaseOverride.connection || database.connection
-  config.database.articlesExpire = process.env.DRSS_DATABASE_ARTICLESEXPIRE !== undefined
+  database.uri = process.env.MONGODB_URI || process.env.DRSS_DATABASE_URI || databaseOverride.uri || database.uri
+  database.redis = process.env.REDIS_URL || process.env.DRSS_DATABASE_REDIS || databaseOverride.redis || database.redis
+  database.connection = databaseOverride.connection || database.connection
+  database.articlesExpire = process.env.DRSS_DATABASE_ARTICLESEXPIRE !== undefined
     ? Number(process.env.DRSS_DATABASE_ARTICLESEXPIRE)
     : databaseOverride.articlesExpire !== undefined
       ? databaseOverride.articlesExpire
       : database.articlesExpire
+  database.deliveryRecordsExpire = process.env.DRSS_DATABASE_DELIVERYRECORDSEXPIRE !== undefined
+    ? Number(process.env.DRSS_DATABASE_DELIVERYRECORDSEXPIRE)
+    : databaseOverride.deliveryRecordsExpire !== undefined
+      ? databaseOverride.deliveryRecordsExpire
+      : database.deliveryRecordsExpire
 
   // FEEDS
   if (!override.feeds) {
