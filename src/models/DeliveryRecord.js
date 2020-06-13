@@ -3,14 +3,18 @@ const Version = require('./common/Version.js')
 
 const schema = new mongoose.Schema({
   articleID: {
-    type: mongoose.Types.ObjectId,
+    type: String,
     required: true
   },
   channel: {
     type: String,
     required: true
   },
-  failed: String
+  delivered: {
+    type: Boolean,
+    required: true
+  },
+  comment: String
 })
 
 schema.add(Version)
