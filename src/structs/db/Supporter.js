@@ -112,13 +112,12 @@ class Supporter extends Base {
    * @returns {Supporter|null}
    */
   static async getValidSupporterOfGuild (guildId) {
-    const validSupporters = await this.getValidSupporters()
-    for (const supporter of validSupporters) {
-      if (supporter.guilds.includes(guildId)) {
-        return supporter
+    const supporter = await this.getByQuery({
+      guilds: {
+        $in: [guildId]
       }
-    }
-    return null
+    })
+    return supporter || null
   }
 
   /**
