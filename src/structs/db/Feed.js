@@ -321,10 +321,8 @@ class Feed extends FilterBase {
       if (!sKeywords) {
         continue
       }
-      for (const word of sKeywords) {
-        if (!this.url.includes(word)) {
-          continue
-        }
+      const someMatch = sKeywords.some(word => this.url.includes(word))
+      if (someMatch) {
         return schedule
       }
     }

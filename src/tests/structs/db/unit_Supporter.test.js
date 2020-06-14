@@ -113,6 +113,16 @@ describe('Unit::structs/db/Supporter', function () {
     })
   })
   describe('static getValidSupporterOfGuild', function () {
+    beforeEach(() => {
+      jest.spyOn(Supporter, 'enabled', 'get')
+        .mockReturnValue(true)
+    })
+    it('returns empty null if not not enabled', async function () {
+      jest.spyOn(Supporter, 'enabled', 'get')
+        .mockReturnValue(false)
+      await expect(Supporter.getValidSupporterOfGuild())
+        .resolves.toEqual(null)
+    })
     it('runs the right query', async function () {
       const getManyByQuery = jest.spyOn(Supporter, 'getManyByQuery')
         .mockResolvedValue([])

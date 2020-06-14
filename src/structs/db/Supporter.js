@@ -112,6 +112,9 @@ class Supporter extends Base {
    * @returns {Supporter|null}
    */
   static async getValidSupporterOfGuild (guildId) {
+    if (!Supporter.enabled) {
+      return null
+    }
     /**
      * @type {Supporter[]}
      */

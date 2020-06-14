@@ -11,17 +11,7 @@ const CON_OPTIONS = {
   useCreateIndex: true
 }
 
-jest.mock('../../../config.js', () => ({
-  get: () => ({
-    _vip: true,
-    database: {
-      uri: 'mongodb://'
-    },
-    feeds: {
-      max: 5
-    }
-  })
-}))
+jest.mock('../../../config.js')
 
 describe('Int::structs/db/Supporter Database', function () {
   /** @type {import('mongoose').Connection} */
@@ -35,6 +25,15 @@ describe('Int::structs/db/Supporter Database', function () {
   })
   beforeEach(async function () {
     await con.db.dropDatabase()
+    config.get.mockReturnValue({
+      _vip: true,
+      database: {
+        uri: 'mongodb://'
+      },
+      feeds: {
+        max: 5
+      }
+    })
   })
   describe('static getGuilds', function () {
     it('returns guilds of all valid supporters', async function () {
@@ -92,6 +91,152 @@ describe('Int::structs/db/Supporter Database', function () {
       expect(returned[0].toObject()).toEqual(expect.objectContaining(supporter2))
       expect(returned[1]).toBeInstanceOf(Supporter)
       expect(returned[1].toObject()).toEqual(expect.objectContaining(supporter4))
+    })
+  })
+  describe('getValidSupporterOfGuild', function () {
+    it('returns supporters who did not expire yet', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const past = new Date(new Date().getTime() - (1000 * 60))
+      const future = new Date(new Date().getTime() + (1000 * 60 * 60 * 60 * 24))
+      const guildID = 'guild1'
+      const supporters = [{
+        _id: 'a',
+        guilds: [guildID],
+        expireAt: past.toISOString()
+      }, {
+        _id: 'b',
+        guilds: [guildID],
+        expireAt: future.toISOString()
+      }, {
+        _id: 'c',
+        guilds: [guildID]
+      }, {
+        _id: 'd',
+        guilds: [guildID + '2'],
+        expireAt: future.toISOString()
+      }]
+      await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      const returned = await Supporter.getValidSupporterOfGuild('guild1')
+      expect(returned).toEqual(expect.objectContaining(supporters[1]))
+    })
+    it('works with patrons', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const guildID = 'qw234et6r'
+      const patrons = [{
+        discord: 'a',
+        status: Patron.STATUS.DECLINED,
+        lastCharge: undefined,
+        pledgeLifetime: 1,
+        pledge: 1
+      }, {
+        discord: 'b',
+        status: Patron.STATUS.ACTIVE,
+        pledgeLifetime: 1,
+        pledge: 1
+      }]
+      const supporters = [{
+        _id: patrons[0].discord,
+        guilds: [guildID],
+        patron: true
+      }, {
+        _id: 'nopatron',
+        patron: true
+      }, {
+        _id: patrons[1].discord,
+        guilds: [guildID],
+        patron: true
+      }]
+      await con.db.collection(Patron.Model.collection.name).insertMany(patrons)
+      await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      const returned = await Supporter.getValidSupporterOfGuild(guildID)
+      expect(returned).toEqual(expect.objectContaining(supporters[2]))
+    })
+  })
+  describe('getValidSupporters', function () {
+    it('returns all valid supporters', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const past = new Date(new Date().getTime() - (1000 * 60))
+      const future = new Date(new Date().getTime() + (1000 * 60 * 60 * 60 * 24))
+      const supporters = [{
+        _id: 'a',
+        expireAt: past.toISOString()
+      }, {
+        _id: 'b',
+        expireAt: future.toISOString()
+      }, {
+        _id: 'c'
+      }, {
+        _id: 'd',
+        expireAt: future.toISOString()
+      }]
+      await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      const returned = await Supporter.getValidSupporters()
+      expect(returned).toHaveLength(3)
+      expect(returned).toEqual([
+        expect.objectContaining(supporters[1]),
+        expect.objectContaining(supporters[2]),
+        expect.objectContaining(supporters[3])
+      ])
+    })
+    it('works with patrons', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const patrons = [{
+        discord: 'a',
+        status: Patron.STATUS.DECLINED,
+        lastCharge: undefined,
+        pledgeLifetime: 1,
+        pledge: 1
+      }, {
+        discord: 'b',
+        status: Patron.STATUS.ACTIVE,
+        pledgeLifetime: 1,
+        pledge: 1
+      }, {
+        discord: 'c',
+        status: Patron.STATUS.ACTIVE,
+        pledgeLifetime: 1,
+        pledge: 1
+      }]
+      const supporters = [{
+        _id: patrons[0].discord,
+        patron: true
+      }, {
+        _id: 'nopatron',
+        patron: true
+      }, {
+        _id: patrons[1].discord,
+        patron: true
+      }, {
+        _id: patrons[2].discord,
+        patron: true
+      }]
+      await con.db.collection(Patron.Model.collection.name).insertMany(patrons)
+      await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      const returned = await Supporter.getValidSupporters()
+      expect(returned).toEqual([
+        expect.objectContaining(supporters[2]),
+        expect.objectContaining(supporters[3])
+      ])
     })
   })
   describe('isValid', function () {

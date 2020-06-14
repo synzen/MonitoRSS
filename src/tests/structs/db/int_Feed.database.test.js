@@ -1,11 +1,16 @@
 process.env.TEST_ENV = true
 const Feed = require('../../../structs/db/Feed.js')
+const Supporter = require('../../../structs/db/Supporter.js')
 const FeedModel = require('../../../models/Feed.js')
 const FilteredFormatModel = require('../../../models/FilteredFormat.js')
 const SubscriberModel = require('../../../models/Subscriber.js')
 const mongoose = require('mongoose')
 const initialize = require('../../../initialization/index.js')
 const dbName = 'test_int_feed'
+const config = require('../../../config.js')
+const Patron = require('../../../structs/db/Patron.js')
+const P = require('pino')
+const Schedule = require('../../../structs/db/Schedule.js')
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -13,13 +18,7 @@ const CON_OPTIONS = {
   autoIndex: false
 }
 
-jest.mock('../../../config.js', () => ({
-  get: () => ({
-    database: {
-      uri: 'mongodb://'
-    }
-  })
-}))
+jest.mock('../../../config.js')
 
 describe('Int::structs/db/Feed Database', function () {
   /** @type {import('mongoose').Connection} */
@@ -33,6 +32,11 @@ describe('Int::structs/db/Feed Database', function () {
   })
   beforeEach(async function () {
     await con.db.dropDatabase()
+    config.get.mockReturnValue({
+      database: {
+        uri: 'mongodb://'
+      }
+    })
   })
   describe('getSubscribers', function () {
     it('works', async function () {
@@ -64,6 +68,80 @@ describe('Int::structs/db/Feed Database', function () {
       expect(subscribers).toHaveLength(2)
       expect(subscribers[0].data).toEqual(expect.objectContaining(JSON.parse(JSON.stringify(subscriberData))))
       expect(subscribers[1].data).toEqual(expect.objectContaining(JSON.parse(JSON.stringify(subscriberData2))))
+    })
+  })
+  describe('determineSchedule', function () {
+    it('returns supporter schedule for supporters', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const guildID = 'w246y3r5eh'
+      const schedules = [{
+        name: 'default',
+        refreshRateMinutes: 99
+      }]
+      const supporters = [{
+        _id: 'a',
+        guilds: [guildID]
+      }]
+      await con.db.collection(Schedule.Model.collection.name).insertMany(schedules)
+      await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      const feedData = {
+        url: 'asdf',
+        guild: guildID,
+        channel: 'sdxgdh'
+      }
+      const feed = new Feed(feedData)
+      const schedule = await feed.determineSchedule()
+      expect(schedule).toEqual(Supporter.schedule)
+    })
+    it('returns supporter schedule if supporter guilds are given', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const guildID = 'w246y3r5eh'
+      const schedules = [{
+        name: 'default',
+        refreshRateMinutes: 99
+      }]
+      const supporterGuilds = [guildID]
+      await con.db.collection(Schedule.Model.collection.name).insertMany(schedules)
+      const feedData = {
+        url: 'asdf',
+        guild: guildID,
+        channel: 'sdxgdh'
+      }
+      const feed = new Feed(feedData)
+      const schedule = await feed.determineSchedule(undefined, supporterGuilds)
+      expect(schedule).toEqual(Supporter.schedule)
+    })
+    it('returns the right schedule with keywords', async function () {
+      const feedURL = 'hello world'
+      const schedules = [{
+        name: 'default',
+        refreshRateMinutes: 99
+      }, {
+        name: 'bloopy',
+        refreshRateMinutes: 22,
+        keywords: ['hello']
+      }]
+      await con.db.collection(Schedule.Model.collection.name).insertMany([...schedules])
+      const feedData = {
+        url: feedURL,
+        guild: 'guildID',
+        channel: 'sdxgdh'
+      }
+      const feed = new Feed(feedData)
+      const schedule = await feed.determineSchedule()
+      expect(schedule).toEqual(expect.objectContaining({
+        name: 'bloopy'
+      }))
     })
   })
   it('saves and updates with filters', async function () {
