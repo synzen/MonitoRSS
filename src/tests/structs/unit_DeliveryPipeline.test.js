@@ -144,7 +144,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       expect(recordFilterBlock).toHaveBeenCalledWith(newArticle)
     })
   })
-  describe('handleArticleFailure', async () => {
+  describe('handleArticleFailure', () => {
     beforeEach(() => {
       jest.spyOn(DeliveryPipeline.prototype, 'getChannel')
         .mockReturnValue({})
