@@ -3,6 +3,7 @@ const config = require('../../config.js')
 const DeliveryRecord = require('../../models/DeliveryRecord.js')
 const ArticleMessage = require('../../structs/ArticleMessage.js')
 const ArticleRateLimiter = require('../../structs/ArticleMessageRateLimiter.js')
+const Feed = require('../../structs/db/Feed.js')
 
 jest.mock('../../config.js')
 jest.mock('../../structs/FeedData.js')
@@ -21,6 +22,8 @@ const NewArticle = () => ({
   feedObject: {},
   article: {}
 })
+
+Feed.isMongoDatabase = true
 
 describe('Unit::structs/DeliveryPipeline', function () {
   beforeAll(() => {
@@ -229,6 +232,24 @@ describe('Unit::structs/DeliveryPipeline', function () {
         })
         expect(modelSave).toHaveBeenCalledTimes(1)
       })
+      it('does not create model if not mongodb', async () => {
+        Feed.isMongoDatabase = false
+        const pipeline = new DeliveryPipeline(Bot())
+        const newArticle = {
+          article: {
+            _id: 'abc'
+          },
+          feedObject: {
+            url: 'bla',
+            channel: 'abaa'
+          }
+        }
+        const error = new Error('sewtryd')
+        await pipeline.recordFailure(newArticle, error)
+        expect(DeliveryRecord.Model).not.toHaveBeenCalled()
+        expect(modelSave).not.toHaveBeenCalled()
+        Feed.isMongoDatabase = true
+      })
     })
     describe('recordSuccess', () => {
       it('works', async () => {
@@ -250,6 +271,23 @@ describe('Unit::structs/DeliveryPipeline', function () {
           delivered: true
         })
         expect(modelSave).toHaveBeenCalledTimes(1)
+      })
+      it('does not create model if not mongodb', async () => {
+        Feed.isMongoDatabase = false
+        const pipeline = new DeliveryPipeline(Bot())
+        const newArticle = {
+          article: {
+            _id: 'abc'
+          },
+          feedObject: {
+            url: 'bla',
+            channel: 'abaa'
+          }
+        }
+        await pipeline.recordSuccess(newArticle)
+        expect(DeliveryRecord.Model).not.toHaveBeenCalled()
+        expect(modelSave).not.toHaveBeenCalled()
+        Feed.isMongoDatabase = true
       })
     })
     describe('recordFilterBlock', () => {
@@ -273,6 +311,23 @@ describe('Unit::structs/DeliveryPipeline', function () {
           comment: 'Blocked by filters'
         })
         expect(modelSave).toHaveBeenCalledTimes(1)
+      })
+      it('does not create model if not mongodb', async () => {
+        Feed.isMongoDatabase = false
+        const pipeline = new DeliveryPipeline(Bot())
+        const newArticle = {
+          article: {
+            _id: 'abc'
+          },
+          feedObject: {
+            channel: 'abaa',
+            url: 'feedurl'
+          }
+        }
+        await pipeline.recordFilterBlock(newArticle)
+        expect(DeliveryRecord.Model).not.toHaveBeenCalled()
+        expect(modelSave).not.toHaveBeenCalled()
+        Feed.isMongoDatabase = true
       })
     })
   })
