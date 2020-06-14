@@ -214,13 +214,15 @@ describe('Unit::structs/DeliveryPipeline', function () {
             _id: 'abc'
           },
           feedObject: {
-            channel: 'abaa'
+            channel: 'abaa',
+            url: 'someurl'
           }
         }
         const errorMessage = '53e47yu'
         await pipeline.recordFailure(newArticle, errorMessage)
         expect(DeliveryRecord.Model).toHaveBeenCalledWith({
           articleID: newArticle.article._id,
+          feedURL: newArticle.feedObject.url,
           channel: newArticle.feedObject.channel,
           delivered: false,
           comment: errorMessage
@@ -236,12 +238,14 @@ describe('Unit::structs/DeliveryPipeline', function () {
             _id: 'abc'
           },
           feedObject: {
+            url: 'bla',
             channel: 'abaa'
           }
         }
         await pipeline.recordSuccess(newArticle)
         expect(DeliveryRecord.Model).toHaveBeenCalledWith({
           articleID: newArticle.article._id,
+          feedURL: newArticle.feedObject.url,
           channel: newArticle.feedObject.channel,
           delivered: true
         })
@@ -256,12 +260,14 @@ describe('Unit::structs/DeliveryPipeline', function () {
             _id: 'abc'
           },
           feedObject: {
-            channel: 'abaa'
+            channel: 'abaa',
+            url: 'feedurl'
           }
         }
         await pipeline.recordFilterBlock(newArticle)
         expect(DeliveryRecord.Model).toHaveBeenCalledWith({
           articleID: newArticle.article._id,
+          feedURL: newArticle.feedObject.url,
           channel: newArticle.feedObject.channel,
           delivered: false,
           comment: 'Blocked by filters'

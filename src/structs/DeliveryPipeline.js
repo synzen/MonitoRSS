@@ -77,6 +77,7 @@ class DeliveryPipeline {
     const channel = feedObject.channel
     const data = {
       articleID: article._id,
+      feedURL: feedObject.url,
       channel,
       delivered: false,
       comment: errorMessage
@@ -97,6 +98,7 @@ class DeliveryPipeline {
     const channel = feedObject.channel
     const data = {
       articleID: article._id,
+      feedURL: feedObject.url,
       delivered: true,
       channel
     }
@@ -116,6 +118,7 @@ class DeliveryPipeline {
     const channel = feedObject.channel
     const data = {
       articleID: article._id,
+      feedURL: feedObject.url,
       channel,
       delivered: false,
       comment: 'Blocked by filters'

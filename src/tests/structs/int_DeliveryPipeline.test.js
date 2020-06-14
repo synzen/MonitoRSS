@@ -42,7 +42,8 @@ describe('Unit::structs/DeliveryPipeline', function () {
         _id: 'some id'
       },
       feedObject: {
-        channel: 'w4yrh5e'
+        channel: 'w4yrh5e',
+        url: 'someurl'
       }
     }
     beforeEach(() => {
@@ -63,6 +64,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       await pipeline.deliver(newArticle)
       expect(DeliveryRecord.Model).toHaveBeenCalledWith({
         articleID: newArticle.article._id,
+        feedURL: newArticle.feedObject.url,
         delivered: true,
         channel: newArticle.feedObject.channel
       })
@@ -79,6 +81,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       await pipeline.deliver(newArticle)
       expect(DeliveryRecord.Model).toHaveBeenCalledWith({
         articleID: newArticle.article._id,
+        feedURL: newArticle.feedObject.url,
         channel: newArticle.feedObject.channel,
         delivered: false,
         comment: 'Blocked by filters'
@@ -99,6 +102,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       await pipeline.deliver(newArticle)
       expect(DeliveryRecord.Model).toHaveBeenCalledWith({
         articleID: newArticle.article._id,
+        feedURL: newArticle.feedObject.url,
         channel: newArticle.feedObject.channel,
         delivered: false,
         comment: error.message
