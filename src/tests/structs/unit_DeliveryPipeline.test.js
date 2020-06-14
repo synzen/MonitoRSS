@@ -1,0 +1,273 @@
+const DeliveryPipeline = require('../../structs/DeliveryPipeline.js')
+const config = require('../../config.js')
+const DeliveryRecord = require('../../models/DeliveryRecord.js')
+const ArticleMessage = require('../../structs/ArticleMessage.js')
+const ArticleRateLimiter = require('../../structs/ArticleMessageRateLimiter.js')
+
+jest.mock('../../config.js')
+jest.mock('../../structs/FeedData.js')
+jest.mock('../../structs/db/Feed.js')
+jest.mock('../../structs/ArticleMessageRateLimiter.js')
+jest.mock('../../structs/ArticleMessage.js')
+// jest.mock('../../models/DeliveryRecord.js')
+
+const Bot = () => ({
+  shard: {
+    ids: []
+  }
+})
+
+const NewArticle = () => ({
+  feedObject: {},
+  article: {}
+})
+
+describe('Unit::structs/DeliveryPipeline', function () {
+  beforeAll(() => {
+    DeliveryRecord.Model = jest.fn()
+  })
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+  describe('constructor', function () {
+    it('sets the fields', function () {
+      const bot = {
+        foo: 'bar',
+        shard: {
+          ids: []
+        }
+      }
+      jest.spyOn(config, 'get')
+        .mockReturnValue({
+          log: {
+            unfiltered: true
+          }
+        })
+      const pipeline = new DeliveryPipeline(bot)
+      expect(pipeline.bot).toEqual(bot)
+      expect(pipeline.logFiltered).toEqual(true)
+    })
+  })
+  describe('getChannel', () => {
+    it('returns the channel', () => {
+      const newArticle = {
+        feedObject: {}
+      }
+      const pipeline = new DeliveryPipeline(Bot())
+      const get = jest.fn()
+      pipeline.bot = {
+        channels: {
+          cache: {
+            get
+          }
+        }
+      }
+      const channel = {
+        bla: 'dah'
+      }
+      get.mockReturnValue(channel)
+      expect(pipeline.getChannel(newArticle))
+        .toEqual(channel)
+    })
+  })
+  describe('createArticleMessage', () => {
+    it('returns the article message', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      await expect(pipeline.createArticleMessage({}))
+        .resolves.toBeInstanceOf(ArticleMessage)
+    })
+  })
+  describe('deliver', () => {
+    beforeEach(() => {
+      jest.spyOn(DeliveryPipeline.prototype, 'getChannel')
+        .mockReturnValue({})
+      jest.spyOn(DeliveryPipeline.prototype, 'createArticleMessage')
+        .mockResolvedValue()
+      jest.spyOn(DeliveryPipeline.prototype, 'handleArticleBlocked')
+        .mockResolvedValue()
+      jest.spyOn(DeliveryPipeline.prototype, 'sendNewArticle')
+        .mockResolvedValue()
+      jest.spyOn(DeliveryPipeline.prototype, 'handleArticleFailure')
+        .mockResolvedValue()
+    })
+    it('does not send article if it does not pass filters', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const sendNewArticle = jest.spyOn(pipeline, 'sendNewArticle')
+      jest.spyOn(pipeline, 'createArticleMessage')
+        .mockResolvedValue({
+          passedFilters: () => false
+        })
+      await pipeline.deliver(NewArticle())
+      expect(sendNewArticle).not.toHaveBeenCalled()
+    })
+    it('sends the article for delivery', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const articleMessage = {
+        passedFilters: () => true
+      }
+      const sendNewArticle = jest.spyOn(pipeline, 'sendNewArticle')
+      jest.spyOn(pipeline, 'createArticleMessage')
+        .mockResolvedValue(articleMessage)
+      await pipeline.deliver(NewArticle())
+      expect(sendNewArticle)
+        .toHaveBeenCalled()
+    })
+    it('handles errors', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const articleMessage = {
+        passedFilters: () => true
+      }
+      const error = new Error('deadgf')
+      jest.spyOn(pipeline, 'sendNewArticle')
+        .mockRejectedValue(error)
+      const handleArticleFailure = jest.spyOn(pipeline, 'handleArticleFailure')
+      jest.spyOn(pipeline, 'createArticleMessage')
+        .mockResolvedValue(articleMessage)
+      await pipeline.deliver(NewArticle())
+      expect(handleArticleFailure)
+        .toHaveBeenCalled()
+    })
+  })
+  describe('handleArticleBlocked', () => {
+    beforeEach(() => {
+      config.get.mockReturnValue({
+        log: {
+          unfiltered: false
+        }
+      })
+    })
+    it('records the filter block', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const recordFilterBlock = jest.spyOn(pipeline, 'recordFilterBlock')
+      const newArticle = NewArticle()
+      await pipeline.handleArticleBlocked(newArticle)
+      expect(recordFilterBlock).toHaveBeenCalledWith(newArticle)
+    })
+  })
+  describe('handleArticleFailure', async () => {
+    beforeEach(() => {
+      jest.spyOn(DeliveryPipeline.prototype, 'getChannel')
+        .mockReturnValue({})
+    })
+    it('records the failure', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const recordFailure = jest.spyOn(pipeline, 'recordFailure')
+      const newArticle = NewArticle()
+      await pipeline.handleArticleFailure(newArticle, new Error('atwegq'))
+      expect(recordFailure).toHaveBeenCalledTimes(1)
+    })
+    it('sends the error if error code 50035', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const channel = {
+        send: jest.fn()
+      }
+      jest.spyOn(pipeline, 'getChannel')
+        .mockReturnValue(channel)
+      const newArticle = NewArticle()
+      const error = new Error('srfx')
+      error.code = 50035
+      await pipeline.handleArticleFailure(newArticle, error)
+      expect(channel.send).toHaveBeenCalledTimes(1)
+    })
+  })
+  describe('sendNewArticle', () => {
+    it('enqueues the article', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const newArticle = NewArticle()
+      const articleMessage = {
+        foo: 'baz'
+      }
+      await pipeline.sendNewArticle(newArticle, articleMessage)
+      expect(ArticleRateLimiter.enqueue)
+        .toHaveBeenCalledWith(articleMessage)
+    })
+    it('records the success', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const newArticle = NewArticle()
+      const articleMessage = {
+        foo: 'baz'
+      }
+      const recordSuccess = jest.spyOn(pipeline, 'recordSuccess')
+      await pipeline.sendNewArticle(newArticle, articleMessage)
+      expect(recordSuccess)
+        .toHaveBeenCalledWith(newArticle)
+    })
+  })
+  describe('record functions', () => {
+    const original = DeliveryRecord.Model
+    const modelSave = jest.fn()
+    beforeEach(() => {
+      DeliveryRecord.Model = jest.fn()
+        .mockReturnValue({
+          save: modelSave
+        })
+      modelSave.mockReset()
+    })
+    afterEach(() => {
+      DeliveryRecord.Model = original
+    })
+    describe('recordFailure', () => {
+      it('creates and saves the model', async () => {
+        const pipeline = new DeliveryPipeline(Bot())
+        const newArticle = {
+          article: {
+            _id: 'abc'
+          },
+          feedObject: {
+            channel: 'abaa'
+          }
+        }
+        const errorMessage = '53e47yu'
+        await pipeline.recordFailure(newArticle, errorMessage)
+        expect(DeliveryRecord.Model).toHaveBeenCalledWith({
+          articleID: newArticle.article._id,
+          channel: newArticle.feedObject.channel,
+          delivered: false,
+          comment: errorMessage
+        })
+        expect(modelSave).toHaveBeenCalledTimes(1)
+      })
+    })
+    describe('recordSuccess', () => {
+      it('works', async () => {
+        const pipeline = new DeliveryPipeline(Bot())
+        const newArticle = {
+          article: {
+            _id: 'abc'
+          },
+          feedObject: {
+            channel: 'abaa'
+          }
+        }
+        await pipeline.recordSuccess(newArticle)
+        expect(DeliveryRecord.Model).toHaveBeenCalledWith({
+          articleID: newArticle.article._id,
+          channel: newArticle.feedObject.channel,
+          delivered: true
+        })
+        expect(modelSave).toHaveBeenCalledTimes(1)
+      })
+    })
+    describe('recordFilterBlock', () => {
+      it('works', async () => {
+        const pipeline = new DeliveryPipeline(Bot())
+        const newArticle = {
+          article: {
+            _id: 'abc'
+          },
+          feedObject: {
+            channel: 'abaa'
+          }
+        }
+        await pipeline.recordFilterBlock(newArticle)
+        expect(DeliveryRecord.Model).toHaveBeenCalledWith({
+          articleID: newArticle.article._id,
+          channel: newArticle.feedObject.channel,
+          delivered: false,
+          comment: 'Blocked by filters'
+        })
+        expect(modelSave).toHaveBeenCalledTimes(1)
+      })
+    })
+  })
+})

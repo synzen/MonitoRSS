@@ -4,13 +4,13 @@ const Feed = require('./db/Feed.js')
 const ArticleRateLimiter = require('./ArticleMessageRateLimiter.js')
 const FeedData = require('./FeedData.js')
 const createLogger = require('../util/logger/create.js')
-const getConfig = require('../config.js').get
+const configuration = require('../config.js')
 
 class DeliveryPipeline {
   constructor (bot) {
     this.bot = bot
     this.log = createLogger(this.bot.shard.ids[0])
-    const config = getConfig()
+    const config = configuration.get()
     this.logFiltered = config.log.unfiltered === true
   }
 
@@ -27,7 +27,7 @@ class DeliveryPipeline {
   }
 
   async deliver (newArticle, debug) {
-    const { article, feedObject } = newArticle
+    const { feedObject } = newArticle
     const channel = this.getChannel(newArticle)
     try {
       if (!channel) {
@@ -35,54 +35,67 @@ class DeliveryPipeline {
       }
       const articleMessage = await this.createArticleMessage(newArticle, debug)
       if (!articleMessage.passedFilters()) {
-        if (this.logFiltered) {
-          this.log.info(`'${article.link || article.title}' did not pass filters and was not sent`)
-        }
-        return await this.recordFilterBlock(newArticle)
+        return await this.handleArticleBlocked(newArticle)
       }
-      await ArticleRateLimiter.enqueue(articleMessage)
-      await this.recordSuccess(newArticle)
-      this.log.debug(`Sent article ${article._id} of feed ${feedObject._id}`)
+      await this.sendNewArticle(newArticle, articleMessage)
     } catch (err) {
-      await this.recordFailure(newArticle, err.message || 'N/A')
-      if (err.message.includes('Rate limit')) {
-        this.log.debug({
-          error: err
-        }, 'Ignoring rate-limited article')
-        return
-      }
-      this.log.warn({
-        error: err,
-        guild: channel.guild,
-        channel
-      }, `Failed to deliver article ${article._id} (${article.link}) of feed ${feedObject._id}`)
-      if (err.code === 50035) {
-        // Invalid format within an embed for example
-        channel.send(`Failed to send article <${article.link}>.\`\`\`${err.message}\`\`\``)
-          .catch(err => this.log.warn({
-            error: err
-          }, 'Unable to send failed-to-send message for article'))
-      }
+      await this.handleArticleFailure(newArticle, err.message)
     }
   }
 
-  async recordFailure (newArticle, error) {
+  async handleArticleBlocked (newArticle) {
+    const { article } = newArticle
+    if (this.logFiltered) {
+      this.log.info(`'${article.link || article.title}' did not pass filters and was not sent`)
+    }
+    await this.recordFilterBlock(newArticle)
+  }
+
+  async handleArticleFailure (newArticle, err) {
+    const { article, feedObject } = newArticle
+    const channel = this.getChannel(newArticle)
+    await this.recordFailure(newArticle, err.message || 'N/A')
+    if (err.message.includes('Rate limit')) {
+      this.log.debug({
+        error: err
+      }, 'Ignoring rate-limited article')
+      return
+    }
+    this.log.warn({
+      error: err,
+      guild: channel.guild,
+      channel
+    }, `Failed to deliver article ${article._id} (${article.link}) of feed ${feedObject._id}`)
+    if (err.code === 50035) {
+      // Invalid format within an embed for example
+      await channel.send(`Failed to send article <${article.link}>.\`\`\`${err.message}\`\`\``)
+    }
+  }
+
+  async sendNewArticle (newArticle, articleMessage) {
+    const { article, feedObject } = newArticle
+    await ArticleRateLimiter.enqueue(articleMessage)
+    await this.recordSuccess(newArticle)
+    this.log.debug(`Sent article ${article._id} of feed ${feedObject._id}`)
+  }
+
+  async recordFailure (newArticle, errorMessage) {
     const { article, feedObject } = newArticle
     const channel = feedObject.channel
     const data = {
       articleID: article._id,
       channel,
       delivered: false,
-      comment: error
+      comment: errorMessage
     }
     this.log.debug({
       data
     }, 'Recording delivery record failure')
     try {
-      const record = new DeliveryRecord.Model()
+      const record = new DeliveryRecord.Model(data)
       await record.save()
     } catch (err) {
-      this.log.error(err, `Failed to record article ${article._id} delivery failure in channel ${channel} (error: ${error})`)
+      this.log.error(err, `Failed to record article ${article._id} delivery failure in channel ${channel} (error: ${errorMessage})`)
     }
   }
 

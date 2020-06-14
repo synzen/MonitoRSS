@@ -173,7 +173,11 @@ class Client extends EventEmitter {
   }
 
   async onNewArticle (newArticle, debug) {
-    this.deliveryPipeline.deliver(newArticle, debug)
+    try {
+      await this.deliveryPipeline.deliver(newArticle, debug)
+    } catch (err) {
+      this.log.error(err, 'Delivery pipeline')
+    }
   }
 
   async sendChannelMessage (channelID, message) {
