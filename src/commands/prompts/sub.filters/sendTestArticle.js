@@ -34,7 +34,12 @@ async function sendTestArticleVisual (data) {
   const { embeds, text } = articleMessage.generateMessage()
   const options = articleMessage.createOptions(embeds, articleMessage.getChannel())
 
-  return new MessageVisual(text, options)
+  return new MessageVisual(text, {
+    ...options,
+    allowedMentions: {
+      parse: []
+    }
+  })
 }
 
 const prompt = new LocalizedPrompt(sendTestArticleVisual)

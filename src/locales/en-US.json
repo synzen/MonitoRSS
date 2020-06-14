@@ -534,7 +534,7 @@
         "optionListFilters": "List existing filter(s)",
         "optionListFiltersDescription": "List my filters in all categories, if any.",
         "optionSendFilteredArticle": "Send a filtered article that mentions you",
-        "optionSendFilteredArticleDescription": "Send a random article that will mention you, taking your filters (if they exist) into account."
+        "optionSendFilteredArticleDescription": "Send a random article that will mention you, taking your filters (if they exist) into account. **Mentioned users/roles will not be pinged for this test.**"
       }
     },
     "unsub": {
