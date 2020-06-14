@@ -112,12 +112,17 @@ class Supporter extends Base {
    * @returns {Supporter|null}
    */
   static async getValidSupporterOfGuild (guildId) {
-    const supporter = await this.getByQuery({
+    /**
+     * @type {Supporter[]}
+     */
+    const supporters = await this.getManyByQuery({
       guilds: {
         $in: [guildId]
       }
     })
-    return supporter || null
+    const validStatuses = await Promise.all(supporters.map(s => s.isValid()))
+    const validSupporter = supporters.find((supporter, index) => validStatuses[index])
+    return validSupporter || null
   }
 
   /**

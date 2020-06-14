@@ -113,20 +113,46 @@ describe('Unit::structs/db/Supporter', function () {
     })
   })
   describe('static getValidSupporterOfGuild', function () {
-    it('returns the supporter of the guild', async function () {
+    it('runs the right query', async function () {
+      const getManyByQuery = jest.spyOn(Supporter, 'getManyByQuery')
+        .mockResolvedValue([])
+      const guildID = 'w34etryh'
+      await Supporter.getValidSupporterOfGuild(guildID)
+      expect(getManyByQuery).toHaveBeenCalledWith({
+        guilds: {
+          $in: [guildID]
+        }
+      })
+    })
+    it('returns correctly', async function () {
       const guildId = 'q23wt5'
-      const foundSupporter = {
-        foo: 'baz'
-      }
-      jest.spyOn(Supporter, 'getByQuery')
-        .mockResolvedValue(foundSupporter)
+      const supporters = [{
+        _id: 'a',
+        isValid: async () => false
+      }, {
+        _id: 'b',
+        isValid: async () => true
+      }, {
+        _id: 'c',
+        isValid: async () => false
+      }]
+      jest.spyOn(Supporter, 'getManyByQuery')
+        .mockResolvedValue(supporters)
       return expect(Supporter.getValidSupporterOfGuild(guildId))
-        .resolves.toEqual(foundSupporter)
+        .resolves.toEqual(supporters[1])
     })
     it('returns null if no supporter found', async function () {
-      jest.spyOn(Supporter, 'getByQuery')
-        .mockResolvedValue()
-      return expect(Supporter.getValidSupporterOfGuild('sweg'))
+      const guildId = 'q23wt5'
+      const supporters = [{
+        _id: 'a',
+        isValid: async () => false
+      }, {
+        _id: 'b',
+        isValid: async () => false
+      }]
+      jest.spyOn(Supporter, 'getManyByQuery')
+        .mockResolvedValue(supporters)
+      return expect(Supporter.getValidSupporterOfGuild(guildId))
         .resolves.toBeNull()
     })
   })
