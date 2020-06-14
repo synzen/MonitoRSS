@@ -73,6 +73,9 @@ class DeliveryPipeline {
   }
 
   async recordFailure (newArticle, errorMessage) {
+    if (!Feed.isMongoDatabase) {
+      return
+    }
     const { article, feedObject } = newArticle
     const channel = feedObject.channel
     const data = {
@@ -94,6 +97,9 @@ class DeliveryPipeline {
   }
 
   async recordSuccess (newArticle) {
+    if (!Feed.isMongoDatabase) {
+      return
+    }
     const { article, feedObject } = newArticle
     const channel = feedObject.channel
     const data = {
@@ -114,6 +120,9 @@ class DeliveryPipeline {
   }
 
   async recordFilterBlock (newArticle) {
+    if (!Feed.isMongoDatabase) {
+      return
+    }
     const { article, feedObject } = newArticle
     const channel = feedObject.channel
     const data = {
