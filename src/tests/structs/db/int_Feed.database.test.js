@@ -8,8 +8,6 @@ const mongoose = require('mongoose')
 const initialize = require('../../../initialization/index.js')
 const dbName = 'test_int_feed'
 const config = require('../../../config.js')
-const Patron = require('../../../structs/db/Patron.js')
-const P = require('pino')
 const Schedule = require('../../../structs/db/Schedule.js')
 const CON_OPTIONS = {
   useNewUrlParser: true,
