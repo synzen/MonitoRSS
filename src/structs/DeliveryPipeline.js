@@ -27,12 +27,7 @@ class DeliveryPipeline {
   }
 
   async deliver (newArticle, debug) {
-    const { feedObject } = newArticle
-    const channel = this.getChannel(newArticle)
     try {
-      if (!channel) {
-        throw new Error(`Missing channel ${feedObject.channel}`)
-      }
       const articleMessage = await this.createArticleMessage(newArticle, debug)
       if (!articleMessage.passedFilters()) {
         return await this.handleArticleBlocked(newArticle)
@@ -62,9 +57,7 @@ class DeliveryPipeline {
       return
     }
     this.log.warn({
-      error: err,
-      guild: channel.guild,
-      channel
+      error: err
     }, `Failed to deliver article ${article._id} (${article.link}) of feed ${feedObject._id}`)
     if (err.code === 50035) {
       // Invalid format within an embed for example
