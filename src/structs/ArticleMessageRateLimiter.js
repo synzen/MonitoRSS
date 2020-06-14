@@ -23,7 +23,7 @@ class ArticleRateLimiter {
   }
 
   static async updateArticlesSent () {
-    if (this.sent === 0) {
+    if (this.sent === 0 || !Supporter.isMongoDatabase) {
       return
     }
     await GeneralStats.Model.updateOne({
@@ -39,7 +39,7 @@ class ArticleRateLimiter {
   }
 
   static async updateArticlesBlocked () {
-    if (this.blocked === 0) {
+    if (this.blocked === 0 || !Supporter.isMongoDatabase) {
       return
     }
     await GeneralStats.Model.updateOne({

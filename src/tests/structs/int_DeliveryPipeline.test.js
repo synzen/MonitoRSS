@@ -1,4 +1,5 @@
 const DeliveryPipeline = require('../../structs/DeliveryPipeline.js')
+const Feed = require('../../structs/db/Feed.js')
 const config = require('../../config.js')
 const DeliveryRecord = require('../../models/DeliveryRecord.js')
 const ArticleRateLimiter = require('../../structs/ArticleMessageRateLimiter.js')
@@ -8,6 +9,8 @@ jest.mock('../../structs/FeedData.js')
 jest.mock('../../structs/db/Feed.js')
 jest.mock('../../structs/ArticleMessageRateLimiter.js')
 jest.mock('../../structs/ArticleMessage.js')
+
+Feed.isMongoDatabase = true
 
 const Bot = () => ({
   shard: {
