@@ -6,6 +6,10 @@ const schema = new mongoose.Schema({
     type: String,
     required: true
   },
+  feedURL: {
+    type: String,
+    required: true
+  },
   channel: {
     type: String,
     required: true
