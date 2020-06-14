@@ -39,7 +39,7 @@ class DeliveryPipeline {
       }
       await this.sendNewArticle(newArticle, articleMessage)
     } catch (err) {
-      await this.handleArticleFailure(newArticle, err.message)
+      await this.handleArticleFailure(newArticle, err)
     }
   }
 
