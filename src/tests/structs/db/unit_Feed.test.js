@@ -241,6 +241,24 @@ describe('Unit::structs/db/Feed', function () {
       expect(feed.disabled).toEqual('No reason specified')
     })
   })
+  describe('hasSupporter', function () {
+    it('returns correctly if array of guilds passed in', async function () {
+      const feed = new Feed({ ...necessaryInit })
+      const supporterGuilds = ['a', 'b', 'c']
+      feed.guild = supporterGuilds[1]
+      await expect(feed.hasSupporter(supporterGuilds)).resolves.toEqual(true)
+      feed.guild = 'd'
+      await expect(feed.hasSupporter(supporterGuilds)).resolves.toEqual(false)
+    })
+    it('returns correctly if no array passed in', async function () {
+      jest.spyOn(Supporter, 'getValidSupporterOfGuild')
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
+      const feed = new Feed({ ...necessaryInit })
+      await expect(feed.hasSupporter()).resolves.toEqual(true)
+      await expect(feed.hasSupporter()).resolves.toEqual(false)
+    })
+  })
   describe('determineSchedule', function () {
     const schedules = [{
       name: 'default'
@@ -255,31 +273,45 @@ describe('Unit::structs/db/Feed', function () {
     }]
     beforeEach(function () {
       Schedule.getAll.mockResolvedValue([])
-      Supporter.getValidGuilds.mockResolvedValue([])
+      Supporter.getValidSupporterOfGuild.mockResolvedValue([])
     })
     afterEach(function () {
       Schedule.getAll.mockReset()
-      Supporter.getValidGuilds.mockReset()
+      Supporter.getValidSupporterOfGuild.mockReset()
     })
     it('calls Schedule.getAll if it is not passed in', async function () {
       const feed = new Feed({ ...necessaryInit })
       await feed.determineSchedule(undefined, [])
       expect(Schedule.getAll).toHaveBeenCalledTimes(1)
     })
-    it('calls Supporter.getValidGuilds if it is not passed in', async function () {
+    it('returns the supporter schedule if supported', async function () {
+      const origSchedule = Supporter.schedule
+      Supporter.schedule = {
+        foo: 'bar'
+      }
+      Supporter.enabled = true
       const feed = new Feed({ ...necessaryInit })
-      await feed.determineSchedule([], undefined)
-      expect(Supporter.getValidGuilds).toHaveBeenCalledTimes(1)
+      jest.spyOn(feed, 'hasSupporter')
+        .mockResolvedValue(true)
+      const determined = await feed.determineSchedule([])
+      expect(determined).toEqual(Supporter.schedule)
+      Supporter.schedule = origSchedule
+      Supporter.enabled = false
     })
-    it('does not call Supporter methods if both passed in', async function () {
+    it('does not return the supporter schedule if supported', async function () {
+      const origSchedule = Supporter.schedule
+      Supporter.schedule = {
+        foo: 'bar'
+      }
+      Supporter.enabled = true
       const feed = new Feed({ ...necessaryInit })
-      await feed.determineSchedule(undefined, [])
-      expect(Supporter.getValidGuilds).not.toHaveBeenCalled()
-    })
-    it('does not call Schedule methods if both passed in', async function () {
-      const feed = new Feed({ ...necessaryInit })
-      await feed.determineSchedule([], undefined)
-      expect(Schedule.getAll).not.toHaveBeenCalled()
+      feed.url = 'feed43'
+      jest.spyOn(feed, 'hasSupporter')
+        .mockResolvedValue(true)
+      const determined = await feed.determineSchedule([])
+      expect(determined).not.toEqual(Supporter.schedule)
+      Supporter.schedule = origSchedule
+      Supporter.enabled = false
     })
     it('returns the schedule that has the feed\'s id', async function () {
       const feed = new Feed({ ...necessaryInit })
@@ -301,44 +333,6 @@ describe('Unit::structs/db/Feed', function () {
       feed.url = 'no match'
       const schedule = await feed.determineSchedule(schedules, [])
       expect(schedule).toEqual(schedules[0])
-    })
-    describe('if supporter enabled', function () {
-      beforeEach(function () {
-        Supporter.enabled = true
-      })
-      afterEach(function () {
-        Supporter.enabled = false
-      })
-      it('returns the supporter schedule if it is not feed43', async function () {
-        const guild = 'w234tyg5er'
-        const scheduleName = 'foobzz'
-        Supporter.schedule = {
-          name: scheduleName
-        }
-        const feed = new Feed({ ...necessaryInit })
-        feed._id = 'no match'
-        feed.url = 'no match'
-        feed.guild = guild
-        const supporterGuilds = ['a', 'b', guild, 'd']
-        const schedule = await feed.determineSchedule(schedules, supporterGuilds)
-        expect(schedule).toEqual(Supporter.schedule)
-        Supporter.schedule = undefined
-      })
-      it('does not return supporter schedule if feed43', async function () {
-        const guild = 'w234hjnvbmr'
-        const scheduleName = 'foobzz'
-        Supporter.schedule = {
-          schedule: scheduleName
-        }
-        const feed = new Feed({ ...necessaryInit })
-        feed._id = 'no match'
-        feed.url = 'https://feed43.com'
-        feed.guild = guild
-        const supporterGuilds = ['a', 'b', guild, 'd']
-        const schedule = await feed.determineSchedule(schedules, supporterGuilds)
-        expect(schedule).not.toEqual(Supporter.schedule)
-        Supporter.schedule = undefined
-      })
     })
   })
 })
