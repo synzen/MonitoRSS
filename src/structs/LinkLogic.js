@@ -56,12 +56,17 @@ class LinkLogic extends EventEmitter {
   }
 
   _logDebug (feedID, message, object) {
-    if (this.debug.has(feedID)) {
-      if (object) {
-        this.log.info(object, message)
-      } else {
-        this.log.info(message)
+    let logObject = {}
+    if (object) {
+      logObject = {
+        ...logObject,
+        ...object
       }
+    } else {
+      logObject.feedID = feedID
+    }
+    if (this.debug.has(feedID)) {
+      this.log.info(logObject, message)
     }
   }
 
@@ -257,9 +262,11 @@ class LinkLogic extends EventEmitter {
     const totalArticles = articleList.length
     const checkDates = LinkLogic.shouldCheckDates(config, feed)
 
+    const mapObject = {}
+    comparisonReferences.forEach((val, key) => { mapObject[key] = val })
     this._logDebug(feedID, `Processing collection. Total article list length: ${totalArticles}`, {
-      comparisonReferences,
-      dbIDs
+      comparisonReferences: mapObject,
+      dbIDs: Array.from(dbIDs)
     })
 
     const newArticles = []
