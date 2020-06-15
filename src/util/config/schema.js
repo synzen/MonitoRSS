@@ -32,7 +32,7 @@ const databaseSchema = Joi.object({
   redis: Joi.string().strict().allow('').default(''),
   connection: Joi.object().default({}),
   articlesExpire: Joi.number().strict().greater(-1).default(14),
-  deliveryRecordsExpire: Joi.number().strict().greater(-1).default(5)
+  deliveryRecordsExpire: Joi.number().strict().greater(-1).default(2)
 })
 
 const feedsSchema = Joi.object({
