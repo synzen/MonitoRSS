@@ -46,11 +46,7 @@ async function listSubscribersVisual (data) {
   }
 
   const texts = splitTextByNewline(output)
-  return texts.map(text => new MessageVisual(text, {
-    allowedMentions: {
-      parse: []
-    }
-  }))
+  return texts.map(text => new MessageVisual(text))
 }
 
 const prompt = new LocalizedPrompt(listSubscribersVisual)

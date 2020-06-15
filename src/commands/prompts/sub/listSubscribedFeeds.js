@@ -40,11 +40,7 @@ async function listSubscribedFeedsVisual (data) {
   } else {
     output = `${translate('commands.sub.subscribedFeedsList')}\n\n${output}`
     const texts = splitTextByNewline(output)
-    return texts.map(text => new MessageVisual(text, {
-      allowedMentions: {
-        parse: []
-      }
-    }))
+    return texts.map(text => new MessageVisual(text))
   }
 }
 

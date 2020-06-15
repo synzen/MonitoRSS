@@ -32,11 +32,7 @@ function inputRoleVisual (data) {
     output += splitMentionsByNewlines(mentionStrings) + '\n'
   }
   const texts = splitTextByNewline(output)
-  return texts.map(text => new MessageVisual(text, {
-    allowedMentions: {
-      parse: []
-    }
-  }))
+  return texts.map(text => new MessageVisual(text))
 }
 
 /**
