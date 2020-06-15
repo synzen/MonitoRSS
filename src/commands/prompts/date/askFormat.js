@@ -50,9 +50,11 @@ async function askFormatFn (message, data) {
     profile.dateFormat = isDefault ? undefined : setting
     await profile.save()
   } else if (!isDefault) {
-    const newProfile = new Profile()
+    const newProfile = new Profile({
+      _id: message.guild.id,
+      dateFormat: setting
+    })
     await newProfile.save()
-    newProfile.dateFormat = setting
   }
   log.info({
     guild: message.guild,
