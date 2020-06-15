@@ -23,6 +23,10 @@ const schema = new mongoose.Schema({
 
 schema.add(Version)
 
+schema.index({
+  channel: 1
+})
+
 exports.schema = schema
 /** @type {import('mongoose').Model} */
 exports.Model = null
