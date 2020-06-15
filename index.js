@@ -6,10 +6,12 @@ const config = require('./src/config.js')
 exports.models = {
   Article: require('./src/models/Article.js'),
   Blacklist: require('./src/models/Blacklist.js'),
+  DeliveryRecord: require('./src/models/DeliveryRecord.js'),
   FailRecord: require('./src/models/FailRecord.js'),
   Feed: require('./src/models/Feed.js'),
   Feedback: require('./src/models/Feedback.js'),
   FilteredFormat: require('./src/models/FilteredFormat.js'),
+  GeneralStats: require('./src/models/GeneralStats.js'),
   KeyValue: require('./src/models/KeyValue.js'),
   Patron: require('./src/models/Patron.js'),
   Profile: require('./src/models/Profile.js'),
