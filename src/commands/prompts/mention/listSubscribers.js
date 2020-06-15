@@ -1,6 +1,7 @@
 const { MessageVisual } = require('discord.js-prompts')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const splitMentionsByNewlines = require('../common/utils/splitMentionsByNewlines.js')
+const splitTextByNewline = require('../common/utils/splitTextByNewline.js')
 const Translator = require('../../../structs/Translator.js')
 
 /**
@@ -43,10 +44,13 @@ async function listSubscribersVisual (data) {
   if (roleSubscribersStrings.length > 0) {
     output += `\n**Roles**\n${splitMentionsByNewlines(roleSubscribersStrings)}`
   }
-  return new MessageVisual(output, {
-    // It may be so large, the message will have to be split
-    split: true
-  })
+
+  const texts = splitTextByNewline(output)
+  return texts.map(text => new MessageVisual(text, {
+    allowedMentions: {
+      parse: []
+    }
+  }))
 }
 
 const prompt = new LocalizedPrompt(listSubscribersVisual)

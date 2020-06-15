@@ -1,7 +1,7 @@
 const { MessageVisual } = require('discord.js-prompts')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
-
+const splitTextByNewline = require('../common/utils/splitTextByNewline.js')
 /**
  * @typedef {Object} Data
  * @property {import('../../../structs/db/Profile.js')} [profile]
@@ -39,9 +39,12 @@ async function listSubscribedFeedsVisual (data) {
     return new MessageVisual(translate('commands.sub.noSubscribedFeedsList'))
   } else {
     output = `${translate('commands.sub.subscribedFeedsList')}\n\n${output}`
-    return new MessageVisual(output, {
-      split: true
-    })
+    const texts = splitTextByNewline(output)
+    return texts.map(text => new MessageVisual(text, {
+      allowedMentions: {
+        parse: []
+      }
+    }))
   }
 }
 

@@ -1,6 +1,7 @@
 const { Rejection, MessageVisual } = require('discord.js-prompts')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const splitMentionsByNewlines = require('../common/utils/splitMentionsByNewlines.js')
+const splitTextByNewline = require('../common/utils/splitTextByNewline.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
 
@@ -30,9 +31,12 @@ function inputRoleVisual (data) {
       .map(s => `<@&${s.id}>`)
     output += splitMentionsByNewlines(mentionStrings) + '\n'
   }
-  return new MessageVisual(output, {
-    split: true
-  })
+  const texts = splitTextByNewline(output)
+  return texts.map(text => new MessageVisual(text, {
+    allowedMentions: {
+      parse: []
+    }
+  }))
 }
 
 /**
