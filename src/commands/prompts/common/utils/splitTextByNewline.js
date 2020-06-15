@@ -1,12 +1,13 @@
 /**
  * @param {string} str
  */
-function splitTextByNewline (fullString) {
+function splitTextByNewline (fullString, maxLength = 1999) {
   const split = fullString.split('\n')
   const strings = []
   let thisString = ''
   for (const str of split) {
-    if (thisString.length < 1999) {
+    // Plus 1 for the newline
+    if (thisString.length + str.length + 1 < maxLength) {
       thisString += str + '\n'
     } else {
       strings.push(thisString)
