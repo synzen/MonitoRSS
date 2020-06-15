@@ -18,10 +18,12 @@ async function removeSuccessVisual (data) {
   const config = getConfig()
   const translate = Translator.createProfileTranslator(profile)
   const prefix = profile && profile.prefix ? profile.prefix : config.bot.prefix
-  const removed = `${translate('commands.remove.success')}\n\`\`\`\n\n${selectedFeeds.map(f => f.url).join('\n')}`
-  return new MessageVisual(`${removed}\`\`\`\n\n${translate('generics.backupReminder', {
+  const removed = `${translate('commands.remove.success')}\n\n**${selectedFeeds.map(f => `<${f.url}>`).join('\n')}**`
+  return new MessageVisual(`${removed}\n\n${translate('generics.backupReminder', {
     prefix
-  })}`)
+  })}`, {
+    split: true
+  })
 }
 
 const prompt = new LocalizedPrompt(removeSuccessVisual)
