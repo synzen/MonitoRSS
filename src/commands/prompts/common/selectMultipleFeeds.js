@@ -30,7 +30,7 @@ function selectMultipleFeedsVisual (data) {
 async function selectMultipleFeedsFn (message, data) {
   const { feeds } = data
   const { content } = message
-  const selectedFeeds = MenuEmbed.getMultiSelectOptionRange(content)
+  const selectedFeeds = MenuEmbed.getMultiSelectOptions(content)
     .map((index) => feeds[index - 1])
   return {
     ...data,
