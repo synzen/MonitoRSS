@@ -26,15 +26,23 @@ class ArticleRateLimiter {
     if (this.sent === 0 || !Supporter.isMongoDatabase) {
       return
     }
-    await GeneralStats.Model.updateOne({
-      _id: GeneralStats.TYPES.ARTICLES_SENT
-    }, {
-      $inc: {
+    /**
+     * @type {import('mongoose').Document}
+     */
+    const found = await GeneralStats.Model.findById(GeneralStats.TYPES.ARTICLES_SENT)
+    if (!found) {
+      const stat = new GeneralStats.Model({
+        _id: GeneralStats.TYPES.ARTICLES_SENT,
         data: ArticleRateLimiter.sent
-      }
-    }, {
-      upsert: true
-    })
+      })
+      await stat.save()
+    } else {
+      await found.updateOne({
+        $inc: {
+          data: ArticleRateLimiter.sent
+        }
+      })
+    }
     this.sent = 0
   }
 
@@ -42,15 +50,23 @@ class ArticleRateLimiter {
     if (this.blocked === 0 || !Supporter.isMongoDatabase) {
       return
     }
-    await GeneralStats.Model.updateOne({
-      _id: GeneralStats.TYPES.ARTICLES_BLOCKED
-    }, {
-      $inc: {
+    /**
+     * @type {import('mongoose').Document}
+     */
+    const found = await GeneralStats.Model.findById(GeneralStats.TYPES.ARTICLES_BLOCKED)
+    if (!found) {
+      const stat = new GeneralStats.Model({
+        _id: GeneralStats.TYPES.ARTICLES_BLOCKED,
         data: ArticleRateLimiter.blocked
-      }
-    }, {
-      upsert: true
-    })
+      })
+      await stat.save()
+    } else {
+      await found.updateOne({
+        $inc: {
+          data: ArticleRateLimiter.blocked
+        }
+      })
+    }
     this.blocked = 0
   }
 
