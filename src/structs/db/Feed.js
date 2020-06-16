@@ -339,7 +339,7 @@ class Feed extends FilterBase {
       return
     }
     try {
-      const docsByURL = await databaseFuncs.getAllDocuments(scheduleName)
+      const docsByURL = await databaseFuncs.getAllDocuments(scheduleName, undefined, [this.url])
       const docs = docsByURL[this.url] || []
       if (docs.length > 0) {
         // The collection already exists from a previous addition, no need to initialize
