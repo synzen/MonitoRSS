@@ -1,6 +1,6 @@
 {
   "name": "discord.rss",
-  "version": "6.4.7",
+  "version": "6.4.8",
   "description": "Discord RSS bot with customizable feeds",
   "main": "index.js",
   "author": "synzen",
