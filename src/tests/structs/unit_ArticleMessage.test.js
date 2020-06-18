@@ -6,17 +6,6 @@ const Article = require('../../structs/Article.js')
 jest.mock('discord.js')
 jest.mock('../../structs/Article.js')
 
-const Bot = () => ({
-  shard: {
-    ids: []
-  },
-  channels: {
-    cache: {
-      get: jest.fn()
-    }
-  }
-})
-
 describe('Unit::ArticleMessage', function () {
   const baseFeedData = {
     feed: {}
@@ -31,15 +20,13 @@ describe('Unit::ArticleMessage', function () {
         foo: 'barbara'
       }
       Article.mockImplementationOnce(() => parsedArticle)
-      const bot = Bot()
       const feedData = {
         foo: 'baz',
         feed: 'boobaz',
         filteredFormats: 'asrfdeuj'
       }
       const debug = true
-      const m = new ArticleMessage(bot, baseArticle, feedData, debug)
-      expect(m.bot).toEqual(bot)
+      const m = new ArticleMessage(baseArticle, feedData, debug)
       expect(m.article).toEqual(baseArticle)
       expect(m.feed).toEqual(feedData.feed)
       expect(m.filteredFormats).toEqual(feedData.filteredFormats)
@@ -63,7 +50,7 @@ describe('Unit::ArticleMessage', function () {
       const parsedArticle = {
         testFilters
       }
-      const m = new ArticleMessage(Bot(), {}, feedData)
+      const m = new ArticleMessage({}, feedData)
       m.parsedArticle = parsedArticle
       expect(m.passedFilters()).toEqual('what is here')
       expect(testFilters).toHaveBeenCalledWith(feedData.feed.rfilters)
@@ -84,7 +71,7 @@ describe('Unit::ArticleMessage', function () {
       const parsedArticle = {
         testFilters
       }
-      const m = new ArticleMessage(Bot(), {}, feedData)
+      const m = new ArticleMessage({}, feedData)
       m.parsedArticle = parsedArticle
       expect(m.passedFilters()).toEqual('water')
       expect(testFilters).toHaveBeenCalledWith(feedData.feed.filters)
@@ -103,7 +90,7 @@ describe('Unit::ArticleMessage', function () {
           webhook: {}
         }
       }
-      const m = new ArticleMessage(Bot(), {}, feedData)
+      const m = new ArticleMessage({}, feedData)
       expect(m.getWebhookNameAvatar(webhook))
         .toEqual({
           username: webhook.name,
@@ -125,7 +112,7 @@ describe('Unit::ArticleMessage', function () {
         }
       }
       const customName = 'we4r5ytu6j546ut7ryji5e6rr7irkmkw34ry54'
-      const m = new ArticleMessage(Bot(), {}, feedData)
+      const m = new ArticleMessage({}, feedData)
       m.parsedArticle = {
         convertKeywords: () => customName
       }
@@ -150,7 +137,7 @@ describe('Unit::ArticleMessage', function () {
         }
       }
       const customAvatar = 'we4r5ytu6j546ut7ryji5e6rr7irkmkw34ry54'
-      const m = new ArticleMessage(Bot(), {}, feedData)
+      const m = new ArticleMessage({}, feedData)
       m.parsedArticle = {
         convertImgs: () => customAvatar
       }
@@ -191,22 +178,20 @@ describe('Unit::ArticleMessage', function () {
       jest.restoreAllMocks()
     })
     it('throws an error if missing channel', function () {
-      const bot = Bot()
-      const m = new ArticleMessage(bot, rawArticle, baseFeedData)
+      const m = new ArticleMessage(rawArticle, baseFeedData)
       jest.spyOn(m, 'getMedium')
         .mockResolvedValue()
       return expect(m.send()).rejects.toBeInstanceOf(Error)
     })
     it('throws the same error that channel.send throws ', async function () {
-      const bot = Bot()
-      const m = new ArticleMessage(bot, rawArticle, baseFeedData)
+      const m = new ArticleMessage(rawArticle, baseFeedData)
       const error = new Error('hello world')
       error.code = 5555
       medium.send.mockRejectedValue(error)
       await expect(m.send()).rejects.toThrow(error)
     })
     it('does not retry if errorCode is 50013', async function () {
-      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const m = new ArticleMessage(rawArticle, baseFeedData)
       const error = new Error('hello world')
       error.code = 50013
       medium.send.mockRejectedValue(error)
@@ -214,7 +199,7 @@ describe('Unit::ArticleMessage', function () {
       expect(medium.send).toHaveBeenCalledTimes(1)
     })
     it('retries a maximum of 4 times with an unrecognized error', async function () {
-      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const m = new ArticleMessage(rawArticle, baseFeedData)
       const error = new Error('hello world')
       medium.send.mockRejectedValue(error)
       await expect(m.send()).rejects.toThrow(Error)
@@ -228,14 +213,14 @@ describe('Unit::ArticleMessage', function () {
         .mockReturnValue({})
     })
     it('parses roles, users, everyone', function () {
-      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const m = new ArticleMessage(rawArticle, baseFeedData)
       const embeds = []
       const options = m.createOptions(embeds)
       expect(options.allowedMentions.parse)
         .toEqual(expect.arrayContaining(['roles', 'users', 'everyone']))
     })
     it('sets the username and avatar URL if the medium is a webhook', function () {
-      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const m = new ArticleMessage(rawArticle, baseFeedData)
       const webhookSettings = {
         username: 'fooby',
         avatarURL: 'urlhere'
@@ -248,14 +233,14 @@ describe('Unit::ArticleMessage', function () {
       expect(options.avatarURL).toEqual(webhookSettings.avatarURL)
     })
     it('returns the first embed in a list of embeds if there is no webhook', function () {
-      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const m = new ArticleMessage(rawArticle, baseFeedData)
       const embeds = [1, 2, 3]
       const data = m.createOptions(embeds)
       expect(data.embed).toEqual(embeds[0])
       expect(data.embeds).toBeUndefined()
     })
     it('returns all the embeds in a list there is a webhook', function () {
-      const m = new ArticleMessage(Bot(), rawArticle, baseFeedData)
+      const m = new ArticleMessage(rawArticle, baseFeedData)
       const embeds = [1, 2, 3]
       const webhook = new Discord.Webhook()
       const data = m.createOptions(embeds, webhook)
@@ -271,7 +256,7 @@ describe('Unit::ArticleMessage', function () {
           }
         }
       }
-      const m = new ArticleMessage(Bot(), rawArticle, feedData)
+      const m = new ArticleMessage(rawArticle, feedData)
       const data = m.createOptions([])
       expect(data.split).toEqual(feedData.feed.split)
     })

@@ -48,9 +48,9 @@ module.exports = async (message) => {
     })
   }
 
-  const articleMessage = new ArticleTestMessage(message.client, article, feedData)
+  const articleMessage = new ArticleTestMessage(article, feedData)
   articleMessage.feed.channel = message.channel.id
 
-  await articleMessage.send()
+  await articleMessage.send(message.client)
   await grabMsg.delete()
 }

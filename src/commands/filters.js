@@ -64,8 +64,8 @@ module.exports = async (message, command, role) => {
       return message.channel.send(translate('commands.filters.noArticlesPassed'))
     }
     log.info(`Sending filtered article for ${feed.url}`)
-    const articleMessage = await (new NewArticle(article, feed)).getArticleMessage(message.client)
+    const articleMessage = await (new NewArticle(article, feed)).getArticleMessage()
     articleMessage.feed.channel = message.channel.id
-    await articleMessage.send()
+    await articleMessage.send(message.client)
   }
 }

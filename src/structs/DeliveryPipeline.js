@@ -23,7 +23,7 @@ class DeliveryPipeline {
     const { article, feedObject } = newArticle
     const constructedFeed = new Feed(feedObject)
     const feedData = await FeedData.ofFeed(constructedFeed)
-    return new ArticleMessage(this.bot, article, feedData, debug)
+    return new ArticleMessage(article, feedData, debug)
   }
 
   async deliver (newArticle, debug) {
@@ -67,7 +67,7 @@ class DeliveryPipeline {
 
   async sendNewArticle (newArticle, articleMessage) {
     const { article, feedObject } = newArticle
-    await ArticleRateLimiter.enqueue(articleMessage)
+    await ArticleRateLimiter.enqueue(articleMessage, this.bot)
     await this.recordSuccess(newArticle)
     this.log.debug(`Sent article ${article._id} of feed ${feedObject._id}`)
   }

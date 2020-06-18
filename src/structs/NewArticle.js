@@ -19,11 +19,11 @@ class NewArticle {
     }
   }
 
-  async getArticleMessage (bot, debug) {
+  async getArticleMessage (debug) {
     const feedObject = this.feedObject
     const feed = feedObject instanceof Feed ? feedObject : new Feed(feedObject)
     const feedData = await FeedData.ofFeed(feed)
-    const articleMessage = new ArticleMessage(bot, this.article, feedData, debug)
+    const articleMessage = new ArticleMessage(this.article, feedData, debug)
     return articleMessage
   }
 }

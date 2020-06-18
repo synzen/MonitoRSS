@@ -95,9 +95,10 @@ class ArticleRateLimiter {
 
   /**
    * @param {import('../structs/ArticleMessage.js')} articleMessage
+   * @param {import('discord.js').Client} bot
    */
-  static async enqueue (articleMessage) {
-    const channel = articleMessage.getChannel()
+  static async enqueue (articleMessage, bot) {
+    const channel = articleMessage.getChannel(bot)
     if (!channel) {
       return
     }
@@ -108,7 +109,7 @@ class ArticleRateLimiter {
       throw new Error('Rate limited article')
     }
     ++ArticleRateLimiter.sent
-    await articleLimiter.send(articleMessage)
+    await articleLimiter.send(articleMessage, bot)
   }
 
   isAtLimit () {
@@ -121,10 +122,11 @@ class ArticleRateLimiter {
 
   /**
    * @param {import('./ArticleMessage.js')} articleMessage
+   * @param {import('discord.js').Client} bot
    */
-  async send (articleMessage) {
+  async send (articleMessage, bot) {
     --this.articlesRemaining
-    const sent = await articleMessage.send()
+    const sent = await articleMessage.send(bot)
     return sent
   }
 }

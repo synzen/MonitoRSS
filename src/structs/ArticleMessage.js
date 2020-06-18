@@ -6,15 +6,12 @@ const devLevels = require('../util/devLevels.js')
 
 class ArticleMessage {
   /**
-   * @param {Discord.Client} bot
    * @param {Object<string, any>} article
    * @param {import('./FeedData.js')} feedData
    * @param {boolean} debug
    */
-  constructor (bot, article, feedData, debug = false) {
-    this.bot = bot
+  constructor (article, feedData, debug = false) {
     this.config = getConfig()
-    this.log = createLogger(bot.shard.ids[0])
     this.debug = debug
     this.article = article
     this.feed = feedData.feed
@@ -32,8 +29,11 @@ class ArticleMessage {
     }
   }
 
-  getChannel () {
-    const channel = this.bot.channels.cache.get(this.feed.channel)
+  /**
+   * @param {import('discord.js').Client} bot
+   */
+  getChannel (bot) {
+    const channel = bot.channels.cache.get(this.feed.channel)
     return channel
   }
 
@@ -170,9 +170,12 @@ class ArticleMessage {
     return richEmbeds
   }
 
-  async getWebhook () {
+  /**
+   * @param {import('discord.js').Client} bot
+   */
+  async getWebhook (bot) {
     const { feed } = this
-    const channel = this.getChannel()
+    const channel = this.getChannel(bot)
     if (!channel) {
       return
     }
@@ -188,7 +191,8 @@ class ArticleMessage {
       }
       return hook
     } catch (err) {
-      this.log.warn({
+      const log = createLogger(bot.shard.ids[0])
+      log.warn({
         channel,
         error: err
       }, 'Cannot fetch webhooks for ArticleMessage webhook initialization to send message')
@@ -265,20 +269,26 @@ class ArticleMessage {
     return options
   }
 
-  async getMedium () {
-    const webhook = await this.getWebhook()
+  /**
+   * @param {import('discord.js').Client} bot
+   */
+  async getMedium (bot) {
+    const webhook = await this.getWebhook(bot)
     if (webhook) {
       return webhook
     }
-    const channel = this.getChannel()
+    const channel = this.getChannel(bot)
     return channel
   }
 
-  async send () {
+  /**
+   * @param {import('discord.js').Client} bot
+   */
+  async send (bot) {
     if (devLevels.disableOutgoingMessages()) {
       return
     }
-    const medium = await this.getMedium()
+    const medium = await this.getMedium(bot)
     if (!medium) {
       throw new Error('Missing medium to send message to')
     }
@@ -293,13 +303,14 @@ class ArticleMessage {
       // 50013 = Missing Permissions, 50035 = Invalid form
       if (err.code === 50013 || err.code === 50035 || this.sendFailed++ === 3) {
         if (this.debug) {
-          this.log.info({
+          const log = createLogger(bot.shard.ids[0])
+          log.info({
             error: err
           }, `${this.feed._id}: Message has been translated but could not be sent (TITLE: ${this.article.title})`)
         }
         throw err
       }
-      return this.send()
+      return this.send(bot)
     }
   }
 }

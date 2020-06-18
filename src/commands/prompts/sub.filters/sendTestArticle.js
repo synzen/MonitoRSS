@@ -30,9 +30,9 @@ async function sendTestArticleVisual (data) {
     return new MessageVisual(translate('commands.filters.noArticlesPassed'))
   }
   const articleMessage = await (new NewArticle(article, feed))
-    .getArticleMessage(channel.client)
+    .getArticleMessage()
   const { embeds, text } = articleMessage.generateMessage()
-  const options = articleMessage.createOptions(embeds, articleMessage.getChannel())
+  const options = articleMessage.createOptions(embeds, articleMessage.getChannel(channel.client))
 
   return new MessageVisual(text, {
     ...options,
