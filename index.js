@@ -24,6 +24,8 @@ exports.models = {
 
 // Structures
 exports.Article = require('./src/structs/Article.js')
+exports.ArticleMessage = require('./src/structs/ArticleMessage.js')
+exports.ArticleTestMessage = require('./src/structs/ArticleTestMessage.js')
 exports.Client = require('./src/structs/Client.js')
 exports.ClientManager = require('./src/structs/ClientManager.js')
 exports.FeedData = require('./src/structs/FeedData.js')
