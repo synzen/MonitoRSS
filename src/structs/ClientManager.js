@@ -1,4 +1,3 @@
-process.env.DRSS = true
 const path = require('path')
 const Discord = require('discord.js')
 const connectDb = require('../util/connectDatabase.js')

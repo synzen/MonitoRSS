@@ -1,4 +1,3 @@
-process.env.DRSS = true
 const Discord = require('discord.js')
 const EventEmitter = require('events')
 const listeners = require('../util/listeners.js')
