@@ -120,9 +120,9 @@ describe('Unit::structs/DeliveryPipeline', function () {
       }
       jest.spyOn(pipeline, 'createArticleMessage')
         .mockReturnValue(articleMessage)
-      const enqueue = jest.spyOn(ArticleRateLimiter, 'enqueue')
+      const sendNewArticle = jest.spyOn(pipeline, 'sendNewArticle')
       await pipeline.deliver(newArticle)
-      expect(enqueue).toHaveBeenCalledWith(articleMessage)
+      expect(sendNewArticle).toHaveBeenCalledWith(newArticle, articleMessage)
     })
     it('rejects if failure handling throws', async () => {
       const pipeline = new DeliveryPipeline(Bot())

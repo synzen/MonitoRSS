@@ -74,10 +74,15 @@ describe('Unit::structs/DeliveryPipeline', function () {
     })
   })
   describe('createArticleMessage', () => {
-    it('returns the article message', async () => {
+    it('returns the created article message', async () => {
       const pipeline = new DeliveryPipeline(Bot())
+      const createdMessage = {
+        foo: 'baz'
+      }
+      jest.spyOn(ArticleMessage, 'create')
+        .mockReturnValue(createdMessage)
       await expect(pipeline.createArticleMessage({}))
-        .resolves.toBeInstanceOf(ArticleMessage)
+        .resolves.toEqual(createdMessage)
     })
   })
   describe('deliver', () => {
@@ -174,15 +179,17 @@ describe('Unit::structs/DeliveryPipeline', function () {
     })
   })
   describe('sendNewArticle', () => {
+    beforeEach(() => {})
     it('enqueues the article', async () => {
-      const pipeline = new DeliveryPipeline(Bot())
+      const bot = Bot()
+      const pipeline = new DeliveryPipeline(bot)
       const newArticle = NewArticle()
       const articleMessage = {
         foo: 'baz'
       }
       await pipeline.sendNewArticle(newArticle, articleMessage)
       expect(ArticleRateLimiter.enqueue)
-        .toHaveBeenCalledWith(articleMessage)
+        .toHaveBeenCalledWith(articleMessage, bot)
     })
     it('records the success', async () => {
       const pipeline = new DeliveryPipeline(Bot())
