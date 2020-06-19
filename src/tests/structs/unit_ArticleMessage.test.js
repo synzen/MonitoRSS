@@ -165,7 +165,7 @@ describe('Unit::ArticleMessage', function () {
       }
       jest.spyOn(ArticleMessage.prototype, 'getWebhook')
         .mockImplementation()
-      jest.spyOn(ArticleMessage.prototype, 'createOptions')
+      jest.spyOn(ArticleMessage.prototype, 'createTextAndOptions')
         .mockImplementation(() => generatedMessage)
       jest.spyOn(ArticleMessage.prototype, 'getMedium')
         .mockReturnValue(medium)
@@ -259,6 +259,20 @@ describe('Unit::ArticleMessage', function () {
       const m = new ArticleMessage(rawArticle, feedData)
       const data = m.createOptions([])
       expect(data.split).toEqual(feedData.feed.split)
+    })
+  })
+  describe('createTextAndOptions', function () {
+    beforeEach(function () {
+      jest.spyOn(ArticleMessage.prototype, 'generateMessage')
+        .mockReturnValue({})
+      jest.spyOn(ArticleMessage.prototype, 'createOptions')
+        .mockImplementation()
+    })
+    it('returns text and options', function () {
+      const m = new ArticleMessage({}, baseFeedData)
+      const data = m.createTextAndOptions()
+      expect(data).toHaveProperty('text')
+      expect(data).toHaveProperty('options')
     })
   })
 })

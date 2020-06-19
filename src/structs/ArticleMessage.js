@@ -287,6 +287,15 @@ class ArticleMessage {
     return options
   }
 
+  createTextAndOptions (medium) {
+    const { text, embeds } = this.generateMessage()
+    const options = this.createOptions(embeds, medium)
+    return {
+      text,
+      options
+    }
+  }
+
   /**
    * @param {import('discord.js').Client} bot
    */
@@ -311,8 +320,7 @@ class ArticleMessage {
       throw new Error('Missing medium to send message to')
     }
 
-    const { text, embeds } = this.generateMessage()
-    const options = this.createOptions(embeds, medium)
+    const { text, options } = this.createTextAndOptions(medium)
 
     // Send the message, and repeat attempt if failed
     try {
