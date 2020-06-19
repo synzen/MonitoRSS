@@ -1,5 +1,5 @@
 const { MessageVisual } = require('discord.js-prompts')
-const NewArticle = require('../../../structs/NewArticle.js')
+const ArticleMessage = require('../../../structs/ArticleMessage.js')
 const FeedFetcher = require('../../../util/FeedFetcher.js')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
@@ -29,8 +29,7 @@ async function sendTestArticleVisual (data) {
     const translate = Translator.createProfileTranslator(profile)
     return new MessageVisual(translate('commands.filters.noArticlesPassed'))
   }
-  const articleMessage = await (new NewArticle(article, feed))
-    .getArticleMessage()
+  const articleMessage = await ArticleMessage.create(feed, article)
   const { embeds, text } = articleMessage.generateMessage()
   const options = articleMessage.createOptions(embeds, articleMessage.getChannel(channel.client))
 

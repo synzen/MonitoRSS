@@ -2,7 +2,6 @@ const DeliveryRecord = require('../models/DeliveryRecord.js')
 const ArticleMessage = require('./ArticleMessage.js')
 const Feed = require('./db/Feed.js')
 const ArticleRateLimiter = require('./ArticleMessageRateLimiter.js')
-const FeedData = require('./FeedData.js')
 const createLogger = require('../util/logger/create.js')
 const configuration = require('../config.js')
 
@@ -21,9 +20,7 @@ class DeliveryPipeline {
 
   async createArticleMessage (newArticle, debug) {
     const { article, feedObject } = newArticle
-    const constructedFeed = new Feed(feedObject)
-    const feedData = await FeedData.ofFeed(constructedFeed)
-    return new ArticleMessage(article, feedData, debug)
+    return ArticleMessage.create(feedObject, article, debug)
   }
 
   async deliver (newArticle, debug) {

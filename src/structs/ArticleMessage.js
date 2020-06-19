@@ -3,6 +3,8 @@ const Article = require('./Article.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
 const devLevels = require('../util/devLevels.js')
+const Feed = require('./db/Feed.js')
+const FeedData = require('./FeedData.js')
 
 class ArticleMessage {
   /**
@@ -18,6 +20,22 @@ class ArticleMessage {
     this.filteredFormats = feedData.filteredFormats
     this.sendFailed = 0
     this.parsedArticle = new Article(article, feedData)
+  }
+
+  /**
+   * @param {import('./db/Feed.js')|Object<string, any>} feed
+   * @param {Object<string, any>} article
+   * @param {boolean} debug
+   */
+  static async create (feed, article, debug) {
+    if (feed instanceof Feed) {
+      const feedData = await FeedData.ofFeed(feed)
+      return new ArticleMessage(article, feedData, debug)
+    } else {
+      const reconstructedFeed = new Feed(feed)
+      const feedData = await FeedData.ofFeed(reconstructedFeed)
+      return new ArticleMessage(article, feedData, debug)
+    }
   }
 
   passedFilters () {
