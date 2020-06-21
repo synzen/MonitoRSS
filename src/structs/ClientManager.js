@@ -35,6 +35,7 @@ class ClientManager extends EventEmitter {
     this.config = setConfig(options.config)
     process.env.DRSS_CONFIG = JSON.stringify(this.config)
     this.log = createLogger('M')
+    this.finishedSetup = false
     this.setPresence = options ? options.setPresence : false
     this.customSchedules = options ? options.schedules : {}
     ClientManager.validateCustomSchedules(this.customSchedules)
@@ -200,7 +201,23 @@ class ClientManager extends EventEmitter {
   }
 
   async connectToDatabase () {
-    return connectDb(this.config.database.uri, this.config.database.connection)
+    const mongo = await connectDb(this.config.database.uri, this.config.database.connection)
+    mongo.on('error', (error) => {
+      this.log.fatal(error, 'MongoDB connection error')
+      this.kill()
+    })
+    mongo.on('disconnected', () => {
+      this.log.error('MongoDB disconnected')
+      this.stopFetching()
+    })
+    mongo.on('reconnected', () => {
+      this.log.info('MongoDB reconnected')
+      if (!this.finishedSetup) {
+        return
+      }
+      this.startFetching()
+    })
+    return mongo
   }
 
   messageHandler (shard, message) {
@@ -222,6 +239,25 @@ class ClientManager extends EventEmitter {
       case ipc.TYPES.ADD_DEBUG_FEEDID: this._addDebugFeedIDEvent(message.data); break
       case ipc.TYPES.REMOVE_DEBUG_FEEDID: this._removeDebugFeedIDEvent(message.data); break
     }
+  }
+
+  startFetching () {
+    if (this.scheduleManager.timers.length > 0) {
+      // Aready running
+      return
+    }
+    if (!devLevels.disableCycles()) {
+      this.scheduleManager.beginTimers()
+      this.log.info('Started fetch intervals')
+    }
+  }
+
+  stopFetching () {
+    if (this.scheduleManager.timers.length === 0) {
+      return
+    }
+    this.scheduleManager.clearTimers()
+    this.log.info('Stopped fetch intervals')
   }
 
   kill () {
@@ -260,6 +296,9 @@ class ClientManager extends EventEmitter {
   }
 
   async _initCompleteEvent (shard) {
+    if (this.finishedSetup) {
+      return
+    }
     if (!this.queuedArticles.has(shard.id)) {
       this.queuedArticles.set(shard.id, [])
     }
@@ -277,14 +316,13 @@ class ClientManager extends EventEmitter {
           this.log.error(err, 'Failed to refresh patrons')
         })
       }
-      if (!devLevels.disableCycles()) {
-        this.scheduleManager.beginTimers()
-      }
+      this.startFetching()
       if (devLevels.dumpHeap()) {
         this.setupHeapDumps()
       }
       this.broadcast(ipc.TYPES.FINISHED_INIT)
       this.emit('finishInit')
+      this.finishedSetup = true
     } catch (err) {
       this.log.fatal(err, 'Post-initialization failed in sharding manager')
     }

@@ -82,7 +82,20 @@ class Client extends EventEmitter {
 
   async connectToDatabase () {
     const config = getConfig()
-    return connectDb(config.database.uri, config.database.connection)
+    const mongo = await connectDb(config.database.uri, config.database.connection)
+    mongo.on('error', (error) => {
+      this.log.fatal(error, 'MongoDB connection error')
+      this.kill()
+    })
+    mongo.on('disconnected', () => {
+      this.log.error('MongoDB disconnected')
+      this.stop()
+    })
+    mongo.on('reconnected', () => {
+      this.log.info('MongoDB reconnected')
+      this.restart()
+    })
+    return mongo
   }
 
   _setup () {
@@ -91,8 +104,8 @@ class Client extends EventEmitter {
       this.log.warn('Websocket error', err)
       const config = getConfig()
       if (config.bot.exitOnSocketIssues === true) {
-        this.log.warn('Stopping all processes due to config.bot.exitOnSocketIssues')
-        ipc.send(ipc.TYPES.KILL)
+        this.log.info('Stopping all processes due to config.bot.exitOnSocketIssues')
+        this.kill()
       } else {
         this.stop()
       }
@@ -248,6 +261,10 @@ class Client extends EventEmitter {
     } catch (err) {
       this.log.error(err, 'Client start')
     }
+  }
+
+  kill () {
+    ipc.send(ipc.TYPES.KILL)
   }
 
   stop () {
