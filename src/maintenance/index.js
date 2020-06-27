@@ -49,9 +49,9 @@ async function pruneWithBot (bot) {
   await Promise.all([
     pruneSubscribers.pruneSubscribers(bot, feeds),
     pruneProfileAlerts(bot),
-    pruneWebhooks.pruneWebhooks(bot, feeds),
-    checkPermissions.feeds(bot, feeds)
+    pruneWebhooks.pruneWebhooks(bot, feeds)
   ])
+  await checkPermissions.feeds(bot, feeds)
 }
 
 /**

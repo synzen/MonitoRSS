@@ -151,6 +151,17 @@ describe('Unit::maintenance/checkPermission', function () {
       expect(feed.disable).not.toHaveBeenCalled()
       expect(res).toEqual(true)
     })
+    it('does not call disable if feed has webhook', async function () {
+      const feed = {
+        disable: jest.fn(() => Promise.resolve()),
+        embeds: [],
+        webhook: {}
+      }
+      permissionsIn.mockReturnValue(new Set())
+      const res = await checkPermissions.feed(feed, bot)
+      expect(feed.disable).not.toHaveBeenCalled()
+      expect(res).toEqual(false)
+    })
     it('enables the feed if all permissions found', async function () {
       const feed = {
         disabled: 'Missing permissions VIEW_CHANNEL',

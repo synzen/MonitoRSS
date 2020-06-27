@@ -3,7 +3,8 @@ const createLogger = require('../util/logger/create.js')
 
 /**
  * Precondition: The feed's guild belongs to the bot, or the
- * shard if it is sharded.
+ * shard if it is sharded. Webhooks have been pruned.
+ *
  * @param {import('../../structs/db/Feed.js')} feed - The feed
  * @param {import('discord.js').Client} bot
  * @returns {Promise<boolean>} - The feed's disabled status
@@ -13,6 +14,9 @@ async function feed (feed, bot) {
   if (feed.disabled && !feed.disabled.startsWith('Missing permissions')) {
     // The feed is disabled for a separate reason - skip all checks
     return true
+  }
+  if (feed.webhook) {
+    return false
   }
   const channel = bot.channels.cache.get(feed.channel)
   const guild = channel.guild
