@@ -242,13 +242,14 @@ class Client extends EventEmitter {
       return this.log.warn(`Ignoring start command because of ${this.state} state`)
     }
     const config = getConfig()
+    const disableCommands = devLevels.disableCommands() || !config.bot.enableCommands
     this.state = STATES.STARTING
     try {
       if ((this.mongo && this.mongo.readyState !== 1) || Profile.isMongoDatabase) {
         this.mongo = await this.connectToDatabase()
       }
       await initialize.setupModels(this.mongo)
-      await initialize.setupCommands()
+      await initialize.setupCommands(disableCommands)
       const uri = config.database.uri
       this.log.info(`Database URI detected as a ${uri.startsWith('mongo') ? 'MongoDB URI' : 'folder URI'}`)
       await maintenance.pruneWithBot(this.bot)
@@ -256,7 +257,7 @@ class Client extends EventEmitter {
       await initialize.setupRateLimiters(this.bot)
       this.log.info(`Commands have been ${config.bot.enableCommands ? 'enabled' : 'disabled'}.`)
       ipc.send(ipc.TYPES.INIT_COMPLETE)
-      listeners.createManagers(this.bot)
+      listeners.createManagers(this.bot, disableCommands)
       this.emit('finishInit')
     } catch (err) {
       this.log.error(err, 'Client start')

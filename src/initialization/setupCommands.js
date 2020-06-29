@@ -1,9 +1,12 @@
 const Profile = require('../structs/db/Profile.js')
 const Command = require('../structs/Command.js')
 
-async function setupCommands () {
+async function setupCommands (disableCommands) {
   await Profile.populatePrefixes()
   await Command.initialize()
+  if (disableCommands) {
+    Command.disable()
+  }
 }
 
 module.exports = setupCommands

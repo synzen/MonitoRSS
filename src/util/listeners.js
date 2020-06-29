@@ -15,9 +15,6 @@ exports.createManagers = (bot) => {
     eventHandlers.push({ name: eventName, func: eventHandler })
     bot.on(eventName, eventHandler)
   }
-  if (!devLevels.disableCommands()) {
-    Command.enable()
-  }
 }
 
 exports.disableAll = (bot) => {
