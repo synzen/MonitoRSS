@@ -6,6 +6,8 @@ async function setupCommands (disableCommands) {
   await Command.initialize()
   if (disableCommands) {
     Command.disable()
+  } else {
+    Command.enable()
   }
 }
 
