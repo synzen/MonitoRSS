@@ -21,7 +21,7 @@ describe('Unit::LinkLogic', function () {
           }
         }
       }
-      const accessor = 'foo.bar.here'
+      const accessor = 'foo_bar_here'
       expect(LinkLogic.getArticleProperty(article, accessor))
         .toEqual(1)
     })
@@ -33,7 +33,7 @@ describe('Unit::LinkLogic', function () {
           }
         }
       }
-      const accessor = 'foo.bar.here.doo.dat'
+      const accessor = 'foo_bar_here_doo_dat'
       expect(LinkLogic.getArticleProperty(article, accessor))
         .toBeUndefined()
     })
