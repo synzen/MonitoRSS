@@ -71,6 +71,24 @@ class LinkLogic extends EventEmitter {
   }
 
   /**
+   * @param {Object<string, any>} article
+   * @param {string} accessor
+   */
+  static getArticleProperty (article, accessor) {
+    const layers = accessor.split('.')
+    let valueSoFar = article[layers[0]]
+    for (let i = 1; i < layers.length; ++i) {
+      const property = layers[i]
+      const newValueSoFar = valueSoFar[property]
+      if (!newValueSoFar) {
+        return
+      }
+      valueSoFar = newValueSoFar
+    }
+    return valueSoFar
+  }
+
+  /**
    * @param {Object[]} docs
    */
   static getComparisonReferences (docs) {
@@ -106,7 +124,7 @@ class LinkLogic extends EventEmitter {
       return false
     }
     for (const property of comparisons) {
-      const value = article[property]
+      const value = this.getArticleProperty(article, property)
       if (!value || typeof value !== 'string') {
         continue
       }
@@ -135,7 +153,7 @@ class LinkLogic extends EventEmitter {
       return false
     }
     for (const property of comparisons) {
-      const value = article[property]
+      const value = this.getArticleProperty(article, property)
       if (!value || typeof value !== 'string') {
         continue
       }
@@ -229,7 +247,7 @@ class LinkLogic extends EventEmitter {
     const feedID = feed._id
     const properties = [...feed.ncomparisons, ...feed.pcomparisons]
     for (const property of properties) {
-      const value = article[property]
+      const value = LinkLogic.getArticleProperty(article, property)
       if (!value || typeof value !== 'string') {
         continue
       }

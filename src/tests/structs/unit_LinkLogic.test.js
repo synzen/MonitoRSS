@@ -12,6 +12,32 @@ describe('Unit::LinkLogic', function () {
     jest.restoreAllMocks()
     NewArticle.mockReset()
   })
+  describe('static getArticleProperty', function () {
+    it('returns correctly', function () {
+      const article = {
+        foo: {
+          bar: {
+            here: 1
+          }
+        }
+      }
+      const accessor = 'foo.bar.here'
+      expect(LinkLogic.getArticleProperty(article, accessor))
+        .toEqual(1)
+    })
+    it('returns undefined on invalid property', function () {
+      const article = {
+        foo: {
+          bar: {
+            here: 1
+          }
+        }
+      }
+      const accessor = 'foo.bar.here.doo.dat'
+      expect(LinkLogic.getArticleProperty(article, accessor))
+        .toBeUndefined()
+    })
+  })
   describe('getComparisonReferences', function () {
     it('returns a map', function () {
       const result = LinkLogic.getComparisonReferences([])

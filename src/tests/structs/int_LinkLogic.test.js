@@ -144,6 +144,55 @@ describe('Int::structs/LinkLogic Database', function () {
       feedObject: rssList.feedid1
     })
   })
+  it('sends new articles when id exists in DB but pass pcomparison with nested value', async function () {
+    const articleList = [{
+      _id: 'a',
+      guid: 'a',
+      my: {
+        property: 't1'
+      }
+    }, {
+      _id: 'b',
+      guid: 'b',
+      my: {
+        property: 't2'
+      }
+    }]
+    const rssList = {
+      feedid1: {
+        _id: 'feedid1',
+        pcomparisons: ['my.property'],
+        ncomparisons: []
+      }
+    }
+    const logicData = {
+      link: 'https://www.example.com',
+      shardID: 1,
+      scheduleName: 'default',
+      config: {
+        feeds: {}
+      },
+      articleList,
+      rssList,
+      useIdType: 'guid'
+    }
+    const docs = [{
+      id: 'a',
+      feedURL: logicData.link,
+      shardID: logicData.shardID,
+      scheduleName: logicData.scheduleName,
+      properties: {
+        title: 't1'
+      }
+    }]
+    const logic = new LinkLogic(logicData)
+    const { newArticles } = await logic.run(docs)
+    expect(newArticles).toHaveLength(1)
+    expect(newArticles[0]).toEqual({
+      article: articleList[1],
+      feedObject: rssList.feedid1
+    })
+  })
   it('does not send articles when id is new but ncomparison blocks', async function () {
     const articleList = [{
       _id: 'a',
