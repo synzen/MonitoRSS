@@ -1,4 +1,5 @@
 const Article = require('../models/Article.js')
+const LinkLogic = require('../structs/LinkLogic.js')
 
 /**
  * @param {Object<string, any>} article
@@ -9,7 +10,7 @@ const Article = require('../models/Article.js')
 function formatArticleForDatabase (article, properties, meta) {
   const propertyValues = {}
   for (const property of properties) {
-    const value = article[property]
+    const value = LinkLogic.getArticleProperty(article, property)
     if (value && typeof value === 'string') {
       propertyValues[property] = value
     }
@@ -31,7 +32,7 @@ function updatedDocumentForDatabase (article, document, properties) {
   const docProperties = document.properties
   let updated = false
   for (const property of properties) {
-    const articleValue = article[property]
+    const articleValue = LinkLogic.getArticleProperty(article, property)
     if (!articleValue || typeof articleValue !== 'string') {
       continue
     }

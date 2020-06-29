@@ -75,7 +75,7 @@ class LinkLogic extends EventEmitter {
    * @param {string} accessor
    */
   static getArticleProperty (article, accessor) {
-    const layers = accessor.split('.')
+    const layers = accessor.split('_')
     let valueSoFar = article[layers[0]]
     for (let i = 1; i < layers.length; ++i) {
       const property = layers[i]
