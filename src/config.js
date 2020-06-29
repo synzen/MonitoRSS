@@ -20,17 +20,17 @@ exports.set = (override, skipValidation) => {
   log.level = process.env.DRSS_LOG_LEVEL || logOverride.level || log.level
   log.destination = process.env.DRSS_LOG_DESTINATION || logOverride.destination || log.destination
   log.linkErrs = process.env.DRSS_LOG_LINKERRS !== undefined
-    ? Boolean(process.env.DRSS_LOG_LINKERRS)
+    ? process.env.DRSS_LOG_LINKERRS === 'true'
     : logOverride.linkErrs !== undefined
       ? logOverride.linkErrs
       : log.linkErrs
   log.unfiltered = process.env.DRSS_LOG_UNFILTERED !== undefined
-    ? Boolean(process.env.DRSS_LOG_UNFILTERED)
+    ? process.env.DRSS_LOG_UNFILTERED === 'true'
     : logOverride.unfiltered !== undefined
       ? logOverride.unfiltered
       : log.unfiltered
   log.failedFeeds = process.env.DRSS_LOG_FAILEDFEEDS !== undefined
-    ? Boolean(process.env.DRSS_LOG_FAILEDFEEDS)
+    ? process.env.DRSS_LOG_FAILEDFEEDS === 'true'
     : logOverride.failedFeeds !== undefined
       ? logOverride.failedFeeds
       : log.failedFeeds
@@ -44,7 +44,7 @@ exports.set = (override, skipValidation) => {
   bot.token = process.env.DRSS_BOT_TOKEN || botOverride.token || bot.token
   bot.locale = process.env.DRSS_BOT_LOCALE || botOverride.locale || bot.locale
   bot.enableCommands = process.env.DRSS_BOT_ENABLECOMMANDS !== undefined
-    ? Boolean(process.env.DRSS_BOT_ENABLECOMMANDS)
+    ? process.env.DRSS_BOT_ENABLECOMMANDS === 'true'
     : botOverride.enableCommands !== undefined
       ? botOverride.enableCommands
       : bot.enableCommands
@@ -60,17 +60,17 @@ exports.set = (override, skipValidation) => {
       ? botOverride.menuColor
       : bot.menuColor
   bot.deleteMenus = process.env.DRSS_BOT_DELETEMENUS !== undefined
-    ? Boolean(process.env.DRSS_BOT_DELETEMENUS)
+    ? process.env.DRSS_BOT_DELETEMENUS === 'true'
     : botOverride.deleteMenus !== undefined
       ? botOverride.deleteMenus
       : bot.deleteMenus
   bot.runSchedulesOnStart = process.env.DRSS_BOT_RUNSCHEDULESONSTART !== undefined
-    ? Boolean(process.env.RUNSCHEDULESONSTART)
+    ? process.env.RUNSCHEDULESONSTART === 'true'
     : botOverride.runSchedulesOnStart !== undefined
       ? botOverride.runSchedulesOnStart
       : bot.runSchedulesOnStart
   bot.exitOnSocketIssues = process.env.DRSS_BOT_EXITONSOCKETISSUES !== undefined
-    ? Boolean(process.env.DRSS_BOT_EXITONSOCKETISSUES)
+    ? process.env.DRSS_BOT_EXITONSOCKETISSUES === 'true'
     : botOverride.exitOnSocketIssues !== undefined
       ? botOverride.exitOnSocketIssues
       : bot.exitOnSocketIssues
@@ -116,12 +116,12 @@ exports.set = (override, skipValidation) => {
   feeds.dateLanguage = process.env.DRSS_FEEDS_DATELANGUAGE || feedsOverride.dateLanguage || feeds.dateLanguage
   feeds.dateLanguageList = envArray('DRSS_FEEDS_DATELANGUAGELIST') || feedsOverride.dateLanguageList || feeds.dateLanguageList
   feeds.dateFallback = process.env.DRSS_FEEDS_DATEFALLBACK !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_DATEFALLBACK)
+    ? process.env.DRSS_FEEDS_DATEFALLBACK === 'true'
     : feedsOverride.dateFallback !== undefined
       ? feedsOverride.dateFallback
       : feeds.dateFallback
   feeds.timeFallback = process.env.DRSS_FEEDS_TIMEFALLBACK !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_TIMEFALLBACK)
+    ? process.env.DRSS_FEEDS_TIMEFALLBACK === 'true'
     : feedsOverride.timeFallback !== undefined
       ? feedsOverride.timeFallback
       : feeds.timeFallback
@@ -136,12 +136,12 @@ exports.set = (override, skipValidation) => {
       ? feedsOverride.hoursUntilFail
       : feeds.hoursUntilFail
   feeds.notifyFail = process.env.DRSS_FEEDS_NOTIFYFAIL !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_NOTIFYFAIL)
+    ? process.env.DRSS_FEEDS_NOTIFYFAIL === 'true'
     : feedsOverride.notifyFail !== undefined
       ? feedsOverride.notifyFail
       : feeds.notifyFail
   feeds.sendFirstCycle = process.env.DRSS_FEEDS_SENDFIRSTCYCLE !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_SENDFIRSTCYCLE)
+    ? process.env.DRSS_FEEDS_SENDFIRSTCYCLE === 'true'
     : feedsOverride.sendFirstCycle !== undefined
       ? feedsOverride.sendFirstCycle
       : feeds.sendFirstCycle
@@ -152,27 +152,27 @@ exports.set = (override, skipValidation) => {
       : feeds.cycleMaxAge
   feeds.defaultText = process.env.DRSS_FEEDS_DEFAULTTEXT || feedsOverride.defaultText || feeds.defaultText
   feeds.imgPreviews = process.env.DRSS_FEEDS_IMGPREVIEWS !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_IMGPREVIEWS)
+    ? process.env.DRSS_FEEDS_IMGPREVIEWS === 'true'
     : feedsOverride.imgPreviews !== undefined
       ? feedsOverride.imgPreviews
       : feeds.imgPreviews
   feeds.imgLinksExistence = process.env.DRSS_FEEDS_IMGLINKSEXISTENCE !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_IMGLINKSEXISTENCE)
+    ? process.env.DRSS_FEEDS_IMGLINKSEXISTENCE === 'true'
     : feedsOverride.imgLinksExistence !== undefined
       ? feedsOverride.imgLinksExistence
       : feeds.imgLinksExistence
   feeds.checkDates = process.env.DRSS_FEEDS_CHECKDATES !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_CHECKDATES)
+    ? process.env.DRSS_FEEDS_CHECKDATES === 'true'
     : feedsOverride.checkDates !== undefined
       ? feedsOverride.checkDates
       : feeds.checkDates
   feeds.formatTables = process.env.DRSS_FEEDS_FORMATTABLES !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_FORMATTABLES)
+    ? process.env.DRSS_FEEDS_FORMATTABLES === 'true'
     : feedsOverride.formatTables !== undefined
       ? feedsOverride.formatTables
       : feeds.formatTables
   feeds.directSubscribers = process.env.DRSS_FEEDS_DIRECTSUBSCRIBERS !== undefined
-    ? Boolean(process.env.DRSS_FEEDS_DIRECTSUBSCRIBERS)
+    ? process.env.DRSS_FEEDS_DIRECTSUBSCRIBERS === 'true'
     : feedsOverride.directSubscribers !== undefined
       ? feedsOverride.directSubscribers
       : feeds.directSubscribers
