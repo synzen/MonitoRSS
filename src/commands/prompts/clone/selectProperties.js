@@ -7,6 +7,7 @@ const referenceProperties = [
   'misc-options',
   'subscribers',
   'comparisons',
+  'regexops',
   'all'
 ]
 

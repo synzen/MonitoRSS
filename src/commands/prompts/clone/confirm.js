@@ -43,6 +43,7 @@ async function confirmFn (message, data) {
   const cloneMessage = cloneAll || properties.includes('message')
   const cloneSubscribers = cloneAll || properties.includes('subscribers')
   const cloneComparisons = cloneAll || properties.includes('comparisons')
+  const cloneRegexops = cloneAll || properties.includes('regexops')
   const log = createLogger(message.client.shard.ids[0])
 
   const copyFromSubscribers = await sourceFeed.getSubscribers()
@@ -77,6 +78,12 @@ async function confirmFn (message, data) {
     if (cloneComparisons) {
       destinationFeed.ncomparisons = sourceFeed.ncomparisons
       destinationFeed.pcomparisons = sourceFeed.pcomparisons
+      updateSelected = true
+    }
+
+    // Regexops
+    if (cloneRegexops) {
+      destinationFeed.regexOps = sourceFeed.regexOps
       updateSelected = true
     }
 
