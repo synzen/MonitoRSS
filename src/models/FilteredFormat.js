@@ -8,8 +8,14 @@ const filteredFormatMiddleware = require('./middleware/FilteredFormat.js')
  * Override the feed key, removing the unique constraint
  */
 const schema = new mongoose.Schema({
-  text: String,
-  embeds: [Embed],
+  text: {
+    type: String,
+    default: undefined
+  },
+  embeds: {
+    type: [Embed],
+    default: undefined
+  },
   feed: {
     type: mongoose.Types.ObjectId,
     required: true

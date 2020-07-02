@@ -22,17 +22,17 @@ class FilteredFormat extends FilterBase {
 
     /**
      * Text message
-     * @type {string}
+     * @type {string|undefined}
      */
     this.text = this.getField('text')
 
     /**
      * Embed message
-     * @type {Object<string, any>[]}
+     * @type {Object<string, any>[]|undefined}
      */
-    this.embeds = this.getField('embeds', [])
+    this.embeds = this.getField('embeds')
 
-    if (!this.text && this.embeds.length === 0) {
+    if (!this.text && (!this.embeds || this.embeds.length === 0)) {
       throw new Error('text or embeds must be populated')
     }
 
@@ -108,6 +108,9 @@ class FilteredFormat extends FilterBase {
   }
 
   async validate () {
+    if (!this.embeds) {
+      return
+    }
     this.constructor.pruneEmbeds(this.embeds)
     const embeds = this.embeds
     for (const embed of embeds) {
