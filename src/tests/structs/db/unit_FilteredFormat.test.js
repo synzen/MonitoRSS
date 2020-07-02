@@ -13,6 +13,9 @@ describe('Unit::structs/db/FilteredFormat', function () {
     feed: '123b',
     text: 'qawed'
   }
+  beforeEach(() => {
+    jest.restoreAllMocks()
+  })
   describe('constructor', function () {
     it('throws for missing feed', function () {
       expect(() => new FilteredFormat({})).toThrow('feed is undefined')
@@ -121,10 +124,22 @@ describe('Unit::structs/db/FilteredFormat', function () {
   })
   describe('validate', function () {
     it('calls pruneEmbeds', async function () {
-      const format = new FilteredFormat({ ...initData })
+      const format = new FilteredFormat({
+        ...initData
+      })
+      format.embeds = []
       const spy = jest.spyOn(FilteredFormat, 'pruneEmbeds').mockReturnValue()
       await format.validate()
       expect(spy).toHaveBeenCalledTimes(1)
+    })
+    it('does not throw if no embeds specified', async function () {
+      const format = new FilteredFormat({
+        ...initData
+      })
+      format.embeds = undefined
+      const spy = jest.spyOn(FilteredFormat, 'pruneEmbeds').mockReturnValue()
+      await format.validate()
+      expect(spy).toHaveBeenCalledTimes(0)
     })
     it('throws an error for invalid timestamp in an embed', function () {
       const format = new FilteredFormat({ ...initData })
