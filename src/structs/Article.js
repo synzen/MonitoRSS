@@ -691,6 +691,7 @@ module.exports = class Article {
       .replace(/{description}/g, ignoreCharLimits ? this.fullDescription : this.description)
       .replace(/{tags}/g, this.tags)
       .replace(/{guid}/g, this.guid)
+      .replace(/\\u200b/g, '\u200b')
 
     const dateRegex = new RegExp('{date(:[a-zA-Z_/]*)?}')
 
