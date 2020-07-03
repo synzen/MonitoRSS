@@ -1,6 +1,5 @@
 const Supporter = require('../structs/db/Supporter.js')
 const createLogger = require('../util/logger/create.js')
-const { channel } = require('../util/logger/serializers.js')
 
 /**
  * @param {import('discord.js').Client} bot

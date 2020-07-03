@@ -19,7 +19,7 @@ describe('Unit::maintenance/pruneWebhooks', function () {
     jest.restoreAllMocks()
     Supporter.mockReset()
     Supporter.enabled = false
-    bot.channels.cache.get.mockRestore()
+    bot.channels.cache.get.mockReturnValue({})
   })
   describe('pruneWebhooks', function () {
     it('removes feeds that has reasons to remove', async function () {
@@ -54,7 +54,7 @@ describe('Unit::maintenance/pruneWebhooks', function () {
         .mockReturnValueOnce('')
         .mockReturnValueOnce('reason2')
       jest.spyOn(pruneWebhooks, 'getDisableReason')
-        .mockResolvedValue('')
+        .mockResolvedValueOnce('')
       await pruneWebhooks.pruneWebhooks(bot, [])
       expect(relevantFeeds[0].webhook).toBeUndefined()
       expect(relevantFeeds[0].save).toHaveBeenCalledTimes(1)
