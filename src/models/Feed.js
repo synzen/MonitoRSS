@@ -42,7 +42,8 @@ const schema = new mongoose.Schema({
   webhook: {
     id: String,
     name: String,
-    avatar: String
+    avatar: String,
+    disabled: Boolean
   },
   split: {
     enabled: Boolean,

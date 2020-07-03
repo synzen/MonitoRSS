@@ -25,15 +25,21 @@ describe('Unit::maintenance/pruneWebhooks', function () {
     it('removes feeds that has reasons to remove', async function () {
       const relevantFeeds = [{
         channel: 1,
-        webhook: 'a',
+        webhook: {
+          name: 'a'
+        },
         save: jest.fn()
       }, {
         channel: 1,
-        webhook: 'b',
+        webhook: {
+          name: 'b'
+        },
         save: jest.fn()
       }, {
         channel: 1,
-        webhook: 'c',
+        webhook: {
+          name: 'c'
+        },
         save: jest.fn()
       }]
       const webhookFetchData = new Map([
@@ -47,6 +53,8 @@ describe('Unit::maintenance/pruneWebhooks', function () {
         .mockReturnValueOnce('reason1')
         .mockReturnValueOnce('')
         .mockReturnValueOnce('reason2')
+      jest.spyOn(pruneWebhooks, 'getDisableReason')
+        .mockResolvedValue('')
       await pruneWebhooks.pruneWebhooks(bot, [])
       expect(relevantFeeds[0].webhook).toBeUndefined()
       expect(relevantFeeds[0].save).toHaveBeenCalledTimes(1)
@@ -54,6 +62,74 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       expect(relevantFeeds[1].save).toHaveBeenCalledTimes(0)
       expect(relevantFeeds[2].webhook).toBeUndefined()
       expect(relevantFeeds[2].save).toHaveBeenCalledTimes(1)
+    })
+    it('disables the webhooks that should be disabled', async () => {
+      const relevantFeeds = [{
+        channel: 1,
+        webhook: {
+          name: 'a'
+        },
+        save: jest.fn()
+      }, {
+        channel: 1,
+        webhook: {
+          name: 'b'
+        },
+        save: jest.fn()
+      }]
+      const webhookFetchData = new Map([
+        [1, {}]
+      ])
+      jest.spyOn(pruneWebhooks, 'getRelevantFeeds')
+        .mockReturnValue(relevantFeeds)
+      jest.spyOn(pruneWebhooks, 'fetchChannelWebhooks')
+        .mockReturnValue(webhookFetchData)
+      jest.spyOn(pruneWebhooks, 'getRemoveReason')
+        .mockReturnValueOnce('')
+        .mockReturnValueOnce('')
+      jest.spyOn(pruneWebhooks, 'getDisableReason')
+        .mockResolvedValueOnce('')
+        .mockResolvedValueOnce('disablereason2')
+      await pruneWebhooks.pruneWebhooks(bot, [])
+      expect(relevantFeeds[0].webhook.disabled).toBeUndefined()
+      expect(relevantFeeds[0].save).toHaveBeenCalledTimes(0)
+      expect(relevantFeeds[1].webhook.disabled).toEqual(true)
+      expect(relevantFeeds[1].save).toHaveBeenCalledTimes(1)
+    })
+    it('enables the webhooks that should be enabled', async () => {
+      const relevantFeeds = [{
+        channel: 1,
+        webhook: {
+          name: 'a',
+          disabled: true
+        },
+        save: jest.fn()
+      }, {
+        channel: 1,
+        webhook: {
+          name: 'b',
+          disabled: true
+        },
+        save: jest.fn()
+      }]
+      const webhookFetchData = new Map([
+        [1, {}]
+      ])
+      jest.spyOn(pruneWebhooks, 'getRelevantFeeds')
+        .mockReturnValue(relevantFeeds)
+      jest.spyOn(pruneWebhooks, 'fetchChannelWebhooks')
+        .mockReturnValue(webhookFetchData)
+      jest.spyOn(pruneWebhooks, 'getRemoveReason')
+        .mockReturnValueOnce('')
+        .mockReturnValueOnce('')
+      jest.spyOn(pruneWebhooks, 'getDisableReason')
+        .mockResolvedValueOnce('')
+        .mockResolvedValueOnce('')
+      await pruneWebhooks.pruneWebhooks(bot, [])
+      expect(relevantFeeds[0].webhook.disabled).toBeUndefined()
+      expect(relevantFeeds[0].save).toHaveBeenCalledTimes(1)
+      expect(relevantFeeds[1].webhook.disabled).toBeUndefined()
+      expect(relevantFeeds[1].save).toHaveBeenCalledTimes(1)
     })
   })
   describe('getRelevantFeeds', function () {
@@ -185,28 +261,6 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       const result = await pruneWebhooks.getRemoveReason(bot, feed, webhookFetchResult)
       expect(result).toEqual('Removing unpermitted webhook from feed abc')
     })
-    it('returns a populated string for unauthorized webhook', async function () {
-      Supporter.enabled = true
-      const webhookID = 'qwte'
-      const feed = {
-        _id: 'abc',
-        webhook: {
-          id: webhookID
-        }
-      }
-      const webhookFetchResult = {
-        status: 'fulfilled',
-        value: new Map([[webhookID, {}]])
-      }
-      bot.channels.cache.get.mockReturnValue({
-        guild: {
-          id: 'whatever'
-        }
-      })
-      Supporter.hasValidGuild.mockResolvedValue(false)
-      const result = await pruneWebhooks.getRemoveReason(bot, feed, webhookFetchResult)
-      expect(result).toEqual('Removing unauthorized supporter webhook from feed abc')
-    })
     it('returns an empty string for valid webhook', async function () {
       const webhookID = 'qwte'
       const feed = {
@@ -222,7 +276,9 @@ describe('Unit::maintenance/pruneWebhooks', function () {
       const result = await pruneWebhooks.getRemoveReason(bot, feed, webhookFetchResult)
       expect(result).toEqual('')
     })
-    it('returns an empty string for authorized webhook', async function () {
+  })
+  describe('getDisableReason', function () {
+    it('returns empty string if unauthorized', async () => {
       Supporter.enabled = true
       const webhookID = 'qwte'
       const feed = {
@@ -231,18 +287,32 @@ describe('Unit::maintenance/pruneWebhooks', function () {
           id: webhookID
         }
       }
-      const webhookFetchResult = {
-        status: 'fulfilled',
-        value: new Map([[webhookID, {}]])
-      }
       bot.channels.cache.get.mockReturnValue({
         guild: {
           id: 'whatever'
         }
       })
       Supporter.hasValidGuild.mockResolvedValue(true)
-      const result = await pruneWebhooks.getRemoveReason(bot, feed, webhookFetchResult)
+      const result = await pruneWebhooks.getDisableReason(bot, feed)
       expect(result).toEqual('')
+    })
+    it('returns the reason if unauthorized', async () => {
+      Supporter.enabled = true
+      const webhookID = 'qwte'
+      const feed = {
+        _id: 'abc',
+        webhook: {
+          id: webhookID
+        }
+      }
+      bot.channels.cache.get.mockReturnValue({
+        guild: {
+          id: 'whatever'
+        }
+      })
+      Supporter.hasValidGuild.mockResolvedValue(false)
+      const result = await pruneWebhooks.getDisableReason(bot, feed)
+      expect(result).toEqual(`Disabling unauthorized supporter webhook from feed ${feed._id}`)
     })
   })
 })

@@ -1,5 +1,6 @@
 const Supporter = require('../structs/db/Supporter.js')
 const createLogger = require('../util/logger/create.js')
+const { channel } = require('../util/logger/serializers.js')
 
 /**
  * @param {import('discord.js').Client} bot
@@ -51,7 +52,7 @@ async function fetchChannelWebhooks (bot, relevantFeeds) {
  * @param {import('../structs/db/Feed.js')} feed
  * @param {Object<string, any>} webhookFetchResult
  */
-async function getRemoveReason (bot, feed, webhookFetchResult) {
+function getRemoveReason (bot, feed, webhookFetchResult) {
   const { status, value: webhooks, reason } = webhookFetchResult
   const log = createLogger(bot.shard.ids[0])
   const channel = bot.channels.cache.get(feed.channel)
@@ -73,10 +74,16 @@ async function getRemoveReason (bot, feed, webhookFetchResult) {
       }, `Unable to check webhook (request error, code ${err.code})`)
     }
   }
-  if (!removeReason && Supporter.enabled && !(await Supporter.hasValidGuild(channel.guild.id))) {
-    removeReason = `Removing unauthorized supporter webhook from feed ${feed._id}`
-  }
   return removeReason
+}
+
+async function getDisableReason (bot, feed) {
+  const channel = bot.channels.cache.get(feed.channel)
+  let disableReason = ''
+  if (Supporter.enabled && !(await Supporter.hasValidGuild(channel.guild.id))) {
+    disableReason = `Disabling unauthorized supporter webhook from feed ${feed._id}`
+  }
+  return disableReason
 }
 
 /**
@@ -96,24 +103,48 @@ async function pruneWebhooks (bot, feeds) {
 
   // Parse the fetch results
   const relevantFeedsLength = relevantFeeds.length
-  const removeReasonFetches = []
+  const removeReasons = []
+  const disableReasonsFetches = []
   for (var j = 0; j < relevantFeedsLength; ++j) {
     const feed = relevantFeeds[j]
     const webhookFetchResult = webhookFetchData.get(feed.channel)
-    removeReasonFetches.push(exports.getRemoveReason(bot, feed, webhookFetchResult))
+    const removeReason = exports.getRemoveReason(bot, feed, webhookFetchResult)
+    removeReasons.push(removeReason)
+    if (removeReason) {
+      disableReasonsFetches.push('')
+    } else {
+      disableReasonsFetches.push(exports.getDisableReason(bot, feed))
+    }
   }
-  const removeReasons = await Promise.all(removeReasonFetches)
+  const disableReasons = await Promise.all(disableReasonsFetches)
   for (var k = 0; k < relevantFeedsLength; ++k) {
     const feed = relevantFeeds[k]
     const removeReason = removeReasons[k]
+    const disableReason = disableReasons[k]
+    const channel = bot.channels.cache.get(feed.channel)
     if (removeReason) {
-      const channel = bot.channels.cache.get(feed.channel)
       log.info({
         guild: channel.guild,
         channel
       }, removeReason)
       feed.webhook = undefined
       updates.push(feed.save())
+    } else {
+      if (disableReason && !feed.webhook.disabled) {
+        feed.webhook.disabled = true
+        updates.push(feed.save())
+        log.info({
+          guild: channel.guild,
+          channel
+        }, disableReason)
+      } else if (!disableReason && feed.webhook.disabled) {
+        feed.webhook.disabled = undefined
+        updates.push(feed.save())
+        log.info({
+          guild: channel.guild,
+          channel
+        }, 'Enabling webhook, found authorization')
+      }
     }
   }
   await Promise.all(updates)
@@ -121,5 +152,6 @@ async function pruneWebhooks (bot, feeds) {
 
 exports.getRelevantFeeds = getRelevantFeeds
 exports.fetchChannelWebhooks = fetchChannelWebhooks
+exports.getDisableReason = getDisableReason
 exports.getRemoveReason = getRemoveReason
 exports.pruneWebhooks = pruneWebhooks

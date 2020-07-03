@@ -163,7 +163,7 @@ class Feed extends FilterBase {
   }
 
   static get WEBHOOK_KEYS () {
-    return ['id', 'name', 'avatar']
+    return ['id', 'name', 'avatar', 'disabled']
   }
 
   toObject () {

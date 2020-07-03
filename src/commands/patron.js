@@ -1,4 +1,5 @@
 const Profile = require('../structs/db/Profile.js')
+const Feed = require('../structs/db/Feed.js')
 const Supporter = require('../structs/db/Supporter.js')
 const getConfig = require('../config.js').get
 const createLogger = require('../util/logger/create.js')
@@ -20,6 +21,39 @@ async function verifyServer (bot, serverId) {
   `)).filter(item => item)
 
   if (results.length > 0) return results[0]
+}
+
+/**
+ * @param {import('discord.js').Client} bot
+ * @param {Profile} profile
+ */
+async function webhookStatusCheck (bot, profile, authorized) {
+  const log = createLogger(bot.shard.ids[0])
+  try {
+    const guildID = profile._id
+    const feeds = await Feed.getManyByQuery({
+      guild: guildID
+    })
+    const saves = []
+    for (const feed of feeds) {
+      if (authorized && feed.webhook && feed.webhook.disabled) {
+        feed.webhook.disabled = undefined
+        log.info({
+          feed
+        }, 'Enabled webhook')
+        saves.push(feed.save())
+      } else if (!authorized && feed.webhook && !feed.webhook.disabled) {
+        feed.webhook.disabled = true
+        log.info({
+          feed
+        }, 'Disabled webhook')
+        saves.push(feed.save())
+      }
+    }
+    await Promise.all(saves)
+  } catch (err) {
+    log.error(err, 'Failed to check webhook statuses after supporter server change')
+  }
 }
 
 /**
@@ -61,6 +95,7 @@ async function switchServerArg (bot, message, args, supporter, supportedGuilds, 
       guild: message.guild,
       user: message.author
     }, `Added patron server ${server} (${gotGuild.name})`)
+    await webhookStatusCheck(bot, profile, true)
   } else if (action === 'remove') {
     if (!supporter.guilds.includes(server)) {
       return message.channel.send('That server does not have your patron backing.')
@@ -73,6 +108,7 @@ async function switchServerArg (bot, message, args, supporter, supportedGuilds, 
       guild: message.guild,
       user: message.author
     }, `Removed patron server ${server}`)
+    await webhookStatusCheck(bot, profile, false)
   } else if (action === 'list') {
     if (supporter.guilds.length === 0) {
       return message.channel.send(`You have no servers under your patron backing. The maximum number of servers you may have under your patron backing is ${maxServers}.`)

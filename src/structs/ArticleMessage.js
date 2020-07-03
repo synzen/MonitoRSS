@@ -201,6 +201,9 @@ class ArticleMessage {
     if (!feed.webhook || !channel.guild.me.permissionsIn(channel).has(permission)) {
       return
     }
+    if (feed.webhook.disabled) {
+      return
+    }
     try {
       const hooks = await channel.fetchWebhooks()
       const hook = hooks.get(feed.webhook.id)
