@@ -6,7 +6,7 @@ const createLogger = require('../util/logger/create.js')
  * @param {import('discord.js').Message} message - Discord message
  */
 async function handler (message) {
-  const { guild, author, channel, client } = message
+  const { guild, author, channel, client, member } = message
   const log = createLogger(client.shard.ids[0], {
     message,
     guild,
@@ -23,12 +23,14 @@ async function handler (message) {
   }
   try {
     // Check member
+    const memberPerms = command.getMemberPermission()
     log.debug({
-      requiredPerms: Command.getPermissionNames(command.getMemberPermission())
+      requiredPerms: Command.getPermissionNames(memberPerms)
     }, 'Checking member permissions')
     const hasMemberPermission = command.hasMemberPermission(message)
     if (!hasMemberPermission) {
-      const requiredPerms = await command.notifyMissingMemberPerms(message)
+      const missingPerms = command.getMissingChannelPermissions(memberPerms, member, channel)
+      const requiredPerms = await command.notifyMissingMemberPerms(message, missingPerms)
       return log.info(`Member permissions ${requiredPerms} missing for command ${command.name}`)
     }
     // If commands are disabled, ignore if it's not an owner
@@ -36,12 +38,14 @@ async function handler (message) {
       return log.info(`Command ${command.name} disabled, only owners allowed`)
     }
     // Check bot
+    const botPerms = command.getBotPermissions()
     log.debug({
-      requiredPerms: Command.getPermissionNames(command.getBotPermissions())
+      requiredPerms: Command.getPermissionNames(botPerms)
     }, 'Checking bot permissions')
     const hasBotPermission = command.hasBotPermission(message)
     if (!hasBotPermission) {
-      const requiredPerms = await command.notifyMissingBotPerms(message)
+      const missingPerms = command.getMissingChannelPermissions(botPerms, guild.me, channel)
+      const requiredPerms = await command.notifyMissingBotPerms(message, missingPerms)
       return log.info(`Bot permissions ${requiredPerms} missing for command ${command.name}`)
     }
     // Run

@@ -242,6 +242,16 @@ class Command {
   }
 
   /**
+   * @param {number[]}
+   * @param {import('discord.js').GuildMember} member
+   * @param {import('discord.js').TextChannel} channel
+   */
+  getMissingChannelPermissions (perms, member, channel) {
+    const missing = perms.filter(perm => !member.permissionsIn(channel).has(perm))
+    return missing
+  }
+
+  /**
    * Get the required bot permissions
    * @returns {number[]}
    */
@@ -284,26 +294,28 @@ class Command {
   /**
    * Send a message about sending missing bot perms
    * @param {import('discord.js').Message} message
+   * @param {number[]} perms
    * @returns {string[]} - Permissio names
    */
-  async notifyMissingBotPerms (message) {
+  async notifyMissingBotPerms (message, perms) {
     const channel = message.channel
-    const permissionNames = Command.getPermissionNames(this.getBotPermissions())
+    const permissionNames = Command.getPermissionNames(perms)
     if (!message.guild.me.permissionsIn(message.channel).has(Permissions.SEND_MESSAGES)) {
       return permissionNames
     }
-    await channel.send(`I am missing one of the following permissions:\n\n${permissionNames.join('\n')}`)
+    await channel.send(`I am missing one or more of the following permissions:\n\n${permissionNames.join('\n')}`)
     return permissionNames
   }
 
   /**
    * Send a message about missing member perms
    * @param {import('discord.js').Message} message
+   * @param {number[]} perms
    * @returns {string[]} - Permission names
    */
-  async notifyMissingMemberPerms (message) {
+  async notifyMissingMemberPerms (message, perms) {
     const channel = message.channel
-    const permissionNames = Command.getPermissionNames(this.getMemberPermission())
+    const permissionNames = Command.getPermissionNames(perms)
     if (!message.guild.me.permissionsIn(message.channel).has(Permissions.SEND_MESSAGES)) {
       return permissionNames
     }
@@ -311,7 +323,7 @@ class Command {
       await message.channel.send('You must be an owner to use this command.')
       return ['owner']
     }
-    await channel.send(`You are missing one of the following permissions:\n\n${permissionNames.join('\n')}`)
+    await channel.send(`You are missing one or more of the following permissions:\n\n${permissionNames.join('\n')}`)
     return permissionNames
   }
 
