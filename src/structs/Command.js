@@ -247,7 +247,7 @@ class Command {
    * @param {import('discord.js').TextChannel} channel
    */
   getMissingChannelPermissions (perms, member, channel) {
-    const missing = perms.filter(perm => !member.permissionsIn(channel).has(perm))
+    const missing = perms.filter(perm => !member.permissionsIn(channel).has(perm) || !member.permissions.has(perm))
     return missing
   }
 
@@ -288,7 +288,12 @@ class Command {
   hasBotPermission (message) {
     const { channel, guild } = message
     const botPermissions = this.getBotPermissions()
-    return guild.me.permissionsIn(channel).has(botPermissions) || guild.me.hasPermission(botPermissions)
+    return botPermissions.every(perm => {
+      // Some guild-wide permissions will still return false in channel permissions
+      const channelPermission = guild.me.permissionsIn(channel).has(perm)
+      const guildPermission = guild.me.hasPermission(perm)
+      return channelPermission || guildPermission
+    })
   }
 
   /**

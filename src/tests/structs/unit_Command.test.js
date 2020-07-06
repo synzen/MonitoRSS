@@ -419,7 +419,7 @@ describe('Unit::structs/Command', function () {
     it('returns the resolved permissions', function () {
       const command = new Command()
       jest.spyOn(command, 'getBotPermissions')
-        .mockImplementation()
+        .mockReturnValue([1, 1])
       const hasChannelPermission = jest.fn()
       const hasServerPermission = jest.fn()
       const message = {
@@ -431,16 +431,28 @@ describe('Unit::structs/Command', function () {
         },
         channel: {}
       }
-      hasChannelPermission.mockReturnValue(true)
-      hasServerPermission.mockReturnValue(false)
-      expect(command.hasBotPermission(message))
-        .toEqual(true)
-      hasChannelPermission.mockReturnValue(false)
-      hasServerPermission.mockReturnValue(false)
+      hasChannelPermission
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+      hasServerPermission
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(false)
       expect(command.hasBotPermission(message))
         .toEqual(false)
-      hasChannelPermission.mockReturnValue(false)
-      hasServerPermission.mockReturnValue(true)
+      hasChannelPermission
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(false)
+      hasServerPermission
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true)
+      expect(command.hasBotPermission(message))
+        .toEqual(false)
+      hasChannelPermission
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+      hasServerPermission
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true)
       expect(command.hasBotPermission(message))
         .toEqual(true)
     })
