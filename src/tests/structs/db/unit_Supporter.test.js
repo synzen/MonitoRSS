@@ -175,6 +175,34 @@ describe('Unit::structs/db/Supporter', function () {
         .resolves.toEqual(false)
     })
   })
+  describe('findActivePatron', function () {
+    it('returns the first active patron', async () => {
+      const supporter = new Supporter({ ...initData })
+      const patrons = [{
+        id: 1,
+        isActive: jest.fn().mockReturnValue(false)
+      }, {
+        id: 2,
+        isActive: jest.fn().mockReturnValue(true)
+      }]
+      jest.spyOn(Patron, 'getManyBy').mockResolvedValue(patrons)
+      await expect(supporter.findActivePatron())
+        .resolves.toEqual(patrons[1])
+    })
+    it('returns undefined if no active patron', async () => {
+      const supporter = new Supporter({ ...initData })
+      const patrons = [{
+        id: 1,
+        isActive: jest.fn().mockReturnValue(false)
+      }, {
+        id: 2,
+        isActive: jest.fn().mockReturnValue(false)
+      }]
+      jest.spyOn(Patron, 'getManyBy').mockResolvedValue(patrons)
+      await expect(supporter.findActivePatron())
+        .resolves.toBeUndefined()
+    })
+  })
   describe('getMaxGuilds', function () {
     it('returns the result from patron method if patron', async function () {
       const supporter = new Supporter({ ...initData })
@@ -183,9 +211,8 @@ describe('Unit::structs/db/Supporter', function () {
       const patron = {
         determineMaxGuilds: jest.fn(() => maxGuilds)
       }
-      const spy = jest.spyOn(Patron, 'getBy').mockResolvedValue(patron)
+      jest.spyOn(supporter, 'findActivePatron').mockResolvedValue(patron)
       const returned = await supporter.getMaxGuilds()
-      expect(spy).toHaveBeenCalledWith('discord', initData._id)
       expect(returned).toEqual(maxGuilds)
     })
     it('returns 1 if maxGuilds is undefined, or maxGuilds if defined', async function () {
@@ -206,9 +233,8 @@ describe('Unit::structs/db/Supporter', function () {
       const patron = {
         determineMaxFeeds: jest.fn(() => maxFeeds)
       }
-      const spy = jest.spyOn(Patron, 'getBy').mockResolvedValue(patron)
+      jest.spyOn(supporter, 'findActivePatron').mockResolvedValue(patron)
       const returned = await supporter.getMaxFeeds()
-      expect(spy).toHaveBeenCalledWith('discord', initData._id)
       expect(returned).toEqual(maxFeeds)
     })
     describe('not a patron', function () {
@@ -242,9 +268,8 @@ describe('Unit::structs/db/Supporter', function () {
       const patron = {
         determineWebhook: jest.fn(() => 5553)
       }
-      const spy = jest.spyOn(Patron, 'getBy').mockResolvedValue(patron)
+      jest.spyOn(supporter, 'findActivePatron').mockResolvedValue(patron)
       const returned = await supporter.getWebhookAccess()
-      expect(spy).toHaveBeenCalledWith('discord', initData._id)
       expect(returned).toEqual(5553)
     })
     it('returns this.webhook if not a patron', async function () {

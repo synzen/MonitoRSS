@@ -156,13 +156,18 @@ class Supporter extends Base {
     return guilds.includes(guildId)
   }
 
+  async findActivePatron () {
+    const patrons = await Patron.getManyBy('discord', this._id)
+    return patrons.find(patron => patron.isActive())
+  }
+
   /**
    * @returns {number}
    */
   async getMaxGuilds () {
     let patron
     if (this.patron) {
-      patron = await Patron.getBy('discord', this._id)
+      patron = await this.findActivePatron()
     }
     if (patron) {
       return patron.determineMaxGuilds()
@@ -178,7 +183,7 @@ class Supporter extends Base {
     const config = getConfig()
     let patron
     if (this.patron) {
-      patron = await Patron.getBy('discord', this._id)
+      patron = await this.findActivePatron()
     }
     if (patron) {
       return patron.determineMaxFeeds()
@@ -201,7 +206,7 @@ class Supporter extends Base {
   async getWebhookAccess () {
     let patron
     if (this.patron) {
-      patron = await Patron.getBy('discord', this._id)
+      patron = await this.findActivePatron()
     }
     if (patron) {
       return patron.determineWebhook()
@@ -223,8 +228,7 @@ class Supporter extends Base {
         return now.getTime() < expire.getTime()
       }
     } else {
-      const patrons = await Patron.getManyBy('discord', this._id)
-      return !!patrons.find(patron => patron.isActive())
+      return !!(await this.findActivePatron())
     }
   }
 
