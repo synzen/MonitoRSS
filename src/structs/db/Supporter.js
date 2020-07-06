@@ -223,12 +223,8 @@ class Supporter extends Base {
         return now.getTime() < expire.getTime()
       }
     } else {
-      const patron = await Patron.getBy('discord', this._id)
-      if (!patron) {
-        return false
-      } else {
-        return patron.isActive()
-      }
+      const patrons = await Patron.getManyBy('discord', this._id)
+      return !!patrons.find(patron => patron.isActive())
     }
   }
 

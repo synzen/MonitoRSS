@@ -275,21 +275,23 @@ describe('Unit::structs/db/Supporter', function () {
   })
   describe('isValid', function () {
     describe('is patron', function () {
-      it('returns isActive() method call on patron if exists', async function () {
+      it('returns true if at least one patron is active', async function () {
         const supporter = new Supporter({ ...initData })
         supporter.patron = 'abc'
-        const isActive = jest.fn(() => 1234)
-        const patron = {
-          isActive
-        }
-        jest.spyOn(Patron, 'getBy').mockResolvedValue(patron)
-        await expect(supporter.isValid()).resolves.toEqual(1234)
-        expect(isActive).toHaveBeenCalled()
+        const patrons = [{
+          isActive: jest.fn().mockReturnValue(false)
+        }, {
+          isActive: jest.fn().mockReturnValue(true)
+        }]
+        jest.spyOn(Patron, 'getManyBy').mockResolvedValue(patrons)
+        await expect(supporter.isValid()).resolves.toEqual(true)
       })
       it('returns false if no patron found', async function () {
         const supporter = new Supporter({ ...initData })
         supporter.patron = 'abc'
-        jest.spyOn(Patron, 'getBy').mockResolvedValue(null)
+        jest.spyOn(Patron, 'getManyBy').mockResolvedValue([{
+          isActive: jest.fn().mockReturnValue(false)
+        }])
         await expect(supporter.isValid()).resolves.toEqual(false)
       })
     })
