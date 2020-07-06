@@ -420,21 +420,29 @@ describe('Unit::structs/Command', function () {
       const command = new Command()
       jest.spyOn(command, 'getBotPermissions')
         .mockImplementation()
-      const has = jest.fn()
+      const hasChannelPermission = jest.fn()
+      const hasServerPermission = jest.fn()
       const message = {
         guild: {
           me: {
-            permissionsIn: () => ({ has })
+            permissionsIn: () => ({ has: hasChannelPermission }),
+            hasPermission: hasServerPermission
           }
         },
         channel: {}
       }
-      has.mockReturnValue(true)
+      hasChannelPermission.mockReturnValue(true)
+      hasServerPermission.mockReturnValue(false)
       expect(command.hasBotPermission(message))
         .toEqual(true)
-      has.mockReturnValue(false)
+      hasChannelPermission.mockReturnValue(false)
+      hasServerPermission.mockReturnValue(false)
       expect(command.hasBotPermission(message))
         .toEqual(false)
+      hasChannelPermission.mockReturnValue(false)
+      hasServerPermission.mockReturnValue(true)
+      expect(command.hasBotPermission(message))
+        .toEqual(true)
     })
   })
   describe('run', function () {

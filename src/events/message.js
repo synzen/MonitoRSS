@@ -29,7 +29,7 @@ async function handler (message) {
     }, 'Checking member permissions')
     const hasMemberPermission = command.hasMemberPermission(message)
     if (!hasMemberPermission) {
-      const missingPerms = command.getMissingChannelPermissions(memberPerms, member, channel)
+      const missingPerms = command.getMissingChannelPermissions(memberPerms, guild.me, channel)
       const requiredPerms = await command.notifyMissingMemberPerms(message, missingPerms)
       return log.info(`Member permissions ${requiredPerms} missing for command ${command.name}`)
     }
@@ -44,7 +44,7 @@ async function handler (message) {
     }, 'Checking bot permissions')
     const hasBotPermission = command.hasBotPermission(message)
     if (!hasBotPermission) {
-      const missingPerms = command.getMissingChannelPermissions(botPerms, guild.me, channel)
+      const missingPerms = command.getMissingChannelPermissions(botPerms, member, channel)
       const requiredPerms = await command.notifyMissingBotPerms(message, missingPerms)
       return log.info(`Bot permissions ${requiredPerms} missing for command ${command.name}`)
     }

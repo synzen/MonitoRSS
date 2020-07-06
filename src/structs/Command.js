@@ -288,7 +288,7 @@ class Command {
   hasBotPermission (message) {
     const { channel, guild } = message
     const botPermissions = this.getBotPermissions()
-    return guild.me.permissionsIn(channel).has(botPermissions)
+    return guild.me.permissionsIn(channel).has(botPermissions) || guild.me.hasPermission(botPermissions)
   }
 
   /**
