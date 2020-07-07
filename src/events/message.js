@@ -29,7 +29,7 @@ async function handler (message) {
     }, 'Checking member permissions')
     const hasMemberPermission = command.hasMemberPermission(message)
     if (!hasMemberPermission) {
-      const missingPerms = command.getMissingChannelPermissions(memberPerms, guild.me, channel)
+      const missingPerms = command.getMissingChannelPermissions(memberPerms, member, channel)
       const requiredPerms = await command.notifyMissingMemberPerms(message, missingPerms)
       return log.info(`Member permissions ${requiredPerms} missing for command ${command.name}`)
     }
