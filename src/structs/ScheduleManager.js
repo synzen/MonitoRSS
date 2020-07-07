@@ -271,6 +271,7 @@ class ScheduleManager extends EventEmitter {
       this.endRun(run, schedule)
     } catch (err) {
       this.log.error(err, 'Error during schedule run')
+      this.endRun(run, schedule)
     }
   }
 
