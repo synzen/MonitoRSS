@@ -247,7 +247,13 @@ class Command {
    * @param {import('discord.js').TextChannel} channel
    */
   getMissingChannelPermissions (perms, member, channel) {
-    const missing = perms.filter(perm => !member.permissionsIn(channel).has(perm) || !member.permissions.has(perm))
+    const missing = perms.filter(perm => {
+      if (perm === Discord.Permissions.FLAGS.MANAGE_ROLES) {
+        return !member.permissions.has(perm)
+      } else {
+        return !member.permissionsIn(channel).has(perm)
+      }
+    })
     return missing
   }
 
@@ -292,7 +298,11 @@ class Command {
       // Some guild-wide permissions will still return false in channel permissions
       const channelPermission = guild.me.permissionsIn(channel).has(perm)
       const guildPermission = guild.me.hasPermission(perm)
-      return channelPermission || guildPermission
+      if (perm === Discord.Permissions.FLAGS.MANAGE_ROLES) {
+        return guildPermission
+      } else {
+        return channelPermission
+      }
     })
   }
 

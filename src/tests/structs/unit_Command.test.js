@@ -439,20 +439,50 @@ describe('Unit::structs/Command', function () {
         .mockReturnValueOnce(false)
       expect(command.hasBotPermission(message))
         .toEqual(false)
+      hasChannelPermission.mockReset()
+      hasServerPermission.mockReset()
       hasChannelPermission
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(false)
       hasServerPermission
         .mockReturnValueOnce(false)
         .mockReturnValueOnce(true)
+      hasChannelPermission.mockReset()
+      hasServerPermission.mockReset()
       expect(command.hasBotPermission(message))
         .toEqual(false)
+      hasChannelPermission.mockReset()
+      hasServerPermission.mockReset()
       hasChannelPermission
         .mockReturnValueOnce(true)
-        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(true)
       hasServerPermission
         .mockReturnValueOnce(false)
+        .mockReturnValueOnce(false)
+      expect(command.hasBotPermission(message))
+        .toEqual(true)
+    })
+    it('handles manage roles correctly', async () => {
+      const command = new Command()
+      jest.spyOn(command, 'getBotPermissions')
+        .mockReturnValue([Discord.Permissions.FLAGS.MANAGE_ROLES, 1])
+      const hasChannelPermission = jest.fn()
+      const hasServerPermission = jest.fn()
+      const message = {
+        guild: {
+          me: {
+            permissionsIn: () => ({ has: hasChannelPermission }),
+            hasPermission: hasServerPermission
+          }
+        },
+        channel: {}
+      }
+      hasChannelPermission
+        .mockReturnValueOnce(false)
         .mockReturnValueOnce(true)
+      hasServerPermission
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
       expect(command.hasBotPermission(message))
         .toEqual(true)
     })
