@@ -68,8 +68,8 @@ describe('create', () => {
       }
       jest.spyOn(ArticleRateLimiter, 'getLimiter')
         .mockReturnValue(limiter)
-      await ArticleRateLimiter.enqueue(articleMessage)
-      expect(limiter.send).not.toHaveBeenCalled()
+      await expect(ArticleRateLimiter.enqueue(articleMessage))
+        .rejects.toThrowError()
     })
     it('rejects if rate limited', async () => {
       const articleMessage = {

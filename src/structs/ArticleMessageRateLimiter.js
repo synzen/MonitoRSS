@@ -100,7 +100,7 @@ class ArticleRateLimiter {
   static async enqueue (articleMessage, bot) {
     const channel = articleMessage.getChannel(bot)
     if (!channel) {
-      return
+      throw new Error('Missing channel for ArticleMessageRateLimiter enqueue')
     }
     const channelID = channel.id
     const articleLimiter = ArticleRateLimiter.getLimiter(channelID)

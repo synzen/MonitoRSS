@@ -24,6 +24,10 @@ class DeliveryPipeline {
   }
 
   async deliver (newArticle, debug) {
+    const channel = this.getChannel(newArticle)
+    if (!channel) {
+      return
+    }
     try {
       const articleMessage = await this.createArticleMessage(newArticle, debug)
       if (!articleMessage.passedFilters()) {

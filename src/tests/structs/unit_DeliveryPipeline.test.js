@@ -98,6 +98,14 @@ describe('Unit::structs/DeliveryPipeline', function () {
       jest.spyOn(DeliveryPipeline.prototype, 'handleArticleFailure')
         .mockResolvedValue()
     })
+    it('does not send if channel is not found', async () => {
+      const pipeline = new DeliveryPipeline(Bot())
+      const sendNewArticle = jest.spyOn(pipeline, 'sendNewArticle')
+      jest.spyOn(pipeline, 'getChannel')
+        .mockReturnValue(undefined)
+      await pipeline.deliver(NewArticle())
+      expect(sendNewArticle).not.toHaveBeenCalled()
+    })
     it('does not send article if it does not pass filters', async () => {
       const pipeline = new DeliveryPipeline(Bot())
       const sendNewArticle = jest.spyOn(pipeline, 'sendNewArticle')
