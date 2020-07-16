@@ -320,7 +320,7 @@
       "checkDM": "Verifique suas mensagens diretas! 😉"
     },
     "invite": {
-      "text": "Convite com cargo - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot&permissions=19456>\n\nConvite sem cargo - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot>"
+      "text": "Convite com cargo - <https://discord.com/oauth2/authorize?client_id={{id}}&scope=bot&permissions=19456>\n\nConvite sem cargo - <https://discord.com/oauth2/authorize?client_id={{id}}&scope=bot>"
     },
     "list": {
       "noFeeds": "Não há feeds",

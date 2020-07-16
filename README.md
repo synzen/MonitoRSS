@@ -20,7 +20,7 @@ https://discordrss.xyz
 
 #### Bot Invite:
 
-https://discordapp.com/oauth2/authorize?client_id=268478587651358721&scope=bot&permissions=19456
+https://discord.com/oauth2/authorize?client_id=268478587651358721&scope=bot&permissions=19456
 
 ### Quick Start
 

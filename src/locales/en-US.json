@@ -320,7 +320,7 @@
       "checkDM": "Check your direct messages!"
     },
     "invite": {
-      "text": "Invite with Role - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot&permissions=19456>\n\nInvite without Role - <https://discordapp.com/oauth2/authorize?client_id={{id}}&scope=bot>"
+      "text": "Invite with Role - <https://discord.com/oauth2/authorize?client_id={{id}}&scope=bot&permissions=19456>\n\nInvite without Role - <https://discord.com/oauth2/authorize?client_id={{id}}&scope=bot>"
     },
     "list": {
       "noFeeds": "There are no feeds.",

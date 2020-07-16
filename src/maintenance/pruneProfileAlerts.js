@@ -1,6 +1,6 @@
 const Profile = require('../structs/db/Profile.js')
 const createLogger = require('../util/logger/create.js')
-// https://discordapp.com/developers/docs/topics/opcodes-and-status-codes
+// https://discord.com/developers/docs/topics/opcodes-and-status-codes
 const DELETE_CODES = new Set([10007, 10013, 50035])
 
 /**
