@@ -150,7 +150,9 @@ exports.set = (override, skipValidation) => {
     : feedsOverride.cycleMaxAge !== undefined
       ? feedsOverride.cycleMaxAge
       : feeds.cycleMaxAge
-  feeds.defaultText = process.env.DRSS_FEEDS_DEFAULTTEXT || feedsOverride.defaultText || feeds.defaultText
+  feeds.defaultText = process.env.DRSS_FEEDS_DEFAULTTEXT !== undefined
+    ? process.env.DRSS_FEEDS_DEFAULTTEXT.replace('\\n', '\n')
+    : feedsOverride.defaultText || feeds.defaultText
   feeds.imgPreviews = process.env.DRSS_FEEDS_IMGPREVIEWS !== undefined
     ? process.env.DRSS_FEEDS_IMGPREVIEWS === 'true'
     : feedsOverride.imgPreviews !== undefined
