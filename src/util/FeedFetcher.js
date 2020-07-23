@@ -145,7 +145,7 @@ class FeedFetcher {
     const { options, timeout } = this.createFetchOptions(url, requestOptions)
     let endStatus
     let res
-    console.log(options)
+
     try {
       res = await fetch(url, options)
     } catch (err) {
