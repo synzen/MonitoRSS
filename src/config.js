@@ -34,6 +34,11 @@ exports.set = (override, skipValidation) => {
     : logOverride.failedFeeds !== undefined
       ? logOverride.failedFeeds
       : log.failedFeeds
+  log.rateLimitHits = process.env.DRSS_LOG_RATELIMITHITS !== undefined
+    ? process.env.DRSS_LOG_RATELIMITHITS === 'true'
+    : logOverride.rateLimitHits !== undefined
+      ? logOverride.rateLimitHits
+      : log.rateLimitHits
 
   // BOT
   if (!override.bot) {

@@ -110,7 +110,12 @@ class Client extends EventEmitter {
         this.stop()
       }
     })
-    bot.on('debug', info => this.log.debug(info))
+    bot.on('debug', info => {
+      const config = getConfig()
+      if (config.log.rateLimitHits && info.includes('429')) {
+        this.log.warn(info)
+      }
+    })
     bot.on('resume', () => {
       this.log.info('Websocket resumed')
       this.start()

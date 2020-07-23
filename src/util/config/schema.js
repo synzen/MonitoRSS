@@ -8,7 +8,8 @@ const logSchema = Joi.object({
   destination: Joi.string().allow('').default(''),
   linkErrs: Joi.bool().strict().default(true),
   unfiltered: Joi.bool().strict().default(true),
-  failedFeeds: Joi.bool().strict().default(true)
+  failedFeeds: Joi.bool().strict().default(true),
+  rateLimitHits: Joi.bool().strict().default(true)
 })
 
 const botSchema = Joi.object({
