@@ -7,6 +7,7 @@ const LinkLogic = require('../structs/LinkLogic.js')
 const initialize = require('../initialization/index.js')
 const databaseFuncs = require('../util/database.js')
 const devLevels = require('./devLevels.js')
+const setConfig = require('../config.js').set
 
 async function fetchFeed (headers, url, urlLog) {
   const fetchOptions = {}
@@ -192,6 +193,7 @@ process.on('message', async m => {
   const logMarker = scheduleName
   const log = createLogger(logMarker)
   const urls = Object.keys(currentBatch)
+  setConfig(config)
   try {
     await connectToDatabase(config)
     const articleDocuments = await databaseFuncs.getAllDocuments(scheduleName, memoryCollections, urls)

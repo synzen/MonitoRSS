@@ -33,6 +33,20 @@ describe('Unit::FeedFetcher', function () {
   it('throws an error if it is instantiated', function () {
     expect(() => new FeedFetcher()).toThrowError()
   })
+  describe('static resolveUserAgent', function () {
+    it('adds GoogleBot if tumblr', function () {
+      const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0'
+      const url = 'https://whatever.tumblr.com'
+      const newUserAgent = FeedFetcher.resolveUserAgent(url, userAgent)
+      expect(newUserAgent).toEqual('Mozilla/5.0 GoogleBot (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0')
+    })
+    it('returns the same string if not tumblr', function () {
+      const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0'
+      const url = 'https://www.google.com'
+      const newUserAgent = FeedFetcher.resolveUserAgent(url, userAgent)
+      expect(newUserAgent).toEqual(userAgent)
+    })
+  })
   describe('static formatNodeFetchResponse', function () {
     it('converts headers to lowercase', function () {
       const headers = {
@@ -149,26 +163,38 @@ describe('Unit::FeedFetcher', function () {
     })
   })
   describe('createFetchOptions', function () {
+    const resolvedUserAgent = 'swry4e3'
+    beforeEach(function () {
+      jest.spyOn(config, 'get')
+        .mockReturnValue({
+          bot: {}
+        })
+      jest.spyOn(FeedFetcher, 'resolveUserAgent')
+        .mockReturnValue(resolvedUserAgent)
+    })
     afterEach(function () {
       jest.clearAllTimers()
     })
-    it('adds the request options', function () {
+    it('adds the request options with the default headers', function () {
       const requestOptions = {
         foo: 'bar',
-        bz: 'da'
+        bz: 'da',
+        headers: {
+          'user-agent': resolvedUserAgent
+        }
       }
-      const returned = FeedFetcher.createFetchOptions('asd', requestOptions)
+      const returned = FeedFetcher.createFetchOptions('url1', requestOptions)
       expect(returned.options)
         .toEqual(expect.objectContaining(requestOptions))
     })
-    it('adds the headers', function () {
+    it('adds the passed in headers', function () {
       const headers = {
         foz: 'baz'
       }
       const requestOptions = {
         headers
       }
-      const returned = FeedFetcher.createFetchOptions('asd', requestOptions)
+      const returned = FeedFetcher.createFetchOptions('url2', requestOptions)
       expect(returned.options.headers)
         .toEqual(expect.objectContaining(headers))
     })

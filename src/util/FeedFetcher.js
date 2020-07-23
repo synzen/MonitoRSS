@@ -6,6 +6,7 @@ const FeedParserError = require('../structs/errors/FeedParserError.js')
 const DecodedFeedParser = require('../structs/DecodedFeedParser.js')
 const ArticleIDResolver = require('../structs/ArticleIDResolver.js')
 const Article = require('../structs/Article.js')
+const configuration = require('../config.js')
 
 class FeedFetcher {
   constructor () {
@@ -25,6 +26,21 @@ class FeedFetcher {
    * @property {number} status
    * @property {Object} headers
    */
+
+  /**
+   * @param {string} url
+   * @param {string} userAgent
+   */
+  static resolveUserAgent (url, userAgent) {
+    if (url.includes('.tumblr.com')) {
+      // tumblr only allows GoogleBot to automatically view NSFW feeds
+      const tempParts = userAgent.split(' ')
+      tempParts.splice(1, 0, 'GoogleBot')
+      return tempParts.join(' ')
+    } else {
+      return userAgent
+    }
+  }
 
   /**
    * Responses must be uniform between cloudscraper and node-fetch
@@ -82,11 +98,12 @@ class FeedFetcher {
    * @param {Object<string, any>} requestOptions
    */
   static createFetchOptions (url, requestOptions = {}) {
+    const config = configuration.get()
     const options = {
       follow: 5,
       ...requestOptions,
       headers: {
-        'user-agent': `Mozilla/5.0 ${url.includes('.tumblr.com') ? 'GoogleBot' : ''} (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Mobile Safari/537.36`
+        'user-agent': this.resolveUserAgent(url, config.bot.userAgent)
       }
     }
 
@@ -128,7 +145,7 @@ class FeedFetcher {
     const { options, timeout } = this.createFetchOptions(url, requestOptions)
     let endStatus
     let res
-
+    console.log(options)
     try {
       res = await fetch(url, options)
     } catch (err) {

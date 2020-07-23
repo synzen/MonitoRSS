@@ -74,6 +74,7 @@ exports.set = (override, skipValidation) => {
     : botOverride.exitOnSocketIssues !== undefined
       ? botOverride.exitOnSocketIssues
       : bot.exitOnSocketIssues
+  bot.userAgent = process.env.DRSS_BOT_USERAGENT || botOverride.userAgent || bot.userAgent
 
   // DATABASE
   if (!override.database) {
