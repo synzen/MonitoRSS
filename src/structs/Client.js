@@ -89,7 +89,12 @@ class Client extends EventEmitter {
     })
     mongo.on('disconnected', () => {
       this.log.error('MongoDB disconnected')
-      this.stop()
+      if (config.bot.exitOnDatabaseDisconnect) {
+        this.log.info('Stopping processes due to exitOnDatabaseDisconnect')
+        this.kill()
+      } else {
+        this.stop()
+      }
     })
     mongo.on('reconnected', () => {
       this.log.info('MongoDB reconnected')

@@ -208,7 +208,12 @@ class ClientManager extends EventEmitter {
     })
     mongo.on('disconnected', () => {
       this.log.error('MongoDB disconnected')
-      this.stopFetching()
+      if (this.config.bot.exitOnDatabaseDisconnect) {
+        this.log.info('Stopping processes due to exitOnDatabaseDisconnect')
+        this.kill()
+      } else {
+        this.stopFetching()
+      }
     })
     mongo.on('reconnected', () => {
       this.log.info('MongoDB reconnected')
