@@ -325,6 +325,7 @@
     "list": {
       "noFeeds": "Não há feeds",
       "noFeedsChannel": "",
+      "channelLimitReached": "",
       "titleChecksEnabled": "Verificações de título: ativada\n",
       "statusDisabled": "Status: DESATIVADO ({{reason}})\n",
       "statusFailed": "Status: FALHADO\n",

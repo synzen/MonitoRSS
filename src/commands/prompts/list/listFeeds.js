@@ -7,6 +7,7 @@ const ThemedEmbed = require('../common/utils/ThemedEmbed.js')
 const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Translator = require('../../../structs/Translator.js')
 const handlePaginationError = require('../common/utils/handlePaginationError.js')
+const ArticleRateLimiter = require('../../../structs/ArticleMessageRateLimiter.js')
 const getConfig = require('../../../config.js').get
 
 /**
@@ -37,6 +38,29 @@ function queryFeeds (feeds, query) {
 }
 
 /**
+ * Returns the set of channels within an array of feeds
+ * that is at their limit
+ *
+ * @param {import('../../../structs/db/Feed.js')[]} feeds
+ */
+async function getChannelsAtLimit (feeds) {
+  // Get all channel ids with no dupes
+  const channels = feeds.map(f => f.channel).filter((channel, index, array) => array.indexOf(channel) === index)
+  // Check if each one is at its limit
+  const promises = channels.map(channelId => ArticleRateLimiter.getLimiter(channelId).isAtDailyLimit())
+  const limitResolves = await Promise.all(promises)
+  const channelsAtLimit = new Set()
+  // Only insert the channels at limit
+  limitResolves.forEach((atLimit, index) => {
+    const channelId = channels[index]
+    if (atLimit) {
+      channelsAtLimit.add(channelId)
+    }
+  })
+  return channelsAtLimit
+}
+
+/**
  * @param {Data} data
  */
 async function listFeedVisual (data) {
@@ -46,15 +70,15 @@ async function listFeedVisual (data) {
     Schedule.getAll(),
     Supporter.getValidGuilds()
   ])
-
   const unqueriedFeeds = channel ? feeds.filter(f => f.channel === channel.id) : feeds
   const targetFeeds = queryFeeds(unqueriedFeeds, searchQuery)
   const translate = Translator.createProfileTranslator(profile)
+  const channelsAtLimit = await getChannelsAtLimit(feeds)
   if (feeds.length === 0) {
     return new MessageVisual(translate('commands.list.noFeeds'))
   } else if (targetFeeds.length === 0) {
     return new MessageVisual(translate('commands.list.noFeedsChannel', {
-      channel: `<#${channel.id}>`
+      channel: `<#${channel.id}>${channelsAtLimit.has(channel.id) ? ` (${translate('commands.list.channelLimitReached')})` : ''}`
     }))
   }
 
@@ -118,23 +142,22 @@ async function listFeedVisual (data) {
     const title = feed.title
 
     // Channel
-    const channel = `<#${feed.channel}>`
+    const atLimit = channelsAtLimit.has(feed.channel)
+    const channel = `<#${feed.channel}>${atLimit ? ` (${translate('commands.list.channelLimitReached')})` : ''}`
 
     // Status
     const failRecord = failRecordsMap[feed.url]
     let status = ''
     if (feed.disabled) {
       status = translate('commands.list.statusDisabled', { reason: feed.disabled })
-    } else if (failRecord) {
-      if (!failRecord.hasFailed()) {
-        // Determine hours between config spec and now, then calculate health
-        const hours = (new Date().getTime() - new Date(failRecord.failedAt).getTime()) / 36e5
-        const health = FailRecord.cutoff === 0 ? '(100% health)' : `(${100 - Math.ceil(hours / FailRecord.cutoff * 100)}% health)`
-        status = translate('commands.list.statusOk', { failCount: health })
-      } else {
-        status = translate('commands.list.statusFailed')
-        someFailed = true
-      }
+    } else if (failRecord && failRecord.hasFailed()) {
+      status = translate('commands.list.statusFailed')
+      someFailed = true
+    } else if (failRecord && !failRecord.hasFailed()) {
+      // Determine hours between config spec and now, then calculate health
+      const hours = (new Date().getTime() - new Date(failRecord.failedAt).getTime()) / 36e5
+      const health = FailRecord.cutoff === 0 ? '(100% health)' : `(${100 - Math.ceil(hours / FailRecord.cutoff * 100)}% health)`
+      status = translate('commands.list.statusOk', { failCount: health })
     } else {
       status = translate('commands.list.statusOk', { failCount: '(100% health)' })
     }

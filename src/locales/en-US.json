@@ -325,6 +325,7 @@
     "list": {
       "noFeeds": "There are no feeds.",
       "noFeedsChannel": "There are no feeds in the channel {{channel}}.",
+      "channelLimitReached": "Daily article limit reached",
       "titleChecksEnabled": "Title Checks: Enabled\n",
       "statusDisabled": "Status: DISABLED ({{reason}})\n",
       "statusFailed": "Status: FAILED\n",
