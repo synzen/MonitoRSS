@@ -1,4 +1,5 @@
 const GeneralStats = require('../models/GeneralStats.js')
+const DeliveryRecord = require('../models/DeliveryRecord.js')
 const Supporter = require('./db/Supporter.js')
 const configuration = require('../config.js')
 const createLogger = require('../util/logger/create.js')
@@ -13,6 +14,7 @@ class ArticleRateLimiter {
     const refreshRateMinutes = config.feeds.refreshRateMinutes
     const articlesLimit = config.feeds.articleRateLimit
     this.channelID = channelID
+    this.increased = increased
     this.articlesLimit = increased ? articlesLimit * 5 : articlesLimit
     this.articlesRemaining = this.articlesLimit
     if (this.articlesLimit !== 0) {
@@ -108,6 +110,10 @@ class ArticleRateLimiter {
       ++ArticleRateLimiter.blocked
       throw new Error('Rate limited article')
     }
+    if (await articleLimiter.isAtDailyLimit()) {
+      ++ArticleRateLimiter.blocked
+      throw new Error('Daily limited article')
+    }
     ++ArticleRateLimiter.sent
     await articleLimiter.send(articleMessage, bot)
   }
@@ -118,6 +124,28 @@ class ArticleRateLimiter {
     } else {
       return this.articlesRemaining === 0
     }
+  }
+
+  static getUTCStartOfToday () {
+    const now = new Date()
+    const nowUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0)
+    return new Date(nowUTC)
+  }
+
+  async isAtDailyLimit () {
+    const config = configuration.get()
+    const dailyLimit = config.feeds.articleDailyChannelLimit
+    if (this.increased || !dailyLimit) {
+      return false
+    }
+    const count = await DeliveryRecord.Model.where({
+      channel: this.channelID,
+      delivered: true,
+      addedAt: {
+        $gte: ArticleRateLimiter.getUTCStartOfToday()
+      }
+    }).countDocuments()
+    return count >= dailyLimit
   }
 
   /**

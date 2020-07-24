@@ -28,5 +28,5 @@ schema.index({
 })
 
 exports.schema = schema
-/** @type {import('mongoose').Model} */
+/** @type {import('mongoose').Model<import('mongoose').Document, {}>} */
 exports.Model = null

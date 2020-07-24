@@ -51,7 +51,7 @@ class DeliveryPipeline {
     const { article, feedObject } = newArticle
     const channel = this.getChannel(newArticle)
     await this.recordFailure(newArticle, err.message || 'N/A')
-    if (err.message.includes('Rate limit')) {
+    if (err.message.includes('limited')) {
       this.log.debug({
         error: err
       }, 'Ignoring rate-limited article')

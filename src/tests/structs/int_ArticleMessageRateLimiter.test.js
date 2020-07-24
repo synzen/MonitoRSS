@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const config = require('../../config.js')
 const initialize = require('../../initialization/index.js')
 const GeneralStats = require('../../models/GeneralStats.js')
+const DeliveryRecord = require('../../models/DeliveryRecord.js')
 const ArticleRateLimiter = require('../../structs/ArticleMessageRateLimiter.js')
 const dbName = 'test_int_articlemessageratelimiter'
 const CON_OPTIONS = {
@@ -25,12 +26,16 @@ describe('Unit::structs/DeliveryPipeline', function () {
       .mockReturnValue({
         database: {
           uri: 'mongodb://'
+        },
+        feeds: {
+          articleDailyChannelLimit: 2
         }
       })
   })
   afterEach(() => {
     ArticleRateLimiter.sent = 0
     ArticleRateLimiter.blocked = 0
+    jest.restoreAllMocks()
   })
   describe('updateArticlesSent', () => {
     it('inserts correctly', async () => {
@@ -80,6 +85,79 @@ describe('Unit::structs/DeliveryPipeline', function () {
       })
       expect(found).toBeDefined()
       expect(found.data).toEqual(4)
+    })
+  })
+  describe('isAtDailyLimit', () => {
+    it('returns true correctly', async () => {
+      const channelID = 'channelid'
+      const rateLimiter = new ArticleRateLimiter(channelID)
+      await con.db.collection(DeliveryRecord.Model.collection.name).insertMany([{
+        channel: channelID,
+        delivered: true,
+        addedAt: new Date()
+      }, {
+        channel: channelID,
+        delivered: true,
+        addedAt: new Date()
+      }])
+      await expect(rateLimiter.isAtDailyLimit())
+        .resolves.toEqual(true)
+    })
+    it('returns false correctly', async () => {
+      const channelID = 'channelid'
+      const rateLimiter = new ArticleRateLimiter(channelID)
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      await con.db.collection(DeliveryRecord.Model.collection.name).insertMany([{
+        channel: channelID,
+        delivered: true,
+        addedAt: yesterday
+      }, {
+        channel: channelID,
+        delivered: true,
+        addedAt: yesterday
+      }])
+      await expect(rateLimiter.isAtDailyLimit())
+        .resolves.toEqual(false)
+    })
+    it('returns false if no limit is set', async () => {
+      jest.spyOn(config, 'get')
+        .mockReturnValue({
+          database: {
+            uri: 'mongodb://'
+          },
+          feeds: {
+            articleDailyChannelLimit: 0
+          }
+        })
+      const channelID = 'channelid'
+      const rateLimiter = new ArticleRateLimiter(channelID)
+      await con.db.collection(DeliveryRecord.Model.collection.name).insertMany([{
+        channel: channelID,
+        delivered: true,
+        addedAt: new Date()
+      }])
+      await expect(rateLimiter.isAtDailyLimit())
+        .resolves.toEqual(false)
+    })
+    it('returns false if limiter has increased limits', async () => {
+      const channelID = 'channelid'
+      const rateLimiter = new ArticleRateLimiter(channelID, true)
+      await con.db.collection(DeliveryRecord.Model.collection.name).insertMany([{
+        channel: channelID,
+        delivered: true,
+        addedAt: new Date()
+      }, {
+        channel: channelID,
+        delivered: true,
+        addedAt: new Date()
+      }, {
+        channel: channelID,
+        delivered: true,
+        addedAt: new Date()
+      }])
+      await expect(rateLimiter.isAtDailyLimit())
+        .resolves.toEqual(false)
     })
   })
   afterAll(async function () {
