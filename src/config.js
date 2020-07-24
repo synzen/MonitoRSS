@@ -122,6 +122,11 @@ exports.set = (override, skipValidation) => {
     : feedsOverride.articleRateLimit !== undefined
       ? feedsOverride.articleRateLimit
       : feeds.articleRateLimit
+  feeds.articleDailyChannelLimit = process.env.DRSS_FEEDS_ARTICLEDAILYCHANNELLIMIT !== undefined
+    ? Number(process.env.DRSS_FEEDS_ARTICLEDAILYCHANNELLIMIT)
+    : feedsOverride.articleDailyChannelLimit !== undefined
+      ? feedsOverride.articleDailyChannelLimit
+      : feeds.articleDailyChannelLimit
   feeds.timezone = process.env.DRSS_FEEDS_TIMEZONE || feedsOverride.timezone || feeds.timezone
   feeds.dateFormat = process.env.DRSS_FEEDS_DATEFORMAT || feedsOverride.dateFormat || feeds.dateFormat
   feeds.dateLanguage = process.env.DRSS_FEEDS_DATELANGUAGE || feedsOverride.dateLanguage || feeds.dateLanguage
