@@ -49,7 +49,7 @@ class Client extends EventEmitter {
     /**
      * @type {import('pino').Logger}
      */
-    this.log = undefined
+    this.log = createLogger('-')
   }
 
   async login (token) {
@@ -61,9 +61,8 @@ class Client extends EventEmitter {
     }
     const client = new Discord.Client(CLIENT_OPTIONS)
     try {
-      this.deliveryPipeline = new DeliveryPipeline(client)
-      this.log = createLogger('-')
       await client.login(token)
+      this.deliveryPipeline = new DeliveryPipeline(client)
       this.log = createLogger(client.shard.ids[0].toString())
       this.bot = client
       this.shardID = client.shard.ids[0]
