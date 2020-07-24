@@ -26,7 +26,7 @@ https://discord.com/oauth2/authorize?client_id=268478587651358721&scope=bot&perm
 
 
 ```
-npm install synzen/discord.rss
+npm install discord.rss
 ```
 
 ```js
