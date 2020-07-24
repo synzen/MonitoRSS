@@ -49,7 +49,7 @@ const settings = {
 }
 
 const drss = new DiscordRSS.ClientManager(settings)
-drss.login('token')
+drss.start()
 ```
 
 For best performance, use a mongodb database.uri instead of a directory.
