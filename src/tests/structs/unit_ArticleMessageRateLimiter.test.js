@@ -51,7 +51,8 @@ describe('create', () => {
       }
       const limiter = {
         isAtLimit: () => false,
-        send: jest.fn()
+        send: jest.fn(),
+        isAtDailyLimit: async () => false
       }
       jest.spyOn(ArticleRateLimiter, 'getLimiter')
         .mockReturnValue(limiter)
@@ -77,6 +78,20 @@ describe('create', () => {
       }
       const limiter = {
         isAtLimit: () => true,
+        send: jest.fn()
+      }
+      jest.spyOn(ArticleRateLimiter, 'getLimiter')
+        .mockReturnValue(limiter)
+      await expect(ArticleRateLimiter.enqueue(articleMessage))
+        .rejects.toThrow(Error)
+    })
+    it('rejects if at daily limit', async () => {
+      const articleMessage = {
+        getChannel: () => ({})
+      }
+      const limiter = {
+        isAtLimit: () => false,
+        isAtDailyLimit: async () => true,
         send: jest.fn()
       }
       jest.spyOn(ArticleRateLimiter, 'getLimiter')
