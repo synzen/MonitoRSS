@@ -102,6 +102,9 @@ class Patron extends Base {
     if (this.pledge >= 2000) {
       return 140
     }
+    if (this.pledge > 1500) {
+      return 105
+    }
     if (this.pledge >= 1000) {
       return 70
     }
