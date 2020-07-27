@@ -177,7 +177,7 @@ class ScheduleRun extends EventEmitter {
   async getScheduleFeeds (feeds) {
     const [schedules, supporterGuilds] = await Promise.all([
       Schedule.getAll(),
-      Supporter.getValidGuilds()
+      Supporter.getValidFastGuilds()
     ])
     const feedsLength = feeds.length
     const schedulesToFetch = []

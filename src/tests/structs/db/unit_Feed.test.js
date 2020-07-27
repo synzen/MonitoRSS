@@ -241,22 +241,24 @@ describe('Unit::structs/db/Feed', function () {
       expect(feed.disabled).toEqual('No reason specified')
     })
   })
-  describe('hasSupporter', function () {
+  describe('hasFastSupporterSchedule', function () {
     it('returns correctly if array of guilds passed in', async function () {
       const feed = new Feed({ ...necessaryInit })
       const supporterGuilds = ['a', 'b', 'c']
       feed.guild = supporterGuilds[1]
-      await expect(feed.hasSupporter(supporterGuilds)).resolves.toEqual(true)
+      await expect(feed.hasFastSupporterSchedule(supporterGuilds))
+        .resolves.toEqual(true)
       feed.guild = 'd'
-      await expect(feed.hasSupporter(supporterGuilds)).resolves.toEqual(false)
+      await expect(feed.hasFastSupporterSchedule(supporterGuilds))
+        .resolves.toEqual(false)
     })
     it('returns correctly if no array passed in', async function () {
       jest.spyOn(Supporter, 'getValidSupporterOfGuild')
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce({ hasSlowRate: async () => false })
+        .mockResolvedValueOnce({ hasSlowRate: async () => true })
       const feed = new Feed({ ...necessaryInit })
-      await expect(feed.hasSupporter()).resolves.toEqual(true)
-      await expect(feed.hasSupporter()).resolves.toEqual(false)
+      await expect(feed.hasFastSupporterSchedule()).resolves.toEqual(true)
+      await expect(feed.hasFastSupporterSchedule()).resolves.toEqual(false)
     })
   })
   describe('determineSchedule', function () {
@@ -291,7 +293,7 @@ describe('Unit::structs/db/Feed', function () {
       }
       Supporter.enabled = true
       const feed = new Feed({ ...necessaryInit })
-      jest.spyOn(feed, 'hasSupporter')
+      jest.spyOn(feed, 'hasFastSupporterSchedule')
         .mockResolvedValue(true)
       const determined = await feed.determineSchedule([])
       expect(determined).toEqual(Supporter.schedule)
@@ -306,7 +308,7 @@ describe('Unit::structs/db/Feed', function () {
       Supporter.enabled = true
       const feed = new Feed({ ...necessaryInit })
       feed.url = 'feed43'
-      jest.spyOn(feed, 'hasSupporter')
+      jest.spyOn(feed, 'hasFastSupporterSchedule')
         .mockResolvedValue(true)
       const determined = await feed.determineSchedule([])
       expect(determined).not.toEqual(Supporter.schedule)

@@ -9,6 +9,7 @@ const initialize = require('../../../initialization/index.js')
 const dbName = 'test_int_feed'
 const config = require('../../../config.js')
 const Schedule = require('../../../structs/db/Schedule.js')
+const Patron = require('../../../structs/db/Patron.js')
 const CON_OPTIONS = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -87,6 +88,108 @@ describe('Int::structs/db/Feed Database', function () {
       }]
       await con.db.collection(Schedule.Model.collection.name).insertMany(schedules)
       await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      const feedData = {
+        url: 'asdf',
+        guild: guildID,
+        channel: 'sdxgdh'
+      }
+      const feed = new Feed(feedData)
+      const schedule = await feed.determineSchedule()
+      expect(schedule).toEqual(Supporter.schedule)
+    })
+    it('does not returns supporter schedule for slow supporters', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const guildID = 'w246y3r5eh'
+      const schedules = [{
+        name: 'default',
+        refreshRateMinutes: 99
+      }]
+      const supporters = [{
+        _id: 'a',
+        guilds: [guildID],
+        slowRate: true
+      }]
+      await con.db.collection(Schedule.Model.collection.name).insertMany(schedules)
+      await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      const feedData = {
+        url: 'asdf',
+        guild: guildID,
+        channel: 'sdxgdh'
+      }
+      const feed = new Feed(feedData)
+      const schedule = await feed.determineSchedule()
+      expect(schedule).toEqual(expect.objectContaining({
+        name: 'default'
+      }))
+    })
+    it('does not returns supporter schedule for ineligible patron', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const guildID = 'w246y3r5eh'
+      const schedules = [{
+        name: 'default',
+        refreshRateMinutes: 99
+      }]
+      const supporters = [{
+        _id: 'a',
+        guilds: [guildID],
+        patron: true
+      }]
+      const patron = {
+        discord: supporters[0]._id,
+        status: Patron.STATUS.ACTIVE,
+        pledge: Patron.SLOW_THRESHOLD - 1,
+        pledgeLifetime: 0
+      }
+      await con.db.collection(Schedule.Model.collection.name).insertMany(schedules)
+      await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      await con.db.collection(Patron.Model.collection.collectionName).insertOne(patron)
+      const feedData = {
+        url: 'asdf',
+        guild: guildID,
+        channel: 'sdxgdh'
+      }
+      const feed = new Feed(feedData)
+      const schedule = await feed.determineSchedule()
+      expect(schedule).toEqual(expect.objectContaining({
+        name: 'default'
+      }))
+    })
+    it('does not returns supporter schedule for eligible patron', async function () {
+      config.get.mockReturnValue({
+        _vip: true,
+        database: {
+          uri: 'mongodb://'
+        }
+      })
+      const guildID = 'w246y3r5eh'
+      const schedules = [{
+        name: 'default',
+        refreshRateMinutes: 99
+      }]
+      const supporters = [{
+        _id: 'a',
+        guilds: [guildID],
+        patron: true
+      }]
+      const patron = {
+        discord: supporters[0]._id,
+        status: Patron.STATUS.ACTIVE,
+        pledge: Patron.SLOW_THRESHOLD,
+        pledgeLifetime: 0
+      }
+      await con.db.collection(Schedule.Model.collection.name).insertMany(schedules)
+      await con.db.collection(Supporter.Model.collection.name).insertMany(supporters)
+      await con.db.collection(Patron.Model.collection.collectionName).insertOne(patron)
       const feedData = {
         url: 'asdf',
         guild: guildID,

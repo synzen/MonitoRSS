@@ -68,7 +68,7 @@ async function listFeedVisual (data) {
   const [supporter, schedules, supporterGuilds] = await Promise.all([
     Supporter.getValidSupporterOfGuild(guildID),
     Schedule.getAll(),
-    Supporter.getValidGuilds()
+    Supporter.getValidFastGuilds()
   ])
   const unqueriedFeeds = channel ? feeds.filter(f => f.channel === channel.id) : feeds
   const targetFeeds = queryFeeds(unqueriedFeeds, searchQuery)

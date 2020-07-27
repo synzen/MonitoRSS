@@ -279,28 +279,28 @@ class Feed extends FilterBase {
    * @param {string[]} supporterGuilds
    * @returns {boolean}
    */
-  async hasSupporter (supporterGuilds) {
+  async hasFastSupporterSchedule (supporterGuilds) {
     if (supporterGuilds) {
       return supporterGuilds.includes(this.guild)
     } else {
       const supporter = await Supporter.getValidSupporterOfGuild(this.guild)
-      return !!supporter
+      return !(await supporter.hasSlowRate())
     }
   }
 
   /**
    * @param {Schedule[]} [schedules] - All stored schedules
-   * @param {string[]} [supporterGuilds] - Array of supporter guild IDs
+   * @param {string[]} [fastSupporterGuilds] - Array of supporter guild IDs
    * @returns {Schedule}
    */
-  async determineSchedule (schedules, supporterGuilds) {
+  async determineSchedule (schedules, fastSupporterGuilds) {
     if (!schedules) {
       schedules = await Schedule.getAll()
     }
 
     // Take care of our supporters first
     if (Supporter.enabled && !this.url.includes('feed43')) {
-      const isSupporter = await this.hasSupporter(supporterGuilds)
+      const isSupporter = await this.hasFastSupporterSchedule(fastSupporterGuilds)
       if (isSupporter) {
         return Supporter.schedule
       }
