@@ -54,6 +54,10 @@ class Patron extends Base {
     this.email = this.getField('email')
   }
 
+  static get SLOW_THRESHOLD () {
+    return 500
+  }
+
   static async refresh () {
     const filePath = path.join(path.resolve(), 'settings', 'api.js')
     return require(filePath)()

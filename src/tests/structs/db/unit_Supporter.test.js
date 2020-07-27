@@ -361,4 +361,50 @@ describe('Unit::structs/db/Supporter', function () {
       expect(returned.get('d')).toEqual(11)
     })
   })
+  describe('hasSlowRate', () => {
+    it('returns correctly for non-patron', async () => {
+      const supporter = new Supporter({ ...initData })
+      supporter.slowRate = true
+      supporter.patron = false
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(true)
+      supporter.slowRate = false
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(false)
+    })
+    it('returns correctly for patrons', async () => {
+      const threshold = 5
+      jest.spyOn(Patron, 'SLOW_THRESHOLD', 'get')
+        .mockReturnValue(threshold)
+      const supporter = new Supporter({ ...initData })
+      supporter.patron = true
+      jest.spyOn(supporter, 'findActivePatron')
+        .mockResolvedValue({
+          pledge: threshold - 1
+        })
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(true)
+      jest.spyOn(supporter, 'findActivePatron')
+        .mockResolvedValue({
+          pledge: threshold + 1
+        })
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(false)
+    })
+    it('returns correctly if patron not found', async () => {
+      const threshold = 5
+      jest.spyOn(Patron, 'SLOW_THRESHOLD', 'get')
+        .mockReturnValue(threshold)
+      const supporter = new Supporter({ ...initData })
+      supporter.patron = true
+      supporter.slowRate = true
+      jest.spyOn(supporter, 'findActivePatron')
+        .mockResolvedValue(null)
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(true)
+      supporter.slowRate = false
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(false)
+    })
+  })
 })

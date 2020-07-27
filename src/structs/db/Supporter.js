@@ -232,6 +232,20 @@ class Supporter extends Base {
     }
   }
 
+  async hasSlowRate () {
+    if (this.patron) {
+      /** @type {import('./Patron')|undefined} */
+      const patron = await this.findActivePatron()
+      if (patron) {
+        return patron.pledge < Patron.SLOW_THRESHOLD
+      } else {
+        return this.slowRate
+      }
+    } else {
+      return this.slowRate
+    }
+  }
+
   toObject () {
     return {
       _id: this._id,

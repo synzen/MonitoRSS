@@ -415,6 +415,56 @@ describe('Int::structs/db/Supporter Database', function () {
       await expect(supporter.getWebhookAccess()).resolves.toEqual(true)
     })
   })
+  describe('hasSlowRate', () => {
+    it('returns true correctly for patron', async () => {
+      const discordId = 'hasslowrate patron'
+      const data = {
+        _id: discordId,
+        patron: true
+      }
+      await collection.insertOne(data)
+      const patronData = {
+        discord: discordId,
+        status: Patron.STATUS.ACTIVE,
+        pledge: Patron.SLOW_THRESHOLD + 1,
+        pledgeLifetime: 0
+      }
+      await con.db.collection('patrons').insertOne(patronData)
+      const supporter = await Supporter.get(data._id)
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(false)
+    })
+    it('returns false correctly for patron', async () => {
+      const discordId = 'hasslowrate patron'
+      const data = {
+        _id: discordId,
+        patron: true
+      }
+      await collection.insertOne(data)
+      const patronData = {
+        discord: discordId,
+        status: Patron.STATUS.ACTIVE,
+        pledge: Patron.SLOW_THRESHOLD - 1,
+        pledgeLifetime: 0
+      }
+      await con.db.collection('patrons').insertOne(patronData)
+      const supporter = await Supporter.get(data._id)
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(true)
+    })
+    it('returns true correctly for patron not found', async () => {
+      const discordId = 'hasslowrate patron'
+      const data = {
+        _id: discordId,
+        patron: true,
+        slowRate: true
+      }
+      await collection.insertOne(data)
+      const supporter = await Supporter.get(data._id)
+      await expect(supporter.hasSlowRate())
+        .resolves.toEqual(true)
+    })
+  })
   afterAll(async function () {
     await con.db.dropDatabase()
     await con.close()
