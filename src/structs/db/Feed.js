@@ -284,7 +284,11 @@ class Feed extends FilterBase {
       return supporterGuilds.includes(this.guild)
     } else {
       const supporter = await Supporter.getValidSupporterOfGuild(this.guild)
-      return !(await supporter.hasSlowRate())
+      if (!supporter) {
+        return false
+      } else {
+        return !(await supporter.hasSlowRate())
+      }
     }
   }
 
