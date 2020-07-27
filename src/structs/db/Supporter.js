@@ -107,6 +107,18 @@ class Supporter extends Base {
     return guilds
   }
 
+  static async getValidFastGuilds () {
+    const guilds = []
+    const validSupporters = await this.getValidSupporters()
+    const hasSlowRates = await Promise.all(validSupporters.map(supporter => supporter.hasSlowRate()))
+    validSupporters
+      .filter((supporter, index) => !hasSlowRates[index])
+      .forEach((supporter, index) => {
+        supporter.guilds.forEach(id => guilds.push(id))
+      })
+    return guilds
+  }
+
   /**
    * @param {string} guildId
    * @returns {Supporter|null}

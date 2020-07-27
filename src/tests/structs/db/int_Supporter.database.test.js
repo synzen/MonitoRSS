@@ -93,6 +93,58 @@ describe('Int::structs/db/Supporter Database', function () {
       expect(returned[1].toObject()).toEqual(expect.objectContaining(supporter4))
     })
   })
+  describe('getValidFastGuilds', function () {
+    it('returns correctly', async () => {
+      const slowDiscordId = 'weryhdt'
+      const slowPatronData = {
+        discord: slowDiscordId,
+        status: Patron.STATUS.ACTIVE,
+        pledge: Patron.SLOW_THRESHOLD - 1,
+        pledgeLifetime: 0
+      }
+      const slowSupporterData = {
+        _id: slowDiscordId,
+        patron: true,
+        slowRate: true,
+        guilds: ['a', 'b']
+      }
+      const fastDiscordId = 'w4ery5e3uthjr'
+      const fastPatronData = {
+        discord: fastDiscordId,
+        status: Patron.STATUS.ACTIVE,
+        pledge: Patron.SLOW_THRESHOLD + 1,
+        pledgeLifetime: 0
+      }
+      const fastDiscordId2 = 'weasdfg'
+      const fastPatron2Data = {
+        ...fastPatronData,
+        discord: fastDiscordId2
+      }
+      const fastSupporterData = {
+        _id: fastDiscordId,
+        patron: true,
+        guilds: ['c', 'd']
+      }
+      const fastSupporter2Data = {
+        ...fastSupporterData,
+        _id: fastDiscordId2,
+        guilds: ['e', 'f']
+      }
+      await con.db.collection('patrons').insertMany([
+        slowPatronData,
+        fastPatronData,
+        fastPatron2Data
+      ])
+      await con.db.collection(Supporter.Model.collection.collectionName)
+        .insertMany([
+          slowSupporterData,
+          fastSupporterData,
+          fastSupporter2Data
+        ])
+      const guildIds = await Supporter.getValidFastGuilds()
+      expect(guildIds).toEqual(['c', 'd', 'e', 'f'])
+    })
+  })
   describe('getValidSupporterOfGuild', function () {
     it('returns supporters who did not expire yet', async function () {
       config.get.mockReturnValue({
