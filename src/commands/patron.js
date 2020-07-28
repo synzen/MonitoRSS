@@ -25,12 +25,11 @@ async function verifyServer (bot, serverId) {
 
 /**
  * @param {import('discord.js').Client} bot
- * @param {Profile} profile
+ * @param {string} guildID
  */
-async function webhookStatusCheck (bot, profile, authorized) {
+async function webhookStatusCheck (bot, guildID, authorized) {
   const log = createLogger(bot.shard.ids[0])
   try {
-    const guildID = profile._id
     const feeds = await Feed.getManyByQuery({
       guild: guildID
     })
@@ -95,7 +94,7 @@ async function switchServerArg (bot, message, args, supporter, supportedGuilds, 
       guild: message.guild,
       user: message.author
     }, `Added patron server ${server} (${gotGuild.name})`)
-    await webhookStatusCheck(bot, profile, true)
+    await webhookStatusCheck(bot, message.guild.id, true)
   } else if (action === 'remove') {
     if (!supporter.guilds.includes(server)) {
       return message.channel.send('That server does not have your patron backing.')
@@ -108,7 +107,7 @@ async function switchServerArg (bot, message, args, supporter, supportedGuilds, 
       guild: message.guild,
       user: message.author
     }, `Removed patron server ${server}`)
-    await webhookStatusCheck(bot, profile, false)
+    await webhookStatusCheck(bot, message.guild.id, false)
   } else if (action === 'list') {
     if (supporter.guilds.length === 0) {
       return message.channel.send(`You have no servers under your patron backing. The maximum number of servers you may have under your patron backing is ${maxServers}.`)
