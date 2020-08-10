@@ -3,6 +3,7 @@ const LocalizedPrompt = require('../common/utils/LocalizedPrompt.js')
 const Subscriber = require('../../../structs/db/Subscriber.js')
 const Translator = require('../../../structs/Translator.js')
 const createLogger = require('../../../util/logger/create.js')
+const FilteredFormat = require('../../../structs/db/FilteredFormat.js')
 
 /**
  * @typedef {Object} Data
@@ -44,6 +45,7 @@ async function confirmFn (message, data) {
   const cloneSubscribers = cloneAll || properties.includes('subscribers')
   const cloneComparisons = cloneAll || properties.includes('comparisons')
   const cloneRegexops = cloneAll || properties.includes('regexops')
+  const cloneFilteredFormats = cloneAll || properties.includes('filtered-formats')
   const log = createLogger(message.client.shard.ids[0])
 
   const copyFromSubscribers = await sourceFeed.getSubscribers()
@@ -109,6 +111,19 @@ async function confirmFn (message, data) {
         saves.push(newSubscriber.save())
       }
       await Promise.all(saves)
+    }
+
+    // Filtered formats
+    if (cloneFilteredFormats) {
+      const copyFromFilteredFormats = await sourceFeed.getFilteredFormats()
+      const filteredFormats = await destinationFeed.getFilteredFormats()
+      await Promise.all(filteredFormats.map(format => format.delete()))
+      await Promise.all(copyFromFilteredFormats.map((format) => {
+        const json = format.toJSON()
+        json.feed = destinationFeed._id
+        const newFormat = new FilteredFormat(json)
+        return newFormat.save()
+      }))
     }
   }
   log.info({

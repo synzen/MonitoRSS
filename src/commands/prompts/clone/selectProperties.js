@@ -8,6 +8,7 @@ const referenceProperties = [
   'subscribers',
   'comparisons',
   'regexops',
+  'filtered-formats',
   'all'
 ]
 
