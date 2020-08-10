@@ -1,4 +1,4 @@
-const { MenuEmbed } = require('discord.js-prompts')
+const { MenuEmbed, Rejection } = require('discord.js-prompts')
 const LocalizedPrompt = require('./utils/LocalizedPrompt.js')
 const selectFeed = require('./selectFeed.js')
 const Translator = require('../../../structs/Translator.js')
@@ -28,10 +28,14 @@ function selectMultipleFeedsVisual (data) {
  * @param {Data} data
  */
 async function selectMultipleFeedsFn (message, data) {
-  const { feeds } = data
+  const { feeds, profile } = data
   const { content } = message
   const selectedFeeds = MenuEmbed.getMultiSelectOptions(content)
     .map((index) => feeds[index - 1])
+  if (selectedFeeds.length === 0) {
+    const translate = Translator.createProfileTranslator(profile)
+    throw new Rejection(translate('structs.FeedSelector.noneSelected'))
+  }
   return {
     ...data,
     selectedFeeds

@@ -600,6 +600,7 @@
       "action": "Action",
       "prompt": "Escolha um feed nesse canal digitando o número para executar a ação solicitada.",
       "multiSelect": "Você pode selecionar vários feeds por separação com vírgulas (por exemplo `1,3,8`) ou com um intervalo (por exemplo `1-3,5,7-9`).",
+      "noneSelected": "",
       "exitToCancel": "digite `exit` para cancelar."
     },
     "errors": {
