@@ -3,7 +3,6 @@ const DeliveryRecord = require('../models/DeliveryRecord.js')
 const Supporter = require('./db/Supporter.js')
 const configuration = require('../config.js')
 const createLogger = require('../util/logger/create.js')
-const ArticleMessage = require('./ArticleMessage.js')
 
 class ArticleRateLimiter {
   /**
@@ -23,30 +22,6 @@ class ArticleRateLimiter {
         this.articlesRemaining = this.articlesLimit
       }, 1000 * 60 * refreshRateMinutes)
     }
-  }
-
-  static async updateArticlesSent () {
-    if (this.sent === 0 || !Supporter.isMongoDatabase) {
-      return
-    }
-    /**
-     * @type {import('mongoose').Document}
-     */
-    const found = await GeneralStats.Model.findById(GeneralStats.TYPES.ARTICLES_SENT)
-    if (!found) {
-      const stat = new GeneralStats.Model({
-        _id: GeneralStats.TYPES.ARTICLES_SENT,
-        data: ArticleRateLimiter.sent
-      })
-      await stat.save()
-    } else {
-      await found.updateOne({
-        $inc: {
-          data: ArticleRateLimiter.sent
-        }
-      })
-    }
-    this.sent = 0
   }
 
   static async updateArticlesBlocked () {
@@ -117,7 +92,6 @@ class ArticleRateLimiter {
     }
     ++ArticleRateLimiter.sent
     --articleLimiter.articlesRemaining
-    return articleMessage
   }
 
   isAtLimit () {
@@ -162,13 +136,11 @@ class ArticleRateLimiter {
  */
 ArticleRateLimiter.limiters = new Map()
 
-ArticleRateLimiter.sent = 0
 ArticleRateLimiter.blocked = 0
 
 if (process.env.NODE_ENV !== 'test') {
   ArticleRateLimiter.timer = setInterval(async () => {
     try {
-      await ArticleRateLimiter.updateArticlesSent()
       await ArticleRateLimiter.updateArticlesBlocked()
     } catch (err) {
       const log = createLogger()

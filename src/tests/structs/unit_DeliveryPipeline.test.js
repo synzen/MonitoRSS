@@ -2,7 +2,6 @@ const DeliveryPipeline = require('../../structs/DeliveryPipeline.js')
 const config = require('../../config.js')
 const DeliveryRecord = require('../../models/DeliveryRecord.js')
 const ArticleMessage = require('../../structs/ArticleMessage.js')
-const ArticleRateLimiter = require('../../structs/ArticleMessageRateLimiter.js')
 const Feed = require('../../structs/db/Feed.js')
 
 jest.mock('../../config.js')
@@ -187,7 +186,14 @@ describe('Unit::structs/DeliveryPipeline', function () {
     })
   })
   describe('sendNewArticle', () => {
-    beforeEach(() => {})
+    const enqueue = jest.fn()
+    beforeEach(() => {
+      jest.spyOn(DeliveryPipeline.prototype, 'getQueueForChannel')
+        .mockReturnValue({
+          enqueue
+        })
+      enqueue.mockReset()
+    })
     it('enqueues the article', async () => {
       const bot = Bot()
       const pipeline = new DeliveryPipeline(bot)
@@ -195,20 +201,10 @@ describe('Unit::structs/DeliveryPipeline', function () {
       const articleMessage = {
         foo: 'baz'
       }
+
       await pipeline.sendNewArticle(newArticle, articleMessage)
-      expect(ArticleRateLimiter.enqueue)
-        .toHaveBeenCalledWith(articleMessage, bot)
-    })
-    it('records the success', async () => {
-      const pipeline = new DeliveryPipeline(Bot())
-      const newArticle = NewArticle()
-      const articleMessage = {
-        foo: 'baz'
-      }
-      const recordSuccess = jest.spyOn(pipeline, 'recordSuccess')
-      await pipeline.sendNewArticle(newArticle, articleMessage)
-      expect(recordSuccess)
-        .toHaveBeenCalledWith(newArticle)
+      expect(enqueue)
+        .toHaveBeenCalledWith(newArticle, articleMessage)
     })
   })
   describe('record functions', () => {
@@ -261,45 +257,6 @@ describe('Unit::structs/DeliveryPipeline', function () {
         }
         const error = new Error('sewtryd')
         await pipeline.recordFailure(newArticle, error)
-        expect(DeliveryRecord.Model).not.toHaveBeenCalled()
-        expect(modelSave).not.toHaveBeenCalled()
-        Feed.isMongoDatabase = true
-      })
-    })
-    describe('recordSuccess', () => {
-      it('works', async () => {
-        const pipeline = new DeliveryPipeline(Bot())
-        const newArticle = {
-          article: {
-            _id: 'abc'
-          },
-          feedObject: {
-            url: 'bla',
-            channel: 'abaa'
-          }
-        }
-        await pipeline.recordSuccess(newArticle)
-        expect(DeliveryRecord.Model).toHaveBeenCalledWith({
-          articleID: newArticle.article._id,
-          feedURL: newArticle.feedObject.url,
-          channel: newArticle.feedObject.channel,
-          delivered: true
-        })
-        expect(modelSave).toHaveBeenCalledTimes(1)
-      })
-      it('does not create model if not mongodb', async () => {
-        Feed.isMongoDatabase = false
-        const pipeline = new DeliveryPipeline(Bot())
-        const newArticle = {
-          article: {
-            _id: 'abc'
-          },
-          feedObject: {
-            url: 'bla',
-            channel: 'abaa'
-          }
-        }
-        await pipeline.recordSuccess(newArticle)
         expect(DeliveryRecord.Model).not.toHaveBeenCalled()
         expect(modelSave).not.toHaveBeenCalled()
         Feed.isMongoDatabase = true

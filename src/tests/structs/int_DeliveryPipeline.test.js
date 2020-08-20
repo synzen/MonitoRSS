@@ -56,23 +56,6 @@ describe('Unit::structs/DeliveryPipeline', function () {
     afterEach(() => {
       channel.send.mockReset()
     })
-    it('records success', async () => {
-      const pipeline = new DeliveryPipeline(Bot())
-      const articleMessage = {
-        foo: 'bar',
-        passedFilters: () => true
-      }
-      jest.spyOn(pipeline, 'createArticleMessage')
-        .mockReturnValue(articleMessage)
-      await pipeline.deliver(newArticle)
-      expect(DeliveryRecord.Model).toHaveBeenCalledWith({
-        articleID: newArticle.article._id,
-        feedURL: newArticle.feedObject.url,
-        delivered: true,
-        channel: newArticle.feedObject.channel
-      })
-      expect(modelSave).toHaveBeenCalledTimes(1)
-    })
     it('records filter blocked', async () => {
       const pipeline = new DeliveryPipeline(Bot())
       const articleMessage = {
@@ -100,7 +83,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       jest.spyOn(pipeline, 'createArticleMessage')
         .mockReturnValue(articleMessage)
       const error = new Error('basfdgrf')
-      jest.spyOn(ArticleRateLimiter, 'enqueue')
+      jest.spyOn(ArticleRateLimiter, 'count')
         .mockRejectedValue(error)
       await pipeline.deliver(newArticle)
       expect(DeliveryRecord.Model).toHaveBeenCalledWith({
@@ -133,7 +116,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       jest.spyOn(pipeline, 'createArticleMessage')
         .mockReturnValue(articleMessage)
       const error = new Error('basfdgrf')
-      jest.spyOn(ArticleRateLimiter, 'enqueue')
+      jest.spyOn(ArticleRateLimiter, 'count')
         .mockRejectedValue(error)
       const handleFailureError = new Error('handle failure error')
       jest.spyOn(pipeline, 'handleArticleFailure')

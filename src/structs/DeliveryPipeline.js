@@ -4,108 +4,7 @@ const Feed = require('./db/Feed.js')
 const ArticleRateLimiter = require('./ArticleMessageRateLimiter.js')
 const createLogger = require('../util/logger/create.js')
 const configuration = require('../config.js')
-const EventEmitter = require('events').EventEmitter
-
-/**
- * Channel article queue, a manual rate limiter
- */
-class ArticleQueue extends EventEmitter {
-  constructor (client) {
-    super()
-    /**
-     * @typedef {Object} ArticleDetails
-     * @property {Object<string, any>} newArticle
-     * @property {import('./ArticleMessage')} articleMessage
-     */
-
-    /**
-     * @type {ArticleDetails[]}
-     */
-    this.queue = []
-    /**
-     * @type {import('discord.js').Client}
-     */
-    this.client = client
-    this.log = createLogger(this.client.shard.ids[0])
-    setInterval(() => {
-      // Dequeue 1 every 10 seconds
-      this.dequeue(1)
-    }, 1000 * 10)
-  }
-
-  /**
-   * @param {number} dequeueAmount
-   */
-  async dequeue (dequeueAmount) {
-    // 0.1 = 1 article every 10 seconds
-    for (let i = 0; i < dequeueAmount; ++i) {
-      if (this.queue.length === 0) {
-        continue
-      }
-      const articleData = this.queue.shift()
-      try {
-        await articleData.articleMessage.send(this.client)
-        await this.recordSuccess(articleData.newArticle)
-      } catch (err) {
-        await this.recordFailure(articleData.newArticle, err.message)
-      }
-    }
-  }
-
-  enqueue (newArticle, articleMessage) {
-    this.queue.push({
-      newArticle,
-      articleMessage
-    })
-  }
-
-  async recordFailure (newArticle, errorMessage) {
-    if (!Feed.isMongoDatabase) {
-      return
-    }
-    const { article, feedObject } = newArticle
-    const channel = feedObject.channel
-    const data = {
-      articleID: article._id,
-      feedURL: feedObject.url,
-      channel,
-      delivered: false,
-      comment: errorMessage
-    }
-    this.log.debug({
-      data
-    }, 'Recording delivery record failure')
-    try {
-      const record = new DeliveryRecord.Model(data)
-      await record.save()
-    } catch (err) {
-      this.log.error(err, `Failed to record article ${article._id} delivery failure in channel ${channel} (error: ${errorMessage})`)
-    }
-  }
-
-  async recordSuccess (newArticle) {
-    if (!Feed.isMongoDatabase) {
-      return
-    }
-    const { article, feedObject } = newArticle
-    const channel = feedObject.channel
-    const data = {
-      articleID: article._id,
-      feedURL: feedObject.url,
-      delivered: true,
-      channel
-    }
-    this.log.debug({
-      data
-    }, 'Recording delivery record success')
-    try {
-      const record = new DeliveryRecord.Model(data)
-      await record.save()
-    } catch (err) {
-      this.log.error(err, `Failed to record article ${article._id} delivery success in channel ${channel}`)
-    }
-  }
-}
+const ArticleQueue = require('./ArticleQueue.js')
 
 /**
  * Core delivery pipeline
@@ -185,15 +84,10 @@ class DeliveryPipeline {
   async sendNewArticle (newArticle, articleMessage) {
     const { article, feedObject } = newArticle
     await ArticleRateLimiter.count(articleMessage, this.bot)
-    // The articleMessage is successfully enqueued and is within all limits
-    if (!this.queues.has(feedObject.channel)) {
-      const newQueue = new ArticleQueue(this.bot)
-      newQueue.enqueue(newArticle, articleMessage)
-      this.queues.set(feedObject.channel, newQueue)
-    } else {
-      const queue = this.queues.get(feedObject.channel)
-      queue.enqueue(newArticle, articleMessage)
-    }
+    // The articleMessage is within all limits
+    const channelID = feedObject.channel
+    const queue = this.getQueueForChannel(channelID)
+    queue.enqueue(newArticle, articleMessage)
     this.log.debug(`Enqueued article ${article._id} of feed ${feedObject._id}`)
   }
 
@@ -242,6 +136,23 @@ class DeliveryPipeline {
       await record.save()
     } catch (err) {
       this.log.error(err, `Failed to record article ${article._id} delivery blocked by filters in channel ${channel}`)
+    }
+  }
+
+  /**
+   * Returns the new article queue for a channel.
+   * If none exists, it creates a new one automatically
+   *
+   * @param {string} channelID
+   * @returns {import('./ArticleQueue')}
+   */
+  getQueueForChannel (channelID) {
+    if (!this.queues.has(channelID)) {
+      const newQueue = new ArticleQueue(this.bot)
+      this.queues.set(channelID, newQueue)
+      return newQueue
+    } else {
+      return this.queues.get(channelID)
     }
   }
 }

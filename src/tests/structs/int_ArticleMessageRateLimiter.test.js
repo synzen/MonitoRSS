@@ -40,31 +40,6 @@ describe('Unit::structs/DeliveryPipeline', function () {
   afterAll(() => {
     jest.useRealTimers()
   })
-  describe('updateArticlesSent', () => {
-    it('inserts correctly', async () => {
-      ArticleRateLimiter.sent = 10
-      await ArticleRateLimiter.updateArticlesSent()
-      const found = await con.db.collection(GeneralStats.Model.collection.name).findOne({
-        _id: GeneralStats.TYPES.ARTICLES_SENT
-      })
-      expect(found).toBeDefined()
-      expect(found.data).toEqual(10)
-      expect(found.addedAt).toBeDefined()
-    })
-    it('updates correctly', async () => {
-      ArticleRateLimiter.sent = 2
-      await con.db.collection(GeneralStats.Model.collection.name).insertOne({
-        _id: GeneralStats.TYPES.ARTICLES_SENT,
-        data: 2
-      })
-      await ArticleRateLimiter.updateArticlesSent()
-      const found = await con.db.collection(GeneralStats.Model.collection.name).findOne({
-        _id: GeneralStats.TYPES.ARTICLES_SENT
-      })
-      expect(found).toBeDefined()
-      expect(found.data).toEqual(4)
-    })
-  })
   describe('updateArticlesBlocked', () => {
     it('inserts correctly', async () => {
       ArticleRateLimiter.blocked = 10
