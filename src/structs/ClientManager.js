@@ -272,6 +272,7 @@ class ClientManager extends EventEmitter {
     if (this.scheduleManager.timers.length === 0) {
       return
     }
+    this.scheduleManager.terminateAllRuns()
     this.scheduleManager.clearTimers()
     this.log.info('Stopped fetch intervals')
   }
