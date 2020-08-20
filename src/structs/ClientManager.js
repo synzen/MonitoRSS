@@ -269,6 +269,7 @@ class ClientManager extends EventEmitter {
   }
 
   stopFetching () {
+    this.scheduleManager.terminateAllRuns()
     if (this.scheduleManager.timers.length === 0) {
       return
     }
