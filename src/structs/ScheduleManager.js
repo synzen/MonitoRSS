@@ -199,7 +199,16 @@ class ScheduleManager extends EventEmitter {
   }
 
   /**
-   * Terminate multiple runs
+   * Terminate all the runs of every schedule
+   */
+  terminateAllRuns () {
+    this.scheduleRuns.forEach((run) => {
+      this.terminateRun(run)
+    })
+  }
+
+  /**
+   * Terminate multiple runs of a schedule
    *
    * @param {import('./db/Schedule.js')} schedule
    */

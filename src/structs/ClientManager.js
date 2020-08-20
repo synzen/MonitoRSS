@@ -284,6 +284,7 @@ class ClientManager extends EventEmitter {
       this.broadcast(ipc.TYPES.KILL)
       process.exit(1)
     }
+    this.scheduleManager.terminateAllRuns()
     if (this.mongo) {
       this.mongo.close(handleMongoClose)
     } else {
