@@ -17,7 +17,8 @@ const RateLimitCounter = require('./RateLimitHitCounter.js')
 const STATES = {
   STOPPED: 'STOPPED',
   STARTING: 'STARTING',
-  READY: 'READY'
+  READY: 'READY',
+  EXITING: 'EXITING'
 }
 /**
  * @type {import('discord.js').ClientOptions}
@@ -56,7 +57,7 @@ class Client extends EventEmitter {
       const config = getConfig()
       if (config.bot.exitOnExcessRateLimits) {
         this.log.error('Forcing bot to exit due to excess rate limit hits (config.bot.exitOnExcessRateLimits)')
-        this.kill()
+        this.sendKillMessage()
       }
     })
   }
@@ -84,7 +85,7 @@ class Client extends EventEmitter {
       }
     } catch (err) {
       this.log.error(err, 'Discord.RSS failed to start')
-      ipc.send(ipc.TYPES.KILL)
+      this.sendKillMessage()
     }
   }
 
@@ -93,13 +94,16 @@ class Client extends EventEmitter {
     const mongo = await connectDb(config.database.uri, config.database.connection)
     mongo.on('error', (error) => {
       this.log.fatal(error, 'MongoDB connection error')
-      this.kill()
+      this.sendKillMessage()
     })
     mongo.on('disconnected', () => {
+      if (this.state === STATES.EXITING) {
+        return
+      }
       this.log.error('MongoDB disconnected')
       if (config.bot.exitOnDatabaseDisconnect) {
         this.log.info('Stopping processes due to exitOnDatabaseDisconnect')
-        this.kill()
+        this.sendKillMessage()
       } else {
         this.stop()
       }
@@ -118,7 +122,7 @@ class Client extends EventEmitter {
       const config = getConfig()
       if (config.bot.exitOnSocketIssues === true) {
         this.log.info('Stopping all processes due to config.bot.exitOnSocketIssues')
-        this.kill()
+        this.sendKillMessage()
       } else {
         this.stop()
       }
@@ -141,7 +145,7 @@ class Client extends EventEmitter {
       const config = getConfig()
       if (config.bot.exitOnSocketIssues === true) {
         this.log.general.info('Stopping all processes due to config.bot.exitOnSocketIssues')
-        ipc.send(ipc.TYPES.KILL)
+        this.sendKillMessage()
       } else {
         this.stop()
       }
@@ -172,6 +176,9 @@ class Client extends EventEmitter {
       }
       try {
         switch (message.type) {
+          case ipc.TYPES.KILL:
+            this.handleKillMessage()
+            break
           case ipc.TYPES.START_INIT: {
             const data = message.data
             if (data.setPresence) {
@@ -285,12 +292,33 @@ class Client extends EventEmitter {
     }
   }
 
-  kill () {
-    ipc.send(ipc.TYPES.KILL)
+  handleKillMessage () {
+    this.state = STATES.EXITING
+    this.log.info('Received kill signal from sharding manager, closing MongoDB connection')
+    this.mongo.close((err) => {
+      if (err) {
+        this.log.error(err, 'Failed to close mongo connection on shard kill message')
+      }
+      this.log.info('Exiting with status code 1')
+      process.exit(1)
+    })
+  }
+
+  sendKillMessage () {
+    this.log.info('Sending kill signal to sharding manager')
+    const handleMongoClose = (err) => {
+      this.log.error(err, 'Failed to close mongo connection on shard kill message emit')
+      ipc.send(ipc.TYPES.KILL)
+    }
+    if (this.mongo) {
+      this.mongo.close(handleMongoClose)
+    } else {
+      handleMongoClose()
+    }
   }
 
   stop () {
-    if (this.state === STATES.STARTING || this.state === STATES.STOPPED) {
+    if (this.state === STATES.STARTING || this.state === STATES.STOPPED || this.state === STATES.EXITING) {
       return this.log.warn(`Ignoring stop command because of ${this.state} state`)
     }
     this.log.info('Discord.RSS has received stop command')

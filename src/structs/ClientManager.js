@@ -53,6 +53,17 @@ class ClientManager extends EventEmitter {
     })
     this.shardingManager.on('shardCreate', shard => {
       shard.on('message', message => this.messageHandler(shard, message))
+      shard.on('death', () => {
+        this.log.info('Detected shard exit, sending kill signal')
+        this.kill()
+      })
+    })
+    const exitSignals = ['exit', 'SIGTERM', 'SIGINT', 'uncaughtException']
+    exitSignals.forEach(signal => {
+      process.once(signal, () => {
+        this.log.info(`Detected process ${signal}, sending kill signal to shards`)
+        this.kill()
+      })
     })
   }
 
@@ -266,10 +277,18 @@ class ClientManager extends EventEmitter {
   }
 
   kill () {
-    this.shardingManager.shards.forEach(shard => {
-      shard.kill()
-    })
-    process.exit(1)
+    const handleMongoClose = (err) => {
+      if (err) {
+        this.log.error(err, 'Failed to close mongo connection on kill signal for sharding manager')
+      }
+      this.broadcast(ipc.TYPES.KILL)
+      process.exit(1)
+    }
+    if (this.mongo) {
+      this.mongo.close(handleMongoClose)
+    } else {
+      handleMongoClose()
+    }
   }
 
   async _shardReadyEvent (shard, message) {
