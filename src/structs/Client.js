@@ -295,6 +295,7 @@ class Client extends EventEmitter {
   handleKillMessage () {
     this.state = STATES.EXITING
     this.log.info('Received kill signal from sharding manager, closing MongoDB connection')
+    this.bot.destroy()
     this.mongo.close((err) => {
       if (err) {
         this.log.error(err, 'Failed to close mongo connection on shard kill message')
