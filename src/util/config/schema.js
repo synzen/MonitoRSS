@@ -41,6 +41,7 @@ const databaseSchema = Joi.object({
 
 const feedsSchema = Joi.object({
   refreshRateMinutes: Joi.number().strict().greater(0).default(10),
+  articleDequeueRate: Joi.number().strict().greater(0).default(1),
   articleRateLimit: Joi.number().strict().greater(-1).default(0),
   articleDailyChannelLimit: Joi.number().strict().greater(-1).default(0),
   timezone: timezoneValidator.config().timezone(),

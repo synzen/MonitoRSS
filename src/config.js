@@ -122,6 +122,11 @@ exports.set = (override, skipValidation) => {
     : feedsOverride.refreshRateMinutes !== undefined
       ? feedsOverride.refreshRateMinutes
       : feeds.refreshRateMinutes
+  feeds.articleDequeueRate = process.env.DRSS_FEEDS_ARTICLEDEQUEUERATE !== undefined
+    ? Number(process.env.DRSS_FEEDS_ARTICLEDEQUEUERATE)
+    : feedsOverride.articleDequeueRate !== undefined
+      ? feedsOverride.articleDequeueRate
+      : feeds.articleDequeueRate
   feeds.articleRateLimit = process.env.DRSS_FEEDS_ARTICLERATELIMIT !== undefined
     ? Number(process.env.DRSS_FEEDS_ARTICLERATELIMIT)
     : feedsOverride.articleRateLimit !== undefined
