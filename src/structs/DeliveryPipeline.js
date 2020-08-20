@@ -184,7 +184,7 @@ class DeliveryPipeline {
    */
   async sendNewArticle (newArticle, articleMessage) {
     const { article, feedObject } = newArticle
-    await ArticleRateLimiter.satisfiesLimits(articleMessage, this.bot)
+    await ArticleRateLimiter.count(articleMessage, this.bot)
     // The articleMessage is successfully enqueued and is within all limits
     if (!this.queues.has(feedObject.channel)) {
       const newQueue = new ArticleQueue(this.bot)

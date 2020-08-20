@@ -100,7 +100,7 @@ class ArticleRateLimiter {
    * @param {import('../structs/ArticleMessage.js')} articleMessage
    * @param {import('discord.js').Client} bot
    */
-  static async satisfiesLimits (articleMessage, bot) {
+  static async count (articleMessage, bot) {
     const channel = articleMessage.getChannel(bot)
     if (!channel) {
       throw new Error('Missing channel for ArticleMessageRateLimiter satisfiesLimits')
@@ -150,10 +150,6 @@ class ArticleRateLimiter {
     return count >= dailyLimit
   }
 
-  /**
-   * @param {import('./ArticleMessage.js')} articleMessage
-   * @param {import('discord.js').Client} bot
-   */
   async send (articleMessage, bot) {
     --this.articlesRemaining
     const sent = await articleMessage.send(bot)
