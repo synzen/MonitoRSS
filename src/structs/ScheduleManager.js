@@ -250,11 +250,15 @@ class ScheduleManager extends EventEmitter {
   async run (schedule) {
     if (this.atMaxRuns(schedule)) {
       const runs = this.getRuns(schedule)
-      const hungupURLs = runs.map(run => run.getHungUpURLs())
+      const hungupURLs = runs.map(run => run.hasHungUpURLRecords() ? run.getHungUpURLs() : null)
       this.log.warn({
         urls: hungupURLs
       }, `Previous schedule runs were not finished (${runs.length} run(s)). Terminating all runs. If repeatedly seeing this message, consider increasing your refresh rate.`)
-      hungupURLs.forEach((hangups) => this.failURLs(hangups.summary.flat(3)))
+      hungupURLs.forEach((hangups) => {
+        if (hangups) {
+          this.failURLs(hangups.summary.flat(3))
+        }
+      })
       this.terminateScheduleRuns(schedule)
     }
     const runCount = this.scheduleRunCounts.get(schedule)

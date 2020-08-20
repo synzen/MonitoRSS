@@ -360,6 +360,14 @@ class ScheduleRun extends EventEmitter {
     urlBatch.delete(url)
   }
 
+  /**
+   * This check is necessary since urlBatchRecords could be undefined if the DB was
+   * disconnected before these records could be created for this run
+   */
+  hasHungUpURLRecords () {
+    return !!this.urlBatchRecords
+  }
+
   getHungUpURLs () {
     const summary = this.urlBatchRecords.filter((urlBatch, batchIndex) => {
       const origBatchSize = this.urlSizeRecords[batchIndex]
