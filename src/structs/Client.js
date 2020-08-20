@@ -12,6 +12,7 @@ const { once } = require('events')
 const devLevels = require('../util/devLevels.js')
 const dumpHeap = require('../util/dumpHeap.js')
 const DeliveryPipeline = require('./DeliveryPipeline.js')
+const RateLimitCounter = require('./RateLimitHitCounter.js')
 
 const STATES = {
   STOPPED: 'STOPPED',
@@ -50,6 +51,14 @@ class Client extends EventEmitter {
      * @type {import('pino').Logger}
      */
     this.log = createLogger('-')
+    this.rateLimitCounter = new RateLimitCounter()
+    this.rateLimitCounter.on('limitReached', () => {
+      const config = getConfig()
+      if (config.bot.exitOnExcessRateLimits) {
+        this.log.error('Forcing bot to exit due to excess rate limit hits (config.bot.exitOnExcessRateLimits)')
+        this.kill()
+      }
+    })
   }
 
   async login (token) {
@@ -116,8 +125,11 @@ class Client extends EventEmitter {
     })
     bot.on('debug', info => {
       const config = getConfig()
-      if (config.log.rateLimitHits && info.includes('429')) {
-        this.log.warn(info)
+      if (info.includes('429')) {
+        this.rateLimitCounter.hit()
+        if (config.log.rateLimitHits) {
+          this.log.warn(info)
+        }
       }
     })
     bot.on('resume', () => {
