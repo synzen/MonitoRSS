@@ -35,10 +35,14 @@ class ArticleQueue {
   }
 
   /**
+   * Dequeue a certain amount of articles from the queue
+   * and send them in order
+   *
    * @param {number} dequeueAmount
    */
   async dequeue (dequeueAmount) {
-    // 0.1 = 1 article every 10 seconds
+    // async must be used within the loop to main the order
+    // in which articles are sent
     for (let i = 0; i < dequeueAmount; ++i) {
       if (this.queue.length === 0) {
         continue

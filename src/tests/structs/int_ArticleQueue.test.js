@@ -12,7 +12,7 @@ const CON_OPTIONS = {
 
 jest.mock('../../config.js')
 
-describe('Unit::structs/ArticleQueue', function () {
+describe('Int::structs/ArticleQueue', function () {
   /** @type {import('mongoose').Connection} */
   let con
   beforeAll(async function () {
