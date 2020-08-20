@@ -3,6 +3,7 @@ const DeliveryRecord = require('../models/DeliveryRecord.js')
 const Supporter = require('./db/Supporter.js')
 const configuration = require('../config.js')
 const createLogger = require('../util/logger/create.js')
+const ArticleMessage = require('./ArticleMessage.js')
 
 class ArticleRateLimiter {
   /**
@@ -99,10 +100,10 @@ class ArticleRateLimiter {
    * @param {import('../structs/ArticleMessage.js')} articleMessage
    * @param {import('discord.js').Client} bot
    */
-  static async enqueue (articleMessage, bot) {
+  static async satisfiesLimits (articleMessage, bot) {
     const channel = articleMessage.getChannel(bot)
     if (!channel) {
-      throw new Error('Missing channel for ArticleMessageRateLimiter enqueue')
+      throw new Error('Missing channel for ArticleMessageRateLimiter satisfiesLimits')
     }
     const channelID = channel.id
     const articleLimiter = ArticleRateLimiter.getLimiter(channelID)
@@ -115,7 +116,8 @@ class ArticleRateLimiter {
       throw new Error('Daily limited article')
     }
     ++ArticleRateLimiter.sent
-    await articleLimiter.send(articleMessage, bot)
+    --articleLimiter.articlesRemaining
+    return articleMessage
   }
 
   isAtLimit () {
