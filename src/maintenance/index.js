@@ -20,7 +20,7 @@ const createLogger = require('../util/logger/create.js')
  * @param {import('discord.js').Client} bot
  */
 async function prunePreInit (guildIdsByShard, channelIdsByShard) {
-  const feeds = await Feed.getAll()
+  const feeds = await Feed.getAllByPagination()
   await Promise.all([
     checkIndexes(),
     ScheduleStats.deleteAll(),
