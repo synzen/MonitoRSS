@@ -1,6 +1,6 @@
-# MonitoRSS
+# MonitoRSS (Formerly Discord.RSS)
 
-This is the core repository of the MonitoRSS bot for development and programmatic use. For the web interface development and programmatic use, see https://github.com/synzen/MonitoRSS-Web.
+This is the core repository of the MonitoRSS bot (formerly known as Discord.RSS) for development and programmatic use. For the web interface development and programmatic use, see https://github.com/synzen/MonitoRSS-Web.
 
 For users who want to deploy MonitoRSS for personal use, see https://github.com/synzen/MonitoRSS-Clone.
 
@@ -8,7 +8,7 @@ For users who want to deploy MonitoRSS for personal use, see https://github.com/
 
 Driven by the lack of comprehensive RSS bots available, I have decided to try my hand at creating one of my own. Designed with as much customization as possible for both users and bot hosters, while also (or should be) easy to understand.
 
-All documentation can be found at https://docs.discordrss.xyz.
+All documentation can be found at https://docs.monitorss.xyz.
 
 ### Publicly Hosted Instance
 
@@ -16,7 +16,7 @@ Don't want to bother hosting your own instance? Use the publicly hosted one!
 
 #### Website:
 
-https://discordrss.xyz
+https://monitorss.xyz
 
 #### Bot Invite:
 
