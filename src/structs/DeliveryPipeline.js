@@ -85,8 +85,8 @@ class DeliveryPipeline {
     const { article, feedObject } = newArticle
     await ArticleRateLimiter.count(articleMessage, this.bot)
     // The articleMessage is within all limits
-    const channelID = feedObject.channel
-    const queue = this.getQueueForChannel(channelID)
+    const guildID = feedObject.guild
+    const queue = this.getQueue(guildID)
     queue.enqueue(newArticle, articleMessage)
     this.log.debug(`Enqueued article ${article._id} of feed ${feedObject._id}`)
   }
@@ -143,16 +143,16 @@ class DeliveryPipeline {
    * Returns the new article queue for a channel.
    * If none exists, it creates a new one automatically
    *
-   * @param {string} channelID
+   * @param {string} guildID
    * @returns {import('./ArticleQueue')}
    */
-  getQueueForChannel (channelID) {
-    if (!this.queues.has(channelID)) {
+  getQueue (guildID) {
+    if (!this.queues.has(guildID)) {
       const newQueue = new ArticleQueue(this.bot)
-      this.queues.set(channelID, newQueue)
+      this.queues.set(guildID, newQueue)
       return newQueue
     } else {
-      return this.queues.get(channelID)
+      return this.queues.get(guildID)
     }
   }
 }
