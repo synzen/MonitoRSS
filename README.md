@@ -1,8 +1,8 @@
-# Discord.RSS
+# MonitoRSS
 
-This is the core repository of the Discord.RSS bot for development and programmatic use. For the web interface development and programmatic use, see https://github.com/synzen/Discord.RSS-Web.
+This is the core repository of the MonitoRSS bot for development and programmatic use. For the web interface development and programmatic use, see https://github.com/synzen/MonitoRSS-Web.
 
-For users who want to deploy Discord.RSS for personal use, see https://github.com/synzen/Discord.RSS-Clone.
+For users who want to deploy MonitoRSS for personal use, see https://github.com/synzen/MonitoRSS-Clone.
 
 ***
 
@@ -26,11 +26,11 @@ https://discord.com/oauth2/authorize?client_id=268478587651358721&scope=bot&perm
 
 
 ```
-npm install discord.rss
+npm install monitorss
 ```
 
 ```js
-const DiscordRSS = require('discord.rss')
+const MonitoRSS = require('monitorss')
 
 // Some configs are mandatory - refer to documentation
 const config = {
@@ -48,15 +48,15 @@ const settings = {
   config
 }
 
-const drss = new DiscordRSS.ClientManager(settings)
-drss.start()
+const client = new MonitoRSS.ClientManager(settings)
+client.start()
 ```
 
 For best performance, use a mongodb database.uri instead of a directory.
 
 ### Contributing
 
-[Read the contribution guidelines](https://github.com/synzen/Discord.RSS/blob/master/CONTRIBUTING.md). All the latest updates are commited to the dev branch. 
+[Read the contribution guidelines](https://github.com/synzen/MonitoRSS/blob/master/CONTRIBUTING.md). All the latest updates are commited to the dev branch. 
 
 ### Testing
 

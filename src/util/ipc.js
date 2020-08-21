@@ -15,7 +15,7 @@ class IPC {
   }
 
   /**
-   * If the message is valid for Discord.RSS
+   * If the message is valid for this bot
    * @param {Object<string, any>} message
    * @returns {boolean}
    */

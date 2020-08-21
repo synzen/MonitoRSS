@@ -84,7 +84,7 @@ class Client extends EventEmitter {
         this._setup()
       }
     } catch (err) {
-      this.log.error(err, 'Discord.RSS failed to start')
+      this.log.error(err, 'MonitoRSS failed to start')
       this.sendKillMessage()
     }
   }
@@ -153,7 +153,7 @@ class Client extends EventEmitter {
     if (devLevels.dumpHeap()) {
       this.setupHeapDumps()
     }
-    this.log.info(`Discord.RSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
+    this.log.info(`MonitoRSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
     ipc.send(ipc.TYPES.SHARD_READY, {
       guildIds: bot.guilds.cache.keyArray(),
       channelIds: bot.channels.cache.keyArray()
@@ -322,7 +322,7 @@ class Client extends EventEmitter {
     if (this.state === STATES.STARTING || this.state === STATES.STOPPED || this.state === STATES.EXITING) {
       return this.log.warn(`Ignoring stop command because of ${this.state} state`)
     }
-    this.log.info('Discord.RSS has received stop command')
+    this.log.info('MonitoRSS has received stop command')
     clearInterval(this.maintenance)
     listeners.disableAll(this.bot)
     this.state = STATES.STOPPED

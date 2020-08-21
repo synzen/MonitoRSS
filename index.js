@@ -64,7 +64,7 @@ exports.errors = {
 }
 
 /**
- * Necessary for npm modules to use Discord.RSS models that
+ * Necessary for npm modules to use models that
  * depends on the database being connected
  *
  * @param {string} uri

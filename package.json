@@ -1,12 +1,12 @@
 {
-  "name": "discord.rss",
+  "name": "MonitoRSS",
   "version": "6.5.38",
   "description": "Discord RSS bot with customizable feeds",
   "main": "index.js",
   "author": "synzen",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/synzen/Discord.RSS/issues"
+    "url": "https://github.com/synzen/MonitoRSS/issues"
   },
   "scripts": {
     "test": "jest ./src/tests --detectOpenHandles --testTimeout=10000",
@@ -38,7 +38,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/synzen/Discord.RSS.git"
+    "url": "git+https://github.com/synzen/MonitoRSS.git"
   },
   "engines": {
     "node": ">=12.16",
