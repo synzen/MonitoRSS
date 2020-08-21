@@ -18,9 +18,54 @@ jest.mock('../../../config.js', () => ({
 }))
 
 describe('Int::structs/db/Base Database', function () {
+  const collectionName = Foobar.collection.collectionName
   beforeAll(async function () {
     await mongoose.connect(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
+  })
+  beforeEach(async () => {
     await mongoose.connection.db.dropDatabase()
+  })
+  describe('getAll', () => {
+    it('works', async () => {
+      const docs = [{
+        foo: '1'
+      }, {
+        foo: '2'
+      }, {
+        foo: '3'
+      }, {
+        foo: '4'
+      }, {
+        foo: '5'
+      }]
+      await mongoose.connection.collection(collectionName).insertMany(docs)
+      const found = await FoobarClass.getAll()
+      expect(found.length).toEqual(5)
+      for (const doc of docs) {
+        expect(found.findIndex(f => f.foo === doc.foo)).toBeGreaterThan(-1)
+      }
+    })
+  })
+  describe('getAllByPagination', () => {
+    it.only('works', async () => {
+      const docs = [{
+        foo: '1'
+      }, {
+        foo: '2'
+      }, {
+        foo: '3'
+      }, {
+        foo: '4'
+      }, {
+        foo: '5'
+      }]
+      await mongoose.connection.collection(collectionName).insertMany(docs)
+      const found = await FoobarClass.getAllByPagination(2)
+      expect(found.length).toEqual(5)
+      for (const doc of docs) {
+        expect(found.findIndex(f => f.foo === doc.foo)).toBeGreaterThan(-1)
+      }
+    })
   })
   it('initializes correctly', async function () {
     const initData = { foo: 'qgfdew4' }

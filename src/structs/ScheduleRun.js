@@ -398,7 +398,7 @@ class ScheduleRun extends EventEmitter {
     this.log.debug({
       schedule: this.schedule
     }, '1 Running schedule, getting all feeds')
-    const feeds = await Feed.getAll()
+    const feeds = await Feed.getAllByPagination()
     // Check the limits
     this.log.debug(`2 Fetched all feeds (${feeds.length}), getting feeds of this schedule`)
     // Get eligible feeds of this schedule

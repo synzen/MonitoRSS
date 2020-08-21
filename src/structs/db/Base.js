@@ -283,6 +283,62 @@ class Base {
   }
 
   /**
+   * Prevent the find method from getting too many results in bulk.
+   * Only supported for MongoDB
+   *
+   * @param {number} npp Number (of docs) per page to fetch per query/page
+   */
+  static async getAllByPagination (npp = 5000) {
+    if (!this.isMongoDatabase) {
+      // Pagination is not supported for databaseless
+      return this.getAll()
+    }
+    // https://docs.mongodb.com/manual/reference/method/cursor.skip/#using-range-queries
+    /**
+     * @type {MongooseModel}
+     */
+    const DatabaseModel = this.Model
+    async function getPage (startId, numberPerPage) {
+      const results = await DatabaseModel.find({
+        _id: {
+          $lt: new mongoose.Types.ObjectId(startId)
+        }
+      }).sort({
+        _id: -1
+      }).limit(numberPerPage).exec()
+      // No more results since results has less than the limit per page
+      if (results.length < numberPerPage) {
+        return results
+      }
+      // Get the last ID of the last document as the start
+      const lastId = results[results.length - 1]._id
+      const nextResults = await getPage(lastId, numberPerPage)
+      results.push(...nextResults)
+      return results
+    }
+    const largestIdDoc = (await DatabaseModel.find().sort({
+      _id: -1
+    }).limit(1).exec())[0]
+    if (!largestIdDoc) {
+      return []
+    }
+    const documents = await getPage(largestIdDoc._id, npp)
+    const documentsLength = documents.length
+    /**
+     * Add doc with the largest ID since getPage does not
+     * include the doc with the largest id ($lt is less than)
+     *
+     * Also use a for loop with var instead of let since this
+     * function is optimized for performance
+     */
+    const converted = [new this(largestIdDoc, true)]
+    for (var i = 0; i < documentsLength; ++i) {
+      converted.push(new this(documents[i], true))
+    }
+    return converted
+  }
+
+  /**
    * Get all documents
    * @returns {Promise<Base[]>}
    */
