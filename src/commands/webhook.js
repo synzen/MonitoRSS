@@ -6,7 +6,7 @@ const runWithFeedGuild = require('./prompts/runner/run.js')
 module.exports = async (message) => {
   const supporter = await Supporter.getValidSupporterOfGuild(message.guild.id)
   if (Supporter.enabled && !supporter) {
-    message.channel.send('You must be a patron to add webhooks. See <https://www.patreon.com/discordrss> for more details.')
+    message.channel.send('You must be a patron to add webhooks. See <https://www.patreon.com/monitorss> for more details.')
     return
   }
   const selectFeedNode = new PromptNode(webhookPrompts.selectFeed.prompt)

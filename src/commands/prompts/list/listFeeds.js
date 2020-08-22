@@ -111,7 +111,7 @@ async function listFeedVisual (data) {
 
   const desc = maxFeedsAllowed === 0
     ? `${vipDetails}\u200b\n`
-    : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${targetFeeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/discordrss)\n\n\u200b`
+    : `${vipDetails}**${translate('commands.list.serverLimit')}:** ${targetFeeds.length}/${maxFeedsAllowed} [＋](https://www.patreon.com/monitorss)\n\n\u200b`
 
   const list = new ThemedEmbed()
     .setDescription(desc)
@@ -183,7 +183,7 @@ async function listFeedVisual (data) {
 
     // Patreon link
     if (Supporter.enabled && !supporter) {
-      refreshRate += ' [－](https://www.patreon.com/discordrss)'
+      refreshRate += ' [－](https://www.patreon.com/monitorss)'
     }
 
     const name = `${title.length > 200 ? title.slice(0, 200) + '[...]' : title}`
