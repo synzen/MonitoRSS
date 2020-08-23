@@ -644,12 +644,13 @@ module.exports = class Article {
 
   testFilters (filters) {
     const filterResults = new FilterResults()
-    let passed = Object.keys(filters).every(type => !!this.getFilterReference(type))
-    filterResults.passed = passed
+    const everyReferenceExists = Object.keys(filters).every(type => !!this.getFilterReference(type))
+    filterResults.passed = everyReferenceExists
     // If not every key in filters exists on the articles, auto-block it
-    if (!passed) {
+    if (!everyReferenceExists) {
       return filterResults
     }
+    let passed = false
     for (const filterTypeName in filters) {
       const userFilters = filters[filterTypeName]
       const reference = this.getFilterReference(filterTypeName)
@@ -666,7 +667,7 @@ module.exports = class Article {
       } else {
         results = this.testRegexFilter(userFilters, reference)
       }
-      passed = results.passed && passed
+      passed = results.passed || passed
       invertedFilters = invertedFilters.concat(results.inverted)
       regularFilters = regularFilters.concat(results.regular)
       if (regularFilters.length > 0) {
