@@ -44,7 +44,7 @@ describe('create', () => {
         .toEqual(limiter)
     })
   })
-  describe('count', () => {
+  describe('assertWithinLimits', () => {
     it('rejects if no channel', async () => {
       const articleMessage = {
         getChannel: () => null
@@ -55,7 +55,7 @@ describe('create', () => {
       }
       jest.spyOn(ArticleRateLimiter, 'getLimiter')
         .mockReturnValue(limiter)
-      await expect(ArticleRateLimiter.count(articleMessage))
+      await expect(ArticleRateLimiter.assertWithinLimits(articleMessage))
         .rejects.toThrowError()
     })
     it('rejects if rate limited', async () => {
@@ -68,7 +68,7 @@ describe('create', () => {
       }
       jest.spyOn(ArticleRateLimiter, 'getLimiter')
         .mockReturnValue(limiter)
-      await expect(ArticleRateLimiter.count(articleMessage))
+      await expect(ArticleRateLimiter.assertWithinLimits(articleMessage))
         .rejects.toThrow(Error)
     })
     it('rejects if at daily limit', async () => {
@@ -82,7 +82,7 @@ describe('create', () => {
       }
       jest.spyOn(ArticleRateLimiter, 'getLimiter')
         .mockReturnValue(limiter)
-      await expect(ArticleRateLimiter.count(articleMessage))
+      await expect(ArticleRateLimiter.assertWithinLimits(articleMessage))
         .rejects.toThrow(Error)
     })
   })

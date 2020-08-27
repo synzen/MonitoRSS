@@ -75,7 +75,7 @@ class ArticleRateLimiter {
    * @param {import('../structs/ArticleMessage.js')} articleMessage
    * @param {import('discord.js').Client} bot
    */
-  static async count (articleMessage, bot) {
+  static async assertWithinLimits (articleMessage, bot) {
     const channel = articleMessage.getChannel(bot)
     if (!channel) {
       throw new Error('Missing channel for ArticleMessageRateLimiter satisfiesLimits')
