@@ -83,7 +83,7 @@ class DeliveryPipeline {
    */
   async sendNewArticle (newArticle, articleMessage) {
     const { article, feedObject } = newArticle
-    await ArticleRateLimiter.count(articleMessage, this.bot)
+    await ArticleRateLimiter.assertWithinLimits(articleMessage, this.bot)
     // The articleMessage is within all limits
     const channelID = feedObject.channel
     const queue = this.getQueueForChannel(channelID)
