@@ -644,6 +644,10 @@ module.exports = class Article {
 
   testFilters (filters) {
     const filterResults = new FilterResults()
+    if (Object.keys(filters).length === 0) {
+      filterResults.passed = true
+      return filterResults
+    }
     const everyReferenceExists = Object.keys(filters).every(type => !!this.getFilterReference(type))
     filterResults.passed = everyReferenceExists
     // If not every key in filters exists on the articles, auto-block it

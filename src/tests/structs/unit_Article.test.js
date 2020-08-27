@@ -8,6 +8,13 @@ describe('Unit::structs/Article', function () {
     feed: {}
   }
   describe('testFilters', function () {
+    it('passes with no filters', function () {
+      const article = new Article(baseArticle, feedData)
+      article.fullTitle = 'my sentence is this'
+      const filters = {}
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(true)
+    })
     it('works with regular filters', function () {
       const article = new Article(baseArticle, feedData)
       article.fullTitle = 'my sentence is this'
