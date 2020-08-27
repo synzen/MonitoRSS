@@ -83,7 +83,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       jest.spyOn(pipeline, 'createArticleMessage')
         .mockReturnValue(articleMessage)
       const error = new Error('basfdgrf')
-      jest.spyOn(ArticleRateLimiter, 'count')
+      jest.spyOn(ArticleRateLimiter, 'assertWithinLimits')
         .mockRejectedValue(error)
       await pipeline.deliver(newArticle)
       expect(DeliveryRecord.Model).toHaveBeenCalledWith({
@@ -116,7 +116,7 @@ describe('Unit::structs/DeliveryPipeline', function () {
       jest.spyOn(pipeline, 'createArticleMessage')
         .mockReturnValue(articleMessage)
       const error = new Error('basfdgrf')
-      jest.spyOn(ArticleRateLimiter, 'count')
+      jest.spyOn(ArticleRateLimiter, 'assertWithinLimits')
         .mockRejectedValue(error)
       const handleFailureError = new Error('handle failure error')
       jest.spyOn(pipeline, 'handleArticleFailure')
