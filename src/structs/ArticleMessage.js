@@ -11,9 +11,8 @@ class ArticleMessage {
    * @param {Object<string, any>} article
    * @param {import('./FeedData.js')} feedData
    * @param {boolean} [debug]
-   * @param {import('./DistributedRESTHandler.js')} [restHandler]
    */
-  constructor (article, feedData, debug = false, restHandler = null) {
+  constructor (article, feedData, debug = false) {
     this.config = getConfig()
     this.debug = debug
     this.article = article
@@ -21,23 +20,21 @@ class ArticleMessage {
     this.filteredFormats = feedData.filteredFormats
     this.sendFailed = 0
     this.parsedArticle = new Article(article, feedData)
-    this.restHandler = restHandler
   }
 
   /**
    * @param {import('./db/Feed.js')|Object<string, any>} feed
    * @param {Object<string, any>} article
    * @param {boolean} [debug]
-   * @param {import('./DistributedRESTHandler.js')} [restHandler]
    */
-  static async create (feed, article, debug, restHandler) {
+  static async create (feed, article, debug) {
     if (feed instanceof Feed) {
       const feedData = await FeedData.ofFeed(feed)
-      return new ArticleMessage(article, feedData, debug, restHandler)
+      return new ArticleMessage(article, feedData, debug)
     } else {
       const reconstructedFeed = new Feed(feed)
       const feedData = await FeedData.ofFeed(reconstructedFeed)
-      return new ArticleMessage(article, feedData, debug, restHandler)
+      return new ArticleMessage(article, feedData, debug)
     }
   }
 
@@ -344,23 +341,7 @@ class ArticleMessage {
     if (!medium) {
       throw new Error('Missing medium to send message to')
     }
-
-    if (!this.restHandler || !this.restHandler.enabled) {
-      return this.sendWithClient(bot, medium)
-    } else if (medium instanceof Discord.Webhook) {
-      return this.sendToWebhookWithHandler(medium, this.restHandler)
-    } else {
-      return this.sendToChannelWithHandler(medium, this.restHandler)
-    }
-  }
-
-  /**
-   * @param {import('discord.js').TextChannel|import('discord.js').Webhook} medium
-   * @param {import('discord.js').Client} bot
-   */
-  async sendWithClient (medium, bot) {
     const { text, options } = this.createTextAndOptions(medium)
-
     // Send the message, and repeat attempt if failed
     try {
       return await medium.send(text, options)
@@ -375,53 +356,8 @@ class ArticleMessage {
         }
         throw err
       }
-      return this.sendWithClient(bot, medium)
+      return this.send(bot, medium)
     }
-  }
-
-  /**
-   * @param {import('discord.js').TextChannel} medium
-   * @param {import('./DistributedRESTHandler.js')} restHandler
-   */
-  async sendToChannelWithHandler (medium, restHandler) {
-    if (devLevels.disableOutgoingMessages()) {
-      return
-    }
-    if (!restHandler) {
-      throw new Error('REST Handler is undefined')
-    }
-    if (!(medium instanceof Discord.TextChannel)) {
-      throw new Error('Medium is not a text channel')
-    }
-    console.log('send to channel with handler')
-    const { text, options } = this.createTextAndOptions(medium)
-    restHandler.sendChannelMessage(medium.id, {
-      ...options,
-      content: text
-    })
-  }
-
-  /**
-   *
-   * @param {import('discord.js').Webhook} medium
-   * @param {import('./DistributedRESTHandler.js')} restHandler
-   */
-  async sendToWebhookWithHandler (medium, restHandler) {
-    if (devLevels.disableOutgoingMessages()) {
-      return
-    }
-    if (!restHandler) {
-      throw new Error('REST Handler is undefined')
-    }
-    if (!(medium instanceof Discord.Webhook)) {
-      throw new Error('Medium is not a webhook')
-    }
-    console.log('send to channel with webhook')
-    const { text, options } = this.createTextAndOptions(medium)
-    restHandler.sendWebhookMessage(medium, {
-      ...options,
-      content: text
-    })
   }
 }
 
