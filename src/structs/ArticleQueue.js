@@ -160,7 +160,8 @@ class ArticleQueue {
     try {
       // The service should always send a message in the response
       json = await res.json()
-      this.log.error(`Bad status code ${res.status} from service (${json.message})`)
+      const isDiscordError = json.discord === true
+      this.log.error(`Bad status code ${res.status} from ${isDiscordError ? 'Discord' : 'service'} (${json.message})`)
     } catch (err) {
       this.log.error(err, `Bad status code ${res.status} from service`)
       throw new Error(`Bad status code (${res.status}) from service`)
