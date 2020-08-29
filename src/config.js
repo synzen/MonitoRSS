@@ -236,6 +236,9 @@ exports.set = (override, skipValidation) => {
   // Web URL
   config.webURL = process.env.DRSS_WEBURL || override.webURL || config.webURL
 
+  // Delivery service
+  config.deliveryServiceURL = process.env.MRSS_DELIVERYSERVICEURL || override.deliveryServiceURL || config.deliveryServiceURL
+
   // Other private ones
   config.dev = process.env.DRSS_DEV !== undefined
     ? Number(process.env.DRSS_DEV)
