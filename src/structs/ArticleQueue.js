@@ -89,7 +89,10 @@ class ArticleQueue {
         this._logDebug(articleData, 'Sending by client')
         await articleData.articleMessage.send(this.client)
       }
-      await this.recordSuccess(articleData.newArticle)
+      // If it's in the backlog, it wasn't a success
+      if (!this.serviceBacklogQueue.includes(articleData)) {
+        await this.recordSuccess(articleData.newArticle)
+      }
       ArticleQueue.sent++
     } catch (err) {
       await this.recordFailure(articleData.newArticle, err.message)
