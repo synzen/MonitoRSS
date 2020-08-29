@@ -51,6 +51,7 @@ class ArticleQueue {
       try {
         await articleData.articleMessage.send(this.client)
         await this.recordSuccess(articleData.newArticle)
+        ArticleQueue.sent++
       } catch (err) {
         await this.recordFailure(articleData.newArticle, err.message)
       }
@@ -139,7 +140,7 @@ class ArticleQueue {
         }
       })
     }
-    this.sent = 0
+    ArticleQueue.sent = 0
   }
 }
 
