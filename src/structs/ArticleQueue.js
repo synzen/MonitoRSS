@@ -132,7 +132,6 @@ class ArticleQueue {
       })
     } catch (err) {
       // Network error, put it in the service backlog
-      this.log.error(err, `Failed to send article ${articleData.newArticle.article._id} payload to service`)
       /**
        * Deliver the articles at a later time once the service is available
        * again. No need to check if it already exists in the array since it's
@@ -140,6 +139,8 @@ class ArticleQueue {
        * calls this
        */
       this.serviceBacklogQueue.push(articleData)
+      const articleID = articleData.newArticle.article._id
+      this.log.error(err, `Failed to send article ${articleID} payload to service. Backlog length: ${this.serviceBacklogQueue.length}`)
       /**
        * Don't throw an error, otherwise it'll be marked as a failure. We're
        * just delaying the article for later delivery
