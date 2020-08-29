@@ -13,7 +13,6 @@ const devLevels = require('../util/devLevels.js')
 const dumpHeap = require('../util/dumpHeap.js')
 const DeliveryPipeline = require('./DeliveryPipeline.js')
 const RateLimitCounter = require('./RateLimitHitCounter.js')
-const DistributedRESTHandler = require('./DistributedRESTHandler.js')
 
 const STATES = {
   STOPPED: 'STOPPED',
@@ -155,7 +154,6 @@ class Client extends EventEmitter {
       this.setupHeapDumps()
     }
     this.log.info(`MonitoRSS has logged in as "${bot.user.username}" (ID ${bot.user.id})`)
-    this.restHandler = new DistributedRESTHandler(bot)
     ipc.send(ipc.TYPES.SHARD_READY, {
       guildIds: bot.guilds.cache.keyArray(),
       channelIds: bot.channels.cache.keyArray()
@@ -216,7 +214,7 @@ class Client extends EventEmitter {
 
   async onNewArticle (newArticle, debug) {
     try {
-      await this.deliveryPipeline.deliver(this.restHandler, newArticle, debug)
+      await this.deliveryPipeline.deliver(newArticle, debug)
     } catch (err) {
       this.log.error(err, 'Delivery pipeline')
     }

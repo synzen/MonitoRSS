@@ -3,11 +3,13 @@ const populateSchedules = require('./populateSchedules')
 const setupCommands = require('./setupCommands.js')
 const setupModels = require('./setupModels.js')
 const setupRateLimiters = require('./setupRateLimiters.js')
+const checkDeliveryService = require('./checkDeliveryService.js')
 
 module.exports = {
   populateKeyValues,
   populateSchedules,
   setupCommands,
   setupModels,
-  setupRateLimiters
+  setupRateLimiters,
+  checkDeliveryService
 }

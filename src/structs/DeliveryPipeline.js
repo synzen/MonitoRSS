@@ -28,18 +28,18 @@ class DeliveryPipeline {
     return this.bot.channels.cache.get(feedObject.channel)
   }
 
-  async createArticleMessage (restHandler, newArticle, debug) {
+  async createArticleMessage (newArticle, debug) {
     const { article, feedObject } = newArticle
-    return ArticleMessage.create(feedObject, article, debug, restHandler)
+    return ArticleMessage.create(feedObject, article, debug)
   }
 
-  async deliver (restHandler, newArticle, debug) {
+  async deliver (newArticle, debug) {
     const channel = this.getChannel(newArticle)
     if (!channel) {
       return
     }
     try {
-      const articleMessage = await this.createArticleMessage(restHandler, newArticle, debug)
+      const articleMessage = await this.createArticleMessage(newArticle, debug)
       if (!articleMessage.passedFilters()) {
         return await this.handleArticleBlocked(newArticle)
       }
