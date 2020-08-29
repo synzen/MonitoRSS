@@ -109,7 +109,7 @@ class ArticleQueue {
         body: apiPayload
       }),
       headers: {
-        // Authorization: `Bot ${this.client.token}`,
+        Authorization: `Bot ${this.client.token}`,
         'Content-Type': 'application/json',
         Accept: 'application/json'
       }
