@@ -21,6 +21,10 @@ class ArticleQueue {
     /**
      * @type {ArticleDetails[]}
      */
+    this.serviceBacklogQueue = []
+    /**
+     * @type {ArticleDetails[]}
+     */
     this.queue = []
     /**
      * @type {import('discord.js').Client}
@@ -32,7 +36,12 @@ class ArticleQueue {
     const dequeueAmount = dequeueRate <= 1 ? 1 : dequeueRate
     const intervalSeconds = dequeueRate <= 1 ? 1 / dequeueRate : 1
     setInterval(() => {
-      this.dequeue(dequeueAmount)
+      // The service backlog always takes priority since they came first
+      if (this.serviceBacklogQueue.length > 0) {
+        this.dequeue(this.serviceBacklogQueue, dequeueAmount)
+      } else {
+        this.dequeue(this.queue, dequeueAmount)
+      }
     }, 1000 * intervalSeconds)
   }
 
@@ -49,16 +58,17 @@ class ArticleQueue {
    * Dequeue a certain amount of articles from the queue
    * and send them in order
    *
+   * @param {ArticleDetails[]} queue
    * @param {number} dequeueAmount
    */
-  async dequeue (dequeueAmount) {
+  async dequeue (queue, dequeueAmount) {
     // async must be used within the loop to main the order
     // in which articles are sent
     for (let i = 0; i < dequeueAmount; ++i) {
-      if (this.queue.length === 0) {
+      if (queue.length === 0) {
         continue
       }
-      const articleData = this.queue.shift()
+      const articleData = queue.shift()
       this._logDebug(articleData, 'Dequeuing')
       await this.send(articleData)
     }
@@ -94,28 +104,51 @@ class ArticleQueue {
    */
   async sendByService (articleData, serviceURL) {
     const articleMessage = articleData.articleMessage
+    // Assert that the medium (either a channel or webhook) still exists
     const medium = await articleMessage.getMedium(this.client)
     if (!medium) {
-      console.log('missing medium')
       throw new Error('Missing medium to send article via service')
     }
+    // Make the fetch
     const apiPayload = articleMessage.createAPIPayload(medium)
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
-    const res = await fetch(`${serviceURL}/api/request`, {
-      method: 'POST',
-      body: JSON.stringify({
+    let res
+    try {
+      res = await fetch(`${serviceURL}/api/request`, {
         method: 'POST',
-        url: `https://discord.com/api${apiRoute}`,
-        body: apiPayload
-      }),
-      headers: {
-        Authorization: `Bot ${this.client.token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      }
-    })
+        body: JSON.stringify({
+          method: 'POST',
+          url: `https://discord.com/api${apiRoute}`,
+          body: apiPayload
+        }),
+        headers: {
+          Authorization: `Bot ${this.client.token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        }
+      })
+    } catch (err) {
+      // Network error, put it in the service backlog
+      this.log.error(err, `Failed to send article ${articleData.newArticle.article._id} payload to service`)
+      /**
+       * Deliver the articles at a later time once the service is available
+       * again. No need to check if it already exists in the array since it's
+       * shifted out of the array in dequeue(), which calls send(), which
+       * calls this
+       */
+      this.serviceBacklogQueue.push(articleData)
+      /**
+       * Don't throw an error, otherwise it'll be marked as a failure. We're
+       * just delaying the article for later delivery
+       */
+      return
+    }
     if (res.ok) {
+      // Successfully delivered
       this._logDebug(articleData, 'Successfully sent via service')
+      if (this.serviceBacklogQueue.includes(articleData)) {
+        this.serviceBacklogQueue.splice(this.serviceBacklogQueue.indexOf(articleData), 1)
+      }
       return
     }
     // Bad status code from service
@@ -128,6 +161,7 @@ class ArticleQueue {
       this.log.error(err, `Bad status code ${res.status} from service`)
       throw new Error(`Bad status code (${res.status}) from service`)
     }
+    // JSON was successfully parsed, use the server response as the error
     if (json) {
       throw new Error(json.message)
     }
