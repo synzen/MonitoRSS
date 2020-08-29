@@ -187,6 +187,7 @@ class ClientManager extends EventEmitter {
       if (Supporter.isMongoDatabase) {
         this.mongo = await this.connectToDatabase()
       }
+      await initialize.checkDeliveryService()
       await initialize.setupModels(this.mongo)
       await initialize.populateKeyValues()
       const schedules = await initialize.populateSchedules(this.customSchedules)

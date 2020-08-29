@@ -290,6 +290,25 @@ class ArticleMessage {
     return options
   }
 
+  createAPIPayload (medium) {
+    const { text, embeds } = this.generateMessage()
+    const options = this.createOptions(embeds, medium)
+    // First convert camel case properties to snake case
+    const transformed = {
+      ...options,
+      allowed_mentions: options.allowedMentions
+    }
+    delete transformed.allowedMentions
+    if (transformed.avatarURL) {
+      transformed.avatar_url = options.avatarURL
+      delete transformed.avatarURL
+    }
+    return {
+      ...transformed,
+      content: text
+    }
+  }
+
   createTextAndOptions (medium) {
     const { text, embeds } = this.generateMessage()
     const options = this.createOptions(embeds, medium)
