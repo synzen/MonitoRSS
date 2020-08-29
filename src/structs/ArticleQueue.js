@@ -92,8 +92,8 @@ class ArticleQueue {
       // If it's in the backlog, it wasn't a success
       if (!this.serviceBacklogQueue.includes(articleData)) {
         await this.recordSuccess(articleData.newArticle)
+        ArticleQueue.sent++
       }
-      ArticleQueue.sent++
     } catch (err) {
       await this.recordFailure(articleData.newArticle, err.message)
     }
