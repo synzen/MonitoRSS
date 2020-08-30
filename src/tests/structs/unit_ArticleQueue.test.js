@@ -9,8 +9,6 @@ const bot = {
   }
 }
 
-jest.useFakeTimers()
-
 describe('Unit::structs/ArticleQueue', function () {
   beforeEach(async () => {
     configuration.get.mockReturnValue({
@@ -18,9 +16,9 @@ describe('Unit::structs/ArticleQueue', function () {
         articleDequeueRate: 0.01
       }
     })
-  })
-  afterEach(() => {
-    jest.resetAllMocks()
+    jest.spyOn(ArticleQueue.prototype, '_logDebug')
+      .mockImplementation()
+    jest.useFakeTimers()
   })
   describe('enqueue', () => {
     it('adds the data to the queue', () => {
@@ -40,44 +38,40 @@ describe('Unit::structs/ArticleQueue', function () {
   })
   describe('dequeue', () => {
     beforeEach(() => {
-      jest.spyOn(ArticleQueue.prototype, 'recordSuccess')
-        .mockImplementation()
-      jest.spyOn(ArticleQueue.prototype, 'recordFailure')
+      jest.spyOn(ArticleQueue.prototype, 'send')
         .mockImplementation()
     })
     it('sends the right article messages', async () => {
-      const message1Send = jest.fn()
-      const message2Send = jest.fn()
-      const message3Send = jest.fn()
-      const articleDataQueue = [{
-        articleMessage: {
-          id: 1, // for debugging
-          send: message1Send
-        }
-      }, {
-        articleMessage: {
-          id: 2,
-          send: message2Send
-        }
-      }, {
-        articleMessage: {
-          id: 3,
-          send: message3Send
-        }
-      }]
+      const articleData1 = {
+        id: 1 // for debugging
+      }
+      const articleData2 = {
+        id: 2
+      }
+      const articleData3 = {
+        id: 3
+      }
+      const articleDataQueue = [
+        articleData1,
+        articleData2,
+        articleData3
+      ]
       const queue = new ArticleQueue({ ...bot })
       queue.queue = articleDataQueue
-      await queue.dequeue(2)
-      expect(message1Send)
-        .toHaveBeenCalledTimes(1)
-      expect(message2Send)
-        .toHaveBeenCalledTimes(1)
-      expect(message3Send)
-        .toHaveBeenCalledTimes(0)
+      queue.send = jest.fn()
+      await queue.dequeue(queue.queue, 2)
+      expect(queue.send)
+        .toHaveBeenCalledTimes(2)
+      expect(queue.send)
+        .toHaveBeenCalledWith(articleData1)
+      expect(queue.send)
+        .toHaveBeenCalledWith(articleData2)
+      expect(queue.send)
+        .not.toHaveBeenCalledWith(articleData3)
     })
   })
   describe('constructor', () => {
-    it.only('creates the interval correctly for rate of <1', () => {
+    it('creates the interval correctly for rate of <1', () => {
       configuration.get.mockReturnValue({
         feeds: {
           articleDequeueRate: 0.2
@@ -86,13 +80,15 @@ describe('Unit::structs/ArticleQueue', function () {
       // eslint-disable-next-line no-new
       const queue = new ArticleQueue({ ...bot })
       queue.dequeue = jest.fn()
+      queue.queue = [1, 3, 4]
+      queue.serviceBacklogQueue = []
       const expectedDequeueRate = 1
       const expectedInterval = 5000
       expect(setInterval)
         .toHaveBeenCalledWith(expect.any(Function), expectedInterval)
       expect(setInterval).toHaveBeenCalledTimes(1)
       jest.advanceTimersByTime(expectedInterval)
-      expect(queue.dequeue).toHaveBeenCalledWith(expectedDequeueRate)
+      expect(queue.dequeue).toHaveBeenCalledWith(queue.queue, expectedDequeueRate)
     })
     it('creates interval correctly for rate of >1', () => {
       configuration.get.mockReturnValue({
@@ -101,6 +97,7 @@ describe('Unit::structs/ArticleQueue', function () {
         }
       })
       const queue = new ArticleQueue({ ...bot })
+      queue.queue = [4, 5, 6]
       queue.dequeue = jest.fn()
       const expectedDequeueRate = 5
       const expectedInterval = 1000
@@ -108,7 +105,7 @@ describe('Unit::structs/ArticleQueue', function () {
         .toHaveBeenCalledWith(expect.any(Function), expectedInterval)
       expect(setInterval).toHaveBeenCalledTimes(1)
       jest.advanceTimersByTime(expectedInterval)
-      expect(queue.dequeue).toHaveBeenCalledWith(expectedDequeueRate)
+      expect(queue.dequeue).toHaveBeenCalledWith(queue.queue, expectedDequeueRate)
     })
   })
 })
