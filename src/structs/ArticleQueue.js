@@ -141,7 +141,7 @@ class ArticleQueue {
        * calls this
        */
       this.serviceBacklogQueue.push(articleData)
-      this.log.error(err, `Failed to send article ${articleID} payload to service. Backlog length: ${this.serviceBacklogQueue.length}`)
+      this._logDebug(articleData, `Failed to send article to service (${err.message}). Backlog length: ${this.serviceBacklogQueue.length}`)
       /**
        * Don't throw an error, otherwise it'll be marked as a failure. We're
        * just delaying the article for later delivery
@@ -150,7 +150,8 @@ class ArticleQueue {
     }
     if (res.ok) {
       // Successfully delivered
-      this._logDebug(articleData, 'Successfully sent via service')
+      const wasBacklogged = this.serviceBacklogQueue.includes(articleData)
+      this._logDebug(articleData, `Successfully sent via service (was backlogged: ${wasBacklogged})`)
       if (this.serviceBacklogQueue.includes(articleData)) {
         this.serviceBacklogQueue.splice(this.serviceBacklogQueue.indexOf(articleData), 1)
       }
