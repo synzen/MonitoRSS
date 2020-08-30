@@ -107,6 +107,7 @@ class ArticleQueue {
    */
   async sendByService (articleData, serviceURL) {
     const articleMessage = articleData.articleMessage
+    const articleID = articleData.newArticle.article._id
     // Assert that the medium (either a channel or webhook) still exists
     const medium = await articleMessage.getMedium(this.client)
     if (!medium) {
@@ -139,7 +140,6 @@ class ArticleQueue {
        * calls this
        */
       this.serviceBacklogQueue.push(articleData)
-      const articleID = articleData.newArticle.article._id
       this.log.error(err, `Failed to send article ${articleID} payload to service. Backlog length: ${this.serviceBacklogQueue.length}`)
       /**
        * Don't throw an error, otherwise it'll be marked as a failure. We're
@@ -161,9 +161,9 @@ class ArticleQueue {
       // The service should always send a message in the response
       json = await res.json()
       const isDiscordError = json.discord === true
-      this.log.warn(`Bad status code ${res.status} from ${isDiscordError ? 'Discord' : 'service'} (${json.message})`)
+      this.log.warn(`Bad status code ${res.status} from ${isDiscordError ? 'Discord' : 'service'} (${json.message}) for article ${articleID}`)
     } catch (err) {
-      this.log.error(err, `Bad status code ${res.status} from service`)
+      this.log.error(err, `Bad status code ${res.status} from service for article ${articleID}`)
       throw new Error(`Bad status code (${res.status}) from service`)
     }
     // JSON was successfully parsed, use the server response as the error
