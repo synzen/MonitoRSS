@@ -675,7 +675,6 @@ module.exports = class Article {
       passed = results.passed || passed
       invertedFilters = invertedFilters.concat(results.inverted)
       regularFilters = regularFilters.concat(results.regular)
-      console.log(results.passed, invertedFilters)
       if (regularFilters.length > 0) {
         filterResults.add(filterTypeName, regularFilters, false)
       }
