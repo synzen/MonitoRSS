@@ -23,18 +23,18 @@
     "@hapi/joi": "^17.1.1",
     "abort-controller": "^3.0.0",
     "cloudscraper": "^4.6.0",
-    "discord.js": "^12.2.0",
-    "discord.js-prompts": "^2.1.0",
+    "discord.js": "^12.3.1",
+    "discord.js-prompts": "^2.2.1",
     "feedparser": "^2.2.10",
     "html-to-text": "^5.1.1",
-    "iconv-lite": "^0.5.1",
+    "iconv-lite": "^0.5.2",
     "ioredis": "^4.17.3",
-    "moment": "^2.26.0",
+    "moment": "^2.27.0",
     "moment-timezone": "^0.5.31",
-    "mongoose": "^5.9.17",
+    "mongoose": "^5.10.2",
     "node-fetch": "^2.6.0",
-    "pino": "^6.3.2",
-    "pino-pretty": "^4.0.0",
+    "pino": "^6.5.1",
+    "pino-pretty": "^4.2.0",
     "redis": "^3.0.2"
   },
   "repository": {
@@ -46,16 +46,16 @@
     "npm": "6.x"
   },
   "devDependencies": {
-    "@shelf/jest-mongodb": "^1.1.5",
+    "@shelf/jest-mongodb": "^1.2.3",
     "@types/jest": "^25.2.3",
     "eslint": "^6.8.0",
     "eslint-config-standard": "^14.1.1",
-    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
     "heapdump": "^0.3.15",
-    "jest": "^26.0.1"
+    "jest": "^26.4.2"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.1",
