@@ -130,5 +130,24 @@ describe('Unit::structs/Article', function () {
       const returned = article.testFilters(filters)
       expect(returned.passed).toEqual(true)
     })
+    it('blocks when one filter blocks with filters in multiple categories', function () {
+      const filters = {
+        title: [
+          'Blah'
+        ],
+        description: [
+          '!Boh'
+        ],
+        author: [
+          'Bang'
+        ]
+      }
+      const article = new Article(baseArticle, feedData)
+      article.title = 'Blah Blahs'
+      article.description = 'Ban Boh'
+      article.author = 'Bang Bang'
+      const returned = article.testFilters(filters)
+      expect(returned.passed).toEqual(false)
+    })
   })
 })
