@@ -72,7 +72,7 @@ class Client extends EventEmitter {
     const client = new Discord.Client(CLIENT_OPTIONS)
     try {
       await client.login(token)
-      this.deliveryPipeline = new DeliveryPipeline(client)
+      this.deliveryPipeline = await DeliveryPipeline.create(client)
       this.log = createLogger(client.shard.ids[0].toString())
       this.bot = client
       this.shardID = client.shard.ids[0]

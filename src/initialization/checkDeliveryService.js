@@ -1,5 +1,6 @@
 const configuration = require('../config')
 const fetch = require('node-fetch')
+const { URL } = require('url')
 
 async function checkDeliveryService () {
   const config = configuration.get()
@@ -7,7 +8,9 @@ async function checkDeliveryService () {
   if (!deliveryServiceURL) {
     return
   }
-  const res = await fetch(`${deliveryServiceURL}/ping`, {
+  const url = new URL(deliveryServiceURL)
+  const { hostname, port } = url
+  const res = await fetch(`http://${hostname}:${port}/health`, {
     headers: {
       Authorization: `Bot ${bot.token}`
     }
