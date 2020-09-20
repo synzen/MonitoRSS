@@ -36,8 +36,7 @@
     "p-queue": "^6.6.1",
     "pino": "^6.5.1",
     "pino-pretty": "^4.2.0",
-    "redis": "^3.0.2",
-    "zeromq": "^6.0.0-beta.6"
+    "redis": "^3.0.2"
   },
   "repository": {
     "type": "git",
@@ -63,6 +62,7 @@
     "bufferutil": "^4.0.1",
     "erlpack": "github:discordapp/erlpack",
     "utf-8-validate": "^5.0.2",
+    "zeromq": "^6.0.0-beta.6",
     "zlib-sync": "^0.1.6"
   }
 }

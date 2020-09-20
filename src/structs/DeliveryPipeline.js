@@ -5,7 +5,6 @@ const ArticleRateLimiter = require('./ArticleMessageRateLimiter.js')
 const createLogger = require('../util/logger/create.js')
 const configuration = require('../config.js')
 const ArticleQueue = require('./ArticleQueue.js')
-const zmq = require('zeromq')
 const { default: PQueue } = require('p-queue')
 const { Webhook } = require('discord.js')
 
@@ -20,7 +19,7 @@ class DeliveryPipeline {
     this.logFiltered = config.log.unfiltered === true
     this.serviceURL = config.deliveryServiceURL
     this.serviceEnabled = !!this.serviceURL
-    this.serviceSock = new zmq.Push()
+    this.serviceSock = new (require('zeromq')).Push()
     /**
      * A queue that only processes one task at a time. This
      * is necessary for zeromq since only one async send call
