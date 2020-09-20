@@ -19,9 +19,10 @@ describe('Unit::structs/DeliveryPipeline', function () {
   beforeAll(async function () {
     con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
     await initialize.setupModels(con)
-    jest.useFakeTimers()
   })
   beforeEach(async () => {
+    jest.resetAllMocks()
+    jest.useFakeTimers()
     await con.db.dropDatabase()
     jest.spyOn(config, 'get')
       .mockReturnValue({
@@ -34,11 +35,10 @@ describe('Unit::structs/DeliveryPipeline', function () {
       })
   })
   afterEach(() => {
+    jest.clearAllTimers()
+    jest.useRealTimers()
     ArticleRateLimiter.sent = 0
     ArticleRateLimiter.blocked = 0
-  })
-  afterAll(() => {
-    jest.useRealTimers()
   })
   describe('updateArticlesBlocked', () => {
     it('inserts correctly', async () => {

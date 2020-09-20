@@ -19,7 +19,11 @@ class DeliveryPipeline {
     this.logFiltered = config.log.unfiltered === true
     this.serviceURL = config.deliveryServiceURL
     this.serviceEnabled = !!this.serviceURL
-    this.serviceSock = new (require('zeromq')).Push()
+    /**
+     * Created if this.serviceEnabled is true in setup()
+     * @type {import('zeromq').Push|null}
+     */
+    this.serviceSock = null
     /**
      * A queue that only processes one task at a time. This
      * is necessary for zeromq since only one async send call
@@ -53,6 +57,7 @@ class DeliveryPipeline {
    */
   async setup () {
     if (this.serviceEnabled) {
+      this.serviceSock = new (require('zeromq')).Push()
       await this.serviceSock.connect(this.serviceURL)
       this.log.info(`Delivery service at ${this.serviceURL} connected `)
     }

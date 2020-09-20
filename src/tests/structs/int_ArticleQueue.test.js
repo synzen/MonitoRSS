@@ -22,6 +22,8 @@ describe('Int::structs/ArticleQueue', function () {
   })
   beforeEach(async () => {
     await con.db.dropDatabase()
+    jest.resetAllMocks()
+    jest.useFakeTimers()
     jest.spyOn(config, 'get')
       .mockReturnValue({
         database: {
@@ -33,11 +35,10 @@ describe('Int::structs/ArticleQueue', function () {
       })
   })
   afterEach(() => {
+    jest.clearAllTimers()
+    jest.useRealTimers()
     ArticleQueue.sent = 0
     ArticleQueue.blocked = 0
-  })
-  afterAll(() => {
-    jest.useRealTimers()
   })
   describe('updateArticlesSent', () => {
     it('inserts correctly', async () => {

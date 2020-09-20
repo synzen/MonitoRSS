@@ -22,7 +22,7 @@ const createLogger = require('../util/logger/create.js')
 async function prunePreInit (guildIdsByShard, channelIdsByShard) {
   const feeds = await Feed.getAllByPagination()
   await Promise.all([
-    checkIndexes(),
+    checkIndexes.checkIndexes(),
     ScheduleStats.deleteAll(),
     pruneProfiles(guildIdsByShard)
   ])

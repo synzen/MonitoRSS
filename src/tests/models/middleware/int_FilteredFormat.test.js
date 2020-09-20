@@ -13,8 +13,10 @@ describe('Int::models/middleware/FilteredFormat', function () {
   let con
   beforeAll(async function () {
     con = await mongoose.createConnection(`mongodb://localhost:27017/${dbName}`, CON_OPTIONS)
-    await con.db.dropDatabase()
     await initialize.setupModels(con)
+  })
+  beforeEach(async () => {
+    await con.db.dropDatabase()
   })
   it('throws an error if the feed does not exist', async function () {
     const format = new FilteredFormatModel.Model({
@@ -29,19 +31,17 @@ describe('Int::models/middleware/FilteredFormat', function () {
     const filteredFormatID = new mongoose.Types.ObjectId()
     const feedId = new mongoose.Types.ObjectId()
     const newFeedId = new mongoose.Types.ObjectId()
-    await Promise.all([
-      con.db.collection('filtered_formats').insertOne({
-        _id: filteredFormatID,
-        text: 'abc',
-        feed: feedId
-      }),
-      con.db.collection('feeds').insertOne({
-        _id: feedId
-      }),
-      con.db.collection('feeds').insertOne({
-        _id: newFeedId
-      })
-    ])
+    await con.db.collection('filtered_formats').insertOne({
+      _id: filteredFormatID,
+      text: 'abc',
+      feed: feedId
+    })
+    await con.db.collection('feeds').insertOne({
+      _id: feedId
+    })
+    await con.db.collection('feeds').insertOne({
+      _id: newFeedId
+    })
 
     const doc = await FilteredFormatModel.Model.findOne({ _id: filteredFormatID })
     const format = new FilteredFormatModel.Model(doc, true)
