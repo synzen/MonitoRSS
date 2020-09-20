@@ -29,13 +29,13 @@
     "html-to-text": "^5.1.1",
     "iconv-lite": "^0.5.2",
     "ioredis": "^4.17.3",
-    "moment": "^2.27.0",
+    "moment": "^2.28.0",
     "moment-timezone": "^0.5.31",
-    "mongoose": "^5.10.2",
-    "node-fetch": "^2.6.0",
+    "mongoose": "^5.10.6",
+    "node-fetch": "^2.6.1",
     "p-queue": "^6.6.1",
-    "pino": "^6.5.1",
-    "pino-pretty": "^4.2.0",
+    "pino": "^6.6.1",
+    "pino-pretty": "^4.2.1",
     "redis": "^3.0.2"
   },
   "repository": {
