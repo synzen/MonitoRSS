@@ -54,7 +54,7 @@ class DeliveryPipeline {
    */
   async setup () {
     if (this.serviceEnabled) {
-      await this.serviceSock.bind(this.serviceURL)
+      await this.serviceSock.connect(this.serviceURL)
       this.log.info(`Delivery service at ${this.serviceURL} connected `)
     }
   }
