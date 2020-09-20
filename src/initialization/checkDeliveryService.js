@@ -10,7 +10,9 @@ async function checkDeliveryService () {
   }
   const url = new URL(deliveryServiceURL)
   const { hostname, port } = url
-  const res = await fetch(`http://${hostname}:${port}/health`)
+  // Health check port is the tcp port plus one
+  const toFetch = `http://${hostname}:${Number(port) + 1}/health`
+  const res = await fetch(toFetch)
   if (!res.ok) {
     throw new Error(`Bad status code ${res.status}`)
   }
