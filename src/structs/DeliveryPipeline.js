@@ -77,6 +77,7 @@ class DeliveryPipeline {
     const apiPayload = articleMessage.createAPIPayload(medium)
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
     return Buffer.from(JSON.stringify({
+      token: configuration.get().bot.token,
       article: {
         _id: article._id
       },
