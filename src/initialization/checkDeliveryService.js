@@ -4,17 +4,13 @@ const { URL } = require('url')
 
 async function checkDeliveryService () {
   const config = configuration.get()
-  const { deliveryServiceURL, bot } = config
+  const { deliveryServiceURL } = config
   if (!deliveryServiceURL) {
     return
   }
   const url = new URL(deliveryServiceURL)
   const { hostname, port } = url
-  const res = await fetch(`http://${hostname}:${port}/health`, {
-    headers: {
-      Authorization: `Bot ${bot.token}`
-    }
-  })
+  const res = await fetch(`http://${hostname}:${port}/health`)
   if (!res.ok) {
     throw new Error(`Bad status code ${res.status}`)
   }
