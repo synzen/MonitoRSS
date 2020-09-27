@@ -64,6 +64,14 @@ class FlattenedJSON {
     this._generateText()
   }
 
+  static isObject (value) {
+    return Object.prototype.toString.call(value) === '[object Object]'
+  }
+
+  static isDateObject (value) {
+    return Object.prototype.toString.call(value) === '[object Date]'
+  }
+
   _trampolineIteration (fun, obj, previousKeyNames) {
     for (var key in obj) {
       let val = fun.bind(this)(obj[key], key, previousKeyNames)
@@ -75,9 +83,24 @@ class FlattenedJSON {
 
   _iterateOverObject (item, keyName, previousKeyNames) {
     const keyNameWithPrevious = (previousKeyNames ? `${previousKeyNames}_${keyName}` : keyName).replace(':', '-') // Replace colons to avoid emoji conflicts
-    if (Array.isArray(item) || !item || EXCLUDED_KEYS.includes(keyName) || item === this.results[keyNameWithPrevious.toLowerCase()]) return
-    if (Object.prototype.toString.call(item) === '[object Object]') return () => this._trampolineIteration(this._iterateOverObject, item, keyNameWithPrevious)
-    else this.results[keyNameWithPrevious] = item
+    if (!item || EXCLUDED_KEYS.includes(keyName) || item === this.results[keyNameWithPrevious.toLowerCase()]) {
+      return
+    }
+    if (Array.isArray(item)) {
+      for (let i = 0; i < item.length; ++i) {
+        const entry = item[i]
+        const thisKeyNameWithPrevious = `${keyNameWithPrevious}[${i}]`
+        if (FlattenedJSON.isObject(entry)) {
+          return () => this._trampolineIteration(this._iterateOverObject, entry, thisKeyNameWithPrevious)
+        } else {
+          this.results[thisKeyNameWithPrevious] = entry
+        }
+      }
+    } else if (FlattenedJSON.isObject(item)) {
+      return () => this._trampolineIteration(this._iterateOverObject, item, keyNameWithPrevious)
+    } else {
+      this.results[keyNameWithPrevious] = item
+    }
   }
 
   _generateText () {
@@ -109,7 +132,9 @@ class FlattenedJSON {
       let curStr = key
       while (curStr.length < longestNameLen) curStr += ' '
       const propNameLength = curStr.length
-      const valueLines = Object.prototype.toString.call(this.results[key]) === '[object Date]' ? [this.results[key].toString() + ' [DATE OBJECT]'] : cleanup(this.feed, this.results[key].toString()).split('\n')
+      const valueLines = FlattenedJSON.isDateObject(this.results[key])
+        ? [this.results[key].toString() + ' [DATE OBJECT]']
+        : cleanup(this.feed, this.results[key].toString()).split('\n')
       for (let u = 0; u < valueLines.length; ++u) {
         curStr += u === 0 ? `|  ${valueLines[u]}\r\n` : `   ${valueLines[u]}\r\n`
         if (u < valueLines.length - 1) {
