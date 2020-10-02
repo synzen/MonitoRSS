@@ -290,6 +290,9 @@ class ArticleMessage {
     return options
   }
 
+  /**
+   * Create an API payload meant for use with the delivery microservice
+   */
   createAPIPayload (medium) {
     const { text, embeds } = this.generateMessage()
     const options = this.createOptions(embeds, medium)
@@ -307,6 +310,46 @@ class ArticleMessage {
       ...transformed,
       content: text
     }
+  }
+
+  /**
+   * Create multiple API payloads from one payload if its text content
+   * exceeds 2000 characters
+   */
+  createAPIPayloads (medium) {
+    const apiPayload = this.createAPIPayload(medium)
+    const text = apiPayload.content
+    if (!apiPayload.split || text.length < 2000) {
+      return [apiPayload]
+    }
+    // Each string in parts should not exceed 2000 characters
+    let textParts = [text]
+    if (apiPayload.split) {
+      textParts = Discord.Util.splitMessage(text)
+    }
+    const isWebhook = medium instanceof Discord.Webhook
+    const payloadParts = []
+    for (let i = 0; i < textParts.length; ++i) {
+      const thisApiPayload = {
+        ...apiPayload,
+        content: textParts[i]
+      }
+      // Delete the embed fields for a clean slate
+      delete thisApiPayload.embed
+      delete thisApiPayload.embeds
+      const isLastElement = i === textParts.length - 1
+      // Channel messages use a "embed" object field and cannot have multiple embeds
+      const channelEmbed = isWebhook || !isLastElement || !apiPayload.embed ? undefined : apiPayload.embed
+      // Webhook messages uses a "embeds" array field and can have multiple embeds
+      const webhookEmbeds = !isWebhook || !isLastElement ? undefined : apiPayload.embeds
+      if (channelEmbed) {
+        thisApiPayload.embed = channelEmbed
+      } else if (webhookEmbeds) {
+        thisApiPayload.embeds = webhookEmbeds
+      }
+      payloadParts.push(thisApiPayload)
+    }
+    return payloadParts
   }
 
   createTextAndOptions (medium) {

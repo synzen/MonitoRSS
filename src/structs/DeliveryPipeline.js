@@ -78,9 +78,9 @@ class DeliveryPipeline {
       throw new Error('Missing medium to send article via service')
     }
     // Make the fetch
-    const apiPayload = articleMessage.createAPIPayload(medium)
+    const apiPayloads = articleMessage.createAPIPayloads(medium)
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
-    return Buffer.from(JSON.stringify({
+    return apiPayloads.map(apiPayload => Buffer.from(JSON.stringify({
       token: configuration.get().bot.token,
       article: {
         _id: article._id
@@ -95,7 +95,7 @@ class DeliveryPipeline {
         body: apiPayload,
         method: 'POST'
       }
-    }))
+    })))
   }
 
   getChannel (newArticle) {
@@ -160,8 +160,8 @@ class DeliveryPipeline {
     const { article, feedObject } = newArticle
     await ArticleRateLimiter.assertWithinLimits(articleMessage, this.bot)
     if (this.serviceEnabled) {
-      const payload = await this.formatForService(newArticle, articleMessage)
-      await this.serviceQueue.add(() => this.serviceSock.send(payload))
+      const payloads = await this.formatForService(newArticle, articleMessage)
+      await Promise.all(payloads.map(buffer => this.serviceQueue.add(() => this.serviceSock.send(buffer))))
       this.log.debug(`Sent article ${article._id} of feed ${feedObject._id} to service`)
     } else {
       // The articleMessage is within all limits

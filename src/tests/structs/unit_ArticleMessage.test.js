@@ -261,6 +261,79 @@ describe('Unit::ArticleMessage', function () {
       expect(data.split).toEqual(feedData.feed.split)
     })
   })
+  describe('createAPIPayloads', function () {
+    it('returns one payload for content with <2000 characters', () => {
+      const mockAPIPayload = {
+        foo: 'bar',
+        content: 'hello world'
+      }
+      jest.spyOn(ArticleMessage.prototype, 'createAPIPayload')
+        .mockReturnValue(mockAPIPayload)
+      const m = new ArticleMessage({}, baseFeedData)
+      expect(m.createAPIPayloads())
+        .toEqual([mockAPIPayload])
+    })
+    it('returns one payload if split is disabled when content is >= 20000 characters', () => {
+      const mockAPIPayload = {
+        foo: 'bar',
+        content: ''.padEnd(2100)
+      }
+      jest.spyOn(ArticleMessage.prototype, 'createAPIPayload')
+        .mockReturnValue(mockAPIPayload)
+      const m = new ArticleMessage({}, baseFeedData)
+      expect(m.createAPIPayloads())
+        .toEqual([mockAPIPayload])
+    })
+    it('it attaches the first embed to the last message after split for non-webhook', () => {
+      const mockAPIPayload = {
+        foo: 'bar',
+        content: ''.padEnd(2001, 'b'),
+        split: {
+          maxLength: 2000,
+          char: '\n',
+          prepend: '',
+          append: ''
+        },
+        embed: { foo: 1 }
+      }
+      Discord.Util.splitMessage.mockReturnValue(['a', 'b'])
+      jest.spyOn(ArticleMessage.prototype, 'createAPIPayload')
+        .mockReturnValue(mockAPIPayload)
+      const m = new ArticleMessage({}, baseFeedData)
+      const payloads = m.createAPIPayloads()
+      expect(payloads).toHaveLength(2)
+      expect(payloads[1]).toEqual(expect.objectContaining({
+        foo: 'bar',
+        content: 'b',
+        embed: { foo: 1 }
+      }))
+    })
+    it('it attaches the embeds to the last message after split for webhooks', () => {
+      const mockAPIPayload = {
+        foo: 'bar',
+        content: ''.padEnd(2001, 'b'),
+        split: {
+          maxLength: 2000,
+          char: '\n',
+          prepend: '',
+          append: ''
+        },
+        embeds: [{ foo: 1 }, { foo: 2 }]
+      }
+      const webhook = new Discord.Webhook({})
+      Discord.Util.splitMessage.mockReturnValue(['a', 'b'])
+      jest.spyOn(ArticleMessage.prototype, 'createAPIPayload')
+        .mockReturnValue(mockAPIPayload)
+      const m = new ArticleMessage({}, baseFeedData)
+      const payloads = m.createAPIPayloads(webhook)
+      expect(payloads).toHaveLength(2)
+      expect(payloads[1]).toEqual(expect.objectContaining({
+        foo: 'bar',
+        content: 'b',
+        embeds: mockAPIPayload.embeds
+      }))
+    })
+  })
   describe('createTextAndOptions', function () {
     beforeEach(function () {
       jest.spyOn(ArticleMessage.prototype, 'generateMessage')
