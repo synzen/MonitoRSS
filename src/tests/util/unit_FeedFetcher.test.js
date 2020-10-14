@@ -4,12 +4,10 @@ const fetch = require('node-fetch')
 const Article = require('../../structs/Article.js')
 const RequestError = require('../../structs/errors/RequestError.js')
 const AbortController = require('abort-controller').AbortController
-const cloudscraper = require('cloudscraper')
 const config = require('../../config.js')
 const Readable = require('stream').Readable
 
 jest.mock('node-fetch')
-jest.mock('cloudscraper')
 jest.mock('../../config.js', () => ({
   get: jest.fn(() => ({
     _vip: false
@@ -126,39 +124,6 @@ describe('Unit::FeedFetcher', function () {
         headers
       }
       expect(FeedFetcher.formatNodeFetchResponse({ ...res }))
-        .toEqual(expectedReturn)
-    })
-  })
-  describe('static formatCloudscraperResponse', function () {
-    it('converts headers to lowercase', function () {
-      const headers = {
-        HELLO: 'world',
-        CAPITAL: 'punish'
-      }
-      const res = {
-        headers
-      }
-      const expectedHeaders = {
-        hello: 'world',
-        capital: 'punish'
-      }
-      expect(FeedFetcher.formatCloudscraperResponse(res).headers)
-        .toEqual(expectedHeaders)
-    })
-    it('returns status and headers object', function () {
-      const headers = {
-        jack: 'h',
-        fo: 'do'
-      }
-      const res = {
-        statusCode: 200,
-        headers: { ...headers }
-      }
-      const expectedReturn = {
-        status: 200,
-        headers
-      }
-      expect(FeedFetcher.formatCloudscraperResponse({ ...res }))
         .toEqual(expectedReturn)
     })
   })
@@ -344,58 +309,15 @@ describe('Unit::FeedFetcher', function () {
           })
           .catch(done)
       })
-      it('calls fetchCloudScraper if is cloudflare and config._vip is false', async function () {
-        const origFunc = FeedFetcher.fetchCloudScraper
+      it('throws a cloudflare error', async function () {
         FeedFetcher.fetchCloudScraper = jest.fn()
         fetch
           .mockResolvedValue({ status: 403, headers: { get: () => ['cloudflare'] } })
-        await FeedFetcher.fetchURL('a', {}, true)
-        expect(FeedFetcher.fetchCloudScraper).toHaveBeenCalledTimes(1)
-        FeedFetcher.fetchCloudScraper = origFunc
+        await expect(FeedFetcher.fetchURL('a', {}, true))
+          .rejects.toThrowError(expect.objectContaining({
+            cloudflare: true
+          }))
       })
-    })
-  })
-  describe('fetchCloudScraper', function () {
-    afterEach(function () {
-      cloudscraper.mockReset()
-    })
-    it('throws an Error if url is not defined', function () {
-      return expect(FeedFetcher.fetchCloudScraper())
-        .rejects.toBeInstanceOf(Error)
-    })
-    it('throws a RequestError if res status code is not 200', function () {
-      cloudscraper.mockResolvedValueOnce({ statusCode: 401 })
-      return expect(FeedFetcher.fetchCloudScraper('d'))
-        .rejects.toBeInstanceOf(RequestError)
-    })
-    it('attaches the error code to the error if res status code is not 200', function (done) {
-      cloudscraper.mockResolvedValueOnce({ statusCode: 401 })
-      FeedFetcher.fetchCloudScraper('abc')
-        .then(() => done(new Error('Promise resolved')))
-        .catch(err => {
-          expect(err.code).toEqual(FeedFetcher.REQUEST_ERROR_CODE)
-          done()
-        })
-        .catch(done)
-    })
-    it('returns an object with a stream if request succeeds', async function () {
-      const response = { statusCode: 200, body: 'abc' }
-      cloudscraper.mockResolvedValueOnce(response)
-      const data = await FeedFetcher.fetchCloudScraper('abc')
-      expect(data.stream).toBeInstanceOf(Readable)
-    })
-    it('throws a RequestError if cloudscraper fails', async function () {
-      const error = new Error('Hello world')
-      cloudscraper.mockRejectedValueOnce(error)
-      await expect(FeedFetcher.fetchCloudScraper('asdeg'))
-        .rejects.toThrowError(new RequestError(null, `Cloudflare - ${error.message}`))
-    })
-    it('throws a RequestError if error has bad status code', async function () {
-      const error = new Error('Hello world')
-      error.statusCode = 500
-      cloudscraper.mockRejectedValueOnce(error)
-      await expect(FeedFetcher.fetchCloudScraper('asdeg'))
-        .rejects.toThrowError(new RequestError(error.statusCode, `Bad Cloudflare status code (${error.statusCode})`))
     })
   })
   describe('parseStream', function () {

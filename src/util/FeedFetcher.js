@@ -1,5 +1,4 @@
 const fetch = require('node-fetch')
-const cloudscraper = require('cloudscraper') // For cloudflare
 const AbortController = require('abort-controller').AbortController
 const RequestError = require('../structs/errors/RequestError.js')
 const FeedParserError = require('../structs/errors/FeedParserError.js')
@@ -70,25 +69,6 @@ class FeedFetcher {
     }
     return {
       status: res.status,
-      headers
-    }
-  }
-
-  /**
-   * Responses must be uniform between cloudscraper and node-fetch
-   * @param {import('cloudscraper').Response} res
-   * @returns {FormattedResponse}
-   */
-  static formatCloudscraperResponse (res) {
-    const headers = res.headers
-    // Normalize the headers
-    for (const key in headers) {
-      const val = headers[key]
-      delete headers[key]
-      headers[key.toLowerCase()] = val
-    }
-    return {
-      status: res.statusCode,
       headers
     }
   }
@@ -183,50 +163,14 @@ class FeedFetcher {
       throw new RequestError(this.REQUEST_ERROR_CODE, `Bad status code (${endStatus})`)
     }
 
-    // Cloudflare is used here
-    // if (Supporter.enabled) {
-    //   throw new RequestError(this.REQUEST_ERROR_CODE, `Bad Cloudflare status code (${endStatus}) (Unsupported on public bot)`, true)
-    // }
-    return this.fetchCloudScraper(url)
+    // Cloudflare errors
+    throw new RequestError(endStatus, `Bad Cloudflare status code (${endStatus})`, true)
   }
   /**
    * @typedef {Object} CSResults
    * @property {import('stream').Readable} stream
    * @property {Object<string, any>} response
    */
-
-  /**
-   * Fetch a feed with cloudscraper instead of node-fetch for cloudflare feeds.
-   * Takes significantly longer than node-fetch.
-   * @param {string} uri - URL to fetch
-   * @returns {CSResults}
-   */
-  static async fetchCloudScraper (uri) {
-    if (!uri) {
-      throw new Error('No url defined')
-    }
-    let res
-    try {
-      res = await cloudscraper({ method: 'GET', uri, resolveWithFullResponse: true })
-    } catch (err) {
-      if (err.statusCode && err.statusCode !== 200) {
-        throw new RequestError(err.statusCode, `Bad Cloudflare status code (${err.statusCode})`, true)
-      } else {
-        throw new RequestError(this.REQUEST_ERROR_CODE, `Cloudflare - ${err.message}` || 'Cloudscraper error', true)
-      }
-    }
-    if (res.statusCode !== 200) {
-      throw new RequestError(this.REQUEST_ERROR_CODE, `Bad Cloudflare status code (${res.statusCode})`, true)
-    }
-    const Readable = require('stream').Readable
-    const feedStream = new Readable()
-    feedStream.push(res.body)
-    feedStream.push(null)
-    return {
-      stream: feedStream,
-      response: this.formatCloudscraperResponse(res)
-    }
-  }
 
   /**
  * @typedef {object} FeedData
