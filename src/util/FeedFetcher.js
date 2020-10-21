@@ -42,7 +42,7 @@ class FeedFetcher {
   }
 
   /**
-   * Responses must be uniform between cloudscraper and node-fetch
+   * Responses must be uniform
    * @param {import('node-fetch').Response} res
    * @returns {FormattedResponse}
    */
