@@ -1,6 +1,6 @@
 {
   "name": "monitorss",
-  "version": "6.7.2",
+  "version": "6.8.0",
   "description": "Discord RSS bot with customizable feeds",
   "main": "index.js",
   "author": "synzen",
@@ -35,7 +35,12 @@
     "p-queue": "^6.6.1",
     "pino": "^6.6.1",
     "pino-pretty": "^4.2.1",
-    "redis": "^3.0.2"
+    "redis": "^3.0.2",
+    "bufferutil": "^4.0.1",
+    "erlpack": "github:discordapp/erlpack",
+    "utf-8-validate": "^5.0.2",
+    "zeromq": "^6.0.0-beta.6",
+    "zlib-sync": "^0.1.6"
   },
   "repository": {
     "type": "git",
