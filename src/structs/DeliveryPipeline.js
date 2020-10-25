@@ -80,6 +80,12 @@ class DeliveryPipeline {
     // Make the fetch
     const apiPayloads = articleMessage.createAPIPayloads(medium)
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
+    const postActions = []
+    if (medium.type === 'news') {
+      postActions.push({
+        type: 'announce'
+      })
+    }
     return apiPayloads.map(apiPayload => Buffer.from(JSON.stringify({
       token: configuration.get().bot.token,
       article: {
@@ -94,7 +100,8 @@ class DeliveryPipeline {
         url: `https://discord.com/api${apiRoute}`,
         body: apiPayload,
         method: 'POST'
-      }
+      },
+      postActions
     })))
   }
 
