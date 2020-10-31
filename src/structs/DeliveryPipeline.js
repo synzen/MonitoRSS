@@ -81,11 +81,15 @@ class DeliveryPipeline {
     const apiPayloads = articleMessage.createAPIPayloads(medium)
     const apiRoute = medium instanceof Webhook ? `/webhooks/${medium.id}/${medium.token}` : `/channels/${medium.id}/messages`
     const postActions = []
-    if (medium.type === 'news') {
-      postActions.push({
-        type: 'announce'
-      })
-    }
+    /**
+     * Auto-announce feature executed by the delivery service. It is currently disabled due to
+     * extremely long rate limits.
+     */
+    // if (medium.type === 'news') {
+    //   postActions.push({
+    //     type: 'announce'
+    //   })
+    // }
     return apiPayloads.map(apiPayload => Buffer.from(JSON.stringify({
       token: configuration.get().bot.token,
       article: {
