@@ -99,7 +99,7 @@ class FlattenedJSON {
     } else if (FlattenedJSON.isObject(item)) {
       return () => this._trampolineIteration(this._iterateOverObject, item, keyNameWithPrevious)
     } else {
-      this.results[keyNameWithPrevious] = item
+      this.results[keyNameWithPrevious] = cleanup(this.feed, item)
     }
   }
 
