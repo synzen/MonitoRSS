@@ -36,7 +36,8 @@ const databaseSchema = Joi.object({
   redis: Joi.string().strict().allow('').default(''),
   connection: Joi.object().default({}),
   articlesExpire: Joi.number().strict().greater(-1).default(14),
-  deliveryRecordsExpire: Joi.number().strict().greater(-1).default(2)
+  deliveryRecordsExpire: Joi.number().strict().greater(-1).default(2),
+  feedRequestTimeoutMs: Joi.number().strict().default(15000)
 })
 
 const feedsSchema = Joi.object({

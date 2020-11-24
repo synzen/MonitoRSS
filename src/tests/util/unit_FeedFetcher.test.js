@@ -129,10 +129,13 @@ describe('Unit::FeedFetcher', function () {
   })
   describe('createFetchOptions', function () {
     const resolvedUserAgent = 'swry4e3'
+    const feedRequestTimeoutMs = 10000
     beforeEach(function () {
       jest.spyOn(config, 'get')
         .mockReturnValue({
-          bot: {}
+          bot: {
+            feedRequestTimeoutMs
+          }
         })
       jest.spyOn(FeedFetcher, 'resolveUserAgent')
         .mockReturnValue(resolvedUserAgent)
@@ -174,7 +177,7 @@ describe('Unit::FeedFetcher', function () {
       const returned = FeedFetcher.createFetchOptions('asd', {})
       expect(returned.options.signal).toEqual(signal)
     })
-    it('aborts the signal in 15s', function () {
+    it('aborts the signal in the correct amount of time', function () {
       const signal = jest.fn()
       const abort = jest.fn()
       const controller = {
@@ -184,7 +187,7 @@ describe('Unit::FeedFetcher', function () {
       AbortController.mockReturnValue(controller)
       FeedFetcher.createFetchOptions('asd', {})
       jest.runAllTimers()
-      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 15000)
+      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), feedRequestTimeoutMs)
       expect(abort).toHaveBeenCalled()
     })
   })
