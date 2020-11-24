@@ -28,7 +28,8 @@ const botSchema = Joi.object({
   exitOnSocketIssues: Joi.bool().strict().default(true),
   exitOnDatabaseDisconnect: Joi.bool().strict().default(false),
   exitOnExcessRateLimits: Joi.bool().strict().default(true),
-  userAgent: Joi.string().strict().default('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0')
+  userAgent: Joi.string().strict().default('Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0'),
+  feedRequestTimeoutMs: Joi.number().strict().default(15000)
 })
 
 const databaseSchema = Joi.object({
@@ -36,8 +37,7 @@ const databaseSchema = Joi.object({
   redis: Joi.string().strict().allow('').default(''),
   connection: Joi.object().default({}),
   articlesExpire: Joi.number().strict().greater(-1).default(14),
-  deliveryRecordsExpire: Joi.number().strict().greater(-1).default(2),
-  feedRequestTimeoutMs: Joi.number().strict().default(15000)
+  deliveryRecordsExpire: Joi.number().strict().greater(-1).default(2)
 })
 
 const feedsSchema = Joi.object({
