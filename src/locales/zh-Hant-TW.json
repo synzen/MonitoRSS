@@ -1,19 +1,19 @@
 {
   "generics": {
-    "defaultSetting": "Default is `{{value}}`.",
+    "defaultSetting": "預設值為`{{value}}`。",
     "backupReminder": "After completely setting up, it is recommended that you use {{prefix}}backup to have a personal backup of your settings.",
-    "channelUpper": "Channel",
-    "channelLower": "channel",
-    "enabledUpper": "Enabled",
-    "enabledLower": "enabled",
-    "disabledUpper": "Disabled",
-    "disabledLower": "disabled"
+    "channelUpper": "頻道",
+    "channelLower": "頻道",
+    "enabledUpper": "已啟用",
+    "enabledLower": "已啟用",
+    "disabledUpper": "已停用",
+    "disabledLower": "已停用"
   },
   "commandDescriptions": {
     "add": {
       "description": "Add an RSS feed to the channel this command is used in. Multiple feeds can be added by separation with `>`.",
       "args": {
-        "<link>": "Feed URL."
+        "<link>": "Feed URL。"
       }
     },
     "alert": {
@@ -28,7 +28,7 @@
       "description": "Send server profile as a JSON attachment for personal backups."
     },
     "clone": {
-      "action": "Feed Settings Cloning",
+      "action": "複製feed設定",
       "description": "Clone a feed's settings to other feed(s)."
     },
     "compare": {
@@ -49,7 +49,7 @@
       }
     },
     "embed": {
-      "action": "Embed Customization",
+      "action": "自訂嵌入式訊息",
       "description": "Open a menu to customize a feed's embed message. This will replace the normal embed Discord usually sends when a link is posted."
     },
     "embed.fields": {
@@ -61,7 +61,7 @@
       "description": "Open a menu to add or remove global filters from a feed. Messages that do not have any of the words in any of your filters won't be sent to your Discord."
     },
     "invite": {
-      "description": "Send the invite links for this bot."
+      "description": "傳送此機器人的邀請連結。"
     },
     "list": {
       "description": "List all active feeds in server.",
@@ -90,19 +90,19 @@
       "description": "Open a menu for miscellaneous feed options."
     },
     "prefix": {
-      "action": "Commands Prefix Change",
+      "action": "變更指令前綴",
       "description": "Change the prefix used for commands from the default ({{prefix}}).",
       "args": {
-        "<prefix>": "The prefix to use.",
-        "reset": "Reset prefix back to default ({{prefix}})."
+        "<prefix>": "要使用的前綴。",
+        "reset": "將前綴重設為預設值（{{prefix}}）。"
       }
     },
     "refresh": {
-      "action": "Refresh Feed",
+      "action": "重新整理feed",
       "description": "Open a menu to restore the feed link back onto the regular cycle after removal due to consecutively surpassing the fail limit."
     },
     "remove": {
-      "action": "Feed Removal",
+      "action": "移除feed",
       "description": "Open a menu to delete a feed from the channel."
     },
     "split": {
@@ -126,17 +126,17 @@
       "description": "Opens a menu to send a test message for a random article in a feed, along with the available properties and placeholders for various customizations. You may add `simple` as a parameter to exclude the test details."
     },
     "text": {
-      "action": "Text Customization",
+      "action": "自訂文字",
       "description": "Open a menu to customize a feed's text message."
     },
     "unsub": {
       "description": "Open a menu similar to `sub`, except to remove a role. Any role beneath the bot's role order will be removeable."
     },
     "version": {
-      "description": "Show version of the bot."
+      "description": "顯示機器人版本。"
     },
     "webhook": {
-      "action": "Webhook Connection",
+      "action": "連接webhook",
       "description": "Open a menu to connect a webhook to a feed to send messages instead."
     }
   },
@@ -144,14 +144,14 @@
     "add": {
       "correctSyntax": "The correct syntax is {{prefix}}add https://www.some_url_here.com. Multiple links can be added at once, separated by `>`.",
       "improperFormat": "Invalid/improperly-formatted link.",
-      "processing": "Processing...",
+      "processing": "處理中……",
       "limitReached": "Maximum feed limit of {{max}} reached.",
       "alreadyExists": "Already exists for this channel.",
       "success": "The following feeds have been successfully added to **this channel**",
       "successInfo": "Articles will be automatically delivered once new articles are found.",
       "failedLimit": "Feed(s) not listed here could not be added due to the feed limit ({{max}}).",
-      "failedList": "The following feed(s) could not be added",
-      "reason": "Reason"
+      "failedList": "無法加入以下feed",
+      "reason": "原因"
     },
     "alert": {
       "noFeeds": "You cannot set up user alerts if you have not added any feeds.",
@@ -190,21 +190,21 @@
       "success": "The following comparisons have been set for the feed <{{url}}>:\n\n{{added}}"
     },
     "date": {
-      "selectTitle": "Date Customizations",
-      "dateLanguage": "Date language",
-      "dateFormat": "Date format",
-      "timezone": "Timezone",
+      "selectTitle": "自訂日期",
+      "dateLanguage": "日期語言",
+      "dateFormat": "日期格式",
+      "timezone": "時區",
       "noFeeds": "You cannot customize the date placeholder if you have not added any feeds.",
       "description": "\u200b\nPlease select an option to customize the {date} placeholder by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
-      "optionCurrentSetting": "Your current setting is `{{value}}`.",
-      "optionChangeTimezone": "Change Timezone",
-      "optionCustomizeFormat": "Customize Format",
-      "optionChangeLanguage": "Change Language",
-      "optionReset": "Reset",
+      "optionCurrentSetting": "目前的設定值為`{{value}}`。",
+      "optionChangeTimezone": "變更時區",
+      "optionCustomizeFormat": "自訂格式",
+      "optionChangeLanguage": "變更語言",
+      "optionReset": "重設",
       "optionResetValue": "Reset all of the above back to default.",
       "successResetAll": "All date customizations have been reset back to default.",
-      "successReset": "{{name}} has been reset to the default: `{{value}}`.",
-      "successSet": "{{name}} has been successfully updated to `{{value}}`.",
+      "successReset": "{{name}}已重設為預設值：`{{value}}`。",
+      "successSet": "{{name}}已成功變更為`{{value}}`。",
       "promptNewLanguage": "Type the abbreviation for a new language now, `reset` to reset back to default, or `exit` to cancel. The available list of languages supported at this time are (separated by commas):\n\n{{localesList}}",
       "promptNewDateFormat": "Type your new date format now, `reset` to reset back to default, or `exit` to cancel. See <https://momentjs.com/docs/#/displaying/> on how to format a date.",
       "promptNewTimezone": "Type your new timezone now, `reset` to reset back to default, or `exit` to cancel. See <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> for a list of timezones under the TZ column.",
@@ -222,35 +222,35 @@
       "embedSelectionOptionAdd": "Add a new embed",
       "embedSelectionOptionAddDescription": "A maximum of 10 embeds may be added.\n\u200b",
       "embedSelectionOptionRemoveAll": "Remove all embeds",
-      "currentProperties": "Current Properties",
+      "currentProperties": "目前屬性",
       "currentPropertiesList": "The current embed properties for {{link}} are: \n{{list}}```\n",
-      "availableProperties": "Available Properties",
+      "availableProperties": "可用屬性",
       "availablePropertiesList": "The list of embed properties that can be set are:\n{{list}}\nType the embed property (for example, `color` or `message`) you want to set/reset, or multiple properties by separation with commas (for example, `color, message`). Type `reset` to remove all properties, or type `exit` to cancel.",
       "invalidColorNumber": "The color must be an **number**. See <https://www.shodor.org/stella2java/rgbint.html>. Try again, or type `exit` to cancel.",
       "invalidColorRange": "The color must be a number between 0 and 16777215. Try again, or type `exit` to cancel.",
       "invalidProperties": "The following properties {{invalids}} are invalid. Try again, or type `exit` to cancel.",
       "removedAllEmbeds": "Successfully removed all embeds from feed <{{link}}>.",
       "removedEmbed": "Embed has been disabled, and all properties have been removed for <{{link}}>.",
-      "resetSuccess": "☑ **{{propName}}** has been reset\n",
-      "updatedSuccess": "☑ **{{propName}}** updated to \n```\n{{userSetting}}\n```\n",
+      "resetSuccess": "☑ 已重設**{{propName}}**\n",
+      "updatedSuccess": "☑ **{{propName}}**已更新至\n```\n{{userSetting}}\n```\n",
       "updatedInfo": "Settings updated for <{{link}}>:\n\n{{resetList}}{{updateList}}\nYou may use `{{prefix}}test` or `{{prefix}}test simple` to see your new embed format.",
-      "title": "Title",
+      "title": "標題",
       "titleDescription": "Title under Author Title\nAccepts placeholders",
-      "description": "Description",
+      "description": "描述",
       "descriptionDescription": "Main message\nAccepts placeholders",
       "url": "URL",
       "urlDescription": "Clicking on the Title/Thumbnail will lead to this URL\nMUST be a link. Set to the article's url by default",
-      "color": "Color",
+      "color": "顏色",
       "colorDescription": "Sidebar color\nMUST be an integer color between 0 and 16777215. See https://www.shodor.org/stella2java/rgbint.html",
-      "timestamp": "Timestamp",
+      "timestamp": "時間戳記",
       "timestampDescription": "Date that is visually localized to every user\nIf an invalid timestamp date is detected, timestamp will not be shown",
       "footerIconURL": "Footer Icon URL",
       "footerIconURLDescription": "Icon to the left of Footer Text\nMUST be a link to an image. If Footer Text is unspecified, the Footer Icon will be hidden\nAccepts placeholders",
       "footerText": "Footer Text",
       "footerTextDescription": "Bottom-most text\nAccepts placeholders",
-      "thumbnailURL": "Thumbnail Image URL",
+      "thumbnailURL": "縮圖URL",
       "thumbnailURLDescription": "Image on the right side\nMUST be a link to an image, OR an image placeholder",
-      "imageURL": "Image URL",
+      "imageURL": "圖片URL",
       "imageURLDescription": "Image on the bottom\nMUST be a link to an image, OR an image placeholder",
       "authorName": "Author Name",
       "authorNameDescription": "Name at the top\nAccepts placeholders",
@@ -261,7 +261,7 @@
       "settingProperty": "You are now customizing the **{{property}}**. Type your input now. To reset the property, type `reset`.",
       "settingPropertyTimestamp": "You are now customizing the **timestamp**. Type your input now.\n\nTo set the timestamp to the time the article is sent to Discord, type `now`.\nTo set the timestamp to the time the article was published (if available in the feed), type `article`.\nFor a custom timestamp, type the text representation of a custom date (see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse>).\n\nTo reset the property, type `reset`.",
       "settingPropertyTimestampError": "That is not a valid setting. It must be either `now`, `article`, or a valid text representation of a date. Try again.",
-      "inline": "Inline",
+      "inline": "行內",
       "regular": "Regular",
       "blankField": "Blank Field",
       "embedFields": "Embed Fields",
@@ -285,15 +285,15 @@
       "embedFieldsSettingPrompt": "Set your Field settings now. The **first line will be the Field title**, and **any new lines after the first will be the Field description**. If there is no content after the first line, then it will be an empty description. Type `exit` to cancel.",
       "embedFieldsSettingTitleLong": "Titles cannot exceed 256 characters. Try again, or type `exit` to cancel.",
       "embedFieldsSettingValueLong": "Field values cannot exceed 1024 characters. Try again, or type `exit` to cancel.",
-      "embedFieldsAdded": "A new{{type}} Field has been added to the embed with the following details:\n\n**Title**\n```\n{{name}}\n```\n**Value**\n```\n{{value}}\n```\nfor the feed {{link}}."
+      "embedFieldsAdded": "A new {{type}} Field has been added to the embed with the following details:\n\n**Title**\n```\n{{name}}\n```\n**Value**\n```\n{{value}}\n```\nfor the feed {{link}}."
     },
     "faq": {
       "searchQueryRequired": "A search query is required.",
-      "searching": "Searching...",
-      "noResults": "No results found 🙁"
+      "searching": "搜尋中……",
+      "noResults": "查無結果 🙁"
     },
     "filters": {
-      "selectFeedDescription": "**Feed Title:** {{title}}\n**Feed Link:** {{link}}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n",
+      "selectFeedDescription": "**feed標題：** {{title}}\n**feed連結：** {{link}}\n\nSelect an option by typing its number, or type *exit* to cancel. Only messages that contain any of the words defined in these feed filters will be sent to Discord.\u200b\n\u200b\n",
       "feedFiltersCustomization": "Feed Filters Customization",
       "optionAddFilters": "Add feed filter(s)",
       "optionAddFiltersDescription": "Add new filter(s) to a specific category in a feed.",
@@ -315,7 +315,7 @@
     "help": {
       "controlPanelLink": "Be sure to check out your control panel at {{url}} for easy feed management!",
       "description": "Arguments for commands are added after the command. For example: `{{prefix}}test simple`.\n\n**Argument Definitions**\n`a` = Directly add `a`\n`[a]` = Optionally add `a`\n`(a|b)` = Directly input `a` OR `b`\n`<a>` = Replace `a` with relevant content",
-      "arguments": "Arguments",
+      "arguments": "引數",
       "support": "\nSupport can be found at https://discord.gg/pudv7Rx",
       "checkDM": "Check your direct messages!"
     },
@@ -326,21 +326,21 @@
       "noFeeds": "There are no feeds.",
       "noFeedsChannel": "There are no feeds in the channel {{channel}}.",
       "channelLimitReached": "Daily article limit reached",
-      "titleChecksEnabled": "Title Checks: Enabled\n",
-      "statusDisabled": "Status: DISABLED ({{reason}})\n",
-      "statusFailed": "Status: FAILED\n",
-      "statusOk": "Status: OK {{failCount}}\n",
-      "serverLimit": "Server Limit",
-      "failAlert": "**Attention!** Feeds that have reached connection failure limit have been detected. They will no longer be retried. Please either remove, or use **{{prefix}}refresh** to try and reset its status.",
-      "feedList": "Feed List",
+      "titleChecksEnabled": "檢查標題：已啟用\n",
+      "statusDisabled": "狀態：已停用（{{reason}}）\n",
+      "statusFailed": "狀態：失敗\n",
+      "statusOk": "狀態：正常 {{failCount}}\n",
+      "serverLimit": "伺服器限制",
+      "failAlert": "**注意！** Feeds that have reached connection failure limit have been detected. They will no longer be retried. Please either remove, or use **{{prefix}}refresh** to try and reset its status.",
+      "feedList": "feed清單",
       "feedListChannel": "Feed List in Channel #{{channel}}",
-      "refreshRate": "Refresh Rate",
-      "webhook": "Webhook",
-      "link": "Link",
-      "exceeds500Characters": "*Exceeds 500 characters*",
-      "seconds": "seconds",
-      "minutes": "minutes",
-      "unknown": "unknown"
+      "refreshRate": "重新整理頻率",
+      "webhook": "webhook",
+      "link": "連結",
+      "exceeds500Characters": "*已達到500字元*",
+      "seconds": "秒",
+      "minutes": "分",
+      "unknown": "未知"
     },
     "locale": {
       "helpText": "To change the interface language of commands, type the locale name after `{{prefix}}locale`. Locales are added through volunteer-sourced translations. Supported locales are:\n\n`{{localeList}}`",
@@ -352,8 +352,8 @@
       "alreadySet": "`{{locale}}` is already the set locale."
     },
     "mention": {
-      "role": "role",
-      "user": "user",
+      "role": "身分組",
+      "user": "使用者",
       "noFeeds": "Cannot add mention customizations without any active feeds.",
       "subscriptionsList": "Subscriptions List",
       "description": "Adding a subscription for a user or role will automatically add their mentions in the `{subscribers}` placeholder. If the subscriber is a role, then the role will be added to the list of eligible roles for role mention toggling, and also for the commands {{prefix}}sub/unsub.\n\nSelect an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
@@ -410,19 +410,19 @@
       "moveSuccess": "The channel for the following feed(s):\n\n{{summary}}\n\nhave been successfully moved to <#{{id}}>."
     },
     "options": {
-      "miscFeedOptions": "Miscellaneous Feed Options",
+      "miscFeedOptions": "其他feed選項",
       "selectOption": "\u200b\nPlease select an option by typing its number, or type `exit` to cancel.\u200b\n\u200b\n",
       "onlyIfNecessary": "Only enable this if necessary!",
-      "titleChecks": "Title Checks",
+      "titleChecks": "檢查標題",
       "titleChecksToggle": "Toggle Title Checks for a feed",
       "titleChecksDescription": "Title checks will ensure no article with the same title as a previous one will be sent for a specific feed.",
-      "imagePreviews": "Image Link Previews",
+      "imagePreviews": "圖片連結預覽",
       "imagePreviewsToggle": "Toggle Image Link Previews for a feed's placeholders",
       "imagePreviewsDescription": "Toggle automatic Discord image link embedded previews for image links found inside placeholders such as {description}.",
       "imageLinksExistence": "Image Links Existence",
       "imageLinksExistenceToggle": "Toggle Image Links Existence for a feed's placeholders",
       "imageLinksExistenceDescription": "Remove image links found inside placeholders such as {description}. If disabled, all image `src` links in such placeholders will be removed.",
-      "dateChecks": "Date Checks",
+      "dateChecks": "檢查日期",
       "dateChecksToggle": "Toggle Date Checks for a feed",
       "dateChecksDescription": "Date checking ensures that articles that are {{cycleMaxAge}} day(s) old or has invalid/no pubdates are't sent.",
       "tableFormatting": "Table Formatting",
@@ -432,7 +432,7 @@
       "directSubscribersToggle": "Toggle direct subscriptions for a feed",
       "directSubscribersDescription": "Allows users to directly add themselves as a subscriber to the feed `{subscribers}` placeholder. This is an alternative to letting users add roles to themselves.",
       "settingChanged": "{{propName}} has been {{finalSetting}} for <{{link}}>{{isDefault}}.",
-      "defaultSetting": "default setting"
+      "defaultSetting": "預設設定"
     },
     "prefix": {
       "helpText": "You must specify a prefix 4 characters or less as the first argument to set a custom prefix, or `reset` to reset the prefix to default if a custom prefix is already set.",
@@ -450,8 +450,8 @@
       "failed": "The following links failed to refresh:"
     },
     "remove": {
-      "removing": "Removing...",
-      "success": "Successfully removed the following link(s):"
+      "removing": "移除中……",
+      "success": "已成功移除以下連結："
     },
     "split": {
       "messageSplittingOptions": "Message Splitting Options",
@@ -468,8 +468,8 @@
       "optionSetAppendCharDescription": "Specify the character that every message except the last should be appended (added after) with.",
       "optionSetMaxLength": "Set max length",
       "optionSetMaxLengthDescription": "Specify the maximum length a single message should have.",
-      "currentlySetTo": "Currently set to `{{value}}`.",
-      "defaultIsValue": "Default is {{value}}",
+      "currentlySetTo": "目前設定值為`{{value}}`。",
+      "defaultIsValue": "預設值為{{value}}",
       "defaultIsNothing": "Default is nothing.",
       "newLine": "new line",
       "promptSplitChar": "Type a split character now, `reset` to reset, or `exit` to cancel.",
@@ -557,14 +557,14 @@
     },
     "utils": {
       "filters": {
-        "title": "Title",
-        "dscription": "Description",
-        "summary": "Summary",
+        "title": "標題",
+        "dscription": "描述",
+        "summary": "摘要",
         "author": "Author",
-        "tags": "Tags",
-        "feed": "Feed",
-        "role": "Role",
-        "user": "User",
+        "tags": "標籤",
+        "feed": "feed",
+        "role": "身分組",
+        "user": "使用者",
         "filtersCustomization": "Filters Customization",
         "categoryDescription": "Below is the list of filter categories you may add filters to. Type the filter category for which you would like you add a filter to, or type `exit` to cancel. To type a filter category that's not listed here but is in the raw dump, start it with `raw:`. For other unlisted filter categories, start it with `other:`.\u200b\n\u200b\n",
         "invalidCategory": "That is not a valid filter category. Try again, or type `exit` to cancel.",
@@ -590,7 +590,7 @@
     "MenuUtils": {
       "permissionWarning": "WARNING: Missing \"Add Reactions\" or \"Read Message History\" permissions in this channel. Because this menu has more than {{maxPerPage}} options, it will not function properly without the right permissions",
       "closedInactivity": "I have closed the menu due to inactivity.",
-      "closed": "Menu closed."
+      "closed": "已關閉選單。"
     },
     "FeedSelector": {
       "noFeeds": "This server does not have any feeds.",
@@ -600,7 +600,7 @@
       "prompt": "Choose a feed to from this channel by typing the number to execute your requested action on.",
       "multiSelect": "You may select multiple feeds by separation with commas (for example `1,3,8`), or with a range (for example `1-3,5,7-9`).",
       "noneSelected": "No valid feeds were selected. To select a feed, the number next to the feed (for example `1`). To select multiple feeds, separate the numberas by commas (for example `1,3,8`), or with a range (for example `1-3,5,7-9`). Try again, or type `exit` to cancel.",
-      "exitToCancel": "Type `exit` to cancel."
+      "exitToCancel": "輸入`exit`以取消。"
     },
     "errors": {
       "MenuOptionError": {
