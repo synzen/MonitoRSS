@@ -39,6 +39,16 @@ class Patron extends Base {
     }
 
     /**
+     * Due to Patreon's unmaintained API, some people who paid 5 USD in a different currency such
+     * as 4.5 euros will not receive the 5 USD benefits since Patreon reports the pldge as 4.5.
+     *
+     * This is a temporary measure until payments are moved off of Patreon.
+     *
+     * @type {number|undefined}
+     */
+    this.pledgeOverride = this.getField('pledgeOverride')
+
+    /**
      * @type {string}
      */
     this.discord = this.getField('discord')
@@ -103,19 +113,20 @@ class Patron extends Base {
     if (!this.isActive()) {
       return config.feeds.max
     }
-    if (this.pledge >= 2000) {
+    const pledge = this.pledgeOverride || this.pledge
+    if (pledge >= 2000) {
       return 140
     }
-    if (this.pledge >= 1500) {
+    if (pledge >= 1500) {
       return 105
     }
-    if (this.pledge >= 1000) {
+    if (pledge >= 1000) {
       return 70
     }
-    if (this.pledge >= 500) {
+    if (pledge >= 500) {
       return 35
     }
-    if (this.pledge >= 250) {
+    if (pledge >= 250) {
       return 15
     }
     return config.feeds.max
